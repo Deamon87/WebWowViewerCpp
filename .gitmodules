@@ -4,3 +4,6 @@
 [submodule "zipper"]
 	path = zipper
 	url = https://github.com/sebastiandev/zipper
+[submodule "viewer_lib/mathfu"]
+	path = viewer_lib/mathfu
+	url = https://github.com/google/mathfu.git
