@@ -1,0 +1,6 @@
+[submodule "minizip"]
+	path = minizip
+	url = https://github.com/nmoinvaz/minizip
+[submodule "zipper"]
+	path = zipper
+	url = https://github.com/sebastiandev/zipper
