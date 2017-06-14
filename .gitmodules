@@ -1,9 +1,6 @@
-[submodule "minizip"]
-	path = minizip
-	url = https://github.com/nmoinvaz/minizip
-[submodule "zipper"]
-	path = zipper
+[submodule "3rdparty/zipper"]
+	path = 3rdparty/zipper
 	url = https://github.com/sebastiandev/zipper
-[submodule "viewer_lib/mathfu"]
-	path = viewer_lib/mathfu
+[submodule "wowViewerLib/mathfu"]
+	path = wowViewerLib/mathfu
 	url = https://github.com/google/mathfu.git
