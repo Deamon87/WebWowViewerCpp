@@ -25,7 +25,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/shader/ShaderRuntimeData.h
         src/engine/opengl/header.h
         src/engine/camera/firstPersonCamera.cpp
-        src/engine/camera/firstPersonCamera.h)
+        src/engine/camera/firstPersonCamera.h src/include/config.h src/engine/camera/CameraInterface.h src/engine/objects/controllable.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

@@ -227,13 +227,15 @@ void WoWSceneImpl::initTextureCompVBO() {
 
 }
 
-WoWSceneImpl::WoWSceneImpl() {
+WoWSceneImpl::WoWSceneImpl(Config *config) {
     constexpr const shaderDefinition *definition = getShaderDef("adtShader");
 //    constexpr const int attributeIndex = getShaderAttribute("m2Shader", "aNormal");
 //    constexpr const int attributeIndex = +m2Shader::Attribute::aNormal;
 //    constexpr const shaderDefinition *definition = getShaderDef("readDepthBuffer");
 //    std::cout << "aHeight = " << definition->shaderString<< std::flush;
     std::cout << "aNormal = " << +m2Shader::Attribute::aNormal << std::flush;
+    this->m_config = config;
+
     this->initShaders();
 }
 /* Shaders stuff */
@@ -609,207 +611,192 @@ void WoWSceneImpl::draw(int deltaTime) {
     glClearScreen();
     mathfu::vec3 *cameraVector;
 
-    if (config.getUseSecondCamera()) {
-        cameraVector = this.secondCamera;
-    } else {
-        cameraVector = this.mainCamera;
-    }
 
-    var farPlane = 250;
-    var nearPlane = 1;
-    var fov = 45.0;
+    float farPlane = 250;
+    float nearPlane = 1;
+    float fov = 45.0;
 
     //If use camera settings
     //Figure out way to assign the object with camera
     //config.setCameraM2(this.graphManager.m2Objects[0]);
-    var m2Object = config.getCameraM2();
-    if (m2Object && m2Object.loaded) {
-        m2Object.updateCameras(deltaTime);
-
-        var cameraSettings = m2Object.cameras[0];
-        farPlane = cameraSettings.farClip;
-        nearPlane = cameraSettings.nearClip;
-        fov = cameraSettings.fov * 32 * Math.PI / 180;
-
-        this.mainCamera = cameraSettings.currentPosition;
-        vec4.transformMat4(this.mainCamera, this.mainCamera, m2Object.placementMatrix);
-        this.mainCameraLookAt = cameraSettings.currentTarget;
-        vec4.transformMat4(this.mainCameraLookAt, this.mainCameraLookAt, m2Object.placementMatrix);
-        cameraVecs = {
-                lookAtVec3: this.mainCameraLookAt,
-                cameraVec3: this.mainCamera,
-                staticCamera: true
-        }
+//    var m2Object = config.getCameraM2();
+//    if (m2Object && m2Object.loaded) {
+//        m2Object.updateCameras(deltaTime);
+//
+//        var cameraSettings = m2Object.cameras[0];
+//        farPlane = cameraSettings.farClip;
+//        nearPlane = cameraSettings.nearClip;
+//        fov = cameraSettings.fov * 32 * Math.PI / 180;
+//
+//        this.mainCamera = cameraSettings.currentPosition;
+//        vec4.transformMat4(this.mainCamera, this.mainCamera, m2Object.placementMatrix);
+//        this.mainCameraLookAt = cameraSettings.currentTarget;
+//        vec4.transformMat4(this.mainCameraLookAt, this.mainCameraLookAt, m2Object.placementMatrix);
+//        cameraVecs = {
+//                lookAtVec3: this.mainCameraLookAt,
+//                cameraVec3: this.mainCamera,
+//                staticCamera: true
+//        }
+//    }
+//
+    if (this->uFogStart == -1) {
+        this->uFogStart = farPlane - 10;
+    }
+    if (this->uFogEnd == -1) {
+        this->uFogEnd = farPlane;
     }
 
-    if (this.uFogStart == -1) {
-        this.uFogStart = farPlane - 10;
+    if (/*!(m2Object && m2Object.loaded) ||*/ m_config->getUseSecondCamera()){
+
     }
-    if (this.uFogEnd == -1) {
-        this.uFogEnd = farPlane;
-    }
-
-    if (!(m2Object && m2Object.loaded) || config.getUseSecondCamera()){
-        this.camera.setCameraPos(cameraVector[0], cameraVector[1], cameraVector[2]);
-        var cameraVecs = this.camera.tick(deltaTime);
-
-
-        if (config.getUseSecondCamera()) {
-            this.secondCamera = cameraVecs.cameraVec3;
-            this.secondCameraLookAt = cameraVecs.lookAtVec3;
-        } else {
-            this.mainCamera = cameraVecs.cameraVec3;
-            this.mainCameraLookAt = cameraVecs.lookAtVec3;
-        }
-    }
-
-    var adt_x = Math.floor((32 - (this.mainCamera[1] / 533.33333)));
-    var adt_y = Math.floor((32 - (this.mainCamera[0] / 533.33333)));
-
-    //TODO: HACK!!
-    for (var x = adt_x-1; x <= adt_x+1; x++) {
-        for (var y = adt_y-1; y <= adt_y+1; y++) {
-            this.addAdtChunkToCurrentMap(x, y);
-        }
-    }
-
-    var lookAtMat4 = [];
-
-    mat4.lookAt(lookAtMat4, this.mainCamera, this.mainCameraLookAt, [0,0,1]);
-
-    //Second camera for debug
-    var secondLookAtMat = [];
-    mat4.lookAt(secondLookAtMat, this.secondCamera, this.secondCameraLookAt, [0,0,1]);
-
-    var perspectiveMatrix = mat4.create();
-    mat4.perspective(perspectiveMatrix, fov, this.canvas.width / this.canvas.height, nearPlane, farPlane);
-    //var o_height = (this.canvas.height * (533.333/256/* zoom 7 in Alram viewer */))/ 8 ;
-    //var o_width = o_height * this.canvas.width / this.canvas.height;
-    //mat4.ortho(perspectiveMatrix, -o_width, o_width, -o_height, o_height, 1, 1000);
-
-
-    var perspectiveMatrixForCulling = mat4.create();
-    mat4.perspective(perspectiveMatrixForCulling, fov, this.canvas.width / this.canvas.height, nearPlane, farPlane);
-
-    //Camera for rendering
-    var perspectiveMatrixForCameraRender = mat4.create();
-    mat4.perspective(perspectiveMatrixForCameraRender, fov, this.canvas.width / this.canvas.height, nearPlane, farPlane);
-
-    var viewCameraForRender = mat4.create();
-    mat4.multiply(viewCameraForRender, perspectiveMatrixForCameraRender,lookAtMat4)
-    //
-
-    this.perspectiveMatrix = perspectiveMatrix;
-    this.viewCameraForRender = viewCameraForRender;
-    if (!this.isShadersLoaded) return;
-
-    var cameraPos = vec4.fromValues(
-            this.mainCamera[0],
-            this.mainCamera[1],
-            this.mainCamera[2],
-            1
-    );
-    this.graphManager.setCameraPos(cameraPos);
-
-    //Matrixes from previous frame
-    if (this.perspectiveMatrix && this.lookAtMat4) {
-        //this.graphManager.checkAgainstDepthBuffer(this.perspectiveMatrix, this.lookAtMat4, this.floatDepthBuffer, this.canvas.width, this.canvas.height);
-    }
-
-    this.graphManager.setLookAtMat(lookAtMat4);
-
-    // Update objects
-    this.adtGeomCache.processCacheQueue(10);
-    this.wmoGeomCache.processCacheQueue(10);
-    this.wmoMainCache.processCacheQueue(10);
-    this.m2GeomCache.processCacheQueue(10);
-    this.skinGeomCache.processCacheQueue(10);
-
-    this.textureCache.processCacheQueue(10);
-
-
-    var updateRes = this.graphManager.update(deltaTime);
-    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
-
-    this.graphManager.checkCulling(perspectiveMatrixForCulling, lookAtMat4);
-    this.graphManager.sortGeometry(perspectiveMatrixForCulling, lookAtMat4);
-
-
-    gl.viewport(0,0,this.canvas.width, this.canvas.height);
-    if (config.getDoubleCameraDebug()) {
-        //Draw static camera
-        this.isDebugCamera = true;
-        this.lookAtMat4 = secondLookAtMat;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
-
-        this.glClearScreen(gl, this.fogColor);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.depthMask(true);
-        gl.enableVertexAttribArray(0);
-        this.graphManager.draw();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-        //Draw debug camera from framebuffer into screen
-        this.glClearScreen(gl, this.fogColor);
-        this.activateRenderFrameShader();
-        gl.viewport(0,0,this.canvas.width, this.canvas.height);
-        gl.enableVertexAttribArray(0);
-        this.drawFrameBuffer();
-
-        this.isDebugCamera = false;
-    }
-
-    //Render real camera
-    this.lookAtMat4 = lookAtMat4;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
-    this.glClearScreen(gl, this.fogColor);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.depthMask(true);
-    gl.enableVertexAttribArray(0);
-    this.graphManager.draw();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    if (!config.getDoubleCameraDebug()) {
-        //Draw real camera into screen
-
-        this.glClearScreen(gl, this.fogColor);
-        gl.enableVertexAttribArray(0);
-        this.activateRenderFrameShader();
-        gl.viewport(0,0,this.canvas.width, this.canvas.height);
-        this.drawFrameBuffer();
-    } else {
-        //Draw real camera into square at bottom of screen
-
-        this.activateRenderDepthShader();
-        gl.enableVertexAttribArray(0);
-        this.drawTexturedQuad(gl, this.frameBufferColorTexture,
-                              this.canvas.width * 0.60,
-                              0,//this.canvas.height * 0.75,
-                              this.canvas.width * 0.40,
-                              this.canvas.height * 0.40,
-                              this.canvas.width, this.canvas.height);
-    }
-    if (config.getDrawDepthBuffer() && this.depth_texture_ext) {
-        this.activateRenderDepthShader();
-        gl.enableVertexAttribArray(0);
-        gl.uniform1f(this.drawDepthBuffer.shaderUniforms.uFarPlane, farPlane);
-        gl.uniform1f(this.drawDepthBuffer.shaderUniforms.uNearPlane, nearPlane);
-
-        this.drawTexturedQuad(gl, this.frameBufferDepthTexture,
-                              this.canvas.width * 0.60,
-                              0,//this.canvas.height * 0.75,
-                              this.canvas.width * 0.40,
-                              this.canvas.height * 0.40,
-                              this.canvas.width, this.canvas.height,
-                              true);
-    }
+//
+//    var adt_x = Math.floor((32 - (this.mainCamera[1] / 533.33333)));
+//    var adt_y = Math.floor((32 - (this.mainCamera[0] / 533.33333)));
+//
+//    //TODO: HACK!!
+//    for (var x = adt_x-1; x <= adt_x+1; x++) {
+//        for (var y = adt_y-1; y <= adt_y+1; y++) {
+//            this.addAdtChunkToCurrentMap(x, y);
+//        }
+//    }
+//
+//    var lookAtMat4 = [];
+//
+//    mat4.lookAt(lookAtMat4, this.mainCamera, this.mainCameraLookAt, [0,0,1]);
+//
+//    //Second camera for debug
+//    var secondLookAtMat = [];
+//    mat4.lookAt(secondLookAtMat, this.secondCamera, this.secondCameraLookAt, [0,0,1]);
+//
+//    var perspectiveMatrix = mat4.create();
+//    mat4.perspective(perspectiveMatrix, fov, this.canvas.width / this.canvas.height, nearPlane, farPlane);
+//    //var o_height = (this.canvas.height * (533.333/256/* zoom 7 in Alram viewer */))/ 8 ;
+//    //var o_width = o_height * this.canvas.width / this.canvas.height;
+//    //mat4.ortho(perspectiveMatrix, -o_width, o_width, -o_height, o_height, 1, 1000);
+//
+//
+//    var perspectiveMatrixForCulling = mat4.create();
+//    mat4.perspective(perspectiveMatrixForCulling, fov, this.canvas.width / this.canvas.height, nearPlane, farPlane);
+//
+//    //Camera for rendering
+//    var perspectiveMatrixForCameraRender = mat4.create();
+//    mat4.perspective(perspectiveMatrixForCameraRender, fov, this.canvas.width / this.canvas.height, nearPlane, farPlane);
+//
+//    var viewCameraForRender = mat4.create();
+//    mat4.multiply(viewCameraForRender, perspectiveMatrixForCameraRender,lookAtMat4)
+//    //
+//
+//    this.perspectiveMatrix = perspectiveMatrix;
+//    this.viewCameraForRender = viewCameraForRender;
+//    if (!this.isShadersLoaded) return;
+//
+//    var cameraPos = vec4.fromValues(
+//            this.mainCamera[0],
+//            this.mainCamera[1],
+//            this.mainCamera[2],
+//            1
+//    );
+//    this.graphManager.setCameraPos(cameraPos);
+//
+//    //Matrixes from previous frame
+//    if (this.perspectiveMatrix && this.lookAtMat4) {
+//        //this.graphManager.checkAgainstDepthBuffer(this.perspectiveMatrix, this.lookAtMat4, this.floatDepthBuffer, this.canvas.width, this.canvas.height);
+//    }
+//
+//    this.graphManager.setLookAtMat(lookAtMat4);
+//
+//    // Update objects
+//    this.adtGeomCache.processCacheQueue(10);
+//    this.wmoGeomCache.processCacheQueue(10);
+//    this.wmoMainCache.processCacheQueue(10);
+//    this.m2GeomCache.processCacheQueue(10);
+//    this.skinGeomCache.processCacheQueue(10);
+//
+//    this.textureCache.processCacheQueue(10);
+//
+//
+//    var updateRes = this.graphManager.update(deltaTime);
+//    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
+//
+//    this.graphManager.checkCulling(perspectiveMatrixForCulling, lookAtMat4);
+//    this.graphManager.sortGeometry(perspectiveMatrixForCulling, lookAtMat4);
+//
+//
+//    gl.viewport(0,0,this.canvas.width, this.canvas.height);
+//    if (config.getDoubleCameraDebug()) {
+//        //Draw static camera
+//        this.isDebugCamera = true;
+//        this.lookAtMat4 = secondLookAtMat;
+//        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+//
+//        this.glClearScreen(gl, this.fogColor);
+//
+//        gl.activeTexture(gl.TEXTURE0);
+//        gl.depthMask(true);
+//        gl.enableVertexAttribArray(0);
+//        this.graphManager.draw();
+//        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+//
+//        //Draw debug camera from framebuffer into screen
+//        this.glClearScreen(gl, this.fogColor);
+//        this.activateRenderFrameShader();
+//        gl.viewport(0,0,this.canvas.width, this.canvas.height);
+//        gl.enableVertexAttribArray(0);
+//        this.drawFrameBuffer();
+//
+//        this.isDebugCamera = false;
+//    }
+//
+//    //Render real camera
+//    this.lookAtMat4 = lookAtMat4;
+//    gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+//    this.glClearScreen(gl, this.fogColor);
+//
+//    gl.activeTexture(gl.TEXTURE0);
+//    gl.depthMask(true);
+//    gl.enableVertexAttribArray(0);
+//    this.graphManager.draw();
+//    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+//
+//    if (!config.getDoubleCameraDebug()) {
+//        //Draw real camera into screen
+//
+//        this.glClearScreen(gl, this.fogColor);
+//        gl.enableVertexAttribArray(0);
+//        this.activateRenderFrameShader();
+//        gl.viewport(0,0,this.canvas.width, this.canvas.height);
+//        this.drawFrameBuffer();
+//    } else {
+//        //Draw real camera into square at bottom of screen
+//
+//        this.activateRenderDepthShader();
+//        gl.enableVertexAttribArray(0);
+//        this.drawTexturedQuad(gl, this.frameBufferColorTexture,
+//                              this.canvas.width * 0.60,
+//                              0,//this.canvas.height * 0.75,
+//                              this.canvas.width * 0.40,
+//                              this.canvas.height * 0.40,
+//                              this.canvas.width, this.canvas.height);
+//    }
+//    if (config.getDrawDepthBuffer() && this.depth_texture_ext) {
+//        this.activateRenderDepthShader();
+//        gl.enableVertexAttribArray(0);
+//        gl.uniform1f(this.drawDepthBuffer.shaderUniforms.uFarPlane, farPlane);
+//        gl.uniform1f(this.drawDepthBuffer.shaderUniforms.uNearPlane, nearPlane);
+//
+//        this.drawTexturedQuad(gl, this.frameBufferDepthTexture,
+//                              this.canvas.width * 0.60,
+//                              0,//this.canvas.height * 0.75,
+//                              this.canvas.width * 0.40,
+//                              this.canvas.height * 0.40,
+//                              this.canvas.width, this.canvas.height,
+//                              true);
+//    }
 
 
 }
 
 
-WoWScene * createWoWScene(){
-    return new WoWSceneImpl();
+WoWScene * createWoWScene(Config *config){
+    return new WoWSceneImpl(config);
 }

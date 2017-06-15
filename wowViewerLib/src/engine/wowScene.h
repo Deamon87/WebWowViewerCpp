@@ -5,17 +5,19 @@
 #include "shadersStructures.h"
 #include "shader/ShaderRuntimeData.h"
 #include "../include/wowScene.h"
+#include "../include/config.h"
 #include <algorithm>
 #include <functional>
 #include <cctype>
 #include <locale>
 #include "mathfu/glsl_mappings.h"
+#include "camera/firstPersonCamera.h"
 
 
 class WoWSceneImpl: public WoWScene {
 
 public:
-    WoWSceneImpl();
+    WoWSceneImpl(Config *config);
 
     void draw(int deltaTime);
     void provideFile(int requestId, char* fileName, unsigned char* data, int fileLength){};
@@ -55,8 +57,16 @@ private:
     ShaderRuntimeData *drawFrustumShader = nullptr;
     ShaderRuntimeData *drawLinesShader = nullptr;
 
+    Config * m_config;
+
     mathfu::mat4 m_lookAtMat4;
     mathfu::mat4 m_perspectiveMatrix;
+
+    FirstPersonCamera m_firstCamera;
+    FirstPersonCamera m_secondCamera;
+
+    float uFogStart = -1;
+    float uFogEnd = -1;
 
 
 

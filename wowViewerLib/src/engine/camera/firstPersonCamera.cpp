@@ -5,7 +5,7 @@
 #include "firstPersonCamera.h"
 #include "math.h"
 
-void FirstPersonCamera::addDepthDiff(float val) {
+void FirstPersonCamera::addForwardDiff(float val) {
     this->depthDiff = this->depthDiff + val;
 }
 
@@ -63,6 +63,14 @@ void FirstPersonCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
 
+mathfu::vec3 FirstPersonCamera::getCameraPosition(){
+    return camera;
+}
+mathfu::vec3 FirstPersonCamera::getCameraLookAt(){
+    return lookAt;
+}
+
+
 void FirstPersonCamera::tick (float timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
     float moveSpeed = 0.02;
@@ -104,10 +112,18 @@ void FirstPersonCamera::tick (float timeDelta) {
         camera[2] = camera[2] + verticalDiff;
     }
 
-    mathfu::vec3 lookat = camera + dir;
+    this->lookAt = camera + dir;
 }
-void FirstPersonCamera::setCameraPos (float x, float y, float z) {
+void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
+    //Reset camera
     this->camera[0] = x;
     this->camera[1] = y;
     this->camera[2] = z;
+
+    this->lookAt[0] = 0;
+    this->lookAt[1] = 0;
+    this->lookAt[2] = 0;
+
+    this->av = 0;
+    this->ah = 0;
 }
