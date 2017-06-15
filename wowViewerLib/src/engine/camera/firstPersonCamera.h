@@ -5,8 +5,8 @@
 #ifndef WOWMAPVIEWERREVIVED_FIRSTPERSONCAMERA_H
 #define WOWMAPVIEWERREVIVED_FIRSTPERSONCAMERA_H
 
-#include "mathfu/vector.h"
-#include "mathfu/glsl_mappings.h"
+#include <mathfu/vector.h>
+#include <mathfu/glsl_mappings.h>
 
 class FirstPersonCamera {
 public:

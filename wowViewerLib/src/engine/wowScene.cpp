@@ -2,11 +2,11 @@
 #include "wowScene.h"
 #include "shaders.h"
 #include "shader/ShaderRuntimeData.h"
-
+#include <mathfu/glsl_mappings.h>
 #include <iostream>
 
 
-ShaderRuntimeData * WoWScene::compileShader(std::string shaderName,
+ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
         std::string vertShaderString,
         std::string fragmentShaderString,
         std::string *vertExtraDefStringsExtern, std::string *fragExtraDefStringsExtern) {
@@ -135,7 +135,7 @@ ShaderRuntimeData * WoWScene::compileShader(std::string shaderName,
 
     return data;
 }
-void WoWScene::initShaders() {
+void WoWSceneImpl::initShaders() {
     const std::string textureCompositionShader = getShaderDef("textureCompositionShader")->shaderString;
     this->textureCompositionShader = this->compileShader("textureCompositionShader", textureCompositionShader, textureCompositionShader);
 
@@ -173,61 +173,61 @@ void WoWScene::initShaders() {
     this->drawLinesShader          = this->compileShader("drawLinesShader", drawLinesShader, drawLinesShader);
 }
 
-void WoWScene::initGlContext() {
+void WoWSceneImpl::initGlContext() {
 
 }
-void WoWScene::createBlackPixelTexture() {
+void WoWSceneImpl::createBlackPixelTexture() {
 
 }
-void WoWScene::initAnisotropicExt() {
+void WoWSceneImpl::initAnisotropicExt() {
 
 }
-void WoWScene::initArrayInstancedExt() {
+void WoWSceneImpl::initArrayInstancedExt() {
 
 }
-void WoWScene::initBoxVBO() {
+void WoWSceneImpl::initBoxVBO() {
 
 }
-void WoWScene::initCaches() {
+void WoWSceneImpl::initCaches() {
 
 }
-void WoWScene::initCamera() {
+void WoWSceneImpl::initCamera() {
 
 }
-void WoWScene::initCompressedTextureS3tcExt() {
+void WoWSceneImpl::initCompressedTextureS3tcExt() {
 
 }
-void WoWScene::initDeferredRendering() {
+void WoWSceneImpl::initDeferredRendering() {
 
 }
-void WoWScene::initDepthTextureExt() {
+void WoWSceneImpl::initDepthTextureExt() {
 
 }
-void WoWScene::initDrawBuffers(int frameBuffer) {
-
-}
-
-void WoWScene::initVertexArrayObjectExt() {
+void WoWSceneImpl::initDrawBuffers(int frameBuffer) {
 
 }
 
-void WoWScene::initRenderBuffers() {
+void WoWSceneImpl::initVertexArrayObjectExt() {
 
 }
 
-void WoWScene::initSceneApi() {
+void WoWSceneImpl::initRenderBuffers() {
 
 }
 
-void WoWScene::initSceneGraph() {
+void WoWSceneImpl::initSceneApi() {
 
 }
 
-void WoWScene::initTextureCompVBO() {
+void WoWSceneImpl::initSceneGraph() {
 
 }
 
-WoWScene::WoWScene() {
+void WoWSceneImpl::initTextureCompVBO() {
+
+}
+
+WoWSceneImpl::WoWSceneImpl() {
     constexpr const shaderDefinition *definition = getShaderDef("adtShader");
 //    constexpr const int attributeIndex = getShaderAttribute("m2Shader", "aNormal");
 //    constexpr const int attributeIndex = +m2Shader::Attribute::aNormal;
@@ -238,7 +238,7 @@ WoWScene::WoWScene() {
 }
 /* Shaders stuff */
 /*
-void WoWScene::activateRenderFrameShader () {
+void WoWSceneImpl::activateRenderFrameShader () {
         glUseProgram(this->renderFrameShader->getProgram());
         glActiveTexture(GL_TEXTURE0);
 
@@ -251,7 +251,7 @@ void WoWScene::activateRenderFrameShader () {
             glUniform1i(this->renderFrameShader->getUnf("u_depth"), 1);
         }
 }
-void WoWScene::activateTextureCompositionShader(GLuint texture) {
+void WoWSceneImpl::activateTextureCompositionShader(GLuint texture) {
         this.currentShaderProgram = this.textureCompositionShader;
         if (this.currentShaderProgram) {
             var gl = this.gl;
@@ -283,7 +283,7 @@ void WoWScene::activateTextureCompositionShader(GLuint texture) {
             gl.viewport(0,0,1024,1024)
         }
 }
-void WoWScene::activateRenderDepthShader () {
+void WoWSceneImpl::activateRenderDepthShader () {
     this.currentShaderProgram = this.drawDepthBuffer;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -295,7 +295,7 @@ void WoWScene::activateRenderDepthShader () {
         gl.activeTexture(gl.TEXTURE0);
     }
 }
-void WoWScene::activateReadDepthBuffer () {
+void WoWSceneImpl::activateReadDepthBuffer () {
     this.currentShaderProgram = this.readDepthBuffer;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -309,7 +309,7 @@ void WoWScene::activateReadDepthBuffer () {
 
     }
 }
-void WoWScene::activateAdtShader (){
+void WoWSceneImpl::activateAdtShader (){
     this.currentShaderProgram = this.adtShader;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -342,7 +342,7 @@ void WoWScene::activateAdtShader (){
         gl.uniform3fv(this.currentShaderProgram.shaderUniforms.uFogColor, this.fogColor);
     }
 }
-void WoWScene::activateWMOShader () {
+void WoWSceneImpl::activateWMOShader () {
     this.currentShaderProgram = this.wmoShader;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -372,7 +372,7 @@ void WoWScene::activateWMOShader () {
         gl.activeTexture(gl.TEXTURE0);
     }
 }
-void WoWScene::deactivateWMOShader () {
+void WoWSceneImpl::deactivateWMOShader () {
     var gl = this.gl;
     var instExt = this.sceneApi.extensions.getInstancingExt();
     var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
@@ -388,7 +388,7 @@ void WoWScene::deactivateWMOShader () {
     gl.disableVertexAttribArray(shaderAttributes.aColor);
     gl.disableVertexAttribArray(shaderAttributes.aColor2);
 }
-void WoWScene::deactivateTextureCompositionShader() {
+void WoWSceneImpl::deactivateTextureCompositionShader() {
     var gl = this.gl;
     gl.useProgram(this.currentShaderProgram.program);
     var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
@@ -403,7 +403,7 @@ void WoWScene::deactivateTextureCompositionShader() {
     gl.disable(gl.BLEND);
 }
 
-void WoWScene::activateM2ShaderAttribs() {
+void WoWSceneImpl::activateM2ShaderAttribs() {
     var gl = this.gl;
     var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
     gl.enableVertexAttribArray(shaderAttributes.aPosition);
@@ -415,7 +415,7 @@ void WoWScene::activateM2ShaderAttribs() {
     gl.enableVertexAttribArray(shaderAttributes.aTexCoord);
     gl.enableVertexAttribArray(shaderAttributes.aTexCoord2);
 }
-void WoWScene::deactivateM2ShaderAttribs() {
+void WoWSceneImpl::deactivateM2ShaderAttribs() {
     var gl = this.gl;
     var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
 
@@ -431,7 +431,7 @@ void WoWScene::deactivateM2ShaderAttribs() {
     gl.disableVertexAttribArray(shaderAttributes.aTexCoord2);
     gl.enableVertexAttribArray(0);
 }
-void WoWScene::activateM2Shader () {
+void WoWSceneImpl::activateM2Shader () {
     this.currentShaderProgram = this.m2Shader;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -459,7 +459,7 @@ void WoWScene::activateM2Shader () {
         gl.activeTexture(gl.TEXTURE0);
     }
 }
-void WoWScene::deactivateM2Shader () {
+void WoWSceneImpl::deactivateM2Shader () {
     var gl = this.gl;
     var instExt = this.sceneApi.extensions.getInstancingExt();
 
@@ -467,7 +467,7 @@ void WoWScene::deactivateM2Shader () {
         this.deactivateM2ShaderAttribs()
     }
 }
-void WoWScene::activateM2InstancingShader () {
+void WoWSceneImpl::activateM2InstancingShader () {
     this.currentShaderProgram = this.m2InstancingShader;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -513,7 +513,7 @@ void WoWScene::activateM2InstancingShader () {
     }
 
 }
-void WoWScene::deactivateM2InstancingShader () {
+void WoWSceneImpl::deactivateM2InstancingShader () {
     var gl = this.gl;
     var instExt = this.sceneApi.extensions.getInstancingExt();
     var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
@@ -540,7 +540,7 @@ void WoWScene::deactivateM2InstancingShader () {
 
     gl.enableVertexAttribArray(0);
 }
-void WoWScene::activateBoundingBoxShader () {
+void WoWSceneImpl::activateBoundingBoxShader () {
     this.currentShaderProgram = this.bbShader;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -556,7 +556,7 @@ void WoWScene::activateBoundingBoxShader () {
         gl.uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
     }
 }
-void WoWScene::activateFrustumBoxShader () {
+void WoWSceneImpl::activateFrustumBoxShader () {
     this.currentShaderProgram = this.drawFrustumShader;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -572,7 +572,7 @@ void WoWScene::activateFrustumBoxShader () {
         gl.uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
     }
 }
-void WoWScene::activateDrawLinesShader () {
+void WoWSceneImpl::activateDrawLinesShader () {
     this.currentShaderProgram = this.drawLinesShader;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -582,7 +582,7 @@ void WoWScene::activateDrawLinesShader () {
         gl.uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
     }
 }
-void WoWScene::activateDrawPortalShader () {
+void WoWSceneImpl::activateDrawPortalShader () {
     this.currentShaderProgram = this.drawPortalShader;
     if (this.currentShaderProgram) {
         var gl = this.gl;
@@ -609,8 +609,11 @@ void glClearScreen() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_CULL_FACE);
 }
-void WoWScene::draw(int deltaTime) {
+void WoWSceneImpl::draw(int deltaTime) {
     glClearScreen();
 }
 
 
+WoWScene * createWoWScene(){
+    return new WoWSceneImpl();
+}

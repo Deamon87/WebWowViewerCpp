@@ -12,7 +12,7 @@
 #include <string>
 #include <iostream>
 #include <zipper/unzipper.h>
-#include "engine/wowScene.h"
+#include "wowScene.h"
 
 #include "persistance/httpFile/httpFile.h"
 
@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
 
-    // Open a window and create its OpenGL context
+//     Open a window and create its OpenGL context
     GLFWwindow* window; // (In the accompanying source code, this variable is global)
     window = glfwCreateWindow( 1024, 768, "Test Window", NULL, NULL);
     if( window == NULL ){
@@ -62,12 +62,12 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    WoWScene *scene = new WoWScene();
+    WoWScene *scene = createWoWScene();
 
     // Ensure we can capture the escape key being pressed below
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-    do{
+    do {
         // Draw nothing, see you in tutorial 2 !
         scene->draw(1);
 
@@ -75,10 +75,9 @@ int main(int argc, char** argv) {
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-    } // Check if the ESC key was pressed or the window was closed
-    while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
+//    } while(true);// Check if the ESC key was pressed or the window was closed
+    }    while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
            glfwWindowShouldClose(window) == 0 );
 
-//    glutMainLoop();
     return 0;
 }

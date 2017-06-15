@@ -1,23 +1,24 @@
-#ifndef WOWMAPVIEWERREVIVED_WOWSCENE_H_H
-#define WOWMAPVIEWERREVIVED_WOWSCENE_H_H
+#ifndef WOWMAPVIEWERREVIVED_WOWSCENEIMPL_H_H
+#define WOWMAPVIEWERREVIVED_WOWSCENEIMPL_H_H
 
 #include <string>
 #include "shadersStructures.h"
 #include "shader/ShaderRuntimeData.h"
-
+#include "../include/wowScene.h"
 #include <algorithm>
 #include <functional>
 #include <cctype>
 #include <locale>
 #include "mathfu/glsl_mappings.h"
 
-class WoWScene {
+
+class WoWSceneImpl: public WoWScene {
 
 public:
-    WoWScene();
+    WoWSceneImpl();
 
     void draw(int deltaTime);
-
+    void provideFile(int requestId, char* fileName, unsigned char* data, int fileLength){};
 private:
     ShaderRuntimeData *compileShader (std::string shaderName, std::string vertShaderString, std::string fragmentShaderString,
                                       std::string *vertExtraDefStrings = nullptr, std::string *fragExtraDefStrings = nullptr);
@@ -130,4 +131,4 @@ static inline std::string trimmed(std::string s) {
     return s;
 }
 
-#endif //WOWMAPVIEWERREVIVED_WOWSCENE_H_H
+#endif //WOWMAPVIEWERREVIVED_WOWSCENEIMPL_H_H
