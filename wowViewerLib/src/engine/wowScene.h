@@ -58,6 +58,8 @@ private:
     mathfu::mat4 m_lookAtMat4;
     mathfu::mat4 m_perspectiveMatrix;
 
+
+
     void activateRenderFrameShader();
 
     void activateRenderDepthShader();

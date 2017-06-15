@@ -22,7 +22,7 @@ void HttpFile::setCallback(HTTPReadyCallback callback) {
 }
 
 void HttpFile::startDownloading() {
-   /* CURL * curl = curl_easy_init();
+    CURL * curl = curl_easy_init();
     this->curlInstance = curl;
 
 
@@ -48,6 +48,6 @@ void HttpFile::startDownloading() {
             std::cout << "Could not download file "<<this->m_httpUrl->c_str() << std::flush;
         }
         /* always cleanup */
-//        curl_easy_cleanup(curl);
-//    }
+       curl_easy_cleanup(curl);
+    }
 }

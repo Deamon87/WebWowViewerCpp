@@ -53,6 +53,18 @@ if (NOT EMSCRIPTEN_BUILD)
     pkg_search_module(GLFW REQUIRED glfw3)
     include_directories(${GLFW_INCLUDE_DIRS})
 endif()
+#########################################################
+# FIND CURL
+#########################################################
+if (NOT EMSCRIPTEN_BUILD)
+    find_package(CURL REQUIRED)
+    include_directories(${CURL_INCLUDE_DIRS})
+    link_directories(${CURL_LIBRARIES})
+    add_definitions(${CURL_DEFINITIONS})
+    if(NOT CURL_FOUND)
+        message(ERROR " CURL not found!")
+    endif(NOT CURL_FOUND)
+endif()
 
 #Build the executiable
 add_executable(WebWoWViewerCpp ${SOURCE_FILES})
@@ -63,5 +75,5 @@ target_link_libraries(WebWoWViewerCpp ${install_dir}/lib/libWoWViewerLib.a)
 add_dependencies(WebWoWViewerCpp WowViewerLib)
 
 set_property(TARGET WebWoWViewerCpp PROPERTY CXX_STANDARD 17)
-target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES} ${GLFW_STATIC_LIBRARIES} zipper z stdc++fs)
+target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES} ${GLFW_STATIC_LIBRARIES} ${CURL_LIBRARIES} zipper z stdc++fs)
 
