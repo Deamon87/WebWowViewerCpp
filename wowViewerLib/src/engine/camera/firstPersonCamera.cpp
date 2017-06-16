@@ -2,6 +2,7 @@
 // Created by deamon on 18.05.17.
 //
 
+#include <iostream>
 #include "firstPersonCamera.h"
 #include "math.h"
 
@@ -112,6 +113,8 @@ void FirstPersonCamera::tick (float timeDelta) {
         camera[2] = camera[2] + verticalDiff;
     }
 
+    //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
+    this->camera = camera;
     this->lookAt = camera + dir;
 }
 void FirstPersonCamera :: setCameraPos (float x, float y, float z) {

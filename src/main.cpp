@@ -15,6 +15,61 @@
 #include "wowScene.h"
 
 #include "persistance/httpFile/httpFile.h"
+static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
+    IControllable* controllable = scene->getCurrentContollable();
+    if ( action == GLFW_PRESS) {
+        switch (key) {
+            case 'W' :
+                controllable->startMovingForward();
+                break;
+            case 'S' :
+                controllable->startMovingBackwards();
+                break;
+            case 'A' :
+                controllable->startStrafingLeft();
+                break;
+            case 'D':
+                controllable->startStrafingRight();
+                break;
+            case 'Q':
+                controllable->startMovingUp();
+                break;
+            case 'E':
+                controllable->startMovingDown();
+                break;
+
+            default:
+                break;
+        }
+    } else if ( action == GLFW_RELEASE) {
+        switch (key) {
+            case 'W' :
+                controllable->stopMovingForward();
+                break;
+            case 'S' :
+                controllable->stopMovingBackwards();
+                break;
+            case 'A' :
+                controllable->stopStrafingLeft();
+                break;
+            case 'D':
+                controllable->stopStrafingRight();
+                break;
+            case 'Q':
+                controllable->stopMovingUp();
+                break;
+            case 'E':
+                controllable->stopMovingDown();
+                break;
+
+            default:
+                break;
+        }
+    }
+
+}
 
 int main(int argc, char** argv) {
     CURL *curl = NULL;
@@ -23,17 +78,17 @@ int main(int argc, char** argv) {
 
     char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
 
-    HttpFile httpFile(new std::string(url));
-    httpFile.setCallback([](HttpFile* httpFileLocal) {
-
-        std::vector<unsigned char> unzipped_entry;
-        zipper::Unzipper unzipper(*httpFileLocal->getFileBuffer());
-        if (unzipper.extractEntryToMemory("world\\generic\\passivedoodads\\fruits\\fruitbowl.blp", unzipped_entry)) {
-            std::cout << "file extracted"<<std::flush;
-        }
-        unzipper.close();
-    });
-    httpFile.startDownloading();
+//    HttpFile httpFile(new std::string(url));
+//    httpFile.setCallback([](HttpFile* httpFileLocal) {
+//
+//        std::vector<unsigned char> unzipped_entry;
+//        zipper::Unzipper unzipper(*httpFileLocal->getFileBuffer());
+//        if (unzipper.extractEntryToMemory("world\\generic\\passivedoodads\\fruits\\fruitbowl.blp", unzipped_entry)) {
+//            std::cout << "file extracted"<<std::flush;
+//        }
+//        unzipper.close();
+//    });
+//    httpFile.startDownloading();
 
     if( !glfwInit() )
     {
@@ -66,11 +121,19 @@ int main(int argc, char** argv) {
     WoWScene *scene = createWoWScene(testConf, 1000, 1000);
 
     // Ensure we can capture the escape key being pressed below
-    glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+    //glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+    glfwSetWindowUserPointer(window, scene);
+    glfwSetKeyCallback(window, onKey);
 
+    double currentFrame = glfwGetTime();
+    double lastFrame = currentFrame;
+    double deltaTime;
     do {
-        // Draw nothing, see you in tutorial 2 !
-        scene->draw(1);
+        currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        scene->draw(deltaTime*1000);
 
         // Swap buffers
         glfwSwapBuffers(window);

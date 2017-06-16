@@ -725,7 +725,7 @@ void WoWSceneImpl::draw(int deltaTime) {
         this->uFogEnd = farPlane;
     }
 
-    if (m_config->getUseSecondCamera()){
+    if (!m_config->getUseSecondCamera()){
         this->m_firstCamera.tick(deltaTime);
     } else {
         this->m_secondCamera.tick(deltaTime);

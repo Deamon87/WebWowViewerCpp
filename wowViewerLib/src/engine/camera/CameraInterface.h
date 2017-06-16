@@ -5,7 +5,7 @@
 #ifndef WOWVIEWERLIB_CAMERAINTERFACE_H
 #define WOWVIEWERLIB_CAMERAINTERFACE_H
 #include <mathfu/vector.h>
-#include "../objects/controllable.h"
+#include "../../include/controllable.h"
 
 class ICamera : public IControllable {
     virtual mathfu::vec3 getCameraPosition() = 0;
