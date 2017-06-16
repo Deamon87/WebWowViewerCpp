@@ -11,6 +11,6 @@ public:
     virtual void provideFile(int requestId, char* fileName, unsigned char* data, int fileLength) = 0;
 };
 
-WoWScene * createWoWScene(Config *config);
+WoWScene * createWoWScene(Config *config, int canvWidth, int canvHeight);
 
 #endif //WOWMAPVIEWERREVIVED_WOWSCENE_H_H

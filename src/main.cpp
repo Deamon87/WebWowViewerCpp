@@ -62,7 +62,8 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    WoWScene *scene = createWoWScene();
+    Config *testConf = new Config();
+    WoWScene *scene = createWoWScene(testConf, 1000, 1000);
 
     // Ensure we can capture the escape key being pressed below
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);

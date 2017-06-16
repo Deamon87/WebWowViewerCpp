@@ -16,6 +16,7 @@ public:
     }
 
 public:
+    unsigned long hasUnf(std::string name);
     GLuint getUnf(std::string name);
     GLuint getProgram();
     void setUnf(std::string name, GLuint index);

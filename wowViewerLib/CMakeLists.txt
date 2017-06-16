@@ -34,6 +34,7 @@ set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 
 mathfu_configure_flags(WoWViewerLib)
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/src/include/wowScene.h
+              ${CMAKE_SOURCE_DIR}/src/include/config.h
         DESTINATION include)
 INSTALL(TARGETS WoWViewerLib
         RUNTIME DESTINATION bin

@@ -3,6 +3,9 @@
 //
 
 #include "ShaderRuntimeData.h"
+unsigned long ShaderRuntimeData::hasUnf(std::string name) {
+    return m_uniformMap.count(name);
+}
 
 GLuint ShaderRuntimeData::getUnf(std::string name) {
     return m_uniformMap.at(name);

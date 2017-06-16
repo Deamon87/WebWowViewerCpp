@@ -17,7 +17,7 @@
 class WoWSceneImpl: public WoWScene {
 
 public:
-    WoWSceneImpl(Config *config);
+    WoWSceneImpl(Config *config, int canvWidth, int canvHeight);
 
     void draw(int deltaTime);
     void provideFile(int requestId, char* fileName, unsigned char* data, int fileLength){};
@@ -65,9 +65,17 @@ private:
     FirstPersonCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;
 
+    int canvWidth;
+    int canvHeight;
+    float canvAspect;
+
     float uFogStart = -1;
     float uFogEnd = -1;
 
+    GLuint frameBuffer;
+    GLuint frameBufferColorTexture;
+    GLuint frameBufferDepthTexture;
+    GLuint vertBuffer;
 
 
     void activateRenderFrameShader();

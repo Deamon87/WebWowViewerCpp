@@ -212,7 +212,66 @@ void WoWSceneImpl::initVertexArrayObjectExt() {
 }
 
 void WoWSceneImpl::initRenderBuffers() {
+    std::cout << "entered" << std::endl;
+    GLuint framebuffer = 0;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
+    std::cout << "passed4" << std::endl;
+    GLuint colorTexture = 0;
+    glGenTextures(1, &colorTexture);
+    glBindTexture(GL_TEXTURE_2D, colorTexture);
+    std::cout << "passed41" << std::endl;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    std::cout << "passed411" << std::endl;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->canvWidth, this->canvHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    std::cout << "passed42" << std::endl;
+//
+    std::cout << "passed1" << std::endl;
+//    // Create the depth texture
+        GLuint depthTexture = 0;
+//    if (this.depth_texture_ext) {
+        glGenTextures(1, &depthTexture);
+        glBindTexture(GL_TEXTURE_2D, depthTexture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, this->canvWidth, this->canvHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT,
+                     nullptr);
+//    }
+//
+//    if (!this.enableDeferred) {
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
+//    }
+//    if (this.depth_texture_ext) {
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+//    }
+    std::cout << "passed2" << std::endl;
+    this->frameBuffer = framebuffer;
+    this->frameBufferColorTexture = colorTexture;
+    this->frameBufferDepthTexture = depthTexture;
+//
+    std::cout << "passed" << std::endl;
+    static const float verts[] = {
+        1,  1,
+       -1,  1,
+       -1, -1,
+        1,  1,
+       -1, -1,
+        1,  -1,
+    };
+    const int vertsLength = sizeof(verts) / sizeof(verts[0]);
+    std::cout << "vertsLength = " << vertsLength << std::endl;
+    GLuint vertBuffer = 0;
+    glGenBuffers(0, &vertBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertBuffer);
+    glBufferData(GL_ARRAY_BUFFER, vertsLength, verts, GL_STATIC_DRAW);
+
+    this->vertBuffer = vertBuffer;
 }
 
 void WoWSceneImpl::initSceneApi() {
@@ -227,7 +286,8 @@ void WoWSceneImpl::initTextureCompVBO() {
 
 }
 
-WoWSceneImpl::WoWSceneImpl(Config *config) {
+
+WoWSceneImpl::WoWSceneImpl(Config *config, int canvWidth, int canvHeight) {
     constexpr const shaderDefinition *definition = getShaderDef("adtShader");
 //    constexpr const int attributeIndex = getShaderAttribute("m2Shader", "aNormal");
 //    constexpr const int attributeIndex = +m2Shader::Attribute::aNormal;
@@ -236,24 +296,50 @@ WoWSceneImpl::WoWSceneImpl(Config *config) {
     std::cout << "aNormal = " << +m2Shader::Attribute::aNormal << std::flush;
     this->m_config = config;
 
+    this->canvWidth = canvWidth;
+    this->canvHeight = canvHeight;
+    this->canvAspect = canvWidth / canvHeight;
+
+
+//    self.initGlContext(canvas);
+    this->initArrayInstancedExt();
+    this->initDepthTextureExt();
+//    if (this->enableDeferred) {
+//        this->initDeferredRendering();
+//    }
+    this->initRenderBuffers();
+    this->initAnisotropicExt();
+    this->initVertexArrayObjectExt();
+    this->initCompressedTextureS3tcExt();
+
     this->initShaders();
+
+    this->initSceneApi();
+    this->initSceneGraph();
+    this->createBlackPixelTexture();
+
+    this->initBoxVBO();
+    this->initTextureCompVBO();
+    this->initCaches();
+    this->initCamera();
 }
 /* Shaders stuff */
-/*
+
 void WoWSceneImpl::activateRenderFrameShader () {
-        glUseProgram(this->renderFrameShader->getProgram());
-        glActiveTexture(GL_TEXTURE0);
+    glUseProgram(this->renderFrameShader->getProgram());
+    glActiveTexture(GL_TEXTURE0);
 
-        glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(1);
 
-        float uResolution[2] = {};
-        glUniform2fv(this->renderFrameShader->getUnf("uResolution"), new Float32Array([this.canvas.width, this.canvas.height]))
+    float uResolution[2] = {this->canvWidth, this->canvHeight };
+    glUniform2fv(this->renderFrameShader->getUnf("uResolution"), 2, uResolution);
 
-        glUniform1i(this->renderFrameShader->getUnf("u_sampler"), 0);
-        if (this->renderFrameShader->getUnf("u_depth")) {
-            glUniform1i(this->renderFrameShader->getUnf("u_depth"), 1);
-        }
+    glUniform1i(this->renderFrameShader->getUnf("u_sampler"), 0);
+    if (this->renderFrameShader->hasUnf("u_depth")) {
+        glUniform1i(this->renderFrameShader->getUnf("u_depth"), 1);
+    }
 }
+/*
 void WoWSceneImpl::activateTextureCompositionShader(GLuint texture) {
     glUseProgram(this->textureCompositionShader->getProgram());
 
@@ -280,19 +366,11 @@ void WoWSceneImpl::activateTextureCompositionShader(GLuint texture) {
     glDepthMask(false);
     glViewport(0,0,1024,1024);
 
-}
+}*/
 void WoWSceneImpl::activateRenderDepthShader () {
-    this.currentShaderProgram = this.drawDepthBuffer;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        GL_useProgram(this.currentShaderProgram.program);
-        var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
-
-
-
-        GL_activeTexture(GL_TEXTURE0);
-    }
-}
+    glUseProgram(this->drawDepthBuffer->getProgram());
+    glActiveTexture(GL_TEXTURE0);
+}/*
 void WoWSceneImpl::activateReadDepthBuffer () {
     this.currentShaderProgram = this.readDepthBuffer;
     if (this.currentShaderProgram) {
@@ -611,9 +689,10 @@ void WoWSceneImpl::draw(int deltaTime) {
     glClearScreen();
     mathfu::vec3 *cameraVector;
 
+    static const mathfu::vec3 upVector(0,0,1);
 
-    float farPlane = 250;
-    float nearPlane = 1;
+    int farPlane = 250;
+    int nearPlane = 1;
     float fov = 45.0;
 
     //If use camera settings
@@ -646,8 +725,10 @@ void WoWSceneImpl::draw(int deltaTime) {
         this->uFogEnd = farPlane;
     }
 
-    if (/*!(m2Object && m2Object.loaded) ||*/ m_config->getUseSecondCamera()){
-
+    if (m_config->getUseSecondCamera()){
+        this->m_firstCamera.tick(deltaTime);
+    } else {
+        this->m_secondCamera.tick(deltaTime);
     }
 //
 //    var adt_x = Math.floor((32 - (this.mainCamera[1] / 533.33333)));
@@ -660,32 +741,47 @@ void WoWSceneImpl::draw(int deltaTime) {
 //        }
 //    }
 //
-//    var lookAtMat4 = [];
-//
-//    mat4.lookAt(lookAtMat4, this.mainCamera, this.mainCameraLookAt, [0,0,1]);
-//
-//    //Second camera for debug
-//    var secondLookAtMat = [];
-//    mat4.lookAt(secondLookAtMat, this.secondCamera, this.secondCameraLookAt, [0,0,1]);
-//
-//    var perspectiveMatrix = mat4.create();
-//    mat4.perspective(perspectiveMatrix, fov, this.canvas.width / this.canvas.height, nearPlane, farPlane);
-//    //var o_height = (this.canvas.height * (533.333/256/* zoom 7 in Alram viewer */))/ 8 ;
-//    //var o_width = o_height * this.canvas.width / this.canvas.height;
-//    //mat4.ortho(perspectiveMatrix, -o_width, o_width, -o_height, o_height, 1, 1000);
-//
-//
-//    var perspectiveMatrixForCulling = mat4.create();
-//    mat4.perspective(perspectiveMatrixForCulling, fov, this.canvas.width / this.canvas.height, nearPlane, farPlane);
-//
-//    //Camera for rendering
-//    var perspectiveMatrixForCameraRender = mat4.create();
-//    mat4.perspective(perspectiveMatrixForCameraRender, fov, this.canvas.width / this.canvas.height, nearPlane, farPlane);
-//
-//    var viewCameraForRender = mat4.create();
-//    mat4.multiply(viewCameraForRender, perspectiveMatrixForCameraRender,lookAtMat4)
-//    //
-//
+    mathfu::mat4 lookAtMat4 =
+        mathfu::mat4::LookAt(
+                this->m_firstCamera.getCameraPosition(),
+                this->m_firstCamera.getCameraLookAt(),
+                upVector);
+
+// Second camera for debug
+    mathfu::mat4 secondLookAtMat =
+            mathfu::mat4::LookAt(
+                    this->m_secondCamera.getCameraPosition(),
+                    this->m_secondCamera.getCameraLookAt(),
+                    upVector);
+
+
+    mathfu::mat4 perspectiveMatrix =
+        mathfu::mat4::Perspective(
+                fov,
+                this->canvAspect,
+                nearPlane,
+                farPlane);
+
+    //var o_height = (this.canvas.height * (533.333/256/* zoom 7 in Alram viewer */))/ 8 ;
+    //var o_width = o_height * this.canvas.width / this.canvas.height;
+    //mat4.ortho(perspectiveMatrix, -o_width, o_width, -o_height, o_height, 1, 1000);
+
+
+    mathfu::mat4 perspectiveMatrixForCulling =
+            mathfu::mat4::Perspective(
+                    fov,
+                    this->canvAspect,
+                    nearPlane,
+                    farPlane);
+    //Camera for rendering
+    mathfu::mat4 perspectiveMatrixForCameraRender =
+            mathfu::mat4::Perspective(fov,
+                                        this->canvAspect,
+                                        nearPlane,
+                                        farPlane);
+    mathfu::mat4 viewCameraForRender =
+            perspectiveMatrixForCameraRender * lookAtMat4;
+
 //    this.perspectiveMatrix = perspectiveMatrix;
 //    this.viewCameraForRender = viewCameraForRender;
 //    if (!this.isShadersLoaded) return;
@@ -697,12 +793,6 @@ void WoWSceneImpl::draw(int deltaTime) {
 //            1
 //    );
 //    this.graphManager.setCameraPos(cameraPos);
-//
-//    //Matrixes from previous frame
-//    if (this.perspectiveMatrix && this.lookAtMat4) {
-//        //this.graphManager.checkAgainstDepthBuffer(this.perspectiveMatrix, this.lookAtMat4, this.floatDepthBuffer, this.canvas.width, this.canvas.height);
-//    }
-//
 //    this.graphManager.setLookAtMat(lookAtMat4);
 //
 //    // Update objects
@@ -711,7 +801,6 @@ void WoWSceneImpl::draw(int deltaTime) {
 //    this.wmoMainCache.processCacheQueue(10);
 //    this.m2GeomCache.processCacheQueue(10);
 //    this.skinGeomCache.processCacheQueue(10);
-//
 //    this.textureCache.processCacheQueue(10);
 //
 //
@@ -722,81 +811,79 @@ void WoWSceneImpl::draw(int deltaTime) {
 //    this.graphManager.sortGeometry(perspectiveMatrixForCulling, lookAtMat4);
 //
 //
-//    gl.viewport(0,0,this.canvas.width, this.canvas.height);
-//    if (config.getDoubleCameraDebug()) {
-//        //Draw static camera
+    glViewport(0,0,this->canvWidth, this->canvHeight);
+    if (this->m_config->getDoubleCameraDebug()) {
+        //Draw static camera
 //        this.isDebugCamera = true;
 //        this.lookAtMat4 = secondLookAtMat;
-//        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
 //
-//        this.glClearScreen(gl, this.fogColor);
+        //glClearScreen(this->fogColor);
 //
-//        gl.activeTexture(gl.TEXTURE0);
-//        gl.depthMask(true);
-//        gl.enableVertexAttribArray(0);
+        glActiveTexture(GL_TEXTURE0);
+        glDepthMask(GL_TRUE);
+        glEnableVertexAttribArray(0);
 //        this.graphManager.draw();
-//        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 //
-//        //Draw debug camera from framebuffer into screen
+        //Draw debug camera from framebuffer into screen
 //        this.glClearScreen(gl, this.fogColor);
-//        this.activateRenderFrameShader();
-//        gl.viewport(0,0,this.canvas.width, this.canvas.height);
-//        gl.enableVertexAttribArray(0);
+        this->activateRenderFrameShader();
+        glViewport(0,0,this->canvWidth, this->canvHeight);
+        glEnableVertexAttribArray(0);
 //        this.drawFrameBuffer();
 //
 //        this.isDebugCamera = false;
-//    }
+    }
 //
 //    //Render real camera
 //    this.lookAtMat4 = lookAtMat4;
 //    gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
 //    this.glClearScreen(gl, this.fogColor);
 //
-//    gl.activeTexture(gl.TEXTURE0);
-//    gl.depthMask(true);
-//    gl.enableVertexAttribArray(0);
+    glActiveTexture(GL_TEXTURE0);
+    glDepthMask(true);
+    glEnableVertexAttribArray(0);
 //    this.graphManager.draw();
-//    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-//
-//    if (!config.getDoubleCameraDebug()) {
-//        //Draw real camera into screen
+    glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
+
+    if (!this->m_config->getDoubleCameraDebug()) {
+        //Draw real camera into screen
 //
 //        this.glClearScreen(gl, this.fogColor);
-//        gl.enableVertexAttribArray(0);
-//        this.activateRenderFrameShader();
-//        gl.viewport(0,0,this.canvas.width, this.canvas.height);
+        glEnableVertexAttribArray(0);
+        this->activateRenderFrameShader();
+        glViewport(0,0,this->canvWidth, this->canvHeight);
 //        this.drawFrameBuffer();
-//    } else {
+    } else {
 //        //Draw real camera into square at bottom of screen
 //
-//        this.activateRenderDepthShader();
-//        gl.enableVertexAttribArray(0);
+        this->activateRenderDepthShader();
+        glEnableVertexAttribArray(0);
 //        this.drawTexturedQuad(gl, this.frameBufferColorTexture,
 //                              this.canvas.width * 0.60,
 //                              0,//this.canvas.height * 0.75,
 //                              this.canvas.width * 0.40,
 //                              this.canvas.height * 0.40,
 //                              this.canvas.width, this.canvas.height);
-//    }
-//    if (config.getDrawDepthBuffer() && this.depth_texture_ext) {
-//        this.activateRenderDepthShader();
-//        gl.enableVertexAttribArray(0);
-//        gl.uniform1f(this.drawDepthBuffer.shaderUniforms.uFarPlane, farPlane);
-//        gl.uniform1f(this.drawDepthBuffer.shaderUniforms.uNearPlane, nearPlane);
-//
-//        this.drawTexturedQuad(gl, this.frameBufferDepthTexture,
+    }
+    if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
+        this->activateRenderDepthShader();
+        glEnableVertexAttribArray(0);
+        glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
+        glUniform1f(drawDepthBuffer->getUnf("uNearPlane"), nearPlane);
+
+//        this->drawTexturedQuad(gl, this.frameBufferDepthTexture,
 //                              this.canvas.width * 0.60,
 //                              0,//this.canvas.height * 0.75,
 //                              this.canvas.width * 0.40,
 //                              this.canvas.height * 0.40,
 //                              this.canvas.width, this.canvas.height,
 //                              true);
-//    }
-
-
+    }
 }
 
 
-WoWScene * createWoWScene(Config *config){
-    return new WoWSceneImpl(config);
+WoWScene * createWoWScene(Config *config, int canvWidth, int canvHeight){
+    return new WoWSceneImpl(config, canvWidth, canvHeight);
 }
