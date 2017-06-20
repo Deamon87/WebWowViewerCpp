@@ -5,7 +5,7 @@
 #ifndef WOWVIEWERLIB_M2GEOM_H
 #define WOWVIEWERLIB_M2GEOM_H
 
-
+#include <vector>
 #include "../persistance/M2File.h"
 
 class M2Geom {
@@ -15,6 +15,7 @@ public:
     void createVBO();
     void setupAttributes(void *skinObject);
 private:
+    std::vector<uint8_t> m2File;
     M2Data *m_m2Data;
 };
 

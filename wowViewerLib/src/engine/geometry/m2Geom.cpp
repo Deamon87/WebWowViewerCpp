@@ -88,9 +88,12 @@ void initM2Light(M2Data *m2Header) {
 }
 
 void M2Geom::initM2File(void *m2File, int fileLength) {
-    M2Data *m2Header = (M2Data *) m2File;
+    this->m2File = std::vector<uint8_t>((uint8_t *) m2File, (uint8_t *) (m2File+fileLength));
 
-    static_assert(std::is_pod<M2Array<M2Loop>>::value, "M2Array<M2Loop> is not POD");
+    M2Data *m2Header = (M2Data *) &this->m2File[0];
+    this->m_m2Data = m2Header;
+
+
 
     //Step 1: Init all m2Arrays
     m2Header->global_loops.initM2Array(m2File);

@@ -61,6 +61,7 @@ struct M2Array {
     int32_t size;
 
     void initM2Array(void * m2File) {
+        static_assert(std::is_pod<M2Array<T>>::value, "M2Array<> is not POD");
 #ifdef ENVIRONMENT64
         offset = (uint32_t) (((uint64_t)m2File)+(uint64_t)offset - (uint64_t)this);
 #else
