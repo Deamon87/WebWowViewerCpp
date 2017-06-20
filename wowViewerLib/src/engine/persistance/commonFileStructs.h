@@ -58,7 +58,7 @@ struct M2Bounds {
 template<typename T>
 struct M2Array {
     uint32_t offset; // pointer to T, relative to begin of m2 data block (i.e. MD21 chunk content or begin of file)
-    uint32_t size;
+    int32_t size;
 
     void initM2Array(void * m2File) {
 #ifdef ENVIRONMENT64
@@ -67,18 +67,32 @@ struct M2Array {
         offset = (uint32_t)offset + (uint32_t)m2File;
 #endif
     }
-    T getElement(int index) {
+    T* getElement(int index) {
 #ifdef ENVIRONMENT64
-        return ((T* ) (((uint64_t)this)+offset))[index];
+        return &((T* ) (((uint64_t)this)+offset))[index];
 #else
         return ((T* )offset)[index];
 #endif
     }
 };
+
+template <typename T>
+void initM2M2Array(M2Array<M2Array<T>> array2D, void *m2File){
+    array2D.initM2Array(m2File);
+    int count = array2D.size;
+    for (int i = 0; i < count; i++){
+        M2Array<T> *array1D = array2D.getElement(i);
+        array1D->initM2Array(m2File);
+    }
+}
+
 struct M2TrackBase {
     uint16_t interpolation_type;
     uint16_t global_sequence;
     M2Array<M2Array<uint32_t>> timestamps;
+    void initTrack(void * m2File) {
+        initM2M2Array(timestamps, m2File);
+    }
 };
 
 template<typename T>
@@ -91,6 +105,10 @@ template<typename T>
 struct M2Track : M2TrackBase
 {
     M2Array<M2Array<T>> values;
+    void initTrack(void * m2File){
+        M2TrackBase::initTrack(m2File);
+        initM2M2Array(values, m2File);
+    };
 };
 
 
@@ -100,5 +118,20 @@ struct M2SplineKey {
     T value;
     T inTan;
     T outTan;
+};
+
+using CArgb = uint32_t;
+struct CImVector
+{
+    unsigned char b;
+    unsigned char g;
+    unsigned char r;
+    unsigned char a;
+};
+
+struct C4Plane // todo: verify
+{
+    C3Vector normal;
+    float distance;
 };
 #endif //WOWVIEWERLIB_COMMONFILESTRUCTS_H

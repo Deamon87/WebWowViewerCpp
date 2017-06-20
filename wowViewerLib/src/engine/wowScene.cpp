@@ -697,7 +697,7 @@ void WoWSceneImpl::draw(int deltaTime) {
 
     //If use camera settings
     //Figure out way to assign the object with camera
-    //config.setCameraM2(this.graphManager.m2Objects[0]);
+    //config.setCameraM2(this.graphManager.m2Object[0]);
 //    var m2Object = config.getCameraM2();
 //    if (m2Object && m2Object.loaded) {
 //        m2Object.updateCameras(deltaTime);

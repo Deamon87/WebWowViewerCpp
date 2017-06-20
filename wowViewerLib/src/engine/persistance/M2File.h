@@ -52,7 +52,7 @@ struct M2CompBone                 // probably M2Bone  ≤ Vanilla
     M2Track<M2CompQuat> rotation;   // compressed values, default is (32767,32767,32767,65535) == (0,0,0,1) == identity
     M2Track<C3Vector> scale;
     C3Vector pivot;                 // The pivot point of that bone.
-} bones[];
+};
 
 struct M2Vertex
 {
@@ -262,10 +262,10 @@ struct M2ParticleOld {
     float followScale2;
     M2Array<C3Vector> splinePoints;                                  //Set only for spline praticle emitter. Contains array of points for spline
     M2Track<unsigned char> enabledIn;                 // (boolean) Appears to be used sparely now, probably there's a flag that links particles to animation sets where they are enabled.
-} particles[];
+};
 
 
-struct m2FileHeader {
+struct M2Data {
     uint32_t magic;                                       // "MD20". Legion uses a chunked file format starting with MD21.
     uint32_t version;
     M2Array<char> name;                                   // should be globally unique, used to reload by name in internal clients
@@ -324,7 +324,7 @@ struct m2FileHeader {
     M2Array<M2Camera> cameras;                           // The cameras are present in most models for having a model in the character tab.
     M2Array<uint16_t> camera_lookup_table;
     M2Array<M2Ribbon> ribbon_emitters;                   // Things swirling around. See the CoT-entrance for light-trails.
-    M2Array<M2Particle> particle_emitters;
+    M2Array<M2ParticleOld> particle_emitters;
     M2Array<uint16_t> blend_map_overrides;             // When set, textures blending is overriden by the associated array.
 };
 

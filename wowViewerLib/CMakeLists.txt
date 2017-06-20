@@ -27,7 +27,14 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/opengl/header.h
         src/engine/camera/firstPersonCamera.cpp
         src/engine/camera/firstPersonCamera.h src/include/config.h
-        src/engine/camera/CameraInterface.h src/engine/persistance/commonFileStructs.h src/engine/persistance/M2File.h)
+        src/engine/camera/CameraInterface.h
+        src/engine/persistance/commonFileStructs.h
+        src/engine/persistance/M2File.h
+        src/engine/geometry/m2Geom.cpp
+        src/engine/geometry/m2Geom.h
+        src/engine/managers/SceneGraph.cpp src/engine/managers/SceneGraph.h src/engine/persistance/wmoFile.h
+        src/engine/texture/BlpTexture.cpp src/engine/texture/BlpTexture.h src/engine/persistance/blpFile.h
+        )
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
