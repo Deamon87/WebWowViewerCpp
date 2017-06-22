@@ -2,28 +2,62 @@
 #define WOWMAPVIEWERREVIVED_WOWSCENEIMPL_H_H
 
 #include <string>
+#include <functional>
+#include <algorithm>
+#include <cctype>
+#include <locale>
 #include "shadersStructures.h"
 #include "shader/ShaderRuntimeData.h"
 #include "../include/wowScene.h"
 #include "../include/config.h"
-#include <algorithm>
-#include <functional>
-#include <cctype>
-#include <locale>
 #include "mathfu/glsl_mappings.h"
 #include "camera/firstPersonCamera.h"
+#include "texture/BlpTexture.h"
+#include "geometry/skinGeom.h"
+#include "geometry/m2Geom.h"
+#include "cache/cache.h"
 
 
-class WoWSceneImpl: public WoWScene {
+
+class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
 public:
-    WoWSceneImpl(Config *config, int canvWidth, int canvHeight);
-
+    WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
     void draw(int deltaTime);
-    void provideFile(int requestId, char* fileName, unsigned char* data, int fileLength){};
+
+    virtual void provideFile(const char* fileName, unsigned char* data, int fileLength){
+        std::vector<unsigned char> fileData;
+        fileData.assign(data, data+fileLength);
+        std::string s_fileName(fileName);
+
+        m2GeomCache.provideFile(s_fileName, fileData);
+        textureCache.provideFile(s_fileName, fileData);
+    };
+    virtual void rejectFile(const char* fileName) {
+        std::string s_fileName(fileName);
+
+        m2GeomCache.reject(s_fileName);
+        textureCache.reject(s_fileName);
+    }
+    void setFileRequestProcessor(IFileRequest*){};
+
     IControllable* getCurrentContollable() {
         return &this->m_firstCamera;
     };
+public:
+    virtual Cache<M2Geom> *getM2GeomCache() {
+        return &m2GeomCache;
+    };
+    virtual Cache<SkinGeom> *getSkinGeomCache() {
+        return &skinGeomCache;
+    };
+    virtual Cache<BlpTexture> *getTextureCache() {
+        return &textureCache;
+    };
+    virtual ShaderRuntimeData *getM2Shader() {
+        return m2Shader;
+    };
+
 private:
     ShaderRuntimeData *compileShader (std::string shaderName, std::string vertShaderString, std::string fragmentShaderString,
                                       std::string *vertExtraDefStrings = nullptr, std::string *fragExtraDefStrings = nullptr);
@@ -75,11 +109,15 @@ private:
     float uFogStart = -1;
     float uFogEnd = -1;
 
-    GLuint frameBuffer;
-    GLuint frameBufferColorTexture;
-    GLuint frameBufferDepthTexture;
-    GLuint vertBuffer;
+    GLuint frameBuffer = 0;
+    GLuint frameBufferColorTexture = 0;
+    GLuint frameBufferDepthTexture = 0;
+    GLuint vertBuffer = 0;
 
+
+    Cache<M2Geom> m2GeomCache;
+    Cache<SkinGeom> skinGeomCache;
+    Cache<BlpTexture> textureCache;
 
     void activateRenderFrameShader();
 
@@ -122,36 +160,36 @@ private:
 static inline void ltrim(std::string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(),
                                     std::not1(std::ptr_fun<int, int>(std::isspace))));
-}
+};
 
 // trim from end (in place)
 static inline void rtrim(std::string &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(),
                          std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-}
+};
 
 // trim from both ends (in place)
 static inline void trim(std::string &s) {
     ltrim(s);
     rtrim(s);
-}
+};
 
 // trim from start (copying)
 static inline std::string ltrimmed(std::string s) {
     ltrim(s);
     return s;
-}
+};
 
 // trim from end (copying)
 static inline std::string rtrimmed(std::string s) {
     rtrim(s);
     return s;
-}
+};
 
 // trim from both ends (copying)
 static inline std::string trimmed(std::string s) {
     trim(s);
     return s;
-}
+};
 
 #endif //WOWMAPVIEWERREVIVED_WOWSCENEIMPL_H_H

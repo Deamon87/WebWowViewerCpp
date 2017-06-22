@@ -34,7 +34,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/geometry/m2Geom.h
         src/engine/managers/SceneGraph.cpp src/engine/managers/SceneGraph.h src/engine/persistance/wmoFile.h
         src/engine/texture/BlpTexture.cpp src/engine/texture/BlpTexture.h src/engine/persistance/blpFile.h
-        )
+        src/engine/cache/cache.cpp src/engine/cache/cache.h src/engine/geometry/skinGeom.cpp src/engine/geometry/skinGeom.h src/engine/persistance/skinFile.h src/engine/objects/m2Object.cpp src/engine/objects/m2Object.h src/engine/algorithms/mathHelper.cpp src/engine/algorithms/mathHelper.h src/engine/wowInnerApi.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

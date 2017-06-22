@@ -10,7 +10,7 @@
 
 class BlpTexture {
 public:
-    BlpTexture(blpFile *blpFile);
+    void process(std::vector<unsigned char> &blpFile);
 };
 
 

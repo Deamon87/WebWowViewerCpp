@@ -5,10 +5,10 @@
 #include <unordered_map>
 
 struct shaderItem {
-    constexpr shaderItem(char *variableName, const int number): variableName(variableName), number(number) {
+    constexpr shaderItem(const char *variableName, const int number): variableName(variableName), number(number) {
 
     }
-    char *variableName;
+    const char *variableName;
     int number;
 } ;
 
@@ -30,7 +30,7 @@ struct shaderDefinition{
 };
 
 struct innerType {
-    char* shaderName;
+    const char* shaderName;
     shaderDefinition shaderDefinition1;
 };
 

@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_BLPFILE_H
 #include <cstdint>
 
-struct blpFile{
+struct BlpFile{
     uint32_t fileIdent;
     int32_t version;
     uint8_t colorEncoding;

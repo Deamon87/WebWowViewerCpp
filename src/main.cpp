@@ -71,24 +71,38 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
 }
 
+class RequestProcessor : IFileRequest {
+public:
+    RequestProcessor () : m_unzipper(nullptr){
+        char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
+
+        HttpFile httpFile(new std::string(url));
+        httpFile.setCallback([this](HttpFile* httpFileLocal) {
+            m_unzipper = new zipper::Unzipper(*httpFileLocal->getFileBuffer());
+        });
+        httpFile.startDownloading();
+    }
+private:
+    zipper::Unzipper *m_unzipper;
+
+public:
+    void requestFile(const char* fileName) {
+        std::string s_fileName(fileName);
+
+        std::vector<unsigned char> unzipped_entry;
+        if (m_unzipper->extractEntryToMemory(s_fileName, unzipped_entry)) {
+
+
+        }
+    };
+};
+
+
 int main(int argc, char** argv) {
     CURL *curl = NULL;
     FILE *fp;
     CURLcode res;
 
-    char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
-
-//    HttpFile httpFile(new std::string(url));
-//    httpFile.setCallback([](HttpFile* httpFileLocal) {
-//
-//        std::vector<unsigned char> unzipped_entry;
-//        zipper::Unzipper unzipper(*httpFileLocal->getFileBuffer());
-//        if (unzipper.extractEntryToMemory("world\\generic\\passivedoodads\\fruits\\fruitbowl.blp", unzipped_entry)) {
-//            std::cout << "file extracted"<<std::flush;
-//        }
-//        unzipper.close();
-//    });
-//    httpFile.startDownloading();
 
     if( !glfwInit() )
     {
@@ -118,7 +132,7 @@ int main(int argc, char** argv) {
     }
 
     Config *testConf = new Config();
-    WoWScene *scene = createWoWScene(testConf, 1000, 1000);
+    WoWScene *scene = createWoWScene(testConf, , 1000, 1000);
 
     // Ensure we can capture the escape key being pressed below
     //glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);

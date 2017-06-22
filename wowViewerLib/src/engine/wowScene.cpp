@@ -5,6 +5,46 @@
 #include <mathfu/glsl_mappings.h>
 #include <iostream>
 
+WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
+        : m2GeomCache(requestProcessor), skinGeomCache(requestProcessor), textureCache(requestProcessor)  {
+    constexpr const shaderDefinition *definition = getShaderDef("adtShader");
+//    constexpr const int attributeIndex = getShaderAttribute("m2Shader", "aNormal");
+//    constexpr const int attributeIndex = +m2Shader::Attribute::aNormal;
+//    constexpr const shaderDefinition *definition = getShaderDef("readDepthBuffer");
+//    std::cout << "aHeight = " << definition->shaderString<< std::flush;
+    std::cout << "aNormal = " << +m2Shader::Attribute::aNormal << std::flush;
+    this->m_config = config;
+
+    this->canvWidth = canvWidth;
+    this->canvHeight = canvHeight;
+    this->canvAspect = canvWidth / canvHeight;
+
+
+//    self.initGlContext(canvas);
+    this->initArrayInstancedExt();
+    this->initDepthTextureExt();
+//    if (this->enableDeferred) {
+//        this->initDeferredRendering();
+//    }
+    this->initRenderBuffers();
+    this->initAnisotropicExt();
+    this->initVertexArrayObjectExt();
+    this->initCompressedTextureS3tcExt();
+
+    this->initShaders();
+
+    this->initSceneApi();
+    this->initSceneGraph();
+    this->createBlackPixelTexture();
+
+    this->initBoxVBO();
+    this->initTextureCompVBO();
+    this->initCaches();
+    this->initCamera();
+
+    //Init caches
+
+}
 
 ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
         std::string vertShaderString,
@@ -286,43 +326,6 @@ void WoWSceneImpl::initTextureCompVBO() {
 
 }
 
-
-WoWSceneImpl::WoWSceneImpl(Config *config, int canvWidth, int canvHeight) {
-    constexpr const shaderDefinition *definition = getShaderDef("adtShader");
-//    constexpr const int attributeIndex = getShaderAttribute("m2Shader", "aNormal");
-//    constexpr const int attributeIndex = +m2Shader::Attribute::aNormal;
-//    constexpr const shaderDefinition *definition = getShaderDef("readDepthBuffer");
-//    std::cout << "aHeight = " << definition->shaderString<< std::flush;
-    std::cout << "aNormal = " << +m2Shader::Attribute::aNormal << std::flush;
-    this->m_config = config;
-
-    this->canvWidth = canvWidth;
-    this->canvHeight = canvHeight;
-    this->canvAspect = canvWidth / canvHeight;
-
-
-//    self.initGlContext(canvas);
-    this->initArrayInstancedExt();
-    this->initDepthTextureExt();
-//    if (this->enableDeferred) {
-//        this->initDeferredRendering();
-//    }
-    this->initRenderBuffers();
-    this->initAnisotropicExt();
-    this->initVertexArrayObjectExt();
-    this->initCompressedTextureS3tcExt();
-
-    this->initShaders();
-
-    this->initSceneApi();
-    this->initSceneGraph();
-    this->createBlackPixelTexture();
-
-    this->initBoxVBO();
-    this->initTextureCompVBO();
-    this->initCaches();
-    this->initCamera();
-}
 /* Shaders stuff */
 
 void WoWSceneImpl::activateRenderFrameShader () {
@@ -799,9 +802,9 @@ void WoWSceneImpl::draw(int deltaTime) {
 //    this.adtGeomCache.processCacheQueue(10);
 //    this.wmoGeomCache.processCacheQueue(10);
 //    this.wmoMainCache.processCacheQueue(10);
-//    this.m2GeomCache.processCacheQueue(10);
-//    this.skinGeomCache.processCacheQueue(10);
-//    this.textureCache.processCacheQueue(10);
+    this->m2GeomCache.processCacheQueue(10);
+    this->skinGeomCache.processCacheQueue(10);
+    this->textureCache.processCacheQueue(10);
 //
 //
 //    var updateRes = this.graphManager.update(deltaTime);
@@ -884,6 +887,6 @@ void WoWSceneImpl::draw(int deltaTime) {
 }
 
 
-WoWScene * createWoWScene(Config *config, int canvWidth, int canvHeight){
-    return new WoWSceneImpl(config, canvWidth, canvHeight);
+WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
+    return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);
 }

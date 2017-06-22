@@ -26,7 +26,7 @@ struct mipmapStruct_t {
 };
 typedef std::vector<mipmapStruct_t> MipmapsVector;
 
-TexureFormat getTextureType(blpFile *blpFile) {
+TexureFormat getTextureType(BlpFile *blpFile) {
     TexureFormat textureFormat = TexureFormat::None;
     switch (blpFile->preferredFormat) {
         case 0:
@@ -63,14 +63,14 @@ TexureFormat getTextureType(blpFile *blpFile) {
     }
     return textureFormat;
 }
-void parseMipmaps(blpFile *blpFile, TexureFormat textureFormat, MipmapsVector &mipmaps) {
+void parseMipmaps(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector &mipmaps) {
     int32_t width = blpFile->width;
     int32_t height = blpFile->height;
 
     for (int i = 0; i < 15; i++) {
         if ((blpFile->lengths[i] == 0) || (blpFile->offsets[i] == 0)) break;
 
-        uint8_t *data = (uint8_t *) blpFile->offsets[i]; //blpFile->lengths[i]);
+        uint8_t *data = ((uint8_t *) blpFile)+blpFile->offsets[i]; //blpFile->lengths[i]);
 
         //Check dimensions for dxt textures
         int32_t validSize = blpFile->lengths[i];
@@ -114,7 +114,7 @@ void parseMipmaps(blpFile *blpFile, TexureFormat textureFormat, MipmapsVector &m
     }
 
 }
-void createGlTexture(blpFile *blpFile, TexureFormat textureFormat, MipmapsVector &mipmaps) {
+void createGlTexture(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector &mipmaps) {
     bool hasAlpha = blpFile->alphaChannelBitDepth > 0;
 
     GLuint texture;
@@ -235,17 +235,18 @@ void createGlTexture(blpFile *blpFile, TexureFormat textureFormat, MipmapsVector
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-BlpTexture::BlpTexture(blpFile *blpFile) {
+void BlpTexture::process(std::vector<unsigned char> &blpFile) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
-    TexureFormat textureFormat = getTextureType(blpFile);
+    BlpFile *pBlpFile = (BlpFile *) &blpFile[0];
+    TexureFormat textureFormat = getTextureType(pBlpFile);
 
 
     /* Load texture by mipmaps */
     MipmapsVector mipmaps;
-    parseMipmaps(blpFile, textureFormat, mipmaps);
+    parseMipmaps(pBlpFile, textureFormat, mipmaps);
 
     /* Load texture into GL memory */
-
+    createGlTexture(pBlpFile, textureFormat, mipmaps);
 }
 

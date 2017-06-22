@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_M2FILE_H
 
 #include "commonFileStructs.h"
+
 struct M2Loop {
     uint32_t timestamp;
 };

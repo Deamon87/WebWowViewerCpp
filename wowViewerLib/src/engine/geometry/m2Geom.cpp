@@ -4,6 +4,8 @@
 
 #include "m2Geom.h"
 #include "../persistance/M2File.h"
+#include "../shaderDefinitions.h"
+#include "../wowScene.h"
 
 void M2Geom::loadTextures() {
 
@@ -11,13 +13,46 @@ void M2Geom::loadTextures() {
 
 void M2Geom::createVBO() {
 
+
+    glGenBuffers(1, &this->vertexVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, this->vertexVbo);
+    glBufferData(GL_ARRAY_BUFFER, m_m2Data->vertices.size*sizeof(M2Vertex), m_m2Data->vertices.getElement(0), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void M2Geom::setupAttributes(void *skinObject) {
+void M2Geom::setupAttributes() {
+    glBindBuffer(GL_ARRAY_BUFFER, this->vertexVbo);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skinObject.indexVBO);
+    //gl.vertexAttrib4f(shaderAttributes.aColor, 0.5, 0.5, 0.5, 0.5);
+
+    /*
+     {name: "pos",           type : "vector3f"},           0+12 = 12
+     {name: "bonesWeight",   type : "uint8Array", len: 4}, 12+4 = 16
+     {name: "bones",         type : "uint8Array", len: 4}, 16+4 = 20
+     {name: "normal",        type : "vector3f"},           20+12 = 32
+     {name: "textureX",      type : "float32"},            32+4 = 36
+     {name: "textureY",      type : "float32"},            36+4 = 40
+     {name : "textureX2",    type : "float32"},            40+4 = 44
+     {name : "textureY2",    type : "float32"}             44+4 = 48
+     */
+
+    glVertexAttribPointer(+m2Shader::Attribute::aPosition, 3, GL_FLOAT, false, 48, (void *)0);  // position
+    glVertexAttribPointer(+m2Shader::Attribute::boneWeights, 4, GL_UNSIGNED_BYTE, true, 48, (void *)12);  // bonesWeight
+    glVertexAttribPointer(+m2Shader::Attribute::bones, 4, GL_UNSIGNED_BYTE, false, 48, (void *)16);  // bones
+    glVertexAttribPointer(+m2Shader::Attribute::aNormal, 3, GL_FLOAT, false, 48, (void *)20); // normal
+    glVertexAttribPointer(+m2Shader::Attribute::aTexCoord, 2, GL_FLOAT, false, 48, (void *)32); // texcoord
+    glVertexAttribPointer(+m2Shader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 48, (void *)40); // texcoord
 
 }
 
 
+void initM2Textures(M2Data *m2Header){
+    int32_t texturesSize = m2Header->textures.size;
+    for (int i = 0; i < texturesSize; i++) {
+        M2Texture *texture = m2Header->textures.getElement(i);
+        texture->filename.initM2Array(m2Header);
+    }
+}
 void initCompBones(M2Data *m2Header){
     int32_t bonesSize = m2Header->bones.size;
     for (int i = 0; i < bonesSize; i++) {
@@ -87,46 +122,44 @@ void initM2Light(M2Data *m2Header) {
     }
 }
 
-void M2Geom::initM2File(void *m2File, int fileLength) {
-    this->m2File = std::vector<uint8_t>((uint8_t *) m2File, (uint8_t *) (m2File+fileLength));
+void M2Geom::process(std::vector<unsigned char> &m2File) {
+    this->m2File = m2File;
 
     M2Data *m2Header = (M2Data *) &this->m2File[0];
     this->m_m2Data = m2Header;
 
-
-
     //Step 1: Init all m2Arrays
-    m2Header->global_loops.initM2Array(m2File);
-    m2Header->sequences.initM2Array(m2File);
-    m2Header->sequence_lookups.initM2Array(m2File);
-    m2Header->bones.initM2Array(m2File);
-    m2Header->key_bone_lookup.initM2Array(m2File);
-    m2Header->vertices.initM2Array(m2File);
-    m2Header->colors.initM2Array(m2File);
-    m2Header->textures.initM2Array(m2File);
-    m2Header->texture_weights.initM2Array(m2File);
-    m2Header->texture_transforms.initM2Array(m2File);
-    m2Header->replacable_texture_lookup.initM2Array(m2File);
-    m2Header->materials.initM2Array(m2File);
-    m2Header->bone_lookup_table.initM2Array(m2File);
-    m2Header->texture_lookup_table.initM2Array(m2File);
-    m2Header->tex_unit_lookup_table.initM2Array(m2File);
-    m2Header->transparency_lookup_table.initM2Array(m2File);
-    m2Header->texture_transforms_lookup_table.initM2Array(m2File);
-    m2Header->collision_triangles.initM2Array(m2File);
-    m2Header->collision_vertices.initM2Array(m2File);
-    m2Header->collision_normals.initM2Array(m2File);
-    m2Header->attachments.initM2Array(m2File);
-    m2Header->attachment_lookup_table.initM2Array(m2File);
-    m2Header->events.initM2Array(m2File);
-    m2Header->lights.initM2Array(m2File);
-    m2Header->cameras.initM2Array(m2File);
-    m2Header->camera_lookup_table.initM2Array(m2File);
-    m2Header->ribbon_emitters.initM2Array(m2File);
-    m2Header->particle_emitters.initM2Array(m2File);
+    m2Header->global_loops.initM2Array(m2Header);
+    m2Header->sequences.initM2Array(m2Header);
+    m2Header->sequence_lookups.initM2Array(m2Header);
+    m2Header->bones.initM2Array(m2Header);
+    m2Header->key_bone_lookup.initM2Array(m2Header);
+    m2Header->vertices.initM2Array(m2Header);
+    m2Header->colors.initM2Array(m2Header);
+    m2Header->textures.initM2Array(m2Header);
+    m2Header->texture_weights.initM2Array(m2Header);
+    m2Header->texture_transforms.initM2Array(m2Header);
+    m2Header->replacable_texture_lookup.initM2Array(m2Header);
+    m2Header->materials.initM2Array(m2Header);
+    m2Header->bone_lookup_table.initM2Array(m2Header);
+    m2Header->texture_lookup_table.initM2Array(m2Header);
+    m2Header->tex_unit_lookup_table.initM2Array(m2Header);
+    m2Header->transparency_lookup_table.initM2Array(m2Header);
+    m2Header->texture_transforms_lookup_table.initM2Array(m2Header);
+    m2Header->collision_triangles.initM2Array(m2Header);
+    m2Header->collision_vertices.initM2Array(m2Header);
+    m2Header->collision_normals.initM2Array(m2Header);
+    m2Header->attachments.initM2Array(m2Header);
+    m2Header->attachment_lookup_table.initM2Array(m2Header);
+    m2Header->events.initM2Array(m2Header);
+    m2Header->lights.initM2Array(m2Header);
+    m2Header->cameras.initM2Array(m2Header);
+    m2Header->camera_lookup_table.initM2Array(m2Header);
+    m2Header->ribbon_emitters.initM2Array(m2Header);
+    m2Header->particle_emitters.initM2Array(m2Header);
 
     if (m2Header->global_flags.flag_has_blend_maps) {
-        m2Header->blend_map_overrides.initM2Array(m2File);
+        m2Header->blend_map_overrides.initM2Array(m2Header);
     }
 
     //Step 2: init tracks
@@ -138,5 +171,85 @@ void M2Geom::initM2File(void *m2File, int fileLength) {
     initM2Event(m2Header);
     initM2Light(m2Header);
     initM2Camera(m2Header);
+
+    initM2Textures(m2Header);
+
+    //Step 3: create VBO
+    this->createVBO();
+
+    m_loaded = true;
+}
+
+void
+M2Geom::setupUniforms(
+        IWoWInnerApi *api,
+        mathfu::mat4 &placementMatrix,
+        std::vector<mathfu::mat4> &boneMatrices,
+        mathfu::vec4 &diffuseColor,
+        bool drawTransparent) {
+
+    ShaderRuntimeData *m2Shader = api->getM2Shader();
+
+    glUniformMatrix4fv(m2Shader->getUnf("uPlacementMat"), 4, GL_FALSE, &placementMatrix[0]);
+
+//    if (boneMatrices) {
+        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes"), 4, GL_FALSE, &boneMatrices[0][0]);
+//    } else {
+//        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes"), false, new Float32Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,]));
+//    }
+
+    //Set proper color
+//    if (diffuseColor) {
+        glUniform4fv(m2Shader->getUnf("uDiffuseColor"), 1, &diffuseColor[0]);
+//    }
+    if (drawTransparent) {
+        glUniform1i(m2Shader->getUnf("isTransparent"), 1);
+    } else {
+        glUniform1i(m2Shader->getUnf("isTransparent"), 0);
+    }
+
+    //Setup lights
+
+//    ?var activeLights = (lights) ? (lights.length | 0) : 0;
+    /*
+    for (var i = 0; i < lights.length; i++) {
+        if (lights[i].attenuation_end - lights[i].attenuation_start > 0.01) {
+            activeLights++;
+        }
+    }*/
+//    gl.uniform1i(uniforms.uLightCount, activeLights);
+    glUniform1i(m2Shader->getUnf("uLightCount"), 0);
+    int index = 0;
+//    for (var i = 0; i < lights.length; i++) {
+//        //if (lights[i].attenuation_end - lights[i].attenuation_start <= 0.01) continue;
+//        gl.uniform4fv(uniforms["pc_lights["+index+"].color"], new Float32Array(lights[i].diffuse_color));
+//        gl.uniform4fv(uniforms["pc_lights["+index+"].attenuation"], new Float32Array([lights[i].attenuation_start, lights[i].diffuse_intensity, lights[i].attenuation_end, activeLights]));
+//        gl.uniform4fv(uniforms["pc_lights["+index+"].position"], new Float32Array(lights[i].position));
+//        index++;
+//    }
+    float indet[4] = {0,0,0,0};
+    for (int i = index; i < 3; i++) {
+        glUniform4fv(m2Shader->getUnf(std::string("pc_lights[")+std::to_string(index)+"].color"), 1, indet);
+        glUniform4fv(m2Shader->getUnf(std::string("pc_lights[")+std::to_string(index)+"].attenuation"), 1, indet);
+        glUniform4fv(m2Shader->getUnf(std::string("pc_lights[")+std::to_string(index)+"].position"), 1, indet);
+        index++;
+    }
+
+    bool diffuseFound = false;
+//    for (int i = 0; i < lights.length; i++) {
+//        if (lights[i].ambient_color) {
+//            if (lights[i].ambient_color[0] != 0 && lights[i].ambient_color[1] != 0 && lights[i].ambient_color[2] != 0) {
+//                gl.uniform4fv(uniforms.uPcColor, new Float32Array(lights[i].ambient_color));
+//                diffuseFound = true;
+//                break;
+//            }
+//        }
+//    }
+
+//    if (!diffuseFound) {
+
+    float pcColor[4];
+    glUniform4fv(m2Shader->getUnf("uPcColor"), 1, pcColor);
+//    }
 }
 

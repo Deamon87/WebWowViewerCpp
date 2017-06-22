@@ -30,6 +30,8 @@ typedef mathfu::vec3_packed C3Vector;
 typedef mathfu::vec2_packed C2Vector;
 typedef mathfu::vec4_packed C4Quaternion;
 
+typedef uint8_t ubyte4[4];
+
 struct M2Box {
     C3Vector ModelRotationSpeedMin;
     C3Vector ModelRotationSpeedMax;
@@ -43,6 +45,11 @@ typedef M2Range CRange;
 
 struct CAaBox
 {
+    CAaBox(){};
+    CAaBox(C3Vector min, C3Vector max) : min(min), max(max) {
+
+    }
+
     C3Vector min;
     C3Vector max;
 };
