@@ -7,3 +7,9 @@
 [submodule "wowViewerLib/3rdparty/mathfu"]
 	path = wowViewerLib/3rdparty/mathfu
 	url = https://github.com/google/mathfu.git
+[submodule "3rdparty/glfw"]
+	path = 3rdparty/glfw
+	url = https://github.com/glfw/glfw
+[submodule "3rdparty/zlib"]
+	path = 3rdparty/zlib
+	url = https://github.com/madler/zlib

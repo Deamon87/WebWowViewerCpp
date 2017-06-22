@@ -15,6 +15,21 @@ set(mathfu_build_tests OFF CACHE BOOL "")
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/mathfu mathfu)
 
+if (WIN32)
+    MESSAGE(IT IS WINDOWS!!!!)
+    include_directories(${CMAKE_SOURCE_DIR}/3rdparty/glew_win/include)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        link_libraries(${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32.lib)
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        link_libraries(${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32.lib)
+    endif()
+else()
+    find_package(GLEW REQUIRED)
+    if (GLEW_FOUND)
+        include_directories(${GLEW_INCLUDE_DIRS})
+        link_libraries(${GLEW_LIBRARIES})
+    endif()
+endif(WIN32)
 
 include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
 
