@@ -15,6 +15,7 @@ public:
     void createVBO();
     bool isLoaded() { return m_loaded; };
     void setupAttributes();
+    M2SkinProfile * getSkinData(){ if (m_loaded) {return m_skinData;} else {return nullptr;}};
 private:
     std::vector<uint8_t> m2Skin;
     M2SkinProfile *m_skinData;

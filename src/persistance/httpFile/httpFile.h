@@ -4,9 +4,11 @@
 #include <curl/curl.h>
 #include <string>
 #include <vector>
+#include <functional>
 
 class HttpFile;
-typedef void (*HTTPReadyCallback)(HttpFile*);
+
+typedef std::function<void (std::vector<unsigned char>*)> HTTPReadyCallback ;
 
 class HttpFile {
 
@@ -14,7 +16,7 @@ public:
     HttpFile(std::string *httpUrl){
         this->m_httpUrl = httpUrl;
         this->written = 0;
-        this->m_callback = nullptr;
+//        this->m_callback = nullptr;
         this->m_fileBuffer = new std::vector<unsigned char>();
     }
 

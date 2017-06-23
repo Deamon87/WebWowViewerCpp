@@ -217,7 +217,7 @@ M2Geom::setupUniforms(
             activeLights++;
         }
     }*/
-//    gl.uniform1i(uniforms.uLightCount, activeLights);
+//    gl.uniform1i(m2Shader->getUnf("uLightCount, activeLights);
     glUniform1i(m2Shader->getUnf("uLightCount"), 0);
     int index = 0;
 //    for (var i = 0; i < lights.length; i++) {
@@ -239,7 +239,7 @@ M2Geom::setupUniforms(
 //    for (int i = 0; i < lights.length; i++) {
 //        if (lights[i].ambient_color) {
 //            if (lights[i].ambient_color[0] != 0 && lights[i].ambient_color[1] != 0 && lights[i].ambient_color[2] != 0) {
-//                gl.uniform4fv(uniforms.uPcColor, new Float32Array(lights[i].ambient_color));
+//                gl.uniform4fv(m2Shader->getUnf("uPcColor, new Float32Array(lights[i].ambient_color));
 //                diffuseFound = true;
 //                break;
 //            }
@@ -252,4 +252,202 @@ M2Geom::setupUniforms(
     glUniform4fv(m2Shader->getUnf("uPcColor"), 1, pcColor);
 //    }
 }
+
+void
+M2Geom::drawMesh(
+        IWoWInnerApi *api,
+        M2MaterialInst &materialData, M2SkinProfile &skinData, mathfu::vec4 &meshColor, float transparency,
+        mathfu::mat4 &textureMatrix1, mathfu::mat4 &textureMatrix2, int pixelShaderIndex,
+        mathfu::vec4 &originalFogColor, int instanceCount) {
+
+    ShaderRuntimeData *m2Shader = api->getM2Shader();
+    //var blackPixelText = this.sceneApi.getBlackPixelTexture();
+
+    //materialData = new M2Material();
+    bool fogChanged = false;
+
+    glUniformMatrix4fv(m2Shader->getUnf("uTextMat1"), false, 1, &textureMatrix1[0]);
+    glUniformMatrix4fv(m2Shader->getUnf("uTextMat2"), false, 1, &textureMatrix2[0]);
+
+    glUniform4fv(m2Shader->getUnf("uColor"), 1, &meshColor[0]);
+    glUniform1f(m2Shader->getUnf("uTransparency"), transparency);
+    glUniform1i(m2Shader->getUnf("uPixelShader"), pixelShaderIndex);
+
+    static float fog_zero[3] = {0,0,0};
+    static float fog_half[3] = {0.5,0.5,0.5};
+    static float fog_one[3] = {1.0,1.0,1.0};
+
+    if (materialData.isRendered) {
+        if (materialData.texUnit1Texture != nullptr && materialData.texUnit1Texture->getIsLoaded()) {
+            //try {
+            glDepthMask(true);
+
+            auto textMaterial = skinData.batches[materialData.texUnit1TexIndex];
+            int renderFlagIndex = textMaterial->materialIndex;
+            auto renderFlag = m_m2Data->materials[renderFlagIndex];
+
+            glUniform1i(m2Shader->getUnf("uBlendMode"), renderFlag->blending_mode);
+            switch (renderFlag->blending_mode) {
+                case 0 : //Blend_Opaque
+                    glDisable(GL_BLEND);
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), -1.0);
+                    break;
+                case 1 : //Blend_AlphaKey
+                    glDisable(GL_BLEND);
+                    //GL_uniform1f(m2Shader->getUnf("uAlphaTest, 2.9);
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.903921569);
+                    //GL_uniform1f(m2Shader->getUnf("uAlphaTest, meshColor[4]*transparency*(252/255));
+                    break;
+                case 2 : //Blend_Alpha
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), -1);
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // default blend func
+                    break;
+                case 3 : //Blend_NoAlphaAdd
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), -1);
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_ONE, GL_ONE);
+
+                    //Override fog
+                    glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_zero);
+                    fogChanged = true;
+
+                    break;
+                case 4 : //Blend_Add
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.00392157);
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+                    glUniform3fv(m2Shader->getUnf("uFogColor"),  1, fog_zero);
+                    fogChanged = true;
+                    break;
+
+                case 5: //Blend_Mod
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.00392157);
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_DST_COLOR, GL_ZERO);
+
+                    glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_one);
+                    fogChanged = true;
+                    break;
+
+                case 6: //Blend_Mod2x
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.00392157);
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+
+                    glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_half);
+                    fogChanged = true;
+                    break;
+                default :
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), -1);
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+
+                    break;
+            }
+            //}catch (e) {
+            //    debugger;
+            //}
+
+            if (((renderFlag->flags & 0x1) > 0)|| (renderFlag->blending_mode == 5) || (renderFlag->blending_mode == 6)) {
+                glUniform1i(m2Shader->getUnf("uUseDiffuseColor"), 0);
+            } else {
+                glUniform1i(m2Shader->getUnf("uUseDiffuseColor"), 1);
+            }
+            if ((renderFlag->flags & 0x2) > 0 ) {
+                glUniform1i(m2Shader->getUnf("uUnFogged"), 1);
+            } else {
+                glUniform1i(m2Shader->getUnf("uUnFogged"), 0);
+            }
+
+            if ((renderFlag->flags & 0x4) > 0) {
+                glDisable(GL_CULL_FACE);
+            } else {
+                glEnable(GL_CULL_FACE);
+            }
+
+            if ((renderFlag->flags & 0x8) > 0) {
+                //GL_uniform1i(m2Shader->getUnf("isBillboard, 1);
+            }
+
+
+            if ((renderFlag->flags & 0x10) > 0) {
+                //GL_disable(GL_DEPTH_TEST);
+                glDepthMask(GL_FALSE);
+            } else {
+                // GL_enable(GL_DEPTH_TEST);
+                glDepthMask(GL_TRUE);
+            }
+
+            if (materialData.isEnviromentMapping) {
+                glUniform1i(m2Shader->getUnf("isEnviroment"), 1);
+            } else {
+                glUniform1i(m2Shader->getUnf("isEnviroment"), 0);
+            }
+
+            /* Set up texture animation */
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, materialData.texUnit1Texture->getGlTexture());
+            if (materialData.xWrapTex1) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            } else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            }
+            if (materialData.yWrapTex1) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            } else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            if (materialData.texUnit2Texture != nullptr) {
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, materialData.texUnit2Texture->getGlTexture());
+
+                if (materialData.xWrapTex2) {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                } else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                }
+                if (materialData.yWrapTex2) {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                } else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                }
+            } else {
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
+
+            auto meshIndex = materialData.meshIndex;
+            if (instanceCount == -1) {
+                //var error = gl.getError(); // Drop error flag
+                glDrawElements(GL_TRIANGLES, skinData.submeshes[meshIndex]->vertexCount,
+                               GL_UNSIGNED_SHORT,
+                               (const void *) (skinData.submeshes[meshIndex]->vertexStart * 2));
+            } else {
+//                instExt.drawElementsInstancedANGLE(gl.TRIANGLES, skinData.subMeshes[meshIndex].nTriangles, gl.UNSIGNED_SHORT, skinData.subMeshes[meshIndex].StartTriangle * 2, instanceCount);
+            }
+            if (materialData.texUnit2Texture != nullptr) {
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glActiveTexture(GL_TEXTURE0);
+            }
+
+            /*
+             if ((renderFlag.flags & 0x8) > 0) {
+             gl.uniform1i(m2Shader->getUnf("isBillboard, 0);
+             }
+             */
+
+            glDepthMask(GL_TRUE);
+            glDisable(GL_BLEND);
+
+            if (fogChanged) {
+                glUniform3fv(m2Shader->getUnf("uFogColor"), 1, &originalFogColor[0]);
+            }
+        }
+    }
+}
+
+
 

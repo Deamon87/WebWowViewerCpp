@@ -26,7 +26,7 @@ ExternalProject_Add("WowViewerLib"
 ExternalProject_Get_Property(WowViewerLib install_dir)
 include_directories(${install_dir}/include)
 
-set(SOURCE_FILES src/main.cpp src/persistance/httpFile/httpFile.cpp src/persistance/httpFile/httpFile.h)
+set(SOURCE_FILES src/main.cpp src/persistance/httpFile/httpFile.cpp src/persistance/httpFile/httpFile.h )
 
 #########################################################
 # FIND OPENGL

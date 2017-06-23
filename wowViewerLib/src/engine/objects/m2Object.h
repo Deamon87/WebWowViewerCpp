@@ -10,43 +10,11 @@
 #include "../geometry/m2Geom.h"
 #include "../geometry/skinGeom.h"
 #include "../wowScene.h"
-
-class M2MaterialInst {
-public:
-    bool isRendered= false;
-    bool isTransparent= false;
-    bool isEnviromentMapping= false;
-    int meshIndex= -1;
-
-
-    int texUnit1TexIndex = 0;
-    int mdxTextureIndex1 = 0;
-    bool xWrapTex1 = false;
-    bool yWrapTex1 = false;
-    std::string textureUnit1TexName = "";
-    void *texUnit1Texture = nullptr;
-
-    int texUnit2TexIndex = 0;
-    int mdxTextureIndex2 = 0;
-    bool xWrapTex2 = false;
-    bool yWrapTex2 = false;
-    std::string textureUnit2TexName = "";
-    void *texUnit2Texture = nullptr;
-
-    int texUnit3TexIndex = 0;
-    int mdxTextureIndex3 = 0;
-    bool xWrapTex3 = false;
-    bool yWrapTex3 = false;
-    std::string textureUnit3TexName = "";
-    void *texUnit3Texture = nullptr;
-
-    int layer = 0;
-    int renderFlagIndex = -1;
-    int flags = 0;
-};
+#include "m2Helpers/M2MaterialInst.h"
 
 class M2Object {
-    M2Object(IWoWInnerApi *api) : m_api(api) {}
+public:
+    M2Object(IWoWInnerApi *api) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr) {}
 
 private:
     void createAABB();
@@ -59,8 +27,8 @@ private:
 
     IWoWInnerApi *m_api;
 
-    M2Geom *m_m2Geom;
-    SkinGeom *m_skinGeom;
+    M2Geom *m_m2Geom = nullptr;
+    SkinGeom *m_skinGeom = nullptr;
 
     std::string m_modelName;
     std::string m_skinName;
@@ -71,16 +39,22 @@ private:
     std::vector<M2MaterialInst> m_materialArray;
 
 
-    void setLoadParams(std::string modelName, int skinNum, std::vector<uint8_t> meshIds,
-                       std::vector<std::string> replaceTextures);
-
     void startLoading();
-    void update(int deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat);
 
-    void draw(bool drawTransparent, mathfu::mat4 placementMatrix, mathfu::vec4 diffuseColor);
     void drawMeshes(bool drawTransparent, int instanceCount);
 
     void drawMaterial(M2MaterialInst &materialData, bool drawTransparent, int instanceCount);
+
+public:
+
+    void setLoadParams(std::string modelName, int skinNum, std::vector<uint8_t> meshIds,
+                       std::vector<std::string> replaceTextures);
+
+
+    void makeTextureArray();
+
+    void update(int deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat);
+    void draw(bool drawTransparent, mathfu::mat4 placementMatrix, mathfu::vec4 diffuseColor);
 };
 
 

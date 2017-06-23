@@ -27,14 +27,18 @@ void M2Object::setLoadParams (std::string modelName, int skinNum, std::vector<ui
     this->m_meshIds = meshIds;
     this->m_replaceTextures = replaceTextures;
 
-    std::locale loc = std::locale::global(std::locale("en_US.utf8"));
+    std::locale loc = std::locale("");
 
     std::string delimiter = ".";
     std::string nameTemplate = modelName.substr(0, modelName.find(delimiter));
     std::string modelFileName = nameTemplate + ".m2";
     std::string skinFileName = nameTemplate + "00.skin";
-    modelFileName = std::tolower(modelFileName, loc);
-    skinFileName = std::tolower(skinFileName, loc);
+//    std::for_each(modelFileName.begin(), modelFileName.end(), [](char & c) {
+//        c = ::tolower(c);
+//    });
+//    std::for_each(skinFileName.begin(), skinFileName.end(), [](char & c) {
+//        c = ::tolower(c);
+//    });
 
     this->m_modelName = modelFileName;
     this->m_skinName = skinFileName;
@@ -54,8 +58,10 @@ void M2Object::startLoading() {
 
 void M2Object::update(int deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat) {
     if (!this->m_loaded) {
-        if (m_m2Geom->isLoaded() && m_skinGeom->isLoaded()) {
+        if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded() && (m_skinGeom != nullptr) && m_skinGeom->isLoaded()) {
             this->m_loaded = true;
+            this->m_loading = false;
+            this->makeTextureArray();
         } else {
             return;
         }
@@ -173,42 +179,161 @@ void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
 }
 
 void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, int instanceCount) {
-//    if (!(materialData.isTransparent ^ !drawTransparent)) return;
+    if (!(materialData.isTransparent ^ !drawTransparent)) return;
 //    /*
 //    var meshIdsTobeRendered = window.meshestoBeRendered;
 //    if (meshIdsTobeRendered && !meshIdsTobeRendered[materialData.texUnit1TexIndex]) return;
 //    if (window.shownLayer != null && materialData.layer != window.shownLayer ) return;
 //      */
 //
-//    var identMat = mat4.create();
-//    mat4.identity(identMat);
-//    var originalFogColor = this.sceneApi.getFogColor();
+    mathfu::mat4 identMat = mathfu::mat4::Identity();
+
+    //mathfu::vec4 originalFogColor = this.sceneApi.getFogColor();
+    mathfu::vec4 originalFogColor = mathfu::vec4(1,1,1,1);
 //
 //
-//
-//    /* Get right texture animation matrix */
-//    var textureMatrix1 = identMat;
-//    var textureMatrix2 = identMat;
-//    var skinData = this.skinGeom.skinFile.header;
-//    if (materialData.texUnit1TexIndex >= 0 && skinData.texs[materialData.texUnit1TexIndex]) {
-//    var textureAnim = skinData.texs[materialData.texUnit1TexIndex].textureAnim;
-//    var textureMatIndex = this.m2Geom.m2File.texAnimLookup[textureAnim];
-//    if (textureMatIndex !== undefined && this.textAnimMatrices && textureMatIndex >= 0 && textureMatIndex <  this.textAnimMatrices.length) {
-//    textureMatrix1 = this.textAnimMatrices[textureMatIndex];
-//    }
-//    if (materialData.texUnit2TexIndex >= 0) {
-//    var textureMatIndex = this.m2Geom.m2File.texAnimLookup[textureAnim+1];
-//    if (textureMatIndex !== undefined && this.textAnimMatrices && textureMatIndex >= 0 && textureMatIndex <  this.textAnimMatrices.length) {
-//    textureMatrix2 = this.textAnimMatrices[textureMatIndex];
-//    }
-//    }
-//    }
+    /* Get right texture animation matrix */
+    mathfu::mat4 textureMatrix1 = identMat;
+    mathfu::mat4 textureMatrix2 = identMat;
+    auto skinData = this->m_skinGeom->getSkinData();
+    auto m2Data = this->m_m2Geom->getM2Data();
+    if (materialData.texUnit1TexIndex >= 0) {
+        auto textureAnim = skinData->batches[materialData.texUnit1TexIndex]->textureTransformComboIndex;
+        uint16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
+    //        if (textureMatIndex >= 0 && textureMatIndex <  this.textAnimMatrices.length) {
+    //            textureMatrix1 = this.textAnimMatrices[textureMatIndex];
+    //        }
+        if (materialData.texUnit2TexIndex >= 0) {
+            int textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
+    //        if (textureMatIndex >= 0 && textureMatIndex < this.textAnimMatrices.length) {
+    //            textureMatrix2 = this.textAnimMatrices[textureMatIndex];
+    //        }
+        }
+    }
 //    var meshColor = this.getCombinedColor(skinData, materialData, this.subMeshColors);
 //    var transparency = this.getTransparency(skinData, materialData, this.transparencies);
+    mathfu::vec4 meshColor = mathfu::vec4(1,1,1,1);
+    float transparency = 1;
 //
 //    //Don't draw meshes with 0 transp
-//    if ((transparency < 0.0001) || (meshColor[3] < 0.0001)) return;
+    if ((transparency < 0.0001) || (meshColor[3] < 0.0001)) return;
 //
-//    var pixelShaderIndex = pixelShaderTable[materialData.shaderNames.pixel];
-//    this.m2Geom.drawMesh(materialData, this.skinGeom, meshColor, transparency, textureMatrix1, textureMatrix2, pixelShaderIndex, originalFogColor, instanceCount)
+//    int pixelShaderIndex = pixelShaderTable[materialData.shaderNames.pixel];
+    int pixelShaderIndex = 0;
+    this->m_m2Geom->drawMesh(m_api, materialData, *skinData , meshColor, transparency, textureMatrix1, textureMatrix2, pixelShaderIndex, originalFogColor, instanceCount);
+}
+
+void M2Object::makeTextureArray() {
+    /* 1. Free previous subMeshArray */
+    auto textureCache = m_api->getTextureCache();
+
+    /* 2. Fill the materialArray */
+    auto subMeshes = m_skinGeom->getSkinData()->submeshes;
+    auto batches = m_skinGeom->getSkinData()->batches;
+
+    auto m2File = m_m2Geom->getM2Data();
+
+    for (int i = 0; i < batches.size; i++) {
+        M2MaterialInst materialData;
+
+        auto skinTextureDefinition = batches[i];
+        auto subMesh = subMeshes[skinTextureDefinition->skinSectionIndex];
+
+        if ((this->m_meshIds.size() > 0) && (subMesh->skinSectionId > 0) &&
+                (m_meshIds[(subMesh->skinSectionId / 100)] != (subMesh->skinSectionId % 100))) {
+            continue;
+        }
+
+
+//        materialArray.push(materialData);
+
+        auto op_count = skinTextureDefinition->textureCount;
+
+        auto renderFlagIndex = skinTextureDefinition->materialIndex;
+        //var isTransparent = (mdxObject.m2File.renderFlags[renderFlagIndex].blend >= 2);
+        auto isTransparent = (m2File->materials[renderFlagIndex]->blending_mode >= 2) ||
+                            ((m2File->materials[renderFlagIndex]->flags & 0x10) > 0);
+
+//        var shaderNames = this.getShaderNames(skinTextureDefinition);
+
+        materialData.layer = skinTextureDefinition->materialLayer;
+        materialData.isRendered = true;
+        materialData.isTransparent = isTransparent;
+        materialData.meshIndex = skinTextureDefinition->skinSectionIndex;
+        materialData.renderFlagIndex = skinTextureDefinition->materialIndex;
+        materialData.flags = skinTextureDefinition->flags;
+//        materialData.shaderNames = shaderNames;
+//        materialData.m2BatchIndex = i;
+
+
+//        materialData.renderFlag =  m2File->materials[renderFlagIndex]->flags;
+//        materialData.renderBlending = m2File->materials[renderFlagIndex]->blending_mode;
+
+        int textureUnit;
+        if (skinTextureDefinition->textureCoordComboIndex <= m2File->tex_unit_lookup_table.size) {
+            textureUnit = *m2File->tex_unit_lookup_table[skinTextureDefinition->textureCoordComboIndex];
+            if (textureUnit == 0xFFFF) {
+                //Enviroment mapping
+                materialData.isEnviromentMapping = true;
+            }
+        }
+
+        if (op_count > 0) {
+            auto mdxTextureIndex = *m2File->texture_lookup_table[skinTextureDefinition->textureComboIndex];
+            M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
+            materialData.texUnit1TexIndex = i;
+            materialData.mdxTextureIndex1 = mdxTextureIndex;
+            materialData.xWrapTex1 = (mdxTextureDefinition->flags & 1) > 0;
+            materialData.yWrapTex1 = (mdxTextureDefinition->flags & 2) > 0;
+
+            if (mdxTextureDefinition->type == 0) {
+                materialData.textureUnit1TexName = mdxTextureDefinition->filename.toString();
+            } else if (mdxTextureDefinition->type < this->m_replaceTextures.size()){
+                materialData.textureUnit1TexName = this->m_replaceTextures[mdxTextureDefinition->type];
+            }
+        }
+        if (op_count > 1) {
+            auto mdxTextureIndex = *m2File->texture_lookup_table[skinTextureDefinition->textureComboIndex + 1];
+            M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
+            materialData.texUnit2TexIndex = i;
+            materialData.mdxTextureIndex2 = mdxTextureIndex;
+            materialData.xWrapTex2 = (mdxTextureDefinition->flags & 1) > 0;
+            materialData.yWrapTex2 = (mdxTextureDefinition->flags & 2) > 0;
+
+            if (mdxTextureDefinition->type == 0) {
+                materialData.textureUnit2TexName = mdxTextureDefinition->filename.toString();
+            } else if (mdxTextureDefinition->type < this->m_replaceTextures.size()){
+                materialData.textureUnit2TexName = this->m_replaceTextures[mdxTextureDefinition->type];
+            }
+        }
+        if (op_count > 2) {
+            auto mdxTextureIndex = *m2File->texture_lookup_table[skinTextureDefinition->textureComboIndex + 1];
+            M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
+            materialData.texUnit3TexIndex = i;
+            materialData.mdxTextureIndex3 = mdxTextureIndex;
+            materialData.xWrapTex3 = (mdxTextureDefinition->flags & 1) > 0;
+            materialData.yWrapTex3 = (mdxTextureDefinition->flags & 2) > 0;
+
+            if (mdxTextureDefinition->type == 0) {
+                materialData.textureUnit3TexName = mdxTextureDefinition->filename.toString();
+            } else if (mdxTextureDefinition->type < this->m_replaceTextures.size()){
+                materialData.textureUnit3TexName = this->m_replaceTextures[mdxTextureDefinition->type];
+            }
+        }
+
+        this->m_materialArray.push_back(materialData);
+    }
+
+    for (int i = 0; i < this->m_materialArray.size(); i++) {
+        auto materialData = this->m_materialArray[i];
+        if (materialData.textureUnit1TexName.size()>1) {
+            materialData.texUnit1Texture = textureCache->get(materialData.textureUnit1TexName);
+        }
+        if (materialData.textureUnit2TexName.size()>1) {
+            materialData.texUnit2Texture = textureCache->get(materialData.textureUnit2TexName);
+        }
+        if (materialData.textureUnit3TexName.size()>1) {
+            materialData.texUnit3Texture = textureCache->get(materialData.textureUnit3TexName);
+        }
+    }
 }

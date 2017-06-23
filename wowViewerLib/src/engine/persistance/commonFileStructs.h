@@ -5,6 +5,7 @@
 #ifndef WOWVIEWERLIB_COMMONFILESTRUCTS_H
 #define WOWVIEWERLIB_COMMONFILESTRUCTS_H
 #include <cstdint>
+#include <string>
 #include <mathfu/glsl_mappings.h>
 
 // Check windows
@@ -82,7 +83,15 @@ struct M2Array {
         return ((T* )offset)[index];
 #endif
     }
+    T* operator[](int index) {
+        return getElement(index);
+    }
+    std::string toString(){
+        static_assert(true, "This conversion to string is not defined");
+    }
 };
+template<>
+std::string M2Array<char>::toString();
 
 template <typename T>
 void initM2M2Array(M2Array<M2Array<T>> array2D, void *m2File){

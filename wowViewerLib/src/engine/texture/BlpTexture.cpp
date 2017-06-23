@@ -7,7 +7,7 @@
 #include <GL/gl.h>
 #include <GL/glcorearb.h>
 #include "BlpTexture.h"
-enum class TexureFormat {
+enum class TextureFormat {
     None,
     S3TC_RGBA_DXT1,
     S3TC_RGB_DXT1,
@@ -26,36 +26,36 @@ struct mipmapStruct_t {
 };
 typedef std::vector<mipmapStruct_t> MipmapsVector;
 
-TexureFormat getTextureType(BlpFile *blpFile) {
-    TexureFormat textureFormat = TexureFormat::None;
+TextureFormat getTextureType(BlpFile *blpFile) {
+    TextureFormat textureFormat = TextureFormat::None;
     switch (blpFile->preferredFormat) {
         case 0:
             if (blpFile->alphaChannelBitDepth > 0) {
-                textureFormat = TexureFormat::S3TC_RGBA_DXT1;
+                textureFormat = TextureFormat::S3TC_RGBA_DXT1;
             } else {
-                textureFormat = TexureFormat::S3TC_RGB_DXT1;
+                textureFormat = TextureFormat::S3TC_RGB_DXT1;
             }
             break;
         case 1:
-            textureFormat = TexureFormat::S3TC_RGBA_DXT3;
+            textureFormat = TextureFormat::S3TC_RGBA_DXT3;
             break;
         case 3:
-            textureFormat = TexureFormat::BGRA;
+            textureFormat = TextureFormat::BGRA;
             break;
         case 4:
-            textureFormat = TexureFormat::PalARGB1555DitherFloydSteinberg;
+            textureFormat = TextureFormat::PalARGB1555DitherFloydSteinberg;
             break;
         case 5:
-            textureFormat = TexureFormat::PalARGB4444DitherFloydSteinberg;
+            textureFormat = TextureFormat::PalARGB4444DitherFloydSteinberg;
             break;
         case 7:
-            textureFormat = TexureFormat::S3TC_RGBA_DXT5;
+            textureFormat = TextureFormat::S3TC_RGBA_DXT5;
             break;
         case 8:
-            textureFormat = TexureFormat::BGRA;
+            textureFormat = TextureFormat::BGRA;
             break;
         case 9:
-            textureFormat = TexureFormat::PalARGB2565DitherFloydSteinberg;
+            textureFormat = TextureFormat::PalARGB2565DitherFloydSteinberg;
             break;
 
         default:
@@ -63,7 +63,7 @@ TexureFormat getTextureType(BlpFile *blpFile) {
     }
     return textureFormat;
 }
-void parseMipmaps(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector &mipmaps) {
+void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &mipmaps) {
     int32_t width = blpFile->width;
     int32_t height = blpFile->height;
 
@@ -74,10 +74,10 @@ void parseMipmaps(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector &m
 
         //Check dimensions for dxt textures
         int32_t validSize = blpFile->lengths[i];
-        if ((textureFormat == TexureFormat::S3TC_RGBA_DXT5) || (textureFormat == TexureFormat::S3TC_RGBA_DXT3)) {
+        if ((textureFormat == TextureFormat::S3TC_RGBA_DXT5) || (textureFormat == TextureFormat::S3TC_RGBA_DXT3)) {
             validSize = (int32_t) (floor((width + 3) / 4) * floor((height + 3) / 4) * 16);
         }
-        if ((textureFormat == TexureFormat::S3TC_RGB_DXT1) || (textureFormat == TexureFormat::S3TC_RGBA_DXT1)) {
+        if ((textureFormat == TextureFormat::S3TC_RGB_DXT1) || (textureFormat == TextureFormat::S3TC_RGBA_DXT1)) {
             validSize = (int32_t) (floor((width + 3) / 4) * floor((height + 3) / 4) * 8);
         }
 
@@ -114,7 +114,7 @@ void parseMipmaps(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector &m
     }
 
 }
-void createGlTexture(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector &mipmaps) {
+GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &mipmaps) {
     bool hasAlpha = blpFile->alphaChannelBitDepth > 0;
 
     GLuint texture;
@@ -124,20 +124,20 @@ void createGlTexture(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector
     GLuint textureGPUFormat = 0;
 //     if (ext) {
         switch (textureFormat) {
-            case TexureFormat::S3TC_RGB_DXT1:
+            case TextureFormat::S3TC_RGB_DXT1:
                 textureGPUFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
                 break;
 
-            case TexureFormat::S3TC_RGBA_DXT1:
+            case TextureFormat::S3TC_RGBA_DXT1:
                 textureGPUFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
                 break;
 
 
-            case TexureFormat::S3TC_RGBA_DXT3:
+            case TextureFormat::S3TC_RGBA_DXT3:
                 textureGPUFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
                 break;
 
-            case TexureFormat::S3TC_RGBA_DXT5:
+            case TextureFormat::S3TC_RGBA_DXT5:
                 textureGPUFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
                 break;
         }
@@ -164,8 +164,8 @@ void createGlTexture(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector
 
     bool generateMipMaps = false;
     switch (textureFormat) {
-        case TexureFormat::S3TC_RGB_DXT1:
-        case TexureFormat::S3TC_RGBA_DXT1:
+        case TextureFormat::S3TC_RGB_DXT1:
+        case TextureFormat::S3TC_RGBA_DXT1:
             for( int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT1Decoding) {
 //                    var decodedResult = decodeDxt(new DataView(mipmaps[k].texture.buffer), mipmaps[k].width, mipmaps[k].height, 'dxt1');
@@ -178,7 +178,7 @@ void createGlTexture(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector
             }
             break;
 
-        case TexureFormat::S3TC_RGBA_DXT3:
+        case TextureFormat::S3TC_RGBA_DXT3:
             for( int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT3Decoding) {
 //                    var decodedResult = decodeDxt(new DataView(mipmaps[k].texture.buffer), mipmaps[k].width, mipmaps[k].height, 'dxt3');
@@ -192,7 +192,7 @@ void createGlTexture(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector
 
             break;
 
-        case TexureFormat::S3TC_RGBA_DXT5:
+        case TextureFormat::S3TC_RGBA_DXT5:
             for( int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT5Decoding) {
 //                    var decodedResult = decodeDxt(new DataView(mipmaps[k].texture.buffer), mipmaps[k].width, mipmaps[k].height, 'dxt5');
@@ -206,7 +206,7 @@ void createGlTexture(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector
 
             break;
 
-        case TexureFormat::BGRA:
+        case TextureFormat::BGRA:
             for( int k = 0; k < mipmaps.size(); k++) {
                 glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                              &mipmaps[k].texture[0]);
@@ -233,13 +233,14 @@ void createGlTexture(BlpFile *blpFile, TexureFormat textureFormat, MipmapsVector
 //    }
 
     glBindTexture(GL_TEXTURE_2D, 0);
+    return texture;
 }
 
 void BlpTexture::process(std::vector<unsigned char> &blpFile) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
     BlpFile *pBlpFile = (BlpFile *) &blpFile[0];
-    TexureFormat textureFormat = getTextureType(pBlpFile);
+    TextureFormat textureFormat = getTextureType(pBlpFile);
 
 
     /* Load texture by mipmaps */
@@ -247,6 +248,6 @@ void BlpTexture::process(std::vector<unsigned char> &blpFile) {
     parseMipmaps(pBlpFile, textureFormat, mipmaps);
 
     /* Load texture into GL memory */
-    createGlTexture(pBlpFile, textureFormat, mipmaps);
+    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps);
 }
 

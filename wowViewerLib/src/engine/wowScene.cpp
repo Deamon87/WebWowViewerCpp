@@ -44,6 +44,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     //Init caches
 
+    m2Object = new M2Object(this);
+    m2Object->setLoadParams(
+            "world/expansion01/doodads/generic/bloodelf/banners/be_banner_tallblack.m2",
+            0,
+            std::vector<uint8_t>(),
+            std::vector<std::string>()
+    );
 }
 
 ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
@@ -808,6 +815,7 @@ void WoWSceneImpl::draw(int deltaTime) {
 //
 //
 //    var updateRes = this.graphManager.update(deltaTime);
+    m2Object->update(deltaTime, this->m_firstCamera.getCameraPosition(), lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
 //
 //    this.graphManager.checkCulling(perspectiveMatrixForCulling, lookAtMat4);
@@ -848,12 +856,13 @@ void WoWSceneImpl::draw(int deltaTime) {
     glDepthMask(true);
     glEnableVertexAttribArray(0);
 //    this.graphManager.draw();
+    m2Object->draw(false, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
     glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
 
     if (!this->m_config->getDoubleCameraDebug()) {
         //Draw real camera into screen
 //
-//        this.glClearScreen(gl, this.fogColor);
+        glClearScreen();
         glEnableVertexAttribArray(0);
         this->activateRenderFrameShader();
         glViewport(0,0,this->canvWidth, this->canvHeight);

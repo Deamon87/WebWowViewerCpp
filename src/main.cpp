@@ -71,28 +71,36 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
 }
 
-class RequestProcessor : IFileRequest {
+class RequestProcessor : public IFileRequest {
 public:
     RequestProcessor () : m_unzipper(nullptr){
         char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
 
+        using namespace std::placeholders;
         HttpFile httpFile(new std::string(url));
-        httpFile.setCallback([this](HttpFile* httpFileLocal) {
-            m_unzipper = new zipper::Unzipper(*httpFileLocal->getFileBuffer());
-        });
+        httpFile.setCallback(std::bind(&RequestProcessor::loadingFinished, this, _1));
         httpFile.startDownloading();
     }
 private:
     zipper::Unzipper *m_unzipper;
+    IFileRequester *m_fileRequester;
 
 public:
+    void setFileRequester(IFileRequester *fileRequester) {
+        m_fileRequester = fileRequester;
+    }
+    void loadingFinished(std::vector<unsigned char> * file) {
+        m_unzipper = new zipper::Unzipper(*file);
+    }
+
     void requestFile(const char* fileName) {
         std::string s_fileName(fileName);
 
         std::vector<unsigned char> unzipped_entry;
         if (m_unzipper->extractEntryToMemory(s_fileName, unzipped_entry)) {
-
-
+            m_fileRequester->provideFile(fileName, &unzipped_entry[0], unzipped_entry.size());
+        } else {
+            m_fileRequester->rejectFile(fileName);
         }
     };
 };
@@ -132,7 +140,9 @@ int main(int argc, char** argv) {
     }
 
     Config *testConf = new Config();
-    WoWScene *scene = createWoWScene(testConf, , 1000, 1000);
+    RequestProcessor *processor = new RequestProcessor();
+    WoWScene *scene = createWoWScene(testConf, processor, 1000, 1000);
+    processor->setFileRequester(scene);
 
     // Ensure we can capture the escape key being pressed below
     //glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);

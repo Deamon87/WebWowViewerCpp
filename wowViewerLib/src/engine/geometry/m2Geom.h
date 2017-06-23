@@ -5,10 +5,13 @@
 #ifndef WOWVIEWERLIB_M2GEOM_H
 #define WOWVIEWERLIB_M2GEOM_H
 
+class M2SkinProfile;
 #include <vector>
 #include "../opengl/header.h"
 #include "../persistance/M2File.h"
 #include "../wowInnerApi.h"
+#include "../objects/m2Helpers/M2MaterialInst.h"
+#include "../objects/m2Object.h"
 
 class M2Geom {
 public:
@@ -27,6 +30,17 @@ public:
             mathfu::vec4 &diffuseColor,
             bool drawTransparent);
 
+    void drawMesh(
+            IWoWInnerApi *api,
+            M2MaterialInst &materialData,
+            M2SkinProfile &skinData,
+            mathfu::vec4 &meshColor,
+            float transparency,
+            mathfu::mat4 &textureMatrix1,
+            mathfu::mat4 &textureMatrix2,
+            int pixelShaderIndex,
+            mathfu::vec4 &originalFogColor,
+            int instanceCount);
 private:
     std::vector<uint8_t> m2File;
     M2Data *m_m2Data;

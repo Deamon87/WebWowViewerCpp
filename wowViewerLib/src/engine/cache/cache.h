@@ -21,7 +21,7 @@ private:
     IFileRequest *m_fileRequestProcessor;
 public:
 
-    std::map<std::string, Container> m_cache;
+    std::map<std::string, Container*> m_cache;
     std::map<std::string, std::vector<unsigned char>> m_objectsToBeProcessed;
 public:
 
@@ -36,8 +36,8 @@ public:
             //ignore value
             //Value v = iter->second;
 
-            Container &container = m_cache.at(fileName);
-            container.obj.process(fileContent);
+            Container *container = m_cache.at(fileName);
+            container->obj.process(fileContent);
 
             m_objectsToBeProcessed.erase(it++);    // or "it = m.erase(it)" since C++11
 
@@ -61,18 +61,19 @@ public:
         if(it != m_cache.end())
         {
             //element found;
-            Container &container = it->second;
-            container.counter = container.counter + 1;
-            return &container.obj;
+            Container *container = it->second;
+            container->counter = container->counter + 1;
+            return &container->obj;
         }
 
-        Container &newContainer = (m_cache[fileName] = Container());
-        newContainer.obj = T();
-        newContainer.counter = 1;
+        Container * newContainer = new Container();
+        m_cache[fileName] = newContainer;
+        newContainer->obj = T();
+        newContainer->counter = 1;
 
         m_fileRequestProcessor->requestFile(fileName.c_str());
 
-        return &newContainer.obj;
+        return &newContainer->obj;
     }
     void reject(std::string fileName) {
 //        var queue = this.queueForLoad.get(fileName);

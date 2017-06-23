@@ -42,7 +42,7 @@ void HttpFile::startDownloading() {
 
         if (res == CURLE_OK) {
             if (this->m_callback != nullptr) {
-                m_callback(this);
+                m_callback(this->m_fileBuffer);
             }
         } else {
             std::cout << "Could not download file "<<this->m_httpUrl->c_str() << std::flush;

@@ -18,6 +18,7 @@
 #include "cache/cache.h"
 
 
+class M2Object;
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -118,6 +119,8 @@ private:
     Cache<M2Geom> m2GeomCache;
     Cache<SkinGeom> skinGeomCache;
     Cache<BlpTexture> textureCache;
+
+    M2Object *m2Object = nullptr;
 
     void activateRenderFrameShader();
 
