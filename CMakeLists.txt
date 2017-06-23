@@ -12,6 +12,13 @@ set(LIBZ_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/lib/libz/include")
 
 #Zipper library
 
+if (WIN32)
+	SET(zlibLib zlibstaticd)
+else()
+	SET(zlibLib libzlibstatic.a)
+endif()
+
+
 ExternalProject_Add("Zipper"
         SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/zipper"
         CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -19,7 +26,7 @@ ExternalProject_Add("Zipper"
         -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/zipper
         -DEXTRA_LIBS=stdc++fs
         -DLIBZ_INCLUDE_DIR=${LIBZ_INCLUDE_DIR}
-        -DLIBZ_LIBRARY=${CMAKE_SOURCE_DIR}/lib/libz/lib/libzlibstatic.a
+        -DLIBZ_LIBRARY=${CMAKE_SOURCE_DIR}/lib/libz/lib/${zlibLib}
         )
 
 

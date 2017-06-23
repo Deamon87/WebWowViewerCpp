@@ -9,7 +9,7 @@ struct shaderItem {
 
     }
     const char *variableName;
-    int number;
+    const int number;
 } ;
 
 struct shaderDefinition{

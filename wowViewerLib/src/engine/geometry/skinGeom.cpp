@@ -25,7 +25,7 @@ void SkinGeom::process(std::vector<unsigned char> &skinFile) {
 void SkinGeom::createVBO() {
     int indiciesLength = this->m_skinData->indices.size;
 
-    uint16_t indicies[indiciesLength];
+    std::vector<uint16_t> indicies(indiciesLength);
 
     for (int i = 0; i < indiciesLength; i++) {
         indicies[i] = *this->m_skinData->vertices.getElement(*this->m_skinData->indices.getElement(i));

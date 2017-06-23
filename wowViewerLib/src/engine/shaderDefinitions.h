@@ -10,7 +10,7 @@ struct adtShader {
  aHeight = 0, aNormal = 1, aIndex = 2, adtShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (adtShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (adtShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem adtShaderAttributes [] = {
  {"aHeight", +adtShader::Attribute::aHeight},
  {"aNormal", +adtShader::Attribute::aNormal},
@@ -31,7 +31,7 @@ struct drawBBShader {
  aPosition = 0, drawBBShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (drawBBShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (drawBBShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem drawBBShaderAttributes [] = {
  {"aPosition", +drawBBShader::Attribute::aPosition},
  };
@@ -50,7 +50,7 @@ struct drawDepthShader {
  position = 0, texture = 1, drawDepthShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (drawDepthShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (drawDepthShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem drawDepthShaderAttributes [] = {
  {"position", +drawDepthShader::Attribute::position},
  {"texture", +drawDepthShader::Attribute::texture},
@@ -70,7 +70,7 @@ struct drawFrustumShader {
  aPosition = 0, drawFrustumShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (drawFrustumShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (drawFrustumShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem drawFrustumShaderAttributes [] = {
  {"aPosition", +drawFrustumShader::Attribute::aPosition},
  };
@@ -89,7 +89,7 @@ struct drawLinesShader {
  aPosition = 0, drawLinesShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (drawLinesShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (drawLinesShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem drawLinesShaderAttributes [] = {
  {"aPosition", +drawLinesShader::Attribute::aPosition},
  };
@@ -108,7 +108,7 @@ struct drawPortalShader {
  aPosition = 0, drawPortalShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (drawPortalShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (drawPortalShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem drawPortalShaderAttributes [] = {
  {"aPosition", +drawPortalShader::Attribute::aPosition},
  };
@@ -127,7 +127,7 @@ struct m2Shader {
  aPosition = 0, aNormal = 1, bones = 2, boneWeights = 3, aTexCoord = 4, aTexCoord2 = 5, aDiffuseColor = 6, aPlacementMat = 7, m2ShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (m2Shader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (m2Shader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem m2ShaderAttributes [] = {
  {"aPosition", +m2Shader::Attribute::aPosition},
  {"aNormal", +m2Shader::Attribute::aNormal},
@@ -153,7 +153,7 @@ struct readDepthBufferShader {
  position = 0, texture = 1, readDepthBufferShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (readDepthBufferShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (readDepthBufferShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem readDepthBufferShaderAttributes [] = {
  {"position", +readDepthBufferShader::Attribute::position},
  {"texture", +readDepthBufferShader::Attribute::texture},
@@ -173,7 +173,7 @@ struct renderFrameBufferShader {
  a_position = 0, renderFrameBufferShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (renderFrameBufferShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (renderFrameBufferShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem renderFrameBufferShaderAttributes [] = {
  {"a_position", +renderFrameBufferShader::Attribute::a_position},
  };
@@ -192,7 +192,7 @@ struct textureCompositionShader {
  aTextCoord = 0, textureCompositionShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (textureCompositionShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (textureCompositionShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem textureCompositionShaderAttributes [] = {
  {"aTextCoord", +textureCompositionShader::Attribute::aTextCoord},
  };
@@ -211,7 +211,7 @@ struct wmoShader {
  aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aColor = 4, aColor2 = 5, wmoShaderAttributeEnd
  };
  };
-inline constexpr unsigned operator+ (wmoShader::Attribute const val) { return static_cast<unsigned>(val); };
+inline constexpr const int operator+ (wmoShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem wmoShaderAttributes [] = {
  {"aPosition", +wmoShader::Attribute::aPosition},
  {"aNormal", +wmoShader::Attribute::aNormal},

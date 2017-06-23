@@ -80,7 +80,7 @@ struct M2Array {
 #ifdef ENVIRONMENT64
         return &((T* ) (((uint64_t)this)+offset))[index];
 #else
-        return ((T* )offset)[index];
+        return &((T* )offset)[index];
 #endif
     }
     T* operator[](int index) {
