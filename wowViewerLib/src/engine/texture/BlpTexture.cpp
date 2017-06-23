@@ -4,8 +4,8 @@
 
 #include <vector>
 #include <cmath>
-#include <GL/gl.h>
-#include <GL/glcorearb.h>
+#include "../opengl/header.h"
+
 #include "BlpTexture.h"
 enum class TextureFormat {
     None,
