@@ -16,6 +16,51 @@
 #include "wowScene.h"
 
 #include "persistance/httpFile/httpFile.h"
+int mleft_pressed = 0;
+double m_x = 0.0;
+double m_y = 0.0;
+
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
+    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
+    IControllable* controllable = scene->getCurrentContollable();
+
+//    if (!pointerIsLocked) {
+        if (mleft_pressed == 1) {
+            controllable->addHorizontalViewDir((xpos - m_x) / 4.0);
+            controllable->addVerticalViewDir((ypos - m_y) / 4.0);
+
+            m_x = xpos;
+            m_y = ypos;
+        }
+//    } else {
+//        var delta_x = event.movementX ||
+//                      event.mozMovementX          ||
+//                      event.webkitMovementX       ||
+//                      0;
+//        var delta_y = event.movementY ||
+//                      event.mozMovementY      ||
+//                      event.webkitMovementY   ||
+//                      0;
+//
+//        camera.addHorizontalViewDir((delta_x) / 4.0);
+//        camera.addVerticalViewDir((delta_y) / 4.0);
+//    }
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        mleft_pressed = 1;
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        m_x = xpos;
+        m_y = ypos;
+    }
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        mleft_pressed = 0;
+    }
+}
+
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
@@ -167,6 +212,8 @@ int main(int argc, char** argv) {
     //glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
     glfwSetWindowUserPointer(window, scene);
     glfwSetKeyCallback(window, onKey);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     double currentFrame = glfwGetTime();
     double lastFrame = currentFrame;

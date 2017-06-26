@@ -421,9 +421,9 @@ M2Geom::drawMesh(
             auto meshIndex = materialData.meshIndex;
             if (instanceCount == -1) {
                 //var error = gl.getError(); // Drop error flag
-                glDrawElements(GL_TRIANGLES, skinData.submeshes[meshIndex]->vertexCount,
+                glDrawElements(GL_TRIANGLES, skinData.submeshes[meshIndex]->indexCount,
                                GL_UNSIGNED_SHORT,
-                               (const void *) (skinData.submeshes[meshIndex]->vertexStart * 2));
+                               (const void *) (skinData.submeshes[meshIndex]->indexStart * 2));
             } else {
 //                instExt.drawElementsInstancedANGLE(gl.TRIANGLES, skinData.subMeshes[meshIndex].nTriangles, gl.UNSIGNED_SHORT, skinData.subMeshes[meshIndex].StartTriangle * 2, instanceCount);
             }

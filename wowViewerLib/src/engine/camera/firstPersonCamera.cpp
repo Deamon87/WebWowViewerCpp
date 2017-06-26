@@ -11,7 +11,7 @@ void FirstPersonCamera::addForwardDiff(float val) {
 }
 
 void FirstPersonCamera::addHorizontalViewDir(float val) {
-    this->ah = ah + this->ah;
+    this->ah = ah + val;
 }
 void FirstPersonCamera::addVerticalViewDir(float val) {
     float av = this->av;
@@ -88,17 +88,18 @@ void FirstPersonCamera::tick (float timeDelta) {
     /* Calc look at position */
 
 
-    dir = mathfu::mat3::RotationY(this->av/M_PI_2) * dir;
-    dir = mathfu::mat3::RotationZ(-this->ah/M_PI_2) * dir;
+
+    dir = mathfu::mat3::RotationY(this->av*M_PI/180) * dir;
+    dir = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * dir;
     dir = mathfu::normalize(dir);
 
     /* Calc camera position */
     if (horizontalDiff != 0) {
-        mathfu::vec3 right = mathfu::mat3::RotationZ(-90/M_PI_2) * dir;
+        mathfu::vec3 right = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
         right[2] = 0;
 
         right = mathfu::normalize(right);
-        right = right *horizontalDiff;
+        right = right * horizontalDiff;
 
         camera = camera + right;
     }
