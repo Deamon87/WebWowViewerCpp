@@ -3,52 +3,65 @@ cmake_minimum_required(VERSION 3.8)
 project(WebWoWViewerCpp)
 include(ExternalProject)
 
-#Zipper library
+if (WIN32)
+	SET(zlibLib zlibstaticd)
+	SET(extra_libraries "")
+
+else()
+	SET(zlibLib libzlibstatic.a)
+	SET(extra_libraries stdc++fs)
+endif()
+
+#ZLib library
 ExternalProject_Add("libz"
         SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/zlib"
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/libz -DEXTRA_LIBS=stdc++fs
+        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/libz -DEXTRA_LIBS=${extra_libraries}
         )
 set(LIBZ_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/lib/libz/include")
 
-#Zipper library
-
-if (WIN32)
-	SET(zlibLib zlibstaticd)
-else()
-	SET(zlibLib libzlibstatic.a)
-endif()
-
-
-ExternalProject_Add("Zipper"
-        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/zipper"
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DBuildShared=ON -DBuildExamples=OFF
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/zipper
-        -DEXTRA_LIBS=stdc++fs
-        -DLIBZ_INCLUDE_DIR=${LIBZ_INCLUDE_DIR}
-        -DLIBZ_LIBRARY=${CMAKE_SOURCE_DIR}/lib/libz/lib/${zlibLib}
-        )
-
-
-
-set(Zipper_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/lib/zipper/include")
-ADD_LIBRARY(zipper STATIC IMPORTED)
-link_directories(${CMAKE_SOURCE_DIR}/lib/zipper/lib/)
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    SET_TARGET_PROPERTIES(zipper PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/zipper/lib/libZipper-static.obj)
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    SET_TARGET_PROPERTIES(zipper PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/zipper/lib/libZipper-static.a)
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-include_directories(${Zipper_INCLUDE_DIRS})
+#Zlib
+ExternalProject_Add("LibZip"
+		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
+		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/libzip -DEXTRA_LIBS=${extra_libraries}
+		)
+#add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libzip)
+set(libzip_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/lib/libzip/include/")
+#set(libzip_HEADER_FILES ${CMAKE_BINARY_DIR}/3rdparty/libzip/)
+set(libzip_HEADER_FILES ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip/include)
+set(libzip_library ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip.dll.a)
+message(libzip_HEADER_FILES = ${libzip_HEADER_FILES})
+include_directories(${libzip_HEADER_FILES})
+include_directories(${libzip_INCLUDE_DIRS})
 
 #GLFW
 ExternalProject_Add("GLFW"
         SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/glfw"
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBUILD_SHARED_LIBS=ON -DGLFW_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/glfw -DEXTRA_LIBS=stdc++fs
+        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBUILD_SHARED_LIBS=ON -DGLFW_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/glfw -DEXTRA_LIBS=${extra_libraries}
         )
 ExternalProject_Get_Property(GLFW install_dir)
 set(glfw_install_dir ${CMAKE_SOURCE_DIR}/lib/glfw)
 include_directories(${glfw_install_dir}/include)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+#    GET_TARGET_PROPERTIES(zipper PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/zipper/lib/libZipper-static.obj)
+	set(GLFW_STATIC_LIBRARIES ${CMAKE_SOURCE_DIR}/lib/glfw/lib/libglfw3dll.a)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+#    SET_TARGET_PROPERTIES(zipper PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/zipper/lib/libZipper-static.a)
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+
+#CURL
+#ExternalProject_Add("CURL"
+#        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/curl"
+#        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBUILD_CURL_EXE=OFF -DCURL_STATICLIB=ON -DHTTP_ONLY=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/curl -DEXTRA_LIBS=${extra_libraries}
+#        )
+#
+#include_directories(${CMAKE_SOURCE_DIR}/3rdparty/curl/include)
+#link_directories(${CURL_LIBRARIES})
+
+#CPR
+add_subdirectory(cpr)
+include_directories(${CPR_INCLUDE_DIRS})
+
 
 #Main library
 ExternalProject_Add("WowViewerLib"
@@ -60,6 +73,7 @@ ExternalProject_Add("WowViewerLib"
         )
 ExternalProject_Get_Property(WowViewerLib install_dir)
 include_directories(${install_dir}/include)
+set(WowViewerLib "${install_dir}/lib/libWoWViewerLib.a")
 
 set(SOURCE_FILES src/main.cpp src/persistance/httpFile/httpFile.cpp src/persistance/httpFile/httpFile.h )
 
@@ -94,8 +108,9 @@ add_executable(WebWoWViewerCpp ${SOURCE_FILES})
 
 
 add_dependencies(WebWoWViewerCpp libz)
-add_dependencies(Zipper libz)
-add_dependencies(WebWoWViewerCpp Zipper)
+add_dependencies(WebWoWViewerCpp LibZip)
+#add_dependencies(Zipper libz)
+#add_dependencies(WebWoWViewerCpp libzip)
 add_dependencies(WebWoWViewerCpp GLFW)
 add_dependencies(WebWoWViewerCpp WowViewerLib)
 
@@ -108,5 +123,6 @@ set_property(TARGET WebWoWViewerCpp PROPERTY CXX_STANDARD 17)
 #target_link_libraries(WebWoWViewerCpp zipper stdc++fs)
 #target_link_libraries(WebWoWViewerCpp zipper stdc++fs)
 message(INFO ${OPENGL_LIBRARIES})
-target_link_libraries(WebWoWViewerCpp glu32.a opengl32.a ${GLFW_STATIC_LIBRARIES} ${CURL_LIBRARIES} z)
-
+#glu32.a opengl32.a z
+target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} ${CURL_LIBRARIES} ${libzip_library} ${WowViewerLib})
+target_link_libraries(WebWoWViewerCpp ${CPR_LIBRARIES})

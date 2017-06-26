@@ -13,3 +13,12 @@
 [submodule "3rdparty/zlib"]
 	path = 3rdparty/zlib
 	url = https://github.com/madler/zlib
+[submodule "3rdparty/curl"]
+	path = 3rdparty/curl
+	url = https://github.com/curl/curl
+[submodule "3rdparty/libzip"]
+	path = 3rdparty/libzip
+	url = https://github.com/nih-at/libzip.git
+[submodule "cpr"]
+	path = cpr
+	url = https://github.com/whoshuu/cpr.git

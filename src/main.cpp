@@ -3,16 +3,14 @@
 #endif
 
 // Include GLEW. Always include it before gl.h and glfw.h, since it's a bit magic.
-#include <GL/glew.h>
-
 #include <GLFW/glfw3.h>
 #include <GL/gl.h>
 
 #include <curl/curl.h>
 #include <string>
 #include <iostream>
-#include <zipper/unzipper.h>
 #include "wowScene.h"
+#include <zip.h>
 
 #include "persistance/httpFile/httpFile.h"
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -73,7 +71,7 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
 class RequestProcessor : public IFileRequest {
 public:
-    RequestProcessor () : m_unzipper(nullptr){
+    RequestProcessor () {
         char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
 
         using namespace std::placeholders;
@@ -82,7 +80,7 @@ public:
         httpFile.startDownloading();
     }
 private:
-    zipper::Unzipper *m_unzipper;
+//    zipper::Unzipper *m_unzipper;
     IFileRequester *m_fileRequester;
 
 public:
@@ -90,18 +88,41 @@ public:
         m_fileRequester = fileRequester;
     }
     void loadingFinished(std::vector<unsigned char> * file) {
-        m_unzipper = new zipper::Unzipper(*file);
+        zip_source_t *src;
+        zip_t *za;
+        zip_error_t error;
+
+        zip_error_init(&error);
+        /* create source from buffer */
+        if ((src = zip_source_buffer_create(&file->at(0), file->size(), 1, &error)) == NULL) {
+            fprintf(stderr, "can't create source: %s\n", zip_error_strerror(&error));
+//            free(data);
+            zip_error_fini(&error);
+//            return 1;
+        }
+
+        /* open zip archive from source */
+        if ((za = zip_open_from_source(src, 0, &error)) == NULL) {
+            fprintf(stderr, "can't open zip from source: %s\n", zip_error_strerror(&error));
+            zip_source_free(src);
+            zip_error_fini(&error);
+//            return 1;
+        }
+        zip_error_fini(&error);
+
+        /* we'll want to read the data back after zip_close */
+        zip_source_keep(src);
     }
 
     void requestFile(const char* fileName) {
         std::string s_fileName(fileName);
 
         std::vector<unsigned char> unzipped_entry;
-        if (m_unzipper->extractEntryToMemory(s_fileName, unzipped_entry)) {
-            m_fileRequester->provideFile(fileName, &unzipped_entry[0], unzipped_entry.size());
-        } else {
-            m_fileRequester->rejectFile(fileName);
-        }
+//        if (m_unzipper->extractEntryToMemory(s_fileName, unzipped_entry)) {
+//            m_fileRequester->provideFile(fileName, &unzipped_entry[0], unzipped_entry.size());
+//        } else {
+//            m_fileRequester->rejectFile(fileName);
+//        }
     };
 };
 
@@ -133,11 +154,6 @@ int main(int argc, char** argv) {
         return -1;
     }
     glfwMakeContextCurrent(window); // Initialize GLEW
-    glewExperimental=true; // Needed in core profile
-    if (glewInit() != GLEW_OK) {
-        fprintf(stderr, "Failed to initialize GLEW\n");
-        return -1;
-    }
 
     Config *testConf = new Config();
     RequestProcessor *processor = new RequestProcessor();
