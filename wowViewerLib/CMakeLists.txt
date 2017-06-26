@@ -19,10 +19,12 @@ if (WIN32)
     MESSAGE(IT IS WINDOWS!!!!)
     include_directories(${CMAKE_SOURCE_DIR}/3rdparty/glew_win/include)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        link_libraries(${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32.lib)
+        set(glew_lib ${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32.lib)
+
     elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-        link_libraries(${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32.lib)
+        set(glew_lib ${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32.lib)
     endif()
+
 else()
     find_package(GLEW REQUIRED)
     if (GLEW_FOUND)
@@ -61,12 +63,15 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
 add_library(WoWViewerLib ${SOURCE_FILES})
 
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
-
+target_link_libraries(WoWViewerLib ${glew_lib})
 mathfu_configure_flags(WoWViewerLib)
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/src/include/wowScene.h
               ${CMAKE_SOURCE_DIR}/src/include/config.h
               ${CMAKE_SOURCE_DIR}/src/include/controllable.h
         DESTINATION include)
+INSTALL(FILES ${glew_lib}
+        DESTINATION lib)
+
 INSTALL(TARGETS WoWViewerLib
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
