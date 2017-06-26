@@ -32,6 +32,7 @@ public:
         std::string s_fileName(fileName);
 
         m2GeomCache.provideFile(s_fileName, fileData);
+        skinGeomCache.provideFile(s_fileName, fileData);
         textureCache.provideFile(s_fileName, fileData);
     };
     virtual void rejectFile(const char* fileName) {

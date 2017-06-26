@@ -52,7 +52,7 @@ void M2Object::startLoading() {
         Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
 
         m_m2Geom = m2GeomCache->get(m_modelName);
-        m_skinGeom = skinGeomCache->get(m_modelName);
+        m_skinGeom = skinGeomCache->get(m_skinName);
     }
 }
 
@@ -229,14 +229,14 @@ void M2Object::makeTextureArray() {
 
     /* 2. Fill the materialArray */
     auto subMeshes = m_skinGeom->getSkinData()->submeshes;
-    auto batches = m_skinGeom->getSkinData()->batches;
+    M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
 
     auto m2File = m_m2Geom->getM2Data();
 
-    for (int i = 0; i < batches.size; i++) {
+    for (int i = 0; i < batches->size; i++) {
         M2MaterialInst materialData;
 
-        auto skinTextureDefinition = batches[i];
+        M2Batch* skinTextureDefinition = batches->getElement(i);
         auto subMesh = subMeshes[skinTextureDefinition->skinSectionIndex];
 
         if ((this->m_meshIds.size() > 0) && (subMesh->skinSectionId > 0) &&

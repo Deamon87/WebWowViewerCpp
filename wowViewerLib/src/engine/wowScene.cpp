@@ -46,7 +46,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     m2Object = new M2Object(this);
     m2Object->setLoadParams(
-            "world/expansion01/doodads/generic/bloodelf/banners/be_banner_tallblack.m2",
+            "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\CHANDELIERS\\KARAZANCHANDELIER_02.m2",
             0,
             std::vector<uint8_t>(),
             std::vector<std::string>()
@@ -856,7 +856,9 @@ void WoWSceneImpl::draw(int deltaTime) {
     glDepthMask(true);
     glEnableVertexAttribArray(0);
 //    this.graphManager.draw();
+    activateM2Shader();
     m2Object->draw(false, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
+    deactivateM2Shader();
     glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
 
     if (!this->m_config->getDoubleCameraDebug()) {

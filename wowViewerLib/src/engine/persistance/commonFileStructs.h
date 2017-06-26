@@ -65,8 +65,8 @@ struct M2Bounds {
 };
 template<typename T>
 struct M2Array {
-    uint32_t offset; // pointer to T, relative to begin of m2 data block (i.e. MD21 chunk content or begin of file)
     int32_t size;
+    uint32_t offset; // pointer to T, relative to begin of m2 data block (i.e. MD21 chunk content or begin of file)
 
     void initM2Array(void * m2File) {
         static_assert(std::is_pod<M2Array<T>>::value, "M2Array<> is not POD");
@@ -94,7 +94,7 @@ template<>
 std::string M2Array<char>::toString();
 
 template <typename T>
-void initM2M2Array(M2Array<M2Array<T>> array2D, void *m2File){
+void initM2M2Array(M2Array<M2Array<T>> &array2D, void *m2File){
     array2D.initM2Array(m2File);
     int count = array2D.size;
     for (int i = 0; i < count; i++){

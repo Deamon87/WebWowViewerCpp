@@ -193,7 +193,7 @@ M2Geom::setupUniforms(
     glUniformMatrix4fv(m2Shader->getUnf("uPlacementMat"), 4, GL_FALSE, &placementMatrix[0]);
 
 //    if (boneMatrices) {
-        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes"), 4, GL_FALSE, &boneMatrices[0][0]);
+        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes[0]"), 4, GL_FALSE, &boneMatrices[0][0]);
 //    } else {
 //        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes"), false, new Float32Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,]));
 //    }
@@ -202,11 +202,11 @@ M2Geom::setupUniforms(
 //    if (diffuseColor) {
         glUniform4fv(m2Shader->getUnf("uDiffuseColor"), 1, &diffuseColor[0]);
 //    }
-    if (drawTransparent) {
-        glUniform1i(m2Shader->getUnf("isTransparent"), 1);
-    } else {
-        glUniform1i(m2Shader->getUnf("isTransparent"), 0);
-    }
+//    if (drawTransparent) {
+//        glUniform1i(m2Shader->getUnf("isTransparent"), 1);
+//    } else {
+//        glUniform1i(m2Shader->getUnf("isTransparent"), 0);
+//    }
 
     //Setup lights
 
@@ -249,7 +249,7 @@ M2Geom::setupUniforms(
 //    if (!diffuseFound) {
 
     float pcColor[4];
-    glUniform4fv(m2Shader->getUnf("uPcColor"), 1, pcColor);
+//    glUniform4fv(m2Shader->getUnf("uPcColor"), 1, pcColor);
 //    }
 }
 
