@@ -7,7 +7,11 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <algorithm>
+#include <iostream>
 #include "../../include/wowScene.h"
+#include "../stringTrim.h"
+
 
 template <typename T>
 class Cache {
@@ -48,6 +52,10 @@ public:
         }
     }
     void provideFile(std::string fileName, std::vector<unsigned char> &file) {
+        trim(fileName);
+
+//        std::cout << "filename:" << fileName << " hex: " << string_to_hex(fileName) << std::endl;
+//        std::cout << "first in storage:" << m_cache.begin()->first << " hex: " << string_to_hex(m_cache.begin()->first) << std::endl << std::flush;
         if (m_cache.count(fileName) > 0) {
             m_objectsToBeProcessed[fileName] = file;
         }
@@ -57,6 +65,8 @@ public:
      * Queue load functions
      */
     T* get (std::string fileName) {
+        fileName = trimmed(fileName);
+
         auto it = m_cache.find(fileName);
         if(it != m_cache.end())
         {
@@ -76,6 +86,7 @@ public:
         return &newContainer->obj;
     }
     void reject(std::string fileName) {
+        trim(fileName);
 //        var queue = this.queueForLoad.get(fileName);
 //        for (var i = 0; i < queue.length; i++) {
 //            queue[i].reject(obj)
@@ -83,6 +94,7 @@ public:
 //        this.queueForLoad.delete(fileName);
     }
     void free (std::string fileName) {
+        trim(fileName);
         Container &container = m_cache.at(fileName);
 
         /* Destroy container if usage counter is 0 or less */

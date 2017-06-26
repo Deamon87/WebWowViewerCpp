@@ -12,6 +12,7 @@
 #include <string>
 #include <iostream>
 #include <zipper/unzipper.h>
+#include <string.h>
 #include "wowScene.h"
 
 #include "persistance/httpFile/httpFile.h"
@@ -71,6 +72,15 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
 }
 
+int strcicmp(char const *a, char const *b)
+{
+    for (;; a++, b++) {
+        int d = tolower(*a) - tolower(*b);
+        if (d != 0 || !*a)
+            return d;
+    }
+}
+
 class RequestProcessor : public IFileRequest {
 public:
     RequestProcessor () : m_unzipper(nullptr){
@@ -91,10 +101,19 @@ public:
     }
     void loadingFinished(std::vector<unsigned char> * file) {
         m_unzipper = new zipper::Unzipper(*file);
+
     }
 
     void requestFile(const char* fileName) {
         std::string s_fileName(fileName);
+
+        for (int i = 0; i < m_unzipper->entries().size(); i++) {
+            auto entry = m_unzipper->entries().at(i);
+            if (strcicmp(entry.name.c_str(), fileName) ==0){
+                s_fileName = entry.name;
+                break;
+            }
+        }
 
         std::vector<unsigned char> unzipped_entry;
         if (m_unzipper->extractEntryToMemory(s_fileName, unzipped_entry)) {

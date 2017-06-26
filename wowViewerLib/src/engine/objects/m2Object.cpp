@@ -153,7 +153,7 @@ void M2Object::draw(bool drawTransparent, mathfu::mat4 placementMatrix, mathfu::
 //    }
 
 //    var combinedMatrix = this.combinedBoneMatrix;
-    std::vector<mathfu::mat4> combinedMatrix(60, mathfu::mat4::Identity());
+    std::vector<mathfu::mat4> combinedMatrix(120, mathfu::mat4::Identity());
 
     this->m_m2Geom->setupUniforms(this->m_api, placementMatrix, combinedMatrix, diffuseColor, drawTransparent);
 
@@ -171,7 +171,7 @@ void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
             this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
     } else {
-        for (int i = this->m_materialArray.size()-1; i >=0; i--) {
+        for (int i = (int) (this->m_materialArray.size() - 1); i >= 0; i--) {
             auto materialData = this->m_materialArray[i];
             this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
@@ -217,6 +217,7 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
 //
 //    //Don't draw meshes with 0 transp
     if ((transparency < 0.0001) || (meshColor[3] < 0.0001)) return;
+//
 //
 //    int pixelShaderIndex = pixelShaderTable[materialData.shaderNames.pixel];
     int pixelShaderIndex = 0;
@@ -325,15 +326,15 @@ void M2Object::makeTextureArray() {
     }
 
     for (int i = 0; i < this->m_materialArray.size(); i++) {
-        auto materialData = this->m_materialArray[i];
-        if (materialData.textureUnit1TexName.size()>1) {
-            materialData.texUnit1Texture = textureCache->get(materialData.textureUnit1TexName);
+        M2MaterialInst* materialData = &this->m_materialArray[i];
+        if (materialData->textureUnit1TexName.size()>1) {
+            materialData->texUnit1Texture = textureCache->get(materialData->textureUnit1TexName);
         }
-        if (materialData.textureUnit2TexName.size()>1) {
-            materialData.texUnit2Texture = textureCache->get(materialData.textureUnit2TexName);
+        if (materialData->textureUnit2TexName.size()>1) {
+            materialData->texUnit2Texture = textureCache->get(materialData->textureUnit2TexName);
         }
-        if (materialData.textureUnit3TexName.size()>1) {
-            materialData.texUnit3Texture = textureCache->get(materialData.textureUnit3TexName);
+        if (materialData->textureUnit3TexName.size()>1) {
+            materialData->texUnit3Texture = textureCache->get(materialData->textureUnit3TexName);
         }
     }
 }

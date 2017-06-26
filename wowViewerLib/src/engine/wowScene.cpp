@@ -19,6 +19,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     this->canvHeight = canvHeight;
     this->canvAspect = canvWidth / canvHeight;
 
+    /* Allocate and assign a Vertex Array Object to our handle */
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+
+    /* Bind our Vertex Array Object as the current used object */
+    glBindVertexArray(vao);
 
 //    self.initGlContext(canvas);
     this->initArrayInstancedExt();
@@ -46,7 +52,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     m2Object = new M2Object(this);
     m2Object->setLoadParams(
-            "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\CHANDELIERS\\KARAZANCHANDELIER_02.m2",
+            "WORLD\\EXPANSION01\\DOODADS\\HELLFIREPENINSULA\\LAMPPOST\\ANCIENT_DRAINEI_LAMPPOST.m2",
             0,
             std::vector<uint8_t>(),
             std::vector<std::string>()
@@ -175,9 +181,10 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
         GLenum type; // type of the variable (float, vec3 or mat4, etc)
 
         glGetActiveUniform(program, (GLuint)i, bufSize, &length, &size, &type, name);
+        GLint location = glGetUniformLocation(program, name);
 
-        data->setUnf(std::string(name), i);
-        printf("Uniform #%d Type: %u Name: %s\n", i, type, name);
+        data->setUnf(std::string(name), location);
+        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
 
     return data;
@@ -314,11 +321,13 @@ void WoWSceneImpl::initRenderBuffers() {
     const int vertsLength = sizeof(verts) / sizeof(verts[0]);
     std::cout << "vertsLength = " << vertsLength << std::endl;
     GLuint vertBuffer = 0;
-    glGenBuffers(0, &vertBuffer);
+    glGenBuffers(1, &vertBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertBuffer);
     glBufferData(GL_ARRAY_BUFFER, vertsLength, verts, GL_STATIC_DRAW);
 
     this->vertBuffer = vertBuffer;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void WoWSceneImpl::initSceneApi() {
@@ -688,7 +697,7 @@ void glClearScreen() {
     glDepthFunc(GL_LESS);
 
     glDisable(GL_BLEND);
-//    glClearColor(0.6, 0.95, 1.0, 1);
+    glClearColor(0.6, 0.95, 1.0, 1);
     //glClearColor(0.117647, 0.207843, 0.392157, 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
@@ -757,6 +766,9 @@ void WoWSceneImpl::draw(int deltaTime) {
                 this->m_firstCamera.getCameraLookAt(),
                 upVector);
 
+    m_lookAtMat4 = lookAtMat4;
+
+
 // Second camera for debug
     mathfu::mat4 secondLookAtMat =
             mathfu::mat4::LookAt(
@@ -771,6 +783,8 @@ void WoWSceneImpl::draw(int deltaTime) {
                 this->canvAspect,
                 nearPlane,
                 farPlane);
+
+    m_perspectiveMatrix = perspectiveMatrix;
 
     //var o_height = (this.canvas.height * (533.333/256/* zoom 7 in Alram viewer */))/ 8 ;
     //var o_width = o_height * this.canvas.width / this.canvas.height;
@@ -822,7 +836,15 @@ void WoWSceneImpl::draw(int deltaTime) {
 //    this.graphManager.sortGeometry(perspectiveMatrixForCulling, lookAtMat4);
 //
 //
+
     glViewport(0,0,this->canvWidth, this->canvHeight);
+
+    activateM2Shader();
+    m2Object->draw(false, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
+    m2Object->draw(true, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
+    deactivateM2Shader();
+
+    /*
     if (this->m_config->getDoubleCameraDebug()) {
         //Draw static camera
 //        this.isDebugCamera = true;
@@ -856,9 +878,7 @@ void WoWSceneImpl::draw(int deltaTime) {
     glDepthMask(true);
     glEnableVertexAttribArray(0);
 //    this.graphManager.draw();
-    activateM2Shader();
-    m2Object->draw(false, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
-    deactivateM2Shader();
+
     glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
 
     if (!this->m_config->getDoubleCameraDebug()) {
@@ -881,7 +901,7 @@ void WoWSceneImpl::draw(int deltaTime) {
 //                              this.canvas.height * 0.40,
 //                              this.canvas.width, this.canvas.height);
     }
-    if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
+    if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*//*) {
         this->activateRenderDepthShader();
         glEnableVertexAttribArray(0);
         glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
@@ -894,7 +914,47 @@ void WoWSceneImpl::draw(int deltaTime) {
 //                              this.canvas.height * 0.40,
 //                              this.canvas.width, this.canvas.height,
 //                              true);
-    }
+    }*/
+}
+
+void WoWSceneImpl::activateM2Shader() {
+    glUseProgram(this->m2Shader->getProgram());
+    glEnableVertexAttribArray(0);
+//    if (!this.vao_ext) {
+        this->activateM2ShaderAttribs();
+//    }
+
+    glUniformMatrix4fv(this->m2Shader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->m2Shader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+//    if (this.currentShaderProgram.shaderUniforms.isBillboard) {
+//        gl.uniform1i(this.currentShaderProgram.shaderUniforms.isBillboard, 0);
+//    }
+
+    glUniform1i(this->m2Shader->getUnf("uTexture"), 0);
+    glUniform1i(this->m2Shader->getUnf("uTexture2"), 1);
+
+    glUniform1f(this->m2Shader->getUnf("uFogStart"), this->uFogStart);
+    glUniform1f(this->m2Shader->getUnf("uFogEnd"), this->uFogEnd);
+
+//    glUniform3fv(this->m2Shader->getUnf("uFogColor"), this->fogColor);
+
+
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void WoWSceneImpl::deactivateM2Shader() {
+
+}
+
+void WoWSceneImpl::activateM2ShaderAttribs() {
+    glEnableVertexAttribArray(+m2Shader::Attribute::aPosition);
+//    if (shaderAttributes.aNormal) {
+//        glEnableVertexAttribArray(shaderAttributes.aNormal);
+//    }
+    glEnableVertexAttribArray(+m2Shader::Attribute::boneWeights);
+    glEnableVertexAttribArray(+m2Shader::Attribute::bones);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
 }
 
 

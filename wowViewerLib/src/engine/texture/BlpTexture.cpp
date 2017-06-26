@@ -249,5 +249,6 @@ void BlpTexture::process(std::vector<unsigned char> &blpFile) {
 
     /* Load texture into GL memory */
     this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps);
+    this->m_isLoaded = true;
 }
 

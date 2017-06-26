@@ -190,10 +190,10 @@ M2Geom::setupUniforms(
 
     ShaderRuntimeData *m2Shader = api->getM2Shader();
 
-    glUniformMatrix4fv(m2Shader->getUnf("uPlacementMat"), 4, GL_FALSE, &placementMatrix[0]);
+    glUniformMatrix4fv(m2Shader->getUnf("uPlacementMat"), 1, GL_FALSE, &placementMatrix[0]);
 
 //    if (boneMatrices) {
-        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes[0]"), 4, GL_FALSE, &boneMatrices[0][0]);
+        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes[0]"), 120, GL_FALSE, &boneMatrices[0][0]);
 //    } else {
 //        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes"), false, new Float32Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,]));
 //    }
@@ -266,8 +266,8 @@ M2Geom::drawMesh(
     //materialData = new M2Material();
     bool fogChanged = false;
 
-    glUniformMatrix4fv(m2Shader->getUnf("uTextMat1"), false, 1, &textureMatrix1[0]);
-    glUniformMatrix4fv(m2Shader->getUnf("uTextMat2"), false, 1, &textureMatrix2[0]);
+    glUniformMatrix4fv(m2Shader->getUnf("uTextMat1"), 1, GL_FALSE, &textureMatrix1[0]);
+    glUniformMatrix4fv(m2Shader->getUnf("uTextMat2"), 1, GL_FALSE, &textureMatrix2[0]);
 
     glUniform4fv(m2Shader->getUnf("uColor"), 1, &meshColor[0]);
     glUniform1f(m2Shader->getUnf("uTransparency"), transparency);
@@ -286,7 +286,7 @@ M2Geom::drawMesh(
             int renderFlagIndex = textMaterial->materialIndex;
             auto renderFlag = m_m2Data->materials[renderFlagIndex];
 
-            glUniform1i(m2Shader->getUnf("uBlendMode"), renderFlag->blending_mode);
+//            glUniform1i(m2Shader->getUnf("uBlendMode"), renderFlag->blending_mode);
             switch (renderFlag->blending_mode) {
                 case 0 : //Blend_Opaque
                     glDisable(GL_BLEND);
