@@ -5,6 +5,7 @@
 #include <locale>
 #include "m2Object.h"
 #include "../algorithms/mathHelper.h"
+#include "../managers/animationManager.h"
 
 
 void M2Object::createAABB() {
@@ -61,7 +62,10 @@ void M2Object::update(int deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMa
         if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded() && (m_skinGeom != nullptr) && m_skinGeom->isLoaded()) {
             this->m_loaded = true;
             this->m_loading = false;
+
             this->makeTextureArray();
+            this->initAnimationManager();
+            this->initBoneAnimMatrices();
         } else {
             return;
         }
@@ -73,13 +77,19 @@ void M2Object::update(int deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMa
 //    //if (!this.materialArray) return;
 //
 //    /* 1. Calc local camera */
-//    var cameraInlocalPos = vec4.create();
-//    vec4.copy(cameraInlocalPos, cameraPos);
-//    vec4.transformMat4(cameraInlocalPos, cameraInlocalPos, invPlacementMat);
+    mathfu::vec4 cameraInlocalPos = mathfu::vec4(cameraPos, 0);
+    //cameraInlocalPos = invPlacementMat* cameraInlocalPos;
 //
 //    /* 2. Update animation values */
-//    this.animationManager.update(deltaTime, cameraInlocalPos, this.bonesMatrices, this.textAnimMatrices,
-//    this.subMeshColors, this.transparencies, this.cameras, this.lights, this.particleEmittersArray);
+    this->m_animationManager->update(deltaTime, cameraPos,
+                                     this->bonesMatrices,
+        this->textAnimMatrices,
+        this->subMeshColors,
+        this->transparencies
+        //this->cameras,
+        //this->lights,
+        //this->particleEmittersArray
+    );
 //
 //    for (var i = 0; i < this.lights.length; i++) {
 //    var light = this.lights[i];
@@ -153,9 +163,9 @@ void M2Object::draw(bool drawTransparent, mathfu::mat4 placementMatrix, mathfu::
 //    }
 
 //    var combinedMatrix = this.combinedBoneMatrix;
-    std::vector<mathfu::mat4> combinedMatrix(120, mathfu::mat4::Identity());
+//    std::vector<mathfu::mat4> combinedMatrix(120, mathfu::mat4::Identity());
 
-    this->m_m2Geom->setupUniforms(this->m_api, placementMatrix, combinedMatrix, diffuseColor, drawTransparent);
+    this->m_m2Geom->setupUniforms(this->m_api, placementMatrix, bonesMatrices, diffuseColor, drawTransparent);
 
     this->drawMeshes(drawTransparent, -1);
 
@@ -337,4 +347,12 @@ void M2Object::makeTextureArray() {
             materialData->texUnit3Texture = textureCache->get(materialData->textureUnit3TexName);
         }
     }
+}
+
+void M2Object::initAnimationManager() {
+    this->m_animationManager = new AnimationManager(m_m2Geom->getM2Data());
+}
+
+void M2Object::initBoneAnimMatrices() {
+    this->bonesMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->bones.size, mathfu::mat4::Identity());;
 }

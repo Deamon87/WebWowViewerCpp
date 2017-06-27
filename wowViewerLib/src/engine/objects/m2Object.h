@@ -11,6 +11,7 @@
 #include "../geometry/skinGeom.h"
 #include "../wowScene.h"
 #include "m2Helpers/M2MaterialInst.h"
+#include "../managers/animationManager.h"
 
 class M2Object {
 public:
@@ -35,9 +36,17 @@ private:
     int m_skinNum;
     std::vector<uint8_t> m_meshIds;
     std::vector<std::string> m_replaceTextures;
+    std::vector<mathfu::mat4> bonesMatrices;
+    std::vector<mathfu::mat4> textAnimMatrices;
+    std::vector<mathfu::vec4> subMeshColors;
+    std::vector<float> transparencies;
+
 
     std::vector<M2MaterialInst> m_materialArray;
+    AnimationManager *m_animationManager;
 
+    void initAnimationManager();
+    void initBoneAnimMatrices();
 
     void startLoading();
 

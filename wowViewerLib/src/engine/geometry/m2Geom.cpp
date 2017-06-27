@@ -59,7 +59,7 @@ void initCompBones(M2Data *m2Header){
         M2CompBone *compBone = m2Header->bones.getElement(i);
         compBone->translation.initTrack(m2Header);
         compBone->rotation.initTrack(m2Header);
-        compBone->scale.initTrack(m2Header);
+        compBone->scaling.initTrack(m2Header);
     }
 }
 void initM2Color(M2Data *m2Header) {

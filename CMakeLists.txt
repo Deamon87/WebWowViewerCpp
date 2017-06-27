@@ -26,7 +26,7 @@ ExternalProject_Add("WowViewerLib"
 ExternalProject_Get_Property(WowViewerLib install_dir)
 include_directories(${install_dir}/include)
 
-set(SOURCE_FILES src/main.cpp src/persistance/httpFile/httpFile.cpp src/persistance/httpFile/httpFile.h wowViewerLib/src/engine/stringTrim.h wowViewerLib/src/engine/managers/animationManager.cpp wowViewerLib/src/engine/managers/animationManager.h)
+set(SOURCE_FILES src/main.cpp src/persistance/httpFile/httpFile.cpp src/persistance/httpFile/httpFile.h wowViewerLib/src/engine/stringTrim.h)
 
 #########################################################
 # FIND OPENGL

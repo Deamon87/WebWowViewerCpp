@@ -40,7 +40,10 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/algorithms/mathHelper.cpp src/engine/algorithms/mathHelper.h
         src/engine/wowInnerApi.h
         src/engine/persistance/commonFileStructs.cpp
-        src/engine/objects/m2Helpers/M2MaterialInst.cpp src/engine/objects/m2Helpers/M2MaterialInst.h)
+        src/engine/objects/m2Helpers/M2MaterialInst.cpp
+        src/engine/objects/m2Helpers/M2MaterialInst.h
+        src/engine/managers/animationManager.cpp
+        )
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

@@ -51,7 +51,7 @@ struct M2CompBone                 // probably M2Bone  ≤ Vanilla
     };
     M2Track<C3Vector> translation;
     M2Track<M2CompQuat> rotation;   // compressed values, default is (32767,32767,32767,65535) == (0,0,0,1) == identity
-    M2Track<C3Vector> scale;
+    M2Track<C3Vector> scaling;
     C3Vector pivot;                 // The pivot point of that bone.
 };
 
