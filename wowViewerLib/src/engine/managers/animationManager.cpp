@@ -3,6 +3,7 @@
 //
 
 #include "animationManager.h"
+#include "../algorithms/animate.h"
 
 AnimationManager::AnimationManager(M2Data* m2File) {
     this->m_m2File = m2File;
@@ -102,82 +103,6 @@ void blendMatrices(std::vector<mathfu::mat4> &origMat, std::vector<mathfu::mat4>
     }
 }
 
-template<typename T>
-mathfu::vec4 animateTrack(int timeIndex, M2Track<T> &animationBlock) {
-    static_assert(false, "Called empty animateTrack");
-}
-
-template<>
-mathfu::vec4 animateTrack<C3Vector>(int timeIndex, M2Track<C3Vector> &animationBlock) {
-    animationBlock->
-
-        var value1 = values[i - 1];
-        var value2 = values[i];
-
-        var time1 = times[i - 1];
-        var time2 = times[i];
-
-        value1 = convertValueTypeToVec4(value1, value_type);
-        value2 = convertValueTypeToVec4(value2, value_type);
-
-        result = this.interpolateValues(animTime,
-                                        interpolType, time1, time2, value1, value2, value_type);
-}
-
-template<typename T>
-mathfu::vec4 getTimedValue(unsigned int currTime,
-            int maxTime,
-            int animationIndex,
-            M2Track<T> &animationBlock,
-            M2Array<M2Loop> &global_loops,
-            std::vector<int> &globalSequenceTimes) {
-    int16_t globalSequence = animationBlock.global_sequence;
-    uint16_t interpolType = animationBlock.interpolation_type;
-
-    if (animationBlock.timestamps.size == 0) {
-        return mathfu::vec4(0,0,0,0);
-    }
-
-    auto times = animationBlock.timestamps[animationIndex];
-    auto values = animationBlock.values[animationIndex];
-
-    //Hack
-    if (times == nullptr) {
-        animationIndex = 0;
-        times = animationBlock.timestamps[animationIndex];
-        values = animationBlock.values[animationIndex];
-    }
-    if (!times || times->size == 0) {
-        return mathfu::vec4(0,0,0,0);
-    }
-
-    if (globalSequence >=0) {
-        currTime = globalSequenceTimes[globalSequence];
-        maxTime = global_loops[globalSequence]->timestamp;
-    }
-
-    int32_t times_len = times->size;
-    mathfu::vec4 result;
-    if (times_len > 1) {
-        //var maxTime = times[times_len-1];
-        unsigned int animTime = currTime % maxTime;
-
-           if ((animTime > *times->getElement(times_len-1)) && (animTime <= maxTime)) {
-//            result = convertValueTypeToVec4(values[0], value_type);
-        } else {
-//            result =  convertValueTypeToVec4(times[times_len-1], value_type);
-            for (int i = 0; i < times_len; i++) {
-                if (*times->getElement(i) > animTime) {
-                    result = animateTrack(i, animationBlock);
-                }
-            }
-        }
-    } else {
-//        result = convertValueTypeToVec4(values[0], value_type);
-    }
-
-    return result;
-}
 
 template<typename T>
 inline void calcAnimationTransform(
@@ -196,13 +121,16 @@ inline void calcAnimationTransform(
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
 
     if (animationData->translation.values.size > 0) {
-        mathfu::vec4 transVec = getTimedValue(
+        mathfu::vec4 defaultValue = mathfu::vec4(0,0,0,0);
+        mathfu::vec4 transVec = animateTrack(
                 time,
                 animationRecord->duration,
                 animationIndex,
                 animationData->translation,
                 m2Data->global_loops,
-                globalSequenceTimes);
+                globalSequenceTimes,
+                defaultValue
+        );
 
         tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(transVec.xyz());
         isAnimated = true;
@@ -210,13 +138,15 @@ inline void calcAnimationTransform(
     if (billboardMatrix != nullptr) {
         tranformMat = tranformMat * *billboardMatrix;
     } else if (animationData->rotation.values.size > 0) {
-        mathfu::vec4 quaternionResult = getTimedValue(
+        mathfu::vec4 defaultValue = mathfu::vec4(0,0,0,0);
+        mathfu::vec4 quaternionResult = animateTrack<mathfu::vec4, mathfu::vec4>(
             time,
             animationRecord->duration,
             animationIndex,
             animationData->rotation,
             m2Data->global_loops,
-            globalSequenceTimes);
+            globalSequenceTimes,
+            defaultValue);
 
 
         mathfu::Quaternion<float> quat(quaternionResult.w, quaternionResult.x, quaternionResult.y, quaternionResult.z);
@@ -225,14 +155,15 @@ inline void calcAnimationTransform(
     }
 
     if (animationData->scaling.values.size > 0) {
-
-        mathfu::vec4 scaleResult = getTimedValue(
+        mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,0);
+        mathfu::vec4 scaleResult = animateTrack(
                 time,
                 animationRecord->duration,
                 animationIndex,
                 animationData->scaling,
                 m2Data->global_loops,
-                globalSequenceTimes);
+                globalSequenceTimes,
+                defaultValue);
 
         tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
         isAnimated = true;

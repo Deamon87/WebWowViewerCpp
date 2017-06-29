@@ -43,7 +43,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/objects/m2Helpers/M2MaterialInst.cpp
         src/engine/objects/m2Helpers/M2MaterialInst.h
         src/engine/managers/animationManager.cpp
-        )
+        src/engine/algorithms/animate.cpp src/engine/algorithms/animate.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
