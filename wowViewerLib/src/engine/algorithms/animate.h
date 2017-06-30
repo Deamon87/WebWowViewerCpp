@@ -18,6 +18,7 @@ template<typename T, typename R>
 inline R convertHelper(T &value) {
 //    REGISTER_PARSE_TYPE(T);
 //    template <typename T> struct MyClassTemplate<T*>;
+    //static_assert(false, "This function was not meant to be called");
     throw "This function was not meant to be called";
 
 };
@@ -42,6 +43,10 @@ inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(C4Quaternion &a ) 
             a.y,
             a.z
     );
+};
+template<>
+inline mathfu::vec4 convertHelper<mathfu::vec3_packed, mathfu::vec4>(mathfu::vec3_packed &a ) {
+    return mathfu::vec4(a.x, a.y, a.z, 0);
 };
 
 template<typename T>
@@ -84,19 +89,20 @@ R animateTrack(
 
     timeIndex = findTimeIndex(currTime, animationIndex, animationBlock.timestamps);
 
-    if (timeIndex > 0) {
-        animationBlock.timestamps;
-        R value1 = convertHelper<T, R>(*values->getElement(timeIndex - 1));
-        R value2 = convertHelper<T, R>(*values->getElement(timeIndex));
+    if (timeIndex == times->size-1 && times->size != 0) {
+        return convertHelper<T, R>(*values->getElement(timeIndex));
+    } else if (timeIndex > 0) {
+        R value1 = convertHelper<T, R>(*values->getElement(timeIndex));
+        R value2 = convertHelper<T, R>(*values->getElement(timeIndex+1));
 
-        int time1 = *times->getElement(timeIndex - 1);
-        int time2 = *times->getElement(timeIndex);
+        int time1 = *times->getElement(timeIndex);
+        int time2 = *times->getElement(timeIndex+1);
 
         uint16_t interpolType = animationBlock.interpolation_type;
         if (interpolType == 0) {
             return value1;
         } else if (interpolType >= 1) {
-            return lerpHelper<R>(value1, value2, (currTime - time1)/(time2 - time1));
+            return lerpHelper<R>(value1, value2, (float)(currTime - time1)/(float)(time2 - time1));
         }
     } else if (timeIndex == 0){
         return convertHelper<T, R>(*values->getElement(0));

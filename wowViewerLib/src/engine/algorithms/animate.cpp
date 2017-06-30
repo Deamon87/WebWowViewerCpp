@@ -7,10 +7,15 @@
 int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key)
 {
     // Termination condition: start index greater than end index
+    if(start == end) {
+        return start;
+    }
+
     if(start > end)
     {
         return -1;
     }
+
 
     // Find the middle element of the vector and use that for splitting
     // the array into two pieces.
@@ -34,7 +39,7 @@ int32_t findTimeIndex(
         M2Array<M2Array<uint32_t>> &timestamps
 ) {
     int timeIndex = -1;
-    if (timestamps.size == 0 || animationIndex < timestamps.size ) {
+    if (timestamps.size == 0 || animationIndex >= timestamps.size ) {
         return -1;
     }
 
@@ -42,7 +47,7 @@ int32_t findTimeIndex(
     int32_t times_len = timeStamp->size;
 
     if (times_len > 1 ) {
-        return binary_search(*timeStamp, 0, times_len, currTime);
+        return binary_search(*timeStamp, 0, times_len-1, currTime);
     } else if (times_len == 1){
         return 0;
     } else {

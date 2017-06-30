@@ -210,14 +210,14 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
     if (materialData.texUnit1TexIndex >= 0) {
         auto textureAnim = skinData->batches[materialData.texUnit1TexIndex]->textureTransformComboIndex;
         uint16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
-    //        if (textureMatIndex >= 0 && textureMatIndex <  this.textAnimMatrices.length) {
-    //            textureMatrix1 = this.textAnimMatrices[textureMatIndex];
-    //        }
+            if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
+                textureMatrix1 = this->textAnimMatrices[textureMatIndex];
+            }
         if (materialData.texUnit2TexIndex >= 0) {
             int textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
-    //        if (textureMatIndex >= 0 && textureMatIndex < this.textAnimMatrices.length) {
-    //            textureMatrix2 = this.textAnimMatrices[textureMatIndex];
-    //        }
+            if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
+                textureMatrix2 = this-> textAnimMatrices[textureMatIndex];
+            }
         }
     }
 //    var meshColor = this.getCombinedColor(skinData, materialData, this.subMeshColors);
