@@ -6,15 +6,103 @@
 #define WOWVIEWERLIB_ANIMATE_H
 
 #include "../persistance/M2File.h"
+int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key);
+
+int32_t findTimeIndex(
+        unsigned int currTime,
+        int animationIndex,
+        M2Array<M2Array<uint32_t>> &timestamps
+);
+
+template<typename T, typename R>
+inline R convertHelper(T &value) {
+//    REGISTER_PARSE_TYPE(T);
+//    template <typename T> struct MyClassTemplate<T*>;
+    throw "This function was not meant to be called";
+
+};
+template<>
+inline mathfu::vec4 convertHelper<mathfu::vec4_packed, mathfu::vec4>(mathfu::vec4_packed &a ) {
+    return mathfu::vec4(a);
+};
+template<>
+inline mathfu::quat convertHelper<Quat16, mathfu::quat>(Quat16 &a ) {
+    return mathfu::quat(
+            (a.w * 0.000030518044) - 1.0,
+            (a.x * 0.000030518044) - 1.0,
+            (a.y * 0.000030518044) - 1.0,
+            (a.z * 0.000030518044) - 1.0
+    );
+};
+template<>
+inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(C4Quaternion &a ) {
+    return mathfu::quat(
+            a.w ,
+            a.x,
+            a.y,
+            a.z
+    );
+};
+
+template<typename T>
+inline T lerpHelper(T &value1, T &value2, float percent) {
+//    REGISTER_PARSE_TYPE(T);
+//    template <typename T> struct MyClassTemplate<T*>;
+    throw "This function was not meant to be called";
+
+};
+template<>
+inline mathfu::vec4 lerpHelper<mathfu::vec4>(mathfu::vec4 &value1, mathfu::vec4 &value2, float percent) {
+    return mathfu::vec4::Lerp(value1, value2, percent);
+};
+template<>
+inline mathfu::quat lerpHelper<mathfu::quat>(mathfu::quat &value1, mathfu::quat &value2, float percent) {
+    return mathfu::quat::Slerp(value1, value2, percent);
+};
+
 
 template<typename T, typename R>
 R animateTrack(
-        unsigned int currTime,
-        uint32_t maxTime,
-        int animationIndex,
+        int &currTime,
+        uint32_t &maxTime,
+        int &animationIndex,
         M2Track<T> &animationBlock,
         M2Array<M2Loop> &global_loops,
         std::vector<int> &globalSequenceTimes,
-        R &defaultValue);
+        R &defaultValue) {
+
+    int16_t globalSequence = animationBlock.global_sequence;
+
+    int32_t timeIndex;
+    if (globalSequence >=0) {
+        currTime = globalSequenceTimes[globalSequence];
+        maxTime = global_loops[globalSequence]->timestamp;
+    }
+
+    M2Array<uint32_t > *times = animationBlock.timestamps[animationIndex];
+    M2Array<T> *values = animationBlock.values[animationIndex];
+
+    timeIndex = findTimeIndex(currTime, animationIndex, animationBlock.timestamps);
+
+    if (timeIndex > 0) {
+        animationBlock.timestamps;
+        R value1 = convertHelper<T, R>(*values->getElement(timeIndex - 1));
+        R value2 = convertHelper<T, R>(*values->getElement(timeIndex));
+
+        int time1 = *times->getElement(timeIndex - 1);
+        int time2 = *times->getElement(timeIndex);
+
+        uint16_t interpolType = animationBlock.interpolation_type;
+        if (interpolType == 0) {
+            return value1;
+        } else if (interpolType >= 1) {
+            return lerpHelper<R>(value1, value2, (currTime - time1)/(time2 - time1));
+        }
+    } else if (timeIndex == 0){
+        return convertHelper<T, R>(*values->getElement(0));
+    } else {
+        return defaultValue;
+    }
+}
 
 #endif //WOWVIEWERLIB_ANIMATE_H

@@ -53,7 +53,7 @@ public:
 
     void calcBones(std::vector<mathfu::mat4> &boneMatrices, int animation, int time, mathfu::vec3 &cameraPosInLocal);
 
-    void calcBoneMatrix(std::vector<mathfu::mat4> boneMatrices, int boneIndex, int animationIndex, int time,
+    void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, int time,
                         mathfu::vec3 cameraPosInLocal);
 
     void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, int time,

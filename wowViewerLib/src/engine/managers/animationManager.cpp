@@ -103,8 +103,7 @@ void blendMatrices(std::vector<mathfu::mat4> &origMat, std::vector<mathfu::mat4>
     }
 }
 
-
-template<typename T>
+template <typename T>
 inline void calcAnimationTransform(
         mathfu::mat4 &tranformMat,
         mathfu::mat4 *billboardMatrix,
@@ -112,7 +111,9 @@ inline void calcAnimationTransform(
         mathfu::vec4 &negatePivotPoint,
         std::vector<int> &globalSequenceTimes,
         bool &isAnimated,
-        T *animationData,
+        M2Track<C3Vector> &translationTrack,
+        M2Track<T> &rotationTrack,
+        M2Track<C3Vector> &scaleTrack,
         M2Data * m2Data,
         int animationIndex,
         int time
@@ -120,13 +121,13 @@ inline void calcAnimationTransform(
     M2Sequence *animationRecord = m2Data->sequences[animationIndex];
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
 
-    if (animationData->translation.values.size > 0) {
+    if (translationTrack.values.size > 0) {
         mathfu::vec4 defaultValue = mathfu::vec4(0,0,0,0);
-        mathfu::vec4 transVec = animateTrack(
+        mathfu::vec4 transVec = animateTrack<C3Vector, mathfu::vec4>(
                 time,
                 animationRecord->duration,
                 animationIndex,
-                animationData->translation,
+                translationTrack,
                 m2Data->global_loops,
                 globalSequenceTimes,
                 defaultValue
@@ -137,30 +138,28 @@ inline void calcAnimationTransform(
     }
     if (billboardMatrix != nullptr) {
         tranformMat = tranformMat * *billboardMatrix;
-    } else if (animationData->rotation.values.size > 0) {
-        mathfu::vec4 defaultValue = mathfu::vec4(0,0,0,0);
-        mathfu::vec4 quaternionResult = animateTrack<mathfu::vec4, mathfu::vec4>(
+    } else if (rotationTrack.values.size > 0) {
+        mathfu::quat defaultValue = mathfu::quat(0,0,0,0);
+        mathfu::quat quaternionResult = animateTrack<T, mathfu::quat>(
             time,
             animationRecord->duration,
             animationIndex,
-            animationData->rotation,
+            rotationTrack,
             m2Data->global_loops,
             globalSequenceTimes,
             defaultValue);
 
-
-        mathfu::Quaternion<float> quat(quaternionResult.w, quaternionResult.x, quaternionResult.y, quaternionResult.z);
-        tranformMat = tranformMat * quat.ToMatrix4();
+        tranformMat = tranformMat * quaternionResult.ToMatrix4();
         isAnimated = true;
     }
 
-    if (animationData->scaling.values.size > 0) {
+    if (scaleTrack.values.size > 0) {
         mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,0);
-        mathfu::vec4 scaleResult = animateTrack(
+        mathfu::vec4 scaleResult = animateTrack<C3Vector, mathfu::vec4>(
                 time,
                 animationRecord->duration,
                 animationIndex,
-                animationData->scaling,
+                scaleTrack,
                 m2Data->global_loops,
                 globalSequenceTimes,
                 defaultValue);
@@ -183,14 +182,16 @@ void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> textAnimMatri
 
         textAnimMatrices[i] = mathfu::mat4::Identity();
         bool isAnimated;
-        calcAnimationTransform<M2TextureTransform>(textAnimMatrices[i],
-                                                   nullptr,
-                                                   pivotPoint, negatePivotPoint,
-                                                   this->globalSequenceTimes,
-                                                   isAnimated,
-                                                   textAnimData,
-                                                   m_m2File,
-                                                   animationIndex, time
+        calcAnimationTransform(textAnimMatrices[i],
+           nullptr,
+           pivotPoint, negatePivotPoint,
+           this->globalSequenceTimes,
+           isAnimated,
+           textAnimData->translation,
+           textAnimData->rotation,
+           textAnimData->scaling,
+           m_m2File,
+           animationIndex, time
         );
         this->isAnimated = isAnimated ? isAnimated : this->isAnimated;
     }
@@ -242,7 +243,7 @@ void calcBoneBillboardMatrix(
 }
 
 void
-AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> boneMatrices, int boneIndex, int animationIndex, int time,
+AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, int time,
                                  mathfu::vec3 cameraPosInLocal) {
     if (this->bonesIsCalculated[boneIndex]) return;
 
@@ -283,12 +284,14 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> boneMatrices, int bon
     }
 
     /* 3. Calculate matrix */
-    calcAnimationTransform<M2CompBone>(boneMatrices[boneIndex],
+    calcAnimationTransform(boneMatrices[boneIndex],
            billboardMatrix,
            pivotPoint, negatePivotPoint,
            this->globalSequenceTimes,
            isAnimated,
-           boneDefinition,
+           boneDefinition->translation,
+           boneDefinition->rotation,
+           boneDefinition->scaling,
            m_m2File,
            animationIndex, time);
 
