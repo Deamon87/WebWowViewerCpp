@@ -77,6 +77,9 @@ struct M2Array {
 #endif
     }
     T* getElement(int index) {
+        if (index >= size) {
+            return nullptr;
+        }
 #ifdef ENVIRONMENT64
         return &((T* ) (((uint64_t)this)+offset))[index];
 #else

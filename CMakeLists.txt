@@ -59,6 +59,7 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 #link_directories(${CURL_LIBRARIES})
 
 #CPR
+set(CMAKE_USE_OPENSSL OFF)
 add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 

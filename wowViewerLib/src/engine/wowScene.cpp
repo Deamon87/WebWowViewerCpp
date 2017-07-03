@@ -172,7 +172,7 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
 
     GLint count;
     glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &count);
-    printf("Active Uniforms: %d\n", count);
+//    printf("Active Uniforms: %d\n", count);
     for (GLint i = 0; i < count; i++)
     {
         const GLsizei bufSize = 32; // maximum name length
@@ -185,7 +185,7 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
         GLint location = glGetUniformLocation(program, name);
 
         data->setUnf(std::string(name), location);
-        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
+//        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
 
     return data;
@@ -267,25 +267,18 @@ void WoWSceneImpl::initVertexArrayObjectExt() {
 }
 
 void WoWSceneImpl::initRenderBuffers() {
-    std::cout << "entered" << std::endl;
     GLuint framebuffer = 0;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
-    std::cout << "passed4" << std::endl;
     GLuint colorTexture = 0;
     glGenTextures(1, &colorTexture);
     glBindTexture(GL_TEXTURE_2D, colorTexture);
-    std::cout << "passed41" << std::endl;
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    std::cout << "passed411" << std::endl;
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->canvWidth, this->canvHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    std::cout << "passed42" << std::endl;
-//
-    std::cout << "passed1" << std::endl;
 //    // Create the depth texture
         GLuint depthTexture = 0;
 //    if (this.depth_texture_ext) {
@@ -305,7 +298,6 @@ void WoWSceneImpl::initRenderBuffers() {
 //    if (this.depth_texture_ext) {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
 //    }
-    std::cout << "passed2" << std::endl;
     this->frameBuffer = framebuffer;
     this->frameBufferColorTexture = colorTexture;
     this->frameBufferDepthTexture = depthTexture;

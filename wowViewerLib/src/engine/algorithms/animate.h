@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_ANIMATE_H
 
 #include "../persistance/M2File.h"
+#include <vector>
 int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key);
 
 int32_t findTimeIndex(
@@ -76,6 +77,10 @@ R animateTrack(
         std::vector<int> &globalSequenceTimes,
         R &defaultValue) {
 
+    if (animationBlock.timestamps[animationIndex]->size == 0) {
+        return defaultValue;
+    }
+
     int16_t globalSequence = animationBlock.global_sequence;
 
     int32_t timeIndex;
@@ -89,9 +94,9 @@ R animateTrack(
 
     timeIndex = findTimeIndex(currTime, animationIndex, animationBlock.timestamps);
 
-    if (timeIndex == times->size-1 && times->size != 0) {
+    if (timeIndex == times->size-1) {
         return convertHelper<T, R>(*values->getElement(timeIndex));
-    } else if (timeIndex > 0) {
+    } else if (timeIndex >= 0) {
         R value1 = convertHelper<T, R>(*values->getElement(timeIndex));
         R value2 = convertHelper<T, R>(*values->getElement(timeIndex+1));
 
@@ -102,10 +107,8 @@ R animateTrack(
         if (interpolType == 0) {
             return value1;
         } else if (interpolType >= 1) {
-            return lerpHelper<R>(value1, value2, (float)(currTime - time1)/(float)(time2 - time1));
+            return lerpHelper<R>(value1, value2, (float)(time1 - currTime)/(float)(time1 - time2));
         }
-    } else if (timeIndex == 0){
-        return convertHelper<T, R>(*values->getElement(0));
     } else {
         return defaultValue;
     }
