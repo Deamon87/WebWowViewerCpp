@@ -953,10 +953,10 @@ void WoWSceneImpl::activateM2ShaderAttribs() {
 
 
 WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
-	glewExperimental = true; // Needed in core profile
-	if (glewInit() != GLEW_OK) {
-		fprintf(stderr, "Failed to initialize GLEW\n");
-		return nullptr;
-	}
+//	glewExperimental = true; // Needed in core profile
+//	if (glewInit() != GLEW_OK) {
+//		fprintf(stderr, "Failed to initialize GLEW\n");
+//		return nullptr;
+//	}
     return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);
 }

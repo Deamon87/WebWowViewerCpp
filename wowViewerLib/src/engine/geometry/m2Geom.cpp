@@ -193,7 +193,7 @@ M2Geom::setupUniforms(
     glUniformMatrix4fv(m2Shader->getUnf("uPlacementMat"), 1, GL_FALSE, &placementMatrix[0]);
 
 //    if (boneMatrices) {
-        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes[0]"), 120, GL_FALSE, &boneMatrices[0][0]);
+        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes[0]"), boneMatrices.size(), GL_FALSE, &boneMatrices[0][0]);
 //    } else {
 //        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes"), false, new Float32Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,]));
 //    }

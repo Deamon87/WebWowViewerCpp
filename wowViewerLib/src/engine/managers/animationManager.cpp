@@ -120,7 +120,7 @@ inline void calcAnimationTransform(
         ) {
     M2Sequence *animationRecord = m2Data->sequences[animationIndex];
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
-
+//
     if (translationTrack.values.size > 0) {
         mathfu::vec4 defaultValue = mathfu::vec4(0,0,0,0);
         mathfu::vec4 transVec = animateTrack<C3Vector, mathfu::vec4>(
@@ -136,10 +136,11 @@ inline void calcAnimationTransform(
         tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(transVec.xyz());
         isAnimated = true;
     }
-    if (billboardMatrix != nullptr) {
-        tranformMat = tranformMat * *billboardMatrix;
-    } else if (rotationTrack.values.size > 0) {
-        mathfu::quat defaultValue = mathfu::quat(0,0,0,0);
+//    if (billboardMatrix != nullptr) {
+//        tranformMat = tranformMat * *billboardMatrix;
+//    } else
+ if (rotationTrack.values.size > 0) {
+        mathfu::quat defaultValue = mathfu::quat(1,0,0,0);
         mathfu::quat quaternionResult = animateTrack<T, mathfu::quat>(
             time,
             animationRecord->duration,
@@ -152,21 +153,21 @@ inline void calcAnimationTransform(
         tranformMat = tranformMat * quaternionResult.ToMatrix4();
         isAnimated = true;
     }
-
-    if (scaleTrack.values.size > 0) {
-        mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,0);
-        mathfu::vec4 scaleResult = animateTrack<C3Vector, mathfu::vec4>(
-                time,
-                animationRecord->duration,
-                animationIndex,
-                scaleTrack,
-                m2Data->global_loops,
-                globalSequenceTimes,
-                defaultValue);
-
-        tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
-        isAnimated = true;
-    }
+//
+//    if (scaleTrack.values.size > 0) {
+//        mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,0);
+//        mathfu::vec4 scaleResult = animateTrack<C3Vector, mathfu::vec4>(
+//                time,
+//                animationRecord->duration,
+//                animationIndex,
+//                scaleTrack,
+//                m2Data->global_loops,
+//                globalSequenceTimes,
+//                defaultValue);
+//
+//        tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
+//        isAnimated = true;
+//    }
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(negatePivotPoint.xyz());
 }
 

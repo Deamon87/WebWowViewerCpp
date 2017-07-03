@@ -47,7 +47,13 @@ int32_t findTimeIndex(
     int32_t times_len = timeStamp->size;
 
     if (times_len > 1 ) {
-        return binary_search(*timeStamp, 0, times_len-1, currTime);
+//        return binary_search(*timeStamp, 0, times_len-1, currTime);
+        for (int i = 1; i < times_len; i++) {
+            if (*timeStamp->getElement(i) > currTime) {
+                return i-1;
+            }
+        }
+        return times_len-1;
     } else if (times_len == 1){
         return 0;
     } else {

@@ -27,13 +27,16 @@ template<>
 inline mathfu::vec4 convertHelper<mathfu::vec4_packed, mathfu::vec4>(mathfu::vec4_packed &a ) {
     return mathfu::vec4(a);
 };
+inline float stf(unsigned short Short) {
+    return (Short / float (32767)) - 1.0f; // (Short > 0 ? Short-32767 : Short+32767)/32767.0;
+}
 template<>
 inline mathfu::quat convertHelper<Quat16, mathfu::quat>(Quat16 &a ) {
     return mathfu::quat(
-            (a.w * 0.000030518044) - 1.0,
-            (a.x * 0.000030518044) - 1.0,
-            (a.y * 0.000030518044) - 1.0,
-            (a.z * 0.000030518044) - 1.0
+            stf(a.w),
+            stf(a.x),
+            stf(a.y),
+            stf(a.z)
     );
 };
 template<>

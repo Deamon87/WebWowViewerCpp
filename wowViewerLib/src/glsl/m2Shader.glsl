@@ -71,7 +71,7 @@ void main() {
     placementMat = uPlacementMat;
 #endif
 
-    mat4 cameraMatrix = uLookAtMat * placementMat * boneTransformMat;
+    mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
 
     vec3 normal = mat3(cameraMatrix) * aNormal;
