@@ -66,8 +66,8 @@ foreach (file ${FILES})
     file(
             APPEND ${CMAKE_SOURCE_DIR}/src/engine/shaderDefinitions.h
             "struct ${NAME} {\n ${shaderAttributeEnum} ${shaderUniformEnum}};\n"
-            "inline constexpr unsigned operator+ (${NAME}::Attribute const val) { return static_cast<unsigned>(val); };\n"
-#            "inline constexpr unsigned operator+ (${NAME}::Uniform const val) { return static_cast<unsigned>(val); };\n"
+            "inline constexpr const int operator+ (${NAME}::Attribute const val) { return static_cast<const int>(val); };\n"
+#            "inline constexpr const int operator+ (${NAME}::Uniform const val) { return static_cast<const int>(val); };\n"
             "${shaderAttributesArray}"
 #            "${shaderUniformArray}"
     )
