@@ -61,7 +61,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/objects/m2Helpers/M2MaterialInst.h
         src/engine/managers/animationManager.cpp
         src/engine/algorithms/animate.cpp
-        src/engine/algorithms/animate.h)
+        src/engine/algorithms/animate.h src/engine/geometry/wmoGroupGeom.cpp src/engine/geometry/wmoGroupGeom.h src/engine/geometry/wmoMainGeom.cpp src/engine/geometry/wmoMainGeom.h src/engine/persistance/ChunkFileReader.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
