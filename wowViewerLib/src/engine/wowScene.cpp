@@ -52,7 +52,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     m2Object = new M2Object(this);
     m2Object->setLoadParams(
-            "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\CHANDELIERS\\KARAZANCHANDELIER_02.m2",
+//            "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\CHANDELIERS\\KARAZANCHANDELIER_02.m2",
+            "WORLD\\EXPANSION01\\DOODADS\\GENERIC\\BLOODELF\\PLANETARIUM\\BE_PLANETARIUM.m2",
 //            "WORLD\\EXPANSION01\\DOODADS\\HELLFIREPENINSULA\\LAMPPOST\\ANCIENT_DRAINEI_LAMPPOST.m2",
             0,
             std::vector<uint8_t>(),
