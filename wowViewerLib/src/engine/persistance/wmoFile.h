@@ -173,10 +173,10 @@ struct SMOPoly
         uint8_t F_UNK_0x40 : 1;
         uint8_t F_COLLIDE_HIT : 1;
 
-        bool isTransFace() { return this.F_UNK_0x01 && (this.F_DETAIL || this.F_RENDER); }
-        bool isColor() { return !this.F_COLLISION; }
-        bool isRenderFace() { return this.F_RENDER && !this.F_DETAIL; }
-        bool isCollidable() { return this.F_COLLISION || this.isRenderFace(); }
+        bool isTransFace() { return this->F_UNK_0x01 && (this->F_DETAIL || this->F_RENDER); }
+        bool isColor() { return !this->F_COLLISION; }
+        bool isRenderFace() { return this->F_RENDER && !this->F_DETAIL; }
+        bool isCollidable() { return this->F_COLLISION || this->isRenderFace(); }
     } flags;
 
     uint8_t material_id;           // index into MOMT, 0xff for collision faces

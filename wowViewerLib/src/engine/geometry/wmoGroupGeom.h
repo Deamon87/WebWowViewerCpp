@@ -8,21 +8,18 @@
 
 #include <vector>
 #include "../persistance/ChunkFileReader.h"
+#include "../persistance/wmoFile.h"
 
 class WmoGroupGeom {
 public:
     void process(std::vector<unsigned char> &wmoGroupFile);
+
+    static chunkDef<WmoGroupGeom> wmoGroupTable;
+private:
+    MOGP *mogp;
 };
 
-chunkDef<WmoGroupGeom> a = {
-        subChunks: {
-                {'MOPY',
-                    [](WmoGroupGeom b, chunkData_t &c)->{
 
-                    }
-                }
-        }
-};
 
 
 #endif //WOWVIEWERLIB_WMOGROUPGEOM_H

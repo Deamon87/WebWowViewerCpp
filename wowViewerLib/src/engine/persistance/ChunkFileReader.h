@@ -8,11 +8,12 @@
 #include <functional>
 #include <map>
 
-struct chunkData_t {
-    chunkData_t (){
+class ChunkData {
+    ChunkData (){
         chunkIdent = 0;
         chunkLen = 0;
         currentOffset = 0;
+
         chunkData = nullptr;
         fileData = nullptr;
     }
@@ -22,43 +23,51 @@ struct chunkData_t {
     int currentOffset;
     void *chunkData;
     void *fileData;
+
+public:
+    inline template<typename T> void readValue(T* &value) {
+        static_assert(!std::is_pointer<T>::value, "T is a pointer");
+        value = (T*)&(((unsigned char *)chunkData)[currentOffset]);
+        currentOffset += sizeof(T);
+    }
+    inline template<typename T> void readValues(T* &value, int count) {
+            static_assert(!std::is_pointer<T>::value, "T is a pointer");
+            value = (T*)&(((unsigned char *)chunkData)[currentOffset]);
+            currentOffset += count*sizeof(T);
+    }
 };
 
 template <typename T>
 struct chunkDef {
-    std::function<void (T, chunkData_t&)> main;
+    std::function<void (T&, ChunkData&)> handler;
     std::map<unsigned int,chunkDef> subChunks;
 };
 
 
+//
 
-template<typename T>
-void readValue(chunkData_t &chunkData, T &value) {
-    value = chunkData.chunkData[chunkData.currentOffset];
-    chunkData.currentOffset += sizeof(T);
-}
-chunkData_t getChunkAtOffset(int offset, void* fileData, int size) {
-    chunkData_t chunkData;
-    chunkData.currentOffset = offset;
-    readValue(chunkData, chunkData.chunkIdent);
-    readValue(chunkData, chunkData.chunkLen);
-    if (chunkData.chunkLen == 0) {
-        chunkData.chunkLen = size;
-    }
-    chunkData.fileData = fileData;
-    chunkData.chunkData = fileData + chunkData.currentOffset;
-    return chunkData;
-}
-chunkData_t getNextSubChunk(chunkData_t &chunkData, int size) {
-    chunkData_t subChunkData;
-    subChunkData.currentOffset = chunkData.currentOffset;
-    readValue(subChunkData, subChunkData.chunkIdent);
-    readValue(subChunkData, subChunkData.chunkLen);
-    if (subChunkData.chunkLen == 0) {
-        subChunkData.chunkLen = size;
-    }
-    subChunkData.chunkData = subChunkData.fileData + subChunkData.currentOffset;
-}
+//chunkData_t getChunkAtOffset(int offset, void* fileData, int size) {
+//    chunkData_t chunkData;
+//    chunkData.currentOffset = offset;
+//    readValue(chunkData, chunkData.chunkIdent);
+//    readValue(chunkData, chunkData.chunkLen);
+//    if (chunkData.chunkLen == 0) {
+//        chunkData.chunkLen = size;
+//    }
+//    chunkData.fileData = fileData;
+//    chunkData.chunkData = fileData + chunkData.currentOffset;
+//    return chunkData;
+//}
+//chunkData_t getNextSubChunk(chunkData_t &chunkData, int size) {
+//    chunkData_t subChunkData;
+//    subChunkData.currentOffset = chunkData.currentOffset;
+//    readValue(subChunkData, subChunkData.chunkIdent);
+//    readValue(subChunkData, subChunkData.chunkLen);
+//    if (subChunkData.chunkLen == 0) {
+//        subChunkData.chunkLen = size;
+//    }
+//    subChunkData.chunkData = subChunkData.fileData + subChunkData.currentOffset;
+//}
 
 
 #endif //WOWVIEWERLIB_CCHUNKFILEREADER_H
