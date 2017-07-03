@@ -7,10 +7,21 @@
 
 
 #include <vector>
+#include "../persistance/ChunkFileReader.h"
 
 class WmoGroupGeom {
 public:
     void process(std::vector<unsigned char> &wmoGroupFile);
+};
+
+chunkDef<WmoGroupGeom> a = {
+        subChunks: {
+                {'MOPY',
+                    [](WmoGroupGeom b, chunkData_t &c)->{
+
+                    }
+                }
+        }
 };
 
 

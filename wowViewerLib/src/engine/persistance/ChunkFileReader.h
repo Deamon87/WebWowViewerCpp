@@ -5,6 +5,9 @@
 #ifndef WOWVIEWERLIB_CCHUNKFILEREADER_H
 #define WOWVIEWERLIB_CCHUNKFILEREADER_H
 
+#include <functional>
+#include <map>
+
 struct chunkData_t {
     chunkData_t (){
         chunkIdent = 0;
@@ -21,10 +24,16 @@ struct chunkData_t {
     void *fileData;
 };
 
+template <typename T>
+struct chunkDef {
+    std::function<void (T, chunkData_t&)> main;
+    std::map<unsigned int,chunkDef> subChunks;
+};
+
 
 
 template<typename T>
-void readValue(chunkData_t chunkData, T &value) {
+void readValue(chunkData_t &chunkData, T &value) {
     value = chunkData.chunkData[chunkData.currentOffset];
     chunkData.currentOffset += sizeof(T);
 }
