@@ -34,7 +34,19 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MOVI', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                                    object.indicesLen = chunkData.chunkLen / 2;
+                                                    chunkData.readValues(object.indicies, object.indicesLen);
                                                     std::cout<<"Entered MOVI"<<std::endl;
+                                                },
+                                            }
+                                        },
+                                        {
+                                            'MOVT', {
+                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+
+                                                    object.verticesLen = chunkData.chunkLen / sizeof(C3Vector);
+                                                    chunkData.readValues(object.verticles, object.verticesLen);
+                                                    std::cout<<"Entered MOVT"<<std::endl;
                                                 },
                                             }
                                         },

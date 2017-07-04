@@ -17,6 +17,17 @@ public:
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 private:
     MOGP *mogp;
+
+    int16_t *indicies;
+    int indicesLen;
+
+    C3Vector *verticles;
+    int verticesLen;
+
+    C3Vector *normals;
+    int normalsLen;
+
+
 };
 
 
