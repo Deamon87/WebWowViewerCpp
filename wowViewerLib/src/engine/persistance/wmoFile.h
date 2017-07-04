@@ -28,7 +28,7 @@ struct SMOHeader
 /*03Ch*/      uint16_t unknown : 11; // unused as of Legion (20994)
 /*03Ch*/  } flags;
 /*03Eh*/  uint16_t numLod;                                         // ≥ Legion (21108)  includes base lod (→ numLod = 3 means '.wmo', 'lod0.wmo' and 'lod1.wmo')
-} header;
+};
 
 
 struct SMOMaterial {
@@ -156,8 +156,8 @@ struct MOGP {
     uint8_t         fogIndicies[4];// 	Up to four indices into the WMO fog list
     uint32_t 		liquidType;    //LiquidType, not always directly used: see below in the MLIQ chunk.
     uint32_t        wmoGroupID;
-//    uint32 		&1: WoD(?)+ CanCutTerrain (by MOPL planes), others (UNUSED: 20740)
-//    uint32 		(UNUSED: 20740)
+    uint32_t 		unused1;//&1: WoD(?)+ CanCutTerrain (by MOPL planes), others (UNUSED: 20740)
+    uint32_t 		unused2;//(UNUSED: 20740)
 };
 
 struct SMOPoly

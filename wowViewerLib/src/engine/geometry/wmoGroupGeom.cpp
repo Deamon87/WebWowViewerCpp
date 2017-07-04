@@ -20,7 +20,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         'MOGP',
                         {
                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-//                                    chunkData.readValue(object.mogp);
+                                    chunkData.readValue(object.mogp);
                                     std::cout<<"Entered MOGP"<<std::endl;
                                 },
                                 subChunks: {

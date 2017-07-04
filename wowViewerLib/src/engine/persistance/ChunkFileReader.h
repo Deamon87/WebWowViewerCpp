@@ -93,6 +93,23 @@ public:
         this->processChunk(sectionHandlerProc, chunk, resultObj);
     }
 
+    void loopOverSubChunks(chunkDef<T> * &sectionHandlerProc, int chunkLoadOffset, int chunkEndOffset, T &resultObj){
+        ChunkData subChunk;
+        while (chunkLoadOffset < chunkEndOffset) {
+            subChunk = this->loadChunkAtOffset(chunkLoadOffset, -1);
+            if (subChunk.chunkIdent == 0) break;
+
+            if (sectionHandlerProc->subChunks.count(subChunk.chunkIdent) > 0) {
+                chunkDef<T> *subchunkHandler = &sectionHandlerProc->subChunks[subChunk.chunkIdent];
+                this->processChunk(subchunkHandler, subChunk, resultObj);
+            } else {
+                char *indentPtr = (char *) &subChunk.chunkIdent;
+                char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
+                std::cout << "Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__ << std::endl;
+            }
+        }
+    }
+
     void processChunk(chunkDef<T> * &sectionHandlerProc, ChunkData &chunk, T &resultObj) {
         sectionHandlerProc->handler(resultObj, chunk);
 
@@ -103,32 +120,13 @@ public:
             } else {
                 int chunkLoadOffset = chunk.dataOffset+chunk.bytesRead;
                 int chunkEndOffset = chunk.dataOffset + chunk.chunkLen;
-                ChunkData subChunk;
-                while (chunkLoadOffset < chunkEndOffset) {
-                    subChunk = this->loadChunkAtOffset(chunkLoadOffset, -1);
-                    if (subChunk.chunkIdent == 0) break;
 
-                    chunkDef<T> *subchunkHandler = &sectionHandlerProc->subChunks[subChunk.chunkIdent];
-                    this->processChunk(subchunkHandler, subChunk, resultObj);
-                }
+                loopOverSubChunks(sectionHandlerProc, chunkLoadOffset, chunkEndOffset, resultObj);
             }
         }
     }
     void processFile(T &resultObj) {
-        int offset = 0;
-        ChunkData chunk = this->loadChunkAtOffset(offset, -1);
-
-        while (chunk.chunkIdent != 0) {
-            if (m_sectionReaders->subChunks.count(chunk.chunkIdent) > 0) {
-                chunkDef<T> *sectionHandlerProc = &m_sectionReaders->subChunks[chunk.chunkIdent];
-                this->processChunk(sectionHandlerProc, chunk, resultObj);
-            } else {
-                char *indentPtr = (char *) &chunk.chunkIdent;
-                char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
-                std::cout << "Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__ << std::endl;
-            }
-            chunk = this->loadChunkAtOffset(offset, -1);
-        }
+        loopOverSubChunks(m_sectionReaders, 0, m_file.size(), resultObj);
     }
 
     ChunkData loadChunkAtOffset(int &offset, int size) {

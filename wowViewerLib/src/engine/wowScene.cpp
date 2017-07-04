@@ -710,6 +710,7 @@ void WoWSceneImpl::draw(int deltaTime) {
     float fov = 45.0;
     if (!testLoad) {
         wmoMainCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO");
+        wmoGeomCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY_002.wmo");
     }
 
     //If use camera settings
