@@ -3,11 +3,8 @@
 #endif
 
 // Include GLEW. Always include it before gl.h and glfw.h, since it's a bit magic.
-//#include <GL/glew.h>
 
 #include <GLFW/glfw3.h>
-#include <GL/gl.h>
-
 #include <curl/curl.h>
 #include <string>
 #include <iostream>

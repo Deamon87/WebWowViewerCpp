@@ -28,8 +28,13 @@ ExternalProject_Add("LibZip"
 set(libzip_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/lib/libzip/include/")
 #set(libzip_HEADER_FILES ${CMAKE_BINARY_DIR}/3rdparty/libzip/)
 set(libzip_HEADER_FILES ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip/include)
-#set(libzip_library ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip.dll.a)
-set(libzip_library ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip.so)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	set(libzip_library ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip.dll.a)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	set(libzip_library ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip.so)
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+
+
 message(libzip_HEADER_FILES = ${libzip_HEADER_FILES})
 include_directories(${libzip_HEADER_FILES})
 include_directories(${libzip_INCLUDE_DIRS})
@@ -77,7 +82,7 @@ ExternalProject_Get_Property(WowViewerLib install_dir)
 include_directories(${install_dir}/include)
 set(WowViewerLib "${install_dir}/lib/libWoWViewerLib.a")
 
-set(SOURCE_FILES src/main.cpp src/persistance/httpFile/httpFile.cpp src/persistance/httpFile/httpFile.h wowViewerLib/src/engine/stringTrim.h wowViewerLib/src/engine/objects/wmoObject.cpp wowViewerLib/src/engine/objects/wmoObject.h)
+set(SOURCE_FILES src/main.cpp src/persistance/httpFile/httpFile.cpp src/persistance/httpFile/httpFile.h)
 
 #########################################################
 # FIND OPENGL
@@ -122,11 +127,9 @@ add_dependencies(WebWoWViewerCpp WowViewerLib)
 
 
 set_property(TARGET WebWoWViewerCpp PROPERTY CXX_STANDARD 17)
-#target_link_libraries(WebWoWViewerCpp zipper stdc++fs)
-#target_link_libraries(WebWoWViewerCpp zipper stdc++fs)
 message(INFO ${OPENGL_LIBRARIES})
 #glu32.a opengl32.a z
 target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} ${CURL_LIBRARIES} ${libzip_library} ${WowViewerLib})
 target_link_libraries(WebWoWViewerCpp ${CPR_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp ${CMAKE_SOURCE_DIR}/wowViewerLib/3rdparty/glew_win/lib/Release/x64/glew32.lib)
-#target_link_libraries(WebWoWViewerCpp opengl32)
+target_link_libraries(WebWoWViewerCpp opengl32)

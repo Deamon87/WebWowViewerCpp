@@ -25,12 +25,12 @@ class ChunkData {
     void *fileData;
 
 public:
-    inline template<typename T> void readValue(T* &value) {
+    template<typename T> inline void readValue(T* &value) {
         static_assert(!std::is_pointer<T>::value, "T is a pointer");
         value = (T*)&(((unsigned char *)chunkData)[currentOffset]);
         currentOffset += sizeof(T);
     }
-    inline template<typename T> void readValues(T* &value, int count) {
+    template<typename T> inline void readValues(T* &value, int count) {
             static_assert(!std::is_pointer<T>::value, "T is a pointer");
             value = (T*)&(((unsigned char *)chunkData)[currentOffset]);
             currentOffset += count*sizeof(T);
