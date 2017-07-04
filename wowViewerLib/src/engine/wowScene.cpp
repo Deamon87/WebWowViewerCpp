@@ -6,7 +6,7 @@
 #include <iostream>
 
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
-        : m2GeomCache(requestProcessor), skinGeomCache(requestProcessor), textureCache(requestProcessor)  {
+        : wmoMainCache(requestProcessor), wmoGeomCache(requestProcessor), m2GeomCache(requestProcessor), skinGeomCache(requestProcessor), textureCache(requestProcessor)  {
     constexpr const shaderDefinition *definition = getShaderDef("adtShader");
 //    constexpr const int attributeIndex = getShaderAttribute("m2Shader", "aNormal");
 //    constexpr const int attributeIndex = +m2Shader::Attribute::aNormal;
@@ -49,6 +49,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     this->initCamera();
 
     //Init caches
+
+    wmoMainCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO");
 
     m2Object = new M2Object(this);
     m2Object->setLoadParams(
@@ -815,8 +817,8 @@ void WoWSceneImpl::draw(int deltaTime) {
 //
 //    // Update objects
 //    this.adtGeomCache.processCacheQueue(10);
-//    this.wmoGeomCache.processCacheQueue(10);
-//    this.wmoMainCache.processCacheQueue(10);
+    this->wmoGeomCache.processCacheQueue(10);
+    this->wmoMainCache.processCacheQueue(10);
     this->m2GeomCache.processCacheQueue(10);
     this->skinGeomCache.processCacheQueue(10);
     this->textureCache.processCacheQueue(10);
@@ -953,10 +955,10 @@ void WoWSceneImpl::activateM2ShaderAttribs() {
 
 
 WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
-	glewExperimental = true; // Needed in core profile
-	if (glewInit() != GLEW_OK) {
-		fprintf(stderr, "Failed to initialize GLEW\n");
-		return nullptr;
-	}
+//	glewExperimental = true; // Needed in core profile
+//	if (glewInit() != GLEW_OK) {
+//		fprintf(stderr, "Failed to initialize GLEW\n");
+//		return nullptr;
+//	}
     return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);
 }

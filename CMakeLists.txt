@@ -131,5 +131,8 @@ message(INFO ${OPENGL_LIBRARIES})
 #glu32.a opengl32.a z
 target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} ${CURL_LIBRARIES} ${libzip_library} ${WowViewerLib})
 target_link_libraries(WebWoWViewerCpp ${CPR_LIBRARIES})
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 target_link_libraries(WebWoWViewerCpp ${CMAKE_SOURCE_DIR}/wowViewerLib/3rdparty/glew_win/lib/Release/x64/glew32.lib)
 target_link_libraries(WebWoWViewerCpp opengl32)
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+

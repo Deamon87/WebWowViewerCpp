@@ -17,6 +17,8 @@
 #include "geometry/m2Geom.h"
 #include "cache/cache.h"
 #include "stringTrim.h"
+#include "geometry/wmoGroupGeom.h"
+#include "geometry/wmoMainGeom.h"
 
 
 class M2Object;
@@ -32,6 +34,8 @@ public:
         fileData.assign(data, data+fileLength);
         std::string s_fileName(fileName);
 
+        wmoGeomCache.provideFile(s_fileName, fileData);
+        wmoMainCache.provideFile(s_fileName, fileData);
         m2GeomCache.provideFile(s_fileName, fileData);
         skinGeomCache.provideFile(s_fileName, fileData);
         textureCache.provideFile(s_fileName, fileData);
@@ -39,7 +43,10 @@ public:
     virtual void rejectFile(const char* fileName) {
         std::string s_fileName(fileName);
 
+        wmoGeomCache.reject(s_fileName);
+        wmoMainCache.reject(s_fileName);
         m2GeomCache.reject(s_fileName);
+        skinGeomCache.reject(s_fileName);
         textureCache.reject(s_fileName);
     }
     void setFileRequestProcessor(IFileRequest*){};
@@ -118,6 +125,8 @@ private:
     GLuint vertBuffer = 0;
 
 
+    Cache<WmoGroupGeom> wmoGeomCache;
+    Cache<WmoMainGeom> wmoMainCache;
     Cache<M2Geom> m2GeomCache;
     Cache<SkinGeom> skinGeomCache;
     Cache<BlpTexture> textureCache;

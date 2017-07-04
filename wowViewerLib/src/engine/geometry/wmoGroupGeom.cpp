@@ -92,5 +92,6 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
 };
 
 void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile) {
-
+    CChunkFileReader<WmoGroupGeom> reader(wmoGroupFile, &WmoGroupGeom::wmoGroupTable);
+    reader.processFile(*this);
 }
