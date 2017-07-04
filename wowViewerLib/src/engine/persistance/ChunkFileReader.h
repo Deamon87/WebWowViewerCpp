@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <map>
+#include <iostream>
 
 class ChunkData {
 public:
@@ -14,6 +15,7 @@ public:
         chunkIdent = 0;
         chunkLen = 0;
         currentOffset = 0;
+        bytesRead = 0;
 
         chunkData = nullptr;
         fileData = nullptr;
@@ -22,6 +24,7 @@ public:
     int chunkLen;
 
     int currentOffset;
+    int bytesRead;
     int dataOffset;
     void *chunkData;
     void *fileData;
@@ -29,18 +32,21 @@ public:
 public:
     template<typename T> inline void readValue(T &value) {
         static_assert(!std::is_pointer<T>::value, "T is a pointer");
-        value = *(T*)&(((unsigned char *)chunkData)[currentOffset]);
+        value = *(T*)&(((unsigned char *)fileData)[currentOffset]);
         currentOffset += sizeof(T);
+        bytesRead += sizeof(T);
     }
     template<typename T> inline void readValue(T* &value) {
         static_assert(!std::is_pointer<T>::value, "T is a pointer");
-        value = (T*)&(((unsigned char *)chunkData)[currentOffset]);
+        value = (T*)&(((unsigned char *)fileData)[currentOffset]);
         currentOffset += sizeof(T);
+        bytesRead += sizeof(T);
     }
     template<typename T> inline void readValues(T* &value, int count) {
-            static_assert(!std::is_pointer<T>::value, "T is a pointer");
-            value = (T*)&(((unsigned char *)chunkData)[currentOffset]);
-            currentOffset += count*sizeof(T);
+        static_assert(!std::is_pointer<T>::value, "T is a pointer");
+        value = (T*)&(((unsigned char *)fileData)[currentOffset]);
+        currentOffset += count*sizeof(T);
+        bytesRead += sizeof(T);
     }
 };
 
@@ -91,16 +97,20 @@ public:
         sectionHandlerProc->handler(resultObj, chunk);
 
         /* Iteration through subchunks */
-        if (chunk.chunkLen > 0) {
-            int chunkLoadOffset = chunk.dataOffset;
-            int chunkEndOffset = chunk.dataOffset + chunk.chunkLen;
-            ChunkData subChunk;
-            while (chunkLoadOffset < chunkEndOffset){
-                subChunk = this->loadChunkAtOffset(chunkLoadOffset, -1);
-                if (subChunk.chunkIdent == 0) break;
+        if (chunk.bytesRead < chunk.chunkLen) {
+            if (sectionHandlerProc->subChunks.size() == 0) {
 
-                chunkDef<T> *subchunkHandler = &sectionHandlerProc->subChunks[subChunk.chunkIdent];
-                this->processChunk(subchunkHandler, subChunk, resultObj);
+            } else {
+                int chunkLoadOffset = chunk.dataOffset+chunk.bytesRead;
+                int chunkEndOffset = chunk.dataOffset + chunk.chunkLen;
+                ChunkData subChunk;
+                while (chunkLoadOffset < chunkEndOffset) {
+                    subChunk = this->loadChunkAtOffset(chunkLoadOffset, -1);
+                    if (subChunk.chunkIdent == 0) break;
+
+                    chunkDef<T> *subchunkHandler = &sectionHandlerProc->subChunks[subChunk.chunkIdent];
+                    this->processChunk(subchunkHandler, subChunk, resultObj);
+                }
             }
         }
     }
@@ -109,8 +119,14 @@ public:
         ChunkData chunk = this->loadChunkAtOffset(offset, -1);
 
         while (chunk.chunkIdent != 0) {
-            chunkDef<T> * sectionHandlerProc = &m_sectionReaders->subChunks[chunk.chunkIdent];
-            this->processChunk(sectionHandlerProc, chunk, resultObj);
+            if (m_sectionReaders->subChunks.count(chunk.chunkIdent) > 0) {
+                chunkDef<T> *sectionHandlerProc = &m_sectionReaders->subChunks[chunk.chunkIdent];
+                this->processChunk(sectionHandlerProc, chunk, resultObj);
+            } else {
+                char *indentPtr = (char *) &chunk.chunkIdent;
+                char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
+                std::cout << "Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__ << std::endl;
+            }
             chunk = this->loadChunkAtOffset(offset, -1);
         }
     }
@@ -128,12 +144,15 @@ public:
         if (offs + 8 < m_file.size()) {
             chunkData.readValue(chunkData.chunkIdent);
             chunkData.readValue(chunkData.chunkLen);
+            chunkData.bytesRead = 0;
 
             if (size != -1) {
                 chunkData.chunkLen = size;
             }
             chunkData.dataOffset = chunkData.currentOffset;
+            offset = chunkData.dataOffset + chunkData.chunkLen;
         }
+
 
         return chunkData;
     }

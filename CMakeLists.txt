@@ -49,10 +49,8 @@ set(glfw_install_dir ${CMAKE_SOURCE_DIR}/lib/glfw)
 include_directories(${glfw_install_dir}/include)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-#    GET_TARGET_PROPERTIES(zipper PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/zipper/lib/libZipper-static.obj)
 	set(GLFW_STATIC_LIBRARIES ${CMAKE_SOURCE_DIR}/lib/glfw/lib/libglfw3dll.a)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-#    SET_TARGET_PROPERTIES(zipper PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/zipper/lib/libZipper-static.a)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 #CURL

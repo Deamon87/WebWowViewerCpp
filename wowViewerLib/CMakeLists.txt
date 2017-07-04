@@ -30,7 +30,6 @@ else()
     if (GLEW_FOUND)
         include_directories(${GLEW_INCLUDE_DIRS})
         link_libraries(${GLEW_LIBRARIES})
-        set(glew_lib ${GLEW_LIBRARIES})
     endif()
     if(NOT GLEW_FOUND)
         message(ERROR " GLEW not found!")
@@ -65,7 +64,12 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/objects/m2Helpers/M2MaterialInst.h
         src/engine/managers/animationManager.cpp
         src/engine/algorithms/animate.cpp
-        src/engine/algorithms/animate.h src/engine/geometry/wmoGroupGeom.cpp src/engine/geometry/wmoGroupGeom.h src/engine/geometry/wmoMainGeom.cpp src/engine/geometry/wmoMainGeom.h src/engine/persistance/ChunkFileReader.h)
+        src/engine/algorithms/animate.h
+        src/engine/geometry/wmoGroupGeom.cpp
+        src/engine/geometry/wmoGroupGeom.h
+        src/engine/geometry/wmoMainGeom.cpp
+        src/engine/geometry/wmoMainGeom.h
+        src/engine/persistance/ChunkFileReader.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
@@ -73,6 +77,7 @@ add_library(WoWViewerLib ${SOURCE_FILES})
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 target_link_libraries(WoWViewerLib ${glew_lib})
 mathfu_configure_flags(WoWViewerLib)
+
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/src/include/wowScene.h
               ${CMAKE_SOURCE_DIR}/src/include/config.h
               ${CMAKE_SOURCE_DIR}/src/include/controllable.h

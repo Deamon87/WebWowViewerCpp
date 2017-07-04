@@ -8,7 +8,7 @@
 
 #include <vector>
 #include "../persistance/ChunkFileReader.h"
-#include "../persistance/wmoFile.h"
+//#include "../persistance/wmoFile.h"
 
 class WmoGroupGeom {
 public:
@@ -16,7 +16,7 @@ public:
 
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 private:
-    MOGP *mogp;
+//    MOGP *mogp;
 };
 
 

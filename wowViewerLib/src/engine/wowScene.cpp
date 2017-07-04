@@ -50,8 +50,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     //Init caches
 
-    wmoMainCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO");
-
     m2Object = new M2Object(this);
     m2Object->setLoadParams(
 //            "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\CHANDELIERS\\KARAZANCHANDELIER_02.m2",
@@ -700,6 +698,7 @@ void glClearScreen() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_CULL_FACE);
 }
+bool testLoad = false;
 void WoWSceneImpl::draw(int deltaTime) {
     glClearScreen();
     mathfu::vec3 *cameraVector;
@@ -709,6 +708,9 @@ void WoWSceneImpl::draw(int deltaTime) {
     int farPlane = 250;
     int nearPlane = 1;
     float fov = 45.0;
+    if (!testLoad) {
+        wmoMainCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO");
+    }
 
     //If use camera settings
     //Figure out way to assign the object with camera

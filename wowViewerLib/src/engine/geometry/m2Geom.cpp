@@ -3,9 +3,8 @@
 //
 
 #include "m2Geom.h"
-#include "../persistance/M2File.h"
 #include "../shaderDefinitions.h"
-#include "../wowScene.h"
+#include "../opengl/header.h"
 
 void M2Geom::loadTextures() {
 
