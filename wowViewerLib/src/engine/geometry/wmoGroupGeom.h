@@ -27,7 +27,14 @@ private:
     C3Vector *normals;
     int normalsLen;
 
+    SMOBatch *batches;
+    int batchesLen;
 
+    t_BSP_NODE * bsp_nodes;
+    int nodesLen;
+
+    uint16_t *bpsIndicies;
+    int bpsIndiciesLen;
 };
 
 

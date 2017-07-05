@@ -81,6 +81,8 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MOBA', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                                    object.batchesLen = chunkData.chunkLen / sizeof(SMOBatch);
+                                                    chunkData.readValues(object.batches, object.batchesLen);
                                                     std::cout<<"Entered MOBA"<<std::endl;
                                                 },
                                             }
@@ -88,6 +90,8 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MOBN', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                                    object.nodesLen = chunkData.chunkLen / sizeof(t_BSP_NODE);
+                                                    chunkData.readValues(object.bsp_nodes, object.nodesLen);
                                                     std::cout<<"Entered MOBN"<<std::endl;
                                                 },
                                             }
@@ -95,6 +99,8 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MOBR', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                                    object.bpsIndiciesLen = chunkData.chunkLen / sizeof(uint16_t);
+                                                    chunkData.readValues(object.bpsIndicies, object.bpsIndiciesLen);
                                                     std::cout<<"Entered MOBR"<<std::endl;
                                                 },
                                             }

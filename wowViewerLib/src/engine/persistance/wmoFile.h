@@ -182,4 +182,36 @@ struct SMOPoly
     uint8_t material_id;           // index into MOMT, 0xff for collision faces
 };
 
+
+struct SMOBatch
+{
+//#if  < Legion
+    /*0x00*/ int16_t unknown_box_min[3];              // -2,-2,-1, 2,2,3 in cameron -> seems to be a bounding box for culling
+  /*0x06*/ int16_t unknown_box_max[3];
+//#else
+//    /*0x00*/ uint8_t unknown[0xA];
+//    /*0x0A*/ uint16_t material_id_large;              // used if flag_use_uint16_t_material is set.
+//#endif
+    /*0x0C*/ uint32_t first_index;                    // index of the first face index used in MOVI
+    /*0x10*/ uint16_t num_indices;                    // number of MOVI indices used
+    /*0x12*/ uint16_t first_vertex;                   // index of the first vertex used in MOVT
+    /*0x14*/ uint16_t last_vertex;                    // index of the last vertex used (batch includes this one)
+    /*0x16*/ uint8_t flag_unknown_1 : 1;
+//#if ≥ Legion
+    /*0x16*/ uint8_t flag_use_material_id_large : 1;  // instead of material_id use material_id_large
+//#endif
+//#if version >= ?
+    /*0x17*/ uint8_t material_id;                     // index in MOMT
+//#else
+};
+
+struct t_BSP_NODE
+{
+    uint16_t planeType;    // 4: leaf, 0 for YZ-plane, 1 for XZ-plane, 2 for XY-plane
+    int16_t  children[2];  // index of bsp child node (right in this array)
+    uint16_t numFaces;     // num of triangle faces in MOBR
+    uint32_t firstFace;    // index of the first triangle index(in MOBR)
+    float    fDist;
+};
+
 #endif //WOWVIEWERLIB_WMOFILE_H
