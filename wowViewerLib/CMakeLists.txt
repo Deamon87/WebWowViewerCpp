@@ -19,10 +19,9 @@ if (WIN32)
     MESSAGE(IT IS WINDOWS!!!!)
     include_directories(${CMAKE_SOURCE_DIR}/3rdparty/glew_win/include)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(glew_lib ${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32.lib)
-
+        set(glew_lib ${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32s.lib)
     elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-        set(glew_lib ${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32.lib)
+        set(glew_lib ${CMAKE_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32s.lib)
     endif()
 
 else()
@@ -37,6 +36,7 @@ else()
 endif(WIN32)
 
 include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
+include_directories(${CMAKE_SOURCE_DIR}/src/opengl/)
 
 set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/shadersStructures.h

@@ -53,6 +53,8 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MONR', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                                    object.normalsLen = chunkData.chunkLen / sizeof(C3Vector);
+                                                    chunkData.readValues(object.normals, object.normalsLen);
                                                     std::cout<<"Entered MONR"<<std::endl;
                                                 },
                                             }
@@ -60,6 +62,9 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MOTV', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                                    object.textureCoordsLen = chunkData.chunkLen / sizeof(C2Vector);
+                                                    chunkData.readValues(object.textCoords, object.textureCoordsLen);
+
                                                     std::cout<<"Entered MOTV"<<std::endl;
                                                 },
                                             }
@@ -67,6 +72,8 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MOCV', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                                    object.cvLen = chunkData.chunkLen / 4;
+                                                    chunkData.readValues(object.colorArray, object.cvLen);
                                                     std::cout<<"Entered MOCV"<<std::endl;
                                                 },
                                             }
@@ -74,6 +81,8 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MODR', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                                    object.doodadRefsLen = chunkData.chunkLen / 2;
+                                                    chunkData.readValues(object.doodadRefs, object.doodadRefsLen);
                                                     std::cout<<"Entered MODR"<<std::endl;
                                                 },
                                             }

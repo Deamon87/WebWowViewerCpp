@@ -27,6 +27,16 @@ private:
     C3Vector *normals;
     int normalsLen;
 
+    C2Vector *textCoords;
+    int textureCoordsLen;
+
+    CImVector *colorArray;
+    int cvLen;
+
+    uint16_t *doodadRefs;
+    int doodadRefsLen;
+
+
     SMOBatch *batches;
     int batchesLen;
 

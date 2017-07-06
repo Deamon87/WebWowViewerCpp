@@ -918,7 +918,7 @@ void WoWSceneImpl::draw(int deltaTime) {
 
 void WoWSceneImpl::activateM2Shader() {
     glUseProgram(this->m2Shader->getProgram());
-    glEnableVertexAttribArray(0);
+//    glEnableVertexAttribArray(0);
 //    if (!this.vao_ext) {
         this->activateM2ShaderAttribs();
 //    }
