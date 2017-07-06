@@ -16,11 +16,11 @@ private:
     int mainAnimationIndex;
 
     int currentAnimationIndex;
-    int currentAnimationTime;
+    double currentAnimationTime;
     int currentAnimationPlayedTimes;
 
     int nextSubAnimationIndex;
-    int nextSubAnimationTime;
+    double nextSubAnimationTime;
     bool nextSubAnimationActive;
 
     bool firstCalc;
@@ -45,7 +45,7 @@ private:
 public:
     AnimationManager(M2Data* m2File);
     bool setAnimationId(int animationId, bool reset);
-    void update (int deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
+    void update (double deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
                  std::vector<mathfu::mat4> &textAnimMatrices,
                  std::vector<mathfu::vec4> &subMeshColors,
                  std::vector<float> transparencies

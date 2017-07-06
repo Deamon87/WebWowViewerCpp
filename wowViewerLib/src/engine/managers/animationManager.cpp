@@ -2,6 +2,7 @@
 // Created by deamon on 26.06.17.
 //
 
+#include <cmath>
 #include "animationManager.h"
 #include "../algorithms/animate.h"
 
@@ -366,7 +367,7 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
     this->firstCalc = false;
 }
 
-void AnimationManager::update(int deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
+void AnimationManager::update(double deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
                               std::vector<mathfu::mat4> &textAnimMatrices,
                               std::vector<mathfu::vec4> &subMeshColors,
                               std::vector<float> transparencies
@@ -406,7 +407,7 @@ void AnimationManager::update(int deltaTime, mathfu::vec3 cameraPosInLocal, std:
         this->nextSubAnimationTime = 0;
     }
 
-    int currAnimLeft = currentAnimationRecord->duration - this->currentAnimationTime;
+    double currAnimLeft = currentAnimationRecord->duration - this->currentAnimationTime;
 
     /*if (this->nextSubAnimationActive) {
         this->nextSubAnimationTime += deltaTime;
@@ -414,7 +415,7 @@ void AnimationManager::update(int deltaTime, mathfu::vec3 cameraPosInLocal, std:
     */
 
     int subAnimBlendTime = 0;
-    float blendAlpha = 1.0;
+    double blendAlpha = 1.0;
     if (this->nextSubAnimationIndex > -1) {
         subAnimRecord = m_m2File->sequences[this->nextSubAnimationIndex];
         subAnimBlendTime = subAnimRecord->blendtime;
@@ -423,7 +424,7 @@ void AnimationManager::update(int deltaTime, mathfu::vec3 cameraPosInLocal, std:
     int blendAnimationIndex = -1;
     if ((subAnimBlendTime > 0) && (currAnimLeft < subAnimBlendTime)) {
         this->firstCalc = true;
-        this->nextSubAnimationTime = (subAnimBlendTime - currAnimLeft) % subAnimRecord->duration;
+        this->nextSubAnimationTime = fmod((subAnimBlendTime - currAnimLeft),(subAnimRecord->duration/1000));
         blendAlpha = currAnimLeft / subAnimBlendTime;
         blendAnimationIndex = this->nextSubAnimationIndex;
     }
@@ -438,7 +439,7 @@ void AnimationManager::update(int deltaTime, mathfu::vec3 cameraPosInLocal, std:
             this->nextSubAnimationIndex = -1;
             this->nextSubAnimationActive = false;
         } else {
-            this->currentAnimationTime = this->currentAnimationTime % currentAnimationRecord->duration;
+            this->currentAnimationTime = fmod(this->currentAnimationTime, currentAnimationRecord->duration/1000);
         }
     }
 

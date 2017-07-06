@@ -120,7 +120,42 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
         }
 };
 
+
+
 void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile) {
     CChunkFileReader<WmoGroupGeom> reader(wmoGroupFile, &WmoGroupGeom::wmoGroupTable);
     reader.processFile(*this);
+
+    createVBO();
+    createIndexVBO();
+}
+
+#define size_of_pvar(x) sizeof(std::remove_pointer<decltype(x)>::type)
+#define makePtr(x) (unsigned char *) x
+void WmoGroupGeom::createVBO() {
+
+    int vboSizeInBytes =
+            size_of_pvar(verticles) * verticesLen+
+            size_of_pvar(normals) * normalsLen+
+            size_of_pvar(textCoords) * textureCoordsLen+
+            size_of_pvar(colorArray) * cvLen;
+
+    std::vector<unsigned char> buffer (vboSizeInBytes);
+
+    unsigned char *nextOffset = &buffer[0];
+    nextOffset = std::copy(makePtr(verticles),  makePtr(verticles+verticesLen), nextOffset);
+    nextOffset = std::copy(makePtr(normals),    makePtr(normals+normalsLen), nextOffset);
+    nextOffset = std::copy(makePtr(textCoords), makePtr(textCoords+textureCoordsLen), nextOffset);
+    nextOffset = std::copy(makePtr(colorArray), makePtr(colorArray+cvLen), nextOffset);
+
+    glGenBuffers(1, &combinedVBO);
+    glBindBuffer( GL_ARRAY_BUFFER, combinedVBO);
+    glBufferData( GL_ARRAY_BUFFER, vboSizeInBytes, &buffer[0], GL_STATIC_DRAW );
+}
+
+void WmoGroupGeom::createIndexVBO() {
+    glGenBuffers(1, &indexVBO);
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glBufferData( GL_ELEMENT_ARRAY_BUFFER, indicesLen, indicies, GL_STATIC_DRAW );
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
 }

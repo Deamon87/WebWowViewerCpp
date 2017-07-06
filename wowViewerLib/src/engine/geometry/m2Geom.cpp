@@ -189,6 +189,7 @@ M2Geom::setupUniforms(
 
     ShaderRuntimeData *m2Shader = api->getM2Shader();
 
+
     glUniformMatrix4fv(m2Shader->getUnf("uPlacementMat"), 1, GL_FALSE, &placementMatrix[0]);
 
 //    if (boneMatrices) {
@@ -260,6 +261,7 @@ M2Geom::drawMesh(
         mathfu::vec4 &originalFogColor, int instanceCount) {
 
     ShaderRuntimeData *m2Shader = api->getM2Shader();
+    GLuint blackPixelText = api->getBlackPixelTexture();
     //var blackPixelText = this.sceneApi.getBlackPixelTexture();
 
     //materialData = new M2Material();
@@ -414,7 +416,7 @@ M2Geom::drawMesh(
                 }
             } else {
                 glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_2D, 0);
+                glBindTexture(GL_TEXTURE_2D, blackPixelText);
             }
 
             auto meshIndex = materialData.meshIndex;

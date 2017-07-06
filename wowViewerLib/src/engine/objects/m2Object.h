@@ -62,7 +62,7 @@ public:
 
     void makeTextureArray();
 
-    void update(int deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat);
+    void update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat);
     void draw(bool drawTransparent, mathfu::mat4 placementMatrix, mathfu::vec4 diffuseColor);
 };
 

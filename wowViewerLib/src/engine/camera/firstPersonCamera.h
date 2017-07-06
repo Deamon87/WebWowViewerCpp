@@ -56,7 +56,7 @@ public:
     mathfu::vec3 getCameraLookAt();
 
 public:
-    void tick(float timeDelta);
+    void tick(double timeDelta);
     void setCameraPos(float x, float y, float z);
 };
 

@@ -88,7 +88,7 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                     'MOTX', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
                             object.textureNamesFieldLen = chunkData.chunkLen;
-                            chunkData.readValues(object.textureNamesField, object.textureNamesFieldLen)
+                            chunkData.readValues(object.textureNamesField, object.textureNamesFieldLen);
                             std::cout<<"Entered MOTX"<<std::endl;
                         }
                     }
@@ -132,6 +132,8 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                 }
         }
 };
+
+
 
 void WmoMainGeom::process(std::vector<unsigned char> &wmoMainFile) {
     CChunkFileReader<WmoMainGeom> reader(wmoMainFile, &WmoMainGeom::wmoMainTable);

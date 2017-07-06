@@ -27,7 +27,7 @@ class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
 public:
     WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
-    void draw(int deltaTime);
+    void draw(double deltaTime);
 
     virtual void provideFile(const char* fileName, unsigned char* data, int fileLength){
         std::vector<unsigned char> fileData;
@@ -67,6 +67,7 @@ public:
     virtual ShaderRuntimeData *getM2Shader() {
         return m2Shader;
     };
+    GLuint getBlackPixelTexture();
 
 private:
     ShaderRuntimeData *compileShader (std::string shaderName, std::string vertShaderString, std::string fragmentShaderString,
@@ -123,6 +124,7 @@ private:
     GLuint frameBufferColorTexture = 0;
     GLuint frameBufferDepthTexture = 0;
     GLuint vertBuffer = 0;
+    GLuint blackPixel = 0;
 
 
     Cache<WmoGroupGeom> wmoGeomCache;
@@ -168,6 +170,8 @@ private:
     void activateDrawPortalShader();
 
     void activateTextureCompositionShader(GLuint texture);
+
+
 };
 
 

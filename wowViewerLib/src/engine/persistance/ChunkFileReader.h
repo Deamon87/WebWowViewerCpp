@@ -46,7 +46,7 @@ public:
         static_assert(!std::is_pointer<T>::value, "T is a pointer");
         value = (T*)&(((unsigned char *)fileData)[currentOffset]);
         currentOffset += count*sizeof(T);
-        bytesRead += sizeof(T);
+        bytesRead += count*sizeof(T);
     }
 };
 

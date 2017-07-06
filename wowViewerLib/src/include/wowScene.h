@@ -20,7 +20,7 @@ public:
 class WoWScene : public IFileRequester {
 
 public:
-    virtual void draw(int deltaTime) = 0;
+    virtual void draw(double deltaTime) = 0;
 
     virtual IControllable* getCurrentContollable() = 0;
 };

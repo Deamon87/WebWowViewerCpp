@@ -72,12 +72,12 @@ mathfu::vec3 FirstPersonCamera::getCameraLookAt(){
 }
 
 
-void FirstPersonCamera::tick (float timeDelta) {
+void FirstPersonCamera::tick (double timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
-    float moveSpeed = 0.02;
+    float moveSpeed = 20;
     mathfu::vec3 camera = this->camera;
 
-    float dTime = timeDelta;
+    double dTime = timeDelta;
 
     float horizontalDiff = dTime * moveSpeed * (this->MDHorizontalPlus - this->MDHorizontalMinus);
     float depthDiff      = dTime * moveSpeed * (this->MDDepthPlus - this->MDDepthMinus) + this->depthDiff;

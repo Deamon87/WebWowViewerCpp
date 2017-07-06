@@ -233,7 +233,19 @@ void WoWSceneImpl::initGlContext() {
 
 }
 void WoWSceneImpl::createBlackPixelTexture() {
+    unsigned int ff = 0xffffffff;
+    glGenTextures(1, &blackPixel);
 
+    glBindTexture(GL_TEXTURE_2D, blackPixel);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &ff);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 void WoWSceneImpl::initAnisotropicExt() {
 
@@ -683,7 +695,9 @@ void WoWSceneImpl::activateDrawPortalShader () {
 } */
 /****************/
 
-
+GLuint WoWSceneImpl::getBlackPixelTexture(){
+    return blackPixel;
+}
 
 void glClearScreen() {
     glClearDepth(1.0);
@@ -699,7 +713,7 @@ void glClearScreen() {
     glDisable(GL_CULL_FACE);
 }
 bool testLoad = false;
-void WoWSceneImpl::draw(int deltaTime) {
+void WoWSceneImpl::draw(double deltaTime) {
     glClearScreen();
     mathfu::vec3 *cameraVector;
 

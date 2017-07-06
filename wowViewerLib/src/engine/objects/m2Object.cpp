@@ -57,7 +57,7 @@ void M2Object::startLoading() {
     }
 }
 
-void M2Object::update(int deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat) {
+void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat) {
     if (!this->m_loaded) {
         if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded() && (m_skinGeom != nullptr) && m_skinGeom->isLoaded()) {
             this->m_loaded = true;
