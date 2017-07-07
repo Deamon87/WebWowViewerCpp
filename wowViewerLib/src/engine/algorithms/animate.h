@@ -10,7 +10,7 @@
 int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key);
 
 int32_t findTimeIndex(
-        unsigned int currTime,
+        double currTime,
         int animationIndex,
         M2Array<M2Array<uint32_t>> &timestamps
 );
@@ -72,12 +72,12 @@ inline mathfu::quat lerpHelper<mathfu::quat>(mathfu::quat &value1, mathfu::quat 
 
 template<typename T, typename R>
 R animateTrack(
-        int &currTime,
+        double &currTime,
         uint32_t &maxTime,
         int &animationIndex,
         M2Track<T> &animationBlock,
         M2Array<M2Loop> &global_loops,
-        std::vector<int> &globalSequenceTimes,
+        std::vector<double> &globalSequenceTimes,
         R &defaultValue) {
 
     if (animationBlock.timestamps[animationIndex]->size == 0) {
@@ -110,7 +110,7 @@ R animateTrack(
         if (interpolType == 0) {
             return value1;
         } else if (interpolType >= 1) {
-            return lerpHelper<R>(value1, value2, (float)(time1 - currTime)/(float)(time1 - time2));
+            return lerpHelper<R>(value1, value2, (float)((float)time1 - currTime)/(float)(time1 - time2));
         }
     } else {
         return defaultValue;

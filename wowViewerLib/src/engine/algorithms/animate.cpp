@@ -34,7 +34,7 @@ int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key)
 }
 
 int32_t findTimeIndex(
-        unsigned int currTime,
+        double currTime,
         int animationIndex,
         M2Array<M2Array<uint32_t>> &timestamps
 ) {

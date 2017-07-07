@@ -29,7 +29,7 @@ private:
     int leftHandClosed;
     int rightHandClosed;
 
-    std::vector<int> globalSequenceTimes;
+    std::vector<double> globalSequenceTimes;
     std::vector<bool> bonesIsCalculated;
     std::vector<mathfu::mat4> blendMatrixArray;
     std::vector<std::vector<int>> childBonesLookup;
@@ -39,7 +39,7 @@ private:
     void initGlobalSequenceTimes();
 
     void calculateBoneTree();
-    void calcAnimMatrixes (std::vector<mathfu::mat4> textAnimMatrices, int animationIndex, int time);
+    void calcAnimMatrixes (std::vector<mathfu::mat4> textAnimMatrices, int animationIndex, double time);
 
 
 public:
@@ -51,12 +51,12 @@ public:
                  std::vector<float> transparencies
             /*cameraDetails, lights, particleEmitters*/);
 
-    void calcBones(std::vector<mathfu::mat4> &boneMatrices, int animation, int time, mathfu::vec3 &cameraPosInLocal);
+    void calcBones(std::vector<mathfu::mat4> &boneMatrices, int animation, double time, mathfu::vec3 &cameraPosInLocal);
 
-    void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, int time,
+    void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, double time,
                         mathfu::vec3 cameraPosInLocal);
 
-    void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, int time,
+    void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, double time,
                         mathfu::vec3 cameraPosInLocal);
 };
 

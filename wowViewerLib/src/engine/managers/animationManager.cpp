@@ -45,7 +45,7 @@ void AnimationManager::initBlendMatrices() {
 }
 
 void AnimationManager::initGlobalSequenceTimes() {
-    globalSequenceTimes = std::vector<int>(
+    globalSequenceTimes = std::vector<double>(
             (unsigned long) (m_m2File->global_loops.size > 0 ? m_m2File->global_loops.size : 0));
 
     for (int i = 0; i < globalSequenceTimes.size(); i++) {
@@ -110,14 +110,14 @@ inline void calcAnimationTransform(
         mathfu::mat4 *billboardMatrix,
         mathfu::vec4 &pivotPoint,
         mathfu::vec4 &negatePivotPoint,
-        std::vector<int> &globalSequenceTimes,
+        std::vector<double> &globalSequenceTimes,
         bool &isAnimated,
         M2Track<C3Vector> &translationTrack,
         M2Track<T> &rotationTrack,
         M2Track<C3Vector> &scaleTrack,
         M2Data * m2Data,
         int animationIndex,
-        int time
+        double time
         ) {
     M2Sequence *animationRecord = m2Data->sequences[animationIndex];
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
@@ -173,7 +173,7 @@ inline void calcAnimationTransform(
 }
 
 
-void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> textAnimMatrices, int animationIndex, int time) {
+void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> textAnimMatrices, int animationIndex, double time) {
 
     mathfu::vec4 pivotPoint(0.5, 0.5, 0, 0);
     mathfu::vec4 negatePivotPoint = -pivotPoint;
@@ -245,7 +245,7 @@ void calcBoneBillboardMatrix(
 }
 
 void
-AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, int time,
+AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, double time,
                                  mathfu::vec3 cameraPosInLocal) {
     if (this->bonesIsCalculated[boneIndex]) return;
 
@@ -305,7 +305,7 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int bo
 }
 
 void AnimationManager::calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex,
-                                      int animationIndex, int time, mathfu::vec3 cameraPosInLocal) {
+                                      int animationIndex, double time, mathfu::vec3 cameraPosInLocal) {
     std::vector<int> *childBones = &this->childBonesLookup[boneIndex];
     for (int i = 0; i < childBones->size(); i++) {
         int childBoneIndex = (*childBones)[i];
@@ -315,7 +315,7 @@ void AnimationManager::calcChildBones(std::vector<mathfu::mat4> &boneMatrices, i
     }
 }
 
-void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int animation, int time, mathfu::vec3 &cameraPosInLocal) {
+void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int animation, double time, mathfu::vec3 &cameraPosInLocal) {
 
 
     if (this->firstCalc || this->isAnimated) {
@@ -381,7 +381,7 @@ void AnimationManager::update(double deltaTime, mathfu::vec3 cameraPosInLocal, s
     for (int i = 0; i < this->globalSequenceTimes.size(); i++) {
         if (m_m2File->global_loops[i] > 0) { // Global sequence values can be 0's
             this->globalSequenceTimes[i] += deltaTime;
-            this->globalSequenceTimes[i] = this->globalSequenceTimes[i] % m_m2File->global_loops[i]->timestamp;
+            this->globalSequenceTimes[i] = fmod(this->globalSequenceTimes[i], m_m2File->global_loops[i]->timestamp);
         }
     }
 

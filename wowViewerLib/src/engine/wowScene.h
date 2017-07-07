@@ -67,7 +67,7 @@ public:
     virtual ShaderRuntimeData *getM2Shader() {
         return m2Shader;
     };
-    GLuint getBlackPixelTexture();
+    virtual GLuint getBlackPixelTexture();
 
 private:
     ShaderRuntimeData *compileShader (std::string shaderName, std::string vertShaderString, std::string fragmentShaderString,

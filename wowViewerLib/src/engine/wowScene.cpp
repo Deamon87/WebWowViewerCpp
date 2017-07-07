@@ -311,6 +311,8 @@ void WoWSceneImpl::initRenderBuffers() {
 //    if (this.depth_texture_ext) {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
 //    }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
     this->frameBuffer = framebuffer;
     this->frameBufferColorTexture = colorTexture;
     this->frameBufferDepthTexture = depthTexture;
@@ -852,10 +854,12 @@ void WoWSceneImpl::draw(double deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
+//    glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
     activateM2Shader();
     m2Object->draw(false, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
     m2Object->draw(true, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
     deactivateM2Shader();
+//    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     /*
     if (this->m_config->getDoubleCameraDebug()) {
@@ -972,10 +976,10 @@ void WoWSceneImpl::activateM2ShaderAttribs() {
 
 
 WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
-//	glewExperimental = true; // Needed in core profile
-//	if (glewInit() != GLEW_OK) {
-//		fprintf(stderr, "Failed to initialize GLEW\n");
-//		return nullptr;
-//	}
+	glewExperimental = true; // Needed in core profile
+	if (glewInit() != GLEW_OK) {
+		fprintf(stderr, "Failed to initialize GLEW\n");
+		return nullptr;
+	}
     return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);
 }

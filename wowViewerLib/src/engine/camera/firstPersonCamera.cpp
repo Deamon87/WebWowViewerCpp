@@ -77,7 +77,7 @@ void FirstPersonCamera::tick (double timeDelta) {
     float moveSpeed = 20;
     mathfu::vec3 camera = this->camera;
 
-    double dTime = timeDelta;
+    double dTime = timeDelta/1000;
 
     float horizontalDiff = dTime * moveSpeed * (this->MDHorizontalPlus - this->MDHorizontalMinus);
     float depthDiff      = dTime * moveSpeed * (this->MDDepthPlus - this->MDDepthMinus) + this->depthDiff;
