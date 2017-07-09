@@ -70,7 +70,11 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/geometry/wmoGroupGeom.h
         src/engine/geometry/wmoMainGeom.cpp
         src/engine/geometry/wmoMainGeom.h
-        src/engine/persistance/ChunkFileReader.h)
+        src/engine/persistance/ChunkFileReader.h
+        src/engine/objects/m2WmoObject.cpp
+        src/engine/objects/m2WmoObject.h
+        src/engine/objects/m2AdtObject.cpp
+        src/engine/objects/m2AdtObject.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

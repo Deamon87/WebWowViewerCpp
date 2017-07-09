@@ -1,0 +1,14 @@
+//
+// Created by Deamon on 7/10/2017.
+//
+
+#ifndef WEBWOWVIEWERCPP_M2ADTOBJECT_H
+#define WEBWOWVIEWERCPP_M2ADTOBJECT_H
+
+
+class M2AdtObject {
+
+};
+
+
+#endif //WEBWOWVIEWERCPP_M2ADTOBJECT_H
