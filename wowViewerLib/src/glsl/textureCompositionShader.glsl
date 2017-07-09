@@ -1,4 +1,3 @@
-#version 120
 #ifdef COMPILING_VS
 uniform float x;
 uniform float y;

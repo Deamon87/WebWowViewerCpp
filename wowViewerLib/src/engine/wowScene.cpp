@@ -74,18 +74,38 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
         fragExtraDefStrings = "";
     }
 
+    bool glsl330 = true;
+    if (glsl330) {
+        vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
+        vertExtraDefStrings += "#define varying out\n";
+        vertExtraDefStrings += "#define attribute in\n";
+
+        fragExtraDefStrings += "#define varying in\n";
+//        fragExtraDefStrings += "#define gl_FragColorDef out vec4 gl_FragColor\n";
+
+        //Insert gl_FragColor for glsl 330
+        fragmentShaderString = trimmed(fragmentShaderString.insert(
+                fragmentShaderString.find("void main(", 0),
+                "\n out vec4 gl_FragColor \n"));
+    } else {
+        vertExtraDefStrings += "#version 120\n";
+
+        fragExtraDefStrings += "#define gl_FragColorDef uniform vec4 notUsed\n";
+    }
+
     if (m_enable) {
-        vertExtraDefStrings = "#define ENABLE_DEFERRED 1\r\n"
+        vertExtraDefStrings = vertExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n"
                 "#define precision\n"
                 "#define lowp\n"
                 "#define mediump\n"
                 "#define highp\n";
-        fragExtraDefStrings = "#define ENABLE_DEFERRED 1\r\n"
+        fragExtraDefStrings = fragExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n"
                 "#define precision\n"
                 "#define lowp\n"
                 "#define mediump\n"
                 "#define highp\n";
     }
+
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
@@ -94,13 +114,16 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
     vertExtraDefStrings = vertExtraDefStrings + "#define MAX_MATRIX_NUM "+std::to_string(maxMatrixUniforms)+"\r\n"+"#define COMPILING_VS 1\r\n ";
     fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
 
-    vertShaderString = trimmed(vertShaderString.insert(
-        vertShaderString.find("\n",vertShaderString.find("#version", 0)+1)+1,
-        vertExtraDefStrings));
+//    vertShaderString = trimmed(vertShaderString.insert(
+//        vertShaderString.find("\n",vertShaderString.find("#version", 0)+1)+1,
+//        vertExtraDefStrings));
+//
+//    fragmentShaderString = trimmed(fragmentShaderString.insert(
+//            fragmentShaderString.find("\n",fragmentShaderString.find("#version", 0)+1)+1,
+//            fragExtraDefStrings));
 
-    fragmentShaderString = trimmed(fragmentShaderString.insert(
-            fragmentShaderString.find("\n",fragmentShaderString.find("#version", 0)+1)+1,
-            fragExtraDefStrings));
+    vertShaderString = vertShaderString.insert(0, vertExtraDefStrings);
+    fragmentShaderString = fragmentShaderString.insert(0, fragExtraDefStrings);
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     const GLchar *vertexShaderConst = (const GLchar *)vertShaderString.c_str();
@@ -164,6 +187,10 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
     GLint status;
     glGetProgramiv(program, GL_LINK_STATUS, &status);
     if (!status) {
+        char logbuffer[1000];
+        int loglen;
+        glGetProgramInfoLog(program, sizeof(logbuffer), &loglen, logbuffer);
+        std::cout << "OpenGL Program Linker Error: " << logbuffer << std::endl << std::flush;
         throw "could not compile shader:" ;
     }
 

@@ -36,6 +36,7 @@ else()
 endif(WIN32)
 
 include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
+#include_directories(${CMAKE_SOURCE_DIR}/lib/glsl)
 include_directories(${CMAKE_SOURCE_DIR}/src/opengl/)
 
 set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h

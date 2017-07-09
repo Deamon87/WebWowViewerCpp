@@ -1,4 +1,3 @@
-#version 140
 //https://www.khronos.org/registry/webgl/extensions/WEBGL_draw_buffers/
 //For drawbuffers in glsl of webgl you need to use GL_EXT_draw_buffers instead of WEBGL_draw_buffers
 
@@ -16,12 +15,12 @@
 
 #ifdef COMPILING_VS
 /* vertex shader code */
-in vec3 aPosition;
-in vec3 aNormal;
-in vec4 bones;
-in vec4 boneWeights;
-in vec2 aTexCoord;
-in vec2 aTexCoord2;
+attribute vec3 aPosition;
+attribute vec3 aNormal;
+attribute vec4 bones;
+attribute vec4 boneWeights;
+attribute vec2 aTexCoord;
+attribute vec2 aTexCoord2;
 
 uniform mediump mat4 uLookAtMat;
 uniform mat4 uPMatrix;
@@ -40,17 +39,17 @@ uniform mat4 uPlacementMat;
 uniform vec4 uDiffuseColor;
 #endif
 
-out vec2 vTexCoord;
-out vec2 vTexCoord2;
-out vec3 vNormal;
-out vec3 vPosition;
-out vec4 vDiffuseColor;
+varying vec2 vTexCoord;
+varying vec2 vTexCoord2;
+varying vec3 vNormal;
+varying vec3 vPosition;
+varying vec4 vDiffuseColor;
 
 
 
 
 #ifdef drawBuffersIsSupported
-out float fs_Depth;
+varying float fs_Depth;
 #endif
 
 void main() {
@@ -122,13 +121,13 @@ void main() {
 
 #ifdef COMPILING_FS
 
-//precision mediump float;
-in vec3 vNormal;
-in vec2 vTexCoord;
-in vec2 vTexCoord2;
-in vec3 vPosition;
+precision mediump float;
+varying vec3 vNormal;
+varying vec2 vTexCoord;
+varying vec2 vTexCoord2;
+varying vec3 vPosition;
 
-in vec4 vDiffuseColor;
+varying vec4 vDiffuseColor;
 
 uniform lowp int isTransparent;
 
@@ -165,9 +164,8 @@ uniform vec4 uPcColor;
 
 uniform LocalLight pc_lights[3];
 uniform lowp int uLightCount;
-out vec4 gl_FragColor;
 #ifdef drawBuffersIsSupported
-in float fs_Depth;
+varying float fs_Depth;
 #endif
 
 void main() {
@@ -321,10 +319,10 @@ void main() {
 #else
     //Deferred rendering
     //gl_FragColor = finalColor;
-    gl_FragData[0] = vec4(vec3(fs_Depth), 1.0);
-    gl_FragData[1] = vec4(vPosition.xyz,0);
-    gl_FragData[2] = vec4(vNormal.xyz,0);
-    gl_FragData[3] = finalColor;
+//    gl_FragData[0] = vec4(vec3(fs_Depth), 1.0);
+//    gl_FragData[1] = vec4(vPosition.xyz,0);
+//    gl_FragData[2] = vec4(vNormal.xyz,0);
+//    gl_FragData[3] = finalColor;
 #endif //drawBuffersIsSupported
 }
 
