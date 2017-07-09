@@ -280,11 +280,36 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     return fps;
 }
 
+void beforeCrash(void);
+
+static const bool SET_TERMINATE = std::set_terminate(beforeCrash);
+
+void beforeCrash() {
+    __asm("int3");
+}
+
+static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
+{
+    switch(ExceptionInfo->ExceptionRecord->ExceptionCode)
+    {
+        case EXCEPTION_ACCESS_VIOLATION:
+            fputs("Error: EXCEPTION_ACCESS_VIOLATION\n", stderr);
+            break;
+        case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+            fputs("Error: EXCEPTION_ARRAY_BOUNDS_EXCEEDED\n", stderr);
+            break;
+        case EXCEPTION_BREAKPOINT:
+            fputs("Error: EXCEPTION_BREAKPOINT\n", stderr);
+            break;
+    }
+}
+
 int main(int argc, char** argv) {
     CURL *curl = NULL;
     FILE *fp;
     CURLcode res;
 
+    SetUnhandledExceptionFilter(windows_exception_handler);
 
     if( !glfwInit() )
     {
@@ -320,7 +345,7 @@ int main(int argc, char** argv) {
     glfwSetKeyCallback(window, onKey);
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
-//    glfwSwapInterval(0);
+    glfwSwapInterval(0);
 
     double currentFrame = glfwGetTime();
     double lastFrame = currentFrame;
@@ -330,7 +355,10 @@ int main(int argc, char** argv) {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        scene->draw(deltaTime*1000);
+
+            scene->draw(deltaTime*1000);
+
+
         calcFPS(window, 2.0, "WoW ");
 
         // Swap buffers

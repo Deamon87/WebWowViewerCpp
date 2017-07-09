@@ -78,15 +78,24 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
     if (glsl330) {
         vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
         vertExtraDefStrings += "#define varying out\n";
-        vertExtraDefStrings += "#define attribute in\n";
+        vertExtraDefStrings += "#define attribute in\n"
+                "#define precision\n"
+                "#define lowp\n"
+                "#define mediump\n"
+                "#define highp\n";
 
-        fragExtraDefStrings += "#define varying in\n";
+        fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
+        fragExtraDefStrings += "#define varying in\n"
+                "#define precision\n"
+                "#define lowp\n"
+                "#define mediump\n"
+                "#define highp\n";
 //        fragExtraDefStrings += "#define gl_FragColorDef out vec4 gl_FragColor\n";
 
         //Insert gl_FragColor for glsl 330
         fragmentShaderString = trimmed(fragmentShaderString.insert(
-                fragmentShaderString.find("void main(", 0),
-                "\n out vec4 gl_FragColor \n"));
+                fragmentShaderString.find("void main(", fragmentShaderString.find("COMPILING_FS", 0)),
+                "\n out vec4 gl_FragColor; \n"));
     } else {
         vertExtraDefStrings += "#version 120\n";
 
@@ -94,16 +103,8 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
     }
 
     if (m_enable) {
-        vertExtraDefStrings = vertExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n"
-                "#define precision\n"
-                "#define lowp\n"
-                "#define mediump\n"
-                "#define highp\n";
-        fragExtraDefStrings = fragExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n"
-                "#define precision\n"
-                "#define lowp\n"
-                "#define mediump\n"
-                "#define highp\n";
+        vertExtraDefStrings = vertExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n";
+        fragExtraDefStrings = fragExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n";
     }
 
 
@@ -215,6 +216,10 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
         data->setUnf(std::string(name), location);
 //        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
+    if (!shaderName.compare("m2Shader")) {
+        std::cout << fragmentShaderString << std::endl << std::flush;
+    }
+
 
     return data;
 }

@@ -121,7 +121,7 @@ void main() {
 
 #ifdef COMPILING_FS
 
-precision mediump float;
+//precision mediump float;
 varying vec3 vNormal;
 varying vec2 vTexCoord;
 varying vec2 vTexCoord2;
@@ -309,21 +309,20 @@ void main() {
         float endFadeFog = clamp(((uFogEnd - distanceToCamera) / (0.699999988 * uFogEnd)), 0.0, 1.0);
         float fog_out = min(expFog, endFadeFog);
         finalColor.rgba = vec4(mix(fogColor.rgb, finalColor.rgb, vec3(fog_out)), finalColor.a);
-
     }
-    finalColor.rgb = finalColor.rgb;
+//    finalColor.rgb = finalColor.rgb;
 
-#ifndef drawBuffersIsSupported
+
     //Forward rendering without lights
     gl_FragColor = finalColor;
-#else
+
     //Deferred rendering
     //gl_FragColor = finalColor;
 //    gl_FragData[0] = vec4(vec3(fs_Depth), 1.0);
 //    gl_FragData[1] = vec4(vPosition.xyz,0);
 //    gl_FragData[2] = vec4(vNormal.xyz,0);
 //    gl_FragData[3] = finalColor;
-#endif //drawBuffersIsSupported
+
 }
 
 #endif //COMPILING_FS
