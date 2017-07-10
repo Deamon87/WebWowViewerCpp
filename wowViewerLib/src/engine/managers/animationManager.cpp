@@ -5,6 +5,7 @@
 #include <cmath>
 #include "animationManager.h"
 #include "../algorithms/animate.h"
+#include "../persistance/M2File.h"
 
 AnimationManager::AnimationManager(M2Data* m2File) {
     this->m_m2File = m2File;
@@ -154,21 +155,21 @@ inline void calcAnimationTransform(
         tranformMat = tranformMat * quaternionResult.ToMatrix4();
         isAnimated = true;
     }
-//
-//    if (scaleTrack.values.size > 0) {
-//        mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,0);
-//        mathfu::vec4 scaleResult = animateTrack<C3Vector, mathfu::vec4>(
-//                time,
-//                animationRecord->duration,
-//                animationIndex,
-//                scaleTrack,
-//                m2Data->global_loops,
-//                globalSequenceTimes,
-//                defaultValue);
-//
-//        tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
-//        isAnimated = true;
-//    }
+
+    if (scaleTrack.values.size > 0) {
+        mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,0);
+        mathfu::vec4 scaleResult = animateTrack<C3Vector, mathfu::vec4>(
+                time,
+                animationRecord->duration,
+                animationIndex,
+                scaleTrack,
+                m2Data->global_loops,
+                globalSequenceTimes,
+                defaultValue);
+
+        tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
+        isAnimated = true;
+    }
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(negatePivotPoint.xyz());
 }
 
@@ -221,7 +222,7 @@ void calcBoneBillboardMatrix(
 
     modelForward = cameraPoint.xyz().Normalized();
 
-    if ((boneDefinition->flags & 0x40) > 0) {
+    if ((boneDefinition->flags.cylindrical_billboard_lock_z) > 0) {
         //Cylindrical billboard
         modelUp = mathfu::vec3(0, 0, 1);
 
@@ -263,7 +264,11 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int bo
         boneMatrices[boneIndex] = boneMatrices[boneIndex] * boneMatrices[parentBone];
     }
 
-    if ((boneDefinition->flags & 0x278) == 0) {
+    if (!(boneDefinition->flags.transformed ||
+        boneDefinition->flags.spherical_billboard ||
+        boneDefinition->flags.cylindrical_billboard_lock_x ||
+        boneDefinition->flags.cylindrical_billboard_lock_y ||
+        boneDefinition->flags.cylindrical_billboard_lock_z)) {
         this->bonesIsCalculated[boneIndex] = true;
         return;
     }
@@ -276,7 +281,7 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int bo
     /* 2.1 Calculate billboard matrix if needed */
     mathfu::mat4 *billboardMatrix = nullptr;
 
-    if (((boneDefinition->flags & 0x8) > 0) || ((boneDefinition->flags & 0x40) > 0)) {
+    if ((boneDefinition->flags.spherical_billboard) || (boneDefinition->flags.cylindrical_billboard_lock_z)) {
         //From http://gamedev.stackexchange.com/questions/112270/calculating-rotation-matrix-for-an-object-relative-to-a-planets-surface-in-monog
         billboardMatrix = new mathfu::mat4();
 

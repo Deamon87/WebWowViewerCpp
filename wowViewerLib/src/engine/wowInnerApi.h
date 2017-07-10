@@ -8,11 +8,15 @@
 class M2Geom;
 class SkinGeom;
 class BlpTexture;
+class WmoMainGeom;
+class WmoGroupGeom;
+
 #include "opengl/header.h"
 #include "cache/cache.h"
 #include "geometry/m2Geom.h"
 #include "shader/ShaderRuntimeData.h"
-
+#include "geometry/wmoMainGeom.h"
+#include "geometry/wmoGroupGeom.h"
 
 
 class IWoWInnerApi {
@@ -20,6 +24,8 @@ public:
     virtual Cache<M2Geom>* getM2GeomCache() = 0;
     virtual Cache<SkinGeom>* getSkinGeomCache() = 0;
     virtual Cache<BlpTexture>* getTextureCache() = 0;
+    virtual Cache<WmoMainGeom>* getWmoMainCache() = 0;
+    virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() = 0;
 
     virtual ShaderRuntimeData *getM2Shader() = 0;
 

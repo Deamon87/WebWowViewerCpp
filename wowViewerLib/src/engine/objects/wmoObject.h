@@ -9,13 +9,23 @@
 #include "m2WmoObject.h"
 
 class WmoObject {
-    WmoObject(){
+    WmoObject(IWoWInnerApi *api) : m_api(api) {
 
     }
+
+    IWoWInnerApi *m_api;
+
+    WmoMainGeom *mainGeom = nullptr;
+    bool m_loading = false;
+    bool m_loaded = false;
+
 public:
     std::string getTextureName(int index);
 
     M2WmoObject& getDoodad(int index);
+    void setLoadingParam();
+    void startLoading();
+
 };
 
 

@@ -29,17 +29,23 @@ struct M2Sequence {
 struct M2CompBone                 // probably M2Bone  ≤ Vanilla
 {
     int32_t key_bone_id;            // Back-reference to the key bone lookup table. -1 if this is no key bone.
-    enum
+    struct
     {
-        spherical_billboard = 0x8,
-        cylindrical_billboard_lock_x = 0x10,
-        cylindrical_billboard_lock_y = 0x20,
-        cylindrical_billboard_lock_z = 0x40,
-        transformed = 0x200,
-        kinematic_bone = 0x400,       // MoP+: allow physics to influence this bone
-        helmet_anim_scaled = 0x1000,  // set blend_modificator to helmetAnimScalingRec.m_amount for this bone
-    };
-    uint32_t flags;
+        uint32_t unk_0x1 : 1;//0x1
+        uint32_t unk_0x2 : 1;//0x2
+        uint32_t unk_0x4 : 1;//0x4
+        uint32_t spherical_billboard : 1;// = 0x8,
+        uint32_t cylindrical_billboard_lock_x : 1;// = 0x10,
+        uint32_t cylindrical_billboard_lock_y : 1; // 0x20,
+        uint32_t cylindrical_billboard_lock_z : 1; // 0x40,
+        uint32_t unk_0x80 : 1; //0x80
+        uint32_t unk_0x100 : 1; //0x100
+        uint32_t transformed : 1;//= 0x200,
+
+        uint32_t kinematic_bone: 1;// = 0x400,       // MoP+: allow physics to influence this bone
+        uint32_t unk_0x800 : 1; //0x800
+        uint32_t helmet_anim_scaled : 1; //= 0x1000,  // set blend_modificator to helmetAnimScalingRec.m_amount for this bone
+    } flags;
     int16_t parent_bone;            // Parent bone ID or -1 if there is none.
     uint16_t submesh_id;            // Mesh part ID OR uDistToParent?
     union {                         // only ≥ BC ?

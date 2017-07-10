@@ -49,8 +49,9 @@ set(glfw_install_dir ${CMAKE_SOURCE_DIR}/lib/glfw)
 include_directories(${glfw_install_dir}/include)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	set(GLFW_STATIC_LIBRARIES ${CMAKE_SOURCE_DIR}/lib/glfw/lib/libglfw3dll.a)
+	set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}//lib/libglfw3dll.a)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}//lib/libglfw.so.3)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 #CURL
@@ -128,7 +129,8 @@ set_property(TARGET WebWoWViewerCpp PROPERTY CXX_STANDARD 17)
 message(INFO ${OPENGL_LIBRARIES})
 #glu32.a opengl32.a z
 target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} ${CURL_LIBRARIES} ${libzip_library} ${WowViewerLib})
-target_link_libraries(WebWoWViewerCpp ${CPR_LIBRARIES})
+target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES})
+#target_link_libraries(WebWoWViewerCpp opengl32)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 target_link_libraries(WebWoWViewerCpp ${CMAKE_SOURCE_DIR}/wowViewerLib/3rdparty/glew_win/lib/Release/x64/glew32.lib)
 target_link_libraries(WebWoWViewerCpp opengl32)

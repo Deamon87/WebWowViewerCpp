@@ -6,8 +6,8 @@ include(ExternalProject)
 #set(mathfu_build_benchmarks OFF CACHE BOOL "")
 #set(mathfu_build_tests OFF CACHE BOOL "")
 #ExternalProject_Add("mathfu"
-#        SOURCE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/mathfu
-#        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/mathfu -Dmathfu_build_tests="OFF CACHE BOOL" -Dmathfu_build_benchmarks="OFF CACHE BOOL"
+#        SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/mathfu
+#        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_SOURCE_DIR}/lib/mathfu -Dmathfu_build_tests="OFF CACHE BOOL" -Dmathfu_build_benchmarks="OFF CACHE BOOL"
 #        )
 
 set(mathfu_build_benchmarks OFF CACHE BOOL "")
@@ -39,7 +39,8 @@ include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
 #include_directories(${CMAKE_SOURCE_DIR}/lib/glsl)
 include_directories(${CMAKE_SOURCE_DIR}/src/opengl/)
 
-set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
+set(SOURCE_FILES src/engine/wowScene.cpp
+        src/engine/wowScene.h
         src/engine/shadersStructures.h
         src/engine/shaderHelperFunctions.h
         src/engine/shaders.h
@@ -74,7 +75,10 @@ set(SOURCE_FILES src/engine/wowScene.cpp src/engine/wowScene.h
         src/engine/objects/m2WmoObject.cpp
         src/engine/objects/m2WmoObject.h
         src/engine/objects/m2AdtObject.cpp
-        src/engine/objects/m2AdtObject.h)
+        src/engine/objects/m2AdtObject.h
+        src/engine/objects/adtObject.cpp
+        src/engine/objects/adtObject.h
+        src/engine/persistance/adtFile.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

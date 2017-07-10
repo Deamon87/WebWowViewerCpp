@@ -6,7 +6,7 @@
 #include <iostream>
 
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
-        : wmoMainCache(requestProcessor), wmoGeomCache(requestProcessor), m2GeomCache(requestProcessor), skinGeomCache(requestProcessor), textureCache(requestProcessor)  {
+        : wmoMainCache(requestProcessor), wmoGeomCache(requestProcessor), m2GeomCache(requestProcessor), skinGeomCache(requestProcessor), textureCache(requestProcessor), adtObjectCache(requestProcessor)  {
     constexpr const shaderDefinition *definition = getShaderDef("adtShader");
 //    constexpr const int attributeIndex = getShaderAttribute("m2Shader", "aNormal");
 //    constexpr const int attributeIndex = +m2Shader::Attribute::aNormal;
@@ -1008,10 +1008,12 @@ void WoWSceneImpl::activateM2ShaderAttribs() {
 
 
 WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
-	glewExperimental = true; // Needed in core profile
+#ifdef _WIN32
+    glewExperimental = true; // Needed in core profile
 	if (glewInit() != GLEW_OK) {
 		fprintf(stderr, "Failed to initialize GLEW\n");
 		return nullptr;
 	}
+#endif
     return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);
 }

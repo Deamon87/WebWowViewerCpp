@@ -19,6 +19,7 @@
 #include "stringTrim.h"
 #include "geometry/wmoGroupGeom.h"
 #include "geometry/wmoMainGeom.h"
+#include "objects/adtObject.h"
 
 
 class M2Object;
@@ -64,6 +65,13 @@ public:
     virtual Cache<BlpTexture> *getTextureCache() {
         return &textureCache;
     };
+    virtual Cache<WmoMainGeom>* getWmoMainCache() {
+        return &wmoMainCache;
+    };
+    virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() {
+        return &wmoGeomCache;
+    };
+
     virtual ShaderRuntimeData *getM2Shader() {
         return m2Shader;
     };
@@ -127,6 +135,7 @@ private:
     GLuint blackPixel = 0;
 
 
+    Cache<AdtObject> adtObjectCache;
     Cache<WmoGroupGeom> wmoGeomCache;
     Cache<WmoMainGeom> wmoMainCache;
     Cache<M2Geom> m2GeomCache;

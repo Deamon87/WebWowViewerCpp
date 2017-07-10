@@ -282,6 +282,7 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
 
 void beforeCrash(void);
 
+#ifdef _WIN32
 static const bool SET_TERMINATE = std::set_terminate(beforeCrash);
 
 void beforeCrash() {
@@ -303,13 +304,16 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
             break;
     }
 }
+#endif
 
 int main(int argc, char** argv) {
     CURL *curl = NULL;
     FILE *fp;
     CURLcode res;
 
+#ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
+#endif
 
     if( !glfwInit() )
     {
