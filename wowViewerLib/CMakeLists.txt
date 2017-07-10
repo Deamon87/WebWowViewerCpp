@@ -78,7 +78,10 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/m2AdtObject.h
         src/engine/objects/adtObject.cpp
         src/engine/objects/adtObject.h
-        src/engine/persistance/adtFile.h)
+        src/engine/persistance/adtFile.h
+        src/engine/objects/wmoGroupObject.cpp
+        src/engine/objects/wmoGroupObject.h
+        )
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

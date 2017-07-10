@@ -21,3 +21,9 @@ void WmoObject::startLoading() {
         mainGeom = wmoGeomCache->get(m_modelName);
     }
 }
+
+void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
+    m_modelName = modelName;
+
+    createPlacementMatrix(mapObjDef);
+}
