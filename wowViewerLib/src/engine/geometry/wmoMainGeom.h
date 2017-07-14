@@ -12,10 +12,12 @@
 class WmoMainGeom {
 public:
     void process(std::vector<unsigned char> &wmoMainFile);
-
-    static chunkDef<WmoMainGeom> wmoMainTable;
+    bool getIsLoaded();
 
 private:
+    static chunkDef<WmoMainGeom> wmoMainTable;
+    bool m_loaded = false;
+public:
     SMOHeader *header;
 
     SMOGroupInfo *groups;

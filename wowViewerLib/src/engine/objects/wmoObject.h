@@ -13,23 +13,40 @@ class WmoGroupObject;
 #include "wmoGroupObject.h"
 
 class WmoObject {
+
+public:
     WmoObject(IWoWInnerApi *api) : m_api(api) {
-
+        m_getTextureFunc = std::bind(&WmoObject::getTexture, this, 1);
     }
-
+private:
     IWoWInnerApi *m_api;
 
     WmoMainGeom *mainGeom = nullptr;
     bool m_loading = false;
     bool m_loaded = false;
 
+    std::function <BlpTexture&(int materialId)> m_getTextureFunc;
+
     mathfu::mat4 m_placementMatrix;
     mathfu::mat4 m_placementInvertMatrix;
     std::string m_modelName;
 
     std::vector<WmoGroupObject> groupObjects;
+    std::vector<BlpTexture> blpTextures;
 
 #define toRadian(x) (float) x*M_PI/180
+
+    inline mathfu::mat4 RotationX(float angle) {
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix4();
+    };
+
+    inline mathfu::mat4 RotationY(float angle) {
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix4();
+    };
+
+    inline mathfu::mat4 RotationZ(float angle) {
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix4();
+    };
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef){
         float TILESIZE = 533.333333333;
@@ -40,8 +57,9 @@ class WmoObject {
 
 
         mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
-        placementMatrix *= mathfu::mat4::RotationX(toRadian(90));
-        placementMatrix *= mathfu::mat4::RotationY(toRadian(90));
+
+        placementMatrix *= RotationX(toRadian(90));
+        placementMatrix *= RotationY(toRadian(90));
 
 
         placementMatrix *= mathfu::mat4::FromTranslationVector(mathfu::vec3(posx, posy, posz));
@@ -60,9 +78,13 @@ public:
     std::string getTextureName(int index);
 
     M2WmoObject& getDoodad(int index);
+    BlpTexture& getTexture(int materialId);
     void setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef);
     void startLoading();
 
+    void draw();
+
+    void createGroupObjects();
 };
 
 

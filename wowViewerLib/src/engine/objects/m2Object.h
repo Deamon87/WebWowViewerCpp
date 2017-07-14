@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <mathfu/glsl_mappings.h>
+#include "../wowInnerApi.h"
 #include "../geometry/m2Geom.h"
 #include "../geometry/skinGeom.h"
 #include "../wowScene.h"
@@ -21,8 +22,13 @@ private:
     void createAABB();
     bool m_loading = false;
     bool m_loaded = false;
+
+
 private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
+    mathfu::mat4 m_inversePlacementMatrix;
+    mathfu::vec3 m_worldPosition;
+
 
     CAaBox aabb;
 

@@ -31,7 +31,7 @@ void M2Object::setLoadParams (std::string modelName, int skinNum, std::vector<ui
     std::locale loc = std::locale("");
 
     std::string delimiter = ".";
-    std::string nameTemplate = modelName.substr(0, modelName.find(delimiter));
+    std::string nameTemplate = modelName.substr(0, modelName.find_last_of(delimiter));
     std::string modelFileName = nameTemplate + ".m2";
     std::string skinFileName = nameTemplate + "00.skin";
 //    std::for_each(modelFileName.begin(), modelFileName.end(), [](char & c) {
@@ -254,8 +254,6 @@ void M2Object::makeTextureArray() {
                 (m_meshIds[(subMesh->skinSectionId / 100)] != (subMesh->skinSectionId % 100))) {
             continue;
         }
-
-
 //        materialArray.push(materialData);
 
         auto op_count = skinTextureDefinition->textureCount;

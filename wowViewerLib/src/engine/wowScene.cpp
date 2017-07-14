@@ -50,15 +50,24 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     //Init caches
 
-    m2Object = new M2Object(this);
-    m2Object->setLoadParams(
-//            "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\CHANDELIERS\\KARAZANCHANDELIER_02.m2",
-            "WORLD\\EXPANSION01\\DOODADS\\GENERIC\\BLOODELF\\PLANETARIUM\\BE_PLANETARIUM.m2",
-//            "WORLD\\EXPANSION01\\DOODADS\\HELLFIREPENINSULA\\LAMPPOST\\ANCIENT_DRAINEI_LAMPPOST.m2",
-            0,
-            std::vector<uint8_t>(),
-            std::vector<std::string>()
-    );
+//    m2Object = new M2Object(this);
+//    m2Object->setLoadParams(
+////            "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\CHANDELIERS\\KARAZANCHANDELIER_02.m2",
+//            "WORLD\\EXPANSION01\\DOODADS\\GENERIC\\BLOODELF\\PLANETARIUM\\BE_PLANETARIUM.m2",
+////            "WORLD\\EXPANSION01\\DOODADS\\HELLFIREPENINSULA\\LAMPPOST\\ANCIENT_DRAINEI_LAMPPOST.m2",
+//            0,
+//            std::vector<uint8_t>(),
+//            std::vector<std::string>()
+//    );
+
+    SMMapObjDef def;
+    def.uniqueId = 0;
+    def.position = C3Vector(mathfu::vec3(0 + 17066.666666656, 0, 0 + 17066.666666656));
+    def.rotation = C3Vector(mathfu::vec3(0, 0, 0));
+    def.doodadSet = 0;
+
+    wmoObject = new WmoObject(this);
+    wmoObject->setLoadingParam("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO", def);
 }
 
 ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
@@ -756,9 +765,10 @@ void WoWSceneImpl::draw(double deltaTime) {
     int farPlane = 250;
     int nearPlane = 1;
     float fov = 45.0;
-    if (!testLoad) {
+    if (testLoad) {
         wmoMainCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO");
         wmoGeomCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY_002.wmo");
+        testLoad = false;
     }
 
     //If use camera settings
@@ -887,10 +897,14 @@ void WoWSceneImpl::draw(double deltaTime) {
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
 //    glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
-    activateM2Shader();
-    m2Object->draw(false, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
-    m2Object->draw(true, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
-    deactivateM2Shader();
+//    activateM2Shader();
+//    m2Object->draw(false, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
+//    m2Object->draw(true, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
+//    deactivateM2Shader();
+    activateWMOShader();
+    wmoObject->draw();
+    deactivateWMOShader();
+
 //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     /*

@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cctype>
 #include <locale>
+#include "wowInnerApi.h"
+
 #include "shadersStructures.h"
 #include "shader/ShaderRuntimeData.h"
 #include "../include/wowScene.h"
@@ -20,6 +22,7 @@
 #include "geometry/wmoGroupGeom.h"
 #include "geometry/wmoMainGeom.h"
 #include "objects/adtObject.h"
+#include "objects/wmoObject.h"
 
 
 class M2Object;
@@ -75,6 +78,9 @@ public:
     virtual ShaderRuntimeData *getM2Shader() {
         return m2Shader;
     };
+        virtual ShaderRuntimeData *getWmoShader() {
+        return wmoShader;
+    }
     virtual GLuint getBlackPixelTexture();
 
 private:
@@ -143,6 +149,7 @@ private:
     Cache<BlpTexture> textureCache;
 
     M2Object *m2Object = nullptr;
+    WmoObject *wmoObject = nullptr;
 
     void activateRenderFrameShader();
 

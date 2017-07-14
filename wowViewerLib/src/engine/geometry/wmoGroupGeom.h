@@ -10,6 +10,7 @@
 #include "../persistance/wmoFile.h"
 #include "../persistance/ChunkFileReader.h"
 #include "../opengl/header.h"
+#include "../wowInnerApi.h"
 
 class WmoGroupGeom {
 public:
@@ -24,9 +25,21 @@ public:
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 
     void createVBO();
+    bool isLoaded() { return m_loaded; };
     void createIndexVBO();
 
+    void draw(IWoWInnerApi *api, SMOMaterial *materials, std::function <BlpTexture&(int materialId)> getTextureFunc);
+
 private:
+    bool m_loaded;
+
+    int normalOffset;
+    int textOffset;
+    int textOffset2;
+    int colorOffset;
+    int colorOffset2;
+
+public:
     MOGP *mogp;
 
     int16_t *indicies;

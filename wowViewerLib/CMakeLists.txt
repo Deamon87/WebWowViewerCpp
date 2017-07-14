@@ -12,6 +12,8 @@ include(ExternalProject)
 
 set(mathfu_build_benchmarks OFF CACHE BOOL "")
 set(mathfu_build_tests OFF CACHE BOOL "")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/mathfu mathfu)
 

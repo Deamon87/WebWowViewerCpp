@@ -7,8 +7,8 @@
 
 class M2SkinProfile;
 #include <vector>
-#include "../persistance/M2File.h"
 #include "../wowInnerApi.h"
+#include "../persistance/M2File.h"
 #include "../objects/m2Helpers/M2MaterialInst.h"
 #include "../objects/m2Object.h"
 

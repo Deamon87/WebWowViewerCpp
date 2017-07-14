@@ -13,11 +13,7 @@ class WmoGroupGeom;
 
 #include "opengl/header.h"
 #include "cache/cache.h"
-#include "geometry/m2Geom.h"
 #include "shader/ShaderRuntimeData.h"
-#include "geometry/wmoMainGeom.h"
-#include "geometry/wmoGroupGeom.h"
-
 
 class IWoWInnerApi {
 public:
@@ -28,9 +24,15 @@ public:
     virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() = 0;
 
     virtual ShaderRuntimeData *getM2Shader() = 0;
+    virtual ShaderRuntimeData *getWmoShader() = 0;
 
     virtual GLuint getBlackPixelTexture() = 0;
 
 };
+
+#include "geometry/m2Geom.h"
+
+#include "geometry/wmoMainGeom.h"
+#include "geometry/wmoGroupGeom.h"
 
 #endif //WOWVIEWERLIB_WOWINNERAPI_H

@@ -185,13 +185,17 @@ struct SMOPoly
 
 struct SMOBatch
 {
-//#if  < Legion
-    /*0x00*/ int16_t unknown_box_min[3];              // -2,-2,-1, 2,2,3 in cameron -> seems to be a bounding box for culling
-  /*0x06*/ int16_t unknown_box_max[3];
-//#else
-//    /*0x00*/ uint8_t unknown[0xA];
-//    /*0x0A*/ uint16_t material_id_large;              // used if flag_use_uint16_t_material is set.
-//#endif
+    union {
+        struct {
+        /*0x00*/ int16_t unknown_box_min[3];              // -2,-2,-1, 2,2,3 in cameron -> seems to be a bounding box for culling
+        /*0x06*/ int16_t unknown_box_max[3];
+        } preLegion;
+        struct {
+        /*0x00*/ uint8_t unknown[0xA];
+        /*0x0A*/ uint16_t material_id_large;              // used if flag_use_uint16_t_material is set.
+        } postLegion;
+    };
+
     /*0x0C*/ uint32_t first_index;                    // index of the first face index used in MOVI
     /*0x10*/ uint16_t num_indices;                    // number of MOVI indices used
     /*0x12*/ uint16_t first_vertex;                   // index of the first vertex used in MOVT
