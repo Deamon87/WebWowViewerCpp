@@ -74,8 +74,6 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/geometry/wmoMainGeom.cpp
         src/engine/geometry/wmoMainGeom.h
         src/engine/persistance/ChunkFileReader.h
-        src/engine/objects/m2WmoObject.cpp
-        src/engine/objects/m2WmoObject.h
         src/engine/objects/m2AdtObject.cpp
         src/engine/objects/m2AdtObject.h
         src/engine/objects/adtObject.cpp
@@ -83,6 +81,8 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/adtFile.h
         src/engine/objects/wmoGroupObject.cpp
         src/engine/objects/wmoGroupObject.h
+        src/engine/objects/wmoObject.cpp
+        src/engine/objects/wmoObject.h
         )
 
 #add_dependencies(WoWViewerLib mathfu)

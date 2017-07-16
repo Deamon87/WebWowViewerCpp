@@ -7,16 +7,16 @@
 
 class WmoGroupObject;
 #include <string>
-#include "m2WmoObject.h"
 #include "../persistance/adtFile.h"
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include "wmoGroupObject.h"
+#include "m2Object.h"
 
 class WmoObject {
 
 public:
     WmoObject(IWoWInnerApi *api) : m_api(api) {
-        m_getTextureFunc = std::bind(&WmoObject::getTexture, this, 1);
+        m_getTextureFunc = std::bind(&WmoObject::getTexture, this, std::placeholders::_1);
     }
 private:
     IWoWInnerApi *m_api;
@@ -31,7 +31,7 @@ private:
     mathfu::mat4 m_placementInvertMatrix;
     std::string m_modelName;
 
-    std::vector<WmoGroupObject> groupObjects;
+    std::vector<WmoGroupObject*> groupObjects = std::vector<WmoGroupObject*>(0);
     std::vector<BlpTexture> blpTextures;
 
 #define toRadian(x) (float) x*M_PI/180
@@ -77,7 +77,7 @@ private:
 public:
     std::string getTextureName(int index);
 
-    M2WmoObject& getDoodad(int index);
+//    M2Object& getDoodad(int index);
     BlpTexture& getTexture(int materialId);
     void setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef);
     void startLoading();

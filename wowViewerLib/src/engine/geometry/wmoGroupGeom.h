@@ -40,6 +40,8 @@ private:
     int colorOffset2;
 
 public:
+    std::vector<uint8_t> m_wmoGroupFile;
+
     MOGP *mogp;
 
     int16_t *indicies;

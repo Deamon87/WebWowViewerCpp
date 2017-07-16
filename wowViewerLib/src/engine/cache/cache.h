@@ -66,6 +66,9 @@ public:
      */
     T* get (std::string fileName) {
         fileName = trimmed(fileName);
+        std::transform(fileName.begin(), fileName.end(),fileName.begin(), ::toupper);
+        std::replace(fileName.begin(), fileName.end(), '\\', '/');
+
 
         auto it = m_cache.find(fileName);
         if(it != m_cache.end())

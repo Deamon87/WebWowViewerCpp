@@ -125,10 +125,11 @@ int strcicmp(char const *a, char const *b)
 class RequestProcessor : public IFileRequest {
 public:
     RequestProcessor () {
-        char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
+//        char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
+        std::string url = "http://deamon87.github.io/WoWFiles/ironforge.zip";
 
         using namespace std::placeholders;
-        HttpFile httpFile(new std::string(url));
+        HttpFile httpFile(url);
         httpFile.setCallback(std::bind(&RequestProcessor::loadingFinished, this, _1));
         httpFile.startDownloading();
     }
@@ -214,6 +215,7 @@ public:
             m_fileRequester->provideFile(fileName, unzippedEntry, sum);
             delete(unzippedEntry);
         } else {
+            std::cout << "Could not load file " << std::string(fileName) << std::endl << std::flush;
             m_fileRequester->rejectFile(fileName);
         }
     };

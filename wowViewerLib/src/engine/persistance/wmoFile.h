@@ -42,7 +42,7 @@ struct SMOMaterial {
         uint32_t F_CLAMP_S : 1;                  // tex clamp S (force this material's textures to use clamp s addressing)
         uint32_t F_CLAMP_T : 1;                  // tex clamp T (force this material's textures to use clamp t addressing)
         uint32_t flag_0x100 : 1;
-        uint32_t unused: 23; // unused as of 7.0.1.20994
+        uint32_t unused: 22; // unused as of 7.0.1.20994
     } flags;
 
 /*004h*/  uint32_t shader;                 // Index into CMapObj::s_wmoShaderMetaData. See below (shader types).

@@ -3,6 +3,7 @@
 //
 
 #include "m2Geom.h"
+#include "skinGeom.h"
 #include "../shaderDefinitions.h"
 #include "../opengl/header.h"
 

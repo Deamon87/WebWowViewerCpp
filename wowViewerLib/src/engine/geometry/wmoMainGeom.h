@@ -18,6 +18,8 @@ private:
     static chunkDef<WmoMainGeom> wmoMainTable;
     bool m_loaded = false;
 public:
+    std::vector<uint8_t> m_wmoMainFile;
+
     SMOHeader *header;
 
     SMOGroupInfo *groups;

@@ -14,15 +14,14 @@ class WmoGroupObject;
 
 class WmoGroupObject {
 public:
-    WmoGroupObject(WmoObject &wmoObject, IWoWInnerApi *api, std::string fileName, SMOGroupInfo &groupInfo) : m_wmoObject(wmoObject), m_fileName(fileName){
+    WmoGroupObject(WmoObject &wmoObject, IWoWInnerApi *api, std::string fileName, SMOGroupInfo &groupInfo) : m_api(api), m_fileName(fileName){
 
     }
 
     void draw(SMOMaterial *materials, std::function <BlpTexture&(int materialId)> m_getTextureFunc);
 private:
     IWoWInnerApi *m_api;
-    WmoObject &m_wmoObject;
-    WmoGroupGeom *m_geom;
+    WmoGroupGeom *m_geom = nullptr;
     std::string m_fileName;
 
 

@@ -125,7 +125,9 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
 
 
 void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile) {
-    CChunkFileReader<WmoGroupGeom> reader(wmoGroupFile, &WmoGroupGeom::wmoGroupTable);
+    m_wmoGroupFile = wmoGroupFile;
+
+    CChunkFileReader<WmoGroupGeom> reader(m_wmoGroupFile, &WmoGroupGeom::wmoGroupTable);
     reader.processFile(*this);
 
     createVBO();
@@ -147,10 +149,10 @@ void WmoGroupGeom::createVBO() {
     std::vector<unsigned char> buffer (vboSizeInBytes);
 
     unsigned char *nextOffset = &buffer[0];
-    nextOffset = std::copy(makePtr(verticles),  makePtr(verticles+verticesLen), nextOffset);
-    normalOffset = nextOffset-&buffer[0]; nextOffset = std::copy(makePtr(normals),    makePtr(normals+normalsLen), nextOffset);
-    textOffset = nextOffset-&buffer[0];   nextOffset = std::copy(makePtr(textCoords), makePtr(textCoords+textureCoordsLen), nextOffset);
-    colorOffset = nextOffset-&buffer[0];  nextOffset = std::copy(makePtr(colorArray), makePtr(colorArray+cvLen), nextOffset);
+    nextOffset = std::copy(makePtr(verticles),  makePtr(&verticles[verticesLen]), nextOffset);
+    normalOffset = nextOffset-&buffer[0]; nextOffset = std::copy(makePtr(normals),    makePtr(&normals[normalsLen]), nextOffset);
+    textOffset = nextOffset-&buffer[0];   nextOffset = std::copy(makePtr(textCoords), makePtr(&textCoords[textureCoordsLen]), nextOffset);
+    colorOffset = nextOffset-&buffer[0];  nextOffset = std::copy(makePtr(colorArray), makePtr(&colorArray[cvLen]), nextOffset);
 
     glGenBuffers(1, &combinedVBO);
     glBindBuffer( GL_ARRAY_BUFFER, combinedVBO);
@@ -160,7 +162,7 @@ void WmoGroupGeom::createVBO() {
 void WmoGroupGeom::createIndexVBO() {
     glGenBuffers(1, &indexVBO);
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glBufferData( GL_ELEMENT_ARRAY_BUFFER, indicesLen, indicies, GL_STATIC_DRAW );
+    glBufferData( GL_ELEMENT_ARRAY_BUFFER, indicesLen*2, indicies, GL_STATIC_DRAW );
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
@@ -178,11 +180,11 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
     glBindBuffer(GL_ARRAY_BUFFER, this->combinedVBO);
 
     glEnableVertexAttribArray(+wmoShader::Attribute::aPosition);
-    glVertexAttribPointer(+wmoShader::Attribute::aPosition, 3, GL_FLOAT, false, 0, 0); // position
+    glVertexAttribPointer(+wmoShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0); // position
 //    if (shaderAttributes.aNormal != null) {
-        glVertexAttribPointer(+wmoShader::Attribute::aNormal, 3, GL_FLOAT, false, 0, (void *)normalOffset); // normal
+        glVertexAttribPointer(+wmoShader::Attribute::aNormal, 3, GL_FLOAT, GL_FALSE, 0, (void *)normalOffset); // normal
 //    }
-    glVertexAttribPointer(+wmoShader::Attribute::aTexCoord, 2, GL_FLOAT, false, 0, (void *)textOffset); // texcoord
+    glVertexAttribPointer(+wmoShader::Attribute::aTexCoord, 2, GL_FLOAT, GL_FALSE, 0, (void *)textOffset); // texcoord
 
 
 //    if (shaderAttributes.aTexCoord2 != null) {
@@ -197,7 +199,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
 
     if (isIndoor && (cvLen > 0)) {
         glEnableVertexAttribArray(+wmoShader::Attribute::aColor);
-        glVertexAttribPointer(+wmoShader::Attribute::aColor, 4, GL_UNSIGNED_BYTE, true, 0, (void *)colorOffset); // color
+        glVertexAttribPointer(+wmoShader::Attribute::aColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)colorOffset); // color
     } else {
         glDisableVertexAttribArray(+wmoShader::Attribute::aColor);
         glVertexAttrib4f(+wmoShader::Attribute::aColor, 1.0, 1.0, 1.0, 1.0);
@@ -250,7 +252,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
 
             glUniform1f(wmoShader->getUnf("uAlphaTest"), alphaTestVal);
         } else {
-            glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0d);
+            glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0f);
         }
 
         if (materials[texIndex].flags.F_UNCULLED) {
@@ -316,6 +318,6 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
             glBindTexture(GL_TEXTURE_2D, 0);
 //        }
     }
-    glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0d);
+    glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0f);
 
 }

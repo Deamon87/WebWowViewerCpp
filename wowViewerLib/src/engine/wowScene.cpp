@@ -67,7 +67,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     def.doodadSet = 0;
 
     wmoObject = new WmoObject(this);
-    wmoObject->setLoadingParam("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO", def);
+    wmoObject->setLoadingParam("World\\wmo\\KhazModan\\Cities\\Ironforge\\ironforge.wmo", def);
 }
 
 ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
@@ -886,7 +886,7 @@ void WoWSceneImpl::draw(double deltaTime) {
 //
 //
 //    var updateRes = this.graphManager.update(deltaTime);
-    m2Object->update(deltaTime, this->m_firstCamera.getCameraPosition(), lookAtMat4);
+    //m2Object->update(deltaTime, this->m_firstCamera.getCameraPosition(), lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
 //
 //    this.graphManager.checkCulling(perspectiveMatrixForCulling, lookAtMat4);
@@ -1018,6 +1018,36 @@ void WoWSceneImpl::activateM2ShaderAttribs() {
     glEnableVertexAttribArray(+m2Shader::Attribute::bones);
     glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
     glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
+}
+
+void WoWSceneImpl::activateWMOShader() {
+    glUseProgram(this->wmoShader->getProgram());
+
+    glEnableVertexAttribArray(+wmoShader::Attribute::aPosition);
+//    if (shaderAttributes.aNormal) {
+        glEnableVertexAttribArray(+wmoShader::Attribute::aNormal);
+//    }
+    glEnableVertexAttribArray(+wmoShader::Attribute::aTexCoord);
+    glEnableVertexAttribArray(+wmoShader::Attribute::aTexCoord2);
+    glEnableVertexAttribArray(+wmoShader::Attribute::aColor);
+    glEnableVertexAttribArray(+wmoShader::Attribute::aColor2);
+
+    glUniformMatrix4fv(this->wmoShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->wmoShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+
+    glUniform1i(this->wmoShader->getUnf("uTexture"), 0);
+    glUniform1i(this->wmoShader->getUnf("uTexture2"), 1);
+
+    glUniform1f(this->wmoShader->getUnf("uFogStart"), this->uFogStart);
+    glUniform1f(this->wmoShader->getUnf("uFogEnd"), this->uFogEnd);
+
+//    glUniform3fv(this->m2Shader->getUnf("shaderUniforms.uFogColor"), this->m_fogColor);
+
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void WoWSceneImpl::deactivateWMOShader() {
+
 }
 
 

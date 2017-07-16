@@ -13,7 +13,7 @@ typedef std::function<void (std::vector<unsigned char>*)> HTTPReadyCallback ;
 class HttpFile {
 
 public:
-    HttpFile(std::string *httpUrl){
+    HttpFile(std::string httpUrl){
         this->m_httpUrl = httpUrl;
         this->written = 0;
 //        this->m_callback = nullptr;
@@ -29,7 +29,7 @@ public:
     void writeToBuffer(void *buffer, long int size);
 
 private:
-    std::string *m_httpUrl;
+    std::string m_httpUrl;
     HTTPReadyCallback m_callback;
     CURL *curlInstance;
 

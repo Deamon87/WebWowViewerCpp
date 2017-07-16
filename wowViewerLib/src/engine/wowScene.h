@@ -23,9 +23,8 @@
 #include "geometry/wmoMainGeom.h"
 #include "objects/adtObject.h"
 #include "objects/wmoObject.h"
+#include "objects/m2Object.h"
 
-
-class M2Object;
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 

@@ -10,7 +10,7 @@ class M2SkinProfile;
 #include "../wowInnerApi.h"
 #include "../persistance/M2File.h"
 #include "../objects/m2Helpers/M2MaterialInst.h"
-#include "../objects/m2Object.h"
+//#include "../objects/m2Object.h"
 
 class M2Geom {
 public:
