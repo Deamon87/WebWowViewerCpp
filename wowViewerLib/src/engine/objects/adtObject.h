@@ -8,6 +8,7 @@
 
 #include <vector>
 #include "../persistance/ChunkFileReader.h"
+#include "../persistance/adtFile.h"
 
 class AdtObject {
 public:
@@ -15,6 +16,22 @@ public:
     void process(std::vector<unsigned char> &adtFile);
 private:
     static chunkDef<AdtObject> adtObjectTable;
+
+private:
+    SMMapHeader* mhdr;
+
+    SMChunkInfo* mcins;
+
+    char *textureNamesField;
+    int textureNamesFieldLen;
+
+    char *doodadNamesField;
+    int doodadNamesFieldLen;
+
+    char *wmoNamesField;
+    int wmoNamesFieldLen;
+
+
 };
 
 

@@ -25,8 +25,8 @@ private:
     std::string m_fileName;
 
 
-    bool m_loading;
-    bool m_loaded;
+    bool m_loading = false;
+    bool m_loaded = false;
 
     void startLoading();
 

@@ -22,6 +22,7 @@ chunkDef<AdtObject> AdtObject::adtObjectTable = {
                         {
                                 handler: [](AdtObject& object, ChunkData& chunkData){
                                     std::cout<<"Entered MHDR"<<std::endl;
+                                    chunkData.readValue(object.mhdr);
                                 }
                         }
                 },
@@ -30,6 +31,7 @@ chunkDef<AdtObject> AdtObject::adtObjectTable = {
                         {
                                 handler: [](AdtObject& object, ChunkData& chunkData){
                                     std::cout<<"Entered MCIN"<<std::endl;
+                                    chunkData.readValues(object.mcins, 16*16);
                                 }
                         }
                 },
@@ -38,6 +40,8 @@ chunkDef<AdtObject> AdtObject::adtObjectTable = {
                         {
                                 handler: [](AdtObject& object, ChunkData& chunkData){
                                     std::cout<<"Entered MTEX"<<std::endl;
+                                    object.textureNamesFieldLen = chunkData.chunkLen;
+                                    chunkData.readValues(object.textureNamesField, object.textureNamesFieldLen);
                                 }
                         }
                 },
@@ -46,6 +50,8 @@ chunkDef<AdtObject> AdtObject::adtObjectTable = {
                         {
                                 handler: [](AdtObject& object, ChunkData& chunkData){
                                     std::cout<<"Entered MMDX"<<std::endl;
+                                    object.doodadNamesFieldLen = chunkData.chunkLen;
+                                    chunkData.readValues(object.doodadNamesField, object.doodadNamesFieldLen);
                                 }
                         }
                 },
@@ -62,6 +68,8 @@ chunkDef<AdtObject> AdtObject::adtObjectTable = {
                         {
                                 handler: [](AdtObject& object, ChunkData& chunkData){
                                     std::cout<<"Entered MWMO"<<std::endl;
+                                    object.wmoNamesFieldLen = chunkData.chunkLen;
+                                    chunkData.readValues(object.wmoNamesField, object.wmoNamesFieldLen);
                                 }
                         }
                 },
