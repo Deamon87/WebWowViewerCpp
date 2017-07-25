@@ -7,173 +7,186 @@
 
 chunkDef<AdtObject> AdtObject::adtObjectTable = {
 
-        handler : [](AdtObject& object, ChunkData& chunkData){},
-        subChunks : {
-                {
-                        'MVER',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MVER"<<std::endl;
-                                }
-                        }
-                },
-                {
-                        'MHDR',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MHDR"<<std::endl;
-                                    chunkData.readValue(object.mhdr);
-                                }
-                        }
-                },
-                {
-                        'MCIN',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MCIN"<<std::endl;
-                                    chunkData.readValue(object.mcins);
-                                }
-                        }
-                },
-                {
-                        'MTEX',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MTEX"<<std::endl;
-                                    object.textureNamesFieldLen = chunkData.chunkLen;
-                                    chunkData.readValues(object.textureNamesField, object.textureNamesFieldLen);
-                                }
-                        }
-                },
-                {
-                        'MMDX',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MMDX"<<std::endl;
-                                    object.doodadNamesFieldLen = chunkData.chunkLen;
-                                    chunkData.readValues(object.doodadNamesField, object.doodadNamesFieldLen);
-                                }
-                        }
-                },
-                {
-                        'MMID',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MMID"<<std::endl;
-                                }
-                        }
-                },
-                {
-                        'MWMO',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MWMO"<<std::endl;
-                                    object.wmoNamesFieldLen = chunkData.chunkLen;
-                                    chunkData.readValues(object.wmoNamesField, object.wmoNamesFieldLen);
-                                }
-                        }
-                },
-                {
-                        'MWID',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MWID"<<std::endl;
-                                }
-                        }
-                },
-                {
-                        'MDDF',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MDDF"<<std::endl;
-                                }
-                        }
-                },
-                {
-                        'MODF',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MODF"<<std::endl;
-                                }
-                        }
-                },
-                {
-                        'MCNK',
-                        {
-                                handler: [](AdtObject& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MCNK"<<std::endl;
-                                    object.mcnkRead++;
-                                    chunkData.readValue(object.mapTile[object.mcnkRead]);
+    handler : [](AdtObject& object, ChunkData& chunkData){},
+    subChunks : {
+        {
+            'MVER',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MVER"<<std::endl;
+                }
+            }
+        },
+        {
+            'MHDR',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MHDR"<<std::endl;
+                  chunkData.readValue(object.mhdr);
+                }
+            }
+        },
+        {
+            'MCIN',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MCIN"<<std::endl;
+                  chunkData.readValue(object.mcins);
+                }
+            }
+        },
+        {
+            'MTEX',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MTEX"<<std::endl;
+                  char *textureNamesField;
+                  int textureNamesFieldLen = chunkData.chunkLen;
+                  chunkData.readValues(textureNamesField, textureNamesFieldLen);
 
-                                },
-                                subChunks : {
-                                        {
-                                                'MCVT',
-                                                {
-                                                        handler: [](AdtObject& object, ChunkData& chunkData){
-                                                            std::cout<<"Entered MCVT"<<std::endl;
-                                                            chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcvt);
-                                                        }
-                                                }
-                                        },
-                                        {
-                                                'MCLV',
-                                                {
-                                                        handler: [](AdtObject& object, ChunkData& chunkData){
-                                                            std::cout<<"Entered MCLV"<<std::endl;
-                                                        }
-                                                }
-                                        },
-                                        {
-                                                'MCCV',
-                                                {
-                                                        handler: [](AdtObject& object, ChunkData& chunkData){
-                                                            std::cout<<"Entered MCCV"<<std::endl;
-                                                            chunkData.readValue(object.mcnkStructs[object.mcnkRead].mccv);
-                                                        }
-                                                }
-                                        },
-                                        {
-                                                'MCNR',
-                                                {
-                                                        handler: [](AdtObject& object, ChunkData& chunkData){
-                                                            std::cout<<"Entered MCNR"<<std::endl;
-                                                            chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcnr);
-                                                        }
-                                                }
-                                        },
-                                        {
-                                                'MCLY',
-                                                {
-                                                        handler: [](AdtObject& object, ChunkData& chunkData){
-                                                            std::cout<<"Entered MCLY"<<std::endl;
-                                                            chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcly);
-                                                        }
-                                                }
-                                        },
-                                        {
-                                                'MCRF',
-                                                {
-                                                        handler: [](AdtObject& object, ChunkData& chunkData){
-                                                            std::cout<<"Entered MCRF"<<std::endl;
-                                                            chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcly);
-                                                        }
-                                                }
-                                        },
-                                        {
-                                                'MCAL',
-                                                {
-                                                        handler: [](AdtObject& object, ChunkData& chunkData){
-                                                            std::cout<<"Entered MCAL"<<std::endl;
-                                                            chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcal);
-                                                        }
-                                                }
-                                        }
-                                }
-                        }
-                },
-        }
+                  int i = 0;
+                  while (i < textureNamesFieldLen) {
+                    object.textureNames.push_back(std::string(textureNamesField+i));
+                    i+= object.textureNames[object.textureNames.size()-1].size()+1;
+                  }
 
+                }
+            }
+        },
+        {
+            'MMDX',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MMDX"<<std::endl;
+                  object.doodadNamesFieldLen = chunkData.chunkLen;
+                  chunkData.readValues(object.doodadNamesField, object.doodadNamesFieldLen);
+                }
+            }
+        },
+        {
+            'MMID',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MMID"<<std::endl;
+                }
+            }
+        },
+        {
+            'MWMO',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MWMO"<<std::endl;
+                  object.wmoNamesFieldLen = chunkData.chunkLen;
+                  chunkData.readValues(object.wmoNamesField, object.wmoNamesFieldLen);
+                }
+            }
+        },
+        {
+            'MWID',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MWID"<<std::endl;
+                }
+            }
+        },
+        {
+            'MDDF',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MDDF"<<std::endl;
+                }
+            }
+        },
+        {
+            'MODF',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                  std::cout<<"Entered MODF"<<std::endl;
+                }
+            }
+        },
+        {
+            'MCNK',
+            {
+                handler: [](AdtObject& object, ChunkData& chunkData){
+                    std::cout<<"Entered MCNK"<<std::endl;
+                    object.mcnkRead++;
+                    chunkData.readValue(object.mapTile[object.mcnkRead]);
+
+                    chunkData.
+
+
+
+                },
+                subChunks : {
+                    {
+                        'MCVT',
+                        {
+                            handler: [](AdtObject& object, ChunkData& chunkData){
+                              std::cout<<"Entered MCVT"<<std::endl;
+                              chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcvt);
+                            }
+                        }
+                    },
+                    {
+                        'MCLV',
+                        {
+                            handler: [](AdtObject& object, ChunkData& chunkData){
+                              std::cout<<"Entered MCLV"<<std::endl;
+                            }
+                        }
+                    },
+                    {
+                        'MCCV',
+                        {
+                            handler: [](AdtObject& object, ChunkData& chunkData){
+                              std::cout<<"Entered MCCV"<<std::endl;
+                              chunkData.readValue(object.mcnkStructs[object.mcnkRead].mccv);
+                            }
+                        }
+                    },
+                    {
+                        'MCNR',
+                        {
+                            handler: [](AdtObject& object, ChunkData& chunkData){
+                              std::cout<<"Entered MCNR"<<std::endl;
+                              chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcnr);
+                            }
+                        }
+                    },
+                    {
+                        'MCLY',
+                        {
+                            handler: [](AdtObject& object, ChunkData& chunkData){
+                              std::cout<<"Entered MCLY"<<std::endl;
+                              object.mcnkStructs[object.mcnkRead].mcly_count =
+                                  chunkData.chunkLen/sizeof(SMLayer);
+                              chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcly);
+                            }
+                        }
+                    },
+                    {
+                        'MCRF',
+                        {
+                            handler: [](AdtObject& object, ChunkData& chunkData){
+                              std::cout<<"Entered MCRF"<<std::endl;
+                              chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcrf);
+                            }
+                        }
+                    },
+                    {
+                        'MCAL',
+                        {
+                            handler: [](AdtObject& object, ChunkData& chunkData){
+                              std::cout<<"Entered MCAL"<<std::endl;
+                              chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcal);
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    }
 };
 
 void AdtObject::process(std::vector<unsigned char> &adtFile) {
@@ -182,8 +195,9 @@ void AdtObject::process(std::vector<unsigned char> &adtFile) {
 
     createTriangleStrip();
     createVBO();
+    loadAlphaTextures(256);
 //    createIndexVBO();
-    loaded = true;
+    m_loaded = true;
 }
 
 void AdtObject::createVBO() {
@@ -263,12 +277,115 @@ void AdtObject::createTriangleStrip() {
     stripOffsets.push_back(strips.size());
 }
 
-void AdtObject::loadAlphaTextures(int limit) {
 
+std::vector<uint8_t> AdtObject::processTexture(int wdtObjFlags, int i) {
+    mcnkStruct_t &mcnkObj = mcnkStructs[i];
+    uint8_t* alphaArray = mcnkObj.mcal;
+    SMLayer* layers = mcnkObj.mcly;
+
+    std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64);
+    if (layers == nullptr || alphaArray == nullptr) return currentLayer;
+    for (int j = 0; j < mcnkObj.mcly_count; j++ ) {
+        int alphaOffs = layers[j].offsetInMCAL;
+        int offO = j;
+        int readCnt = 0;
+        int readForThisLayer = 0;
+
+        if (layers[j].flags.alpha_map_compressed) {
+            //Compressed
+            //http://www.pxr.dk/wowdev/wiki/index.php?title=ADT/v18
+            while( readForThisLayer < 4096 )
+            {
+                // fill or copy mode
+                int fill = (alphaArray[alphaOffs] & 0x80 );
+                int n = alphaArray[alphaOffs] & 0x7F;
+                alphaOffs++;
+
+                for ( int k = 0; k < n; k++ )
+                {
+                    if (readForThisLayer == 4096) break;
+
+                    currentLayer[offO] = alphaArray[alphaOffs];
+                    readCnt++; readForThisLayer++;
+                    offO += 4;
+
+                    if (readCnt >=64) {
+                        readCnt = 0;
+                    }
+
+                    if( !fill ) alphaOffs++;
+                }
+                if( fill ) alphaOffs++;
+            }
+        } else {
+            //Uncompressed
+            if (((wdtObjFlags & 0x4) > 0) || ((wdtObjFlags & 0x80) > 0)) {
+                //Uncompressed (4096)
+                for (int iX =0; iX < 64; iX++) {
+                    for (int iY = 0; iY < 64; iY++){
+                        currentLayer[offO] = alphaArray[alphaOffs];
+
+                        offO += 4; readCnt+=1; readForThisLayer+=1; alphaOffs++;
+                    }
+                }
+            } else {
+                //Uncompressed (2048)
+                for (int iX =0; iX < 64; iX++) {
+                    for (int iY = 0; iY < 32; iY++){
+                        //Old world
+                        currentLayer[offO] = (alphaArray[alphaOffs] & 0x0f ) * 17;
+                        offO += 4;
+                        currentLayer[offO] =  ((alphaArray[alphaOffs] & 0xf0 ) >> 4) * 17;
+                        offO += 4;
+                        readCnt+=2; readForThisLayer+=2; alphaOffs++;
+                    }
+                }
+            }
+        }
+    }
+    return currentLayer;
 }
 
-void AdtObject::draw(std::vector<bool> &drawChunks) {
+void AdtObject::loadAlphaTextures(int limit) {
+    if (this->alphaTexturesLoaded>=256) return;
 
+    int chunkCount = mcnkRead+1;
+    int maxAlphaTexPerChunk = 4;
+    int alphaTexSize = 64;
+
+    int texWidth = alphaTexSize;
+    int texHeight = alphaTexSize;
+
+    int createdThisRun = 0;
+    for (int i = this->alphaTexturesLoaded; i < chunkCount; i++) {
+        GLuint alphaTexture;
+        glGenTextures(1, &alphaTexture);
+        std::vector<uint8_t> alphaTextureData = processTexture(0, i);
+
+        glBindTexture(GL_TEXTURE_2D, alphaTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, &alphaTextureData[0]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        alphaTextures.push_back(alphaTexture);
+
+        createdThisRun++;
+        if (createdThisRun >= limit) {
+            break;
+        }
+    }
+    this->alphaTexturesLoaded += createdThisRun;
+}
+
+
+
+void AdtObject::draw(std::vector<bool> &drawChunks) {
+    if (!m_loaded) return;
     GLuint blackPixelTexture = this->m_api->getBlackPixelTexture();
     ShaderRuntimeData *adtShader = this->m_api->getAdtShader();
 
@@ -284,24 +401,28 @@ void AdtObject::draw(std::vector<bool> &drawChunks) {
         glVertexAttribPointer(+adtShader::Attribute::aHeight, 1, GL_FLOAT, false, 0, (void *)((this->heightOffset + i * 145) * 4));
         glUniform3f(adtShader->getUnf("uPos"), mapTile[i].position.x, mapTile[i].position.y, mapTile[i].position.z);
 
-        if ((textureArray[i]) && (textureArray[i][0])) {
+        if (mcnkStructs[i].mcly_count <= 0) continue;
+
+        BlpTexture &layer0 = getAdtTexture(mcnkStructs[i].mcly[0].textureId);
+        if (layer0.getIsLoaded()) {
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, textureArray[i][0].texture);
+            glBindTexture(GL_TEXTURE_2D, layer0.getGlTexture());
 
             glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, this.alphaTextures[i]);
+            glBindTexture(GL_TEXTURE_2D, alphaTextures[i]);
 
-//Bind layer textures
-            for (int j = 1; j < textureArray[i].length; j++) {
+            //Bind layer textures
+            for (int j = 1; j < mcnkStructs[i].mcly_count; j++) {
                 glActiveTexture(GL_TEXTURE1 + j);
-                if ((textureArray[i][j]) && (textureArray[i][j].texture)) {
-//gl.enable(gl.TEXTURE_2D);
-                    glBindTexture(GL_TEXTURE_2D, textureArray[i][j].texture);
+                BlpTexture &layer_x = getAdtTexture(mcnkStructs[i].mcly[0].textureId);
+                if (layer_x.getIsLoaded()) {
+                    //gl.enable(gl.TEXTURE_2D);
+                    glBindTexture(GL_TEXTURE_2D, layer_x.getGlTexture());
                 } else {
                     glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
                 }
             }
-            for (int j = textureArray[i].length; j < 4; j++) {
+            for (int j = mcnkStructs[i].mcly_count; j < 4; j++) {
                 glActiveTexture(GL_TEXTURE1 + j);
                 glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
             }
@@ -310,4 +431,10 @@ void AdtObject::draw(std::vector<bool> &drawChunks) {
             glDrawElements(GL_TRIANGLE_STRIP, stripLength, GL_UNSIGNED_SHORT, (void *)(stripOffsets[i] * 2));
         }
     }
+}
+
+BlpTexture &AdtObject::getAdtTexture(int textureId) {
+    std::string &materialTexture = textureNames[textureId];
+
+    return *m_api->getTextureCache()->get(materialTexture);
 }

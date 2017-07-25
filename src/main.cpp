@@ -125,8 +125,8 @@ int strcicmp(char const *a, char const *b)
 class RequestProcessor : public IFileRequest {
 public:
     RequestProcessor () {
-//        char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
-        std::string url = "http://deamon87.github.io/WoWFiles/ironforge.zip";
+        char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
+//        std::string url = "http://deamon87.github.io/WoWFiles/ironforge.zip";
 
         using namespace std::placeholders;
         HttpFile httpFile(url);
@@ -356,6 +356,7 @@ int main(int argc, char** argv) {
     double currentFrame = glfwGetTime();
     double lastFrame = currentFrame;
     double deltaTime;
+
     do {
         currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;

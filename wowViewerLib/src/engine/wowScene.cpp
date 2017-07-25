@@ -68,9 +68,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     wmoObject = new WmoObject(this);
     wmoObject->setLoadingParam("World\\wmo\\KhazModan\\Cities\\Ironforge\\ironforge.wmo", def);
-
-    adtObject = getAdtGeomCache()->get("world\\maps\\Expansion01\\Expansion01_22_35.adt");
 //    adtObject
+
+    m_firstCamera.setCameraPos(-1663, 5098, 27);
 }
 
 ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
@@ -456,39 +456,6 @@ void WoWSceneImpl::activateReadDepthBuffer () {
 
     }
 }
-void WoWSceneImpl::activateAdtShader (){
-    this.currentShaderProgram = this.adtShader;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        var instExt = this.sceneApi.extensions.getInstancingExt();
-        var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
-
-        GL_useProgram(this.currentShaderProgram.program);
-
-        GL_enableVertexAttribArray(shaderAttributes.aHeight);
-        GL_enableVertexAttribArray(shaderAttributes.aIndex);
-
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uLookAtMat, false, this.lookAtMat4);
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
-
-        if (this.currentWdt && ((this.currentWdt.flags & 0x04) > 0)) {
-            GL_uniform1i(this.currentShaderProgram.shaderUniforms.uNewFormula, 1);
-        } else {
-            GL_uniform1i(this.currentShaderProgram.shaderUniforms.uNewFormula, 0);
-        }
-
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uLayer0, 0);
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uAlphaTexture, 1);
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uLayer1, 2);
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uLayer2, 3);
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uLayer3, 4);
-
-        GL_uniform1f(this.currentShaderProgram.shaderUniforms.uFogStart, this.uFogStart);
-        GL_uniform1f(this.currentShaderProgram.shaderUniforms.uFogEnd, this.uFogEnd);
-
-        GL_uniform3fv(this.currentShaderProgram.shaderUniforms.uFogColor, this.fogColor);
-    }
-}
 void WoWSceneImpl::activateWMOShader () {
     this.currentShaderProgram = this.wmoShader;
     if (this.currentShaderProgram) {
@@ -760,6 +727,10 @@ void glClearScreen() {
 }
 bool testLoad = false;
 void WoWSceneImpl::draw(double deltaTime) {
+    if (adtObject == nullptr) {
+        adtObject = getAdtGeomCache()->get("world\\maps\\Expansion01\\Expansion01_22_35.adt");
+    }
+
     glClearScreen();
     mathfu::vec3 *cameraVector;
 
@@ -881,6 +852,7 @@ void WoWSceneImpl::draw(double deltaTime) {
 //
 //    // Update objects
 //    this.adtGeomCache.processCacheQueue(10);
+    this->adtObjectCache.processCacheQueue(10);
     this->wmoGeomCache.processCacheQueue(10);
     this->wmoMainCache.processCacheQueue(10);
     this->m2GeomCache.processCacheQueue(10);
@@ -909,7 +881,9 @@ void WoWSceneImpl::draw(double deltaTime) {
 //    wmoObject->draw();
 //    deactivateWMOShader();
 
-//    adtObject->draw();
+    activateAdtShader();
+    std::vector<bool> drawAll(256, true);
+    adtObject->draw(drawAll);
 
 //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -1054,6 +1028,32 @@ void WoWSceneImpl::activateWMOShader() {
 
 void WoWSceneImpl::deactivateWMOShader() {
 
+}
+void WoWSceneImpl::activateAdtShader (){
+        glUseProgram(adtShader->getProgram());
+
+        glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
+        glEnableVertexAttribArray(+adtShader::Attribute::aIndex);
+
+        glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), false, 1, &this->m_lookAtMat4[0]);
+        glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), false, 1, &this->m_perspectiveMatrix[0]);
+
+//        if (this.currentWdt && ((this.currentWdt.flags & 0x04) > 0)) {
+//            glUniform1i(adtShader->getUnf("shaderUniforms.uNewFormula"), 1);
+//        } else {
+            glUniform1i(adtShader->getUnf("uNewFormula"), 0);
+//        }
+
+        glUniform1i(adtShader->getUnf("uLayer0"), 0);
+        glUniform1i(adtShader->getUnf("uAlphaTexture"), 1);
+        glUniform1i(adtShader->getUnf("uLayer1"), 2);
+        glUniform1i(adtShader->getUnf("uLayer2"), 3);
+        glUniform1i(adtShader->getUnf("uLayer3"), 4);
+
+        glUniform1f(adtShader->getUnf("uFogStart"), this->uFogStart);
+        glUniform1f(adtShader->getUnf("uFogEnd"), this->uFogEnd);
+
+//        glUniform3fv(adtShader->getUnf("shaderUniforms.uFogColor"), this->fogColor);
 }
 
 

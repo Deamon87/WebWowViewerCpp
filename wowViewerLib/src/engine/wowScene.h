@@ -37,6 +37,7 @@ public:
         fileData.assign(data, data+fileLength);
         std::string s_fileName(fileName);
 
+        adtObjectCache.provideFile(s_fileName, fileData);
         wmoGeomCache.provideFile(s_fileName, fileData);
         wmoMainCache.provideFile(s_fileName, fileData);
         m2GeomCache.provideFile(s_fileName, fileData);
@@ -46,6 +47,7 @@ public:
     virtual void rejectFile(const char* fileName) {
         std::string s_fileName(fileName);
 
+        adtObjectCache.reject(s_fileName);
         wmoGeomCache.reject(s_fileName);
         wmoMainCache.reject(s_fileName);
         m2GeomCache.reject(s_fileName);

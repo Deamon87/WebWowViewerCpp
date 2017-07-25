@@ -19,6 +19,9 @@ struct mcnkStruct_t {
     MCCV *mccv;
     SMNormal *mcnr;
     SMLayer *mcly;
+    int mcly_count;
+    uint8_t *mcrf;
+
     uint8_t *mcal;
 };
 
@@ -30,6 +33,7 @@ public:
     }
     AdtObject(IWoWInnerApi *api) : m_api(api), alphaTextures()  {}
     void process(std::vector<unsigned char> &adtFile);
+    void draw(std::vector<bool> &drawChunks);
 private:
     static chunkDef<AdtObject> adtObjectTable;
 
@@ -40,8 +44,7 @@ private:
 
     IWoWInnerApi *m_api;
     int alphaTexturesLoaded = 0;
-    std::vector<char> alphaTextures;
-    bool loaded;
+    bool m_loaded = false;
 
     std::vector<int16_t> strips;
     std::vector<int> stripOffsets;
@@ -59,8 +62,8 @@ private:
         SMChunkInfo chunkInfo[16][16];
     } *mcins;
 
-    char *textureNamesField;
-    int textureNamesFieldLen;
+    std::vector<std::string> textureNames;
+    std::vector<GLuint> alphaTextures;
 
     char *doodadNamesField;
     int doodadNamesFieldLen;
@@ -72,7 +75,9 @@ private:
     SMChunk mapTile[16*16];
     mcnkStruct_t mcnkStructs[16*16];
 
-    void draw(std::vector<bool> &drawChunks);
+    BlpTexture & getAdtTexture(int textureId);
+    std::vector<uint8_t> processTexture(int wdtObjFlags, int i);
+
 };
 
 

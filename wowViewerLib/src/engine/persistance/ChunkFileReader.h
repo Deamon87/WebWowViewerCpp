@@ -55,6 +55,7 @@ struct chunkDef {
     std::function<void (T&, ChunkData&)> handler;
     std::map<unsigned int,chunkDef> subChunks;
 };
+
 template <typename T>
 class CChunkFileReader {
 private:
