@@ -163,7 +163,7 @@ struct SMNormal {
     struct MCNREntry {
         int8_t normal[3];             // normalized. X, Z, Y. 127 == 1.0, -127 == -1.0.
     } entries[9*9+8*8];
-    uint8_t unknown[3*3+2*2];       // this data is not included in the MCNR chunk but additional data which purpose is unknown. 0.5.3.3368 lists this as padding
+    //uint8_t unknown[3*3+2*2];       // this data is not included in the MCNR chunk but additional data which purpose is unknown. 0.5.3.3368 lists this as padding
     // always 0 112 245  18 0  8 0 0  0 84  245 18 0. Nobody yet found a different pattern. The data is not derived from the normals.
     // It also does not seem that the client reads this data. --Schlumpf (talk) 23:01, 26 July 2015 (UTC)
     // While stated that this data is not "included in the MCNR chunk", the chunk-size defined for the MCNR chunk does cover this data. --Kruithne Feb 2016

@@ -58,6 +58,9 @@ public:
         return &this->m_firstCamera;
     };
 public:
+    virtual Cache<AdtObject> *getAdtGeomCache() {
+        return &adtObjectCache;
+    }
     virtual Cache<M2Geom> *getM2GeomCache() {
         return &m2GeomCache;
     };
@@ -77,8 +80,11 @@ public:
     virtual ShaderRuntimeData *getM2Shader() {
         return m2Shader;
     };
-        virtual ShaderRuntimeData *getWmoShader() {
+    virtual ShaderRuntimeData *getWmoShader() {
         return wmoShader;
+    }
+    virtual ShaderRuntimeData *getAdtShader() {
+        return adtShader;
     }
     virtual GLuint getBlackPixelTexture();
 
@@ -149,6 +155,7 @@ private:
 
     M2Object *m2Object = nullptr;
     WmoObject *wmoObject = nullptr;
+    AdtObject *adtObject = nullptr;
 
     void activateRenderFrameShader();
 

@@ -14,9 +14,11 @@ class WmoGroupGeom;
 #include "opengl/header.h"
 #include "cache/cache.h"
 #include "shader/ShaderRuntimeData.h"
+#include "objects/adtObject.h"
 
 class IWoWInnerApi {
 public:
+    virtual Cache<AdtObject>* getAdtGeomCache() = 0;
     virtual Cache<M2Geom>* getM2GeomCache() = 0;
     virtual Cache<SkinGeom>* getSkinGeomCache() = 0;
     virtual Cache<BlpTexture>* getTextureCache() = 0;
@@ -25,6 +27,7 @@ public:
 
     virtual ShaderRuntimeData *getM2Shader() = 0;
     virtual ShaderRuntimeData *getWmoShader() = 0;
+    virtual ShaderRuntimeData *getAdtShader() = 0;
 
     virtual GLuint getBlackPixelTexture() = 0;
 

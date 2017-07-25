@@ -68,6 +68,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     wmoObject = new WmoObject(this);
     wmoObject->setLoadingParam("World\\wmo\\KhazModan\\Cities\\Ironforge\\ironforge.wmo", def);
+
+    adtObject = getAdtGeomCache()->get("world\\maps\\Expansion01\\Expansion01_22_35.adt");
+//    adtObject
 }
 
 ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
@@ -901,9 +904,12 @@ void WoWSceneImpl::draw(double deltaTime) {
 //    m2Object->draw(false, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
 //    m2Object->draw(true, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
 //    deactivateM2Shader();
-    activateWMOShader();
-    wmoObject->draw();
-    deactivateWMOShader();
+
+//    activateWMOShader();
+//    wmoObject->draw();
+//    deactivateWMOShader();
+
+//    adtObject->draw();
 
 //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
