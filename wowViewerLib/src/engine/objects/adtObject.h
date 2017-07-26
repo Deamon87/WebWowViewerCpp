@@ -19,7 +19,6 @@ struct mcnkStruct_t {
     MCCV *mccv;
     SMNormal *mcnr;
     SMLayer *mcly;
-    int mcly_count;
     uint8_t *mcrf;
 
     uint8_t *mcal;
@@ -29,7 +28,9 @@ class AdtObject {
 public:
     AdtObject() : alphaTextures(){
         m_api = nullptr;
-
+    }
+    void setApi(IWoWInnerApi *api) {
+        m_api = api;
     }
     AdtObject(IWoWInnerApi *api) : m_api(api), alphaTextures()  {}
     void process(std::vector<unsigned char> &adtFile);

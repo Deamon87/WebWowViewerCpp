@@ -728,7 +728,9 @@ void glClearScreen() {
 bool testLoad = false;
 void WoWSceneImpl::draw(double deltaTime) {
     if (adtObject == nullptr) {
+
         adtObject = getAdtGeomCache()->get("world\\maps\\Expansion01\\Expansion01_22_35.adt");
+        adtObject->setApi(this);
     }
 
     glClearScreen();
@@ -1035,8 +1037,8 @@ void WoWSceneImpl::activateAdtShader (){
         glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
         glEnableVertexAttribArray(+adtShader::Attribute::aIndex);
 
-        glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), false, 1, &this->m_lookAtMat4[0]);
-        glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), false, 1, &this->m_perspectiveMatrix[0]);
+        glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+        glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
 
 //        if (this.currentWdt && ((this.currentWdt.flags & 0x04) > 0)) {
 //            glUniform1i(adtShader->getUnf("shaderUniforms.uNewFormula"), 1);

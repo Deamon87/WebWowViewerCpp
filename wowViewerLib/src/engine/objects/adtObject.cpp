@@ -113,9 +113,37 @@ chunkDef<AdtObject> AdtObject::adtObjectTable = {
                     object.mcnkRead++;
                     chunkData.readValue(object.mapTile[object.mcnkRead]);
 
-                    chunkData.
+                    SMChunk chunk = object.mapTile[object.mcnkRead];
+                    chunkDef<AdtObject> *def = &AdtObject::adtObjectTable.subChunks['MCNK'];
 
+                    //1. Load MCVT
+                    if (chunk.ofsHeight > 0) {
+                        int offset = chunkData.dataOffset + chunk.ofsHeight - 8;
+                        chunkData.processChunkAtOffs(offset, object, def);
+                    }
+//                    2. Load MCNR
+                    if (chunk.ofsNormal > 0) {
+                        int offset = chunkData.dataOffset + chunk.ofsNormal - 8;
+                        chunkData.processChunkAtOffs(offset, object, def);
+                    }
+//                    3. Load MCLY
+                    if (chunk.ofsLayer > 0) {
+                        int offset = chunkData.dataOffset + chunk.ofsLayer - 8;
+                        chunkData.processChunkAtOffs(offset, object, def);
+                    }
+//                    4. Load MCAL
+                    if (chunk.ofsAlpha > 0) {
+                        int offset = chunkData.dataOffset + chunk.ofsAlpha - 8;
+                        chunkData.processChunkAtOffsWithSize(offset, chunk.sizeAlpha, object, def);
+                    }
+//                    5. Load MCRF
+                    if (chunk.ofsRefs >  0) {
+                        int offset = chunkData.dataOffset + chunk.ofsRefs - 8;
+                        chunkData.processChunkAtOffs(offset, object, def);
+                    }
 
+                    //Force stop the parsing of chunk
+                    chunkData.bytesRead = chunkData.chunkLen;
 
                 },
                 subChunks : {
@@ -159,8 +187,8 @@ chunkDef<AdtObject> AdtObject::adtObjectTable = {
                         {
                             handler: [](AdtObject& object, ChunkData& chunkData){
                               std::cout<<"Entered MCLY"<<std::endl;
-                              object.mcnkStructs[object.mcnkRead].mcly_count =
-                                  chunkData.chunkLen/sizeof(SMLayer);
+//                              object.mcnkStructs[object.mcnkRead].mcly_count =
+//                                  chunkData.chunkLen/sizeof(SMLayer);
                               chunkData.readValue(object.mcnkStructs[object.mcnkRead].mcly);
                             }
                         }
@@ -190,8 +218,8 @@ chunkDef<AdtObject> AdtObject::adtObjectTable = {
 };
 
 void AdtObject::process(std::vector<unsigned char> &adtFile) {
-    CChunkFileReader<AdtObject> reader(adtFile, &AdtObject::adtObjectTable);
-    reader.processFile(*this);
+    CChunkFileReader reader(adtFile);
+    reader.processFile(*this, &AdtObject::adtObjectTable);
 
     createTriangleStrip();
     createVBO();
@@ -285,7 +313,7 @@ std::vector<uint8_t> AdtObject::processTexture(int wdtObjFlags, int i) {
 
     std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64);
     if (layers == nullptr || alphaArray == nullptr) return currentLayer;
-    for (int j = 0; j < mcnkObj.mcly_count; j++ ) {
+    for (int j = 0; j < mapTile[i].nLayers; j++ ) {
         int alphaOffs = layers[j].offsetInMCAL;
         int offO = j;
         int readCnt = 0;
@@ -401,7 +429,7 @@ void AdtObject::draw(std::vector<bool> &drawChunks) {
         glVertexAttribPointer(+adtShader::Attribute::aHeight, 1, GL_FLOAT, false, 0, (void *)((this->heightOffset + i * 145) * 4));
         glUniform3f(adtShader->getUnf("uPos"), mapTile[i].position.x, mapTile[i].position.y, mapTile[i].position.z);
 
-        if (mcnkStructs[i].mcly_count <= 0) continue;
+        if (mapTile[i].nLayers <= 0) continue;
 
         BlpTexture &layer0 = getAdtTexture(mcnkStructs[i].mcly[0].textureId);
         if (layer0.getIsLoaded()) {
@@ -412,9 +440,9 @@ void AdtObject::draw(std::vector<bool> &drawChunks) {
             glBindTexture(GL_TEXTURE_2D, alphaTextures[i]);
 
             //Bind layer textures
-            for (int j = 1; j < mcnkStructs[i].mcly_count; j++) {
+            for (int j = 1; j < mapTile[i].nLayers; j++) {
                 glActiveTexture(GL_TEXTURE1 + j);
-                BlpTexture &layer_x = getAdtTexture(mcnkStructs[i].mcly[0].textureId);
+                BlpTexture &layer_x = getAdtTexture(mcnkStructs[i].mcly[j].textureId);
                 if (layer_x.getIsLoaded()) {
                     //gl.enable(gl.TEXTURE_2D);
                     glBindTexture(GL_TEXTURE_2D, layer_x.getGlTexture());
@@ -422,7 +450,7 @@ void AdtObject::draw(std::vector<bool> &drawChunks) {
                     glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
                 }
             }
-            for (int j = mcnkStructs[i].mcly_count; j < 4; j++) {
+            for (int j = mapTile[i].nLayers; j < 4; j++) {
                 glActiveTexture(GL_TEXTURE1 + j);
                 glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
             }

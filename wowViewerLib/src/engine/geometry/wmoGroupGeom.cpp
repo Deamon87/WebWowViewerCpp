@@ -127,8 +127,8 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
 void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile) {
     m_wmoGroupFile = wmoGroupFile;
 
-    CChunkFileReader<WmoGroupGeom> reader(m_wmoGroupFile, &WmoGroupGeom::wmoGroupTable);
-    reader.processFile(*this);
+    CChunkFileReader reader(m_wmoGroupFile);
+    reader.processFile(*this, &WmoGroupGeom::wmoGroupTable);
 
     createVBO();
     createIndexVBO();

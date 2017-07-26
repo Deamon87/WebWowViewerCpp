@@ -363,7 +363,7 @@ int main(int argc, char** argv) {
         lastFrame = currentFrame;
 
 
-            scene->draw(deltaTime*1000);
+        scene->draw(deltaTime*1000);
 
 
         calcFPS(window, 2.0, "WoW ");
