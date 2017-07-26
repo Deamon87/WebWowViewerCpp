@@ -9,7 +9,11 @@
 #include <map>
 #include <iostream>
 
-class ChunkData {
+
+
+class CChunkFileReader;
+
+class ChunkData : public CChunkFileReader{
 public:
     ChunkData (){
         chunkIdent = 0;
@@ -18,7 +22,6 @@ public:
         bytesRead = 0;
 
         chunkData = nullptr;
-        fileData = nullptr;
     }
     unsigned int chunkIdent;
     int chunkLen;
@@ -27,7 +30,7 @@ public:
     int bytesRead;
     int dataOffset;
     void *chunkData;
-    void *fileData;
+
 
 public:
     template<typename T> inline void readValue(T &value) {
@@ -56,19 +59,21 @@ struct chunkDef {
     std::map<unsigned int,chunkDef> subChunks;
 };
 
-template <typename T>
 class CChunkFileReader {
-private:
-    std::vector<unsigned char> &m_file;
-    chunkDef<T> *m_sectionReaders;
+protected:
+    std::vector<unsigned char> *m_file;
+    void *fileData;
+    int regionSizeToProcess;
+
 public:
-    CChunkFileReader(std::vector<unsigned char> &file, chunkDef<T> *sectionReaders) : m_file(file), m_sectionReaders(sectionReaders){
+    CChunkFileReader() : m_file(nullptr){
+      }
+    CChunkFileReader(std::vector<unsigned char> &file) : m_file(&file){
+        regionSizeToProcess = m_file->size();
+        fileData = &m_file[0];
     }
 
-    unsigned long getFileSize () {
-        return m_file.size();
-    }
-
+    template <typename T>
     void processChunkAtOffsWithSize (int &offs, int size, T &resultObj, chunkDef<T> *parentSectionHandlerProc) {
         ChunkData chunk = this->loadChunkAtOffset(offs, size);
 
@@ -81,7 +86,7 @@ public:
         this->processChunk(sectionHandlerProc, chunk, resultObj);
     }
 
-
+    template <typename T>
     void processChunkAtOffs (int &offs, T &resultObj, chunkDef<T> *parentSectionHandlerProc) {
         ChunkData chunk = this->loadChunkAtOffset(offs, -1);
         chunkDef<T> * sectionHandlerProc;
@@ -94,6 +99,7 @@ public:
         this->processChunk(sectionHandlerProc, chunk, resultObj);
     }
 
+    template <typename T>
     void loopOverSubChunks(chunkDef<T> * &sectionHandlerProc, int chunkLoadOffset, int chunkEndOffset, T &resultObj){
         ChunkData subChunk;
         while (chunkLoadOffset < chunkEndOffset) {
@@ -111,6 +117,7 @@ public:
         }
     }
 
+    template <typename T>
     void processChunk(chunkDef<T> * &sectionHandlerProc, ChunkData &chunk, T &resultObj) {
         sectionHandlerProc->handler(resultObj, chunk);
 
@@ -128,8 +135,10 @@ public:
             }
         }
     }
-    void processFile(T &resultObj) {
-        loopOverSubChunks(m_sectionReaders, 0, m_file.size(), resultObj);
+
+    template <typename T>
+    void processFile(T &resultObj, chunkDef<T> *sectionReaders) {
+        loopOverSubChunks(sectionReaders, 0, regionSizeToProcess, resultObj);
     }
 
     ChunkData loadChunkAtOffset(int &offset, int size) {
@@ -138,13 +147,15 @@ public:
         /* Read chunk header */
         ChunkData chunkData;
         chunkData.currentOffset = offset;
-        chunkData.fileData = &m_file[0];
+        chunkData.fileData = fileData;
 
         // 8 is length of chunk header
 
-        if (offs + 8 < m_file.size()) {
+        if (offs + 8 < regionSizeToProcess) {
             chunkData.readValue(chunkData.chunkIdent);
             chunkData.readValue(chunkData.chunkLen);
+            chunkData.regionSizeToProcess = chunkData.chunkLen;
+
             chunkData.bytesRead = 0;
 
             if (size != -1) {
@@ -154,10 +165,11 @@ public:
             offset = chunkData.dataOffset + chunkData.chunkLen;
         }
 
-
         return chunkData;
     }
 };
+
+
 
 
 
