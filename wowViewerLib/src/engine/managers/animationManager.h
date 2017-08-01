@@ -7,7 +7,7 @@
 
 
 #include <vector>
-#include "../persistance/M2File.h"
+#include "../persistance/header/M2FileHeader.h"
 
 class AnimationManager {
 private:

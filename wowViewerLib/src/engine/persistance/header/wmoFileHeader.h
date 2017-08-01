@@ -2,8 +2,8 @@
 // Created by deamon on 19.06.17.
 //
 
-#ifndef WOWVIEWERLIB_WMOFILE_H
-#define WOWVIEWERLIB_WMOFILE_H
+#ifndef WOWVIEWERLIB_WMOFILEHEADER_H
+#define WOWVIEWERLIB_WMOFILEHEADER_H
 #include "commonFileStructs.h"
 
 struct SMOHeader
@@ -218,4 +218,4 @@ struct t_BSP_NODE
     float    fDist;
 };
 
-#endif //WOWVIEWERLIB_WMOFILE_H
+#endif //WOWVIEWERLIB_WMOFILEHEADER_H

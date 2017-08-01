@@ -2,8 +2,8 @@
 // Created by deamon on 19.06.17.
 //
 
-#ifndef WOWVIEWERLIB_BLPFILE_H
-#define WOWVIEWERLIB_BLPFILE_H
+#ifndef WOWVIEWERLIB_BLPFILEHEADER_H
+#define WOWVIEWERLIB_BLPFILEHEADER_H
 #include <cstdint>
 
 struct BlpFile{
@@ -19,4 +19,4 @@ struct BlpFile{
     int32_t lengths[16];
     uint8_t palette[1024];
 };
-#endif //WOWVIEWERLIB_BLPFILE_H
+#endif //WOWVIEWERLIB_BLPFILEHEADER_H

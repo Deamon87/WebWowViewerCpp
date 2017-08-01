@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_BLPTEXTURE_H
 
 #include "../opengl/header.h"
-#include "../persistance/blpFile.h"
+#include "../persistance/header/blpFileHeader.h"
 #include <vector>
 
 class BlpTexture {

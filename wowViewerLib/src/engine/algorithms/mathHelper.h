@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_MATHHELPER_H
 
 
-#include "../persistance/commonFileStructs.h"
+#include "../persistance/header/commonFileStructs.h"
 
 class MathHelper {
 public:

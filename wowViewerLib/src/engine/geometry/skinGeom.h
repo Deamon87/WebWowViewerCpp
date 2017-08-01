@@ -7,7 +7,7 @@
 
 #include <vector>
 #include "../opengl/header.h"
-#include "../persistance/skinFile.h"
+#include "../persistance/header/skinFileHeader.h"
 
 class SkinGeom {
 public:

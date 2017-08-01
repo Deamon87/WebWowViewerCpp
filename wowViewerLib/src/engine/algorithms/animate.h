@@ -5,7 +5,7 @@
 #ifndef WOWVIEWERLIB_ANIMATE_H
 #define WOWVIEWERLIB_ANIMATE_H
 
-#include "../persistance/M2File.h"
+#include "../persistance/header/M2FileHeader.h"
 #include <vector>
 int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key);
 

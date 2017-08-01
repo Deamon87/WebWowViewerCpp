@@ -7,8 +7,8 @@
 
 
 #include <vector>
-#include "../persistance/wmoFile.h"
-#include "../persistance/ChunkFileReader.h"
+#include "../persistance/header/wmoFileHeader.h"
+#include "../persistance/helper/ChunkFileReader.h"
 #include "../opengl/header.h"
 #include "../wowInnerApi.h"
 

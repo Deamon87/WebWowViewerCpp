@@ -6,8 +6,8 @@
 #define WOWVIEWERLIB_WMOMAINGEOM_H
 
 #include <vector>
-#include "../persistance/ChunkFileReader.h"
-#include "../persistance/wmoFile.h"
+#include "../persistance/helper/ChunkFileReader.h"
+#include "../persistance/header/wmoFileHeader.h"
 
 class WmoMainGeom {
 public:

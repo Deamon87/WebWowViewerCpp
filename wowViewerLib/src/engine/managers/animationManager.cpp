@@ -5,7 +5,7 @@
 #include <cmath>
 #include "animationManager.h"
 #include "../algorithms/animate.h"
-#include "../persistance/M2File.h"
+#include "../persistance/header/M2FileHeader.h"
 
 AnimationManager::AnimationManager(M2Data* m2File) {
     this->m_m2File = m2File;

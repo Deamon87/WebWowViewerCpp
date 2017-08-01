@@ -2,8 +2,8 @@
 // Created by deamon on 16.06.17.
 //
 
-#ifndef WOWVIEWERLIB_M2FILE_H
-#define WOWVIEWERLIB_M2FILE_H
+#ifndef WOWVIEWERLIB_M2FILEHEADER_H
+#define WOWVIEWERLIB_M2FILEHEADER_H
 
 #include "commonFileStructs.h"
 
@@ -336,4 +336,4 @@ struct M2Data {
 };
 
 
-#endif //WOWVIEWERLIB_M2FILE_H
+#endif //WOWVIEWERLIB_M2FILEHEADER_H

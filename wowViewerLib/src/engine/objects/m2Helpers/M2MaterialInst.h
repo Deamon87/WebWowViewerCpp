@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_M2MATERIALINST_H
 
 #include <string>
-#include "../../persistance/blpFile.h"
+#include "../../persistance/header/blpFileHeader.h"
 #include "../../texture/BlpTexture.h"
 
 class M2MaterialInst {

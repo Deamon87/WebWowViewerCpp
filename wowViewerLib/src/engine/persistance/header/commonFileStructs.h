@@ -89,12 +89,15 @@ struct M2Array {
     T* operator[](int index) {
         return getElement(index);
     }
-    std::string toString(){
+    inline std::string toString(){
         static_assert(true, "This conversion to string is not defined");
     }
 };
 template<>
-std::string M2Array<char>::toString();
+inline std::string M2Array<char>::toString() {
+    char * ptr = this->getElement(0);
+    return std::string(ptr, ptr+size);
+}
 
 template <typename T>
 void initM2M2Array(M2Array<M2Array<T>> &array2D, void *m2File){

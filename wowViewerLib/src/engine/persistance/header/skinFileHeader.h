@@ -2,8 +2,8 @@
 // Created by deamon on 22.06.17.
 //
 
-#ifndef WOWVIEWERLIB_SKINFILE_H
-#define WOWVIEWERLIB_SKINFILE_H
+#ifndef WOWVIEWERLIB_SKINFILEHEADER_H
+#define WOWVIEWERLIB_SKINFILEHEADER_H
 
 #include "commonFileStructs.h"
 
@@ -74,4 +74,4 @@ struct M2SkinProfile
 //#endif
 };
 
-#endif //WOWVIEWERLIB_SKINFILE_H
+#endif //WOWVIEWERLIB_SKINFILEHEADER_H

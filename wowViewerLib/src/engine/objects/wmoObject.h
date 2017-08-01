@@ -7,7 +7,7 @@
 
 class WmoGroupObject;
 #include <string>
-#include "../persistance/adtFile.h"
+#include "../persistance/header/adtFileHeader.h"
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include "wmoGroupObject.h"
 #include "m2Object.h"

@@ -3,7 +3,7 @@
 //
 
 #include "wmoGroupGeom.h"
-#include "../persistance/wmoFile.h"
+#include "../persistance/header/wmoFileHeader.h"
 #include "../shaderDefinitions.h"
 #include <iostream>
 

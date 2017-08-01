@@ -9,20 +9,12 @@ class IWoWInnerApi;
 class AdtObject;
 
 #include <vector>
-#include "../persistance/ChunkFileReader.h"
-#include "../persistance/adtFile.h"
+
+#include "../persistance/header/adtFileHeader.h"
 #include "../opengl/header.h"
 #include "../wowInnerApi.h"
 
-struct mcnkStruct_t {
-    MCVT *mcvt;
-    MCCV *mccv;
-    SMNormal *mcnr;
-    SMLayer *mcly;
-    uint8_t *mcrf;
-
-    uint8_t *mcal;
-};
+#include "../persistance/adtFile.h"
 
 class AdtObject {
 public:
@@ -35,20 +27,16 @@ public:
     AdtObject(IWoWInnerApi *api) : m_api(api), alphaTextures()  {}
     void process(std::vector<unsigned char> &adtFile);
     void draw(std::vector<bool> &drawChunks);
-private:
-    static chunkDef<AdtObject> adtObjectTable;
 
+
+private:
     void createVBO();
-    void createTriangleStrip();
     void loadAlphaTextures(int limit);
 
-
     IWoWInnerApi *m_api;
+    AdtFile *m_adtFile;
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;
-
-    std::vector<int16_t> strips;
-    std::vector<int> stripOffsets;
 
     int indexOffset = 0;
     int heightOffset = 0;
@@ -57,27 +45,9 @@ private:
     GLuint stripVBO = 0;
 
 private:
-    SMMapHeader* mhdr;
-
-    struct {
-        SMChunkInfo chunkInfo[16][16];
-    } *mcins;
-
-    std::vector<std::string> textureNames;
     std::vector<GLuint> alphaTextures;
 
-    char *doodadNamesField;
-    int doodadNamesFieldLen;
-
-    char *wmoNamesField;
-    int wmoNamesFieldLen;
-
-    int mcnkRead = -1;
-    SMChunk mapTile[16*16];
-    mcnkStruct_t mcnkStructs[16*16];
-
     BlpTexture & getAdtTexture(int textureId);
-    std::vector<uint8_t> processTexture(int wdtObjFlags, int i);
 
 };
 

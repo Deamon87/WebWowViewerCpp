@@ -9,7 +9,7 @@ class WmoObject;
 class WmoGroupObject;
 
 #include "../wowInnerApi.h"
-#include "../persistance/wmoFile.h"
+#include "../persistance/header/wmoFileHeader.h"
 #include "wmoObject.h"
 
 class WmoGroupObject {

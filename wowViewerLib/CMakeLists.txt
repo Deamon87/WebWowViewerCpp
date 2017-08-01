@@ -52,18 +52,17 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/camera/firstPersonCamera.cpp
         src/engine/camera/firstPersonCamera.h src/include/config.h
         src/engine/camera/CameraInterface.h
-        src/engine/persistance/commonFileStructs.h
-        src/engine/persistance/M2File.h
+        src/engine/persistance/header/commonFileStructs.h
+        src/engine/persistance/header/M2FileHeader.h
         src/engine/geometry/m2Geom.cpp
         src/engine/geometry/m2Geom.h
-        src/engine/managers/SceneGraph.cpp src/engine/managers/SceneGraph.h src/engine/persistance/wmoFile.h
-        src/engine/texture/BlpTexture.cpp src/engine/texture/BlpTexture.h src/engine/persistance/blpFile.h
+        src/engine/managers/SceneGraph.cpp src/engine/managers/SceneGraph.h src/engine/persistance/header/wmoFileHeader.h
+        src/engine/texture/BlpTexture.cpp src/engine/texture/BlpTexture.h src/engine/persistance/header/blpFileHeader.h
         src/engine/cache/cache.cpp src/engine/cache/cache.h src/engine/geometry/skinGeom.cpp
-        src/engine/geometry/skinGeom.h src/engine/persistance/skinFile.h
+        src/engine/geometry/skinGeom.h src/engine/persistance/header/skinFileHeader.h
         src/engine/objects/m2Object.cpp src/engine/objects/m2Object.h
         src/engine/algorithms/mathHelper.cpp src/engine/algorithms/mathHelper.h
         src/engine/wowInnerApi.h
-        src/engine/persistance/commonFileStructs.cpp
         src/engine/objects/m2Helpers/M2MaterialInst.cpp
         src/engine/objects/m2Helpers/M2MaterialInst.h
         src/engine/managers/animationManager.cpp
@@ -73,17 +72,17 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/geometry/wmoGroupGeom.h
         src/engine/geometry/wmoMainGeom.cpp
         src/engine/geometry/wmoMainGeom.h
-        src/engine/persistance/ChunkFileReader.h
+        src/engine/persistance/helper/ChunkFileReader.h
         src/engine/objects/adtObject.cpp
         src/engine/objects/adtObject.h
-        src/engine/persistance/adtFile.h
+        src/engine/persistance/header/adtFileHeader.h
         src/engine/objects/wmoGroupObject.cpp
         src/engine/objects/wmoGroupObject.h
         src/engine/objects/wmoObject.cpp
         src/engine/objects/wmoObject.h
         src/engine/objects/map.cpp
         src/engine/objects/map.h
-        )
+        src/engine/persistance/adtFile.h src/engine/persistance/adtFile.cpp)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

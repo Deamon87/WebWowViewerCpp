@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <mathfu/glsl_mappings.h>
 #include "../wowInnerApi.h"
-#include "../persistance/wmoFile.h"
+#include "../persistance/header/wmoFileHeader.h"
 #include "../geometry/m2Geom.h"
 #include "../geometry/skinGeom.h"
 #include "m2Helpers/M2MaterialInst.h"
