@@ -182,8 +182,8 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                             handler: [](AdtFile& file, ChunkData& chunkData){
                               std::cout<<"Entered MCLY"<<std::endl;
 //                file.mcnkStructs[file.mcnkRead].mcly_count =
-//                  chunkData.chunkLen/sizeof(SMLayer);
-                              chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcly);
+//                  ;
+                              chunkData.readValues(file.mcnkStructs[file.mcnkRead].mcly, chunkData.chunkLen/sizeof(SMLayer));
                             }
                         }
                     },
@@ -211,8 +211,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
     }
 };
 
-AdtFile::AdtFile(std::vector<unsigned char> &adtFile) :  m_adtFile(adtFile){
-    CChunkFileReader reader(adtFile);
+AdtFile::AdtFile(std::vector<unsigned char> &adtFile) {
+    m_adtFile = std::vector<uint8_t>(adtFile);
+    CChunkFileReader reader(m_adtFile);
     reader.processFile(*this, &AdtFile::adtFileTable);
 
     createTriangleStrip();

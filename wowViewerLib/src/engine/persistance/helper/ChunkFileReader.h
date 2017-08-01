@@ -24,7 +24,6 @@ struct chunkDef {
 
 class CChunkFileReader {
 protected:
-    std::vector<unsigned char> m_file;
     void *fileData;
     int regionSizeToProcess;
 
@@ -39,11 +38,11 @@ public:
     void *chunkData;
 
 public:
-    CChunkFileReader() : m_file(){
+    CChunkFileReader() {
       }
-    CChunkFileReader(std::vector<unsigned char> &file) : m_file(file){
-        regionSizeToProcess = m_file.size();
-        fileData = &m_file[0];
+    CChunkFileReader(std::vector<unsigned char> &file){
+        regionSizeToProcess = file.size();
+        fileData = &file[0];
     }
 
 

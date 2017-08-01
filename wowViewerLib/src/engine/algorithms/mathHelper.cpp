@@ -36,3 +36,44 @@ CAaBox MathHelper::transformAABBWithMat4(mathfu::mat4 mat4, mathfu::vec4 min, ma
 
     return CAaBox(bb_min_packed, bb_max_packed);
 }
+
+std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(mathfu::mat4 &mat) {
+    std::vector<mathfu::vec4> planes(6);
+    // Right clipping plane.
+    planes[0] = mathfu::vec4(mat[3] - mat[0],
+                                mat[7] - mat[4],
+                                mat[11] - mat[8],
+                                mat[15] - mat[12]);
+    // Left clipping plane.
+    planes[1] = mathfu::vec4(mat[3] + mat[0],
+                                mat[7] + mat[4],
+                                mat[11] + mat[8],
+                                mat[15] + mat[12]);
+    // Bottom clipping plane.
+    planes[2] = mathfu::vec4(mat[3] + mat[1],
+                                mat[7] + mat[5],
+                                mat[11] + mat[9],
+                                mat[15] + mat[13]);
+    // Top clipping plane.
+    planes[3] = mathfu::vec4(mat[3] - mat[1],
+                                mat[7] - mat[5],
+                                mat[11] - mat[9],
+                                mat[15] - mat[13]);
+    // Far clipping plane.
+    planes[4] = mathfu::vec4(mat[3] - mat[2],
+                                mat[7] - mat[6],
+                                mat[11] - mat[10],
+                                mat[15] - mat[14]);
+    // Near clipping plane.
+    planes[5] = mathfu::vec4(mat[3] + mat[2],
+                                mat[7] + mat[6],
+                                mat[11] + mat[10],
+                                mat[15] + mat[14]);
+
+    for (int i = 0; i < 6; i++) {
+        //Hand made normalize
+        float invVecLength = 1 / (planes[i].xyz().Length());
+        planes[i] *= invVecLength;
+    }
+
+}
