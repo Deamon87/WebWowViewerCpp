@@ -77,3 +77,31 @@ std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(mathfu::mat4 &ma
     }
 
 }
+
+std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat) {
+        mathfu::mat4 perspectiveViewMatInv = perspectiveViewMat.Inverse();
+
+        static mathfu::vec4 vertices[] = {
+                {-1, -1, -1, 1}, //0
+                {1, -1, -1, 1},  //1
+                {1, -1, 1, 1},   //2
+                {-1, -1, 1, 1},  //3
+                {-1, 1, 1, 1},   //4
+                {1, 1, 1, 1},    //5
+                {1, 1, -1, 1},   //6
+                {-1, 1, -1, 1},  //7
+        };
+
+        std::vector<mathfu::vec3> points;
+        for (int i = 0; i < 8; i++) {
+            mathfu::vec4 &vert = vertices[i];
+
+            mathfu::vec4 resVec4 = perspectiveViewMatInv * vert;
+            resVec4 = resVec4 * (1/resVec4[3]);
+            //vec4.transformMat4(resVec4, vert, perspectiveViewMat);
+
+            points.push_back(resVec4.xyz());
+        }
+
+        return points;
+}

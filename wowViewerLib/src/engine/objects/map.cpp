@@ -5,6 +5,8 @@
 #include <set>
 #include "map.h"
 #include "../algorithms/mathHelper.h"
+#include "../algorithms/grahamScan.h"
+
 
 
 void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
@@ -16,5 +18,8 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
     MathHelper::fixNearPlane(frustumPlanes, cameraPos);
+
+    std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
+    //grahamScan(frustumPoints);
 
 }

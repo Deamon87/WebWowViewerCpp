@@ -18,6 +18,7 @@ public:
         float dist = mathfu::dot(nearPlane, cameraVec4);
         nearPlane[3] -= dist;
     }
+    static std::vector<mathfu::vec3> calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat);
 };
 
 

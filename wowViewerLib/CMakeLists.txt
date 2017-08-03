@@ -82,7 +82,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/wmoObject.h
         src/engine/objects/map.cpp
         src/engine/objects/map.h
-        src/engine/persistance/adtFile.h src/engine/persistance/adtFile.cpp)
+        src/engine/persistance/adtFile.h src/engine/persistance/adtFile.cpp src/engine/algorithms/grahamScan.cpp src/engine/algorithms/grahamScan.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
