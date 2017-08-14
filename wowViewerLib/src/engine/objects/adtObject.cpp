@@ -141,3 +141,13 @@ BlpTexture &AdtObject::getAdtTexture(int textureId) {
 
     return *m_api->getTextureCache()->get(materialTexture);
 }
+
+void AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
+                                    std::vector<mathfu::vec4> &frustumPlanes,
+                                    std::vector<mathfu::vec3> &frustumPoints,
+                                    std::vector<mathfu::vec3> &hullLines,
+                                    mathfu::mat4 &lookAtMat4,
+                                    std::set<M2Object *> &m2ObjectsCandidates,
+                                    std::set<WmoObject *> &wmoCandidates) {
+
+}

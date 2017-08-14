@@ -26,9 +26,9 @@ private:
             std::vector<mathfu::vec3> &frustumPoints,
             std::vector<mathfu::vec3> &hullLines,
             mathfu::mat4 &lookAtMat4,
-            std::set<AdtObject> &adtRenderedThisFrame,
-            std::set<M2Object> &m2RenderedThisFrame,
-            std::set<WmoObject> &wmoRenderedThisFrame);
+            std::set<AdtObject*> &adtRenderedThisFrame,
+            std::set<M2Object*> &m2RenderedThisFrame,
+            std::set<WmoObject*> &wmoRenderedThisFrame);
 
 };
 

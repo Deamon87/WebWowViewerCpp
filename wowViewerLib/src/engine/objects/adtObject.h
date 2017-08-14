@@ -38,8 +38,8 @@ public:
             std::vector<mathfu::vec3> &frustumPoints,
             std::vector<mathfu::vec3> &hullLines,
             mathfu::mat4 &lookAtMat4,
-            std::set<M2Object&> &m2ObjectsCandidates,
-            std::set<WmoObject&> &wmoCandidates);
+            std::set<M2Object*> &m2ObjectsCandidates,
+            std::set<WmoObject*> &wmoCandidates);
 
 private:
     void createVBO();
