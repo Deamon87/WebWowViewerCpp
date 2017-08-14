@@ -8,7 +8,7 @@
 #include "../persistance/header/commonFileStructs.h"
 #include <stack>
 
-typedef mathfu::vec2 Point;
+typedef mathfu::vec3 Point;
 std::stack<Point> grahamScan(std::vector<Point> &points);
 
 #endif //WOWVIEWERLIB_GRAHAMSCAN_H

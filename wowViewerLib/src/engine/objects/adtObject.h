@@ -7,14 +7,18 @@
 
 class IWoWInnerApi;
 class AdtObject;
+class M2Object;
 
 #include <vector>
+#include <set>
 
 #include "../persistance/header/adtFileHeader.h"
 #include "../opengl/header.h"
 #include "../wowInnerApi.h"
 
 #include "../persistance/adtFile.h"
+#include "m2Object.h"
+#include "wmoObject.h"
 
 class AdtObject {
 public:
@@ -28,6 +32,14 @@ public:
     void process(std::vector<unsigned char> &adtFile);
     void draw(std::vector<bool> &drawChunks);
 
+    void checkFrustumCulling(
+            mathfu::vec4 &cameraPos,
+            std::vector<mathfu::vec4> &frustumPlanes,
+            std::vector<mathfu::vec3> &frustumPoints,
+            std::vector<mathfu::vec3> &hullLines,
+            mathfu::mat4 &lookAtMat4,
+            std::set<M2Object&> &m2ObjectsCandidates,
+            std::set<WmoObject&> &wmoCandidates);
 
 private:
     void createVBO();

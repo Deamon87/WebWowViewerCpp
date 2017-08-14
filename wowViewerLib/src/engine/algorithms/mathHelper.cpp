@@ -3,6 +3,7 @@
 //
 
 #include "mathHelper.h"
+#include "grahamScan.h"
 
 CAaBox MathHelper::transformAABBWithMat4(mathfu::mat4 mat4, mathfu::vec4 min, mathfu::vec4 max) {
     //Adapted from http://dev.theomader.com/transform-bounding-boxes/
@@ -104,4 +105,82 @@ std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4
         }
 
         return points;
+}
+
+bool hullSort(mathfu::vec3 a, mathfu::vec3 b, mathfu::vec2 center) {
+    if (a.x - center.x >= 0 && b.x - center.x < 0)
+        return true;
+    if (a.x - center.x < 0 && b.x - center.x >= 0)
+        return false;
+    if (a.x - center.x == 0 && b.x - center.x == 0) {
+        if (a.y - center.y >= 0 || b.y - center.y >= 0)
+            return a.y > b.y;
+        return b.y > a.y;
+    }
+
+    // compute the cross product of vectors (center -> a) x (center -> b)
+    float det = (a.x - center.x) * (b.y - center.y) - (b.x - center.x) * (a.y - center.y);
+    if (det < 0)
+        return true;
+    if (det > 0)
+        return false;
+
+    // points a and b are on the same line from the center
+    // check which point is closer to the center
+    float d1 = (a.x - center.x) * (a.x - center.x) + (a.y - center.y) * (a.y - center.y);
+    float d2 = (b.x - center.x) * (b.x - center.x) + (b.y - center.y) * (b.y - center.y);
+    return d1 > d2;
+}
+
+std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
+    std::stack<Point> hullPoints = grahamScan(points);
+    mathfu::vec3* end   = &hullPoints.top() + 1;
+    mathfu::vec3* begin = end - hullPoints.size();
+    std::vector<mathfu::vec3> hullPointsArr(begin, end);
+
+    mathfu::vec2 centerPoint = mathfu::vec2(0,0);
+    for (int i = 0; i< hullPoints.size(); i++) {
+        centerPoint += hullPointsArr[i].xy();
+    }
+    centerPoint = centerPoint * ((float)1/hullPoints.size());
+    std::sort(hullPointsArr.begin(),
+              hullPointsArr.end(),
+              std::bind(hullSort, std::placeholders::_1, std::placeholders::_2, centerPoint));
+
+    std::vector<mathfu::vec3> hullLines;
+    
+    if (hullPoints.size() > 2) {
+        for (int i = 0; i < hullPointsArr.size() - 1; i++) {
+            int index1 = i+1;
+            int index2 = i;
+
+            mathfu::vec3 line (
+                hullPointsArr[index1].y - hullPointsArr[index2].y,
+                hullPointsArr[index2].x - hullPointsArr[index1].x,
+                -hullPointsArr[index1].y*(hullPointsArr[index2].x - hullPointsArr[index1].x) +
+                hullPointsArr[index1].x*( hullPointsArr[index2].y - hullPointsArr[index1].y)
+            );
+            float normalLength = sqrt(line[0]*line[0] + line[1]+line[1]);
+            line =  line * (1/normalLength);
+
+            hullLines.push_back(line);
+        }
+
+        int index1 = 0;
+        int index2 = hullPointsArr.size() - 1;
+        mathfu::vec3 line (
+            hullPointsArr[index1].y - hullPointsArr[index2].y,
+            hullPointsArr[index2].x - hullPointsArr[index1].x,
+            -hullPointsArr[index1].y*(hullPointsArr[index2].x - hullPointsArr[index1].x) +
+            hullPointsArr[index1].x*( hullPointsArr[index2].y - hullPointsArr[index1].y)
+        );
+        float normalLength = sqrt(line[0]*line[0] + line[1]+line[1]);
+        line *= 1/normalLength;
+
+        hullLines.push_back(line);
+    } else {
+        //"invalid number of hullPoints"
+    }
+
+    return hullLines;
 }
