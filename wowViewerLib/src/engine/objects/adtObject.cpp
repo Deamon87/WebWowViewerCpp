@@ -4,6 +4,7 @@
 
 #include "adtObject.h"
 #include "../shaderDefinitions.h"
+#include "../algorithms/mathHelper.h"
 
 
 void AdtObject::process(std::vector<unsigned char> &adtFile) {
@@ -142,7 +143,7 @@ BlpTexture &AdtObject::getAdtTexture(int textureId) {
     return *m_api->getTextureCache()->get(materialTexture);
 }
 
-void AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
+bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                                     std::vector<mathfu::vec4> &frustumPlanes,
                                     std::vector<mathfu::vec3> &frustumPoints,
                                     std::vector<mathfu::vec3> &hullLines,
@@ -150,4 +151,63 @@ void AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                                     std::set<M2Object *> &m2ObjectsCandidates,
                                     std::set<WmoObject *> &wmoCandidates) {
 
+    if (!this->m_loaded) return false;
+    bool atLeastOneIsDrawn = false;
+
+    if (!this.postLoadExecuted) {
+        this.calcBoundingBoxes();
+        this.loadTextures();
+        this.loadM2s();
+        this.loadWmos();
+
+        this.postLoadExecuted = true;
+    }
+
+    for (int i = 0; i < 256; i++) {
+        mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
+//        var aabb = this.aabbs[i];
+//        this.drawChunk[i] = false;
+//        if (!aabb) continue;
+
+        //1. Check if camera position is inside Bounding Box
+        bool cameraOnChunk =
+                (cameraPos[0] > aabb[0][0] && cameraPos[0] < aabb[1][0] &&
+                cameraPos[1] > aabb[0][1] && cameraPos[1] < aabb[1][1]) ;
+        if ( cameraOnChunk &&
+            cameraPos[2] > aabb[0][2] && cameraPos[2] < aabb[1][2]
+        ) {
+            this.drawChunk[i] = true;
+            atLeastOneIsDrawn = true;
+        }
+
+
+        //2. Check aabb is inside camera frustum
+        bool result = false;
+        bool checkRefs = this->drawChunk[i];
+        if (!this->drawChunk[i]) {
+            result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+            checkRefs = result || MathHelper::checkFrustum2D(hullLines, aabb, hullLines.length, null);
+
+            this.drawChunk[i] = result;
+            atLeastOneIsDrawn = atLeastOneIsDrawn || result ;
+        }
+        if (checkRefs) {
+            var mcnk = objAdtFile.mcnkObjs[i];
+
+            if (mcnk && mcnk.m2Refs) {
+                for (var j = 0; j < mcnk.m2Refs.length; j++) {
+                    var m2Ref = mcnk.m2Refs[j];
+                    m2ObjectsCandidates.add(this.m2Array[m2Ref])
+                }
+            }
+            if (this.wmoArray && mcnk && mcnk.wmoRefs) {
+                for (var j = 0; j < mcnk.wmoRefs.length; j++) {
+                    var wmoRef = mcnk.wmoRefs[j];
+                    wmoCandidates.add(this.wmoArray[wmoRef])
+                }
+            }
+        }
+    }
+
+    return atLeastOneIsDrawn;
 }

@@ -32,7 +32,7 @@ public:
     void process(std::vector<unsigned char> &adtFile);
     void draw(std::vector<bool> &drawChunks);
 
-    void checkFrustumCulling(
+    bool checkFrustumCulling(
             mathfu::vec4 &cameraPos,
             std::vector<mathfu::vec4> &frustumPlanes,
             std::vector<mathfu::vec3> &frustumPoints,

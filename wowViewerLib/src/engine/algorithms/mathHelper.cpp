@@ -184,3 +184,33 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
 
     return hullLines;
 }
+
+static bool MathHelper::checkFrustum(std::vector<mathfu::vec4> &planes, CAaBox &box, std::vector<mathfu::vec3> &points) {
+    // check box outside/inside of frustum
+    int num_planes = planes.size();
+    for (int i = 0; i < num_planes; i++) {
+        int out = 0;
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]*box.min.z+planes[i][3]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]*box.min.z+planes[i][3]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]*box.min.z+planes[i][3]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]*box.min.z+planes[i][3]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]*box.max.z+planes[i][3]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]*box.max.z+planes[i][3]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]*box.max.z+planes[i][3]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]*box.max.z+planes[i][3]) < 0.0 ) ? 1 : 0);
+
+        if (out == 8) return false;
+    }
+
+    // check frustum outside/inside box
+    if (points.size() > 0) {
+        int out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x > box.max.x) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x < box.min.x) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y > box.max.y) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y < box.min.y) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z > box.max.z) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z < box.min.z) ? 1 : 0); if (out == 8) return false;
+    }
+
+    return true;
+}
