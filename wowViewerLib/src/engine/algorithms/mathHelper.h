@@ -19,6 +19,8 @@ public:
         nearPlane[3] -= dist;
     }
     static std::vector<mathfu::vec3> calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat);
+    static bool checkFrustum(std::vector<mathfu::vec4> &planes, CAaBox &box, std::vector<mathfu::vec3> &points);
+    static bool checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box);
     static std::vector<mathfu::vec3> getHullLines(std::vector<mathfu::vec3> &points);
 };
 

@@ -185,7 +185,7 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
     return hullLines;
 }
 
-static bool MathHelper::checkFrustum(std::vector<mathfu::vec4> &planes, CAaBox &box, std::vector<mathfu::vec3> &points) {
+bool MathHelper::checkFrustum(std::vector<mathfu::vec4> &planes, CAaBox &box, std::vector<mathfu::vec3> &points) {
     // check box outside/inside of frustum
     int num_planes = planes.size();
     for (int i = 0; i < num_planes; i++) {
@@ -210,6 +210,22 @@ static bool MathHelper::checkFrustum(std::vector<mathfu::vec4> &planes, CAaBox &
             out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y < box.min.y) ? 1 : 0); if (out == 8) return false;
             out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z > box.max.z) ? 1 : 0); if (out == 8) return false;
             out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z < box.min.z) ? 1 : 0); if (out == 8) return false;
+    }
+
+    return true;
+}
+
+bool MathHelper::checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box) {
+
+    //var maxLines = window.lines != null ? window.lines : 1;
+    //for (var i = 0; i < Math.min(num_planes, maxLines); i++) {
+    for (int i = 0; i < planes.size(); i++) {
+        int out = 0;
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
+        if (out == 4) return false;
     }
 
     return true;

@@ -35,6 +35,9 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::set<M2Object*> &m2RenderedThisFrame,
                         std::set<WmoObject*> &wmoRenderedThisFrame) {
 
+    std::set<M2Object*> m2ObjectsCandidates;
+    std::set<WmoObject*> wmoCandidates;
+
     float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
     float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
 

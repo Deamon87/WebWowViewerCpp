@@ -12,7 +12,8 @@ struct mcnkStruct_t {
     MCCV *mccv;
     SMNormal *mcnr;
     SMLayer *mcly;
-    uint8_t *mcrf;
+
+    struct {uint32_t *doodad_refs; uint32_t *object_refs; } mcrf;
 
     uint8_t *mcal;
 };

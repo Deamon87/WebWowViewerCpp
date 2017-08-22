@@ -19,15 +19,21 @@ class M2Object;
 #include "../persistance/adtFile.h"
 #include "m2Object.h"
 #include "wmoObject.h"
+#include "iMapApi.h"
 
 class AdtObject {
 public:
     AdtObject() : alphaTextures(){
         m_api = nullptr;
+        tileAabb = std::vector<CAaBox>(256);
     }
     void setApi(IWoWInnerApi *api) {
         m_api = api;
     }
+    void setMapApi(IMapApi *api) {
+        m_mapApi = api;
+    }
+
     AdtObject(IWoWInnerApi *api) : m_api(api), alphaTextures()  {}
     void process(std::vector<unsigned char> &adtFile);
     void draw(std::vector<bool> &drawChunks);
@@ -46,6 +52,7 @@ private:
     void loadAlphaTextures(int limit);
 
     IWoWInnerApi *m_api;
+    IMapApi *m_mapApi;
     AdtFile *m_adtFile;
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;
@@ -58,9 +65,17 @@ private:
 
 private:
     std::vector<GLuint> alphaTextures;
+    std::vector<CAaBox> tileAabb;
+    bool drawChunk[256] = {};
+
+    std::vector<M2Object> m2Objects;
+    std::vector<WmoObject> wmoObjects;
 
     BlpTexture & getAdtTexture(int textureId);
 
+    void calcBoundingBoxes();
+    void loadM2s();
+    void loadWmos();
 };
 
 

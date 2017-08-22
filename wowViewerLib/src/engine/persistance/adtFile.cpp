@@ -191,8 +191,16 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         'MCRF',
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){
-                              std::cout<<"Entered MCRF"<<std::endl;
-                              chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcrf);
+                                std::cout<<"Entered MCRF"<<std::endl;
+
+                                chunkData.readValues(
+                                        file.mcnkStructs[file.mcnkRead].mcrf.doodad_refs,
+                                        file.mapTile[file.mcnkRead].nDoodadRefs
+                                );
+                                chunkData.readValues(
+                                        file.mcnkStructs[file.mcnkRead].mcrf.object_refs,
+                                        file.mapTile[file.mcnkRead].nMapObjRefs
+                                );
                             }
                         }
                     },

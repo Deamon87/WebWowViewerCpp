@@ -5,6 +5,7 @@
 #include "adtObject.h"
 #include "../shaderDefinitions.h"
 #include "../algorithms/mathHelper.h"
+#include "../persistance/adtFile.h"
 
 
 void AdtObject::process(std::vector<unsigned char> &adtFile) {
@@ -14,6 +15,20 @@ void AdtObject::process(std::vector<unsigned char> &adtFile) {
     loadAlphaTextures(256);
 //    createIndexVBO();
     m_loaded = true;
+    calcBoundingBoxes();
+
+    loadM2s();
+    loadWmos();
+
+}
+
+void AdtObject::loadM2s() {
+//    for (int i = 0; i < m_adtFile->mhdr->nDoodadRefs; i++) {
+//
+//    }
+}
+void AdtObject::loadWmos() {
+
 }
 
 void AdtObject::createVBO() {
@@ -45,7 +60,33 @@ void AdtObject::createVBO() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_adtFile->strips.size()*sizeof(int16_t), &m_adtFile->strips[0], GL_STATIC_DRAW);
 }
 
+void AdtObject::calcBoundingBoxes() {
+    for (int i = 0; i < 256; i++) {
+        mcnkStruct_t *mcnkContent = &this->m_adtFile->mcnkStructs[i];
+        SMChunk *mcnkChunk = &m_adtFile->mapTile[i];
 
+        //Loop over heights
+        float minZ = 999999;
+        float maxZ = -999999;
+        for (int j = 0; j < 8*8+9*9; j++) {
+            float heightVal = mcnkContent->mcvt->height[j];
+            if (minZ > heightVal) minZ = heightVal;
+            if (maxZ < heightVal) maxZ = heightVal;
+        }
+
+        float minX = mcnkChunk->position.x - (533.3433333 / 16.0);
+        float maxX = mcnkChunk->position.x;
+        float minY = mcnkChunk->position.y - (533.3433333 / 16.0);
+        float maxY = mcnkChunk->position.y;
+        minZ += mcnkChunk->position.z;
+        maxZ += mcnkChunk->position.z;
+
+        this->tileAabb[i] = CAaBox(
+            C3Vector(mathfu::vec3(minX, minY, minZ)),
+            C3Vector(mathfu::vec3(maxX, maxY, maxZ))
+        );
+    }
+}
 
 void AdtObject::loadAlphaTextures(int limit) {
     if (this->alphaTexturesLoaded>=256) return;
@@ -154,29 +195,19 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     if (!this->m_loaded) return false;
     bool atLeastOneIsDrawn = false;
 
-    if (!this.postLoadExecuted) {
-        this.calcBoundingBoxes();
-        this.loadTextures();
-        this.loadM2s();
-        this.loadWmos();
-
-        this.postLoadExecuted = true;
-    }
-
     for (int i = 0; i < 256; i++) {
         mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
-//        var aabb = this.aabbs[i];
-//        this.drawChunk[i] = false;
-//        if (!aabb) continue;
+        CAaBox &aabb = this->tileAabb[i];
+        this->drawChunk[i] = false;
 
         //1. Check if camera position is inside Bounding Box
         bool cameraOnChunk =
-                (cameraPos[0] > aabb[0][0] && cameraPos[0] < aabb[1][0] &&
-                cameraPos[1] > aabb[0][1] && cameraPos[1] < aabb[1][1]) ;
+            ( cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
+              cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
         if ( cameraOnChunk &&
-            cameraPos[2] > aabb[0][2] && cameraPos[2] < aabb[1][2]
+            cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
         ) {
-            this.drawChunk[i] = true;
+            this->drawChunk[i] = true;
             atLeastOneIsDrawn = true;
         }
 
@@ -186,24 +217,26 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
         bool checkRefs = this->drawChunk[i];
         if (!this->drawChunk[i]) {
             result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
-            checkRefs = result || MathHelper::checkFrustum2D(hullLines, aabb, hullLines.length, null);
+            checkRefs = result || MathHelper::checkFrustum2D(hullLines, aabb);
 
-            this.drawChunk[i] = result;
+            this->drawChunk[i] = result;
             atLeastOneIsDrawn = atLeastOneIsDrawn || result ;
         }
         if (checkRefs) {
-            var mcnk = objAdtFile.mcnkObjs[i];
+            //var mcnk = objAdtFile.mcnkObjs[i];
+            SMChunk *mapTile = &m_adtFile->mapTile[i];
+            mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
 
-            if (mcnk && mcnk.m2Refs) {
-                for (var j = 0; j < mcnk.m2Refs.length; j++) {
-                    var m2Ref = mcnk.m2Refs[j];
-                    m2ObjectsCandidates.add(this.m2Array[m2Ref])
+            if (mcnkContent && mcnkContent->mcrf.doodad_refs) {
+                for (int j = 0; j < mapTile->nDoodadRefs; j++) {
+                    uint32_t m2Ref = mcnkContent->mcrf.doodad_refs[j];
+                    //m2ObjectsCandidates.insert(this->m2Array[m2Ref])
                 }
             }
-            if (this.wmoArray && mcnk && mcnk.wmoRefs) {
-                for (var j = 0; j < mcnk.wmoRefs.length; j++) {
-                    var wmoRef = mcnk.wmoRefs[j];
-                    wmoCandidates.add(this.wmoArray[wmoRef])
+            if (mcnkContent && mcnkContent->mcrf.object_refs) {
+                for (int j = 0; j < mapTile->nMapObjRefs; j++) {
+                    uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
+                    //wmoCandidates.insert(this.wmoArray[wmoRef])
                 }
             }
         }
