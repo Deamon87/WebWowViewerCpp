@@ -29,6 +29,13 @@ public:
     virtual ShaderRuntimeData *getWmoShader() = 0;
     virtual ShaderRuntimeData *getAdtShader() = 0;
 
+    virtual void activateM2Shader() = 0;
+    virtual void deactivateM2Shader() = 0;
+    virtual void activateAdtShader() = 0;
+    virtual void deactivateAdtShader() = 0;
+    virtual void activateWMOShader() = 0;
+    virtual void deactivateWMOShader() = 0;
+
     virtual GLuint getBlackPixelTexture() = 0;
 
 };

@@ -7,6 +7,7 @@
 
 
 #include "../persistance/header/commonFileStructs.h"
+#include <vector>
 
 class MathHelper {
 public:

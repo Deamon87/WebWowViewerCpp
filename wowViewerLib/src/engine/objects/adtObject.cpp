@@ -142,7 +142,7 @@ void AdtObject::loadAlphaTextures(int limit) {
 
 
 
-void AdtObject::draw(std::vector<bool> &drawChunks) {
+void AdtObject::draw() {
     if (!m_loaded) return;
     GLuint blackPixelTexture = this->m_api->getBlackPixelTexture();
     ShaderRuntimeData *adtShader = this->m_api->getAdtShader();
@@ -154,7 +154,7 @@ void AdtObject::draw(std::vector<bool> &drawChunks) {
 
 //Draw
     for (int i = 0; i < 256; i++) {
-        if (!drawChunks[i]) continue;
+        if (!drawChunk[i]) continue;
 
         glVertexAttribPointer(+adtShader::Attribute::aHeight, 1, GL_FLOAT, false, 0, (void *)((this->heightOffset + i * 145) * 4));
         glUniform3f(adtShader->getUnf("uPos"),

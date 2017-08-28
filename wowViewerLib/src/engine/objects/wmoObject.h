@@ -11,6 +11,7 @@ class WmoGroupObject;
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include "wmoGroupObject.h"
 #include "m2Object.h"
+#include "../geometry/wmoMainGeom.h"
 
 class WmoObject {
 
@@ -42,10 +43,17 @@ public:
     BlpTexture& getTexture(int materialId);
     void setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef);
     void startLoading();
+    bool isLoaded(){ return m_loaded;}
+    bool hasPortals() {
+        return mainGeom->header->nPortals != 0;
+    }
 
     void draw();
 
     void createGroupObjects();
+
+    bool checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
+                             std::vector<mathfu::vec3> &frustumPoints, std::set<M2Object *> m2RenderedThisFrame);
 };
 
 

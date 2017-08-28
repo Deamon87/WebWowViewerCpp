@@ -24,6 +24,45 @@ void WmoObject::startLoading() {
     }
 }
 
+bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
+                                     std::set<M2Object*> m2RenderedThisFrame) {
+    if (m_loaded) {
+        return true;
+    }
+
+    bool result = false;
+    CAaBox &aabb = this->aabb;
+
+    //1. Check if camera position is inside Bounding Box
+    if (
+        cameraPos[0] > aabb.min.z && cameraPos[0] < aabb.max.x &&
+        cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y &&
+        cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
+        ) return true;
+
+    //2. Check aabb is inside camera frustum
+    result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+
+    std::set<M2Object*> wmoM2Candidates;
+    if (result) {
+        //1. Calculate visibility for groups
+        for (int i = 0; i < this->groupObjects.size(); i++) {
+            this->groupObjects[i]->checkGroupFrustum(cameraPos, frustumPlanes, frustumPoints, wmoM2Candidates);
+        }
+
+        //2. Check all m2 candidates
+        for (auto it = wmoM2Candidates.begin(); it != wmoM2Candidates.end(); ++it) {
+            M2Object *m2ObjectCandidate  = *it;
+            bool frustumResult = m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints);
+            if (frustumResult) {
+                m2RenderedThisFrame.insert(m2ObjectCandidate);
+            }
+        }
+    }
+
+    return result;
+}
+
 void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
     float TILESIZE = 533.333333333;
 
@@ -93,8 +132,8 @@ void WmoObject::draw(){
 void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
     m_modelName = modelName;
 
-    this->m_placementMatrix = mathfu::mat4::Identity();
-//    createPlacementMatrix(mapObjDef);
+    //this->m_placementMatrix = mathfu::mat4::Identity();
+    createPlacementMatrix(mapObjDef);
 }
 
 BlpTexture &WmoObject::getTexture(int textureId) {

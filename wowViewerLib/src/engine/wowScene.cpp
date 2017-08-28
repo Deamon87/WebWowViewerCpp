@@ -889,84 +889,85 @@ void WoWSceneImpl::draw(double deltaTime) {
 //    wmoObject->draw();
 //    deactivateWMOShader();
 
-    activateAdtShader();
-    std::vector<bool> drawAll(256, true);
+//    activateAdtShader();
+//    std::vector<bool> drawAll(256, true);
 //    adtObject->draw(drawAll);
 
 
 //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    /*
-    if (this->m_config->getDoubleCameraDebug()) {
-        //Draw static camera
-//        this.isDebugCamera = true;
-//        this.lookAtMat4 = secondLookAtMat;
-        glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
 //
-        //glClearScreen(this->fogColor);
-//
-        glActiveTexture(GL_TEXTURE0);
-        glDepthMask(GL_TRUE);
-        glEnableVertexAttribArray(0);
-//        this.graphManager.draw();
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//
-        //Draw debug camera from framebuffer into screen
-//        this.glClearScreen(gl, this.fogColor);
-        this->activateRenderFrameShader();
-        glViewport(0,0,this->canvWidth, this->canvHeight);
-        glEnableVertexAttribArray(0);
-//        this.drawFrameBuffer();
-//
-//        this.isDebugCamera = false;
-    }
+//    if (this->m_config->getDoubleCameraDebug()) {
+//        //Draw static camera
+////        this.isDebugCamera = true;
+////        this.lookAtMat4 = secondLookAtMat;
+//        glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
+////
+//        //glClearScreen(this->fogColor);
+////
+//        glActiveTexture(GL_TEXTURE0);
+//        glDepthMask(GL_TRUE);
+//        glEnableVertexAttribArray(0);
+////        this.graphManager.draw();
+//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+////
+//        //Draw debug camera from framebuffer into screen
+////        this.glClearScreen(gl, this.fogColor);
+//        this->activateRenderFrameShader();
+//        glViewport(0,0,this->canvWidth, this->canvHeight);
+//        glEnableVertexAttribArray(0);
+////        this.drawFrameBuffer();
+////
+////        this.isDebugCamera = false;
+//    }
 //
 //    //Render real camera
 //    this.lookAtMat4 = lookAtMat4;
 //    gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
-//    this.glClearScreen(gl, this.fogColor);
+    //glClearScreen(/*this.fogColor*/);
 //
-    glActiveTexture(GL_TEXTURE0);
-    glDepthMask(true);
-    glEnableVertexAttribArray(0);
+//    glActiveTexture(GL_TEXTURE0);
+//    glDepthMask(true);
+//    glEnableVertexAttribArray(0);
 //    this.graphManager.draw();
+    map->draw();
 
-    glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
+//    glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
 
-    if (!this->m_config->getDoubleCameraDebug()) {
-        //Draw real camera into screen
+//    if (!this->m_config->getDoubleCameraDebug()) {
+//        //Draw real camera into screen
+////
+//        glClearScreen();
+//        glEnableVertexAttribArray(0);
+//        this->activateRenderFrameShader();
+//        glViewport(0,0,this->canvWidth, this->canvHeight);
+////        this.drawFrameBuffer();
+//    } else {
+////        //Draw real camera into square at bottom of screen
+////
+//        this->activateRenderDepthShader();
+//        glEnableVertexAttribArray(0);
+////        this.drawTexturedQuad(gl, this.frameBufferColorTexture,
+////                              this.canvas.width * 0.60,
+////                              0,//this.canvas.height * 0.75,
+////                              this.canvas.width * 0.40,
+////                              this.canvas.height * 0.40,
+////                              this.canvas.width, this.canvas.height);
+//    }
+//    if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
+//        this->activateRenderDepthShader();
+//        glEnableVertexAttribArray(0);
+//        glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
+//        glUniform1f(drawDepthBuffer->getUnf("uNearPlane"), nearPlane);
 //
-        glClearScreen();
-        glEnableVertexAttribArray(0);
-        this->activateRenderFrameShader();
-        glViewport(0,0,this->canvWidth, this->canvHeight);
-//        this.drawFrameBuffer();
-    } else {
-//        //Draw real camera into square at bottom of screen
-//
-        this->activateRenderDepthShader();
-        glEnableVertexAttribArray(0);
-//        this.drawTexturedQuad(gl, this.frameBufferColorTexture,
-//                              this.canvas.width * 0.60,
-//                              0,//this.canvas.height * 0.75,
-//                              this.canvas.width * 0.40,
-//                              this.canvas.height * 0.40,
-//                              this.canvas.width, this.canvas.height);
-    }
-    if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*//*) {
-        this->activateRenderDepthShader();
-        glEnableVertexAttribArray(0);
-        glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
-        glUniform1f(drawDepthBuffer->getUnf("uNearPlane"), nearPlane);
-
-//        this->drawTexturedQuad(gl, this.frameBufferDepthTexture,
-//                              this.canvas.width * 0.60,
-//                              0,//this.canvas.height * 0.75,
-//                              this.canvas.width * 0.40,
-//                              this.canvas.height * 0.40,
-//                              this.canvas.width, this.canvas.height,
-//                              true);
-    }*/
+////        this->drawTexturedQuad(gl, this.frameBufferDepthTexture,
+////                              this.canvas.width * 0.60,
+////                              0,//this.canvas.height * 0.75,
+////                              this.canvas.width * 0.40,
+////                              this.canvas.height * 0.40,
+////                              this.canvas.width, this.canvas.height,
+////                              true);
+//    }
 }
 
 void WoWSceneImpl::activateM2Shader() {
@@ -1063,6 +1064,9 @@ void WoWSceneImpl::activateAdtShader (){
         glUniform1f(adtShader->getUnf("uFogEnd"), this->uFogEnd);
 
 //        glUniform3fv(adtShader->getUnf("shaderUniforms.uFogColor"), this->fogColor);
+}
+void WoWSceneImpl::deactivateAdtShader() {
+    glUseProgram(0);
 }
 
 

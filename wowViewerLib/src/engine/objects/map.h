@@ -64,6 +64,14 @@ private:
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;
 
+    std::set<AdtObject*> adtRenderedThisFrame;
+    std::set<M2Object*> m2RenderedThisFrame;
+    std::set<WmoObject*> wmoRenderedThisFrame;
+
+    std::vector<AdtObject*> adtRenderedThisFrameArr;
+    std::vector<M2Object*> m2RenderedThisFrameArr;
+    std::vector<WmoObject*> wmoRenderedThisFrameArr;
+
     M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef);
     WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef);
 public:
@@ -72,7 +80,7 @@ public:
     };
 
     void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
-
+    void draw();
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
             std::vector<mathfu::vec4> &frustumPlanes,
@@ -82,6 +90,11 @@ private:
             std::set<AdtObject*> &adtRenderedThisFrame,
             std::set<M2Object*> &m2RenderedThisFrame,
             std::set<WmoObject*> &wmoRenderedThisFrame);
+
+
+
+    void drawExterior();
+    void drawM2s();
 
 };
 

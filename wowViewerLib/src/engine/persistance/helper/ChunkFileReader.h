@@ -45,8 +45,6 @@ public:
         fileData = &file[0];
     }
 
-
-
     template <typename T>
     void processChunkAtOffsWithSize (int &offs, int size, T &resultObj, chunkDef<T> *parentSectionHandlerProc) {
         ChunkData chunk = this->loadChunkAtOffset(offs, size);

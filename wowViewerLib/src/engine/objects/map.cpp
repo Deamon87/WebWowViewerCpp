@@ -3,6 +3,7 @@
 //
 
 #include <set>
+#include <cmath>
 #include "map.h"
 #include "../algorithms/mathHelper.h"
 #include "../algorithms/grahamScan.h"
@@ -10,9 +11,9 @@
 
 
 void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
-    std::set<AdtObject*> adtRenderedThisFrame;
-    std::set<M2Object*> m2RenderedThisFrame;
-    std::set<WmoObject*> wmoRenderedThisFrame;
+    adtRenderedThisFrame = std::set<AdtObject*>();
+    m2RenderedThisFrame = std::set<M2Object*>();
+    wmoRenderedThisFrame = std::set<WmoObject*>();
 
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
@@ -25,6 +26,9 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4,
                   adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
 
+    adtRenderedThisFrameArr = std::vector<AdtObject*>(adtRenderedThisFrame.begin(), adtRenderedThisFrame.end());
+    m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.begin(), m2RenderedThisFrame.end());
+    wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 }
 
 void Map::checkExterior(mathfu::vec4 &cameraPos,
@@ -66,6 +70,37 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             }
         }
     }
+
+    //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
+    for (auto it = m2ObjectsCandidates.begin(); it != m2ObjectsCandidates.end(); ++it) {
+        M2Object *m2ObjectCandidate  = *it;
+        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints);
+        if (frustumResult) {
+            m2RenderedThisFrame.insert(m2ObjectCandidate);
+        }
+    }
+
+    for (auto it = wmoCandidates.begin(); it != wmoCandidates.end(); ++it) {
+        WmoObject *wmoCandidate = *it;
+
+        if (!wmoCandidate->isLoaded()) {
+            wmoRenderedThisFrame.insert(wmoCandidate);
+            continue;
+        }
+
+        if ( false /*wmoCandidate->hasPortals() && config.getUsePortalCulling() */) {
+//            if(self.portalCullingAlgo.startTraversingFromExterior(wmoCandidate, self.position,
+//                                                                  lookAtMat4, frustumPlanes, m2RenderedThisFrame)){
+//                wmoRenderedThisFrame.add(wmoCandidate);
+//            }
+        } else {
+            if (wmoCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints, m2RenderedThisFrame)) {
+                wmoRenderedThisFrame.insert(wmoCandidate);
+            }
+        }
+    }
+
+
 }
 
 M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
@@ -87,4 +122,98 @@ WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
         m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
     }
     return wmoObject;
+}
+
+void Map::draw() {
+//    this.m2OpaqueRenderedThisFrame = {};
+//    this.m2TranspRenderedThisFrame = {};
+//    if (this.currentWMO && this.currentInteriorGroups != null && config.getUsePortalCulling()) {
+//        this.sceneApi.shaders.activateWMOShader();
+//        this.currentWMO.drawPortalBased(true);
+//        this.sceneApi.shaders.deactivateWMOShader();
+//
+//        if (this.currentWMO.exteriorPortals.length > 0) {
+//            this.drawExterior()
+//        }
+//        //6. Draw WMO portals
+//        if (config.getRenderPortals()) {
+//            this.sceneApi.shaders.activateDrawPortalShader();
+//            for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
+//                this.wmoRenderedThisFrame[i].drawPortals();
+//            }
+//        }
+//        this.drawM2s();
+//
+//        this.sceneApi.shaders.activateFrustumBoxShader();
+//        //Draw Wmo portal frustums
+//        if (this.sceneApi.getIsDebugCamera()) {
+//            this.sceneApi.drawCamera()
+//        }
+//    } else {
+        this->drawExterior();
+        this->drawM2s();
+
+        //6. Draw WMO portals
+//        if (config.getRenderPortals()) {
+//            this.sceneApi.shaders.activateDrawPortalShader();
+//            for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
+//                this.wmoRenderedThisFrame[i].drawPortals();
+//            }
+//        }
+        //Draw Wmo portal frustums
+//    this.sceneApi.shaders.activateFrustumBoxShader();
+//        if (this.sceneApi.getIsDebugCamera()) {
+//            this.sceneApi.drawCamera()
+//        }
+//    }
+}
+
+void Map::drawExterior() {
+//    if (config.getRenderAdt()) {
+        this->m_api->activateAdtShader();
+        for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
+            this->adtRenderedThisFrameArr[i]->draw();
+        }
+//    }
+
+
+    //2.0. Draw WMO bsp highlighted vertices
+//    if (config.getRenderBSP()) {
+//        this.sceneApi.shaders.activateDrawPortalShader();
+//        for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
+//            this.wmoRenderedThisFrame[i].drawBspVerticles();
+//        }
+//    }
+
+    //2. Draw WMO
+    this->m_api->activateWMOShader();
+    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
+//        if (config.getUsePortalCulling()) {
+//            this.wmoRenderedThisFrame[i].drawPortalBased(false)
+//        } else {
+            this->wmoRenderedThisFrameArr[i]->draw();
+//        }
+    }
+    this->m_api->deactivateWMOShader();
+
+
+    //3. Draw background WDL
+
+    //4. Draw skydom
+//    if (this.skyDom) {
+//        this.skyDom.draw();
+//    }
+
+    //7.1 Draw WMO BBs
+//    this.sceneApi.shaders.activateBoundingBoxShader();
+//    if (config.getDrawWmoBB()) {
+//        for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
+//            this.wmoRenderedThisFrame[i].drawBB();
+//        }
+//    }
+
+}
+
+void Map::drawM2s() {
+
 }

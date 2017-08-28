@@ -194,6 +194,25 @@ void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 vie
 //    });
 //}
 
+bool M2Object::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints) {
+    if (!m_loaded) {
+        return true;
+    }
+
+    CAaBox &aabb = this->aabb;
+
+    //1. Check if camera position is inside Bounding Box
+    if (
+        cameraPos[0] > aabb.min.z && cameraPos[0] < aabb.max.x &&
+        cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y &&
+        cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
+    ) return true;
+
+    //2. Check aabb is inside camera frustum
+    bool result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+    return result;
+}
+
 void M2Object::draw(bool drawTransparent, mathfu::mat4 placementMatrix, mathfu::vec4 diffuseColor) {
     if (!this->m_loaded) {
         this->startLoading();

@@ -7,6 +7,7 @@
 
 #include "../persistance/header/commonFileStructs.h"
 #include <stack>
+#include <vector>
 
 typedef mathfu::vec3 Point;
 std::stack<Point> grahamScan(std::vector<Point> &points);

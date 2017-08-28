@@ -36,7 +36,7 @@ public:
 
     AdtObject(IWoWInnerApi *api) : m_api(api), alphaTextures()  {}
     void process(std::vector<unsigned char> &adtFile);
-    void draw(std::vector<bool> &drawChunks);
+    void draw();
 
     bool checkFrustumCulling(
             mathfu::vec4 &cameraPos,

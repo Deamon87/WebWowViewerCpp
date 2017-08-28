@@ -162,37 +162,22 @@ private:
     Map *map = nullptr;
 
     void activateRenderFrameShader();
-
     void activateRenderDepthShader();
-
     void activateReadDepthBuffer();
-
     void activateAdtShader();
-
+    void deactivateAdtShader();
     void activateWMOShader();
-
     void deactivateWMOShader();
-
     void deactivateTextureCompositionShader();
-
     void activateM2ShaderAttribs();
-
     void deactivateM2ShaderAttribs();
-
     void activateM2Shader();
-
     void deactivateM2Shader();
-
     void activateM2InstancingShader();
-
     void deactivateM2InstancingShader();
-
     void activateBoundingBoxShader();
-
     void activateFrustumBoxShader();
-
     void activateDrawLinesShader();
-
     void activateDrawPortalShader();
 
     void activateTextureCompositionShader(GLuint texture);
