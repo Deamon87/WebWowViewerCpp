@@ -23,12 +23,28 @@ void AdtObject::process(std::vector<unsigned char> &adtFile) {
 }
 
 void AdtObject::loadM2s() {
-//    for (int i = 0; i < m_adtFile->mhdr->nDoodadRefs; i++) {
-//
-//    }
+
+    m2Objects = std::vector<M2Object *>(m_adtFile->doodadDef_len);
+    for (int i = 0; i < m_adtFile->doodadDef_len; i++) {
+        //1. Get filename
+        SMDoodadDef &doodadDef = m_adtFile->doodadDef[i];
+        std::string fileName = &m_adtFile->doodadNamesField[m_adtFile->mmid[doodadDef.mmidEntry]];
+
+        //2. Get model
+        m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
+    }
 }
 void AdtObject::loadWmos() {
+    wmoObjects = std::vector<WmoObject *>(m_adtFile->mapObjDef_len);
 
+    for (int i = 0; i < m_adtFile->mapObjDef_len; i++) {
+        //1. Get filename
+        SMMapObjDef &mapDef = m_adtFile->mapObjDef[i];
+        std::string fileName = &m_adtFile->wmoNamesField[m_adtFile->mwid[mapDef.nameId]];
+
+        //2. Get model
+        wmoObjects[i] = m_mapApi->getWmoObject(fileName, mapDef);
+    }
 }
 
 void AdtObject::createVBO() {

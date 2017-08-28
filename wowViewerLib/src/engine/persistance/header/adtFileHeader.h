@@ -60,9 +60,10 @@ struct SMDoodadDef {
         // for this flag
         uint16_t mddf_unk_4 : 1;             // Legion+?
         uint16_t mddf_unk_8 : 1;             // Legion+?
-        uint16_t mddf_unk_20 = 1;            // Legion+?
+        uint16_t mddf_unk_10 : 1;            //
+        uint16_t mddf_unk_20 : 1;            // Legion+?
         uint16_t mddf_entry_is_filedata_id : 1; // mmidEntry is a file data id to directly load
-        uint16_t unused : 10;
+        uint16_t unused : 9;
     } flags;               // values from enum MDDFFlags.
 };
 

@@ -10,8 +10,8 @@ class IMapApi;
 
 class IMapApi {
 public:
-    virtual M2Object getM2Object(SMDoodadDef &doodadDef) = 0;
-    virtual M2Object getWmoObject(SMMapObjDef &mapObjDef) = 0;
+    virtual M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef) = 0;
+    virtual WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) = 0;
 };
 
 

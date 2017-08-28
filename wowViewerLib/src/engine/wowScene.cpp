@@ -727,11 +727,15 @@ void glClearScreen() {
 }
 bool testLoad = false;
 void WoWSceneImpl::draw(double deltaTime) {
-    if (adtObject == nullptr) {
-
-        adtObject = getAdtGeomCache()->get("world\\maps\\Expansion01\\Expansion01_22_35.adt");
-        adtObject->setApi(this);
+//    if (adtObject == nullptr) {
+//
+//        adtObject = getAdtGeomCache()->get("world\\maps\\Expansion01\\Expansion01_22_35.adt");
+//        adtObject->setApi(this);
+//    }
+    if (map == nullptr) {
+        map = new Map(this, "Expansion01");
     }
+
 
     glClearScreen();
     mathfu::vec3 *cameraVector;
@@ -741,11 +745,11 @@ void WoWSceneImpl::draw(double deltaTime) {
     int farPlane = 250;
     int nearPlane = 1;
     float fov = 45.0;
-    if (testLoad) {
-        wmoMainCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO");
-        wmoGeomCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY_002.wmo");
-        testLoad = false;
-    }
+//    if (testLoad) {
+//        wmoMainCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO");
+//        wmoGeomCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY_002.wmo");
+//        testLoad = false;
+//    }
 
     //If use camera settings
     //Figure out way to assign the object with camera
@@ -866,6 +870,8 @@ void WoWSceneImpl::draw(double deltaTime) {
     //m2Object->update(deltaTime, this->m_firstCamera.getCameraPosition(), lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
 //
+    mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 0);
+    map->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
 //    this.graphManager.checkCulling(perspectiveMatrixForCulling, lookAtMat4);
 //    this.graphManager.sortGeometry(perspectiveMatrixForCulling, lookAtMat4);
 //
@@ -885,7 +891,8 @@ void WoWSceneImpl::draw(double deltaTime) {
 
     activateAdtShader();
     std::vector<bool> drawAll(256, true);
-    adtObject->draw(drawAll);
+//    adtObject->draw(drawAll);
+
 
 //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

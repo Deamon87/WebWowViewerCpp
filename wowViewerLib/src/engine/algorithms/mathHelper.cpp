@@ -77,6 +77,7 @@ std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(mathfu::mat4 &ma
         planes[i] *= invVecLength;
     }
 
+    return planes;
 }
 
 std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat) {

@@ -24,6 +24,7 @@
 #include "objects/adtObject.h"
 #include "objects/wmoObject.h"
 #include "objects/m2Object.h"
+#include "objects/map.h"
 
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
@@ -158,6 +159,7 @@ private:
     M2Object *m2Object = nullptr;
     WmoObject *wmoObject = nullptr;
     AdtObject *adtObject = nullptr;
+    Map *map = nullptr;
 
     void activateRenderFrameShader();
 

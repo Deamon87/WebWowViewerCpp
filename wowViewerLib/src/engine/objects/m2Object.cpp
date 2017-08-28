@@ -22,6 +22,50 @@ void M2Object::createAABB() {
     this->aabb = worldAABB;
 }
 
+void M2Object::createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat) {
+    mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
+    placementMatrix = placementMatrix * wmoPlacementMat;
+    placementMatrix = placementMatrix * mathfu::mat4::FromTranslationVector(mathfu::vec3(def.position));
+
+    mathfu::quat quat4(def.orientation.w, def.orientation.x, def.orientation.y, def.orientation.z);
+    placementMatrix = placementMatrix * quat4.ToMatrix4();
+
+    float scale = def.scale;
+    placementMatrix = placementMatrix * mathfu::mat4::FromScaleVector(mathfu::vec3(scale,scale,scale));
+
+    mathfu::mat4 invertPlacementMatrix = placementMatrix.Inverse();
+
+    m_placementMatrix = placementMatrix;
+    m_placementInvertMatrix = invertPlacementMatrix;
+}
+
+void M2Object::createPlacementMatrix(SMDoodadDef &def) {
+    const float TILESIZE = 533.333333333;
+
+    float posx = 32*TILESIZE - def.position.x;
+    float posy = def.position.y;
+    float posz = 32*TILESIZE - def.position.z;
+
+    mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
+
+    placementMatrix *= MathHelper::RotationX(toRadian(90));
+    placementMatrix *= MathHelper::RotationY(toRadian(90));
+
+    placementMatrix *= mathfu::mat4::FromTranslationVector(mathfu::vec3(posx, posy, posz));
+
+    placementMatrix *= MathHelper::RotationY(toRadian(def.rotation.y-270));
+    placementMatrix *= MathHelper::RotationZ(toRadian(-def.rotation.x));
+    placementMatrix *= MathHelper::RotationX(toRadian(def.rotation.z-90));
+
+    float scale = def.scale / 1024;
+    placementMatrix *= mathfu::mat4::FromScaleVector(mathfu::vec3(scale, scale, scale));
+
+    mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
+
+    m_placementInvertMatrix = placementInvertMatrix;
+    m_placementMatrix = placementMatrix;
+}
+
 void M2Object::setLoadParams (std::string modelName, int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
     modelName;
     this->m_skinNum = skinNum;
@@ -354,3 +398,4 @@ void M2Object::initAnimationManager() {
 void M2Object::initBoneAnimMatrices() {
     this->bonesMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->bones.size, mathfu::mat4::Identity());;
 }
+

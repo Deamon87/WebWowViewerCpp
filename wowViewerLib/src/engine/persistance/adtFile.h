@@ -37,6 +37,17 @@ public:
     char *wmoNamesField;
     int wmoNamesFieldLen;
 
+    SMDoodadDef * doodadDef;
+    int doodadDef_len = -1;
+
+    SMMapObjDef * mapObjDef;
+    int mapObjDef_len = -1;
+
+    uint32_t *mmid;
+    int mmid_length;
+    uint32_t *mwid;
+    int mwid_length;
+
     int mcnkRead = -1;
     SMChunk mapTile[16*16];
     mcnkStruct_t mcnkStructs[16*16];

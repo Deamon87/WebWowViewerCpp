@@ -23,22 +23,7 @@ private:
     bool m_loading = false;
     bool m_loaded = false;
 
-    void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat) {
-        mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
-        placementMatrix = placementMatrix * wmoPlacementMat;
-        placementMatrix = placementMatrix * mathfu::mat4::FromTranslationVector(mathfu::vec3(def.position));
 
-        mathfu::quat quat4(def.orientation.w, def.orientation.x, def.orientation.y, def.orientation.z);
-        placementMatrix = placementMatrix * quat4.ToMatrix4();
-
-        float scale = def.scale;
-        placementMatrix = placementMatrix * mathfu::mat4::FromScaleVector(mathfu::vec3(scale,scale,scale));
-
-        mathfu::mat4 invertPlacementMatrix = placementMatrix.Inverse();
-
-        m_placementMatrix = placementMatrix;
-        m_inversePlacementMatrix = invertPlacementMatrix;
-    }
 
 
     void calcWorldPosition(){
@@ -55,7 +40,7 @@ private:
 
 private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
-    mathfu::mat4 m_inversePlacementMatrix;
+    mathfu::mat4 m_placementInvertMatrix;
     mathfu::vec3 m_worldPosition;
 
 
@@ -94,6 +79,8 @@ public:
     void setLoadParams(std::string modelName, int skinNum, std::vector<uint8_t> meshIds,
                        std::vector<std::string> replaceTextures);
 
+    void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);
+    void createPlacementMatrix(SMDoodadDef &def);
 
     void makeTextureArray();
 

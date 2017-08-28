@@ -68,8 +68,8 @@ private:
     std::vector<CAaBox> tileAabb;
     bool drawChunk[256] = {};
 
-    std::vector<M2Object> m2Objects;
-    std::vector<WmoObject> wmoObjects;
+    std::vector<M2Object*> m2Objects;
+    std::vector<WmoObject*> wmoObjects;
 
     BlpTexture & getAdtTexture(int textureId);
 

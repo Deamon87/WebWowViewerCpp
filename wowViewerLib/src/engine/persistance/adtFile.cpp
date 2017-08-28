@@ -61,7 +61,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MMID',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MMID"<<std::endl;
+                    file.mmid_length = chunkData.chunkLen / sizeof(uint32_t);
+                    chunkData.readValues(file.mmid, file.mmid_length);
+                    std::cout<<"Entered MMID"<<std::endl;
                 }
             }
         },
@@ -79,7 +81,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MWID',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MWID"<<std::endl;
+                    file.mwid_length = chunkData.chunkLen / sizeof(uint32_t);
+                    chunkData.readValues(file.mwid, file.mwid_length);
+                    std::cout<<"Entered MWID"<<std::endl;
                 }
             }
         },
@@ -87,7 +91,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MDDF',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MDDF"<<std::endl;
+                    file.doodadDef_len = chunkData.chunkLen / sizeof(SMDoodadDef);
+                    chunkData.readValues(file.doodadDef, file.doodadDef_len);
+                    std::cout<<"Entered MDDF"<<std::endl;
                 }
             }
         },
@@ -95,7 +101,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MODF',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MODF"<<std::endl;
+                    file.mapObjDef_len = chunkData.chunkLen / sizeof(SMMapObjDef);
+                    chunkData.readValues(file.mapObjDef, file.mapObjDef_len);
+                    std::cout<<"Entered MODF"<<std::endl;
                 }
             }
         },

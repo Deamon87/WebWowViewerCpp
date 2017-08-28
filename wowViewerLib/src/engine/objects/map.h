@@ -18,7 +18,8 @@ private:
     private:
         class Container {
         public:
-            T obj;
+            Container(){}
+            T *obj;
             int counter;
         };
     public:
@@ -33,7 +34,7 @@ private:
                 //element found;
                 Container *container = it->second;
                 container->counter = container->counter + 1;
-                return &container->obj;
+                return container->obj;
             }
 
            return nullptr;
@@ -41,7 +42,7 @@ private:
         void put (P uniqueId, T* object) {
             Container * newContainer = new Container();
             m_cache[uniqueId] = newContainer;
-            newContainer->obj = T();
+            newContainer->obj = object;
             newContainer->counter = 1;
         }
         void free (P uniqueId) {
@@ -54,15 +55,22 @@ private:
             }
         }
     };
-
-
 private:
+    IWoWInnerApi *m_api;
     AdtObject *mapTiles[64][64]={};
+    std::string mapName;
 
 
-    ObjectCache<int, M2Object> m_m2MapObjects;
-    ObjectCache<int, WmoObject> m_wmoMapObjects;
+    ObjectCache<M2Object, int> m_m2MapObjects;
+    ObjectCache<WmoObject, int> m_wmoMapObjects;
+
+    M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef);
+    WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef);
 public:
+    Map(IWoWInnerApi *api, std::string mapName) : m_api(api), mapName(mapName){
+
+    };
+
     void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
 
 private:
