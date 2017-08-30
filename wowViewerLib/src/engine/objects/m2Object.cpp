@@ -107,6 +107,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 vie
             this->m_loaded = true;
             this->m_loading = false;
 
+            this->createAABB();
             this->makeTextureArray();
             this->initAnimationManager();
             this->initBoneAnimMatrices();
@@ -213,7 +214,7 @@ bool M2Object::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu:
     return result;
 }
 
-void M2Object::draw(bool drawTransparent, mathfu::mat4 placementMatrix, mathfu::vec4 diffuseColor) {
+void M2Object::draw(bool drawTransparent, mathfu::vec4 diffuseColor) {
     if (!this->m_loaded) {
         this->startLoading();
         return;
@@ -228,7 +229,7 @@ void M2Object::draw(bool drawTransparent, mathfu::mat4 placementMatrix, mathfu::
 //    var combinedMatrix = this.combinedBoneMatrix;
 //    std::vector<mathfu::mat4> combinedMatrix(120, mathfu::mat4::Identity());
 
-    this->m_m2Geom->setupUniforms(this->m_api, placementMatrix, bonesMatrices, diffuseColor, drawTransparent);
+    this->m_m2Geom->setupUniforms(this->m_api, m_placementMatrix, bonesMatrices, diffuseColor, drawTransparent);
 
     this->drawMeshes(drawTransparent, -1);
 

@@ -109,6 +109,7 @@ M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
         m2Object = new M2Object(m_api);
         m2Object->setLoadParams(fileName, 0, {},{});
         m2Object->createPlacementMatrix(doodadDef);
+        m2Object->calcWorldPosition();
         m_m2MapObjects.put(doodadDef.uniqueId, m2Object);
     }
     return m2Object;
@@ -215,5 +216,99 @@ void Map::drawExterior() {
 }
 
 void Map::drawM2s() {
+    //if (config.getRenderM2()) {
+//        bool lastWasDrawInstanced = false;
+//        this->m_api->activateM2Shader();
+//        for (var i = 0; i < this.m2RenderedThisFrame.length; i++) {
+//            var m2Object = this.m2RenderedThisFrame[i];
+//            if (this.m2OpaqueRenderedThisFrame[m2Object.sceneNumber]) continue;
+//            var fileIdent = m2Object.getFileNameIdent();
+//
+//            var drawInstanced = false;
+//            if (this.instanceMap.has(fileIdent)) {
+//                var instanceManager = this.instanceMap.get(fileIdent);
+//                drawInstanced = instanceManager.mdxObjectList.length > 1;
+//            }
+//            if (drawInstanced) {
+//                if (!lastWasDrawInstanced) {
+//                    this.sceneApi.shaders.activateM2InstancingShader();
+//                }
+//
+//                instanceManager.drawInstancedNonTransparentMeshes(this.m2OpaqueRenderedThisFrame);
+//                lastWasDrawInstanced = true;
+//            } else {
+//                if (lastWasDrawInstanced) {
+//                    this.sceneApi.shaders.deactivateM2InstancingShader();
+//                    this.sceneApi.shaders.activateM2Shader();
+//                }
+//
+//                this.m2OpaqueRenderedThisFrame[m2Object.sceneNumber] = true;
+//                m2Object.drawNonTransparentMeshes();
+//                lastWasDrawInstanced = false;
+//            }
+//        }
+//        if (lastWasDrawInstanced) {
+//            this->m_api->deactivateM2InstancingShader();
+//        } else {
+//            this->m_api->deactivateM2Shader();
+//        }
+//   // }
+//
+//    //6. Draw transparent meshes of m2
+////    if (config.getRenderM2()) {
+//        var lastWasDrawInstanced = false;
+//        this.sceneApi.shaders.activateM2Shader();
+//        for (var i = this.m2RenderedThisFrame.length-1; i >= 0; i--) {
+//            var m2Object = this.m2RenderedThisFrame[i];
+//            if (this.m2TranspRenderedThisFrame[m2Object.sceneNumber]) continue;
+//            var fileIdent = m2Object.getFileNameIdent();
+//
+//            var drawInstanced = false;
+//            if (this.instanceMap.has(fileIdent)) {
+//                var instanceManager = this.instanceMap.get(fileIdent);
+//                drawInstanced = instanceManager.mdxObjectList.length > 1;
+//            }
+//            if (drawInstanced) {
+//                if (!lastWasDrawInstanced) {
+//                    this.sceneApi.shaders.activateM2InstancingShader();
+//                }
+//
+//                instanceManager.drawInstancedTransparentMeshes(this.m2TranspRenderedThisFrame);
+//                lastWasDrawInstanced = true;
+//            } else {
+//                if (lastWasDrawInstanced) {
+//                    this.sceneApi.shaders.deactivateM2InstancingShader();
+//                    this.sceneApi.shaders.activateM2Shader();
+//                }
+//
+//                this.m2TranspRenderedThisFrame[m2Object.sceneNumber] = true;
+//                m2Object.drawTransparentMeshes();
+//                lastWasDrawInstanced = false;
+//            }
+//        }
+//        if (lastWasDrawInstanced) {
+//            this->m_api->deactivateM2InstancingShader();
+//        } else {
+//            this->m_api->deactivateM2Shader();
+//        }
+    this->m_api->activateM2Shader();
+    mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
+    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
 
+        M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+
+        //TODO: fix this hack
+        m2Object->update(0, mathfu::vec3(0,0,0), mathfu::mat4::Identity());
+
+        m2Object->draw(false, diffuseNon);
+    }
+
+    for (int i = this->m2RenderedThisFrameArr.size()-1; i >= 0; i--) {
+        M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+
+        m2Object->draw(true, diffuseNon);
+    }
+
+
+//    }
 }

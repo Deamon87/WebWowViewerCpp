@@ -23,17 +23,9 @@ private:
     bool m_loading = false;
     bool m_loaded = false;
 
-
-
-
-    void calcWorldPosition(){
-        m_worldPosition = (m_placementMatrix * mathfu::vec4(0,0,0,1)).xyz();
-    }
-
     void load(std::string modelName, SMODoodadDef &doodadDef, mathfu::mat4 &wmoPlacementMat){
         createPlacementMatrix(doodadDef, wmoPlacementMat);
         calcWorldPosition();
-
 
         this->setLoadParams(modelName, 0, {}, {});
     }
@@ -81,6 +73,9 @@ public:
 
     void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);
     void createPlacementMatrix(SMDoodadDef &def);
+    void calcWorldPosition(){
+        m_worldPosition = (m_placementMatrix * mathfu::vec4(0,0,0,1)).xyz();
+    }
 
     void makeTextureArray();
 
@@ -89,7 +84,7 @@ public:
                                          std::vector<mathfu::vec3> &frustumPoints);
 
     void update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat);
-    void draw(bool drawTransparent, mathfu::mat4 placementMatrix, mathfu::vec4 diffuseColor);
+    void draw(bool drawTransparent, mathfu::vec4 diffuseColor);
 };
 
 

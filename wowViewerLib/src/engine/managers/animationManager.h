@@ -26,8 +26,8 @@ private:
     bool firstCalc;
     bool isAnimated;
 
-    int leftHandClosed;
-    int rightHandClosed;
+    int leftHandClosed = 0;
+    int rightHandClosed = 0;
 
     std::vector<double> globalSequenceTimes;
     std::vector<bool> bonesIsCalculated;

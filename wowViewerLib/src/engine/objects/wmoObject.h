@@ -25,6 +25,7 @@ private:
     WmoMainGeom *mainGeom = nullptr;
     bool m_loading = false;
     bool m_loaded = false;
+    CAaBox m_bbox;
 
     std::function <BlpTexture&(int materialId)> m_getTextureFunc;
 
@@ -36,6 +37,7 @@ private:
     std::vector<BlpTexture> blpTextures;
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
+    void createBB(CAaBox bbox);
 public:
     std::string getTextureName(int index);
 
@@ -52,8 +54,9 @@ public:
 
     void createGroupObjects();
 
+
     bool checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
-                             std::vector<mathfu::vec3> &frustumPoints, std::set<M2Object *> m2RenderedThisFrame);
+                             std::vector<mathfu::vec3> &frustumPoints, std::set<M2Object *> &m2RenderedThisFrame);
 };
 
 

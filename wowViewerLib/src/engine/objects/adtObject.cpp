@@ -246,13 +246,13 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
             if (mcnkContent && mcnkContent->mcrf.doodad_refs) {
                 for (int j = 0; j < mapTile->nDoodadRefs; j++) {
                     uint32_t m2Ref = mcnkContent->mcrf.doodad_refs[j];
-                    //m2ObjectsCandidates.insert(this->m2Array[m2Ref])
+                    m2ObjectsCandidates.insert(this->m2Objects[m2Ref]);
                 }
             }
             if (mcnkContent && mcnkContent->mcrf.object_refs) {
                 for (int j = 0; j < mapTile->nMapObjRefs; j++) {
                     uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
-                    //wmoCandidates.insert(this.wmoArray[wmoRef])
+                    wmoCandidates.insert(this->wmoObjects[wmoRef]);
                 }
             }
         }

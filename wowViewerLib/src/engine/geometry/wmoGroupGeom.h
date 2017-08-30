@@ -31,7 +31,7 @@ public:
     void draw(IWoWInnerApi *api, SMOMaterial *materials, std::function <BlpTexture&(int materialId)> getTextureFunc);
 
 private:
-    bool m_loaded;
+    bool m_loaded = false;
 
     int normalOffset;
     int textOffset;

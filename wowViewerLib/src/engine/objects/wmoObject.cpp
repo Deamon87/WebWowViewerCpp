@@ -25,13 +25,13 @@ void WmoObject::startLoading() {
 }
 
 bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                                     std::set<M2Object*> m2RenderedThisFrame) {
+                                     std::set<M2Object*> &m2RenderedThisFrame) {
     if (m_loaded) {
         return true;
     }
 
     bool result = false;
-    CAaBox &aabb = this->aabb;
+    CAaBox &aabb = this->m_bbox;
 
     //1. Check if camera position is inside Bounding Box
     if (
@@ -78,16 +78,18 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
 
 
     placementMatrix *= mathfu::mat4::FromTranslationVector(mathfu::vec3(posx, posy, posz));
+//    placementMatrix *= mathfu::mat4::FromTranslationVector(mathfu::vec3(posz, -posx, -posy));
 
     placementMatrix *= MathHelper::RotationY(toRadian(mapObjDef.rotation.y-270));
     placementMatrix *= MathHelper::RotationZ(toRadian(-mapObjDef.rotation.x));
     placementMatrix *= MathHelper::RotationX(toRadian(mapObjDef.rotation.z-90));
 
-
     mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
 
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+
+    createBB(mapObjDef.extents);
 }
 
 void WmoObject::createGroupObjects(){
@@ -101,7 +103,7 @@ void WmoObject::createGroupObjects(){
         std::string groupFilename = nameTemplate + "_" + numStr + ".wmo";
 
 
-        groupObjects[i] = new WmoGroupObject(*this, m_api, groupFilename, mainGeom->groups[i]);
+        groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilename, mainGeom->groups[i]);
     }
 }
 
@@ -141,4 +143,24 @@ BlpTexture &WmoObject::getTexture(int textureId) {
 
     //TODO: cache Textures used in WMO
     return *m_api->getTextureCache()->get(materialTexture);
+}
+
+void WmoObject::createBB(CAaBox bbox) {
+//            groupInfo = this.groupInfo;
+//            bb1 = groupInfo.bb1;
+//            bb2 = groupInfo.bb2;
+//        } else {
+//            groupInfo = this.wmoGeom.wmoGroupFile.mogp;
+//            bb1 = groupInfo.BoundBoxCorner1;
+//            bb2 = groupInfo.BoundBoxCorner2;
+//        }
+    C3Vector &bb1 = bbox.min;
+    C3Vector &bb2 = bbox.max;
+
+    mathfu::vec4 bb1vec = mathfu::vec4(bb1.x, bb1.y, bb1.z, 1);
+    mathfu::vec4 bb2vec = mathfu::vec4(bb2.x, bb2.y, bb2.z, 1);
+
+    CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, bb1vec, bb2vec);
+
+    this->m_bbox = worldAABB;
 }

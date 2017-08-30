@@ -347,7 +347,7 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
         }
 
         if (closedHandAnimation >= 0) {
-            if (this->leftHandClosed) {
+            if (this->leftHandClosed && m_m2File->key_bone_lookup.size > (13+5)) {
                 for (int j = 0; j < 5; j++) {
                     if (*m_m2File->key_bone_lookup[13 + j] > -1) { // BONE_LFINGER1 = 13
                         int boneId = *m_m2File->key_bone_lookup[13 + j];
@@ -357,7 +357,7 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
                     }
                 }
             }
-            if (this->rightHandClosed) {
+            if (this->rightHandClosed && m_m2File->key_bone_lookup.size > (8+5)) {
                 for (int j = 0; j < 5; j++) {
                     if (*m_m2File->key_bone_lookup[8 + j] > -1) { // BONE_RFINGER1 = 8
                         int boneId = *m_m2File->key_bone_lookup[8 + j];

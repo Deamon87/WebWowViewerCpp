@@ -24,18 +24,18 @@ public:
     static bool checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box);
     static std::vector<mathfu::vec3> getHullLines(std::vector<mathfu::vec3> &points);
 
-    #define toRadian(x) (float) x*M_PI/180
+    #define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
 
     static inline mathfu::mat4 RotationX(float angle) {
         return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix4();
     };
 
     static inline mathfu::mat4 RotationY(float angle) {
-        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix4();
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,1,0)).ToMatrix4();
     };
 
     static inline mathfu::mat4 RotationZ(float angle) {
-        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix4();
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,0,1)).ToMatrix4();
     };
 };
 
