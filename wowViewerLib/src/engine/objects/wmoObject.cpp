@@ -26,9 +26,7 @@ void WmoObject::startLoading() {
 
 bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
                                      std::set<M2Object*> &m2RenderedThisFrame) {
-    if (m_loaded) {
-        return true;
-    }
+    if (!m_loaded) return false;
 
     bool result = false;
     CAaBox &aabb = this->m_bbox;
@@ -64,21 +62,18 @@ bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu
 }
 
 void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
-    float TILESIZE = 533.333333333;
 
-    float posx = 32*TILESIZE - mapObjDef.position.x;
+
+    float posx = mapObjDef.position.x;
     float posy = mapObjDef.position.y;
-    float posz = 32*TILESIZE - mapObjDef.position.z;
+    float posz = mapObjDef.position.z;
 
+    mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
 
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
-
-    placementMatrix *= MathHelper::RotationX(toRadian(90));
-    placementMatrix *= MathHelper::RotationY(toRadian(90));
-
-
-    placementMatrix *= mathfu::mat4::FromTranslationVector(mathfu::vec3(posx, posy, posz));
-//    placementMatrix *= mathfu::mat4::FromTranslationVector(mathfu::vec3(posz, -posx, -posy));
+    placementMatrix *= adtToWorldMat4;
+    placementMatrix *= mathfu::mat4::FromTranslationVector(mathfu::vec3(mapObjDef.position));
+    placementMatrix *= mathfu::mat4::FromScaleVector(mathfu::vec3(-1, 1, -1));
 
     placementMatrix *= MathHelper::RotationY(toRadian(mapObjDef.rotation.y-270));
     placementMatrix *= MathHelper::RotationZ(toRadian(-mapObjDef.rotation.x));
@@ -89,7 +84,16 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
 
-    createBB(mapObjDef.extents);
+    //BBox is in ADT coordinates. We need to transform it first
+    C3Vector &bb1 = mapObjDef.extents.min;
+    C3Vector &bb2 = mapObjDef.extents.max;
+    mathfu::vec4 bb1vec = mathfu::vec4(bb1.x, bb1.y, bb1.z, 1);
+    mathfu::vec4 bb2vec = mathfu::vec4(bb2.x, bb2.y, bb2.z, 1);
+
+    CAaBox worldAABB = MathHelper::transformAABBWithMat4(
+            adtToWorldMat4, bb1vec, bb2vec);
+
+    createBB(worldAABB);
 }
 
 void WmoObject::createGroupObjects(){
@@ -115,6 +119,7 @@ void WmoObject::update() {
             m_loading = false;
 
             this->createGroupObjects();
+            this->createBB(mainGeom->header->bounding_box);
         } else {
             this->startLoading();
         }

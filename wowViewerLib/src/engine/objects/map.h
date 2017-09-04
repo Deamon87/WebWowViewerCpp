@@ -60,6 +60,10 @@ private:
     AdtObject *mapTiles[64][64]={};
     std::string mapName;
 
+    float m_currentTime = 0;
+    float m_lastTimeSort = 0;
+    float m_lastTimeDistanceCalc = 0;
+
 
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;
@@ -81,6 +85,8 @@ public:
 
     void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
     void draw();
+
+    void update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 lookAtMat);
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
             std::vector<mathfu::vec4> &frustumPlanes,
@@ -95,6 +101,7 @@ private:
 
     void drawExterior();
     void drawM2s();
+
 
 };
 

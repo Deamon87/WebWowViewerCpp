@@ -35,6 +35,7 @@ private:
     mathfu::mat4 m_placementInvertMatrix;
     mathfu::vec3 m_worldPosition;
 
+    float m_currentDistance = 0;
 
     CAaBox aabb;
 
@@ -76,6 +77,8 @@ public:
     void calcWorldPosition(){
         m_worldPosition = (m_placementMatrix * mathfu::vec4(0,0,0,1)).xyz();
     }
+    void calcDistance(mathfu::vec3 cameraPos);
+    float getCurrentDistance();
 
     void makeTextureArray();
 

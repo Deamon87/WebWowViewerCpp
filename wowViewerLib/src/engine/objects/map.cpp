@@ -29,6 +29,195 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 }
 
+struct SortM2 {
+    bool operator() (M2Object *a, M2Object *b) const {
+        return b->getCurrentDistance() - a->getCurrentDistance() > 0;
+    }
+};
+
+void Map::update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 lookAtMat) {
+    //if (config.getRenderM2()) {
+        for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
+            M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+            m2Object->update(deltaTime, cameraVec3, lookAtMat);
+//            if (this.isM2Scene && m2Object.objectUpdate) {
+//                m2Object.objectUpdate(deltaTime, cameraVec4, lookAtMat);
+//            }
+        }
+//    }
+
+    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
+        this->wmoRenderedThisFrameArr[i]->update();
+    }
+
+    //2. Calc distance every 100 ms
+    if (this->m_currentTime + deltaTime - this->m_lastTimeDistanceCalc > 100) {
+        for (int j = 0; j < this->m2RenderedThisFrameArr.size(); j++) {
+            //if (this.m2Objects[j].getIsRendered()) {
+            this->m2RenderedThisFrameArr[j]->calcDistance(cameraVec3);
+            //}
+        }
+
+        this->m_lastTimeDistanceCalc = this->m_currentTime;
+    }
+
+    //3. Sort m2 by distance every 100 ms
+    if (this->m_currentTime + deltaTime - this->m_lastTimeSort > 100) {
+        std::sort(this->m2RenderedThisFrameArr.begin(),
+                  this->m2RenderedThisFrameArr.end(), SortM2());
+
+        this->m_lastTimeSort = this->m_currentTime;
+    }
+
+//    //4. Collect m2 into instances every 200 ms
+////        if (this.currentTime + deltaTime - this.lastInstanceCollect > 30) {
+//    var map = new Map();
+//    if (this.sceneApi.extensions.getInstancingExt()) {
+//        //Clear instance lists
+//        for (var j = 0; j < this.instanceList.length; j++) {
+//            this.instanceList[j].clearList();
+//        }
+//
+//        for (var j = 0; j < this.m2RenderedThisFrame.length; j++) {
+//            var m2Object = this.m2RenderedThisFrame[j];
+//
+//            if (!m2Object.m2Geom) continue;
+//            if (m2Object.getHasBillboarded() || !m2Object.getIsInstancable()) continue;
+//
+//            var fileIdent = m2Object.getFileNameIdent();
+//
+//            if (map.has(fileIdent)) {
+//                var m2ObjectInstanced = map.get(fileIdent);
+//                this.addM2ObjectToInstanceManager(m2Object);
+//                this.addM2ObjectToInstanceManager(m2ObjectInstanced);
+//            } else {
+//                map.set(fileIdent, m2Object);
+//            }
+//        }
+//    }
+
+
+//    //4.1 Update placement matrix buffers in Instance
+//    for (var j = 0; j < this.instanceList.length; j++) {
+//        var instanceManager = this.instanceList[j];
+//        instanceManager.updatePlacementVBO();
+//    }
+//
+//    this.lastInstanceCollect = this.currentTime;
+
+//
+//    //6. Check what WMO instance we're in
+//    this.currentInteriorGroups = null;
+//    this.currentWMO = null;
+//
+//    var bspNodeId = -1;
+//    var interiorGroupNum = -1;
+//    var currentWmoGroup = -1;
+//    for (var i = 0; i < this.wmoObjects.length; i++) {
+//        var checkingWmoObj = this.wmoObjects[i];
+//        var result = checkingWmoObj.getGroupWmoThatCameraIsInside(this.position);
+//
+//        if (result) {
+//            this.currentWMO = checkingWmoObj;
+//            currentWmoGroup = result.groupId;
+//            if (checkingWmoObj.isGroupWmoInterior(result.groupId)) {
+//                this.currentInteriorGroups = [result];
+//                interiorGroupNum = result.groupId;
+//            } else {
+//            }
+//
+//            bspNodeId = result.nodeId;
+//            break;
+//        }
+//    }
+//
+//    //7. Get AreaId and Area Name
+//    var currentAreaName = '';
+//    var wmoAreaTableDBC = this.sceneApi.dbc.getWmoAreaTableDBC();
+//    var areaTableDBC = this.sceneApi.dbc.getAreaTableDBC();
+//    var areaRecord = null;
+//    if (wmoAreaTableDBC && areaTableDBC) {
+//        if (this.currentWMO) {
+//            var wmoFile = this.currentWMO.wmoObj;
+//            var wmoId = wmoFile.wmoId;
+//            var wmoGroupId = this.currentWMO.wmoGroupArray[currentWmoGroup].wmoGeom.wmoGroupFile.mogp.groupID;
+//            var nameSetId = this.currentWMO.nameSet;
+//
+//            var wmoAreaTableRecord = wmoAreaTableDBC.findRecord(wmoId, nameSetId, wmoGroupId);
+//            if (wmoAreaTableRecord) {
+//                var areaRecord = areaTableDBC[wmoAreaTableRecord.areaId];
+//                if (wmoAreaTableRecord) {
+//                    if (wmoAreaTableRecord.name == '') {
+//                        var areaRecord = areaTableDBC[wmoAreaTableRecord.areaId];
+//                        if (areaRecord) {
+//                            currentAreaName = areaRecord.name
+//                        }
+//                    } else {
+//                        currentAreaName = wmoAreaTableRecord.name;
+//                    }
+//                }
+//            }
+//        }
+//        if (currentAreaName == '' && mcnkChunk) {
+//            var areaRecord = areaTableDBC[mcnkChunk.areaId];
+//            if (areaRecord) {
+//                currentAreaName = areaRecord.name
+//            }
+//        }
+//    }
+//
+//    //8. Check fog color every 2 seconds
+//    var fogRecordWasFound = false;
+//    if (this.currentTime + deltaTime - this.lastFogParamCheck > 2000) {
+//        if (this.currentWMO) {
+//            var wmoFile = this.currentWMO.wmoObj;
+//            var cameraLocal = vec4.create();
+//            vec4.transformMat4(cameraLocal, this.position, this.currentWMO.placementInvertMatrix);
+//
+//            for (var i = wmoFile.mfogArray.length-1; i >= 0; i--) {
+//                var fogRecord = wmoFile.mfogArray[i];
+//                var fogPosVec = vec4.fromValues(fogRecord.pos.x,fogRecord.pos.y,fogRecord.pos.z,1);
+//
+//                var distanceToFog = vec4.distance(fogPosVec, cameraLocal);
+//                if ((distanceToFog < fogRecord.larger_radius) /*|| fogRecord.larger_radius == 0*/) {
+//                    this.sceneApi.setFogColor(fogRecord.fog_colorF);
+//                    //this.sceneApi.setFogStart(wmoFile.mfog.fog_end);
+//                    this.sceneApi.setFogEnd(fogRecord.fog_end);
+//                    fogRecordWasFound = true;
+//                    break;
+//                }
+//            }
+//        }
+//        var lightIntBandDBC = this.sceneApi.dbc.getLightIntBandDBC();
+//        if (!fogRecordWasFound && lightIntBandDBC) {
+//            //Check areaRecord
+//            /*
+//            //It's always 0 in WotLK
+//            if (areaRecord && lightTableDBC) {
+//                var lightRecord = lightTableDBC[areaRecord.lightId];
+//            }
+//            */
+//            //Query Light Record
+//            var result = this.sceneApi.findLightRecord(this.position);
+//            if (result && result.length > 0) {
+//                result.sort(function(a,b){
+//                    if (a.distance < b.distance) return -1;
+//                    if (a.distance > b.distance) return 1;
+//                    return 0;
+//                });
+//                var fogIntRec = lightIntBandDBC[result[0].record.skyAndFog*18 - 17 + 7];
+//                this.sceneApi.setFogColor(fogIntRec.floatValues[0]);
+//
+//                //Take fog params from here
+//
+//            }
+//
+//        }
+//        this.lastFogParamCheck = this.currentTime;
+//    }
+    this->m_currentTime += deltaTime;
+}
+
 void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::vector<mathfu::vec4> &frustumPlanes,
                         std::vector<mathfu::vec3> &frustumPoints,

@@ -50,26 +50,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     //Init caches
 
-//    m2Object = new M2Object(this);
-//    m2Object->setLoadParams(
-////            "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\CHANDELIERS\\KARAZANCHANDELIER_02.m2",
-//            "WORLD\\EXPANSION01\\DOODADS\\GENERIC\\BLOODELF\\PLANETARIUM\\BE_PLANETARIUM.m2",
-////            "WORLD\\EXPANSION01\\DOODADS\\HELLFIREPENINSULA\\LAMPPOST\\ANCIENT_DRAINEI_LAMPPOST.m2",
-//            0,
-//            std::vector<uint8_t>(),
-//            std::vector<std::string>()
-//    );
-
-    SMMapObjDef def;
-    def.uniqueId = 0;
-    def.position = C3Vector(mathfu::vec3(0 + 17066.666666656, 0, 0 + 17066.666666656));
-    def.rotation = C3Vector(mathfu::vec3(0, 0, 0));
-    def.doodadSet = 0;
-
-    wmoObject = new WmoObject(this);
-    wmoObject->setLoadingParam("World\\wmo\\KhazModan\\Cities\\Ironforge\\ironforge.wmo", def);
-//    adtObject
-
     m_firstCamera.setCameraPos(-1663, 5098, 27);
 }
 
@@ -867,10 +847,11 @@ void WoWSceneImpl::draw(double deltaTime) {
 //
 //
 //    var updateRes = this.graphManager.update(deltaTime);
+    mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 0);
+    map->update(deltaTime, cameraVec4.xyz(), lookAtMat4);
     //m2Object->update(deltaTime, this->m_firstCamera.getCameraPosition(), lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
 //
-    mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 0);
     map->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
 //    this.graphManager.checkCulling(perspectiveMatrixForCulling, lookAtMat4);
 //    this.graphManager.sortGeometry(perspectiveMatrixForCulling, lookAtMat4);
@@ -878,21 +859,6 @@ void WoWSceneImpl::draw(double deltaTime) {
 //
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
-
-//    glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
-//    activateM2Shader();
-//    m2Object->draw(false, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
-//    m2Object->draw(true, mathfu::mat4::Identity(), mathfu::vec4(1,1,1,1));
-//    deactivateM2Shader();
-
-//    activateWMOShader();
-//    wmoObject->draw();
-//    deactivateWMOShader();
-
-//    activateAdtShader();
-//    std::vector<bool> drawAll(256, true);
-//    adtObject->draw(drawAll);
-
 
 //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

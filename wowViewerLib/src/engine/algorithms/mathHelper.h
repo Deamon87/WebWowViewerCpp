@@ -8,6 +8,7 @@
 
 #include "../persistance/header/commonFileStructs.h"
 #include <vector>
+#define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
 
 class MathHelper {
 public:
@@ -24,7 +25,7 @@ public:
     static bool checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box);
     static std::vector<mathfu::vec3> getHullLines(std::vector<mathfu::vec3> &points);
 
-    #define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
+
 
     static inline mathfu::mat4 RotationX(float angle) {
         return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix4();
@@ -37,6 +38,17 @@ public:
     static inline mathfu::mat4 RotationZ(float angle) {
         return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,0,1)).ToMatrix4();
     };
+
+    static const mathfu::mat4 getAdtToWorldMat4() {
+        const float TILESIZE = 533.333333333;
+
+        mathfu::mat4 adtToWorldMat4 = mathfu::mat4::Identity();
+        adtToWorldMat4 *= MathHelper::RotationX(toRadian(90));
+        adtToWorldMat4 *= MathHelper::RotationY(toRadian(90));
+        adtToWorldMat4 *= mathfu::mat4::FromTranslationVector(mathfu::vec3(32*TILESIZE, 0, 32*TILESIZE));
+        adtToWorldMat4 *= mathfu::mat4::FromScaleVector(mathfu::vec3(-1, 1, -1));
+        return adtToWorldMat4;
+    }
 };
 
 

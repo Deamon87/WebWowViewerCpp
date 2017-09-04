@@ -42,16 +42,16 @@ void M2Object::createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlaceme
 void M2Object::createPlacementMatrix(SMDoodadDef &def) {
     const float TILESIZE = 533.333333333;
 
-    float posx = 32*TILESIZE - def.position.x;
+    float posx = def.position.x;
     float posy = def.position.y;
-    float posz = 32*TILESIZE - def.position.z;
+    float posz = def.position.z;
 
+    mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
 
-    placementMatrix *= MathHelper::RotationX(toRadian(90));
-    placementMatrix *= MathHelper::RotationY(toRadian(90));
-
+    placementMatrix *= adtToWorldMat4;
     placementMatrix *= mathfu::mat4::FromTranslationVector(mathfu::vec3(posx, posy, posz));
+    placementMatrix *= mathfu::mat4::FromScaleVector(mathfu::vec3(-1, 1, -1));
 
     placementMatrix *= MathHelper::RotationY(toRadian(def.rotation.y-270));
     placementMatrix *= MathHelper::RotationZ(toRadian(-def.rotation.x));
@@ -64,6 +64,14 @@ void M2Object::createPlacementMatrix(SMDoodadDef &def) {
 
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+}
+
+void M2Object::calcDistance(mathfu::vec3 cameraPos) {
+    m_currentDistance = (m_worldPosition-cameraPos).Length();
+}
+
+float M2Object::getCurrentDistance() {
+    return m_currentDistance;
 }
 
 void M2Object::setLoadParams (std::string modelName, int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
