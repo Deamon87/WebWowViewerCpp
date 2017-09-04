@@ -36,6 +36,8 @@ private:
     std::vector<WmoGroupObject*> groupObjects = std::vector<WmoGroupObject*>(0);
     std::vector<BlpTexture> blpTextures;
 
+    std::vector<bool> drawGroupWMO;
+
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createBB(CAaBox bbox);
 public:
@@ -57,6 +59,8 @@ public:
 
     bool checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                              std::vector<mathfu::vec3> &frustumPoints, std::set<M2Object *> &m2RenderedThisFrame);
+
+    void update();
 };
 
 

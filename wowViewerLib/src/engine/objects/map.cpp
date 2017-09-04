@@ -8,8 +8,6 @@
 #include "../algorithms/mathHelper.h"
 #include "../algorithms/grahamScan.h"
 
-
-
 void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     adtRenderedThisFrame = std::set<AdtObject*>();
     m2RenderedThisFrame = std::set<M2Object*>();

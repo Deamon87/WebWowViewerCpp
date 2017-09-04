@@ -20,6 +20,8 @@ public:
     }
 
     void draw(SMOMaterial *materials, std::function <BlpTexture&(int materialId)> m_getTextureFunc);
+
+    void update();
     bool checkGroupFrustum(mathfu::vec4 &cameraVec4,
                            std::vector<mathfu::vec4> &frustumPlanes,
                            std::vector<mathfu::vec3> &points,
@@ -45,6 +47,7 @@ private:
     bool checkDoodads(std::set<M2Object*> &wmoM2Candidates);
 
     void postLoad();
+
 };
 
 

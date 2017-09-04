@@ -47,7 +47,7 @@ bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu
     if (result) {
         //1. Calculate visibility for groups
         for (int i = 0; i < this->groupObjects.size(); i++) {
-            this->groupObjects[i]->checkGroupFrustum(cameraPos, frustumPlanes, frustumPoints, wmoM2Candidates);
+            drawGroupWMO[i] = this->groupObjects[i]->checkGroupFrustum(cameraPos, frustumPlanes, frustumPoints, wmoM2Candidates);
         }
 
         //2. Check all m2 candidates
@@ -94,6 +94,7 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
 
 void WmoObject::createGroupObjects(){
     groupObjects = std::vector<WmoGroupObject*>(mainGeom->groupsLen, nullptr);
+    drawGroupWMO = std::vector<bool>(mainGeom->groupsLen, false);
 
     std::string nameTemplate = m_modelName.substr(0, m_modelName.find_last_of("."));
     for(int i = 0; i < mainGeom->groupsLen; i++) {
@@ -107,7 +108,7 @@ void WmoObject::createGroupObjects(){
     }
 }
 
-void WmoObject::draw(){
+void WmoObject::update() {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getIsLoaded()){
             m_loaded = true;
@@ -119,13 +120,24 @@ void WmoObject::draw(){
         }
 
         return;
+    } else {
+        for (int i= 0; i < groupObjects.size(); i++) {
+            if(groupObjects[i] != nullptr) {
+                groupObjects[i]->update();
+            }
+        }
     }
+}
+
+void WmoObject::draw(){
+    if (!m_loaded) return;
+
     auto wmoShader = m_api->getWmoShader();
 
     glUniformMatrix4fv(wmoShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
 
     for (int i= 0; i < groupObjects.size(); i++) {
-        if(groupObjects[i] != nullptr) {
+        if(groupObjects[i] != nullptr && drawGroupWMO[i]) {
             groupObjects[i]->draw(mainGeom->materials, m_getTextureFunc);
         }
     }

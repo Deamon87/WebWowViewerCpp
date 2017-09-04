@@ -63,6 +63,7 @@ struct M2Bounds {
     CAaBox extent;
     float radius;
 };
+
 template<typename T>
 struct M2Array {
     int32_t size;
