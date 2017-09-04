@@ -27,6 +27,9 @@ private:
     bool m_loaded = false;
     CAaBox m_bbox;
 
+    int m_nameSet;
+    int m_doodadSet;
+
     std::function <BlpTexture&(int materialId)> m_getTextureFunc;
 
     mathfu::mat4 m_placementMatrix;
@@ -37,13 +40,15 @@ private:
     std::vector<BlpTexture> blpTextures;
 
     std::vector<bool> drawGroupWMO;
+    std::vector<M2Object*> m_doodadsArray;
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createBB(CAaBox bbox);
+    void loadM2s();
 public:
     std::string getTextureName(int index);
 
-//    M2Object& getDoodad(int index);
+    M2Object *getDoodad(int index);
     BlpTexture& getTexture(int materialId);
     void setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef);
     void startLoading();

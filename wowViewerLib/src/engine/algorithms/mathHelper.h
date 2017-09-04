@@ -7,6 +7,7 @@
 
 
 #include "../persistance/header/commonFileStructs.h"
+#include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include <vector>
 #define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
 
@@ -42,13 +43,22 @@ public:
     static const mathfu::mat4 getAdtToWorldMat4() {
         const float TILESIZE = 533.333333333;
 
-        mathfu::mat4 adtToWorldMat4 = mathfu::mat4::Identity();
-        adtToWorldMat4 *= MathHelper::RotationX(toRadian(90));
-        adtToWorldMat4 *= MathHelper::RotationY(toRadian(90));
-        adtToWorldMat4 *= mathfu::mat4::FromTranslationVector(mathfu::vec3(32*TILESIZE, 0, 32*TILESIZE));
-        adtToWorldMat4 *= mathfu::mat4::FromScaleVector(mathfu::vec3(-1, 1, -1));
+//        mathfu::mat4 adtToWorldMat4 = mathfu::mat4::Identity();
+//        adtToWorldMat4 *= MathHelper::RotationX(toRadian(90));
+//        adtToWorldMat4 *= MathHelper::RotationY(toRadian(90));
+//        adtToWorldMat4 *= mathfu::mat4::FromTranslationVector(mathfu::vec3(32*TILESIZE, 0, 32*TILESIZE));
+//        adtToWorldMat4 *= mathfu::mat4::FromScaleVector(mathfu::vec3(-1, 1, -1));
+
+        static mathfu::mat4 adtToWorldMat4 = {
+                {0, -1, 0, 0},
+                {0, 0, 1, 0},
+                {-1, 0, 0, 0},
+                {32*TILESIZE, 32*TILESIZE, 0, 1}};
+
         return adtToWorldMat4;
     }
+//
+
 };
 
 

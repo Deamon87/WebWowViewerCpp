@@ -35,6 +35,8 @@ void WmoGroupObject::postLoad() {
 
     this->m_dontUseLocalLightingForM2 = ((m_geom->mogp->flags & 0x40) > 0) || ((m_geom->mogp->flags & 0x8) > 0);
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
+
+
 }
 
 void WmoGroupObject::createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix) {
@@ -113,12 +115,12 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
     return drawGroup;
 }
 bool WmoGroupObject::checkDoodads(std::set<M2Object*> &wmoM2Candidates){
-//    for (int i = 0; i< this->wmoDoodads.length; i++) {
-//        if (this.wmoDoodads[i]) {
-//            if (this.dontUseLocalLightingForM2) {
-//                this.wmoDoodads[i].setUseLocalLighting(false);
-//            }
-//            wmoM2Candidates.add(this.wmoDoodads[i]);
-//        }
-//    }
+    for (int i = 0; i< this->wmoDoodads.length; i++) {
+        if (this.wmoDoodads[i]) {
+            if (this.dontUseLocalLightingForM2) {
+                this.wmoDoodads[i].setUseLocalLighting(false);
+            }
+            wmoM2Candidates.add(this.wmoDoodads[i]);
+        }
+    }
 }

@@ -9,19 +9,40 @@ std::string WmoObject::getTextureName(int index) {
     return std::__cxx11::string();
 }
 
-//M2Object &WmoObject::getDoodad(int index) {
-//    return M2Object;
-//}
-
 void WmoObject::startLoading() {
     if (!m_loading) {
         m_loading = true;
 
         Cache<WmoMainGeom> *wmoGeomCache = m_api->getWmoMainCache();
-
         mainGeom = wmoGeomCache->get(m_modelName);
 
     }
+}
+
+M2Object *WmoObject::getDoodad(int index) {
+    int doodadsSet = this->m_doodadSet;
+
+    SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
+    if (index < doodadSetDef->firstinstanceindex
+        || index > doodadSetDef->firstinstanceindex + doodadSetDef->numDoodads) return nullptr;
+
+    int doodadIndex = index - doodadSetDef->firstinstanceindex;
+
+    M2Object *doodadObject = this->m_doodadsArray[doodadIndex];
+    if (doodadObject == nullptr) return doodadObject;
+
+
+    SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
+    doodadDef->name_offset;
+
+    M2Object *m2Object = new M2Object(m_api);
+    m2Object->setLoadParams(fileName, 0, {},{});
+    m2Object->createPlacementMatrix(doodadDef);
+    m2Object->calcWorldPosition();
+
+    this->m_doodadsArray[doodadIndex] = doodadObject;
+
+    return doodadObject;
 }
 
 bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
@@ -153,6 +174,10 @@ void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
 
     //this->m_placementMatrix = mathfu::mat4::Identity();
     createPlacementMatrix(mapObjDef);
+
+    this->m_doodadSet = mapObjDef.doodadSet;
+    this->m_nameSet = mapObjDef.nameSet;
+
 }
 
 BlpTexture &WmoObject::getTexture(int textureId) {
