@@ -3,10 +3,13 @@ cmake_minimum_required(VERSION 3.8)
 project(WebWoWViewerCpp)
 include(ExternalProject)
 
+#set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+
 if (WIN32)
 	SET(zlibLib zlibstaticd)
 	SET(extra_libraries "")
-
 else()
 	SET(zlibLib libzlibstatic.a)
 	SET(extra_libraries stdc++fs)

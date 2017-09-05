@@ -2,7 +2,7 @@
 #include "shadersStructures.h"
 
 constexpr const char* const adtShaderString =
- #include <adtShader.glsl>
+ #include <../glsl/adtShader.glsl>
 ;
 
 struct adtShader {
@@ -23,7 +23,7 @@ adtShaderAttributes
 };
 
 constexpr const char* const drawBBShaderString =
- #include <drawBBShader.glsl>
+ #include <../glsl/drawBBShader.glsl>
 ;
 
 struct drawBBShader {
@@ -42,7 +42,7 @@ drawBBShaderAttributes
 };
 
 constexpr const char* const drawDepthShaderString =
- #include <drawDepthShader.glsl>
+ #include <../glsl/drawDepthShader.glsl>
 ;
 
 struct drawDepthShader {
@@ -62,7 +62,7 @@ drawDepthShaderAttributes
 };
 
 constexpr const char* const drawFrustumShaderString =
- #include <drawFrustumShader.glsl>
+ #include <../glsl/drawFrustumShader.glsl>
 ;
 
 struct drawFrustumShader {
@@ -81,7 +81,7 @@ drawFrustumShaderAttributes
 };
 
 constexpr const char* const drawLinesShaderString =
- #include <drawLinesShader.glsl>
+ #include <../glsl/drawLinesShader.glsl>
 ;
 
 struct drawLinesShader {
@@ -100,7 +100,7 @@ drawLinesShaderAttributes
 };
 
 constexpr const char* const drawPortalShaderString =
- #include <drawPortalShader.glsl>
+ #include <../glsl/drawPortalShader.glsl>
 ;
 
 struct drawPortalShader {
@@ -119,7 +119,7 @@ drawPortalShaderAttributes
 };
 
 constexpr const char* const m2ShaderString =
- #include <m2Shader.glsl>
+ #include <../glsl/m2Shader.glsl>
 ;
 
 struct m2Shader {
@@ -145,7 +145,7 @@ m2ShaderAttributes
 };
 
 constexpr const char* const readDepthBufferShaderString =
- #include <readDepthBufferShader.glsl>
+ #include <../glsl/readDepthBufferShader.glsl>
 ;
 
 struct readDepthBufferShader {
@@ -165,7 +165,7 @@ readDepthBufferShaderAttributes
 };
 
 constexpr const char* const renderFrameBufferShaderString =
- #include <renderFrameBufferShader.glsl>
+ #include <../glsl/renderFrameBufferShader.glsl>
 ;
 
 struct renderFrameBufferShader {
@@ -184,7 +184,7 @@ renderFrameBufferShaderAttributes
 };
 
 constexpr const char* const textureCompositionShaderString =
- #include <textureCompositionShader.glsl>
+ #include <../glsl/textureCompositionShader.glsl>
 ;
 
 struct textureCompositionShader {
@@ -203,7 +203,7 @@ textureCompositionShaderAttributes
 };
 
 constexpr const char* const wmoShaderString =
- #include <wmoShader.glsl>
+ #include <../glsl/wmoShader.glsl>
 ;
 
 struct wmoShader {

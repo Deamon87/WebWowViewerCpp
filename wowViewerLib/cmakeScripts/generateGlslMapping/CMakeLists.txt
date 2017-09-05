@@ -16,7 +16,7 @@ foreach (file ${FILES})
     file(
             APPEND ${CMAKE_SOURCE_DIR}/src/engine/shaderDefinitions.h
             ""
-            "constexpr const char* const ${NAME}String =\n #include <${NAME}${EXT}>\n;\n\n"
+            "constexpr const char* const ${NAME}String =\n #include <../glsl/${NAME}${EXT}>\n;\n\n"
     )
     set(shaderDefMap "${shaderDefMap} { \"${NAME}\", ${NAME}Def },\n")
 

@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(WoWViewerLib)
+
 set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 
 include(ExternalProject)
 #set(mathfu_build_benchmarks OFF CACHE BOOL "")
@@ -13,6 +17,8 @@ include(ExternalProject)
 set(mathfu_build_benchmarks OFF CACHE BOOL "")
 set(mathfu_build_tests OFF CACHE BOOL "")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+
 
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/mathfu mathfu)

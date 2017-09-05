@@ -8,6 +8,161 @@
 #include "../managers/animationManager.h"
 #include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
 
+void getTabledShaderNames(shaderId, op_count, tex_unit_number2){
+    var v4 = (shaderId >> 4) & 7;
+    var v5 = shaderId & 7;
+    var v6 = (shaderId >> 4) & 8;
+    var v7 = shaderId & 8;
+
+    var vertexShaderName;
+    var pixelShaderName;
+    if ( op_count == 1 ) {
+        if ( v6 )
+        {
+            vertexShaderName = "Diffuse_Env";
+        }
+        else
+        {
+            vertexShaderName = "Diffuse_T2";
+            if ( tex_unit_number2 )
+                vertexShaderName = "Diffuse_T1";
+        }
+        switch ( v4 )
+        {
+
+            case 0:
+                pixelShaderName = "Combiners_Opaque";
+                break;
+            case 2:
+                pixelShaderName = "Combiners_Decal";
+                break;
+            case 3:
+                pixelShaderName = "Combiners_Add";
+                break;
+            case 4:
+                pixelShaderName = "Combiners_Mod2x";
+                break;
+            case 5:
+                pixelShaderName = "Combiners_Fade";
+                break;
+            default:
+                pixelShaderName = "Combiners_Mod";
+                break;
+        }
+    } else {
+        if ( v6 )
+        {
+            vertexShaderName = "Diffuse_Env_T2";
+            if ( v7 )
+                vertexShaderName = "Diffuse_Env_Env";
+        }
+        else if ( shaderId & 8 )
+        {
+            vertexShaderName = "Diffuse_T1_Env";
+        }
+        else
+        {
+            vertexShaderName = "Diffuse_T1_T2";
+        }
+        if ( !v4 )
+        {
+            switch ( v5 )
+            {
+                case 0:
+                    pixelShaderName = "Combiners_Opaque_Opaque";
+                    break;
+                case 3:
+                    pixelShaderName = "Combiners_Opaque_Add";
+                    break;
+                case 4:
+                    pixelShaderName = "Combiners_Opaque_Mod2x";
+                    break;
+                case 6:
+                    pixelShaderName = "Combiners_Opaque_Mod2xNA";
+                    break;
+                case 7:
+                    pixelShaderName = "Combiners_Opaque_AddNA";
+                    break;
+                default:
+                    pixelShaderName = "Combiners_Opaque_Mod";
+                    break;
+            }
+        } else if ( v4 == 1 ) {
+            switch ( v5 )
+            {
+                case 0:
+                    pixelShaderName = "Combiners_Mod_Opaque";
+                    break;
+                case 3:
+                    pixelShaderName = "Combiners_Mod_Add";
+                    break;
+                case 4:
+                    pixelShaderName = "Combiners_Mod_Mod2x";
+                    break;
+                case 6:
+                    pixelShaderName = "Combiners_Mod_Mod2xNA";
+                    break;
+                case 7:
+                    pixelShaderName = "Combiners_Mod_AddNA";
+                    break;
+                default:
+                    pixelShaderName = "Combiners_Mod_Mod";
+                    break;
+
+            }
+        } else if ( v4 == 3 ) {
+            if ( v5 == 1 )
+            {
+                pixelShaderName = "Combiners_Add_Mod";
+            }
+            return 0;
+        } else if ( v4 != 4 ) {
+            return 0;
+        } else if ( v5 == 1 ) {
+            pixelShaderName = "Combiners_Mod_Mod2x";
+        } else {
+            if ( v5 != 4 )
+                return 0;
+            pixelShaderName = "Combiners_Mod2x_Mod2x";
+        }
+    }
+    return { vertex: vertexShaderName, pixel : pixelShaderName }
+}
+
+void getShaderNames(M2Batch *m2Batch){
+
+
+        var shaderId = m2Batch->shaderId;
+        var shaderNames;
+        var vertexShader;
+        var pixelShader;
+        if ( !(shaderId & 0x8000) ) {
+            shaderNames = getTabledShaderNames(shaderId, m2Batch.op_count, m2Batch.textureUnitNum);
+            if ( !shaderNames )
+                shaderNames = getTabledShaderNames(shaderId, m2Batch.op_count, 0x11, m2Batch.textureUnitNum);
+            return shaderNames;
+        }
+        switch ( shaderId & 0x7FFF ) {
+            case 0:
+                return 0;
+            case 1:
+                vertexShader = "Combiners_Opaque_Mod2xNA_Alpha";
+            pixelShader = "Diffuse_T1_Env";
+            break;
+            case 2:
+                vertexShader = "Combiners_Opaque_AddAlpha";
+            pixelShader = "Diffuse_T1_Env";
+            break;
+            case 3:
+                vertexShader = "Combiners_Opaque_AddAlpha_Alpha";
+            pixelShader = "Diffuse_T1_Env";
+            break;
+            default:
+                break;
+        }
+
+        return { vertex: vertexShader, pixel : pixelShader }
+}
 
 void M2Object::createAABB() {
     M2Data *m2Data = m_m2Geom->getM2Data();
@@ -123,6 +278,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 vie
             this->initTextAnimMatrices();
             this->initSubmeshColors();
             this->initTransparencies();
+
+            m_skinGeom->fixData(m_m2Geom->getM2Data());
         } else {
             return;
         }
