@@ -80,7 +80,7 @@ R animateTrack(
         std::vector<double> &globalSequenceTimes,
         R &defaultValue) {
 
-    if (animationBlock.timestamps[animationIndex]->size == 0) {
+    if ((animationBlock.timestamps.size <= animationIndex) || (animationBlock.timestamps[animationIndex]->size == 0)) {
         return defaultValue;
     }
 

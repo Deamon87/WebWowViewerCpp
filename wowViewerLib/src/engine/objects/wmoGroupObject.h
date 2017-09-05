@@ -11,6 +11,7 @@ class WmoGroupObject;
 #include "../wowInnerApi.h"
 #include "../persistance/header/wmoFileHeader.h"
 #include "wmoObject.h"
+#include "iWmoApi.h"
 
 class WmoGroupObject {
 public:
@@ -21,19 +22,23 @@ public:
 
     void draw(SMOMaterial *materials, std::function <BlpTexture&(int materialId)> m_getTextureFunc);
 
+    void setWmoApi(IWmoApi *api);
     void update();
     bool checkGroupFrustum(mathfu::vec4 &cameraVec4,
                            std::vector<mathfu::vec4> &frustumPlanes,
                            std::vector<mathfu::vec3> &points,
                            std::set<M2Object*> &wmoM2Candidates);
 private:
-    IWoWInnerApi *m_api;
+    IWoWInnerApi *m_api = nullptr;
+    IWmoApi *m_wmoApi = nullptr;
     WmoGroupGeom *m_geom = nullptr;
     std::string m_fileName;
 
     CAaBox m_worldGroupBorder;
     CAaBox m_volumeWorldGroupBorder;
     mathfu::mat4 *m_modelMatrix;
+
+    std::vector <M2Object *> m_doodads = std::vector<M2Object *>(0);
 
     bool m_dontUseLocalLightingForM2 = false;
 
@@ -48,6 +53,7 @@ private:
 
     void postLoad();
 
+    void loadDoodads();
 };
 
 

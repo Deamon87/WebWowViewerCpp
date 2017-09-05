@@ -483,10 +483,6 @@ void Map::drawM2s() {
     for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
 
         M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-
-        //TODO: fix this hack
-        m2Object->update(0, mathfu::vec3(0,0,0), mathfu::mat4::Identity());
-
         m2Object->draw(false, diffuseNon);
     }
 

@@ -75,7 +75,7 @@ ExternalProject_Add("WowViewerLib"
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib
         STEP_TARGETS build
         EXCLUDE_FROM_ALL TRUE
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
         )
 ExternalProject_Get_Property(WowViewerLib install_dir)
 include_directories(${install_dir}/include)

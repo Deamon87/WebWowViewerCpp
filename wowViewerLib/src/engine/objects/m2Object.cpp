@@ -6,6 +6,7 @@
 #include "m2Object.h"
 #include "../algorithms/mathHelper.h"
 #include "../managers/animationManager.h"
+#include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
 
 
 void M2Object::createAABB() {
@@ -119,6 +120,9 @@ void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 vie
             this->makeTextureArray();
             this->initAnimationManager();
             this->initBoneAnimMatrices();
+            this->initTextAnimMatrices();
+            this->initSubmeshColors();
+            this->initTransparencies();
         } else {
             return;
         }
@@ -130,12 +134,12 @@ void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 vie
 //    //if (!this.materialArray) return;
 //
 //    /* 1. Calc local camera */
-    mathfu::vec4 cameraInlocalPos = mathfu::vec4(cameraPos, 0);
-    //cameraInlocalPos = invPlacementMat* cameraInlocalPos;
+    mathfu::vec4 cameraInlocalPos = mathfu::vec4(cameraPos, 1);
+    cameraInlocalPos = m_placementInvertMatrix * cameraInlocalPos;
 //
 //    /* 2. Update animation values */
-    this->m_animationManager->update(deltaTime, cameraPos,
-                                     this->bonesMatrices,
+    this->m_animationManager->update(deltaTime, cameraInlocalPos.xyz(),
+                                 this->bonesMatrices,
         this->textAnimMatrices,
         this->subMeshColors,
         this->transparencies
@@ -426,4 +430,14 @@ void M2Object::initAnimationManager() {
 void M2Object::initBoneAnimMatrices() {
     this->bonesMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->bones.size, mathfu::mat4::Identity());;
 }
+void M2Object::initTextAnimMatrices() {
+    textAnimMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->texture_transforms.size, mathfu::mat4::Identity());;
+}
 
+void M2Object::initSubmeshColors() {
+    subMeshColors = std::vector<mathfu::vec4>(m_m2Geom->getM2Data()->colors.size);
+
+}
+void M2Object::initTransparencies() {
+    transparencies = std::vector<float>(m_m2Geom->getM2Data()->transparency_lookup_table.size);
+}

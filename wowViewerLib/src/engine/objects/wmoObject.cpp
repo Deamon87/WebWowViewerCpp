@@ -29,20 +29,20 @@ M2Object *WmoObject::getDoodad(int index) {
     int doodadIndex = index - doodadSetDef->firstinstanceindex;
 
     M2Object *doodadObject = this->m_doodadsArray[doodadIndex];
-    if (doodadObject == nullptr) return doodadObject;
+    if (doodadObject != nullptr) return doodadObject;
 
 
     SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
-    doodadDef->name_offset;
+    std::string fileName(&this->mainGeom->doodadNamesField[doodadDef->name_offset]);
 
     M2Object *m2Object = new M2Object(m_api);
     m2Object->setLoadParams(fileName, 0, {},{});
-    m2Object->createPlacementMatrix(doodadDef);
+    m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
 
-    this->m_doodadsArray[doodadIndex] = doodadObject;
+    this->m_doodadsArray[doodadIndex] = m2Object;
 
-    return doodadObject;
+    return m2Object;
 }
 
 bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
@@ -130,6 +130,7 @@ void WmoObject::createGroupObjects(){
 
 
         groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilename, mainGeom->groups[i]);
+        groupObjects[i]->setWmoApi(this);
     }
 }
 
@@ -141,6 +142,7 @@ void WmoObject::update() {
 
             this->createGroupObjects();
             this->createBB(mainGeom->header->bounding_box);
+            this->createM2Array();
         } else {
             this->startLoading();
         }
@@ -205,4 +207,8 @@ void WmoObject::createBB(CAaBox bbox) {
     CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, bb1vec, bb2vec);
 
     this->m_bbox = worldAABB;
+}
+
+void WmoObject::createM2Array() {
+    this->m_doodadsArray = std::vector<M2Object*>(this->mainGeom->doodadDefsLen, nullptr);
 }

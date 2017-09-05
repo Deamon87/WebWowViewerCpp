@@ -12,8 +12,9 @@ class WmoGroupObject;
 #include "wmoGroupObject.h"
 #include "m2Object.h"
 #include "../geometry/wmoMainGeom.h"
+#include "./iWmoApi.h"
 
-class WmoObject {
+class WmoObject : public IWmoApi {
 
 public:
     WmoObject(IWoWInnerApi *api) : m_api(api) {
@@ -66,6 +67,8 @@ public:
                              std::vector<mathfu::vec3> &frustumPoints, std::set<M2Object *> &m2RenderedThisFrame);
 
     void update();
+
+    void createM2Array();
 };
 
 

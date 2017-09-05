@@ -138,10 +138,10 @@ inline void calcAnimationTransform(
         tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(transVec.xyz());
         isAnimated = true;
     }
-//    if (billboardMatrix != nullptr) {
-//        tranformMat = tranformMat * *billboardMatrix;
-//    } else
- if (rotationTrack.values.size > 0) {
+    if (billboardMatrix != nullptr) {
+        tranformMat = tranformMat * *billboardMatrix;
+    } else
+    if (rotationTrack.values.size > 0) {
         mathfu::quat defaultValue = mathfu::quat(1,0,0,0);
         mathfu::quat quaternionResult = animateTrack<T, mathfu::quat>(
             time,

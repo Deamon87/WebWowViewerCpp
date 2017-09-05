@@ -88,6 +88,12 @@ public:
 
     void update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat);
     void draw(bool drawTransparent, mathfu::vec4 diffuseColor);
+
+    void initTextAnimMatrices();
+
+    void initSubmeshColors();
+
+    void initTransparencies();
 };
 
 
