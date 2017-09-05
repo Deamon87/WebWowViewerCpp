@@ -6,7 +6,7 @@
 #define WOWMAPVIEWERREVIVED_SHADERRUNTIMEDATA_H
 
 #include <string>
-#include <map>
+#include <unordered_map>
 #include "../opengl/header.h"
 
 
@@ -16,13 +16,13 @@ public:
     }
 
 public:
-    unsigned long hasUnf(std::string name);
-    GLuint getUnf(std::string name);
+    unsigned long hasUnf(const std::string &name);
+    GLuint getUnf(const std::string &name);
     GLuint getProgram();
-    void setUnf(std::string name, GLuint index);
+    void setUnf(const std::string &name, GLuint index);
     void setProgram(GLuint program);
 private:
-    std::map<std::string, GLuint> m_uniformMap;
+    std::unordered_map<std::string, GLuint> m_uniformMap;
     GLuint m_program;
 };
 
