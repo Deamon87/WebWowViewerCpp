@@ -8,14 +8,37 @@
 #include "../managers/animationManager.h"
 #include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
 
-void getTabledShaderNames(shaderId, op_count, tex_unit_number2){
-    var v4 = (shaderId >> 4) & 7;
-    var v5 = shaderId & 7;
-    var v6 = (shaderId >> 4) & 8;
-    var v7 = shaderId & 8;
+std::map<std::string, int> pixelShaderTable = {
+        {"Combiners_Opaque", 0},
+        {"Combiners_Decal" , 1},
+        {"Combiners_Add" , 2},
+        {"Combiners_Mod2x" , 3},
+        {"Combiners_Fade" , 4},
+        {"Combiners_Mod" , 5},
+        {"Combiners_Opaque_Opaque" , 6},
+        {"Combiners_Opaque_Add" , 7},
+        {"Combiners_Opaque_Mod2x" , 8},
+        {"Combiners_Opaque_Mod2xNA" , 9},
+        {"Combiners_Opaque_AddNA" , 10},
+        {"Combiners_Opaque_Mod" , 11},
+        {"Combiners_Mod_Opaque" , 12},
+        {"Combiners_Mod_Add" , 13},
+        {"Combiners_Mod_Mod2x" , 14},
+        {"Combiners_Mod_Mod2xNA" , 15},
+        {"Combiners_Mod_AddNA" , 16},
+        {"Combiners_Mod_Mod" , 17},
+        {"Combiners_Add_Mod" , 18},
+        {"Combiners_Mod2x_Mod2x" , 19}
+};
 
-    var vertexShaderName;
-    var pixelShaderName;
+int getTabledShaderNames(uint16_t shaderId, uint16_t op_count, uint16_t tex_unit_number2,
+    std::string &vertexShaderName, std::string &pixelShaderName
+){
+    uint16_t v4 = (shaderId >> 4) & 7;
+    uint16_t v5 = shaderId & 7;
+    uint16_t v6 = (shaderId >> 4) & 8;
+    uint16_t v7 = shaderId & 8;
+
     if ( op_count == 1 ) {
         if ( v6 )
         {
@@ -126,21 +149,18 @@ void getTabledShaderNames(shaderId, op_count, tex_unit_number2){
             pixelShaderName = "Combiners_Mod2x_Mod2x";
         }
     }
-    return { vertex: vertexShaderName, pixel : pixelShaderName }
+
+    return 1;
 }
 
-void getShaderNames(M2Batch *m2Batch){
+int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pixelShader){
+        uint16_t shaderId = m2Batch->shader_id;
 
-
-        var shaderId = m2Batch->shaderId;
-        var shaderNames;
-        var vertexShader;
-        var pixelShader;
         if ( !(shaderId & 0x8000) ) {
-            shaderNames = getTabledShaderNames(shaderId, m2Batch.op_count, m2Batch.textureUnitNum);
-            if ( !shaderNames )
-                shaderNames = getTabledShaderNames(shaderId, m2Batch.op_count, 0x11, m2Batch.textureUnitNum);
-            return shaderNames;
+            int result = getTabledShaderNames(shaderId, m2Batch->textureCount, m2Batch->textureCoordComboIndex, vertexShader, pixelShader);
+//            if ( !result )
+//                getTabledShaderNames(shaderId, m2Batch->textureCount, 0x11, m2Batch->textureCoordComboIndex, vertexShader, pixelShader);
+            return 1;
         }
         switch ( shaderId & 0x7FFF ) {
             case 0:
@@ -161,7 +181,7 @@ void getShaderNames(M2Batch *m2Batch){
                 break;
         }
 
-        return { vertex: vertexShader, pixel : pixelShader }
+    return 1;
 }
 
 void M2Object::createAABB() {
@@ -316,54 +336,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 vie
 //    this.currentTime += deltaTime;
 }
 
-//
-//void M2Object::load() {
-//    var m2Promise = this.sceneApi.resources.loadM2Geom(modelFileName);
-//    var skinPromise = this.sceneApi.resources.loadSkinGeom(skinFileName);
-//
-//    return $q.all([m2Promise, skinPromise]).then(function (result) {
-//        try {
-//            var m2Geom = result[0];
-//            var skinGeom = result[1];
-//
-//            self.m2Geom = m2Geom;
-//            self.skinGeom = skinGeom;
-//
-//            skinGeom.fixData(m2Geom.m2File);
-//            skinGeom.calcBBForSkinSections(m2Geom.m2File);
-//
-//            if (!m2Geom) {
-//                $log.log("m2 file failed to load : " + modelName);
-//            } else {
-//                var gl = self.sceneApi.getGlContext();
-//                m2Geom.createVAO(skinGeom);
-//                self.hasBillboarded = self.checkIfHasBillboarded();
-//
-//                self.makeTextureArray(self.meshIds, self.replaceTextures);
-//                self.updateLocalBB([self.m2Geom.m2File.BoundingCorner1, self.m2Geom.m2File.BoundingCorner2]);
-//
-//                self.createAABB();
-//
-//                self.initAnimationManager(m2Geom.m2File);
-//                self.initParticleSystem();
-//                self.initBoneAnimMatrices();
-//                self.initSubmeshColors();
-//                self.initTextureAnimMatrices();
-//                self.initTransparencies();
-//                self.initCameras();
-//                self.initLights();
-//
-//                self.postLoad();
-//                self.loaded = true;
-//            }
-//        } catch (e) {
-//            console.log("exception while loading M2", e)
-//        }
-//
-//        return true;
-//    });
-//}
-
 bool M2Object::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints) {
     if (!m_loaded) {
         return true;
@@ -462,8 +434,7 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
     if ((transparency < 0.0001) || (meshColor[3] < 0.0001)) return;
 //
 //
-//    int pixelShaderIndex = pixelShaderTable[materialData.shaderNames.pixel];
-    int pixelShaderIndex = 0;
+    int pixelShaderIndex = materialData.pixelShader;
     this->m_m2Geom->drawMesh(m_api, materialData, *skinData , meshColor, transparency, textureMatrix1, textureMatrix2, pixelShaderIndex, originalFogColor, instanceCount);
 }
 
@@ -504,6 +475,11 @@ void M2Object::makeTextureArray() {
         materialData.meshIndex = skinTextureDefinition->skinSectionIndex;
         materialData.renderFlagIndex = skinTextureDefinition->materialIndex;
         materialData.flags = skinTextureDefinition->flags;
+
+        std::string vertexShader;
+        std::string pixelShader;
+        getShaderNames(skinTextureDefinition, vertexShader, pixelShader);
+        materialData.pixelShader = pixelShaderTable.at(pixelShader);
 //        materialData.shaderNames = shaderNames;
 //        materialData.m2BatchIndex = i;
 

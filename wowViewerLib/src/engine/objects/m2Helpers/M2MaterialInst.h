@@ -41,6 +41,7 @@ public:
     int layer = 0;
     int renderFlagIndex = -1;
     int flags = 0;
+    int pixelShader;
 };
 
 

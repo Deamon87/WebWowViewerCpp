@@ -955,7 +955,7 @@ void WoWSceneImpl::activateM2Shader() {
     glUniform1f(this->m2Shader->getUnf("uFogStart"), this->uFogStart);
     glUniform1f(this->m2Shader->getUnf("uFogEnd"), this->uFogEnd);
 
-//    glUniform3fv(this->m2Shader->getUnf("uFogColor"), this->fogColor);
+    glUniform3fv(this->m2Shader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 
 
     glActiveTexture(GL_TEXTURE0);
@@ -997,7 +997,7 @@ void WoWSceneImpl::activateWMOShader() {
     glUniform1f(this->wmoShader->getUnf("uFogStart"), this->uFogStart);
     glUniform1f(this->wmoShader->getUnf("uFogEnd"), this->uFogEnd);
 
-//    glUniform3fv(this->m2Shader->getUnf("shaderUniforms.uFogColor"), this->m_fogColor);
+    glUniform3fv(this->wmoShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 
     glActiveTexture(GL_TEXTURE0);
 }
@@ -1029,7 +1029,7 @@ void WoWSceneImpl::activateAdtShader (){
         glUniform1f(adtShader->getUnf("uFogStart"), this->uFogStart);
         glUniform1f(adtShader->getUnf("uFogEnd"), this->uFogEnd);
 
-//        glUniform3fv(adtShader->getUnf("shaderUniforms.uFogColor"), this->fogColor);
+        glUniform3fv(adtShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 }
 void WoWSceneImpl::deactivateAdtShader() {
     glUseProgram(0);

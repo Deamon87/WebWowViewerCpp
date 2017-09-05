@@ -141,6 +141,7 @@ private:
 
     float uFogStart = -1;
     float uFogEnd = -1;
+    float m_fogColor[4] = {1.0, 1.0, 1.0, 1.0};
 
     GLuint frameBuffer = 0;
     GLuint frameBufferColorTexture = 0;
