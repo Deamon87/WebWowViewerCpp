@@ -9,9 +9,8 @@
 #include <string>
 #include <iostream>
 #include "wowScene.h"
-#include <zip.h>
+#include "persistance/RequestProcessor.h"
 
-#include "persistance/httpFile/httpFile.h"
 int mleft_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
@@ -112,114 +111,6 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 
 }
-
-int strcicmp(char const *a, char const *b)
-{
-    for (;; a++, b++) {
-        int d = tolower(*a) - tolower(*b);
-        if (d != 0 || !*a)
-            return d;
-    }
-}
-
-class RequestProcessor : public IFileRequest {
-public:
-    RequestProcessor () {
-        char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
-//        std::string url = "http://deamon87.github.io/WoWFiles/ironforge.zip";
-
-        using namespace std::placeholders;
-        HttpFile httpFile(url);
-        httpFile.setCallback(std::bind(&RequestProcessor::loadingFinished, this, _1));
-        httpFile.startDownloading();
-    }
-private:
-//    zipper::Unzipper *m_unzipper;
-    zip_t *zipArchive;
-    IFileRequester *m_fileRequester;
-
-public:
-    void setFileRequester(IFileRequester *fileRequester) {
-        m_fileRequester = fileRequester;
-    }
-    void loadingFinished(std::vector<unsigned char> * file) {
-        zip_source_t *src;
-        zip_t *za;
-        zip_error_t error;
-
-        zip_error_init(&error);
-        /* create source from buffer */
-        if ((src = zip_source_buffer_create(&file->at(0), file->size(), 1, &error)) == NULL) {
-            fprintf(stderr, "can't create source: %s\n", zip_error_strerror(&error));
-//            free(data);
-            zip_error_fini(&error);
-//            return 1;
-        }
-
-        /* open zip archive from source */
-        if ((za = zip_open_from_source(src, 0, &error)) == NULL) {
-            fprintf(stderr, "can't open zip from source: %s\n", zip_error_strerror(&error));
-            zip_source_free(src);
-            zip_error_fini(&error);
-//            return 1;
-        }
-        zip_error_fini(&error);
-        zipArchive = za;
-
-        /* we'll want to read the data back after zip_close */
-//        zip_source_keep(src);
-    }
-
-    void requestFile(const char* fileName) {
-        std::string s_fileName(fileName);
-        zip_error_t error;
-        struct zip_stat sb;
-        zip_file *zf;
-
-        zip_int64_t record = zip_name_locate(zipArchive, fileName, ZIP_FL_NOCASE);
-
-//        for (int i = 0; i < m_unzipper->entries().size(); i++) {
-//            auto entry = m_unzipper->entries().at(i);
-//            if (strcicmp(entry.name.c_str(), fileName) ==0){
-//                s_fileName = entry.name;
-//                break;
-//            }
-//        }
-
-//        std::vector<unsigned char> unzipped_entry;
-//        if (m_unzipper->extractEntryToMemory(s_fileName, unzipped_entry)) {
-//            m_fileRequester->provideFile(fileName, &unzipped_entry[0], unzipped_entry.size());
-//        } else {
-//            m_fileRequester->rejectFile(fileName);
-        if (record != -1) {
-            if (zip_stat_index(zipArchive, record, 0, &sb) != 0) {
-                throw "errror";
-            }
-            zf = zip_fopen_index(zipArchive, record, 0);
-
-            unsigned char *unzippedEntry = new unsigned char[sb.size];
-
-            int sum = 0;
-            while (sum != sb.size) {
-                zip_int64_t len = zip_fread(zf, &unzippedEntry[sum], 1024);
-                if (len < 0) {
-                    //error
-                    exit(102);
-                }
-                sum += len;
-            }
-
-            zip_fclose(zf);
-
-
-            m_fileRequester->provideFile(fileName, unzippedEntry, sum);
-            delete(unzippedEntry);
-        } else {
-            std::cout << "Could not load file " << std::string(fileName) << std::endl << std::flush;
-            m_fileRequester->rejectFile(fileName);
-        }
-    };
-};
 
 double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string windowTitle = "NONE")
 {
@@ -340,8 +231,10 @@ int main(int argc, char** argv) {
     }
     glfwMakeContextCurrent(window); // Initialize GLEW
 
+    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
+
     Config *testConf = new Config();
-    RequestProcessor *processor = new RequestProcessor();
+    ZipHttpRequestProcessor *processor = new ZipHttpRequestProcessor(url);
     WoWScene *scene = createWoWScene(testConf, processor, 1000, 1000);
     processor->setFileRequester(scene);
 
@@ -362,9 +255,7 @@ int main(int argc, char** argv) {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-
         scene->draw(deltaTime*1000);
-
 
         calcFPS(window, 2.0, "WoW ");
 
