@@ -32,6 +32,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    if (this->enableDeferred) {
 //        this->initDeferredRendering();
 //    }
+    this->initVertBuffer();
     this->initRenderBuffers();
     this->initAnisotropicExt();
     this->initVertexArrayObjectExt();
@@ -303,7 +304,45 @@ void WoWSceneImpl::initVertexArrayObjectExt() {
 
 }
 
+void WoWSceneImpl::initVertBuffer(){
+    static const float verts[] = {
+            1,  1,
+            -1,  1,
+            -1, -1,
+            1,  1,
+            -1, -1,
+            1,  -1,
+    };
+    const int vertsLength = sizeof(verts) / sizeof(verts[0]);
+    std::cout << "vertsLength = " << vertsLength << std::endl;
+    GLuint vertBuffer = 0;
+    glGenBuffers(1, &vertBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertBuffer);
+    glBufferData(GL_ARRAY_BUFFER, vertsLength, verts, GL_STATIC_DRAW);
+
+    this->vertBuffer = vertBuffer;
+
+}
+void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
+    this->canvWidth = canvWidth;
+    this->canvHeight = canvHeight;
+    this->canvAspect = canvWidth / canvHeight;
+
+    this->initRenderBuffers();
+}
+
 void WoWSceneImpl::initRenderBuffers() {
+    //1. Free previous buffers
+    if(this->frameBuffer != -1) {
+        glDeleteFramebuffers(1, &this->frameBuffer);
+    }
+    if(this->frameBufferColorTexture != -1) {
+        glDeleteTextures(1, &this->frameBufferColorTexture);
+    }
+    if(this->frameBufferDepthTexture != -1) {
+        glDeleteTextures(1, &this->frameBufferDepthTexture);
+    }
+
     GLuint framebuffer = 0;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -341,24 +380,6 @@ void WoWSceneImpl::initRenderBuffers() {
     this->frameBufferColorTexture = colorTexture;
     this->frameBufferDepthTexture = depthTexture;
 //
-    std::cout << "passed" << std::endl;
-    static const float verts[] = {
-        1,  1,
-       -1,  1,
-       -1, -1,
-        1,  1,
-       -1, -1,
-        1,  -1,
-    };
-    const int vertsLength = sizeof(verts) / sizeof(verts[0]);
-    std::cout << "vertsLength = " << vertsLength << std::endl;
-    GLuint vertBuffer = 0;
-    glGenBuffers(1, &vertBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertBuffer);
-    glBufferData(GL_ARRAY_BUFFER, vertsLength, verts, GL_STATIC_DRAW);
-
-    this->vertBuffer = vertBuffer;
-
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 

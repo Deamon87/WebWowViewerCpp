@@ -32,6 +32,7 @@ class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 public:
     WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
     void draw(double deltaTime);
+    void setScreenSize(int canvWidth, int canvHeight);
 
     virtual void provideFile(const char* fileName, unsigned char* data, int fileLength){
         std::vector<unsigned char> fileData;
@@ -143,9 +144,9 @@ private:
     float uFogEnd = -1;
     float m_fogColor[4] = {1.0, 1.0, 1.0, 1.0};
 
-    GLuint frameBuffer = 0;
-    GLuint frameBufferColorTexture = 0;
-    GLuint frameBufferDepthTexture = 0;
+    GLuint frameBuffer = -1;
+    GLuint frameBufferColorTexture = -1;
+    GLuint frameBufferDepthTexture = -1;
     GLuint vertBuffer = 0;
     GLuint blackPixel = 0;
 
@@ -184,6 +185,7 @@ private:
     void activateTextureCompositionShader(GLuint texture);
 
 
+    void initVertBuffer();
 };
 
 

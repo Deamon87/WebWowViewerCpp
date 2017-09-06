@@ -173,6 +173,17 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     return fps;
 }
 
+int canvWidth = 1024;
+int canvHeight = 768;
+bool windowSizeChanged = false;
+
+void window_size_callback(GLFWwindow* window, int width, int height)
+{
+    canvWidth = width;
+    canvHeight = height;
+    windowSizeChanged = true;
+}
+
 void beforeCrash(void);
 
 #ifdef _WIN32
@@ -223,7 +234,8 @@ int main(int argc, char** argv) {
 
 //     Open a window and create its OpenGL context
     GLFWwindow* window; // (In the accompanying source code, this variable is global)
-    window = glfwCreateWindow( 1024, 768, "Test Window", NULL, NULL);
+
+    window = glfwCreateWindow( canvWidth, canvHeight, "Test Window", NULL, NULL);
     if( window == NULL ){
         fprintf( stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n" );
         glfwTerminate();
@@ -235,7 +247,7 @@ int main(int argc, char** argv) {
 
     Config *testConf = new Config();
     ZipHttpRequestProcessor *processor = new ZipHttpRequestProcessor(url);
-    WoWScene *scene = createWoWScene(testConf, processor, 1000, 1000);
+    WoWScene *scene = createWoWScene(testConf, processor, 1024, 1000);
     processor->setFileRequester(scene);
 
     // Ensure we can capture the escape key being pressed below
@@ -243,6 +255,8 @@ int main(int argc, char** argv) {
     glfwSetWindowUserPointer(window, scene);
     glfwSetKeyCallback(window, onKey);
     glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetWindowSizeCallback(window, window_size_callback);
+    glfwSetWindowSizeLimits(window, 640, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSwapInterval(0);
 
@@ -255,6 +269,10 @@ int main(int argc, char** argv) {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        if (windowSizeChanged) {
+            scene->setScreenSize(canvWidth, canvHeight);
+            windowSizeChanged = false;
+        }
         scene->draw(deltaTime*1000);
 
         calcFPS(window, 2.0, "WoW ");
