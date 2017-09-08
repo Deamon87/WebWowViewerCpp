@@ -161,7 +161,7 @@ private:
     M2Object *m2Object = nullptr;
     WmoObject *wmoObject = nullptr;
     AdtObject *adtObject = nullptr;
-    Map *map = nullptr;
+    iInnerSceneApi *currentScene;
 
     void activateRenderFrameShader();
     void activateRenderDepthShader();

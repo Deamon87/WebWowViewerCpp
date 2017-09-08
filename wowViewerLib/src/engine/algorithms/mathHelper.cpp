@@ -152,17 +152,17 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
     
     if (hullPoints.size() > 2) {
         for (int i = 0; i < hullPointsArr.size() - 1; i++) {
-            int index1 = i+1;
-            int index2 = i;
+            int index2 = i+1;
+            int index1 = i;
 
             mathfu::vec3 line (
-                hullPointsArr[index1].y - hullPointsArr[index2].y,
-                hullPointsArr[index2].x - hullPointsArr[index1].x,
-                -hullPointsArr[index1].y*(hullPointsArr[index2].x - hullPointsArr[index1].x) +
-                hullPointsArr[index1].x*( hullPointsArr[index2].y - hullPointsArr[index1].y)
+                hullPointsArr[index2].y - hullPointsArr[index1].y,
+                -(hullPointsArr[index2].x - hullPointsArr[index1].x),
+                -hullPointsArr[index1].x * (hullPointsArr[index2].y - hullPointsArr[index1].y) +
+                hullPointsArr[index1].y*( hullPointsArr[index2].x - hullPointsArr[index1].x)
             );
-            float normalLength = sqrt(line[0]*line[0] + line[1]+line[1]);
-            line =  line * (1/normalLength);
+            float normalLength = sqrt(line[0]*line[0] + line[1]*line[1]);
+            line =  (-line) * (1/normalLength);
 
             hullLines.push_back(line);
         }

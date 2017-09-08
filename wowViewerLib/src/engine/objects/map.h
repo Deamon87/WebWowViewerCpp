@@ -10,8 +10,9 @@
 #include "m2Object.h"
 #include "wmoObject.h"
 #include "iMapApi.h"
+#include "iInnerSceneApi.h"
 
-class Map : public IMapApi {
+class Map : public IMapApi, public iInnerSceneApi {
 private:
     template <typename T, typename P = int>
     class ObjectCache {

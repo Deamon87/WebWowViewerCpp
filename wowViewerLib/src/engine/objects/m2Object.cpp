@@ -242,6 +242,22 @@ void M2Object::createPlacementMatrix(SMDoodadDef &def) {
     m_placementMatrix = placementMatrix;
 }
 
+void M2Object::createPlacementMatrix (mathfu::vec3 pos, float f, mathfu::vec3 scaleVec, mathfu::mat4 *rotationMatrix){
+    mathfu::mat4 placementMatrix = mathfu::mat4::FromTranslationVector(pos);
+
+    if (rotationMatrix != nullptr) {
+        placementMatrix *= *rotationMatrix;
+    } else {
+        placementMatrix *= MathHelper::RotationZ(toRadian(f));
+    }
+
+    placementMatrix *= mathfu::mat4::FromScaleVector(scaleVec);
+
+    mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
+    m_placementInvertMatrix = placementInvertMatrix;
+    m_placementMatrix = placementMatrix;
+}
+
 void M2Object::calcDistance(mathfu::vec3 cameraPos) {
     m_currentDistance = (m_worldPosition-cameraPos).Length();
 }
@@ -249,6 +265,37 @@ void M2Object::calcDistance(mathfu::vec3 cameraPos) {
 float M2Object::getCurrentDistance() {
     return m_currentDistance;
 }
+
+mathfu::vec4 M2Object::getCombinedColor(
+        M2SkinProfile *skinData,
+        M2MaterialInst &materialData,
+        std::vector<mathfu::vec4> subMeshColors
+) {
+    int colorIndex = skinData->batches[materialData.texUnit1TexIndex]->colorIndex;
+    mathfu::vec4 submeshColor = mathfu::vec4(1,1,1,1);
+
+    if ((colorIndex >= 0) && (subMeshColors.size() > colorIndex)) {
+        mathfu::vec4 &color = subMeshColors[colorIndex];
+        submeshColor = color;
+    }
+
+    return submeshColor;
+}
+
+float M2Object::getTransparency(
+        M2SkinProfile *skinData,
+        M2MaterialInst &materialData,
+        std::vector<float> transparencies) {
+    float transparency = 1.0;
+
+    int transpIndex = skinData->batches[materialData.texUnit1TexIndex]->textureWeightComboIndex;
+    if ((transpIndex >= 0) && (transparencies.size() > transpIndex)) {
+        transparency = transparencies[transpIndex];
+    }
+
+    return transparency;
+}
+
 
 void M2Object::setLoadParams (std::string modelName, int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
     modelName;
@@ -285,11 +332,44 @@ void M2Object::startLoading() {
     }
 }
 
-void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat) {
+bool matSortFunc(M2MaterialInst& a, M2MaterialInst& b) {
+    if (a.priorityPlane != b.priorityPlane) {
+        return b.priorityPlane < a.priorityPlane;
+    }
+
+    if (a.flags != b.flags) {
+        return b.flags < a.flags;
+    }
+
+    return b.layer < a.layer;
+}
+
+void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
+    if (!m_loading) return;
+
+    /* 3. Resort m2 meshes against distance to screen */
+    M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
+
+    mathfu::mat4 modelViewMat = lookAtMat4 * this->m_placementMatrix;
+
+
+    mathfu::vec3 zeroVect(0,0,0);
+
+    /* 3.1 Transform aabb with current mat */
+
+    std::sort(this->m_materialArray.begin(),
+              this->m_materialArray.end(),
+              matSortFunc
+    );
+}
+
+void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
     if (!this->m_loaded) {
         if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded() && (m_skinGeom != nullptr) && m_skinGeom->isLoaded()) {
             this->m_loaded = true;
             this->m_loading = false;
+
+            m_skinGeom->fixData(m_m2Geom->getM2Data());
 
             this->createAABB();
             this->makeTextureArray();
@@ -299,7 +379,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 vie
             this->initSubmeshColors();
             this->initTransparencies();
 
-            m_skinGeom->fixData(m_m2Geom->getM2Data());
+
         } else {
             return;
         }
@@ -324,6 +404,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 vie
         //this->lights,
         //this->particleEmittersArray
     );
+
+    this->sortMaterials(viewMat);
 //
 //    for (var i = 0; i < this.lights.length; i++) {
 //    var light = this.lights[i];
@@ -355,7 +437,7 @@ bool M2Object::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu:
     return result;
 }
 
-void M2Object::draw(bool drawTransparent, mathfu::vec4 diffuseColor) {
+void M2Object::draw(bool drawTransparent, mathfu::vec4 &diffuseColor) {
     if (!this->m_loaded) {
         this->startLoading();
         return;
@@ -425,10 +507,10 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
             }
         }
     }
-//    var meshColor = this.getCombinedColor(skinData, materialData, this.subMeshColors);
-//    var transparency = this.getTransparency(skinData, materialData, this.transparencies);
-    mathfu::vec4 meshColor = mathfu::vec4(1,1,1,1);
-    float transparency = 1;
+    mathfu::vec4 meshColor = this->getCombinedColor(skinData, materialData, this->subMeshColors);
+    float transparency = this->getTransparency(skinData, materialData, this->transparencies);
+//    mathfu::vec4 meshColor = mathfu::vec4(1,1,1,1);
+//    float transparency = 1;
 //
 //    //Don't draw meshes with 0 transp
     if ((transparency < 0.0001) || (meshColor[3] < 0.0001)) return;
@@ -475,6 +557,7 @@ void M2Object::makeTextureArray() {
         materialData.meshIndex = skinTextureDefinition->skinSectionIndex;
         materialData.renderFlagIndex = skinTextureDefinition->materialIndex;
         materialData.flags = skinTextureDefinition->flags;
+        materialData.priorityPlane = skinTextureDefinition->priorityPlane;
 
         std::string vertexShader;
         std::string pixelShader;

@@ -39,7 +39,7 @@ private:
     void initGlobalSequenceTimes();
 
     void calculateBoneTree();
-    void calcAnimMatrixes (std::vector<mathfu::mat4> textAnimMatrices, int animationIndex, double time);
+    void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, double time);
 
 
 public:
@@ -48,7 +48,7 @@ public:
     void update (double deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
                  std::vector<mathfu::mat4> &textAnimMatrices,
                  std::vector<mathfu::vec4> &subMeshColors,
-                 std::vector<float> transparencies
+                 std::vector<float> &transparencies
             /*cameraDetails, lights, particleEmitters*/);
 
     void calcBones(std::vector<mathfu::mat4> &boneMatrices, int animation, double time, mathfu::vec3 &cameraPosInLocal);
@@ -58,6 +58,16 @@ public:
 
     void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, double time,
                         mathfu::vec3 cameraPosInLocal);
+
+    void calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors,
+            int animationIndex,
+            double time,
+            int blendAnimationIndex,
+            double blendAnimationTime,
+            double blendAlpha);
+
+    void calcTransparencies(std::vector<float> &transparencies, int animationIndex, double time, int blendAnimationIndex,
+                            double blendAnimationTime, double blendAlpha);
 };
 
 

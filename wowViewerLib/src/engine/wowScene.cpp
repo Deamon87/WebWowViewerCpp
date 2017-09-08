@@ -2,6 +2,8 @@
 #include "wowScene.h"
 #include "shaders.h"
 #include "shader/ShaderRuntimeData.h"
+#include "algorithms/mathHelper.h"
+#include "objects/m2Scene.h"
 #include <mathfu/glsl_mappings.h>
 #include <iostream>
 
@@ -51,7 +53,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     //Init caches
 
+    //Test scene 1: Shattrath
     m_firstCamera.setCameraPos(-1663, 5098, 27);
+    currentScene = new Map(this, "Expansion01");
+
+    //Test scene 2: tree from shattrath
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "WORLD\\EXPANSION01\\DOODADS\\TEROKKAR\\TREES\\TEROKKARTREEMEDIUMPINECONES.m2");
+
 }
 
 ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
@@ -733,10 +743,6 @@ void WoWSceneImpl::draw(double deltaTime) {
 //        adtObject = getAdtGeomCache()->get("world\\maps\\Expansion01\\Expansion01_22_35.adt");
 //        adtObject->setApi(this);
 //    }
-    if (map == nullptr) {
-        map = new Map(this, "Expansion01");
-    }
-
 
     glClearScreen();
     mathfu::vec3 *cameraVector;
@@ -745,7 +751,7 @@ void WoWSceneImpl::draw(double deltaTime) {
 
     int farPlane = 250;
     int nearPlane = 1;
-    float fov = 45.0;
+    float fov = toRadian(45.0);
 //    if (testLoad) {
 //        wmoMainCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO");
 //        wmoGeomCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY_002.wmo");
@@ -869,11 +875,11 @@ void WoWSceneImpl::draw(double deltaTime) {
 //
 //    var updateRes = this.graphManager.update(deltaTime);
     mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 0);
-    map->update(deltaTime, cameraVec4.xyz(), lookAtMat4);
+    currentScene->update(deltaTime, cameraVec4.xyz(), lookAtMat4);
     //m2Object->update(deltaTime, this->m_firstCamera.getCameraPosition(), lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
 //
-    map->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
+    currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
 //    this.graphManager.checkCulling(perspectiveMatrixForCulling, lookAtMat4);
 //    this.graphManager.sortGeometry(perspectiveMatrixForCulling, lookAtMat4);
 //
@@ -917,7 +923,7 @@ void WoWSceneImpl::draw(double deltaTime) {
 //    glDepthMask(true);
 //    glEnableVertexAttribArray(0);
 //    this.graphManager.draw();
-    map->draw();
+    currentScene->draw();
 
 //    glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
 

@@ -13,6 +13,8 @@
 #include "../geometry/skinGeom.h"
 #include "m2Helpers/M2MaterialInst.h"
 #include "../managers/animationManager.h"
+#include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
+#include "../persistance/header/skinFileHeader.h"
 
 class M2Object {
 public:
@@ -67,6 +69,16 @@ private:
 
     void drawMaterial(M2MaterialInst &materialData, bool drawTransparent, int instanceCount);
 
+    void initTextAnimMatrices();
+
+    void initSubmeshColors();
+
+    void initTransparencies();
+
+    void sortMaterials(mathfu::Matrix<float, 4, 4> &lookAtMat4);
+
+    mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, M2MaterialInst &materialData,  std::vector<mathfu::vec4> subMeshColors);
+    float getTransparency(M2SkinProfile *skinData,M2MaterialInst &materialData,std::vector<float> transparencies);
 public:
 
     void setLoadParams(std::string modelName, int skinNum, std::vector<uint8_t> meshIds,
@@ -74,6 +86,9 @@ public:
 
     void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);
     void createPlacementMatrix(SMDoodadDef &def);
+    void createPlacementMatrix(mathfu::vec3 pos, float f, mathfu::vec3 scaleVec,
+                               mathfu::Matrix<float, 4, 4> *rotationMatrix);
+
     void calcWorldPosition(){
         m_worldPosition = (m_placementMatrix * mathfu::vec4(0,0,0,1)).xyz();
     }
@@ -86,14 +101,11 @@ public:
                                          std::vector<mathfu::vec4> &frustumPlanes,
                                          std::vector<mathfu::vec3> &frustumPoints);
 
-    void update(double deltaTime, mathfu::vec3 cameraPos, mathfu::mat4 viewMat);
-    void draw(bool drawTransparent, mathfu::vec4 diffuseColor);
+    void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
+    void draw(bool drawTransparent, mathfu::vec4 &diffuseColor);
 
-    void initTextAnimMatrices();
 
-    void initSubmeshColors();
 
-    void initTransparencies();
 };
 
 

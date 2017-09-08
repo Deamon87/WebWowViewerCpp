@@ -27,6 +27,10 @@ template<>
 inline mathfu::vec4 convertHelper<mathfu::vec4_packed, mathfu::vec4>(mathfu::vec4_packed &a ) {
     return mathfu::vec4(a);
 };
+template<>
+inline mathfu::vec3 convertHelper<mathfu::vec3_packed, mathfu::vec3>(mathfu::vec3_packed &a ) {
+    return mathfu::vec3(a);
+};
 inline float stf(unsigned short Short) {
     return (Short / float (32767)) - 1.0f; // (Short > 0 ? Short-32767 : Short+32767)/32767.0;
 }
@@ -49,6 +53,11 @@ inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(C4Quaternion &a ) 
     );
 };
 template<>
+inline float convertHelper<fixed16, float>(fixed16 &a ) {
+    return a / 32768.0;
+};
+
+template<>
 inline mathfu::vec4 convertHelper<mathfu::vec3_packed, mathfu::vec4>(mathfu::vec3_packed &a ) {
     return mathfu::vec4(a.x, a.y, a.z, 0);
 };
@@ -67,6 +76,11 @@ inline mathfu::vec4 lerpHelper<mathfu::vec4>(mathfu::vec4 &value1, mathfu::vec4 
 template<>
 inline mathfu::quat lerpHelper<mathfu::quat>(mathfu::quat &value1, mathfu::quat &value2, float percent) {
     return mathfu::quat::Slerp(value1, value2, percent);
+};
+template<>
+inline float lerpHelper<float>(float &value1, float &value2, float percent) {
+    return (value1 * percent) + ((1 - percent) * value2);
+
 };
 
 

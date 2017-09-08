@@ -233,7 +233,8 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
         bool checkRefs = this->drawChunk[i];
         if (!this->drawChunk[i]) {
             result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
-            checkRefs = result || MathHelper::checkFrustum2D(hullLines, aabb);
+            bool frustum2DRes = MathHelper::checkFrustum2D(hullLines, aabb);
+            checkRefs = result || frustum2DRes;
 
             this->drawChunk[i] = result;
             atLeastOneIsDrawn = atLeastOneIsDrawn || result ;

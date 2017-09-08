@@ -6,6 +6,7 @@
 #include "animationManager.h"
 #include "../algorithms/animate.h"
 #include "../persistance/header/M2FileHeader.h"
+#include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 
 AnimationManager::AnimationManager(M2Data* m2File) {
     this->m_m2File = m2File;
@@ -105,6 +106,8 @@ void blendMatrices(std::vector<mathfu::mat4> &origMat, std::vector<mathfu::mat4>
     }
 }
 
+
+
 template <typename T>
 inline void calcAnimationTransform(
         mathfu::mat4 &tranformMat,
@@ -174,7 +177,7 @@ inline void calcAnimationTransform(
 }
 
 
-void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> textAnimMatrices, int animationIndex, double time) {
+void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, double time) {
 
     mathfu::vec4 pivotPoint(0.5, 0.5, 0, 0);
     mathfu::vec4 negatePivotPoint = -pivotPoint;
@@ -375,7 +378,7 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
 void AnimationManager::update(double deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
                               std::vector<mathfu::mat4> &textAnimMatrices,
                               std::vector<mathfu::vec4> &subMeshColors,
-                              std::vector<float> transparencies
+                              std::vector<float> &transparencies
         /*cameraDetails, lights, particleEmitters*/) {
 
     M2Sequence* mainAnimationRecord = m_m2File->sequences[this->mainAnimationIndex];
@@ -471,13 +474,132 @@ void AnimationManager::update(double deltaTime, mathfu::vec3 cameraPosInLocal, s
         blendMatrices(bonesMatrices, this->blendMatrixArray, m_m2File->bones.size, blendAlpha);
     }
 
-//    this->calcSubMeshColors(subMeshColors, this->currentAnimationIndex, this->currentAnimationTime, blendAnimationIndex,
-//                           this->nextSubAnimationTime, blendAlpha);
-//    this->calcTransparencies(transparencies, this->currentAnimationIndex, this->currentAnimationTime, blendAnimationIndex,
-//                            this->nextSubAnimationTime, blendAlpha);
+    this->calcSubMeshColors(subMeshColors, this->currentAnimationIndex, this->currentAnimationTime, blendAnimationIndex,
+                           this->nextSubAnimationTime, blendAlpha);
+    this->calcTransparencies(transparencies, this->currentAnimationIndex, this->currentAnimationTime, blendAnimationIndex,
+                            this->nextSubAnimationTime, blendAlpha);
 
 //    this->calcCameras(cameraDetails, this->currentAnimationIndex, this->currentAnimationTime);
 //    this->calcLights(lights, bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime);
 //    this->calcParticleEmitters(particleEmitters, this->currentAnimationIndex, this->currentAnimationTime);
 }
+
+void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors,
+                                         int animationIndex,
+                                         double time,
+                                         int blendAnimationIndex,
+                                         double blendAnimationTime,
+                                         double blendAlpha) {
+    M2Array<M2Color> &colors = this->m_m2File->colors;
+    M2Sequence *animationRecord = this->m_m2File->sequences[animationIndex];
+    M2Sequence *blendAnimationRecord = nullptr;
+    if (blendAnimationIndex > -1) {
+        blendAnimationRecord = this->m_m2File->sequences[blendAnimationIndex];
+    }
+
+    static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
+    static float defaultAlpha = 1.0;
+
+    for (int i = 0; i < colors.size; i++) {
+        mathfu::vec3 colorResult1 = animateTrack<C3Vector, mathfu::vec3>(time,
+                     animationRecord->duration,
+                     animationIndex,
+                     colors[i]->color,
+                     this->m_m2File->global_loops,
+                     this->globalSequenceTimes,
+                     defaultVector
+        );
+
+        //Support for blend
+        if (blendAnimationRecord != nullptr) {
+            mathfu::vec3 colorResult2 = animateTrack<C3Vector, mathfu::vec3>(
+                    blendAnimationTime,
+                    blendAnimationRecord->duration,
+                    blendAnimationIndex,
+                    colors[i]->color,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultVector
+            );
+
+            colorResult1 = colorResult1 * blendAlpha + (colorResult2 * (1.0 - blendAlpha));
+        }
+
+        subMeshColors[i].x = colorResult1.x;
+        subMeshColors[i].y = colorResult1.y;
+        subMeshColors[i].z = colorResult1.z;
+
+        float resultAlpha1 = animateTrack<fixed16, float>(time,
+            animationRecord->duration,
+            animationIndex,
+            colors[i]->alpha,
+            this->m_m2File->global_loops,
+            this->globalSequenceTimes,
+            defaultAlpha
+        );
+
+        // Support for blend
+        if (blendAnimationRecord != nullptr) {
+            float resultAlpha2 = animateTrack<fixed16, float>(
+                    blendAnimationTime,
+                    blendAnimationRecord->duration,
+                    blendAnimationIndex,
+                    colors[i]->alpha,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultAlpha
+            );
+
+            resultAlpha1 = resultAlpha1 * blendAlpha + (resultAlpha2 * (1.0 - blendAlpha));
+        }
+
+        subMeshColors[i][3] = resultAlpha1;
+    }
+}
+
+void AnimationManager::calcTransparencies(
+        std::vector<float> &transparencies,
+        int animationIndex,
+        double time,
+        int blendAnimationIndex,
+        double blendAnimationTime,
+        double blendAlpha) {
+
+    M2Array<M2TextureWeight> &transparencyRecords = this->m_m2File->texture_weights;
+    M2Sequence *animationRecord = this->m_m2File->sequences[animationIndex];
+    M2Sequence *blendAnimationRecord = nullptr;
+    if (blendAnimationIndex > -1) {
+        blendAnimationRecord = this->m_m2File->sequences[blendAnimationIndex];
+    }
+
+    static float defaultAlpha = 1.0;
+    for (int i = 0; i < transparencyRecords.size; i++) {
+        float result1 = animateTrack<fixed16, float>(
+            time,
+            animationRecord->duration,
+            animationIndex,
+            transparencyRecords[i]->weight,
+            this->m_m2File->global_loops,
+            this->globalSequenceTimes,
+            defaultAlpha
+        );
+
+        // Support for blend
+        if (blendAnimationRecord != nullptr) {
+            float result2 = animateTrack<fixed16, float>(
+                blendAnimationTime,
+                blendAnimationRecord->duration,
+                blendAnimationIndex,
+                transparencyRecords[i]->weight,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultAlpha
+            );
+            result1 = (result1 * blendAlpha) + ((1 - blendAlpha) * result2);
+        }
+
+        transparencies[i] = result1;
+    }
+}
+
 

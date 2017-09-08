@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(WoWViewerLib)
 
-#set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Release)
 #set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 
@@ -88,7 +88,14 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/wmoObject.h
         src/engine/objects/map.cpp
         src/engine/objects/map.h
-        src/engine/persistance/adtFile.h src/engine/persistance/adtFile.cpp src/engine/algorithms/grahamScan.cpp src/engine/algorithms/grahamScan.h src/engine/objects/iMapApi.h)
+        src/engine/persistance/adtFile.h
+        src/engine/persistance/adtFile.cpp
+        src/engine/algorithms/grahamScan.cpp
+        src/engine/algorithms/grahamScan.h
+        src/engine/objects/iMapApi.h
+        src/engine/objects/iInnerSceneApi.h
+        src/engine/objects/m2Scene.cpp
+        src/engine/objects/m2Scene.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
