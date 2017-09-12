@@ -231,3 +231,109 @@ bool MathHelper::checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box) 
 
     return true;
 }
+
+
+mathfu::vec4 intersection(mathfu::vec4 &p1, mathfu::vec4 &p2, float k) {
+    mathfu::vec4 temp = mathfu::vec4(
+            p1[0] + k * (p2[0] - p1[0]),
+            p1[1] + k * (p2[1] - p1[1]),
+            p1[2] + k * (p2[2] - p1[2]),
+            1
+    );
+    return temp;
+}
+
+//Points should be sorted against center by this point
+bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu::vec4> &planes) {
+    // check box outside/inside of frustum
+    std::vector<mathfu::vec4> vec4Points(points.size());
+
+    for (int j = 0; j < points.size(); j++) {
+        vec4Points[j] = mathfu::vec4(points[j][0], points[j][1], points[j][2], 1.0);
+    }
+
+
+    for (int i = 0; i < planes.size(); i++) {
+        int out = 0;
+        float epsilon = 0;
+
+        for (int j = 0; j < vec4Points.size(); j++) {
+            out += ((mathfu::vec4::DotProduct(planes[i], vec4Points[j]) + epsilon < 0.0 ) ? 1 : 0);
+        }
+
+        if (out == vec4Points.size()) return false;
+
+        //---------------------------------
+        // Cull by points by current plane
+        //---------------------------------
+
+        std::vector<mathfu::vec4> resultPoints;
+
+//        mathfu::vec3 pointO;
+//        if (planes[i][2] != 0) {
+//            pointO = mathfu::vec3(0, 0, -planes[i][3] / planes[i][2]);
+//        } else if (planes[i][1] != 0) {
+//            pointO = mathfu::vec3(0, -planes[i][3] / planes[i][1], 0);
+//        } else if (planes[i][0] != 0) {
+//            pointO = mathfu::vec3(-planes[i][3] / planes[i][0], 0, 0);
+//        } else {
+//            continue;
+//        }
+
+        for (int j = 0; j < vec4Points.size(); j++) {
+            mathfu::vec4 p1 = vec4Points[j];
+            mathfu::vec4 p2 = vec4Points[(j + 1) % vec4Points.size()];
+
+            mathfu::vec3 p1_xyz = p1.xyz();
+            mathfu::vec3 p2_xyz = p2.xyz();
+
+            // InFront = plane.Distance( point ) > 0.0f
+            // Behind  = plane.Distance( point ) < 0.0f
+
+            float t1 = mathfu::vec4.DotProduct(p1, planes[i]);
+            float t2 = mathfu::vec4.DotProduct(p2, planes[i]);
+
+            if (t1 > 0 && t2 > 0) { //p1 InFront and p2 InFront
+                resultPoints.push_back(p2);
+            } else if (t1 > 0 && t2 < 0) { //p1 InFront and p2 Behind
+                float k = t1 / (t1 - t2);
+                resultPoints.push_back(intersection(p1, p2, k));
+            } else if (t1 < 0 && t2 > 0) { //p1 Behind and p2 Behind
+                float k = t1 / (t1 - t2);
+                resultPoints.push_back(intersection(p1, p2, k));
+                resultPoints.push_back(p2);
+            }
+        }
+
+        vec4Points = std::vector<mathfu::vec4>(resultPoints.begin(), resultPoints.end());
+    }
+
+    for (int j = 0; j < vec4Points.size(); j++) {
+        points[j] = vec4Points[j].xyz();
+    }
+
+    return vec4Points.size() > 2;
+
+}
+
+static MathHelper::sortVec3ArrayAgainstPlane(thisPortalVertices, plane) {
+var center = vec3.fromValues(0, 0, 0);
+for (var j = 0; j < thisPortalVertices.length; j++) {
+vec3.add(center, thisPortalVertices[j], center);
+}
+vec3.scale(center, 1 / thisPortalVertices.length);
+thisPortalVertices.sort(function (a, b) {
+        var ac = vec3.create();
+        vec3.subtract(ac, a, center);
+
+        var bc = vec3.create();
+        vec3.subtract(bc, b, center);
+
+        var cross = vec3.create();
+        vec3.cross(cross, ac, bc);
+
+        var dotResult = vec3.dot(cross, [plane.x, plane.y, plane.z]);
+
+        return dotResult;
+});
+}

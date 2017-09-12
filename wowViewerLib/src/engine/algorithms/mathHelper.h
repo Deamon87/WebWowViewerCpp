@@ -59,6 +59,7 @@ public:
     }
 //
 
+    static bool planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu::vec4> &planes);
 };
 
 

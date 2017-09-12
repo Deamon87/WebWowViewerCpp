@@ -749,14 +749,9 @@ void WoWSceneImpl::draw(double deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 250;
+    int farPlane = 400;
     int nearPlane = 1;
     float fov = toRadian(45.0);
-//    if (testLoad) {
-//        wmoMainCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY.WMO");
-//        wmoGeomCache.get("WORLD\\WMO\\OUTLAND\\TEROKKAR\\SHATTRATHCITY_002.wmo");
-//        testLoad = false;
-//    }
 
     //If use camera settings
     //Figure out way to assign the object with camera
@@ -781,10 +776,10 @@ void WoWSceneImpl::draw(double deltaTime) {
 //        }
 //    }
 //
-    if (this->uFogStart == -1) {
-        this->uFogStart = farPlane - 10;
+    if (this->uFogStart < 0) {
+        this->uFogStart = farPlane ;
     }
-    if (this->uFogEnd == -1) {
+    if (this->uFogEnd < 0) {
         this->uFogEnd = farPlane;
     }
 
@@ -793,17 +788,7 @@ void WoWSceneImpl::draw(double deltaTime) {
     } else {
         this->m_secondCamera.tick(deltaTime);
     }
-//
-//    var adt_x = Math.floor((32 - (this.mainCamera[1] / 533.33333)));
-//    var adt_y = Math.floor((32 - (this.mainCamera[0] / 533.33333)));
-//
-//    //TODO: HACK!!
-//    for (var x = adt_x-1; x <= adt_x+1; x++) {
-//        for (var y = adt_y-1; y <= adt_y+1; y++) {
-//            this.addAdtChunkToCurrentMap(x, y);
-//        }
-//    }
-//
+
     mathfu::mat4 lookAtMat4 =
         mathfu::mat4::LookAt(
                 this->m_firstCamera.getCameraPosition(),
@@ -871,18 +856,12 @@ void WoWSceneImpl::draw(double deltaTime) {
     this->m2GeomCache.processCacheQueue(10);
     this->skinGeomCache.processCacheQueue(10);
     this->textureCache.processCacheQueue(10);
-//
-//
-//    var updateRes = this.graphManager.update(deltaTime);
+
     mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 0);
     currentScene->update(deltaTime, cameraVec4.xyz(), lookAtMat4);
-    //m2Object->update(deltaTime, this->m_firstCamera.getCameraPosition(), lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
 //
     currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
-//    this.graphManager.checkCulling(perspectiveMatrixForCulling, lookAtMat4);
-//    this.graphManager.sortGeometry(perspectiveMatrixForCulling, lookAtMat4);
-//
 //
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
@@ -972,9 +951,6 @@ void WoWSceneImpl::activateM2Shader() {
 
     glUniformMatrix4fv(this->m2Shader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
     glUniformMatrix4fv(this->m2Shader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
-//    if (this.currentShaderProgram.shaderUniforms.isBillboard) {
-//        gl.uniform1i(this.currentShaderProgram.shaderUniforms.isBillboard, 0);
-//    }
 
     glUniform1i(this->m2Shader->getUnf("uTexture"), 0);
     glUniform1i(this->m2Shader->getUnf("uTexture2"), 1);

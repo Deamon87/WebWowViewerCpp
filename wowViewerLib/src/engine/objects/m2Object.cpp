@@ -549,8 +549,6 @@ void M2Object::makeTextureArray() {
         auto isTransparent = (m2File->materials[renderFlagIndex]->blending_mode >= 2) ||
                             ((m2File->materials[renderFlagIndex]->flags & 0x10) > 0);
 
-//        var shaderNames = this.getShaderNames(skinTextureDefinition);
-
         materialData.layer = skinTextureDefinition->materialLayer;
         materialData.isRendered = true;
         materialData.isTransparent = isTransparent;
