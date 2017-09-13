@@ -316,24 +316,26 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
 
 }
 
-static MathHelper::sortVec3ArrayAgainstPlane(thisPortalVertices, plane) {
-var center = vec3.fromValues(0, 0, 0);
-for (var j = 0; j < thisPortalVertices.length; j++) {
-vec3.add(center, thisPortalVertices[j], center);
+bool sortPortalVerts(mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &center, mathfu::vec4 &plane) {
+    mathfu::vec3 ac = a - center;
+
+    mathfu::vec3 bc = b - center;
+
+    mathfu::vec3 cross = mathfu::vec3.CrossProduct(ac, bc);
+
+    float dotResult = mathfu::vec3.DotProduct(cross, plane.xyz());
+
+    return dotResult < 0;
 }
-vec3.scale(center, 1 / thisPortalVertices.length);
-thisPortalVertices.sort(function (a, b) {
-        var ac = vec3.create();
-        vec3.subtract(ac, a, center);
 
-        var bc = vec3.create();
-        vec3.subtract(bc, b, center);
+void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortalVertices,
+                                                  mathfu::vec4 &plane) {
+    mathfu::vec3 center(0, 0, 0);
+    for (int j = 0; j < thisPortalVertices.size(); j++) {
+        center += thisPortalVertices[j];
+    }
+    center *= 1 / thisPortalVertices.size();
 
-        var cross = vec3.create();
-        vec3.cross(cross, ac, bc);
-
-        var dotResult = vec3.dot(cross, [plane.x, plane.y, plane.z]);
-
-        return dotResult;
-});
+    std::sort(thisPortalVertices.begin(), thisPortalVertices.end(),
+              std::bind(hullSort, std::placeholders::_1, std::placeholders::_2, center, plane));
 }
