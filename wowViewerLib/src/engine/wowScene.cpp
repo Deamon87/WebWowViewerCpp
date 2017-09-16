@@ -219,9 +219,9 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
         data->setUnf(std::string(name), location);
 //        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
-    if (!shaderName.compare("m2Shader")) {
-        std::cout << fragmentShaderString << std::endl << std::flush;
-    }
+//    if (!shaderName.compare("m2Shader")) {
+//        std::cout << fragmentShaderString << std::endl << std::flush;
+//    }
 
 
     return data;
@@ -736,14 +736,8 @@ void glClearScreen() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_CULL_FACE);
 }
-bool testLoad = false;
-void WoWSceneImpl::draw(double deltaTime) {
-//    if (adtObject == nullptr) {
-//
-//        adtObject = getAdtGeomCache()->get("world\\maps\\Expansion01\\Expansion01_22_35.adt");
-//        adtObject->setApi(this);
-//    }
 
+void WoWSceneImpl::draw(double deltaTime) {
     glClearScreen();
     mathfu::vec3 *cameraVector;
 
@@ -837,7 +831,6 @@ void WoWSceneImpl::draw(double deltaTime) {
 
 //    this.perspectiveMatrix = perspectiveMatrix;
 //    this.viewCameraForRender = viewCameraForRender;
-//    if (!this.isShadersLoaded) return;
 //
 //    var cameraPos = vec4.fromValues(
 //            this.mainCamera[0],
@@ -845,8 +838,6 @@ void WoWSceneImpl::draw(double deltaTime) {
 //            this.mainCamera[2],
 //            1
 //    );
-//    this.graphManager.setCameraPos(cameraPos);
-//    this.graphManager.setLookAtMat(lookAtMat4);
 //
 //    // Update objects
 //    this.adtGeomCache.processCacheQueue(10);

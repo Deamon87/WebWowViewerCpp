@@ -97,9 +97,9 @@ public:
 
     void makeTextureArray();
 
-    bool checkFrustumCulling(mathfu::vec4 &cameraPos,
-                                         std::vector<mathfu::vec4> &frustumPlanes,
-                                         std::vector<mathfu::vec3> &frustumPoints);
+    const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
+                                   const std::vector<mathfu::vec4> &frustumPlanes,
+                                   const std::vector<mathfu::vec3> &frustumPoints);
 
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
     void draw(bool drawTransparent, mathfu::vec4 &diffuseColor);

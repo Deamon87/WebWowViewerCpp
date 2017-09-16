@@ -21,6 +21,9 @@ public:
     }
 
     void draw(SMOMaterial *materials, std::function <BlpTexture&(int materialId)> m_getTextureFunc);
+    bool getIsLoaded() { return m_loaded; };
+    const WmoGroupGeom *getWmoGroupGeom() const { return m_geom; };
+    const std::vector <M2Object *> *getDoodads() const { return &m_doodads; };
 
     void setWmoApi(IWmoApi *api);
     void update();

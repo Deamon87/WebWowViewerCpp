@@ -95,7 +95,9 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/iMapApi.h
         src/engine/objects/iInnerSceneApi.h
         src/engine/objects/m2Scene.cpp
-        src/engine/objects/m2Scene.h)
+        src/engine/objects/m2Scene.h
+        src/engine/algorithms/PortalCullingAlgo.cpp
+        src/engine/algorithms/PortalCullingAlgo.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

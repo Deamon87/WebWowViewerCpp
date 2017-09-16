@@ -84,8 +84,12 @@ ExternalProject_Get_Property(WowViewerLib install_dir)
 include_directories(${install_dir}/include)
 set(WowViewerLib "${install_dir}/lib/libWoWViewerLib.a")
 
-set(SOURCE_FILES src/main.cpp src/persistance/httpFile/httpFile.cpp src/persistance/httpFile/httpFile.h src/persistance/RequestProcessor.cpp src/persistance/RequestProcessor.h wowViewerLib/src/engine/algorithms/PortalCullingAlgo.cpp wowViewerLib/src/engine/algorithms/PortalCullingAlgo.h)
-
+set(SOURCE_FILES
+		src/main.cpp
+		src/persistance/httpFile/httpFile.cpp
+		src/persistance/httpFile/httpFile.h
+		src/persistance/RequestProcessor.cpp
+		src/persistance/RequestProcessor.h )
 #########################################################
 # FIND OPENGL
 #########################################################

@@ -27,6 +27,7 @@
 #endif
 
 using fixed16 = short;
+typedef mathfu::vec4_packed C4Vector;
 typedef mathfu::vec3_packed C3Vector;
 typedef mathfu::vec2_packed C2Vector;
 typedef mathfu::vec4_packed C4Quaternion;
@@ -155,7 +156,12 @@ struct CImVector
 
 struct C4Plane // todo: verify
 {
-    C3Vector normal;
-    float distance;
+    union {
+        struct {
+            C3Vector normal;
+            float distance;
+        } planeGeneral;
+        C4Vector planeVector;
+    };
 };
 #endif //WOWVIEWERLIB_COMMONFILESTRUCTS_H

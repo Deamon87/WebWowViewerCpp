@@ -186,7 +186,7 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
     return hullLines;
 }
 
-bool MathHelper::checkFrustum(std::vector<mathfu::vec4> &planes, CAaBox &box, std::vector<mathfu::vec3> &points) {
+bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAaBox &box, const std::vector<mathfu::vec3> &points) {
     // check box outside/inside of frustum
     int num_planes = planes.size();
     for (int i = 0; i < num_planes; i++) {
@@ -290,8 +290,8 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
             // InFront = plane.Distance( point ) > 0.0f
             // Behind  = plane.Distance( point ) < 0.0f
 
-            float t1 = mathfu::vec4.DotProduct(p1, planes[i]);
-            float t2 = mathfu::vec4.DotProduct(p2, planes[i]);
+            float t1 = mathfu::vec4::DotProduct(p1, planes[i]);
+            float t2 = mathfu::vec4::DotProduct(p2, planes[i]);
 
             if (t1 > 0 && t2 > 0) { //p1 InFront and p2 InFront
                 resultPoints.push_back(p2);
@@ -316,20 +316,8 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
 
 }
 
-bool sortPortalVerts(mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &center, mathfu::vec4 &plane) {
-    mathfu::vec3 ac = a - center;
-
-    mathfu::vec3 bc = b - center;
-
-    mathfu::vec3 cross = mathfu::vec3.CrossProduct(ac, bc);
-
-    float dotResult = mathfu::vec3.DotProduct(cross, plane.xyz());
-
-    return dotResult < 0;
-}
-
 void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortalVertices,
-                                                  mathfu::vec4 &plane) {
+                                                  const mathfu::vec4 &plane) {
     mathfu::vec3 center(0, 0, 0);
     for (int j = 0; j < thisPortalVertices.size(); j++) {
         center += thisPortalVertices[j];
@@ -337,5 +325,32 @@ void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortal
     center *= 1 / thisPortalVertices.size();
 
     std::sort(thisPortalVertices.begin(), thisPortalVertices.end(),
-              std::bind(hullSort, std::placeholders::_1, std::placeholders::_2, center, plane));
+        [&](mathfu::vec3 &a, mathfu::vec3 &b) -> bool {
+            mathfu::vec3 ac = a - center;
+
+            mathfu::vec3 bc = b - center;
+
+            mathfu::vec3 cross = mathfu::vec3::CrossProduct(ac, bc);
+            float dotResult = mathfu::vec3::DotProduct(cross, plane.xyz());
+
+            return dotResult < 0;
+    });
+}
+
+mathfu::vec4 MathHelper::createPlaneFromEyeAndVertexes (
+            const mathfu::vec3 &eye,
+            const mathfu::vec3 &vertex1,
+            const mathfu::vec3 &vertex2) {
+
+    mathfu::vec3 edgeDir1 = vertex1 - eye;
+    mathfu::vec3 edgeDir2 = vertex2 - eye;
+
+    //planeNorm=cross(viewDir, edgeDir)
+    mathfu::vec3 planeNorm = mathfu::vec3::CrossProduct(edgeDir2, edgeDir1).Normalized();
+
+    //Plane fpl(planeNorm, dot(planeNorm, vertexA))
+    float distToPlane = mathfu::vec3::DotProduct(planeNorm, eye);
+    mathfu::vec4 plane(planeNorm, -distToPlane);
+
+    return plane;
 }

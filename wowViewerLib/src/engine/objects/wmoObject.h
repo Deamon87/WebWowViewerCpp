@@ -14,6 +14,22 @@ class WmoGroupObject;
 #include "../geometry/wmoMainGeom.h"
 #include "./iWmoApi.h"
 
+
+
+struct WmoGroupResult {
+    M2Range topBottom;
+    int groupId;
+    std::vector<int> bspLeafList;
+    int nodeId;
+};
+
+struct PortalResults {
+    int groupId;
+    int portalIndex;
+    std::vector<mathfu::vec4> frustumPlanes;
+    int level;
+};
+
 class WmoObject : public IWmoApi {
 
 public:
@@ -45,7 +61,6 @@ private:
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createBB(CAaBox bbox);
-    void loadM2s();
 public:
     std::string getTextureName(int index);
 
@@ -69,6 +84,46 @@ public:
     void update();
 
     void createM2Array();
+
+private:
+    std::vector<PortalResults> interiorPortals;
+    std::vector<PortalResults> exteriorPortals;
+
+public:
+    //Portal culling
+    bool startTraversingFromInteriorWMO (
+        std::vector<WmoGroupResult> &wmoGroupsResult,
+        mathfu::vec4 &cameraVec4,
+        mathfu::mat4 &viewPerspectiveMat,
+        std::vector<mathfu::vec4> &frustumPlanes,
+        std::vector<mathfu::vec3> &frustumPoints,
+        std::set<M2Object*> &m2RenderedThisFrame);
+
+    bool startTraversingFromExterior (
+        mathfu::vec4 &cameraVec4,
+        mathfu::mat4 &viewPerspectiveMat,
+        std::vector<mathfu::vec4> &frustumPlanes,
+        std::vector<mathfu::vec3> &frustumPoints,
+        std::set<M2Object*> &m2RenderedThisFrame);
+
+    void checkGroupDoodads(
+        int groupId,
+        mathfu::vec4 &cameraVec4,
+        std::vector<mathfu::vec4> &frustumPlanes,
+        int level,
+        std::set<M2Object*> &m2RenderedThisFrame);
+
+    void transverseGroupWMO (
+        int groupId,
+        bool fromInterior,
+        mathfu::vec4 &cameraVec4,
+        mathfu::vec4 &cameraLocal,
+        mathfu::mat4 &inverseTransposeModelMat,
+        std::vector<bool> &transverseVisitedGroups,
+        std::vector<bool> &transverseVisitedPortals,
+        std::vector<mathfu::vec4> &localFrustumPlanes,
+        int level,
+        std::set<M2Object*> &m2ObjectSet);
 };
 
 
