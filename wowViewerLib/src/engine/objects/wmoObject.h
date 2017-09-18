@@ -95,15 +95,11 @@ public:
         std::vector<WmoGroupResult> &wmoGroupsResult,
         mathfu::vec4 &cameraVec4,
         mathfu::mat4 &viewPerspectiveMat,
-        std::vector<mathfu::vec4> &frustumPlanes,
-        std::vector<mathfu::vec3> &frustumPoints,
         std::set<M2Object*> &m2RenderedThisFrame);
 
     bool startTraversingFromExterior (
         mathfu::vec4 &cameraVec4,
         mathfu::mat4 &viewPerspectiveMat,
-        std::vector<mathfu::vec4> &frustumPlanes,
-        std::vector<mathfu::vec3> &frustumPoints,
         std::set<M2Object*> &m2RenderedThisFrame);
 
     void checkGroupDoodads(

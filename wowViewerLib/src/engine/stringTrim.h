@@ -5,7 +5,7 @@
 #ifndef WEBWOWVIEWERCPP_STRINGTRIM_H
 #define WEBWOWVIEWERCPP_STRINGTRIM_H
 // trim from start (in place)
-int isprint ( int c );
+
 static inline void ltrim(std::string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(),
                                     std::not1(std::ptr_fun<int, int>(std::iscntrl))));
