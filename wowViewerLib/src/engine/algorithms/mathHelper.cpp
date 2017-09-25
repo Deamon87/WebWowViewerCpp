@@ -337,6 +337,53 @@ void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortal
     });
 }
 
+bool MathHelper::isPointInsideAABB(CAaBox &aabb, mathfu::vec3 &p) {
+    bool result = p[0] > aabb.min.x && p[0] < aabb.max.x &&
+             p[1] > aabb.min.y && p[1] < aabb.max.y &&
+             p[2] > aabb.min.z && p[2] < aabb.max.z;
+    return result;
+}
+
+static float distance_aux(float p, float lower, float upper) {
+    if (p < lower) return lower - p;
+    if (p > upper) return p - upper;
+    return 0;
+}
+
+float MathHelper::distanceFromAABBToPoint(CAaBox &aabb, mathfu::vec3 &p) {
+
+    float dx = distance_aux(p.x, aabb.min.x, aabb.max.x);
+    float dy = distance_aux(p.y, aabb.min.y, aabb.max.y);
+    float dz = distance_aux(p.z, aabb.min.z, aabb.max.z);
+
+    if (MathHelper::isPointInsideAABB(aabb, p))
+        return std::min(std::min(dx, dy), dz);    // or 0 in case of distance from the area
+    else
+        return sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+mathfu::vec3 MathHelper::getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &c) {
+    mathfu::vec3 v0 = b - a;
+    mathfu::vec3 v1 = c - a;
+    mathfu::vec3 v2 = p - a;
+
+    float d00 = mathfu::vec3::DotProduct(v0, v0);
+    float d01 = mathfu::vec3::DotProduct(v0, v1);
+    float d11 = mathfu::vec3::DotProduct(v1, v1);
+
+    float d20 = mathfu::vec3::DotProduct(v2, v0);
+    float d21 = mathfu::vec3::DotProduct(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    if ((denom < 0.0001) && (denom > -0.0001)) {
+        return mathfu::vec3(-1, -1, -1);
+    };
+
+    float v = (d11 * d20 - d01 * d21) / denom;
+    float w = (d00 * d21 - d01 * d20) / denom;
+    float u = 1.0 - v - w;
+    return mathfu::vec3(u, v, w);
+}
+
 mathfu::vec4 MathHelper::createPlaneFromEyeAndVertexes (
             const mathfu::vec3 &eye,
             const mathfu::vec3 &vertex1,

@@ -31,6 +31,13 @@ public:
                            std::vector<mathfu::vec4> &frustumPlanes,
                            std::vector<mathfu::vec3> &points,
                            std::set<M2Object*> &wmoM2Candidates);
+
+    bool checkIfInsideGroup(mathfu::vec4 &cameraVec4,
+                            mathfu::vec4 &cameraLocal,
+                            C3Vector *portalVerticles,
+                            SMOPortal *portalInfos,
+                            SMOPortalRef *portalRels,
+                            std::vector<WmoGroupResult> &candidateGroups);
 private:
     IWoWInnerApi *m_api = nullptr;
     IWmoApi *m_wmoApi = nullptr;
@@ -57,6 +64,17 @@ private:
     void postLoad();
 
     void loadDoodads();
+
+    bool checkIfInsidePortals(mathfu::vec3 point,C3Vector *portalVerticles,
+                              SMOPortal *portalInfos, SMOPortalRef *portalRels);
+
+    bool
+    checkIfInsidePortals(mathfu::vec4 point, C3Vector *portalVerticles, SMOPortal *portalInfos, SMOPortalRef *portalRels);
+
+    static void queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList);
+
+    bool getTopAndBottomTriangleFromBsp(mathfu::vec4 &cameraLocal, C3Vector *portalVerticles, SMOPortal *portalInfos,
+                                        SMOPortalRef *portalRels, std::vector<int> &bspLeafList, M2Range &result);
 };
 
 

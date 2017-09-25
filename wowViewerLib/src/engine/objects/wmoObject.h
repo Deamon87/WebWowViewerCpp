@@ -5,6 +5,7 @@
 #ifndef WEBWOWVIEWERCPP_WMOOBJECT_H
 #define WEBWOWVIEWERCPP_WMOOBJECT_H
 
+struct WmoGroupResult;
 class WmoGroupObject;
 #include <string>
 #include "../persistance/header/adtFileHeader.h"
