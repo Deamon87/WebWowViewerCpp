@@ -65,6 +65,9 @@ private:
     float m_lastTimeSort = 0;
     float m_lastTimeDistanceCalc = 0;
 
+    std::vector<WmoGroupResult> m_currentInteriorGroups;
+    WmoObject *m_currentWMO = nullptr;
+
 
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;

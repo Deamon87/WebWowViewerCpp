@@ -314,7 +314,7 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
         if (!isInsidePortalThis) continue;
 
         if ((plane->planeVector.z < 0.0001) && (plane->planeVector.z > -0.0001)) continue;
-        float z = (-plane->planeVector.z -
+        float z = (-plane->planeVector.w -
                    cameraLocal[0] * plane->planeVector.x -
                    cameraLocal[1] * plane->planeVector.y)
                   / plane->planeVector.z;
@@ -350,7 +350,7 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
         return false;
     }
 
-    result = {min: topZ, max: bottomZ};
+    result = {min: bottomZ, max: topZ};
 
     return true;
 }
@@ -384,7 +384,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
     int moprIndex = groupInfo->moprIndex;
     int numItems = groupInfo->moprCount;
 
-    bool insidePortals = this->checkIfInsidePortals(cameraLocal, portalVerticles, portalInfos, portalRels);
+    bool insidePortals = this->checkIfInsidePortals(cameraLocal.xyz(), portalVerticles, portalInfos, portalRels);
     if (!insidePortals) return false;
 
     //3. Query bsp tree for leafs around the position of object(camera)
@@ -438,11 +438,13 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
         }
 
         candidateGroups.push_back({
-                                          topBottom : topBottom,
-                                          groupId : this->m_geom->mogp->wmoGroupID,
-                                          bspLeafList : bspLeafList,
-                                          nodeId: nodeId
-                                  });
+            topBottom : topBottom,
+            groupId : m_groupNumber,
+            bspLeafList : bspLeafList,
+            nodeId: nodeId
+        });
+
+        return true;
     }
 
     return false;

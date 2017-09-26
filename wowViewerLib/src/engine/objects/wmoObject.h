@@ -121,6 +121,12 @@ public:
         std::vector<mathfu::vec4> &localFrustumPlanes,
         int level,
         std::set<M2Object*> &m2ObjectSet);
+
+    WmoGroupResult getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4);
+
+    bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
+
+    bool isGroupWmoInterior(int groupId);
 };
 
 

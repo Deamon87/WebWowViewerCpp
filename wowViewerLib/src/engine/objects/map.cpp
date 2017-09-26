@@ -105,32 +105,33 @@ void Map::update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 lookAtM
 //
 //    this.lastInstanceCollect = this.currentTime;
 
-//
-//    //6. Check what WMO instance we're in
-//    this.currentInteriorGroups = null;
-//    this.currentWMO = null;
-//
-//    var bspNodeId = -1;
-//    var interiorGroupNum = -1;
-//    var currentWmoGroup = -1;
-//    for (var i = 0; i < this.wmoObjects.length; i++) {
-//        var checkingWmoObj = this.wmoObjects[i];
-//        var result = checkingWmoObj.getGroupWmoThatCameraIsInside(this.position);
-//
-//        if (result) {
-//            this.currentWMO = checkingWmoObj;
-//            currentWmoGroup = result.groupId;
-//            if (checkingWmoObj.isGroupWmoInterior(result.groupId)) {
-//                this.currentInteriorGroups = [result];
-//                interiorGroupNum = result.groupId;
-//            } else {
-//            }
-//
-//            bspNodeId = result.nodeId;
-//            break;
-//        }
-//    }
-//
+
+    //6. Check what WMO instance we're in
+    this->m_currentInteriorGroups = {};
+    this->m_currentWMO = nullptr;
+
+    int bspNodeId = -1;
+    int interiorGroupNum = -1;
+    int currentWmoGroup = -1;
+    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
+        WmoObject *checkingWmoObj = this->wmoRenderedThisFrameArr[i];
+        WmoGroupResult groupResult;
+        bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(cameraVec3, 1), groupResult);
+
+        if (result) {
+            this->m_currentWMO = checkingWmoObj;
+            currentWmoGroup = groupResult.groupId;
+            if (checkingWmoObj->isGroupWmoInterior(groupResult.groupId)) {
+                this->m_currentInteriorGroups.push_back(groupResult);
+                interiorGroupNum = groupResult.groupId;
+            } else {
+            }
+
+            bspNodeId = groupResult.nodeId;
+            break;
+        }
+    }
+
 //    //7. Get AreaId and Area Name
 //    var currentAreaName = '';
 //    var wmoAreaTableDBC = this.sceneApi.dbc.getWmoAreaTableDBC();

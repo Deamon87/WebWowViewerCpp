@@ -15,8 +15,9 @@ class WmoGroupObject;
 
 class WmoGroupObject {
 public:
-    WmoGroupObject(mathfu::mat4 &modelMatrix, IWoWInnerApi *api, std::string fileName, SMOGroupInfo &groupInfo) : m_api(api), m_fileName(fileName){
+    WmoGroupObject(mathfu::mat4 &modelMatrix, IWoWInnerApi *api, std::string fileName, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api), m_fileName(fileName){
         m_modelMatrix = &modelMatrix;
+        m_groupNumber = groupNumber;
         createWorldGroupBB(groupInfo.bounding_box, modelMatrix);
     }
 
@@ -47,6 +48,7 @@ private:
     CAaBox m_worldGroupBorder;
     CAaBox m_volumeWorldGroupBorder;
     mathfu::mat4 *m_modelMatrix;
+    int m_groupNumber;
 
     std::vector <M2Object *> m_doodads = std::vector<M2Object *>(0);
 
@@ -68,8 +70,6 @@ private:
     bool checkIfInsidePortals(mathfu::vec3 point,C3Vector *portalVerticles,
                               SMOPortal *portalInfos, SMOPortalRef *portalRels);
 
-    bool
-    checkIfInsidePortals(mathfu::vec4 point, C3Vector *portalVerticles, SMOPortal *portalInfos, SMOPortalRef *portalRels);
 
     static void queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList);
 

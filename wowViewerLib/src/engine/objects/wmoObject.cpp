@@ -129,7 +129,7 @@ void WmoObject::createGroupObjects(){
         std::string groupFilename = nameTemplate + "_" + numStr + ".wmo";
 
 
-        groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilename, mainGeom->groups[i]);
+        groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilename, mainGeom->groups[i], i);
         groupObjects[i]->setWmoApi(this);
     }
 }
@@ -503,5 +503,65 @@ WmoObject::transverseGroupWMO(int groupId, bool fromInterior,
                                      transverseVisitedPortals,thisPortalPlanes, level+1, m2ObjectSet);
         }
     }
+}
 
+bool WmoObject::isGroupWmoInterior(int groupId) {
+    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    bool result = ((groupInfo->flags & 0x2000) != 0);
+    return result;
+}
+
+bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroupResult &groupResult) {
+        if (this->groupObjects.size() ==0) return false;
+
+        //Transform camera into local coordinates
+        mathfu::vec4 cameraLocal = this->m_placementInvertMatrix * cameraVec4 ;
+
+        //Check if camera inside wmo
+        bool isInsideWMOBB = (
+        cameraLocal[0] > this->mainGeom->header->bounding_box.min.x && cameraLocal[0] < this->mainGeom->header->bounding_box.max.x &&
+        cameraLocal[1] > this->mainGeom->header->bounding_box.min.y && cameraLocal[1] < this->mainGeom->header->bounding_box.max.y &&
+        cameraLocal[2] > this->mainGeom->header->bounding_box.min.z && cameraLocal[2] < this->mainGeom->header->bounding_box.max.z
+        );
+        if (!isInsideWMOBB) return false;
+
+        //Loop
+        int wmoGroupsInside = 0;
+        int interiorGroups = 0;
+        int lastWmoGroupInside = -1;
+        std::vector<WmoGroupResult> candidateGroups;
+
+        for (int i = 0; i < this->groupObjects.size(); i++) {
+            this->groupObjects[i]->checkIfInsideGroup(
+                    cameraVec4,
+                    cameraLocal,
+                    this->mainGeom->portal_vertices,
+                    this->mainGeom->portals,
+                    this->mainGeom->portalReferences,
+                    candidateGroups);
+            /* Test: iterate through portals in 5 value radius and check if it fits there */
+        }
+
+        //6. Iterate through result group list and find the one with maximal bottom z coordinate for object position
+        float minDist = 999999;
+        bool result = false;
+        for (int i = 0; i < candidateGroups.size(); i++) {
+            WmoGroupResult *candidate = &candidateGroups[i];
+            SMOGroupInfo *groupInfo = &this->mainGeom->groups[candidate->groupId];
+            /*if ((candidate.topBottom.bottomZ < 99999) && (candidate.topBottom.topZ > -99999)){
+                if ((cameraLocal[2] < candidateGroups[i].topBottom.bottomZ) || (cameraLocal[2] > candidateGroups[i].topBottom.topZ))
+                    continue
+            } */
+            if (candidate->topBottom.min < 99999) {
+                float dist = cameraLocal[2] - candidate->topBottom.min;
+                if (dist > 0 && dist < minDist) {
+                    result = true;
+                    minDist = dist;
+                    groupResult = *candidate;
+                }
+            }
+        }
+
+
+        return result;
 }
