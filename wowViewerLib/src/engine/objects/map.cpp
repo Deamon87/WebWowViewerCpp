@@ -21,9 +21,41 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 
-    checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4,
-                  adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
+    if (this->m_currentInteriorGroups.size() > 0 && m_api->getConfig()->getUsePortalCulling()) {
+        try {
+            if (this->m_currentWMO->startTraversingFromInteriorWMO(
+                    this->m_currentInteriorGroups,
+                    cameraPos,
+                    projectionModelMat,
+                    m2RenderedThisFrame)) {
 
+                wmoRenderedThisFrame.insert(this->m_currentWMO);
+
+                if (this->m_currentWMO->exteriorPortals.size() > 0) {
+                    checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4,
+                                  adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
+                }
+            }
+        }  catch (const std::overflow_error& e) {
+            std::cout << "std::overflow_error" << std::endl << e.what();
+            // this executes if f() throws std::overflow_error (same type rule)
+        } catch (const std::runtime_error& e) {
+            std::cout << "std::runtime_error" << std::endl << e.what();
+            // this executes if f() throws std::underflow_error (base class rule)
+        } catch (const std::exception& e) {
+            std::cout << "std::exception" << std::endl << e.what();
+        // this executes if f() throws std::logic_error (base class rule)
+        } catch (...) {
+            std::cout << "unknown error" << std::endl;
+        // this executes if f() throws std::string or int or any other unrelated type
+        }
+
+
+
+    } else {
+        checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4,
+                      adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
+    }
     adtRenderedThisFrameArr = std::vector<AdtObject*>(adtRenderedThisFrame.begin(), adtRenderedThisFrame.end());
     m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.begin(), m2RenderedThisFrame.end());
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());

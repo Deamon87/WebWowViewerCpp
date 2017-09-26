@@ -86,7 +86,7 @@ public:
 
     void createM2Array();
 
-private:
+public:
     std::vector<PortalResults> interiorPortals;
     std::vector<PortalResults> exteriorPortals;
 

@@ -37,6 +37,7 @@ public:
     virtual void deactivateWMOShader() = 0;
 
     virtual GLuint getBlackPixelTexture() = 0;
+    virtual Config *getConfig() = 0;
 
 };
 

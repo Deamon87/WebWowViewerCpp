@@ -238,18 +238,19 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
     this->exteriorPortals = std::vector<PortalResults>();
     this->interiorPortals = std::vector<PortalResults>();
 
+    mathfu::mat4 transposeModelMat = this->m_placementMatrix.Transpose();
     mathfu::mat4 inverseTransposeModelMat = this->m_placementInvertMatrix.Transpose();
 
-    std::vector<mathfu::vec4> localFrustumPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
+    std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
 //    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
 
-    std::vector<mathfu::vec4> frustumPlanes;
-    std::transform(localFrustumPlanes.begin(), localFrustumPlanes.end(),
-                   std::back_inserter(frustumPlanes),
+    std::vector<mathfu::vec4> localFrustumPlanes;
+    std::transform(frustumPlanes.begin(), frustumPlanes.end(),
+                   std::back_inserter(localFrustumPlanes),
                    [&](mathfu::vec4 p) -> mathfu::vec4 {
-                       return inverseTransposeModelMat * p;
+                       return transposeModelMat * p;
                    }
     );
 
@@ -270,7 +271,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
         for (int i = 0; i< mainGeom->groupsLen; i++) {
             if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
                 if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
-                    this->interiorPortals.push_back({groupId: i, portalIndex : -1, frustumPlanes: frustumPlanes, level : 0});
+                    this->exteriorPortals.push_back({groupId: i, portalIndex : -1, frustumPlanes: frustumPlanes, level : 0});
                     this->transverseGroupWMO(i, false, cameraVec4, cameraLocal,  inverseTransposeModelMat,
                                              transverseVisitedGroups,
                                              transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
@@ -319,7 +320,14 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
     this->interiorPortals = std::vector<PortalResults>();
 
     mathfu::mat4 inverseTransposeModelMat = this->m_placementInvertMatrix.Transpose();
-    std::vector<mathfu::vec4> localFrustumPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
+    std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
+    std::vector<mathfu::vec4> localFrustumPlanes;
+    std::transform(frustumPlanes.begin(), frustumPlanes.end(),
+                   std::back_inserter(localFrustumPlanes),
+                   [&](mathfu::vec4 p) -> mathfu::vec4 {
+                       return inverseTransposeModelMat * p;
+                   }
+    );
 //    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
@@ -335,13 +343,7 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
         }
     }
 
-    std::vector<mathfu::vec4> frustumPlanes;
-    std::transform(localFrustumPlanes.begin(), localFrustumPlanes.end(),
-                   std::back_inserter(frustumPlanes),
-                   [&](mathfu::vec4 p) -> mathfu::vec4 {
-                       return inverseTransposeModelMat * p;
-                   }
-    );
+
 
     for (M2Object *m2Object : wmoM2Candidates) {
         if (m2Object == nullptr) continue;
@@ -447,7 +449,7 @@ WmoObject::transverseGroupWMO(int groupId, bool fromInterior,
 
         //2.2 Check if Portal BB made from portal vertexes intersects frustum
         std::vector<mathfu::vec3> portalVerticesVec;
-        std::transform(portalVertexes, portalVertexes + mainGeom->portal_verticesLen-1,
+        std::transform(portalVertexes + portalInfo->base_index, portalVertexes + portalInfo->base_index + portalInfo->index_count,
             std::back_inserter(portalVerticesVec),
             [](C3Vector d) -> mathfu::vec3 { return mathfu::vec3(d);}
             );
@@ -463,6 +465,7 @@ WmoObject::transverseGroupWMO(int groupId, bool fromInterior,
         int lastFrustumPlanesLen = localFrustumPlanes.size();
 
         //3. Construct frustum planes for this portal
+
         std::vector<mathfu::vec4> thisPortalPlanes;
         bool flip = (relation->side < 0);
 
@@ -500,7 +503,7 @@ WmoObject::transverseGroupWMO(int groupId, bool fromInterior,
             this->exteriorPortals.push_back({groupId: nextGroup, portalIndex : relation->portal_index, frustumPlanes: thisPortalPlanes, level : level+1});
             this->transverseGroupWMO(nextGroup, false, cameraVec4, cameraLocal, inverseTransposeModelMat,
                                      transverseVisitedGroups,
-                                     transverseVisitedPortals,thisPortalPlanes, level+1, m2ObjectSet);
+                                     transverseVisitedPortals, thisPortalPlanes, level+1, m2ObjectSet);
         }
     }
 }

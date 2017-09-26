@@ -7,6 +7,8 @@ include(ExternalProject)
 #set(CMAKE_Ccd .._FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+
 if (WIN32)
 	SET(zlibLib zlibstaticd)
 	SET(extra_libraries "")

@@ -91,6 +91,9 @@ public:
         return adtShader;
     }
     virtual GLuint getBlackPixelTexture();
+    virtual Config *getConfig() {
+        return m_config;
+    }
 
 private:
     ShaderRuntimeData *compileShader (std::string shaderName, std::string vertShaderString, std::string fragmentShaderString,

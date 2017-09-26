@@ -33,9 +33,12 @@ void SkinGeom::createVBO() {
     }
 
     glGenBuffers(1, &this->indexVbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexVbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesLength*sizeof(uint16_t), &indicies[0], GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    //There are models, that have no indicies.
+    if (indiciesLength > 0) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexVbo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesLength * sizeof(uint16_t), &indicies[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
 }
 
 void SkinGeom::setupAttributes() {

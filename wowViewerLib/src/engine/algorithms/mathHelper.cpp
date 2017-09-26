@@ -308,6 +308,7 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
         vec4Points = std::vector<mathfu::vec4>(resultPoints.begin(), resultPoints.end());
     }
 
+    points = std::vector<mathfu::vec3>(vec4Points.size());
     for (int j = 0; j < vec4Points.size(); j++) {
         points[j] = vec4Points[j].xyz();
     }
