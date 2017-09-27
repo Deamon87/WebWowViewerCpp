@@ -848,7 +848,7 @@ void WoWSceneImpl::draw(double deltaTime) {
     this->skinGeomCache.processCacheQueue(10);
     this->textureCache.processCacheQueue(10);
 
-    mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 0);
+    mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
     currentScene->update(deltaTime, cameraVec4.xyz(), lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
 //

@@ -16,42 +16,25 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
-    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
+    //MathHelper::fixNearPlane(frustumPlanes, cameraPos);
 
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 
     if (this->m_currentInteriorGroups.size() > 0 && m_api->getConfig()->getUsePortalCulling()) {
-        try {
-            if (this->m_currentWMO->startTraversingFromInteriorWMO(
-                    this->m_currentInteriorGroups,
-                    cameraPos,
-                    projectionModelMat,
-                    m2RenderedThisFrame)) {
+        if (this->m_currentWMO->startTraversingFromInteriorWMO(
+                this->m_currentInteriorGroups,
+                cameraPos,
+                projectionModelMat,
+                m2RenderedThisFrame)) {
 
-                wmoRenderedThisFrame.insert(this->m_currentWMO);
+            wmoRenderedThisFrame.insert(this->m_currentWMO);
 
-                if (this->m_currentWMO->exteriorPortals.size() > 0) {
-                    checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
-                                  adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
-                }
+            if (this->m_currentWMO->exteriorPortals.size() > 0) {
+                checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
+                              adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
             }
-        }  catch (const std::overflow_error& e) {
-            std::cout << "std::overflow_error" << std::endl << e.what();
-            // this executes if f() throws std::overflow_error (same type rule)
-        } catch (const std::runtime_error& e) {
-            std::cout << "std::runtime_error" << std::endl << e.what();
-            // this executes if f() throws std::underflow_error (base class rule)
-        } catch (const std::exception& e) {
-            std::cout << "std::exception" << std::endl << e.what();
-        // this executes if f() throws std::logic_error (base class rule)
-        } catch (...) {
-            std::cout << "unknown error" << std::endl;
-        // this executes if f() throws std::string or int or any other unrelated type
         }
-
-
-
     } else {
         checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
                       adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);

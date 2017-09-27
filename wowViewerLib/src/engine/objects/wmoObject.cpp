@@ -393,16 +393,17 @@ void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
     }
 }
 
-void
-WmoObject::transverseGroupWMO(int groupId, bool fromInterior,
-                              mathfu::vec4 &cameraVec4,
-                              mathfu::vec4 &cameraLocal,
-                              mathfu::mat4 &inverseTransposeModelMat,
-                              std::vector<bool> &transverseVisitedGroups,
-                              std::vector<bool> &transverseVisitedPortals,
-                              std::vector<mathfu::vec4> &localFrustumPlanes,
-                              int level,
-                              std::set<M2Object *> &m2ObjectSet) {
+void WmoObject::transverseGroupWMO(
+                                int groupId,
+                                bool fromInterior,
+                                mathfu::vec4 &cameraVec4,
+                                mathfu::vec4 &cameraLocal,
+                                mathfu::mat4 &inverseTransposeModelMat,
+                                std::vector<bool> &transverseVisitedGroups,
+                                std::vector<bool> &transverseVisitedPortals,
+                                std::vector<mathfu::vec4> &localFrustumPlanes,
+                                int level,
+                                std::set<M2Object *> &m2ObjectSet) {
 
     transverseVisitedGroups[groupId] = true;
 

@@ -255,7 +255,7 @@ mathfu::vec4 MathHelper::planeLineIntersection(mathfu::vec4 &plane, mathfu::vec4
         p1.xyz() + (lineVector*((mathfu::vec3::DotProduct(p1.xyz(), planeNormal) + plane.w) /
           mathfu::vec3::DotProduct(lineVector, planeNormal)));
 
-    return mathfu::vec4(intersectionPoint, 1);
+    return mathfu::vec4(intersectionPoint, 1.0);
 }
 
 //Points should be sorted against center by this point
@@ -264,7 +264,7 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
     std::vector<mathfu::vec4> vec4Points(points.size());
 
     for (int j = 0; j < points.size(); j++) {
-        vec4Points[j] = mathfu::vec4(points[j][0], points[j][1], points[j][2], 1.0);
+        vec4Points[j] = mathfu::vec4(points[j].x, points[j].y, points[j].z, 1.0);
     }
 
 
@@ -276,7 +276,9 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
             out += ((mathfu::vec4::DotProduct(planes[i], vec4Points[j]) + epsilon < 0.0 ) ? 1 : 0);
         }
 
-        if (out == vec4Points.size()) return false;
+        if (out == vec4Points.size()) {
+            return false;
+        }
 
         //---------------------------------
         // Cull by points by current plane
