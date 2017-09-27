@@ -4,6 +4,8 @@
 
 #include "mathHelper.h"
 #include "grahamScan.h"
+#include <cmath>
+#include "../../../3rdparty/mathfu/include/mathfu/internal/vector_4.h"
 
 CAaBox MathHelper::transformAABBWithMat4(mathfu::mat4 mat4, mathfu::vec4 min, mathfu::vec4 max) {
     //Adapted from http://dev.theomader.com/transform-bounding-boxes/
@@ -41,6 +43,7 @@ CAaBox MathHelper::transformAABBWithMat4(mathfu::mat4 mat4, mathfu::vec4 min, ma
 std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(mathfu::mat4 &mat) {
     std::vector<mathfu::vec4> planes(6);
     // Right clipping plane.
+
     planes[0] = mathfu::vec4(mat[3] - mat[0],
                                 mat[7] - mat[4],
                                 mat[11] - mat[8],
@@ -243,6 +246,18 @@ mathfu::vec4 intersection(mathfu::vec4 &p1, mathfu::vec4 &p2, float k) {
     return temp;
 }
 
+mathfu::vec4 MathHelper::planeLineIntersection(mathfu::vec4 &plane, mathfu::vec4 &p1, mathfu::vec4 &p2) {
+    mathfu::vec3 lineVector = p2.xyz() - p1.xyz();
+    mathfu::vec3 planeNormal = plane.xyz();
+
+
+    mathfu::vec3 intersectionPoint =
+        p1.xyz() + (lineVector*((mathfu::vec3::DotProduct(p1.xyz(), planeNormal) + plane.w) /
+          mathfu::vec3::DotProduct(lineVector, planeNormal)));
+
+    return mathfu::vec4(intersectionPoint, 1);
+}
+
 //Points should be sorted against center by this point
 bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu::vec4> &planes) {
     // check box outside/inside of frustum
@@ -296,11 +311,11 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
             if (t1 > 0 && t2 > 0) { //p1 InFront and p2 InFront
                 resultPoints.push_back(p2);
             } else if (t1 > 0 && t2 < 0) { //p1 InFront and p2 Behind
-                float k = t1 / (t1 - t2);
-                resultPoints.push_back(intersection(p1, p2, k));
+//                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
+                resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
             } else if (t1 < 0 && t2 > 0) { //p1 Behind and p2 Behind
-                float k = t1 / (t1 - t2);
-                resultPoints.push_back(intersection(p1, p2, k));
+//                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
+                resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
                 resultPoints.push_back(p2);
             }
         }

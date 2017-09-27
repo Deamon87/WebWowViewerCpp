@@ -8,6 +8,7 @@
 
 #include "../persistance/header/commonFileStructs.h"
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
+#include "../../../3rdparty/mathfu/include/mathfu/internal/vector_4.h"
 #include <vector>
 #define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
 
@@ -72,6 +73,8 @@ public:
     static bool isPointInsideAABB(CAaBox &aabb, mathfu::vec3 &p);
 
     static mathfu::vec3 getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &c);
+
+    static mathfu::vec4 planeLineIntersection(mathfu::vec4 &plane, mathfu::vec4 &p1, mathfu::vec4 &p2);
 };
 
 

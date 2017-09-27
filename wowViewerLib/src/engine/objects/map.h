@@ -97,6 +97,7 @@ private:
             std::vector<mathfu::vec3> &frustumPoints,
             std::vector<mathfu::vec3> &hullLines,
             mathfu::mat4 &lookAtMat4,
+            mathfu::mat4 &projectionModelMat,
             std::set<AdtObject*> &adtRenderedThisFrame,
             std::set<M2Object*> &m2RenderedThisFrame,
             std::set<WmoObject*> &wmoRenderedThisFrame);

@@ -32,7 +32,7 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
                 wmoRenderedThisFrame.insert(this->m_currentWMO);
 
                 if (this->m_currentWMO->exteriorPortals.size() > 0) {
-                    checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4,
+                    checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
                                   adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
                 }
             }
@@ -53,7 +53,7 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
 
 
     } else {
-        checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4,
+        checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
                       adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
     }
     adtRenderedThisFrameArr = std::vector<AdtObject*>(adtRenderedThisFrame.begin(), adtRenderedThisFrame.end());
@@ -256,6 +256,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::vector<mathfu::vec3> &frustumPoints,
                         std::vector<mathfu::vec3> &hullLines,
                         mathfu::mat4 &lookAtMat4,
+                        mathfu::mat4 &projectionModelMat,
                         std::set<AdtObject*> &adtRenderedThisFrame,
                         std::set<M2Object*> &m2RenderedThisFrame,
                         std::set<WmoObject*> &wmoRenderedThisFrame) {
@@ -307,12 +308,12 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             wmoRenderedThisFrame.insert(wmoCandidate);
             continue;
         }
+        if( wmoRenderedThisFrame.count(wmoCandidate) > 0) continue;
 
-        if ( false /*wmoCandidate->hasPortals() && config.getUsePortalCulling() */) {
-//            if(self.portalCullingAlgo.startTraversingFromExterior(wmoCandidate, self.position,
-//                                                                  lookAtMat4, frustumPlanes, m2RenderedThisFrame)){
-//                wmoRenderedThisFrame.add(wmoCandidate);
-//            }
+        if ( wmoCandidate->hasPortals() && m_api->getConfig()->getUsePortalCulling() ) {
+            if(wmoCandidate->startTraversingFromExterior(cameraPos, projectionModelMat, m2RenderedThisFrame)){
+                wmoRenderedThisFrame.insert(wmoCandidate);
+            }
         } else {
             if (wmoCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints, m2RenderedThisFrame)) {
                 wmoRenderedThisFrame.insert(wmoCandidate);

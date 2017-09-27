@@ -319,31 +319,36 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
     this->exteriorPortals = std::vector<PortalResults>();
     this->interiorPortals = std::vector<PortalResults>();
 
+    mathfu::mat4 transposeModelMat = this->m_placementMatrix.Transpose();
     mathfu::mat4 inverseTransposeModelMat = this->m_placementInvertMatrix.Transpose();
+
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
+//    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
+    std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
+
+
     std::vector<mathfu::vec4> localFrustumPlanes;
     std::transform(frustumPlanes.begin(), frustumPlanes.end(),
                    std::back_inserter(localFrustumPlanes),
                    [&](mathfu::vec4 p) -> mathfu::vec4 {
-                       return inverseTransposeModelMat * p;
+                       mathfu::vec4 plane = transposeModelMat * p;
+                       float normalLength = plane.xyz().Length();
+                       return plane * (1.0f / normalLength);
                    }
     );
-//    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
-    std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
+
 
     std::set<M2Object *> wmoM2Candidates ;
     for (int i = 0; i< mainGeom->groupsLen; i++) {
         if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
-            if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, localFrustumPlanes, frustumPoints, wmoM2Candidates)) {
-                this->interiorPortals.push_back({groupId: i, portalIndex : -1, frustumPlanes: localFrustumPlanes, level : 0});
+            if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
+                this->exteriorPortals.push_back({groupId: i, portalIndex : -1, frustumPlanes: frustumPlanes, level : 0});
                 this->transverseGroupWMO(i, false, cameraVec4, cameraLocal,  inverseTransposeModelMat,
                                          transverseVisitedGroups,
                                          transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
             }
         }
     }
-
-
 
     for (M2Object *m2Object : wmoM2Candidates) {
         if (m2Object == nullptr) continue;
@@ -454,11 +459,13 @@ WmoObject::transverseGroupWMO(int groupId, bool fromInterior,
             [](C3Vector d) -> mathfu::vec3 { return mathfu::vec3(d);}
             );
 
+        MathHelper::sortVec3ArrayAgainstPlane(portalVerticesVec, planeV4);
+
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
 
         if (!visible) continue;
 
-        MathHelper::sortVec3ArrayAgainstPlane(portalVerticesVec, planeV4);
+
 
         transverseVisitedPortals[relation->portal_index] = true;
 
