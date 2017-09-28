@@ -18,7 +18,7 @@ private:
     bool drawWmoBB = false;
     bool drawM2BB = false;
     bool secondCamera = false;
-    bool doubleCameraDebug = false;
+    bool doubleCameraDebug = true;
 
     bool drawDepthBuffer = false;
     int cameraM2 = -1; // this will be sceneNumber of object

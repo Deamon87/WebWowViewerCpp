@@ -22,6 +22,7 @@ class WoWScene : public IFileRequester {
 public:
     virtual void draw(double deltaTime) = 0;
     virtual void setScreenSize(int canvWidth, int canvHeight) = 0;
+    virtual void switchCameras() = 0;
 
     virtual IControllable* getCurrentContollable() = 0;
 };

@@ -104,6 +104,8 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
             case 'E':
                 controllable->stopMovingDown();
                 break;
+            case 'H':
+                scene->switchCameras();
 
             default:
                 break;

@@ -58,9 +58,23 @@ public:
     }
     void setFileRequestProcessor(IFileRequest*){};
 
+    IControllable* controllable = &m_firstCamera;
+
     IControllable* getCurrentContollable() {
-        return &this->m_firstCamera;
+        return this->controllable;
     };
+
+    void switchCameras() {
+        if (controllable == &m_firstCamera) {
+            this->m_config->setUseSecondCamera(true);
+            controllable = &m_secondCamera;
+            mathfu::vec3 camPos = m_firstCamera.getCameraPosition();
+            m_secondCamera.setCameraPos(camPos.x, camPos.y, camPos.z);
+        } else {
+            this->m_config->setUseSecondCamera(false);
+            controllable = &m_firstCamera;
+        }
+    }
 public:
     virtual Cache<AdtObject> *getAdtGeomCache() {
         return &adtObjectCache;
@@ -189,6 +203,9 @@ private:
 
 
     void initVertBuffer();
+
+    void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
+                          bool drawDepth);
 };
 
 
