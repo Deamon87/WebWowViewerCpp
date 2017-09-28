@@ -366,10 +366,10 @@ void Map::draw() {
 //            }
 //        }
         //Draw Wmo portal frustums
-//    this.sceneApi.shaders.activateFrustumBoxShader();
-//        if (this.sceneApi.getIsDebugCamera()) {
-//            this.sceneApi.drawCamera()
-//        }
+        this->m_api->activateFrustumBoxShader();
+        if (this->m_api->getIsDebugCamera()) {
+            this->m_api->drawCamera();
+        }
 //    }
 }
 
@@ -510,5 +510,19 @@ void Map::drawM2s() {
     }
 
 
+    //7. Draw BBs
+    //7.1 Draw M2 BBs
+    if (this->m_api->getConfig()->getDrawM2BB()) {
+        this->m_api->activateBoundingBoxShader();
+
+        mathfu::vec3 bbColor(0.819607843, 0.058, 0.058);
+        for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
+            this->m2RenderedThisFrameArr[i]->drawBB(bbColor);
+        }
+        this->m_api->deactivateBoundingBoxShader();
+
+    }
+
 //    }
 }
+

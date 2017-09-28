@@ -16,7 +16,7 @@ private:
     bool usePortalCulling = true;
 
     bool drawWmoBB = false;
-    bool drawM2BB = false;
+    bool drawM2BB = true;
     bool secondCamera = false;
     bool doubleCameraDebug = true;
 

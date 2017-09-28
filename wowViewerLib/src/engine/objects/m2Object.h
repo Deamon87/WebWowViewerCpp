@@ -15,6 +15,7 @@
 #include "../managers/animationManager.h"
 #include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
 #include "../persistance/header/skinFileHeader.h"
+#include "../../../3rdparty/mathfu/include/mathfu/internal/vector_4.h"
 
 class M2Object {
 public:
@@ -105,7 +106,9 @@ public:
     void draw(bool drawTransparent, mathfu::vec4 &diffuseColor);
 
 
+    void drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::Matrix<float, 4, 4> &placementMatrix);
 
+    void drawBB(mathfu::vec3 &color);
 };
 
 

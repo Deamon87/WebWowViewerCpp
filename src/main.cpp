@@ -56,6 +56,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
+Config *testConf;
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
@@ -106,7 +107,10 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
             case 'H':
                 scene->switchCameras();
-
+                break;
+            case 'J':
+                testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
+                break;
             default:
                 break;
         }
@@ -247,7 +251,7 @@ int main(int argc, char** argv) {
 
     const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
 
-    Config *testConf = new Config();
+    testConf = new Config();
     ZipHttpRequestProcessor *processor = new ZipHttpRequestProcessor(url);
     WoWScene *scene = createWoWScene(testConf, processor, 1024, 1000);
     processor->setFileRequester(scene);

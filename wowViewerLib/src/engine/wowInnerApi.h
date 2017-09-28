@@ -26,6 +26,7 @@ public:
     virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() = 0;
 
     virtual ShaderRuntimeData *getM2Shader() = 0;
+    virtual ShaderRuntimeData *getBBShader() = 0;
     virtual ShaderRuntimeData *getWmoShader() = 0;
     virtual ShaderRuntimeData *getAdtShader() = 0;
 
@@ -35,6 +36,12 @@ public:
     virtual void deactivateAdtShader() = 0;
     virtual void activateWMOShader() = 0;
     virtual void deactivateWMOShader() = 0;
+    virtual void activateBoundingBoxShader() = 0;
+    virtual void deactivateBoundingBoxShader() = 0;
+    virtual void activateFrustumBoxShader() = 0;
+    virtual bool getIsDebugCamera() = 0;
+    virtual void drawCamera() = 0;
+
 
     virtual GLuint getBlackPixelTexture() = 0;
     virtual Config *getConfig() = 0;

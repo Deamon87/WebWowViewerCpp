@@ -461,6 +461,46 @@ void M2Object::draw(bool drawTransparent, mathfu::vec4 &diffuseColor) {
 //    }
 }
 
+void M2Object::drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::mat4 &placementMatrix) {
+    mathfu::vec3 center = mathfu::vec3(
+        (bb.min.x + bb.max.x) / 2,
+        (bb.min.y + bb.max.y) / 2,
+        (bb.min.z + bb.max.z) / 2
+    );
+
+    mathfu::vec3 scale = mathfu::vec3(
+        bb.max.x - center[0],
+        bb.max.y - center[1],
+        bb.max.z - center[2]
+    );
+
+    ShaderRuntimeData *shader = this->m_api->getBBShader();
+    glUniform3fv(shader->getUnf("uBBScale"), 1, &scale[0]);
+    glUniform3fv(shader->getUnf("uBBCenter"), 1, &center[0]);
+    glUniform3fv(shader->getUnf("uColor"), 3, &color[0]); //red
+    glUniformMatrix4fv(shader->getUnf("uPlacementMat"), 1, GL_FALSE, &placementMatrix[0]);
+
+    glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
+}
+
+void M2Object::drawBB(mathfu::vec3 &color) {
+    if (!this->m_loaded) return;
+
+//    function drawBBInternal2(center, scale, color, placementMatrix) {
+//        gl.uniform3fv(uniforms.uBBScale, new Float32Array(scale));
+//        gl.uniform3fv(uniforms.uBBCenter, new Float32Array(center));
+//        gl.uniform3fv(uniforms.uColor, new Float32Array(color)); //red
+//        gl.uniformMatrix4fv(uniforms.uPlacementMat, false, placementMatrix);
+//
+//        gl.drawElements(gl.LINES, 48, gl.UNSIGNED_SHORT, 0);
+//    }
+    //CAaBox bb = this->getBoundingBox();
+
+    mathfu::mat4 defMat = mathfu::mat4::Identity();
+    drawBBInternal(this->aabb, color, defMat);
+
+}
+
 void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
     if (!drawTransparent) {
         for (int i = 0; i < this->m_materialArray.size(); i++) {

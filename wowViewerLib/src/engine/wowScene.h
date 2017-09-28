@@ -98,6 +98,9 @@ public:
     virtual ShaderRuntimeData *getM2Shader() {
         return m2Shader;
     };
+    virtual ShaderRuntimeData *getBBShader() {
+        return bbShader;
+    };
     virtual ShaderRuntimeData *getWmoShader() {
         return wmoShader;
     }
@@ -148,10 +151,14 @@ private:
     Config * m_config;
 
     mathfu::mat4 m_lookAtMat4;
+    mathfu::mat4 m_viewCameraForRender;
     mathfu::mat4 m_perspectiveMatrix;
 
     FirstPersonCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;
+
+    GLuint vbo_vertices;
+    GLuint ibo_elements;
 
     int canvWidth;
     int canvHeight;
@@ -160,6 +167,8 @@ private:
     float uFogStart = -1;
     float uFogEnd = -1;
     float m_fogColor[4] = {1.0, 1.0, 1.0, 1.0};
+
+    bool m_isDebugCamera = false;
 
     GLuint frameBuffer = -1;
     GLuint frameBufferColorTexture = -1;
@@ -195,6 +204,7 @@ private:
     void activateM2InstancingShader();
     void deactivateM2InstancingShader();
     void activateBoundingBoxShader();
+    void deactivateBoundingBoxShader();
     void activateFrustumBoxShader();
     void activateDrawLinesShader();
     void activateDrawPortalShader();
@@ -206,6 +216,11 @@ private:
 
     void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
                           bool drawDepth);
+
+    void drawCamera();
+    bool getIsDebugCamera() {
+        return m_isDebugCamera;
+    }
 };
 
 

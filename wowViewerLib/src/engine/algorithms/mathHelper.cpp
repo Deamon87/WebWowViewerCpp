@@ -77,7 +77,7 @@ std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(mathfu::mat4 &ma
     for (int i = 0; i < 6; i++) {
         //Hand made normalize
         float invVecLength = 1 / (planes[i].xyz().Length());
-        planes[i] *= invVecLength;
+        planes[i] = planes[i] * invVecLength;
     }
 
     return planes;
@@ -146,7 +146,8 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
     for (int i = 0; i< hullPoints.size(); i++) {
         centerPoint += hullPointsArr[i].xy();
     }
-    centerPoint = centerPoint * ((float)1/hullPoints.size());
+    centerPoint = centerPoint * (1.0f / hullPoints.size());
+
     std::sort(hullPointsArr.begin(),
               hullPointsArr.end(),
               std::bind(hullSort, std::placeholders::_1, std::placeholders::_2, centerPoint));
@@ -154,9 +155,9 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
     std::vector<mathfu::vec3> hullLines;
     
     if (hullPoints.size() > 2) {
-        for (int i = 0; i < hullPointsArr.size() - 1; i++) {
-            int index2 = i+1;
-            int index1 = i;
+        for (int i = 0; i < hullPointsArr.size(); i++) {
+            int index1 = (i+1) % (hullPointsArr.size());
+            int index2 = i;
 
             mathfu::vec3 line (
                 hullPointsArr[index2].y - hullPointsArr[index1].y,
@@ -165,23 +166,10 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
                 hullPointsArr[index1].y*( hullPointsArr[index2].x - hullPointsArr[index1].x)
             );
             float normalLength = sqrt(line[0]*line[0] + line[1]*line[1]);
-            line =  (-line) * (1/normalLength);
+            line =  line * (1.0f/normalLength);
 
             hullLines.push_back(line);
         }
-
-        int index1 = 0;
-        int index2 = hullPointsArr.size() - 1;
-        mathfu::vec3 line (
-            hullPointsArr[index1].y - hullPointsArr[index2].y,
-            hullPointsArr[index2].x - hullPointsArr[index1].x,
-            -hullPointsArr[index1].y*(hullPointsArr[index2].x - hullPointsArr[index1].x) +
-            hullPointsArr[index1].x*( hullPointsArr[index2].y - hullPointsArr[index1].y)
-        );
-        float normalLength = sqrt(line[0]*line[0] + line[1]+line[1]);
-        line *= 1/normalLength;
-
-        hullLines.push_back(line);
     } else {
         //"invalid number of hullPoints"
     }
@@ -194,14 +182,15 @@ bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAa
     int num_planes = planes.size();
     for (int i = 0; i < num_planes; i++) {
         int out = 0;
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]*box.min.z+planes[i][3]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]*box.min.z+planes[i][3]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]*box.min.z+planes[i][3]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]*box.min.z+planes[i][3]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]*box.max.z+planes[i][3]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]*box.max.z+planes[i][3]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]*box.max.z+planes[i][3]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]*box.max.z+planes[i][3]) < 0.0 ) ? 1 : 0);
+
+        out += ((( (planes[i].x*box.min.x) + (planes[i].y*box.min.y) + (planes[i].z*box.min.z) + planes[i].w) < 0.0 ) ? 1 : 0);
+        out += ((( (planes[i].x*box.max.x) + (planes[i].y*box.min.y) + (planes[i].z*box.min.z) + planes[i].w) < 0.0 ) ? 1 : 0);
+        out += ((( (planes[i].x*box.min.x) + (planes[i].y*box.max.y) + (planes[i].z*box.min.z) + planes[i].w) < 0.0 ) ? 1 : 0);
+        out += ((( (planes[i].x*box.max.x) + (planes[i].y*box.max.y) + (planes[i].z*box.min.z) + planes[i].w) < 0.0 ) ? 1 : 0);
+        out += ((( (planes[i].x*box.min.x) + (planes[i].y*box.min.y) + (planes[i].z*box.max.z) + planes[i].w) < 0.0 ) ? 1 : 0);
+        out += ((( (planes[i].x*box.max.x) + (planes[i].y*box.min.y) + (planes[i].z*box.max.z) + planes[i].w) < 0.0 ) ? 1 : 0);
+        out += ((( (planes[i].x*box.min.x) + (planes[i].y*box.max.y) + (planes[i].z*box.max.z) + planes[i].w) < 0.0 ) ? 1 : 0);
+        out += ((( (planes[i].x*box.max.x) + (planes[i].y*box.max.y) + (planes[i].z*box.max.z) + planes[i].w) < 0.0 ) ? 1 : 0);
 
         if (out == 8) return false;
     }
@@ -225,10 +214,10 @@ bool MathHelper::checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box) 
     //for (var i = 0; i < Math.min(num_planes, maxLines); i++) {
     for (int i = 0; i < planes.size(); i++) {
         int out = 0;
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]) < 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
         if (out == 4) return false;
     }
 

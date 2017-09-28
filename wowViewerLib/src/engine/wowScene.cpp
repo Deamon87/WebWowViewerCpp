@@ -249,7 +249,7 @@ void WoWSceneImpl::initShaders() {
                                                          new std::string("#define INSTANCED 1\r\n "),
                                                          new std::string("#define INSTANCED 1\r\n "));
 
-    const  std::string bbShader = getShaderDef("m2Shader")->shaderString;
+    const  std::string bbShader = getShaderDef("drawBBShader")->shaderString;
     this->bbShader                 = this->compileShader("drawBBShader", bbShader, bbShader);
 
     const  std::string adtShader = getShaderDef("adtShader")->shaderString;
@@ -290,7 +290,41 @@ void WoWSceneImpl::initArrayInstancedExt() {
 
 }
 void WoWSceneImpl::initBoxVBO() {
+    //From https://en.wikibooks.org/wiki/OpenGL_Programming/Bounding_box
+    static const float vertices[] = {
+        -1, -1, -1, //0
+        1, -1, -1,  //1
+        1, -1, 1,   //2
+        -1, -1, 1,  //3
+        -1, 1, 1,   //4
+        1, 1, 1,    //5
+        1, 1, -1,   //6
+        -1, 1, -1  //7
+    };
 
+    GLuint vbo_vertices;
+    glGenBuffers(1, &vbo_vertices);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_vertices);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, GL_ZERO);
+
+    static const uint16_t elements[] = {
+            0, 1, 1, 2, 2, 3, 3, 0,
+            4, 5, 5, 6, 6, 7, 7, 4,
+            7, 6, 6, 1, 1, 0, 0, 7,
+            3, 2, 2, 5, 5, 4, 4, 3,
+            6, 5, 5, 2, 2, 1, 1, 6,
+            0, 3, 3, 4, 4, 7, 7, 0
+    };
+
+    GLuint ibo_elements;
+    glGenBuffers(1, &ibo_elements);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo_elements);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
+
+    this->vbo_vertices = vbo_vertices;
+    this->ibo_elements = ibo_elements;
 }
 void WoWSceneImpl::initCaches() {
 
@@ -764,6 +798,17 @@ void glClearScreen() {
     glDisable(GL_CULL_FACE);
 }
 
+void WoWSceneImpl::drawCamera () {
+    glDisable(GL_DEPTH_TEST);
+
+    mathfu::mat4 invViewFrustum = this->m_viewCameraForRender.Inverse();
+
+    glUniformMatrix4fv(drawFrustumShader->getUnf("uInverseViewProjection"), 1, GL_FALSE, &invViewFrustum[0]);
+
+    glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
+    glEnable(GL_DEPTH_TEST);
+}
+
 void WoWSceneImpl::draw(double deltaTime) {
     glClearScreen();
     mathfu::vec3 *cameraVector;
@@ -857,7 +902,7 @@ void WoWSceneImpl::draw(double deltaTime) {
             perspectiveMatrixForCameraRender * lookAtMat4;
 
 //    this.perspectiveMatrix = perspectiveMatrix;
-//    this.viewCameraForRender = viewCameraForRender;
+    this->m_viewCameraForRender = viewCameraForRender;
 //
 //    var cameraPos = vec4.fromValues(
 //            this.mainCamera[0],
@@ -886,8 +931,10 @@ void WoWSceneImpl::draw(double deltaTime) {
 
     if (this->m_config->getDoubleCameraDebug()) {
         //Draw static camera
+        m_isDebugCamera = true;
         this->m_lookAtMat4 = secondLookAtMat;
         currentScene->draw();
+        m_isDebugCamera = false;
 
         if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
             //Draw real camera into square at bottom of screen
@@ -973,6 +1020,22 @@ void WoWSceneImpl::deactivateM2Shader() {
 
 }
 
+void WoWSceneImpl::activateBoundingBoxShader() {
+    glUseProgram(this->bbShader->getProgram());
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
+    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
+
+    //gl.enableVertexAttribArray(this.currentShaderProgram.shaderAttributes.aPosition);
+    glVertexAttribPointer(+drawBBShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, nullptr);  // position
+
+    glUniformMatrix4fv(this->bbShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->bbShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+}
+void WoWSceneImpl::deactivateBoundingBoxShader() {
+
+}
+
 void WoWSceneImpl::activateM2ShaderAttribs() {
     glEnableVertexAttribArray(+m2Shader::Attribute::aPosition);
 //    if (shaderAttributes.aNormal) {
@@ -1041,6 +1104,20 @@ void WoWSceneImpl::activateAdtShader (){
 }
 void WoWSceneImpl::deactivateAdtShader() {
     glUseProgram(0);
+}
+
+void WoWSceneImpl::activateFrustumBoxShader() {
+    glUseProgram(drawFrustumShader->getProgram());
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
+    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
+
+    glEnableVertexAttribArray(+drawFrustumShader::Attribute::aPosition);
+    glVertexAttribPointer(+drawFrustumShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
+
+    glUniformMatrix4fv(drawFrustumShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(drawFrustumShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+
 }
 
 
