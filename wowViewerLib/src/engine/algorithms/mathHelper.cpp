@@ -225,10 +225,10 @@ bool MathHelper::checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box) 
     //for (var i = 0; i < Math.min(num_planes, maxLines); i++) {
     for (int i = 0; i < planes.size(); i++) {
         int out = 0;
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]) < 0.0 ) ? 1 : 0);
+        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]) < 0.0 ) ? 1 : 0);
         if (out == 4) return false;
     }
 
@@ -340,7 +340,7 @@ void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortal
     for (int j = 0; j < thisPortalVertices.size(); j++) {
         center += thisPortalVertices[j];
     }
-    center *= 1 / thisPortalVertices.size();
+    center *= 1.0 / thisPortalVertices.size();
 
     std::sort(thisPortalVertices.begin(), thisPortalVertices.end(),
         [&](mathfu::vec3 &a, mathfu::vec3 &b) -> bool {
@@ -351,7 +351,7 @@ void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortal
             mathfu::vec3 cross = mathfu::vec3::CrossProduct(ac, bc);
             float dotResult = mathfu::vec3::DotProduct(cross, plane.xyz());
 
-            return dotResult < 0;
+            return dotResult > 0;
     });
 }
 

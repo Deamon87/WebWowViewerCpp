@@ -465,7 +465,7 @@ void WmoObject::transverseGroupWMO(
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
 
         if (!visible) continue;
-
+        MathHelper::sortVec3ArrayAgainstPlane(portalVerticesVec, planeV4);
 
 
         transverseVisitedPortals[relation->portal_index] = true;
