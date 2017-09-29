@@ -182,7 +182,7 @@ void WmoObject::drawTransformedPortalPoints(){
     for (int i = 0; i < this->interiorPortals.size(); i++) {
         //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
 
-        for (int j =0; j < this->interiorPortals[i].portalVertices.size()-2; j++) {
+        for (int j =0; j < (((int)this->interiorPortals[i].portalVertices.size())-2); j++) {
             indiciesArray.push_back(k+0);
             indiciesArray.push_back(k+j+1);
             indiciesArray.push_back(k+j+2);
