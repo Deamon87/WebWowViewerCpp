@@ -183,14 +183,15 @@ bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAa
     for (int i = 0; i < num_planes; i++) {
         int out = 0;
 
-        out += ((( (planes[i].x*box.min.x) + (planes[i].y*box.min.y) + (planes[i].z*box.min.z) + planes[i].w) < 0.0 ) ? 1 : 0);
-        out += ((( (planes[i].x*box.max.x) + (planes[i].y*box.min.y) + (planes[i].z*box.min.z) + planes[i].w) < 0.0 ) ? 1 : 0);
-        out += ((( (planes[i].x*box.min.x) + (planes[i].y*box.max.y) + (planes[i].z*box.min.z) + planes[i].w) < 0.0 ) ? 1 : 0);
-        out += ((( (planes[i].x*box.max.x) + (planes[i].y*box.max.y) + (planes[i].z*box.min.z) + planes[i].w) < 0.0 ) ? 1 : 0);
-        out += ((( (planes[i].x*box.min.x) + (planes[i].y*box.min.y) + (planes[i].z*box.max.z) + planes[i].w) < 0.0 ) ? 1 : 0);
-        out += ((( (planes[i].x*box.max.x) + (planes[i].y*box.min.y) + (planes[i].z*box.max.z) + planes[i].w) < 0.0 ) ? 1 : 0);
-        out += ((( (planes[i].x*box.min.x) + (planes[i].y*box.max.y) + (planes[i].z*box.max.z) + planes[i].w) < 0.0 ) ? 1 : 0);
-        out += ((( (planes[i].x*box.max.x) + (planes[i].y*box.max.y) + (planes[i].z*box.max.z) + planes[i].w) < 0.0 ) ? 1 : 0);
+        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.max.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.max.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.min.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.min.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.max.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.max.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
+
 
         if (out == 8) return false;
     }
@@ -236,12 +237,12 @@ mathfu::vec4 intersection(mathfu::vec4 &p1, mathfu::vec4 &p2, float k) {
 }
 
 mathfu::vec4 MathHelper::planeLineIntersection(mathfu::vec4 &plane, mathfu::vec4 &p1, mathfu::vec4 &p2) {
-    mathfu::vec3 lineVector = p2.xyz() - p1.xyz();
+    mathfu::vec3 lineVector = (p2.xyz() - p1.xyz()).Normalized();
     mathfu::vec3 planeNormal = plane.xyz();
 
 
     mathfu::vec3 intersectionPoint =
-        p1.xyz() + (lineVector*((mathfu::vec3::DotProduct(p1.xyz(), planeNormal) + plane.w) /
+        p1.xyz() - (lineVector*((mathfu::vec3::DotProduct(p1.xyz(), planeNormal) + plane.w) /
           mathfu::vec3::DotProduct(lineVector, planeNormal)));
 
     return mathfu::vec4(intersectionPoint, 1.0);
@@ -337,10 +338,10 @@ void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortal
 
             mathfu::vec3 bc = b - center;
 
-            mathfu::vec3 cross = mathfu::vec3::CrossProduct(ac, bc);
+            mathfu::vec3 cross = mathfu::vec3::CrossProduct(ac, bc).Normalized();
             float dotResult = mathfu::vec3::DotProduct(cross, plane.xyz());
 
-            return dotResult > 0;
+            return dotResult < 0;
     });
 }
 

@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 project(WoWViewerLib)
 
 #set(CMAKE_BUILD_TYPE Release)
-#set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
-#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+#set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s -O3 -D__OPTIMIZE__=1 -ftree-vectorize -DMATHFU_COMPILE_WITH_SIMD")
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -s -D__OPTIMIZE__=1 -ftree-vectorize -DMATHFU_COMPILE_WITH_SIMD")
 set(CMAKE_BUILD_TYPE Debug)
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 
@@ -106,7 +106,7 @@ add_library(WoWViewerLib ${SOURCE_FILES})
 
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 target_link_libraries(WoWViewerLib ${glew_lib})
-mathfu_configure_flags(WoWViewerLib)
+mathfu_configure_flags(WoWViewerLib ON)
 
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/src/include/wowScene.h
               ${CMAKE_SOURCE_DIR}/src/include/config.h

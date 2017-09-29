@@ -101,6 +101,9 @@ public:
     virtual ShaderRuntimeData *getBBShader() {
         return bbShader;
     };
+    virtual ShaderRuntimeData *getPortalShader() {
+        return drawPortalShader;
+    }
     virtual ShaderRuntimeData *getWmoShader() {
         return wmoShader;
     }

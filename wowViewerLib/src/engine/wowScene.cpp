@@ -489,6 +489,14 @@ void WoWSceneImpl::activateRenderDepthShader () {
     glActiveTexture(GL_TEXTURE0);
 }
 
+void WoWSceneImpl::activateDrawPortalShader () {
+    glUseProgram(drawPortalShader->getProgram());
+
+    glUniformMatrix4fv(drawPortalShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(drawPortalShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+}
+
+
 void WoWSceneImpl::drawTexturedQuad(GLuint texture,
                                     float x,
                                     float y,

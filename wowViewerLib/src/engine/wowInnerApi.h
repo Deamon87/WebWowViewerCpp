@@ -28,6 +28,7 @@ public:
     virtual ShaderRuntimeData *getM2Shader() = 0;
     virtual ShaderRuntimeData *getBBShader() = 0;
     virtual ShaderRuntimeData *getWmoShader() = 0;
+    virtual ShaderRuntimeData *getPortalShader() = 0;
     virtual ShaderRuntimeData *getAdtShader() = 0;
 
     virtual void activateM2Shader() = 0;
@@ -39,6 +40,7 @@ public:
     virtual void activateBoundingBoxShader() = 0;
     virtual void deactivateBoundingBoxShader() = 0;
     virtual void activateFrustumBoxShader() = 0;
+    virtual void activateDrawPortalShader() = 0;
     virtual bool getIsDebugCamera() = 0;
     virtual void drawCamera() = 0;
 

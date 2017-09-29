@@ -27,6 +27,7 @@ struct WmoGroupResult {
 struct PortalResults {
     int groupId;
     int portalIndex;
+    std::vector<mathfu::vec3> portalVertices;
     std::vector<mathfu::vec4> frustumPlanes;
     int level;
 };
@@ -127,6 +128,8 @@ public:
     bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
 
     bool isGroupWmoInterior(int groupId);
+
+    void drawTransformedPortalPoints();
 };
 
 

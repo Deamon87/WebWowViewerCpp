@@ -4,6 +4,7 @@
 
 #include "wmoObject.h"
 #include "../algorithms/mathHelper.h"
+#include "../shaderDefinitions.h"
 
 std::string WmoObject::getTextureName(int index) {
     return std::__cxx11::string();
@@ -171,6 +172,71 @@ void WmoObject::draw(){
     }
 }
 
+void WmoObject::drawTransformedPortalPoints(){
+    if (!m_loaded) return;
+
+    std::vector<uint16_t> indiciesArray;
+    std::vector<float> verticles;
+    int k = 0;
+    //int l = 0;
+    for (int i = 0; i < this->interiorPortals.size(); i++) {
+        //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
+
+        for (int j =0; j < this->interiorPortals[i].portalVertices.size()-2; j++) {
+            indiciesArray.push_back(k+0);
+            indiciesArray.push_back(k+j+1);
+            indiciesArray.push_back(k+j+2);
+        }
+
+        for (int j =0; j < this->interiorPortals[i].portalVertices.size(); j++) {
+            verticles.push_back(this->interiorPortals[i].portalVertices[j].x);
+            verticles.push_back(this->interiorPortals[i].portalVertices[j].y);
+            verticles.push_back(this->interiorPortals[i].portalVertices[j].z);
+        }
+        k += this->interiorPortals[i].portalVertices.size() * 3;
+    }
+    GLuint indexVBO;
+    GLuint bufferVBO;
+    glGenBuffers(1, &indexVBO);
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glBufferData( GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size()*2, &indiciesArray[0], GL_STATIC_DRAW);
+
+    glGenBuffers(1, &bufferVBO);
+    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
+    glBufferData( GL_ARRAY_BUFFER, verticles.size()*4, &verticles[0], GL_STATIC_DRAW);
+
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // default blend func
+
+    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, false, 0, 0);  // position
+
+    auto drawPortalShader = m_api->getPortalShader();
+    float colorArr[4] = {0.058, 0.058, 0.819607843, 0.3};
+    glUniformMatrix4fv(drawPortalShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
+    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
+
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+
+    int offset = 0;
+    for (int i = 0; i < this->interiorPortals.size(); i++) {
+        int indeciesLen = (this->interiorPortals[i].portalVertices.size()-2) * 3;
+
+        glDrawElements(GL_TRIANGLES, indeciesLen, GL_UNSIGNED_SHORT, (void *)(offset * 2));
+
+        offset += indeciesLen;
+    }
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
+    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
+
+    glDeleteBuffers(1, &indexVBO);
+    glDeleteBuffers(1, &bufferVBO);
+}
+
 void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
     m_modelName = modelName;
 
@@ -256,7 +322,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
 
 
     for (int i = 0; i < wmoGroupsResults.size(); i++) {
-        this->interiorPortals.push_back({groupId: wmoGroupsResults[i].groupId, portalIndex: -1, frustumPlanes: localFrustumPlanes, level: 0});
+        this->interiorPortals.push_back({groupId: wmoGroupsResults[i].groupId, portalIndex: -1, portalVertices: {}, frustumPlanes: localFrustumPlanes, level: 0});
         this->transverseGroupWMO(wmoGroupsResults[i].groupId, true, cameraVec4, cameraLocal,
                                  inverseTransposeModelMat,
                                  transverseVisitedGroups,
@@ -271,7 +337,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
         for (int i = 0; i< mainGeom->groupsLen; i++) {
             if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
                 if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
-                    this->exteriorPortals.push_back({groupId: i, portalIndex : -1, frustumPlanes: frustumPlanes, level : 0});
+                    this->exteriorPortals.push_back({groupId: i, portalIndex : -1, portalVertices: {}, frustumPlanes: frustumPlanes, level : 0});
                     this->transverseGroupWMO(i, false, cameraVec4, cameraLocal,  inverseTransposeModelMat,
                                              transverseVisitedGroups,
                                              transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
@@ -342,7 +408,7 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
     for (int i = 0; i< mainGeom->groupsLen; i++) {
         if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
             if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
-                this->exteriorPortals.push_back({groupId: i, portalIndex : -1, frustumPlanes: frustumPlanes, level : 0});
+                this->exteriorPortals.push_back({groupId: i, portalIndex : -1, portalVertices: {}, frustumPlanes: frustumPlanes, level : 0});
                 this->transverseGroupWMO(i, false, cameraVec4, cameraLocal,  inverseTransposeModelMat,
                                          transverseVisitedGroups,
                                          transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
@@ -465,7 +531,7 @@ void WmoObject::transverseGroupWMO(
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
 
         if (!visible) continue;
-        MathHelper::sortVec3ArrayAgainstPlane(portalVerticesVec, planeV4);
+        //MathHelper::sortVec3ArrayAgainstPlane(portalVerticesVec, planeV4);
 
 
         transverseVisitedPortals[relation->portal_index] = true;
@@ -480,7 +546,7 @@ void WmoObject::transverseGroupWMO(
         for (int i = 0; i < portalVerticesVec.size(); ++i) {
             int i2 = (i + 1) % portalVerticesVec.size();
 
-            mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(cameraLocal.xyz(), portalVerticesVec[i], portalVerticesVec[i2]);
+            mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(cameraLocal.xyz(), portalVerticesVec[i2], portalVerticesVec[i]);
 
             if (flip) {
                 n *= -1;
@@ -502,13 +568,13 @@ void WmoObject::transverseGroupWMO(
         //5. Traverse next
         if ((mainGeom->groups[nextGroup].flags & 0x2000) > 0) {
             //5.1 The portal is into interior wmo group. So go on.
-            this->interiorPortals.push_back({groupId: nextGroup, portalIndex : relation->portal_index, frustumPlanes: thisPortalPlanes, level : level+1});
+            this->interiorPortals.push_back({groupId: nextGroup, portalIndex : relation->portal_index, portalVertices: portalVerticesVec, frustumPlanes: thisPortalPlanes, level : level+1});
             this->transverseGroupWMO(nextGroup, fromInterior, cameraVec4, cameraLocal, inverseTransposeModelMat, transverseVisitedGroups,
                                      transverseVisitedPortals, thisPortalPlanes, level+1, m2ObjectSet);
         } else if (fromInterior) {
             //5.2 The portal is from interior into exterior wmo group.
             //Make sense to add only if whole traversing process started from interior
-            this->exteriorPortals.push_back({groupId: nextGroup, portalIndex : relation->portal_index, frustumPlanes: thisPortalPlanes, level : level+1});
+            this->exteriorPortals.push_back({groupId: nextGroup, portalIndex : relation->portal_index, portalVertices: portalVerticesVec, frustumPlanes: thisPortalPlanes, level : level+1});
             this->transverseGroupWMO(nextGroup, false, cameraVec4, cameraLocal, inverseTransposeModelMat,
                                      transverseVisitedGroups,
                                      transverseVisitedPortals, thisPortalPlanes, level+1, m2ObjectSet);

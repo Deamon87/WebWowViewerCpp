@@ -401,6 +401,15 @@ void Map::drawExterior() {
     }
     this->m_api->deactivateWMOShader();
 
+    this->m_api->activateDrawPortalShader();
+    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
+//        if (config.getUsePortalCulling()) {
+//            this.wmoRenderedThisFrame[i].drawPortalBased(false)
+//        } else {
+        this->wmoRenderedThisFrameArr[i]->drawTransformedPortalPoints();
+//        }
+    }
+
 
     //3. Draw background WDL
 
