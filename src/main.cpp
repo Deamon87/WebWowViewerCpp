@@ -3,7 +3,7 @@
 #endif
 
 // Include GLEW. Always include it before gl.h and glfw.h, since it's a bit magic.
-
+#undef GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <curl/curl.h>
 #include <string>
@@ -255,6 +255,7 @@ int main(int argc, char** argv) {
     ZipHttpRequestProcessor *processor = new ZipHttpRequestProcessor(url);
     WoWScene *scene = createWoWScene(testConf, processor, 1024, 1000);
     processor->setFileRequester(scene);
+    testConf->setDrawM2BB(false);
 
     // Ensure we can capture the escape key being pressed below
     //glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);

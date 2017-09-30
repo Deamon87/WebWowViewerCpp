@@ -183,15 +183,14 @@ bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAa
     for (int i = 0; i < num_planes; i++) {
         int out = 0;
 
-        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.max.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.max.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.min.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.min.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.max.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += (( mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.max.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
-
+        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.max.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.max.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.min.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.min.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.max.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
+        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.max.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
 
         if (out == 8) return false;
     }

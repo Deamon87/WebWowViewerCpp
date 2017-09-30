@@ -16,7 +16,7 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
-    //MathHelper::fixNearPlane(frustumPlanes, cameraPos);
+    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
 
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
@@ -517,7 +517,7 @@ void Map::drawM2s() {
 
         m2Object->draw(true, diffuseNon);
     }
-
+    this->m_api->deactivateM2Shader();
 
     //7. Draw BBs
     //7.1 Draw M2 BBs

@@ -27,7 +27,9 @@ struct WmoGroupResult {
 struct PortalResults {
     int groupId;
     int portalIndex;
+#ifndef CULLED_NO_PORTAL_DRAWING
     std::vector<mathfu::vec3> portalVertices;
+#endif
     std::vector<mathfu::vec4> frustumPlanes;
     int level;
 };

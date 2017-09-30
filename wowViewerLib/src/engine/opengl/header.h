@@ -1,8 +1,9 @@
 #ifndef WOWMAPVIEWERREVIVED_HEADER_H
 #define WOWMAPVIEWERREVIVED_HEADER_H
 
-#define GL_GLEXT_PROTOTYPES 1
+//#define GL_GLEXT_PROTOTYPES 1
 #ifdef _WIN32
+#undef GLFW_INCLUDE_VULKAN
 #include <GL/glew.h>
 #else
 #include <GL/gl.h>

@@ -363,7 +363,7 @@ void WoWSceneImpl::initVertBuffer(){
     GLuint vertBuffer = 0;
     glGenBuffers(1, &vertBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertBuffer);
-    glBufferData(GL_ARRAY_BUFFER, vertsLength, &verts[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 48, &verts[0], GL_STATIC_DRAW);
 
     this->vertBuffer = vertBuffer;
 
@@ -446,7 +446,7 @@ void WoWSceneImpl::activateRenderFrameShader () {
     glUseProgram(this->renderFrameShader->getProgram());
     glActiveTexture(GL_TEXTURE0);
 
-    glDisableVertexAttribArray(1);
+    //glDisableVertexAttribArray(1);
 
     float uResolution[2] = {this->canvWidth, this->canvHeight };
     glUniform2fv(this->renderFrameShader->getUnf("uResolution"), 2, uResolution);
@@ -507,8 +507,10 @@ void WoWSceneImpl::drawTexturedQuad(GLuint texture,
                                     bool drawDepth) {
     glDisable(GL_DEPTH_TEST);
     glBindBuffer(GL_ARRAY_BUFFER, this->vertBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    glVertexAttribPointer(+drawDepthShader::Attribute::position, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glEnableVertexAttribArray(+drawDepthShader::Attribute::position);
+    glVertexAttribPointer(+drawDepthShader::Attribute::position, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
     glUniform1f(this->drawDepthBuffer->getUnf("uWidth"), width/canv_width);
     glUniform1f(this->drawDepthBuffer->getUnf("uHeight"), height/canv_height);
@@ -1025,7 +1027,14 @@ void WoWSceneImpl::activateM2Shader() {
 }
 
 void WoWSceneImpl::deactivateM2Shader() {
-
+    //glDisableVertexAttribArray(+m2Shader::Attribute::aPosition);
+//    if (shaderAttributes.aNormal) {
+        glDisableVertexAttribArray(+m2Shader::Attribute::aNormal);
+//    }
+    glDisableVertexAttribArray(+m2Shader::Attribute::boneWeights);
+    glDisableVertexAttribArray(+m2Shader::Attribute::bones);
+    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
+    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
 }
 
 void WoWSceneImpl::activateBoundingBoxShader() {
@@ -1082,7 +1091,12 @@ void WoWSceneImpl::activateWMOShader() {
 }
 
 void WoWSceneImpl::deactivateWMOShader() {
-
+    glDisableVertexAttribArray(+wmoShader::Attribute::aNormal);
+//    }
+    glDisableVertexAttribArray(+wmoShader::Attribute::aTexCoord);
+    glDisableVertexAttribArray(+wmoShader::Attribute::aTexCoord2);
+    glDisableVertexAttribArray(+wmoShader::Attribute::aColor);
+    glDisableVertexAttribArray(+wmoShader::Attribute::aColor2);
 }
 void WoWSceneImpl::activateAdtShader (){
         glUseProgram(adtShader->getProgram());

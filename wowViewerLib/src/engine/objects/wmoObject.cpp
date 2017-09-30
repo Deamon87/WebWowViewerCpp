@@ -173,6 +173,7 @@ void WmoObject::draw(){
 }
 
 void WmoObject::drawTransformedPortalPoints(){
+#ifndef CULLED_NO_PORTAL_DRAWING
     if (!m_loaded) return;
 
     std::vector<uint16_t> indiciesArray;
@@ -235,6 +236,7 @@ void WmoObject::drawTransformedPortalPoints(){
 
     glDeleteBuffers(1, &indexVBO);
     glDeleteBuffers(1, &bufferVBO);
+#endif
 }
 
 void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
@@ -322,7 +324,14 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
 
 
     for (int i = 0; i < wmoGroupsResults.size(); i++) {
-        this->interiorPortals.push_back({groupId: wmoGroupsResults[i].groupId, portalIndex: -1, portalVertices: {}, frustumPlanes: localFrustumPlanes, level: 0});
+        this->interiorPortals.push_back({
+                groupId: wmoGroupsResults[i].groupId,
+                portalIndex: -1,
+#ifndef CULLED_NO_PORTAL_DRAWING
+                portalVertices: {},
+#endif
+                frustumPlanes: localFrustumPlanes,
+                level: 0});
         this->transverseGroupWMO(wmoGroupsResults[i].groupId, true, cameraVec4, cameraLocal,
                                  inverseTransposeModelMat,
                                  transverseVisitedGroups,
@@ -337,7 +346,15 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
         for (int i = 0; i< mainGeom->groupsLen; i++) {
             if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
                 if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
-                    this->exteriorPortals.push_back({groupId: i, portalIndex : -1, portalVertices: {}, frustumPlanes: frustumPlanes, level : 0});
+                    this->exteriorPortals.push_back({
+                        groupId: i,
+                        portalIndex : -1,
+#ifndef CULLED_NO_PORTAL_DRAWING
+                        portalVertices: {},
+#endif
+                        frustumPlanes: frustumPlanes,
+                        level : 0
+                    });
                     this->transverseGroupWMO(i, false, cameraVec4, cameraLocal,  inverseTransposeModelMat,
                                              transverseVisitedGroups,
                                              transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
@@ -408,7 +425,14 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
     for (int i = 0; i< mainGeom->groupsLen; i++) {
         if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
             if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
-                this->exteriorPortals.push_back({groupId: i, portalIndex : -1, portalVertices: {}, frustumPlanes: frustumPlanes, level : 0});
+                this->exteriorPortals.push_back({
+                                                    groupId: i,
+                                                    portalIndex : -1,
+#ifndef CULLED_NO_PORTAL_DRAWING
+                                                    portalVertices: {},
+#endif
+                                                    frustumPlanes: frustumPlanes,
+                                                    level : 0});
                 this->transverseGroupWMO(i, false, cameraVec4, cameraLocal,  inverseTransposeModelMat,
                                          transverseVisitedGroups,
                                          transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
@@ -568,13 +592,27 @@ void WmoObject::transverseGroupWMO(
         //5. Traverse next
         if ((mainGeom->groups[nextGroup].flags & 0x2000) > 0) {
             //5.1 The portal is into interior wmo group. So go on.
-            this->interiorPortals.push_back({groupId: nextGroup, portalIndex : relation->portal_index, portalVertices: portalVerticesVec, frustumPlanes: thisPortalPlanes, level : level+1});
+            this->interiorPortals.push_back({
+                                                groupId: nextGroup,
+                                                portalIndex : relation->portal_index,
+#ifndef CULLED_NO_PORTAL_DRAWING
+                                                portalVertices: portalVerticesVec,
+#endif
+                                                frustumPlanes: thisPortalPlanes,
+                                                level : level+1});
             this->transverseGroupWMO(nextGroup, fromInterior, cameraVec4, cameraLocal, inverseTransposeModelMat, transverseVisitedGroups,
                                      transverseVisitedPortals, thisPortalPlanes, level+1, m2ObjectSet);
         } else if (fromInterior) {
             //5.2 The portal is from interior into exterior wmo group.
             //Make sense to add only if whole traversing process started from interior
-            this->exteriorPortals.push_back({groupId: nextGroup, portalIndex : relation->portal_index, portalVertices: portalVerticesVec, frustumPlanes: thisPortalPlanes, level : level+1});
+            this->exteriorPortals.push_back({
+                                                groupId: nextGroup,
+                                                portalIndex : relation->portal_index,
+#ifndef CULLED_NO_PORTAL_DRAWING
+                                                portalVertices: portalVerticesVec,
+#endif
+                                                frustumPlanes: thisPortalPlanes,
+                                                level : level+1});
             this->transverseGroupWMO(nextGroup, false, cameraVec4, cameraLocal, inverseTransposeModelMat,
                                      transverseVisitedGroups,
                                      transverseVisitedPortals, thisPortalPlanes, level+1, m2ObjectSet);
