@@ -70,19 +70,22 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 #CURL
-#ExternalProject_Add("CURL"
-#        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/curl"
-#        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBUILD_CURL_EXE=OFF -DCURL_STATICLIB=ON -DHTTP_ONLY=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/curl -DEXTRA_LIBS=${extra_libraries}
-#        )
-#
-#include_directories(${CMAKE_SOURCE_DIR}/3rdparty/curl/include)
-#link_directories(${CURL_LIBRARIES})
+ExternalProject_Add("CURL"
+        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/curl"
+        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBUILD_CURL_EXE=OFF -DCURL_STATICLIB=ON -DHTTP_ONLY=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/curl -DEXTRA_LIBS=${extra_libraries}
+        )
+
+include_directories(${CMAKE_SOURCE_DIR}/3rdparty/curl/include)
+link_directories(${CURL_LIBRARIES})
 
 #CPR
 set(CMAKE_USE_OPENSSL OFF)
 add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 
+#PolyM
+add_subdirectory(3rdparty/PolyM)
+include_directories(3rdparty/PolyM)
 
 #Main library
 ExternalProject_Add("WowViewerLib"
@@ -101,7 +104,7 @@ set(SOURCE_FILES
 		src/persistance/httpFile/httpFile.cpp
 		src/persistance/httpFile/httpFile.h
 		src/persistance/RequestProcessor.cpp
-		src/persistance/RequestProcessor.h )
+		src/persistance/RequestProcessor.h src/persistance/ZipRequestProcessor.cpp src/persistance/ZipRequestProcessor.h src/persistance/HttpZipRequestProcessor.cpp src/persistance/HttpZipRequestProcessor.h)
 #########################################################
 # FIND OPENGL
 #########################################################
@@ -131,7 +134,6 @@ endif(NOT OPENGL_FOUND)
 #Build the executiable
 add_executable(WebWoWViewerCpp ${SOURCE_FILES})
 
-
 add_dependencies(WebWoWViewerCpp libz)
 add_dependencies(WebWoWViewerCpp LibZip)
 #add_dependencies(Zipper libz)
@@ -149,6 +151,7 @@ message(INFO ${OPENGL_LIBRARIES})
 #glu32.a opengl32.a z
 target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} ${CURL_LIBRARIES} ${libzip_library} ${WowViewerLib})
 target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES})
+target_link_libraries(WebWoWViewerCpp polym)
 #target_link_libraries(WebWoWViewerCpp opengl32)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 target_link_libraries(WebWoWViewerCpp ${CMAKE_SOURCE_DIR}/wowViewerLib/3rdparty/glew_win/lib/Release/x64/glew32.lib)

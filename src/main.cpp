@@ -9,7 +9,7 @@
 #include <string>
 #include <iostream>
 #include "wowScene.h"
-#include "persistance/RequestProcessor.h"
+#include "persistance/ZipRequestProcessor.h"
 
 int mleft_pressed = 0;
 double m_x = 0.0;
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
 
@@ -250,9 +250,11 @@ int main(int argc, char** argv) {
     glfwMakeContextCurrent(window); // Initialize GLEW
 
     const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
+    const char *filePath = "D:\\shattrath (1).zip\0";
 
     testConf = new Config();
-    ZipHttpRequestProcessor *processor = new ZipHttpRequestProcessor(url);
+//    ZipHttpRequestProcessor *processor = new ZipHttpRequestProcessor(url);
+    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
     WoWScene *scene = createWoWScene(testConf, processor, 1024, 1000);
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);

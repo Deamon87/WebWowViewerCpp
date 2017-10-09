@@ -150,7 +150,30 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
 
     std::sort(hullPointsArr.begin(),
               hullPointsArr.end(),
-              std::bind(hullSort, std::placeholders::_1, std::placeholders::_2, centerPoint));
+              [&](mathfu::vec3 a, mathfu::vec3 b) -> bool {
+                  if (a.x - centerPoint.x >= 0 && b.x - centerPoint.x < 0)
+                      return true;
+                  if (a.x - centerPoint.x < 0 && b.x - centerPoint.x >= 0)
+                      return false;
+                  if (a.x - centerPoint.x == 0 && b.x - centerPoint.x == 0) {
+                      if (a.y - centerPoint.y >= 0 || b.y - centerPoint.y >= 0)
+                          return a.y > b.y;
+                      return b.y > a.y;
+                  }
+
+                  // compute the cross product of vectors (center -> a) x (center -> b)
+                  float det = (a.x - centerPoint.x) * (b.y - centerPoint.y) - (b.x - centerPoint.x) * (a.y - centerPoint.y);
+                  if (det < 0)
+                      return true;
+                  if (det > 0)
+                      return false;
+
+                  // points a and b are on the same line from the center
+                  // check which point is closer to the center
+                  float d1 = (a.x - centerPoint.x) * (a.x - centerPoint.x) + (a.y - centerPoint.y) * (a.y - centerPoint.y);
+                  float d2 = (b.x - centerPoint.x) * (b.x - centerPoint.x) + (b.y - centerPoint.y) * (b.y - centerPoint.y);
+                  return d1 > d2;
+              });
 
     std::vector<mathfu::vec3> hullLines;
     

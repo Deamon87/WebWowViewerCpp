@@ -4,34 +4,26 @@
 
 #ifndef WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
-#include <zip.h>
+
 #include <wowScene.h>
-#include "httpFile/httpFile.h"
+#include <thread>
 
+class RequestProcessor : public IFileRequest {
 
-using namespace std::placeholders;
-
-class ZipHttpRequestProcessor : public IFileRequest {
-public:
-    ZipHttpRequestProcessor (const char *url) {
-        //std::string url = "http://deamon87.github.io/WoWFiles/ironforge.zip";
-
-
-        HttpFile httpFile(url);
-        httpFile.setCallback(std::bind(&ZipHttpRequestProcessor::loadingFinished, this, _1));
-        httpFile.startDownloading();
+    RequestProcessor() {
+//        auto receiver = [](int count, PolyM::Queue& q) {
+//            while (true) {
+//                auto msg = q.get();
+//                auto &dm = dynamic_cast<PolyM::DataMsg<int> &>(*msg);
+//
+//            }
+//        };
+//
+//        loaderThread = new std::thread()
     }
+
 private:
-//    zipper::Unzipper *m_unzipper;
-    zip_t *zipArchive;
-    IFileRequester *m_fileRequester;
-
-public:
-    void setFileRequester(IFileRequester *fileRequester) {
-        m_fileRequester = fileRequester;
-    }
-    void loadingFinished(std::vector<unsigned char> * file);
-    void requestFile(const char* fileName) ;
+    std::thread *loaderThread;
 };
 
 #endif //WEBWOWVIEWERCPP_REQUESTPROCESSOR_H

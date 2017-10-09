@@ -22,3 +22,6 @@
 [submodule "cpr"]
 	path = cpr
 	url = https://github.com/whoshuu/cpr.git
+[submodule "3rdparty/PolyM"]
+	path = 3rdparty/PolyM
+	url = https://github.com/khuttun/PolyM

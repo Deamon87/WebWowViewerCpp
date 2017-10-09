@@ -20,6 +20,12 @@ public:
         this->m_fileBuffer = new std::vector<unsigned char>();
     }
 
+    ~HttpFile(){
+        if (this->m_fileBuffer != nullptr) {
+            delete this->m_fileBuffer;
+        }
+    }
+
 public:
     void startDownloading();
     void setCallback(HTTPReadyCallback callback);
@@ -35,7 +41,7 @@ private:
 
     long int fileSize;
     long int written;
-    std::vector<unsigned char> *m_fileBuffer;
+    std::vector<unsigned char> *m_fileBuffer = nullptr;
 
 
 };
