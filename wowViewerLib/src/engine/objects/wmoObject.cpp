@@ -310,7 +310,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
     mathfu::mat4 inverseTransposeModelMat = this->m_placementInvertMatrix.Transpose();
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
-//    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
+    MathHelper::fixNearPlane(frustumPlanes, cameraVec4);
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
 
@@ -406,7 +406,7 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
     mathfu::mat4 inverseTransposeModelMat = this->m_placementInvertMatrix.Transpose();
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
-//    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
+    MathHelper::fixNearPlane(frustumPlanes, cameraVec4);
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
 

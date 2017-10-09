@@ -111,6 +111,9 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
             case 'J':
                 testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
                 break;
+            case 'K':
+                testConf->setRenderPortals(!testConf->getRenderPortals());
+                break;
             default:
                 break;
         }
