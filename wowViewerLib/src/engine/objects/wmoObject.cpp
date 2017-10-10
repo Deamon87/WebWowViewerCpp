@@ -180,21 +180,34 @@ void WmoObject::drawTransformedPortalPoints(){
     std::vector<float> verticles;
     int k = 0;
     //int l = 0;
+    std::vector<int> stripOffsets;
+    stripOffsets.push_back(0);
+    int verticleOffset = 0;
+    int stripOffset = 0;
     for (int i = 0; i < this->interiorPortals.size(); i++) {
         //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
 
-        for (int j =0; j < (((int)this->interiorPortals[i].portalVertices.size())-2); j++) {
-            indiciesArray.push_back(k+0);
-            indiciesArray.push_back(k+j+1);
-            indiciesArray.push_back(k+j+2);
-        }
+        int verticlesCount = this->interiorPortals[i].portalVertices.size();
+        if ((verticlesCount - 2) <= 0) {
+            stripOffsets.push_back(stripOffsets[i]);
+            continue;
+        };
 
-        for (int j =0; j < this->interiorPortals[i].portalVertices.size(); j++) {
+        for (int j =0; j < (((int)verticlesCount)-2); j++) {
+            indiciesArray.push_back(verticleOffset+0);
+            indiciesArray.push_back(verticleOffset+j+1);
+            indiciesArray.push_back(verticleOffset+j+2);
+        }
+        stripOffset += ((verticlesCount-2) * 3);
+
+        for (int j =0; j < verticlesCount; j++) {
             verticles.push_back(this->interiorPortals[i].portalVertices[j].x);
             verticles.push_back(this->interiorPortals[i].portalVertices[j].y);
             verticles.push_back(this->interiorPortals[i].portalVertices[j].z);
         }
-        k += this->interiorPortals[i].portalVertices.size() * 3;
+
+        verticleOffset += verticlesCount;
+        stripOffsets.push_back(stripOffset);
     }
     GLuint indexVBO;
     GLuint bufferVBO;
@@ -210,7 +223,7 @@ void WmoObject::drawTransformedPortalPoints(){
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // default blend func
 
-    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, false, 0, 0);  // position
+    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
 
     auto drawPortalShader = m_api->getPortalShader();
     float colorArr[4] = {0.058, 0.058, 0.819607843, 0.3};
@@ -222,7 +235,7 @@ void WmoObject::drawTransformedPortalPoints(){
 
     int offset = 0;
     for (int i = 0; i < this->interiorPortals.size(); i++) {
-        int indeciesLen = (this->interiorPortals[i].portalVertices.size()-2) * 3;
+        int indeciesLen = stripOffsets[i+1] - stripOffsets[i];
 
         glDrawElements(GL_TRIANGLES, indeciesLen, GL_UNSIGNED_SHORT, (void *)(offset * 2));
 

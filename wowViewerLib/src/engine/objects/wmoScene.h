@@ -15,7 +15,6 @@ private:
     std::string m_wmoModel;
 
     WmoObject *m_wmoObject;
-    bool m_drawModel = false;
 
     float m_currentTime = 0;
     float m_lastTimeSort = 0;
@@ -23,10 +22,6 @@ private:
 
     std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
-
-
-    ObjectCache<M2Object, int> m_m2MapObjects;
-    ObjectCache<WmoObject, int> m_wmoMapObjects;
 
     std::set<M2Object*> m2RenderedThisFrame;
     std::set<WmoObject*> wmoRenderedThisFrame;
