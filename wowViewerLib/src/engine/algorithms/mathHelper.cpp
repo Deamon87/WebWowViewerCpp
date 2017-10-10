@@ -275,6 +275,8 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
     // check box outside/inside of frustum
     std::vector<mathfu::vec4> vec4Points(points.size());
 
+    const float epsilon = 0.001;
+
     for (int j = 0; j < points.size(); j++) {
         vec4Points[j] = mathfu::vec4(points[j].x, points[j].y, points[j].z, 1.0);
     }
@@ -324,12 +326,14 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
 
             if (t1 > 0 && t2 > 0) { //p1 InFront and p2 InFront
                 resultPoints.push_back(p2);
-            } else if (t1 > 0 && t2 < 0) { //p1 InFront and p2 Behind
+            } else if (t1 > 0 && t2 < -epsilon) { //p1 InFront and p2 Behind
 //                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
                 resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
-            } else if (t1 < 0 && t2 > 0) { //p1 Behind and p2 Behind
+            } else if (t1 < -epsilon && t2 > 0) { //p1 Behind and p2 InFront
 //                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
                 resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
+                resultPoints.push_back(p2);
+            } else if (t2 < epsilon && t2 > -epsilon) { //P2 Inside
                 resultPoints.push_back(p2);
             }
         }

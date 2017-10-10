@@ -931,7 +931,7 @@ void WoWSceneImpl::draw(double deltaTime) {
     this->textureCache.processCacheQueue(10);
 
     mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
-    currentScene->update(deltaTime, cameraVec4.xyz(), lookAtMat4);
+    currentScene->update(deltaTime, cameraVec4.xyz(), perspectiveMatrixForCulling, lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
 //
     currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);

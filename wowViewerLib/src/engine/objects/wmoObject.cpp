@@ -314,6 +314,12 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
 
+    mathfu::vec3 headOfPyramid = getIntersection(
+            frustumPoints[4], frustumPoints[7],
+            frustumPoints[3], frustumPoints[0]
+    );
+    mathfu::vec4 headOfPyramidLocal = this->m_placementInvertMatrix * mathfu::vec4(headOfPyramid, 1.0);
+
     std::vector<mathfu::vec4> localFrustumPlanes;
     std::transform(frustumPlanes.begin(), frustumPlanes.end(),
                    std::back_inserter(localFrustumPlanes),
@@ -332,7 +338,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
 #endif
                 frustumPlanes: localFrustumPlanes,
                 level: 0});
-        this->transverseGroupWMO(wmoGroupsResults[i].groupId, true, cameraVec4, cameraLocal,
+        this->transverseGroupWMO(wmoGroupsResults[i].groupId, true, cameraVec4, headOfPyramidLocal,
                                  inverseTransposeModelMat,
                                  transverseVisitedGroups,
                                  transverseVisitedPortals,
@@ -355,7 +361,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
                         frustumPlanes: frustumPlanes,
                         level : 0
                     });
-                    this->transverseGroupWMO(i, false, cameraVec4, cameraLocal,  inverseTransposeModelMat,
+                    this->transverseGroupWMO(i, false, cameraVec4, headOfPyramidLocal,  inverseTransposeModelMat,
                                              transverseVisitedGroups,
                                              transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
                 }
@@ -379,6 +385,52 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
     }
 
     return atLeastOneIsDrawn;
+}
+
+mathfu::vec3 getIntersection( mathfu::vec3 tail1, mathfu::vec3 head1, mathfu::vec3 tail2, mathfu::vec3 head2) {
+
+//Edge vectors
+    mathfu::vec3 dir1 = head1 - tail1;
+    mathfu::vec3 dir2 = head2 - tail2;
+
+    mathfu::vec3 diff = tail1 - tail2;
+
+    double a = mathfu::vec3::DotProduct(dir1, dir1);//always >= 0
+    double b = mathfu::vec3::DotProduct(dir1, dir2);
+    double c = mathfu::vec3::DotProduct(dir2, dir2);//always >= 0
+    double d = mathfu::vec3::DotProduct(dir1, diff);
+    double e = mathfu::vec3::DotProduct(dir2, diff);
+    double f = a * c - b * b;//always >= 0
+
+    double sc;//sc = sN / sD, default sD = D >= 0
+    double tc;//tc = tN / tD, default tD = D >= 0
+
+//compute the line parameters of the two closest points
+
+//M_EQUAL здесь проверяет, лежит ли f в некоторой окрестности 0.0
+//Т. е. 0.0 - epsilon < f < 0.0 + epsilon
+//epsilon задано где-то в header'ах мат. библиотеки...
+    if(f > -0.001f && f < 0.001f)//the lines are almost parallel
+    {
+        sc = 0.0;
+        tc = (b > c ? d / b : e / c);//use the largest denominator
+    }
+    else
+    {
+        sc = (b * e - c * d) / f;
+        tc = (a * e - b * d) / f;
+    }
+
+    mathfu::vec3 npoints[2];//Nearest points' coordinates
+
+    npoints[0] = tail1 + dir1 * sc;
+    npoints[1] = tail2 + dir2 * tc;
+
+    if((npoints[1] - npoints[0]).Length() < 0.001)
+    {
+        return (npoints[0] + npoints[1]) / 2;
+    }
+    else return mathfu::vec3(0,0,0);
 }
 
 bool
@@ -410,6 +462,13 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
 
+
+    mathfu::vec3 headOfPyramid = getIntersection(
+            frustumPoints[4], frustumPoints[7],
+            frustumPoints[3], frustumPoints[0]
+    );
+    mathfu::vec4 headOfPyramidLocal = this->m_placementInvertMatrix * mathfu::vec4(headOfPyramid, 1.0);
+
     std::vector<mathfu::vec4> localFrustumPlanes;
     std::transform(frustumPlanes.begin(), frustumPlanes.end(),
                    std::back_inserter(localFrustumPlanes),
@@ -433,7 +492,7 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
 #endif
                                                     frustumPlanes: frustumPlanes,
                                                     level : 0});
-                this->transverseGroupWMO(i, false, cameraVec4, cameraLocal,  inverseTransposeModelMat,
+                this->transverseGroupWMO(i, false, cameraVec4, headOfPyramidLocal,  inverseTransposeModelMat,
                                          transverseVisitedGroups,
                                          transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
             }
@@ -565,12 +624,13 @@ void WmoObject::transverseGroupWMO(
         //3. Construct frustum planes for this portal
 
         std::vector<mathfu::vec4> thisPortalPlanes;
-        bool flip = (relation->side < 0);
+        bool flip = (relation->side > 0);
 
-        for (int i = 0; i < portalVerticesVec.size(); ++i) {
-            int i2 = (i + 1) % portalVerticesVec.size();
+        int portalCnt = portalVerticesVec.size();
+        for (int i = 0; i < portalCnt; ++i) {
+            int i2 = (i + 1) % portalCnt;
 
-            mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(cameraLocal.xyz(), portalVerticesVec[i2], portalVerticesVec[i]);
+            mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(cameraLocal.xyz(), portalVerticesVec[i], portalVerticesVec[i2]);
 
             if (flip) {
                 n *= -1;

@@ -50,7 +50,7 @@ struct SortM2 {
     }
 };
 
-void Map::update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 lookAtMat) {
+void Map::update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 lookAtMat) {
     //if (config.getRenderM2()) {
         for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
             M2Object *m2Object = this->m2RenderedThisFrameArr[i];
@@ -128,10 +128,22 @@ void Map::update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 lookAtM
     int bspNodeId = -1;
     int interiorGroupNum = -1;
     int currentWmoGroup = -1;
+
+    //Get center of near plane
+    mathfu::mat4 viewPerspectiveMat = frustumMat*lookAtMat;
+    std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
+
+    mathfu::vec3 nearPlaneCenter(0,0,0);
+    nearPlaneCenter += frustumPoints[0];
+    nearPlaneCenter += frustumPoints[1];
+    nearPlaneCenter += frustumPoints[6];
+    nearPlaneCenter += frustumPoints[7];
+    nearPlaneCenter *= 0.25;
+
     for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
         WmoObject *checkingWmoObj = this->wmoRenderedThisFrameArr[i];
         WmoGroupResult groupResult;
-        bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(cameraVec3, 1), groupResult);
+        bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(nearPlaneCenter, 1), groupResult);
 
         if (result) {
             this->m_currentWMO = checkingWmoObj;
