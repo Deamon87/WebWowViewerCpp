@@ -44,7 +44,7 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 }
 
-void Map::update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 lookAtMat) {
+void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
     //if (config.getRenderM2()) {
         for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
             M2Object *m2Object = this->m2RenderedThisFrameArr[i];

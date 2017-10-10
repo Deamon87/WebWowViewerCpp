@@ -26,6 +26,6 @@ void M2Scene::draw() {
     this->m_api->deactivateM2Shader();
 }
 
-void M2Scene::update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 lookAtMat) {
+void M2Scene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
     m_m2Object->update(deltaTime, cameraVec3, lookAtMat);
 }

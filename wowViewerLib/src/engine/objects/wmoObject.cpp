@@ -48,7 +48,7 @@ M2Object *WmoObject::getDoodad(int index) {
 
 bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
                                      std::set<M2Object*> &m2RenderedThisFrame) {
-    if (!m_loaded) return false;
+    if (!m_loaded) return true;
 
     bool result = false;
     CAaBox &aabb = this->m_bbox;

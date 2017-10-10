@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.8)
 project(WebWoWViewerCpp)
 include(ExternalProject)
 
-set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+#set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 
@@ -99,7 +99,7 @@ include_directories(3rdparty/PolyM)
 #        )
 #ExternalProject_Get_Property(WowViewerLib install_dir)
 #include_directories(${install_dir}/include)
-set(WowViewerLib "${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib/lib/libWoWViewerLib.a")
+set(WowViewerLib "${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib/libWoWViewerLib.a")
 
 add_subdirectory(wowViewerLib)
 

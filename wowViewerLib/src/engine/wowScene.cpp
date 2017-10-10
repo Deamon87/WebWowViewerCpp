@@ -4,6 +4,7 @@
 #include "shader/ShaderRuntimeData.h"
 #include "algorithms/mathHelper.h"
 #include "objects/m2Scene.h"
+#include "objects/wmoScene.h"
 #include <mathfu/glsl_mappings.h>
 #include <iostream>
 
@@ -54,14 +55,19 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-    m_firstCamera.setCameraPos(-1663, 5098, 27);
-    m_secondCamera.setCameraPos(-1663, 5098, 27);
-    currentScene = new Map(this, "Expansion01");
+//    m_firstCamera.setCameraPos(-1663, 5098, 27);
+//    m_secondCamera.setCameraPos(-1663, 5098, 27);
+//    currentScene = new Map(this, "Expansion01");
 
     //Test scene 2: tree from shattrath
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "WORLD\\EXPANSION01\\DOODADS\\TEROKKAR\\TREES\\TEROKKARTREEMEDIUMPINECONES.m2");
+
+    //Test scene 3: Ironforge
+    m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "World\\wmo\\KhazModan\\Cities\\Ironforge\\ironforge.wmo");
 
 }
 
@@ -931,7 +937,8 @@ void WoWSceneImpl::draw(double deltaTime) {
     this->textureCache.processCacheQueue(10);
 
     mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
-    currentScene->update(deltaTime, cameraVec4.xyz(), perspectiveMatrixForCulling, lookAtMat4);
+    mathfu::vec3 cameraVec3 = cameraVec4.xyz();
+    currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
 //
     currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);

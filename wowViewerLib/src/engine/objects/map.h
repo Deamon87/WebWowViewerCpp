@@ -11,51 +11,9 @@
 #include "wmoObject.h"
 #include "iMapApi.h"
 #include "iInnerSceneApi.h"
+#include "ObjectCache.h"
 
 class Map : public IMapApi, public iInnerSceneApi {
-private:
-    template <typename T, typename P = int>
-    class ObjectCache {
-    private:
-        class Container {
-        public:
-            Container(){}
-            T *obj;
-            int counter;
-        };
-    public:
-        std::map<P, Container*> m_cache;
-    public:
-        ObjectCache() {}
-
-        T* get (P uniqueId) {
-            auto it = m_cache.find(uniqueId);
-            if(it != m_cache.end())
-            {
-                //element found;
-                Container *container = it->second;
-                container->counter = container->counter + 1;
-                return container->obj;
-            }
-
-           return nullptr;
-        }
-        void put (P uniqueId, T* object) {
-            Container * newContainer = new Container();
-            m_cache[uniqueId] = newContainer;
-            newContainer->obj = object;
-            newContainer->counter = 1;
-        }
-        void free (P uniqueId) {
-            Container &container = m_cache.at(uniqueId);
-
-            /* Destroy container if usage counter is 0 or less */
-            container.counter -= 1;
-            if (container.counter <= 0) {
-                m_cache.erase(uniqueId);
-            }
-        }
-    };
 private:
     IWoWInnerApi *m_api;
     AdtObject *mapTiles[64][64]={};
@@ -90,7 +48,7 @@ public:
     void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) override;
     void draw() override;
 
-    void update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 lookAtMat) override;
+    void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
             std::vector<mathfu::vec4> &frustumPlanes,

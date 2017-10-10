@@ -102,7 +102,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/m2Scene.cpp
         src/engine/objects/m2Scene.h
         src/engine/algorithms/PortalCullingAlgo.cpp
-        src/engine/algorithms/PortalCullingAlgo.h)
+        src/engine/algorithms/PortalCullingAlgo.h src/engine/objects/wmoScene.cpp src/engine/objects/wmoScene.h src/engine/objects/objectCache.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
