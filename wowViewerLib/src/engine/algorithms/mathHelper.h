@@ -75,6 +75,7 @@ public:
     static mathfu::vec3 getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &c);
 
     static mathfu::vec4 planeLineIntersection(mathfu::vec4 &plane, mathfu::vec4 &p1, mathfu::vec4 &p2);
+    static mathfu::vec3 getIntersection( mathfu::vec3 &tail1, mathfu::vec3 &head1, mathfu::vec3 &tail2, mathfu::vec3 &head2);
 };
 
 

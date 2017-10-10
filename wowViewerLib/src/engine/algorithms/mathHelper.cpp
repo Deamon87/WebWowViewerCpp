@@ -200,6 +200,53 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
     return hullLines;
 }
 
+mathfu::vec3 MathHelper::getIntersection( mathfu::vec3 &tail1, mathfu::vec3 &head1, mathfu::vec3 &tail2, mathfu::vec3 &head2) {
+
+//Edge vectors
+    mathfu::vec3 dir1 = head1 - tail1;
+    mathfu::vec3 dir2 = head2 - tail2;
+
+    mathfu::vec3 diff = tail1 - tail2;
+
+    double a = mathfu::vec3::DotProduct(dir1, dir1);//always >= 0
+    double b = mathfu::vec3::DotProduct(dir1, dir2);
+    double c = mathfu::vec3::DotProduct(dir2, dir2);//always >= 0
+    double d = mathfu::vec3::DotProduct(dir1, diff);
+    double e = mathfu::vec3::DotProduct(dir2, diff);
+    double f = a * c - b * b;//always >= 0
+
+    double sc;//sc = sN / sD, default sD = D >= 0
+    double tc;//tc = tN / tD, default tD = D >= 0
+
+//compute the line parameters of the two closest points
+
+//M_EQUAL здесь проверяет, лежит ли f в некоторой окрестности 0.0
+//Т. е. 0.0 - epsilon < f < 0.0 + epsilon
+//epsilon задано где-то в header'ах мат. библиотеки...
+    if(f > -0.001f && f < 0.001f)//the lines are almost parallel
+    {
+        sc = 0.0;
+        tc = (b > c ? d / b : e / c);//use the largest denominator
+    }
+    else
+    {
+        sc = (b * e - c * d) / f;
+        tc = (a * e - b * d) / f;
+    }
+
+    mathfu::vec3 npoints[2];//Nearest points' coordinates
+
+    npoints[0] = tail1 + dir1 * sc;
+    npoints[1] = tail2 + dir2 * tc;
+
+    if((npoints[1] - npoints[0]).Length() < 0.001)
+    {
+        return (npoints[0] + npoints[1]) / 2;
+    }
+    else return mathfu::vec3(0,0,0);
+}
+
+
 bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAaBox &box, const std::vector<mathfu::vec3> &points) {
     // check box outside/inside of frustum
     int num_planes = planes.size();
