@@ -1135,7 +1135,7 @@ void WoWSceneImpl::activateFrustumBoxShader() {
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
 
     glEnableVertexAttribArray(+drawFrustumShader::Attribute::aPosition);
-    glVertexAttribPointer(+drawFrustumShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
+    glVertexAttribPointer(+drawFrustumShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, nullptr);  // position
 
     glUniformMatrix4fv(drawFrustumShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
     glUniformMatrix4fv(drawFrustumShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
@@ -1143,7 +1143,7 @@ void WoWSceneImpl::activateFrustumBoxShader() {
 }
 
 
-WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
+ WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
 #ifdef _WIN32
     glewExperimental = true; // Needed in core profile
 	if (glewInit() != GLEW_OK) {

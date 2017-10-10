@@ -8,7 +8,7 @@
 #include <curl/curl.h>
 #include <string>
 #include <iostream>
-#include "wowScene.h"
+#include "../wowViewerLib/src/include/wowScene.h"
 #include "persistance/ZipRequestProcessor.h"
 
 int mleft_pressed = 0;

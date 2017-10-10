@@ -27,6 +27,6 @@ public:
     virtual IControllable* getCurrentContollable() = 0;
 };
 
-WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
+extern WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
 
 #endif //WOWMAPVIEWERREVIVED_WOWSCENE_H_H

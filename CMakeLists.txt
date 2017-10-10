@@ -41,6 +41,7 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 
 message(libzip_HEADER_FILES = ${libzip_HEADER_FILES})
+message(CMAKE_CURRENT_BINARY_DIR = ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${libzip_HEADER_FILES})
 include_directories(${libzip_INCLUDE_DIRS})
 
@@ -88,17 +89,19 @@ add_subdirectory(3rdparty/PolyM)
 include_directories(3rdparty/PolyM)
 
 #Main library
-ExternalProject_Add("WowViewerLib"
-        SOURCE_DIR "${CMAKE_SOURCE_DIR}/wowViewerLib"
-        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib
-        STEP_TARGETS build
-        EXCLUDE_FROM_ALL TRUE
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
-        -DBUILD_WITHOUT_CULLED_PORTAL_DRAWING=${BUILD_WITHOUT_CULLED_PORTAL_DRAWING}
-        )
-ExternalProject_Get_Property(WowViewerLib install_dir)
-include_directories(${install_dir}/include)
-set(WowViewerLib "${install_dir}/lib/libWoWViewerLib.a")
+#ExternalProject_Add("WowViewerLib"
+#        SOURCE_DIR "${CMAKE_SOURCE_DIR}/wowViewerLib"
+#        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib
+#        STEP_TARGETS build
+#        EXCLUDE_FROM_ALL TRUE
+#        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+#        -DBUILD_WITHOUT_CULLED_PORTAL_DRAWING=${BUILD_WITHOUT_CULLED_PORTAL_DRAWING}
+#        )
+#ExternalProject_Get_Property(WowViewerLib install_dir)
+#include_directories(${install_dir}/include)
+set(WowViewerLib "${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib/lib/libWoWViewerLib.a")
+
+add_subdirectory(wowViewerLib)
 
 set(SOURCE_FILES
 		src/main.cpp
@@ -140,7 +143,7 @@ add_dependencies(WebWoWViewerCpp LibZip)
 #add_dependencies(Zipper libz)
 #add_dependencies(WebWoWViewerCpp libzip)
 add_dependencies(WebWoWViewerCpp GLFW)
-add_dependencies(WebWoWViewerCpp WowViewerLib)
+add_dependencies(WebWoWViewerCpp WoWViewerLib)
 
 #TODO: platform dependant!!
 #target_link_libraries(WebWoWViewerCpp ${install_dir}/lib/libWoWViewerLib)

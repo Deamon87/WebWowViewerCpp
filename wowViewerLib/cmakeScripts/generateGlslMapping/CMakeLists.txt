@@ -1,7 +1,7 @@
-file(GLOB FILES ${CMAKE_SOURCE_DIR}/src/glsl/*.glsl)
+file(GLOB FILES ${PROJECT_SOURCE_DIR}/src/glsl/*.glsl)
 
 file(
-        WRITE ${CMAKE_SOURCE_DIR}/src/engine/shaderDefinitions.h
+        WRITE ${PROJECT_SOURCE_DIR}/src/engine/shaderDefinitions.h
         "#include <string>\n"
         "#include \"shadersStructures.h\"\n\n"
 )
@@ -14,7 +14,7 @@ foreach (file ${FILES})
     set(shaderAttributeEnum "enum class Attribute { \n")
 
     file(
-            APPEND ${CMAKE_SOURCE_DIR}/src/engine/shaderDefinitions.h
+            APPEND ${PROJECT_SOURCE_DIR}/src/engine/shaderDefinitions.h
             ""
             "constexpr const char* const ${NAME}String =\n #include <../glsl/${NAME}${EXT}>\n;\n\n"
     )
@@ -23,7 +23,7 @@ foreach (file ${FILES})
     #Write attributes numbers to file
     execute_process(
             COMMAND node uniformParser.js ${filename} attribute
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT_VARIABLE attributes
     )
 
@@ -46,7 +46,7 @@ foreach (file ${FILES})
 #    set(shaderUniformEnum "enum class Uniform { \n")
 #    execute_process(
 #            COMMAND node uniformParser.js ${filename} uniform
-#            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+#            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 #            OUTPUT_VARIABLE uniforms
 #    )
 #
@@ -64,7 +64,7 @@ foreach (file ${FILES})
 #    set(shaderUniformEnum "${shaderUniformEnum} ${NAME}ShaderEnd\n };\n")
 #    set(shaderUniformArray "${shaderUniformArray} };\n")
     file(
-            APPEND ${CMAKE_SOURCE_DIR}/src/engine/shaderDefinitions.h
+            APPEND ${PROJECT_SOURCE_DIR}/src/engine/shaderDefinitions.h
             "struct ${NAME} {\n ${shaderAttributeEnum} ${shaderUniformEnum}};\n"
             "inline constexpr const int operator+ (${NAME}::Attribute const val) { return static_cast<const int>(val); };\n"
 #            "inline constexpr const int operator+ (${NAME}::Uniform const val) { return static_cast<const int>(val); };\n"
@@ -75,7 +75,7 @@ foreach (file ${FILES})
     #End of uniforms\attributes
 
     file(
-            APPEND ${CMAKE_SOURCE_DIR}/src/engine/shaderDefinitions.h
+            APPEND ${PROJECT_SOURCE_DIR}/src/engine/shaderDefinitions.h
             ""
             "constexpr const static shaderDefinition ${NAME}Def = { \n"
             "${NAME}String,\n"
@@ -94,7 +94,7 @@ foreach (file ${FILES})
     endforeach()
 
     file(
-            WRITE ${CMAKE_SOURCE_DIR}/lib/glsl/${NAME}${EXT}
+            WRITE ${PROJECT_SOURCE_DIR}/lib/glsl/${NAME}${EXT}
             "R\"=====(\n"
             "${source}"
             "\n)=====\""
@@ -102,8 +102,8 @@ foreach (file ${FILES})
 
 endforeach()
 file(
-        APPEND ${CMAKE_SOURCE_DIR}/src/engine/shaderDefinitions.h
+        APPEND ${PROJECT_SOURCE_DIR}/src/engine/shaderDefinitions.h
         "constexpr innerType map[] = {\n ${shaderDefMap} \n };"
 )
 
-include_directories(${CMAKE_SOURCE_DIR}/lib/glsl)
+include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)

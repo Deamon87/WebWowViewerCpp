@@ -44,12 +44,6 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 }
 
-struct SortM2 {
-    bool operator() (M2Object *a, M2Object *b) const {
-        return b->getCurrentDistance() - a->getCurrentDistance() > 0;
-    }
-};
-
 void Map::update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 lookAtMat) {
     //if (config.getRenderM2()) {
         for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
@@ -78,8 +72,13 @@ void Map::update(double deltaTime, mathfu::vec3 cameraVec3, mathfu::mat4 &frustu
 
     //3. Sort m2 by distance every 100 ms
     if (this->m_currentTime + deltaTime - this->m_lastTimeSort > 100) {
-        std::sort(this->m2RenderedThisFrameArr.begin(),
-                  this->m2RenderedThisFrameArr.end(), SortM2());
+        std::sort(
+            this->m2RenderedThisFrameArr.begin(),
+            this->m2RenderedThisFrameArr.end(),
+            [] (M2Object *a, M2Object *b) -> bool const {
+                return b->getCurrentDistance() - a->getCurrentDistance() > 0;
+            }        
+        );
 
         this->m_lastTimeSort = this->m_currentTime;
     }
