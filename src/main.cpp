@@ -253,8 +253,8 @@ int main(int argc, char** argv) {
     glfwMakeContextCurrent(window); // Initialize GLEW
 
     const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
-//    const char *filePath = "D:\\shattrath (1).zip\0";
-    const char *filePath = "D:\\ironforge.zip\0";
+    const char *filePath = "D:\\shattrath (1).zip\0";
+//    const char *filePath = "D:\\ironforge.zip\0";
 
     testConf = new Config();
 //    ZipHttpRequestProcessor *processor = new ZipHttpRequestProcessor(url);

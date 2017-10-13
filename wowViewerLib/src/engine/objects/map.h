@@ -12,6 +12,7 @@
 #include "iMapApi.h"
 #include "iInnerSceneApi.h"
 #include "ObjectCache.h"
+#include "m2Instancing/m2InstancingObject.h"
 
 class Map : public IMapApi, public iInnerSceneApi {
 private:
@@ -20,6 +21,7 @@ private:
     std::string mapName;
 
     float m_currentTime = 0;
+    float lastInstanceCollect = 0;
     float m_lastTimeSort = 0;
     float m_lastTimeDistanceCalc = 0;
 
@@ -38,6 +40,12 @@ private:
     std::vector<M2Object*> m2RenderedThisFrameArr;
     std::vector<WmoObject*> wmoRenderedThisFrameArr;
 
+    std::set<M2Object *> m2OpaqueRenderedThisFrame;
+    std::set<M2Object *> m2TranspRenderedThisFrame;
+
+    std::vector<M2InstancingObject*> m_instanceList;
+    std::map<std::string, M2InstancingObject*> m_instanceMap;
+
     M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef);
     WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef);
 public:
@@ -51,14 +59,14 @@ public:
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
-            std::vector<mathfu::vec4> &frustumPlanes,
-            std::vector<mathfu::vec3> &frustumPoints,
-            std::vector<mathfu::vec3> &hullLines,
-            mathfu::mat4 &lookAtMat4,
-            mathfu::mat4 &projectionModelMat,
-            std::set<AdtObject*> &adtRenderedThisFrame,
-            std::set<M2Object*> &m2RenderedThisFrame,
-            std::set<WmoObject*> &wmoRenderedThisFrame);
+                       std::vector<mathfu::vec4> &frustumPlanes,
+                       std::vector<mathfu::vec3> &frustumPoints,
+                       std::vector<mathfu::vec3> &hullLines,
+                       mathfu::mat4 &lookAtMat4,
+                       mathfu::mat4 &projectionModelMat,
+                       std::set<AdtObject*> &adtRenderedThisFrame,
+                       std::set<M2Object*> &m2RenderedThisFrame,
+                       std::set<WmoObject*> &wmoRenderedThisFrame);
 
 
 
@@ -66,6 +74,7 @@ private:
     void drawM2s();
 
 
+    void addM2ObjectToInstanceManager(M2Object *m2Object);
 };
 
 

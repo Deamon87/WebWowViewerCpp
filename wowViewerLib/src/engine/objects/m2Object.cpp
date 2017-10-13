@@ -3,10 +3,12 @@
 //
 
 #include <locale>
+#include <regex>
 #include "m2Object.h"
 #include "../algorithms/mathHelper.h"
 #include "../managers/animationManager.h"
 #include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
+#include "../persistance/header/M2FileHeader.h"
 
 std::map<std::string, int> pixelShaderTable = {
         {"Combiners_Opaque", 0},
@@ -296,28 +298,31 @@ float M2Object::getTransparency(
     return transparency;
 }
 
+void M2Object::setDiffuseColor(CImVector& value) {
+    this->m_localDiffuseColor = value;
 
+    this->m_localDiffuseColorV = mathfu::vec4(
+            value.r / 255.0f,
+            value.g / 255.0f,
+            value.b / 255.0f,
+            value.a / 255.0f);
+}
 void M2Object::setLoadParams (std::string modelName, int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
     modelName;
     this->m_skinNum = skinNum;
     this->m_meshIds = meshIds;
     this->m_replaceTextures = replaceTextures;
 
-    std::locale loc = std::locale("");
-
     std::string delimiter = ".";
     std::string nameTemplate = modelName.substr(0, modelName.find_last_of(delimiter));
     std::string modelFileName = nameTemplate + ".m2";
     std::string skinFileName = nameTemplate + "00.skin";
-//    std::for_each(modelFileName.begin(), modelFileName.end(), [](char & c) {
-//        c = ::tolower(c);
-//    });
-//    std::for_each(skinFileName.begin(), skinFileName.end(), [](char & c) {
-//        c = ::tolower(c);
-//    });
 
     this->m_modelName = modelFileName;
     this->m_skinName = skinFileName;
+
+    this->m_modelIdent = modelFileName + " " +skinFileName;
+    std::transform(m_modelIdent.begin(), m_modelIdent.end(), m_modelIdent.begin(), ::tolower);
 }
 
 void M2Object::startLoading() {
@@ -378,6 +383,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             this->initTextAnimMatrices();
             this->initSubmeshColors();
             this->initTransparencies();
+            m_hasBillboards = checkIfHasBillboarded();
 
 
         } else {
@@ -385,11 +391,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         }
     };
 
-
-//    var invPlacementMat = this.getInvertModelMatrix();
-//
-//    //if (!this.materialArray) return;
-//
 //    /* 1. Calc local camera */
     mathfu::vec4 cameraInlocalPos = mathfu::vec4(cameraPos, 1);
     cameraInlocalPos = m_placementInvertMatrix * cameraInlocalPos;
@@ -681,6 +682,22 @@ void M2Object::initAnimationManager() {
     this->m_animationManager = new AnimationManager(m_m2Geom->getM2Data());
 }
 
+bool M2Object::checkIfHasBillboarded() {
+    M2Data * m2File = this->m_m2Geom->getM2Data();
+    for (int i = 0; i < m2File->bones.size; i++) {
+        M2CompBone * boneDefinition = m2File->bones.getElement(i);
+        if ((
+            boneDefinition->flags.cylindrical_billboard_lock_x &
+            boneDefinition->flags.cylindrical_billboard_lock_y &
+            boneDefinition->flags.cylindrical_billboard_lock_z &
+            boneDefinition->flags.spherical_billboard) > 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void M2Object::initBoneAnimMatrices() {
     this->bonesMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->bones.size, mathfu::mat4::Identity());;
 }
@@ -694,4 +711,13 @@ void M2Object::initSubmeshColors() {
 }
 void M2Object::initTransparencies() {
     transparencies = std::vector<float>(m_m2Geom->getM2Data()->transparency_lookup_table.size);
+}
+
+void M2Object::drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO) {
+    if (!this->m_loaded) return;
+
+    this->m_m2Geom->setupAttributes(/*this->m_skinGeom*/);
+    this->m_m2Geom->setupUniforms(m_api, m_placementMatrix, bonesMatrices, m_localDiffuseColorV, drawTransparent);
+    this->m_m2Geom->setupPlacementAttribute(placementVBO);
+    this->drawMeshes(drawTransparent, instanceCount);
 }

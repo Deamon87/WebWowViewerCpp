@@ -37,6 +37,7 @@ M2Object *WmoObject::getDoodad(int index) {
     std::string fileName(&this->mainGeom->doodadNamesField[doodadDef->name_offset]);
 
     M2Object *m2Object = new M2Object(m_api);
+    m2Object->setDiffuseColor(doodadDef->color);
     m2Object->setLoadParams(fileName, 0, {},{});
     m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
@@ -496,9 +497,7 @@ void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
             if (!mdxObject) continue;
             if (m2ObjectSet.count(mdxObject) > 0) continue;
 
-//            if (groupWmoObject.dontUseLocalLightingForM2) {
-//                mdxObject.setUseLocalLighting(false);
-//            }
+            mdxObject->setUseLocalLighting(!groupWmoObject->getDontUseLocalLightingForM2());
 
             bool inFrustum = true;
             inFrustum = inFrustum && mdxObject->checkFrustumCulling(cameraVec4, frustumPlane, {});

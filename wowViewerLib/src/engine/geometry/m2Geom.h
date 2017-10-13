@@ -29,6 +29,8 @@ public:
             mathfu::vec4 &diffuseColor,
             bool drawTransparent);
 
+    void setupPlacementAttribute(GLuint placementVBO);
+
     void drawMesh(
             IWoWInnerApi *api,
             M2MaterialInst &materialData,
@@ -46,6 +48,7 @@ private:
 
     bool m_loaded = false;
     GLuint vertexVbo;
+
 
 };
 

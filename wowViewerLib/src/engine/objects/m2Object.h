@@ -21,6 +21,7 @@ class M2Object {
 public:
     M2Object(IWoWInnerApi *api) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr), m_animationManager(nullptr) {}
 
+    friend class M2InstancingObject;
 private:
     void createAABB();
     bool m_loading = false;
@@ -47,16 +48,21 @@ private:
     M2Geom *m_m2Geom = nullptr;
     SkinGeom *m_skinGeom = nullptr;
 
+
+    bool m_hasBillboards = false;
     std::string m_modelName;
     std::string m_skinName;
+    std::string m_modelIdent;
     int m_skinNum = 0;
+    CImVector m_localDiffuseColor = {0xff, 0xff, 0xff, 0xff};
+    mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0xff, 0xff, 0xff, 0xff);
+    bool m_useLocalDiffuseColor = false;
     std::vector<uint8_t> m_meshIds;
     std::vector<std::string> m_replaceTextures;
     std::vector<mathfu::mat4> bonesMatrices;
     std::vector<mathfu::mat4> textAnimMatrices;
     std::vector<mathfu::vec4> subMeshColors;
     std::vector<float> transparencies;
-
 
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
@@ -77,6 +83,7 @@ private:
     void initTransparencies();
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &lookAtMat4);
+    bool checkIfHasBillboarded();
 
     mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, M2MaterialInst &materialData,  std::vector<mathfu::vec4> subMeshColors);
     float getTransparency(M2SkinProfile *skinData,M2MaterialInst &materialData,std::vector<float> transparencies);
@@ -95,9 +102,20 @@ public:
     }
     void calcDistance(mathfu::vec3 cameraPos);
     float getCurrentDistance();
+    bool getGetIsLoaded() { return m_loaded; };
+    bool getHasBillboarded() {
+        return m_hasBillboards;
+    }
+    bool getIsInstancable() {
+        if (!m_loaded || this->m_animationManager == nullptr) return false;
+
+        return !(this->m_animationManager->getIsFirstCalc()|| this->m_animationManager->getIsAnimated());
+    }
+    std::string getModelIdent() { return m_modelIdent; };
 
     void makeTextureArray();
 
+    void setUseLocalLighting(bool value) { m_useLocalDiffuseColor = value; };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
                                    const std::vector<mathfu::vec4> &frustumPlanes,
                                    const std::vector<mathfu::vec3> &frustumPoints);
@@ -109,6 +127,11 @@ public:
     void drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::Matrix<float, 4, 4> &placementMatrix);
 
     void drawBB(mathfu::vec3 &color);
+
+    void setDiffuseColor(CImVector& value);
+
+    void drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO);
+
 };
 
 

@@ -456,7 +456,7 @@ bool WmoGroupObject::checkDoodads(std::set<M2Object *> &wmoM2Candidates) {
     for (int i = 0; i < this->m_doodads.size(); i++) {
         if (this->m_doodads[i] != nullptr) {
             if (this->m_dontUseLocalLightingForM2) {
-//                this->m_doodads[i]->setUseLocalLighting(false);
+                this->m_doodads[i]->setUseLocalLighting(false);
             }
             wmoM2Candidates.insert(this->m_doodads[i]);
         }

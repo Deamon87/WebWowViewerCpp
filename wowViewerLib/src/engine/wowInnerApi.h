@@ -33,6 +33,8 @@ public:
 
     virtual void activateM2Shader() = 0;
     virtual void deactivateM2Shader() = 0;
+    virtual void activateM2InstancingShader() = 0;
+    virtual void deactivateM2InstancingShader() = 0;
     virtual void activateAdtShader() = 0;
     virtual void deactivateAdtShader() = 0;
     virtual void activateWMOShader() = 0;

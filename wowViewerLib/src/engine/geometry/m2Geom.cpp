@@ -12,8 +12,6 @@ void M2Geom::loadTextures() {
 }
 
 void M2Geom::createVBO() {
-
-
     glGenBuffers(1, &this->vertexVbo);
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexVbo);
     glBufferData(GL_ARRAY_BUFFER, m_m2Data->vertices.size*sizeof(M2Vertex), m_m2Data->vertices.getElement(0), GL_STATIC_DRAW);
@@ -178,6 +176,19 @@ void M2Geom::process(std::vector<unsigned char> &m2File) {
     this->createVBO();
 
     m_loaded = true;
+}
+
+void
+M2Geom::setupPlacementAttribute(GLuint placementVBO) {
+        glBindBuffer(GL_ARRAY_BUFFER, placementVBO);
+
+        //"Official" way to pass mat4 to shader as attribute
+        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 0, 4, GL_FLOAT, GL_FALSE, 16 * 5, 0);  // position
+        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 1, 4, GL_FLOAT, GL_FALSE, 16 * 5, (void*)16);  // position
+        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 2, 4, GL_FLOAT, GL_FALSE, 16 * 5, (void*)32);  // position
+        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 3, 4, GL_FLOAT, GL_FALSE, 16 * 5, (void*)48);  // position
+        glVertexAttribPointer(+m2Shader::Attribute::aDiffuseColor, 4, GL_FLOAT, GL_FALSE, 16 * 5, (void*)64); //Diffuse color
+
 }
 
 void
@@ -428,6 +439,10 @@ M2Geom::drawMesh(
                                (const void *) (skinData.submeshes[meshIndex]->indexStart * 2));
             } else {
 //                instExt.drawElementsInstancedANGLE(gl.TRIANGLES, skinData.subMeshes[meshIndex].nTriangles, gl.UNSIGNED_SHORT, skinData.subMeshes[meshIndex].StartTriangle * 2, instanceCount);
+                glDrawElementsInstanced(GL_TRIANGLES, skinData.submeshes[meshIndex]->indexCount,
+                                        GL_UNSIGNED_SHORT,
+                                        (const void *)(skinData.submeshes[meshIndex]->indexStart * 2),
+                                        instanceCount);
             }
             if (materialData.texUnit2Texture != nullptr) {
                 glActiveTexture(GL_TEXTURE1);

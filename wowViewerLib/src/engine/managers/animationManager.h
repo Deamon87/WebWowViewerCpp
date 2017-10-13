@@ -68,6 +68,13 @@ public:
 
     void calcTransparencies(std::vector<float> &transparencies, int animationIndex, double time, int blendAnimationIndex,
                             double blendAnimationTime, double blendAlpha);
+
+    bool getIsFirstCalc() {
+        return firstCalc;
+    }
+    bool getIsAnimated() {
+        return isAnimated;
+    }
 };
 
 
