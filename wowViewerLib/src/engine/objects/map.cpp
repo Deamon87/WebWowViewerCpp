@@ -119,7 +119,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
                     this->addM2ObjectToInstanceManager(m2Object);
                     this->addM2ObjectToInstanceManager(m2ObjectInstanced);
                 } else {
-                    map.insert_or_assign(fileIdent, m2Object);
+                    map[fileIdent] = m2Object;
                 }
             }
         }

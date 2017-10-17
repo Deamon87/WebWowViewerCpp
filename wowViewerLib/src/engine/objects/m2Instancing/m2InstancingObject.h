@@ -35,7 +35,7 @@ public:
         this->m_mdxObjectList.push_back(m2Object);
     }
     void createPlacementVBO() {
-        glCreateBuffers(1, &placementVBO);
+        glGenBuffers(1, &placementVBO);
     }
     void updatePlacementVBO() {
         GLuint paramsVbo = this->placementVBO;
@@ -44,7 +44,7 @@ public:
         std::vector<float> permanentBuffer = {};
 
         //1. Collect objects
-        if (this->m_mdxObjectList.size() > 0) {;
+        if (this->m_mdxObjectList.size() > 0) {
             for (int i = 0; i < this->m_mdxObjectList.size(); i++) {
                 M2Object* mdxObject = this->m_mdxObjectList[i];
 
@@ -57,10 +57,10 @@ public:
                     diffuseColor = diffuse_default;
                 }
                 for (int j = 0; j < 16; j++) {
-                    permanentBuffer[written * 20 + j] = placementMatrix[j];
+                    permanentBuffer.push_back(placementMatrix[j]);
                 }
                 for (int j = 0; j < 4; j++) {
-                    permanentBuffer[written * 20 + 16 + j] = diffuseColor[j];
+                    permanentBuffer.push_back(diffuseColor[j]);
                 }
 
                 written++;

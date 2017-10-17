@@ -214,12 +214,14 @@ void WmoObject::drawTransformedPortalPoints(){
     GLuint bufferVBO;
     glGenBuffers(1, &indexVBO);
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glBufferData( GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size()*2, &indiciesArray[0], GL_STATIC_DRAW);
-
+    if (indiciesArray.size() > 0) {
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size() * 2, &indiciesArray[0], GL_STATIC_DRAW);
+    }
     glGenBuffers(1, &bufferVBO);
     glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-    glBufferData( GL_ARRAY_BUFFER, verticles.size()*4, &verticles[0], GL_STATIC_DRAW);
-
+    if (verticles.size() > 0) {
+        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
+    }
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // default blend func

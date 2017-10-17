@@ -71,13 +71,13 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 #CURL
-ExternalProject_Add("CURL"
-        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/curl"
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBUILD_CURL_EXE=OFF -DCURL_STATICLIB=ON -DHTTP_ONLY=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/curl -DEXTRA_LIBS=${extra_libraries}
-        )
+#ExternalProject_Add("CURL"
+#        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/curl"
+#        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBUILDING_LIBCURL=1 -DBUILD_CURL_EXE=OFF -DCURL_STATICLIB=ON -DHTTP_ONLY=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/curl -DEXTRA_LIBS=${extra_libraries}
+#        )
 
-include_directories(${CMAKE_SOURCE_DIR}/3rdparty/curl/include)
-link_directories(${CURL_LIBRARIES})
+#include_directories(${CMAKE_SOURCE_DIR}/3rdparty/curl/include)
+#link_directories(${CURL_LIBRARIES})
 
 #CPR
 set(CMAKE_USE_OPENSSL OFF)

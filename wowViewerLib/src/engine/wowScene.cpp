@@ -1057,10 +1057,9 @@ void WoWSceneImpl::activateM2InstancingShader() {
     glUniform1f(this->m2InstancingShader->getUnf("uFogEnd"), this->uFogEnd);
 
     glActiveTexture(GL_TEXTURE0);
-    glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(+m2Shader::Attribute::aPosition);
 //    if (shaderAttributes.aNormal) {
-        glEnableVertexAttribArray(+m2Shader::Attribute::aNormal);
+//        glEnableVertexAttribArray(+m2Shader::Attribute::aNormal);
 //    }
     glEnableVertexAttribArray(+m2Shader::Attribute::boneWeights);
     glEnableVertexAttribArray(+m2Shader::Attribute::bones);
@@ -1073,11 +1072,11 @@ void WoWSceneImpl::activateM2InstancingShader() {
     glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 3);
     glEnableVertexAttribArray(+m2Shader::Attribute::aDiffuseColor);
     if ( true/*instExt != null */) {
-        glVertexAttribDivisorANGLE(+m2Shader::Attribute::aPlacementMat + 0, 1);
-        glVertexAttribDivisorANGLE(+m2Shader::Attribute::aPlacementMat + 1, 1);
-        glVertexAttribDivisorANGLE(+m2Shader::Attribute::aPlacementMat + 2, 1);
-        glVertexAttribDivisorANGLE(+m2Shader::Attribute::aPlacementMat + 3, 1);
-        glVertexAttribDivisorANGLE(+m2Shader::Attribute::aDiffuseColor, 1);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 0, 1);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 1);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 2, 1);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 3, 1);
+        glVertexAttribDivisor(+m2Shader::Attribute::aDiffuseColor, 1);
     }
 
     glUniform3fv(this->m2InstancingShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
@@ -1085,7 +1084,7 @@ void WoWSceneImpl::activateM2InstancingShader() {
 
 void WoWSceneImpl::deactivateM2InstancingShader() {
 
-    glDisableVertexAttribArray(+m2Shader::Attribute::aPosition);
+//    glDisableVertexAttribArray(+m2Shader::Attribute::aPosition);
 //    if (shaderAttributes.aNormal) {
         glDisableVertexAttribArray(+m2Shader::Attribute::aNormal);
 //    }
@@ -1095,17 +1094,17 @@ void WoWSceneImpl::deactivateM2InstancingShader() {
     glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
 
     if (true /*instExt*/) {
-        glVertexAttribDivisorANGLE(+m2Shader::Attribute::aPlacementMat + 0, 0);
-        glVertexAttribDivisorANGLE(+m2Shader::Attribute::aPlacementMat + 1, 0);
-        glVertexAttribDivisorANGLE(+m2Shader::Attribute::aPlacementMat + 2, 0);
-        glVertexAttribDivisorANGLE(+m2Shader::Attribute::aPlacementMat + 3, 0);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 0, 0);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 0);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 2, 0);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 3, 0);
     }
     glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 0);
     glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 1);
     glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 2);
     glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 3);
 
-    glEnableVertexAttribArray(0);
+//    glEnableVertexAttribArray(0);
 }
 
 void WoWSceneImpl::activateBoundingBoxShader() {

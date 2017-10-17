@@ -11,7 +11,7 @@
 #include "wmoObject.h"
 #include "iMapApi.h"
 #include "iInnerSceneApi.h"
-#include "ObjectCache.h"
+#include "objectCache.h"
 #include "m2Instancing/m2InstancingObject.h"
 
 class Map : public IMapApi, public iInnerSceneApi {

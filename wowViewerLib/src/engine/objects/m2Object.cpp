@@ -717,6 +717,7 @@ void M2Object::drawInstanced(bool drawTransparent, int instanceCount, GLuint pla
     if (!this->m_loaded) return;
 
     this->m_m2Geom->setupAttributes(/*this->m_skinGeom*/);
+    this->m_skinGeom->setupAttributes();
     this->m_m2Geom->setupUniforms(m_api, m_placementMatrix, bonesMatrices, m_localDiffuseColorV, drawTransparent);
     this->m_m2Geom->setupPlacementAttribute(placementVBO);
     this->drawMeshes(drawTransparent, instanceCount);

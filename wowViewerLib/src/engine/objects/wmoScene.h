@@ -7,7 +7,7 @@
 
 #include "iInnerSceneApi.h"
 #include "wmoObject.h"
-#include "ObjectCache.h"
+#include "objectCache.h"
 
 class WmoScene : public iInnerSceneApi {
 private:

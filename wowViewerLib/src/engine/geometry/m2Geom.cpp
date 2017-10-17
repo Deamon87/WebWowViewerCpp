@@ -183,11 +183,11 @@ M2Geom::setupPlacementAttribute(GLuint placementVBO) {
         glBindBuffer(GL_ARRAY_BUFFER, placementVBO);
 
         //"Official" way to pass mat4 to shader as attribute
-        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 0, 4, GL_FLOAT, GL_FALSE, 16 * 5, 0);  // position
-        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 1, 4, GL_FLOAT, GL_FALSE, 16 * 5, (void*)16);  // position
-        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 2, 4, GL_FLOAT, GL_FALSE, 16 * 5, (void*)32);  // position
-        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 3, 4, GL_FLOAT, GL_FALSE, 16 * 5, (void*)48);  // position
-        glVertexAttribPointer(+m2Shader::Attribute::aDiffuseColor, 4, GL_FLOAT, GL_FALSE, 16 * 5, (void*)64); //Diffuse color
+        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 0, 4, GL_FLOAT, GL_FALSE, 20 * 4, 0);  // position
+        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 1, 4, GL_FLOAT, GL_FALSE, 20 * 4, (void*)16);  // position
+        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 2, 4, GL_FLOAT, GL_FALSE, 20 * 4, (void*)32);  // position
+        glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 3, 4, GL_FLOAT, GL_FALSE, 20 * 4, (void*)48);  // position
+        glVertexAttribPointer(+m2Shader::Attribute::aDiffuseColor, 4, GL_FLOAT, GL_FALSE, 20 * 4, (void*)64); //Diffuse color
 
 }
 
