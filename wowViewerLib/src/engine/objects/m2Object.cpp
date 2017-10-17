@@ -453,7 +453,7 @@ void M2Object::draw(bool drawTransparent, mathfu::vec4 &diffuseColor) {
 //    var combinedMatrix = this.combinedBoneMatrix;
 //    std::vector<mathfu::mat4> combinedMatrix(120, mathfu::mat4::Identity());
 
-    this->m_m2Geom->setupUniforms(this->m_api, m_placementMatrix, bonesMatrices, diffuseColor, drawTransparent);
+    this->m_m2Geom->setupUniforms(this->m_api, m_placementMatrix, bonesMatrices, diffuseColor, drawTransparent, false);
 
     this->drawMeshes(drawTransparent, -1);
 
@@ -718,7 +718,7 @@ void M2Object::drawInstanced(bool drawTransparent, int instanceCount, GLuint pla
 
     this->m_m2Geom->setupAttributes(/*this->m_skinGeom*/);
     this->m_skinGeom->setupAttributes();
-    this->m_m2Geom->setupUniforms(m_api, m_placementMatrix, bonesMatrices, m_localDiffuseColorV, drawTransparent);
+    this->m_m2Geom->setupUniforms(m_api, m_placementMatrix, bonesMatrices, m_localDiffuseColorV, drawTransparent, true);
     this->m_m2Geom->setupPlacementAttribute(placementVBO);
     this->drawMeshes(drawTransparent, instanceCount);
 }

@@ -197,13 +197,18 @@ M2Geom::setupUniforms(
         mathfu::mat4 &placementMatrix,
         std::vector<mathfu::mat4> &boneMatrices,
         mathfu::vec4 &diffuseColor,
-        bool drawTransparent) {
+        bool drawTransparent,
+        bool instanced) {
+    ShaderRuntimeData *m2Shader;
+    if (!instanced) {
+        m2Shader = api->getM2Shader();
+    } else {
+        m2Shader = api->getM2InstancingShader();
+    }
 
-    ShaderRuntimeData *m2Shader = api->getM2Shader();
-
-
-    glUniformMatrix4fv(m2Shader->getUnf("uPlacementMat"), 1, GL_FALSE, &placementMatrix[0]);
-
+    if (!instanced) {
+        glUniformMatrix4fv(m2Shader->getUnf("uPlacementMat"), 1, GL_FALSE, &placementMatrix[0]);
+    }
 //    if (boneMatrices) {
         glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes[0]"), boneMatrices.size(), GL_FALSE, &boneMatrices[0][0]);
 //    } else {
@@ -212,7 +217,9 @@ M2Geom::setupUniforms(
 
     //Set proper color
 //    if (diffuseColor) {
+    if (!instanced) {
         glUniform4fv(m2Shader->getUnf("uDiffuseColor"), 1, &diffuseColor[0]);
+    }
 //    }
 //    if (drawTransparent) {
 //        glUniform1i(m2Shader->getUnf("isTransparent"), 1);
@@ -272,7 +279,12 @@ M2Geom::drawMesh(
         mathfu::mat4 &textureMatrix1, mathfu::mat4 &textureMatrix2, int pixelShaderIndex,
         mathfu::vec4 &originalFogColor, int instanceCount) {
 
-    ShaderRuntimeData *m2Shader = api->getM2Shader();
+    ShaderRuntimeData *m2Shader;
+    if (instanceCount == -1) {
+        m2Shader = api->getM2Shader();
+    } else {
+        m2Shader = api->getM2InstancingShader();
+    }
     GLuint blackPixelText = api->getBlackPixelTexture();
     //var blackPixelText = this.sceneApi.getBlackPixelTexture();
 

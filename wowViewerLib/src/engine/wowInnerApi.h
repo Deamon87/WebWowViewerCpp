@@ -26,6 +26,7 @@ public:
     virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() = 0;
 
     virtual ShaderRuntimeData *getM2Shader() = 0;
+    virtual ShaderRuntimeData *getM2InstancingShader() = 0;
     virtual ShaderRuntimeData *getBBShader() = 0;
     virtual ShaderRuntimeData *getWmoShader() = 0;
     virtual ShaderRuntimeData *getPortalShader() = 0;

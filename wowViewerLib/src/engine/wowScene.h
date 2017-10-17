@@ -98,6 +98,9 @@ public:
     virtual ShaderRuntimeData *getM2Shader() {
         return m2Shader;
     };
+    virtual ShaderRuntimeData *getM2InstancingShader() {
+        return m2InstancingShader;
+    };
     virtual ShaderRuntimeData *getBBShader() {
         return bbShader;
     };
