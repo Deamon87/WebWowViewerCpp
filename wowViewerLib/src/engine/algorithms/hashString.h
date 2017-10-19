@@ -2,118 +2,173 @@
 #ifndef HASHEDSTRING_HPP_INCLUDED
 #define HASHEDSTRING_HPP_INCLUDED
 
-// if HASHEDSTRING_USE_CONSTEXPR is defined, a recursive constexpr hashing algorithm will be used.
-// otherwise, an iterative runtime hashing algorithm will be used.
-#include <cstdint>
+/////////////
+// LINKING //
+/////////////
 
-#define HASHEDSTRING_USE_CONSTEXPR
+//////////////
+// INCLUDES //
+//////////////
 
-// do not touch this block of preprocessor.
-#ifdef HASHEDSTRING_USE_CONSTEXPR
-#define HASHEDSTRING_CONSTEXPR_IMPL constexpr
-#else
-#define HASHEDSTRING_CONSTEXPR_IMPL
-#endif
+/////////////
+// DEFINES //
+/////////////
 
-// encapsulates hashed strings
-// will try to remember the original string in debug builds.
-// in release builds, will not store the string at all.
-// strings are hashed at compile time whenever possible using constexpr, if the HASHEDSTRING_USE_CONSTEXPR flag is defined.
-    class HashedString
+/*
+	=> Pre-processor constant hashed strings only are created if those flags..:
+		- C/C++ > Optimization > Full Optimization
+		- C/C++ > Code Generation > Enable String Pooling
+	are set to true... So, if you wanna use this, remember to change the project properties.
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+// Class name: FHashedString
+////////////////////////////////////////////////////////////////////////////////
+class HashedString
+{
+public:
+
+    // Used to return the hash component
+    class Hasher
     {
+        friend HashedString;
+
     public:
-        typedef uint32_t HashType;
-
-        friend HASHEDSTRING_CONSTEXPR_IMPL HashType _hashString(const char* str);
-        friend HASHEDSTRING_CONSTEXPR_IMPL HashType _hashStringRecursive(HashType hash, const char* str);
-
-        // Hashes the passed in string and stores the hash
-        // in debug builds, the original string pointer will also be stored to be accessed with getDebugString()
-        inline explicit HASHEDSTRING_CONSTEXPR_IMPL HashedString(const char* str);
-
-        template <size_t N>
-         inline HASHEDSTRING_CONSTEXPR_IMPL HashedString(const char (&str)[N]);
-
-
-        // in debug builds, will return the originally hashed string.
-        // in debug builds, causes undefined behaviour if the string originally used to construct the hash no longer exists.
-        // in release builds, will return an empty string. Should not call this function in release builds.
-        inline const char* getReverseHash() const;
-
-        // compares hash by equality
-        inline bool operator==(const HashedString& other) const;
-
-        // compares hash in terms of order to allow efficient use with std::less<T> as a Compare function in std::maps
-        inline bool operator<(const HashedString& other) const;
-        // add more comparison operators as they are needed. Always compare with the hash, not the reverse hash.
-
-        operator HashType () const { return hash; }
-    private:
-        // reverse hash only exists in debug build
-#ifdef _DEBUG
-        const char* debugReverseHash;
-#endif
-        HashType hash;
+        size_t operator()(const HashedString & _hashedString) const
+        {
+            return _hashedString.m_Hash;
+        }
     };
 
-// performs a compile time recursive string hash using the djb2 algorithm explained here: http://www.cse.yorku.ca/~oz/hash.html
-// To hash a string, do not call these functions. Instead, construct a HashedString with the string passed as an argument to the constructor.
-    HASHEDSTRING_CONSTEXPR_IMPL HashedString::HashType _hashStringRecursive(HashedString::HashType hash, const char* str)
+    // Compare 2 hashed strings
+    class Equal
     {
-        return ( !*str ? hash :
-                 _hashStringRecursive(((hash << 5) + hash) + *str, str + 1));
+        friend HashedString;
+
+    public:
+        bool operator() (HashedString const& t1, HashedString const& t2) const
+        {
+            return (t1.m_Hash == t2.m_Hash);
+        }
+    };
+
+private:
+
+    // Just a constant wrapper
+    struct ConstCharWrapper
+    {
+        inline ConstCharWrapper(const char* str);
+        const char* str;
+    };
+
+public:
+
+    // A wrapper so we can generate any number of functions using the pre-processor (const strings)
+    template <size_t N>
+    inline HashedString(const char(&str)[N]);
+    explicit HashedString(ConstCharWrapper str);
+
+    // Return the original string
+    const char* String()
+    {
+        return m_String;
     }
 
-// performs a compile time string hash
-    HASHEDSTRING_CONSTEXPR_IMPL HashedString::HashType _hashString(const char* str)
+    // Return the hash
+    const size_t Hash() const
     {
-#ifdef HASHEDSTRING_USE_CONSTEXPR
-        return ( !str ? 0 :
-                 _hashStringRecursive(5381, str));
-#else
-        HashType hash = 5381;
-	int x;
-
-	while ( (x = *str++) )
-	{
-		hash += ((hash << 5) + hash) + x;
-	}
-
-	return hash;
-#endif
+        return m_Hash;
     }
 
-    HASHEDSTRING_CONSTEXPR_IMPL HashedString::HashedString(const char* str):
-#ifdef _DEBUG
-            debugReverseHash(str),
-#endif
-            hash(_hashString(str))
+public:
+
+    // The hash object (pre-calculated if we use the full optimization flag)
+    size_t m_Hash;
+
+    // The original string
+    const char* m_String;
+};
+
+/////////////////////////////////
+// IGNORE ANY ERROR FROM THERE // => Those macros are fine
+/////////////////////////////////
+
+#define OFFSET 2166136261u
+#define PRIME 16777619u
+
+#define ME_JOIN(x,y)				x##y
+
+#define ME_HASHED_STRING_1            OFFSET
+#define ME_HASHED_STRING_2            ((ME_HASHED_STRING_1 ^ str[0]) * PRIME)
+#define ME_HASHED_STRING_3            ((ME_HASHED_STRING_2 ^ str[1]) * PRIME)
+#define ME_HASHED_STRING_4            ((ME_HASHED_STRING_3 ^ str[2]) * PRIME)
+#define ME_HASHED_STRING_5            ((ME_HASHED_STRING_4 ^ str[3]) * PRIME)
+#define ME_HASHED_STRING_6            ((ME_HASHED_STRING_5 ^ str[4]) * PRIME)
+#define ME_HASHED_STRING_7            ((ME_HASHED_STRING_6 ^ str[5]) * PRIME)
+#define ME_HASHED_STRING_8            ((ME_HASHED_STRING_7 ^ str[6]) * PRIME)
+#define ME_HASHED_STRING_9            ((ME_HASHED_STRING_8 ^ str[7]) * PRIME)
+#define ME_HASHED_STRING_10            ((ME_HASHED_STRING_9 ^ str[8]) * PRIME)
+#define ME_HASHED_STRING_11            ((ME_HASHED_STRING_10 ^ str[9]) * PRIME)
+#define ME_HASHED_STRING_12            ((ME_HASHED_STRING_11 ^ str[10]) * PRIME)
+#define ME_HASHED_STRING_13            ((ME_HASHED_STRING_12 ^ str[11]) * PRIME)
+#define ME_HASHED_STRING_14            ((ME_HASHED_STRING_13 ^ str[12]) * PRIME)
+#define ME_HASHED_STRING_15            ((ME_HASHED_STRING_14 ^ str[13]) * PRIME)
+#define ME_HASHED_STRING_16            ((ME_HASHED_STRING_15 ^ str[14]) * PRIME)
+#define ME_HASHED_STRING_17            ((ME_HASHED_STRING_16 ^ str[15]) * PRIME)
+#define ME_HASHED_STRING_18            ((ME_HASHED_STRING_17 ^ str[16]) * PRIME)
+#define ME_HASHED_STRING_19            ((ME_HASHED_STRING_18 ^ str[17]) * PRIME)
+#define ME_HASHED_STRING_20            ((ME_HASHED_STRING_19 ^ str[18]) * PRIME)
+#define ME_HASHED_STRING_21            ((ME_HASHED_STRING_20 ^ str[19]) * PRIME)
+#define ME_HASHED_STRING_22            ((ME_HASHED_STRING_21 ^ str[20]) * PRIME)
+#define ME_HASHED_STRING_23            ((ME_HASHED_STRING_22 ^ str[21]) * PRIME)
+#define ME_HASHED_STRING_24            ((ME_HASHED_STRING_23 ^ str[22]) * PRIME)
+#define ME_HASHED_STRING_25            ((ME_HASHED_STRING_24 ^ str[23]) * PRIME)
+// etc.
+
+#define ME_HASHED_STRING_SPECIALIZATION(n)                                    \
+  template <>                                                                \
+  inline HashedString::HashedString(const char (&str)[n])                    \
+    : m_Hash(ME_JOIN(ME_HASHED_STRING_, n))                                \
+  {                                                                            \
+		m_String = str;																  \
+  }
+
+ME_HASHED_STRING_SPECIALIZATION(1)
+ME_HASHED_STRING_SPECIALIZATION(2)
+ME_HASHED_STRING_SPECIALIZATION(3)
+ME_HASHED_STRING_SPECIALIZATION(4)
+ME_HASHED_STRING_SPECIALIZATION(5)
+ME_HASHED_STRING_SPECIALIZATION(6)
+ME_HASHED_STRING_SPECIALIZATION(7)
+ME_HASHED_STRING_SPECIALIZATION(8)
+ME_HASHED_STRING_SPECIALIZATION(9)
+ME_HASHED_STRING_SPECIALIZATION(10)
+ME_HASHED_STRING_SPECIALIZATION(11)
+ME_HASHED_STRING_SPECIALIZATION(12)
+ME_HASHED_STRING_SPECIALIZATION(13)
+ME_HASHED_STRING_SPECIALIZATION(14)
+ME_HASHED_STRING_SPECIALIZATION(15)
+ME_HASHED_STRING_SPECIALIZATION(16)
+ME_HASHED_STRING_SPECIALIZATION(17)
+ME_HASHED_STRING_SPECIALIZATION(18)
+ME_HASHED_STRING_SPECIALIZATION(19)
+ME_HASHED_STRING_SPECIALIZATION(20)
+ME_HASHED_STRING_SPECIALIZATION(21)
+ME_HASHED_STRING_SPECIALIZATION(22)
+ME_HASHED_STRING_SPECIALIZATION(23)
+ME_HASHED_STRING_SPECIALIZATION(24)
+ME_HASHED_STRING_SPECIALIZATION(25)
+
+static size_t CalculateFNV(const char* str)
+{
+    unsigned int hash = OFFSET;
+    while (*str != 0)
     {
+        hash ^= *str++;
+        hash *= PRIME;
     }
 
-    const char* HashedString::getReverseHash() const
-    {
-#ifdef _DEBUG
-        return debugReverseHash;
-#else
-        return "";
-#endif
-    }
-
-    bool HashedString::operator==(const HashedString& other) const
-    {
-        return hash == other.hash;
-    }
-
-    bool HashedString::operator<(const HashedString& other) const
-    {
-        return hash < other.hash;
-    }
-
-template<size_t N>
-constexpr HashedString::HashedString(const char (&str)[N]) : HashedString(str) {
-
-
+    return hash;
 }
 
 

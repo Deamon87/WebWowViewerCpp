@@ -17,14 +17,14 @@ public:
     }
 
 public:
-    inline unsigned long hasUnf(const HashedString name) {    return m_uniformMap.find(name) != m_uniformMap.end();};
-    inline GLuint getUnf(const HashedString name){ return m_uniformMap.at(name); };
-    GLuint getUnf(std::string &name);
+    inline unsigned long hasUnf(HashedString name) const {    return m_uniformMap.find(name.Hash()) != m_uniformMap.end();};
+    inline GLuint getUnf(HashedString name) const { return m_uniformMap.at(name.Hash()); };
+    GLuint getUnfRN(std::string &name);
     GLuint getProgram();
     void setUnf(const std::string &name, GLuint index);
     void setProgram(GLuint program);
 private:
-    std::unordered_map<HashedString::HashType, GLuint> m_uniformMap;
+    std::unordered_map<size_t, GLuint> m_uniformMap;
     GLuint m_program;
 };
 

@@ -247,11 +247,11 @@ M2Geom::setupUniforms(
     for (int i = index; i < 3; i++) {
         std::string uniformName;
         uniformName = std::string("pc_lights[")+std::to_string(index)+std::string("].color");
-        glUniform4fv(m2Shader->getUnf(uniformName), 1, indet);
+        glUniform4fv(m2Shader->getUnfRN(uniformName), 1, indet);
         uniformName = std::string("pc_lights[")+std::to_string(index)+std::string("].attenuation");
-        glUniform4fv(m2Shader->getUnf(uniformName), 1, indet);
+        glUniform4fv(m2Shader->getUnfRN(uniformName), 1, indet);
         uniformName = std::string("pc_lights[")+std::to_string(index)+std::string("].position");
-        glUniform4fv(m2Shader->getUnf(uniformName), 1, indet);
+        glUniform4fv(m2Shader->getUnfRN(uniformName), 1, indet);
         index++;
     }
 
