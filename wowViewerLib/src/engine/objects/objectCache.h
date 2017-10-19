@@ -14,7 +14,7 @@ private:
         int counter;
     };
 public:
-    std::map<P, Container*> m_cache;
+    std::unordered_map<P, Container*> m_cache;
 public:
     ObjectCache() {}
 

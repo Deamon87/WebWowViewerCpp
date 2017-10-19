@@ -209,11 +209,8 @@ M2Geom::setupUniforms(
     if (!instanced) {
         glUniformMatrix4fv(m2Shader->getUnf("uPlacementMat"), 1, GL_FALSE, &placementMatrix[0]);
     }
-//    if (boneMatrices) {
-        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes[0]"), boneMatrices.size(), GL_FALSE, &boneMatrices[0][0]);
-//    } else {
-//        glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes"), false, new Float32Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,]));
-//    }
+    glUniformMatrix4fv(m2Shader->getUnf("uBoneMatrixes[0]"), boneMatrices.size(), GL_FALSE, &boneMatrices[0][0]);
+
 
     //Set proper color
 //    if (diffuseColor) {
@@ -371,9 +368,6 @@ M2Geom::drawMesh(
 
                     break;
             }
-            //}catch (e) {
-            //    debugger;
-            //}
 
             if (((renderFlag->flags & 0x1) > 0)|| (renderFlag->blending_mode == 5) || (renderFlag->blending_mode == 6)) {
                 glUniform1i(m2Shader->getUnf("uUseDiffuseColor"), 0);

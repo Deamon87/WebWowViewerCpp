@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_CACHE_H
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -25,8 +26,8 @@ private:
     IFileRequest *m_fileRequestProcessor;
 public:
 
-    std::map<std::string, Container*> m_cache;
-    std::map<std::string, std::vector<unsigned char>> m_objectsToBeProcessed;
+    std::unordered_map<std::string, Container*> m_cache;
+    std::unordered_map<std::string, std::vector<unsigned char>> m_objectsToBeProcessed;
 public:
 
     Cache(IFileRequest *fileRequestProcessor) : m_fileRequestProcessor(fileRequestProcessor){

@@ -101,7 +101,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     //4. Collect m2 into instances every 200 ms
     //
     if (this->m_currentTime + deltaTime - this->lastInstanceCollect > 30) {
-        std::map<std::string, M2Object *> map;
+        std::unordered_map<std::string, M2Object *> map;
         if (true /*this.sceneApi.extensions.getInstancingExt()*/) {
             //Clear instance lists
             for (auto &j : this->m_instanceList) {

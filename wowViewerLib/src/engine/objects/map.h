@@ -44,7 +44,7 @@ private:
     std::set<M2Object *> m2TranspRenderedThisFrame;
 
     std::vector<M2InstancingObject*> m_instanceList;
-    std::map<std::string, M2InstancingObject*> m_instanceMap;
+    std::unordered_map<std::string, M2InstancingObject*> m_instanceMap;
 
     M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef);
     WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef);

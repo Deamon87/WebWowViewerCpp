@@ -10,7 +10,7 @@
 #include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
 #include "../persistance/header/M2FileHeader.h"
 
-std::map<std::string, int> pixelShaderTable = {
+std::unordered_map<std::string, int> pixelShaderTable = {
         {"Combiners_Opaque", 0},
         {"Combiners_Decal" , 1},
         {"Combiners_Add" , 2},
