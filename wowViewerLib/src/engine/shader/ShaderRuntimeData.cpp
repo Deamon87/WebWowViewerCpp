@@ -3,16 +3,15 @@
 //
 
 #include "ShaderRuntimeData.h"
-unsigned long ShaderRuntimeData::hasUnf(const std::string &name) {
-    return m_uniformMap.count(name);
+
+GLuint ShaderRuntimeData::getUnf(std::string &name) {
+    const char * cstr = name.c_str();
+    return m_uniformMap.at(_hashString(cstr));
 }
 
-GLuint ShaderRuntimeData::getUnf(const std::string &name) {
-    return m_uniformMap.at(name);
-}
 
 void ShaderRuntimeData::setUnf(const std::string &name, GLuint index) {
-    m_uniformMap[name] = index;
+    m_uniformMap[HashedString(name.c_str())] = index;
 }
 
 GLuint ShaderRuntimeData::getProgram() {

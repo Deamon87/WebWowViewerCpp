@@ -7,6 +7,7 @@
 
 #include <string>
 #include <unordered_map>
+#include "../algorithms/hashString.h"
 #include "../opengl/header.h"
 
 
@@ -16,13 +17,14 @@ public:
     }
 
 public:
-    unsigned long hasUnf(const std::string &name);
-    GLuint getUnf(const std::string &name);
+    inline unsigned long hasUnf(const HashedString name) {    return m_uniformMap.find(name) != m_uniformMap.end();};
+    inline GLuint getUnf(const HashedString name){ return m_uniformMap.at(name); };
+    GLuint getUnf(std::string &name);
     GLuint getProgram();
     void setUnf(const std::string &name, GLuint index);
     void setProgram(GLuint program);
 private:
-    std::unordered_map<std::string, GLuint> m_uniformMap;
+    std::unordered_map<HashedString::HashType, GLuint> m_uniformMap;
     GLuint m_program;
 };
 

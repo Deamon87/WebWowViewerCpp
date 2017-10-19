@@ -245,9 +245,13 @@ M2Geom::setupUniforms(
 //    }
     float indet[4] = {0,0,0,0};
     for (int i = index; i < 3; i++) {
-        glUniform4fv(m2Shader->getUnf(std::string("pc_lights[")+std::to_string(index)+"].color"), 1, indet);
-        glUniform4fv(m2Shader->getUnf(std::string("pc_lights[")+std::to_string(index)+"].attenuation"), 1, indet);
-        glUniform4fv(m2Shader->getUnf(std::string("pc_lights[")+std::to_string(index)+"].position"), 1, indet);
+        std::string uniformName;
+        uniformName = std::string("pc_lights[")+std::to_string(index)+std::string("].color");
+        glUniform4fv(m2Shader->getUnf(uniformName), 1, indet);
+        uniformName = std::string("pc_lights[")+std::to_string(index)+std::string("].attenuation");
+        glUniform4fv(m2Shader->getUnf(uniformName), 1, indet);
+        uniformName = std::string("pc_lights[")+std::to_string(index)+std::string("].position");
+        glUniform4fv(m2Shader->getUnf(uniformName), 1, indet);
         index++;
     }
 
