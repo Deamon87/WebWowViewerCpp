@@ -80,7 +80,7 @@ public:
         this->placementVBO = paramsVbo;
         this->lastUpdatedNumber = written;
     }
-    void drawInstancedNonTransparentMeshes(std::set<M2Object *> &opaqueMap) {
+    void drawInstancedNonTransparentMeshes(std::unordered_set<M2Object *> &opaqueMap) {
             if (this->m_mdxObjectList.size() <= 0) return;
 
             M2Object * lastDrawn = nullptr;
@@ -93,7 +93,7 @@ public:
                 lastDrawn->drawInstanced(false, this->lastUpdatedNumber, this->placementVBO);
             }
     }
-    void drawInstancedTransparentMeshes(std::set<M2Object *> &transparentMap) {
+    void drawInstancedTransparentMeshes(std::unordered_set<M2Object *> &transparentMap) {
         if (this->m_mdxObjectList.size() <= 0) return;
 
         M2Object * lastDrawn = nullptr;

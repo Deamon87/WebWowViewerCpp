@@ -8,6 +8,7 @@
 struct WmoGroupResult;
 class WmoGroupObject;
 #include <string>
+#include <unordered_set>
 #include "../persistance/header/adtFileHeader.h"
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include "wmoGroupObject.h"
@@ -83,7 +84,7 @@ public:
 
 
     bool checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
-                             std::vector<mathfu::vec3> &frustumPoints, std::set<M2Object *> &m2RenderedThisFrame);
+                             std::vector<mathfu::vec3> &frustumPoints, std::unordered_set<M2Object *> &m2RenderedThisFrame);
 
     void update();
 
@@ -99,19 +100,19 @@ public:
         std::vector<WmoGroupResult> &wmoGroupsResult,
         mathfu::vec4 &cameraVec4,
         mathfu::mat4 &viewPerspectiveMat,
-        std::set<M2Object*> &m2RenderedThisFrame);
+        std::unordered_set<M2Object*> &m2RenderedThisFrame);
 
     bool startTraversingFromExterior (
         mathfu::vec4 &cameraVec4,
         mathfu::mat4 &viewPerspectiveMat,
-        std::set<M2Object*> &m2RenderedThisFrame);
+        std::unordered_set<M2Object*> &m2RenderedThisFrame);
 
     void checkGroupDoodads(
         int groupId,
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
         int level,
-        std::set<M2Object*> &m2RenderedThisFrame);
+        std::unordered_set<M2Object*> &m2RenderedThisFrame);
 
     void transverseGroupWMO (
         int groupId,
@@ -123,7 +124,7 @@ public:
         std::vector<bool> &transverseVisitedPortals,
         std::vector<mathfu::vec4> &localFrustumPlanes,
         int level,
-        std::set<M2Object*> &m2ObjectSet);
+        std::unordered_set<M2Object*> &m2ObjectSet);
 
     WmoGroupResult getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4);
 

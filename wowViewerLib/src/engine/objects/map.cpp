@@ -24,9 +24,9 @@ void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
 }
 
 void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
-    adtRenderedThisFrame = std::set<AdtObject*>();
-    m2RenderedThisFrame = std::set<M2Object*>();
-    wmoRenderedThisFrame = std::set<WmoObject*>();
+    adtRenderedThisFrame = std::unordered_set<AdtObject*>();
+    m2RenderedThisFrame = std::unordered_set<M2Object*>();
+    wmoRenderedThisFrame = std::unordered_set<WmoObject*>();
 
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
@@ -265,9 +265,9 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::vector<mathfu::vec3> &hullLines,
                         mathfu::mat4 &lookAtMat4,
                         mathfu::mat4 &projectionModelMat,
-                        std::set<AdtObject*> &adtRenderedThisFrame,
-                        std::set<M2Object*> &m2RenderedThisFrame,
-                        std::set<WmoObject*> &wmoRenderedThisFrame) {
+                        std::unordered_set<AdtObject*> &adtRenderedThisFrame,
+                        std::unordered_set<M2Object*> &m2RenderedThisFrame,
+                        std::unordered_set<WmoObject*> &wmoRenderedThisFrame) {
 
     std::set<M2Object*> m2ObjectsCandidates;
     std::set<WmoObject*> wmoCandidates;

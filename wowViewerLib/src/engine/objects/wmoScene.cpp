@@ -6,8 +6,8 @@
 #include "../algorithms/mathHelper.h"
 
 void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
-    m2RenderedThisFrame = std::set<M2Object*>();
-    wmoRenderedThisFrame = std::set<WmoObject*>();
+    m2RenderedThisFrame = std::unordered_set<M2Object*>();
+    wmoRenderedThisFrame = std::unordered_set<WmoObject*>();
 
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 

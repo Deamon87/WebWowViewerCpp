@@ -10,6 +10,7 @@
 #include "../algorithms/hashString.h"
 #include "../opengl/header.h"
 
+size_t hashFunction(const size_t & key);
 
 class ShaderRuntimeData {
 public:

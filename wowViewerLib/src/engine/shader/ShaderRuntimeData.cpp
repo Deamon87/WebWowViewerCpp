@@ -3,6 +3,9 @@
 //
 
 #include "ShaderRuntimeData.h"
+size_t hashFunction(const size_t & key){
+    return key;
+}
 
 bool ShaderRuntimeData::hasUnf(const HashedString name) const {
     return m_uniformMap.find(name.Hash()) != m_uniformMap.end();

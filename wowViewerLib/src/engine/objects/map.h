@@ -6,6 +6,7 @@
 #define WEBWOWVIEWERCPP_MAP_H
 
 
+#include <unordered_set>
 #include "adtObject.h"
 #include "m2Object.h"
 #include "wmoObject.h"
@@ -32,16 +33,16 @@ private:
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;
 
-    std::set<AdtObject*> adtRenderedThisFrame;
-    std::set<M2Object*> m2RenderedThisFrame;
-    std::set<WmoObject*> wmoRenderedThisFrame;
+    std::unordered_set<AdtObject*> adtRenderedThisFrame;
+    std::unordered_set<M2Object*> m2RenderedThisFrame;
+    std::unordered_set<WmoObject*> wmoRenderedThisFrame;
 
     std::vector<AdtObject*> adtRenderedThisFrameArr;
     std::vector<M2Object*> m2RenderedThisFrameArr;
     std::vector<WmoObject*> wmoRenderedThisFrameArr;
 
-    std::set<M2Object *> m2OpaqueRenderedThisFrame;
-    std::set<M2Object *> m2TranspRenderedThisFrame;
+    std::unordered_set<M2Object *> m2OpaqueRenderedThisFrame;
+    std::unordered_set<M2Object *> m2TranspRenderedThisFrame;
 
     std::vector<M2InstancingObject*> m_instanceList;
     std::unordered_map<std::string, M2InstancingObject*> m_instanceMap;
@@ -64,9 +65,9 @@ private:
                        std::vector<mathfu::vec3> &hullLines,
                        mathfu::mat4 &lookAtMat4,
                        mathfu::mat4 &projectionModelMat,
-                       std::set<AdtObject*> &adtRenderedThisFrame,
-                       std::set<M2Object*> &m2RenderedThisFrame,
-                       std::set<WmoObject*> &wmoRenderedThisFrame);
+                       std::unordered_set<AdtObject*> &adtRenderedThisFrame,
+                       std::unordered_set<M2Object*> &m2RenderedThisFrame,
+                       std::unordered_set<WmoObject*> &wmoRenderedThisFrame);
 
 
 

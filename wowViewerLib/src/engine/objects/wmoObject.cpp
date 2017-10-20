@@ -48,7 +48,7 @@ M2Object *WmoObject::getDoodad(int index) {
 }
 
 bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                                     std::set<M2Object*> &m2RenderedThisFrame) {
+                                     std::unordered_set<M2Object*> &m2RenderedThisFrame) {
     if (!m_loaded) return true;
 
     bool result = false;
@@ -304,7 +304,7 @@ void WmoObject::createM2Array() {
 bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoGroupsResults,
                                                mathfu::vec4 &cameraVec4,
                                                mathfu::mat4 &viewPerspectiveMat,
-                                               std::set<M2Object *> &m2RenderedThisFrame) {
+                                               std::unordered_set<M2Object *> &m2RenderedThisFrame) {
     //CurrentVisibleM2 and visibleWmo is array of global m2 objects, that are visible after frustum
     mathfu::vec4 cameraLocal = this->m_placementInvertMatrix * cameraVec4;
 
@@ -407,7 +407,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
 bool
 WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
                                        mathfu::mat4 &viewPerspectiveMat,
-                                       std::set<M2Object*> &m2RenderedThisFrame) {
+                                       std::unordered_set<M2Object*> &m2RenderedThisFrame) {
     //CurrentVisibleM2 and visibleWmo is array of global m2 objects, that are visible after frustum
     mathfu::vec4 cameraLocal = this->m_placementInvertMatrix * cameraVec4;
 
@@ -489,7 +489,7 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
 
 void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
                                   std::vector<mathfu::vec4> &frustumPlane, int level,
-                                  std::set<M2Object *> &m2ObjectSet) {
+                                  std::unordered_set<M2Object *> &m2ObjectSet) {
     WmoGroupObject *groupWmoObject = groupObjects[groupId];
     if (groupWmoObject != nullptr && groupWmoObject->getIsLoaded()) {
         const std::vector <M2Object *> *doodads = groupWmoObject->getDoodads();
@@ -521,7 +521,7 @@ void WmoObject::transverseGroupWMO(
                                 std::vector<bool> &transverseVisitedPortals,
                                 std::vector<mathfu::vec4> &localFrustumPlanes,
                                 int level,
-                                std::set<M2Object *> &m2ObjectSet) {
+                                std::unordered_set<M2Object *> &m2ObjectSet) {
 
     transverseVisitedGroups[groupId] = true;
 
