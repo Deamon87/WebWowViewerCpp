@@ -100,39 +100,40 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 
     //4. Collect m2 into instances every 200 ms
     //
-    if (this->m_currentTime + deltaTime - this->lastInstanceCollect > 30) {
-        std::unordered_map<std::string, M2Object *> map;
-        if (true /*this.sceneApi.extensions.getInstancingExt()*/) {
-            //Clear instance lists
-            for (auto &j : this->m_instanceList) {
-                j->clearList();
-            }
+    if (config->getUseInstancing()) {
+        if (this->m_currentTime + deltaTime - this->lastInstanceCollect > 30) {
+            std::unordered_map<std::string, M2Object *> map;
+            if (true /*this.sceneApi.extensions.getInstancingExt()*/) {
+                //Clear instance lists
+                for (auto &j : this->m_instanceList) {
+                    j->clearList();
+                }
 
-            for (auto m2Object : this->m2RenderedThisFrameArr) {
-                if (!m2Object->getGetIsLoaded()) continue;
-                if (m2Object->getHasBillboarded() || !m2Object->getIsInstancable()) continue;
+                for (auto m2Object : this->m2RenderedThisFrameArr) {
+                    if (!m2Object->getGetIsLoaded()) continue;
+                    if (m2Object->getHasBillboarded() || !m2Object->getIsInstancable()) continue;
 
-                std::string fileIdent = m2Object->getModelIdent();
+                    std::string fileIdent = m2Object->getModelIdent();
 
-                if (map.find(fileIdent) != map.end()) {
-                    M2Object *m2ObjectInstanced = map.at(fileIdent);
-                    this->addM2ObjectToInstanceManager(m2Object);
-                    this->addM2ObjectToInstanceManager(m2ObjectInstanced);
-                } else {
-                    map[fileIdent] = m2Object;
+                    if (map.find(fileIdent) != map.end()) {
+                        M2Object *m2ObjectInstanced = map.at(fileIdent);
+                        this->addM2ObjectToInstanceManager(m2Object);
+                        this->addM2ObjectToInstanceManager(m2ObjectInstanced);
+                    } else {
+                        map[fileIdent] = m2Object;
+                    }
                 }
             }
+
+
+            //4.1 Update placement matrix buffers in Instance
+            for (auto instanceManager : this->m_instanceList) {
+                instanceManager->updatePlacementVBO();
+            }
+
+            this->lastInstanceCollect = this->m_currentTime;
         }
-
-
-        //4.1 Update placement matrix buffers in Instance
-        for (auto instanceManager : this->m_instanceList) {
-            instanceManager->updatePlacementVBO();
-        }
-
-        this->lastInstanceCollect = this->m_currentTime;
     }
-
     //6. Check what WMO instance we're in
     this->m_currentInteriorGroups = {};
     this->m_currentWMO = nullptr;
@@ -454,106 +455,109 @@ void Map::drawExterior() {
 
 void Map::drawM2s() {
     mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
+    Config * config = this->m_api->getConfig();
 
-    if (this->m_api->getConfig()->getRenderM2()) {
-        bool lastWasDrawInstanced = false;
-        this->m_api->activateM2Shader();
-        for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-            M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-            if (this->m2OpaqueRenderedThisFrame.find(m2Object) != this->m2OpaqueRenderedThisFrame.end()) continue;
-            std::string fileIdent = m2Object->getModelIdent();
+    if (config->getUseInstancing()) {
+        if (this->m_api->getConfig()->getRenderM2()) {
+            bool lastWasDrawInstanced = false;
+            this->m_api->activateM2Shader();
+            for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
+                M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+                if (this->m2OpaqueRenderedThisFrame.find(m2Object) != this->m2OpaqueRenderedThisFrame.end()) continue;
+                std::string fileIdent = m2Object->getModelIdent();
 
-            bool drawInstanced = false;
-            M2InstancingObject* instanceManager = nullptr;
-            auto it = this->m_instanceMap.find(fileIdent);
-            if (it != this->m_instanceMap.end()) {
-                instanceManager = (*it).second;
-                drawInstanced = instanceManager->getLastUpdatedNumber() > 1;
-            }
-            if (drawInstanced) {
-                if (!lastWasDrawInstanced) {
-                    this->m_api->activateM2InstancingShader();
+                bool drawInstanced = false;
+                M2InstancingObject *instanceManager = nullptr;
+                auto it = this->m_instanceMap.find(fileIdent);
+                if (it != this->m_instanceMap.end()) {
+                    instanceManager = (*it).second;
+                    drawInstanced = instanceManager->getLastUpdatedNumber() > 1;
                 }
+                if (drawInstanced) {
+                    if (!lastWasDrawInstanced) {
+                        this->m_api->activateM2InstancingShader();
+                    }
 
-                instanceManager->drawInstancedNonTransparentMeshes(this->m2OpaqueRenderedThisFrame);
-                lastWasDrawInstanced = true;
+                    instanceManager->drawInstancedNonTransparentMeshes(this->m2OpaqueRenderedThisFrame);
+                    lastWasDrawInstanced = true;
+                } else {
+                    if (lastWasDrawInstanced) {
+                        this->m_api->deactivateM2InstancingShader();
+                        this->m_api->activateM2Shader();
+                    }
+
+                    this->m2OpaqueRenderedThisFrame.insert(m2Object);
+                    m2Object->draw(false, diffuseNon);;
+                    lastWasDrawInstanced = false;
+                }
+            }
+            if (lastWasDrawInstanced) {
+                this->m_api->deactivateM2InstancingShader();
             } else {
-                if (lastWasDrawInstanced) {
-                    this->m_api->deactivateM2InstancingShader();
-                    this->m_api->activateM2Shader();
-                }
-
-                this->m2OpaqueRenderedThisFrame.insert(m2Object);
-                m2Object->draw(false, diffuseNon);;
-                lastWasDrawInstanced = false;
+                this->m_api->deactivateM2Shader();
             }
         }
-        if (lastWasDrawInstanced) {
-            this->m_api->deactivateM2InstancingShader();
-        } else {
-            this->m_api->deactivateM2Shader();
-        }
-    }
 
         //6. Draw transparent meshes of m2
-    if (this->m_api->getConfig()->getRenderM2()) {
-        bool lastWasDrawInstanced = false;
-        this->m_api->activateM2Shader();
-        for (int i = static_cast<int>(this->m2RenderedThisFrameArr.size() - 1); i >= 0; i--) {
-            M2Object * m2Object = this->m2RenderedThisFrameArr[i];
-            if (this->m2TranspRenderedThisFrame.find(m2Object)
-                != this->m2TranspRenderedThisFrame.end()) continue;
-            std::string fileIdent = m2Object->getModelIdent();
+        if (this->m_api->getConfig()->getRenderM2()) {
+            bool lastWasDrawInstanced = false;
+            this->m_api->activateM2Shader();
+            for (int i = static_cast<int>(this->m2RenderedThisFrameArr.size() - 1); i >= 0; i--) {
+                M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+                if (this->m2TranspRenderedThisFrame.find(m2Object)
+                    != this->m2TranspRenderedThisFrame.end())
+                    continue;
+                std::string fileIdent = m2Object->getModelIdent();
 
-            bool drawInstanced = false;
-            M2InstancingObject* instanceManager = nullptr;
-            auto it = this->m_instanceMap.find(fileIdent);
-            if (it != this->m_instanceMap.end()) {
-                instanceManager = (*it).second;
-                drawInstanced = instanceManager->getLastUpdatedNumber() > 1;
-            }
-            if (drawInstanced) {
-                if (!lastWasDrawInstanced) {
-                    this->m_api->activateM2InstancingShader();
+                bool drawInstanced = false;
+                M2InstancingObject *instanceManager = nullptr;
+                auto it = this->m_instanceMap.find(fileIdent);
+                if (it != this->m_instanceMap.end()) {
+                    instanceManager = (*it).second;
+                    drawInstanced = instanceManager->getLastUpdatedNumber() > 1;
                 }
+                if (drawInstanced) {
+                    if (!lastWasDrawInstanced) {
+                        this->m_api->activateM2InstancingShader();
+                    }
 
-                instanceManager->drawInstancedTransparentMeshes(this->m2TranspRenderedThisFrame);
-                lastWasDrawInstanced = true;
+                    instanceManager->drawInstancedTransparentMeshes(this->m2TranspRenderedThisFrame);
+                    lastWasDrawInstanced = true;
+                } else {
+                    if (lastWasDrawInstanced) {
+                        this->m_api->deactivateM2InstancingShader();
+                        this->m_api->activateM2Shader();
+                    }
+
+                    this->m2TranspRenderedThisFrame.insert(m2Object);
+                    m2Object->draw(true, diffuseNon);
+                    lastWasDrawInstanced = false;
+                }
+            }
+            if (lastWasDrawInstanced) {
+                this->m_api->deactivateM2InstancingShader();
             } else {
-                if (lastWasDrawInstanced) {
-                    this->m_api->deactivateM2InstancingShader();
-                    this->m_api->activateM2Shader();
-                }
-
-                this->m2TranspRenderedThisFrame.insert(m2Object);
-                m2Object->draw(true, diffuseNon);
-                lastWasDrawInstanced = false;
+                this->m_api->deactivateM2Shader();
             }
         }
-        if (lastWasDrawInstanced) {
-            this->m_api->deactivateM2InstancingShader();
-        } else {
-            this->m_api->deactivateM2Shader();
+    } else {
+        //Old implementation without instancing
+
+        this->m_api->activateM2Shader();
+        mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
+        for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
+
+            M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+            m2Object->draw(false, diffuseNon);
         }
+
+        for (int i = this->m2RenderedThisFrameArr.size()-1; i >= 0; i--) {
+            M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+
+            m2Object->draw(true, diffuseNon);
+        }
+        this->m_api->deactivateM2Shader();
     }
-
-    //Old implementation without instancing
-    /*
-    this->m_api->activateM2Shader();
-    mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
-    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-
-        M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-        m2Object->draw(false, diffuseNon);
-    }
-
-    for (int i = this->m2RenderedThisFrameArr.size()-1; i >= 0; i--) {
-        M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-
-        m2Object->draw(true, diffuseNon);
-    }
-    this->m_api->deactivateM2Shader();
- */
 
     //7. Draw BBs
     //7.1 Draw M2 BBs

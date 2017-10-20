@@ -14,6 +14,7 @@ private:
     bool renderBSP = false;
     bool renderPortals = false;
     bool usePortalCulling = true;
+    bool useInstancing = false;
 
     bool drawWmoBB = false;
     bool drawM2BB = true;
@@ -25,6 +26,9 @@ private:
 public:
     bool getRenderM2 () {
         return renderMd2;
+    }
+    bool getUseInstancing () {
+        return useInstancing;
     }
     void setRenderM2 (bool value) {
         renderMd2 = value;

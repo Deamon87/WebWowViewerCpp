@@ -4,9 +4,21 @@
 
 #include "ShaderRuntimeData.h"
 
-GLuint ShaderRuntimeData::getUnfRN(std::string &name) {
+bool ShaderRuntimeData::hasUnf(const HashedString name) const {
+    return m_uniformMap.find(name.Hash()) != m_uniformMap.end();
+};
+GLuint ShaderRuntimeData::getUnf(const HashedString name) const {
+    return m_uniformMap.at(name.Hash());
+};
+
+
+GLuint ShaderRuntimeData::getUnfRT(const std::string &name) {
     const char * cstr = name.c_str();
     return m_uniformMap.at(CalculateFNV(cstr));
+}
+
+GLuint ShaderRuntimeData::getUnfHash(size_t hash) {
+    return m_uniformMap.at(hash);
 }
 
 

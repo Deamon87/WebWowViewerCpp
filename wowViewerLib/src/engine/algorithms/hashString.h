@@ -65,15 +65,16 @@ public:
 
     // A wrapper so we can generate any number of functions using the pre-processor (const strings)
     template <size_t N>
-    inline HashedString(const char(&str)[N]);
-    explicit HashedString(ConstCharWrapper str);
+    constexpr HashedString(const char(&str)[N]);
+    explicit constexpr HashedString(ConstCharWrapper str);
 
     // Return the original string
+#ifdef _DEBUG
     const char* String()
     {
         return m_String;
     }
-
+#endif
     // Return the hash
     const size_t Hash() const
     {
@@ -86,7 +87,9 @@ public:
     size_t m_Hash;
 
     // The original string
+#ifdef _DEBUG
     const char* m_String;
+#endif
 };
 
 /////////////////////////////////
@@ -127,11 +130,9 @@ public:
 
 #define ME_HASHED_STRING_SPECIALIZATION(n)                                    \
   template <>                                                                \
-  inline HashedString::HashedString(const char (&str)[n])                    \
+  constexpr HashedString::HashedString(const char (&str)[n])                    \
     : m_Hash(ME_JOIN(ME_HASHED_STRING_, n))                                \
-  {                                                                            \
-		m_String = str;																  \
-  }
+  {}
 
 ME_HASHED_STRING_SPECIALIZATION(1)
 ME_HASHED_STRING_SPECIALIZATION(2)

@@ -17,9 +17,10 @@ public:
     }
 
 public:
-    inline unsigned long hasUnf(HashedString name) const {    return m_uniformMap.find(name.Hash()) != m_uniformMap.end();};
-    inline GLuint getUnf(HashedString name) const { return m_uniformMap.at(name.Hash()); };
-    GLuint getUnfRN(std::string &name);
+    bool hasUnf(const HashedString name) const;
+    GLuint getUnf(const HashedString name) const;
+    GLuint getUnfRT(const std::string &name);
+    GLuint getUnfHash(size_t hash);
     GLuint getProgram();
     void setUnf(const std::string &name, GLuint index);
     void setProgram(GLuint program);

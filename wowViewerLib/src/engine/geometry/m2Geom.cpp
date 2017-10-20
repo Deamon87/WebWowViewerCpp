@@ -244,14 +244,28 @@ M2Geom::setupUniforms(
 //        index++;
 //    }
     float indet[4] = {0,0,0,0};
+    static const size_t pcLightNames[4][3] = {
+            {
+                CalculateFNV("pc_lights[0].color"),
+                CalculateFNV("pc_lights[0].attenuation"),
+                CalculateFNV("pc_lights[0].position")
+            },
+            {
+                CalculateFNV("pc_lights[1].color"),
+                CalculateFNV("pc_lights[1].attenuation"),
+                CalculateFNV("pc_lights[1].position")
+            },
+            {
+                CalculateFNV("pc_lights[2].color"),
+                CalculateFNV("pc_lights[2].attenuation"),
+                CalculateFNV("pc_lights[2].position")
+            }
+    };
     for (int i = index; i < 3; i++) {
         std::string uniformName;
-        uniformName = std::string("pc_lights[")+std::to_string(index)+std::string("].color");
-        glUniform4fv(m2Shader->getUnfRN(uniformName), 1, indet);
-        uniformName = std::string("pc_lights[")+std::to_string(index)+std::string("].attenuation");
-        glUniform4fv(m2Shader->getUnfRN(uniformName), 1, indet);
-        uniformName = std::string("pc_lights[")+std::to_string(index)+std::string("].position");
-        glUniform4fv(m2Shader->getUnfRN(uniformName), 1, indet);
+        glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][0]), 1, indet);
+        glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][1]), 1, indet);
+        glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][2]), 1, indet);
         index++;
     }
 
