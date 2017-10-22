@@ -21,18 +21,14 @@
 #include "stringTrim.h"
 #include "geometry/wmoGroupGeom.h"
 #include "geometry/wmoMainGeom.h"
-#include "objects/adtObject.h"
-#include "objects/wmoObject.h"
-#include "objects/m2Object.h"
 #include "objects/map.h"
-
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
 public:
     WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
-    void draw(double deltaTime);
-    void setScreenSize(int canvWidth, int canvHeight);
+    void draw(animTime_t deltaTime) override;
+    void setScreenSize(int canvWidth, int canvHeight) override;
 
     virtual void provideFile(const char* fileName, unsigned char* data, int fileLength){
         std::vector<unsigned char> fileData;
@@ -190,9 +186,6 @@ private:
     Cache<SkinGeom> skinGeomCache;
     Cache<BlpTexture> textureCache;
 
-    M2Object *m2Object = nullptr;
-    WmoObject *wmoObject = nullptr;
-    AdtObject *adtObject = nullptr;
     iInnerSceneApi *currentScene;
 
     void activateRenderFrameShader();

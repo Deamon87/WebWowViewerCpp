@@ -8,6 +8,7 @@
 #include <curl/curl.h>
 #include <string>
 #include <iostream>
+#include <cmath>
 #include "../wowViewerLib/src/include/wowScene.h"
 #include "persistance/ZipRequestProcessor.h"
 #include "persistance/HttpZipRequestProcessor.h"
@@ -287,7 +288,7 @@ int main(int argc, char** argv) {
             scene->setScreenSize(canvWidth, canvHeight);
             windowSizeChanged = false;
         }
-        scene->draw(deltaTime*1000);
+        scene->draw(floor(deltaTime*1000));
 
         calcFPS(window, 2.0, "WoW ");
 

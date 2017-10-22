@@ -95,7 +95,7 @@ void initM2Event(M2Data *m2Header) {
     int32_t eventCount = m2Header->events.size;
     for (int i = 0; i < eventCount; i++) {
         M2Event *event = m2Header->events.getElement(i);
-        event->enabled.initTrack(m2Header);
+        event->enabled.initTrackBase(m2Header);
     }
 }
 void initM2Light(M2Data *m2Header) {

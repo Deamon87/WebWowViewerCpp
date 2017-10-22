@@ -8,6 +8,7 @@
 #include <mathfu/vector.h>
 #include <mathfu/glsl_mappings.h>
 #include "CameraInterface.h"
+#include "../../include/wowScene.h"
 
 
 class FirstPersonCamera: public ICamera {
@@ -56,7 +57,7 @@ public:
     mathfu::vec3 getCameraLookAt();
 
 public:
-    void tick(double timeDelta);
+    void tick(animTime_t timeDelta);
     void setCameraPos(float x, float y, float z);
 };
 

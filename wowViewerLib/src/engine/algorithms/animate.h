@@ -5,8 +5,10 @@
 #ifndef WOWVIEWERLIB_ANIMATE_H
 #define WOWVIEWERLIB_ANIMATE_H
 
+#include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
 #include <vector>
+
 int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key);
 
 int32_t findTimeIndex(
@@ -86,12 +88,12 @@ inline float lerpHelper<float>(float &value1, float &value2, float percent) {
 
 template<typename T, typename R>
 R animateTrack(
-        double &currTime,
+        animTime_t &currTime,
         uint32_t &maxTime,
         int &animationIndex,
         M2Track<T> &animationBlock,
         M2Array<M2Loop> &global_loops,
-        std::vector<double> &globalSequenceTimes,
+        std::vector<animTime_t> &globalSequenceTimes,
         R &defaultValue) {
 
     if ((animationBlock.timestamps.size <= animationIndex) || (animationBlock.timestamps[animationIndex]->size == 0)) {
@@ -109,6 +111,12 @@ R animateTrack(
     M2Array<uint32_t > *times = animationBlock.timestamps[animationIndex];
     M2Array<T> *values = animationBlock.values[animationIndex];
 
+//    if (maxTime == 0 ) {
+//        maxTime = *times->getElement(times->size - 1);
+//        if (maxTime > 0)
+//            currTime = currTime % maxTime;
+//    }
+
     timeIndex = findTimeIndex(currTime, animationIndex, animationBlock.timestamps);
 
     if (timeIndex == times->size-1) {
@@ -124,7 +132,7 @@ R animateTrack(
         if (interpolType == 0) {
             return value1;
         } else if (interpolType >= 1) {
-            return lerpHelper<R>(value1, value2, (float)((float)time1 - currTime)/(float)(time1 - time2));
+            return lerpHelper<R>(value1, value2, (float)((float)currTime - time1)/(float)(time2 - time1));
         }
     } else {
         return defaultValue;

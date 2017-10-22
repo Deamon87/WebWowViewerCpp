@@ -47,7 +47,7 @@ void AnimationManager::initBlendMatrices() {
 }
 
 void AnimationManager::initGlobalSequenceTimes() {
-    globalSequenceTimes = std::vector<double>(
+    globalSequenceTimes = std::vector<animTime_t>(
             (unsigned long) (m_m2File->global_loops.size > 0 ? m_m2File->global_loops.size : 0));
 
     for (int i = 0; i < globalSequenceTimes.size(); i++) {
@@ -114,14 +114,14 @@ inline void calcAnimationTransform(
         mathfu::mat4 *billboardMatrix,
         mathfu::vec4 &pivotPoint,
         mathfu::vec4 &negatePivotPoint,
-        std::vector<double> &globalSequenceTimes,
+        std::vector<animTime_t> &globalSequenceTimes,
         bool &isAnimated,
         M2Track<C3Vector> &translationTrack,
         M2Track<T> &rotationTrack,
         M2Track<C3Vector> &scaleTrack,
         M2Data * m2Data,
         int animationIndex,
-        double time
+        animTime_t time
         ) {
     M2Sequence *animationRecord = m2Data->sequences[animationIndex];
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
@@ -177,7 +177,7 @@ inline void calcAnimationTransform(
 }
 
 
-void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, double time) {
+void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, animTime_t time) {
 
     mathfu::vec4 pivotPoint(0.5, 0.5, 0, 0);
     mathfu::vec4 negatePivotPoint = -pivotPoint;
@@ -249,7 +249,7 @@ void calcBoneBillboardMatrix(
 }
 
 void
-AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, double time,
+AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, animTime_t time,
                                  mathfu::vec3 cameraPosInLocal) {
     if (this->bonesIsCalculated[boneIndex]) return;
 
@@ -313,7 +313,7 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int bo
 }
 
 void AnimationManager::calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex,
-                                      int animationIndex, double time, mathfu::vec3 cameraPosInLocal) {
+                                      int animationIndex, animTime_t time, mathfu::vec3 cameraPosInLocal) {
     std::vector<int> *childBones = &this->childBonesLookup[boneIndex];
     for (int i = 0; i < childBones->size(); i++) {
         int childBoneIndex = (*childBones)[i];
@@ -323,7 +323,7 @@ void AnimationManager::calcChildBones(std::vector<mathfu::mat4> &boneMatrices, i
     }
 }
 
-void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int animation, double time, mathfu::vec3 &cameraPosInLocal) {
+void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int animation, animTime_t time, mathfu::vec3 &cameraPosInLocal) {
 
 
     if (this->firstCalc || this->isAnimated) {
@@ -375,7 +375,7 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
     this->firstCalc = false;
 }
 
-void AnimationManager::update(double deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
+void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
                               std::vector<mathfu::mat4> &textAnimMatrices,
                               std::vector<mathfu::vec4> &subMeshColors,
                               std::vector<float> &transparencies
@@ -415,7 +415,7 @@ void AnimationManager::update(double deltaTime, mathfu::vec3 cameraPosInLocal, s
         this->nextSubAnimationTime = 0;
     }
 
-    double currAnimLeft = currentAnimationRecord->duration - this->currentAnimationTime;
+    animTime_t currAnimLeft = currentAnimationRecord->duration - this->currentAnimationTime;
 
     /*if (this->nextSubAnimationActive) {
         this->nextSubAnimationTime += deltaTime;
@@ -432,7 +432,7 @@ void AnimationManager::update(double deltaTime, mathfu::vec3 cameraPosInLocal, s
     int blendAnimationIndex = -1;
     if ((subAnimBlendTime > 0) && (currAnimLeft < subAnimBlendTime)) {
         this->firstCalc = true;
-        this->nextSubAnimationTime = fmod((subAnimBlendTime - currAnimLeft),(subAnimRecord->duration/1000));
+        this->nextSubAnimationTime = ((subAnimBlendTime - currAnimLeft) % (subAnimRecord->duration));
         blendAlpha = currAnimLeft / subAnimBlendTime;
         blendAnimationIndex = this->nextSubAnimationIndex;
     }
@@ -446,8 +446,8 @@ void AnimationManager::update(double deltaTime, mathfu::vec3 cameraPosInLocal, s
 
             this->nextSubAnimationIndex = -1;
             this->nextSubAnimationActive = false;
-        } else {
-            this->currentAnimationTime = fmod(this->currentAnimationTime, currentAnimationRecord->duration/1000);
+        } else if (currentAnimationRecord->duration > 0) {
+            this->currentAnimationTime = (this->currentAnimationTime % currentAnimationRecord->duration);
         }
     }
 
@@ -486,9 +486,9 @@ void AnimationManager::update(double deltaTime, mathfu::vec3 cameraPosInLocal, s
 
 void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors,
                                          int animationIndex,
-                                         double time,
+                                         animTime_t time,
                                          int blendAnimationIndex,
-                                         double blendAnimationTime,
+                                         animTime_t blendAnimationTime,
                                          double blendAlpha) {
     M2Array<M2Color> &colors = this->m_m2File->colors;
     M2Sequence *animationRecord = this->m_m2File->sequences[animationIndex];
@@ -560,9 +560,9 @@ void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColor
 void AnimationManager::calcTransparencies(
         std::vector<float> &transparencies,
         int animationIndex,
-        double time,
+        animTime_t time,
         int blendAnimationIndex,
-        double blendAnimationTime,
+        animTime_t blendAnimationTime,
         double blendAlpha) {
 
     M2Array<M2TextureWeight> &transparencyRecords = this->m_m2File->texture_weights;

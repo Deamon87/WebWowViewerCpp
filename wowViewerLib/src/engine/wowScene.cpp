@@ -63,6 +63,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "WORLD\\EXPANSION01\\DOODADS\\TEROKKAR\\TREES\\TEROKKARTREEMEDIUMPINECONES.m2");
+//
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(0, 0, 0);
@@ -825,7 +829,7 @@ void WoWSceneImpl::drawCamera () {
     glEnable(GL_DEPTH_TEST);
 }
 
-void WoWSceneImpl::draw(double deltaTime) {
+void WoWSceneImpl::draw(animTime_t deltaTime) {
     glClearScreen();
     mathfu::vec3 *cameraVector;
 

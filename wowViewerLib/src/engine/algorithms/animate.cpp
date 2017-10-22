@@ -53,7 +53,7 @@ int32_t findTimeIndex(
                 return i-1;
             }
         }
-        return times_len-1;
+        return times_len-2;
     } else if (times_len == 1){
         return 0;
     } else {

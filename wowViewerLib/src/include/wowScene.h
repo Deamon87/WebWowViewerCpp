@@ -1,6 +1,9 @@
 #ifndef WOWMAPVIEWERREVIVED_WOWSCENE_H_H
 #define WOWMAPVIEWERREVIVED_WOWSCENE_H_H
 
+#include <cstdint>
+typedef uint32_t animTime_t;
+
 #include <string>
 #include "config.h"
 #include "controllable.h"
@@ -20,7 +23,7 @@ public:
 class WoWScene : public IFileRequester {
 
 public:
-    virtual void draw(double deltaTime) = 0;
+    virtual void draw(animTime_t deltaTime) = 0;
     virtual void setScreenSize(int canvWidth, int canvHeight) = 0;
     virtual void switchCameras() = 0;
 
