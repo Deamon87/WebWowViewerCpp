@@ -252,7 +252,7 @@ int main(int argc, char** argv) {
         glfwTerminate();
         return -1;
     }
-    glfwMakeContextCurrent(window); // Initialize GLEW
+    glfwMakeContextCurrent(window); // Initialize GLFW
 
     const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
             scene->setScreenSize(canvWidth, canvHeight);
             windowSizeChanged = false;
         }
-        scene->draw(floor(deltaTime*1000));
+        scene->draw((deltaTime*1000));
 
         calcFPS(window, 2.0, "WoW ");
 

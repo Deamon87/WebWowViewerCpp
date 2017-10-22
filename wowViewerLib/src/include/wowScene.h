@@ -2,7 +2,7 @@
 #define WOWMAPVIEWERREVIVED_WOWSCENE_H_H
 
 #include <cstdint>
-typedef uint32_t animTime_t;
+typedef double animTime_t;
 
 #include <string>
 #include "config.h"

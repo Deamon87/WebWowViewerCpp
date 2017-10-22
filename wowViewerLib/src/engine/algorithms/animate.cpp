@@ -4,7 +4,7 @@
 
 #include "animate.h"
 
-int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key)
+int binary_search(M2Array<uint32_t>& vec, int start, int end, animTime_t & key)
 {
     // Termination condition: start index greater than end index
     if(start == end) {
@@ -13,7 +13,7 @@ int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key)
 
     if(start > end)
     {
-        return -1;
+        return end-1;
     }
 
 
@@ -34,7 +34,7 @@ int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key)
 }
 
 int32_t findTimeIndex(
-        double currTime,
+        animTime_t currTime,
         int animationIndex,
         M2Array<M2Array<uint32_t>> &timestamps
 ) {
@@ -47,13 +47,15 @@ int32_t findTimeIndex(
     int32_t times_len = timeStamp->size;
 
     if (times_len > 1 ) {
-//        return binary_search(*timeStamp, 0, times_len-1, currTime);
+        //return std::binary_search((*timeStamp)[0], (*timeStamp)[timeStamp->size-1], currTime);
+//        return binary_search(*timeStamp, 0, times_len-1, currTime) - 1;
         for (int i = 1; i < times_len; i++) {
-            if (*timeStamp->getElement(i) > currTime) {
+            unsigned int timestamp_time = *timeStamp->getElement(i);
+            if (timestamp_time > currTime) {
                 return i-1;
             }
         }
-        return times_len-2;
+        return times_len-1;
     } else if (times_len == 1){
         return 0;
     } else {
