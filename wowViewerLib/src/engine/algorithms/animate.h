@@ -145,7 +145,12 @@ R animateTrack(
         std::vector<animTime_t> &globalSequenceTimes,
         R &defaultValue) {
 
-    if ((animationBlock.timestamps.size <= animationIndex) || (animationBlock.timestamps[animationIndex]->size == 0)) {
+
+    if (animationBlock.timestamps.size <= animationIndex) {
+        animationIndex = 0;
+    }
+
+    if (animationIndex <= animationBlock.timestamps.size && animationBlock.timestamps[animationIndex]->size == 0) {
         return defaultValue;
     }
 
@@ -188,8 +193,8 @@ R animateTrack(
             return lerpHelper<R>(value1, value2, (float)((float)currTime - time1)/(float)(time2 - time1));
         }
     } else {
-        //return convertHelper<T, R>(*values->getElement(0));
-        return defaultValue;
+        return convertHelper<T, R>(*values->getElement(0));
+//        return defaultValue;
     }
 }
 

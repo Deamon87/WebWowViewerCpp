@@ -336,7 +336,7 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
         //Animate everything with standard animation
         for (int i = 0; i < m_m2File->bones.size; i++) {
             this->calcBoneMatrix(boneMatrices, i, animation, time, cameraPosInLocal);
-            //std::cout << "boneMatrices[" << std::to_string(i) << "] = " << dumpMatrix(boneMatrices[i]) << std::endl;
+//            std::cout << "boneMatrices[" << std::to_string(i) << "] = " << dumpMatrix(boneMatrices[i]) << std::endl;
         }
 
         /* Animate mouth */

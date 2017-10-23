@@ -55,18 +55,18 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-//    m_firstCamera.setCameraPos(-1663, 5098, 27);
-//    m_secondCamera.setCameraPos(-1663, 5098, 27);
-//    currentScene = new Map(this, "Expansion01");
+    m_firstCamera.setCameraPos(-1663, 5098, 27);
+    m_secondCamera.setCameraPos(-1663, 5098, 27);
+    currentScene = new Map(this, "Expansion01");
 
     //Test scene 2: tree from shattrath
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "WORLD\\EXPANSION01\\DOODADS\\TEROKKAR\\TREES\\TEROKKARTREEMEDIUMPINECONES.m2");
 //
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "world\\generic\\human\\passive doodads\\gryphonroost\\gryphonroost01.m2");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "world\\generic\\human\\passive doodads\\gryphonroost\\gryphonroost01.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
