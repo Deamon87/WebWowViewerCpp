@@ -88,6 +88,10 @@ include_directories(${CPR_INCLUDE_DIRS})
 add_subdirectory(3rdparty/PolyM)
 include_directories(3rdparty/PolyM)
 
+#StormLib
+add_subdirectory(3rdparty/stormlib)
+#include_directories(3rdparty/PolyM)
+
 #Main library
 #ExternalProject_Add("WowViewerLib"
 #        SOURCE_DIR "${CMAKE_SOURCE_DIR}/wowViewerLib"
@@ -108,7 +112,7 @@ set(SOURCE_FILES
 		src/persistance/httpFile/httpFile.cpp
 		src/persistance/httpFile/httpFile.h
 		src/persistance/RequestProcessor.cpp
-		src/persistance/RequestProcessor.h src/persistance/ZipRequestProcessor.cpp src/persistance/ZipRequestProcessor.h src/persistance/HttpZipRequestProcessor.cpp src/persistance/HttpZipRequestProcessor.h)
+		src/persistance/RequestProcessor.h src/persistance/ZipRequestProcessor.cpp src/persistance/ZipRequestProcessor.h src/persistance/HttpZipRequestProcessor.cpp src/persistance/HttpZipRequestProcessor.h src/persistance/MpqRequestProcessor.cpp src/persistance/MpqRequestProcessor.h)
 #########################################################
 # FIND OPENGL
 #########################################################
@@ -121,29 +125,14 @@ if(NOT OPENGL_FOUND)
     message(ERROR " OPENGL not found!")
 endif(NOT OPENGL_FOUND)
 
-#########################################################
-# FIND CURL
-#########################################################
-#if (NOT EMSCRIPTEN_BUILD)
-#    find_package(CURL REQUIRED)
-#    include_directories(${CURL_INCLUDE_DIRS})
-#    link_directories(${CURL_LIBRARIES})
-#    add_definitions(${CURL_DEFINITIONS})
-#    #message(ERROR " CURL_DEFINITIONS = ${CURL_DEFINITIONS} CURL_INCLUDE_DIRS = ${CURL_INCLUDE_DIRS}")
-#    if(NOT CURL_FOUND)
-#        message(ERROR " CURL not found!")
-#    endif(NOT CURL_FOUND)
-#endif()
-
 #Build the executiable
 add_executable(WebWoWViewerCpp ${SOURCE_FILES})
 
 add_dependencies(WebWoWViewerCpp libz)
 add_dependencies(WebWoWViewerCpp LibZip)
-#add_dependencies(Zipper libz)
-#add_dependencies(WebWoWViewerCpp libzip)
 add_dependencies(WebWoWViewerCpp GLFW)
 add_dependencies(WebWoWViewerCpp WoWViewerLib)
+add_dependencies(WebWoWViewerCpp storm)
 
 #TODO: platform dependant!!
 #target_link_libraries(WebWoWViewerCpp ${install_dir}/lib/libWoWViewerLib)
@@ -156,6 +145,7 @@ message(INFO ${OPENGL_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} ${CURL_LIBRARIES} ${libzip_library} ${WowViewerLib})
 target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp polym)
+target_link_libraries(WebWoWViewerCpp storm)
 #target_link_libraries(WebWoWViewerCpp opengl32)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 target_link_libraries(WebWoWViewerCpp ${CMAKE_SOURCE_DIR}/wowViewerLib/3rdparty/glew_win/lib/Release/x64/glew32.lib)

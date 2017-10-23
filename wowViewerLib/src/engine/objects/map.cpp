@@ -487,7 +487,7 @@ void Map::drawM2s() {
                     }
 
                     this->m2OpaqueRenderedThisFrame.insert(m2Object);
-                    m2Object->draw(false, diffuseNon);;
+                    m2Object->draw(false);
                     lastWasDrawInstanced = false;
                 }
             }
@@ -530,7 +530,7 @@ void Map::drawM2s() {
                     }
 
                     this->m2TranspRenderedThisFrame.insert(m2Object);
-                    m2Object->draw(true, diffuseNon);
+                    m2Object->draw(true);
                     lastWasDrawInstanced = false;
                 }
             }
@@ -548,13 +548,13 @@ void Map::drawM2s() {
         for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
 
             M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-            m2Object->draw(false, diffuseNon);
+            m2Object->draw(false);
         }
 
         for (int i = this->m2RenderedThisFrameArr.size()-1; i >= 0; i--) {
             M2Object *m2Object = this->m2RenderedThisFrameArr[i];
 
-            m2Object->draw(true, diffuseNon);
+            m2Object->draw(true);
         }
         this->m_api->deactivateM2Shader();
     }

@@ -121,7 +121,7 @@ public:
                                    const std::vector<mathfu::vec3> &frustumPoints);
 
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
-    void draw(bool drawTransparent, mathfu::vec4 &diffuseColor);
+    void draw(bool drawTransparent);
 
 
     void drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::Matrix<float, 4, 4> &placementMatrix);

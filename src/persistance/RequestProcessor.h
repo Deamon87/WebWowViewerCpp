@@ -5,7 +5,7 @@
 #ifndef WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 
-#include <wowScene.h>
+#include "../../wowViewerLib/src/include/wowScene.h"
 #include <thread>
 
 class RequestProcessor : public IFileRequest {

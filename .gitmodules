@@ -25,3 +25,9 @@
 [submodule "3rdparty/PolyM"]
 	path = 3rdparty/PolyM
 	url = https://github.com/khuttun/PolyM
+[submodule "3rdparty/stormlib"]
+	path = 3rdparty/stormlib
+	url = https://github.com/ladislav-zezula/StormLib.git
+[submodule "3rdparty/casclib"]
+	path = 3rdparty/casclib
+	url = https://github.com/ladislav-zezula/CascLib.git

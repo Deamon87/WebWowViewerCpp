@@ -20,9 +20,8 @@ void M2Scene::draw() {
     if (!m_drawModel) return;
 
     this->m_api->activateM2Shader();
-    mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
-    m_m2Object->draw(false, diffuseNon);
-    m_m2Object->draw(true, diffuseNon);
+    m_m2Object->draw(false);
+    m_m2Object->draw(true);
     this->m_api->deactivateM2Shader();
 }
 

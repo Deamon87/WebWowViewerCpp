@@ -12,6 +12,7 @@
 #include "../wowViewerLib/src/include/wowScene.h"
 #include "persistance/ZipRequestProcessor.h"
 #include "persistance/HttpZipRequestProcessor.h"
+#include "persistance/MpqRequestProcessor.h"
 
 int mleft_pressed = 0;
 double m_x = 0.0;
@@ -254,13 +255,14 @@ int main(int argc, char** argv) {
     }
     glfwMakeContextCurrent(window); // Initialize GLFW
 
-    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
+//    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
-//    const char *filePath = "D:\\ironforge.zip\0";
+    const char *filePath = "D:\\ironforge.zip\0";
 
     testConf = new Config();
-    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
+//    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
 //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
+    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
     WoWScene *scene = createWoWScene(testConf, processor, 1024, 1000);
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);

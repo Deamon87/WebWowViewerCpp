@@ -407,7 +407,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
     const M2Sequence* subAnimRecord = nullptr;
     if (this->nextSubAnimationIndex < 0 && mainAnimationRecord->variationNext > -1) {
         //if (currentAnimationPlayedTimes)
-        int probability = rand();
+        int probability = ((float)rand() / (float)RAND_MAX) * 0x7FFF;
         int calcProb = 0;
 
         /* First iteration is out of loop */

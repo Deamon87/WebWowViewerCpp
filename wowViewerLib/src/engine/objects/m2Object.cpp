@@ -302,9 +302,9 @@ void M2Object::setDiffuseColor(CImVector& value) {
     this->m_localDiffuseColor = value;
 
     this->m_localDiffuseColorV = mathfu::vec4(
-            value.r / 255.0f,
-            value.g / 255.0f,
             value.b / 255.0f,
+            value.g / 255.0f,
+            value.r / 255.0f,
             value.a / 255.0f);
 }
 void M2Object::setLoadParams (std::string modelName, int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
@@ -438,7 +438,7 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const s
     return result;
 }
 
-void M2Object::draw(bool drawTransparent, mathfu::vec4 &diffuseColor) {
+void M2Object::draw(bool drawTransparent) {
     if (!this->m_loaded) {
         this->startLoading();
         return;
@@ -453,7 +453,12 @@ void M2Object::draw(bool drawTransparent, mathfu::vec4 &diffuseColor) {
 //    var combinedMatrix = this.combinedBoneMatrix;
 //    std::vector<mathfu::mat4> combinedMatrix(120, mathfu::mat4::Identity());
 
-    this->m_m2Geom->setupUniforms(this->m_api, m_placementMatrix, bonesMatrices, diffuseColor, drawTransparent, false);
+    mathfu::vec4 localDiffuse = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
+    if (m_useLocalDiffuseColor) {
+        localDiffuse = m_localDiffuseColorV;
+    }
+
+    this->m_m2Geom->setupUniforms(this->m_api, m_placementMatrix, bonesMatrices, localDiffuse, drawTransparent, false);
 
     this->drawMeshes(drawTransparent, -1);
 
@@ -505,12 +510,12 @@ void M2Object::drawBB(mathfu::vec3 &color) {
 void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
     if (!drawTransparent) {
         for (int i = 0; i < this->m_materialArray.size(); i++) {
-            auto materialData = this->m_materialArray[i];
+            auto &materialData = this->m_materialArray[i];
             this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
     } else {
         for (int i = (int) (this->m_materialArray.size() - 1); i >= 0; i--) {
-            auto materialData = this->m_materialArray[i];
+            auto &materialData = this->m_materialArray[i];
             this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
     }
@@ -566,7 +571,7 @@ void M2Object::makeTextureArray() {
     auto textureCache = m_api->getTextureCache();
 
     /* 2. Fill the materialArray */
-    auto subMeshes = m_skinGeom->getSkinData()->submeshes;
+    auto & subMeshes = m_skinGeom->getSkinData()->submeshes;
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
 
     auto m2File = m_m2Geom->getM2Data();
@@ -592,7 +597,7 @@ void M2Object::makeTextureArray() {
 
         materialData.layer = skinTextureDefinition->materialLayer;
         materialData.isRendered = true;
-        materialData.isTransparent = isTransparent;
+         materialData.isTransparent = isTransparent;
         materialData.meshIndex = skinTextureDefinition->skinSectionIndex;
         materialData.renderFlagIndex = skinTextureDefinition->materialIndex;
         materialData.flags = skinTextureDefinition->flags;

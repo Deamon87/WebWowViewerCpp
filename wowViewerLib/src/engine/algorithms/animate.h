@@ -139,7 +139,7 @@ template<typename T, typename R>
 R animateTrack(
         animTime_t currTime,
         uint32_t maxTime,
-        int &animationIndex,
+        int animationIndex,
         M2Track<T> &animationBlock,
         M2Array<M2Loop> &global_loops,
         std::vector<animTime_t> &globalSequenceTimes,
