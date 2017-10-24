@@ -93,7 +93,7 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
         this->nextSubAnimationTime = 0;
         this->nextSubAnimationActive = false;
 
-        this->firstCalc = true; //TODO: reset this on going to next subAnimation too
+        this->firstCalc = true;
     }
     return (animationIndex > -1);
 }
@@ -106,8 +106,6 @@ void blendMatrices(std::vector<mathfu::mat4> &origMat, std::vector<mathfu::mat4>
         origMat[i] = ((blendMat[i] - origMat[i]) * (const float &) (1.0 - blendAlpha)) + origMat[i];
     }
 }
-
-
 
 template <typename T>
 inline void calcAnimationTransform(

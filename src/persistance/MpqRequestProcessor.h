@@ -10,6 +10,20 @@
 #include "../../wowViewerLib/src/include/wowScene.h"
 #include "../../3rdparty/stormlib/src/StormLib.h"
 
+static std::string mpqPriorityOrder[] = {
+    "patch-2.MPQ",
+    "patch.MPQ",
+    "enGB\\patch-enGB-2.MPQ"
+    "enGB\\patch-enGB.MPQ",
+    "expansion3.MPQ",
+    "expansion2.MPQ",
+    "expansion.MPQ",
+    "common.MPQ",
+    "common-2.MPQ",
+    "common-3.MPQ",
+    "enGB\\locale-enGB.MPQ"
+};
+
 class MpqRequestProcessor : public IFileRequest{
 
 public:
@@ -20,6 +34,22 @@ public:
 
         HANDLE hmpq;
         SFileOpenArchive("", 0, 0, &hmpq);
+    }
+
+    void GetMPQHandles(std::string &pathToDist) {
+        int CurrentArchive: ;
+        HANDLE hMPQFileCurr ;
+        std::string tmpString;
+
+        std::vector<HANDLE> MPQArchiveHandle;
+        for (int i = 0; i < sizeof(mpqPriorityOrder); i++) {
+            hMPQFileCurr = 0;
+            tmpString  =  Path2MPQ +  MPQArchiveNames[CurrentArchive];
+            SFileOpenArchive(Pchar(tmpString),0,0,hMPQFileCurr);
+            if (hMPQFileCurr > 0) {
+                MPQArchiveHandle.push_back(hMPQFileCurr);
+            }
+        }
     }
 
 private:

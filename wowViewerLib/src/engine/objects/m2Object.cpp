@@ -453,7 +453,8 @@ void M2Object::draw(bool drawTransparent) {
 //    var combinedMatrix = this.combinedBoneMatrix;
 //    std::vector<mathfu::mat4> combinedMatrix(120, mathfu::mat4::Identity());
 
-    mathfu::vec4 localDiffuse = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
+    static mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
+    mathfu::vec4 localDiffuse = diffuseNon;
     if (m_useLocalDiffuseColor) {
         localDiffuse = m_localDiffuseColorV;
     }
