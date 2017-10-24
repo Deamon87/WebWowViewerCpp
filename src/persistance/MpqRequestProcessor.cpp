@@ -6,8 +6,7 @@
 
 void MpqRequestProcessor::requestFile(const char *fileName) {
 
-}
 
-void MpqRequestProcessor::loadingFinished(std::vector<unsigned char> *file) {
 
 }
+

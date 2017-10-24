@@ -5,7 +5,7 @@
 #ifndef WEBWOWVIEWERCPP_HTTPZIPREQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_HTTPZIPREQUESTPROCESSOR_H
 
-
+#include "httpFile/httpFile.h"
 #include "ZipRequestProcessor.h"
 
 class HttpZipRequestProcessor : public ZipRequestProcessor {

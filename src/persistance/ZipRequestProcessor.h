@@ -10,7 +10,8 @@
 #include <../../wowViewerLib/src/include/wowScene.h>
 #include <ios>
 #include <fstream>
-#include "httpFile/httpFile.h"
+#include <regex>
+
 
 using namespace std::placeholders;
 

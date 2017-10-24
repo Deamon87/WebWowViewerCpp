@@ -112,7 +112,7 @@ set(SOURCE_FILES
 		src/persistance/httpFile/httpFile.cpp
 		src/persistance/httpFile/httpFile.h
 		src/persistance/RequestProcessor.cpp
-		src/persistance/RequestProcessor.h src/persistance/ZipRequestProcessor.cpp src/persistance/ZipRequestProcessor.h src/persistance/HttpZipRequestProcessor.cpp src/persistance/HttpZipRequestProcessor.h src/persistance/MpqRequestProcessor.cpp src/persistance/MpqRequestProcessor.h)
+		src/persistance/RequestProcessor.h src/persistance/ZipRequestProcessor.cpp src/persistance/ZipRequestProcessor.h src/persistance/HttpZipRequestProcessor.cpp src/persistance/HttpZipRequestProcessor.h src/persistance/MpqRequestProcessor.cpp src/persistance/MpqRequestProcessor.h src/persistance/HttpRequestProcessor.cpp src/persistance/HttpRequestProcessor.h)
 #########################################################
 # FIND OPENGL
 #########################################################

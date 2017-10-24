@@ -27,7 +27,6 @@ static std::string mpqPriorityOrder[] = {
 class MpqRequestProcessor : public IFileRequest{
 
 public:
-    void loadingFinished(std::vector<unsigned char> * file);
     void requestFile(const char* fileName) override;
 
     MpqRequestProcessor(const char * wowDistPath) {
@@ -37,15 +36,16 @@ public:
     }
 
     void GetMPQHandles(std::string &pathToDist) {
-        int CurrentArchive: ;
+        int CurrentArchive;
         HANDLE hMPQFileCurr ;
         std::string tmpString;
 
         std::vector<HANDLE> MPQArchiveHandle;
         for (int i = 0; i < sizeof(mpqPriorityOrder); i++) {
             hMPQFileCurr = 0;
-            tmpString  =  Path2MPQ +  MPQArchiveNames[CurrentArchive];
-            SFileOpenArchive(Pchar(tmpString),0,0,hMPQFileCurr);
+            tmpString  =  pathToDist +  mpqPriorityOrder[CurrentArchive];
+
+            SFileOpenArchive(tmpString.c_str(),0,0, &hMPQFileCurr);
             if (hMPQFileCurr > 0) {
                 MPQArchiveHandle.push_back(hMPQFileCurr);
             }
