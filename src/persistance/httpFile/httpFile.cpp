@@ -29,8 +29,9 @@ void HttpFile::startDownloading() {
     if (curl) {
         curl_easy_cleanup(curl);
         curl = curl_easy_init();
+        char * escaped_url = curl_easy_escape(curl, this->m_httpUrl.c_str(), this->m_httpUrl.length());
 
-        curl_easy_setopt(curl, CURLOPT_URL, this->m_httpUrl.c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, escaped_url);
 
         curl_easy_setopt(curl, CURLOPT_HEADER, 0);
         curl_easy_setopt(curl, CURLOPT_NOBODY, 0);
@@ -48,6 +49,7 @@ void HttpFile::startDownloading() {
             std::cout << "Could not download file "<<this->m_httpUrl.c_str() << std::flush;
         }
         /* always cleanup */
-       curl_easy_cleanup(curl);
+        curl_free(escaped_url);
+        curl_easy_cleanup(curl);
     }
 }

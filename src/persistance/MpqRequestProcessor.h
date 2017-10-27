@@ -13,7 +13,7 @@
 static std::string mpqPriorityOrder[] = {
     "patch-2.MPQ",
     "patch.MPQ",
-    "enGB\\patch-enGB-2.MPQ"
+    "enGB\\patch-enGB-2.MPQ",
     "enGB\\patch-enGB.MPQ",
     "expansion3.MPQ",
     "expansion2.MPQ",
