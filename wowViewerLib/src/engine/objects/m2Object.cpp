@@ -30,7 +30,10 @@ std::unordered_map<std::string, int> pixelShaderTable = {
         {"Combiners_Mod_AddNA" , 16},
         {"Combiners_Mod_Mod" , 17},
         {"Combiners_Add_Mod" , 18},
-        {"Combiners_Mod2x_Mod2x" , 19}
+        {"Combiners_Mod2x_Mod2x" , 19},
+        {"Combiners_Opaque_Mod2xNA_Alpha" , 0},
+        {"Combiners_Opaque_AddAlpha" , 0},
+        {"Combiners_Opaque_AddAlpha_Alpha" , 0},
 };
 
 int getTabledShaderNames(uint16_t shaderId, uint16_t op_count, uint16_t tex_unit_number2,
@@ -607,7 +610,12 @@ void M2Object::makeTextureArray() {
         std::string vertexShader;
         std::string pixelShader;
         getShaderNames(skinTextureDefinition, vertexShader, pixelShader);
-        materialData.pixelShader = pixelShaderTable.at(pixelShader);
+        //TODO: this his hack!!!
+        if (pixelShader == "") {
+            materialData.pixelShader = 0;
+        } else {
+            materialData.pixelShader = pixelShaderTable.at(pixelShader);
+        }
 //        materialData.shaderNames = shaderNames;
 //        materialData.m2BatchIndex = i;
 

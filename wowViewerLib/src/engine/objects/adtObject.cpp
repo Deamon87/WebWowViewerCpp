@@ -195,9 +195,16 @@ void AdtObject::draw() {
 }
 
 BlpTexture &AdtObject::getAdtTexture(int textureId) {
-    std::string &materialTexture = m_adtFile->textureNames[textureId];
+    auto item = m_requestedTextures.find(textureId);
+    if (item != m_requestedTextures.end()) {
+        return *item->second;
+    }
 
-    return *m_api->getTextureCache()->get(materialTexture);
+    std::string &materialTexture = m_adtFile->textureNames[textureId];
+    BlpTexture * texture = m_api->getTextureCache()->get(materialTexture);
+    m_requestedTextures[textureId] = texture;
+
+    return *texture;
 }
 
 bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,

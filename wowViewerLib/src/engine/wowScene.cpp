@@ -15,7 +15,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    constexpr const int attributeIndex = +m2Shader::Attribute::aNormal;
 //    constexpr const shaderDefinition *definition = getShaderDef("readDepthBuffer");
 //    std::cout << "aHeight = " << definition->shaderString<< std::flush;
-    std::cout << "aNormal = " << +m2Shader::Attribute::aNormal << std::flush;
+//    std::cout << "aNormal = " << +m2Shader::Attribute::aNormal << std::flush;
     this->m_config = config;
 
     this->canvWidth = canvWidth;
@@ -55,9 +55,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-    m_firstCamera.setCameraPos(0, 0, 0);
+//    m_firstCamera.setCameraPos(0, 0, 0);
+    m_firstCamera.setCameraPos(-1663, 5098, 27);
     m_secondCamera.setCameraPos(-1663, 5098, 27);
-    currentScene = new Map(this, "UlduarRaid");
+    currentScene = new Map(this, "Expansion01");
+//    currentScene = new Map(this, "UlduarRaid");
 
     //Test scene 2: tree from shattrath
 //    m_firstCamera.setCameraPos(0, 0, 0);
@@ -872,10 +874,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    }
 //
     if (this->uFogStart < 0) {
-        this->uFogStart = farPlane ;
+        this->uFogStart = farPlane+400;
     }
     if (this->uFogEnd < 0) {
-        this->uFogEnd = farPlane;
+        this->uFogEnd = farPlane+800;
     }
 
     if (!m_config->getUseSecondCamera()){

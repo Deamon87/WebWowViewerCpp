@@ -1,8 +1,28 @@
 #include "httpFile.h"
 #include <iostream>
+#include <iomanip>
 
 
+std::string url_encode(const std::string &value) {
+    std::ostringstream escaped;
 
+    for (std::string::const_iterator i = value.begin(), n = value.end(); i != n; ++i) {
+        std::string::value_type c = (*i);
+
+        // Keep alphanumeric and other accepted characters intact
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~' || c == '/' || c == ':') {
+            escaped << c;
+            continue;
+        }
+
+        // Any other characters are percent-encoded
+        escaped << std::uppercase;
+        escaped << '%' << std::setw(2) << std::hex << int((unsigned char) c);
+        escaped << std::nouppercase;
+    }
+
+    return escaped.str();
+}
 
 size_t write_data(void *ptr, size_t size, size_t nmemb, HttpFile *httpFile) {
     httpFile->writeToBuffer(ptr, size*nmemb);
@@ -29,9 +49,9 @@ void HttpFile::startDownloading() {
     if (curl) {
         curl_easy_cleanup(curl);
         curl = curl_easy_init();
-        char * escaped_url = curl_easy_escape(curl, this->m_httpUrl.c_str(), this->m_httpUrl.length());
+        std::string escaped_url = url_encode(m_httpUrl);
 
-        curl_easy_setopt(curl, CURLOPT_URL, escaped_url);
+        curl_easy_setopt(curl, CURLOPT_URL, escaped_url.c_str());
 
         curl_easy_setopt(curl, CURLOPT_HEADER, 0);
         curl_easy_setopt(curl, CURLOPT_NOBODY, 0);
@@ -41,15 +61,21 @@ void HttpFile::startDownloading() {
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 5000);
         CURLcode res = curl_easy_perform(curl);
 
-        if (res == CURLE_OK) {
-            if (this->m_callback != nullptr) {
+        long httpCode;
+        curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &httpCode);
+
+        if (httpCode == 200 && res == CURLE_OK) {
+            if (this->m_fileBuffer->size() == 0) {
+                std::cout << "File "<< this->m_httpUrl.c_str() << " is empty" << std::endl <<
+                    escaped_url << std::endl << std::flush;
+            } else if (this->m_callback != nullptr) {
                 m_callback(this->m_fileBuffer);
             }
         } else {
-            std::cout << "Could not download file "<<this->m_httpUrl.c_str() << std::flush;
+            std::cout << "Could not download file "<<this->m_httpUrl.c_str() << std::endl <<
+                escaped_url << std::endl << std::flush;
         }
         /* always cleanup */
-        curl_free(escaped_url);
         curl_easy_cleanup(curl);
     }
 }

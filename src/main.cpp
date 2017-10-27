@@ -260,13 +260,14 @@ int main(int argc, char** argv) {
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
+    const char * url = "http://178.165.92.24:40000/get/";
+    //const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
 
     testConf = new Config();
 //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
 //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
-    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-//    HttpRequestProcessor *processor = new HttpRequestProcessor(url);
+//    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
+    HttpRequestProcessor *processor = new HttpRequestProcessor(url);
     WoWScene *scene = createWoWScene(testConf, processor, 1024, 1000);
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);
@@ -290,13 +291,15 @@ int main(int argc, char** argv) {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+
+        processor->processResults(10);
         if (windowSizeChanged) {
             scene->setScreenSize(canvWidth, canvHeight);
             windowSizeChanged = false;
         }
         scene->draw((deltaTime*1000));
 
-        calcFPS(window, 2.0, "WoW ");
+        calcFPS(window, 2.0);
 
         // Swap buffers
         glfwSwapBuffers(window);

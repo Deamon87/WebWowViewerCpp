@@ -7,6 +7,8 @@
 #include "../shaderDefinitions.h"
 #include <iostream>
 
+
+
 chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
         handler : [](WmoGroupGeom& object, ChunkData& chunkData){},
         subChunks : {
@@ -14,7 +16,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         'MVER',
                         {
                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                    std::cout<<"Entered MVER"<<std::endl;
+                                    debuglog("Entered MVER");
                                 }
                         }
                 },
@@ -23,13 +25,13 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         {
                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                     chunkData.readValue(object.mogp);
-                                    std::cout<<"Entered MOGP"<<std::endl;
+                                    debuglog("Entered MOGP");
                                 },
                                 subChunks: {
                                         {
                                             'MOPY', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    std::cout<<"Entered MOPY"<<std::endl;
+                                                    debuglog("Entered MOPY");
                                                 },
                                             }
                                         },
@@ -38,7 +40,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                                     object.indicesLen = chunkData.chunkLen / 2;
                                                     chunkData.readValues(object.indicies, object.indicesLen);
-                                                    std::cout<<"Entered MOVI"<<std::endl;
+                                                    debuglog("Entered MOVI");
                                                 },
                                             }
                                         },
@@ -48,7 +50,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
 
                                                     object.verticesLen = chunkData.chunkLen / sizeof(C3Vector);
                                                     chunkData.readValues(object.verticles, object.verticesLen);
-                                                    std::cout<<"Entered MOVT"<<std::endl;
+                                                    debuglog("Entered MOVT");
                                                 },
                                             }
                                         },
@@ -57,7 +59,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                                     object.normalsLen = chunkData.chunkLen / sizeof(C3Vector);
                                                     chunkData.readValues(object.normals, object.normalsLen);
-                                                    std::cout<<"Entered MONR"<<std::endl;
+                                                    debuglog("Entered MONR");
                                                 },
                                             }
                                         },
@@ -67,7 +69,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                                     object.textureCoordsLen = chunkData.chunkLen / sizeof(C2Vector);
                                                     chunkData.readValues(object.textCoords, object.textureCoordsLen);
 
-                                                    std::cout<<"Entered MOTV"<<std::endl;
+                                                    debuglog("Entered MOTV");
                                                 },
                                             }
                                         },
@@ -76,7 +78,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                                     object.cvLen = chunkData.chunkLen / 4;
                                                     chunkData.readValues(object.colorArray, object.cvLen);
-                                                    std::cout<<"Entered MOCV"<<std::endl;
+                                                    debuglog("Entered MOCV");
                                                 },
                                             }
                                         },
@@ -85,7 +87,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                                     object.doodadRefsLen = chunkData.chunkLen / 2;
                                                     chunkData.readValues(object.doodadRefs, object.doodadRefsLen);
-                                                    std::cout<<"Entered MODR"<<std::endl;
+                                                    debuglog("Entered MODR");
                                                 },
                                             }
                                         },
@@ -94,7 +96,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                                     object.batchesLen = chunkData.chunkLen / sizeof(SMOBatch);
                                                     chunkData.readValues(object.batches, object.batchesLen);
-                                                    std::cout<<"Entered MOBA"<<std::endl;
+                                                    debuglog("Entered MOBA");
                                                 },
                                             }
                                         },
@@ -103,7 +105,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                                     object.nodesLen = chunkData.chunkLen / sizeof(t_BSP_NODE);
                                                     chunkData.readValues(object.bsp_nodes, object.nodesLen);
-                                                    std::cout<<"Entered MOBN"<<std::endl;
+                                                    debuglog("Entered MOBN");
                                                 },
                                             }
                                         },
@@ -112,7 +114,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                                     object.bpsIndiciesLen = chunkData.chunkLen / sizeof(uint16_t);
                                                     chunkData.readValues(object.bpsIndicies, object.bpsIndiciesLen);
-                                                    std::cout<<"Entered MOBR"<<std::endl;
+                                                    debuglog("Entered MOBR");
                                                 },
                                             }
                                         },

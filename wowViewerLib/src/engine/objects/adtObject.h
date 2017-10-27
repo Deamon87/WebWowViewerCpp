@@ -60,6 +60,8 @@ private:
     int indexOffset = 0;
     int heightOffset = 0;
 
+    std::unordered_map<int, BlpTexture*> m_requestedTextures;
+
     GLuint combinedVbo = 0;
     GLuint stripVBO = 0;
 

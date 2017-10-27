@@ -88,6 +88,8 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
 
         if ((blpFile->colorEncoding == 1) && (blpFile->preferredFormat == 8)) {//Unk format && pixel format 8
             uint8_t *paleteData = data;
+            validSize = 4 * width * height;
+            mipmapStruct.texture = std::vector<uint8_t>(validSize, 0);
 
             for (int j = 0; j< width*height; j++) {
                 uint8_t colIndex = paleteData[j];

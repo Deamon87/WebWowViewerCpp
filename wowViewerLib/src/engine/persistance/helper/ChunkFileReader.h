@@ -10,7 +10,8 @@
 #include <vector>
 #include <iostream>
 
-
+//#define debuglog(x) std::cout<< x <<std::endl;
+#define debuglog(x)
 
 class CChunkFileReader;
 typedef CChunkFileReader ChunkData;
@@ -119,7 +120,7 @@ private:
             } else {
                 char *indentPtr = (char *) &subChunk.chunkIdent;
                 char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
-                std::cout << "Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__ << std::endl;
+                debuglog("Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__);
             }
         }
     }
@@ -133,7 +134,7 @@ private:
             if (sectionHandlerProc->subChunks.size() == 0) {
                 char *indentPtr = (char *) &chunk.chunkIdent;
                 char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
-                std::cout << "Not all data was read from "<< indent << " chunk, parsed from "<< __PRETTY_FUNCTION__ << std::endl;
+                debuglog("Not all data was read from "<< indent << " chunk, parsed from "<< __PRETTY_FUNCTION__);
             } else {
                 int chunkLoadOffset = chunk.dataOffset+chunk.bytesRead;
                 int chunkEndOffset = chunk.dataOffset + chunk.chunkLen;

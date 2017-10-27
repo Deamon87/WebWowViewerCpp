@@ -5,15 +5,22 @@
 #include "HttpRequestProcessor.h"
 
 void HttpRequestProcessor::requestFile(const char *fileName) {
+    std::string fileName_s(fileName);
+    this->addRequest(fileName_s);
+}
+
+void HttpRequestProcessor::processFileRequest(std::string &fileName) {
     std::string fullUrl = m_urlBase + fileName;
 
     HttpFile * httpFile = new HttpFile(fullUrl.c_str());
     httpFile->setCallback(
-        [&](std::vector<unsigned char> * fileContent) -> void {
-            m_fileRequester->provideFile(fileName, &((*fileContent)[0]), fileContent->size());
+            [=](std::vector<unsigned char> * fileContent) -> void {
+                provideResult(fileName, *fileContent);
 
-            delete httpFile;
-        }
+                //m_fileRequester->provideFile(fileName.c_str(), &((*fileContent)[0]), fileContent->size());
+
+                delete httpFile;
+            }
     );
     httpFile->startDownloading();
 }

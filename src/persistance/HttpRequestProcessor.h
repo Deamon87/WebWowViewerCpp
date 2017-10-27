@@ -7,19 +7,18 @@
 
 #include "httpFile/httpFile.h"
 #include "../../wowViewerLib/src/include/wowScene.h"
+#include "RequestProcessor.h"
 
-class HttpRequestProcessor : public IFileRequest{
+class HttpRequestProcessor : public RequestProcessor {
 public:
     HttpRequestProcessor(const char *urlBase) : m_urlBase(urlBase){
 
     }
 private:
-    IFileRequester *m_fileRequester = nullptr;
     std::string m_urlBase;
-public:
-    void setFileRequester(IFileRequester *fileRequester) {
-        m_fileRequester = fileRequester;
-    }
+protected:
+    void processFileRequest(std::string &fileName) override;
+
 public:
     void requestFile(const char* fileName) override;
 };

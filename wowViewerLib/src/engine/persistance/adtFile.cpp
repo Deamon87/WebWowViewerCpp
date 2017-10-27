@@ -8,7 +8,7 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MVER',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MVER"<<std::endl;
+                  debuglog("Entered MVER");
                 }
             }
         },
@@ -16,8 +16,8 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MHDR',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MHDR"<<std::endl;
-                  chunkData.readValue(file.mhdr);
+                    debuglog("Entered MHDR");
+                    chunkData.readValue(file.mhdr);
                 }
             }
         },
@@ -25,8 +25,8 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MCIN',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MCIN"<<std::endl;
-                  chunkData.readValue(file.mcins);
+                    debuglog("Entered MCIN");
+                    chunkData.readValue(file.mcins);
                 }
             }
         },
@@ -34,17 +34,16 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MTEX',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MTEX"<<std::endl;
-                  char *textureNamesField;
-                  int textureNamesFieldLen = chunkData.chunkLen;
-                  chunkData.readValues(textureNamesField, textureNamesFieldLen);
+                    debuglog("Entered MTEX");
+                    char *textureNamesField;
+                    int textureNamesFieldLen = chunkData.chunkLen;
+                    chunkData.readValues(textureNamesField, textureNamesFieldLen);
 
-                  int i = 0;
-                  while (i < textureNamesFieldLen) {
-                    file.textureNames.push_back(std::string(textureNamesField+i));
-                    i+= file.textureNames[file.textureNames.size()-1].size()+1;
-                  }
-
+                    int i = 0;
+                    while (i < textureNamesFieldLen) {
+                        file.textureNames.push_back(std::string(textureNamesField+i));
+                        i+= file.textureNames[file.textureNames.size()-1].size()+1;
+                    }
                 }
             }
         },
@@ -52,9 +51,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MMDX',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MMDX"<<std::endl;
-                  file.doodadNamesFieldLen = chunkData.chunkLen;
-                  chunkData.readValues(file.doodadNamesField, file.doodadNamesFieldLen);
+                    debuglog("Entered MMDX");
+                    file.doodadNamesFieldLen = chunkData.chunkLen;
+                    chunkData.readValues(file.doodadNamesField, file.doodadNamesFieldLen);
                 }
             }
         },
@@ -62,9 +61,10 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MMID',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MMID");
+
                     file.mmid_length = chunkData.chunkLen / sizeof(uint32_t);
                     chunkData.readValues(file.mmid, file.mmid_length);
-                    std::cout<<"Entered MMID"<<std::endl;
                 }
             }
         },
@@ -72,9 +72,10 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MWMO',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                  std::cout<<"Entered MWMO"<<std::endl;
-                  file.wmoNamesFieldLen = chunkData.chunkLen;
-                  chunkData.readValues(file.wmoNamesField, file.wmoNamesFieldLen);
+                    debuglog("Entered MWMO");
+
+                    file.wmoNamesFieldLen = chunkData.chunkLen;
+                    chunkData.readValues(file.wmoNamesField, file.wmoNamesFieldLen);
                 }
             }
         },
@@ -82,9 +83,10 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MWID',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MWID");
+
                     file.mwid_length = chunkData.chunkLen / sizeof(uint32_t);
                     chunkData.readValues(file.mwid, file.mwid_length);
-                    std::cout<<"Entered MWID"<<std::endl;
                 }
             }
         },
@@ -92,9 +94,10 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MDDF',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MDDF");
+
                     file.doodadDef_len = chunkData.chunkLen / sizeof(SMDoodadDef);
                     chunkData.readValues(file.doodadDef, file.doodadDef_len);
-                    std::cout<<"Entered MDDF"<<std::endl;
                 }
             }
         },
@@ -102,9 +105,10 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MODF',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MODF");
+
                     file.mapObjDef_len = chunkData.chunkLen / sizeof(SMMapObjDef);
                     chunkData.readValues(file.mapObjDef, file.mapObjDef_len);
-                    std::cout<<"Entered MODF"<<std::endl;
                 }
             }
         },
@@ -112,7 +116,8 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MCNK',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){
-                    std::cout << "Entered MCNK" << std::endl;
+                    debuglog("Entered MCNK");
+
                     file.mcnkRead++;
                     chunkData.readValue(file.mapTile[file.mcnkRead]);
 
@@ -154,8 +159,8 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         'MCVT',
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){
-                              std::cout<<"Entered MCVT"<<std::endl;
-                              chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcvt);
+                                debuglog("Entered MCVT");
+                                chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcvt);
                             }
                         }
                     },
@@ -163,7 +168,7 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         'MCLV',
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){
-                              std::cout<<"Entered MCLV"<<std::endl;
+                                debuglog("Entered MCLV");
                             }
                         }
                     },
@@ -171,8 +176,8 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         'MCCV',
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){
-                              std::cout<<"Entered MCCV"<<std::endl;
-                              chunkData.readValue(file.mcnkStructs[file.mcnkRead].mccv);
+                                debuglog("Entered MCCV");
+                                chunkData.readValue(file.mcnkStructs[file.mcnkRead].mccv);
                             }
                         }
                     },
@@ -180,8 +185,8 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         'MCNR',
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){
-                              std::cout<<"Entered MCNR"<<std::endl;
-                              chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcnr);
+                                debuglog("Entered MCNR");
+                                chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcnr);
                             }
                         }
                     },
@@ -189,10 +194,12 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         'MCLY',
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){
-                              std::cout<<"Entered MCLY"<<std::endl;
-//                file.mcnkStructs[file.mcnkRead].mcly_count =
-//                  ;
-                              chunkData.readValues(file.mcnkStructs[file.mcnkRead].mcly, chunkData.chunkLen/sizeof(SMLayer));
+                                debuglog("Entered MCLY");
+
+                                chunkData.readValues(
+                                        file.mcnkStructs[file.mcnkRead].mcly,
+                                        chunkData.chunkLen/sizeof(SMLayer)
+                                );
                             }
                         }
                     },
@@ -200,7 +207,7 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         'MCRF',
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){
-                                std::cout<<"Entered MCRF"<<std::endl;
+                                debuglog("Entered MCRF");
 
                                 chunkData.readValues(
                                         file.mcnkStructs[file.mcnkRead].mcrf.doodad_refs,
@@ -217,8 +224,8 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         'MCAL',
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){
-                              std::cout<<"Entered MCAL"<<std::endl;
-                              chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcal);
+                                debuglog("Entered MCAL");
+                                chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcal);
                             }
                         }
                     }
