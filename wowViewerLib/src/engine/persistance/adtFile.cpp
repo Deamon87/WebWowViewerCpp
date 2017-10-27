@@ -1,4 +1,5 @@
 #include "adtFile.h"
+#include "header/adtFileHeader.h"
 
 chunkDef<AdtFile> AdtFile::adtFileTable = {
     handler : [](AdtFile& file, ChunkData& chunkData){},
@@ -253,13 +254,15 @@ std::vector<uint8_t> AdtFile::processTexture(int wdtObjFlags, int i) {
     uint8_t* alphaArray = mcnkObj.mcal;
     SMLayer* layers = mcnkObj.mcly;
 
-    std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64);
+    std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64, 1.0);
     if (layers == nullptr || alphaArray == nullptr) return currentLayer;
     for (int j = 0; j < mapTile[i].nLayers; j++ ) {
         int alphaOffs = layers[j].offsetInMCAL;
         int offO = j;
         int readCnt = 0;
         int readForThisLayer = 0;
+
+        if (!layers[j].flags.use_alpha_map) continue;
 
         if (layers[j].flags.alpha_map_compressed) {
             //Compressed

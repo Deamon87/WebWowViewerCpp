@@ -256,15 +256,16 @@ int main(int argc, char** argv) {
     }
     glfwMakeContextCurrent(window); // Initialize GLFW
 
-    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
+//    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
+    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
 
     testConf = new Config();
-    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
+//    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
 //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
-//    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
+    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
 //    HttpRequestProcessor *processor = new HttpRequestProcessor(url);
     WoWScene *scene = createWoWScene(testConf, processor, 1024, 1000);
     processor->setFileRequester(scene);

@@ -168,16 +168,16 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
             case 0:
                 return 0;
             case 1:
-                vertexShader = "Combiners_Opaque_Mod2xNA_Alpha";
-            pixelShader = "Diffuse_T1_Env";
+                pixelShader = "Combiners_Opaque_Mod2xNA_Alpha";
+                vertexShader = "Diffuse_T1_Env";
             break;
             case 2:
-                vertexShader = "Combiners_Opaque_AddAlpha";
-            pixelShader = "Diffuse_T1_Env";
+                pixelShader = "Combiners_Opaque_AddAlpha";
+                vertexShader= "Diffuse_T1_Env";
             break;
             case 3:
-                vertexShader = "Combiners_Opaque_AddAlpha_Alpha";
-            pixelShader = "Diffuse_T1_Env";
+                pixelShader  = "Combiners_Opaque_AddAlpha_Alpha";
+                vertexShader = "Diffuse_T1_Env";
             break;
             default:
                 break;

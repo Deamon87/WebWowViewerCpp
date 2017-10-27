@@ -79,6 +79,11 @@ inline mathfu::vec4 lerpHelper<mathfu::vec4>(mathfu::vec4 &value1, mathfu::vec4 
     return mathfu::vec4::Lerp(value1, value2, percent);
 };
 
+template<>
+inline mathfu::vec3 lerpHelper<mathfu::vec3>(mathfu::vec3 &value1, mathfu::vec3 &value2, float percent) {
+    return mathfu::vec3::Lerp(value1, value2, percent);
+};
+
 
 static inline mathfu::quat custom_slerp(mathfu::quat &a, mathfu::quat &b, double t) {
     // benchmarks:

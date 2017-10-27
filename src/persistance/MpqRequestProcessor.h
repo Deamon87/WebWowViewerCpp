@@ -11,16 +11,17 @@
 #include "../../3rdparty/stormlib/src/StormLib.h"
 
 static std::string mpqPriorityOrder[] = {
+    "patch-3.MPQ",
     "patch-2.MPQ",
     "patch.MPQ",
     "enGB\\patch-enGB-2.MPQ",
     "enGB\\patch-enGB.MPQ",
-    "expansion3.MPQ",
+    "lichking.MPQ",
     "expansion2.MPQ",
     "expansion.MPQ",
-    "common.MPQ",
-    "common-2.MPQ",
     "common-3.MPQ",
+    "common-2.MPQ",
+    "common.MPQ",
     "enGB\\locale-enGB.MPQ"
 };
 
@@ -29,32 +30,26 @@ class MpqRequestProcessor : public IFileRequest{
 public:
     void requestFile(const char* fileName) override;
 
-    MpqRequestProcessor(const char * wowDistPath) {
-
-        HANDLE hmpq;
-        SFileOpenArchive("", 0, 0, &hmpq);
-    }
-
-    void GetMPQHandles(std::string &pathToDist) {
-        int CurrentArchive;
+    explicit MpqRequestProcessor(const char * wowDistPath) {
         HANDLE hMPQFileCurr ;
         std::string tmpString;
+        std::string pathToDist(wowDistPath);
 
-        std::vector<HANDLE> MPQArchiveHandle;
-        for (int i = 0; i < sizeof(mpqPriorityOrder); i++) {
+        int acrhiveCnt = sizeof(mpqPriorityOrder)  / sizeof(std::string);
+        for (int i = 0; i < acrhiveCnt; i++) {
             hMPQFileCurr = 0;
-            tmpString  =  pathToDist +  mpqPriorityOrder[CurrentArchive];
+            tmpString  =  pathToDist +  mpqPriorityOrder[i];
 
-            SFileOpenArchive(tmpString.c_str(),0,0, &hMPQFileCurr);
+            SFileOpenArchive(tmpString.c_str(), 0, STREAM_FLAG_READ_ONLY, &hMPQFileCurr);
             if (hMPQFileCurr > 0) {
-                MPQArchiveHandle.push_back(hMPQFileCurr);
+                m_MPQArchiveHandles.push_back(hMPQFileCurr);
             }
         }
     }
 
 private:
     IFileRequester *m_fileRequester = nullptr;
-
+    std::vector<HANDLE> m_MPQArchiveHandles;
 public:
     void setFileRequester(IFileRequester *fileRequester) {
         m_fileRequester = fileRequester;
