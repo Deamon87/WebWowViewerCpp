@@ -47,8 +47,9 @@ private:
     std::vector<M2InstancingObject*> m_instanceList;
     std::unordered_map<std::string, M2InstancingObject*> m_instanceMap;
 
-    M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef);
-    WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef);
+    M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef) override ;
+    M2Object *getM2Object(int fileDataId, SMDoodadDef &doodadDef) override ;
+    WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) override ;
 public:
     Map(IWoWInnerApi *api, std::string mapName) : m_api(api), mapName(mapName){
 

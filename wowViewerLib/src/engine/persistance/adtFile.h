@@ -9,7 +9,7 @@
 
 struct mcnkStruct_t {
     MCVT *mcvt;
-    MCCV *mccv;
+    MCCV *mccv = nullptr;
     SMNormal *mcnr;
     SMLayer *mcly;
     int mclyCnt;

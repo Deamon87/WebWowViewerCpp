@@ -595,3 +595,7 @@ void Map::drawM2s() {
 //    }
 }
 
+M2Object *Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
+    return nullptr;
+}
+

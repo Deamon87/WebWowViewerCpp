@@ -1,6 +1,7 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
 attribute float aHeight;
+attribute vec4  aColor;
 attribute float aNormal;
 attribute float aIndex;
 
@@ -10,6 +11,7 @@ uniform mat4 uPMatrix;
 
 varying vec2 vChunkCoords;
 varying vec3 vPosition;
+varying vec4 vColor;
 
 const float UNITSIZE =  533.3433333 / 16.0 / 8.0;
 
@@ -39,6 +41,7 @@ void main() {
     }
 
     vPosition = (uLookAtMat * worldPoint).xyz;
+    vColor = aColor;
 
     gl_Position = uPMatrix * uLookAtMat * worldPoint;
 }
@@ -49,6 +52,7 @@ precision lowp float;
 
 varying vec2 vChunkCoords;
 varying vec3 vPosition;
+varying vec4 vColor;
 
 uniform int uNewFormula;
 
@@ -181,6 +185,7 @@ void main() {
         finalColor = vec4(mixTextures(mixTextures(mixTextures(tex1,tex2,a2),tex3, a3), tex4, a4), 1);
         //finalColor = vec4(a4 * tex4 - (a4  - 1.0) * ( (a3 - 1.0)*( tex1 * (a2 - 1.0) - a2*tex2) + a3*tex3), 1);
     }
+    finalColor.rgb = finalColor.rgb * vColor.rgb;
 
     // --- Fog start ---
     vec3 fogColor = uFogColor;

@@ -7,18 +7,19 @@ constexpr const char* const adtShaderString =
 
 struct adtShader {
  enum class Attribute { 
- aHeight = 0, aNormal = 1, aIndex = 2, adtShaderAttributeEnd
+ aHeight = 0, aColor = 1, aNormal = 2, aIndex = 3, adtShaderAttributeEnd
  };
  };
 inline constexpr const int operator+ (adtShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem adtShaderAttributes [] = {
  {"aHeight", +adtShader::Attribute::aHeight},
+ {"aColor", +adtShader::Attribute::aColor},
  {"aNormal", +adtShader::Attribute::aNormal},
  {"aIndex", +adtShader::Attribute::aIndex},
  };
 constexpr const static shaderDefinition adtShaderDef = { 
 adtShaderString,
-3,
+4,
 adtShaderAttributes
 };
 

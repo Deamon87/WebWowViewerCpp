@@ -26,10 +26,16 @@ void AdtObject::loadM2s() {
     for (int i = 0; i < m_adtFileLod->doodadDef_len; i++) {
         //1. Get filename
         SMDoodadDef &doodadDef = m_adtFileLod->doodadDef[i];
-        std::string fileName = &m_adtFileLod->doodadNamesField[m_adtFileLod->mmid[doodadDef.mmidEntry]];
+        if (doodadDef.flags.mddf_entry_is_filedata_id) {
+            //2. Get model
+            int fileDataId = m_adtFileLod->mmid[doodadDef.mmidEntry];
+            m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
+        } else {
+            std::string fileName = &m_adtFileLod->doodadNamesField[m_adtFileLod->mmid[doodadDef.mmidEntry]];
+            //2. Get model
+            m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
+        }
 
-        //2. Get model
-        m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
     }
 }
 void AdtObject::loadWmos() {
@@ -61,6 +67,28 @@ void AdtObject::createVBO() {
         for (int j = 0; j < 145; j++) {
             vboArray.push_back(m_adtFile->mcnkStructs[i].mcvt->height[j]);
         }
+    }
+    this->colorsOffset = vboArray.size();
+
+    /* 1.3 MCCV */
+    for (int i = 0; i <= m_adtFile->mcnkRead; i++) {
+        if (m_adtFile->mcnkStructs[i].mccv != nullptr) {
+            for (int j = 0; j < 145; j++) {
+                auto &mccvEntry = m_adtFile->mcnkStructs[i].mccv->entries[j];
+                vboArray.push_back(mccvEntry.red/255.0);
+                vboArray.push_back(mccvEntry.green/255.0);
+                vboArray.push_back(mccvEntry.blue/255.0);
+                vboArray.push_back(mccvEntry.alpha/255.0);
+            }
+        } else {
+            for (int j = 0; j < 145; j++) {
+                vboArray.push_back(1.0);
+                vboArray.push_back(1.0);
+                vboArray.push_back(1.0);
+                vboArray.push_back(1.0);
+            }
+        }
+
     }
 
     /* 1.3 Make combinedVbo */
@@ -149,13 +177,14 @@ void AdtObject::draw() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBO);
     glBindBuffer(GL_ARRAY_BUFFER, this->combinedVbo);
 
-    glVertexAttribPointer(+adtShader::Attribute::aIndex, 1, GL_FLOAT, false, 0, (void *)(this->indexOffset * 4));
+    glVertexAttribPointer(+adtShader::Attribute::aIndex, 1, GL_FLOAT, GL_FALSE, 0, (void *)(this->indexOffset * 4));
 
 //Draw
     for (int i = 0; i < 256; i++) {
         if (!drawChunk[i]) continue;
 
-        glVertexAttribPointer(+adtShader::Attribute::aHeight, 1, GL_FLOAT, false, 0, (void *)((this->heightOffset + i * 145) * 4));
+        glVertexAttribPointer(+adtShader::Attribute::aHeight, 1, GL_FLOAT, GL_FALSE, 0, (void *)((this->heightOffset + i * 145) * 4));
+        glVertexAttribPointer(+adtShader::Attribute::aColor, 4, GL_FLOAT, GL_FALSE, 0, (void *)((this->colorsOffset + (i*4) * 145) * 4));
         glUniform3f(adtShader->getUnf("uPos"),
                     m_adtFile->mapTile[i].position.x,
                     m_adtFile->mapTile[i].position.y,

@@ -55,14 +55,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
-    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
+    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
+//    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
+//    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
-//    currentScene = new Map(this, "Troll Raid");
+    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "UlduarRaid");
-    currentScene = new Map(this, "argus 1");
+//    currentScene = new Map(this, "silithusphase01");
 
 
     //Test scene 2: tree from shattrath
@@ -1196,6 +1197,7 @@ void WoWSceneImpl::activateAdtShader (){
 
         glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
         glEnableVertexAttribArray(+adtShader::Attribute::aIndex);
+        glEnableVertexAttribArray(+adtShader::Attribute::aColor);
 
         glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
         glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
@@ -1219,6 +1221,9 @@ void WoWSceneImpl::activateAdtShader (){
 }
 void WoWSceneImpl::deactivateAdtShader() {
     glUseProgram(0);
+
+    glDisableVertexAttribArray(+adtShader::Attribute::aIndex);
+    glDisableVertexAttribArray(+adtShader::Attribute::aColor);
 }
 
 void WoWSceneImpl::activateFrustumBoxShader() {
