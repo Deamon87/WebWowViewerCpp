@@ -186,8 +186,8 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     return fps;
 }
 
-int canvWidth = 1024;
-int canvHeight = 768;
+int canvWidth = 1920;
+int canvHeight = 1080;
 bool windowSizeChanged = false;
 
 void window_size_callback(GLFWwindow* window, int width, int height)
@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
 //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
 //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
     HttpRequestProcessor *processor = new HttpRequestProcessor(url);
-    WoWScene *scene = createWoWScene(testConf, processor, 1024, 1000);
+    WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);
 
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
     glfwSetKeyCallback(window, onKey);
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetWindowSizeCallback(window, window_size_callback);
-    glfwSetWindowSizeLimits(window, 640, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    glfwSetWindowSizeLimits(window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSwapInterval(0);
 

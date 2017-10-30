@@ -10,17 +10,11 @@
 
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
         : wmoMainCache(requestProcessor), wmoGeomCache(requestProcessor), m2GeomCache(requestProcessor), skinGeomCache(requestProcessor), textureCache(requestProcessor), adtObjectCache(requestProcessor)  {
-    constexpr const shaderDefinition *definition = getShaderDef("adtShader");
-//    constexpr const int attributeIndex = getShaderAttribute("m2Shader", "aNormal");
-//    constexpr const int attributeIndex = +m2Shader::Attribute::aNormal;
-//    constexpr const shaderDefinition *definition = getShaderDef("readDepthBuffer");
-//    std::cout << "aHeight = " << definition->shaderString<< std::flush;
-//    std::cout << "aNormal = " << +m2Shader::Attribute::aNormal << std::flush;
     this->m_config = config;
 
     this->canvWidth = canvWidth;
     this->canvHeight = canvHeight;
-    this->canvAspect = canvWidth / canvHeight;
+    this->canvAspect = (float)canvWidth / (float)canvHeight;
 
     /* Allocate and assign a Vertex Array Object to our handle */
     GLuint vao;
@@ -401,7 +395,7 @@ void WoWSceneImpl::initVertBuffer(){
 void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
     this->canvWidth = canvWidth;
     this->canvHeight = canvHeight;
-    this->canvAspect = canvWidth / canvHeight;
+    this->canvAspect = (float)canvWidth / (float)canvHeight;
 
     this->initRenderBuffers();
 }
@@ -855,7 +849,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 400;
+    int farPlane = 1200;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 
