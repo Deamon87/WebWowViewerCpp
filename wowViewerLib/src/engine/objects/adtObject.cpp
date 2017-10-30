@@ -273,6 +273,9 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
 //                }
 //            }
 
+            for (int j = 0; j < this->m2Objects.size(); j++) {
+                m2ObjectsCandidates.insert(this->m2Objects[j]);
+            }
             for (int j = 0; j < wmoObjects.size(); j++) {
 //                    uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
                     wmoCandidates.insert(this->wmoObjects[j]);

@@ -55,7 +55,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
+//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
     m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
