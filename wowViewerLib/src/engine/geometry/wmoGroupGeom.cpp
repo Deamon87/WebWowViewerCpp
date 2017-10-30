@@ -66,10 +66,22 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MOTV', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    object.textureCoordsLen = chunkData.chunkLen / sizeof(C2Vector);
-                                                    chunkData.readValues(object.textCoords, object.textureCoordsLen);
-
                                                     debuglog("Entered MOTV");
+
+                                                    if (object.textureCoordsRead == 0) {
+                                                        object.textureCoordsLen = chunkData.chunkLen / sizeof(C2Vector);
+                                                        chunkData.readValues(object.textCoords,
+                                                                             object.textureCoordsLen);
+                                                    } else if (object.textureCoordsRead == 1) {
+                                                        object.textureCoordsLen2 = chunkData.chunkLen / sizeof(C2Vector);
+                                                        chunkData.readValues(object.textCoords2,
+                                                                             object.textureCoordsLen2);
+                                                    } else if (object.textureCoordsRead == 2) {
+                                                        object.textureCoordsLen2 = chunkData.chunkLen / sizeof(C2Vector);
+                                                        chunkData.readValues(object.textCoords3,
+                                                                             object.textureCoordsLen3);
+                                                    }
+                                                    object.textureCoordsRead++;
                                                 },
                                             }
                                         },

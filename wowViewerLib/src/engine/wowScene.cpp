@@ -55,7 +55,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-    m_firstCamera.setCameraPos(-834, 2600, 0);
+//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
+    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
     m_secondCamera.setCameraPos(-1663, 5098, 27);
     currentScene = new Map(this, "Troll Raid");

@@ -22,6 +22,8 @@ void WmoGroupObject::update() {
 void WmoGroupObject::draw(SMOMaterial *materials, std::function<BlpTexture &(int materialId)> getTextureFunc) {
     if (!this->m_loaded) return;
     if (m_geom->batchesLen <= 0) return;
+
+
     m_geom->draw(m_api, materials, getTextureFunc);
 }
 

@@ -53,8 +53,15 @@ public:
     C3Vector *normals;
     int normalsLen;
 
+    int textureCoordsRead = 0;
     C2Vector *textCoords;
     int textureCoordsLen;
+
+    C2Vector *textCoords2;
+    int textureCoordsLen2;
+
+    C2Vector *textCoords3;
+    int textureCoordsLen3;
 
     CImVector *colorArray;
     int cvLen;
@@ -65,7 +72,7 @@ public:
     SMOBatch *batches;
     int batchesLen;
 
-    t_BSP_NODE * bsp_nodes;
+    t_BSP_NODE * bsp_nodes = nullptr;
     int nodesLen;
 
     uint16_t *bpsIndicies;
