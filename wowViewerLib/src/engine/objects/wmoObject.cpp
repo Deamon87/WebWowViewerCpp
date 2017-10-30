@@ -21,7 +21,7 @@ void WmoObject::startLoading() {
 }
 
 M2Object *WmoObject::getDoodad(int index) {
-    return nullptr;
+    //return nullptr;
     int doodadsSet = this->m_doodadSet;
 
     SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];

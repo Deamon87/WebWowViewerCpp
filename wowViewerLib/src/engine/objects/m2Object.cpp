@@ -624,7 +624,7 @@ void M2Object::makeTextureArray() {
 //        materialData.renderBlending = m2File->materials[renderFlagIndex]->blending_mode;
 
         int textureUnit;
-        if (skinTextureDefinition->textureCoordComboIndex <= m2File->tex_unit_lookup_table.size) {
+        if (skinTextureDefinition->textureCoordComboIndex < m2File->tex_unit_lookup_table.size) {
             textureUnit = *m2File->tex_unit_lookup_table[skinTextureDefinition->textureCoordComboIndex];
             if (textureUnit == 0xFFFF) {
                 //Enviroment mapping

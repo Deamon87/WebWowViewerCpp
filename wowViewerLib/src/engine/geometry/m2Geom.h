@@ -43,13 +43,16 @@ public:
             int pixelShaderIndex,
             mathfu::vec4 &originalFogColor,
             int instanceCount);
+
+    M2Data *m_m2Data;
+    std::vector<uint32_t> skinFileDataIDs;
 private:
     std::vector<uint8_t> m2File;
-    M2Data *m_m2Data;
 
     bool m_loaded = false;
     GLuint vertexVbo;
 
+    static chunkDef<M2Geom> m2FileTable;
 
 };
 

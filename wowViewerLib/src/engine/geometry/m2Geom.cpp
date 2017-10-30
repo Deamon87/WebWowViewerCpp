@@ -7,6 +7,40 @@
 #include "../shaderDefinitions.h"
 #include "../opengl/header.h"
 
+chunkDef<M2Geom> M2Geom::m2FileTable = {
+        handler : [](M2Geom& file, ChunkData& chunkData){},
+        subChunks : {
+                {
+                    '12DM',
+                        {
+                                handler: [](M2Geom &file, ChunkData &chunkData) {
+                                    debuglog("Entered MD21");
+
+//                                    chunkData.currentOffset = chunkData.currentOffset - 8;
+                                    chunkData.readValue(file.m_m2Data);
+
+                                    chunkData.bytesRead = chunkData.chunkLen;
+                                }
+                        }
+                },
+                {
+                        'DIFS',
+                        {
+                                handler: [](M2Geom &file, ChunkData &chunkData) {
+                                    debuglog("Entered SFID");
+                                    file.skinFileDataIDs =
+                                            std::vector<uint32_t>(
+                                                    file.m_m2Data->num_skin_profiles);
+
+                                    for (int i = 0; i < file.skinFileDataIDs.size(); i++) {
+                                        chunkData.readValue(file.skinFileDataIDs[i]);
+                                    }
+                                }
+                        }
+                }
+        }
+};
+
 void M2Geom::loadTextures() {
 
 }
@@ -44,14 +78,14 @@ void M2Geom::setupAttributes() {
 }
 
 
-void initM2Textures(M2Data *m2Header){
+void initM2Textures(M2Data *m2Header, void *m2File){
     int32_t texturesSize = m2Header->textures.size;
     for (int i = 0; i < texturesSize; i++) {
         M2Texture *texture = m2Header->textures.getElement(i);
         texture->filename.initM2Array(m2Header);
     }
 }
-void initCompBones(M2Data *m2Header){
+void initCompBones(M2Data *m2Header, void *m2File){
     int32_t bonesSize = m2Header->bones.size;
     for (int i = 0; i < bonesSize; i++) {
         M2CompBone *compBone = m2Header->bones.getElement(i);
@@ -60,7 +94,7 @@ void initCompBones(M2Data *m2Header){
         compBone->scaling.initTrack(m2Header);
     }
 }
-void initM2Color(M2Data *m2Header) {
+void initM2Color(M2Data *m2Header, void *m2File) {
     int32_t m2ColorSize = m2Header->colors.size;
     for (int i = 0; i < m2ColorSize; i++) {
         M2Color * m2Color = m2Header->colors.getElement(i);
@@ -68,14 +102,14 @@ void initM2Color(M2Data *m2Header) {
         m2Color->color.initTrack(m2Header);
     }
 }
-void initM2TextureWeight(M2Data *m2Header) {
+void initM2TextureWeight(M2Data *m2Header, void *m2File) {
     int32_t textureWeightSize = m2Header->texture_weights.size;
     for (int i = 0; i < textureWeightSize; i++) {
         M2TextureWeight * textureWeight = m2Header->texture_weights.getElement(i);
         textureWeight->weight.initTrack(m2Header);
     }
 }
-void initM2TextureTransform(M2Data *m2Header) {
+void initM2TextureTransform(M2Data *m2Header, void *m2File) {
     int32_t textureTransformSize = m2Header->texture_transforms.size;
     for (int i = 0; i < textureTransformSize; i++) {
         M2TextureTransform * textureTransform = m2Header->texture_transforms.getElement(i);
@@ -84,21 +118,21 @@ void initM2TextureTransform(M2Data *m2Header) {
         textureTransform->scaling.initTrack(m2Header);
     }
 }
-void initM2Attachment(M2Data *m2Header) {
+void initM2Attachment(M2Data *m2Header, void *m2File) {
     int32_t attachmentCount = m2Header->attachments.size;
     for (int i = 0; i < attachmentCount; i++) {
         M2Attachment *attachment = m2Header->attachments.getElement(i);
         attachment->animate_attached.initTrack(m2Header);
     }
 }
-void initM2Event(M2Data *m2Header) {
+void initM2Event(M2Data *m2Header, void *m2File) {
     int32_t eventCount = m2Header->events.size;
     for (int i = 0; i < eventCount; i++) {
         M2Event *event = m2Header->events.getElement(i);
         event->enabled.initTrackBase(m2Header);
     }
 }
-void initM2Light(M2Data *m2Header) {
+void initM2Light(M2Data *m2Header, void *m2File) {
     int32_t lightCount = m2Header->lights.size;
     for (int i = 0; i < lightCount; i++) {
         M2Light *light = m2Header->lights.getElement(i);
@@ -110,7 +144,7 @@ void initM2Light(M2Data *m2Header) {
         light->attenuation_end.initTrack(m2Header);
         light->visibility.initTrack(m2Header);
     }
-}void initM2Camera(M2Data *m2Header) {
+}void initM2Camera(M2Data *m2Header, void *m2File) {
     int32_t cameraCount = m2Header->cameras.size;
     for (int i = 0; i < cameraCount; i++) {
         M2Camera *light = m2Header->cameras.getElement(i);
@@ -123,8 +157,21 @@ void initM2Light(M2Data *m2Header) {
 void M2Geom::process(std::vector<unsigned char> &m2File) {
     this->m2File = m2File;
 
-    M2Data *m2Header = (M2Data *) &this->m2File[0];
-    this->m_m2Data = m2Header;
+    if (
+        m2File[0] == 'M' &&
+        m2File[1] == 'D' &&
+        m2File[2] == '2' &&
+        m2File[3] == '1'
+
+            ) {
+        CChunkFileReader reader(this->m2File);
+        reader.processFile(*this, &M2Geom::m2FileTable);
+    } else {
+        M2Data *m2Header = (M2Data *) &this->m2File[0];
+        this->m_m2Data = m2Header;
+    }
+    M2Data *m2Header = this->m_m2Data;
+    void *m2FileP = &this->m2File[0];
 
     //Step 1: Init all m2Arrays
     m2Header->global_loops.initM2Array(m2Header);
@@ -157,20 +204,20 @@ void M2Geom::process(std::vector<unsigned char> &m2File) {
     m2Header->particle_emitters.initM2Array(m2Header);
 
     if (m2Header->global_flags.flag_has_blend_maps) {
-        m2Header->blend_map_overrides.initM2Array(m2Header);
+        m2Header->blend_map_overrides.initM2Array(m2FileP);
     }
 
     //Step 2: init tracks
-    initCompBones(m2Header);
-    initM2Color(m2Header);
-    initM2TextureWeight(m2Header);
-    initM2TextureTransform(m2Header);
-    initM2Attachment(m2Header);
-    initM2Event(m2Header);
-    initM2Light(m2Header);
-    initM2Camera(m2Header);
+    initCompBones(m2Header, m2FileP);
+    initM2Color(m2Header, m2FileP);
+    initM2TextureWeight(m2Header, m2FileP);
+    initM2TextureTransform(m2Header, m2FileP);
+    initM2Attachment(m2Header, m2FileP);
+    initM2Event(m2Header, m2FileP);
+    initM2Light(m2Header, m2FileP);
+    //initM2Camera(m2Header, m2FileP); //TODO: off for now
 
-    initM2Textures(m2Header);
+    initM2Textures(m2Header, m2FileP);
 
     //Step 3: create VBO
     this->createVBO();

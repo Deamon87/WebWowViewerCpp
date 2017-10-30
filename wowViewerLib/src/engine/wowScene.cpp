@@ -55,12 +55,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
-    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
+    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
+    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
+//    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
-    m_secondCamera.setCameraPos(-1663, 5098, 27);
-    currentScene = new Map(this, "Troll Raid");
+//    m_secondCamera.setCameraPos(-1663, 5098, 27);
+//    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "UlduarRaid");
+    currentScene = new Map(this, "argus 1");
+
 
     //Test scene 2: tree from shattrath
 //    m_firstCamera.setCameraPos(0, 0, 0);
@@ -79,6 +82,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
+
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(0, 0, 0);

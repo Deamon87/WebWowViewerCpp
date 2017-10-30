@@ -42,6 +42,8 @@ public:
             //Value v = iter->second;
 
             Container *container = m_cache.at(fileName);
+
+            std::cout << "Processing file " << fileName << std::endl << std::flush;
             container->obj.process(fileContent);
 
             m_objectsToBeProcessed.erase(it++);    // or "it = m.erase(it)" since C++11

@@ -101,12 +101,13 @@ void SkinGeom::fixShaderIdBasedOnBlendOverride(M2Data *m2File) {
 }
 
 void SkinGeom::fixData(M2Data *m2File) {
-    if (!this->m_fixed) {
-        this->fixShaderIdBasedOnBlendOverride(m2File);
-        this->fixShaderIdBasedOnLayer(m2File);
-
-        this->m_fixed = true;
-    }
+    //TODO: enable this for WOTLK
+//    if (!this->m_fixed) {
+//        this->fixShaderIdBasedOnBlendOverride(m2File);
+//        this->fixShaderIdBasedOnLayer(m2File);
+//
+//        this->m_fixed = true;
+//    }
 }
 
 void SkinGeom::fixShaderIdBasedOnLayer(M2Data *m2File) {

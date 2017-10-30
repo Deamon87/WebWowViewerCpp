@@ -15,7 +15,7 @@ void AdtObject::loadingFinished() {
     m_loaded = true;
     calcBoundingBoxes();
 
-    //loadM2s();
+    loadM2s();
     loadWmos();
 
 }

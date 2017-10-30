@@ -88,9 +88,16 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                         {
                                             'MOCV', {
                                                 handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    object.cvLen = chunkData.chunkLen / 4;
-                                                    chunkData.readValues(object.colorArray, object.cvLen);
                                                     debuglog("Entered MOCV");
+                                                    if (object.mocvRead == 0) {
+                                                        object.cvLen = chunkData.chunkLen / 4;
+                                                        chunkData.readValues(object.colorArray, object.cvLen);
+                                                    } else if (object.mocvRead == 1) {
+                                                        object.cvLen2 = chunkData.chunkLen / 4;
+                                                        chunkData.readValues(object.colorArray2, object.cvLen2);
+                                                    }
+
+                                                    object.mocvRead++;
                                                 },
                                             }
                                         },

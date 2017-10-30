@@ -66,6 +66,10 @@ public:
     CImVector *colorArray;
     int cvLen;
 
+    CImVector *colorArray2;
+    int cvLen2;
+    int mocvRead = 0;
+
     uint16_t *doodadRefs;
     int doodadRefsLen;
 
