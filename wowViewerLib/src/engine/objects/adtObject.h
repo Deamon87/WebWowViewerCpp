@@ -23,19 +23,12 @@ class M2Object;
 
 class AdtObject {
 public:
-    AdtObject() : alphaTextures(){
-        m_api = nullptr;
-        tileAabb = std::vector<CAaBox>(256);
-    }
-    void setApi(IWoWInnerApi *api) {
-        m_api = api;
-    }
+    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate);
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
     }
 
-    AdtObject(IWoWInnerApi *api) : m_api(api), alphaTextures()  {}
-    void process(std::vector<unsigned char> &adtFile);
+    void loadingFinished();
     void draw();
 
     bool checkFrustumCulling(
@@ -53,7 +46,11 @@ private:
 
     IWoWInnerApi *m_api;
     IMapApi *m_mapApi;
+
     AdtFile *m_adtFile;
+    AdtFile *m_adtFileTex;
+    AdtFile *m_adtFileLod;
+
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;
 
@@ -68,6 +65,9 @@ private:
 private:
     std::vector<GLuint> alphaTextures;
     std::vector<CAaBox> tileAabb;
+
+    std::string m_adtFileTemplate;
+
     bool drawChunk[256] = {};
 
     std::vector<M2Object*> m2Objects;

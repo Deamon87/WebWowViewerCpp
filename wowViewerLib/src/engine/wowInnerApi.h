@@ -15,10 +15,11 @@ class WmoGroupGeom;
 #include "cache/cache.h"
 #include "shader/ShaderRuntimeData.h"
 #include "objects/adtObject.h"
+#include "persistance/adtFile.h"
 
 class IWoWInnerApi {
 public:
-    virtual Cache<AdtObject>* getAdtGeomCache() = 0;
+    virtual Cache<AdtFile>* getAdtGeomCache() = 0;
     virtual Cache<M2Geom>* getM2GeomCache() = 0;
     virtual Cache<SkinGeom>* getSkinGeomCache() = 0;
     virtual Cache<BlpTexture>* getTextureCache() = 0;

@@ -8,39 +8,37 @@
 #include "../persistance/adtFile.h"
 
 
-void AdtObject::process(std::vector<unsigned char> &adtFile) {
-    m_adtFile = new AdtFile(adtFile);
-
+void AdtObject::loadingFinished() {
     createVBO();
     loadAlphaTextures(256);
 //    createIndexVBO();
     m_loaded = true;
     calcBoundingBoxes();
 
-    loadM2s();
+    //loadM2s();
     loadWmos();
 
 }
 
 void AdtObject::loadM2s() {
 
-    m2Objects = std::vector<M2Object *>(m_adtFile->doodadDef_len);
-    for (int i = 0; i < m_adtFile->doodadDef_len; i++) {
+    m2Objects = std::vector<M2Object *>(m_adtFileLod->doodadDef_len);
+    for (int i = 0; i < m_adtFileLod->doodadDef_len; i++) {
         //1. Get filename
-        SMDoodadDef &doodadDef = m_adtFile->doodadDef[i];
-        std::string fileName = &m_adtFile->doodadNamesField[m_adtFile->mmid[doodadDef.mmidEntry]];
+        SMDoodadDef &doodadDef = m_adtFileLod->doodadDef[i];
+        std::string fileName = &m_adtFileLod->doodadNamesField[m_adtFileLod->mmid[doodadDef.mmidEntry]];
 
         //2. Get model
         m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
     }
 }
 void AdtObject::loadWmos() {
-    wmoObjects = std::vector<WmoObject *>(m_adtFile->mapObjDef_len);
+    wmoObjects = std::vector<WmoObject *>(m_adtFileLod->mapObjDef_len);
 
-    for (int i = 0; i < m_adtFile->mapObjDef_len; i++) {
+    for (int i = 0; i < m_adtFileLod->mapObjDef_len; i++) {
         //1. Get filename
-        SMMapObjDef &mapDef = m_adtFile->mapObjDef[i];
-        std::string fileName = &m_adtFile->wmoNamesField[m_adtFile->mwid[mapDef.nameId]];
+        SMMapObjDef &mapDef = m_adtFileLod->mapObjDef[i];
+        std::string fileName = &m_adtFileLod->wmoNamesField[m_adtFileLod->mwid[mapDef.nameId]];
 
         //2. Get model
         wmoObjects[i] = m_mapApi->getWmoObject(fileName, mapDef);
@@ -107,7 +105,8 @@ void AdtObject::calcBoundingBoxes() {
 void AdtObject::loadAlphaTextures(int limit) {
     if (this->alphaTexturesLoaded>=256) return;
 
-    int chunkCount = m_adtFile->mcnkRead+1;
+    //int chunkCount = m_adtFile->mcnkRead+1;
+    int chunkCount = m_adtFileTex->mcnkRead+1;
     int maxAlphaTexPerChunk = 4;
     int alphaTexSize = 64;
 
@@ -118,7 +117,7 @@ void AdtObject::loadAlphaTextures(int limit) {
     for (int i = this->alphaTexturesLoaded; i < chunkCount; i++) {
         GLuint alphaTexture;
         glGenTextures(1, &alphaTexture);
-        std::vector<uint8_t> alphaTextureData = m_adtFile->processTexture(0, i);
+        std::vector<uint8_t> alphaTextureData = m_adtFileTex->processTexture(0, i);
 
         glBindTexture(GL_TEXTURE_2D, alphaTexture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, &alphaTextureData[0]);
@@ -162,9 +161,12 @@ void AdtObject::draw() {
                     m_adtFile->mapTile[i].position.y,
                     m_adtFile->mapTile[i].position.z);
 
-        if (m_adtFile->mapTile[i].nLayers <= 0) continue;
+        //Cant be used only in Wotlk
+        //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
+        if (m_adtFileTex->mcnkStructs[i].mclyCnt <= 0) continue;
 
-        BlpTexture &layer0 = getAdtTexture(m_adtFile->mcnkStructs[i].mcly[0].textureId);
+//        BlpTexture &layer0 = getAdtTexture(m_adtFile->mcnkStructs[i].mcly[0].textureId);
+        BlpTexture &layer0 = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[0].textureId);
         if (layer0.getIsLoaded()) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, layer0.getGlTexture());
@@ -173,9 +175,9 @@ void AdtObject::draw() {
             glBindTexture(GL_TEXTURE_2D, alphaTextures[i]);
 
             //Bind layer textures
-            for (int j = 1; j < m_adtFile->mapTile[i].nLayers; j++) {
+            for (int j = 1; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
                 glActiveTexture(GL_TEXTURE1 + j);
-                BlpTexture &layer_x = getAdtTexture(m_adtFile->mcnkStructs[i].mcly[j].textureId);
+                BlpTexture &layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
                 if (layer_x.getIsLoaded()) {
                     //gl.enable(gl.TEXTURE_2D);
                     glBindTexture(GL_TEXTURE_2D, layer_x.getGlTexture());
@@ -183,7 +185,7 @@ void AdtObject::draw() {
                     glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
                 }
             }
-            for (int j = m_adtFile->mapTile[i].nLayers; j < 4; j++) {
+            for (int j = m_adtFileTex->mcnkStructs[i].mclyCnt; j < 4; j++) {
                 glActiveTexture(GL_TEXTURE1 + j);
                 glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
             }
@@ -200,7 +202,7 @@ BlpTexture &AdtObject::getAdtTexture(int textureId) {
         return *item->second;
     }
 
-    std::string &materialTexture = m_adtFile->textureNames[textureId];
+    std::string &materialTexture = m_adtFileTex->textureNames[textureId];
     BlpTexture * texture = m_api->getTextureCache()->get(materialTexture);
     m_requestedTextures[textureId] = texture;
 
@@ -215,7 +217,14 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                                     std::set<M2Object *> &m2ObjectsCandidates,
                                     std::set<WmoObject *> &wmoCandidates) {
 
-    if (!this->m_loaded) return false;
+    if (!this->m_loaded) {
+        if (m_adtFile->getIsLoaded() && m_adtFileLod->getIsLoaded() && m_adtFileTex->getIsLoaded()) {
+            this->loadingFinished();
+            m_loaded = true;
+        } else {
+            return false;
+        }
+    }
     bool atLeastOneIsDrawn = false;
 
     for (int i = 0; i < 256; i++) {
@@ -248,23 +257,41 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
         }
         if (checkRefs) {
             //var mcnk = objAdtFile.mcnkObjs[i];
-            SMChunk *mapTile = &m_adtFile->mapTile[i];
-            mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
+//            SMChunk *mapTile = &m_adtFile->mapTile[i];
+//            mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
+//
+//            if (mcnkContent && mcnkContent->mcrf.doodad_refs) {
+//                for (int j = 0; j < mapTile->nDoodadRefs; j++) {
+//                    uint32_t m2Ref = mcnkContent->mcrf.doodad_refs[j];
+//                    m2ObjectsCandidates.insert(this->m2Objects[m2Ref]);
+//                }
+//            }
+//            if (mcnkContent && mcnkContent->mcrf.object_refs) {
+//                for (int j = 0; j < mapTile->nMapObjRefs; j++) {
+//                    uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
+//                    wmoCandidates.insert(this->wmoObjects[wmoRef]);
+//                }
+//            }
 
-            if (mcnkContent && mcnkContent->mcrf.doodad_refs) {
-                for (int j = 0; j < mapTile->nDoodadRefs; j++) {
-                    uint32_t m2Ref = mcnkContent->mcrf.doodad_refs[j];
-                    m2ObjectsCandidates.insert(this->m2Objects[m2Ref]);
-                }
-            }
-            if (mcnkContent && mcnkContent->mcrf.object_refs) {
-                for (int j = 0; j < mapTile->nMapObjRefs; j++) {
-                    uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
-                    wmoCandidates.insert(this->wmoObjects[wmoRef]);
-                }
+            for (int j = 0; j < wmoObjects.size(); j++) {
+//                    uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
+                    wmoCandidates.insert(this->wmoObjects[j]);
+//                }
+
             }
         }
     }
 
     return atLeastOneIsDrawn;
+}
+
+AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate) : alphaTextures(){
+    m_api = api;
+    tileAabb = std::vector<CAaBox>(256);
+    adtFileTemplate = adtFileTemplate;
+
+    m_adtFile = m_api->getAdtGeomCache()->get(adtFileTemplate+".adt");
+    m_adtFile->setIsMain(true);
+    m_adtFileTex = m_api->getAdtGeomCache()->get(adtFileTemplate+"_tex"+std::to_string(0)+".adt");
+    m_adtFileLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt");
 }

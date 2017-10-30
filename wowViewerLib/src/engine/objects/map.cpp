@@ -291,9 +291,9 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                     adtRenderedThisFrame.insert(adtObject);
                 }
             } else {
-                std::string adtFileName = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j)+".adt";
-                adtObject = m_api->getAdtGeomCache()->get(adtFileName);
-                adtObject->setApi(m_api);
+                std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
+                adtObject = new AdtObject(m_api, adtFileTemplate);
+
                 adtObject->setMapApi(this);
                 this->mapTiles[i][j] = adtObject;
             }

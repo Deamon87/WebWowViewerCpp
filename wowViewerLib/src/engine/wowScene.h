@@ -72,7 +72,7 @@ public:
         }
     }
 public:
-    virtual Cache<AdtObject> *getAdtGeomCache() {
+    virtual Cache<AdtFile> *getAdtGeomCache() {
         return &adtObjectCache;
     }
     virtual Cache<M2Geom> *getM2GeomCache() {
@@ -179,7 +179,7 @@ private:
     GLuint blackPixel = 0;
 
 
-    Cache<AdtObject> adtObjectCache;
+    Cache<AdtFile> adtObjectCache;
     Cache<WmoGroupGeom> wmoGeomCache;
     Cache<WmoMainGeom> wmoMainCache;
     Cache<M2Geom> m2GeomCache;

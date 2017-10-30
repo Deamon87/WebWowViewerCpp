@@ -10,8 +10,8 @@
 #include <vector>
 #include <iostream>
 
-//#define debuglog(x) std::cout<< x <<std::endl;
-#define debuglog(x)
+#define debuglog(x) std::cout<< x <<std::endl;
+//#define debuglog(x)
 
 class CChunkFileReader;
 typedef CChunkFileReader ChunkData;
@@ -110,7 +110,7 @@ private:
     template <typename T>
     void loopOverSubChunks(chunkDef<T> * &sectionHandlerProc, int chunkLoadOffset, int chunkEndOffset, T &resultObj){
         ChunkData subChunk;
-        while (chunkLoadOffset < chunkEndOffset) {
+        while ((chunkLoadOffset < chunkEndOffset)) {
             subChunk = this->loadChunkAtOffset(chunkLoadOffset, -1);
             if (subChunk.chunkIdent == 0) break;
 

@@ -12,6 +12,7 @@ struct mcnkStruct_t {
     MCCV *mccv;
     SMNormal *mcnr;
     SMLayer *mcly;
+    int mclyCnt;
 
     struct {uint32_t *doodad_refs; uint32_t *object_refs; } mcrf;
 
@@ -20,8 +21,12 @@ struct mcnkStruct_t {
 
 class AdtFile {
 public:
-    AdtFile(std::vector<unsigned char> &adtFile);
+    AdtFile() {};
+
     std::vector<uint8_t> processTexture(int wdtObjFlags, int i);
+    void process(std::vector<unsigned char> &adtFile);
+    bool getIsLoaded() { return m_loaded; };
+    void setIsMain(bool isMain) { m_mainAdt = isMain; };
 public:
     SMMapHeader* mhdr;
 
@@ -55,6 +60,9 @@ public:
     std::vector<int16_t> strips;
     std::vector<int> stripOffsets;
 private:
+    bool m_loaded = false;
+    bool m_mainAdt = false;
+
     void createTriangleStrip();
     static chunkDef<AdtFile> adtFileTable;
     std::vector<unsigned char> m_adtFile;

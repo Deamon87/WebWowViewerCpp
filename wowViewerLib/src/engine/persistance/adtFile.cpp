@@ -119,40 +119,44 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                     debuglog("Entered MCNK");
 
                     file.mcnkRead++;
-                    chunkData.readValue(file.mapTile[file.mcnkRead]);
 
                     SMChunk chunk = file.mapTile[file.mcnkRead];
                     chunkDef<AdtFile> *def = &AdtFile::adtFileTable.subChunks['MCNK'];
 
+                    if (file.m_mainAdt) {
+                        chunkData.readValue(file.mapTile[file.mcnkRead]);
+
 //1. Load MCVT
-                    if (chunk.ofsHeight > 0) {
-                        int offset = chunkData.dataOffset + chunk.ofsHeight - 8;
-                        chunkData.processChunkAtOffs(offset, file, def);
-                    }
-//2. Load MCNR
-                    if (chunk.ofsNormal > 0) {
-                        int offset = chunkData.dataOffset + chunk.ofsNormal - 8;
-                        chunkData.processChunkAtOffs(offset, file, def);
-                    }
-//3. Load MCLY
-                    if (chunk.ofsLayer > 0) {
-                        int offset = chunkData.dataOffset + chunk.ofsLayer - 8;
-                        chunkData.processChunkAtOffs(offset, file, def);
-                    }
-//4. Load MCAL
-                    if (chunk.ofsAlpha > 0) {
-                        int offset = chunkData.dataOffset + chunk.ofsAlpha - 8;
-                        chunkData.processChunkAtOffsWithSize(offset, chunk.sizeAlpha, file, def);
-                    }
-//5. Load MCRF
-                    if (chunk.ofsRefs > 0) {
-                        int offset = chunkData.dataOffset + chunk.ofsRefs - 8;
-                        chunkData.processChunkAtOffs(offset, file, def);
-                    }
+//                        if (chunk.ofsHeight > 0) {
+//                            int offset = chunkData.dataOffset + chunk.ofsHeight - 8;
+//                            chunkData.processChunkAtOffs(offset, file, def);
+//                        }
+////2. Load MCNR
+//                        if (chunk.ofsNormal > 0) {
+//                            int offset = chunkData.dataOffset + chunk.ofsNormal - 8;
+//                            chunkData.processChunkAtOffs(offset, file, def);
+//                        }
+////3. Load MCLY
+//                        if (chunk.ofsLayer > 0) {
+//                            int offset = chunkData.dataOffset + chunk.ofsLayer - 8;
+//                            chunkData.processChunkAtOffs(offset, file, def);
+//                        }
+////4. Load MCAL
+//                        if (chunk.ofsAlpha > 0) {
+//                            int offset = chunkData.dataOffset + chunk.ofsAlpha - 8;
+//                            chunkData.processChunkAtOffsWithSize(offset, chunk.sizeAlpha, file, def);
+//                        }
+////5. Load MCRF
+//                        if (chunk.ofsRefs > 0) {
+//                            int offset = chunkData.dataOffset + chunk.ofsRefs - 8;
+//                            chunkData.processChunkAtOffs(offset, file, def);
+//                        }
 
 //Force stop the parsing of chunk
-                    chunkData.bytesRead = chunkData.chunkLen;
+                        //TODO: Turn on this for Wotlk
 
+                        //chunkData.bytesRead = chunkData.chunkLen;
+                    }
                 },
                 subChunks : {
                     {
@@ -196,9 +200,13 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                             handler: [](AdtFile& file, ChunkData& chunkData){
                                 debuglog("Entered MCLY");
 
+                                int mclyCnt = chunkData.chunkLen/sizeof(SMLayer);
+
+                                file.mcnkStructs[file.mcnkRead].mclyCnt = mclyCnt;
+
                                 chunkData.readValues(
                                         file.mcnkStructs[file.mcnkRead].mcly,
-                                        chunkData.chunkLen/sizeof(SMLayer)
+                                        mclyCnt
                                 );
                             }
                         }
@@ -235,14 +243,6 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
     }
 };
 
-AdtFile::AdtFile(std::vector<unsigned char> &adtFile) {
-    m_adtFile = std::vector<uint8_t>(adtFile);
-    CChunkFileReader reader(m_adtFile);
-    reader.processFile(*this, &AdtFile::adtFileTable);
-
-    createTriangleStrip();
-}
-
 static bool isHole(int hole, int i, int j) {
     static int holetab_h[4] = {0x1111, 0x2222, 0x4444, 0x8888};
     static int holetab_v[4] = {0x000F, 0x00F0, 0x0F00, 0xF000};
@@ -263,7 +263,9 @@ std::vector<uint8_t> AdtFile::processTexture(int wdtObjFlags, int i) {
 
     std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64, 1.0);
     if (layers == nullptr || alphaArray == nullptr) return currentLayer;
-    for (int j = 0; j < mapTile[i].nLayers; j++ ) {
+
+//    for (int j = 0; j < mapTile[i].nLayers; j++ ) {
+    for (int j = 0; j < mcnkStructs[i].mclyCnt; j++ ) {
         int alphaOffs = layers[j].offsetInMCAL;
         int offO = j;
         int readCnt = 0;
@@ -360,4 +362,14 @@ void AdtFile::createTriangleStrip() {
         }
     }
     stripOffsets.push_back(strips.size());
+}
+
+void AdtFile::process(std::vector<unsigned char> &adtFile) {
+    m_adtFile = std::vector<uint8_t>(adtFile);
+    CChunkFileReader reader(m_adtFile);
+    reader.processFile(*this, &AdtFile::adtFileTable);
+
+    createTriangleStrip();
+
+    m_loaded = true;
 }
