@@ -36,7 +36,7 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 
-    if (this->m_currentInteriorGroups.size() > 0 && m_api->getConfig()->getUsePortalCulling()) {
+    if (!this->m_currentInteriorGroups.empty() && m_api->getConfig()->getUsePortalCulling()) {
         if (this->m_currentWMO->startTraversingFromInteriorWMO(
                 this->m_currentInteriorGroups,
                 cameraPos,
@@ -45,7 +45,7 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
 
             wmoRenderedThisFrame.insert(this->m_currentWMO);
 
-            if (this->m_currentWMO->exteriorPortals.size() > 0) {
+            if (!this->m_currentWMO->exteriorPortals.empty()) {
                 checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
                               adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
             }
@@ -72,14 +72,14 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 //    }
     }
 
-    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
-        this->wmoRenderedThisFrameArr[i]->update();
+    for (auto &wmoObject : this->wmoRenderedThisFrameArr) {
+        wmoObject->update();
     }
 
     //2. Calc distance every 100 ms
     if (this->m_currentTime + deltaTime - this->m_lastTimeDistanceCalc > 100) {
-        for (int j = 0; j < this->m2RenderedThisFrameArr.size(); j++) {
-            this->m2RenderedThisFrameArr[j]->calcDistance(cameraVec3);
+        for (auto &m2Object : this->m2RenderedThisFrameArr) {
+            m2Object->calcDistance(cameraVec3);
         }
 
         this->m_lastTimeDistanceCalc = this->m_currentTime;
@@ -153,8 +153,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     nearPlaneCenter += frustumPoints[7];
     nearPlaneCenter *= 0.25;
 
-    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
-        WmoObject *checkingWmoObj = this->wmoRenderedThisFrameArr[i];
+    for (auto checkingWmoObj : this->wmoRenderedThisFrameArr) {
         WmoGroupResult groupResult;
         bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(nearPlaneCenter, 1), groupResult);
 
@@ -259,6 +258,10 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     this->m_currentTime += deltaTime;
 }
 
+inline int worldCoordinateToAdtIndex(float x) {
+    return floor((32 - (x / 533.33333)));
+}
+
 void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::vector<mathfu::vec4> &frustumPlanes,
                         std::vector<mathfu::vec3> &frustumPoints,
@@ -272,11 +275,28 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     std::set<M2Object*> m2ObjectsCandidates;
     std::set<WmoObject*> wmoCandidates;
 
-    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
-    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
+//    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
+//    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
 
-    for (int i = adt_x-1; i <= adt_x+1; i++) {
-        for (int j = adt_y-1; j <= adt_y+1; j++) {
+    //Get visible area that should be checked
+    float minx = 99999, maxx = -99999;
+    float miny = 99999, maxy = -99999;
+
+    for (int i = 0; i < frustumPoints.size(); i++) {
+        mathfu::vec3 &frustumPoint = frustumPoints[i];
+
+        minx = std::min(frustumPoint.x, minx); maxx = std::max(frustumPoint.x, maxx);
+        miny = std::min(frustumPoint.y, miny); maxy = std::max(frustumPoint.y, maxy);
+    }
+    int adt_x_min = worldCoordinateToAdtIndex(maxy);
+    int adt_x_max = worldCoordinateToAdtIndex(miny);
+
+    int adt_y_min = worldCoordinateToAdtIndex(maxx);
+    int adt_y_max = worldCoordinateToAdtIndex(minx);
+
+
+    for (int i = adt_x_min; i <= adt_x_max; i++) {
+        for (int j = adt_y_min; j <= adt_y_max; j++) {
             if ((i < 0) || (i > 64)) continue;
             if ((j < 0) || (j > 64)) continue;
 
