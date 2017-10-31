@@ -345,8 +345,8 @@ void AdtFile::createTriangleStrip() {
 
         int j = 0;
         bool first = true;
-        for (int x = 0; x < 8; x++) {
-            for (int y = 0; y < 8; y++) {
+        for (int y = 0; y < 8; y++) {
+            for (int x = 0; x < 8; x++) {
                 bool isHole = (!mcnkObj.flags.high_res_holes) ?
                               isHoleLowRes(holeLow, x, y) :
                               isHoleHighRes(holeHigh, x, y);
