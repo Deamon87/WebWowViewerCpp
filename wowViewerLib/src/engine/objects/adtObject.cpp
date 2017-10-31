@@ -198,6 +198,8 @@ void AdtObject::draw() {
             for (int j = 1; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
                 glActiveTexture(GL_TEXTURE1 + j);
                 BlpTexture &layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+                BlpTexture &layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+                BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
                 if (layer_x.getIsLoaded()) {
                     //gl.enable(gl.TEXTURE_2D);
                     glBindTexture(GL_TEXTURE_2D, layer_x.getGlTexture());
@@ -225,6 +227,38 @@ BlpTexture &AdtObject::getAdtTexture(int textureId) {
     std::string &materialTexture = m_adtFileTex->textureNames[textureId];
     BlpTexture * texture = m_api->getTextureCache()->get(materialTexture);
     m_requestedTextures[textureId] = texture;
+
+    return *texture;
+}
+
+BlpTexture &AdtObject::getAdtHeightTexture(int textureId) {
+    auto item = m_requestedTexturesHeight.find(textureId);
+    if (item != m_requestedTexturesHeight.end()) {
+        return *item->second;
+    }
+
+    std::string &materialTexture = m_adtFileTex->textureNames[textureId];
+
+    std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_h.blp";
+
+    BlpTexture * texture = m_api->getTextureCache()->get(matHeightText);
+    m_requestedTexturesHeight[textureId] = texture;
+
+    return *texture;
+}
+
+BlpTexture &AdtObject::getAdtSpecularTexture(int textureId) {
+    auto item = m_requestedTexturesSpec.find(textureId);
+    if (item != m_requestedTexturesSpec.end()) {
+        return *item->second;
+    }
+
+    std::string &materialTexture = m_adtFileTex->textureNames[textureId];
+
+    std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_s.blp";
+
+    BlpTexture * texture = m_api->getTextureCache()->get(matHeightText);
+    m_requestedTexturesSpec[textureId] = texture;
 
     return *texture;
 }

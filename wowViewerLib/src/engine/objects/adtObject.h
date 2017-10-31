@@ -59,6 +59,8 @@ private:
     int colorOffset = 0;
 
     std::unordered_map<int, BlpTexture*> m_requestedTextures;
+    std::unordered_map<int, BlpTexture*> m_requestedTexturesHeight;
+    std::unordered_map<int, BlpTexture*> m_requestedTexturesSpec;
 
     GLuint combinedVbo = 0;
     GLuint stripVBO = 0;
@@ -75,6 +77,8 @@ private:
     std::vector<WmoObject*> wmoObjects;
 
     BlpTexture & getAdtTexture(int textureId);
+    BlpTexture & getAdtHeightTexture(int textureId);
+    BlpTexture & getAdtSpecularTexture(int textureId);
 
     void calcBoundingBoxes();
     void loadM2s();
