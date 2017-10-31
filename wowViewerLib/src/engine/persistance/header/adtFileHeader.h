@@ -85,7 +85,7 @@ struct SMMapObjDef {
     uint16_t unk;                 // Legion(?)+: has data finally!
 } ;
 
-struct SMChunk
+struct __attribute__ ((packed)) SMChunk
 {
     struct
     {
@@ -111,12 +111,16 @@ struct SMChunk
 //#endif
 /*0x00C*/  uint32_t nLayers;                              // maximum 4
 /*0x010*/  uint32_t nDoodadRefs;
-//#if version >= ~5.3
-//    uint64_t holes_high_res;                                // only used with flags.high_res_holes
-//#else
-/*0x014*/  uint32_t ofsHeight;
-/*0x018*/  uint32_t ofsNormal;
-//#endif
+union __attribute__ ((packed)){
+    struct __attribute__ ((packed)) {
+        /*0x014*/ uint32_t ofsHeight;
+        /*0x018*/ uint32_t ofsNormal;
+    } preMop;
+    struct __attribute__ ((packed)){
+        /*0x014*/ uint64_t holes_high_res;
+    } postMop;
+};
+
 /*0x01C*/  uint32_t ofsLayer;
 /*0x020*/  uint32_t ofsRefs;
 /*0x024*/  uint32_t ofsAlpha;
