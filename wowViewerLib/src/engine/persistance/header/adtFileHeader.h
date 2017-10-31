@@ -85,7 +85,7 @@ struct SMMapObjDef {
     uint16_t unk;                 // Legion(?)+: has data finally!
 } ;
 
-struct SMChunk
+struct __attribute__ ((packed)) SMChunk
 {
     struct
     {
@@ -111,12 +111,16 @@ struct SMChunk
 //#endif
 /*0x00C*/  uint32_t nLayers;                              // maximum 4
 /*0x010*/  uint32_t nDoodadRefs;
-//#if version >= ~5.3
-//    uint64_t holes_high_res;                                // only used with flags.high_res_holes
-//#else
-/*0x014*/  uint32_t ofsHeight;
-/*0x018*/  uint32_t ofsNormal;
-//#endif
+union __attribute__ ((packed)){
+    struct __attribute__ ((packed)) {
+        /*0x014*/ uint32_t ofsHeight;
+        /*0x018*/ uint32_t ofsNormal;
+    } preMop;
+    struct __attribute__ ((packed)){
+        /*0x014*/ uint64_t holes_high_res;
+    } postMop;
+};
+
 /*0x01C*/  uint32_t ofsLayer;
 /*0x020*/  uint32_t ofsRefs;
 /*0x024*/  uint32_t ofsAlpha;
@@ -189,6 +193,22 @@ struct SMLayer
     } flags;
     uint32_t offsetInMCAL;
     uint32_t effectId;     // 0xFFFFFFFF for none, in alpha: uint16_t + padding
+};
+
+struct SMTextureFlags
+{
+    uint32_t do_not_load_specular_or_height_texture_but_use_cubemap : 1; // probably just 'disable_all_shading'
+    uint32_t : 3;                                                        // no non-zero values in 20490
+    uint32_t texture_scale : 4;
+    uint32_t : 24;
+};
+
+struct SMTextureParams {
+    SMTextureFlags flags; // same as in mtxf (or taken from there if no mtxp present)
+    float heightScale;    // default 0.0 -- the _h texture values are scaled to [0, value) to determine actual "height".
+    //                this determines if textures overlap or not (e.g. roots on top of roads).
+    float heightOffset;   // default 1.0 -- note that _h based chunks are still influenced by MCAL (blendTex below)
+    uint32_t padding;     // no default, no non-zero values in 20490
 };
 
 

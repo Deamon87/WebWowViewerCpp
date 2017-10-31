@@ -1,7 +1,7 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
 attribute float aHeight;
-attribute vec4  aColor;
+attribute vec4 aColor;
 attribute float aNormal;
 attribute float aIndex;
 
@@ -13,7 +13,8 @@ varying vec2 vChunkCoords;
 varying vec3 vPosition;
 varying vec4 vColor;
 
-const float UNITSIZE =  533.3433333 / 16.0 / 8.0;
+const float UNITSIZE_X =  533.3333333 / 16.0 / 8.0;
+const float UNITSIZE_Y =  533.3333333 / 16.0 / 9.0;
 
 void main() {
 
@@ -25,20 +26,18 @@ void main() {
     float iX = mod(aIndex, 17.0);
     float iY = floor(aIndex/17.0);
 
+    if (iX > 8.01) {
+        iY = iY + 0.5;
+        iX = iX - 8.5;
+    }
+
     vec4 worldPoint = vec4(
-        uPos.x - iY * UNITSIZE,
-        uPos.y - iX * UNITSIZE,
+        uPos.x - iY * UNITSIZE_Y,
+        uPos.y - iX * UNITSIZE_X,
         uPos.z + aHeight,
         1);
 
     vChunkCoords = vec2(iX, iY);
-
-    //On Intel Graphics ">" is equal to ">="
-    if (iX > 8.1) {
-        worldPoint.x = uPos.x - (iX - 8.5) * UNITSIZE;
-        worldPoint.y = uPos.y - (iY + 0.5) * UNITSIZE;
-        vChunkCoords.x = (iY-8.5);
-    }
 
     vPosition = (uLookAtMat * worldPoint).xyz;
     vColor = aColor;
@@ -185,6 +184,8 @@ void main() {
         finalColor = vec4(mixTextures(mixTextures(mixTextures(tex1,tex2,a2),tex3, a3), tex4, a4), 1);
         //finalColor = vec4(a4 * tex4 - (a4  - 1.0) * ( (a3 - 1.0)*( tex1 * (a2 - 1.0) - a2*tex2) + a3*tex3), 1);
     }
+    finalColor.rgb = finalColor.rgb * vColor.rgb;
+
     finalColor.rgb = finalColor.rgb * vColor.rgb;
 
     // --- Fog start ---

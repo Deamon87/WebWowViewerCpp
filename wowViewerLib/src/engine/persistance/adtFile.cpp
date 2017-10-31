@@ -243,17 +243,6 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
     }
 };
 
-static bool isHole(int hole, int i, int j) {
-    static int holetab_h[4] = {0x1111, 0x2222, 0x4444, 0x8888};
-    static int holetab_v[4] = {0x000F, 0x00F0, 0x0F00, 0xF000};
-
-    return (hole & holetab_h[i] & holetab_v[j]) != 0;
-}
-
-static int indexMapBuf(int x, int y) {
-    int result = ((y + 1) >> 1) * 9 + (y >> 1) * 8 + x;
-    return result;
-}
 
 
 std::vector<uint8_t> AdtFile::processTexture(int wdtObjFlags, int i) {
@@ -328,34 +317,48 @@ std::vector<uint8_t> AdtFile::processTexture(int wdtObjFlags, int i) {
     return currentLayer;
 }
 
+static bool isHoleLowRes(int hole, int i, int j) {
+    static int holetab_h[4] = {0x1111, 0x2222, 0x4444, 0x8888};
+    static int holetab_v[4] = {0x000F, 0x00F0, 0x0F00, 0xF000};
+
+    i = i << 1;
+    j = j << 1;
+
+    return (hole & holetab_h[i] & holetab_v[j]) != 0;
+}
+static bool isHoleHighRes(uint64_t hole, int i, int j) {
+    return (((hole >> (7 - j) & 0xFF)) >> i & 1) > 0;
+}
+
 void AdtFile::createTriangleStrip() {
     if (mcnkRead < 0) return;
 
+    const int stripLenght = 9;
+    static uint8_t squareIndsStrip[stripLenght] = {17, 0, 9, 1, 18, 18, 9, 17, 17};
+
     for (int i = 0; i <= mcnkRead; i++) {
         SMChunk &mcnkObj = mapTile[i];
-        int hole = mcnkObj.holes_low_res;
+        int holeLow = mcnkObj.holes_low_res;
+        uint64_t holeHigh = mcnkObj.postMop.holes_high_res;
+
         stripOffsets.push_back(strips.size());
 
         int j = 0;
         bool first = true;
-        for (int x = 0; x < 4; x++) {
-            for (int y = 0; y < 4; y++) {
-                if (!isHole(hole, x, y)) {
-                    int _i = x * 2;
-                    int _j = y * 4;
-
-                    for (int k = 0; k < 2; k++) {
-                        if (!first) {
-                            strips.push_back(indexMapBuf(_i, _j + k * 2));
-                        } else
-                            first = false;
-
-                        for (int l = 0; l < 3; l++) {
-
-                            strips.push_back(indexMapBuf(_i + l, _j + k * 2));
-                            strips.push_back(indexMapBuf(_i + l, _j + k * 2 + 2));
-                        }
-                        strips.push_back(indexMapBuf(_i + 2, _j + k * 2 + 2));
+        for (int y = 0; y < 8; y++) {
+            for (int x = 0; x < 8; x++) {
+                bool isHole = (!mcnkObj.flags.high_res_holes) ?
+                              isHoleLowRes(holeLow, x, y) :
+                              isHoleHighRes(holeHigh, x, y);
+                if (!isHole) {
+                    //There are 8 squares in width and 8 square in height.
+                    //Each square is 4 triangles
+                    if (!first) {
+                        strips.push_back(squareIndsStrip[0] + 17 * y + x);
+                    }
+                    first = false;
+                    for (int k = 0; k < stripLenght; k++) {
+                        strips.push_back(squareIndsStrip[k] + 17 * y + x);
                     }
                 }
             }
