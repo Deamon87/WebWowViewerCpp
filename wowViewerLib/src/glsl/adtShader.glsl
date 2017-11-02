@@ -13,8 +13,8 @@ varying vec2 vChunkCoords;
 varying vec3 vPosition;
 varying vec4 vColor;
 
-const float UNITSIZE_X =  533.3333333 / 16.0 / 8.0;
-const float UNITSIZE_Y =  533.3333333 / 16.0 / 9.0;
+const float UNITSIZE_X =  (1600.0 / 3.0) / 16.0 / 8.0;
+const float UNITSIZE_Y =  (1600.0 / 3.0) / 16.0 / 8.0;
 
 void main() {
 
