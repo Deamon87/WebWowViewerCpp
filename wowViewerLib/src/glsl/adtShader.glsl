@@ -184,9 +184,7 @@ void main() {
         finalColor = vec4(mixTextures(mixTextures(mixTextures(tex1,tex2,a2),tex3, a3), tex4, a4), 1);
         //finalColor = vec4(a4 * tex4 - (a4  - 1.0) * ( (a3 - 1.0)*( tex1 * (a2 - 1.0) - a2*tex2) + a3*tex3), 1);
     }
-    finalColor.rgb = finalColor.rgb * vColor.rgb;
-
-    finalColor.rgb = finalColor.rgb * vColor.rgb;
+    finalColor.rgb = finalColor.rgb * 2*vColor.rgb;
 
     // --- Fog start ---
     vec3 fogColor = uFogColor;

@@ -82,10 +82,11 @@ void AdtObject::createVBO() {
             }
         } else {
             for (int j = 0; j < 145; j++) {
-                vboArray.push_back(1.0f);
-                vboArray.push_back(1.0f);
-                vboArray.push_back(1.0f);
-                vboArray.push_back(1.0f);
+                // 0.5 to mitigate multiplication by 2 in shader
+                vboArray.push_back(0.5f);
+                vboArray.push_back(0.5f);
+                vboArray.push_back(0.5f);
+                vboArray.push_back(0.5f);
             }
         }
     }

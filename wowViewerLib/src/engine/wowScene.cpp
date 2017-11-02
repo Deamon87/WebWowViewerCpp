@@ -49,23 +49,26 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
+//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
 //    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
-//    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
+    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 
-    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
-    currentScene = new Map(this, "silithusphase01");
+//    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
+//    currentScene = new Map(this, "silithusphase01");
+
+//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+//    currentScene = new Map(this, "Troll Raid");
+//    currentScene = new Map(this, "argus_rifts");
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
     currentScene = new Map(this, "Troll Raid");
 
 //    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "UlduarRaid");
-//    currentScene = new Map(this, "silithusphase01");
 //    currentScene = new Map(this, "argus 1");
 
 
@@ -859,7 +862,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 1200;
+    int farPlane = 500;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 
@@ -887,10 +890,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    }
 //
     if (this->uFogStart < 0) {
-        this->uFogStart = farPlane+400;
+        this->uFogStart = farPlane+8000;
     }
     if (this->uFogEnd < 0) {
-        this->uFogEnd = farPlane+800;
+        this->uFogEnd = farPlane+12000;
     }
 
     if (!m_config->getUseSecondCamera()){
