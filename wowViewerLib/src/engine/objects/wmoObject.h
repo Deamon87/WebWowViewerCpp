@@ -39,7 +39,7 @@ class WmoObject : public IWmoApi {
 
 public:
     WmoObject(IWoWInnerApi *api) : m_api(api) {
-        m_getTextureFunc = std::bind(&WmoObject::getTexture, this, std::placeholders::_1);
+        m_getTextureFunc = std::bind(&WmoObject::getTexture, this, std::placeholders::_1, std::placeholders::_2);
     }
 private:
     IWoWInnerApi *m_api;

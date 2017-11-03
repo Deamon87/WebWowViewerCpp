@@ -120,7 +120,7 @@ Effect(MapObjDiffuseTerrain)
 
 */
 
-enum class WmoVertexShader {
+enum class WmoVertexShader : int {
     None = -1,
     MapObjDiffuse_T1 = 0,
     MapObjDiffuse_T1_Refl = 1,
@@ -131,7 +131,7 @@ enum class WmoVertexShader {
     MapObjDiffuse_Comp_Terrain = 6
 };
 
-enum class WmoPixelShader {
+enum class WmoPixelShader : int {
     None = -1,
     MapObjDiffuse = 0,
     MapObjSpecular = 1,
@@ -149,7 +149,8 @@ enum class WmoPixelShader {
     MapObjTwoLayerDiffuseEmissive = 13
 };
 
-
+inline constexpr const int operator+ (WmoPixelShader const val) { return static_cast<const int>(val); };
+inline constexpr const int operator+ (WmoVertexShader const val) { return static_cast<const int>(val); };
 
 static const struct {
     int vertexShader;
@@ -157,88 +158,88 @@ static const struct {
 } wmoMaterialShader[17] = {
     //MapObjDiffuse = 0
     {
-        vertex: WmoVertexShader::MapObjDiffuse_T1,
-        pixel: WmoPixelShader::MapObjDiffuse,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
+        pixelShader: +WmoPixelShader::MapObjDiffuse,
     },
     //MapObjSpecular = 1
     {
-        vertex: WmoVertexShader::MapObjSpecular_T1,
-        pixel: WmoPixelShader::MapObjSpecular,
+        vertexShader: +WmoVertexShader::MapObjSpecular_T1,
+        pixelShader: +WmoPixelShader::MapObjSpecular,
     },
     //MapObjMetal = 2
     {
-        vertex: WmoVertexShader::MapObjSpecular_T1,
-        pixel: WmoPixelShader::MapObjMetal,
+        vertexShader: +WmoVertexShader::MapObjSpecular_T1,
+        pixelShader: +WmoPixelShader::MapObjMetal,
     },
     //MapObjEnv = 3
     {
-        vertex: WmoVertexShader::MapObjDiffuse_T1_Refl,
-        pixel: WmoPixelShader::MapObjEnv,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_T1_Refl,
+        pixelShader: +WmoPixelShader::MapObjEnv,
     },
     //MapObjOpaque = 4
     {
-        vertex: WmoVertexShader::MapObjDiffuse_T1,
-        pixel: WmoPixelShader::MapObjOpaque,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
+        pixelShader: +WmoPixelShader::MapObjOpaque,
     },
     //MapObjEnvMetal = 5
     {
-        vertex: WmoVertexShader::MapObjDiffuse_T1_Refl,
-        pixel: WmoPixelShader::MapObjEnvMetal,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_T1_Refl,
+        pixelShader: +WmoPixelShader::MapObjEnvMetal,
     },
     //MapObjTwoLayerDiffuse = 6
     {
-        vertex: WmoVertexShader::MapObjDiffuse_Comp,
-        pixel: WmoPixelShader::MapObjTwoLayerDiffuse,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp,
+        pixelShader: +WmoPixelShader::MapObjTwoLayerDiffuse,
     },
     //MapObjTwoLayerEnvMetal = 7
     {
-        vertex: WmoVertexShader::MapObjDiffuse_T1,
-        pixel: WmoPixelShader::MapObjDiffuse,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
+        pixelShader: +WmoPixelShader::MapObjDiffuse,
     },
     //TwoLayerTerrain = 8
     {
-        vertex: WmoVertexShader::MapObjDiffuse_Comp_Terrain,
-        pixel: WmoPixelShader::MapObjTwoLayerTerrain,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp_Terrain,
+        pixelShader: +WmoPixelShader::MapObjTwoLayerTerrain,
     },
     //MapObjDiffuseEmissive = 9
     {
-        vertex: WmoVertexShader::MapObjDiffuse_Comp,
-        pixel: WmoPixelShader::MapObjDiffuseEmissive,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp,
+        pixelShader: +WmoPixelShader::MapObjDiffuseEmissive,
     },
     //waterWindow = 10
     {
-        vertex: WmoVertexShader::None,
-        pixel: WmoPixelShader::None,
+        vertexShader: +WmoVertexShader::None,
+        pixelShader: +WmoPixelShader::None,
     },
     //MapObjMaskedEnvMetal = 11
     {
-        vertex: WmoVertexShader::MapObjDiffuse_T1_Env_T2,
-        pixel: WmoPixelShader::MapObjMaskedEnvMetal,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        pixelShader: +WmoPixelShader::MapObjMaskedEnvMetal,
     },
     //MapObjEnvMetalEmissive = 12
     {
-        vertex: WmoVertexShader::MapObjDiffuse_T1_Env_T2,
-        pixel: WmoPixelShader::MapObjEnvMetalEmissive,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        pixelShader: +WmoPixelShader::MapObjEnvMetalEmissive,
     },
     //TwoLayerDiffuseOpaque = 13
     {
-        vertex: WmoVertexShader::MapObjDiffuse_Comp,
-        pixel: WmoPixelShader::MapObjTwoLayerDiffuseOpaque,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp,
+        pixelShader: +WmoPixelShader::MapObjTwoLayerDiffuseOpaque,
     },
     //submarineWindow = 14
     {
-        vertex: WmoVertexShader::None,
-        pixel: WmoPixelShader::None,
+        vertexShader: +WmoVertexShader::None,
+        pixelShader: +WmoPixelShader::None,
     },
     //TwoLayerDiffuseEmissive = 15
     {
-        vertex: WmoVertexShader::MapObjDiffuse_Comp,
-        pixel: WmoPixelShader::MapObjTwoLayerDiffuseEmissive,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp,
+        pixelShader: +WmoPixelShader::MapObjTwoLayerDiffuseEmissive,
     },
     //MapObjDiffuseTerrain = 16
     {
-        vertex: WmoVertexShader::MapObjDiffuse_T1,
-        pixel: WmoPixelShader::MapObjDiffuse,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
+        pixelShader: +WmoPixelShader::MapObjDiffuse,
     },
 };
 
@@ -496,7 +497,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
 
 //        ambientColor = [1,1,1,1];
         glUniform1i(wmoShader->getUnf("uVertexShader"), vertexShader);
-        glUniform4f(wmoShader->getUnf("uPixelShader"), pixelShader);
+        glUniform1i(wmoShader->getUnf("uPixelShader"), pixelShader);
 
         glUniform4f(wmoShader->getUnf("uMeshColor1"), 1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -521,23 +522,32 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
         }
 
         //var textureObject = this.textureArray[j];
+        bool isSecondTextSpec = material.shader == 8;
 
-        BlpTexture *texture1 = getTextureFunc(material.diffuseNameIndex);
-        BlpTexture *texture2 = getTextureFunc(material.envNameIndex);
-        BlpTexture *texture3 = getTextureFunc(material.texture_2);
+        BlpTexture *texture1 = getTextureFunc(material.diffuseNameIndex, false);
+        BlpTexture *texture2 = getTextureFunc(material.envNameIndex, isSecondTextSpec);
+        BlpTexture *texture3 = getTextureFunc(material.texture_2, false);
 
         glActiveTexture(GL_TEXTURE0);
-        if (texture1->getIsLoaded()) {
+        if (texture1 != nullptr && texture1->getIsLoaded()) {
             glBindTexture(GL_TEXTURE_2D, texture1->getGlTexture());
         }  else {
             glBindTexture(GL_TEXTURE_2D, blackPixelText);
         }
 
-        if (texture2->getIsLoaded()) {
+        if (texture2 != nullptr && texture2->getIsLoaded()) {
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, texture2->getGlTexture());
         } else {
             glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, blackPixelText);
+        }
+
+        if (texture3 != nullptr && texture3->getIsLoaded()) {
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, texture3->getGlTexture());
+        } else {
+            glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, blackPixelText);
         }
 
@@ -573,10 +583,12 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
 //        }
 
 //        if (textureObject && textureObject[1]) {
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, 0);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
 //        }
     }
     glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0f);

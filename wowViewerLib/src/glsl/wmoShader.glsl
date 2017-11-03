@@ -96,8 +96,8 @@ void main() {
     vec4 tex2 = texture2D(uTexture2, vTexCoord2).rgba;
     vec4 tex3 = texture2D(uTexture3, vTexCoord3).rgba;
 
-    vec4 finalColor = (0.0, 0.0, 0.0, 1.0);
-    if (uPixelShader == -1) {
+    vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
+    if ( uPixelShader == -1 ) {
         finalColor = vec4(tex.rgb * vColor.bgr + tex2.rgb*vColor2.bgr, tex.a);
     } else if (uPixelShader == 0) { //MapObjDiffuse
 
@@ -195,7 +195,7 @@ void main() {
             mix(t1diffuse, tex.rgb, vColor2.a));
 
         finalColor.rgba = vec4(matDiffuse+env, vColor.a);
-    }
+    };
 
     vec3 fogColor = uFogColor;
     float fog_start = uFogStart;

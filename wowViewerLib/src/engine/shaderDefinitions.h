@@ -209,7 +209,7 @@ constexpr const char* const wmoShaderString =
 
 struct wmoShader {
  enum class Attribute { 
- aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aColor = 4, aColor2 = 5, wmoShaderAttributeEnd
+ aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aColor = 5, aColor2 = 6, wmoShaderAttributeEnd
  };
  };
 inline constexpr const int operator+ (wmoShader::Attribute const val) { return static_cast<const int>(val); };
@@ -218,12 +218,13 @@ constexpr shaderItem wmoShaderAttributes [] = {
  {"aNormal", +wmoShader::Attribute::aNormal},
  {"aTexCoord", +wmoShader::Attribute::aTexCoord},
  {"aTexCoord2", +wmoShader::Attribute::aTexCoord2},
+ {"aTexCoord3", +wmoShader::Attribute::aTexCoord3},
  {"aColor", +wmoShader::Attribute::aColor},
  {"aColor2", +wmoShader::Attribute::aColor2},
  };
 constexpr const static shaderDefinition wmoShaderDef = { 
 wmoShaderString,
-6,
+7,
 wmoShaderAttributes
 };
 

@@ -268,6 +268,7 @@ void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
 }
 
 BlpTexture *WmoObject::getTexture(int textureId, bool isSpec) {
+    if (textureId < 0) return nullptr;
     std::string materialTexture(&mainGeom->textureNamesField[textureId]);
 
     if (isSpec) {
