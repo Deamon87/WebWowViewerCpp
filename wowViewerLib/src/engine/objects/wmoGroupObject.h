@@ -21,7 +21,7 @@ public:
         createWorldGroupBB(groupInfo.bounding_box, modelMatrix);
     }
 
-    void draw(SMOMaterial *materials, std::function <BlpTexture&(int materialId)> m_getTextureFunc);
+    void draw(SMOMaterial *materials, std::function <BlpTexture *(int materialId, bool isSpec)> m_getTextureFunc);
     bool getIsLoaded() { return m_loaded; };
     const WmoGroupGeom *getWmoGroupGeom() const { return m_geom; };
     const std::vector <M2Object *> *getDoodads() const { return &m_doodads; };

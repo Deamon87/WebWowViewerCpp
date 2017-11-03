@@ -330,7 +330,7 @@ static bool isHoleHighRes(uint64_t hole, int i, int j) {
     uint8_t * holeAsUint8 = (uint8_t *) &hole;
     return ((holeAsUint8[j] >> i) & 1) > 0;
 
-    //return ((((hole >> ((j) * 8) & 0xFF)) >> (7-i)) & 1) > 0;
+//    return ((hole >> ((7-j) * 8  + i)) & 1) > 0;
 }
 
 void AdtFile::createTriangleStrip() {

@@ -28,7 +28,7 @@ public:
     bool isLoaded() { return m_loaded; };
     void createIndexVBO();
 
-    void draw(IWoWInnerApi *api, SMOMaterial *materials, std::function <BlpTexture&(int materialId)> getTextureFunc);
+    void draw(IWoWInnerApi *api, SMOMaterial *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc);
 
 private:
     bool m_loaded = false;

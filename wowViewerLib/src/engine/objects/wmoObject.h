@@ -52,7 +52,7 @@ private:
     int m_nameSet;
     int m_doodadSet;
 
-    std::function <BlpTexture&(int materialId)> m_getTextureFunc;
+    std::function <BlpTexture *(int materialId, bool isSpec)> m_getTextureFunc;
 
     mathfu::mat4 m_placementMatrix;
     mathfu::mat4 m_placementInvertMatrix;
@@ -70,7 +70,7 @@ public:
     std::string getTextureName(int index);
 
     M2Object *getDoodad(int index);
-    BlpTexture& getTexture(int materialId);
+    BlpTexture * getTexture(int materialId, bool isSpec);
     void setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef);
     void startLoading();
     bool isLoaded(){ return m_loaded;}

@@ -6,141 +6,374 @@
 #include "../persistance/header/wmoFileHeader.h"
 #include "../shaderDefinitions.h"
 #include <iostream>
+/*
+//0
+MapObjDiffuse {
+    VertexShader(MapObjDiffuse_T1);
+    PixelShader(MapObjDiffuse);
+}
+
+//1
+MapObjSpecular {
+    VertexShader(MapObjSpecular_T1);
+    PixelShader(MapObjSpecular);
+}
+
+//2
+MapObjMetal {
+    VertexShader(MapObjSpecular_T1);
+    PixelShader(MapObjMetal);
+}
+
+//3
+MapObjEnv {
+    VertexShader(MapObjDiffuse_T1_Refl);
+    PixelShader(MapObjEnv);
+}
+
+//4
+MapObjOpaque {
+    VertexShader(MapObjDiffuse_T1);
+    PixelShader(MapObjOpaque);
+}
+
+//5
+Effect(MapObjEnvMetal {
+    VertexShader(MapObjDiffuse_T1_Refl);
+    PixelShader(MapObjEnvMetal);
+}
+
+//6
+Effect(MapObjComposite) //aka MapObjTwoLayerDiffuse
+{
+    VertexShader(MapObjDiffuse_Comp);
+    PixelShader(MapObjComposite); //aka MapObjTwoLayerDiffuse
+}
+
+//7
+Effect(MapObjTwoLayerEnvMetal)
+{
+    VertexShader(MapObjDiffuse_Comp_Refl);
+    PixelShader(MapObjTwoLayerEnvMetal);
+}
+
+//8
+Effect(TwoLayerTerrain)
+{
+    VertexShader(MapObjDiffuse_Comp_Terrain);
+    PixelShader(MapObjTwoLayerTerrain);
+}
+
+//9
+Effect(MapObjDiffuseEmissive)
+{
+    VertexShader(MapObjDiffuse_Comp);
+    PixelShader(MapObjDiffuseEmissive);
+}
+
+//10
+Effect(waterWindow)
+{
+    //unk
+}
+
+//11
+Effect(MapObjMaskedEnvMetal)
+{
+    VertexShader(MapObjDiffuse_T1_Env_T2);
+    PixelShader(MapObjMaskedEnvMetal);
+}
+
+//12
+Effect(MapObjEnvMetalEmissive)
+{
+    VertexShader(MapObjDiffuse_T1_Env_T2);
+    PixelShader(MapObjEnvMetalEmissive);
+}
+
+//13
+Effect(TwoLayerDiffuseOpaque)
+{
+    VertexShader(MapObjDiffuse_Comp);
+    PixelShader(MapObjTwoLayerDiffuseOpaque);
+}
+
+//14
+Effect(submarineWindow)
+{
+    //unk
+}
+
+//15
+Effect(TwoLayerDiffuseEmissive)
+{
+    VertexShader(MapObjDiffuse_Comp);
+    PixelShader(MapObjTwoLayerDiffuseEmissive);
+}
+
+//16
+Effect(MapObjDiffuseTerrain)
+{
+    VertexShader(MapObjDiffuse_T1);
+    PixelShader(MapObjDiffuse);
+}
+
+*/
+
+enum class WmoVertexShader {
+    None = -1,
+    MapObjDiffuse_T1 = 0,
+    MapObjDiffuse_T1_Refl = 1,
+    MapObjDiffuse_T1_Env_T2 = 2,
+    MapObjSpecular_T1 = 3,
+    MapObjDiffuse_Comp = 4,
+    MapObjDiffuse_Comp_Refl = 5,
+    MapObjDiffuse_Comp_Terrain = 6
+};
+
+enum class WmoPixelShader {
+    None = -1,
+    MapObjDiffuse = 0,
+    MapObjSpecular = 1,
+    MapObjMetal = 2,
+    MapObjEnv = 3,
+    MapObjOpaque = 4,
+    MapObjEnvMetal = 5,
+    MapObjTwoLayerDiffuse = 6, //MapObjComposite
+    MapObjTwoLayerEnvMetal = 7,
+    MapObjTwoLayerTerrain = 8,
+    MapObjDiffuseEmissive = 9,
+    MapObjMaskedEnvMetal = 10,
+    MapObjEnvMetalEmissive = 11,
+    MapObjTwoLayerDiffuseOpaque = 12,
+    MapObjTwoLayerDiffuseEmissive = 13
+};
 
 
+
+static const struct {
+    int vertexShader;
+    int pixelShader;
+} wmoMaterialShader[17] = {
+    //MapObjDiffuse = 0
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_T1,
+        pixel: WmoPixelShader::MapObjDiffuse,
+    },
+    //MapObjSpecular = 1
+    {
+        vertex: WmoVertexShader::MapObjSpecular_T1,
+        pixel: WmoPixelShader::MapObjSpecular,
+    },
+    //MapObjMetal = 2
+    {
+        vertex: WmoVertexShader::MapObjSpecular_T1,
+        pixel: WmoPixelShader::MapObjMetal,
+    },
+    //MapObjEnv = 3
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_T1_Refl,
+        pixel: WmoPixelShader::MapObjEnv,
+    },
+    //MapObjOpaque = 4
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_T1,
+        pixel: WmoPixelShader::MapObjOpaque,
+    },
+    //MapObjEnvMetal = 5
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_T1_Refl,
+        pixel: WmoPixelShader::MapObjEnvMetal,
+    },
+    //MapObjTwoLayerDiffuse = 6
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_Comp,
+        pixel: WmoPixelShader::MapObjTwoLayerDiffuse,
+    },
+    //MapObjTwoLayerEnvMetal = 7
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_T1,
+        pixel: WmoPixelShader::MapObjDiffuse,
+    },
+    //TwoLayerTerrain = 8
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_Comp_Terrain,
+        pixel: WmoPixelShader::MapObjTwoLayerTerrain,
+    },
+    //MapObjDiffuseEmissive = 9
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_Comp,
+        pixel: WmoPixelShader::MapObjDiffuseEmissive,
+    },
+    //waterWindow = 10
+    {
+        vertex: WmoVertexShader::None,
+        pixel: WmoPixelShader::None,
+    },
+    //MapObjMaskedEnvMetal = 11
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        pixel: WmoPixelShader::MapObjMaskedEnvMetal,
+    },
+    //MapObjEnvMetalEmissive = 12
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        pixel: WmoPixelShader::MapObjEnvMetalEmissive,
+    },
+    //TwoLayerDiffuseOpaque = 13
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_Comp,
+        pixel: WmoPixelShader::MapObjTwoLayerDiffuseOpaque,
+    },
+    //submarineWindow = 14
+    {
+        vertex: WmoVertexShader::None,
+        pixel: WmoPixelShader::None,
+    },
+    //TwoLayerDiffuseEmissive = 15
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_Comp,
+        pixel: WmoPixelShader::MapObjTwoLayerDiffuseEmissive,
+    },
+    //MapObjDiffuseTerrain = 16
+    {
+        vertex: WmoVertexShader::MapObjDiffuse_T1,
+        pixel: WmoPixelShader::MapObjDiffuse,
+    },
+};
 
 chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
-        handler : [](WmoGroupGeom& object, ChunkData& chunkData){},
-        subChunks : {
-                {
-                        'MVER',
-                        {
-                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                    debuglog("Entered MVER");
-                                }
-                        }
-                },
-                {
-                        'MOGP',
-                        {
-                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                    chunkData.readValue(object.mogp);
-                                    debuglog("Entered MOGP");
-                                },
-                                subChunks: {
-                                        {
-                                            'MOPY', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    debuglog("Entered MOPY");
-                                                },
-                                            }
-                                        },
-                                        {
-                                            'MOVI', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    object.indicesLen = chunkData.chunkLen / 2;
-                                                    chunkData.readValues(object.indicies, object.indicesLen);
-                                                    debuglog("Entered MOVI");
-                                                },
-                                            }
-                                        },
-                                        {
-                                            'MOVT', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-
-                                                    object.verticesLen = chunkData.chunkLen / sizeof(C3Vector);
-                                                    chunkData.readValues(object.verticles, object.verticesLen);
-                                                    debuglog("Entered MOVT");
-                                                },
-                                            }
-                                        },
-                                        {
-                                            'MONR', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    object.normalsLen = chunkData.chunkLen / sizeof(C3Vector);
-                                                    chunkData.readValues(object.normals, object.normalsLen);
-                                                    debuglog("Entered MONR");
-                                                },
-                                            }
-                                        },
-                                        {
-                                            'MOTV', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    debuglog("Entered MOTV");
-
-                                                    if (object.textureCoordsRead == 0) {
-                                                        object.textureCoordsLen = chunkData.chunkLen / sizeof(C2Vector);
-                                                        chunkData.readValues(object.textCoords,
-                                                                             object.textureCoordsLen);
-                                                    } else if (object.textureCoordsRead == 1) {
-                                                        object.textureCoordsLen2 = chunkData.chunkLen / sizeof(C2Vector);
-                                                        chunkData.readValues(object.textCoords2,
-                                                                             object.textureCoordsLen2);
-                                                    } else if (object.textureCoordsRead == 2) {
-                                                        object.textureCoordsLen2 = chunkData.chunkLen / sizeof(C2Vector);
-                                                        chunkData.readValues(object.textCoords3,
-                                                                             object.textureCoordsLen3);
-                                                    }
-                                                    object.textureCoordsRead++;
-                                                },
-                                            }
-                                        },
-                                        {
-                                            'MOCV', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    debuglog("Entered MOCV");
-                                                    if (object.mocvRead == 0) {
-                                                        object.cvLen = chunkData.chunkLen / 4;
-                                                        chunkData.readValues(object.colorArray, object.cvLen);
-                                                    } else if (object.mocvRead == 1) {
-                                                        object.cvLen2 = chunkData.chunkLen / 4;
-                                                        chunkData.readValues(object.colorArray2, object.cvLen2);
-                                                    }
-
-                                                    object.mocvRead++;
-                                                },
-                                            }
-                                        },
-                                        {
-                                            'MODR', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    object.doodadRefsLen = chunkData.chunkLen / 2;
-                                                    chunkData.readValues(object.doodadRefs, object.doodadRefsLen);
-                                                    debuglog("Entered MODR");
-                                                },
-                                            }
-                                        },
-                                        {
-                                            'MOBA', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    object.batchesLen = chunkData.chunkLen / sizeof(SMOBatch);
-                                                    chunkData.readValues(object.batches, object.batchesLen);
-                                                    debuglog("Entered MOBA");
-                                                },
-                                            }
-                                        },
-                                        {
-                                            'MOBN', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    object.nodesLen = chunkData.chunkLen / sizeof(t_BSP_NODE);
-                                                    chunkData.readValues(object.bsp_nodes, object.nodesLen);
-                                                    debuglog("Entered MOBN");
-                                                },
-                                            }
-                                        },
-                                        {
-                                            'MOBR', {
-                                                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
-                                                    object.bpsIndiciesLen = chunkData.chunkLen / sizeof(uint16_t);
-                                                    chunkData.readValues(object.bpsIndicies, object.bpsIndiciesLen);
-                                                    debuglog("Entered MOBR");
-                                                },
-                                            }
-                                        },
-                                }
-                        }
+    handler : [](WmoGroupGeom& object, ChunkData& chunkData){},
+    subChunks : {
+        {
+            'MVER',
+            {
+                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                    debuglog("Entered MVER");
                 }
+            }
+        },
+        {
+            'MOGP',
+            {
+                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                    chunkData.readValue(object.mogp);
+                    debuglog("Entered MOGP");
+                },
+                subChunks: {
+                    {
+                        'MOPY', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOPY");
+                            },
+                        }
+                    },
+                    {
+                        'MOVI', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                object.indicesLen = chunkData.chunkLen / 2;
+                                chunkData.readValues(object.indicies, object.indicesLen);
+                                debuglog("Entered MOVI");
+                            },
+                        }
+                    },
+                    {
+                        'MOVT', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+
+                                object.verticesLen = chunkData.chunkLen / sizeof(C3Vector);
+                                chunkData.readValues(object.verticles, object.verticesLen);
+                                debuglog("Entered MOVT");
+                            },
+                        }
+                    },
+                    {
+                        'MONR', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                object.normalsLen = chunkData.chunkLen / sizeof(C3Vector);
+                                chunkData.readValues(object.normals, object.normalsLen);
+                                debuglog("Entered MONR");
+                            },
+                        }
+                    },
+                    {
+                        'MOTV', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOTV");
+
+                                if (object.textureCoordsRead == 0) {
+                                    object.textureCoordsLen = chunkData.chunkLen / sizeof(C2Vector);
+                                    chunkData.readValues(object.textCoords,
+                                                         object.textureCoordsLen);
+                                } else if (object.textureCoordsRead == 1) {
+                                    object.textureCoordsLen2 = chunkData.chunkLen / sizeof(C2Vector);
+                                    chunkData.readValues(object.textCoords2,
+                                                         object.textureCoordsLen2);
+                                } else if (object.textureCoordsRead == 2) {
+                                    object.textureCoordsLen2 = chunkData.chunkLen / sizeof(C2Vector);
+                                    chunkData.readValues(object.textCoords3,
+                                                         object.textureCoordsLen3);
+                                }
+                                object.textureCoordsRead++;
+                            },
+                        }
+                    },
+                    {
+                        'MOCV', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOCV");
+                                if (object.mocvRead == 0) {
+                                    object.cvLen = chunkData.chunkLen / 4;
+                                    chunkData.readValues(object.colorArray, object.cvLen);
+                                } else if (object.mocvRead == 1) {
+                                    object.cvLen2 = chunkData.chunkLen / 4;
+                                    chunkData.readValues(object.colorArray2, object.cvLen2);
+                                }
+
+                                object.mocvRead++;
+                            },
+                        }
+                    },
+                    {
+                        'MODR', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                object.doodadRefsLen = chunkData.chunkLen / 2;
+                                chunkData.readValues(object.doodadRefs, object.doodadRefsLen);
+                                debuglog("Entered MODR");
+                            },
+                        }
+                    },
+                    {
+                        'MOBA', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                object.batchesLen = chunkData.chunkLen / sizeof(SMOBatch);
+                                chunkData.readValues(object.batches, object.batchesLen);
+                                debuglog("Entered MOBA");
+                            },
+                        }
+                    },
+                    {
+                        'MOBN', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                object.nodesLen = chunkData.chunkLen / sizeof(t_BSP_NODE);
+                                chunkData.readValues(object.bsp_nodes, object.nodesLen);
+                                debuglog("Entered MOBN");
+                            },
+                        }
+                    },
+                    {
+                        'MOBR', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                object.bpsIndiciesLen = chunkData.chunkLen / sizeof(uint16_t);
+                                chunkData.readValues(object.bpsIndicies, object.bpsIndiciesLen);
+                                debuglog("Entered MOBR");
+                            },
+                        }
+                    },
+                }
+            }
         }
+    }
 };
 
 
@@ -187,7 +420,7 @@ void WmoGroupGeom::createIndexVBO() {
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function <BlpTexture&(int materialId)> getTextureFunc) {
+void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
 
 //    var shaderUniforms = this.sceneApi.shaders.getShaderUniforms();
 //    var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
@@ -252,15 +485,20 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
             texIndex = renderBatch.material_id;
         }
 
-        uint32_t color = materials[texIndex].diffColor;
+        SMOMaterial &material = materials[texIndex];
+        uint32_t color = material.diffColor;
+        int pixelShader = wmoMaterialShader[material.shader].pixelShader;
+        int vertexShader = wmoMaterialShader[material.shader].vertexShader;
 //        var colorVector = [color&0xff, (color>> 8)&0xff,
 //                (color>>16)&0xff, (color>> 24)&0xff];
 //        colorVector[0] /= 255.0; colorVector[1] /= 255.0;
 //        colorVector[2] /= 255.0; colorVector[3] /= 255.0;
 
 //        ambientColor = [1,1,1,1];
-        glUniform4f(wmoShader->getUnf("uMeshColor1"), 1.0f, 1.0f, 1.0f, 1.0f);
+        glUniform1i(wmoShader->getUnf("uVertexShader"), vertexShader);
+        glUniform4f(wmoShader->getUnf("uPixelShader"), pixelShader);
 
+        glUniform4f(wmoShader->getUnf("uMeshColor1"), 1.0f, 1.0f, 1.0f, 1.0f);
 
         if (materials[texIndex].blendMode != 0) {
             float alphaTestVal = 0.878431f;
@@ -284,22 +522,24 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
 
         //var textureObject = this.textureArray[j];
 
-        BlpTexture texture1 = getTextureFunc(materials[texIndex].diffuseNameIndex);
-//        BlpTexture texture2 = getTextureFunc(materials[texIndex].texture_2);
+        BlpTexture *texture1 = getTextureFunc(material.diffuseNameIndex);
+        BlpTexture *texture2 = getTextureFunc(material.envNameIndex);
+        BlpTexture *texture3 = getTextureFunc(material.texture_2);
 
         glActiveTexture(GL_TEXTURE0);
-        if (texture1.getIsLoaded()) {
-            glBindTexture(GL_TEXTURE_2D, texture1.getGlTexture());
+        if (texture1->getIsLoaded()) {
+            glBindTexture(GL_TEXTURE_2D, texture1->getGlTexture());
         }  else {
             glBindTexture(GL_TEXTURE_2D, blackPixelText);
         }
-//        if (textureObject && textureObject[1]) {
-//            glActiveTexture(GL_TEXTURE1);
-//            glBindTexture(GL_TEXTURE_2D, textureObject[1].texture);
-//        } else {
+
+        if (texture2->getIsLoaded()) {
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, texture2->getGlTexture());
+        } else {
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, blackPixelText);
-//        }
+        }
 
 //        /* Hack to skip verticles from node */
 //        if (bspNodeList) {

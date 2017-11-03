@@ -2,6 +2,7 @@
 // Created by Deamon on 7/16/2017.
 //
 
+#include <iostream>
 #include <set>
 #include <cmath>
 #include "map.h"
