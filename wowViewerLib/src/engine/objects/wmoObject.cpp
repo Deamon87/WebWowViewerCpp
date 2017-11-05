@@ -268,12 +268,15 @@ void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
 }
 
 BlpTexture *WmoObject::getTexture(int textureId, bool isSpec) {
-    if (textureId < 0) return nullptr;
+    if (textureId < 0 || textureId >= mainGeom->textureNamesFieldLen) return nullptr;
+
     std::string materialTexture(&mainGeom->textureNamesField[textureId]);
+    if (materialTexture == "") return nullptr;
 
     if (isSpec) {
         materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
     }
+
 
     //TODO: cache Textures used in WMO
     return m_api->getTextureCache()->get(materialTexture);

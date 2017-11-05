@@ -34,8 +34,9 @@ private:
     bool m_loaded = false;
 
     int normalOffset;
-    int textOffset;
-    int textOffset2;
+    int textOffset = 0;
+    int textOffset2 = 0;
+    int textOffset3 = 0;
     int colorOffset;
     int colorOffset2;
 
@@ -44,7 +45,7 @@ public:
 
     MOGP *mogp;
 
-    int16_t *indicies;
+    uint16_t *indicies;
     int indicesLen;
 
     C3Vector *verticles;
@@ -55,19 +56,19 @@ public:
 
     int textureCoordsRead = 0;
     C2Vector *textCoords;
-    int textureCoordsLen;
+    int textureCoordsLen = 0;
 
     C2Vector *textCoords2;
-    int textureCoordsLen2;
+    int textureCoordsLen2 = 0;
 
     C2Vector *textCoords3;
-    int textureCoordsLen3;
+    int textureCoordsLen3 = 0;
 
     CImVector *colorArray;
-    int cvLen;
+    int cvLen = 0;
 
     CImVector *colorArray2;
-    int cvLen2;
+    int cvLen2 = 0;
     int mocvRead = 0;
 
     uint16_t *doodadRefs;
