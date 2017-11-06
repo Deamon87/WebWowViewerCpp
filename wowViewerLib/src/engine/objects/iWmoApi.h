@@ -10,5 +10,6 @@
 class IWmoApi {
 public:
     virtual M2Object *getDoodad(int index) = 0;
+    virtual SMOHeader *getWmoHeader() = 0;
 };
 #endif //WOWVIEWERLIB_IWMOAPI_H

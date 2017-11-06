@@ -77,6 +77,9 @@ public:
     bool getIsAnimated() {
         return isAnimated;
     }
+
+    void calcLights(std::vector<mathfu::mat4> &lights, std::vector<mathfu::mat4> &bonesMatrices, int animationIndex,
+                    animTime_t animationTime);
 };
 
 

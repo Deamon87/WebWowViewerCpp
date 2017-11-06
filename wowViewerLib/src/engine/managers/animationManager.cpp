@@ -386,8 +386,9 @@ static bool dump = false;
 void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
                               std::vector<mathfu::mat4> &textAnimMatrices,
                               std::vector<mathfu::vec4> &subMeshColors,
-                              std::vector<float> &transparencies
-        /*cameraDetails, lights, particleEmitters*/) {
+                              std::vector<float> &transparencies,
+                              lights
+        /*cameraDetails, , particleEmitters*/) {
 
     const M2Sequence* mainAnimationRecord = m_m2File->sequences[this->mainAnimationIndex];
     const M2Sequence* currentAnimationRecord = m_m2File->sequences[this->currentAnimationIndex];
@@ -608,6 +609,115 @@ void AnimationManager::calcTransparencies(
         }
 
         transparencies[i] = result1;
+    }
+}
+
+
+void AnimationManager::calcLights(std::vector<mathfu::mat4> &lights, std::vector<mathfu::mat4> &bonesMatrices, int animationIndex, animTime_t animationTime) {
+    auto lightRecords = m_m2File->lights;
+    if (lightRecords.size <= 0) return;
+    static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
+    static float defaultFloat = 1.0;
+
+    auto animationRecord = m_m2File->sequences[animationIndex];
+
+    for (int i = 0; i < lightRecords.size; i++) {
+        M2Light * lightRecord = lightRecords.getElement(i);
+
+        mathfu::vec3 ambient_color =
+            animateTrack<C3Vector, mathfu::vec3>(
+                    animationTime,
+                    animationRecord->duration,
+                    animationIndex,
+                    lightRecord->ambient_color,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultVector
+            );
+
+        float ambient_intensity =
+                animateTrack<float, float>(
+                        animationTime,
+                        animationRecord->duration,
+                        animationIndex,
+                        lightRecord->ambient_intensity,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultFloat
+                );
+        mathfu::vec3 diffuse_color =
+                animateTrack<C3Vector, mathfu::vec3>(
+                        animationTime,
+                        animationRecord->duration,
+                        animationIndex,
+                        lightRecord->diffuse_color,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultVector
+                );
+
+        float diffuse_intensity =
+                animateTrack<float, float>(
+                        animationTime,
+                        animationRecord->duration,
+                        animationIndex,
+                        lightRecord->diffuse_intensity,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultFloat
+                );
+
+        float attenuation_start =
+                animateTrack<float, float>(
+                        animationTime,
+                        animationRecord->duration,
+                        animationIndex,
+                        lightRecord->attenuation_start,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultFloat
+                );
+        float attenuation_end =
+                animateTrack<float, float>(
+                        animationTime,
+                        animationRecord->duration,
+                        animationIndex,
+                        lightRecord->attenuation_end,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultFloat
+                );
+
+        static unsigned char defaultChar = 0;
+        unsigned char visibility =
+                animateTrack<unsigned char, unsigned char>(
+                        animationTime,
+                        animationRecord->duration,
+                        animationIndex,
+                        lightRecord->visibility,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultChar
+                );
+
+        mathfu::mat4 &boneMat = bonesMatrices[lightRecord->bone];
+        C3Vector &pos_vec = lightRecord->position;
+
+        mathfu::vec4 lightWorldPos = boneMat * mathfu::vec4(mathfu::vec3(pos_vec), 1.0);
+
+//        lights[i].ambient_color = ambient_color;
+//        lights[i].ambient_intensity = ambient_intensity;
+//        lights[i].ambient_color[0] *= ambient_intensity;
+//        lights[i].ambient_color[1] *= ambient_intensity;
+//        lights[i].ambient_color[2] *= ambient_intensity;
+//        lights[i].ambient_color[3] *= ambient_intensity;
+//
+//        lights[i].diffuse_color = diffuse_color;
+//        lights[i].diffuse_intensity = diffuse_intensity;
+//        lights[i].attenuation_start = attenuation_start;
+//        lights[i].attenuation_end = attenuation_end;
+//        lights[i].position = position;
+//        lights[i].unk_ambient = unk_ambient;
     }
 }
 

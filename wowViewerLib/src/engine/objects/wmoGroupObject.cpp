@@ -32,6 +32,7 @@ void WmoGroupObject::startLoading() {
         this->m_loading = true;
 
         m_geom = m_api->getWmoGroupGeomCache()->get(m_fileName);
+        m_geom->setMOHD(this->m_wmoApi->getWmoHeader());
     }
 }
 

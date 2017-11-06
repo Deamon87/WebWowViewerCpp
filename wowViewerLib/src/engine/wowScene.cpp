@@ -72,8 +72,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "argus 1");
 //    currentScene = new Map(this, "silithusphase01");
 
-    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
-    currentScene = new Map(this, "stormgarde keep");
+//    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
+//    currentScene = new Map(this, "stormgarde keep");
 
 
     //Test scene 2: tree from shattrath
@@ -99,9 +99,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
 
     //Test scene 3: Ironforge
-//    m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "world\\wmo\\brokenisles\\dalaran2.wmo");
+    m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "world\\wmo\\brokenisles\\dalaran2.wmo");
 
 }
 

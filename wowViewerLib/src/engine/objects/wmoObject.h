@@ -78,6 +78,9 @@ public:
     bool hasPortals() {
         return mainGeom->header->nPortals != 0;
     }
+    virtual SMOHeader *getWmoHeader() override {
+        return mainGeom->header;
+    }
 
     void draw();
 

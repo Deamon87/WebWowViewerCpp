@@ -193,8 +193,8 @@ static const struct {
     },
     //MapObjTwoLayerEnvMetal = 7
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp_Refl,
-        pixelShader: +WmoPixelShader::MapObjTwoLayerDiffuse,
+        vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
+        pixelShader: +  WmoPixelShader::MapObjDiffuse,
     },
     //TwoLayerTerrain = 8
     {
@@ -336,6 +336,15 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         }
                     },
                     {
+                        'MOLT', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData) {
+                                debuglog("Entered MOLT");
+                                object.lightsLen = chunkData.chunkLen / sizeof(SMOLight);
+                                chunkData.readValues(object.lights, object.lightsLen);
+                            }
+                        }
+                    },
+                    {
                         'MODR', {
                             handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                 object.doodadRefsLen = chunkData.chunkLen / 2;
@@ -387,66 +396,71 @@ void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile) {
 
     createVBO();
     createIndexVBO();
+    fixColorVertexAlpha(mohd);
 
 
     m_loaded = true;
 }
 
 
-void WmoGroupGeom::fixColorVertexAlpha() {
+void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
     int begin_second_fixup = 0;
     if (mogp->transBatchCount) {
         begin_second_fixup =
-            *((unsigned __int16 *) &batches[(unsigned __int16) mogp->transBatchCount] - 2) + 1;
+            *((uint16_t *) &batches[(uint16_t) mogp->transBatchCount] - 2) + 1;
     }
 
-    if (mapObjGroup->m_mapObj->mohd->flags & flag_has_some_outdoor_group) {
-        for (int i(begin_second_fixup); i < mapObjGroup->mocv_count; ++i) {
-            mapObjGroup->mocv[i].w = mapObjGroup->m_groupFlags & SMOGroup::EXTERIOR ? 0xFF : 0x00;
+    unsigned char v35;
+    unsigned char v36;
+    unsigned char v37;
+
+    if (false /*mapObjGroup->m_mapObj->mohd->flags & flag_has_some_outdoor_group*/) {
+        for (int i(begin_second_fixup); i < cvLen; ++i) {
+            colorArray[i].a = mogp->flags & 0x8 ? 0xFF : 0x00;
         }
     } else {
-        if (mapObjGroup->m_mapObj->mohd->flags & flag_skip_base_color) {
+        if (!mohd->flags.flag_skip_base_color) {
             v35 = 0;
             v36 = 0;
             v37 = 0;
         } else {
-            v35 = (mapObjGroup->m_mapObj->mohd.color >> 0) & 0xff;
-            v37 = (mapObjGroup->m_mapObj->mohd.color >> 8) & 0xff;
-            v36 = (mapObjGroup->m_mapObj->mohd.color >> 16) & 0xff;
+            v35 = (mohd->ambColor >> 0) & 0xff;
+            v37 = (mohd->ambColor >> 8) & 0xff;
+            v36 = (mohd->ambColor >> 16) & 0xff;
         }
 
         for (int mocv_index(0); mocv_index < begin_second_fixup; ++mocv_index) {
-            mapObjGroup->mocv[mocv_index].x -= v36;
-            mapObjGroup->mocv[mocv_index].y -= v37;
-            mapObjGroup->mocv[mocv_index].z -= v35;
+            colorArray[mocv_index].r -= v36;
+            colorArray[mocv_index].g -= v37;
+            colorArray[mocv_index].b -= v35;
 
-            v38 = mapObjGroup->mocv[mocv_index].w / 255.0f;
+            float v38 = colorArray[mocv_index].a / 255.0f;
 
-            v11 = mapObjGroup->mocv[mocv_index].x - v38 * mapObjGroup->mocv[mocv_index].x;
+            float v11 = colorArray[mocv_index].r - v38 * colorArray[mocv_index].r;
             assert (v11 > -0.5f);
             assert (v11 < 255.5f);
-            mapObjGroup->mocv[mocv_index].x = v11 / 2;
-            v13 = mapObjGroup->mocv[mocv_index].y - v38 * mapObjGroup->mocv[mocv_index].y;
+            colorArray[mocv_index].r = v11 / 2;
+            float v13 = colorArray[mocv_index].g - v38 * colorArray[mocv_index].g;
             assert (v13 > -0.5f);
             assert (v13 < 255.5f);
-            mapObjGroup->mocv[mocv_index].y = v13 / 2;
-            v14 = mapObjGroup->mocv[mocv_index].z - v38 * mapObjGroup->mocv[mocv_index].z;
+            colorArray[mocv_index].g = v13 / 2;
+            float v14 = colorArray[mocv_index].b - v38 * colorArray[mocv_index].b;
             assert (v14 > -0.5f);
             assert (v14 < 255.5f);
-            mapObjGroup->mocv[mocv_index++].z = v14 / 2;
+            colorArray[mocv_index++].b = v14 / 2;
         }
 
-        for (int i(begin_second_fixup); i < mapObjGroup->mocv_count; ++i) {
-            v19 = (mapObjGroup->mocv[i].x * mapObjGroup->mocv[i].w) / 64 + mapObjGroup->mocv[i].x - v36;
-            mapObjGroup->mocv[i].x = std::min(255, std::max(v19 / 2, 0));
+        for (int i(begin_second_fixup); i < cvLen; ++i) {
+            float v19 = (colorArray[i].r * colorArray[i].a) / 64 + colorArray[i].r - v36;
+            colorArray[i].r = std::min(255.0f, std::max(v19 / 2.0f, 0.0f));
 
-            v30 = (mapObjGroup->mocv[i].y * mapObjGroup->mocv[i].w) / 64 + mapObjGroup->mocv[i].y - v37;
-            mapObjGroup->mocv[i].y = std::min(255, std::max(v30 / 2, 0));
+            float v30 = (colorArray[i].g * colorArray[i].a) / 64 + colorArray[i].g - v37;
+            colorArray[i].g = std::min(255.0f, std::max(v30 / 2.0f, 0.0f));
 
-            v33 = (mapObjGroup->mocv[i].w * mapObjGroup->mocv[i].z) / 64 + mapObjGroup->mocv[i].z - v35;
-            mapObjGroup->mocv[i].z = std::min(255, std::max(v33 / 2, 0));
+            float v33 = (colorArray[i].a * colorArray[i].b) / 64 + colorArray[i].b - v35;
+            colorArray[i].b = std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
 
-            mapObjGroup->mocv[i].w = mapObjGroup->m_groupFlags & SMOGroup::EXTERIOR ? 0xFF : 0x00;
+            colorArray[i].a = mogp->flags & 0x8 ? 0xFF : 0x00;
         }
     }
 }
@@ -580,7 +594,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
 //        colorVector[2] /= 255.0; colorVector[3] /= 255.0;
 
 //        ambientColor = [1,1,1,1];
-//        glUniform1i(wmoShader->getUnf("uVertexShader"), vertexShader);
+        glUniform1i(wmoShader->getUnf("uVertexShader"), vertexShader);
         glUniform1i(wmoShader->getUnf("uPixelShader"), pixelShader);
 
 //        glUniform4f(wmoShader->getUnf("uMeshColor1"), 1.0f, 1.0f, 1.0f, 1.0f);

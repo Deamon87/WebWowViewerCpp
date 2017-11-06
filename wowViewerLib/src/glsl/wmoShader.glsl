@@ -193,9 +193,9 @@ void main() {
     } else if (uPixelShader == 8) { //MapObjTwoLayerTerrain
 
         vec3 layer1 = tex.rgb;
-        vec3 layer2 = tex2.xyz;
+        vec3 layer2 = tex2.rgb;
 
-        vec3 matDiffuse = ((vColor.xyz * 2.0) * mix(layer2, layer1, vColor2.a));
+        vec3 matDiffuse = ((vColor.rgb * 2.0) * mix(layer2, layer1, vColor2.a));
         finalColor.rgba = vec4(matDiffuse, vColor.a);
 
     } else if (uPixelShader == 9) { //MapObjDiffuseEmissive
@@ -209,7 +209,7 @@ void main() {
 
         float mixFactor = clamp((tex3.a * vColor2.a), 0, 1);
         vec3 matDiffuse =
-            (vColor.xyz * 2.0) *
+            (vColor.rgb * 2.0) *
             mix(mix(((tex.rgb * tex2.rgb) * 2.0), tex3.rgb, mixFactor), tex.rgb, tex.a);
 
         finalColor.rgba = vec4(matDiffuse, vColor.a);
@@ -219,7 +219,7 @@ void main() {
         vec3 env =
             (
                 ((tex.rgb * tex.a) * tex2.rgb) +
-                ((tex3.rgb * tex3.a) * vColor2.w)
+                ((tex3.rgb * tex3.a) * vColor2.a)
             );
 
         finalColor.rgba = vec4(matDiffuse+env, vColor.a);
@@ -237,7 +237,9 @@ void main() {
             mix(t1diffuse, tex.rgb, vColor2.a));
 
         //TODO: there is env missing here
-        finalColor.rgba = vec4(matDiffuse, vColor.a);
+        vec3 env = ((tex2.rgb * tex2.a) * (1.0 - vColor2.a));
+
+        finalColor.rgba = vec4(matDiffuse+env, vColor.a);
     };
 
     vec3 fogColor = uFogColor;
