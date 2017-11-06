@@ -122,6 +122,7 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
 
 void WmoObject::createGroupObjects(){
     groupObjects = std::vector<WmoGroupObject*>(mainGeom->groupsLen, nullptr);
+    groupObjectsLod1 = std::vector<WmoGroupObject*>(mainGeom->groupsLen, nullptr);
     drawGroupWMO = std::vector<bool>(mainGeom->groupsLen, false);
 
     std::string nameTemplate = m_modelName.substr(0, m_modelName.find_last_of("."));
@@ -130,10 +131,14 @@ void WmoObject::createGroupObjects(){
         for (int j = numStr.size(); j < 3; j++) numStr = '0'+numStr;
 
         std::string groupFilename = nameTemplate + "_" + numStr + ".wmo";
+        std::string groupFilenameLod1 = nameTemplate + "_" + numStr + "_lod1.wmo";
 
 
         groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilename, mainGeom->groups[i], i);
         groupObjects[i]->setWmoApi(this);
+
+        groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilenameLod1, mainGeom->groups[i], i);
+        groupObjectsLod1[i]->setWmoApi(this);
     }
 }
 
@@ -157,6 +162,11 @@ void WmoObject::update() {
                 groupObjects[i]->update();
             }
         }
+        for (int i= 0; i < groupObjectsLod1.size(); i++) {
+            if(groupObjectsLod1[i] != nullptr) {
+                groupObjectsLod1[i]->update();
+            }
+        }
     }
 }
 
@@ -170,6 +180,7 @@ void WmoObject::draw(){
     for (int i= 0; i < groupObjects.size(); i++) {
         if(groupObjects[i] != nullptr && drawGroupWMO[i]) {
             groupObjects[i]->draw(mainGeom->materials, m_getTextureFunc);
+//            groupObjectsLod1[i]->draw(mainGeom->materials, m_getTextureFunc);
         }
     }
 }

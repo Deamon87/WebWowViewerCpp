@@ -388,8 +388,69 @@ void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile) {
     createVBO();
     createIndexVBO();
 
+
     m_loaded = true;
 }
+
+
+void WmoGroupGeom::fixColorVertexAlpha() {
+    int begin_second_fixup = 0;
+    if (mogp->transBatchCount) {
+        begin_second_fixup =
+            *((unsigned __int16 *) &batches[(unsigned __int16) mogp->transBatchCount] - 2) + 1;
+    }
+
+    if (mapObjGroup->m_mapObj->mohd->flags & flag_has_some_outdoor_group) {
+        for (int i(begin_second_fixup); i < mapObjGroup->mocv_count; ++i) {
+            mapObjGroup->mocv[i].w = mapObjGroup->m_groupFlags & SMOGroup::EXTERIOR ? 0xFF : 0x00;
+        }
+    } else {
+        if (mapObjGroup->m_mapObj->mohd->flags & flag_skip_base_color) {
+            v35 = 0;
+            v36 = 0;
+            v37 = 0;
+        } else {
+            v35 = (mapObjGroup->m_mapObj->mohd.color >> 0) & 0xff;
+            v37 = (mapObjGroup->m_mapObj->mohd.color >> 8) & 0xff;
+            v36 = (mapObjGroup->m_mapObj->mohd.color >> 16) & 0xff;
+        }
+
+        for (int mocv_index(0); mocv_index < begin_second_fixup; ++mocv_index) {
+            mapObjGroup->mocv[mocv_index].x -= v36;
+            mapObjGroup->mocv[mocv_index].y -= v37;
+            mapObjGroup->mocv[mocv_index].z -= v35;
+
+            v38 = mapObjGroup->mocv[mocv_index].w / 255.0f;
+
+            v11 = mapObjGroup->mocv[mocv_index].x - v38 * mapObjGroup->mocv[mocv_index].x;
+            assert (v11 > -0.5f);
+            assert (v11 < 255.5f);
+            mapObjGroup->mocv[mocv_index].x = v11 / 2;
+            v13 = mapObjGroup->mocv[mocv_index].y - v38 * mapObjGroup->mocv[mocv_index].y;
+            assert (v13 > -0.5f);
+            assert (v13 < 255.5f);
+            mapObjGroup->mocv[mocv_index].y = v13 / 2;
+            v14 = mapObjGroup->mocv[mocv_index].z - v38 * mapObjGroup->mocv[mocv_index].z;
+            assert (v14 > -0.5f);
+            assert (v14 < 255.5f);
+            mapObjGroup->mocv[mocv_index++].z = v14 / 2;
+        }
+
+        for (int i(begin_second_fixup); i < mapObjGroup->mocv_count; ++i) {
+            v19 = (mapObjGroup->mocv[i].x * mapObjGroup->mocv[i].w) / 64 + mapObjGroup->mocv[i].x - v36;
+            mapObjGroup->mocv[i].x = std::min(255, std::max(v19 / 2, 0));
+
+            v30 = (mapObjGroup->mocv[i].y * mapObjGroup->mocv[i].w) / 64 + mapObjGroup->mocv[i].y - v37;
+            mapObjGroup->mocv[i].y = std::min(255, std::max(v30 / 2, 0));
+
+            v33 = (mapObjGroup->mocv[i].w * mapObjGroup->mocv[i].z) / 64 + mapObjGroup->mocv[i].z - v35;
+            mapObjGroup->mocv[i].z = std::min(255, std::max(v33 / 2, 0));
+
+            mapObjGroup->mocv[i].w = mapObjGroup->m_groupFlags & SMOGroup::EXTERIOR ? 0xFF : 0x00;
+        }
+    }
+}
+
 
 #define size_of_pvar(x) sizeof(std::remove_pointer<decltype(x)>::type)
 #define makePtr(x) (unsigned char *) x

@@ -59,6 +59,7 @@ private:
     std::string m_modelName;
 
     std::vector<WmoGroupObject*> groupObjects = std::vector<WmoGroupObject*>(0);
+    std::vector<WmoGroupObject*> groupObjectsLod1 = std::vector<WmoGroupObject*>(0);
     std::vector<BlpTexture> blpTextures;
 
     std::vector<bool> drawGroupWMO;

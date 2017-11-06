@@ -248,8 +248,8 @@ int main(int argc, char** argv) {
 //     Open a window and create its OpenGL context
     GLFWwindow* window; // (In the accompanying source code, this variable is global)
 
-    window = glfwCreateWindow( canvWidth, canvHeight, "WoW Viewer", NULL, NULL);
-    if( window == NULL ){
+    window = glfwCreateWindow( canvWidth, canvHeight, "WoW Viewer", nullptr, nullptr);
+    if( window == nullptr ){
         fprintf( stderr, "Failed to open GLFW window.\n" );
         glfwTerminate();
         return -1;
@@ -260,8 +260,9 @@ int main(int argc, char** argv) {
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-    const char * url = "http://178.165.92.24:40001/get/";
+//    const char * url = "http://178.165.92.24:40001/get/";
     //const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
+     const char *url = "http://localhost:8084/get/";
 
     testConf = new Config();
 //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);

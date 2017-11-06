@@ -85,6 +85,8 @@ public:
 
     GLuint combinedVBO;
     GLuint indexVBO;
+
+    void fixColorVertexAlpha();
 };
 
 

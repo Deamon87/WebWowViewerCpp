@@ -66,14 +66,14 @@ void HttpFile::startDownloading() {
 
         if (httpCode == 200 && res == CURLE_OK) {
             if (this->m_fileBuffer->size() == 0) {
-//                std::cout << "File "<< this->m_httpUrl.c_str() << " is empty" << std::endl <<
-//                    escaped_url << std::endl << std::flush;
+                std::cout << "File "<< this->m_httpUrl.c_str() << " is empty" << std::endl <<
+                    escaped_url << std::endl << std::flush;
             } else if (this->m_callback != nullptr) {
                 m_callback(this->m_fileBuffer);
             }
         } else {
-//            std::cout << "Could not download file "<<this->m_httpUrl.c_str() << std::endl <<
-//                escaped_url << std::endl << std::flush;
+            std::cout << "Could not download file "<<this->m_httpUrl.c_str() << std::endl <<
+                escaped_url << std::endl << std::flush;
         }
         /* always cleanup */
         curl_easy_cleanup(curl);

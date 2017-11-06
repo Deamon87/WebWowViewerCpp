@@ -52,9 +52,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
-//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
-//    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
-    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
+//    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
+//    currentScene = new Map(this, "Troll Raid");
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 
 //    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
@@ -65,11 +64,16 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "argus_rifts");
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
-    currentScene = new Map(this, "Troll Raid");
+//
+//    m_firstCamera.setCameraPos(5243.2461346537075f, 1938.6550422193939f, 717.0332923206179f); //HallsOfReflection
+//    currentScene = new Map(this, "HallsOfReflection");
 
-//    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "UlduarRaid");
 //    currentScene = new Map(this, "argus 1");
+//    currentScene = new Map(this, "silithusphase01");
+
+    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
+    currentScene = new Map(this, "stormgarde keep");
 
 
     //Test scene 2: tree from shattrath
@@ -97,7 +101,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
-//        "World\\wmo\\KhazModan\\Cities\\Ironforge\\ironforge.wmo");
+//        "world\\wmo\\brokenisles\\dalaran2.wmo");
 
 }
 
