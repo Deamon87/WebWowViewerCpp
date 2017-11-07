@@ -69,13 +69,6 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                     }
                 },
                 {
-                    'MOLT', {
-                        handler: [](WmoMainGeom &object, ChunkData &chunkData) {
-                            debuglog("Entered MOLT");
-                        }
-                    }
-                },
-                {
                     'MOMT', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
                             object.materialsLen = chunkData.chunkLen / sizeof(SMOMaterial);
@@ -129,7 +122,16 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                             debuglog("Entered MFOG");
                         }
                     }
-                }
+                },
+                {
+                    'MOLT', {
+                        handler: [](WmoMainGeom& object, ChunkData& chunkData) {
+                            debuglog("Entered MOLT");
+                            object.lightsLen = chunkData.chunkLen / sizeof(SMOLight);
+                            chunkData.readValues(object.lights, object.lightsLen);
+                        }
+                    }
+                },
         }
 };
 

@@ -77,8 +77,8 @@ public:
     uint16_t *doodadRefs = nullptr;
     int doodadRefsLen = 0;
 
-    SMOLight * lights = nullptr;
-    int lightsLen = 0;
+    uint16_t * lightRefList = nullptr;
+    int lightRefListLen = 0;
 
     SMOBatch *batches = nullptr;
     int batchesLen = 0;
@@ -88,6 +88,9 @@ public:
 
     uint16_t *bpsIndicies = nullptr;
     int bpsIndiciesLen = 0;
+
+    int use_replacement_for_header_color = 0;
+    CArgb replacement_for_header_color = {};
 
     GLuint combinedVBO;
     GLuint indexVBO;

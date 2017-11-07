@@ -81,6 +81,9 @@ public:
     virtual SMOHeader *getWmoHeader() override {
         return mainGeom->header;
     }
+    virtual SMOLight *getLightArray() override {
+        return mainGeom->lights;
+    }
 
     void draw();
 
@@ -137,6 +140,8 @@ public:
     bool isGroupWmoInterior(int groupId);
 
     void drawTransformedPortalPoints();
+
+    void drawDebugLights();
 };
 
 

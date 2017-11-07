@@ -74,7 +74,7 @@ Effect(MapObjDiffuseEmissive)
 //10
 Effect(waterWindow)
 {
-    //unk
+e    //unk
 }
 
 //11
@@ -337,20 +337,20 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         }
                     },
                     {
-                        'MOLT', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData) {
-                                debuglog("Entered MOLT");
-                                object.lightsLen = chunkData.chunkLen / sizeof(SMOLight);
-                                chunkData.readValues(object.lights, object.lightsLen);
-                            }
-                        }
-                    },
-                    {
                         'MODR', {
                             handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                 object.doodadRefsLen = chunkData.chunkLen / 2;
                                 chunkData.readValues(object.doodadRefs, object.doodadRefsLen);
                                 debuglog("Entered MODR");
+                            },
+                        }
+                    },
+                    {
+                        'MOLR', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOLR");
+                                object.lightRefListLen = chunkData.chunkLen / 2;
+                                chunkData.readValues(object.lightRefList, object.lightRefListLen);
                             },
                         }
                     },
@@ -378,6 +378,16 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                 object.bpsIndiciesLen = chunkData.chunkLen / sizeof(uint16_t);
                                 chunkData.readValues(object.bpsIndicies, object.bpsIndiciesLen);
                                 debuglog("Entered MOBR");
+                            },
+                        }
+                    },
+                    {
+                        'MDAL', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MDAL");
+                                object.use_replacement_for_header_color = 1;
+                                chunkData.readValue(object.replacement_for_header_color);
+
                             },
                         }
                     },
@@ -425,9 +435,15 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
             v36 = 0;
             v37 = 0;
         } else {
-            v35 = mohd->ambColor.b;
-            v37 = mohd->ambColor.g;
-            v36 = mohd->ambColor.r;
+            if (use_replacement_for_header_color) {
+                v35 = replacement_for_header_color.b;
+                v37 = replacement_for_header_color.g;
+                v36 = replacement_for_header_color.r;
+            } else {
+                v35 = mohd->ambColor.b;
+                v37 = mohd->ambColor.g;
+                v36 = mohd->ambColor.r;
+            }
         }
 
         for (int mocv_index(0); mocv_index < begin_second_fixup; ++mocv_index) {

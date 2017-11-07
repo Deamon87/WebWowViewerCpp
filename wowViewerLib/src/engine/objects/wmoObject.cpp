@@ -186,6 +186,63 @@ void WmoObject::draw(){
     }
 }
 
+void WmoObject::drawDebugLights(){
+    if (!m_loaded) return;
+
+    auto drawPointsShader = m_api->getDrawPointsShader();
+
+    glUniformMatrix4fv(drawPointsShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
+
+    if (!this->m_loaded) return;
+
+    SMOLight * lights = getLightArray();
+
+    std::vector<float> points;
+
+    for (int i = 0; i < mainGeom->lightsLen; i++) {
+        points.push_back(lights[i].position.x);
+        points.push_back(lights[i].position.y);
+        points.push_back(lights[i].position.z);
+    }
+
+    GLuint bufferVBO;
+    glGenBuffers(1, &bufferVBO);
+    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
+    if (points.size() > 0) {
+        glBufferData(GL_ARRAY_BUFFER, points.size() * 4, &points[0], GL_STATIC_DRAW);
+    }
+
+     static float colorArr[4] = {0.819607843, 0.058, 0.058, 0.3};
+    glUniform3fv(drawPointsShader->getUnf("uColor"), 1, &colorArr[0]);
+
+    glEnable( GL_PROGRAM_POINT_SIZE );
+    glVertexAttribPointer(+drawPoints::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
+
+
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+
+    glDrawArrays(GL_POINTS, 0, points.size()/3);
+
+
+    glDisable( GL_PROGRAM_POINT_SIZE );
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
+    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
+
+    glDepthMask(GL_TRUE);
+
+    glDeleteBuffers(1, &bufferVBO);
+
+
+
+//    for (int i= 0; i < groupObjects.size(); i++) {
+//        if(groupObjects[i] != nullptr && drawGroupWMO[i]) {
+//            groupObjects[i]->drawDebugLights();
+//        }
+//    }
+}
+
+
 void WmoObject::drawTransformedPortalPoints(){
 #ifndef CULLED_NO_PORTAL_DRAWING
     if (!m_loaded) return;

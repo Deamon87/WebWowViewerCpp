@@ -20,7 +20,7 @@ public:
         m_groupNumber = groupNumber;
         createWorldGroupBB(groupInfo.bounding_box, modelMatrix);
     }
-
+    void drawDebugLights();
     void draw(SMOMaterial *materials, std::function <BlpTexture *(int materialId, bool isSpec)> m_getTextureFunc);
     bool getIsLoaded() { return m_loaded; };
     const WmoGroupGeom *getWmoGroupGeom() const { return m_geom; };
@@ -76,6 +76,7 @@ private:
 
     bool getTopAndBottomTriangleFromBsp(mathfu::vec4 &cameraLocal, C3Vector *portalVerticles, SMOPortal *portalInfos,
                                         SMOPortalRef *portalRels, std::vector<int> &bspLeafList, M2Range &result);
+
 };
 
 

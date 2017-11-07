@@ -49,6 +49,9 @@ public:
     SMODoodadDef *doodadDefs;
     int doodadDefsLen;
 
+    SMOLight * lights = nullptr;
+    int lightsLen = 0;
+
     SMOFog *fogs;
     int fogsLen;
 };
