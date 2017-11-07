@@ -21,7 +21,7 @@ void WmoObject::startLoading() {
 }
 
 M2Object *WmoObject::getDoodad(int index) {
-    //return nullptr;
+    return nullptr;
     int doodadsSet = this->m_doodadSet;
 
     SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
@@ -127,6 +127,7 @@ void WmoObject::createGroupObjects(){
 
     std::string nameTemplate = m_modelName.substr(0, m_modelName.find_last_of("."));
     for(int i = 0; i < mainGeom->groupsLen; i++) {
+        //if (i != 127) continue; // Pillars of creation room
         std::string numStr = std::to_string(i);
         for (int j = numStr.size(); j < 3; j++) numStr = '0'+numStr;
 
@@ -137,8 +138,8 @@ void WmoObject::createGroupObjects(){
         groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilename, mainGeom->groups[i], i);
         groupObjects[i]->setWmoApi(this);
 
-        groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilenameLod1, mainGeom->groups[i], i);
-        groupObjectsLod1[i]->setWmoApi(this);
+//        groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilenameLod1, mainGeom->groups[i], i);
+//        groupObjectsLod1[i]->setWmoApi(this);
     }
 }
 
@@ -696,6 +697,7 @@ bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroup
         std::vector<WmoGroupResult> candidateGroups;
 
         for (int i = 0; i < this->groupObjects.size(); i++) {
+            if (this->groupObjects[i] == nullptr) continue;
             this->groupObjects[i]->checkIfInsideGroup(
                     cameraVec4,
                     cameraLocal,

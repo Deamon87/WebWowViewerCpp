@@ -23,7 +23,10 @@ uniform mat4 uLookAtMat;
 uniform mat4 uPMatrix;
 uniform int uVertexShader;
 
+uniform int uUseLitColor;
+
 uniform mat4 uPlacementMat;
+uniform vec4 uAmbientLight;
 
 varying vec2 vTexCoord;
 varying vec2 vTexCoord2;
@@ -56,6 +59,14 @@ void main() {
     vPosition = cameraPoint.xyz;
 #endif //drawBuffersIsSupported
 
+    if (uUseLitColor == 0) {
+        vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
+    } else {
+        vColor = aColor.bgra ;
+//        vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
+    }
+    vColor2 = aColor2.bgra;
+
     if ( uVertexShader == -1 ) {
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2;
@@ -64,10 +75,14 @@ void main() {
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2; //not used
         vTexCoord3 = aTexCoord3; //not used
+
+        vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
     } else if (uVertexShader == 1) { //MapObjDiffuse_T1_Refl
         vTexCoord = aTexCoord;
         vTexCoord2 = reflect(normalize(cameraPoint.xyz), vNormal).xy;
         vTexCoord3 = aTexCoord3; //not used
+
+        vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
     } else if (uVertexShader == 2) { //MapObjDiffuse_T1_Env_T2
         vTexCoord = aTexCoord;
 
@@ -85,6 +100,8 @@ void main() {
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2; //not used
         vTexCoord3 = aTexCoord3; //not used
+
+        vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
     } else if (uVertexShader == 5) { //MapObjDiffuse_Comp_Refl
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2;
@@ -94,10 +111,6 @@ void main() {
         vTexCoord2 = vPosition.xy * -0.239999995;
         vTexCoord3 = aTexCoord3; //not used
     }
-
-    vColor = aColor.bgra;
-    vColor2 = aColor2.bgra;
-
 
 
 }
@@ -118,6 +131,7 @@ varying vec3 vPosition;
 uniform float uAlphaTest;
 uniform vec4 uMeshColor1;
 uniform vec4 uMeshColor2;
+uniform vec4 uAmbientLight;
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
@@ -144,6 +158,7 @@ void main() {
     } else if (uPixelShader == 0) { //MapObjDiffuse
 
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+
         finalColor.rgba = vec4(matDiffuse, vColor.a);
 
     } else if (uPixelShader == 1) { //MapObjSpecular
@@ -242,6 +257,11 @@ void main() {
         finalColor.rgba = vec4(matDiffuse+env, vColor.a);
     };
 
+    //finalColor.rgb *= 4.0;
+
+    if(finalColor.a < uAlphaTest)
+        discard;
+
     vec3 fogColor = uFogColor;
     float fog_start = uFogStart;
     float fog_end = uFogEnd;
@@ -262,9 +282,6 @@ void main() {
 
     finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
 
-
-    if(finalColor.a < uAlphaTest)
-        discard;
 
     //Apply global lighting
 /*

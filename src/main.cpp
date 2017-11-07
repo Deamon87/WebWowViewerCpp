@@ -272,6 +272,7 @@ int main(int argc, char** argv) {
     WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);
+    //testConf->setUsePortalCulling(false);
 
     // Ensure we can capture the escape key being pressed below
     //glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);

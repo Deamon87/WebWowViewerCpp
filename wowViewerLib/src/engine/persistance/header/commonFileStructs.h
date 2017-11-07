@@ -149,7 +149,7 @@ struct M2SplineKey {
     T outTan;
 };
 
-using CArgb = uint32_t;
+
 struct CImVector
 {
     unsigned char b;
@@ -157,6 +157,7 @@ struct CImVector
     unsigned char r;
     unsigned char a;
 };
+using CArgb = CImVector;
 
 struct C4Plane // todo: verify
 {

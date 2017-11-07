@@ -106,12 +106,12 @@ constexpr const char* const drawPointsString =
 
 struct drawPoints {
  enum class Attribute { 
- uPos = 0, drawPointsAttributeEnd
+ aPosition = 0, drawPointsAttributeEnd
  };
  };
 inline constexpr const int operator+ (drawPoints::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem drawPointsAttributes [] = {
- {"uPos", +drawPoints::Attribute::uPos},
+ {"aPosition", +drawPoints::Attribute::aPosition},
  };
 constexpr const static shaderDefinition drawPointsDef = { 
 drawPointsString,

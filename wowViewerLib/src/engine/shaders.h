@@ -10,7 +10,7 @@ constexpr bool strings_equal(char const * a, char const * b) {
     return *a == *b && (*a == '\0' || strings_equal(a + 1, b + 1));
 }
 constexpr const shaderDefinition *getShaderDef(const char *shaderName) {
-    int arraySize = 11;
+    int arraySize = 12;
     const shaderDefinition *result = nullptr;
     for (int i = 0; i < arraySize; i++) {
         if (strings_equal(map[i].shaderName,shaderName)) {

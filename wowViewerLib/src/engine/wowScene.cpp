@@ -99,7 +99,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
 
     //Test scene 3: Ironforge
-    m_firstCamera.setCameraPos(0, 0, 0);
+    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592);
     currentScene = new WmoScene(this,
         "world\\wmo\\brokenisles\\dalaran2.wmo");
 
@@ -1259,7 +1259,7 @@ void WoWSceneImpl::activateFrustumBoxShader() {
 void WoWSceneImpl::activateDrawPointShader() {
     glUseProgram(drawPoints->getProgram());
 
-    glEnableVertexAttribArray(+drawPoints::Attribute::uPos);
+    glEnableVertexAttribArray(+drawPoints::Attribute::aPosition);
 
     glUniformMatrix4fv(drawPoints->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
     glUniformMatrix4fv(drawPoints->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);

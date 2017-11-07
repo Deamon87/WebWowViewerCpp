@@ -614,7 +614,7 @@ void AnimationManager::calcTransparencies(
 
 
 void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vector<mathfu::mat4> &bonesMatrices, int animationIndex, animTime_t animationTime) {
-    auto lightRecords = m_m2File->lights;
+    auto &lightRecords = m_m2File->lights;
     if (lightRecords.size <= 0) return;
     static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
     static float defaultFloat = 1.0;

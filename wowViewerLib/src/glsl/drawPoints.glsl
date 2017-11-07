@@ -2,19 +2,19 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
 
-attribute vec3 uPos;
+attribute vec3 aPosition;
 
 varying vec4 vPos;
 
 uniform mat4 uLookAtMat;
 uniform mat4 uPMatrix;
-uniform mat4 uPMatrix;
+uniform mat4 uPlacementMat;
 
 
 
 void main() {
-    gl_Position = uPMatrix * uLookAtMat * vec4(uPos.xyz, 1.0);
-    gl_PointSize = 2.0;
+    gl_Position = uPMatrix * uLookAtMat * uPlacementMat * vec4(aPosition.xyz, 1.0);
+    gl_PointSize = 10.0;
 }
 
 #endif
@@ -27,7 +27,7 @@ varying vec4 vPos;
 uniform vec3 uColor;
 
 void main() {
-    gl_FragColor = vec4(color.rgb, 1.0);
+    gl_FragColor = vec4(uColor.rgb, 1.0);
 }
 
 #endif

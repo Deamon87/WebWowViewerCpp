@@ -425,9 +425,9 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
             v36 = 0;
             v37 = 0;
         } else {
-            v35 = (mohd->ambColor >> 0) & 0xff;
-            v37 = (mohd->ambColor >> 8) & 0xff;
-            v36 = (mohd->ambColor >> 16) & 0xff;
+            v35 = mohd->ambColor.b;
+            v37 = mohd->ambColor.g;
+            v36 = mohd->ambColor.r;
         }
 
         for (int mocv_index(0); mocv_index < begin_second_fixup; ++mocv_index) {
@@ -462,8 +462,25 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
             colorArray[i].b = std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
 
             colorArray[i].a = mogp->flags & 0x8 ? 0xFF : 0x00;
+
+
         }
     }
+//
+//
+//    if (mohd->flags.flag_skip_base_color) {
+//
+//        v35 = (mohd->ambColor >> 0) & 0xff;
+//        v37 = (mohd->ambColor >> 8) & 0xff;
+//        v36 = (mohd->ambColor >> 16) & 0xff;
+//
+//        for (int i(0); i < cvLen; ++i) {
+//            colorArray[begin_second_fixup].r += v36;
+//            colorArray[begin_second_fixup].g += v37;
+//            colorArray[begin_second_fixup].b += v35;
+//        }
+//    }
+
 }
 
 
@@ -599,7 +616,19 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
         glUniform1i(wmoShader->getUnf("uVertexShader"), vertexShader);
         glUniform1i(wmoShader->getUnf("uPixelShader"), pixelShader);
 
+//        glUniform4f(wmoShader->getUnf("uAmbientLight"),
+//                    mohd->ambColor.r/255.0f,
+//                    mohd->ambColor.g/255.0f,
+//                    mohd->ambColor.b/255.0f,
+//                    1.0/255.0f);
+
 //        glUniform4f(wmoShader->getUnf("uMeshColor1"), 1.0f, 1.0f, 1.0f, 1.0f);
+
+        glUniform1i(wmoShader->getUnf("uUseLitColor"), 1);
+
+//        if ( !renderBatch.flag_unknown_1/*materials[texIndex].flags.F_UNLIT */) {
+//            glUniform1i(wmoShader->getUnf("uUseLitColor"), 1);
+//        }
 
         if (materials[texIndex].blendMode != 0) {
             float alphaTestVal = 0.878431f;
@@ -615,11 +644,32 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
             glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0f);
         }
 
+        switch (materials[texIndex].blendMode) {
+            case 0 : //Blend_Opaque
+                glDisable(GL_BLEND);
+                glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0);
+                break;
+            case 1 : //Blend_AlphaKey
+                glDisable(GL_BLEND);
+                //GL_uniform1f(m2Shader->getUnf("uAlphaTest, 2.9);
+                glUniform1f(wmoShader->getUnf("uAlphaTest"), 0.903921569);
+                //GL_uniform1f(m2Shader->getUnf("uAlphaTest, meshColor[4]*transparency*(252/255));
+                break;
+            default :
+                glUniform1f(wmoShader->getUnf("uAlphaTest"), -1);
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+
+                break;
+        }
+
         if (materials[texIndex].flags.F_UNCULLED) {
             glDisable(GL_CULL_FACE);
         } else {
             glEnable(GL_CULL_FACE);
         }
+
+
 
         //var textureObject = this.textureArray[j];
         bool isSecondTextSpec = material.shader == 8;
@@ -690,6 +740,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, 0);
 //        }
+        glDisable(GL_BLEND);
     }
     glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0f);
 

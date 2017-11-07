@@ -49,7 +49,12 @@ else()
     endif(NOT GLEW_FOUND)
 endif(WIN32)
 
-include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+    include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+
+
+
 #include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)
 include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
 

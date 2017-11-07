@@ -9,6 +9,8 @@
 #include "../managers/animationManager.h"
 #include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
 #include "../persistance/header/M2FileHeader.h"
+#include "../shaderDefinitions.h"
+
 
 std::unordered_map<std::string, int> pixelShaderTable = {
         {"Combiners_Opaque", 0},
@@ -473,18 +475,47 @@ void M2Object::draw(bool drawTransparent) {
 }
 
 void M2Object::drawDebugLight() {
+
+    std::vector<float> points;
+
+    for (int i = 0; i < this->lights.size(); i++) {
+        auto &light = this->lights[i];
+
+        points.push_back(light.position[0]);
+        points.push_back(light.position[1]);
+        points.push_back(light.position[2]);
+
+    }
+
     GLuint bufferVBO;
     glGenBuffers(1, &bufferVBO);
     glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-    if (verticles.size() > 0) {
-        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
+    if (points.size() > 0) {
+        glBufferData(GL_ARRAY_BUFFER, points.size() * 4, &points[0], GL_STATIC_DRAW);
     }
 
     auto drawPointsShader = m_api->getDrawPointsShader();
     static float colorArr[4] = {0.058, 0.058, 0.819607843, 0.3};
     glUniformMatrix4fv(drawPointsShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
-    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
+    glUniform3fv(drawPointsShader->getUnf("uColor"), 1, &colorArr[0]);
 
+    glEnable( GL_PROGRAM_POINT_SIZE );
+    glVertexAttribPointer(+drawPoints::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
+
+
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+
+    glDrawArrays(GL_POINTS, 0, points.size()/3);
+
+
+    glDisable( GL_PROGRAM_POINT_SIZE );
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
+    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
+
+    glDepthMask(GL_TRUE);
+
+    glDeleteBuffers(1, &bufferVBO);
 }
 
 void M2Object::drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::mat4 &placementMatrix) {
@@ -539,10 +570,6 @@ void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
             this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
     }
-}
-
-void M2Object::drawDebugLight() {
-
 }
 
 void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, int instanceCount) {

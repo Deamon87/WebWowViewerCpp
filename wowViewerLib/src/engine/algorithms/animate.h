@@ -30,6 +30,11 @@ inline mathfu::vec4 convertHelper<mathfu::vec4_packed, mathfu::vec4>(mathfu::vec
     return mathfu::vec4(a);
 };
 template<>
+inline float convertHelper<float, float>(float &a ) {
+    return a;
+};
+
+template<>
 inline mathfu::vec3 convertHelper<mathfu::vec3_packed, mathfu::vec3>(mathfu::vec3_packed &a ) {
     return mathfu::vec3(a);
 };
@@ -153,6 +158,10 @@ R animateTrack(
 
     if (animationBlock.timestamps.size <= animationIndex) {
         animationIndex = 0;
+    }
+
+    if (animationBlock.timestamps.size <= 0) {
+        return defaultValue;
     }
 
     if (animationIndex <= animationBlock.timestamps.size && animationBlock.timestamps[animationIndex]->size == 0) {
