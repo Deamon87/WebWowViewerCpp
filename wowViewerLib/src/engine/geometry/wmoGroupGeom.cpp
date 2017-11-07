@@ -405,9 +405,10 @@ void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile) {
     CChunkFileReader reader(m_wmoGroupFile);
     reader.processFile(*this, &WmoGroupGeom::wmoGroupTable);
 
+    fixColorVertexAlpha(mohd);
     createVBO();
     createIndexVBO();
-    fixColorVertexAlpha(mohd);
+
 
 
     m_loaded = true;
@@ -484,18 +485,16 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
     }
 //
 //
-//    if (mohd->flags.flag_skip_base_color) {
-//
-//        v35 = (mohd->ambColor >> 0) & 0xff;
-//        v37 = (mohd->ambColor >> 8) & 0xff;
-//        v36 = (mohd->ambColor >> 16) & 0xff;
-//
-//        for (int i(0); i < cvLen; ++i) {
-//            colorArray[begin_second_fixup].r += v36;
-//            colorArray[begin_second_fixup].g += v37;
-//            colorArray[begin_second_fixup].b += v35;
-//        }
-//    }
+
+        float red = mohd->ambColor.r;
+        float green = mohd->ambColor.g;
+        float blue = mohd->ambColor.b;
+
+        for (int i(0); i < cvLen; ++i) {
+            colorArray[i].r = std::min(255.0f, red + colorArray[i].r) ;
+            colorArray[i].g = std::min(255.0f, (green + colorArray[i].g));
+            colorArray[i].b = std::min(255.0f, (blue + colorArray[i].b));
+        }
 
 }
 

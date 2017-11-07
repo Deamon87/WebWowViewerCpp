@@ -74,6 +74,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
 //    currentScene = new Map(this, "stormgarde keep");
+//
+//   m_firstCamera.setCameraPos(939, -4813 , 0); //Broken shore
+//    currentScene = new Map(this, "Northrend");
 
 
     //Test scene 2: tree from shattrath
@@ -102,6 +105,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592);
     currentScene = new WmoScene(this,
         "world\\wmo\\brokenisles\\dalaran2.wmo");
+//
+//   m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592);
+//    currentScene = new WmoScene(this,
+//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 
 }
 
@@ -869,7 +876,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 500;
+    int farPlane = 100;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 
