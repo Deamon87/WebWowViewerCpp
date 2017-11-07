@@ -63,6 +63,7 @@ private:
     std::vector<mathfu::mat4> textAnimMatrices;
     std::vector<mathfu::vec4> subMeshColors;
     std::vector<float> transparencies;
+    std::vector<AnimationManager::M2LightResult> lights;
 
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
@@ -122,6 +123,7 @@ public:
 
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
     void draw(bool drawTransparent);
+    void drawDebugLight();
 
 
     void drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::Matrix<float, 4, 4> &placementMatrix);
@@ -132,6 +134,7 @@ public:
 
     void drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO);
 
+    void initLights();
 };
 
 

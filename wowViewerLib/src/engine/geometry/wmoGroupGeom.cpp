@@ -152,10 +152,11 @@ enum class WmoPixelShader : int {
 inline constexpr const int operator+ (WmoPixelShader const val) { return static_cast<const int>(val); };
 inline constexpr const int operator+ (WmoVertexShader const val) { return static_cast<const int>(val); };
 
+const int MAX_WMO_SHADERS = 17;
 static const struct {
     int vertexShader;
     int pixelShader;
-} wmoMaterialShader[17] = {
+} wmoMaterialShader[MAX_WMO_SHADERS] = {
     //MapObjDiffuse = 0
     {
         vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
@@ -414,7 +415,7 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
     unsigned char v36;
     unsigned char v37;
 
-    if (false /*mapObjGroup->m_mapObj->mohd->flags & flag_has_some_outdoor_group*/) {
+    if (mohd->flags.flag_lighten_interiors) {
         for (int i(begin_second_fixup); i < cvLen; ++i) {
             colorArray[i].a = mogp->flags & 0x8 ? 0xFF : 0x00;
         }
@@ -585,6 +586,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
         }
 
         SMOMaterial &material = materials[texIndex];
+        assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
         uint32_t color = material.diffColor;
         int pixelShader = wmoMaterialShader[material.shader].pixelShader;
         int vertexShader = wmoMaterialShader[material.shader].vertexShader;

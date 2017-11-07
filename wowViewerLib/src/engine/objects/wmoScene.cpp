@@ -221,8 +221,14 @@ void WmoScene::drawM2s() {
             this->m2RenderedThisFrameArr[i]->drawBB(bbColor);
         }
         this->m_api->deactivateBoundingBoxShader();
-
     }
+    this->m_api->activateDrawPointShader();
+
+    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
+        this->m2RenderedThisFrameArr[i]->drawDebugLight();
+    }
+
+    this->m_api->deactivateDrawPointShader();
 }
 
 

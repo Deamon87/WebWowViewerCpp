@@ -241,7 +241,7 @@ void WmoObject::drawTransformedPortalPoints(){
     glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
 
     auto drawPortalShader = m_api->getPortalShader();
-    float colorArr[4] = {0.058, 0.058, 0.819607843, 0.3};
+    static float colorArr[4] = {0.058, 0.058, 0.819607843, 0.3};
     glUniformMatrix4fv(drawPortalShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
     glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
 

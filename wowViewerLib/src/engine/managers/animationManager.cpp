@@ -387,7 +387,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
                               std::vector<mathfu::mat4> &textAnimMatrices,
                               std::vector<mathfu::vec4> &subMeshColors,
                               std::vector<float> &transparencies,
-                              lights
+                              std::vector<M2LightResult> &lights
         /*cameraDetails, , particleEmitters*/) {
 
     const M2Sequence* mainAnimationRecord = m_m2File->sequences[this->mainAnimationIndex];
@@ -490,7 +490,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
                             this->nextSubAnimationTime, blendAlpha);
 
 //    this->calcCameras(cameraDetails, this->currentAnimationIndex, this->currentAnimationTime);
-//    this->calcLights(lights, bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime);
+    this->calcLights(lights, bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime);
 //    this->calcParticleEmitters(particleEmitters, this->currentAnimationIndex, this->currentAnimationTime);
 }
 
@@ -613,7 +613,7 @@ void AnimationManager::calcTransparencies(
 }
 
 
-void AnimationManager::calcLights(std::vector<mathfu::mat4> &lights, std::vector<mathfu::mat4> &bonesMatrices, int animationIndex, animTime_t animationTime) {
+void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vector<mathfu::mat4> &bonesMatrices, int animationIndex, animTime_t animationTime) {
     auto lightRecords = m_m2File->lights;
     if (lightRecords.size <= 0) return;
     static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
@@ -705,19 +705,17 @@ void AnimationManager::calcLights(std::vector<mathfu::mat4> &lights, std::vector
 
         mathfu::vec4 lightWorldPos = boneMat * mathfu::vec4(mathfu::vec3(pos_vec), 1.0);
 
-//        lights[i].ambient_color = ambient_color;
-//        lights[i].ambient_intensity = ambient_intensity;
-//        lights[i].ambient_color[0] *= ambient_intensity;
-//        lights[i].ambient_color[1] *= ambient_intensity;
-//        lights[i].ambient_color[2] *= ambient_intensity;
-//        lights[i].ambient_color[3] *= ambient_intensity;
-//
-//        lights[i].diffuse_color = diffuse_color;
-//        lights[i].diffuse_intensity = diffuse_intensity;
-//        lights[i].attenuation_start = attenuation_start;
-//        lights[i].attenuation_end = attenuation_end;
-//        lights[i].position = position;
-//        lights[i].unk_ambient = unk_ambient;
+
+        lights[i].ambient_color = ambient_color;
+        lights[i].ambient_intensity = ambient_intensity;
+        lights[i].ambient_color *= ambient_intensity;
+
+        lights[i].diffuse_color = diffuse_color;
+        lights[i].diffuse_intensity = diffuse_intensity;
+        lights[i].attenuation_start = attenuation_start;
+        lights[i].attenuation_end = attenuation_end;
+        lights[i].position = lightWorldPos;
+        lights[i].visibility = visibility;
     }
 }
 

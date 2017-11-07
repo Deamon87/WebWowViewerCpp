@@ -42,15 +42,27 @@ private:
     void calculateBoneTree();
     void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, animTime_t time);
 
-
 public:
+    class M2LightResult {
+    public:
+        mathfu::vec3 ambient_color;
+        float ambient_intensity;
+        mathfu::vec3 diffuse_color;
+        float diffuse_intensity;
+        float attenuation_start;
+        float attenuation_end;
+        mathfu::vec4 position;
+        unsigned char visibility;
+    };
+
     AnimationManager(M2Data* m2File);
     bool setAnimationId(int animationId, bool reset);
     void update (animTime_t deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
                  std::vector<mathfu::mat4> &textAnimMatrices,
                  std::vector<mathfu::vec4> &subMeshColors,
-                 std::vector<float> &transparencies
-            /*cameraDetails, lights, particleEmitters*/);
+                 std::vector<float> &transparencies,
+                 std::vector<M2LightResult> &lights
+            /*cameraDetails, particleEmitters*/);
 
     void calcBones(std::vector<mathfu::mat4> &boneMatrices, int animation, animTime_t time, mathfu::vec3 &cameraPosInLocal);
 
@@ -78,7 +90,9 @@ public:
         return isAnimated;
     }
 
-    void calcLights(std::vector<mathfu::mat4> &lights, std::vector<mathfu::mat4> &bonesMatrices, int animationIndex,
+    void calcLights(std::vector<M2LightResult> &lights,
+                    std::vector<mathfu::mat4> &bonesMatrices,
+                    int animationIndex,
                     animTime_t animationTime);
 };
 

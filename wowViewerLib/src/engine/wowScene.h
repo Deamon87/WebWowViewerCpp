@@ -109,6 +109,10 @@ public:
     virtual ShaderRuntimeData *getAdtShader() {
         return adtShader;
     }
+    virtual ShaderRuntimeData *getDrawPointsShader() {
+        return drawPoints;
+    }
+
     virtual GLuint getBlackPixelTexture();
     virtual Config *getConfig() {
         return m_config;
@@ -149,6 +153,7 @@ private:
     ShaderRuntimeData *drawPortalShader = nullptr;
     ShaderRuntimeData *drawFrustumShader = nullptr;
     ShaderRuntimeData *drawLinesShader = nullptr;
+    ShaderRuntimeData *drawPoints = nullptr;
 
     Config * m_config;
 
@@ -220,6 +225,10 @@ private:
     bool getIsDebugCamera() {
         return m_isDebugCamera;
     }
+
+    void activateDrawPointShader();
+
+    void deactivateDrawPointShader();
 };
 
 

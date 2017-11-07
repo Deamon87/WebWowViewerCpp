@@ -386,6 +386,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             this->initTextAnimMatrices();
             this->initSubmeshColors();
             this->initTransparencies();
+            this->initLights();
             m_hasBillboards = checkIfHasBillboarded();
 
 
@@ -403,9 +404,9 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
                                  this->bonesMatrices,
         this->textAnimMatrices,
         this->subMeshColors,
-        this->transparencies
+        this->transparencies,
         //this->cameras,
-        //this->lights,
+        this->lights
         //this->particleEmittersArray
     );
 
@@ -471,6 +472,21 @@ void M2Object::draw(bool drawTransparent) {
 //    }
 }
 
+void M2Object::drawDebugLight() {
+    GLuint bufferVBO;
+    glGenBuffers(1, &bufferVBO);
+    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
+    if (verticles.size() > 0) {
+        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
+    }
+
+    auto drawPointsShader = m_api->getDrawPointsShader();
+    static float colorArr[4] = {0.058, 0.058, 0.819607843, 0.3};
+    glUniformMatrix4fv(drawPointsShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
+    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
+
+}
+
 void M2Object::drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::mat4 &placementMatrix) {
     mathfu::vec3 center = mathfu::vec3(
         (bb.min.x + bb.max.x) / 2,
@@ -523,6 +539,10 @@ void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
             this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
     }
+}
+
+void M2Object::drawDebugLight() {
+
 }
 
 void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, int instanceCount) {
@@ -726,6 +746,11 @@ void M2Object::initSubmeshColors() {
 void M2Object::initTransparencies() {
     transparencies = std::vector<float>(m_m2Geom->getM2Data()->transparency_lookup_table.size);
 }
+
+void M2Object::initLights() {
+    lights = std::vector<AnimationManager::M2LightResult>(m_m2Geom->getM2Data()->lights.size);
+}
+
 
 void M2Object::drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO) {
     if (!this->m_loaded) return;

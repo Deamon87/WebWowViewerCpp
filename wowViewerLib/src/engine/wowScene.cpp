@@ -304,6 +304,9 @@ void WoWSceneImpl::initShaders() {
 
     const  std::string drawLinesShader = getShaderDef("drawLinesShader")->shaderString;
     this->drawLinesShader          = this->compileShader("drawLinesShader", drawLinesShader, drawLinesShader);
+
+    const  std::string drawPoints = getShaderDef("drawPoints")->shaderString;
+    this->drawPoints          = this->compileShader("drawPoints", drawPoints, drawPoints);
 }
 
 void WoWSceneImpl::initGlContext() {
@@ -1253,6 +1256,18 @@ void WoWSceneImpl::activateFrustumBoxShader() {
 
 }
 
+void WoWSceneImpl::activateDrawPointShader() {
+    glUseProgram(drawPoints->getProgram());
+
+    glEnableVertexAttribArray(+drawPoints::Attribute::uPos);
+
+    glUniformMatrix4fv(drawPoints->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(drawPoints->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+
+}
+void WoWSceneImpl::deactivateDrawPointShader() {
+
+}
 
  WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
 #ifdef _WIN32

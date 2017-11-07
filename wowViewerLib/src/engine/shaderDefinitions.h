@@ -100,6 +100,25 @@ drawLinesShaderString,
 drawLinesShaderAttributes
 };
 
+constexpr const char* const drawPointsString =
+ #include <../glsl/drawPoints.glsl>
+;
+
+struct drawPoints {
+ enum class Attribute { 
+ uPos = 0, drawPointsAttributeEnd
+ };
+ };
+inline constexpr const int operator+ (drawPoints::Attribute const val) { return static_cast<const int>(val); };
+constexpr shaderItem drawPointsAttributes [] = {
+ {"uPos", +drawPoints::Attribute::uPos},
+ };
+constexpr const static shaderDefinition drawPointsDef = { 
+drawPointsString,
+1,
+drawPointsAttributes
+};
+
 constexpr const char* const drawPortalShaderString =
  #include <../glsl/drawPortalShader.glsl>
 ;
@@ -234,6 +253,7 @@ constexpr innerType map[] = {
  { "drawDepthShader", drawDepthShaderDef },
  { "drawFrustumShader", drawFrustumShaderDef },
  { "drawLinesShader", drawLinesShaderDef },
+ { "drawPoints", drawPointsDef },
  { "drawPortalShader", drawPortalShaderDef },
  { "m2Shader", m2ShaderDef },
  { "readDepthBufferShader", readDepthBufferShaderDef },
