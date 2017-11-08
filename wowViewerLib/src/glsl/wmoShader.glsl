@@ -62,7 +62,7 @@ void main() {
     if (uUseLitColor == 0) {
         vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
     } else {
-        vColor.rgb = clamp(aColor.bgr + 0.3 * uAmbientLight.bgr,  vec3(0.0), vec3(1.0)) ;
+        vColor.rgb = clamp(aColor.bgr + uAmbientLight.bgr,  vec3(0.0), vec3(1.0)) ;
         vColor.a = aColor.a;
 //        vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
     }

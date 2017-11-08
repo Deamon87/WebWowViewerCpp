@@ -65,8 +65,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
 //
-    m_firstCamera.setCameraPos(5243.2461346537075f, 1938.6550422193939f, 717.0332923206179f); //HallsOfReflection
-    currentScene = new Map(this, "HallsOfReflection");
+//    m_firstCamera.setCameraPos(5243.2461346537075f, 1938.6550422193939f, 717.0332923206179f); //HallsOfReflection
+//    currentScene = new Map(this, "HallsOfReflection");
 
 //    currentScene = new Map(this, "UlduarRaid");
 //    currentScene = new Map(this, "argus 1");
@@ -110,9 +110,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
-//  m_firstCamera.setCameraPos(0, 0, 0);
+  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
-//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+//        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
+ currentScene = new WmoScene(this,
+        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 }
 
