@@ -235,11 +235,11 @@ void WmoObject::drawDebugLights(){
 
 
 
-//    for (int i= 0; i < groupObjects.size(); i++) {
-//        if(groupObjects[i] != nullptr && drawGroupWMO[i]) {
-//            groupObjects[i]->drawDebugLights();
-//        }
-//    }
+    for (int i= 0; i < groupObjects.size(); i++) {
+        if(groupObjects[i] != nullptr) {
+            groupObjects[i]->drawDebugLights();
+        }
+    }
 }
 
 

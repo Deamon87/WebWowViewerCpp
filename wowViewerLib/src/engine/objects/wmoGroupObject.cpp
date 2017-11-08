@@ -31,16 +31,14 @@ void WmoGroupObject::draw(SMOMaterial *materials, std::function<BlpTexture *(int
 void WmoGroupObject::drawDebugLights() {
     if (!this->m_loaded) return;
 
-    SMOLight * lights = m_wmoApi->getLightArray();
+    MOLP * lights = m_geom->molp;
 
     std::vector<float> points;
 
-    for (int i = 0; i < this->m_geom->lightRefListLen; i++) {
-        uint16_t light = this->m_geom->lightRefList[i];
-
-        points.push_back(lights[i].position.x);
-        points.push_back(lights[i].position.y);
-        points.push_back(lights[i].position.z);
+    for (int i = 0; i < this->m_geom->molpCnt; i++) {
+        points.push_back(lights[i].vec1.x);
+        points.push_back(lights[i].vec1.y);
+        points.push_back(lights[i].vec1.z);
     }
 
     GLuint bufferVBO;
@@ -51,7 +49,7 @@ void WmoGroupObject::drawDebugLights() {
     }
 
     auto drawPointsShader = m_api->getDrawPointsShader();
-    static float colorArr[4] = {0.819607843, 0.058, 0.058, 0.3};
+    static float colorArr[4] = {0.058, 0.819607843, 0.058, 0.3};
     glUniform3fv(drawPointsShader->getUnf("uColor"), 1, &colorArr[0]);
 
     glEnable( GL_PROGRAM_POINT_SIZE );

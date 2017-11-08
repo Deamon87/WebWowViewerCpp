@@ -92,6 +92,9 @@ public:
     int use_replacement_for_header_color = 0;
     CArgb replacement_for_header_color = {};
 
+    MOLP *molp;
+    int molpCnt = 0;
+
     GLuint combinedVBO;
     GLuint indexVBO;
 

@@ -51,7 +51,7 @@ struct SMOMaterial {
 /*010h*/  CImVector emissive_color;        // emissive color; see below (emissive color)
 /*014h*/  CImVector sidn_emissive_color;   // set at runtime; gets sidn-manipulated emissive color; see below (emissive color)
 /*018h*/  uint32_t envNameIndex;
-/*01Ch*/  uint32_t diffColor;
+/*01Ch*/  CArgb diffColor;
 /*020h*/  int32_t ground_type;            // according to CMapObjDef::GetGroundType
 /*024h*/  uint32_t texture_2;
 /*028h*/  uint32_t color_2;
@@ -216,6 +216,18 @@ struct t_BSP_NODE
     uint16_t numFaces;     // num of triangle faces in MOBR
     uint32_t firstFace;    // index of the first triangle index(in MOBR)
     float    fDist;
+};
+
+struct MOLP {
+    unsigned int unk;
+    CArgb unk2;
+    C3Vector vec2;
+    C3Vector vec1;
+    float unk3;
+    unsigned int unk4;
+    CArgb unk5;
+    float unk6;
+
 };
 
 #endif //WOWVIEWERLIB_WMOFILEHEADER_H

@@ -106,4 +106,3 @@ file(
         "constexpr innerType map[] = {\n ${shaderDefMap} \n };"
 )
 
-include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)

@@ -49,9 +49,10 @@ else()
     endif(NOT GLEW_FOUND)
 endif(WIN32)
 
-IF(CMAKE_BUILD_TYPE MATCHES Debug)
+IF(CMAKE_BUILD_TYPE MATCHES Release)
     include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
-ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
+include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)
 
 
 

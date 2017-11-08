@@ -391,6 +391,17 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                             },
                         }
                     },
+                    {
+                        'MOLP', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOLP");
+                                object.molpCnt = chunkData.chunkLen / sizeof(MOLP);
+                                chunkData.readValues(object.molp, object.molpCnt);
+
+
+                            },
+                        }
+                    },
                 }
             }
         }
@@ -483,18 +494,16 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
 
         }
     }
-//
-//
 
-        float red = mohd->ambColor.r;
-        float green = mohd->ambColor.g;
-        float blue = mohd->ambColor.b;
-
-        for (int i(0); i < cvLen; ++i) {
-            colorArray[i].r = std::min(255.0f, red + colorArray[i].r) ;
-            colorArray[i].g = std::min(255.0f, (green + colorArray[i].g));
-            colorArray[i].b = std::min(255.0f, (blue + colorArray[i].b));
-        }
+//        float red = mohd->ambColor.r;
+//        float green = mohd->ambColor.g;
+//        float blue = mohd->ambColor.b;
+//
+//        for (int i(0); i < cvLen; ++i) {
+//            colorArray[i].r = std::min(255.0f, red + colorArray[i].r) ;
+//            colorArray[i].g = std::min(255.0f, (green + colorArray[i].g));
+//            colorArray[i].b = std::min(255.0f, (blue + colorArray[i].b));
+//        }
 
 }
 
@@ -619,7 +628,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
 
         SMOMaterial &material = materials[texIndex];
         assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
-        uint32_t color = material.diffColor;
+//        uint32_t color = material.diffColor;
         int pixelShader = wmoMaterialShader[material.shader].pixelShader;
         int vertexShader = wmoMaterialShader[material.shader].vertexShader;
 //        var colorVector = [color&0xff, (color>> 8)&0xff,
@@ -631,11 +640,20 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
         glUniform1i(wmoShader->getUnf("uVertexShader"), vertexShader);
         glUniform1i(wmoShader->getUnf("uPixelShader"), pixelShader);
 
-//        glUniform4f(wmoShader->getUnf("uAmbientLight"),
-//                    mohd->ambColor.r/255.0f,
-//                    mohd->ambColor.g/255.0f,
-//                    mohd->ambColor.b/255.0f,
-//                    1.0/255.0f);
+        if ((!material.flags.F_UNLIT)) {
+            glUniform4f(wmoShader->getUnf("uAmbientLight"),
+                        ((float)mohd->ambColor.r/ 255.0f + (float)material.diffColor.r) / 255.0f,
+                        ((float)mohd->ambColor.g/ 255.0f + (float)material.diffColor.g / 255.0f),
+                        ((float)mohd->ambColor.b/ 255.0f + (float)material.diffColor.b / 255.0f),
+                        ((float)mohd->ambColor.a/ 255.0f + (float)material.diffColor.a / 255.0f)
+            );
+        } else {
+            glUniform4f(wmoShader->getUnf("uAmbientLight"),
+                        0,
+                        0,
+                        0,
+                        0);
+        }
 
 //        glUniform4f(wmoShader->getUnf("uMeshColor1"), 1.0f, 1.0f, 1.0f, 1.0f);
 
