@@ -86,6 +86,49 @@ void WmoGroupObject::postLoad() {
     this->m_dontUseLocalLightingForM2 = ((m_geom->mogp->flags & 0x40) > 0) || ((m_geom->mogp->flags & 0x8) > 0);
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
     this->loadDoodads();
+    this->createPortalsGeom();
+}
+
+
+void WmoGroupObject::createPortalsGeom() {
+    int moprIndex = this->m_geom->mogp->moprIndex;
+    int numItems = this->m_geom->mogp->moprCount;
+
+    if (numItems < 0) return;
+
+    geometryPerPortal = std::vector<PortalInfo_t>(numItems);
+
+    for (int j = moprIndex; j < moprIndex + numItems; j++) {
+        SMOPortalRef *relation = &portalRels[j];
+        SMOPortal *portalInfo = &portalInfos[relation->portal_index];
+
+        int nextGroup = relation->group_index;
+        C4Plane plane = portalInfo->plane;
+
+        float minX = 99999;
+        float minY = 99999;
+        float minZ = 99999;
+        float maxX = -99999;
+        float maxY = -99999;
+        float maxZ = -99999;
+
+
+        int base_index = portalInfo->base_index;
+        for (int k = 0; k < portalInfo->index_count; k++) {
+
+
+            minX = std::min(minX, portalVerticles[base_index + k].x);
+            minY = std::min(minY, portalVerticles[base_index + k].y);
+            minZ = std::min(minZ, portalVerticles[base_index + k].z);
+
+            maxX = std::max(maxX, portalVerticles[base_index + k].x);
+            maxY = std::max(maxX, portalVerticles[base_index + k].y);
+            maxZ = std::max(maxZ, portalVerticles[base_index + k].z);
+        }
+
+        CAaBox aaBox(C3Vector(mathfu::vec3(minX, minY, minZ)), C3Vector(mathfu::vec3(maxX, maxY, maxZ)));
+
+    }
 }
 
 void WmoGroupObject::loadDoodads() {

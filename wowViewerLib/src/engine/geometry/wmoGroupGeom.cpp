@@ -642,17 +642,29 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
 
         bool isInteriorBatch = j > mogp->transBatchCount && j < (mogp->transBatchCount + mogp->intBatchCount);
 
-        if ((mohd->flags.flag_lighten_interiors && isInteriorBatch)) {
+        if ((isInteriorBatch)) {
             float modifier = 0.3;
-            if (material.flags.F_EXTLIGHT) {
-                modifier = 0.0;
-            }
 
-            glUniform4f(wmoShader->getUnf("uAmbientLight"),
-                        modifier*((float)material.diffColor.r) / 255.0f,
-                        modifier*((float)material.diffColor.g / 255.0f),
-                        modifier*((float)material.diffColor.b / 255.0f),
-                        modifier*((float)material.diffColor.a / 255.0f)
+
+            mathfu::vec4 diffColor = mathfu::vec4(
+                    ((float)material.diffColor.r) / 255.0f,
+                    ((float)material.diffColor.g / 255.0f),
+                    ((float)material.diffColor.b / 255.0f),
+                    ((float)material.diffColor.a / 255.0f)
+            );
+
+            mathfu::vec4 ambColor = mathfu::vec4(
+                    ((float)mohd->ambColor.r) / 255.0f,
+                    ((float)mohd->ambColor.g / 255.0f),
+                    ((float)mohd->ambColor.b / 255.0f),
+                    ((float)mohd->ambColor.a / 255.0f)
+            );
+
+            mathfu::vec4 resultColor = 1.0f * (diffColor * ambColor);
+
+            glUniform4fv(wmoShader->getUnf("uAmbientLight"),
+                1,
+                &resultColor[0]
             );
 
             ;
