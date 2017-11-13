@@ -114,13 +114,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
     m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
+    currentScene = new WmoScene(this,
+        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_tower.wmo");
-    currentScene = new WmoScene(this,
-        "world\\wmo\\dungeon\\mantidraid\\pa_mantid_raid.wmo");
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\dungeon\\mantidraid\\pa_mantid_raid.wmo");
 
 //    m_firstCamera.setCameraPos(-191.784775,258.097565,66.5634689);
 //    currentScene = new WmoScene(this,

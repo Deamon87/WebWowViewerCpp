@@ -397,8 +397,6 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                 debuglog("Entered MOLP");
                                 object.molpCnt = chunkData.chunkLen / sizeof(MOLP);
                                 chunkData.readValues(object.molp, object.molpCnt);
-
-
                             },
                         }
                     },

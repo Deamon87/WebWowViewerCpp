@@ -219,14 +219,13 @@ struct t_BSP_NODE
 };
 
 struct MOLP {
-    unsigned int unk;
+    float unk;
     CArgb unk2;
-    C3Vector vec2;
     C3Vector vec1;
+    C3Vector vec2;
     float unk3;
     unsigned int unk4;
     CArgb unk5;
-    float unk6;
 
 };
 
