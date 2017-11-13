@@ -69,13 +69,12 @@ private:
 
     void loadDoodads();
 
-    bool checkIfInsidePortals(mathfu::vec3 point,C3Vector *portalVerticles,
-                              SMOPortal *portalInfos, SMOPortalRef *portalRels);
+    bool checkIfInsidePortals(mathfu::vec3 point, SMOPortal *portalInfos, SMOPortalRef *portalRels);
 
 
     static void queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList);
 
-    bool getTopAndBottomTriangleFromBsp(mathfu::vec4 &cameraLocal, C3Vector *portalVerticles, SMOPortal *portalInfos,
+    bool getTopAndBottomTriangleFromBsp(mathfu::vec4 &cameraLocal, SMOPortal *portalInfos,
                                         SMOPortalRef *portalRels, std::vector<int> &bspLeafList, M2Range &result);
 };
 

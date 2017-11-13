@@ -208,7 +208,6 @@ void WmoObject::createWorldPortals() {
             max = mathfu::vec3::Max(portalVecs[k], max);
         }
 
-        CAaBox aaBox(C3Vector(min), C3Vector(max));
         CAaBox &aaBoxCopyTo = geometryPerPortal[j].aaBox;
 
         aaBoxCopyTo = CAaBox(C3Vector(min), C3Vector(max));;

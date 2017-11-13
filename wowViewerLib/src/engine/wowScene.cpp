@@ -49,8 +49,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-    m_firstCamera.setCameraPos(-1663, 5098, 27);
-    currentScene = new Map(this, "Expansion01");
+//    m_firstCamera.setCameraPos(-1663, 5098, 27);
+//    currentScene = new Map(this, "Expansion01");
 
 //    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
@@ -113,10 +113,17 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
-//  m_firstCamera.setCameraPos(0, 0, 0);
+    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
-// currentScene = new WmoScene(this,
+//
+//   currentScene = new WmoScene(this,
+//        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_tower.wmo");
+    currentScene = new WmoScene(this,
+        "world\\wmo\\dungeon\\mantidraid\\pa_mantid_raid.wmo");
+
+//    m_firstCamera.setCameraPos(-191.784775,258.097565,66.5634689);
+//    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
 // currentScene = new WmoScene(this,
 //        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");

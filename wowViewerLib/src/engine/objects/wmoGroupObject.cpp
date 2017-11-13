@@ -180,11 +180,12 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
 }
 
 bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
-                                          C3Vector *portalVerticles,
                                           SMOPortal *portalInfos,
                                           SMOPortalRef *portalRels) {
     int moprIndex = this->m_geom->mogp->moprIndex;
     int numItems = this->m_geom->mogp->moprCount;
+
+    std::vector<PortalInfo_t> &portalGeoms = this->m_wmoApi->getPortalInfos();
 
     bool insidePortals = true;
     for (int j = moprIndex; j < moprIndex + numItems; j++) {
@@ -194,31 +195,12 @@ bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
         int nextGroup = relation->group_index;
         C4Plane plane = portalInfo->plane;
 
-        float minX = 99999;
-        float minY = 99999;
-        float minZ = 99999;
-        float maxX = -99999;
-        float maxY = -99999;
-        float maxZ = -99999;
-
-
-        int base_index = portalInfo->base_index;
-        for (int k = 0; k < portalInfo->index_count; k++) {
-            minX = std::min(minX, portalVerticles[base_index + k].x);
-            minY = std::min(minY, portalVerticles[base_index + k].y);
-            minZ = std::min(minZ, portalVerticles[base_index + k].z);
-
-            maxX = std::max(maxX, portalVerticles[base_index + k].x);
-            maxY = std::max(maxX, portalVerticles[base_index + k].y);
-            maxZ = std::max(maxZ, portalVerticles[base_index + k].z);
-        }
-
-        CAaBox aaBox(C3Vector(mathfu::vec3(minX, minY, minZ)), C3Vector(mathfu::vec3(maxX, maxY, maxZ)));
+        CAaBox &aaBox = portalGeoms[relation->portal_index].aaBox;
         float distanceToBB = MathHelper::distanceFromAABBToPoint(aaBox, point);
 
         float dotResult = mathfu::vec3::DotProduct(mathfu::vec4(plane.planeVector).xyz(), point) + plane.planeVector.w;
         bool isInsidePortalThis = (relation->side < 0) ? (dotResult <= 0) : (dotResult >= 0);
-        if (!isInsidePortalThis && (abs(dotResult) < 0.1) && (abs(distanceToBB) < 0.1)) {
+        if (!isInsidePortalThis && (abs(dotResult) < 0.01) && (abs(distanceToBB) < 0.01)) {
             insidePortals = false;
             break;
         }
@@ -267,7 +249,6 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, s
 
 bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
         mathfu::vec4 &cameraLocal,
-        C3Vector *portalVerticles,
         SMOPortal *portalInfos,
         SMOPortalRef *portalRels,
         std::vector<int> &bspLeafList,
@@ -326,7 +307,7 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
             );
 
             if ((bary[0] < 0) || (bary[1] < 0) || (bary[2] < 0)) continue;
-            if (!WmoGroupObject::checkIfInsidePortals(suggestedPoint, portalVerticles, portalInfos,
+            if (!WmoGroupObject::checkIfInsidePortals(suggestedPoint, portalInfos,
                                                       portalRels))
                 continue;
 
@@ -346,6 +327,8 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
     MOGP *groupInfo = this->m_geom->mogp;
     int moprIndex = groupInfo->moprIndex;
     int numItems = groupInfo->moprCount;
+
+    std::vector<PortalInfo_t> &portalGeoms = this->m_wmoApi->getPortalInfos();
 
     for (int j = moprIndex; j < moprIndex + numItems; j++) {
         SMOPortalRef *relation = &portalRels[j];
@@ -368,13 +351,14 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
                    cameraLocal[1] * plane->planeVector.y)
                   / plane->planeVector.z;
 
-        for (int k = 0; k < portalInfo->index_count - 2; k++) {
+        std::vector<mathfu::vec3> &portalVerticles = portalGeoms[relation->portal_index].sortedVericles;
+        for (int k = 0; k < portalVerticles.size() - 2; k++) {
             int portalIndex;
-            portalIndex = base_index + 0;
+            portalIndex = 0;
             mathfu::vec3 point1 = mathfu::vec3(portalVerticles[portalIndex]);
-            portalIndex = base_index + k + 1;
+            portalIndex = k + 1;
             mathfu::vec3 point2 = mathfu::vec3(portalVerticles[portalIndex]);
-            portalIndex = base_index + k + 2;
+            portalIndex = k + 2;
             mathfu::vec3 point3 = mathfu::vec3(portalVerticles[portalIndex]);
 
             mathfu::vec3 pointToCheck = mathfu::vec3(cameraLocal[0], cameraLocal[1], z);
@@ -433,7 +417,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
     int moprIndex = groupInfo->moprIndex;
     int numItems = groupInfo->moprCount;
 
-    bool insidePortals = this->checkIfInsidePortals(cameraLocal.xyz(), portalVerticles, portalInfos, portalRels);
+    bool insidePortals = this->checkIfInsidePortals(cameraLocal.xyz(), portalInfos, portalRels);
     if (!insidePortals) return false;
 
     //3. Query bsp tree for leafs around the position of object(camera)
@@ -458,7 +442,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
     if (nodes != nullptr) {
         WmoGroupObject::queryBspTree(cameraBB, nodeId, nodes, bspLeafList);
         bool result = WmoGroupObject::getTopAndBottomTriangleFromBsp(
-                cameraLocal, portalVerticles, portalInfos, portalRels, bspLeafList, topBottom);
+                cameraLocal, portalInfos, portalRels, bspLeafList, topBottom);
         if (!result) return false;
         if (topBottom.min > 99999) return false;
 
@@ -497,7 +481,6 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
     }
 
     return false;
-//candidateGroups.push({'topBottom' : {topZ : 0, bottomZ : 0}, groupId : this.groupId, bspList : [], nodeId: 0});
 }
 
 

@@ -17,11 +17,6 @@ class WmoGroupObject;
 #include "./iWmoApi.h"
 
 
-struct PortalInfo_t {
-    std::vector<mathfu::vec3> sortedVericles;
-    CAaBox aaBox;
-};
-
 struct WmoGroupResult {
     M2Range topBottom;
     int groupId;
@@ -91,6 +86,9 @@ public:
     virtual SMOLight *getLightArray() override {
         return mainGeom->lights;
     }
+    virtual std::vector<PortalInfo_t> &getPortalInfos() override {
+        return geometryPerPortal;
+    };
 
     void draw();
 
