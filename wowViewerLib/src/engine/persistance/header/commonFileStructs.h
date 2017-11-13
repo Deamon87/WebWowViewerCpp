@@ -47,14 +47,24 @@ typedef M2Range CRange;
 
 struct CAaBox
 {
+public:
     CAaBox(){};
     CAaBox(C3Vector min, C3Vector max) : min(min), max(max) {
 
     }
 
+//    CAaBox operator=(CAaBox &a) {
+//        this->min = a.min;
+//        this->max = a.max;
+//        return *this;
+//    }
+
     C3Vector min;
     C3Vector max;
 };
+
+
+
 struct Quat16 {
     int16_t x,y,z,w;
 };

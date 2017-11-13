@@ -17,6 +17,10 @@ class WmoGroupObject;
 #include "./iWmoApi.h"
 
 
+struct PortalInfo_t {
+    std::vector<mathfu::vec3> sortedVericles;
+    CAaBox aaBox;
+};
 
 struct WmoGroupResult {
     M2Range topBottom;
@@ -52,6 +56,8 @@ private:
     int m_nameSet;
     int m_doodadSet;
 
+    std::vector<PortalInfo_t> geometryPerPortal;
+
     std::function <BlpTexture *(int materialId, bool isSpec)> m_getTextureFunc;
 
     mathfu::mat4 m_placementMatrix;
@@ -67,6 +73,7 @@ private:
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createBB(CAaBox bbox);
+    void postWmoGroupObjectLoad(int groupId, int lod) override;
 public:
     std::string getTextureName(int index);
 
@@ -142,6 +149,8 @@ public:
     void drawTransformedPortalPoints();
 
     void drawDebugLights();
+
+    void createWorldPortals();
 };
 
 

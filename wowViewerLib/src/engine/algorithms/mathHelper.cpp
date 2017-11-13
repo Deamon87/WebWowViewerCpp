@@ -136,7 +136,7 @@ bool hullSort(mathfu::vec3 a, mathfu::vec3 b, mathfu::vec2 center) {
     return d1 > d2;
 }
 
-std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
+std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &points){
     std::stack<Point> hullPoints = grahamScan(points);
     mathfu::vec3* end   = &hullPoints.top() + 1;
     mathfu::vec3* begin = end - hullPoints.size();
@@ -175,9 +175,15 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
                   return d1 > d2;
               });
 
+    return hullPointsArr;
+}
+
+std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
+    std::vector<mathfu::vec3> hullPointsArr = MathHelper::getHullPoints(points);
+
     std::vector<mathfu::vec3> hullLines;
     
-    if (hullPoints.size() > 2) {
+    if (hullPointsArr.size() > 2) {
         for (int i = 0; i < hullPointsArr.size(); i++) {
             int index1 = (i+1) % (hullPointsArr.size());
             int index2 = i;

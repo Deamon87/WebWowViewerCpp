@@ -5,6 +5,7 @@
 #include "wmoObject.h"
 #include "../algorithms/mathHelper.h"
 #include "../shaderDefinitions.h"
+#include "../persistance/header/commonFileStructs.h"
 
 std::string WmoObject::getTextureName(int index) {
     return std::__cxx11::string();
@@ -143,6 +144,79 @@ void WmoObject::createGroupObjects(){
     }
 }
 
+void WmoObject::createWorldPortals() {
+
+    int portalCnt = mainGeom->portalsLen;
+    SMOPortal *portals = mainGeom->portals;
+    C3Vector *portalVerticles = mainGeom->portal_vertices;
+
+    if (portalCnt <= 0) return;
+    geometryPerPortal = std::vector<PortalInfo_t>(portalCnt);
+
+    for (int j = 0; j < portalCnt; j++) {
+        SMOPortal *portalInfo = &portals[j];
+
+
+        int base_index = portalInfo->base_index;
+        std::vector <mathfu::vec3> portalVecs;
+        for (int k = 0; k < portalInfo->index_count; k++) {
+            mathfu::vec3 verticle = mathfu::vec3(
+                portalVerticles[base_index + k].x,
+                portalVerticles[base_index + k].y,
+                portalVerticles[base_index + k].z);
+
+            portalVecs.push_back(verticle);
+        }
+
+        //Calculate center of the portal
+        mathfu::vec3 center(0,0,0);
+        for (int k = 0; k < portalVecs.size(); k++) {
+            center += portalVecs[k];
+        }
+        center *= 1.0 / portalVecs.size();
+
+        //Calculate create projection and calc simplified, sorted polygon
+        mathfu::vec3 lookAt = center + mathfu::vec3(portalInfo->plane.planeGeneral.normal);
+        mathfu::vec3 upVector = portalVecs[0] - center;
+
+        mathfu::mat4 projMat = mathfu::mat4::LookAt(
+                lookAt,
+                center,
+                upVector
+        );
+        mathfu::mat4 projMatInv = projMat.Inverse();
+
+        std::vector <mathfu::vec3> portalTransformed(portalVecs.size());
+        for (int k = 0; k < portalVecs.size(); k++) {
+            portalTransformed[k] = (projMat * mathfu::vec4(portalVecs[k], 1.0)).xyz();
+        }
+
+        std::vector<mathfu::vec3> hulled = MathHelper::getHullPoints(portalTransformed);
+
+        portalVecs.clear();
+        for (int k = 0; k < hulled.size(); k++) {
+            portalVecs.push_back((projMatInv * mathfu::vec4(hulled[k], 1.0)).xyz());
+        }
+        geometryPerPortal[j].sortedVericles = portalVecs;
+
+        //Calc CAAbox
+        mathfu::vec3 min(99999,99999,99999), max(-99999,-99999,-99999);
+
+        for (int k = 0; k < portalVecs.size(); k++) {
+
+            min = mathfu::vec3::Min(portalVecs[k], min);
+            max = mathfu::vec3::Max(portalVecs[k], max);
+        }
+
+        CAaBox aaBox(C3Vector(min), C3Vector(max));
+        CAaBox &aaBoxCopyTo = geometryPerPortal[j].aaBox;
+
+        aaBoxCopyTo = CAaBox(C3Vector(min), C3Vector(max));;
+        //.min = aaBox.min;
+//        aaBoxCopyTo.max = aaBox.max;
+    }
+}
+
 void WmoObject::update() {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getIsLoaded()){
@@ -150,6 +224,7 @@ void WmoObject::update() {
             m_loading = false;
 
             this->createGroupObjects();
+            this->createWorldPortals();
             this->createBB(mainGeom->header->bounding_box);
             this->createM2Array();
         } else {
@@ -375,10 +450,13 @@ void WmoObject::createM2Array() {
     this->m_doodadsArray = std::vector<M2Object*>(this->mainGeom->doodadDefsLen, nullptr);
 }
 
+void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
+    //1. Create portal verticles from geometry
+
+
+}
 
 // Portal culling
-
-
 bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoGroupsResults,
                                                mathfu::vec4 &cameraVec4,
                                                mathfu::mat4 &viewPerspectiveMat,
@@ -625,7 +703,6 @@ void WmoObject::transverseGroupWMO(
     //2. Loop through portals of current group
     int moprIndex = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprIndex;
     int numItems = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprCount;
-    C3Vector * portalVertexes = mainGeom->portal_vertices;
 
     for (int j = moprIndex; j < moprIndex+numItems; j++) {
         SMOPortalRef * relation = &mainGeom->portalReferences[j];
@@ -651,18 +728,16 @@ void WmoObject::transverseGroupWMO(
 
         //2.2 Check if Portal BB made from portal vertexes intersects frustum
         std::vector<mathfu::vec3> portalVerticesVec;
-        std::transform(portalVertexes + portalInfo->base_index, portalVertexes + portalInfo->base_index + portalInfo->index_count,
+        std::transform(
+            geometryPerPortal[relation->portal_index].sortedVericles.begin(),
+            geometryPerPortal[relation->portal_index].sortedVericles.end(),
             std::back_inserter(portalVerticesVec),
-            [](C3Vector d) -> mathfu::vec3 { return mathfu::vec3(d);}
+            [](mathfu::vec3 d) -> mathfu::vec3 { return d;}
             );
-
-        MathHelper::sortVec3ArrayAgainstPlane(portalVerticesVec, planeV4);
 
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
 
         if (!visible) continue;
-        //MathHelper::sortVec3ArrayAgainstPlane(portalVerticesVec, planeV4);
-
 
         transverseVisitedPortals[relation->portal_index] = true;
 
@@ -788,3 +863,4 @@ bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroup
 
         return result;
 }
+

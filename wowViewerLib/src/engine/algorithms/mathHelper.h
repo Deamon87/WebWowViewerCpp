@@ -25,6 +25,7 @@ public:
     static std::vector<mathfu::vec3> calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat);
     static bool checkFrustum(const std::vector<mathfu::vec4> &planes, const CAaBox &box, const std::vector<mathfu::vec3> &points);
     static bool checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box);
+    static std::vector<mathfu::vec3> getHullPoints(std::vector<mathfu::vec3> &points);
     static std::vector<mathfu::vec3> getHullLines(std::vector<mathfu::vec3> &points);
 
 

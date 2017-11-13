@@ -12,5 +12,7 @@ public:
     virtual M2Object *getDoodad(int index) = 0;
     virtual SMOHeader *getWmoHeader() = 0;
     virtual SMOLight *getLightArray() = 0;
+
+    virtual void postWmoGroupObjectLoad(int groupId, int lod) = 0;
 };
 #endif //WOWVIEWERLIB_IWMOAPI_H

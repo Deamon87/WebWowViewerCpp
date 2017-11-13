@@ -13,11 +13,6 @@ class WmoGroupObject;
 #include "wmoObject.h"
 #include "iWmoApi.h"
 
-struct PortalInfo_t {
-    std::vector<mathfu::vec4> sortedVericles;
-    mathfu::vec3 min;
-    mathfu::vec3 max;
-};
 
 class WmoGroupObject {
 public:
@@ -46,8 +41,6 @@ public:
                             SMOPortal *portalInfos,
                             SMOPortalRef *portalRels,
                             std::vector<WmoGroupResult> &candidateGroups);
-
-    std::vector<PortalInfo_t> geometryPerPortal;
 private:
     IWoWInnerApi *m_api = nullptr;
     IWmoApi *m_wmoApi = nullptr;
@@ -84,8 +77,6 @@ private:
 
     bool getTopAndBottomTriangleFromBsp(mathfu::vec4 &cameraLocal, C3Vector *portalVerticles, SMOPortal *portalInfos,
                                         SMOPortalRef *portalRels, std::vector<int> &bspLeafList, M2Range &result);
-
-    void createPortalsGeom();
 };
 
 
