@@ -484,12 +484,21 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
     MathHelper::fixNearPlane(frustumPlanes, cameraVec4);
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
-
     mathfu::vec3 headOfPyramid = MathHelper::getIntersection(
             frustumPoints[4], frustumPoints[7],
             frustumPoints[3], frustumPoints[0]
     );
     mathfu::vec4 headOfPyramidLocal = this->m_placementInvertMatrix * mathfu::vec4(headOfPyramid, 1.0);
+
+
+    //Test code
+    mathfu::mat4 MVPMat = viewPerspectiveMat*this->m_placementMatrix;
+    std::vector<mathfu::vec3> frustumPointsLocal1 = MathHelper::calculateFrustumPointsFromMat(MVPMat);
+    std::vector<mathfu::vec4> frustumPlanes1 = MathHelper::getFrustumClipsFromMatrix(MVPMat);
+    mathfu::vec4 headOfPyramidLocal1 = mathfu::vec4(MathHelper::getIntersection(
+            frustumPointsLocal1[4], frustumPointsLocal1[7],
+            frustumPointsLocal1[3], frustumPointsLocal1[0]
+    ), 1.0);
 
     std::vector<mathfu::vec4> localFrustumPlanes;
     std::transform(frustumPlanes.begin(), frustumPlanes.end(),
@@ -507,13 +516,13 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
 #ifndef CULLED_NO_PORTAL_DRAWING
                 portalVertices: {},
 #endif
-                frustumPlanes: localFrustumPlanes,
+                frustumPlanes: frustumPlanes1,
                 level: 0});
-        this->transverseGroupWMO(wmoGroupsResults[i].groupId, true, cameraVec4, headOfPyramidLocal,
+        this->transverseGroupWMO(wmoGroupsResults[i].groupId, true, cameraVec4, headOfPyramidLocal1,
                                  inverseTransposeModelMat,
                                  transverseVisitedGroups,
                                  transverseVisitedPortals,
-                                 localFrustumPlanes, 0, m2RenderedThisFrame);
+                                 frustumPlanes1, 0, m2RenderedThisFrame);
     }
 
     //If there are portals leading to exterior, we need to go through all exterior wmos.
@@ -532,9 +541,9 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
                         frustumPlanes: frustumPlanes,
                         level : 0
                     });
-                    this->transverseGroupWMO(i, false, cameraVec4, headOfPyramidLocal,  inverseTransposeModelMat,
+                    this->transverseGroupWMO(i, false, cameraVec4, headOfPyramidLocal1,  inverseTransposeModelMat,
                                              transverseVisitedGroups,
-                                             transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
+                                             transverseVisitedPortals, frustumPlanes1, 0, m2RenderedThisFrame);
                 }
             }
         }
@@ -595,6 +604,17 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
     );
     mathfu::vec4 headOfPyramidLocal = this->m_placementInvertMatrix * mathfu::vec4(headOfPyramid, 1.0);
 
+    //Test code
+    mathfu::mat4 MVPMat = viewPerspectiveMat*this->m_placementMatrix;
+    std::vector<mathfu::vec3> frustumPointsLocal1 = MathHelper::calculateFrustumPointsFromMat(MVPMat);
+    std::vector<mathfu::vec4> frustumPlanes1 = MathHelper::getFrustumClipsFromMatrix(MVPMat);
+    mathfu::vec4 headOfPyramidLocal1 = mathfu::vec4(MathHelper::getIntersection(
+            frustumPointsLocal1[4], frustumPointsLocal1[7],
+            frustumPointsLocal1[3], frustumPointsLocal1[0]
+    ), 1.0);
+
+
+
     std::vector<mathfu::vec4> localFrustumPlanes;
     std::transform(frustumPlanes.begin(), frustumPlanes.end(),
                    std::back_inserter(localFrustumPlanes),
@@ -618,9 +638,9 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
 #endif
                                                     frustumPlanes: frustumPlanes,
                                                     level : 0});
-                this->transverseGroupWMO(i, false, cameraVec4, headOfPyramidLocal,  inverseTransposeModelMat,
+                this->transverseGroupWMO(i, false, cameraVec4, headOfPyramidLocal1, inverseTransposeModelMat,
                                          transverseVisitedGroups,
-                                         transverseVisitedPortals, localFrustumPlanes, 0, m2RenderedThisFrame);
+                                         transverseVisitedPortals, frustumPlanes1, 0, m2RenderedThisFrame);
             }
         }
     }
