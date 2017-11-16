@@ -267,15 +267,17 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         'MOPY', {
                             handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOPY");
+                                object.mopyLen = chunkData.chunkLen / sizeof(SMOPoly);
+                                chunkData.readValues(object.mopy, object.mopyLen);
                             },
                         }
                     },
                     {
                         'MOVI', {
                             handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOVI");
                                 object.indicesLen = chunkData.chunkLen / 2;
                                 chunkData.readValues(object.indicies, object.indicesLen);
-                                debuglog("Entered MOVI");
                             },
                         }
                     },

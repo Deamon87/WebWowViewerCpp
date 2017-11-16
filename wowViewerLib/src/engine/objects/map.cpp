@@ -263,6 +263,10 @@ inline int worldCoordinateToAdtIndex(float x) {
     return floor((32 - (x / 533.33333)));
 }
 
+float AdtIndexToWorldCoordinate(int x) {
+    return (32 - x) * 533.33333;
+}
+
 void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::vector<mathfu::vec4> &frustumPlanes,
                         std::vector<mathfu::vec3> &frustumPoints,
@@ -453,6 +457,7 @@ void Map::drawExterior() {
 //            this.wmoRenderedThisFrame[i].drawPortalBased(false)
 //        } else {
         this->wmoRenderedThisFrameArr[i]->drawTransformedPortalPoints();
+        this->wmoRenderedThisFrameArr[i]->drawTransformedAntiPortalPoints();
 //        }
     }
 

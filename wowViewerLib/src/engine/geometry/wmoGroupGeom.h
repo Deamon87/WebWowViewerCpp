@@ -26,7 +26,7 @@ public:
 
     void setMOHD(SMOHeader *mohd) {this->mohd = mohd; };
     void createVBO();
-    bool isLoaded() { return m_loaded; };
+    bool isLoaded() const { return m_loaded; };
     void createIndexVBO();
 
     void draw(IWoWInnerApi *api, SMOMaterial *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc);
@@ -50,6 +50,9 @@ public:
 
     uint16_t *indicies = nullptr;
     int indicesLen = 0;
+
+    SMOPoly *mopy = nullptr;
+    int mopyLen = 0;
 
     C3Vector *verticles = nullptr;
     int verticesLen;

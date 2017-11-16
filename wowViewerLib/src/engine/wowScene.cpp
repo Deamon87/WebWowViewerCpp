@@ -52,6 +52,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 //    currentScene = new Map(this, "Expansion01");
 
+//    m_firstCamera.setCameraPos(6500.6665, 7500.33301, 0);
+//    currentScene = new Map(this, "HawaiiMainLand"); // Pandaria
+
 //    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
@@ -59,8 +62,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "Troll Raid");
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 
-//    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
-//    currentScene = new Map(this, "silithusphase01");
+    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
+    currentScene = new Map(this, "silithusphase01");
 
 //    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
 //    currentScene = new Map(this, "Troll Raid");
@@ -113,9 +116,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_tower.wmo");
@@ -127,6 +130,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
 // currentScene = new WmoScene(this,
 //        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+//
+// currentScene = new WmoScene(this,
+//        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
+//
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\draenor\\tanaanjungle\\6tj_darkportal_antiportal.wmo");
+//
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\azeroth\\buildings\\stormwind\\stormwind2.WMO");
 
 }
 
@@ -894,7 +906,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 500;
+    int farPlane = 1000;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 

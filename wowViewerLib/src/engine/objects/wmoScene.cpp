@@ -90,6 +90,7 @@ void WmoScene::draw() {
 //            this.wmoRenderedThisFrame[i].drawPortalBased(false)
 //        } else {
         this->wmoRenderedThisFrameArr[i]->drawTransformedPortalPoints();
+        this->wmoRenderedThisFrameArr[i]->drawTransformedAntiPortalPoints();
 //        }
     }
 

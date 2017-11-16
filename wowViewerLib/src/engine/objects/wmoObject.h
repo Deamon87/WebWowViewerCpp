@@ -105,6 +105,7 @@ public:
 public:
     std::vector<PortalResults> interiorPortals;
     std::vector<PortalResults> exteriorPortals;
+    std::vector<PortalResults> antiPortals;
 
 public:
     //Portal culling
@@ -149,6 +150,8 @@ public:
     void drawDebugLights();
 
     void createWorldPortals();
+
+    void drawTransformedAntiPortalPoints();
 };
 
 

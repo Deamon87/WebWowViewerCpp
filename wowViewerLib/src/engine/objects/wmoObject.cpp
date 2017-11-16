@@ -7,6 +7,52 @@
 #include "../shaderDefinitions.h"
 #include "../persistance/header/commonFileStructs.h"
 
+std::vector<mathfu::vec3> CreateOccluders(const WmoGroupGeom * groupGeom)
+{
+    std::vector<mathfu::vec3> points(0);
+
+    if (groupGeom == nullptr || !groupGeom->isLoaded()) return points;
+    for ( unsigned int mopy_index (0), movi_index (0)
+            ; mopy_index < groupGeom->mopyLen
+            ; ++mopy_index, ++movi_index
+            )
+    {
+        points.push_back(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+0]]));
+        points.push_back(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+1]]));
+        points.push_back(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+2]]));
+//        C3Vector points[3] =
+//                {  groupGeom->verticles[groupGeom->indicies[movi_index]]
+//                   groupGeom->verticles[groupGeom->indicies[movi_index]]
+//                   groupGeom->verticles[groupGeom->indicies[movi_index]]
+//                };
+//
+//        float avg ((points[0]->z + points[1]->z + points[2]->z) / 3.0);
+//
+//        unsigned int two_points[2];
+//        unsigned int two_points_index (0);
+//
+//        for (unsigned int i (0); i < 3; ++i)
+//        {
+//            if (points[i]->z > avg)
+//            {
+//                two_points[two_points_index++] = i;
+//            }
+//        }
+//
+//        if (two_points_index > 1)
+//        {
+//            CMapObjOccluder* occluder (CMapObj::AllocOccluder());
+//            occluder->p1 = points[two_points[0]];
+//            occluder->p2 = points[two_points[1]];
+//
+//            append (this->occluders, occluder);
+//        }
+
+    }
+    return points;
+}
+
+
 std::string WmoObject::getTextureName(int index) {
     return std::__cxx11::string();
 }
@@ -141,6 +187,8 @@ void WmoObject::createGroupObjects(){
 
 //        groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilenameLod1, mainGeom->groups[i], i);
 //        groupObjectsLod1[i]->setWmoApi(this);
+
+
     }
 }
 
@@ -232,8 +280,22 @@ void WmoObject::update() {
 
         return;
     } else {
+        this->antiPortals = std::vector<PortalResults>(0);
         for (int i= 0; i < groupObjects.size(); i++) {
             if(groupObjects[i] != nullptr) {
+                if ((mainGeom->groups[i].flags & 0x4000000) > 0) {
+                    //AntiPortal
+
+                    std::vector<mathfu::vec3> oclluded = CreateOccluders(groupObjects[i]->getWmoGroupGeom());
+                    this->antiPortals.push_back({
+                                                        groupId: i,
+                                                        portalIndex : -1,
+#ifndef CULLED_NO_PORTAL_DRAWING
+                                                        portalVertices: oclluded,
+#endif
+                                                        frustumPlanes: {},
+                                                        level : 0});
+                }
                 groupObjects[i]->update();
             }
         }
@@ -399,6 +461,91 @@ void WmoObject::drawTransformedPortalPoints(){
 #endif
 }
 
+void WmoObject::drawTransformedAntiPortalPoints(){
+#ifndef CULLED_NO_PORTAL_DRAWING
+    if (!m_loaded) return;
+
+    std::vector<uint16_t> indiciesArray;
+    std::vector<float> verticles;
+    int k = 0;
+    //int l = 0;
+    std::vector<int> stripOffsets;
+    stripOffsets.push_back(0);
+    int verticleOffset = 0;
+    int stripOffset = 0;
+
+    //
+
+    for (int i = 0; i < this->antiPortals.size(); i++) {
+        //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
+
+        int verticlesCount = this->antiPortals[i].portalVertices.size();
+//        if ((verticlesCount - 2) <= 0) {
+//            stripOffsets.push_back(stripOffsets[i]);
+//            continue;
+//        };
+//
+//        for (int j =0; j < (((int)verticlesCount)-2); j++) {
+//            indiciesArray.push_back(verticleOffset+0);
+//            indiciesArray.push_back(verticleOffset+j+1);
+//            indiciesArray.push_back(verticleOffset+j+2);
+//        }
+//        stripOffset += ((verticlesCount-2) * 3);
+
+        for (int j =0; j < verticlesCount; j++) {
+            verticles.push_back(this->antiPortals[i].portalVertices[j].x);
+            verticles.push_back(this->antiPortals[i].portalVertices[j].y);
+            verticles.push_back(this->antiPortals[i].portalVertices[j].z);
+        }
+
+        verticleOffset += verticlesCount;
+        stripOffsets.push_back(stripOffset);
+    }
+    GLuint indexVBO;
+    GLuint bufferVBO;
+//    glGenBuffers(1, &indexVBO);
+//    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+//    if (indiciesArray.size() > 0) {
+//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size() * 2, &indiciesArray[0], GL_STATIC_DRAW);
+//    }
+    glGenBuffers(1, &bufferVBO);
+    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
+    if (verticles.size() > 0) {
+        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
+    }
+
+    glDisable(GL_BLEND);
+
+    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
+
+    auto drawPortalShader = m_api->getPortalShader();
+    static float colorArr[4] = {0.819607843, 0.058, 0.058, 0.3};
+    glUniformMatrix4fv(drawPortalShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
+    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
+
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+
+    int offset = 0;
+    for (int i = 0; i < this->antiPortals.size(); i++) {
+//        int indeciesLen = stripOffsets[i+1] - stripOffsets[i];
+
+//        glDrawElements(GL_TRIANGLES, indeciesLen, GL_UNSIGNED_SHORT, (void *)(offset * 2));
+        glDrawArrays(GL_TRIANGLES, 0, verticles.size()*4);
+
+//        offset += indeciesLen;
+    }
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
+    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
+
+    glDeleteBuffers(1, &indexVBO);
+    glDeleteBuffers(1, &bufferVBO);
+#endif
+}
+
 void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
     m_modelName = modelName;
 
@@ -454,6 +601,8 @@ void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
 
 
 }
+
+
 
 // Portal culling
 bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoGroupsResults,
@@ -628,7 +777,7 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
 
     std::set<M2Object *> wmoM2Candidates ;
     for (int i = 0; i< mainGeom->groupsLen; i++) {
-        if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
+       if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
             if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
                 this->exteriorPortals.push_back({
                                                     groupId: i,
@@ -732,7 +881,7 @@ void WmoObject::transverseGroupWMO(
 
         //Skip portals we already visited
         if (transverseVisitedPortals[relation->portal_index]) continue;
-        if (!fromInterior && (mainGeom->groups[nextGroup].flags & 0x2000) == 0) continue;
+        //if (!fromInterior && (mainGeom->groups[nextGroup].flags & 0x2000) == 0) continue;
 
 
         //Local coordinanes plane DOT local camera
