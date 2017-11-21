@@ -203,6 +203,12 @@ struct SMOBatch
     /*0x16*/ uint8_t flag_unknown_1 : 1;
 //#if ≥ Legion
     /*0x16*/ uint8_t flag_use_material_id_large : 1;  // instead of material_id use material_id_large
+    /*0x16*/ uint8_t flag_unknown_3 : 1;
+    /*0x16*/ uint8_t flag_unknown_4 : 1;
+    /*0x16*/ uint8_t flag_unknown_5 : 1;
+    /*0x16*/ uint8_t flag_unknown_6 : 1;
+    /*0x16*/ uint8_t flag_unknown_7 : 1;
+    /*0x16*/ uint8_t flag_unknown_8 : 1;
 //#endif
 //#if version >= ?
     /*0x17*/ uint8_t material_id;                     // index in MOMT

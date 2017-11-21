@@ -12,17 +12,7 @@
 class RequestProcessor : public IFileRequest {
 protected:
     RequestProcessor() {
-//        auto receiver = [](int count, PolyM::Queue& q) {
-//            while (true) {
-//                auto msg = q.get();
-//                auto &dm = dynamic_cast<PolyM::DataMsg<int> &>(*msg);
-//
-//            }
-//        };
-//
-        loaderThread = new std::thread(([&](){
-            this->processRequests();
-        }));
+
     }
 
 protected:
@@ -45,13 +35,22 @@ private:
     std::list<std::string> m_requestQueue;
     std::list<resultStruct> m_resultQueue;
 
+    bool m_threaded = false;
 public:
     void processResults(int limit);
+    void processRequests(bool calledFromThread);
 
+    void setThreaded(bool value) {
+        m_threaded = value;
+        if (value) {
+            loaderThread = new std::thread(([&](){
+                this->processRequests(true);
+            }));
+        }
+    }
 
 protected:
     void addRequest (std::string &fileName);
-    void processRequests();
 
     void provideResult(std::string fileName, std::vector<unsigned char> &content);
 

@@ -366,6 +366,15 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         }
                     },
                     {
+                        'MOPB', {
+                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOPB");
+                                object.prePassBatchesLen = chunkData.chunkLen / sizeof(SMOBatch);
+                                chunkData.readValues(object.prePassbatches, object.prePassBatchesLen);
+                            },
+                        }
+                    },
+                    {
                         'MOBN', {
                             handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                 object.nodesLen = chunkData.chunkLen / sizeof(t_BSP_NODE);
@@ -494,17 +503,6 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
 
         }
     }
-
-//        float red = mohd->ambColor.r;
-//        float green = mohd->ambColor.g;
-//        float blue = mohd->ambColor.b;
-//
-//        for (int i(0); i < cvLen; ++i) {
-//            colorArray[i].r = std::min(255.0f, red + colorArray[i].r) ;
-//            colorArray[i].g = std::min(255.0f, (green + colorArray[i].g));
-//            colorArray[i].b = std::min(255.0f, (blue + colorArray[i].b));
-//        }
-
 }
 
 
@@ -556,7 +554,7 @@ void WmoGroupGeom::createIndexVBO() {
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
+void WmoGroupGeom::draw(IWoWInnerApi *api, const SMOMaterial const *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
 
 //    var shaderUniforms = this.sceneApi.shaders.getShaderUniforms();
 //    var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
@@ -645,22 +643,32 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
         if ((isInteriorBatch)) {
             float modifier = 0.3;
 
-
             mathfu::vec4 diffColor = mathfu::vec4(
-                    ((float)material.diffColor.r) / 255.0f,
+                    ((float)material.diffColor.r / 255.0f),
                     ((float)material.diffColor.g / 255.0f),
                     ((float)material.diffColor.b / 255.0f),
                     ((float)material.diffColor.a / 255.0f)
             );
 
+
             mathfu::vec4 ambColor = mathfu::vec4(
-                    ((float)mohd->ambColor.r) / 255.0f,
+                    ((float)mohd->ambColor.r / 255.0f),
                     ((float)mohd->ambColor.g / 255.0f),
                     ((float)mohd->ambColor.b / 255.0f),
                     ((float)mohd->ambColor.a / 255.0f)
             );
 
-            mathfu::vec4 resultColor = 1.0f * (diffColor * ambColor);
+            if (use_replacement_for_header_color) {
+                ambColor = mathfu::vec4(
+                        ((float)replacement_for_header_color.r / 255.0f),
+                        ((float)replacement_for_header_color.g / 255.0f),
+                        ((float)replacement_for_header_color.b / 255.0f),
+                        ((float)replacement_for_header_color.a / 255.0f)
+                ) * 0.5;
+            }
+
+            //mathfu::vec4 resultColor = 1.0f * (diffColor * ambColor);
+            mathfu::vec4 resultColor = ambColor * 0.5 ;
 
             glUniform4fv(wmoShader->getUnf("uAmbientLight"),
                 1,
@@ -702,17 +710,21 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial *materials, std::function
             case 0 : //Blend_Opaque
                 glDisable(GL_BLEND);
                 glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0);
+                glUniform1i(wmoShader->getUnf("uEnableAlpha"), 0);
                 break;
             case 1 : //Blend_AlphaKey
                 glDisable(GL_BLEND);
                 //GL_uniform1f(m2Shader->getUnf("uAlphaTest, 2.9);
-                glUniform1f(wmoShader->getUnf("uAlphaTest"), 0.903921569);
+                glUniform1f(wmoShader->getUnf("uAlphaTest"), 244.0/255.0);
+                glUniform1i(wmoShader->getUnf("uEnableAlpha"), 1);
                 //GL_uniform1f(m2Shader->getUnf("uAlphaTest, meshColor[4]*transparency*(252/255));
                 break;
             default :
                 glUniform1f(wmoShader->getUnf("uAlphaTest"), -1);
                 glEnable(GL_BLEND);
                 glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+
+                glUniform1i(wmoShader->getUnf("uEnableAlpha"), 0);
 
                 break;
         }

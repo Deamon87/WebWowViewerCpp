@@ -86,6 +86,10 @@ public:
     SMOBatch *batches = nullptr;
     int batchesLen = 0;
 
+    SMOBatch *prePassbatches = nullptr;
+    int prePassBatchesLen = 0;
+
+
     t_BSP_NODE * bsp_nodes = nullptr;
     int nodesLen = 0;
 
@@ -95,7 +99,7 @@ public:
     int use_replacement_for_header_color = 0;
     CArgb replacement_for_header_color = {};
 
-    MOLP *molp;
+    MOLP *molp = nullptr;
     int molpCnt = 0;
 
     GLuint combinedVBO;

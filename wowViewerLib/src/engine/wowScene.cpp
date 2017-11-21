@@ -62,8 +62,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "Troll Raid");
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 
-    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
-    currentScene = new Map(this, "silithusphase01");
+//    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
+//    currentScene = new Map(this, "silithusphase01");
 
 //    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
 //    currentScene = new Map(this, "Troll Raid");
@@ -108,9 +108,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
 
     //Test scene 3: Ironforge
-//    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592);
+    //m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
+    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
+    currentScene = new WmoScene(this,
+        "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,
-//        "world\\wmo\\brokenisles\\dalaran2.wmo");
+//        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
+
 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -906,7 +910,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 1000;
+    int farPlane = 150;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 

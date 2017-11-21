@@ -293,8 +293,9 @@ int main(int argc, char** argv) {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-
+        processor->processRequests(false);
         processor->processResults(10);
+
         if (windowSizeChanged) {
             scene->setScreenSize(canvWidth, canvHeight);
             windowSizeChanged = false;
