@@ -51,6 +51,12 @@ public:
     void startMovingDown();
     void stopMovingDown();
 
+    void getCameraPosition(float *position) override {
+        position[0] = camera.x;
+        position[1] = camera.y;
+        position[2] = camera.z;
+    }
+
 public:
     //Implemented ICamera
     mathfu::vec3 getCameraPosition();

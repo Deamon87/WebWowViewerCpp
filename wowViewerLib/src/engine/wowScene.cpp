@@ -17,7 +17,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     this->canvAspect = (float)canvWidth / (float)canvHeight;
 
     /* Allocate and assign a Vertex Array Object to our handle */
-    GLuint vao;
     glGenVertexArrays(1, &vao);
 
     /* Bind our Vertex Array Object as the current used object */
@@ -62,8 +61,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "Troll Raid");
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 
-//    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
-//    currentScene = new Map(this, "silithusphase01");
+    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
+    currentScene = new Map(this, "silithusphase01");
 
 //    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
 //    currentScene = new Map(this, "Troll Raid");
@@ -108,10 +107,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
 
     //Test scene 3: Ironforge
-    //m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
-    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
-    currentScene = new WmoScene(this,
-        "world\\wmo\\brokenisles\\dalaran2.wmo");
+//    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
+//    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
@@ -134,7 +133,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
 // currentScene = new WmoScene(this,
 //        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
-//
+
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
 //
@@ -144,6 +143,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\azeroth\\buildings\\stormwind\\stormwind2.WMO");
 
+       m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "world\\wmo\\dungeon\\argusraid\\7du_argusraid_shivantemple.wmo");
+
+
+    glBindVertexArray(0);
 }
 
 ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
@@ -889,8 +894,10 @@ void glClearScreen() {
     //glClearColor(0.117647, 0.207843, 0.392157, 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glDisable(GL_CULL_FACE);
+
+    glDisable(GL_SCISSOR_TEST);
 }
 
 void WoWSceneImpl::drawCamera () {
@@ -905,12 +912,13 @@ void WoWSceneImpl::drawCamera () {
 }
 
 void WoWSceneImpl::draw(animTime_t deltaTime) {
+    glBindVertexArray(vao);
     glClearScreen();
     mathfu::vec3 *cameraVector;
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 150;
+    int farPlane = 1000;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 
@@ -1088,6 +1096,8 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                                    this->canvHeight, true);
         }
     }
+
+    glBindVertexArray(0);
 }
 
 void WoWSceneImpl::activateM2Shader() {

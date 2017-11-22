@@ -33,9 +33,9 @@ if (WIN32)
     MESSAGE(IT IS WINDOWS!!!!)
     include_directories(${PROJECT_SOURCE_DIR}/3rdparty/glew_win/include)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(glew_lib ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32s.lib)
+        set(glew_lib ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32s.lib )
     elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-        set(glew_lib ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32s.lib)
+        set(glew_lib ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32s.lib )
     endif()
 
 else()
@@ -43,18 +43,19 @@ else()
     if (GLEW_FOUND)
         include_directories(${GLEW_INCLUDE_DIRS})
         link_libraries(${GLEW_LIBRARIES})
+        set(glew_lib ${GLEW_LIBRARIES} )
     endif()
     if(NOT GLEW_FOUND)
         message(ERROR " GLEW not found!")
     endif(NOT GLEW_FOUND)
 endif(WIN32)
 
+set(glew_lib ${glew_lib} PARENT_SCOPE)
+
 IF(CMAKE_BUILD_TYPE MATCHES Release)
     include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
 include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)
-
-
 
 #include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)
 include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)

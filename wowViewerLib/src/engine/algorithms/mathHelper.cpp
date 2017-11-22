@@ -138,6 +138,10 @@ bool hullSort(mathfu::vec3 a, mathfu::vec3 b, mathfu::vec2 center) {
 
 std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &points){
     std::stack<Point> hullPoints = grahamScan(points);
+    if (hullPoints.size() <= 2) {
+        return std::vector<mathfu::vec3>(0);
+    }
+
     mathfu::vec3* end   = &hullPoints.top() + 1;
     mathfu::vec3* begin = end - hullPoints.size();
     std::vector<mathfu::vec3> hullPointsArr(begin, end);

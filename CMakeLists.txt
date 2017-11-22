@@ -93,6 +93,10 @@ include_directories(3rdparty/PolyM)
 add_subdirectory(3rdparty/stormlib)
 #include_directories(3rdparty/PolyM)
 
+#nuklear_cross
+include_directories(3rdparty/nuklear_cross)
+include_directories(3rdparty/nuklear_cross)
+
 #Main library
 #ExternalProject_Add("WowViewerLib"
 #        SOURCE_DIR "${CMAKE_SOURCE_DIR}/wowViewerLib"
@@ -147,7 +151,7 @@ target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} -lpthread ${CURL_
 target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp polym)
 target_link_libraries(WebWoWViewerCpp storm)
-#target_link_libraries(WebWoWViewerCpp opengl32)
+target_link_libraries(WebWoWViewerCpp ${glew_lib})
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 target_link_libraries(WebWoWViewerCpp ${CMAKE_SOURCE_DIR}/wowViewerLib/3rdparty/glew_win/lib/Release/x64/glew32.lib)
 target_link_libraries(WebWoWViewerCpp opengl32)

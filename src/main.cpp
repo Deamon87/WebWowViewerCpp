@@ -3,6 +3,13 @@
 #endif
 
 // Include GLEW. Always include it before gl.h and glfw.h, since it's a bit magic.
+#define NKC_IMPLEMENTATION
+#define NKCD NKC_GLFW
+#define NKC_USE_OPENGL 3
+#include <nuklear_cross.h>
+
+
+
 #undef GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <curl/curl.h>
@@ -15,13 +22,16 @@
 #include "persistance/MpqRequestProcessor.h"
 #include "persistance/HttpRequestProcessor.h"
 
+
+
+
 int mleft_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
-    IControllable* controllable = scene->getCurrentContollable();
+    IControllable* controllable = scene->getCurrentCamera();
 
 //    if (!pointerIsLocked) {
         if (mleft_pressed == 1) {
@@ -64,7 +74,7 @@ Config *testConf;
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
-    IControllable* controllable = scene->getCurrentContollable();
+    IControllable* controllable = scene->getCurrentCamera();
     if ( action == GLFW_PRESS) {
         switch (key) {
             case 'W' :
@@ -223,6 +233,158 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 }
 #endif
 
+
+enum radioOptions {
+    EASY,
+    HARD
+};
+
+struct my_nkc_app {
+    struct nkc* nkcHandle;
+
+    /* some user data */
+    float value;
+    enum radioOptions op;
+
+    WoWScene *scene;
+    RequestProcessor *processor;
+
+    double currentFrame;
+    double lastFrame;
+};
+
+
+
+void mainLoop(void* loopArg){
+    struct my_nkc_app* myapp = (struct my_nkc_app*)loopArg;
+    struct nk_context *ctx = nkc_get_ctx(myapp->nkcHandle);
+
+    union nkc_event e = nkc_poll_events(myapp->nkcHandle);
+    if( (e.type == NKC_EWINDOW) && (e.window.param == NKC_EQUIT) ){
+        nkc_stop_main_loop(myapp->nkcHandle);
+    }
+
+    // Render scene
+    myapp->currentFrame = glfwGetTime();
+    double deltaTime = myapp->currentFrame - myapp->lastFrame;
+    myapp->lastFrame = myapp->currentFrame;
+
+
+
+    myapp->processor->processRequests(false);
+    myapp->processor->processResults(10);
+
+    myapp->scene->draw((deltaTime*1000));
+
+
+    /* Nuklear GUI code */
+    if (nk_begin(ctx, "Show", nk_rect(50, 50, 220, 220),
+                 NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
+        /* fixed widget pixel width */
+        nk_layout_row_static(ctx, 30, 80, 1);
+        if (nk_button_label(ctx, "button")) {
+            /* event handling */
+            printf("Button pressed\n");
+        }
+
+        /* fixed widget window ratio width */
+        nk_layout_row_dynamic(ctx, 30, 2);
+        if (nk_option_label(ctx, "easy", myapp->op == EASY)) myapp->op = EASY;
+        if (nk_option_label(ctx, "hard", myapp->op == HARD)) myapp->op = HARD;
+
+        /* custom widget pixel width */
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+        {
+            nk_layout_row_push(ctx, 50);
+            nk_label(ctx, "Volume:", NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 110);
+            nk_slider_float(ctx, 0, &(myapp->value), 1.0f, 0.1f);
+        }
+        nk_layout_row_end(ctx);
+
+        nk_layout_row_begin(ctx, NK_STATIC, 15, 1);
+        {
+            nk_layout_row_push(ctx, 200);
+
+            float cameraPos[4];
+            myapp->scene->getCurrentCamera()->getCameraPosition(cameraPos);
+
+            nk_label(ctx, "Coordinates :", NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
+            nk_label(ctx, std::to_string(cameraPos[0]).c_str(), NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
+            nk_label(ctx, std::to_string(cameraPos[1]).c_str(), NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
+            nk_label(ctx, std::to_string(cameraPos[2]).c_str(), NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
+        }
+        nk_layout_row_end(ctx);
+    }
+    nk_end(ctx);
+    /* End Nuklear GUI */
+
+    nkc_render_gui(myapp->nkcHandle);
+}
+
+
+int main(){
+    struct my_nkc_app myapp;
+    struct nkc nkcx; /* Allocate memory for Nuklear+ handle */
+    myapp.nkcHandle = &nkcx;
+    /* init some user data */
+    myapp.value = 0.4;
+    myapp.op = HARD;
+
+
+//    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
+//    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
+//    const char *filePath = "D:\\shattrath (1).zip\0";
+//    const char *filePath = "D:\\ironforge.zip\0";
+    const char * url = "http://178.165.92.24:40001/get/";
+    //const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
+//     const char *url = "http://localhost:8084/get/";
+
+    testConf = new Config();
+
+
+
+    if( nkc_init( myapp.nkcHandle, "Nuklear+ Example", 640, 480, NKC_WIN_NORMAL ) ){
+        printf("Successfull init. Starting 'infinite' main loop...\n");
+
+        //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
+        //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
+        //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
+        HttpRequestProcessor *processor = new HttpRequestProcessor(url);
+        processor->setThreaded(true);
+
+        WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
+        processor->setFileRequester(scene);
+        testConf->setDrawM2BB(false);
+        //testConf->setUsePortalCulling(false);
+
+        myapp.scene = scene;
+        myapp.processor = processor;
+        myapp.currentFrame = glfwGetTime();
+        myapp.lastFrame = myapp.currentFrame;
+
+        glfwSetWindowUserPointer(myapp.nkcHandle->window, scene);
+        glfwSetKeyCallback(myapp.nkcHandle->window, onKey);
+        glfwSetCursorPosCallback( myapp.nkcHandle->window, cursor_position_callback);
+        glfwSetWindowSizeCallback( myapp.nkcHandle->window, window_size_callback);
+        glfwSetWindowSizeLimits( myapp.nkcHandle->window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
+        glfwSetMouseButtonCallback( myapp.nkcHandle->window, mouse_button_callback);
+
+        nkc_set_main_loop(myapp.nkcHandle, mainLoop, (void*)&myapp );
+    } else {
+        printf("Can't init NKC\n");
+    }
+    printf("Value after exit = %f\n", myapp.value);
+    nkc_shutdown( myapp.nkcHandle );
+    return 0;
+}
+
+
+/*
 int main(int argc, char** argv) {
     CURL *curl = NULL;
     FILE *fp;
@@ -256,6 +418,8 @@ int main(int argc, char** argv) {
     }
     glfwMakeContextCurrent(window); // Initialize GLFW
 
+
+
 //    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
@@ -269,6 +433,8 @@ int main(int argc, char** argv) {
 //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
 //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
     HttpRequestProcessor *processor = new HttpRequestProcessor(url);
+    processor->setThreaded(true);
+
     WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);
@@ -287,6 +453,7 @@ int main(int argc, char** argv) {
     double currentFrame = glfwGetTime();
     double lastFrame = currentFrame;
     double deltaTime;
+
 
     do {
         currentFrame = glfwGetTime();
@@ -314,3 +481,4 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+*/

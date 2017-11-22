@@ -554,7 +554,7 @@ void WmoGroupGeom::createIndexVBO() {
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void WmoGroupGeom::draw(IWoWInnerApi *api, const SMOMaterial const *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
+void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
 
 //    var shaderUniforms = this.sceneApi.shaders.getShaderUniforms();
 //    var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
@@ -624,7 +624,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, const SMOMaterial const *materials, s
             texIndex = renderBatch.material_id;
         }
 
-        SMOMaterial &material = materials[texIndex];
+        const SMOMaterial &material = materials[texIndex];
         assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
 //        uint32_t color = material.diffColor;
         int pixelShader = wmoMaterialShader[material.shader].pixelShader;

@@ -56,7 +56,7 @@ public:
 
     IControllable* controllable = &m_firstCamera;
 
-    IControllable* getCurrentContollable() {
+    IControllable* getCurrentCamera() {
         return this->controllable;
     };
 
@@ -170,6 +170,8 @@ private:
     int canvWidth;
     int canvHeight;
     float canvAspect;
+
+    GLuint vao;
 
     float uFogStart = -1;
     float uFogEnd = -1;

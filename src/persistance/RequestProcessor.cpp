@@ -27,7 +27,7 @@ void RequestProcessor::processRequests (bool calledFromThread) {
 
         while (true) {
             if (m_requestQueue.empty()) {
-                std::this_thread::sleep_for(1s);
+                std::this_thread::sleep_for(1ms);
                 continue;
             }
 

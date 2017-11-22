@@ -27,7 +27,7 @@ public:
     virtual void setScreenSize(int canvWidth, int canvHeight) = 0;
     virtual void switchCameras() = 0;
 
-    virtual IControllable* getCurrentContollable() = 0;
+    virtual IControllable* getCurrentCamera() = 0;
 };
 
 extern WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);

@@ -31,3 +31,6 @@
 [submodule "3rdparty/casclib"]
 	path = 3rdparty/casclib
 	url = https://github.com/ladislav-zezula/CascLib.git
+[submodule "3rdparty/nuklear_cross"]
+	path = 3rdparty/nuklear_cross
+	url = https://github.com/DeXP/nuklear_cross.git

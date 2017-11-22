@@ -8,6 +8,7 @@
 #include "../../include/controllable.h"
 
 class ICamera : public IControllable {
+public:
     virtual mathfu::vec3 getCameraPosition() = 0;
     virtual mathfu::vec3 getCameraLookAt() = 0;
 };
