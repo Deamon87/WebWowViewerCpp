@@ -292,7 +292,7 @@ mathfu::vec4 M2Object::getCombinedColor(
 float M2Object::getTransparency(
         M2SkinProfile *skinData,
         M2MaterialInst &materialData,
-        std::vector<float> transparencies) {
+        std::vector<float> &transparencies) {
     float transparency = 1.0;
 
     int transpIndex = skinData->batches[materialData.texUnit1TexIndex]->textureWeightComboIndex;

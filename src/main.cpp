@@ -18,6 +18,7 @@
 #include <cmath>
 #include "../wowViewerLib/src/include/wowScene.h"
 #include "persistance/ZipRequestProcessor.h"
+#include "persistance/CascRequestProcessor.h"
 #include "persistance/HttpZipRequestProcessor.h"
 #include "persistance/MpqRequestProcessor.h"
 #include "persistance/HttpRequestProcessor.h"
@@ -347,8 +348,9 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-    const char * url = "http://178.165.92.24:40001/get/";
-    //const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
+//    const char * url = "http://178.165.92.24:40001/get/";
+//    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
+    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
 //     const char *url = "http://localhost:8084/get/";
 
     testConf = new Config();
@@ -361,7 +363,8 @@ int main(){
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
         //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
         //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-        HttpRequestProcessor *processor = new HttpRequestProcessor(url);
+//        HttpRequestProcessor *processor = new HttpRequestProcessor(url);
+        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);

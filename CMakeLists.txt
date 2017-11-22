@@ -5,8 +5,8 @@ project(WebWoWViewerCpp)
 include(ExternalProject)
 
 #set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 
@@ -91,10 +91,12 @@ include_directories(3rdparty/PolyM)
 
 #StormLib
 add_subdirectory(3rdparty/stormlib)
-#include_directories(3rdparty/PolyM)
+
+#CascLib
+set(CASC_BUILD_SHARED_LIB ON)
+add_subdirectory(3rdparty/casclib)
 
 #nuklear_cross
-include_directories(3rdparty/nuklear_cross)
 include_directories(3rdparty/nuklear_cross)
 
 #Main library
@@ -117,7 +119,17 @@ set(SOURCE_FILES
 		src/persistance/httpFile/httpFile.cpp
 		src/persistance/httpFile/httpFile.h
 		src/persistance/RequestProcessor.cpp
-		src/persistance/RequestProcessor.h src/persistance/ZipRequestProcessor.cpp src/persistance/ZipRequestProcessor.h src/persistance/HttpZipRequestProcessor.cpp src/persistance/HttpZipRequestProcessor.h src/persistance/MpqRequestProcessor.cpp src/persistance/MpqRequestProcessor.h src/persistance/HttpRequestProcessor.cpp src/persistance/HttpRequestProcessor.h)
+		src/persistance/RequestProcessor.h
+		src/persistance/ZipRequestProcessor.cpp
+		src/persistance/ZipRequestProcessor.h
+		src/persistance/HttpZipRequestProcessor.cpp
+		src/persistance/HttpZipRequestProcessor.h
+		src/persistance/MpqRequestProcessor.cpp
+		src/persistance/MpqRequestProcessor.h
+		src/persistance/CascRequestProcessor.cpp
+		src/persistance/CascRequestProcessor.h
+		src/persistance/HttpRequestProcessor.cpp
+		src/persistance/HttpRequestProcessor.h)
 #########################################################
 # FIND OPENGL
 #########################################################
@@ -131,6 +143,7 @@ if(NOT OPENGL_FOUND)
 endif(NOT OPENGL_FOUND)
 
 #Build the executiable
+include_directories(${glew_include})
 add_executable(WebWoWViewerCpp ${SOURCE_FILES})
 
 add_dependencies(WebWoWViewerCpp libz)
@@ -138,6 +151,7 @@ add_dependencies(WebWoWViewerCpp LibZip)
 add_dependencies(WebWoWViewerCpp GLFW)
 add_dependencies(WebWoWViewerCpp WoWViewerLib)
 add_dependencies(WebWoWViewerCpp storm)
+add_dependencies(WebWoWViewerCpp casc)
 
 #TODO: platform dependant!!
 #target_link_libraries(WebWoWViewerCpp ${install_dir}/lib/libWoWViewerLib)
@@ -151,6 +165,7 @@ target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} -lpthread ${CURL_
 target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp polym)
 target_link_libraries(WebWoWViewerCpp storm)
+target_link_libraries(WebWoWViewerCpp casc)
 target_link_libraries(WebWoWViewerCpp ${glew_lib})
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 target_link_libraries(WebWoWViewerCpp ${CMAKE_SOURCE_DIR}/wowViewerLib/3rdparty/glew_win/lib/Release/x64/glew32.lib)
