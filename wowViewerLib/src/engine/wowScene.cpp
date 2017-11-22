@@ -143,9 +143,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\azeroth\\buildings\\stormwind\\stormwind2.WMO");
 
-       m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "world\\wmo\\dungeon\\argusraid\\7du_argusraid_shivantemple.wmo");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\dungeon\\argusraid\\7du_argusraid_shivantemple.wmo");
 
 
     glBindVertexArray(0);

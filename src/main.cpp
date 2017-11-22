@@ -184,7 +184,7 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
         }
         else // If the user didn't specify a window to append the FPS to then output the FPS to the console
         {
-            std::cout << "FPS: " << fps << std::endl;
+//            std::cout << "FPS: " << fps << std::endl;
         }
 
         // Reset the frame count to zero and set the initial time to be now
@@ -269,16 +269,21 @@ void mainLoop(void* loopArg){
     double deltaTime = myapp->currentFrame - myapp->lastFrame;
     myapp->lastFrame = myapp->currentFrame;
 
-
+    double fps = calcFPS(nullptr, 2.0);
 
     myapp->processor->processRequests(false);
     myapp->processor->processResults(10);
+
+    if (windowSizeChanged) {
+        myapp->scene->setScreenSize(canvWidth, canvHeight);
+        windowSizeChanged = false;
+    }
 
     myapp->scene->draw((deltaTime*1000));
 
 
     /* Nuklear GUI code */
-    if (nk_begin(ctx, "Show", nk_rect(50, 50, 220, 220),
+    if (nk_begin(ctx, "Show", nk_rect(50, 50, 220, 300),
                  NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
         /* fixed widget pixel width */
         nk_layout_row_static(ctx, 30, 80, 1);
@@ -317,6 +322,8 @@ void mainLoop(void* loopArg){
             nk_layout_row_push(ctx, 50);
             nk_label(ctx, std::to_string(cameraPos[2]).c_str(), NK_TEXT_LEFT);
             nk_layout_row_push(ctx, 50);
+            nk_label(ctx, "FPS :", NK_TEXT_LEFT);
+            nk_label(ctx, std::to_string(fps).c_str(), NK_TEXT_LEFT);
         }
         nk_layout_row_end(ctx);
     }
