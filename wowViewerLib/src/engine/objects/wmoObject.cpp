@@ -68,7 +68,6 @@ void WmoObject::startLoading() {
 }
 
 M2Object *WmoObject::getDoodad(int index) {
-    return nullptr;
     int doodadsSet = this->m_doodadSet;
 
     SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
@@ -744,8 +743,6 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
     MathHelper::fixNearPlane(frustumPlanes, cameraVec4);
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
-
-
 
     mathfu::vec3 headOfPyramid = MathHelper::getIntersection(
             frustumPoints[4], frustumPoints[7],

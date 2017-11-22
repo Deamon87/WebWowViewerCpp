@@ -528,6 +528,7 @@ void Map::drawM2s() {
         if (this->m_api->getConfig()->getRenderM2()) {
             bool lastWasDrawInstanced = false;
             this->m_api->activateM2Shader();
+
             for (int i = static_cast<int>(this->m2RenderedThisFrameArr.size() - 1); i >= 0; i--) {
                 M2Object *m2Object = this->m2RenderedThisFrameArr[i];
                 if (this->m2TranspRenderedThisFrame.find(m2Object)
