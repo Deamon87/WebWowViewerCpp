@@ -69,12 +69,12 @@ public:
     explicit constexpr HashedString(ConstCharWrapper str);
 
     // Return the original string
-#ifdef _DEBUG
-    const char* String()
-    {
-        return m_String;
-    }
-#endif
+//#ifdef _DEBUG
+//    const char* String()
+//    {
+//        return m_String;
+//    }
+//#endif
     // Return the hash
     const size_t Hash() const
     {
@@ -87,9 +87,9 @@ public:
     size_t m_Hash;
 
     // The original string
-#ifdef _DEBUG
-    const char* m_String;
-#endif
+//#ifdef _DEBUG
+//    const char* m_String;
+//#endif
 };
 
 /////////////////////////////////

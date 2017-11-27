@@ -343,6 +343,10 @@ int main(){
     myapp.value = 0.4;
     myapp.op = HARD;
 
+#ifdef _WIN32
+    SetUnhandledExceptionFilter(windows_exception_handler);
+#endif
+
 
 //    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";

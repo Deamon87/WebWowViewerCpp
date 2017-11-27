@@ -93,6 +93,7 @@ include_directories(3rdparty/PolyM)
 add_subdirectory(3rdparty/stormlib)
 
 #CascLib
+#set(CASC_BUILD_STATIC_LIB ON)
 set(CASC_BUILD_SHARED_LIB ON)
 add_subdirectory(3rdparty/casclib)
 

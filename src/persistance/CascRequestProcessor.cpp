@@ -16,9 +16,10 @@ void CascRequestProcessor::processFileRequest(std::string &fileName) {
 
     CascLib::HANDLE fileHandle;
     std::vector<unsigned char> fileContent;
+    bool fileOpened = false;
     if (CascLib::CascOpenFile(m_storage, fileNameFixed.c_str(), 0,  0, &fileHandle)) {
         CascLib::DWORD fileSize1 = CascLib::CascGetFileSize(fileHandle, 0);
-
+        fileOpened = true;
         fileContent = std::vector<unsigned char> (fileSize1+1);
 
         CascLib::DWORD totalBytesRead = 0;
@@ -37,5 +38,9 @@ void CascRequestProcessor::processFileRequest(std::string &fileName) {
 
     }
 
-    this->provideResult(fileName, fileContent);
+    if (fileOpened) {
+        this->provideResult(fileName, fileContent);
+    } else {
+        std::cout << "Could not open file "<< fileName << std::endl << std::flush;
+    }
 }

@@ -5,7 +5,12 @@
 #ifndef WOWVIEWERLIB_ADTFILEHEADER_H
 #define WOWVIEWERLIB_ADTFILEHEADER_H
 
-#include <stdint-gcc.h>
+#ifdef _MSC_VER
+#include "../../../include/stdint_msvc.h"
+#else
+#include <stdint.h>
+#endif
+
 #include "commonFileStructs.h"
 
 struct SMMapHeader {
@@ -85,7 +90,8 @@ struct SMMapObjDef {
     uint16_t unk;                 // Legion(?)+: has data finally!
 } ;
 
-struct __attribute__ ((packed)) SMChunk
+PACK(
+struct SMChunk
 {
     struct
     {
@@ -111,14 +117,14 @@ struct __attribute__ ((packed)) SMChunk
 //#endif
 /*0x00C*/  uint32_t nLayers;                              // maximum 4
 /*0x010*/  uint32_t nDoodadRefs;
-union __attribute__ ((packed)){
-    struct __attribute__ ((packed)) {
+union{
+	PACK(struct {
         /*0x014*/ uint32_t ofsHeight;
         /*0x018*/ uint32_t ofsNormal;
-    } preMop;
-    struct __attribute__ ((packed)){
+    } preMop);
+	PACK(struct {
         /*0x014*/ uint64_t holes_high_res;
-    } postMop;
+    } postMop);
 };
 
 /*0x01C*/  uint32_t ofsLayer;
@@ -145,7 +151,7 @@ union __attribute__ ((packed)){
 /*0x078*/  uint32_t ofsMCLV;                             // introduced in Cataclysm
 /*0x07C*/  uint32_t unused;                              // currently unused
 /*0x080*/
-};
+});
 
 struct MCVT {
     float height[9*9 + 8*8];

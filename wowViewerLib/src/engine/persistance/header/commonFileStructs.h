@@ -26,6 +26,13 @@
 #endif
 #endif
 
+#ifndef _MSC_VER
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#else
+#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
+#endif
+
+
 using fixed16 = short;
 typedef mathfu::vec4_packed C4Vector;
 typedef mathfu::vec3_packed C3Vector;
