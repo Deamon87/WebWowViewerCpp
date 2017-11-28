@@ -690,12 +690,12 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
 //            glUniform1i(wmoShader->getUnf("uUseLitColor"), 1);
 //        }
 
-        if (materials[texIndex].blendMode != 0) {
+        if (material.blendMode != 0) {
             float alphaTestVal = 0.878431f;
 //            if ((materials[texIndex].flags. & 0x80) > 0) {
 //                //alphaTestVal = 0.2999999;
 //            }
-            if (materials[texIndex].flags.F_UNLIT) {
+            if (material.flags.F_UNLIT) {
                 alphaTestVal = 0.1f; //TODO: confirm this
             }
 
@@ -704,7 +704,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
             glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0f);
         }
 
-        switch (materials[texIndex].blendMode) {
+        switch (material.blendMode) {
             case 0 : //Blend_Opaque
                 glDisable(GL_BLEND);
                 glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0);
@@ -727,7 +727,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
                 break;
         }
 
-        if (materials[texIndex].flags.F_UNCULLED) {
+        if (material.flags.F_UNCULLED) {
             glDisable(GL_CULL_FACE);
         } else {
             glEnable(GL_CULL_FACE);

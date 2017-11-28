@@ -6,19 +6,21 @@
 #define WEBWOWVIEWERCPP_STRINGTRIM_H
 // trim from start (in place)
 
+#include <string>
+#include <algorithm>
+#include <functional>
+#include <locale>
+#include <ctype.h>
+
 static inline void ltrim(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-                                    std::not1(std::ptr_fun<int, int>(std::iscntrl))));
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-                                    std::not1(std::ptr_fun<int, int>(std::isspace))));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) {return !iscntrl(c); }));
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) {return !isspace(c); }));
 };
 
 // trim from end (in place)
 static inline void rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(),
-                         std::not1(std::ptr_fun<int, int>(std::iscntrl))).base(), s.end());
-    s.erase(std::find_if(s.rbegin(), s.rend(),
-                         std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int c) {return !iscntrl(c); }).base(), s.end());
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int c) {return !isspace(c); }).base(), s.end());
 };
 
 // trim from both ends (in place)

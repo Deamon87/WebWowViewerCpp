@@ -51,8 +51,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 //    currentScene = new Map(this, "Expansion01");
 
-//    m_firstCamera.setCameraPos(6500.6665, 7500.33301, 0);
-//    currentScene = new Map(this, "HawaiiMainLand"); // Pandaria
+    m_firstCamera.setCameraPos(6500.6665, 7500.33301, 0);
+    currentScene = new Map(this, "HawaiiMainLand"); // Pandaria
 
 //    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
@@ -72,6 +72,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //    m_firstCamera.setCameraPos(5243.2461346537075f, 1938.6550422193939f, 717.0332923206179f); //HallsOfReflection
 //    currentScene = new Map(this, "HallsOfReflection");
+    // .go 668 5243 1938 760
+    // .go 668 0 0 0
 
 //    currentScene = new Map(this, "UlduarRaid");
 //    currentScene = new Map(this, "argus 1");
@@ -138,8 +140,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-191.784775,258.097565,66.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
- currentScene = new WmoScene(this,
-        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");

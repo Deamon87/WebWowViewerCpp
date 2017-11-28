@@ -8,6 +8,7 @@
 #include "../../wowViewerLib/src/include/wowScene.h"
 #include <thread>
 #include <list>
+#include <vector>
 
 class RequestProcessor : public IFileRequest {
 protected:

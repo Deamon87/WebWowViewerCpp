@@ -89,7 +89,7 @@ private:
     bool checkIfHasBillboarded();
 
     mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, M2MaterialInst &materialData,  std::vector<mathfu::vec4> subMeshColors);
-    float getTransparency(M2SkinProfile *skinData,M2MaterialInst &materialData,std::vector<float> transparencies);
+    float getTransparency(M2SkinProfile *skinData,M2MaterialInst &materialData, std::vector<float> &transparencies);
 public:
 
     void setLoadParams(std::string modelName, int skinNum, std::vector<uint8_t> meshIds,
