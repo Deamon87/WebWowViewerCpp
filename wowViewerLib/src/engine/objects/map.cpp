@@ -25,6 +25,8 @@ void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
 }
 
 void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
+    if (!m_wdtfile->getIsLoaded()) return;
+
     adtRenderedThisFrame = std::unordered_set<AdtObject*>();
     m2RenderedThisFrame = std::unordered_set<M2Object*>();
     wmoRenderedThisFrame = std::unordered_set<WmoObject*>();
@@ -61,6 +63,8 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
 }
 
 void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
+    if (!m_wdtfile->getIsLoaded()) return;
+
     Config* config = this->m_api->getConfig();
     if (config->getRenderM2()) {
         for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
@@ -317,7 +321,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                 }
             } else {
                 std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-                adtObject = new AdtObject(m_api, adtFileTemplate);
+                adtObject = new AdtObject(m_api, adtFileTemplate, m_wdtfile);
 
                 adtObject->setMapApi(this);
                 this->mapTiles[i][j] = adtObject;

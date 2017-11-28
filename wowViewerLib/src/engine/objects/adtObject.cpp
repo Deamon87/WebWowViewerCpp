@@ -148,7 +148,7 @@ void AdtObject::loadAlphaTextures(int limit) {
     for (int i = this->alphaTexturesLoaded; i < chunkCount; i++) {
         GLuint alphaTexture;
         glGenTextures(1, &alphaTexture);
-        std::vector<uint8_t> alphaTextureData = m_adtFileTex->processTexture(0, i);
+        std::vector<uint8_t> alphaTextureData = m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i);
 
         glBindTexture(GL_TEXTURE_2D, alphaTexture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, &alphaTextureData[0]);
@@ -199,12 +199,25 @@ void AdtObject::draw() {
 
 //        BlpTexture &layer0 = getAdtTexture(m_adtFile->mcnkStructs[i].mcly[0].textureId);
         BlpTexture &layer0 = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[0].textureId);
+        float heightScale [4] = {0.0, 0.0, 0.0, 0.0};
+        float heightOffset [4] = {1.0, 1.0, 1.0, 1.0};
+        if (m_adtFileTex->mtxp_len > 0) {
+            for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                heightOffset[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightOffset;
+                heightScale[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightScale;
+
+            }
+        }
+
+        glUniform1fv(adtShader->getUnf("uHeightOffset[0]"), 4, &heightOffset[0]);
+        glUniform1fv(adtShader->getUnf("uHeightScale[0]"), 4, &heightScale[0]);
+
         if (layer0.getIsLoaded()) {
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, layer0.getGlTexture());
+            glBindTexture(GL_TEXTURE_2D, alphaTextures[i]);
 
             glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, alphaTextures[i]);
+            glBindTexture(GL_TEXTURE_2D, layer0.getGlTexture());
 
             //Bind layer textures
             for (int j = 1; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
@@ -212,15 +225,27 @@ void AdtObject::draw() {
                 BlpTexture &layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
                 BlpTexture &layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
                 BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+
                 if (layer_x.getIsLoaded()) {
                     //gl.enable(gl.TEXTURE_2D);
                     glBindTexture(GL_TEXTURE_2D, layer_x.getGlTexture());
                 } else {
                     glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
                 }
+
+                glActiveTexture(GL_TEXTURE1 + j+4);
+                if (layer_height.getIsLoaded()) {
+                    //gl.enable(gl.TEXTURE_2D);
+                    glBindTexture(GL_TEXTURE_2D, layer_height.getGlTexture());
+                } else {
+                    glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
+                }
             }
             for (int j = m_adtFileTex->mcnkStructs[i].mclyCnt; j < 4; j++) {
                 glActiveTexture(GL_TEXTURE1 + j);
+                glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
+
+                glActiveTexture(GL_TEXTURE1 + j+4);
                 glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
             }
 
@@ -354,10 +379,12 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     return atLeastOneIsDrawn;
 }
 
-AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate) : alphaTextures(){
+AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, WdtFile *wdtFile) : alphaTextures(){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     adtFileTemplate = adtFileTemplate;
+
+    m_wdtFile = wdtFile;
 
     m_adtFile = m_api->getAdtGeomCache()->get(adtFileTemplate+".adt");
     m_adtFile->setIsMain(true);

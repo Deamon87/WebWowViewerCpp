@@ -29,6 +29,7 @@ private:
     std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
 
+    WdtFile * m_wdtfile;
 
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;
@@ -52,7 +53,9 @@ private:
     WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) override ;
 public:
     Map(IWoWInnerApi *api, std::string mapName) : m_api(api), mapName(mapName){
+        std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
 
+        m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
     };
 
     void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) override;

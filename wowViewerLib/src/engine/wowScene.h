@@ -22,6 +22,7 @@
 #include "geometry/wmoGroupGeom.h"
 #include "geometry/wmoMainGeom.h"
 #include "objects/map.h"
+#include "persistance/wdtFile.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -41,6 +42,7 @@ public:
         m2GeomCache.provideFile(s_fileName, fileData);
         skinGeomCache.provideFile(s_fileName, fileData);
         textureCache.provideFile(s_fileName, fileData);
+        wdtCache.provideFile(s_fileName, fileData);
     };
     virtual void rejectFile(const char* fileName) {
         std::string s_fileName(fileName);
@@ -51,6 +53,7 @@ public:
         m2GeomCache.reject(s_fileName);
         skinGeomCache.reject(s_fileName);
         textureCache.reject(s_fileName);
+        wdtCache.reject(s_fileName);
     }
     void setFileRequestProcessor(IFileRequest*){};
 
@@ -89,6 +92,9 @@ public:
     };
     virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() {
         return &wmoGeomCache;
+    };
+    virtual Cache<WdtFile>* getWdtFileCache() {
+        return &wdtCache;
     };
 
     virtual ShaderRuntimeData *getM2Shader() {
@@ -187,6 +193,7 @@ private:
 
 
     Cache<AdtFile> adtObjectCache;
+    Cache<WdtFile> wdtCache;
     Cache<WmoGroupGeom> wmoGeomCache;
     Cache<WmoMainGeom> wmoMainCache;
     Cache<M2Geom> m2GeomCache;

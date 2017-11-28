@@ -32,6 +32,12 @@
 #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
 #endif
 
+#ifdef _MSC_VER
+#include "../../../include/stdint_msvc.h"
+#else
+#include <stdint.h>
+#endif
+
 
 using fixed16 = short;
 typedef mathfu::vec4_packed C4Vector;

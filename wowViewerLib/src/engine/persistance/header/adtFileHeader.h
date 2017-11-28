@@ -5,12 +5,6 @@
 #ifndef WOWVIEWERLIB_ADTFILEHEADER_H
 #define WOWVIEWERLIB_ADTFILEHEADER_H
 
-#ifdef _MSC_VER
-#include "../../../include/stdint_msvc.h"
-#else
-#include <stdint.h>
-#endif
-
 #include "commonFileStructs.h"
 
 struct SMMapHeader {

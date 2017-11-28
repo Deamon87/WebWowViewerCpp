@@ -1,5 +1,6 @@
 #include "adtFile.h"
 #include "header/adtFileHeader.h"
+#include "header/wdtFileHeader.h"
 
 chunkDef<AdtFile> AdtFile::adtFileTable = {
     handler : [](AdtFile& file, ChunkData& chunkData){},
@@ -44,6 +45,16 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         file.textureNames.push_back(std::string(textureNamesField+i));
                         i+= file.textureNames[file.textureNames.size()-1].size()+1;
                     }
+                }
+            }
+        },
+        {
+            'MTXP',
+            {
+                handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MTXP");
+                    file.mtxp_len = chunkData.chunkLen / sizeof(SMTextureParams);
+                    chunkData.readValues(file.mtxp, file.mtxp_len);
                 }
             }
         },
@@ -245,44 +256,39 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
 
 
 
-std::vector<uint8_t> AdtFile::processTexture(int wdtObjFlags, int i) {
+std::vector<uint8_t> AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i) {
     mcnkStruct_t &mcnkObj = mcnkStructs[i];
     uint8_t* alphaArray = mcnkObj.mcal;
     SMLayer* layers = mcnkObj.mcly;
 
-    std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64, 1.0);
+    std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64, 0);
     if (layers == nullptr || alphaArray == nullptr) return currentLayer;
 
 //    for (int j = 0; j < mapTile[i].nLayers; j++ ) {
     for (int j = 0; j < mcnkStructs[i].mclyCnt; j++ ) {
         int alphaOffs = layers[j].offsetInMCAL;
         int offO = j;
-        int readCnt = 0;
         int readForThisLayer = 0;
 
-        if (!layers[j].flags.use_alpha_map) continue;
-
-        if (layers[j].flags.alpha_map_compressed) {
+        if (!layers[j].flags.use_alpha_map) {
+            for (int k = 0; k < 4096; k++) {
+                currentLayer[offO+k*4] = 255;
+            }
+        } else if (layers[j].flags.alpha_map_compressed) {
             //Compressed
             //http://www.pxr.dk/wowdev/wiki/index.php?title=ADT/v18
             while( readForThisLayer < 4096 )
             {
                 // fill or copy mode
-                int fill = (alphaArray[alphaOffs] & 0x80 );
+                bool fill = (alphaArray[alphaOffs] & 0x80 ) > 0;
                 int n = alphaArray[alphaOffs] & 0x7F;
                 alphaOffs++;
 
                 for ( int k = 0; k < n; k++ )
                 {
-                    if (readForThisLayer == 4096) break;
-
                     currentLayer[offO] = alphaArray[alphaOffs];
-                    readCnt++; readForThisLayer++;
+                    readForThisLayer++;
                     offO += 4;
-
-                    if (readCnt >=64) {
-                        readCnt = 0;
-                    }
 
                     if( !fill ) alphaOffs++;
                 }
@@ -290,13 +296,15 @@ std::vector<uint8_t> AdtFile::processTexture(int wdtObjFlags, int i) {
             }
         } else {
             //Uncompressed
-            if (((wdtObjFlags & 0x4) > 0) || ((wdtObjFlags & 0x80) > 0)) {
+            if (((wdtObjFlags.adt_has_big_alpha) > 0) || ((wdtObjFlags.adt_has_height_texturing) > 0)) {
                 //Uncompressed (4096)
                 for (int iX =0; iX < 64; iX++) {
                     for (int iY = 0; iY < 64; iY++){
                         currentLayer[offO] = alphaArray[alphaOffs];
 
-                        offO += 4; readCnt+=1; readForThisLayer+=1; alphaOffs++;
+                        offO += 4;
+                        readForThisLayer+=1;
+                        alphaOffs++;
                     }
                 }
             } else {
@@ -308,11 +316,19 @@ std::vector<uint8_t> AdtFile::processTexture(int wdtObjFlags, int i) {
                         offO += 4;
                         currentLayer[offO] =  ((alphaArray[alphaOffs] & 0xf0 ) >> 4) * 17;
                         offO += 4;
-                        readCnt+=2; readForThisLayer+=2; alphaOffs++;
+                        readForThisLayer+=2; alphaOffs++;
                     }
                 }
             }
         }
+
+        //Fix alpha depending on flag
+//        if (((wdtObjFlags.adt_has_big_alpha) > 0) || ((wdtObjFlags.adt_has_height_texturing) > 0)) {
+//            int offO = j;
+//            for (int k = 0; k < 4096; k++) {
+//                currentLayer[offO+k*4] = (unsigned char) (178 * currentLayer[offO + k * 4] >> 8);
+//            }
+//        }
     }
     return currentLayer;
 }

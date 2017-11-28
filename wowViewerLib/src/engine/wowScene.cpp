@@ -9,7 +9,14 @@
 #include <iostream>
 
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
-        : wmoMainCache(requestProcessor), wmoGeomCache(requestProcessor), m2GeomCache(requestProcessor), skinGeomCache(requestProcessor), textureCache(requestProcessor), adtObjectCache(requestProcessor)  {
+        :
+        wmoMainCache(requestProcessor),
+        wdtCache(requestProcessor),
+        wmoGeomCache(requestProcessor),
+        m2GeomCache(requestProcessor),
+        skinGeomCache(requestProcessor),
+        textureCache(requestProcessor),
+        adtObjectCache(requestProcessor)  {
     this->m_config = config;
 
     this->canvWidth = canvWidth;
@@ -1026,6 +1033,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    // Update objects
 //    this.adtGeomCache.processCacheQueue(10);
     this->adtObjectCache.processCacheQueue(10);
+    this->wdtCache.processCacheQueue(10);
     this->wmoGeomCache.processCacheQueue(10);
     this->wmoMainCache.processCacheQueue(10);
     this->m2GeomCache.processCacheQueue(10);
@@ -1276,17 +1284,15 @@ void WoWSceneImpl::activateAdtShader (){
         glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
         glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
 
-//        if (this.currentWdt && ((this.currentWdt.flags & 0x04) > 0)) {
-//            glUniform1i(adtShader->getUnf("shaderUniforms.uNewFormula"), 1);
-//        } else {
-            glUniform1i(adtShader->getUnf("uNewFormula"), 0);
-//        }
-
-        glUniform1i(adtShader->getUnf("uLayer0"), 0);
-        glUniform1i(adtShader->getUnf("uAlphaTexture"), 1);
+        glUniform1i(adtShader->getUnf("uAlphaTexture"), 0);
+        glUniform1i(adtShader->getUnf("uLayer0"), 1);
         glUniform1i(adtShader->getUnf("uLayer1"), 2);
         glUniform1i(adtShader->getUnf("uLayer2"), 3);
         glUniform1i(adtShader->getUnf("uLayer3"), 4);
+    glUniform1i(adtShader->getUnf("uLayerHeight0"), 5);
+    glUniform1i(adtShader->getUnf("uLayerHeight1"), 6);
+    glUniform1i(adtShader->getUnf("uLayerHeight2"), 7);
+    glUniform1i(adtShader->getUnf("uLayerHeight3"), 8);
 
         glUniform1f(adtShader->getUnf("uFogStart"), this->uFogStart);
         glUniform1f(adtShader->getUnf("uFogEnd"), this->uFogEnd);

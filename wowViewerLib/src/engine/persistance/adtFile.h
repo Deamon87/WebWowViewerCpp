@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_ADTFILE_H
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
+#include "header/wdtFileHeader.h"
 
 struct mcnkStruct_t {
     MCVT *mcvt;
@@ -23,7 +24,7 @@ class AdtFile {
 public:
     AdtFile() {};
 
-    std::vector<uint8_t> processTexture(int wdtObjFlags, int i);
+    std::vector<uint8_t> processTexture(const MPHDFlags &wdtObjFlags, int i);
     void process(std::vector<unsigned char> &adtFile);
     bool getIsLoaded() { return m_loaded; };
     void setIsMain(bool isMain) { m_mainAdt = isMain; };
@@ -41,6 +42,9 @@ public:
 
     char *wmoNamesField;
     int wmoNamesFieldLen;
+
+    SMTextureParams *mtxp = 0;
+    int mtxp_len = 0;
 
     SMDoodadDef * doodadDef;
     int doodadDef_len = -1;

@@ -60,6 +60,14 @@ uniform sampler2D uLayer1;
 uniform sampler2D uLayer2;
 uniform sampler2D uLayer3;
 uniform sampler2D uAlphaTexture;
+uniform sampler2D uLayerHeight0;
+uniform sampler2D uLayerHeight1;
+uniform sampler2D uLayerHeight2;
+uniform sampler2D uLayerHeight3;
+
+uniform float uHeightScale[4];
+uniform float uHeightOffset[4];
+
 uniform vec3 uFogColor;
 
 uniform float uFogStart;
@@ -157,33 +165,40 @@ float filterFunc(float x) {
     return x;
 }
 
-vec3 mixTextures(vec3 tex0, vec3 tex1, float alpha) {
-    return  (alpha*(tex1.rgb-tex0.rgb)+tex0.rgb);
-}
-
 void main() {
     vec2 vTexCoord = vChunkCoords;
     const float threshold = 1.5;
 
     vec2 alphaCoord = vec2(vChunkCoords.x/8.0, vChunkCoords.y/8.0 );
-    vec4 alpha = texture2D( uAlphaTexture, alphaCoord);
-    float a2 = alpha.g;
-    float a3 = alpha.b;
-    float a4 = alpha.a;
+    vec3 alpha = texture2D( uAlphaTexture, alphaCoord).gba;
 
-    vec3 tex4 = texture2D(uLayer3, vTexCoord).rgb;
-    vec3 tex3 = texture2D(uLayer2, vTexCoord).rgb;
-    vec3 tex2 = texture2D(uLayer1, vTexCoord).rgb;
-    vec3 tex1 = texture2D(uLayer0, vTexCoord).rgb;
+   // then layer 0 is 1-sum to fill up
+   vec4 layer_weights = vec4(1.0 - clamp(dot(alpha, vec3(1.0)), 0.0, 1.0), alpha);
 
-    //Mix formula for 4 texture mixing
+    vec4 tex4 = texture2D(uLayer3, vTexCoord).rgba;
+    vec4 tex3 = texture2D(uLayer2, vTexCoord).rgba;
+    vec4 tex2 = texture2D(uLayer1, vTexCoord).rgba;
+    vec4 tex1 = texture2D(uLayer0, vTexCoord).rgba;
+
+    vec4 layer_pct = vec4 ( layer_weights.x * (texture(uLayerHeight0, alphaCoord).a * uHeightScale[0] + uHeightOffset[0])
+                         , layer_weights.y * (texture(uLayerHeight1, alphaCoord).a * uHeightScale[1] + uHeightOffset[1])
+                         , layer_weights.z * (texture(uLayerHeight2, alphaCoord).a * uHeightScale[2] + uHeightOffset[2])
+                         , layer_weights.w * (texture(uLayerHeight3, alphaCoord).a * uHeightScale[3] + uHeightOffset[3])
+                         );
+
+
+    vec4 layer_pct_max = vec4(max(max(max(layer_pct.x, layer_pct.y), layer_pct.y), layer_pct.z));
+    layer_pct = layer_pct * (vec4(1.0) - clamp(layer_pct_max - layer_pct, 0, 1));
+    layer_pct = layer_pct / vec4(dot(layer_pct, vec4(1.0)));
+
+    vec4 weightedLayer_0 = tex1 * layer_pct.x;
+    vec4 weightedLayer_1 = tex2 * layer_pct.y;
+    vec4 weightedLayer_2 = tex3 * layer_pct.z;
+    vec4 weightedLayer_3 = tex4 * layer_pct.w;
+
     vec4 finalColor;
-    if (uNewFormula >= 1) {
-        finalColor = vec4(tex1 * (1.0 - (a2 + a3 + a4)) + tex2 * a2 + tex3 * a3 + tex4* a4, 1);
-    } else {
-        finalColor = vec4(mixTextures(mixTextures(mixTextures(tex1,tex2,a2),tex3, a3), tex4, a4), 1);
-        //finalColor = vec4(a4 * tex4 - (a4  - 1.0) * ( (a3 - 1.0)*( tex1 * (a2 - 1.0) - a2*tex2) + a3*tex3), 1);
-    }
+    finalColor.rgb = (weightedLayer_0.rgb + weightedLayer_1.rgb + weightedLayer_2.rgb + weightedLayer_3.rgb);
+
     finalColor.rgb = finalColor.rgb * 2*vColor.rgb;
 
     // --- Fog start ---

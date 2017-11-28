@@ -17,13 +17,14 @@ class M2Object;
 #include "../wowInnerApi.h"
 
 #include "../persistance/adtFile.h"
+#include "../persistance/wdtFile.h"
 #include "m2Object.h"
 #include "wmoObject.h"
 #include "iMapApi.h"
 
 class AdtObject {
 public:
-    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate);
+    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, WdtFile * wdtfile);
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
     }
@@ -46,6 +47,7 @@ private:
 
     IWoWInnerApi *m_api;
     IMapApi *m_mapApi;
+    WdtFile *m_wdtFile;
 
     AdtFile *m_adtFile;
     AdtFile *m_adtFileTex;
