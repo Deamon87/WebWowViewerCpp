@@ -53,10 +53,6 @@ std::vector<mathfu::vec3> CreateOccluders(const WmoGroupGeom * groupGeom)
 }
 
 
-std::string WmoObject::getTextureName(int index) {
-    return std::__cxx11::string();
-}
-
 void WmoObject::startLoading() {
     if (!m_loading) {
         m_loading = true;
@@ -82,6 +78,10 @@ M2Object *WmoObject::getDoodad(int index) {
 
     SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
     std::string fileName(&this->mainGeom->doodadNamesField[doodadDef->name_offset]);
+
+//    if ((int )fileName.find("ROOST", 0) > 0) {
+//        __asm ("int3");
+//    }
 
     M2Object *m2Object = new M2Object(m_api);
     m2Object->setDiffuseColor(doodadDef->color);
@@ -282,7 +282,7 @@ void WmoObject::update() {
         this->antiPortals = std::vector<PortalResults>(0);
         for (int i= 0; i < groupObjects.size(); i++) {
             if(groupObjects[i] != nullptr) {
-                if ((mainGeom->groups[i].flags & 0x4000000) > 0) {
+                if ((mainGeom->groups[i].flags.ANTIPORTAL) > 0) {
                     //AntiPortal
 
                     std::vector<mathfu::vec3> oclluded = CreateOccluders(groupObjects[i]->getWmoGroupGeom());
@@ -559,6 +559,16 @@ void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
 BlpTexture *WmoObject::getTexture(int textureId, bool isSpec) {
     if (textureId < 0 || textureId >= mainGeom->textureNamesFieldLen) return nullptr;
 
+    std::unordered_map<int, BlpTexture*> &textureCache = diffuseTextures;
+    if (isSpec) {
+        textureCache = specularTextures;
+    }
+
+    auto i = textureCache.find(textureId);
+    if (i != textureCache.end()) {
+        return i->second;
+    }
+
     std::string materialTexture(&mainGeom->textureNamesField[textureId]);
     if (materialTexture == "") return nullptr;
 
@@ -566,9 +576,10 @@ BlpTexture *WmoObject::getTexture(int textureId, bool isSpec) {
         materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
     }
 
+    BlpTexture * texture = m_api->getTextureCache()->get(materialTexture);
+    textureCache[textureId] =  texture;
 
-    //TODO: cache Textures used in WMO
-    return m_api->getTextureCache()->get(materialTexture);
+    return texture;
 }
 
 void WmoObject::createBB(CAaBox bbox) {
@@ -678,7 +689,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
     std::set<M2Object *> wmoM2Candidates ;
     if (this->exteriorPortals.size() > 0) {
         for (int i = 0; i< mainGeom->groupsLen; i++) {
-            if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
+            if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
                 if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
                     this->exteriorPortals.push_back({
                         groupId: i,
@@ -774,7 +785,7 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
 
     std::set<M2Object *> wmoM2Candidates ;
     for (int i = 0; i< mainGeom->groupsLen; i++) {
-       if ((mainGeom->groups[i].flags & 0x8) > 0) { //exterior
+       if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
             if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
                 this->exteriorPortals.push_back({
                                                     groupId: i,
@@ -937,7 +948,7 @@ void WmoObject::transverseGroupWMO(
         //thisPortalPlanes.push(frustumPlanes[frustumPlanes.length-1]);
 
         //5. Traverse next
-        if ((mainGeom->groups[nextGroup].flags & 0x2000) > 0) {
+        if ((mainGeom->groups[nextGroup].flags.INTERIOR) > 0) {
             //5.1 The portal is into interior wmo group. So go on.
             this->interiorPortals.push_back({
                                                 groupId: nextGroup,
@@ -969,7 +980,7 @@ void WmoObject::transverseGroupWMO(
 
 bool WmoObject::isGroupWmoInterior(int groupId) {
     SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
-    bool result = ((groupInfo->flags & 0x2000) != 0);
+    bool result = ((groupInfo->flags.INTERIOR) != 0);
     return result;
 }
 

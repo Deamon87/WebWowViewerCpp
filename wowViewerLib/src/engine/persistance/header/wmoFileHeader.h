@@ -59,9 +59,76 @@ struct SMOMaterial {
 /*030h*/  uint32_t runTimeData[4];         // This data is explicitly nulled upon loading. Contains textures or similar stuff.
 };
 
+struct SMOGroupFlags {
+    // 0x1;
+    uint32_t hasBsp : 1;
+    // 0x2;
+    uint32_t hasLightMap : 1; //old: has MOLM, MOLD// new: subtract mohd.color in mocv fixing
+    // 0x4;
+    uint32_t hasVertexColors : 1; // MOCV chunk
+    // 0x8;
+    uint32_t EXTERIOR : 1; // Outdoor
+    // 0x10;
+    uint32_t unused1 : 1;
+    // 0x20;
+    uint32_t unused2 : 1;
+    // 0x40;
+    uint32_t EXTERIOR_LIT : 1;
+    // 0x80;
+    uint32_t UNREACHABLE : 1;
+    // 0x100;
+    uint32_t unused3 : 1;
+    // 0x200;
+    uint32_t hasLights : 1; //has MOLR chunk
+    // 0x400;
+    uint32_t LOD : 1; // Also load for LoD != 0 (_lod* groups)
+    // 0x800
+    uint32_t hasDoodads : 1; //has MODR chunk
+    // 0x1000
+    uint32_t LIQUIDSURFACE : 1; // Has water (MLIQ chunk)
+    // 0x2000
+    uint32_t INTERIOR : 1; // Indoor
+    // 0x4000
+    uint32_t unused4 : 1;
+    // 0x8000
+    uint32_t unused5 : 1;
+    // 0x10000
+    uint32_t ALWAYSDRAW : 1; //clear 0x8 after CMapObjGroup::Create() in MOGP and MOGI
+    // 0x20000
+    uint32_t hasMORI : 1; // Has MORI and MORB chunks.
+    // 0x40000
+    uint32_t showSkyBox : 1; //automatically unset if MOSB not present.
+    // 0x80000
+    uint32_t is_not_water_but_ocean : 1; //LiquidType related, see below in the MLIQ chunk.
+    // 0x100000
+    uint32_t unused6 : 1; //
+    // 0x200000
+    uint32_t isMountAllowed : 1;
+    // 0x400000
+    uint32_t unused7 : 1;
+    // 0x800000
+    uint32_t unused8 : 1;
+    // 0x1000000
+    uint32_t CVERTS2 : 1; //Has two MOCV chunks
+    // 0x2000000
+    uint32_t TVERTS2 : 1; //Has two MOTV chunks
+    // 0x4000000
+    uint32_t ANTIPORTAL : 1; //requires intBatchCount == 0, extBatchCount == 0, UNREACHABLE.
+    // 0x8000000
+    uint32_t unk1 : 1; //requires intBatchCount == 0, extBatchCount == 0, UNREACHABLE.
+    // 0x10000000
+    uint32_t unused9 : 1;
+    // 0x20000000
+    uint32_t EXTERIOR_CULL : 1;
+    // 0x40000000
+    uint32_t TVERTS3 : 1; //Has three MOTV chunks
+    // 0x80000000
+    uint32_t unused10 : 1;
+};
+
 struct SMOGroupInfo
 {
-/*000h*/  uint32_t flags;      //  see information in in MOGP, they are equivalent
+/*000h*/  SMOGroupFlags flags; //  see information in in MOGP, they are equivalent
 /*004h*/  CAaBox bounding_box;
 /*01Ch*/  int32_t nameoffset;  // name in MOGN chunk (-1 for no name)
 };
@@ -142,10 +209,12 @@ struct SMOFog
     } underwater_fog;
 };
 
+
+
 struct MOGP {
     uint32_t 		groupName; //(offset into MOGN chunk)
     uint32_t 		descriptiveGroupName;// (offset into MOGN chunk)
-    uint32_t 		flags;
+    SMOGroupFlags   flags;
     CAaBox          boundingBox;
     uint16_t 		moprIndex;  //Index into the MOPR chunk
     uint16_t 		moprCount;  //Number of items used from the MOPR chunk

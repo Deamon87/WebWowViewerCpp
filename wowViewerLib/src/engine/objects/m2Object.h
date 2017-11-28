@@ -68,6 +68,8 @@ private:
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
 
+    void debugDumpAnimationSequences();
+
     void initAnimationManager();
     void initBoneAnimMatrices();
 

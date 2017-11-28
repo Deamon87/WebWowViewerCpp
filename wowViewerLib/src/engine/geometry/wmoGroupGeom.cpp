@@ -448,7 +448,7 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
 
     if (mohd->flags.flag_lighten_interiors) {
         for (int i(begin_second_fixup); i < cvLen; ++i) {
-            colorArray[i].a = mogp->flags & 0x8 ? 0xFF : 0x00;
+            colorArray[i].a = (unsigned char) ((mogp->flags.EXTERIOR > 0) ? 0xFF : 0x00);
         }
     } else {
         if (!mohd->flags.flag_skip_base_color) {
@@ -498,7 +498,7 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
             float v33 = (colorArray[i].a * colorArray[i].b) / 64 + colorArray[i].b - v35;
             colorArray[i].b = std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
 
-            colorArray[i].a = mogp->flags & 0x8 ? 0xFF : 0x00;
+            colorArray[i].a = (unsigned char) ((mogp->flags.EXTERIOR ) > 0 ? 0xFF : 0x00);
 
 
         }
@@ -562,7 +562,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
     GLuint blackPixelText = api->getBlackPixelTexture();
 
 
-    bool isIndoor = (mogp->flags & 0x2000) > 0;
+    bool isIndoor = (mogp->flags.INTERIOR) > 0;
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexVBO);
     glBindBuffer(GL_ARRAY_BUFFER, this->combinedVBO);
@@ -683,8 +683,6 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
                         0,
                         0);
         }
-
-//        glUniform4f(wmoShader->getUnf("uMeshColor1"), 1.0f, 1.0f, 1.0f, 1.0f);
 
         glUniform1i(wmoShader->getUnf("uUseLitColor"), 1);
 

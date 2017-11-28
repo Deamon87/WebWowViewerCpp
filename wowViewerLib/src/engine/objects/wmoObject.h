@@ -66,12 +66,13 @@ private:
     std::vector<bool> drawGroupWMO;
     std::vector<M2Object*> m_doodadsArray;
 
+    std::unordered_map<int, BlpTexture*> diffuseTextures;
+    std::unordered_map<int, BlpTexture*> specularTextures;
+
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createBB(CAaBox bbox);
     void postWmoGroupObjectLoad(int groupId, int lod) override;
 public:
-    std::string getTextureName(int index);
-
     M2Object *getDoodad(int index);
     BlpTexture * getTexture(int materialId, bool isSpec);
     void setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef);

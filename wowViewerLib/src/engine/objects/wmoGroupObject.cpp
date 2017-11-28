@@ -83,7 +83,7 @@ void WmoGroupObject::startLoading() {
 
 void WmoGroupObject::postLoad() {
 
-    this->m_dontUseLocalLightingForM2 = ((m_geom->mogp->flags & 0x40) > 0) || ((m_geom->mogp->flags & 0x8) > 0);
+    this->m_dontUseLocalLightingForM2 = ((m_geom->mogp->flags.EXTERIOR_LIT) > 0) || ((m_geom->mogp->flags.EXTERIOR) > 0);
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
     this->loadDoodads();
 }

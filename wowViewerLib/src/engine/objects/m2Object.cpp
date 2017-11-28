@@ -4,12 +4,14 @@
 
 #include <locale>
 #include <regex>
+#include <iomanip>
 #include "m2Object.h"
 #include "../algorithms/mathHelper.h"
 #include "../managers/animationManager.h"
 #include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "../shaderDefinitions.h"
+
 
 
 std::unordered_map<std::string, int> pixelShaderTable = {
@@ -373,6 +375,47 @@ void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
     );
 }
 
+void M2Object::debugDumpAnimationSequences() {
+
+    std::cout << "Model name = " << m_modelName << std::endl;
+    int sequence_lookupsSize = m_m2Geom->m_m2Data->sequence_lookups.size;
+    std::cout << "sequences.size = " << m_m2Geom->m_m2Data->sequences.size << std::endl;
+    std::cout << "sequence_lookups.size = " << m_m2Geom->m_m2Data->sequence_lookups.size << std::endl;
+
+    int misses = 0;
+
+    for (int i = 0; i < m_m2Geom->m_m2Data->sequences.size; i++) {
+        auto sequence = m_m2Geom->m_m2Data->sequences.getElement(i);
+        int index = sequence->id % sequence_lookupsSize;
+        int seqLookup = * m_m2Geom->m_m2Data->sequence_lookups.getElement(index);
+        int trueSeqLookup = -1;
+        for (int j = 0; j < m_m2Geom->m_m2Data->sequence_lookups.size; j++) {
+            if (*m_m2Geom->m_m2Data->sequence_lookups.getElement(j) == i) {
+                trueSeqLookup = j;
+                break;
+            }
+        }
+
+        std::cout << std::right
+                  << "sequence[" << i << "].id = "<< sequence->id
+                  << std::setw(5) << " (" << sequence->id << " % " << sequence_lookupsSize << ") = " << index
+                  << std::setw(20) << " trueSeqLookup = " << trueSeqLookup
+                  << std::setw(10) << " theoryOk = " << (bool)(seqLookup == i)
+                  << std::endl;
+
+        if (trueSeqLookup != -1 && (trueSeqLookup != index)) {
+            misses++;
+        }
+    }
+    std::cout << std::endl << std::endl;
+    std::cout << "misses = " << misses << std::endl << std::endl;
+    for (int i = 0; i < m_m2Geom->m_m2Data->sequence_lookups.size; i++) {
+        auto sequenceLookup = *m_m2Geom->m_m2Data->sequence_lookups.getElement(i);
+        std::cout << "sequence_lookups[" << i << "].id = "<< sequenceLookup << std::endl;
+    }
+
+}
+
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
     if (!this->m_loaded) {
         if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded() && (m_skinGeom != nullptr) && m_skinGeom->isLoaded()) {
@@ -390,7 +433,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             this->initTransparencies();
             this->initLights();
             m_hasBillboards = checkIfHasBillboarded();
-
 
         } else {
             return;
@@ -515,6 +557,7 @@ void M2Object::drawDebugLight() {
 
     glDepthMask(GL_TRUE);
 
+    glBindBuffer( GL_ARRAY_BUFFER, 0);
     glDeleteBuffers(1, &bufferVBO);
 }
 
