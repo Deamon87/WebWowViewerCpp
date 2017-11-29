@@ -12,6 +12,177 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "../shaderDefinitions.h"
 
+//Legion shader stuff
+
+#define stringify( name ) # name
+
+enum class M2VertexShader : int {
+    Combiners_Opaque = 0,
+    Combiners_Mod = 1,
+    Combiners_Opaque_Mod = 2,
+    Combiners_Opaque_Mod2x = 3,
+    Combiners_Opaque_Mod2xNA = 4,
+    Combiners_Opaque_Opaque = 5,
+    Combiners_Mod_Mod = 6,
+    Combiners_Mod_Mod2x = 7,
+    Combiners_Mod_Add = 8,
+    Combiners_Mod_Mod2xNA = 9,
+    Combiners_Mod_AddNA = 10,
+    Combiners_Mod_Opaque = 11,
+    Combiners_Opaque_Mod2xNA_Alpha = 12,
+    Combiners_Opaque_AddAlpha = 13,
+    Combiners_Opaque_AddAlpha_Alpha = 14,
+    Combiners_Opaque_Mod2xNA_Alpha_Add = 15,
+    Combiners_Mod_AddAlpha = 16,
+    Combiners_Mod_AddAlpha_Alpha = 17,
+    Combiners_Opaque_Alpha_Alpha = 18,
+    Combiners_Opaque_Mod2xNA_Alpha_3s = 19,
+    Combiners_Opaque_AddAlpha_Wgt = 20,
+    Combiners_Mod_Add_Alpha = 21,
+    Combiners_Opaque_ModNA_Alpha = 22,
+    Combiners_Mod_AddAlpha_Wgt = 23,
+    Combiners_Opaque_Mod_Add_Wgt = 24,
+    Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha = 25,
+    Combiners_Mod_Dual_Crossfade = 26,
+    Combiners_Opaque_Mod2xNA_Alpha_Alpha = 27,
+    Combiners_Mod_Masked_Dual_Crossfade = 28,
+    Combiners_Opaque_Alpha = 29,
+    Guild = 30,
+    Guild_NoBorder = 31,
+    Guild_Opaque = 32,
+    Combiners_Mod_Depth = 33,
+    Illum = 34,
+    Combiners_Mod_Mod_Mod_Const = 35,
+};
+
+enum class M2PixelShader : int {
+    Diffuse_Env = 0,
+    Diffuse_T1_T2 = 1,
+    Diffuse_T1_Env = 2,
+    Diffuse_Env_T1 = 3,
+    Diffuse_Env_Env = 4,
+    Diffuse_T1_Env_T1 = 5,
+    Diffuse_T1_T1 = 6,
+    Diffuse_T1_T1_T1 = 7,
+    Diffuse_EdgeFade_T1 = 8,
+    Diffuse_T2 = 9,
+    Diffuse_T1_Env_T2 = 10,
+    Diffuse_EdgeFade_T1_T2 = 11,
+    Diffuse_EdgeFade_Env = 12,
+    Diffuse_T1_T2_T1 = 13,
+    Diffuse_T1_T2_T3 = 14,
+    Color_T1_T2_T3 = 15,
+    BW_Diffuse_T1 = 16,
+    BW_Diffuse_T1_T2 = 17,
+};
+
+static struct {
+    unsigned int pixel;
+    unsigned int vertex;
+    unsigned int hull;
+    unsigned int domain;} M2ShaderTable[] = {
+        {0x0C, 3, 1, 1},
+        {0x0D, 3, 1, 1},
+        {0x0E, 3, 1, 1},
+        {0x0F, 6, 2, 2},
+        {0x10, 3, 1, 1},
+        {0x0D, 7, 1, 1},
+        {0x10, 7, 1, 1},
+        {0x11, 3, 1, 1},
+        {0x12, 3, 1, 1},
+        {0x13, 6, 2, 2},
+        {0x14, 7, 1, 1},
+        {0x15, 3, 1, 1},
+        {0x16, 3, 1, 1},
+        {0x17, 3, 1, 1},
+        {0x17, 7, 1, 1},
+        {0x14, 2, 1, 1},
+        {0x18, 3, 1, 1},
+        {0x19, 6, 2, 2},
+        {0x1A, 0, 0, 0},
+        {0x21, 9, 0, 0},
+        {0x1B, 0x0B, 2, 2},
+        {6, 0x0C, 1, 1},
+        {0x1C, 2, 1, 1},
+        {0x1D, 7, 1, 1},
+        {0x19, 0x0B, 2, 2},
+        {0x21, 0x0D, 0, 0},
+        {0x1E, 0x0E, 2, 1},
+        {0x1F, 2, 1,  2},
+        {0x20, 0x0E, 2, 1},
+        {0x22, 7, 1, 1},
+        {0x23, 0x0F, 2, 2},
+        {0x23, 0x10, 2, 2},
+        {0, 0, 0, 0},
+        {7, 0x0C, 1, 1}
+};
+
+int getVertexShaderId(int textureCount, int16_t shaderId) {
+    int result;
+    if ( shaderId < 0 )
+    {
+        int vertexShaderId = shaderId & 0x7FFF;
+        if ( (unsigned int)vertexShaderId >= 0x22 ) {
+            std::cout << "Wrong shaderId for vertex shader";
+            assert(false);
+        }
+        result = (unsigned int)M2ShaderTable[(shaderId & 0x7FFF)].vertex;
+    }
+    else if ( textureCount == 1 )
+    {
+        if ( (shaderId & 0x80u) != 0 )
+        {
+            result = 1LL;
+        }
+        else
+        {
+            result = 10LL;
+            if ( !(shaderId & 0x4000) )
+                result = 0LL;
+        }
+    }
+    else if ( (shaderId & 0x80u) != 0 )
+    {
+        result = ((shaderId & 8u) >> 3) | 4;
+    }
+    else
+    {
+        result = 3LL;
+        if ( !(shaderId & 8) )
+            result = 5 * (unsigned int)((shaderId & 0x4000) == 0) + 2;
+    }
+    return result;
+}
+
+int getPixelShaderId(int textureCount, int16_t shaderId) {
+    static const uint32_t array1[] = {7, 6, 9, 0x0A, 0x0B, 6, 6, 8};
+    static const uint32_t array2[] = {3, 2, 4, 0x0D, 5, 2, 2, 0x0D};
+
+    int result;
+    if ( shaderId < 0 )
+    {
+        int pixelShaderId = shaderId & 0x7FFF;
+        if ( (unsigned int)pixelShaderId >= 0x22 ) {
+            std::cout << "Wrong shaderId for pixel shader";
+            assert(false);
+        }
+        result = (unsigned int)M2ShaderTable[shaderId & 0x7FFF].pixel;
+    }
+    else if ( textureCount == 1 )
+    {
+        result = (shaderId & 0x70) != 0;
+    }
+    else
+    {
+        const uint32_t * arrayPointer = &array2[0];
+        if ( shaderId & 0x70 )
+            arrayPointer = &array1[0];
+
+        result = arrayPointer[((uint8_t)shaderId ^ 4) & 7];
+    }
+    return result;
+}
+
 
 
 std::unordered_map<std::string, int> pixelShaderTable = {

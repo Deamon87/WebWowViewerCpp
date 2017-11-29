@@ -58,8 +58,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 //    currentScene = new Map(this, "Expansion01");
 
-    m_firstCamera.setCameraPos(6500.6665, 7500.33301, 0);
-    currentScene = new Map(this, "HawaiiMainLand"); // Pandaria
+//    m_firstCamera.setCameraPos(6500.6665, 7500.33301, 0);
+//    currentScene = new Map(this, "HawaiiMainLand"); // Pandaria
 
 //    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
@@ -89,8 +89,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
 //    currentScene = new Map(this, "stormgarde keep");
 //
-//   m_firstCamera.setCameraPos(939, -4813 , 0); //Broken shore
-//    currentScene = new Map(this, "Northrend");
+   m_firstCamera.setCameraPos(939, -4813 , 0); //Near dalaran
+    currentScene = new Map(this, "Northrend");
 
 
     //Test scene 2: tree from shattrath
@@ -115,7 +115,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
 
-    m_firstCamera.setCameraPos(0, 0, 0);
+//    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "creature\\wingedhorse\\wingedhorse.m2");
 
