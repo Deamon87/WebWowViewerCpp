@@ -234,56 +234,85 @@ void main() {
     if (uPixelShader == 0) { //Combiners_Opaque
         finalColor.rgb = tex.rgb * meshResColor.rgb;
         finalColor.a = meshResColor.a;
-    } else if (uPixelShader == 1) { // Combiners_Decal
-        finalColor.rgb = (meshResColor.rgb - tex.rgb) * meshResColor.a + tex.rgb;
-        finalColor.a = meshResColor.a;
-    } else if (uPixelShader == 2) { // Combiners_Add
-        finalColor.rgba = tex.rgba + meshResColor.rgba;
-    } else if (uPixelShader == 3) { // Combiners_Mod2x
-        finalColor.rgb = tex.rgb * meshResColor.rgb * vec3(2.0);
-        finalColor.a = tex.a * meshResColor.a * 2.0;
-    } else if (uPixelShader == 4) { // Combiners_Fade
-        finalColor.rgb = (tex.rgb - meshResColor.rgb) * meshResColor.a + meshResColor.rgb;
-        finalColor.a = meshResColor.a;
-    } else if (uPixelShader == 5) { // Combiners_Mod
+    } else if (uPixelShader == 1) { // Combiners_Mod
         finalColor.rgba = tex.rgba * meshResColor.rgba;
-    } else if (uPixelShader == 6) { // Combiners_Opaque_Opaque
-        finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb;
-        finalColor.a = meshResColor.a;
-    } else if (uPixelShader == 7) { // Combiners_Opaque_Add
-        finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
-        finalColor.a = meshResColor.a + tex.a;
-    } else if (uPixelShader == 8) { // Combiners_Opaque_Mod2x
-        finalColor.rgb = tex.rgb * meshResColor.rgb * tex2.rgb * vec3(2.0);
-        finalColor.a  = tex2.a * meshResColor.a * 2.0;
-    } else if (uPixelShader == 9) { // Combiners_Opaque_Mod2xNA
-        finalColor.rgb = tex.rgb * meshResColor.rgb * tex2.rgb * vec3(2.0);
-        finalColor.a  = meshResColor.a;
-    } else if (uPixelShader == 10) { // Combiners_Opaque_AddNA
-        finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
-        finalColor.a = meshResColor.a;
-    } else if (uPixelShader == 11) { // Combiners_Opaque_Mod
+    } else if (uPixelShader == 2) { // Combiners_Opaque_Mod
         finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb;
         finalColor.a = tex2.a * meshResColor.a;
-    } else if (uPixelShader == 12) { // Combiners_Mod_Opaque
+    } else if (uPixelShader == 3) { // Combiners_Opaque_Mod2x
+        finalColor.rgb = tex.rgb * meshResColor.rgb * tex2.rgb * vec3(2.0);
+        finalColor.a  = tex2.a * meshResColor.a * 2.0;
+    } else if (uPixelShader == 4) { // Combiners_Opaque_Mod2xNA
+        finalColor.rgb = tex.rgb * meshResColor.rgb * tex2.rgb * vec3(2.0);
+        finalColor.a  = meshResColor.a;
+    } else if (uPixelShader == 5) { // Combiners_Opaque_Opaque
         finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb;
-        finalColor.a = tex.a;
-    } else if (uPixelShader == 13) { // Combiners_Mod_Add
-        finalColor.rgba = tex2.rgba + tex.rgba * meshResColor.rgba;
-    } else if (uPixelShader == 14) { // Combiners_Mod_Mod2x
+        finalColor.a = meshResColor.a;
+    } else if (uPixelShader == 6) { // Combiners_Mod_Mod
+        finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba;
+    } else if (uPixelShader == 7) { // Combiners_Mod_Mod2x
         finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba * vec4(2.0);
-    } else if (uPixelShader == 15) { // Combiners_Mod_Mod2xNA
+    } else if (uPixelShader == 8) { // Combiners_Mod_Add
+        finalColor.rgba = tex2.rgba + tex.rgba * meshResColor.rgba;
+    } else if (uPixelShader == 9) { // Combiners_Mod_Mod2xNA
         finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb * vec3(2.0);
         finalColor.a = tex.a * meshResColor.a;
-    } else if (uPixelShader == 16) { // Combiners_Mod_AddNA
+    } else if (uPixelShader == 10) { // Combiners_Mod_AddNA
         finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
         finalColor.a = tex.a * meshResColor.a;
-    } else if (uPixelShader == 17) { // Combiners_Mod_Mod
-        finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba;
-    } else if (uPixelShader == 18) { // Combiners_Add_Mod
+    } else if (uPixelShader == 11) { // Combiners_Mod_Opaque
+        finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb;
+        finalColor.a = tex.a;
+    } else if (uPixelShader == 12) { // Combiners_Opaque_Mod2xNA_Alpha
+    } else if (uPixelShader == 13) { // Combiners_Opaque_AddAlpha
+    } else if (uPixelShader == 14) { // Combiners_Opaque_AddAlpha_Alpha
+    } else if (uPixelShader == 15) { // Combiners_Opaque_Mod2xNA_Alpha_Add
+    } else if (uPixelShader == 16) { // Combiners_Mod_AddAlpha
+    } else if (uPixelShader == 17) { // Combiners_Mod_AddAlpha_Alpha
+    } else if (uPixelShader == 18) { // Combiners_Opaque_Alpha_Alpha
+    } else if (uPixelShader == 19) { // Combiners_Opaque_Mod2xNA_Alpha_3s
+    } else if (uPixelShader == 20) { // Combiners_Opaque_AddAlpha_Wgt
+    } else if (uPixelShader == 21) { // Combiners_Mod_Add_Alpha
+    } else if (uPixelShader == 22) { // Combiners_Opaque_ModNA_Alpha
+    } else if (uPixelShader == 23) { // Combiners_Mod_AddAlpha_Wgt
+    } else if (uPixelShader == 24) { // Combiners_Opaque_Mod_Add_Wgt
+    } else if (uPixelShader == 25) { // Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
+    } else if (uPixelShader == 26) { // Combiners_Mod_Dual_Crossfade
+    } else if (uPixelShader == 27) { // Combiners_Opaque_Mod2xNA_Alpha_Alpha
+    } else if (uPixelShader == 28) { // Combiners_Mod_Masked_Dual_Crossfade
+    } else if (uPixelShader == 29) { // Combiners_Opaque_Alpha
+    } else if (uPixelShader == 30) { // Guild
+    } else if (uPixelShader == 31) { // Guild_NoBorder
+    } else if (uPixelShader == 32) { // Guild_Opaque
+    } else if (uPixelShader == 33) { // Combiners_Mod_Depth
+    } else if (uPixelShader == 34) { // Illum
+    } else if (uPixelShader == 35) { // Combiners_Mod_Mod_Mod_Const
+
+
+    /*
+        WOTLK DEPRECATED SHADERS!
+    */
+    } else if (uPixelShader == -1) { // Combiners_Decal
+        finalColor.rgb = (meshResColor.rgb - tex.rgb) * meshResColor.a + tex.rgb;
+        finalColor.a = meshResColor.a;
+    } else if (uPixelShader == -2) { // Combiners_Add
+        finalColor.rgba = tex.rgba + meshResColor.rgba;
+    } else if (uPixelShader == -3) { // Combiners_Mod2x
+        finalColor.rgb = tex.rgb * meshResColor.rgb * vec3(2.0);
+        finalColor.a = tex.a * meshResColor.a * 2.0;
+    } else if (uPixelShader == -4) { // Combiners_Fade
+        finalColor.rgb = (tex.rgb - meshResColor.rgb) * meshResColor.a + meshResColor.rgb;
+        finalColor.a = meshResColor.a;
+    } else if (uPixelShader == -5) { // Combiners_Opaque_Add
+        finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
+        finalColor.a = meshResColor.a + tex.a;
+    } else if (uPixelShader == -6) { // Combiners_Opaque_AddNA
+        finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
+        finalColor.a = meshResColor.a;
+    } else if (uPixelShader == -7) { // Combiners_Add_Mod
         finalColor.rgb = (tex.rgb + meshResColor.rgb) * tex2.a;
         finalColor.a = (tex.a + meshResColor.a) * tex2.a;
-    } else if (uPixelShader == 19) { // Combiners_Mod2x_Mod2x
+    } else if (uPixelShader == -8) { // Combiners_Mod2x_Mod2x
         finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba * vec4(4.0);
     }
 
