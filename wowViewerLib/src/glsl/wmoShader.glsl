@@ -274,7 +274,6 @@ void main() {
 
         //TODO: there is env missing here
         vec3 env = ((tex2.rgb * tex2.a) * (1.0 - vColor2.a));
-
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
     };
 

@@ -23,6 +23,8 @@ private:
 
     bool drawDepthBuffer = false;
     int cameraM2 = -1; // this will be sceneNumber of object
+
+    bool useWotlkLogic = false;
 public:
     bool getRenderM2 () {
         return renderMd2;
@@ -94,6 +96,10 @@ public:
     void setCameraM2 (bool value) {
         cameraM2 = value;
     }
+
+    bool getUseWotlkLogic() {
+         return useWotlkLogic;
+    };
 };
 
 

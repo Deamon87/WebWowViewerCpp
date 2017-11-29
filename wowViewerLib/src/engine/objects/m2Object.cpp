@@ -14,9 +14,8 @@
 
 //Legion shader stuff
 
-#define stringify( name ) # name
-
 enum class M2PixelShader : int {
+    //Wotlk deprecated shaders
     Combiners_Decal = -1,
     Combiners_Add = -2,
     Combiners_Mod2x = -3,
@@ -26,6 +25,7 @@ enum class M2PixelShader : int {
     Combiners_Add_Mod = -7,
     Combiners_Mod2x_Mod2x = -8,
 
+    //Legion modern shaders
     Combiners_Opaque = 0,
     Combiners_Mod = 1,
     Combiners_Opaque_Mod = 2,
@@ -169,8 +169,26 @@ int getVertexShaderId(int textureCount, int16_t shaderId) {
 }
 
 int getPixelShaderId(int textureCount, int16_t shaderId) {
-    static const uint32_t array1[] = {7, 6, 9, 0x0A, 0x0B, 6, 6, 8};
-    static const uint32_t array2[] = {3, 2, 4, 0x0D, 5, 2, 2, 0x0D};
+    static const uint32_t array1[] = {
+            +M2PixelShader::Combiners_Mod_Mod2x,
+            +M2PixelShader::Combiners_Mod_Mod,
+            +M2PixelShader::Combiners_Mod_Mod2xNA,
+            +M2PixelShader::Combiners_Mod_AddNA,
+            +M2PixelShader::Combiners_Mod_Opaque,
+            +M2PixelShader::Combiners_Mod_Mod,
+            +M2PixelShader::Combiners_Mod_Mod,
+            +M2PixelShader::Combiners_Mod_Add
+    };
+    static const uint32_t array2[] = {
+            +M2PixelShader::Combiners_Opaque_Mod2x,
+            +M2PixelShader::Combiners_Opaque_Mod,
+            +M2PixelShader::Combiners_Opaque_Mod2xNA,
+            +M2PixelShader::Combiners_Opaque_AddAlpha_Alpha,
+            +M2PixelShader::Combiners_Opaque_Opaque,
+            +M2PixelShader::Combiners_Opaque_Mod,
+            +M2PixelShader::Combiners_Opaque_Mod,
+            +M2PixelShader::Combiners_Opaque_AddAlpha_Alpha
+    };
 
     int result;
     if ( shaderId < 0 )
@@ -521,7 +539,7 @@ void M2Object::startLoading() {
     if (!m_loading) {
         m_loading = true;
 
-        Cache<M2Geom> *m2GeomCache =  m_api->getM2GeomCache();
+        Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
         Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
 
         m_m2Geom = m2GeomCache->get(m_modelName);
@@ -683,9 +701,6 @@ void M2Object::draw(bool drawTransparent) {
         this->m_skinGeom->setupAttributes();
 //    }
 
-//    var combinedMatrix = this.combinedBoneMatrix;
-//    std::vector<mathfu::mat4> combinedMatrix(120, mathfu::mat4::Identity());
-
     static mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
     mathfu::vec4 localDiffuse = diffuseNon;
     if (m_useLocalDiffuseColor) {
@@ -771,16 +786,6 @@ void M2Object::drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::mat4 &pla
 void M2Object::drawBB(mathfu::vec3 &color) {
     if (!this->m_loaded) return;
 
-//    function drawBBInternal2(center, scale, color, placementMatrix) {
-//        gl.uniform3fv(uniforms.uBBScale, new Float32Array(scale));
-//        gl.uniform3fv(uniforms.uBBCenter, new Float32Array(center));
-//        gl.uniform3fv(uniforms.uColor, new Float32Array(color)); //red
-//        gl.uniformMatrix4fv(uniforms.uPlacementMat, false, placementMatrix);
-//
-//        gl.drawElements(gl.LINES, 48, gl.UNSIGNED_SHORT, 0);
-//    }
-    //CAaBox bb = this->getBoundingBox();
-
     mathfu::mat4 defMat = mathfu::mat4::Identity();
     drawBBInternal(this->aabb, color, defMat);
 
@@ -858,8 +863,8 @@ void M2Object::makeTextureArray() {
     for (int i = 0; i < batches->size; i++) {
         M2MaterialInst materialData;
 
-        M2Batch* skinTextureDefinition = batches->getElement(i);
-        auto subMesh = subMeshes[skinTextureDefinition->skinSectionIndex];
+        M2Batch* m2Batch = batches->getElement(i);
+        auto subMesh = subMeshes[m2Batch->skinSectionIndex];
 
         if ((this->m_meshIds.size() > 0) && (subMesh->skinSectionId > 0) &&
                 (m_meshIds[(subMesh->skinSectionId / 100)] != (subMesh->skinSectionId % 100))) {
@@ -867,40 +872,40 @@ void M2Object::makeTextureArray() {
         }
 //        materialArray.push(materialData);
 
-        auto op_count = skinTextureDefinition->textureCount;
+        auto op_count = m2Batch->textureCount;
 
-        auto renderFlagIndex = skinTextureDefinition->materialIndex;
+        auto renderFlagIndex = m2Batch->materialIndex;
         //var isTransparent = (mdxObject.m2File.renderFlags[renderFlagIndex].blend >= 2);
         auto isTransparent = (m2File->materials[renderFlagIndex]->blending_mode >= 2) ||
                             ((m2File->materials[renderFlagIndex]->flags & 0x10) > 0);
 
-        materialData.layer = skinTextureDefinition->materialLayer;
+        materialData.layer = m2Batch->materialLayer;
         materialData.isRendered = true;
-         materialData.isTransparent = isTransparent;
-        materialData.meshIndex = skinTextureDefinition->skinSectionIndex;
-        materialData.renderFlagIndex = skinTextureDefinition->materialIndex;
-        materialData.flags = skinTextureDefinition->flags;
-        materialData.priorityPlane = skinTextureDefinition->priorityPlane;
+        materialData.isTransparent = isTransparent;
+        materialData.meshIndex = m2Batch->skinSectionIndex;
+        materialData.renderFlagIndex = m2Batch->materialIndex;
+        materialData.flags = m2Batch->flags;
+        materialData.priorityPlane = m2Batch->priorityPlane;
 
-        std::string vertexShader;
-        std::string pixelShader;
-        getShaderNames(skinTextureDefinition, vertexShader, pixelShader);
-        //TODO: this his hack!!!
-        if (pixelShader == "") {
-            materialData.pixelShader = 0;
+        if (m_api->getConfig()->getUseWotlkLogic()) {
+            std::string vertexShader;
+            std::string pixelShader;
+            getShaderNames(m2Batch, vertexShader, pixelShader);
+            //TODO: this his hack!!!
+            if (pixelShader == "") {
+                materialData.pixelShader = 0;
+            } else {
+                materialData.pixelShader = pixelShaderTable.at(pixelShader);
+            }
         } else {
-            materialData.pixelShader = pixelShaderTable.at(pixelShader);
+            //Legion logic
+            materialData.pixelShader = getPixelShaderId(m2Batch->textureCount, m2Batch->shader_id);
+            materialData.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
         }
-//        materialData.shaderNames = shaderNames;
-//        materialData.m2BatchIndex = i;
-
-
-//        materialData.renderFlag =  m2File->materials[renderFlagIndex]->flags;
-//        materialData.renderBlending = m2File->materials[renderFlagIndex]->blending_mode;
 
         int textureUnit;
-        if (skinTextureDefinition->textureCoordComboIndex < m2File->tex_unit_lookup_table.size) {
-            textureUnit = *m2File->tex_unit_lookup_table[skinTextureDefinition->textureCoordComboIndex];
+        if (m2Batch->textureCoordComboIndex < m2File->tex_unit_lookup_table.size) {
+            textureUnit = *m2File->tex_unit_lookup_table[m2Batch->textureCoordComboIndex];
             if (textureUnit == 0xFFFF) {
                 //Enviroment mapping
                 materialData.isEnviromentMapping = true;
@@ -908,7 +913,7 @@ void M2Object::makeTextureArray() {
         }
 
         if (op_count > 0) {
-            auto mdxTextureIndex = *m2File->texture_lookup_table[skinTextureDefinition->textureComboIndex];
+            auto mdxTextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex];
             M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
             materialData.texUnit1TexIndex = i;
             materialData.mdxTextureIndex1 = mdxTextureIndex;
@@ -922,7 +927,7 @@ void M2Object::makeTextureArray() {
             }
         }
         if (op_count > 1) {
-            auto mdxTextureIndex = *m2File->texture_lookup_table[skinTextureDefinition->textureComboIndex + 1];
+            auto mdxTextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
             M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
             materialData.texUnit2TexIndex = i;
             materialData.mdxTextureIndex2 = mdxTextureIndex;
@@ -936,7 +941,7 @@ void M2Object::makeTextureArray() {
             }
         }
         if (op_count > 2) {
-            auto mdxTextureIndex = *m2File->texture_lookup_table[skinTextureDefinition->textureComboIndex + 1];
+            auto mdxTextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
             M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
             materialData.texUnit3TexIndex = i;
             materialData.mdxTextureIndex3 = mdxTextureIndex;

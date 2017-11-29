@@ -178,9 +178,6 @@ void main() {
     vec4 tex2 = texture2D(uTexture2, texCoord2).rgba;
 
     vec4 meshColor = uColor;
-    /*if (uBlendMode == 6) {
-       meshColor.rbg *= vec3(0.65);
-    }*/
 
     vec4 finalColor = vec4(0);
     //finalColor = vec4((tex.rgb * tex2.rgb), 1.0);
@@ -264,6 +261,8 @@ void main() {
         finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb;
         finalColor.a = tex.a;
     } else if (uPixelShader == 12) { // Combiners_Opaque_Mod2xNA_Alpha
+        finalColor = ((uColor.rgb * 2.0) * mix(((tex.rgb * tex2.rgb) * 2.0), tex.rgb, tex.a));
+        finalColor.a = uColor.a;
     } else if (uPixelShader == 13) { // Combiners_Opaque_AddAlpha
     } else if (uPixelShader == 14) { // Combiners_Opaque_AddAlpha_Alpha
     } else if (uPixelShader == 15) { // Combiners_Opaque_Mod2xNA_Alpha_Add

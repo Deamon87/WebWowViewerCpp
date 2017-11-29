@@ -42,6 +42,7 @@ public:
     int renderFlagIndex = -1;
     int flags = 0;
     int priorityPlane = 0;
+    int vertexShader;
     int pixelShader;
 };
 
