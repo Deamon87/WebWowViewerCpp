@@ -72,7 +72,10 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/shader/ShaderRuntimeData.h
         src/engine/opengl/header.h
         src/engine/camera/firstPersonCamera.cpp
-        src/engine/camera/firstPersonCamera.h src/include/config.h
+        src/engine/camera/firstPersonCamera.h
+        src/engine/camera/firstPersonOrthoCamera.cpp
+        src/engine/camera/firstPersonOrthoCamera.h
+        src/include/config.h
         src/engine/camera/CameraInterface.h
         src/engine/persistance/header/commonFileStructs.h
         src/engine/persistance/header/M2FileHeader.h
@@ -113,7 +116,14 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/m2Scene.cpp
         src/engine/objects/m2Scene.h
         src/engine/algorithms/PortalCullingAlgo.cpp
-        src/engine/algorithms/PortalCullingAlgo.h src/engine/objects/wmoScene.cpp src/engine/objects/wmoScene.h src/engine/objects/objectCache.h src/engine/objects/m2Instancing/m2InstancingObject.cpp src/engine/objects/m2Instancing/m2InstancingObject.h src/engine/algorithms/hashString.h src/engine/persistance/header/wdtFileHeader.h src/engine/persistance/wdtFile.cpp src/engine/persistance/wdtFile.h)
+        src/engine/algorithms/PortalCullingAlgo.h
+        src/engine/objects/wmoScene.cpp
+        src/engine/objects/wmoScene.h
+        src/engine/objects/objectCache.h src/engine/objects/m2Instancing/m2InstancingObject.cpp
+        src/engine/objects/m2Instancing/m2InstancingObject.h
+        src/engine/algorithms/hashString.h
+        src/engine/persistance/header/wdtFileHeader.h
+        src/engine/persistance/wdtFile.cpp src/engine/persistance/wdtFile.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

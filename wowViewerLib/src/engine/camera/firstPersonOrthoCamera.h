@@ -18,8 +18,6 @@ public:
 private:
     mathfu::vec3 camera = {0, 0, 0};
     mathfu::vec3 lookAt = {0, 0, 0};
-    mathfu::mat4 lookAtMat = {};
-
 
     float MDDepthPlus = 0;
     float MDDepthMinus = 0;
@@ -57,10 +55,6 @@ public:
         position[0] = camera.x;
         position[1] = camera.y;
         position[2] = camera.z;
-    }
-
-    mathfu::mat4 &getLookatMat() {
-        return lookAtMat;
     }
 
 public:

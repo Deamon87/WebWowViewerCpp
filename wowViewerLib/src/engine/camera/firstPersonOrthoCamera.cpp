@@ -5,7 +5,6 @@
 #include <iostream>
 #include "firstPersonCamera.h"
 #include "math.h"
-#include "../algorithms/mathHelper.h"
 
 void FirstPersonCamera::addForwardDiff(float val) {
     this->depthDiff = this->depthDiff + val;
@@ -94,19 +93,19 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     dir = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * dir;
     dir = mathfu::normalize(dir);
 
-    mathfu::vec3 right = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
-    right[2] = 0;
-    right = mathfu::normalize(right);
-
     /* Calc camera position */
     if (horizontalDiff != 0) {
-//        right = right * horizontalDiff;
+        mathfu::vec3 right = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
+        right[2] = 0;
 
-        camera = camera + right*horizontalDiff;
+        right = mathfu::normalize(right);
+        right = right * horizontalDiff;
+
+        camera = camera + right;
     }
 
     if (depthDiff != 0) {
-        mathfu::vec3 movDir = mathfu::vec3(dir);
+        mathfu::vec3 movDir = dir;
 
         movDir = movDir * depthDiff;
         camera = camera + movDir;
@@ -115,24 +114,9 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
         camera[2] = camera[2] + verticalDiff;
     }
 
+    //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
     this->camera = camera;
     this->lookAt = camera + dir;
-
-//    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
-    lookAtMat = mathfu::mat4(
-        right.x, right.y,  right.z, 0.0f,
-        0.0f, 0.0f, 1.0f, 0.0f,
-        dir.x, dir.y, dir.z, 0,
-        0.0f, 0.0f, 0.0f, 1.0f //translation
-    );
-
-
-
-    lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
-
-
-    //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
-
 }
 void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera

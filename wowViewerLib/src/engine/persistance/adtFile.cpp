@@ -113,6 +113,17 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             }
         },
         {
+            'MLDD',
+            {
+                handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLDD");
+
+//                    file.doodadDef_len = chunkData.chunkLen / sizeof(SMDoodadDef);
+//                    chunkData.readValues(file.doodadDef, file.doodadDef_len);
+                }
+            }
+        },
+        {
             'MODF',
             {
                 handler: [](AdtFile& file, ChunkData& chunkData){

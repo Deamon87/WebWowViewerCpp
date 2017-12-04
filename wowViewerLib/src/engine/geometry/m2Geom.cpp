@@ -8,37 +8,37 @@
 #include "../opengl/header.h"
 
 chunkDef<M2Geom> M2Geom::m2FileTable = {
-        handler : [](M2Geom& file, ChunkData& chunkData){},
-        subChunks : {
+    handler : [](M2Geom& file, ChunkData& chunkData){},
+    subChunks : {
+        {
+            '12DM',
                 {
-                    '12DM',
-                        {
-                                handler: [](M2Geom &file, ChunkData &chunkData) {
-                                    debuglog("Entered MD21");
+                    handler: [](M2Geom &file, ChunkData &chunkData) {
+                        debuglog("Entered MD21");
 
 //                                    chunkData.currentOffset = chunkData.currentOffset - 8;
-                                    chunkData.readValue(file.m_m2Data);
+                        chunkData.readValue(file.m_m2Data);
 
-                                    chunkData.bytesRead = chunkData.chunkLen;
-                                }
-                        }
-                },
+                        chunkData.bytesRead = chunkData.chunkLen;
+                    }
+                }
+        },
+        {
+                'DIFS',
                 {
-                        'DIFS',
-                        {
-                                handler: [](M2Geom &file, ChunkData &chunkData) {
-                                    debuglog("Entered SFID");
-                                    file.skinFileDataIDs =
-                                            std::vector<uint32_t>(
-                                                    file.m_m2Data->num_skin_profiles);
+                    handler: [](M2Geom &file, ChunkData &chunkData) {
+                        debuglog("Entered SFID");
+                        file.skinFileDataIDs =
+                                std::vector<uint32_t>(
+                                        file.m_m2Data->num_skin_profiles);
 
-                                    for (int i = 0; i < file.skinFileDataIDs.size(); i++) {
-                                        chunkData.readValue(file.skinFileDataIDs[i]);
-                                    }
-                                }
+                        for (int i = 0; i < file.skinFileDataIDs.size(); i++) {
+                            chunkData.readValue(file.skinFileDataIDs[i]);
                         }
+                    }
                 }
         }
+    }
 };
 
 void M2Geom::loadTextures() {
@@ -426,6 +426,15 @@ M2Geom::drawMesh(
                     glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_half);
                     fogChanged = true;
                     break;
+
+                case 7: //Blend_Mod2x
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.00392157);
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+                    glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_half);
+                    fogChanged = true;
+                    break;
                 default :
                     glUniform1f(m2Shader->getUnf("uAlphaTest"), -1);
                     glEnable(GL_BLEND);
@@ -503,16 +512,17 @@ M2Geom::drawMesh(
             }
 
             auto meshIndex = materialData.meshIndex;
+            auto mesh = skinData.submeshes[meshIndex];
             if (instanceCount == -1) {
                 //var error = gl.getError(); // Drop error flag
-                glDrawElements(GL_TRIANGLES, skinData.submeshes[meshIndex]->indexCount,
+                glDrawElements(GL_TRIANGLES, mesh->indexCount,
                                GL_UNSIGNED_SHORT,
-                               (const void *) (skinData.submeshes[meshIndex]->indexStart * 2));
+                               (const void *) ((mesh->indexStart + (mesh->Level << 16)) * 2));
             } else {
 //                instExt.drawElementsInstancedANGLE(gl.TRIANGLES, skinData.subMeshes[meshIndex].nTriangles, gl.UNSIGNED_SHORT, skinData.subMeshes[meshIndex].StartTriangle * 2, instanceCount);
                 glDrawElementsInstanced(GL_TRIANGLES, skinData.submeshes[meshIndex]->indexCount,
                                         GL_UNSIGNED_SHORT,
-                                        (const void *)(skinData.submeshes[meshIndex]->indexStart * 2),
+                                        (const void *)((mesh->indexStart + (mesh->Level << 16)) * 2),
                                         instanceCount);
             }
             if (materialData.texUnit2Texture != nullptr) {

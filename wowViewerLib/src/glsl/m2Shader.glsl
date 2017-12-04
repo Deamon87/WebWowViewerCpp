@@ -125,6 +125,7 @@ void main() {
 varying vec3 vNormal;
 varying vec2 vTexCoord;
 varying vec2 vTexCoord2;
+varying vec2 vTexCoord3;
 varying vec3 vPosition;
 
 varying vec4 vDiffuseColor;
@@ -143,6 +144,7 @@ uniform float uAlphaTest;
 uniform float uTransparency;
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
+uniform sampler2D uTexture3;
 
 uniform mat4 uTextMat1;
 uniform mat4 uTextMat2;
@@ -168,14 +170,19 @@ uniform lowp int uLightCount;
 varying float fs_Depth;
 #endif
 
+
+
 void main() {
     /* Animation support */
     vec2 texCoord = (uTextMat1 * vec4(vTexCoord, 0, 1)).xy;
     vec2 texCoord2 = (uTextMat2 * vec4(vTexCoord2, 0, 1)).xy;
+    vec2 texCoord3 = (uTextMat2 * vec4(vTexCoord2, 0, 1)).xy;
+
 
     /* Get color from texture */
     vec4 tex = texture2D(uTexture, texCoord).rgba;
     vec4 tex2 = texture2D(uTexture2, texCoord2).rgba;
+    vec4 tex3 = texture2D(uTexture3, texCoord3).rgba;
 
     vec4 meshColor = uColor;
 
@@ -218,7 +225,7 @@ void main() {
 
         //vec3 gammaDiffuse = finalColor.rgb;
         //vec3 gammaDiffuse = uPcColor.rgb;
-        //vec3 linearDiffuse =finalColor.rgb * finalColor.rgb * lightColor.rgb;
+        //vec3 linearDiffuse = finalColor.rgb * finalColor.rgb * lightColor.rgb;
 
         vec3 sunDir = vec3(0.294422, -0.11700600000000004, 0.948486);
         vec3 sunLight = vec3(0.392941, 0.268235, 0.308235);
@@ -248,7 +255,8 @@ void main() {
     } else if (uPixelShader == 6) { // Combiners_Mod_Mod
         finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba;
     } else if (uPixelShader == 7) { // Combiners_Mod_Mod2x
-        finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba * vec4(2.0);
+        finalColor.rgb = (uColor.rgb * 2.0) * tex.rgb * tex2.rgb * vec3(2.0);
+        finalColor.a = (tex.a * tex2.a) * 2.0;
     } else if (uPixelShader == 8) { // Combiners_Mod_Add
         finalColor.rgba = tex2.rgba + tex.rgba * meshResColor.rgba;
     } else if (uPixelShader == 9) { // Combiners_Mod_Mod2xNA
@@ -261,11 +269,19 @@ void main() {
         finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb;
         finalColor.a = tex.a;
     } else if (uPixelShader == 12) { // Combiners_Opaque_Mod2xNA_Alpha
-        finalColor = ((uColor.rgb * 2.0) * mix(((tex.rgb * tex2.rgb) * 2.0), tex.rgb, tex.a));
+        finalColor.rgb = ((uColor.rgb * 2.0) * mix(((tex.rgb * tex2.rgb) * 2.0), tex.rgb, tex.a));
         finalColor.a = uColor.a;
     } else if (uPixelShader == 13) { // Combiners_Opaque_AddAlpha
+        vec3 envTerm = tex2.rgb * tex2.a;
+        finalColor.rgb = ((uColor.rgb * 2.0) * tex.rgb) + envTerm;
+        finalColor.a = uColor.a;
     } else if (uPixelShader == 14) { // Combiners_Opaque_AddAlpha_Alpha
+        vec3 envTerm = tex2.rgb * tex2.a * (1.0 - tex2.a);
+        finalColor.rgb = ((uColor.rgb * 2.0) * tex.rgb) + envTerm;
+        finalColor.a = uColor.a;
     } else if (uPixelShader == 15) { // Combiners_Opaque_Mod2xNA_Alpha_Add
+
+//        finalColor.rgb = ((uColor.xyz) * mix(((t493 * texture(pt_map1, in_tc1).xyz) * 2.0), t493, t498));
     } else if (uPixelShader == 16) { // Combiners_Mod_AddAlpha
     } else if (uPixelShader == 17) { // Combiners_Mod_AddAlpha_Alpha
     } else if (uPixelShader == 18) { // Combiners_Opaque_Alpha_Alpha

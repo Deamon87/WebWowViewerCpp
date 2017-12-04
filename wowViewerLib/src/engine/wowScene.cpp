@@ -68,8 +68,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "Troll Raid");
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 
-//    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
-//    currentScene = new Map(this, "silithusphase01");
+    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
+    currentScene = new Map(this, "silithusphase01");
 
 //    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
 //    currentScene = new Map(this, "Troll Raid");
@@ -84,13 +84,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new Map(this, "UlduarRaid");
 //    currentScene = new Map(this, "argus 1");
-//    currentScene = new Map(this, "silithusphase01");
 
 //    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
 //    currentScene = new Map(this, "stormgarde keep");
 //
-   m_firstCamera.setCameraPos(939, -4813 , 0); //Near dalaran
-    currentScene = new Map(this, "Northrend");
+//   m_firstCamera.setCameraPos(939, -4813 , 0); //Near dalaran
+//    currentScene = new Map(this, "Northrend");
 
 
     //Test scene 2: tree from shattrath
@@ -118,6 +117,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "creature\\wingedhorse\\wingedhorse.m2");
+//
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "world\\expansion06\\doodads\\legion\\7fx_sargerassword_fx.m2");
 
 //    currentScene = new M2Scene(this,
 //        "character\\nightelf\\male\\nightelfmale.m2");
@@ -934,7 +937,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 250;
+    int farPlane = 300;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 
@@ -974,12 +977,13 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         this->m_secondCamera.tick(deltaTime);
     }
 
-    mathfu::mat4 lookAtMat4 =
-        mathfu::mat4::LookAt(
-                this->m_firstCamera.getCameraPosition(),
-                this->m_firstCamera.getCameraLookAt(),
-                upVector);
+//    mathfu::mat4 lookAtMat4 =
+//        mathfu::mat4::LookAt(
+//                this->m_firstCamera.getCameraPosition(),
+//                this->m_firstCamera.getCameraLookAt(),
+//                upVector);
 
+    mathfu::mat4 lookAtMat4 = this->m_firstCamera.getLookatMat();
     m_lookAtMat4 = lookAtMat4;
 
 
@@ -990,13 +994,24 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                     this->m_secondCamera.getCameraLookAt(),
                     upVector);
 
-
+//
     mathfu::mat4 perspectiveMatrix =
         mathfu::mat4::Perspective(
                 fov,
                 this->canvAspect,
                 nearPlane,
                 farPlane);
+//    float o_height = (this->canvHeight * (533.333/256/* zoom 7 in Alram viewer */))/ 8 ;
+//    float o_width = o_height * this->canvWidth / this->canvHeight ;
+
+//    mathfu::mat4 perspectiveMatrix =
+//        mathfu::mat4::Ortho(
+//                -o_width,
+//                o_width,
+//                -o_height,
+//                o_height,
+//                1,
+//                4000);
 
     m_perspectiveMatrix = perspectiveMatrix;
 
