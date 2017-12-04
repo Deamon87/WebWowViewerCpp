@@ -901,6 +901,11 @@ void M2Object::makeTextureArray() {
             //Legion logic
             materialData.pixelShader = getPixelShaderId(m2Batch->textureCount, m2Batch->shader_id);
             materialData.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
+
+            //TODO: hack
+            if (materialData.pixelShader >=13){
+                materialData.pixelShader = 0; //fallback
+            }
         }
 
         int textureUnit;

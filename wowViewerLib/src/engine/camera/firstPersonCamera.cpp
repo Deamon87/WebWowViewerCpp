@@ -75,6 +75,7 @@ mathfu::vec3 FirstPersonCamera::getCameraLookAt(){
 
 void FirstPersonCamera::tick (animTime_t timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
+    mathfu::vec3 up = {0, 0, 1};
     float moveSpeed = 1.0f / 10.0f;
     mathfu::vec3 camera = this->camera;
 
@@ -92,17 +93,26 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 
     dir = mathfu::mat3::RotationY(this->av*M_PI/180) * dir;
     dir = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * dir;
+
     dir = mathfu::normalize(dir);
 
-    mathfu::vec3 right = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
-    right[2] = 0;
-    right = mathfu::normalize(right);
+//    up = mathfu::mat3::RotationY(this->av*M_PI/180) * up;
+//    up = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * up;
+//    up = mathfu::normalize(up);
+
+//    mathfu::vec3 right = mathfu::normalize(mathfu::vec3::CrossProduct(dir,up));
+
+    mathfu::vec3 right_move = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
+    right_move[2] = 0;
+    right_move = mathfu::normalize(right_move);
+
+    up = mathfu::normalize(mathfu::vec3::CrossProduct(right_move,dir));
 
     /* Calc camera position */
     if (horizontalDiff != 0) {
 //        right = right * horizontalDiff;
 
-        camera = camera + right*horizontalDiff;
+        camera = camera + right_move*horizontalDiff;
     }
 
     if (depthDiff != 0) {
@@ -120,10 +130,10 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
     lookAtMat = mathfu::mat4(
-        right.x, right.y,  right.z, 0.0f,
-        0.0f, 0.0f, 1.0f, 0.0f,
-        dir.x, dir.y, dir.z, 0,
-        0.0f, 0.0f, 0.0f, 1.0f //translation
+        right_move.x, up.x, -dir.x, 0.0f,
+        right_move.y, up.y, -dir.y, 0.0f,
+        right_move.z, up.z, -dir.z, 0.0f,
+        0,0,0,1.0f //translation
     );
 
 

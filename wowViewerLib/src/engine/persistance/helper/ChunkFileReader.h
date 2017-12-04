@@ -122,6 +122,9 @@ private:
                 char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
                 debuglog("Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__);
             }
+
+            //TODO: HACK!
+            if (chunkLoadOffset < 0) break;
         }
     }
 

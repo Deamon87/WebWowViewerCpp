@@ -71,6 +71,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
     currentScene = new Map(this, "silithusphase01");
 
+//    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0); // THE WOUND
+//    currentScene = new Map(this, "BLTestMap");
+
 //    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
 //    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "argus_rifts");
@@ -84,12 +87,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new Map(this, "UlduarRaid");
 //    currentScene = new Map(this, "argus 1");
+//    currentScene = new Map(this, "silithusphase01");
 
 //    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
 //    currentScene = new Map(this, "stormgarde keep");
 //
-//   m_firstCamera.setCameraPos(939, -4813 , 0); //Near dalaran
-//    currentScene = new Map(this, "Northrend");
+   m_firstCamera.setCameraPos(939, -4813 , 0); //Near dalaran
+    currentScene = new Map(this, "Northrend");
 
 
     //Test scene 2: tree from shattrath

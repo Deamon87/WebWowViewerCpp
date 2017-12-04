@@ -9,6 +9,7 @@
 #include "../algorithms/mathHelper.h"
 #include "../algorithms/grahamScan.h"
 #include "m2Instancing/m2InstancingObject.h"
+#include "../persistance/wdtFile.h"
 
 void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
     std::string fileIdent = m2Object->getModelIdent();
@@ -281,8 +282,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::unordered_set<M2Object*> &m2RenderedThisFrame,
                         std::unordered_set<WmoObject*> &wmoRenderedThisFrame) {
 
-    std::set<M2Object*> m2ObjectsCandidates;
-    std::set<WmoObject*> wmoCandidates;
+    std::set<M2Object *> m2ObjectsCandidates;
+    std::set<WmoObject *> wmoCandidates;
 
 //    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
 //    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
@@ -294,14 +295,23 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     for (int i = 0; i < frustumPoints.size(); i++) {
         mathfu::vec3 &frustumPoint = frustumPoints[i];
 
-        minx = std::min(frustumPoint.x, minx); maxx = std::max(frustumPoint.x, maxx);
-        miny = std::min(frustumPoint.y, miny); maxy = std::max(frustumPoint.y, maxy);
+        minx = std::min(frustumPoint.x, minx);
+        maxx = std::max(frustumPoint.x, maxx);
+        miny = std::min(frustumPoint.y, miny);
+        maxy = std::max(frustumPoint.y, maxy);
     }
     int adt_x_min = worldCoordinateToAdtIndex(maxy);
     int adt_x_max = worldCoordinateToAdtIndex(miny);
 
     int adt_y_min = worldCoordinateToAdtIndex(maxx);
     int adt_y_max = worldCoordinateToAdtIndex(minx);
+
+//    for (int i = 0; i < 64; i++)
+//        for (int j = 0; j < 64; j++) {
+//            if (this->m_wdtfile->mapTileTable->mainInfo[i][j].Flag_AllWater) {
+//                std::cout << AdtIndexToWorldCoordinate(j) <<" "<<  AdtIndexToWorldCoordinate(i) << std::endl;
+//            }
+//        }
 
 
     for (int i = adt_x_min; i <= adt_x_max; i++) {
