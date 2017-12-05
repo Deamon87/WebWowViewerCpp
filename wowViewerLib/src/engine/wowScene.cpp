@@ -5,6 +5,7 @@
 #include "algorithms/mathHelper.h"
 #include "objects/m2Scene.h"
 #include "objects/wmoScene.h"
+
 #include <mathfu/glsl_mappings.h>
 #include <iostream>
 
@@ -67,7 +68,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    currentScene = new Map(this, "Troll Raid");
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
-
     m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
     currentScene = new Map(this, "silithusphase01");
 
@@ -92,8 +92,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
 //    currentScene = new Map(this, "stormgarde keep");
 //
-   m_firstCamera.setCameraPos(939, -4813 , 0); //Near dalaran
-    currentScene = new Map(this, "Northrend");
+//   m_firstCamera.setCameraPos(939, -4813 , 0); //Near dalaran
+//    currentScene = new Map(this, "Northrend");
 
 
     //Test scene 2: tree from shattrath
@@ -941,7 +941,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 300;
+    int farPlane = 1000;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 
@@ -999,23 +999,23 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                     upVector);
 
 //
-    mathfu::mat4 perspectiveMatrix =
-        mathfu::mat4::Perspective(
-                fov,
-                this->canvAspect,
-                nearPlane,
-                farPlane);
-//    float o_height = (this->canvHeight * (533.333/256/* zoom 7 in Alram viewer */))/ 8 ;
-//    float o_width = o_height * this->canvWidth / this->canvHeight ;
-
 //    mathfu::mat4 perspectiveMatrix =
-//        mathfu::mat4::Ortho(
-//                -o_width,
-//                o_width,
-//                -o_height,
-//                o_height,
-//                1,
-//                4000);
+//        mathfu::mat4::Perspective(
+//                fov,
+//                this->canvAspect,
+//                nearPlane,
+//                farPlane);
+    float o_height = (this->canvHeight * (533.333/256/* zoom 5 in Alram viewer */))/ 8 ;
+    float o_width = o_height * this->canvWidth / this->canvHeight ;
+
+    mathfu::mat4 perspectiveMatrix =
+        mathfu::mat4::Ortho(
+                -o_width,
+                o_width,
+                -o_height,
+                o_height,
+                1,
+                4000);
 
     m_perspectiveMatrix = perspectiveMatrix;
 

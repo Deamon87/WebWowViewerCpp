@@ -2,8 +2,8 @@
 // Created by deamon on 18.05.17.
 //
 
-#ifndef WOWMAPVIEWERREVIVED_FIRSTPERSONCAMERA_H
-#define WOWMAPVIEWERREVIVED_FIRSTPERSONCAMERA_H
+#ifndef WOWMAPVIEWERREVIVED_FIRSTPERSONORTHOCAMERA_H
+#define WOWMAPVIEWERREVIVED_FIRSTPERSONORTHOCAMERA_H
 
 #include <mathfu/vector.h>
 #include <mathfu/glsl_mappings.h>
@@ -11,13 +11,14 @@
 #include "../../include/wowScene.h"
 
 
-class FirstPersonCamera: public ICamera {
+class FirstPersonOrthoCamera: public ICamera {
 public:
-    FirstPersonCamera(){};
+    FirstPersonOrthoCamera(){};
 
 private:
     mathfu::vec3 camera = {0, 0, 0};
     mathfu::vec3 lookAt = {0, 0, 0};
+    mathfu::mat4 lookAtMat = {};
 
     float MDDepthPlus = 0;
     float MDDepthMinus = 0;
@@ -32,7 +33,7 @@ private:
     bool staticCamera = false;
 
     float ah = 0;
-    float av = 0;
+    float av = 89;
 public:
     //Implemented IControllable
     void addHorizontalViewDir(float val);
@@ -57,6 +58,10 @@ public:
         position[2] = camera.z;
     }
 
+    mathfu::mat4 &getLookatMat() {
+        return lookAtMat;
+    }
+
 public:
     //Implemented ICamera
     mathfu::vec3 getCameraPosition();
@@ -68,4 +73,4 @@ public:
 };
 
 
-#endif //WOWMAPVIEWERREVIVED_FIRSTPERSONCAMERA_H
+#endif //WOWMAPVIEWERREVIVED_FIRSTPERSONORTHOCAMERA_H

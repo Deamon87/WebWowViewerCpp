@@ -3,77 +3,69 @@
 //
 
 #include <iostream>
-#include "firstPersonCamera.h"
-#include "math.h"
+#include "firstPersonOrthoCamera.h"
 
-void FirstPersonCamera::addForwardDiff(float val) {
+void FirstPersonOrthoCamera::addForwardDiff(float val) {
     this->depthDiff = this->depthDiff + val;
 }
 
-void FirstPersonCamera::addHorizontalViewDir(float val) {
-    this->ah = ah + val;
-}
-void FirstPersonCamera::addVerticalViewDir(float val) {
-    float av = this->av;
-    av += val;
+void FirstPersonOrthoCamera::addHorizontalViewDir(float val) {
 
-    if (av < -89.99999f) {
-        av = -89.99999f;
-    } else if (av > 89.99999f) {
-        av = 89.99999f;
-    }
-    this->av = av;
+}
+void FirstPersonOrthoCamera::addVerticalViewDir(float val) {
+
 }
 
-void FirstPersonCamera::startMovingForward(){
+void FirstPersonOrthoCamera::startMovingForward(){
     this->MDDepthPlus = 1;
 }
-void FirstPersonCamera::stopMovingForward(){
+void FirstPersonOrthoCamera::stopMovingForward(){
     this->MDDepthPlus = 0;
 }
-void FirstPersonCamera::startMovingBackwards(){
+void FirstPersonOrthoCamera::startMovingBackwards(){
     this->MDDepthMinus = 1;
 }
-void FirstPersonCamera::stopMovingBackwards(){
+void FirstPersonOrthoCamera::stopMovingBackwards(){
     this->MDDepthMinus = 0;
 }
 
-void FirstPersonCamera::startStrafingLeft(){
+void FirstPersonOrthoCamera::startStrafingLeft(){
     this->MDHorizontalMinus = 1;
 }
-void FirstPersonCamera::stopStrafingLeft(){
+void FirstPersonOrthoCamera::stopStrafingLeft(){
     this->MDHorizontalMinus = 0;
 }
-void FirstPersonCamera::startStrafingRight(){
+void FirstPersonOrthoCamera::startStrafingRight(){
     this->MDHorizontalPlus = 1;
 }
-void FirstPersonCamera::stopStrafingRight(){
+void FirstPersonOrthoCamera::stopStrafingRight(){
     this->MDHorizontalPlus = 0;
 }
 
-void FirstPersonCamera::startMovingUp(){
+void FirstPersonOrthoCamera::startMovingUp(){
     this->MDVerticalPlus = 1;
 }
-void FirstPersonCamera::stopMovingUp(){
+void FirstPersonOrthoCamera::stopMovingUp(){
     this->MDVerticalPlus = 0;
 }
-void FirstPersonCamera::startMovingDown(){
+void FirstPersonOrthoCamera::startMovingDown(){
     this->MDVerticalMinus = 1;
 }
-void FirstPersonCamera::stopMovingDown(){
+void FirstPersonOrthoCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
 
-mathfu::vec3 FirstPersonCamera::getCameraPosition(){
+mathfu::vec3 FirstPersonOrthoCamera::getCameraPosition(){
     return camera;
 }
-mathfu::vec3 FirstPersonCamera::getCameraLookAt(){
+mathfu::vec3 FirstPersonOrthoCamera::getCameraLookAt(){
     return lookAt;
 }
 
 
-void FirstPersonCamera::tick (animTime_t timeDelta) {
+void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
+    mathfu::vec3 up = {0, 0, 1};
     float moveSpeed = 1.0f / 10.0f;
     mathfu::vec3 camera = this->camera;
 
@@ -87,38 +79,62 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 
     /* Calc look at position */
 
-
+    this->av = 89.9999;
 
     dir = mathfu::mat3::RotationY(this->av*M_PI/180) * dir;
     dir = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * dir;
+
     dir = mathfu::normalize(dir);
+
+//    up = mathfu::mat3::RotationY(this->av*M_PI/180) * up;
+//    up = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * up;
+//    up = mathfu::normalize(up);
+
+//    mathfu::vec3 right = mathfu::normalize(mathfu::vec3::CrossProduct(dir,up));
+
+    mathfu::vec3 right_move = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
+    right_move[2] = 0;
+    right_move = mathfu::normalize(right_move);
+
+    up = mathfu::normalize(mathfu::vec3::CrossProduct(right_move,dir));
 
     /* Calc camera position */
     if (horizontalDiff != 0) {
-        mathfu::vec3 right = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
-        right[2] = 0;
+//        right = right * horizontalDiff;
 
-        right = mathfu::normalize(right);
-        right = right * horizontalDiff;
-
-        camera = camera + right;
+        camera = camera + mathfu::vec3(0,1,0)*horizontalDiff;
     }
 
     if (depthDiff != 0) {
-        mathfu::vec3 movDir = dir;
+        mathfu::vec3 movDir = mathfu::vec3(dir);
 
-        movDir = movDir * depthDiff;
+        movDir = mathfu::vec3(1,0,0) * depthDiff;
         camera = camera + movDir;
     }
     if (verticalDiff != 0) {
         camera[2] = camera[2] + verticalDiff;
     }
 
-    //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
     this->camera = camera;
     this->lookAt = camera + dir;
+
+//    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
+    lookAtMat = mathfu::mat4(
+        right_move.x, up.x, -dir.x, 0.0f,
+        right_move.y, up.y, -dir.y, 0.0f,
+        right_move.z, up.z, -dir.z, 0.0f,
+        0,0,0,1.0f //translation
+    );
+
+
+
+    lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
+
+
+    //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
+
 }
-void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
+void FirstPersonOrthoCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera
     this->camera[0] = x;
     this->camera[1] = y;

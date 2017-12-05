@@ -219,6 +219,15 @@ void AdtObject::draw() {
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, layer0.getGlTexture());
 
+            glActiveTexture(GL_TEXTURE1 + 4);
+            BlpTexture &layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[0].textureId);
+            if (layer_height.getIsLoaded()) {
+                //gl.enable(gl.TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, layer_height.getGlTexture());
+            } else {
+                glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
+            }
+
             //Bind layer textures
             for (int j = 1; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
                 glActiveTexture(GL_TEXTURE1 + j);

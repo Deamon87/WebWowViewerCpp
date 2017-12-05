@@ -13,6 +13,7 @@
 #include "../include/wowScene.h"
 #include "../include/config.h"
 #include "mathfu/glsl_mappings.h"
+#include "camera/firstPersonOrthoCamera.h"
 #include "camera/firstPersonCamera.h"
 #include "texture/BlpTexture.h"
 #include "geometry/skinGeom.h"
@@ -167,7 +168,7 @@ private:
     mathfu::mat4 m_viewCameraForRender;
     mathfu::mat4 m_perspectiveMatrix;
 
-    FirstPersonCamera m_firstCamera;
+    FirstPersonOrthoCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;
 
     GLuint vbo_vertices;
