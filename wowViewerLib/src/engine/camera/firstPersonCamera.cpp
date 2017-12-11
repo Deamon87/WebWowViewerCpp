@@ -89,18 +89,11 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 
     /* Calc look at position */
 
-
-
     dir = mathfu::mat3::RotationY(this->av*M_PI/180) * dir;
     dir = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * dir;
 
     dir = mathfu::normalize(dir);
 
-//    up = mathfu::mat3::RotationY(this->av*M_PI/180) * up;
-//    up = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * up;
-//    up = mathfu::normalize(up);
-
-//    mathfu::vec3 right = mathfu::normalize(mathfu::vec3::CrossProduct(dir,up));
 
     mathfu::vec3 right_move = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
     right_move[2] = 0;

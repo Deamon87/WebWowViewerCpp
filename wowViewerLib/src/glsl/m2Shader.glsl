@@ -235,74 +235,279 @@ void main() {
         //finalColor.rgb =  finalColor.rgb * lightColor;
     }
 
-    if (uPixelShader == 0) { //Combiners_Opaque
-        finalColor.rgb = tex.rgb * meshResColor.rgb;
-        finalColor.a = meshResColor.a;
-    } else if (uPixelShader == 1) { // Combiners_Mod
-        finalColor.rgba = tex.rgba * meshResColor.rgba;
-    } else if (uPixelShader == 2) { // Combiners_Opaque_Mod
-        finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb;
-        finalColor.a = tex2.a * meshResColor.a;
-    } else if (uPixelShader == 3) { // Combiners_Opaque_Mod2x
-        finalColor.rgb = tex.rgb * meshResColor.rgb * tex2.rgb * vec3(2.0);
-        finalColor.a  = tex2.a * meshResColor.a * 2.0;
-    } else if (uPixelShader == 4) { // Combiners_Opaque_Mod2xNA
-        finalColor.rgb = tex.rgb * meshResColor.rgb * tex2.rgb * vec3(2.0);
-        finalColor.a  = meshResColor.a;
-    } else if (uPixelShader == 5) { // Combiners_Opaque_Opaque
-        finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb;
-        finalColor.a = meshResColor.a;
-    } else if (uPixelShader == 6) { // Combiners_Mod_Mod
-        finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba;
-    } else if (uPixelShader == 7) { // Combiners_Mod_Mod2x
-        finalColor.rgb = (uColor.rgb * 2.0) * tex.rgb * tex2.rgb * vec3(2.0);
-        finalColor.a = (tex.a * tex2.a) * 2.0;
-    } else if (uPixelShader == 8) { // Combiners_Mod_Add
-        finalColor.rgba = tex2.rgba + tex.rgba * meshResColor.rgba;
-    } else if (uPixelShader == 9) { // Combiners_Mod_Mod2xNA
-        finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb * vec3(2.0);
-        finalColor.a = tex.a * meshResColor.a;
-    } else if (uPixelShader == 10) { // Combiners_Mod_AddNA
-        finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
-        finalColor.a = tex.a * meshResColor.a;
-    } else if (uPixelShader == 11) { // Combiners_Mod_Opaque
-        finalColor.rgb = tex.rgb * tex2.rgb * meshResColor.rgb;
-        finalColor.a = tex.a;
-    } else if (uPixelShader == 12) { // Combiners_Opaque_Mod2xNA_Alpha
-        finalColor.rgb = ((uColor.rgb * 2.0) * mix(((tex.rgb * tex2.rgb) * 2.0), tex.rgb, tex.a));
-        finalColor.a = uColor.a;
-    } else if (uPixelShader == 13) { // Combiners_Opaque_AddAlpha
-        vec3 envTerm = tex2.rgb * tex2.a;
-        finalColor.rgb = ((uColor.rgb * 2.0) * tex.rgb) + envTerm;
-        finalColor.a = uColor.a;
-    } else if (uPixelShader == 14) { // Combiners_Opaque_AddAlpha_Alpha
-        vec3 envTerm = tex2.rgb * tex2.a * (1.0 - tex2.a);
-        finalColor.rgb = ((uColor.rgb * 2.0) * tex.rgb) + envTerm;
-        finalColor.a = uColor.a;
-    } else if (uPixelShader == 15) { // Combiners_Opaque_Mod2xNA_Alpha_Add
+    vec3 diffTerm = vec3(0.0);;
+    vec3 specTerm = vec3(0.0);
+    vec3 envTerm = vec3(0.0);;
+    float finalAlpha;
 
-//        finalColor.rgb = ((uColor.xyz) * mix(((t493 * texture(pt_map1, in_tc1).xyz) * 2.0), t493, t498));
-    } else if (uPixelShader == 16) { // Combiners_Mod_AddAlpha
-    } else if (uPixelShader == 17) { // Combiners_Mod_AddAlpha_Alpha
-    } else if (uPixelShader == 18) { // Combiners_Opaque_Alpha_Alpha
-    } else if (uPixelShader == 19) { // Combiners_Opaque_Mod2xNA_Alpha_3s
-    } else if (uPixelShader == 20) { // Combiners_Opaque_AddAlpha_Wgt
-    } else if (uPixelShader == 21) { // Combiners_Mod_Add_Alpha
-    } else if (uPixelShader == 22) { // Combiners_Opaque_ModNA_Alpha
-    } else if (uPixelShader == 23) { // Combiners_Mod_AddAlpha_Wgt
-    } else if (uPixelShader == 24) { // Combiners_Opaque_Mod_Add_Wgt
-    } else if (uPixelShader == 25) { // Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
-    } else if (uPixelShader == 26) { // Combiners_Mod_Dual_Crossfade
-    } else if (uPixelShader == 27) { // Combiners_Opaque_Mod2xNA_Alpha_Alpha
-    } else if (uPixelShader == 28) { // Combiners_Mod_Masked_Dual_Crossfade
-    } else if (uPixelShader == 29) { // Combiners_Opaque_Alpha
-    } else if (uPixelShader == 30) { // Guild
-    } else if (uPixelShader == 31) { // Guild_NoBorder
-    } else if (uPixelShader == 32) { // Guild_Opaque
-    } else if (uPixelShader == 33) { // Combiners_Mod_Depth
-    } else if (uPixelShader == 34) { // Illum
-    } else if (uPixelShader == 35) { // Combiners_Mod_Mod_Mod_Const
-
+    if ( uPixelShader == 0 ) {//Combiners_Opaque
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t989 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t989.rgb, t989.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t989.rgb, t989.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t989.rgb, t989.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 1 ) {//Combiners_Mod
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t989 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t989.rgb, t989.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t989.rgb, t989.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t989.rgb, t989.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 2 ) {//Combiners_Opaque_Mod
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb;
+    opacity = texture(pt_map1,in_tc1).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 3 ) {//Combiners_Opaque_Mod2x
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb * 2.000000;
+    opacity = texture(pt_map1,in_tc1).a * 2.000000 * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 4 ) {//Combiners_Opaque_Mod2xNA
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb * 2.000000;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 5 ) {//Combiners_Opaque_Opaque
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 6 ) {//Combiners_Mod_Mod
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb;
+    opacity = texture(pt_map0,in_tc0).a * texture(pt_map1,in_tc1).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 7 ) {//Combiners_Mod_Mod2x
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb * 2.000000;
+    opacity = texture(pt_map0,in_tc0).a * texture(pt_map1,in_tc1).a * 2.000000 * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 8 ) {//Combiners_Mod_Add
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    opacity = (texture(pt_map0,in_tc0).a + texture(pt_map1,in_tc1).a) * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map1,in_tc1).rgb, opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 9 ) {//Combiners_Mod_Mod2xNA
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb * 2.000000;
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 10 ) {//Combiners_Mod_AddNA
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map1,in_tc1).rgb, opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 11 ) {//Combiners_Mod_Opaque
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb;
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 12 ) {//Combiners_Opaque_Mod2xNA_Alpha
+    matDiffuse = in_col0.rgb * 2.000000 * mix(texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb * 2.000000, texture(pt_map0,in_tc0).rgb, vec3(texture(pt_map0,in_tc0).a));
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 13 ) {//Combiners_Opaque_AddAlpha
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map1,in_tc1).rgb * texture(pt_map1,in_tc1).a, in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 14 ) {//Combiners_Opaque_AddAlpha_Alpha
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map1,in_tc1).rgb * texture(pt_map1,in_tc1).a * (1.000000 - texture(pt_map0,in_tc0).a), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 15 ) {//Combiners_Opaque_Mod2xNA_Alpha_Add
+    matDiffuse = in_col0.rgb * 2.000000 * mix(texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb * 2.000000, texture(pt_map0,in_tc0).rgb, vec3(texture(pt_map0,in_tc0).a));
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t993 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map2,in_tc2).rgb * texture(pt_map2,in_tc2).a * pc_genericParams[0].b, in_col0.a * pc_visParams.r);
+    final = vec4(mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 16 ) {//Combiners_Mod_AddAlpha
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map1,in_tc1).rgb * texture(pt_map1,in_tc1).a, opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 17 ) {//Combiners_Mod_AddAlpha_Alpha
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    opacity = (texture(pt_map0,in_tc0).a + texture(pt_map1,in_tc1).a * (0.300000 * texture(pt_map1,in_tc1).r + 0.590000 * texture(pt_map1,in_tc1).g + 0.110000 * texture(pt_map1,in_tc1).b)) * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map1,in_tc1).rgb * texture(pt_map1,in_tc1).a * (1.000000 - texture(pt_map0,in_tc0).a), opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 18 ) {//Combiners_Opaque_Alpha_Alpha
+    matDiffuse = in_col0.rgb * 2.000000 * mix(mix(texture(pt_map0,in_tc0).rgb, texture(pt_map1,in_tc1).rgb, vec3(texture(pt_map1,in_tc1).a)), texture(pt_map0,in_tc0).rgb, vec3(texture(pt_map0,in_tc0).a));
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 19 ) {//Combiners_Opaque_Mod2xNA_Alpha_3s
+    matDiffuse = in_col0.rgb * 2.000000 * mix(texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb * 2.000000, texture(pt_map2,in_tc2).rgb, vec3(texture(pt_map2,in_tc2).a));
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t993 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 20 ) {//Combiners_Opaque_AddAlpha_Wgt
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map1,in_tc1).rgb * texture(pt_map1,in_tc1).a * pc_genericParams[0].g, in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 21 ) {//Combiners_Mod_Add_Alpha
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    opacity = (texture(pt_map0,in_tc0).a + texture(pt_map1,in_tc1).a) * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map1,in_tc1).rgb * (1.000000 - texture(pt_map0,in_tc0).a), opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 22 ) {//Combiners_Opaque_ModNA_Alpha
+    matDiffuse = in_col0.rgb * 2.000000 * mix(texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb, texture(pt_map0,in_tc0).rgb, vec3(texture(pt_map0,in_tc0).a));
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 23 ) {//Combiners_Mod_AddAlpha_Wgt
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map1,in_tc1).rgb * texture(pt_map1,in_tc1).a * pc_genericParams[0].g, opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 24 ) {//Combiners_Opaque_Mod_Add_Wgt
+    matDiffuse = in_col0.rgb * 2.000000 * mix(texture(pt_map0,in_tc0).rgb, texture(pt_map1,in_tc1).rgb, vec3(texture(pt_map1,in_tc1).a));
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map0,in_tc0).rgb * texture(pt_map0,in_tc0).a * pc_genericParams[0].r, in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 25 ) {//Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
+    matDiffuse = in_col0.rgb * 2.000000 * mix(texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb * 2.000000, texture(pt_map0,in_tc0).rgb, vec3(texture(pt_map0,in_tc0).a)) * (1.000000 - glowOpacity);
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t993 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm) + texture(pt_map2,in_tc2).rgb * glowOpacity, in_col0.a * pc_visParams.r);
+    final = vec4(mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 26 ) {//Combiners_Mod_Dual_Crossfade
+    matDiffuse = in_col0.rgb * 2.000000 * mix(mix(texture(pt_map0,in_tc0), texture(pt_map1,in_tc0), vec4(clamp(pc_genericParams[0].g, 0.000000, 1.000000))), texture(pt_map2,in_tc0), vec4(clamp(pc_genericParams[0].b, 0.000000, 1.000000))).rgb;
+    opacity = mix(mix(texture(pt_map0,in_tc0), texture(pt_map1,in_tc0), vec4(clamp(pc_genericParams[0].g, 0.000000, 1.000000))), texture(pt_map2,in_tc0), vec4(clamp(pc_genericParams[0].b, 0.000000, 1.000000))).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t993 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 27 ) {//Combiners_Opaque_Mod2xNA_Alpha_Alpha
+    matDiffuse = in_col0.rgb * 2.000000 * mix(mix(texture(pt_map0,in_tc0).rgb * texture(pt_map1,in_tc1).rgb * 2.000000, texture(pt_map2,in_tc2).rgb, vec3(texture(pt_map2,in_tc2).a)), texture(pt_map0,in_tc0).rgb, vec3(texture(pt_map0,in_tc0).a));
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t993 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 28 ) {//Combiners_Mod_Masked_Dual_Crossfade
+    matDiffuse = in_col0.rgb * 2.000000 * mix(mix(texture(pt_map0,in_tc0), texture(pt_map1,in_tc0), vec4(clamp(pc_genericParams[0].g, 0.000000, 1.000000))), texture(pt_map2,in_tc0), vec4(clamp(pc_genericParams[0].b, 0.000000, 1.000000))).rgb;
+    opacity = mix(mix(texture(pt_map0,in_tc0), texture(pt_map1,in_tc0), vec4(clamp(pc_genericParams[0].g, 0.000000, 1.000000))), texture(pt_map2,in_tc0), vec4(clamp(pc_genericParams[0].b, 0.000000, 1.000000))).a * texture(pt_map3,in_tc1).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t995 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t995.rgb, t995.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t995.rgb, t995.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t995.rgb, t995.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 29 ) {//Combiners_Opaque_Alpha
+    matDiffuse = in_col0.rgb * 2.000000 * mix(texture(pt_map0,in_tc0).rgb, texture(pt_map1,in_tc1).rgb, vec3(texture(pt_map1,in_tc1).a));
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 30 ) {//Guild
+    matDiffuse = in_col0.rgb * 2.000000 * mix(texture(pt_map0,in_tc0).rgb * mix(pc_genericParams[0].rgb, texture(pt_map1,in_tc1).rgb * pc_genericParams[1].rgb, vec3(texture(pt_map1,in_tc1).a)), texture(pt_map2,in_tc2).rgb * pc_genericParams[2].rgb, vec3(texture(pt_map2,in_tc2).a));
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t993 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 31 ) {//Guild_NoBorder
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb * mix(pc_genericParams[0].rgb, texture(pt_map1,in_tc1).rgb * pc_genericParams[1].rgb, vec3(texture(pt_map1,in_tc1).a));
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t991 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t991.rgb, t991.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 32 ) {//Guild_Opaque
+    matDiffuse = in_col0.rgb * 2.000000 * mix(texture(pt_map0,in_tc0).rgb * mix(pc_genericParams[0].rgb, texture(pt_map1,in_tc1).rgb * pc_genericParams[1].rgb, vec3(texture(pt_map1,in_tc1).a)), texture(pt_map2,in_tc2).rgb * pc_genericParams[2].rgb, vec3(texture(pt_map2,in_tc2).a));
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t993 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), in_col0.a * pc_visParams.r);
+    final = vec4(mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, in_col0.a * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 33 ) {//Combiners_Mod_Depth
+    matDiffuse = in_col0.rgb * 2.000000 * texture(pt_map0,in_tc0).rgb;
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a * pc_visParams.r;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t989 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), t989.rgb, vec3(min)), opacity * pc_visParams.r);
+    }
+    else if ( uPixelShader == 34 ) {//Illum
+    specTerm = vec3(mix(0.000000, 1.000000, texture(pt_map1,in_tc0).rgb.r)) * (texture(pt_map1,in_tc0).a * 64.000000 + 2.000000)/8.000000 * 0.000000 * pc_sunColor.rgb * dirAtten * 0.800000 * 1.000000;
+    opacity = texture(pt_map0,in_tc0).a * in_col0.a;
+    final = vec4(mix(vec4(0.000000, 0.000000, 0.000000 + specTerm, opacity * pc_visParams.r).rgb, vec4(0.000000, 0.000000, 0.000000 + specTerm, opacity * pc_visParams.r).rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(vec4(0.000000, 0.000000, 0.000000 + specTerm, opacity * pc_visParams.r).rgb, vec4(0.000000, 0.000000, 0.000000 + specTerm, opacity * pc_visParams.r).rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(vec4(0.000000, 0.000000, 0.000000 + specTerm, opacity * pc_visParams.r).rgb, vec4(0.000000, 0.000000, 0.000000 + specTerm, opacity * pc_visParams.r).rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
+    }
+    else if ( uPixelShader == 35 ) {//Combiners_Mod_Mod_Mod_Const
+    matDiffuse = in_col0.rgb * 2.000000 * (texture(pt_map0,in_tc0) * texture(pt_map1,in_tc1) * texture(pt_map2,in_tc2) * pc_genericParams[0]).rgb;
+    opacity = (texture(pt_map0,in_tc0) * texture(pt_map1,in_tc1) * texture(pt_map2,in_tc2) * pc_genericParams[0]).a * in_col0.a;
+    gammaDiffTerm = matDiffuse * vec3(1.000000);
+    t993 = vec4(sqrt(gammaDiffTerm * gammaDiffTerm), opacity * pc_visParams.r);
+    final = vec4(mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).r, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).g, mix(t993.rgb, t993.rgb * pc_impactColor.rgb * 3.000000 * sqrt(1.000000 - lum), vec3(pc_impactColor.a * finalDistLength)).b, opacity * pc_visParams.r);
+    out_col0 = vec4(mix(mix(mix(color_and_heightRate.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a * length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), mix(heightColor_and_endFogDistance.rgb, heightDensity_and_endColor.gba, vec3(clamp(length/heightColor_and_endFogDistance.a, 0.000000, 1.000000))), vec3(heightFog)), final.rgb, vec3(min)), final.a);
 
     /*
         WOTLK DEPRECATED SHADERS!
@@ -331,6 +536,8 @@ void main() {
         finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba * vec4(4.0);
     }
 
+    finalColor.rgb = diffTerm + envTerm + specTerm;
+    finalColor.a = finalAlpha;
 
     if(finalColor.a < uAlphaTest)
         discard;
