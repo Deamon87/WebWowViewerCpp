@@ -168,7 +168,7 @@ private:
     mathfu::mat4 m_viewCameraForRender;
     mathfu::mat4 m_perspectiveMatrix;
 
-    FirstPersonOrthoCamera m_firstCamera;
+    FirstPersonCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;
 
     GLuint vbo_vertices;

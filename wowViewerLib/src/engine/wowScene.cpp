@@ -941,7 +941,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 1000;
+    int farPlane = 300;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 

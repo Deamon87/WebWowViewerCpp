@@ -65,7 +65,6 @@ mathfu::vec3 FirstPersonOrthoCamera::getCameraLookAt(){
 
 void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
-    mathfu::vec3 up = {0, 0, 1};
     float moveSpeed = 1.0f / 10.0f;
     mathfu::vec3 camera = this->camera;
 
@@ -86,17 +85,12 @@ void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
 
     dir = mathfu::normalize(dir);
 
-//    up = mathfu::mat3::RotationY(this->av*M_PI/180) * up;
-//    up = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * up;
-//    up = mathfu::normalize(up);
-
-//    mathfu::vec3 right = mathfu::normalize(mathfu::vec3::CrossProduct(dir,up));
 
     mathfu::vec3 right_move = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
     right_move[2] = 0;
     right_move = mathfu::normalize(right_move);
 
-    up = mathfu::normalize(mathfu::vec3::CrossProduct(right_move,dir));
+    mathfu::vec3 up = mathfu::normalize(mathfu::vec3::CrossProduct(right_move,dir));
 
     /* Calc camera position */
     if (horizontalDiff != 0) {
@@ -126,13 +120,7 @@ void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
         0,0,0,1.0f //translation
     );
 
-
-
     lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
-
-
-    //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
-
 }
 void FirstPersonOrthoCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera
