@@ -68,14 +68,14 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    currentScene = new Map(this, "Troll Raid");
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
-    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
-    currentScene = new Map(this, "silithusphase01");
+//    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
+//    currentScene = new Map(this, "silithusphase01");
 
 //    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0); // THE WOUND
 //    currentScene = new Map(this, "BLTestMap");
 
-//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-//    currentScene = new Map(this, "Troll Raid");
+    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "argus_rifts");
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
@@ -224,7 +224,7 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
-    int maxMatrixUniforms = (maxVertexUniforms / 4) - 6;
+    int maxMatrixUniforms = (maxVertexUniforms / 4) - 9;
 
     vertExtraDefStrings = vertExtraDefStrings + "#define MAX_MATRIX_NUM "+std::to_string(maxMatrixUniforms)+"\r\n"+"#define COMPILING_VS 1\r\n ";
     fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
@@ -999,24 +999,24 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                     upVector);
 
 //
-//    mathfu::mat4 perspectiveMatrix =
-//        mathfu::mat4::Perspective(
-//                fov,
-//                this->canvAspect,
-//                nearPlane,
-//                farPlane);
-    float o_height = (this->canvHeight * (533.333/256/* zoom 5 in Alram viewer */))/ 8 ;
-    float o_width = o_height * this->canvWidth / this->canvHeight ;
-
     mathfu::mat4 perspectiveMatrix =
-        mathfu::mat4::Ortho(
-                -o_width,
-                o_width,
-                -o_height,
-                o_height,
-                1,
-                4000);
+        mathfu::mat4::Perspective(
+                fov,
+                this->canvAspect,
+                nearPlane,
+                farPlane);
+//    float o_height = (this->canvHeight * (533.333/256/* zoom 5 in Alram viewer */))/ 8 ;
+//    float o_width = o_height * this->canvWidth / this->canvHeight ;
 
+//    mathfu::mat4 perspectiveMatrix =
+//        mathfu::mat4::Ortho(
+//                -o_width,
+//                o_width,
+//                -o_height,
+//                o_height,
+//                1,
+//                4000);
+//
     m_perspectiveMatrix = perspectiveMatrix;
 
     //var o_height = (this.canvas.height * (533.333/256/* zoom 7 in Alram viewer */))/ 8 ;

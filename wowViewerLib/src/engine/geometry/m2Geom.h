@@ -40,6 +40,7 @@ public:
             float transparency,
             mathfu::mat4 &textureMatrix1,
             mathfu::mat4 &textureMatrix2,
+            int vertexShaderIndex,
             int pixelShaderIndex,
             mathfu::vec4 &originalFogColor,
             int instanceCount);

@@ -847,7 +847,8 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
 //
 //
     int pixelShaderIndex = materialData.pixelShader;
-    this->m_m2Geom->drawMesh(m_api, materialData, *skinData , meshColor, transparency, textureMatrix1, textureMatrix2, pixelShaderIndex, originalFogColor, instanceCount);
+    int vertexShaderIndex = materialData.vertexShader;
+    this->m_m2Geom->drawMesh(m_api, materialData, *skinData , meshColor, transparency, textureMatrix1, textureMatrix2, vertexShaderIndex, pixelShaderIndex, originalFogColor, instanceCount);
 }
 
 void M2Object::makeTextureArray() {
@@ -901,11 +902,6 @@ void M2Object::makeTextureArray() {
             //Legion logic
             materialData.pixelShader = getPixelShaderId(m2Batch->textureCount, m2Batch->shader_id);
             materialData.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
-
-            //TODO: hack
-            if (materialData.pixelShader >=13){
-                materialData.pixelShader = 0; //fallback
-            }
         }
 
         int textureUnit;

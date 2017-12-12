@@ -338,7 +338,9 @@ void
 M2Geom::drawMesh(
         IWoWInnerApi *api,
         M2MaterialInst &materialData, M2SkinProfile &skinData, mathfu::vec4 &meshColor, float transparency,
-        mathfu::mat4 &textureMatrix1, mathfu::mat4 &textureMatrix2, int pixelShaderIndex,
+        mathfu::mat4 &textureMatrix1, mathfu::mat4 &textureMatrix2,
+        int vertexShaderIndex,
+        int pixelShaderIndex,
         mathfu::vec4 &originalFogColor, int instanceCount) {
 
     ShaderRuntimeData *m2Shader;
@@ -358,6 +360,7 @@ M2Geom::drawMesh(
 
     glUniform4fv(m2Shader->getUnf("uColor"), 1, &meshColor[0]);
     glUniform1f(m2Shader->getUnf("uTransparency"), transparency);
+    glUniform1i(m2Shader->getUnf("uVertexShader"), vertexShaderIndex);
     glUniform1i(m2Shader->getUnf("uPixelShader"), pixelShaderIndex);
 
     static float fog_zero[3] = {0,0,0};
@@ -473,11 +476,11 @@ M2Geom::drawMesh(
                 glDepthMask(GL_TRUE);
             }
 
-            if (materialData.isEnviromentMapping) {
-                glUniform1i(m2Shader->getUnf("isEnviroment"), 1);
-            } else {
-                glUniform1i(m2Shader->getUnf("isEnviroment"), 0);
-            }
+//            if (materialData.isEnviromentMapping) {
+//                glUniform1i(m2Shader->getUnf("isEnviroment"), 1);
+//            } else {
+//                glUniform1i(m2Shader->getUnf("isEnviroment"), 0);
+//            }
 
             /* Set up texture animation */
             glActiveTexture(GL_TEXTURE0);
