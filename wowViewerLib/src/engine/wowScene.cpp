@@ -74,8 +74,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0); // THE WOUND
 //    currentScene = new Map(this, "BLTestMap");
 
-    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-    currentScene = new Map(this, "Troll Raid");
+//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+//    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "argus_rifts");
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
@@ -94,6 +94,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //   m_firstCamera.setCameraPos(939, -4813 , 0); //Near dalaran
 //    currentScene = new Map(this, "Northrend");
+//
+//  m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
+//    currentScene = new Map(this, "Azeroth");
+//
+    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
+    currentScene = new Map(this, "MaelstromShaman");
 
 
     //Test scene 2: tree from shattrath
