@@ -85,7 +85,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     // .go 668 5243 1938 760
     // .go 668 0 0 0
 
-//    currentScene = new Map(this, "UlduarRaid");
+    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
+    currentScene = new Map(this, "UlduarRaid");
+
 //    currentScene = new Map(this, "argus 1");
 //    currentScene = new Map(this, "silithusphase01");
 
@@ -98,8 +100,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //  m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
 //    currentScene = new Map(this, "Azeroth");
 //
-    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
-    currentScene = new Map(this, "MaelstromShaman");
+//    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
+//    currentScene = new Map(this, "MaelstromShaman");
 
 
     //Test scene 2: tree from shattrath
@@ -157,7 +159,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\mantidraid\\pa_mantid_raid.wmo");
 
-//    m_firstCamera.setCameraPos(-191.784775,258.097565,66.5634689);
+//    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
 // currentScene = new WmoScene(this,
@@ -947,7 +949,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 300;
+    int farPlane = 1000;
     int nearPlane = 1;
     float fov = toRadian(45.0);
 
@@ -1256,9 +1258,7 @@ void WoWSceneImpl::deactivateBoundingBoxShader() {
 
 void WoWSceneImpl::activateM2ShaderAttribs() {
     glEnableVertexAttribArray(+m2Shader::Attribute::aPosition);
-//    if (shaderAttributes.aNormal) {
-//        glEnableVertexAttribArray(shaderAttributes.aNormal);
-//    }
+    glEnableVertexAttribArray(+m2Shader::Attribute::aNormal);
     glEnableVertexAttribArray(+m2Shader::Attribute::boneWeights);
     glEnableVertexAttribArray(+m2Shader::Attribute::bones);
     glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord);

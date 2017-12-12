@@ -547,18 +547,6 @@ void M2Object::startLoading() {
     }
 }
 
-bool matSortFunc(M2MaterialInst& a, M2MaterialInst& b) {
-    if (a.priorityPlane != b.priorityPlane) {
-        return b.priorityPlane < a.priorityPlane;
-    }
-
-    if (a.flags != b.flags) {
-        return b.flags < a.flags;
-    }
-
-    return b.layer < a.layer;
-}
-
 void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
     if (!m_loading) return;
 
@@ -572,9 +560,35 @@ void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
 
     /* 3.1 Transform aabb with current mat */
 
+    std::vector<float> sortDistArray(skinData->submeshes.size);
+    for (int i = 0; i < skinData->submeshes.size; i++) {
+        M2SkinSection *submesh = skinData->submeshes.getElement(i);
+        mathfu::vec3 centerBB = mathfu::vec3(submesh->sortCenterPosition);
+
+
+        mathfu::mat4 &boneMat = this->bonesMatrices[submesh->centerBoneIndex];
+        centerBB = modelViewMat * (boneMat * centerBB);
+
+        float value = centerBB.Length();
+
+        sortDistArray[i] = value;
+    }
+
     std::sort(this->m_materialArray.begin(),
               this->m_materialArray.end(),
-              matSortFunc
+              [&](M2MaterialInst& a, M2MaterialInst& b) -> const bool {
+                  if (a.priorityPlane != b.priorityPlane) {
+                      return b.priorityPlane < a.priorityPlane;
+                  }
+                  if (sortDistArray[a.meshIndex] < sortDistArray[b.meshIndex]) {
+                      return true;
+                  }
+                  if (sortDistArray[a.meshIndex] > sortDistArray[b.meshIndex]) {
+                      return false;
+                  }
+
+                  return b.layer < a.layer;
+              }
     );
 }
 

@@ -9,10 +9,10 @@
 #include "header/wdtFileHeader.h"
 
 struct mcnkStruct_t {
-    MCVT *mcvt;
+    MCVT *mcvt = nullptr;
     MCCV *mccv = nullptr;
-    SMNormal *mcnr;
-    SMLayer *mcly;
+    SMNormal *mcnr = nullptr;
+    SMLayer *mcly = nullptr;
     int mclyCnt;
 
     struct {uint32_t *doodad_refs; uint32_t *object_refs; } mcrf;

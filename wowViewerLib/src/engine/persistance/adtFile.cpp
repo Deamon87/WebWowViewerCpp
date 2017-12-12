@@ -295,11 +295,12 @@ std::vector<uint8_t> AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i
                 int n = alphaArray[alphaOffs] & 0x7F;
                 alphaOffs++;
 
-                for ( int k = 0; k < n; k++ )
+                for ( int k = 0; k < n && readForThisLayer < 4096; k++ )
                 {
                     currentLayer[offO] = alphaArray[alphaOffs];
                     readForThisLayer++;
                     offO += 4;
+
 
                     if( !fill ) alphaOffs++;
                 }

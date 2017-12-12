@@ -217,12 +217,16 @@ void AdtObject::draw() {
             glBindTexture(GL_TEXTURE_2D, alphaTextures[i]);
 
             glActiveTexture(GL_TEXTURE1);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             glBindTexture(GL_TEXTURE_2D, layer0.getGlTexture());
 
             glActiveTexture(GL_TEXTURE1 + 4);
             BlpTexture &layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[0].textureId);
             if (layer_height.getIsLoaded()) {
                 //gl.enable(gl.TEXTURE_2D);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 glBindTexture(GL_TEXTURE_2D, layer_height.getGlTexture());
             } else {
                 glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
@@ -237,6 +241,8 @@ void AdtObject::draw() {
 
                 if (layer_x.getIsLoaded()) {
                     //gl.enable(gl.TEXTURE_2D);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                     glBindTexture(GL_TEXTURE_2D, layer_x.getGlTexture());
                 } else {
                     glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
@@ -245,6 +251,8 @@ void AdtObject::draw() {
                 glActiveTexture(GL_TEXTURE1 + j+4);
                 if (layer_height.getIsLoaded()) {
                     //gl.enable(gl.TEXTURE_2D);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                     glBindTexture(GL_TEXTURE_2D, layer_height.getGlTexture());
                 } else {
                     glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
