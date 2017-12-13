@@ -129,7 +129,7 @@ struct M2Camera
 {
     uint32_t type; // 0: portrait, 1: characterinfo; -1: else (flyby etc.); referenced backwards in the lookup table.
 //#if  < Cata
-    float fov; // rad_fov = fov * 0.6 -- No radians, no degrees. Multiply by 35 to get degrees. -- the default fov is 0.94247788rad
+//    float fov; // rad_fov = fov * 0.6 -- No radians, no degrees. Multiply by 35 to get degrees. -- the default fov is 0.94247788rad
 //#endif
     float far_clip;
     float near_clip;
@@ -139,7 +139,7 @@ struct M2Camera
     C3Vector target_position_base;
     M2Track<M2SplineKey<float>> roll; // The camera can have some roll-effect. Its 0 to 2*Pi.
 //#if ≥ Cata
-//    M2Track<M2SplineKey<float>> FoV; // Units are not radians. Multiplying by 35 seems to be the correct # of degrees. This is incredibly important, as otherwise e.g. loading screen models will look totally wrong.
+    M2Track<M2SplineKey<float>> FoV; // Units are not radians. Multiplying by 35 seems to be the correct # of degrees. This is incredibly important, as otherwise e.g. loading screen models will look totally wrong.
 //#endif
 };
 

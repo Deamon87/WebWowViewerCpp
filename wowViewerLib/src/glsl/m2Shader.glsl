@@ -95,7 +95,7 @@ void main() {
     }
 
     vec4 meshColor = uColor;
-    lDiffuseColor = vec4(meshColor.rgb * lDiffuseColor.bgr, uColor.a* uTransparency);
+    lDiffuseColor = vec4(meshColor.rgb * lDiffuseColor.bgr, uTransparency);
 
 
     mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;

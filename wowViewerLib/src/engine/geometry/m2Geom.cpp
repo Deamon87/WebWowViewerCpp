@@ -147,10 +147,27 @@ void initM2Light(M2Data *m2Header, void *m2File) {
 }void initM2Camera(M2Data *m2Header, void *m2File) {
     int32_t cameraCount = m2Header->cameras.size;
     for (int i = 0; i < cameraCount; i++) {
-        M2Camera *light = m2Header->cameras.getElement(i);
-        light->positions.initTrack(m2Header);
-        light->target_position.initTrack(m2Header);
-        light->roll.initTrack(m2Header);
+        M2Camera *camera = m2Header->cameras.getElement(i);
+        camera->positions.initTrack(m2Header);
+        camera->target_position.initTrack(m2Header);
+        camera->roll.initTrack(m2Header);
+        camera->FoV.initTrack(m2Header);
+
+        std::cout << "positionBase  = "
+                  << camera->position_base.x << " "
+                  << camera->position_base.y << " "
+                  << camera->position_base.z << " " << std::endl;
+
+        std::cout << "positions  = "
+            << camera->target_position.values.getElement(0)->getElement(0)->outTan.x << " "
+            << camera->target_position.values.getElement(0)->getElement(0)->outTan.y << " "
+            << camera->target_position.values.getElement(0)->getElement(0)->outTan.z << " " << std::endl;
+
+        std::cout << "FOV = "
+                  << camera->FoV.values.getElement(0)->getElement(0)->inTan << " "
+                  << camera->FoV.values.getElement(0)->getElement(0)->outTan << " "
+                  << camera->FoV.values.getElement(0)->getElement(0)->value << " " << std::endl;
+
     }
 }
 
@@ -215,7 +232,7 @@ void M2Geom::process(std::vector<unsigned char> &m2File) {
     initM2Attachment(m2Header, m2FileP);
     initM2Event(m2Header, m2FileP);
     initM2Light(m2Header, m2FileP);
-    //initM2Camera(m2Header, m2FileP); //TODO: off for now
+    initM2Camera(m2Header, m2FileP); //TODO: off for now
 
     initM2Textures(m2Header, m2FileP);
 
@@ -359,7 +376,6 @@ M2Geom::drawMesh(
     glUniformMatrix4fv(m2Shader->getUnf("uTextMat2"), 1, GL_FALSE, &textureMatrix2[0]);
 
     glUniform4fv(m2Shader->getUnf("uColor"), 1, &meshColor[0]);
-    glUniform1f(m2Shader->getUnf("uTransparency"), transparency);
     glUniform1i(m2Shader->getUnf("uVertexShader"), vertexShaderIndex);
     glUniform1i(m2Shader->getUnf("uPixelShader"), pixelShaderIndex);
 
@@ -375,6 +391,12 @@ M2Geom::drawMesh(
             auto textMaterial = skinData.batches[materialData.texUnit1TexIndex];
             int renderFlagIndex = textMaterial->materialIndex;
             auto renderFlag = m_m2Data->materials[renderFlagIndex];
+
+            float finalTransparency = meshColor.w;
+            if ( textMaterial->textureCount && !(textMaterial->flags & 0x40)) {
+                finalTransparency *= transparency;
+            }
+            glUniform1f(m2Shader->getUnf("uTransparency"), finalTransparency);
 
 //            glUniform1i(m2Shader->getUnf("uBlendMode"), renderFlag->blending_mode);
             switch (renderFlag->blending_mode) {

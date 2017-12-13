@@ -548,7 +548,7 @@ void M2Object::startLoading() {
 }
 
 void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
-    if (!m_loading) return;
+    if (!m_loaded) return;
 
     /* 3. Resort m2 meshes against distance to screen */
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
@@ -580,14 +580,15 @@ void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
                   if (a.priorityPlane != b.priorityPlane) {
                       return b.priorityPlane < a.priorityPlane;
                   }
-                  if (sortDistArray[a.meshIndex] < sortDistArray[b.meshIndex]) {
-                      return true;
-                  }
-                  if (sortDistArray[a.meshIndex] > sortDistArray[b.meshIndex]) {
+
+                  if (sortDistArray[a.meshIndex] + 0.001 > sortDistArray[b.meshIndex]) {
                       return false;
                   }
+                  if (sortDistArray[a.meshIndex] + 0.001 < sortDistArray[b.meshIndex]) {
+                      return true;
+                  }
 
-                  return b.layer < a.layer;
+                  return b.layer > a.layer;
               }
     );
 }
@@ -857,6 +858,7 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
 //    float transparency = 1;
 //
 //    //Don't draw meshes with 0 transp
+
     if ((transparency < 0.0001) || (meshColor[3] < 0.0001)) return;
 //
 //

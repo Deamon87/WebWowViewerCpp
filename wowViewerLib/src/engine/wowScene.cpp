@@ -85,8 +85,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     // .go 668 5243 1938 760
     // .go 668 0 0 0
 
-    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
-    currentScene = new Map(this, "UlduarRaid");
+//    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
+//    currentScene = new Map(this, "UlduarRaid");
 
 //    currentScene = new Map(this, "argus 1");
 //    currentScene = new Map(this, "silithusphase01");
@@ -130,9 +130,25 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "creature\\wingedhorse\\wingedhorse.m2");
 //
-//   m_firstCamera.setCameraPos(0, 0, 0);
+   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "world\\expansion06\\doodads\\legion\\7fx_sargerassword_fx.m2");
+//   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2");
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2");
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2");
+//
+//   currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2");
+//   currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2");
+//   currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2");
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2");
 
 //    currentScene = new M2Scene(this,
 //        "character\\nightelf\\male\\nightelfmale.m2");
@@ -951,14 +967,17 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     int farPlane = 1000;
     int nearPlane = 1;
-    float fov = toRadian(45.0);
+    float fov = toRadian(50.0);
+
+//    float diagFov = 2.0944;
+//    float fov = diagFov / sqrt(1 + canvAspect*canvAspect);
 
     //If use camera settings
     //Figure out way to assign the object with camera
     //config.setCameraM2(this.graphManager.m2Object[0]);
-//    var m2Object = config.getCameraM2();
-//    if (m2Object && m2Object.loaded) {
-//        m2Object.updateCameras(deltaTime);
+//    M2Object *m2Object = ((M2Scene *)this->currentScene)->getM2Object();
+//    if (m2Object && m2Object->getGetIsLoaded()) {
+//        m2Object->updateCameras(deltaTime);
 //
 //        var cameraSettings = m2Object.cameras[0];
 //        farPlane = cameraSettings.farClip;
@@ -975,7 +994,9 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //                staticCamera: true
 //        }
 //    }
-//
+
+
+
     if (this->uFogStart < 0) {
         this->uFogStart = farPlane+8000;
     }
