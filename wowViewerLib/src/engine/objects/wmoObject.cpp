@@ -688,21 +688,26 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
     //Because it's not guaranteed that exterior wmo, that portals lead to, have portal connections to all visible interior wmo
     std::set<M2Object *> wmoM2Candidates ;
     if (this->exteriorPortals.size() > 0) {
+        std::vector<std::vector<mathfu::vec4>> portalsToExt;
+        for (auto a : this->exteriorPortals) {
+            portalsToExt.push_back(a.frustumPlanes);
+        }
+
         for (int i = 0; i< mainGeom->groupsLen; i++) {
             if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
-                if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
-                    this->exteriorPortals.push_back({
-                        groupId: i,
-                        portalIndex : -1,
-#ifndef CULLED_NO_PORTAL_DRAWING
-                        portalVertices: {},
-#endif
-                        frustumPlanes: frustumPlanes,
-                        level : 0
-                    });
+                if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, portalsToExt[0], frustumPoints, wmoM2Candidates)) {
+//                    this->exteriorPortals.push_back({
+//                        groupId: i,
+//                        portalIndex : -1,
+//#ifndef CULLED_NO_PORTAL_DRAWING
+//                        portalVertices: {},
+//#endif
+//                        frustumPlanes: frustumPlanes,
+//                        level : 0
+//                    });
                     this->transverseGroupWMO(i, false, cameraVec4, headOfPyramidLocal1,  inverseTransposeModelMat,
                                              transverseVisitedGroups,
-                                             transverseVisitedPortals, frustumPlanes1, 0, m2RenderedThisFrame);
+                                             transverseVisitedPortals, portalsToExt[0], 0, m2RenderedThisFrame);
                 }
             }
         }

@@ -62,11 +62,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(6500.6665, 7500.33301, 0);
 //    currentScene = new Map(this, "HawaiiMainLand"); // Pandaria
 
-//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
+    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
-//    currentScene = new Map(this, "Troll Raid");
+    currentScene = new Map(this, "Troll Raid");
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 //    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
 //    currentScene = new Map(this, "silithusphase01");
@@ -130,12 +130,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "creature\\wingedhorse\\wingedhorse.m2");
 //
-   m_firstCamera.setCameraPos(0, 0, 0);
+//   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "world\\expansion06\\doodads\\legion\\7fx_sargerassword_fx.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2");
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2");
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2");
 //    currentScene = new M2Scene(this,
@@ -937,7 +937,7 @@ void glClearScreen() {
     glDepthFunc(GL_LESS);
 
     glDisable(GL_BLEND);
-    glClearColor(0.6, 0.95, 1.0, 1);
+    glClearColor(0.0, 0.0, 0.0, 1);
     //glClearColor(0.117647, 0.207843, 0.392157, 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
@@ -965,7 +965,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 1000;
+    int farPlane = 200;
     int nearPlane = 1;
     float fov = toRadian(50.0);
 

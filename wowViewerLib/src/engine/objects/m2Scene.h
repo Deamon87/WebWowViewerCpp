@@ -27,6 +27,8 @@ public:
         m_m2Object = m2Object;
     };
 
+    M2Object * getM2Object() { return m_m2Object; };
+
     void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) override;
     void draw() override;
 
