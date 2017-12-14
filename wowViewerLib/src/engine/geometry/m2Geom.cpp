@@ -144,7 +144,40 @@ void initM2Light(M2Data *m2Header, void *m2File) {
         light->attenuation_end.initTrack(m2Header);
         light->visibility.initTrack(m2Header);
     }
-}void initM2Camera(M2Data *m2Header, void *m2File) {
+}
+
+void initM2Particle(M2Data *m2Header, void *m2File) {
+    assert(sizeof(M2Particle) == 492);
+    int32_t particleEmitterCount = m2Header->particle_emitters.size;
+    for (int i = 0; i < particleEmitterCount; i++) {
+        M2Particle *particleEmitter = m2Header->particle_emitters.getElement(i);
+
+        particleEmitter->old.geometry_model_filename.initM2Array(m2Header);
+        particleEmitter->old.recursion_model_filename.initM2Array(m2Header);
+
+        particleEmitter->old.emissionSpeed.initTrack(m2Header);
+        particleEmitter->old.speedVariation.initTrack(m2Header);
+        particleEmitter->old.verticalRange.initTrack(m2Header);
+        particleEmitter->old.horizontalRange.initTrack(m2Header);
+        particleEmitter->old.gravity.initTrack(m2Header);
+        particleEmitter->old.lifespan.initTrack(m2Header);
+        particleEmitter->old.emissionRate.initTrack(m2Header);
+        particleEmitter->old.emissionAreaLength.initTrack(m2Header);
+        particleEmitter->old.emissionAreaWidth.initTrack(m2Header);
+        particleEmitter->old.zSource.initTrack(m2Header);
+        particleEmitter->old.alphaTrack.initPartTrack(m2Header);
+        particleEmitter->old.colorTrack.initPartTrack(m2Header);
+        particleEmitter->old.scaleTrack.initPartTrack(m2Header);
+        particleEmitter->old.headCellTrack.initPartTrack(m2Header);
+        particleEmitter->old.tailCellTrack.initPartTrack(m2Header);
+
+        particleEmitter->old.splinePoints.initM2Array(m2Header);
+
+        particleEmitter->old.enabledIn.initTrack(m2Header);
+    }
+}
+
+void initM2Camera(M2Data *m2Header, void *m2File) {
     int32_t cameraCount = m2Header->cameras.size;
     for (int i = 0; i < cameraCount; i++) {
         M2Camera *camera = m2Header->cameras.getElement(i);
@@ -152,22 +185,6 @@ void initM2Light(M2Data *m2Header, void *m2File) {
         camera->target_position.initTrack(m2Header);
         camera->roll.initTrack(m2Header);
         camera->FoV.initTrack(m2Header);
-
-        std::cout << "positionBase  = "
-                  << camera->position_base.x << " "
-                  << camera->position_base.y << " "
-                  << camera->position_base.z << " " << std::endl;
-
-        std::cout << "positions  = "
-            << camera->target_position.values.getElement(0)->getElement(0)->outTan.x << " "
-            << camera->target_position.values.getElement(0)->getElement(0)->outTan.y << " "
-            << camera->target_position.values.getElement(0)->getElement(0)->outTan.z << " " << std::endl;
-
-        std::cout << "FOV = "
-                  << camera->FoV.values.getElement(0)->getElement(0)->inTan << " "
-                  << camera->FoV.values.getElement(0)->getElement(0)->outTan << " "
-                  << camera->FoV.values.getElement(0)->getElement(0)->value << " " << std::endl;
-
     }
 }
 
@@ -232,6 +249,7 @@ void M2Geom::process(std::vector<unsigned char> &m2File) {
     initM2Attachment(m2Header, m2FileP);
     initM2Event(m2Header, m2FileP);
     initM2Light(m2Header, m2FileP);
+    initM2Particle(m2Header, m2FileP);
     initM2Camera(m2Header, m2FileP); //TODO: off for now
 
     initM2Textures(m2Header, m2FileP);

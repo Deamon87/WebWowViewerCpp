@@ -83,6 +83,7 @@ struct Quat16 {
 };
 using M2CompQuat = Quat16;
 
+
 struct M2Bounds {
     CAaBox extent;
     float radius;
@@ -148,6 +149,10 @@ template<typename T>
 struct M2PartTrack {
     M2Array<fixed16> times;
     M2Array<T> values;
+    void initPartTrack(void * m2File){
+        times.initM2Array(m2File);
+        values.initM2Array(m2File);
+    };
 };
 
 template<typename T>

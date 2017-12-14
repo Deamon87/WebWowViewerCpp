@@ -167,40 +167,41 @@ struct M2Ribbon
 //#endif
 };
 
+PACK(
 struct M2ParticleOld {
     uint32_t particleId;                        // Always (as I have seen): -1.
     uint32_t flags;                             // See Below
     C3Vector Position;                       // The position. Relative to the following bone.
     uint16_t bone;                              // The bone its attached to.
-    union
+    PACK(union
     {
         uint16_t texture;                         // And the textures that are used.
 //#if ≥ Cata
-//        struct                                  // For multi-textured particles actually three ids
-//    {
-//      uint16_t texture_0 : 5;
-//      uint16_t texture_1 : 5;
-//      uint16_t texture_2 : 5;
-//      uint16_t : 1;
-//    };
+    PACK(struct  // For multi-textured particles actually three ids
+    {
+      uint16_t texture_0 : 5;
+      uint16_t texture_1 : 5;
+      uint16_t texture_2 : 5;
+      uint16_t pad : 1;
+    });
 //#endif
-    };
+    });
     M2Array<char> geometry_model_filename;    // if given, this emitter spawns models
     M2Array<char> recursion_model_filename;   // if given, this emitter is an alias for the (maximum 4) emitters of the given model
 
 //#if >= 263 (late Burning Crusade)
-//    uint8 blendingType;                       // A blending type for the particle. See Below
-//  uint8 emitterType;                        // 1 - Plane (rectangle), 2 - Sphere, 3 - Spline, 4 - Bone
-//  uint16 particleColorIndex;                // This one is used for ParticleColor.dbc. See below.
+    uint8_t blendingType;                       // A blending type for the particle. See Below
+    uint8_t emitterType;                        // 1 - Plane (rectangle), 2 - Sphere, 3 - Spline, 4 - Bone
+    uint16_t particleColorIndex;                // This one is used for ParticleColor.dbc. See below.
 //#else
-    uint16_t blendingType;                      // A blending type for the particle. See Below
-    uint16_t emitterType;                       // 1 - Plane (rectangle), 2 - Sphere, 3 - Spline, 4 - Bone
+//    uint16_t blendingType;                      // A blending type for the particle. See Below
+//    uint16_t emitterType;                       // 1 - Plane (rectangle), 2 - Sphere, 3 - Spline, 4 - Bone
 //#endif
 //#if ≥ Cata
-//    fixed_pointⁱ<uint8_t, 2, 5> multiTextureParamX[2];
+    uint8_t multiTextureParamX[2];
 //#else
-    uint8_t particleType;                      // Found below.
-    uint8_t headorTail;                         // 0 - Head, 1 - Tail, 2 - Both
+//    uint8_t particleType;                      // Found below.
+//    uint8_t headorTail;                         // 0 - Head, 1 - Tail, 2 - Both
 //#endif
     uint16_t textureTileRotation;               // Rotation for the texture tile. (Values: -1,0,1) -- priorityPlane
     uint16_t textureDimensions_rows;            // for tiled textures
@@ -259,7 +260,7 @@ struct M2ParticleOld {
 //    float spin;                               // 0.0 for none, 1.0 to rotate the particle 360 degrees throughout its lifetime.
 //#endif
 
-    M2Bounds tumble;
+    M2Box tumble;
     C3Vector WindVector;
     float WindTime;
 
@@ -269,7 +270,16 @@ struct M2ParticleOld {
     float followScale2;
     M2Array<C3Vector> splinePoints;                                  //Set only for spline praticle emitter. Contains array of points for spline
     M2Track<unsigned char> enabledIn;                 // (boolean) Appears to be used sparely now, probably there's a flag that links particles to animation sets where they are enabled.
-};
+});
+
+PACK(struct vector_2fp_6_9 { uint16_t x; uint16_t y; });
+PACK(
+struct M2Particle
+{
+    M2ParticleOld old;
+    vector_2fp_6_9 multiTextureParam0[2];
+    vector_2fp_6_9 multiTextureParam1[2];
+});
 
 
 struct M2Data {
@@ -331,7 +341,7 @@ struct M2Data {
     M2Array<M2Camera> cameras;                           // The cameras are present in most models for having a model in the character tab.
     M2Array<uint16_t> camera_lookup_table;
     M2Array<M2Ribbon> ribbon_emitters;                   // Things swirling around. See the CoT-entrance for light-trails.
-    M2Array<M2ParticleOld> particle_emitters;
+    M2Array<M2Particle> particle_emitters;
     M2Array<uint16_t> blend_map_overrides;             // When set, textures blending is overriden by the associated array.
 };
 
