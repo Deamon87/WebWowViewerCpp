@@ -318,6 +318,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 //            }
 //        }
 
+//    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
+
 
     for (int i = adt_x_min; i <= adt_x_max; i++) {
         for (int j = adt_y_min; j <= adt_y_max; j++) {
@@ -332,6 +334,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         hullLines,
                         lookAtMat4, m2ObjectsCandidates, wmoCandidates);
                 if (result) {
+
                     adtRenderedThisFrame.insert(adtObject);
                 }
             } else {
@@ -380,13 +383,28 @@ M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
     M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
     if (m2Object == nullptr) {
         m2Object = new M2Object(m_api);
-        m2Object->setLoadParams(fileName, 0, {},{});
+        m2Object->setLoadParams(0, {},{});
+        m2Object->setModelFileName(fileName);
         m2Object->createPlacementMatrix(doodadDef);
         m2Object->calcWorldPosition();
         m_m2MapObjects.put(doodadDef.uniqueId, m2Object);
     }
     return m2Object;
 }
+
+M2Object *Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
+    M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
+    if (m2Object == nullptr) {
+        m2Object = new M2Object(m_api);
+        m2Object->setLoadParams(0, {}, {});
+        m2Object->setModelFileId(fileDataId);
+        m2Object->createPlacementMatrix(doodadDef);
+        m2Object->calcWorldPosition();
+        m_m2MapObjects.put(doodadDef.uniqueId, m2Object);
+    }
+    return m2Object;
+}
+
 
 WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
     WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
@@ -619,9 +637,5 @@ void Map::drawM2s() {
     }
 
 //    }
-}
-
-M2Object *Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
-    return nullptr;
 }
 

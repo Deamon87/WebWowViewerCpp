@@ -123,7 +123,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/m2Instancing/m2InstancingObject.h
         src/engine/algorithms/hashString.h
         src/engine/persistance/header/wdtFileHeader.h
-        src/engine/persistance/wdtFile.cpp src/engine/persistance/wdtFile.h src/engine/managers/particleManager.cpp src/engine/managers/particleManager.h src/engine/managers/particles/particleEmitter.cpp src/engine/managers/particles/particleEmitter.h)
+        src/engine/persistance/wdtFile.cpp src/engine/persistance/wdtFile.h src/engine/managers/particleManager.cpp src/engine/managers/particleManager.h src/engine/managers/particles/particleEmitter.cpp src/engine/managers/particles/particleEmitter.h src/engine/managers/particles/generators/CParticleGenerator.cpp src/engine/managers/particles/generators/CParticleGenerator.h src/engine/managers/particles/generators/CSphereGenerator.cpp src/engine/managers/particles/generators/CSphereGenerator.h src/engine/managers/particles/particle.cpp src/engine/managers/particles/particle.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

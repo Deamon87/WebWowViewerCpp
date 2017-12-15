@@ -46,6 +46,8 @@ void AdtObject::loadWmos() {
         SMMapObjDef &mapDef = m_adtFileLod->mapObjDef[i];
         std::string fileName = &m_adtFileLod->wmoNamesField[m_adtFileLod->mwid[mapDef.nameId]];
 
+        std::cout << "wmo filename = "<< fileName << std::endl;
+
         //2. Get model
         wmoObjects[i] = m_mapApi->getWmoObject(fileName, mapDef);
     }

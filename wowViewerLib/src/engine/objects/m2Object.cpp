@@ -517,33 +517,26 @@ void M2Object::setDiffuseColor(CImVector& value) {
             value.r / 255.0f,
             value.a / 255.0f);
 }
-void M2Object::setLoadParams (std::string modelName, int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
-    modelName;
+void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
     this->m_skinNum = skinNum;
     this->m_meshIds = meshIds;
     this->m_replaceTextures = replaceTextures;
-
-    std::string delimiter = ".";
-    std::string nameTemplate = modelName.substr(0, modelName.find_last_of(delimiter));
-    std::string modelFileName = nameTemplate + ".m2";
-    std::string skinFileName = nameTemplate + "00.skin";
-
-    this->m_modelName = modelFileName;
-    this->m_skinName = skinFileName;
-
-    this->m_modelIdent = modelFileName + " " +skinFileName;
-    std::transform(m_modelIdent.begin(), m_modelIdent.end(), m_modelIdent.begin(), ::tolower);
 }
 
 void M2Object::startLoading() {
     if (!m_loading) {
         m_loading = true;
 
-        Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
-        Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
 
-        m_m2Geom = m2GeomCache->get(m_modelName);
-        m_skinGeom = skinGeomCache->get(m_skinName);
+        Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
+        if (!useFileId) {
+            m_m2Geom = m2GeomCache->get(m_modelName);
+
+            Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
+            m_skinGeom = skinGeomCache->get(m_skinName);
+        } else {
+            m_m2Geom = m2GeomCache->getFileId(m_modelFileId);
+        }
     }
 }
 
@@ -636,7 +629,17 @@ void M2Object::debugDumpAnimationSequences() {
 
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
     if (!this->m_loaded) {
-        if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded() && (m_skinGeom != nullptr) && m_skinGeom->isLoaded()) {
+        if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded()) {
+
+            if ((m_skinGeom == nullptr) || !m_skinGeom->isLoaded()) {
+                if (useFileId) {
+                    Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
+                    m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
+                }
+
+                return;
+            }
+
             this->m_loaded = true;
             this->m_loading = false;
 
@@ -1037,4 +1040,23 @@ void M2Object::drawInstanced(bool drawTransparent, int instanceCount, GLuint pla
     this->m_m2Geom->setupUniforms(m_api, m_placementMatrix, bonesMatrices, m_localDiffuseColorV, drawTransparent, true);
     this->m_m2Geom->setupPlacementAttribute(placementVBO);
     this->drawMeshes(drawTransparent, instanceCount);
+}
+
+void M2Object::setModelFileName(std::string modelName) {
+
+    std::string delimiter = ".";
+    std::string nameTemplate = modelName.substr(0, modelName.find_last_of(delimiter));
+    std::string modelFileName = nameTemplate + ".m2";
+    std::string skinFileName = nameTemplate + "00.skin";
+
+    this->m_modelName = modelFileName;
+    this->m_skinName = skinFileName;
+
+    this->m_modelIdent = modelFileName + " " +skinFileName;
+    std::transform(m_modelIdent.begin(), m_modelIdent.end(), m_modelIdent.begin(), ::tolower);
+}
+
+void M2Object::setModelFileId(int fileId) {
+    useFileId = true;
+    m_modelFileId = fileId;
 }

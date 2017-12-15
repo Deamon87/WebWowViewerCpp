@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_CACHE_H
 #include <string>
 #include <map>
+#include <sstream>
 #include <unordered_map>
 #include <vector>
 #include <algorithm>
@@ -72,6 +73,30 @@ public:
         std::transform(fileName.begin(), fileName.end(),fileName.begin(), ::toupper);
         std::replace(fileName.begin(), fileName.end(), '\\', '/');
 
+        auto it = m_cache.find(fileName);
+        if(it != m_cache.end())
+        {
+            //element found;
+            Container *container = it->second;
+            container->counter = container->counter + 1;
+            return &container->obj;
+        }
+
+        Container * newContainer = new Container();
+        m_cache[fileName] = newContainer;
+        newContainer->obj = T();
+        newContainer->counter = 1;
+
+        m_fileRequestProcessor->requestFile(fileName.c_str());
+
+        return &newContainer->obj;
+    }
+
+    T* getFileId (int id) {
+        std::stringstream ss;
+        ss << "FILE" << std::hex << id <<".unk";
+        std::string fileName = ss.str();
+
 
         auto it = m_cache.find(fileName);
         if(it != m_cache.end())
@@ -91,6 +116,7 @@ public:
 
         return &newContainer->obj;
     }
+
     void reject(std::string fileName) {
         trim(fileName);
 //        var queue = this.queueForLoad.get(fileName);

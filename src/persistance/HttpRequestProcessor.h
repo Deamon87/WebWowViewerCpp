@@ -11,11 +11,12 @@
 
 class HttpRequestProcessor : public RequestProcessor {
 public:
-    HttpRequestProcessor(const char *urlBase) : m_urlBase(urlBase){
+    HttpRequestProcessor(const char *urlBase, const char *urlBaseFileId) : m_urlBase(urlBase){
 
     }
 private:
     std::string m_urlBase;
+    std::string m_urlBaseFileId;
 protected:
     void processFileRequest(std::string &fileName) override;
 

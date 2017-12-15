@@ -85,7 +85,8 @@ M2Object *WmoObject::getDoodad(int index) {
 
     M2Object *m2Object = new M2Object(m_api);
     m2Object->setDiffuseColor(doodadDef->color);
-    m2Object->setLoadParams(fileName, 0, {},{});
+    m2Object->setLoadParams(0, {},{});
+    m2Object->setModelFileName(fileName);
     m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
 
@@ -790,7 +791,11 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
 
     std::set<M2Object *> wmoM2Candidates ;
     for (int i = 0; i< mainGeom->groupsLen; i++) {
-       if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
+       if (mainGeom->groups[i].flags.ALWAYSDRAW) {
+           this->transverseGroupWMO(i, false, cameraVec4, headOfPyramidLocal1, inverseTransposeModelMat,
+                                    transverseVisitedGroups,
+                                    transverseVisitedPortals, frustumPlanes1, 0, m2RenderedThisFrame);
+       } else if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
             if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
                 this->exteriorPortals.push_back({
                                                     groupId: i,

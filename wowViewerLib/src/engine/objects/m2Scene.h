@@ -20,7 +20,8 @@ private:
 public:
     M2Scene(IWoWInnerApi *api, std::string m2Model) : m_api(api), m_m2Model(m2Model){
         M2Object *m2Object = new M2Object(m_api);
-        m2Object->setLoadParams(m_m2Model, 0, {},{});
+        m2Object->setLoadParams(0, {},{});
+        m2Object->setModelFileName(m_m2Model);
         m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
         m2Object->calcWorldPosition();
 

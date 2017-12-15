@@ -31,7 +31,8 @@ private:
         createPlacementMatrix(doodadDef, wmoPlacementMat);
         calcWorldPosition();
 
-        this->setLoadParams(modelName, 0, {}, {});
+        this->setLoadParams(0, {}, {});
+        this->setModelFileName(modelName);
     }
 
 private:
@@ -53,6 +54,11 @@ private:
     std::string m_modelName;
     std::string m_skinName;
     std::string m_modelIdent;
+
+    bool useFileId = false;
+    int m_modelFileId;
+    int m_skinFileId;
+
     int m_skinNum = 0;
     CImVector m_localDiffuseColor = {0xff, 0xff, 0xff, 0xff};
     mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0xff, 0xff, 0xff, 0xff);
@@ -92,8 +98,11 @@ private:
     float getTransparency(M2SkinProfile *skinData,M2MaterialInst &materialData, std::vector<float> &transparencies);
 public:
 
-    void setLoadParams(std::string modelName, int skinNum, std::vector<uint8_t> meshIds,
+    void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
                        std::vector<std::string> replaceTextures);
+
+    void setModelFileName(std::string modelName);
+    void setModelFileId(int fileId);
 
     void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);
     void createPlacementMatrix(SMDoodadDef &def);

@@ -10,7 +10,12 @@ void HttpRequestProcessor::requestFile(const char *fileName) {
 }
 
 void HttpRequestProcessor::processFileRequest(std::string &fileName) {
-    std::string fullUrl = m_urlBase + fileName;
+    std::string fullUrl;
+    if (fileName.find("FILE") == 0) {
+        fullUrl = m_urlBaseFileId + fileName;
+    } else {
+        fullUrl = m_urlBase + fileName;
+    }
 
     HttpFile * httpFile = new HttpFile(fullUrl.c_str());
     httpFile->setCallback(
