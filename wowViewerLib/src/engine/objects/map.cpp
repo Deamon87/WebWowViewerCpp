@@ -416,6 +416,16 @@ WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
     return wmoObject;
 }
 
+WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
+    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
+    if (wmoObject == nullptr) {
+        wmoObject = new WmoObject(m_api);
+        wmoObject->setLoadingParam(fileName, mapObjDef);
+        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+    }
+    return wmoObject;
+}
+
 void Map::draw() {
     this->m2OpaqueRenderedThisFrame = {};
     this->m2TranspRenderedThisFrame = {};

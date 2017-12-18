@@ -118,8 +118,31 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                 handler: [](AdtFile& file, ChunkData& chunkData){
                     debuglog("Entered MLDD");
 
-//                    file.doodadDef_len = chunkData.chunkLen / sizeof(SMDoodadDef);
-//                    chunkData.readValues(file.doodadDef, file.doodadDef_len);
+                    file.doodadDefObj1_len = chunkData.chunkLen / sizeof(SMDoodadDef);
+                    chunkData.readValues(file.doodadDefObj1, file.doodadDefObj1_len);
+                }
+            }
+        },
+        {
+            'MLMD',
+            {
+                handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLMD");
+
+                    file.mapObjDefObj1_len = chunkData.chunkLen / sizeof(SMMapObjDefObj1);
+                    chunkData.readValues(file.mapObjDefObj1, file.mapObjDefObj1_len);
+                }
+            }
+        },
+        {
+            'MLFD',
+            {
+                handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLFD");
+
+                    chunkData.readValue(file.lod_levels_for_objects);
+
+
                 }
             }
         },

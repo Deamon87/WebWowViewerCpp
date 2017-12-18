@@ -70,12 +70,15 @@ private:
     std::unordered_map<int, BlpTexture*> specularTextures;
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
+    void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
     void createBB(CAaBox bbox);
     void postWmoGroupObjectLoad(int groupId, int lod) override;
 public:
     M2Object *getDoodad(int index);
     BlpTexture * getTexture(int materialId, bool isSpec);
     void setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef);
+    void setLoadingParam(std::string modelName, SMMapObjDefObj1 &mapObjDef);
+
     void startLoading();
     bool isLoaded(){ return m_loaded;}
     bool hasPortals() {

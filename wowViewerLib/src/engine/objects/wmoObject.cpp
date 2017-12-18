@@ -133,8 +133,6 @@ bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu
 }
 
 void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
-
-
     float posx = mapObjDef.position.x;
     float posy = mapObjDef.position.y;
     float posz = mapObjDef.position.z;
@@ -160,6 +158,41 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
     C3Vector &bb2 = mapObjDef.extents.max;
     mathfu::vec4 bb1vec = mathfu::vec4(bb1.x, bb1.y, bb1.z, 1);
     mathfu::vec4 bb2vec = mathfu::vec4(bb2.x, bb2.y, bb2.z, 1);
+
+    CAaBox worldAABB = MathHelper::transformAABBWithMat4(
+            adtToWorldMat4, bb1vec, bb2vec);
+
+    createBB(worldAABB);
+}
+void WmoObject::createPlacementMatrix(SMMapObjDefObj1 &mapObjDef){
+    float posx = mapObjDef.position.x;
+    float posy = mapObjDef.position.y;
+    float posz = mapObjDef.position.z;
+
+    mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
+
+    mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
+    placementMatrix *= adtToWorldMat4;
+    placementMatrix *= mathfu::mat4::FromTranslationVector(mathfu::vec3(mapObjDef.position));
+    placementMatrix *= mathfu::mat4::FromScaleVector(mathfu::vec3(-1, 1, -1));
+
+    placementMatrix *= MathHelper::RotationY(toRadian(mapObjDef.rotation.y-270));
+    placementMatrix *= MathHelper::RotationZ(toRadian(-mapObjDef.rotation.x));
+    placementMatrix *= MathHelper::RotationX(toRadian(mapObjDef.rotation.z-90));
+
+    mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
+
+    m_placementInvertMatrix = placementInvertMatrix;
+    m_placementMatrix = placementMatrix;
+
+    //BBox is in ADT coordinates. We need to transform it first
+//    C3Vector &bb1 = mapObjDef.extents.min;
+//    C3Vector &bb2 = mapObjDef.extents.max;
+//    mathfu::vec4 bb1vec = mathfu::vec4(bb1.x, bb1.y, bb1.z, 1);
+//    mathfu::vec4 bb2vec = mathfu::vec4(bb2.x, bb2.y, bb2.z, 1);
+//
+    mathfu::vec4 bb1vec = mathfu::vec4(-1000,-1000,-1000, 1);
+    mathfu::vec4 bb2vec = mathfu::vec4(1000, 1000,1000, 1);
 
     CAaBox worldAABB = MathHelper::transformAABBWithMat4(
             adtToWorldMat4, bb1vec, bb2vec);
@@ -554,7 +587,15 @@ void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
 
     this->m_doodadSet = mapObjDef.doodadSet;
     this->m_nameSet = mapObjDef.nameSet;
+}
+void WmoObject::setLoadingParam(std::string modelName, SMMapObjDefObj1 &mapObjDef) {
+    m_modelName = modelName;
 
+    //this->m_placementMatrix = mathfu::mat4::Identity();
+    createPlacementMatrix(mapObjDef);
+
+    this->m_doodadSet = mapObjDef.doodadSet;
+    this->m_nameSet = mapObjDef.nameSet;
 }
 
 BlpTexture *WmoObject::getTexture(int textureId, bool isSpec) {

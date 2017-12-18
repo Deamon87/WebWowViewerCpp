@@ -52,6 +52,14 @@ public:
     SMMapObjDef * mapObjDef;
     int mapObjDef_len = -1;
 
+    SMDoodadDef * doodadDefObj1;
+    int doodadDefObj1_len = -1;
+
+    SMMapObjDefObj1 * mapObjDefObj1;
+    int mapObjDefObj1_len = -1;
+
+    SMLodLevelPerObject * lod_levels_for_objects = nullptr;
+
     uint32_t *mmid;
     int mmid_length;
     uint32_t *mwid;

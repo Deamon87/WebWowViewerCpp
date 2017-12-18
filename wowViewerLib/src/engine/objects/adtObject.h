@@ -51,7 +51,7 @@ private:
 
     AdtFile *m_adtFile;
     AdtFile *m_adtFileTex;
-    AdtFile *m_adtFileLod;
+    AdtFile *m_adtFileObj;
 
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;

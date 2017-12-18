@@ -84,6 +84,30 @@ struct SMMapObjDef {
     uint16_t unk;                 // Legion(?)+: has data finally!
 } ;
 
+struct SMMapObjDefObj1 {                        // same as MODF but without bounding box (may be out of sync), better look at both
+    uint32_t mwidEntry;
+    uint32_t uniqueId;
+    C3Vector position;
+    C3Vector rotation;
+    struct MODFFlags {
+        uint16_t modf_destroyable : 1;         // set for destroyable buildings like the tower in DeathknightStart. This makes it a server-controllable game object.
+        uint16_t modf_use_lod : 1;             // WoD(?)+: also load _LOD1.WMO for use dependent on distance
+        uint16_t modf_unk_4 : 1;               // Legion(?)+: unknown
+        uint16_t unused : 13;
+    } flags;
+    uint16_t doodadSet;
+    uint16_t nameSet;
+    uint16_t unk;
+};
+
+struct SMLodLevelPerObject
+{
+    uint32_t m2LodOffset[3];  //Index into MLDD per lod
+    uint32_t m2LodLength[3];  //Number of elements used from MLDD per lod
+    uint32_t wmoLodOffset[3]; //Index into MLMD per lod
+    uint32_t wmoLodLength[3]; //Number of elements used from MLMD per lod
+};
+
 PACK(
 struct SMChunk
 {

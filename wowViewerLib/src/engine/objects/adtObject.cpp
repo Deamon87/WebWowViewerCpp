@@ -21,17 +21,27 @@ void AdtObject::loadingFinished() {
 }
 
 void AdtObject::loadM2s() {
+    uint32_t offset = 0;
+    int32_t length = m_adtFileObj->doodadDefObj1_len;
 
-    m2Objects = std::vector<M2Object *>(m_adtFileLod->doodadDef_len);
-    for (int i = 0; i < m_adtFileLod->doodadDef_len; i++) {
+    if (m_adtFileObj->lod_levels_for_objects != nullptr) {
+        offset = m_adtFileObj->lod_levels_for_objects->m2LodOffset[2];
+        length = m_adtFileObj->lod_levels_for_objects->m2LodLength[2];
+    }
+
+    m2Objects = std::vector<M2Object *>(length);
+    for (int j = 0, i = offset; i < offset+length; i++, j++) {
         //1. Get filename
-        SMDoodadDef &doodadDef = m_adtFileLod->doodadDef[i];
+        SMDoodadDef &doodadDef = m_adtFileObj->doodadDefObj1[i];
         if (doodadDef.flags.mddf_entry_is_filedata_id) {
             //2. Get model
-            int fileDataId = m_adtFileLod->mmid[doodadDef.mmidEntry];
+            int fileDataId = m_adtFileObj->mmid[doodadDef.mmidEntry];
+            std::cout << "m2 fileDataId = "<< fileDataId << std::endl;
             m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
         } else {
-            std::string fileName = &m_adtFileLod->doodadNamesField[m_adtFileLod->mmid[doodadDef.mmidEntry]];
+            std::string fileName = &m_adtFileObj->doodadNamesField[m_adtFileObj->mmid[doodadDef.mmidEntry]];
+
+            std::cout << "m2 filename = "<< fileName << std::endl;
             //2. Get model
             m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
         }
@@ -39,17 +49,27 @@ void AdtObject::loadM2s() {
     }
 }
 void AdtObject::loadWmos() {
-    wmoObjects = std::vector<WmoObject *>(m_adtFileLod->mapObjDef_len);
+    uint32_t offset = 0;
+    int32_t length = m_adtFileObj->mapObjDefObj1_len;
 
-    for (int i = 0; i < m_adtFileLod->mapObjDef_len; i++) {
+    if (m_adtFileObj->lod_levels_for_objects != nullptr) {
+        offset = m_adtFileObj->lod_levels_for_objects->wmoLodOffset[2];
+        length = m_adtFileObj->lod_levels_for_objects->wmoLodLength[2];
+    }
+
+
+
+    wmoObjects = std::vector<WmoObject *>(length);
+    for (int j = 0, i = offset; i < offset + length; i++, j++) {
         //1. Get filename
-        SMMapObjDef &mapDef = m_adtFileLod->mapObjDef[i];
-        std::string fileName = &m_adtFileLod->wmoNamesField[m_adtFileLod->mwid[mapDef.nameId]];
+//        SMMapObjDef &mapDef = m_adtFileObj->mapObjDef[i];
+        SMMapObjDefObj1 &mapDef = m_adtFileObj->mapObjDefObj1[i];
+        std::string fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.mwidEntry]];
 
         std::cout << "wmo filename = "<< fileName << std::endl;
 
         //2. Get model
-        wmoObjects[i] = m_mapApi->getWmoObject(fileName, mapDef);
+        wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
     }
 }
 
@@ -328,7 +348,7 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                                     std::set<WmoObject *> &wmoCandidates) {
 
     if (!this->m_loaded) {
-        if (m_adtFile->getIsLoaded() && m_adtFileLod->getIsLoaded() && m_adtFileTex->getIsLoaded()) {
+        if (m_adtFile->getIsLoaded() && m_adtFileObj->getIsLoaded() && m_adtFileTex->getIsLoaded()) {
             this->loadingFinished();
             m_loaded = true;
         } else {
@@ -408,5 +428,5 @@ AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, WdtFile *w
     m_adtFile = m_api->getAdtGeomCache()->get(adtFileTemplate+".adt");
     m_adtFile->setIsMain(true);
     m_adtFileTex = m_api->getAdtGeomCache()->get(adtFileTemplate+"_tex"+std::to_string(0)+".adt");
-    m_adtFileLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt");
+    m_adtFileObj = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(1)+".adt");
 }
