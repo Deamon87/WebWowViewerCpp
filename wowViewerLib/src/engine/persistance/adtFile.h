@@ -13,7 +13,7 @@ struct mcnkStruct_t {
     MCCV *mccv = nullptr;
     SMNormal *mcnr = nullptr;
     SMLayer *mcly = nullptr;
-    int mclyCnt;
+    int mclyCnt = 0;
 
     struct {uint32_t *doodad_refs; uint32_t *object_refs; } mcrf;
 

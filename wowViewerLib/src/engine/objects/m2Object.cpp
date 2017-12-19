@@ -862,7 +862,7 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
 //
 //    //Don't draw meshes with 0 transp
 
-    if ((transparency < 0.0001) || (meshColor[3] < 0.0001)) return;
+    //if ((transparency < 0.0001) || (meshColor[3] < 0.0001)) return;
 //
 //
     int pixelShaderIndex = materialData.pixelShader;

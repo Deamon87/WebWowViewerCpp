@@ -276,8 +276,8 @@ void main() {
     vec4 finalColor = vec4(0);
     vec4 meshResColor = vDiffuseColor;
 
-    if(meshResColor.a < uAlphaTest)
-        discard;
+//    if(meshResColor.a < uAlphaTest)
+//        discard;
 
     if ((uUseDiffuseColor == 1)) {
         vec3 vPos3 = vPosition.xyz;

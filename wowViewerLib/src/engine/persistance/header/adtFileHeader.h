@@ -85,7 +85,7 @@ struct SMMapObjDef {
 } ;
 
 struct SMMapObjDefObj1 {                        // same as MODF but without bounding box (may be out of sync), better look at both
-    uint32_t mwidEntry;
+    uint32_t nameId;
     uint32_t uniqueId;
     C3Vector position;
     C3Vector rotation;

@@ -737,7 +737,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
 
         for (int i = 0; i< mainGeom->groupsLen; i++) {
             if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
-                if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, portalsToExt[0], frustumPoints, wmoM2Candidates)) {
+                if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPoints, wmoM2Candidates)) {
 //                    this->exteriorPortals.push_back({
 //                        groupId: i,
 //                        portalIndex : -1,
@@ -749,7 +749,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
 //                    });
                     this->transverseGroupWMO(i, false, cameraVec4, headOfPyramidLocal1,  inverseTransposeModelMat,
                                              transverseVisitedGroups,
-                                             transverseVisitedPortals, portalsToExt[0], 0, m2RenderedThisFrame);
+                                             transverseVisitedPortals, frustumPlanes1, 0, m2RenderedThisFrame);
                 }
             }
         }

@@ -173,7 +173,7 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
 
     bool drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
 
-    if (drawDoodads) {
+    if (drawGroup) {
         this->checkDoodads(wmoM2Candidates);
     }
     return drawGroup;

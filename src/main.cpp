@@ -374,7 +374,7 @@ int main(){
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
         processor->setFileRequester(scene);
-        testConf->setDrawM2BB(true);
+        testConf->setDrawM2BB(false);
         //testConf->setUsePortalCulling(false);
 
         myapp.scene = scene;

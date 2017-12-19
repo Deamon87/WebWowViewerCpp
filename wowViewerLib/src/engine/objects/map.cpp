@@ -55,7 +55,7 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
                     portalsToExt.push_back(a.frustumPlanes);
                 }
 
-                checkExterior(cameraPos, portalsToExt[0], frustumPoints, hullines, lookAtMat4, projectionModelMat,
+                checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
                               adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
             }
         }
