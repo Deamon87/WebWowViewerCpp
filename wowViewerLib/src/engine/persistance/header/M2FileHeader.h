@@ -268,7 +268,7 @@ struct M2ParticleOld {
     float followScale1;
     float followSpeed2;
     float followScale2;
-    M2Array<C3Vector> splinePoints;                                  //Set only for spline praticle emitter. Contains array of points for spline
+    M2Array<C3Vector> splinePoints;                   //Set only for spline praticle emitter. Contains array of points for spline
     M2Track<unsigned char> enabledIn;                 // (boolean) Appears to be used sparely now, probably there's a flag that links particles to animation sets where they are enabled.
 });
 

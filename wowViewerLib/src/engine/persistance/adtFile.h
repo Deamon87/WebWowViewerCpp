@@ -46,17 +46,21 @@ public:
     SMTextureParams *mtxp = 0;
     int mtxp_len = 0;
 
-    SMDoodadDef * doodadDef;
+    SMDoodadDef * doodadDef = nullptr;
     int doodadDef_len = -1;
 
-    SMMapObjDef * mapObjDef;
+    SMMapObjDef * mapObjDef = nullptr;
     int mapObjDef_len = -1;
 
-    SMDoodadDef * doodadDefObj1;
+    SMDoodadDef * doodadDefObj1 = nullptr;
     int doodadDefObj1_len = -1;
 
-    SMMapObjDefObj1 * mapObjDefObj1;
+    SMMapObjDefObj1 * mapObjDefObj1 = nullptr;
     int mapObjDefObj1_len = -1;
+
+    uint32_t *mldd = nullptr;
+    int mldd_len = -1;
+
 
     SMLodLevelPerObject * lod_levels_for_objects = nullptr;
 

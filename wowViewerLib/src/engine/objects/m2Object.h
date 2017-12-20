@@ -59,6 +59,8 @@ private:
     int m_modelFileId;
     int m_skinFileId;
 
+    std::vector<std::function<void()>> m_postLoadEvents;
+
     int m_skinNum = 0;
     CImVector m_localDiffuseColor = {0xff, 0xff, 0xff, 0xff};
     mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0xff, 0xff, 0xff, 0xff);
@@ -97,6 +99,12 @@ private:
     mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, M2MaterialInst &materialData,  std::vector<mathfu::vec4> subMeshColors);
     float getTransparency(M2SkinProfile *skinData,M2MaterialInst &materialData, std::vector<float> &transparencies);
 public:
+
+    void addPostLoadEvent(std::function<void()> &value) {
+        m_postLoadEvents.push_back(value);
+    }
+
+    CAaBox getAABB() { return aabb; };
 
     void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
                        std::vector<std::string> replaceTextures);

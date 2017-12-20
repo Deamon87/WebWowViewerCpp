@@ -743,32 +743,31 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
         BlpTexture *texture3 = getTextureFunc(material.texture_2, false);
 
         glActiveTexture(GL_TEXTURE0);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
         if (texture1 != nullptr && texture1->getIsLoaded()) {
             glBindTexture(GL_TEXTURE_2D, texture1->getGlTexture());
         }  else {
             glBindTexture(GL_TEXTURE_2D, blackPixelText);
         }
-
-        glActiveTexture(GL_TEXTURE1);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glActiveTexture(GL_TEXTURE1);
         if (texture2 != nullptr && texture2->getIsLoaded()) {
             glBindTexture(GL_TEXTURE_2D, texture2->getGlTexture());
         } else {
             glBindTexture(GL_TEXTURE_2D, blackPixelText);
         }
-
-        glActiveTexture(GL_TEXTURE2);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glActiveTexture(GL_TEXTURE2);
         if (texture3 != nullptr && texture3->getIsLoaded()) {
             glBindTexture(GL_TEXTURE_2D, texture3->getGlTexture());
         } else {
             glBindTexture(GL_TEXTURE_2D, blackPixelText);
         }
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 //        /* Hack to skip verticles from node */
 //        if (bspNodeList) {

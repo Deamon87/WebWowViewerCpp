@@ -18,6 +18,11 @@ void WmoGroupObject::update() {
         this->startLoading();
         return;
     }
+    
+    if (m_recalcBoundries) {
+        this->updateWorldGroupBBWithM2();
+        m_recalcBoundries = false;
+    }
 }
 
 void WmoGroupObject::draw(SMOMaterial *materials, std::function<BlpTexture *(int materialId, bool isSpec)> getTextureFunc) {
@@ -97,6 +102,12 @@ void WmoGroupObject::loadDoodads() {
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
         m_doodads[i] = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
+        std::function<void()> event = [&]() -> void {
+            this->m_recalcBoundries = true;
+        };
+        if (m_doodads[i] != nullptr) {
+            m_doodads[i]->addPostLoadEvent(event);
+        }
     }
 }
 
@@ -119,34 +130,42 @@ void WmoGroupObject::createWorldGroupBB(CAaBox &bbox, mathfu::mat4 &placementMat
 
     this->m_worldGroupBorder = worldAABB;
     this->m_volumeWorldGroupBorder = worldAABB;
+
+    std::cout << "Called WmoGroupObject::createWorldGroupBB " << std::endl;
 }
 
 void WmoGroupObject::updateWorldGroupBBWithM2() {
 //    var doodadRefs = this.wmoGeom.wmoGroupFile.doodadRefs;
 //    var mogp = this.wmoGeom.wmoGroupFile.mogp;
-//    var groupAABB = this.worldGroupBorder;
+    CAaBox &groupAABB = this->m_worldGroupBorder;
 //
 //    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
 //
-//    for (var j = 0; j < this.wmoDoodads.length; j++) {
-//        var mdxObject = this.wmoDoodads[j];
-//        //1. Update the mdx
-//        //If at least one exterior WMO group reference the doodad - do not use the diffuse lightning from modd chunk
+    for (int j = 0; j < this->m_doodads.size(); j++) {
+        M2Object* m2Object = this->m_doodads[j];
+        //1. Update the mdx
+        //If at least one exterior WMO group reference the doodad - do not use the diffuse lightning from modd chunk
 //        if (dontUseLocalLighting) {
-//            mdxObject.setUseLocalLighting(false);
+//            m2Object.setUseLocalLighting(false);
 //        }
-//
-//        if (!mdxObject.loaded) continue; //corrupted :(
-//
-//        //2. Update the world group BB
-//        groupAABB[0] = vec3.fromValues(Math.min(mdxObject.aabb[0][0],groupAABB[0][0]),
-//                                       Math.min(mdxObject.aabb[0][1],groupAABB[0][1]),
-//                                       Math.min(mdxObject.aabb[0][2],groupAABB[0][2]));
-//
-//        groupAABB[1] = vec3.fromValues(Math.max(mdxObject.aabb[1][0],groupAABB[1][0]),
-//                                       Math.max(mdxObject.aabb[1][1],groupAABB[1][1]),
-//                                       Math.max(mdxObject.aabb[1][2],groupAABB[1][2]));
-//    }
+
+        if (m2Object == nullptr || !m2Object->getGetIsLoaded()) continue; //corrupted :(
+
+        CAaBox m2AAbb = m2Object->getAABB(); 
+        
+        //2. Update the world group BB
+        groupAABB.min = mathfu::vec3_packed(mathfu::vec3(std::min(m2AAbb.min.x,groupAABB.min.x),
+                                            std::min(m2AAbb.min.y,groupAABB.min.y),
+                                            std::min(m2AAbb.min.z,groupAABB.min.z)));
+
+        groupAABB.max = mathfu::vec3_packed(mathfu::vec3(std::max(m2AAbb.max.x,groupAABB.max.x),
+                                        std::max(m2AAbb.max.y,groupAABB.max.y),
+                                        std::max(m2AAbb.max.z,groupAABB.max.z)));
+    }
+
+    std::cout << "Called WmoGroupObject::updateWorldGroupBBWithM2 " << std::endl;
+    this->m_worldGroupBorder = CAaBox(groupAABB.min, groupAABB.max);
+    m_wmoApi->updateBB();
 }
 
 bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
@@ -154,7 +173,7 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
                                        std::vector<mathfu::vec3> &points,
                                        std::set<M2Object *> &wmoM2Candidates) {
     if (this == nullptr) return false;
-    CAaBox &bbArray = this->m_worldGroupBorder;
+    CAaBox bbArray = this->m_worldGroupBorder;
 
     bool isInsideM2Volume = (
             cameraPos[0] > bbArray.min.z && cameraPos[0] < bbArray.max.x &&
@@ -173,7 +192,7 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
 
     bool drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
 
-    if (drawGroup) {
+    if (drawDoodads) {
         this->checkDoodads(wmoM2Candidates);
     }
     return drawGroup;

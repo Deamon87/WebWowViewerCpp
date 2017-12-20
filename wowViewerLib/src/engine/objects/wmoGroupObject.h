@@ -24,6 +24,9 @@ public:
     void drawDebugLights();
     void draw(SMOMaterial *materials, std::function <BlpTexture *(int materialId, bool isSpec)> m_getTextureFunc);
     bool getIsLoaded() { return m_loaded; };
+    CAaBox getWorldAABB() {
+        return m_worldGroupBorder;
+    }
     const WmoGroupGeom *getWmoGroupGeom() const { return m_geom; };
     const std::vector <M2Object *> *getDoodads() const { return &m_doodads; };
 
@@ -58,6 +61,8 @@ private:
 
     bool m_loading = false;
     bool m_loaded = false;
+
+    bool m_recalcBoundries = false;
 
     void startLoading();
     void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);

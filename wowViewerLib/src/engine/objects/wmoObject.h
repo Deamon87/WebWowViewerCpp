@@ -105,6 +105,7 @@ public:
     void update();
 
     void createM2Array();
+    void updateBB();
 
 public:
     std::vector<PortalResults> interiorPortals;

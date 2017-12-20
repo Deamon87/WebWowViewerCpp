@@ -100,11 +100,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "stormgarde keep");
 //
 //   m_firstCamera.setCameraPos(939, -4813 , 0); //Scholozar Basin
-    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
-    currentScene = new Map(this, "Northrend");
+//    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
+//    currentScene = new Map(this, "Northrend");
 //
-//  m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-//    currentScene = new Map(this, "Azeroth");
+  m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
+    currentScene = new Map(this, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
 //    currentScene = new Map(this, "MaelstromShaman");
@@ -199,6 +199,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\argusraid\\7du_argusraid_shivantemple.wmo");
+
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
+
 
 
     glBindVertexArray(0);

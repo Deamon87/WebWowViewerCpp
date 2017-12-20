@@ -40,6 +40,9 @@ void AdtObject::loadM2s() {
         //1. Get filename
         if (useLod1Version) {
             SMDoodadDef &doodadDef = m_adtFileObjLod->doodadDefObj1[i];
+            if (doodadDef.mmidEntry == 1252114) {
+                std::cout << " file.mwid[i] = " << doodadDef.mmidEntry;
+            }
             if (doodadDef.flags.mddf_entry_is_filedata_id) {
                 //2. Get model
                 int fileDataId = m_adtFileObjLod->mmid[doodadDef.mmidEntry];
@@ -51,6 +54,9 @@ void AdtObject::loadM2s() {
             }
         } else {
             SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
+            if (doodadDef.mmidEntry == 1252114) {
+                std::cout << " file.mwid[i] = " << doodadDef.mmidEntry;
+            }
             if (doodadDef.flags.mddf_entry_is_filedata_id) {
                 //2. Get model
                 int fileDataId = m_adtFileObj->mmid[doodadDef.mmidEntry];
@@ -83,10 +89,16 @@ void AdtObject::loadWmos() {
         std::string fileName;
         if (useLod1Version) {
             auto &mapDef = m_adtFileObjLod->mapObjDefObj1[i];
+            if (mapDef.nameId == 1393155) {
+                std::cout << " file.mwid[i] = " << mapDef.nameId;
+            }
             fileName = &m_adtFileObjLod->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
             wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
         } else {
             auto &mapDef = m_adtFileObj->mapObjDef[i];
+            if (mapDef.nameId == 1393155) {
+                std::cout << " file.mwid[i] = " << mapDef.nameId;
+            }
             fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
             wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
         }

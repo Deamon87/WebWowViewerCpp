@@ -76,6 +76,12 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
 
                     file.mmid_length = chunkData.chunkLen / sizeof(uint32_t);
                     chunkData.readValues(file.mmid, file.mmid_length);
+
+                    for (int i = 0; i < file.mmid_length; i++) {
+                        if (file.mmid[i] == 1252114) {
+                            std::cout << " file.mwid[i] = " << file.mwid[i];
+                        }
+                    }
                 }
             }
         },
@@ -98,6 +104,11 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
 
                     file.mwid_length = chunkData.chunkLen / sizeof(uint32_t);
                     chunkData.readValues(file.mwid, file.mwid_length);
+                    for (int i = 0; i < file.mwid_length; i++) {
+                        if (file.mwid[i] == 1393155) {
+                            std::cout << " file.mwid[i] = " << file.mwid[i];
+                        }
+                    }
                 }
             }
         },
@@ -120,6 +131,23 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
 
                     file.doodadDefObj1_len = chunkData.chunkLen / sizeof(SMDoodadDef);
                     chunkData.readValues(file.doodadDefObj1, file.doodadDefObj1_len);
+                }
+            }
+        },
+        {
+            'MLDL',
+            {
+                handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLDL");
+
+                    file.mldd_len = chunkData.chunkLen / sizeof(uint32_t);
+                    chunkData.readValues(file.mldd, file.mldd_len);
+
+                    for (int i = 0; i < file.mldd_len; i++) {
+                        if (file.mldd[i] == 1252114) {
+                            std::cout << " file.mldd[i] = " << file.mwid[i];
+                        }
+                    }
                 }
             }
         },

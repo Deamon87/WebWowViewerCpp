@@ -51,7 +51,7 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
 
             if (!this->m_currentWMO->exteriorPortals.empty()) {
                 std::vector<std::vector<mathfu::vec4>> portalsToExt;
-                for (auto a : this->m_currentWMO->exteriorPortals) {
+                for (auto &a : this->m_currentWMO->exteriorPortals) {
                     portalsToExt.push_back(a.frustumPlanes);
                 }
 
@@ -120,7 +120,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
                     j->clearList();
                 }
 
-                for (auto m2Object : this->m2RenderedThisFrameArr) {
+                for (auto &m2Object : this->m2RenderedThisFrameArr) {
                     if (!m2Object->getGetIsLoaded()) continue;
                     if (m2Object->getHasBillboarded() || !m2Object->getIsInstancable()) continue;
 
@@ -164,7 +164,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     nearPlaneCenter += frustumPoints[7];
     nearPlaneCenter *= 0.25;
 
-    for (auto checkingWmoObj : this->wmoRenderedThisFrameArr) {
+    for (auto &checkingWmoObj : this->wmoRenderedThisFrameArr) {
         WmoGroupResult groupResult;
         bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(nearPlaneCenter, 1), groupResult);
 

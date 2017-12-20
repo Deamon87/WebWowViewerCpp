@@ -660,6 +660,12 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         }
     };
 
+    for ( auto &item : m_postLoadEvents) {
+        item();
+    }
+    m_postLoadEvents.clear();
+
+
 //    /* 1. Calc local camera */
     mathfu::vec4 cameraInlocalPos = mathfu::vec4(cameraPos, 1);
     cameraInlocalPos = m_placementInvertMatrix * cameraInlocalPos;

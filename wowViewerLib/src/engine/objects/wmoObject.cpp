@@ -77,11 +77,8 @@ M2Object *WmoObject::getDoodad(int index) {
 
 
     SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
+    assert(doodadDef->name_offset < this->mainGeom->doodadNamesFieldLen);
     std::string fileName(&this->mainGeom->doodadNamesField[doodadDef->name_offset]);
-
-//    if ((int )fileName.find("ROOST", 0) > 0) {
-//        __asm ("int3");
-//    }
 
     M2Object *m2Object = new M2Object(m_api);
     m2Object->setDiffuseColor(doodadDef->color);
@@ -107,10 +104,11 @@ bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu
         cameraPos[0] > aabb.min.z && cameraPos[0] < aabb.max.x &&
         cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y &&
         cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
-        ) return true;
+        ) result = true;
 
     //2. Check aabb is inside camera frustum
-    result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+    if (!result)
+        result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
 
     std::set<M2Object*> wmoM2Candidates;
     if (result) {
@@ -644,6 +642,28 @@ void WmoObject::createBB(CAaBox bbox) {
     this->m_bbox = worldAABB;
 }
 
+void WmoObject::updateBB() {
+    CAaBox &AABB = this->m_bbox;
+//
+//    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
+//
+    for (int j = 0; j < this->groupObjects.size(); j++) {
+        WmoGroupObject* wmoGroupObject= this->groupObjects[j];
+
+
+        CAaBox groupAAbb = wmoGroupObject->getWorldAABB();
+
+        //2. Update the world group BB
+        AABB.min = mathfu::vec3_packed(mathfu::vec3(std::min(groupAAbb.min.x,AABB.min.x),
+                                                         std::min(groupAAbb.min.y,AABB.min.y),
+                                                         std::min(groupAAbb.min.z,AABB.min.z)));
+
+        AABB.max = mathfu::vec3_packed(mathfu::vec3(std::max(groupAAbb.max.x,AABB.max.x),
+                                                         std::max(groupAAbb.max.y,AABB.max.y),
+                                                         std::max(groupAAbb.max.z,AABB.max.z)));
+    }
+}
+
 void WmoObject::createM2Array() {
     this->m_doodadsArray = std::vector<M2Object*>(this->mainGeom->doodadDefsLen, nullptr);
 }
@@ -731,7 +751,7 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
     std::set<M2Object *> wmoM2Candidates ;
     if (this->exteriorPortals.size() > 0) {
         std::vector<std::vector<mathfu::vec4>> portalsToExt;
-        for (auto a : this->exteriorPortals) {
+        for (auto &a : this->exteriorPortals) {
             portalsToExt.push_back(a.frustumPlanes);
         }
 

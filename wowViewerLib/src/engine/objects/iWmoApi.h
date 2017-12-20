@@ -21,6 +21,8 @@ public:
 
     virtual std::vector<PortalInfo_t> &getPortalInfos() = 0;
 
+    virtual void updateBB() = 0;
     virtual void postWmoGroupObjectLoad(int groupId, int lod) = 0;
+
 };
 #endif //WOWVIEWERLIB_IWMOAPI_H
