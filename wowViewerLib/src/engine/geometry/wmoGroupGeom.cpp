@@ -704,6 +704,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
             glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0f);
         }
 
+        auto blendMode = material.blendMode;
         switch (material.blendMode) {
             case 0 : //Blend_Opaque
                 glDisable(GL_BLEND);
@@ -713,16 +714,19 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
             case 1 : //Blend_AlphaKey
                 glDisable(GL_BLEND);
                 //GL_uniform1f(m2Shader->getUnf("uAlphaTest, 2.9);
-                glUniform1f(wmoShader->getUnf("uAlphaTest"), 244.0/255.0);
+                glUniform1f(wmoShader->getUnf("uAlphaTest"), 70.0/255.0);
                 glUniform1i(wmoShader->getUnf("uEnableAlpha"), 1);
                 //GL_uniform1f(m2Shader->getUnf("uAlphaTest, meshColor[4]*transparency*(252/255));
                 break;
             default :
-                glUniform1f(wmoShader->getUnf("uAlphaTest"), -1);
-                glEnable(GL_BLEND);
+//                glUniform1f(wmoShader->getUnf("uAlphaTest"), -1);
+                glDisable(GL_BLEND);
                 glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
 
-                glUniform1i(wmoShader->getUnf("uEnableAlpha"), 0);
+                glUniform1f(wmoShader->getUnf("uAlphaTest"), 244.0/255.0);
+                glUniform1i(wmoShader->getUnf("uEnableAlpha"), 1);
+
+                std::cout << "material.blendMode = " << material.blendMode;
 
                 break;
         }

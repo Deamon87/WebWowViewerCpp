@@ -67,12 +67,16 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    currentScene = new Map(this, "Troll Raid");
+//    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 //    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
 //    currentScene = new Map(this, "silithusphase01");
+//
+//   m_firstCamera.setCameraPos( -594, 4664, 200);
+//    currentScene = new Map(this, "Artifact-MageOrderHall");
 
-//    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0); // THE WOUND
+//    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0);
 //    currentScene = new Map(this, "BLTestMap");
 
 //    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
@@ -100,11 +104,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "stormgarde keep");
 //
 //   m_firstCamera.setCameraPos(939, -4813 , 0); //Scholozar Basin
-//    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
-//    currentScene = new Map(this, "Northrend");
+    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
+    currentScene = new Map(this, "Northrend");
 //
-  m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-    currentScene = new Map(this, "Azeroth");
+//  m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
+//    currentScene = new Map(this, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
 //    currentScene = new Map(this, "MaelstromShaman");
@@ -203,6 +207,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
+
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 
 
 

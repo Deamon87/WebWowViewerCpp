@@ -417,7 +417,9 @@ M2Geom::drawMesh(
             glUniform1f(m2Shader->getUnf("uTransparency"), finalTransparency);
 
 //            glUniform1i(m2Shader->getUnf("uBlendMode"), renderFlag->blending_mode);
-            switch (renderFlag->blending_mode) {
+            auto blendMode = renderFlag->blending_mode;
+//            blendMode = 0;
+            switch (blendMode) {
                 case 0 : //Blend_Opaque
                     glDisable(GL_BLEND);
                     glUniform1f(m2Shader->getUnf("uAlphaTest"), -1.0);

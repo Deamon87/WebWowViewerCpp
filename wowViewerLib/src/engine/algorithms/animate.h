@@ -35,6 +35,12 @@ inline float convertHelper<float, float>(float &a ) {
 };
 
 template<>
+inline unsigned char convertHelper<unsigned char, unsigned char>(unsigned char &a ) {
+    return a;
+};
+
+
+template<>
 inline mathfu::vec3 convertHelper<mathfu::vec3_packed, mathfu::vec3>(mathfu::vec3_packed &a ) {
     return mathfu::vec3(a);
 };
@@ -84,6 +90,10 @@ inline mathfu::vec4 lerpHelper<mathfu::vec4>(mathfu::vec4 &value1, mathfu::vec4 
     return mathfu::vec4::Lerp(value1, value2, percent);
 };
 
+template<>
+inline unsigned char lerpHelper<unsigned char>(unsigned char &value1, unsigned char &value2, float percent) {
+    return (value1 * percent) + ((1 - percent) * value2);;
+};
 template<>
 inline mathfu::vec3 lerpHelper<mathfu::vec3>(mathfu::vec3 &value1, mathfu::vec3 &value2, float percent) {
     return mathfu::vec3::Lerp(value1, value2, percent);
