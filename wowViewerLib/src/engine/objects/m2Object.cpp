@@ -848,6 +848,19 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
     mathfu::mat4 textureMatrix2 = identMat;
     auto skinData = this->m_skinGeom->getSkinData();
     auto m2Data = this->m_m2Geom->getM2Data();
+
+    mathfu::vec4 meshColor = this->getCombinedColor(skinData, materialData, this->subMeshColors);
+    float transparency = this->getTransparency(skinData, materialData, this->transparencies);
+
+    float finalTransparency = meshColor.w;
+    auto textMaterial = skinData->batches[materialData.texUnit1TexIndex];
+    if ( textMaterial->textureCount && !(textMaterial->flags & 0x40)) {
+        finalTransparency *= transparency;
+    }
+
+    //Don't draw meshes with 0 transp
+    if ((finalTransparency < 0.0001) ) return;
+
     if (materialData.texUnit1TexIndex >= 0) {
         auto textureAnim = skinData->batches[materialData.texUnit1TexIndex]->textureTransformComboIndex;
         uint16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
@@ -861,14 +874,11 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
             }
         }
     }
-    mathfu::vec4 meshColor = this->getCombinedColor(skinData, materialData, this->subMeshColors);
-    float transparency = this->getTransparency(skinData, materialData, this->transparencies);
+
 //    mathfu::vec4 meshColor = mathfu::vec4(1,1,1,1);
 //    float transparency = 1;
 //
-//    //Don't draw meshes with 0 transp
 
-    //if ((transparency < 0.0001) || (meshColor[3] < 0.0001)) return;
 //
 //
     int pixelShaderIndex = materialData.pixelShader;
