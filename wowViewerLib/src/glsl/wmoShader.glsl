@@ -59,10 +59,10 @@ void main() {
     vPosition = cameraPoint.xyz;
 #endif //drawBuffersIsSupported
 
-    if (uUseLitColor == 0) {
+    if (uUseLitColor == 1) {
         vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
     } else {
-        vColor.rgb = clamp(aColor.bgr + uAmbientLight.bgr,  vec3(0.0), vec3(1.0)) ;
+        vColor.rgb = clamp(aColor.bgr,  vec3(0.0), vec3(1.0)) ;
         vColor.a = aColor.a;
 //        vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
     }
@@ -76,6 +76,7 @@ void main() {
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2; //not used
         vTexCoord3 = aTexCoord3; //not used
+
 
         vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
     } else if (uVertexShader == 1) { //MapObjDiffuse_T1_Refl
@@ -133,6 +134,7 @@ uniform float uAlphaTest;
 uniform vec4 uMeshColor1;
 uniform vec4 uMeshColor2;
 uniform vec4 uAmbientLight;
+uniform int uUseLitColor;
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
@@ -151,15 +153,18 @@ varying float fs_Depth;
 #endif
 
 vec3 makeDiffTerm(vec3 matDiffuse) {
-//    vec3 lDiffuse = uAmbientLight.rgb;
-//    float mag = length(lDiffuse);
-//    if ((mag > 1.0))
-//    {
-//        lDiffuse = ((lDiffuse * (1.0 + log(mag))) / vec3(mag));
-//    }
+    vec3 currColor;
+    if (uUseLitColor == 1) {
+    currColor = (vColor2.rgb + vec3(0.2)) ;
 
 
-    return matDiffuse ;
+
+    } else {
+        currColor = vec3 (1.0, 1.0, 1.0) * uAmbientLight.rgb;
+    }
+
+
+    return matDiffuse * currColor.rgb ;
 }
 
 void main() {
@@ -282,6 +287,7 @@ void main() {
     if(finalColor.a < uAlphaTest)
         discard;
 
+
     vec3 fogColor = uFogColor;
     float fog_start = uFogStart;
     float fog_end = uFogEnd;
@@ -301,6 +307,7 @@ void main() {
     float endFadeFog = clamp(((fog_end - distanceToCamera) / (0.699999988 * fog_end)), 0.0, 1.0);
 
     finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
+
 
 
     //Apply global lighting

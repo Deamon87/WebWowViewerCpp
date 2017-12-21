@@ -569,9 +569,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
 
     glEnableVertexAttribArray(+wmoShader::Attribute::aPosition);
     glVertexAttribPointer(+wmoShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0); // position
-//    if (shaderAttributes.aNormal != null) {
-        glVertexAttribPointer(+wmoShader::Attribute::aNormal, 3, GL_FLOAT, GL_FALSE, 0, (void *)normalOffset); // normal
-//    }
+    glVertexAttribPointer(+wmoShader::Attribute::aNormal, 3, GL_FLOAT, GL_FALSE, 0, (void *)normalOffset); // normal
     glVertexAttribPointer(+wmoShader::Attribute::aTexCoord, 2, GL_FLOAT, GL_FALSE, 0, (void *)textOffset); // texcoord
 
 
@@ -588,24 +586,6 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
     } else {
         glDisableVertexAttribArray(+wmoShader::Attribute::aTexCoord3);
         glVertexAttrib2f(+wmoShader::Attribute::aTexCoord3, 1.0, 1.0);
-    }
-
-    if (isIndoor && (cvLen > 0)) {
-        glEnableVertexAttribArray(+wmoShader::Attribute::aColor);
-        glVertexAttribPointer(+wmoShader::Attribute::aColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)colorOffset); // color
-    } else {
-        glDisableVertexAttribArray(+wmoShader::Attribute::aColor);
-        glVertexAttrib4f(+wmoShader::Attribute::aColor, 0.5, 0.5, 0.5, 0.5);
-    }
-
-
-//    Color2 array
-    if (isIndoor && (cvLen2 > 0)) {
-        glEnableVertexAttribArray(+wmoShader::Attribute::aColor2);
-        glVertexAttribPointer(+wmoShader::Attribute::aColor2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)colorOffset2); // color
-    } else {
-        glDisableVertexAttribArray(+wmoShader::Attribute::aColor2);
-        glVertexAttrib4f(+wmoShader::Attribute::aColor2, 1.0, 1.0, 1.0, 1.0);
     }
 
     auto wmoShader = api->getWmoShader();
@@ -638,11 +618,30 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
         glUniform1i(wmoShader->getUnf("uVertexShader"), vertexShader);
         glUniform1i(wmoShader->getUnf("uPixelShader"), pixelShader);
 
-        bool isInteriorBatch = j > mogp->transBatchCount && j < (mogp->transBatchCount + mogp->intBatchCount);
+        bool isAffectedByMOCV = j < (mogp->transBatchCount + mogp->intBatchCount);
+        bool isAffectedByAmbient = (j > 0 && j < (mogp->transBatchCount)) ||
+                (j > (mogp->transBatchCount + mogp->intBatchCount));
 
-        if ((isInteriorBatch)) {
-            float modifier = 0.3;
+        if (isAffectedByMOCV && (cvLen > 0)) {
+            glEnableVertexAttribArray(+wmoShader::Attribute::aColor);
+            glVertexAttribPointer(+wmoShader::Attribute::aColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)colorOffset); // color
+        } else {
+            glDisableVertexAttribArray(+wmoShader::Attribute::aColor);
+            glVertexAttrib4f(+wmoShader::Attribute::aColor, 0.5, 0.5, 0.5, 0.5);
+        }
 
+
+//    Color2 array
+        if (isAffectedByMOCV && (cvLen2 > 0)) {
+            glEnableVertexAttribArray(+wmoShader::Attribute::aColor2);
+            glVertexAttribPointer(+wmoShader::Attribute::aColor2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)colorOffset2); // color
+        } else {
+            glDisableVertexAttribArray(+wmoShader::Attribute::aColor2);
+            glVertexAttrib4f(+wmoShader::Attribute::aColor2, 1.0, 1.0, 1.0, 1.0);
+        }
+
+
+        if ((isAffectedByAmbient)) {
             mathfu::vec4 diffColor = mathfu::vec4(
                     ((float)material.diffColor.r / 255.0f),
                     ((float)material.diffColor.g / 255.0f),
@@ -664,7 +663,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
                         ((float)replacement_for_header_color.g / 255.0f),
                         ((float)replacement_for_header_color.b / 255.0f),
                         ((float)replacement_for_header_color.a / 255.0f)
-                ) * 0.5;
+                ) ;
             }
 
             //mathfu::vec4 resultColor = 1.0f * (diffColor * ambColor);
@@ -678,10 +677,10 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
             ;
         } else {
             glUniform4f(wmoShader->getUnf("uAmbientLight"),
-                        0,
-                        0,
-                        0,
-                        0);
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0);
         }
 
         glUniform1i(wmoShader->getUnf("uUseLitColor"), 1);
@@ -713,11 +712,18 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
                 break;
             case 1 : //Blend_AlphaKey
                 glDisable(GL_BLEND);
-                //GL_uniform1f(m2Shader->getUnf("uAlphaTest, 2.9);
                 glUniform1f(wmoShader->getUnf("uAlphaTest"), 70.0/255.0);
                 glUniform1i(wmoShader->getUnf("uEnableAlpha"), 1);
-                //GL_uniform1f(m2Shader->getUnf("uAlphaTest, meshColor[4]*transparency*(252/255));
+
                 break;
+            case 3 : //GxBlend_Add
+                glUniform1f(wmoShader->getUnf("uAlphaTest"), 0.00392157);
+                glUniform1i(wmoShader->getUnf("uEnableAlpha"), 1);
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+                break;
+
             default :
 //                glUniform1f(wmoShader->getUnf("uAlphaTest"), -1);
                 glDisable(GL_BLEND);

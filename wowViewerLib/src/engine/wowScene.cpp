@@ -62,11 +62,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(6500.6665, 7500.33301, 0);
 //    currentScene = new Map(this, "HawaiiMainLand"); // Pandaria
 
-//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
+    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
-//    currentScene = new Map(this, "Troll Raid");
+    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -104,8 +104,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "stormgarde keep");
 //
 //   m_firstCamera.setCameraPos(939, -4813 , 0); //Scholozar Basin
-    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
-    currentScene = new Map(this, "Northrend");
+//    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
+//    currentScene = new Map(this, "Northrend");
 //
 //  m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
 //    currentScene = new Map(this, "Azeroth");
