@@ -245,7 +245,8 @@ struct my_nkc_app {
 
     /* some user data */
     float value;
-    enum radioOptions op;
+    bool drawM2AABB = false;
+    bool drawWMOAABB = false;
 
     WoWScene *scene;
     RequestProcessor *processor;
@@ -294,9 +295,30 @@ void mainLoop(void* loopArg){
         }
 
         /* fixed widget window ratio width */
-        nk_layout_row_dynamic(ctx, 30, 2);
-        if (nk_option_label(ctx, "easy", myapp->op == EASY)) myapp->op = EASY;
-        if (nk_option_label(ctx, "hard", myapp->op == HARD)) myapp->op = HARD;
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
+        {
+            nk_layout_row_push(ctx, 50);
+            nk_label(ctx, "Draw M2 AABB:", NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
+            nk_layout_row_dynamic(ctx, 30, 2);
+            if (nk_option_label(ctx, "on", myapp->drawM2AABB)) myapp->drawM2AABB = true;
+            if (nk_option_label(ctx, "off", !myapp->drawM2AABB)) myapp->drawM2AABB = false;
+        }
+        nk_layout_row_end(ctx);
+
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
+        {
+            nk_layout_row_push(ctx, 50);
+            nk_label(ctx, "Draw WMO AABB:", NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
+            if (nk_option_label(ctx, "on", myapp->drawWMOAABB)) myapp->drawWMOAABB = true;
+            if (nk_option_label(ctx, "off", !myapp->drawWMOAABB)) myapp->drawWMOAABB = false;
+        }
+        nk_layout_row_end(ctx);
+
+
+        testConf->setDrawM2BB(myapp->drawM2AABB);
+        testConf->setDrawWmoBB(myapp->drawWMOAABB);
 
         /* custom widget pixel width */
         nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
@@ -341,7 +363,7 @@ int main(){
     myapp.nkcHandle = &nkcx;
     /* init some user data */
     myapp.value = 0.4;
-    myapp.op = HARD;
+
 
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
@@ -352,10 +374,10 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-    const char * url = "http://178.165.92.24:40001/get/";
-    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
+//    const char * url = "http://178.165.92.24:40001/get/";
+//    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
 //    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
-//    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
+    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
 //     const char *url = "http://localhost:8084/get/";
 
     testConf = new Config();
@@ -368,8 +390,8 @@ int main(){
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
         //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
         //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
+//        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);

@@ -56,17 +56,19 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Init caches
 
     //Test scene 1: Shattrath
-//    m_firstCamera.setCameraPos(-1663, 5098, 27);
+//    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
+//    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
+
 //    currentScene = new Map(this, "Expansion01");
 
 //    m_firstCamera.setCameraPos(6500.6665, 7500.33301, 0);
 //    currentScene = new Map(this, "HawaiiMainLand"); // Pandaria
 
-    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
+//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
-    currentScene = new Map(this, "Troll Raid");
+//    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -208,9 +210,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
 
-//    m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
+    m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 
 
 
