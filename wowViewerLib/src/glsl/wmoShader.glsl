@@ -155,7 +155,7 @@ varying float fs_Depth;
 vec3 makeDiffTerm(vec3 matDiffuse) {
     vec3 currColor;
     if (uUseLitColor == 1) {
-    currColor = (vColor2.rgb + vec3(0.2)) ;
+        currColor = (vColor2.rgb + uAmbientLight.rgb) ;
 
 
 

@@ -445,7 +445,7 @@ void M2Object::createPlacementMatrix(SMDoodadDef &def) {
     placementMatrix *= MathHelper::RotationZ(toRadian(-def.rotation.x));
     placementMatrix *= MathHelper::RotationX(toRadian(def.rotation.z-90));
 
-    float scale = def.scale / 1024;
+    float scale = def.scale / 1024.0f;
     placementMatrix *= mathfu::mat4::FromScaleVector(mathfu::vec3(scale, scale, scale));
 
     mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();

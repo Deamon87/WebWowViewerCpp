@@ -657,7 +657,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
                     ((float)mohd->ambColor.a / 255.0f)
             );
 
-            if (use_replacement_for_header_color) {
+            if (use_replacement_for_header_color && (*(int *)&replacement_for_header_color != -1)) {
                 ambColor = mathfu::vec4(
                         ((float)replacement_for_header_color.r / 255.0f),
                         ((float)replacement_for_header_color.g / 255.0f),
@@ -667,7 +667,10 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
             }
 
             //mathfu::vec4 resultColor = 1.0f * (diffColor * ambColor);
-            mathfu::vec4 resultColor = ambColor * 0.5 ;
+            mathfu::vec4 resultColor = ambColor;
+//            if (isAffectedByMOCV && (cvLen > 0)) {
+//                resultColor = mathfu::vec4(0.0);
+//            }
 
             glUniform4fv(wmoShader->getUnf("uAmbientLight"),
                 1,
