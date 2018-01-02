@@ -81,8 +81,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0);
 //    currentScene = new Map(this, "BLTestMap");
 
-//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-//    currentScene = new Map(this, "Troll Raid");
+    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "argus_rifts");
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
@@ -96,6 +96,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "UlduarRaid");
 
 //    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
+//    m_firstCamera.setCameraPos( 5333.3335, 10666.667, 1); //Strange WMO
 //    currentScene = new Map(this, "argus 1");
 
 //    m_firstCamera.setCameraPos( 4266.67, -2133.33, 200); // VoidElf
@@ -181,11 +182,17 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
-//
+//    m_firstCamera.setCameraPos(-1161.35, -798.59, 835.05);
+//    currentScene = new Map(this, "grimbatolraid");
+
 //   currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_tower.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\mantidraid\\pa_mantid_raid.wmo");
+//    currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/grimbatol/kz_grimbatol_raid.wmo");
+
+
 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,

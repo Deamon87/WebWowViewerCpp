@@ -145,6 +145,9 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
     placementMatrix *= MathHelper::RotationY(toRadian(mapObjDef.rotation.y-270));
     placementMatrix *= MathHelper::RotationZ(toRadian(-mapObjDef.rotation.x));
     placementMatrix *= MathHelper::RotationX(toRadian(mapObjDef.rotation.z-90));
+    if (mapObjDef.unk != 0) {
+        placementMatrix *= mathfu::mat4::FromScaleVector(mathfu::vec3(mapObjDef.unk / 1024.0f));
+    }
 
     mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
 
