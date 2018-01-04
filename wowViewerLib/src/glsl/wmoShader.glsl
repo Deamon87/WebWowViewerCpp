@@ -27,6 +27,7 @@ uniform int uUseLitColor;
 
 uniform mat4 uPlacementMat;
 uniform vec4 uAmbientLight;
+uniform vec3 uViewUp;
 
 varying vec2 vTexCoord;
 varying vec2 vTexCoord2;
@@ -34,10 +35,10 @@ varying vec2 vTexCoord3;
 varying vec4 vColor;
 varying vec4 vColor2;
 varying vec3 vPosition;
-
+varying vec3 vNormal;
 
 #ifdef drawBuffersIsSupported
-vec3 vNormal;
+//vec3 vNormal;
 varying float fs_Depth;
 #endif
 
@@ -47,7 +48,6 @@ void main() {
     vec4 cameraPoint = uLookAtMat * worldPoint;
 
 #ifndef drawBuffersIsSupported
-    vec3 vNormal;
     gl_Position = uPMatrix * cameraPoint;
     vPosition = cameraPoint.xyz;
     vNormal = normalize((uPlacementMat * vec4(aNormal, 0)).xyz);
@@ -131,8 +131,7 @@ varying vec3 vPosition;
 
 //uniform vec4  uGlobalLighting;
 uniform float uAlphaTest;
-uniform vec4 uMeshColor1;
-uniform vec4 uMeshColor2;
+uniform vec3 uViewUp;
 uniform vec4 uAmbientLight;
 uniform int uUseLitColor;
 uniform sampler2D uTexture;
@@ -142,6 +141,7 @@ uniform sampler2D uTexture3;
 uniform int uEnableAlpha;
 
 uniform vec3 uFogColor;
+
 
 uniform float uFogStart;
 uniform float uFogEnd;
@@ -155,9 +155,29 @@ varying float fs_Depth;
 vec3 makeDiffTerm(vec3 matDiffuse) {
     vec3 currColor;
     if (uUseLitColor == 1) {
-        currColor = (vColor2.rgb + uAmbientLight.bgr) ;
+        vec3 sunDir = normalize(vec3(0.2, 0.4, 0.3));
+        //vec3 viewUp = normalize(vec3(0, 0.9, 0.1));
+        vec3 normalizedN = normalize(vNormal);
+        float t823 = dot(normalizedN, -(sunDir.xyz));
+        float t846 = dot(normalizedN, uViewUp.xyz);
 
+        vec3 precomputed = vColor2.rgb;
+        vec3 adjAmbient = (uAmbientLight.bgr + precomputed);
+        vec3 adjHorizAmbient = (uAmbientLight.bgr + precomputed);
+        vec3 adjGroundAmbient = (uAmbientLight.bgr + precomputed);
 
+        if ((t846 >= 0.0))
+        {
+            currColor = mix(adjHorizAmbient, adjAmbient, vec3(t846));
+        }
+        else
+        {
+            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(t846)));
+        }
+
+        vec3 skyColor = (currColor * 1.10000002);
+        vec3 groundColor = (currColor* 0.699999988);
+        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * t823))));
 
     } else {
         currColor = vec3 (1.0, 1.0, 1.0) * uAmbientLight.rgb;

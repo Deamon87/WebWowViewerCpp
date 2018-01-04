@@ -59,12 +59,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
 //    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-//    currentScene = new Map(this, "Expansion01");
-
-//    m_firstCamera.setCameraPos(6500.6665, 7500.33301, 0);
-//    currentScene = new Map(this, "HawaiiMainLand"); // Pandaria
-
-//    m_firstCamera.setCameraPos(-834, 2600, 0); //Broken shore
+//    currentScene = new Map(this, "Expansion01");d
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
@@ -81,8 +76,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0);
 //    currentScene = new Map(this, "BLTestMap");
 
-    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-    currentScene = new Map(this, "Troll Raid");
+//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+//    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "argus_rifts");
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
@@ -179,7 +174,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
-//    m_firstCamera.setCameraPos(0, 0, 0);
+    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
 //    m_firstCamera.setCameraPos(-1161.35, -798.59, 835.05);
@@ -197,8 +192,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
-// currentScene = new WmoScene(this,
-//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+ currentScene = new WmoScene(this,
+        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
@@ -1336,6 +1331,10 @@ void WoWSceneImpl::activateWMOShader() {
     glUniform1f(this->wmoShader->getUnf("uFogEnd"), this->uFogEnd);
 
     glUniform3fv(this->wmoShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+
+    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+    upVector = (this->m_lookAtMat4 * upVector);
+    glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
 
     glActiveTexture(GL_TEXTURE0);
 }

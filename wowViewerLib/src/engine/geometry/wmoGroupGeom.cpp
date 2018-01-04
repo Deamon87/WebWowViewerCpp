@@ -556,9 +556,6 @@ void WmoGroupGeom::createIndexVBO() {
 
 void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
 
-//    var shaderUniforms = this.sceneApi.shaders.getShaderUniforms();
-//    var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
-
     GLuint blackPixelText = api->getBlackPixelTexture();
 
 
@@ -638,7 +635,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
             glVertexAttribPointer(+wmoShader::Attribute::aColor2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)colorOffset2); // color
         } else {
             glDisableVertexAttribArray(+wmoShader::Attribute::aColor2);
-            glVertexAttrib4f(+wmoShader::Attribute::aColor2, 1.0, 1.0, 1.0, 1.0);
+            glVertexAttrib4f(+wmoShader::Attribute::aColor2, 0.5, 0.5, 0.5, 0.5);
         }
 
 
@@ -650,7 +647,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
                     ((float)mohd->ambColor.a / 255.0f)
             );
 
-            if (use_replacement_for_header_color==1 && (*(int*)&replacement_for_header_color != -1)) {
+            if ((use_replacement_for_header_color == 1) && (*(int *)&replacement_for_header_color != -1)) {
                 ambColor = mathfu::vec4(
                         ((float)replacement_for_header_color.r / 255.0f),
                         ((float)replacement_for_header_color.g / 255.0f),
@@ -660,13 +657,10 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
             }
 
             //mathfu::vec4 resultColor = 1.0f * (diffColor * ambColor);
-            mathfu::vec4 resultColor = ambColor * 0.5;
-            if (mogp->flags.INTERIOR > 0 && mogp->flags.EXTERIOR_LIT == 0) {
-                resultColor = resultColor * 1.0;
-            } else {
-                resultColor = mathfu::vec4(1.0,1.0,1.0,1.0);
-            }
-
+            mathfu::vec4 resultColor = ambColor;
+//            if (isAffectedByMOCV && (cvLen > 0)) {
+//                resultColor = mathfu::vec4(0.0);
+//            }
 
             glUniform4fv(wmoShader->getUnf("uAmbientLight"),
                 1,
