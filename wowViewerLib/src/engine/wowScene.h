@@ -168,6 +168,8 @@ private:
     mathfu::mat4 m_viewCameraForRender;
     mathfu::mat4 m_perspectiveMatrix;
 
+    mathfu::vec3 m_sunDir;
+
     FirstPersonCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;
 
@@ -239,6 +241,8 @@ private:
     void activateDrawPointShader();
 
     void deactivateDrawPointShader();
+
+    void SetDirection();
 };
 
 

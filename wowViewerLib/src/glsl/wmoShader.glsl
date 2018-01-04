@@ -132,6 +132,7 @@ varying vec3 vPosition;
 //uniform vec4  uGlobalLighting;
 uniform float uAlphaTest;
 uniform vec3 uViewUp;
+uniform vec3 uSunDir;
 uniform vec4 uAmbientLight;
 uniform int uUseLitColor;
 uniform sampler2D uTexture;
@@ -155,10 +156,9 @@ varying float fs_Depth;
 vec3 makeDiffTerm(vec3 matDiffuse) {
     vec3 currColor;
     if (uUseLitColor == 1) {
-        vec3 sunDir = normalize(vec3(0.2, 0.4, 0.3));
         //vec3 viewUp = normalize(vec3(0, 0.9, 0.1));
         vec3 normalizedN = normalize(vNormal);
-        float t823 = dot(normalizedN, -(sunDir.xyz));
+        float t823 = dot(normalizedN, -(uSunDir.xyz));
         float t846 = dot(normalizedN, uViewUp.xyz);
 
         vec3 precomputed = vColor2.rgb;
