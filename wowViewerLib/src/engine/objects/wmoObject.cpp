@@ -148,7 +148,6 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
     if (mapObjDef.unk != 0) {
         placementMatrix *= mathfu::mat4::FromScaleVector(mathfu::vec3(mapObjDef.unk / 1024.0f));
     }
-
     mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
 
     m_placementInvertMatrix = placementInvertMatrix;

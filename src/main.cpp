@@ -311,6 +311,7 @@ void mainLoop(void* loopArg){
             nk_layout_row_push(ctx, 50);
             nk_label(ctx, "Draw WMO AABB:", NK_TEXT_LEFT);
             nk_layout_row_push(ctx, 50);
+            nk_layout_row_dynamic(ctx, 30, 2);
             if (nk_option_label(ctx, "on", myapp->drawWMOAABB)) myapp->drawWMOAABB = true;
             if (nk_option_label(ctx, "off", !myapp->drawWMOAABB)) myapp->drawWMOAABB = false;
         }
@@ -374,24 +375,24 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-//    const char * url = "http://178.165.92.24:40001/get/";
-//    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
+    const char * url = "http://178.165.92.24:40001/get/";
+    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
 //    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
-    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
+//    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
 //     const char *url = "http://localhost:8084/get/";
 
     testConf = new Config();
 
 
 
-    if( nkc_init( myapp.nkcHandle, "Nuklear+ Example", 640, 480, NKC_WIN_NORMAL ) ){
+    if( nkc_init( myapp.nkcHandle, "WowViewer", 640, 480, NKC_WIN_NORMAL ) ){
         printf("Successfull init. Starting 'infinite' main loop...\n");
 
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
         //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
         //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-//        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
+        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);

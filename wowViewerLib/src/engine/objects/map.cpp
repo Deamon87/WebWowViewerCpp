@@ -381,6 +381,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
 M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
     M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
+    m2Object = nullptr;
     if (m2Object == nullptr) {
         m2Object = new M2Object(m_api);
         m2Object->setLoadParams(0, {},{});
@@ -394,6 +395,7 @@ M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
 
 M2Object *Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
     M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
+    m2Object = nullptr;
     if (m2Object == nullptr) {
         m2Object = new M2Object(m_api);
         m2Object->setLoadParams(0, {}, {});
@@ -407,7 +409,8 @@ M2Object *Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
 
 
 WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
+//    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
+    WmoObject * wmoObject = nullptr;
     if (wmoObject == nullptr) {
         wmoObject = new WmoObject(m_api);
         wmoObject->setLoadingParam(fileName, mapObjDef);
@@ -417,7 +420,8 @@ WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
 }
 
 WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
+//    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
+    WmoObject * wmoObject = nullptr;
     if (wmoObject == nullptr) {
         wmoObject = new WmoObject(m_api);
         wmoObject->setLoadingParam(fileName, mapObjDef);
