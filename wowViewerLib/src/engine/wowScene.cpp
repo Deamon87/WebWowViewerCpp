@@ -146,8 +146,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2");
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2");
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2");
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2");
 //
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2");
@@ -189,9 +189,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 
 
-//    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
-//    currentScene = new WmoScene(this,
-//        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
+    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
+    currentScene = new WmoScene(this,
+        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
 // currentScene = new WmoScene(this,
 //        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
@@ -949,7 +949,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 300;
+    int farPlane = 1200;
     int nearPlane = 1;
     float fov = toRadian(50.0);
 
