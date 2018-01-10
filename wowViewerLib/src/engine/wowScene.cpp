@@ -90,9 +90,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
 //    currentScene = new Map(this, "UlduarRaid");
 
-    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
+//    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
 //    m_firstCamera.setCameraPos( 5333.3335, 10666.667, 1); //Strange WMO
-    currentScene = new Map(this, "argus 1");
+//    currentScene = new Map(this, "argus 1");
 
 //    m_firstCamera.setCameraPos( 4266.67, -2133.33, 200); // VoidElf
 //    currentScene = new Map(this, "VoildElf");
@@ -174,7 +174,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
-    m_firstCamera.setCameraPos(0, 0, 0);
+//    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
 //    m_firstCamera.setCameraPos(-1161.35, -798.59, 835.05);
@@ -189,11 +189,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 
 
-//    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
-//    currentScene = new WmoScene(this,
-//        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
- currentScene = new WmoScene(this,
-        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
+    currentScene = new WmoScene(this,
+        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");

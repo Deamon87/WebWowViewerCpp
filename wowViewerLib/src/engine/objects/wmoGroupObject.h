@@ -19,6 +19,7 @@ public:
     WmoGroupObject(mathfu::mat4 &modelMatrix, IWoWInnerApi *api, std::string fileName, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api), m_fileName(fileName){
         m_modelMatrix = &modelMatrix;
         m_groupNumber = groupNumber;
+        m_main_groupInfo = &groupInfo;
         createWorldGroupBB(groupInfo.bounding_box, modelMatrix);
     }
     void drawDebugLights();
@@ -54,6 +55,8 @@ private:
     CAaBox m_volumeWorldGroupBorder;
     mathfu::mat4 *m_modelMatrix;
     int m_groupNumber;
+
+    SMOGroupInfo *m_main_groupInfo;
 
     std::vector <M2Object *> m_doodads = std::vector<M2Object *>(0);
 

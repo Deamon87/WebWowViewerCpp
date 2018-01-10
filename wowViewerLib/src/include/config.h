@@ -24,6 +24,9 @@ private:
     bool drawDepthBuffer = false;
     int cameraM2 = -1; // this will be sceneNumber of object
 
+    int minBatch = 0;
+    int maxBatch = 9999;
+
     bool useWotlkLogic = false;
 public:
     bool getRenderM2 () {
@@ -100,6 +103,20 @@ public:
     bool getUseWotlkLogic() {
          return useWotlkLogic;
     };
+
+
+    void setMinBatch(int value) {
+        minBatch = value;
+    }
+    int getMinBatch() {
+        return minBatch;
+    }
+    void setMaxBatch(int value) {
+        maxBatch = value;
+    }
+    int getMaxBatch() {
+        return maxBatch;
+    }
 };
 
 

@@ -414,10 +414,8 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                                         SMOPortalRef *portalRels,
                                         std::vector<WmoGroupResult> &candidateGroups) {
 
-    if (!this->m_loaded) return false;
-
     CAaBox &bbArray = this->m_volumeWorldGroupBorder;
-    MOGP *groupInfo = this->m_geom->mogp;
+
     //1. Check if group wmo is interior wmo
     //if ((groupInfo.flags & 0x2000) == 0) return null;
     //interiorGroups++;
@@ -430,8 +428,26 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
     );
 
     if (!isInsideAABB) return false;
+
     //wmoGroupsInside++;
     //lastWmoGroupInside = i;
+
+    if (!m_loaded) {
+        M2Range topBottom;
+        topBottom.max = m_main_groupInfo->bounding_box.max.z;
+        topBottom.min = m_main_groupInfo->bounding_box.min.z;
+
+        candidateGroups.push_back({
+                                      topBottom : topBottom,
+                                      groupId : m_groupNumber,
+                                      bspLeafList : {},
+                                      nodeId: -1
+                                  });
+
+        return true;
+    }
+
+    MOGP *groupInfo = this->m_geom->mogp;
 
     int moprIndex = groupInfo->moprIndex;
     int numItems = groupInfo->moprCount;

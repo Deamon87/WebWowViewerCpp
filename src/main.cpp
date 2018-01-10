@@ -248,6 +248,9 @@ struct my_nkc_app {
     bool drawM2AABB = false;
     bool drawWMOAABB = false;
 
+    int minBatch = 0;
+    int maxBatch = 9999;
+
     WoWScene *scene;
     RequestProcessor *processor;
 
@@ -255,7 +258,12 @@ struct my_nkc_app {
     double lastFrame;
 };
 
-
+inline void CopyAndNullTerminate( const std::string& source,
+                                  char* dest,
+                                  size_t dest_size )
+{
+    dest[source.copy(dest, dest_size-1)] = 0;
+}
 
 void mainLoop(void* loopArg){
     struct my_nkc_app* myapp = (struct my_nkc_app*)loopArg;
@@ -294,24 +302,22 @@ void mainLoop(void* loopArg){
             printf("Button pressed\n");
         }
 
+        nk_label(ctx, "Draw M2 AABB:", NK_TEXT_LEFT);
+
         /* fixed widget window ratio width */
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
         {
             nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "Draw M2 AABB:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
-            nk_layout_row_dynamic(ctx, 30, 2);
             if (nk_option_label(ctx, "on", myapp->drawM2AABB)) myapp->drawM2AABB = true;
             if (nk_option_label(ctx, "off", !myapp->drawM2AABB)) myapp->drawM2AABB = false;
         }
         nk_layout_row_end(ctx);
 
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
+        nk_layout_row_push(ctx, 50);
+        nk_label(ctx, "Draw WMO AABB:", NK_TEXT_LEFT);
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
         {
             nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "Draw WMO AABB:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
-            nk_layout_row_dynamic(ctx, 30, 2);
             if (nk_option_label(ctx, "on", myapp->drawWMOAABB)) myapp->drawWMOAABB = true;
             if (nk_option_label(ctx, "off", !myapp->drawWMOAABB)) myapp->drawWMOAABB = false;
         }
@@ -321,6 +327,42 @@ void mainLoop(void* loopArg){
         testConf->setDrawM2BB(myapp->drawM2AABB);
         testConf->setDrawWmoBB(myapp->drawWMOAABB);
 
+        //Debug batch stuff
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+        {
+            char buffer[10];
+            CopyAndNullTerminate(std::to_string(myapp->minBatch), buffer, 10);
+            nk_layout_row_push(ctx, 50);
+            nk_flags event = nk_edit_string_zero_terminated(ctx,
+                                                            NK_EDIT_BOX |
+                                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
+                                                            buffer, sizeof(buffer),
+                                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
+
+            try {
+                myapp->minBatch = std::stoi(buffer);
+            } catch(...) {
+                myapp->minBatch = 0;
+            }
+            nk_layout_row_push(ctx, 50);
+            CopyAndNullTerminate(std::to_string(myapp->maxBatch), buffer, 10);
+            nk_edit_string_zero_terminated(ctx,
+                                           NK_EDIT_BOX |
+                                           NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
+                                           buffer, sizeof(buffer),
+                                           nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
+
+            try {
+                myapp->maxBatch = std::stoi(buffer);
+            } catch(...) {
+                myapp->maxBatch = 9999;
+            }
+
+            testConf->setMinBatch(myapp->minBatch);
+            testConf->setMaxBatch(myapp->maxBatch);
+
+        }
+//
         /* custom widget pixel width */
         nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
         {
@@ -331,25 +373,28 @@ void mainLoop(void* loopArg){
         }
         nk_layout_row_end(ctx);
 
-        nk_layout_row_begin(ctx, NK_STATIC, 15, 1);
+        nk_layout_row_push(ctx, 80);
+        nk_label(ctx, "Coordinates :", NK_TEXT_LEFT);
+
+        nk_layout_row_begin(ctx, NK_STATIC, 15, 3);
         {
-            nk_layout_row_push(ctx, 200);
+            nk_layout_row_push(ctx, 60);
 
             float cameraPos[4];
             myapp->scene->getCurrentCamera()->getCameraPosition(cameraPos);
 
-            nk_label(ctx, "Coordinates :", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
             nk_label(ctx, std::to_string(cameraPos[0]).c_str(), NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
             nk_label(ctx, std::to_string(cameraPos[1]).c_str(), NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
             nk_label(ctx, std::to_string(cameraPos[2]).c_str(), NK_TEXT_LEFT);
+        }
+        nk_layout_row_end(ctx);
+        nk_layout_row_begin(ctx, NK_STATIC, 15, 2);
+        {
             nk_layout_row_push(ctx, 50);
             nk_label(ctx, "FPS :", NK_TEXT_LEFT);
             nk_label(ctx, std::to_string(fps).c_str(), NK_TEXT_LEFT);
         }
-        nk_layout_row_end(ctx);
+
     }
     nk_end(ctx);
     /* End Nuklear GUI */

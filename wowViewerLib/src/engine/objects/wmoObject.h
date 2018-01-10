@@ -144,8 +144,6 @@ public:
         int level,
         std::unordered_set<M2Object*> &m2ObjectSet);
 
-    WmoGroupResult getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4);
-
     bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
 
     bool isGroupWmoInterior(int groupId);

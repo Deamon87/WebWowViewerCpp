@@ -557,7 +557,7 @@ void WmoGroupGeom::createIndexVBO() {
 void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
 
     GLuint blackPixelText = api->getBlackPixelTexture();
-
+    Config * config = api->getConfig();
 
     bool isIndoor = (mogp->flags.INTERIOR) > 0;
 
@@ -590,8 +590,10 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
     glActiveTexture(GL_TEXTURE0);
     glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0);
 
-    //for (var j = 0; j < wmoGroupObject.mogp.numBatchesA; j++) {
-    for (int j = 0; j < batchesLen; j++) {
+    int minBatch = config->getMinBatch();
+    int maxBatch = std::min(config->getMaxBatch(), batchesLen);
+
+    for (int j = minBatch; j < maxBatch; j++) {
         SMOBatch &renderBatch = batches[j];
 
         int texIndex;
