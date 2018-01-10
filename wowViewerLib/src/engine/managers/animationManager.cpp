@@ -393,10 +393,10 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
     const M2Sequence* mainAnimationRecord = m_m2File->sequences[this->mainAnimationIndex];
     const M2Sequence* currentAnimationRecord = m_m2File->sequences[this->currentAnimationIndex];
 
-    this->currentAnimationTime += deltaTime * currentAnimationRecord->movespeed;
+    this->currentAnimationTime += deltaTime;
     //Update global sequences
     for (int i = 0; i < this->globalSequenceTimes.size(); i++) {
-        if (m_m2File->global_loops[i] > 0) { // Global sequence values can be 0's
+        if (m_m2File->global_loops[i]->timestamp > 0) { // Global sequence values can be 0's
             this->globalSequenceTimes[i] += deltaTime;
             this->globalSequenceTimes[i] = fmod(this->globalSequenceTimes[i], m_m2File->global_loops[i]->timestamp);
         }

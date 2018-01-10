@@ -664,6 +664,10 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
 //                resultColor = mathfu::vec4(0.0);
 //            }
 
+            if (mogp->flags.EXTERIOR) {
+                resultColor = mathfu::vec4(0.5f, 0.5f, 0.5f, 0.5f);
+            }
+
             glUniform4fv(wmoShader->getUnf("uAmbientLight"),
                 1,
                 &resultColor[0]
@@ -709,8 +713,15 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
                 glDisable(GL_BLEND);
                 glUniform1f(wmoShader->getUnf("uAlphaTest"), 70.0/255.0);
                 glUniform1i(wmoShader->getUnf("uEnableAlpha"), 1);
-
                 break;
+            case 2 : //Blend_Alpha
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glUniform1f(wmoShader->getUnf("uAlphaTest"), 70.0/255.0);
+                glUniform1i(wmoShader->getUnf("uEnableAlpha"), 1);
+                break;
+
+
             case 3 : //GxBlend_Add
                 glUniform1f(wmoShader->getUnf("uAlphaTest"), 0.00392157);
                 glUniform1i(wmoShader->getUnf("uEnableAlpha"), 1);

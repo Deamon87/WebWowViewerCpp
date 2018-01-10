@@ -85,11 +85,11 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/texture/BlpTexture.cpp src/engine/texture/BlpTexture.h src/engine/persistance/header/blpFileHeader.h
         src/engine/cache/cache.cpp src/engine/cache/cache.h src/engine/geometry/skinGeom.cpp
         src/engine/geometry/skinGeom.h src/engine/persistance/header/skinFileHeader.h
-        src/engine/objects/m2Object.cpp src/engine/objects/m2Object.h
+        src/engine/objects/m2/m2Object.cpp src/engine/objects/m2/m2Object.h
         src/engine/algorithms/mathHelper.cpp src/engine/algorithms/mathHelper.h
         src/engine/wowInnerApi.h
-        src/engine/objects/m2Helpers/M2MaterialInst.cpp
-        src/engine/objects/m2Helpers/M2MaterialInst.h
+        src/engine/objects/m2/m2Helpers/M2MaterialInst.cpp
+        src/engine/objects/m2/m2Helpers/M2MaterialInst.h
         src/engine/managers/animationManager.cpp
         src/engine/algorithms/animate.cpp
         src/engine/algorithms/animate.h
@@ -98,29 +98,29 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/geometry/wmoMainGeom.cpp
         src/engine/geometry/wmoMainGeom.h
         src/engine/persistance/helper/ChunkFileReader.h
-        src/engine/objects/adtObject.cpp
-        src/engine/objects/adtObject.h
+        src/engine/objects/adt/adtObject.cpp
+        src/engine/objects/adt/adtObject.h
         src/engine/persistance/header/adtFileHeader.h
-        src/engine/objects/wmoGroupObject.cpp
-        src/engine/objects/wmoGroupObject.h
-        src/engine/objects/wmoObject.cpp
-        src/engine/objects/wmoObject.h
-        src/engine/objects/map.cpp
-        src/engine/objects/map.h
+        src/engine/objects/wmo/wmoGroupObject.cpp
+        src/engine/objects/wmo/wmoGroupObject.h
+        src/engine/objects/wmo/wmoObject.cpp
+        src/engine/objects/wmo/wmoObject.h
+        src/engine/objects/scenes/map.cpp
+        src/engine/objects/scenes/map.h
         src/engine/persistance/adtFile.h
         src/engine/persistance/adtFile.cpp
         src/engine/algorithms/grahamScan.cpp
         src/engine/algorithms/grahamScan.h
         src/engine/objects/iMapApi.h
         src/engine/objects/iInnerSceneApi.h
-        src/engine/objects/m2Scene.cpp
-        src/engine/objects/m2Scene.h
+        src/engine/objects/scenes/m2Scene.cpp
+        src/engine/objects/scenes/m2Scene.h
         src/engine/algorithms/PortalCullingAlgo.cpp
         src/engine/algorithms/PortalCullingAlgo.h
-        src/engine/objects/wmoScene.cpp
-        src/engine/objects/wmoScene.h
-        src/engine/objects/objectCache.h src/engine/objects/m2Instancing/m2InstancingObject.cpp
-        src/engine/objects/m2Instancing/m2InstancingObject.h
+        src/engine/objects/scenes/wmoScene.cpp
+        src/engine/objects/scenes/wmoScene.h
+        src/engine/objects/objectCache.h src/engine/objects/m2/m2Instancing/m2InstancingObject.cpp
+        src/engine/objects/m2/m2Instancing/m2InstancingObject.h
         src/engine/algorithms/hashString.h
         src/engine/persistance/header/wdtFileHeader.h
         src/engine/persistance/wdtFile.cpp src/engine/persistance/wdtFile.h src/engine/managers/particleManager.cpp src/engine/managers/particleManager.h src/engine/managers/particles/particleEmitter.cpp src/engine/managers/particles/particleEmitter.h src/engine/managers/particles/generators/CParticleGenerator.cpp src/engine/managers/particles/generators/CParticleGenerator.h src/engine/managers/particles/generators/CSphereGenerator.cpp src/engine/managers/particles/generators/CSphereGenerator.h src/engine/managers/particles/particle.cpp src/engine/managers/particles/particle.h src/engine/managers/particles/generators/CSplineGenerator.cpp src/engine/managers/particles/generators/CSplineGenerator.h src/engine/managers/particles/generators/CBoneGenerator.cpp src/engine/managers/particles/generators/CBoneGenerator.h)

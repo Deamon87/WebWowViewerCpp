@@ -9,7 +9,7 @@ class M2SkinProfile;
 #include <vector>
 #include "../wowInnerApi.h"
 #include "../persistance/header/M2FileHeader.h"
-#include "../objects/m2Helpers/M2MaterialInst.h"
+#include "../objects/m2/m2Helpers/M2MaterialInst.h"
 //#include "../objects/m2Object.h"
 
 class M2Geom {

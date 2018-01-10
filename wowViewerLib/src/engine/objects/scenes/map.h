@@ -7,13 +7,13 @@
 
 
 #include <unordered_set>
-#include "adtObject.h"
-#include "m2Object.h"
-#include "wmoObject.h"
-#include "iMapApi.h"
-#include "iInnerSceneApi.h"
-#include "objectCache.h"
-#include "m2Instancing/m2InstancingObject.h"
+#include "../adt/adtObject.h"
+#include "../m2/m2Object.h"
+#include "../wmo/wmoObject.h"
+#include "../iMapApi.h"
+#include "../iInnerSceneApi.h"
+#include "../objectCache.h"
+#include "../m2/m2Instancing/m2InstancingObject.h"
 
 class Map : public IMapApi, public iInnerSceneApi {
 private:

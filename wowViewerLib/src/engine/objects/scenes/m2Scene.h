@@ -6,8 +6,8 @@
 #define WEBWOWVIEWERCPP_M2SCENE_H
 
 
-#include "iInnerSceneApi.h"
-#include "m2Object.h"
+#include "../iInnerSceneApi.h"
+#include "../m2/m2Object.h"
 
 class M2Scene : public iInnerSceneApi {
 private:

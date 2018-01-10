@@ -5,9 +5,9 @@
 #ifndef WEBWOWVIEWERCPP_WMOSCENE_H
 #define WEBWOWVIEWERCPP_WMOSCENE_H
 
-#include "iInnerSceneApi.h"
-#include "wmoObject.h"
-#include "objectCache.h"
+#include "../iInnerSceneApi.h"
+#include "../wmo/wmoObject.h"
+#include "../objectCache.h"
 
 class WmoScene : public iInnerSceneApi {
 private:

@@ -14,7 +14,7 @@ class WmoGroupGeom;
 #include "opengl/header.h"
 #include "cache/cache.h"
 #include "shader/ShaderRuntimeData.h"
-#include "objects/adtObject.h"
+#include "objects/adt/adtObject.h"
 #include "persistance/adtFile.h"
 #include "persistance/wdtFile.h"
 

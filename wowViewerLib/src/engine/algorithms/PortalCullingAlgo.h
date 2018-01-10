@@ -6,7 +6,7 @@
 #define WEBWOWVIEWERCPP_PORTALCULLINGALGO_H
 
 
-#include "../objects/wmoObject.h"
+#include "../objects/wmo/wmoObject.h"
 
 
 #endif //WEBWOWVIEWERCPP_PORTALCULLINGALGO_H

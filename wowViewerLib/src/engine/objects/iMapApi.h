@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_IMAPAPI_H
 
 class IMapApi;
-#include "m2Object.h"
+#include "m2/m2Object.h"
 
 class IMapApi {
 public:

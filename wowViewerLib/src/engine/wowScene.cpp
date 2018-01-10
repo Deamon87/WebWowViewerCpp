@@ -3,8 +3,8 @@
 #include "shaders.h"
 #include "shader/ShaderRuntimeData.h"
 #include "algorithms/mathHelper.h"
-#include "objects/m2Scene.h"
-#include "objects/wmoScene.h"
+#include "objects/scenes/m2Scene.h"
+#include "objects/scenes/wmoScene.h"
 
 #include <mathfu/glsl_mappings.h>
 #include <iostream>
@@ -61,7 +61,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new Map(this, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
-//    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
@@ -101,6 +100,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
 //    currentScene = new Map(this, "stormgarde keep");
 //
+    m_firstCamera.setCameraPos(-963, 977, 80);
+    currentScene = new Map(this, "dungeonblockout");
+//
 //   m_firstCamera.setCameraPos(939, -4813 , 0); //Scholozar Basin
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
 //    currentScene = new Map(this, "Northrend");
@@ -137,6 +139,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "creature\\wingedhorse\\wingedhorse.m2");
+//
+//
+//  m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "world/expansion06/doodads/brokenshore/7bs_tombofsargerasfxbeam_01_reduced.m2");
 //
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -185,13 +192,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\mantidraid\\pa_mantid_raid.wmo");
 //    currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/grimbatol/kz_grimbatol.wmo");
+//    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/grimbatol/kz_grimbatol_raid.wmo");
 
 
 
-    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
-    currentScene = new WmoScene(this,
-        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
+//    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
 // currentScene = new WmoScene(this,
 //        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
@@ -210,7 +219,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
+//        "world/wmo/brokenisles/valsharah/7vs_nightmare_worldtree.wmo");
+//
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
 //        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
+//
+//  m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -949,7 +966,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 1200;
+    int farPlane = 300;
     int nearPlane = 1;
     float fov = toRadian(50.0);
 

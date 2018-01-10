@@ -12,15 +12,15 @@ class M2Object;
 #include <vector>
 #include <set>
 
-#include "../persistance/header/adtFileHeader.h"
-#include "../opengl/header.h"
-#include "../wowInnerApi.h"
+#include "../../persistance/header/adtFileHeader.h"
+#include "../../opengl/header.h"
+#include "../../wowInnerApi.h"
 
-#include "../persistance/adtFile.h"
-#include "../persistance/wdtFile.h"
-#include "m2Object.h"
-#include "wmoObject.h"
-#include "iMapApi.h"
+#include "../../persistance/adtFile.h"
+#include "../../persistance/wdtFile.h"
+#include "../m2/m2Object.h"
+#include "../wmo/wmoObject.h"
+#include "../iMapApi.h"
 
 class AdtObject {
 public:

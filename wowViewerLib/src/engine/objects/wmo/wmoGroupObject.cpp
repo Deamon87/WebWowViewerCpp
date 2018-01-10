@@ -3,8 +3,8 @@
 //
 
 #include "wmoGroupObject.h"
-#include "../algorithms/mathHelper.h"
-#include "../shaderDefinitions.h"
+#include "../../algorithms/mathHelper.h"
+#include "../../shaderDefinitions.h"
 #include <algorithm>
 
 void WmoGroupObject::update() {

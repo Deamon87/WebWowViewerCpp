@@ -3,9 +3,9 @@
 //
 
 #include "wmoObject.h"
-#include "../algorithms/mathHelper.h"
-#include "../shaderDefinitions.h"
-#include "../persistance/header/commonFileStructs.h"
+#include "../../algorithms/mathHelper.h"
+#include "../../shaderDefinitions.h"
+#include "../../persistance/header/commonFileStructs.h"
 
 std::vector<mathfu::vec3> CreateOccluders(const WmoGroupGeom * groupGeom)
 {
@@ -707,13 +707,6 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
     MathHelper::fixNearPlane(frustumPlanes, cameraVec4);
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
-    mathfu::vec3 headOfPyramid = MathHelper::getIntersection(
-            frustumPoints[4], frustumPoints[7],
-            frustumPoints[3], frustumPoints[0]
-    );
-    mathfu::vec4 headOfPyramidLocal = this->m_placementInvertMatrix * mathfu::vec4(headOfPyramid, 1.0);
-
-
     //Test code
     mathfu::mat4 MVPMat = viewPerspectiveMat*this->m_placementMatrix;
     std::vector<mathfu::vec3> frustumPointsLocal1 = MathHelper::calculateFrustumPointsFromMat(MVPMat);
@@ -823,12 +816,6 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
     MathHelper::fixNearPlane(frustumPlanes, cameraVec4);
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
-
-    mathfu::vec3 headOfPyramid = MathHelper::getIntersection(
-            frustumPoints[4], frustumPoints[7],
-            frustumPoints[3], frustumPoints[0]
-    );
-    mathfu::vec4 headOfPyramidLocal = this->m_placementInvertMatrix * mathfu::vec4(headOfPyramid, 1.0);
 
     //Test code
     mathfu::mat4 MVPMat = viewPerspectiveMat*this->m_placementMatrix;

@@ -9,12 +9,12 @@ struct WmoGroupResult;
 class WmoGroupObject;
 #include <string>
 #include <unordered_set>
-#include "../persistance/header/adtFileHeader.h"
-#include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
+#include "../../persistance/header/adtFileHeader.h"
+#include "mathfu/glsl_mappings.h"
 #include "wmoGroupObject.h"
-#include "m2Object.h"
-#include "../geometry/wmoMainGeom.h"
-#include "./iWmoApi.h"
+#include "../m2/m2Object.h"
+#include "../../geometry/wmoMainGeom.h"
+#include "../iWmoApi.h"
 
 
 struct WmoGroupResult {

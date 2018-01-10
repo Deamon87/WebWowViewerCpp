@@ -7,15 +7,15 @@
 
 #include <cstdint>
 #include <mathfu/glsl_mappings.h>
-#include "../wowInnerApi.h"
-#include "../persistance/header/wmoFileHeader.h"
-#include "../geometry/m2Geom.h"
-#include "../geometry/skinGeom.h"
+#include "../../wowInnerApi.h"
+#include "../../persistance/header/wmoFileHeader.h"
+#include "../../geometry/m2Geom.h"
+#include "../../geometry/skinGeom.h"
 #include "m2Helpers/M2MaterialInst.h"
-#include "../managers/animationManager.h"
-#include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
-#include "../persistance/header/skinFileHeader.h"
-#include "../../../3rdparty/mathfu/include/mathfu/internal/vector_4.h"
+#include "../../managers/animationManager.h"
+#include "mathfu/matrix.h"
+#include "../../persistance/header/skinFileHeader.h"
+#include "mathfu/internal/vector_4.h"
 
 class M2Object {
 public:

@@ -22,7 +22,7 @@
 #include "stringTrim.h"
 #include "geometry/wmoGroupGeom.h"
 #include "geometry/wmoMainGeom.h"
-#include "objects/map.h"
+#include "objects/scenes/map.h"
 #include "persistance/wdtFile.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {

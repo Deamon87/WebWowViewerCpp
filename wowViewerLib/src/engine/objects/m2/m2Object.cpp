@@ -6,11 +6,11 @@
 #include <regex>
 #include <iomanip>
 #include "m2Object.h"
-#include "../algorithms/mathHelper.h"
-#include "../managers/animationManager.h"
-#include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
-#include "../persistance/header/M2FileHeader.h"
-#include "../shaderDefinitions.h"
+#include "../../algorithms/mathHelper.h"
+#include "../../managers/animationManager.h"
+#include "mathfu/matrix.h"
+#include "../../persistance/header/M2FileHeader.h"
+#include "../../shaderDefinitions.h"
 
 //Legion shader stuff
 

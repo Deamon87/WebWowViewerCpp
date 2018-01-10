@@ -3,9 +3,9 @@
 //
 
 #include "adtObject.h"
-#include "../shaderDefinitions.h"
-#include "../algorithms/mathHelper.h"
-#include "../persistance/adtFile.h"
+#include "../../shaderDefinitions.h"
+#include "../../algorithms/mathHelper.h"
+#include "../../persistance/adtFile.h"
 
 
 void AdtObject::loadingFinished() {

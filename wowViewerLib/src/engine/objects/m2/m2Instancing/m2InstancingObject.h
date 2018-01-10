@@ -6,7 +6,7 @@
 #define WEBWOWVIEWERCPP_M2INSTANCINGOBJECT_H
 
 
-#include "../../wowInnerApi.h"
+#include "../../../wowInnerApi.h"
 
 class M2InstancingObject {
 

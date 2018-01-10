@@ -6,10 +6,10 @@
 #include <set>
 #include <cmath>
 #include "map.h"
-#include "../algorithms/mathHelper.h"
-#include "../algorithms/grahamScan.h"
-#include "m2Instancing/m2InstancingObject.h"
-#include "../persistance/wdtFile.h"
+#include "../../algorithms/mathHelper.h"
+#include "../../algorithms/grahamScan.h"
+#include "../m2/m2Instancing/m2InstancingObject.h"
+#include "../../persistance/wdtFile.h"
 
 void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
     std::string fileIdent = m2Object->getModelIdent();
