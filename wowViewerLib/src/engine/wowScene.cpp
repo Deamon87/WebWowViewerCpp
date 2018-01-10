@@ -59,7 +59,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
 //    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-//    currentScene = new Map(this, "Expansion01");d
+//    currentScene = new Map(this, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-7271, 925, 0); //The wound
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
@@ -138,7 +138,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "creature\\wingedhorse\\wingedhorse.m2");
 //
-   m_firstCamera.setCameraPos(0, 0, 0);
+//   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "world\\expansion06\\doodads\\legion\\7fx_sargerassword_fx.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);

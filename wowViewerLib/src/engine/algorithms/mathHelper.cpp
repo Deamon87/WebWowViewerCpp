@@ -249,7 +249,7 @@ mathfu::vec3 MathHelper::getIntersection( mathfu::vec3 &tail1, mathfu::vec3 &hea
     npoints[0] = tail1 + dir1 * sc;
     npoints[1] = tail2 + dir2 * tc;
 
-    if((npoints[1] - npoints[0]).Length() < 0.001)
+    if((npoints[1] - npoints[0]).Length() < 0.1)
     {
         return (npoints[0] + npoints[1]) / 2;
     }
