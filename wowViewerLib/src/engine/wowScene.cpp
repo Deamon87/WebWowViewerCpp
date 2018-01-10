@@ -138,7 +138,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "creature\\wingedhorse\\wingedhorse.m2");
 //
-//   m_firstCamera.setCameraPos(0, 0, 0);
+   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "world\\expansion06\\doodads\\legion\\7fx_sargerassword_fx.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
@@ -215,7 +215,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
-
+////
 
 
     glBindVertexArray(0);
@@ -683,271 +683,232 @@ void WoWSceneImpl::drawTexturedQuad(GLuint texture,
     glEnable(GL_DEPTH_TEST);
 }
 
-/*
-void WoWSceneImpl::activateReadDepthBuffer () {
-    this.currentShaderProgram = this.readDepthBuffer;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        GL_useProgram(this.currentShaderProgram.program);
-        var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
 
-        GL_activeTexture(GL_TEXTURE0);
+void WoWSceneImpl::activateM2Shader() {
+    glUseProgram(this->m2Shader->getProgram());
+//    glEnableVertexAttribArray(0);
+//    if (!this.vao_ext) {
+    this->activateM2ShaderAttribs();
+//    }
 
-        GL_enableVertexAttribArray(this.currentShaderProgram.shaderAttributes.position);
-        GL_enableVertexAttribArray(this.currentShaderProgram.shaderAttributes.texture);
+    glUniformMatrix4fv(this->m2Shader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->m2Shader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
 
-    }
+    glUniform1i(this->m2Shader->getUnf("uTexture"), 0);
+    glUniform1i(this->m2Shader->getUnf("uTexture2"), 1);
+
+    glUniform1f(this->m2Shader->getUnf("uFogStart"), this->uFogStart);
+    glUniform1f(this->m2Shader->getUnf("uFogEnd"), this->uFogEnd);
+
+    glUniform3fv(this->m2Shader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+
+
+    glActiveTexture(GL_TEXTURE0);
 }
-void WoWSceneImpl::activateWMOShader () {
-    this.currentShaderProgram = this.wmoShader;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        GL_useProgram(this.currentShaderProgram.program);
-        var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
 
-        GL_enableVertexAttribArray(shaderAttributes.aPosition);
-        if (shaderAttributes.aNormal) {
-            GL_enableVertexAttribArray(shaderAttributes.aNormal);
-        }
-        GL_enableVertexAttribArray(shaderAttributes.aTexCoord);
-        GL_enableVertexAttribArray(shaderAttributes.aTexCoord2);
-        GL_enableVertexAttribArray(shaderAttributes.aColor);
-        GL_enableVertexAttribArray(shaderAttributes.aColor2);
-
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uLookAtMat, false, this.lookAtMat4);
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
-
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uTexture, 0);
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uTexture2, 1);
-
-        GL_uniform1f(this.currentShaderProgram.shaderUniforms.uFogStart, this.uFogStart);
-        GL_uniform1f(this.currentShaderProgram.shaderUniforms.uFogEnd, this.uFogEnd);
-
-        GL_uniform3fv(this.currentShaderProgram.shaderUniforms.uFogColor, this.fogColor);
-
-        GL_activeTexture(GL_TEXTURE0);
-    }
+void WoWSceneImpl::deactivateM2Shader() {
+    //glDisableVertexAttribArray(+m2Shader::Attribute::aPosition);
+//    if (shaderAttributes.aNormal) {
+    glDisableVertexAttribArray(+m2Shader::Attribute::aNormal);
+//    }
+    glDisableVertexAttribArray(+m2Shader::Attribute::boneWeights);
+    glDisableVertexAttribArray(+m2Shader::Attribute::bones);
+    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
+    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
 }
-void WoWSceneImpl::deactivateWMOShader () {
-    var gl = this.gl;
-    var instExt = this.sceneApi.extensions.getInstancingExt();
-    var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
 
-    //GL_disableVertexAttribArray(shaderAttributes.aPosition);
-    if (shaderAttributes.aNormal) {
-        GL_disableVertexAttribArray(shaderAttributes.aNormal);
+void WoWSceneImpl::activateM2InstancingShader() {
+    glUseProgram(this->m2InstancingShader->getProgram());
+
+    glUniformMatrix4fv(this->m2InstancingShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->m2InstancingShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+
+    glUniform1i(this->m2InstancingShader->getUnf("uTexture"), 0);
+    glUniform1i(this->m2InstancingShader->getUnf("uTexture2"), 1);
+
+    glUniform1f(this->m2InstancingShader->getUnf("uFogStart"), this->uFogStart);
+    glUniform1f(this->m2InstancingShader->getUnf("uFogEnd"), this->uFogEnd);
+
+    glActiveTexture(GL_TEXTURE0);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aPosition);
+//    if (shaderAttributes.aNormal) {
+//        glEnableVertexAttribArray(+m2Shader::Attribute::aNormal);
+//    }
+    glEnableVertexAttribArray(+m2Shader::Attribute::boneWeights);
+    glEnableVertexAttribArray(+m2Shader::Attribute::bones);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
+
+    glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 0);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 1);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 2);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 3);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aDiffuseColor);
+    if ( true/*instExt != null */) {
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 0, 1);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 1);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 2, 1);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 3, 1);
+        glVertexAttribDivisor(+m2Shader::Attribute::aDiffuseColor, 1);
     }
 
-    GL_disableVertexAttribArray(shaderAttributes.aTexCoord);
-    GL_disableVertexAttribArray(shaderAttributes.aTexCoord2);
-
-    GL_disableVertexAttribArray(shaderAttributes.aColor);
-    GL_disableVertexAttribArray(shaderAttributes.aColor2);
+    glUniform3fv(this->m2InstancingShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 }
-void WoWSceneImpl::deactivateTextureCompositionShader() {
-    var gl = this.gl;
-    GL_useProgram(this.currentShaderProgram.program);
-    var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
 
-    GL_bindFramebuffer(GL_FRAMEBUFFER, null);
+void WoWSceneImpl::deactivateM2InstancingShader() {
 
-    GL_bindBuffer(GL_ELEMENT_ARRAY_BUFFER, null);
-    GL_bindBuffer(GL_ARRAY_BUFFER, null);
+//    glDisableVertexAttribArray(+m2Shader::Attribute::aPosition);
+//    if (shaderAttributes.aNormal) {
+    glDisableVertexAttribArray(+m2Shader::Attribute::aNormal);
+//    }
+    glDisableVertexAttribArray(+m2Shader::Attribute::boneWeights);
+    glDisableVertexAttribArray(+m2Shader::Attribute::bones);
+    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
+    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
 
-    GL_enable(GL_DEPTH_TEST);
-    GL_depthMask(true);
-    GL_disable(GL_BLEND);
+    if (true /*instExt*/) {
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 0, 0);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 0);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 2, 0);
+        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 3, 0);
+    }
+    glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 0);
+    glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 1);
+    glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 2);
+    glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 3);
+
+//    glEnableVertexAttribArray(0);
+}
+
+void WoWSceneImpl::activateBoundingBoxShader() {
+    glUseProgram(this->bbShader->getProgram());
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
+    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
+
+    //gl.enableVertexAttribArray(this.currentShaderProgram.shaderAttributes.aPosition);
+    glVertexAttribPointer(+drawBBShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, nullptr);  // position
+
+    glUniformMatrix4fv(this->bbShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->bbShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+}
+void WoWSceneImpl::deactivateBoundingBoxShader() {
+
 }
 
 void WoWSceneImpl::activateM2ShaderAttribs() {
-    var gl = this.gl;
-    var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
-    GL_enableVertexAttribArray(shaderAttributes.aPosition);
-    if (shaderAttributes.aNormal) {
-        GL_enableVertexAttribArray(shaderAttributes.aNormal);
-    }
-    GL_enableVertexAttribArray(shaderAttributes.boneWeights);
-    GL_enableVertexAttribArray(shaderAttributes.bones);
-    GL_enableVertexAttribArray(shaderAttributes.aTexCoord);
-    GL_enableVertexAttribArray(shaderAttributes.aTexCoord2);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aPosition);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aNormal);
+    glEnableVertexAttribArray(+m2Shader::Attribute::boneWeights);
+    glEnableVertexAttribArray(+m2Shader::Attribute::bones);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
+    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
 }
-void WoWSceneImpl::deactivateM2ShaderAttribs() {
-    var gl = this.gl;
-    var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
 
-    GL_disableVertexAttribArray(shaderAttributes.aPosition);
+void WoWSceneImpl::activateWMOShader() {
+    glUseProgram(this->wmoShader->getProgram());
 
-    if (shaderAttributes.aNormal) {
-        GL_disableVertexAttribArray(shaderAttributes.aNormal);
-    }
-    GL_disableVertexAttribArray(shaderAttributes.boneWeights);
-    GL_disableVertexAttribArray(shaderAttributes.bones);
+    glEnableVertexAttribArray(+wmoShader::Attribute::aPosition);
+//    if (shaderAttributes.aNormal) {
+    glEnableVertexAttribArray(+wmoShader::Attribute::aNormal);
+//    }
+    glEnableVertexAttribArray(+wmoShader::Attribute::aTexCoord);
+    glEnableVertexAttribArray(+wmoShader::Attribute::aTexCoord2);
+    glEnableVertexAttribArray(+wmoShader::Attribute::aColor);
+    glEnableVertexAttribArray(+wmoShader::Attribute::aColor2);
 
-    GL_disableVertexAttribArray(shaderAttributes.aTexCoord);
-    GL_disableVertexAttribArray(shaderAttributes.aTexCoord2);
-    GL_enableVertexAttribArray(0);
+    glUniformMatrix4fv(this->wmoShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->wmoShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+
+    glUniform1i(this->wmoShader->getUnf("uTexture"), 0);
+    glUniform1i(this->wmoShader->getUnf("uTexture2"), 1);
+
+    glUniform1f(this->wmoShader->getUnf("uFogStart"), this->uFogStart);
+    glUniform1f(this->wmoShader->getUnf("uFogEnd"), this->uFogEnd);
+
+    glUniform3fv(this->wmoShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+
+    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+    upVector = (this->m_lookAtMat4.Transpose() * upVector);
+    glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
+
+    glUniform3fv(this->wmoShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
+
+
+
+
+    glActiveTexture(GL_TEXTURE0);
 }
-void WoWSceneImpl::activateM2Shader () {
-    this.currentShaderProgram = this.m2Shader;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        GL_useProgram(this.currentShaderProgram.program);
-        GL_enableVertexAttribArray(0);
-        if (!this.vao_ext) {
-            this.activateM2ShaderAttribs()
-        }
 
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uLookAtMat, false, this.lookAtMat4);
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
-        if (this.currentShaderProgram.shaderUniforms.isBillboard) {
-            GL_uniform1i(this.currentShaderProgram.shaderUniforms.isBillboard, 0);
-        }
-
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uTexture, 0);
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uTexture2, 1);
-
-        GL_uniform1f(this.currentShaderProgram.shaderUniforms.uFogStart, this.uFogStart);
-        GL_uniform1f(this.currentShaderProgram.shaderUniforms.uFogEnd, this.uFogEnd);
-
-        GL_uniform3fv(this.currentShaderProgram.shaderUniforms.uFogColor, this.fogColor);
-
-
-        GL_activeTexture(GL_TEXTURE0);
-    }
+void WoWSceneImpl::deactivateWMOShader() {
+    glDisableVertexAttribArray(+wmoShader::Attribute::aNormal);
+//    }
+    glDisableVertexAttribArray(+wmoShader::Attribute::aTexCoord);
+    glDisableVertexAttribArray(+wmoShader::Attribute::aTexCoord2);
+    glDisableVertexAttribArray(+wmoShader::Attribute::aColor);
+    glDisableVertexAttribArray(+wmoShader::Attribute::aColor2);
 }
-void WoWSceneImpl::deactivateM2Shader () {
-    var gl = this.gl;
-    var instExt = this.sceneApi.extensions.getInstancingExt();
+void WoWSceneImpl::activateAdtShader (){
+    glUseProgram(adtShader->getProgram());
 
-    if (!this.vao_ext) {
-        this.deactivateM2ShaderAttribs()
-    }
+    glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
+    glEnableVertexAttribArray(+adtShader::Attribute::aIndex);
+    glEnableVertexAttribArray(+adtShader::Attribute::aColor);
+
+    glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+
+    glUniform1i(adtShader->getUnf("uAlphaTexture"), 0);
+    glUniform1i(adtShader->getUnf("uLayer0"), 1);
+    glUniform1i(adtShader->getUnf("uLayer1"), 2);
+    glUniform1i(adtShader->getUnf("uLayer2"), 3);
+    glUniform1i(adtShader->getUnf("uLayer3"), 4);
+    glUniform1i(adtShader->getUnf("uLayerHeight0"), 5);
+    glUniform1i(adtShader->getUnf("uLayerHeight1"), 6);
+    glUniform1i(adtShader->getUnf("uLayerHeight2"), 7);
+    glUniform1i(adtShader->getUnf("uLayerHeight3"), 8);
+
+    glUniform1f(adtShader->getUnf("uFogStart"), this->uFogStart);
+    glUniform1f(adtShader->getUnf("uFogEnd"), this->uFogEnd);
+
+    glUniform3fv(adtShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 }
-void WoWSceneImpl::activateM2InstancingShader () {
-    this.currentShaderProgram = this.m2InstancingShader;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        var instExt = this.sceneApi.extensions.getInstancingExt();
-        var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
+void WoWSceneImpl::deactivateAdtShader() {
+    glDisableVertexAttribArray(+adtShader::Attribute::aIndex);
+    glDisableVertexAttribArray(+adtShader::Attribute::aColor);
+    glUseProgram(0);
 
-        GL_useProgram(this.currentShaderProgram.program);
+    glDisableVertexAttribArray(+adtShader::Attribute::aIndex);
+    glDisableVertexAttribArray(+adtShader::Attribute::aColor);
+}
 
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uLookAtMat, false, this.lookAtMat4);
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
+void WoWSceneImpl::activateFrustumBoxShader() {
+    glUseProgram(drawFrustumShader->getProgram());
 
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uTexture, 0);
-        GL_uniform1i(this.currentShaderProgram.shaderUniforms.uTexture2, 1);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
+    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
 
-        GL_uniform1f(this.currentShaderProgram.shaderUniforms.uFogStart, this.uFogStart);
-        GL_uniform1f(this.currentShaderProgram.shaderUniforms.uFogEnd, this.uFogEnd);
+    glEnableVertexAttribArray(+drawFrustumShader::Attribute::aPosition);
+    glVertexAttribPointer(+drawFrustumShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, nullptr);  // position
 
-        GL_activeTexture(GL_TEXTURE0);
-        GL_enableVertexAttribArray(0);
-        GL_enableVertexAttribArray(shaderAttributes.aPosition);
-        if (shaderAttributes.aNormal) {
-            GL_enableVertexAttribArray(shaderAttributes.aNormal);
-        }
-        GL_enableVertexAttribArray(shaderAttributes.boneWeights);
-        GL_enableVertexAttribArray(shaderAttributes.bones);
-        GL_enableVertexAttribArray(shaderAttributes.aTexCoord);
-        GL_enableVertexAttribArray(shaderAttributes.aTexCoord2);
-
-        GL_enableVertexAttribArray(shaderAttributes.aPlacementMat + 0);
-        GL_enableVertexAttribArray(shaderAttributes.aPlacementMat + 1);
-        GL_enableVertexAttribArray(shaderAttributes.aPlacementMat + 2);
-        GL_enableVertexAttribArray(shaderAttributes.aPlacementMat + 3);
-        GL_enableVertexAttribArray(shaderAttributes.aDiffuseColor);
-        if (instExt != null) {
-            instExt.vertexAttribDivisorANGLE(shaderAttributes.aPlacementMat + 0, 1);
-            instExt.vertexAttribDivisorANGLE(shaderAttributes.aPlacementMat + 1, 1);
-            instExt.vertexAttribDivisorANGLE(shaderAttributes.aPlacementMat + 2, 1);
-            instExt.vertexAttribDivisorANGLE(shaderAttributes.aPlacementMat + 3, 1);
-            instExt.vertexAttribDivisorANGLE(shaderAttributes.aDiffuseColor, 1);
-        }
-
-        GL_uniform3fv(this.currentShaderProgram.shaderUniforms.uFogColor, this.fogColor);
-    }
+    glUniformMatrix4fv(drawFrustumShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(drawFrustumShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
 
 }
-void WoWSceneImpl::deactivateM2InstancingShader () {
-    var gl = this.gl;
-    var instExt = this.sceneApi.extensions.getInstancingExt();
-    var shaderAttributes = this.sceneApi.shaders.getShaderAttributes();
 
-    GL_disableVertexAttribArray(shaderAttributes.aPosition);
-    if (shaderAttributes.aNormal) {
-        GL_disableVertexAttribArray(shaderAttributes.aNormal);
-    }
-    GL_disableVertexAttribArray(shaderAttributes.boneWeights);
-    GL_disableVertexAttribArray(shaderAttributes.bones);
-    GL_disableVertexAttribArray(shaderAttributes.aTexCoord);
-    GL_disableVertexAttribArray(shaderAttributes.aTexCoord2);
+void WoWSceneImpl::activateDrawPointShader() {
+    glUseProgram(drawPoints->getProgram());
 
-    if (instExt) {
-        instExt.vertexAttribDivisorANGLE(shaderAttributes.aPlacementMat + 0, 0);
-        instExt.vertexAttribDivisorANGLE(shaderAttributes.aPlacementMat + 1, 0);
-        instExt.vertexAttribDivisorANGLE(shaderAttributes.aPlacementMat + 2, 0);
-        instExt.vertexAttribDivisorANGLE(shaderAttributes.aPlacementMat + 3, 0);
-    }
-    GL_disableVertexAttribArray(shaderAttributes.aPlacementMat + 0);
-    GL_disableVertexAttribArray(shaderAttributes.aPlacementMat + 1);
-    GL_disableVertexAttribArray(shaderAttributes.aPlacementMat + 2);
-    GL_disableVertexAttribArray(shaderAttributes.aPlacementMat + 3);
+    glEnableVertexAttribArray(+drawPoints::Attribute::aPosition);
 
-    GL_enableVertexAttribArray(0);
+    glUniformMatrix4fv(drawPoints->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(drawPoints->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+
 }
-void WoWSceneImpl::activateBoundingBoxShader () {
-    this.currentShaderProgram = this.bbShader;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        GL_useProgram(this.currentShaderProgram.program);
+void WoWSceneImpl::deactivateDrawPointShader() {
 
-        GL_bindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.bbBoxVars.ibo_elements);
-        GL_bindBuffer(GL_ARRAY_BUFFER, this.bbBoxVars.vbo_vertices);
-
-        //GL_enableVertexAttribArray(this.currentShaderProgram.shaderAttributes.aPosition);
-        GL_vertexAttribPointer(this.currentShaderProgram.shaderAttributes.aPosition, 3, GL_FLOAT, false, 0, 0);  // position
-
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uLookAtMat, false, this.lookAtMat4);
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
-    }
 }
-void WoWSceneImpl::activateFrustumBoxShader () {
-    this.currentShaderProgram = this.drawFrustumShader;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        GL_useProgram(this.currentShaderProgram.program);
 
-        GL_bindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.bbBoxVars.ibo_elements);
-        GL_bindBuffer(GL_ARRAY_BUFFER, this.bbBoxVars.vbo_vertices);
-
-        GL_enableVertexAttribArray(this.currentShaderProgram.shaderAttributes.aPosition);
-        GL_vertexAttribPointer(this.currentShaderProgram.shaderAttributes.aPosition, 3, GL_FLOAT, false, 0, 0);  // position
-
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uLookAtMat, false, this.lookAtMat4);
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
-    }
-}
-void WoWSceneImpl::activateDrawLinesShader () {
-    this.currentShaderProgram = this.drawLinesShader;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        GL_useProgram(this.currentShaderProgram.program);
-
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uLookAtMat, false, this.lookAtMat4);
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
-    }
-}
-void WoWSceneImpl::activateDrawPortalShader () {
-    this.currentShaderProgram = this.drawPortalShader;
-    if (this.currentShaderProgram) {
-        var gl = this.gl;
-        GL_useProgram(this.currentShaderProgram.program);
-
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uLookAtMat, false, this.lookAtMat4);
-        GL_uniformMatrix4fv(this.currentShaderProgram.shaderUniforms.uPMatrix, false, this.perspectiveMatrix);
-    }
-} */
 /****************/
 
 GLuint WoWSceneImpl::getBlackPixelTexture(){
@@ -988,7 +949,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 300;
+    int farPlane = 1200;
     int nearPlane = 1;
     float fov = toRadian(50.0);
 
@@ -1093,6 +1054,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
 //    this.perspectiveMatrix = perspectiveMatrix;
     this->m_viewCameraForRender = viewCameraForRender;
+    this->SetDirection();
 //
 //    var cameraPos = vec4.fromValues(
 //            this.mainCamera[0],
@@ -1188,224 +1150,45 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     glBindVertexArray(0);
 }
 
-void WoWSceneImpl::activateM2Shader() {
-    glUseProgram(this->m2Shader->getProgram());
-//    glEnableVertexAttribArray(0);
-//    if (!this.vao_ext) {
-        this->activateM2ShaderAttribs();
-//    }
+void WoWSceneImpl::SetDirection() {
 
-    glUniformMatrix4fv(this->m2Shader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(this->m2Shader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+    // Phi Table
+    static const float phiTable[4][2] = {
+            { 0.0,  2.2165682f },
+            { 0.25, 1.9198623f },
+            { 0.5,  2.2165682f },
+            { 0.75, 1.9198623f }
+    };
 
-    glUniform1i(this->m2Shader->getUnf("uTexture"), 0);
-    glUniform1i(this->m2Shader->getUnf("uTexture2"), 1);
-
-    glUniform1f(this->m2Shader->getUnf("uFogStart"), this->uFogStart);
-    glUniform1f(this->m2Shader->getUnf("uFogEnd"), this->uFogEnd);
-
-    glUniform3fv(this->m2Shader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+    // Theta Table
 
 
-    glActiveTexture(GL_TEXTURE0);
-}
+    static const float thetaTable[4][2] = {
+        { 0.0,  3.926991f },
+        { 0.25, 3.926991f },
+        { 0.5,  3.926991f },
+        { 0.75, 3.926991f }
+    };
 
-void WoWSceneImpl::deactivateM2Shader() {
-    //glDisableVertexAttribArray(+m2Shader::Attribute::aPosition);
-//    if (shaderAttributes.aNormal) {
-        glDisableVertexAttribArray(+m2Shader::Attribute::aNormal);
-//    }
-    glDisableVertexAttribArray(+m2Shader::Attribute::boneWeights);
-    glDisableVertexAttribArray(+m2Shader::Attribute::bones);
-    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
-    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
-}
+//    float phi = DayNight::InterpTable(&DayNight::phiTable, 4u, DayNight::g_dnInfo.dayProgression);
+//    float theta = DayNight::InterpTable(&DayNight::thetaTable, 4u, DayNight::g_dnInfo.dayProgression);
 
-void WoWSceneImpl::activateM2InstancingShader() {
-    glUseProgram(this->m2InstancingShader->getProgram());
+    float phi = phiTable[0][1];
+    float theta = thetaTable[0][1];
 
-    glUniformMatrix4fv(this->m2InstancingShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(this->m2InstancingShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+    // Convert from spherical coordinates to XYZ
+    // x = rho * sin(phi) * cos(theta)
+    // y = rho * sin(phi) * sin(theta)
+    // z = rho * cos(phi)
 
-    glUniform1i(this->m2InstancingShader->getUnf("uTexture"), 0);
-    glUniform1i(this->m2InstancingShader->getUnf("uTexture2"), 1);
+    float sinPhi = (float) sin(phi);
+    float cosPhi = (float) cos(phi);
 
-    glUniform1f(this->m2InstancingShader->getUnf("uFogStart"), this->uFogStart);
-    glUniform1f(this->m2InstancingShader->getUnf("uFogEnd"), this->uFogEnd);
+    float sinTheta = (float) sin(theta);
+    float cosTheta = (float) cos(theta);
 
-    glActiveTexture(GL_TEXTURE0);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aPosition);
-//    if (shaderAttributes.aNormal) {
-//        glEnableVertexAttribArray(+m2Shader::Attribute::aNormal);
-//    }
-    glEnableVertexAttribArray(+m2Shader::Attribute::boneWeights);
-    glEnableVertexAttribArray(+m2Shader::Attribute::bones);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
-
-    glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 0);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 1);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 2);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 3);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aDiffuseColor);
-    if ( true/*instExt != null */) {
-        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 0, 1);
-        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 1);
-        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 2, 1);
-        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 3, 1);
-        glVertexAttribDivisor(+m2Shader::Attribute::aDiffuseColor, 1);
-    }
-
-    glUniform3fv(this->m2InstancingShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
-}
-
-void WoWSceneImpl::deactivateM2InstancingShader() {
-
-//    glDisableVertexAttribArray(+m2Shader::Attribute::aPosition);
-//    if (shaderAttributes.aNormal) {
-        glDisableVertexAttribArray(+m2Shader::Attribute::aNormal);
-//    }
-    glDisableVertexAttribArray(+m2Shader::Attribute::boneWeights);
-    glDisableVertexAttribArray(+m2Shader::Attribute::bones);
-    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
-    glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
-
-    if (true /*instExt*/) {
-        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 0, 0);
-        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 0);
-        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 2, 0);
-        glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 3, 0);
-    }
-    glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 0);
-    glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 1);
-    glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 2);
-    glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 3);
-
-//    glEnableVertexAttribArray(0);
-}
-
-void WoWSceneImpl::activateBoundingBoxShader() {
-    glUseProgram(this->bbShader->getProgram());
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
-
-    //gl.enableVertexAttribArray(this.currentShaderProgram.shaderAttributes.aPosition);
-    glVertexAttribPointer(+drawBBShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, nullptr);  // position
-
-    glUniformMatrix4fv(this->bbShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(this->bbShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
-}
-void WoWSceneImpl::deactivateBoundingBoxShader() {
-
-}
-
-void WoWSceneImpl::activateM2ShaderAttribs() {
-    glEnableVertexAttribArray(+m2Shader::Attribute::aPosition);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aNormal);
-    glEnableVertexAttribArray(+m2Shader::Attribute::boneWeights);
-    glEnableVertexAttribArray(+m2Shader::Attribute::bones);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
-}
-
-void WoWSceneImpl::activateWMOShader() {
-    glUseProgram(this->wmoShader->getProgram());
-
-    glEnableVertexAttribArray(+wmoShader::Attribute::aPosition);
-//    if (shaderAttributes.aNormal) {
-        glEnableVertexAttribArray(+wmoShader::Attribute::aNormal);
-//    }
-    glEnableVertexAttribArray(+wmoShader::Attribute::aTexCoord);
-    glEnableVertexAttribArray(+wmoShader::Attribute::aTexCoord2);
-    glEnableVertexAttribArray(+wmoShader::Attribute::aColor);
-    glEnableVertexAttribArray(+wmoShader::Attribute::aColor2);
-
-    glUniformMatrix4fv(this->wmoShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(this->wmoShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
-
-    glUniform1i(this->wmoShader->getUnf("uTexture"), 0);
-    glUniform1i(this->wmoShader->getUnf("uTexture2"), 1);
-
-    glUniform1f(this->wmoShader->getUnf("uFogStart"), this->uFogStart);
-    glUniform1f(this->wmoShader->getUnf("uFogEnd"), this->uFogEnd);
-
-    glUniform3fv(this->wmoShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
-
-    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    upVector = (this->m_lookAtMat4 * upVector);
-    glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
-
-    glActiveTexture(GL_TEXTURE0);
-}
-
-void WoWSceneImpl::deactivateWMOShader() {
-    glDisableVertexAttribArray(+wmoShader::Attribute::aNormal);
-//    }
-    glDisableVertexAttribArray(+wmoShader::Attribute::aTexCoord);
-    glDisableVertexAttribArray(+wmoShader::Attribute::aTexCoord2);
-    glDisableVertexAttribArray(+wmoShader::Attribute::aColor);
-    glDisableVertexAttribArray(+wmoShader::Attribute::aColor2);
-}
-void WoWSceneImpl::activateAdtShader (){
-        glUseProgram(adtShader->getProgram());
-
-        glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
-        glEnableVertexAttribArray(+adtShader::Attribute::aIndex);
-        glEnableVertexAttribArray(+adtShader::Attribute::aColor);
-
-        glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-        glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
-
-        glUniform1i(adtShader->getUnf("uAlphaTexture"), 0);
-        glUniform1i(adtShader->getUnf("uLayer0"), 1);
-        glUniform1i(adtShader->getUnf("uLayer1"), 2);
-        glUniform1i(adtShader->getUnf("uLayer2"), 3);
-        glUniform1i(adtShader->getUnf("uLayer3"), 4);
-    glUniform1i(adtShader->getUnf("uLayerHeight0"), 5);
-    glUniform1i(adtShader->getUnf("uLayerHeight1"), 6);
-    glUniform1i(adtShader->getUnf("uLayerHeight2"), 7);
-    glUniform1i(adtShader->getUnf("uLayerHeight3"), 8);
-
-        glUniform1f(adtShader->getUnf("uFogStart"), this->uFogStart);
-        glUniform1f(adtShader->getUnf("uFogEnd"), this->uFogEnd);
-
-        glUniform3fv(adtShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
-}
-void WoWSceneImpl::deactivateAdtShader() {
-    glDisableVertexAttribArray(+adtShader::Attribute::aIndex);
-    glDisableVertexAttribArray(+adtShader::Attribute::aColor);
-    glUseProgram(0);
-
-    glDisableVertexAttribArray(+adtShader::Attribute::aIndex);
-    glDisableVertexAttribArray(+adtShader::Attribute::aColor);
-}
-
-void WoWSceneImpl::activateFrustumBoxShader() {
-    glUseProgram(drawFrustumShader->getProgram());
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
-
-    glEnableVertexAttribArray(+drawFrustumShader::Attribute::aPosition);
-    glVertexAttribPointer(+drawFrustumShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, nullptr);  // position
-
-    glUniformMatrix4fv(drawFrustumShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(drawFrustumShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
-
-}
-
-void WoWSceneImpl::activateDrawPointShader() {
-    glUseProgram(drawPoints->getProgram());
-
-    glEnableVertexAttribArray(+drawPoints::Attribute::aPosition);
-
-    glUniformMatrix4fv(drawPoints->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(drawPoints->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
-
-}
-void WoWSceneImpl::deactivateDrawPointShader() {
-
+    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
+    m_sunDir = (m_lookAtMat4.Transpose() * sunDirWorld).xyz();
 }
 
  WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){

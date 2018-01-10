@@ -293,14 +293,102 @@ void mainLoop(void* loopArg){
 
 
     /* Nuklear GUI code */
-    if (nk_begin(ctx, "Show", nk_rect(50, 50, 220, 300),
+    if (nk_begin(ctx, "Show", nk_rect(50, 50, 250, 300),
                  NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
         /* fixed widget pixel width */
-        nk_layout_row_static(ctx, 30, 80, 1);
-        if (nk_button_label(ctx, "button")) {
-            /* event handling */
-            printf("Button pressed\n");
-        }
+//        nk_layout_row_static(ctx, 30, 80, 1);
+//        if (nk_button_label(ctx, "button")) {
+//            /* event handling */
+//            printf("Button pressed\n");
+//        }
+
+        //        //MENU
+//        {
+//            /* menubar */
+//            enum menu_states {MENU_DEFAULT, MENU_WINDOWS};
+//            static nk_size mprog = 60;
+//            static int mslider = 10;
+//            static int mcheck = nk_true;
+//            nk_menubar_begin(ctx);
+//
+//            /* menu #1 */
+//            nk_layout_row_begin(ctx, NK_STATIC, 25, 5);
+//            nk_layout_row_push(ctx, 45);
+//            if (nk_menu_begin_label(ctx, "MENU", NK_TEXT_LEFT, nk_vec2(120, 200)))
+//            {
+//                static size_t prog = 40;
+//                static int slider = 10;
+//                static int check = nk_true;
+//                nk_layout_row_dynamic(ctx, 25, 1);
+////                if (nk_menu_item_label(ctx, "Hide", NK_TEXT_LEFT))
+////                    show_menu = nk_false;
+////                if (nk_menu_item_label(ctx, "About", NK_TEXT_LEFT))
+////                    show_app_about = nk_true;
+//                nk_progress(ctx, &prog, 100, NK_MODIFIABLE);
+//                nk_slider_int(ctx, 0, &slider, 16, 1);
+//                nk_checkbox_label(ctx, "check", &check);
+//                nk_menu_end(ctx);
+//            }
+//            /* menu #2 */
+//            nk_layout_row_push(ctx, 60);
+//            if (nk_menu_begin_label(ctx, "ADVANCED", NK_TEXT_LEFT, nk_vec2(200, 600)))
+//            {
+//                enum menu_state {MENU_NONE,MENU_FILE, MENU_EDIT,MENU_VIEW,MENU_CHART};
+//                static enum menu_state menu_state = MENU_NONE;
+//                enum nk_collapse_states state;
+//
+//                state = (menu_state == MENU_FILE) ? NK_MAXIMIZED: NK_MINIMIZED;
+//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "FILE", &state)) {
+//                    menu_state = MENU_FILE;
+//                    nk_menu_item_label(ctx, "New", NK_TEXT_LEFT);
+//                    nk_menu_item_label(ctx, "Open", NK_TEXT_LEFT);
+//                    nk_menu_item_label(ctx, "Save", NK_TEXT_LEFT);
+//                    nk_menu_item_label(ctx, "Close", NK_TEXT_LEFT);
+//                    nk_menu_item_label(ctx, "Exit", NK_TEXT_LEFT);
+//                    nk_tree_pop(ctx);
+//                } else menu_state = (menu_state == MENU_FILE) ? MENU_NONE: menu_state;
+//
+//                state = (menu_state == MENU_EDIT) ? NK_MAXIMIZED: NK_MINIMIZED;
+//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "EDIT", &state)) {
+//                    menu_state = MENU_EDIT;
+//                    nk_menu_item_label(ctx, "Copy", NK_TEXT_LEFT);
+//                    nk_menu_item_label(ctx, "Delete", NK_TEXT_LEFT);
+//                    nk_menu_item_label(ctx, "Cut", NK_TEXT_LEFT);
+//                    nk_menu_item_label(ctx, "Paste", NK_TEXT_LEFT);
+//                    nk_tree_pop(ctx);
+//                } else menu_state = (menu_state == MENU_EDIT) ? MENU_NONE: menu_state;
+//
+//                state = (menu_state == MENU_VIEW) ? NK_MAXIMIZED: NK_MINIMIZED;
+//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "VIEW", &state)) {
+//                    menu_state = MENU_VIEW;
+//                    nk_menu_item_label(ctx, "About", NK_TEXT_LEFT);
+//                    nk_menu_item_label(ctx, "Options", NK_TEXT_LEFT);
+//                    nk_menu_item_label(ctx, "Customize", NK_TEXT_LEFT);
+//                    nk_tree_pop(ctx);
+//                } else menu_state = (menu_state == MENU_VIEW) ? MENU_NONE: menu_state;
+//
+//                state = (menu_state == MENU_CHART) ? NK_MAXIMIZED: NK_MINIMIZED;
+//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "CHART", &state)) {
+//                    size_t i = 0;
+//                    const float values[]={26.0f,13.0f,30.0f,15.0f,25.0f,10.0f,20.0f,40.0f,12.0f,8.0f,22.0f,28.0f};
+//                    menu_state = MENU_CHART;
+//                    nk_layout_row_dynamic(ctx, 150, 1);
+//                    nk_chart_begin(ctx, NK_CHART_COLUMN, NK_LEN(values), 0, 50);
+//                    for (i = 0; i < NK_LEN(values); ++i)
+//                    nk_chart_push(ctx, values[i]);
+//                    nk_chart_end(ctx);
+//                    nk_tree_pop(ctx);
+//                } else menu_state = (menu_state == MENU_CHART) ? MENU_NONE: menu_state;
+//                nk_menu_end(ctx);
+//            }
+//            /* menu widgets */
+//            nk_layout_row_push(ctx, 70);
+//            nk_progress(ctx, &mprog, 100, NK_MODIFIABLE);
+//            nk_slider_int(ctx, 0, &mslider, 16, 1);
+//            nk_checkbox_label(ctx, "check", &mcheck);
+//            nk_menubar_end(ctx);
+//        }
+
 
         nk_label(ctx, "Draw M2 AABB:", NK_TEXT_LEFT);
 
@@ -384,7 +472,9 @@ void mainLoop(void* loopArg){
             myapp->scene->getCurrentCamera()->getCameraPosition(cameraPos);
 
             nk_label(ctx, std::to_string(cameraPos[0]).c_str(), NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
             nk_label(ctx, std::to_string(cameraPos[1]).c_str(), NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
             nk_label(ctx, std::to_string(cameraPos[2]).c_str(), NK_TEXT_LEFT);
         }
         nk_layout_row_end(ctx);
