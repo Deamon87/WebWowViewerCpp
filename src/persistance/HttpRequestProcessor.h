@@ -11,7 +11,7 @@
 
 class HttpRequestProcessor : public RequestProcessor {
 public:
-    HttpRequestProcessor(const char *urlBase, const char *urlBaseFileId) : m_urlBase(urlBase){
+    HttpRequestProcessor(const char *urlBase, const char *urlBaseFileId) : m_urlBase(urlBase), m_urlBaseFileId(urlBaseFileId){
 
     }
 private:

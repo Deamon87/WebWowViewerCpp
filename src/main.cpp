@@ -466,15 +466,16 @@ void mainLoop(void* loopArg){
 
         nk_layout_row_begin(ctx, NK_STATIC, 15, 3);
         {
-            nk_layout_row_push(ctx, 60);
+
 
             float cameraPos[4];
             myapp->scene->getCurrentCamera()->getCameraPosition(cameraPos);
 
+            nk_layout_row_push(ctx, 80);
             nk_label(ctx, std::to_string(cameraPos[0]).c_str(), NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
+            nk_layout_row_push(ctx, 80);
             nk_label(ctx, std::to_string(cameraPos[1]).c_str(), NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
+            nk_layout_row_push(ctx, 80);
             nk_label(ctx, std::to_string(cameraPos[2]).c_str(), NK_TEXT_LEFT);
         }
         nk_layout_row_end(ctx);

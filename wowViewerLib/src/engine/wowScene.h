@@ -24,6 +24,7 @@
 #include "geometry/wmoMainGeom.h"
 #include "objects/scenes/map.h"
 #include "persistance/wdtFile.h"
+#include "persistance/wdlFile.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -44,6 +45,7 @@ public:
         skinGeomCache.provideFile(s_fileName, fileData);
         textureCache.provideFile(s_fileName, fileData);
         wdtCache.provideFile(s_fileName, fileData);
+        wdlCache.provideFile(s_fileName, fileData);
     };
     virtual void rejectFile(const char* fileName) {
         std::string s_fileName(fileName);
@@ -55,6 +57,7 @@ public:
         skinGeomCache.reject(s_fileName);
         textureCache.reject(s_fileName);
         wdtCache.reject(s_fileName);
+        wdlCache.reject(s_fileName);
     }
     void setFileRequestProcessor(IFileRequest*){};
 
@@ -76,47 +79,51 @@ public:
         }
     }
 public:
-    virtual Cache<AdtFile> *getAdtGeomCache() {
+    virtual Cache<AdtFile> *getAdtGeomCache() override {
         return &adtObjectCache;
     }
-    virtual Cache<M2Geom> *getM2GeomCache() {
+    virtual Cache<M2Geom> *getM2GeomCache() override {
         return &m2GeomCache;
     };
-    virtual Cache<SkinGeom> *getSkinGeomCache() {
+    virtual Cache<SkinGeom> *getSkinGeomCache() override {
         return &skinGeomCache;
     };
-    virtual Cache<BlpTexture> *getTextureCache() {
+    virtual Cache<BlpTexture> *getTextureCache() override {
         return &textureCache;
     };
-    virtual Cache<WmoMainGeom>* getWmoMainCache() {
+    virtual Cache<WmoMainGeom>* getWmoMainCache() override {
         return &wmoMainCache;
     };
-    virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() {
+    virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() override {
         return &wmoGeomCache;
     };
-    virtual Cache<WdtFile>* getWdtFileCache() {
+    virtual Cache<WdtFile>* getWdtFileCache() override {
         return &wdtCache;
     };
 
-    virtual ShaderRuntimeData *getM2Shader() {
+    virtual Cache<WdlFile>* getWdlFileCache() override {
+        return &wdlCache;
+    };
+
+    virtual ShaderRuntimeData *getM2Shader() override {
         return m2Shader;
     };
-    virtual ShaderRuntimeData *getM2InstancingShader() {
+    virtual ShaderRuntimeData *getM2InstancingShader() override {
         return m2InstancingShader;
     };
-    virtual ShaderRuntimeData *getBBShader() {
+    virtual ShaderRuntimeData *getBBShader() override {
         return bbShader;
     };
-    virtual ShaderRuntimeData *getPortalShader() {
+    virtual ShaderRuntimeData *getPortalShader() override {
         return drawPortalShader;
     }
-    virtual ShaderRuntimeData *getWmoShader() {
+    virtual ShaderRuntimeData *getWmoShader() override {
         return wmoShader;
     }
-    virtual ShaderRuntimeData *getAdtShader() {
+    virtual ShaderRuntimeData *getAdtShader() override {
         return adtShader;
     }
-    virtual ShaderRuntimeData *getDrawPointsShader() {
+    virtual ShaderRuntimeData *getDrawPointsShader() override {
         return drawPoints;
     }
 
@@ -197,6 +204,7 @@ private:
 
     Cache<AdtFile> adtObjectCache;
     Cache<WdtFile> wdtCache;
+    Cache<WdlFile> wdlCache;
     Cache<WmoGroupGeom> wmoGeomCache;
     Cache<WmoMainGeom> wmoMainCache;
     Cache<M2Geom> m2GeomCache;

@@ -142,12 +142,6 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
 
                     file.mldd_len = chunkData.chunkLen / sizeof(uint32_t);
                     chunkData.readValues(file.mldd, file.mldd_len);
-
-                    for (int i = 0; i < file.mldd_len; i++) {
-                        if (file.mldd[i] == 1252114) {
-                            std::cout << " file.mldd[i] = " << file.mwid[i];
-                        }
-                    }
                 }
             }
         },

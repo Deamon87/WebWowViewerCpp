@@ -13,6 +13,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         :
         wmoMainCache(requestProcessor),
         wdtCache(requestProcessor),
+        wdlCache(requestProcessor),
         wmoGeomCache(requestProcessor),
         m2GeomCache(requestProcessor),
         skinGeomCache(requestProcessor),
@@ -62,7 +63,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
-//    currentScene = new Map(this, "Troll Raid");
+    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
+    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -100,8 +102,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-3000, -3000, 0); //Broken shore
 //    currentScene = new Map(this, "stormgarde keep");
 //
-    m_firstCamera.setCameraPos(-963, 977, 80);
-    currentScene = new Map(this, "dungeonblockout");
+//    m_firstCamera.setCameraPos(-963, 977, 80);
+//    currentScene = new Map(this, "dungeonblockout");
 //
 //   m_firstCamera.setCameraPos(939, -4813 , 0); //Scholozar Basin
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
@@ -142,6 +144,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "world/expansion06/doodads/brokenshore/7bs_tombofsargerasfx_01_reduced.m2");
+
 //    currentScene = new M2Scene(this,
 //        "world/expansion06/doodads/brokenshore/7bs_tombofsargerasfxbeam_01_reduced.m2");
 //
@@ -1084,6 +1089,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    this.adtGeomCache.processCacheQueue(10);
     this->adtObjectCache.processCacheQueue(10);
     this->wdtCache.processCacheQueue(10);
+    this->wdlCache.processCacheQueue(10);
     this->wmoGeomCache.processCacheQueue(10);
     this->wmoMainCache.processCacheQueue(10);
     this->m2GeomCache.processCacheQueue(10);

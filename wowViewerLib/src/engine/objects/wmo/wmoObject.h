@@ -57,7 +57,10 @@ private:
 
     mathfu::mat4 m_placementMatrix;
     mathfu::mat4 m_placementInvertMatrix;
+
     std::string m_modelName;
+    bool useFileId = false;
+    int m_modelFileId;
 
     std::vector<WmoGroupObject*> groupObjects = std::vector<WmoGroupObject*>(0);
     std::vector<WmoGroupObject*> groupObjectsLod1 = std::vector<WmoGroupObject*>(0);
@@ -76,8 +79,11 @@ private:
 public:
     M2Object *getDoodad(int index);
     BlpTexture * getTexture(int materialId, bool isSpec);
-    void setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef);
-    void setLoadingParam(std::string modelName, SMMapObjDefObj1 &mapObjDef);
+    void setLoadingParam( SMMapObjDef &mapObjDef);
+    void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
+
+    void setModelFileName(std::string modelName);
+    void setModelFileId(int fileId);
 
     void startLoading();
     bool isLoaded(){ return m_loaded;}

@@ -527,7 +527,6 @@ void M2Object::startLoading() {
     if (!m_loading) {
         m_loading = true;
 
-
         Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
         if (!useFileId) {
             m_m2Geom = m2GeomCache->get(m_modelName);
@@ -703,7 +702,7 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const s
 
     //1. Check if camera position is inside Bounding Box
     if (
-        cameraPos[0] > aabb.min.z && cameraPos[0] < aabb.max.x &&
+        cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
         cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y &&
         cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
     ) return true;

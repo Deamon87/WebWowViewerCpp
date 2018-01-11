@@ -14,6 +14,7 @@
 #include "../iInnerSceneApi.h"
 #include "../objectCache.h"
 #include "../m2/m2Instancing/m2InstancingObject.h"
+#include "../wdl/wdlObject.h"
 
 class Map : public IMapApi, public iInnerSceneApi {
 private:
@@ -30,6 +31,7 @@ private:
     WmoObject *m_currentWMO = nullptr;
 
     WdtFile * m_wdtfile;
+    WdlObject * m_wdlObject;
 
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;
@@ -52,11 +54,15 @@ private:
     M2Object *getM2Object(int fileDataId, SMDoodadDef &doodadDef) override ;
     WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) override ;
     WmoObject *getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) override ;
+    WmoObject *getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
 public:
     Map(IWoWInnerApi *api, std::string mapName) : m_api(api), mapName(mapName){
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
+        std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
         m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
+        m_wdlObject = new WdlObject(api, wdlFileName);
+        m_wdlObject->setMapApi(this);
     };
 
     void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) override;
@@ -74,11 +80,8 @@ private:
                        std::unordered_set<M2Object*> &m2RenderedThisFrame,
                        std::unordered_set<WmoObject*> &wmoRenderedThisFrame);
 
-
-
     void drawExterior();
     void drawM2s();
-
 
     void addM2ObjectToInstanceManager(M2Object *m2Object);
 };

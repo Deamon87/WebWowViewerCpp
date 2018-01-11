@@ -29,7 +29,7 @@ public:
         m_mapApi = api;
     }
 
-    void loadingFinished();
+
     void draw();
 
     bool checkFrustumCulling(
@@ -42,6 +42,7 @@ public:
             std::set<WmoObject*> &wmoCandidates);
 
 private:
+    void loadingFinished();
     void createVBO();
     void loadAlphaTextures(int limit);
 

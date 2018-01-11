@@ -57,8 +57,13 @@ void WmoObject::startLoading() {
     if (!m_loading) {
         m_loading = true;
 
+
         Cache<WmoMainGeom> *wmoGeomCache = m_api->getWmoMainCache();
-        mainGeom = wmoGeomCache->get(m_modelName);
+        if (!useFileId) {
+            mainGeom = wmoGeomCache->get(m_modelName);
+        } else {
+            mainGeom = wmoGeomCache->getFileId(m_modelFileId);
+        }
 
     }
 }
@@ -579,18 +584,14 @@ void WmoObject::drawTransformedAntiPortalPoints(){
 #endif
 }
 
-void WmoObject::setLoadingParam(std::string modelName, SMMapObjDef &mapObjDef) {
-    m_modelName = modelName;
-
+void WmoObject::setLoadingParam(SMMapObjDef &mapObjDef) {
     //this->m_placementMatrix = mathfu::mat4::Identity();
     createPlacementMatrix(mapObjDef);
 
     this->m_doodadSet = mapObjDef.doodadSet;
     this->m_nameSet = mapObjDef.nameSet;
 }
-void WmoObject::setLoadingParam(std::string modelName, SMMapObjDefObj1 &mapObjDef) {
-    m_modelName = modelName;
-
+void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
     //this->m_placementMatrix = mathfu::mat4::Identity();
     createPlacementMatrix(mapObjDef);
 
@@ -1098,5 +1099,14 @@ bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroup
 
 
         return result;
+}
+
+void WmoObject::setModelFileName(std::string modelName) {
+    m_modelName = modelName;
+}
+
+void WmoObject::setModelFileId(int fileId) {
+    useFileId = true;
+    m_modelFileId = fileId;
 }
 

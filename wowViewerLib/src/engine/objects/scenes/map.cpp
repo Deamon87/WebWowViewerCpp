@@ -14,6 +14,7 @@
 void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
     std::string fileIdent = m2Object->getModelIdent();
     M2InstancingObject* instanceManager = this->m_instanceMap[fileIdent];
+
     //1. Create Instance manager for this type of file if it was not created yet
     if (instanceManager == nullptr) {
         instanceManager = new M2InstancingObject(this->m_api);
@@ -27,6 +28,7 @@ void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
 
 void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     if (!m_wdtfile->getIsLoaded()) return;
+
 
     adtRenderedThisFrame = std::unordered_set<AdtObject*>();
     m2RenderedThisFrame = std::unordered_set<M2Object*>();
@@ -76,11 +78,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
         for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
             M2Object *m2Object = this->m2RenderedThisFrameArr[i];
             m2Object->update(deltaTime, cameraVec3, lookAtMat);
-//            if (this.isM2Scene && m2Object.objectUpdate) {
-//                m2Object.objectUpdate(deltaTime, cameraVec4, lookAtMat);
-//            }
         }
-//    }
     }
 
     for (auto &wmoObject : this->wmoRenderedThisFrameArr) {
@@ -320,6 +318,11 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
 //    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
 
+    m_wdlObject->checkFrustumCulling(
+            cameraPos, frustumPlanes,
+            frustumPoints,
+            hullLines,
+            lookAtMat4, m2ObjectsCandidates, wmoCandidates);
 
     for (int i = adt_x_min; i <= adt_x_max; i++) {
         for (int j = adt_y_min; j <= adt_y_max; j++) {
@@ -381,7 +384,6 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
 M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
     M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
-    m2Object = nullptr;
     if (m2Object == nullptr) {
         m2Object = new M2Object(m_api);
         m2Object->setLoadParams(0, {},{});
@@ -395,7 +397,6 @@ M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
 
 M2Object *Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
     M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
-    m2Object = nullptr;
     if (m2Object == nullptr) {
         m2Object = new M2Object(m_api);
         m2Object->setLoadParams(0, {}, {});
@@ -409,22 +410,33 @@ M2Object *Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
 
 
 WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
-//    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    WmoObject * wmoObject = nullptr;
+    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
     if (wmoObject == nullptr) {
         wmoObject = new WmoObject(m_api);
-        wmoObject->setLoadingParam(fileName, mapObjDef);
+        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject->setModelFileName(fileName);
         m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
     }
     return wmoObject;
 }
 
 WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
-//    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    WmoObject * wmoObject = nullptr;
+    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
     if (wmoObject == nullptr) {
         wmoObject = new WmoObject(m_api);
-        wmoObject->setLoadingParam(fileName, mapObjDef);
+        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject->setModelFileName(fileName);
+        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+    }
+    return wmoObject;
+}
+
+WmoObject *Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
+    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
+    if (wmoObject == nullptr) {
+        wmoObject = new WmoObject(m_api);
+        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject->setModelFileId(fileDataId);
         m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
     }
     return wmoObject;

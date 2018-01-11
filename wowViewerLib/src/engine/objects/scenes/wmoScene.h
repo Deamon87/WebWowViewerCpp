@@ -39,7 +39,8 @@ public:
         mapObjDef.doodadSet = 0;
 
         auto *wmoObject = new WmoObject(m_api);
-        wmoObject->setLoadingParam(m_wmoModel, mapObjDef);
+        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject->setModelFileName(m_wmoModel);
 
         m_wmoObject = wmoObject;
     };
