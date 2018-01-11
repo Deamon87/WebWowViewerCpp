@@ -25,7 +25,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
         fullUrl = m_urlBase + fileName;
     }
 
-    std::cout << "fullUrl = " << fullUrl << std::endl;
+//    std::cout << "fullUrl = " << fullUrl << std::endl;
 
     HttpFile * httpFile = new HttpFile(fullUrl.c_str());
     httpFile->setCallback(
