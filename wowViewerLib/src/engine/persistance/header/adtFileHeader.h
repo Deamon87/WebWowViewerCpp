@@ -44,7 +44,7 @@ typedef uint32_t* MWID;
 
 
 struct SMDoodadDef {
-    uint32_t mmidEntry;           // references an entry in the MMID chunk, specifying the model to use.
+    uint32_t nameId;              // references an entry in the MMID chunk, specifying the model to use.
     uint32_t uniqueId;            // this ID should be unique for all ADTs currently loaded. Best, they are unique for the whole map. Blizzard has
                                   //these unique for the whole game.
     C3Vector position;            // This is relative to a corner of the map. Subtract 17066 from the non vertical values and you should start to see
@@ -61,7 +61,7 @@ struct SMDoodadDef {
         uint16_t mddf_unk_8 : 1;             // Legion+?
         uint16_t mddf_unk_10 : 1;            //
         uint16_t mddf_unk_20 : 1;            // Legion+?
-        uint16_t mddf_entry_is_filedata_id : 1; // mmidEntry is a file data id to directly load
+        uint16_t mddf_entry_is_filedata_id : 1; // nameId is a file data id to directly load
         uint16_t unused : 9;
     } flags;               // values from enum MDDFFlags.
 };
@@ -94,7 +94,7 @@ struct SMMapObjDefObj1 {                        // same as MODF but without boun
         uint16_t modf_destroyable : 1;         // set for destroyable buildings like the tower in DeathknightStart. This makes it a server-controllable game object.
         uint16_t modf_use_lod : 1;             // WoD(?)+: also load _LOD1.WMO for use dependent on distance
         uint16_t modf_unk_4 : 1;               // Legion(?)+: unknown
-        uint16_t modf_unk_8 : 1;               // Legion(?)+: unknown
+        uint16_t modf_entry_is_filedata_id : 1; // Legion(?)+: nameId is a file data id to directly load
         uint16_t unused : 12;
     } flags;
     uint16_t doodadSet;

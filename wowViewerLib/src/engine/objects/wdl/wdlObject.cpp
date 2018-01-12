@@ -37,7 +37,7 @@ void WdlObject::loadM2s() {
         SMDoodadDef &doodadDef = m_wdlFile->doodadDefObj[i];
         if (doodadDef.flags.mddf_entry_is_filedata_id) {
             //2. Get model
-            int fileDataId = doodadDef.mmidEntry;
+            int fileDataId = doodadDef.nameId;
             m2Objects[j] = m_mapApi->getM2Object(fileDataId, doodadDef);
         } else {
             std::cout << "WDL M2 do not have mddf_entry_is_filedata_id flag!!!" << std::endl;

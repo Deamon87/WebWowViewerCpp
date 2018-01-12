@@ -40,29 +40,23 @@ void AdtObject::loadM2s() {
         //1. Get filename
         if (useLod1Version) {
             SMDoodadDef &doodadDef = m_adtFileObjLod->doodadDefObj1[i];
-            if (doodadDef.mmidEntry == 1252114) {
-                std::cout << " file.mwid[i] = " << doodadDef.mmidEntry;
-            }
             if (doodadDef.flags.mddf_entry_is_filedata_id) {
                 //2. Get model
-                int fileDataId = m_adtFileObjLod->mmid[doodadDef.mmidEntry];
+                int fileDataId = m_adtFileObjLod->mmid[doodadDef.nameId];
                 m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
             } else {
-                std::string fileName = &m_adtFileObjLod->doodadNamesField[m_adtFileObjLod->mmid[doodadDef.mmidEntry]];
+                std::string fileName = &m_adtFileObjLod->doodadNamesField[m_adtFileObjLod->mmid[doodadDef.nameId]];
                 //2. Get model
                 m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
             }
         } else {
             SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
-            if (doodadDef.mmidEntry == 1252114) {
-                std::cout << " file.mwid[i] = " << doodadDef.mmidEntry;
-            }
             if (doodadDef.flags.mddf_entry_is_filedata_id) {
                 //2. Get model
-                int fileDataId = m_adtFileObj->mmid[doodadDef.mmidEntry];
+                int fileDataId = m_adtFileObj->mmid[doodadDef.nameId];
                 m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
             } else {
-                std::string fileName = &m_adtFileObj->doodadNamesField[m_adtFileObj->mmid[doodadDef.mmidEntry]];
+                std::string fileName = &m_adtFileObj->doodadNamesField[m_adtFileObj->mmid[doodadDef.nameId]];
                 //2. Get model
                 m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
             }
