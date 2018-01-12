@@ -25,6 +25,8 @@ public:
     SMOGroupInfo *groups;
     int groupsLen;
 
+    std::vector<std::vector<uint32_t>> gfids;
+
     C3Vector *portal_vertices;
     int portal_verticesLen;
 

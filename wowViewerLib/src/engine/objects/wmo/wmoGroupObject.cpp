@@ -81,7 +81,11 @@ void WmoGroupObject::startLoading() {
     if (!this->m_loading) {
         this->m_loading = true;
 
-        m_geom = m_api->getWmoGroupGeomCache()->get(m_fileName);
+        if (useFileId) {
+            m_geom = m_api->getWmoGroupGeomCache()->getFileId(m_modelFileId);
+        } else {
+            m_geom = m_api->getWmoGroupGeomCache()->get(m_fileName);
+        }
         m_geom->setMOHD(this->m_wmoApi->getWmoHeader());
     }
 }
@@ -131,7 +135,7 @@ void WmoGroupObject::createWorldGroupBB(CAaBox &bbox, mathfu::mat4 &placementMat
     this->m_worldGroupBorder = worldAABB;
     this->m_volumeWorldGroupBorder = worldAABB;
 
-    std::cout << "Called WmoGroupObject::createWorldGroupBB " << std::endl;
+//    std::cout << "Called WmoGroupObject::createWorldGroupBB " << std::endl;
 }
 
 void WmoGroupObject::updateWorldGroupBBWithM2() {
@@ -143,12 +147,6 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 //
     for (int j = 0; j < this->m_doodads.size(); j++) {
         M2Object* m2Object = this->m_doodads[j];
-        //1. Update the mdx
-        //If at least one exterior WMO group reference the doodad - do not use the diffuse lightning from modd chunk
-//        if (dontUseLocalLighting) {
-//            m2Object.setUseLocalLighting(false);
-//        }
-
         if (m2Object == nullptr || !m2Object->getGetIsLoaded()) continue; //corrupted :(
 
         CAaBox m2AAbb = m2Object->getAABB(); 
@@ -163,7 +161,7 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
                                         std::max(m2AAbb.max.z,groupAABB.max.z)));
     }
 
-    std::cout << "Called WmoGroupObject::updateWorldGroupBBWithM2 " << std::endl;
+//    std::cout << "Called WmoGroupObject::updateWorldGroupBBWithM2 " << std::endl;
     this->m_worldGroupBorder = CAaBox(groupAABB.min, groupAABB.max);
     m_wmoApi->updateBB();
 }
@@ -532,4 +530,13 @@ bool WmoGroupObject::checkDoodads(std::set<M2Object *> &wmoM2Candidates) {
 
 void WmoGroupObject::setWmoApi(IWmoApi *api) {
     m_wmoApi = api;
+}
+
+void WmoGroupObject::setModelFileName(std::string modelName) {
+    m_fileName = modelName;
+}
+
+void WmoGroupObject::setModelFileId(int fileId) {
+    useFileId = true;
+    m_modelFileId = fileId;
 }

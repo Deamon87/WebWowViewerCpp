@@ -16,7 +16,7 @@ class WmoGroupObject;
 
 class WmoGroupObject {
 public:
-    WmoGroupObject(mathfu::mat4 &modelMatrix, IWoWInnerApi *api, std::string fileName, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api), m_fileName(fileName){
+    WmoGroupObject(mathfu::mat4 &modelMatrix, IWoWInnerApi *api, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
         m_modelMatrix = &modelMatrix;
         m_groupNumber = groupNumber;
         m_main_groupInfo = &groupInfo;
@@ -32,6 +32,10 @@ public:
     const std::vector <M2Object *> *getDoodads() const { return &m_doodads; };
 
     void setWmoApi(IWmoApi *api);
+    void setModelFileName(std::string modelName);
+    void setModelFileId(int fileId);
+
+
     bool getDontUseLocalLightingForM2() { return m_dontUseLocalLightingForM2; };
     void update();
     bool checkGroupFrustum(mathfu::vec4 &cameraVec4,
@@ -49,7 +53,10 @@ private:
     IWoWInnerApi *m_api = nullptr;
     IWmoApi *m_wmoApi = nullptr;
     WmoGroupGeom *m_geom = nullptr;
+
     std::string m_fileName;
+    bool useFileId = false;
+    int m_modelFileId;
 
     CAaBox m_worldGroupBorder;
     CAaBox m_volumeWorldGroupBorder;

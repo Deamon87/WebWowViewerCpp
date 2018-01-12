@@ -11,6 +11,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include "../../include/wowScene.h"
 #include "../stringTrim.h"
 
@@ -94,7 +95,7 @@ public:
 
     T* getFileId (int id) {
         std::stringstream ss;
-        ss << "FILE" << std::hex << id <<".unk";
+        ss << "File" << std::setfill('0') << std::setw(8) << std::hex << id <<".unk";
         std::string fileName = ss.str();
 
 

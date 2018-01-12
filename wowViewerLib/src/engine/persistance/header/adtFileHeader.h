@@ -77,7 +77,8 @@ struct SMMapObjDef {
         uint16_t modf_destroyable : 1;         // set for destroyable buildings like the tower in DeathknightStart. This makes it a server-controllable game object.
         uint16_t modf_use_lod : 1;             // WoD(?)+: also load _LOD1.WMO for use dependent on distance
         uint16_t modf_unk_4 : 1;               // Legion(?)+: unknown
-        uint16_t unused : 13;
+        uint16_t modf_unk_8 : 1;               // Legion(?)+: unknown
+        uint16_t unused : 12;
     } flags;               // values from enum MODFFlags.
     uint16_t doodadSet;           // which WMO doodad set is used.
     uint16_t nameSet;             // which WMO name set is used. Used for renaming goldshire inn to northshire inn while using the same model.
@@ -93,7 +94,8 @@ struct SMMapObjDefObj1 {                        // same as MODF but without boun
         uint16_t modf_destroyable : 1;         // set for destroyable buildings like the tower in DeathknightStart. This makes it a server-controllable game object.
         uint16_t modf_use_lod : 1;             // WoD(?)+: also load _LOD1.WMO for use dependent on distance
         uint16_t modf_unk_4 : 1;               // Legion(?)+: unknown
-        uint16_t unused : 13;
+        uint16_t modf_unk_8 : 1;               // Legion(?)+: unknown
+        uint16_t unused : 12;
     } flags;
     uint16_t doodadSet;
     uint16_t nameSet;

@@ -212,16 +212,21 @@ void WmoObject::createGroupObjects(){
 
     std::string nameTemplate = m_modelName.substr(0, m_modelName.find_last_of("."));
     for(int i = 0; i < mainGeom->groupsLen; i++) {
-        //if (i != 127) continue; // Pillars of creation room
-        std::string numStr = std::to_string(i);
-        for (int j = numStr.size(); j < 3; j++) numStr = '0'+numStr;
 
-        std::string groupFilename = nameTemplate + "_" + numStr + ".wmo";
-        std::string groupFilenameLod1 = nameTemplate + "_" + numStr + "_lod1.wmo";
-
-
-        groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilename, mainGeom->groups[i], i);
+        groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
         groupObjects[i]->setWmoApi(this);
+        if (useFileId) {
+            groupObjects[i]->setModelFileId(mainGeom->gfids[0][i]);
+        } else {
+            std::string numStr = std::to_string(i);
+            for (int j = numStr.size(); j < 3; j++) numStr = '0' + numStr;
+
+            std::string groupFilename = nameTemplate + "_" + numStr + ".wmo";
+            std::string groupFilenameLod1 = nameTemplate + "_" + numStr + "_lod1.wmo";
+            groupObjects[i]->setModelFileName(groupFilename);
+        }
+
+
 
 //        groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilenameLod1, mainGeom->groups[i], i);
 //        groupObjectsLod1[i]->setWmoApi(this);

@@ -13,7 +13,7 @@ void HttpRequestProcessor::requestFile(const char *fileName) {
 
 void HttpRequestProcessor::processFileRequest(std::string &fileName) {
     std::string fullUrl;
-    if (fileName.find("FILE") == 0) {
+    if (fileName.find("File") == 0) {
         std::stringstream ss;
         std::string fileDataIdHex = fileName.substr(4, fileName.find(".")-4);
         uint32_t fileDataId;

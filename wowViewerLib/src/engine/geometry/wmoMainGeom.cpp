@@ -18,18 +18,38 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                 {
                     'MOHD', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
-                            chunkData.readValue(object.header);
-
                             debuglog("Entered MOHD");
+
+                            chunkData.readValue(object.header);
                         }
                     }
                 },
                 {
+                    'GFID', {
+                        handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered GFID");
+
+                            int fileDataIdCount = chunkData.chunkLen / sizeof(uint32_t);
+                            int lodCount = fileDataIdCount / object.header->nGroups;
+                            object.gfids = std::vector<std::vector<uint32_t>>(lodCount);
+                            for (int i = 0; i < lodCount; i++) {
+                                object.gfids[i] = std::vector<uint32_t>(object.header->nGroups);
+                                for (int j = 0; j < object.header->nGroups; j++) {
+                                    uint32_t fileDataId;
+                                    chunkData.readValue(fileDataId);
+                                    object.gfids[i][j] = fileDataId;
+                                }
+                            }
+                        }
+                    }
+                },
+
+                {
                     'MOGI', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MOGI");
                             object.groupsLen = chunkData.chunkLen / sizeof(SMOGroupInfo);
                             chunkData.readValues(object.groups, object.groupsLen);
-                            debuglog("Entered MOGI");
                         }
                     }
                 },
@@ -43,19 +63,18 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                 {
                     'MOPV', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MOPV");
                             object.portal_verticesLen = chunkData.chunkLen / sizeof(C3Vector);
                             chunkData.readValues(object.portal_vertices, object.portal_verticesLen);
-
-                            debuglog("Entered MOPV");
                         }
                     }
                 },
                 {
                     'MOPT', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MOPT");
                             object.portalsLen = chunkData.chunkLen / sizeof(SMOPortal);
                             chunkData.readValues(object.portals, object.portalsLen);
-                            debuglog("Entered MOPT");
                         }
                     }
                 },
@@ -71,55 +90,54 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                 {
                     'MOMT', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MOMT");
                             object.materialsLen = chunkData.chunkLen / sizeof(SMOMaterial);
                             chunkData.readValues(object.materials, object.materialsLen);
-                            debuglog("Entered MOMT");
                         }
                     }
                 },
                 {
                     'MOTX', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MOTX");
                             object.textureNamesFieldLen = chunkData.chunkLen;
                             chunkData.readValues(object.textureNamesField, object.textureNamesFieldLen);
-                            debuglog("Entered MOTX");
                         }
                     }
                 },
                 {
                     'MODN', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MODN");
                             object.doodadNamesFieldLen = chunkData.chunkLen;
                             chunkData.readValues(object.doodadNamesField, object.doodadNamesFieldLen);
-                            debuglog("Entered MODN");
                         }
                     }
                 },
                 {
                     'MODS', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MODS");
                             object.doodadSetsLen = chunkData.chunkLen / sizeof(SMODoodadSet);
                             chunkData.readValues(object.doodadSets, object.doodadSetsLen);
-                            debuglog("Entered MODS");
                         }
                     }
                 },
                 {
                     'MODD', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MODD");
                             object.doodadDefsLen = chunkData.chunkLen / sizeof(SMODoodadDef);
                             chunkData.readValues(object.doodadDefs, object.doodadDefsLen);
-                            debuglog("Entered MODD");
                         }
                     }
                 },
                 {
                     'MFOG', {
                         handler: [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MFOG");
                             object.fogsLen = chunkData.chunkLen / sizeof(SMOFog);
                             chunkData.readValues(object.fogs, object.fogsLen);
-
-                            debuglog("Entered MFOG");
                         }
                     }
                 },

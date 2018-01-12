@@ -293,7 +293,7 @@ void mainLoop(void* loopArg){
 
 
     /* Nuklear GUI code */
-    if (nk_begin(ctx, "Show", nk_rect(50, 50, 250, 300),
+    if (nk_begin(ctx, "Show", nk_rect(50, 50, 300, 300),
                  NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
         /* fixed widget pixel width */
 //        nk_layout_row_static(ctx, 30, 80, 1);
@@ -511,10 +511,10 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-    const char * url = "http://178.165.92.24:40001/get/";
-    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
+//    const char * url = "http://178.165.92.24:40001/get/";
+//    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
 //    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
-//    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
+    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
 //     const char *url = "http://localhost:8084/get/";
 
     testConf = new Config();
@@ -527,8 +527,8 @@ int main(){
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
         //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
         //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
+//        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
