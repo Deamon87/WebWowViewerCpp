@@ -25,14 +25,14 @@ void AdtObject::loadM2s() {
     int32_t length = m_adtFileObj->doodadDef_len;
 //
     bool useLod1Version = m_adtFileObjLod->lod_levels_for_objects != nullptr;
-    if (useLod1Version) {
-        offset = m_adtFileObjLod->lod_levels_for_objects->m2LodOffset[0];
-        length = m_adtFileObjLod->lod_levels_for_objects->m2LodLength[0];
-    }
     useLod1Version = false;
     if (useLod1Version) {
-        offset = 0;
-        length = m_adtFileObjLod->doodadDefObj1_len;
+        if (m_adtFileObjLod->lod_levels_for_objects != nullptr) {
+            offset = m_adtFileObjLod->lod_levels_for_objects->m2LodOffset[2];
+            length = m_adtFileObjLod->lod_levels_for_objects->m2LodLength[2];
+        } else {
+            length = m_adtFileObjLod->doodadDefObj1_len;
+        };
     }
 
     m2Objects = std::vector<M2Object *>(length);
@@ -40,9 +40,9 @@ void AdtObject::loadM2s() {
         //1. Get filename
         if (useLod1Version) {
             SMDoodadDef &doodadDef = m_adtFileObjLod->doodadDefObj1[i];
-            if (doodadDef.flags.mddf_entry_is_filedata_id) {
+            if (doodadDef.flags.mddf_entry_is_filedata_id == 1) {
                 //2. Get model
-                int fileDataId = m_adtFileObjLod->mmid[doodadDef.nameId];
+                int fileDataId = doodadDef.nameId;
                 m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
             } else {
                 std::string fileName = &m_adtFileObjLod->doodadNamesField[m_adtFileObjLod->mmid[doodadDef.nameId]];
@@ -71,8 +71,12 @@ void AdtObject::loadWmos() {
     bool useLod1Version = m_adtFileObjLod->lod_levels_for_objects != nullptr;
     useLod1Version = false;
     if (useLod1Version) {
-        offset = m_adtFileObjLod->lod_levels_for_objects->wmoLodOffset[0];
-        length = m_adtFileObjLod->lod_levels_for_objects->wmoLodLength[0];
+        if (m_adtFileObjLod->lod_levels_for_objects != nullptr) {
+            offset = m_adtFileObjLod->lod_levels_for_objects->wmoLodOffset[2];
+            length = m_adtFileObjLod->lod_levels_for_objects->wmoLodLength[2];
+        } else {
+            length = m_adtFileObjLod->mapObjDefObj1_len;
+        }
     }
 
 
@@ -83,16 +87,16 @@ void AdtObject::loadWmos() {
         std::string fileName;
         if (useLod1Version) {
             auto &mapDef = m_adtFileObjLod->mapObjDefObj1[i];
-            if (mapDef.nameId == 1393155) {
-                std::cout << " file.mwid[i] = " << mapDef.nameId;
+            if (mapDef.flags.modf_entry_is_filedata_id == 0) {
+                fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
+                wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
+            } else {
+                uint32_t fileDataId = mapDef.nameId;
+                wmoObjects[j] = m_mapApi->getWmoObject(fileDataId, mapDef);
             }
-            fileName = &m_adtFileObjLod->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
-            wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
         } else {
             auto &mapDef = m_adtFileObj->mapObjDef[i];
-            if (mapDef.nameId == 1393155) {
-                std::cout << " file.mwid[i] = " << mapDef.nameId;
-            }
+
             fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
             wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
         }

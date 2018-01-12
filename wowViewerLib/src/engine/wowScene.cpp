@@ -63,8 +63,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
-    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
-    currentScene = new Map(this, "Troll Raid");
+//    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
+//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+//    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -77,8 +78,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0);
 //    currentScene = new Map(this, "BLTestMap");
 
-//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-//    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "argus_rifts");
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
@@ -90,6 +89,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
 //    currentScene = new Map(this, "UlduarRaid");
+//
+//   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
+//    currentScene = new Map(this, "AzeriteBG1");
 
 //    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
 //    m_firstCamera.setCameraPos( 5333.3335, 10666.667, 1); //Strange WMO
@@ -105,7 +107,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-963, 977, 80);
 //    currentScene = new Map(this, "dungeonblockout");
 //
-//   m_firstCamera.setCameraPos(939, -4813 , 0); //Scholozar Basin
+//    m_firstCamera.setCameraPos(939, -4813 , 0); //Scholozar Basin
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
 //    currentScene = new Map(this, "Northrend");
 //
@@ -137,6 +139,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
+//
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "WORLD\\GENERIC\\HUMAN\\PASSIVE DOODADS\\STATUES\\STATUEDANATH.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -237,7 +243,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
-////
+//
 
 
     glBindVertexArray(0);
@@ -451,7 +457,7 @@ void WoWSceneImpl::initGlContext() {
 
 }
 void WoWSceneImpl::createBlackPixelTexture() {
-    unsigned int ff = 0xffffffff;
+    unsigned int ff = 0;
     glGenTextures(1, &blackPixel);
 
     glBindTexture(GL_TEXTURE_2D, blackPixel);
@@ -971,7 +977,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 1000;
+    int farPlane = 300;
     int nearPlane = 1;
     float fov = toRadian(50.0);
 

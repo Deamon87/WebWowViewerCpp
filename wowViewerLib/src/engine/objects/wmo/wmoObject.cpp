@@ -136,10 +136,6 @@ bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu
 }
 
 void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
-    float posx = mapObjDef.position.x;
-    float posy = mapObjDef.position.y;
-    float posz = mapObjDef.position.z;
-
     mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
 
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
@@ -170,10 +166,6 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
     createBB(worldAABB);
 }
 void WmoObject::createPlacementMatrix(SMMapObjDefObj1 &mapObjDef){
-    float posx = mapObjDef.position.x;
-    float posy = mapObjDef.position.y;
-    float posz = mapObjDef.position.z;
-
     mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
 
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
@@ -184,6 +176,10 @@ void WmoObject::createPlacementMatrix(SMMapObjDefObj1 &mapObjDef){
     placementMatrix *= MathHelper::RotationY(toRadian(mapObjDef.rotation.y-270));
     placementMatrix *= MathHelper::RotationZ(toRadian(-mapObjDef.rotation.x));
     placementMatrix *= MathHelper::RotationX(toRadian(mapObjDef.rotation.z-90));
+
+    if (mapObjDef.unk != 0) {
+        placementMatrix *= mathfu::mat4::FromScaleVector(mathfu::vec3(mapObjDef.unk / 1024.0f));
+    }
 
     mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
 
