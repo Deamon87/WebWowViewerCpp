@@ -296,6 +296,35 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         }
                     },
                     {
+                        'MCRD',
+                        {
+                            handler: [](AdtFile& file, ChunkData& chunkData) {
+                                debuglog("Entered MCRD");
+
+                                file.mcnkStructs[file.mcnkRead].mcrd_doodad_refs_len =
+                                    chunkData.chunkLen / sizeof(uint32_t);
+                                chunkData.readValues(
+                                    file.mcnkStructs[file.mcnkRead].mcrd_doodad_refs,
+                                    file.mcnkStructs[file.mcnkRead].mcrd_doodad_refs_len
+                                );
+                            }
+                        }
+                    },
+                    {
+                        'MCRW',
+                        {
+                            handler: [](AdtFile& file, ChunkData& chunkData){
+                                debuglog("Entered MCRW");
+
+                                file.mcnkStructs[file.mcnkRead].mcrw_object_refs_len = chunkData.chunkLen / sizeof(uint32_t);
+                                chunkData.readValues(
+                                    file.mcnkStructs[file.mcnkRead].mcrw_object_refs,
+                                    file.mcnkStructs[file.mcnkRead].mcrw_object_refs_len
+                                );
+                            }
+                        }
+                    },
+                    {
                         'MCAL',
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){

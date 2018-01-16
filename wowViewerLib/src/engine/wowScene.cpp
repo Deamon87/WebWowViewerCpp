@@ -117,6 +117,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
 //    currentScene = new Map(this, "MaelstromShaman");
 
+    m_firstCamera.setCameraPos( 0,  0, 470); // Ulduar Raid
+    currentScene = new Map(this, "HawaiiMainLand");
+
 
     //Test scene 2: tree from shattrath
 //    m_firstCamera.setCameraPos(0, 0, 0);
@@ -1070,7 +1073,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                     fov,
                     this->canvAspect,
                     nearPlane,
-                    farPlane);
+                    farPlane-50);
     //Camera for rendering
     mathfu::mat4 perspectiveMatrixForCameraRender =
             mathfu::mat4::Perspective(fov,

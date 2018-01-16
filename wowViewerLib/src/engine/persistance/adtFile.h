@@ -17,6 +17,13 @@ struct mcnkStruct_t {
 
     struct {uint32_t *doodad_refs; uint32_t *object_refs; } mcrf;
 
+    uint32_t *mcrd_doodad_refs = nullptr;
+    int mcrd_doodad_refs_len = -1;
+
+    uint32_t *mcrw_object_refs = nullptr;
+    int mcrw_object_refs_len = -1;
+
+
     uint8_t *mcal;
 };
 

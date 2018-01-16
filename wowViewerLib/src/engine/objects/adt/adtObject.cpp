@@ -50,6 +50,7 @@ void AdtObject::loadM2s() {
                 m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
             }
         } else {
+
             SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
             if (doodadDef.flags.mddf_entry_is_filedata_id) {
                 //2. Get model
@@ -60,6 +61,8 @@ void AdtObject::loadM2s() {
                 //2. Get model
                 m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
             }
+
+
         }
 
     }
@@ -420,37 +423,57 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
             result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
             bool frustum2DRes = MathHelper::checkFrustum2D(hullLines, aabb);
             checkRefs = result || frustum2DRes;
-
+//
+//            checkRefs = result;
             this->drawChunk[i] = result;
             atLeastOneIsDrawn = atLeastOneIsDrawn || result ;
         }
         if (checkRefs) {
-            //var mcnk = objAdtFile.mcnkObjs[i];
-//            SMChunk *mapTile = &m_adtFile->mapTile[i];
-//            mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
+            bool wotlk = false;
+            if (wotlk) {
+                SMChunk *mapTile = &m_adtFile->mapTile[i];
+                mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
+
+
+                if (mcnkContent != nullptr && mcnkContent->mcrf.doodad_refs != nullptr) {
+                    for (int j = 0; j < mapTile->nDoodadRefs; j++) {
+                        uint32_t m2Ref = mcnkContent->mcrf.doodad_refs[j];
+                        m2ObjectsCandidates.insert(this->m2Objects[m2Ref]);
+                    }
+                }
+                if (mcnkContent != nullptr && mcnkContent->mcrf.object_refs != nullptr) {
+                    for (int j = 0; j < mapTile->nMapObjRefs; j++) {
+                        uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
+                        wmoCandidates.insert(this->wmoObjects[wmoRef]);
+                    }
+                }
+            } else {
+                SMChunk *mapTile = &m_adtFile->mapTile[i];
+                mcnkStruct_t *mcnkContent = &m_adtFileObj->mcnkStructs[i];
+
+                if (mcnkContent->mcrd_doodad_refs_len > 0) {
+                    for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
+                        uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
+                        m2ObjectsCandidates.insert(this->m2Objects[m2Ref]);
+                    }
+                }
+                if (mcnkContent->mcrw_object_refs_len > 0) {
+                    for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
+                        uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
+                        wmoCandidates.insert(this->wmoObjects[wmoRef]);
+                    }
+                }
+            }
+
+//            for (int j = 0; j < this->m2Objects.size(); j++) {
+//                m2ObjectsCandidates.insert(this->m2Objects[j]);
+//            }
+//            for (int j = 0; j < wmoObjects.size(); j++) {
+////                    uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
+//                    wmoCandidates.insert(this->wmoObjects[j]);
+////                }
 //
-//            if (mcnkContent && mcnkContent->mcrf.doodad_refs) {
-//                for (int j = 0; j < mapTile->nDoodadRefs; j++) {
-//                    uint32_t m2Ref = mcnkContent->mcrf.doodad_refs[j];
-//                    m2ObjectsCandidates.insert(this->m2Objects[m2Ref]);
-//                }
 //            }
-//            if (mcnkContent && mcnkContent->mcrf.object_refs) {
-//                for (int j = 0; j < mapTile->nMapObjRefs; j++) {
-//                    uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
-//                    wmoCandidates.insert(this->wmoObjects[wmoRef]);
-//                }
-//            }
-
-            for (int j = 0; j < this->m2Objects.size(); j++) {
-                m2ObjectsCandidates.insert(this->m2Objects[j]);
-            }
-            for (int j = 0; j < wmoObjects.size(); j++) {
-//                    uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
-                    wmoCandidates.insert(this->wmoObjects[j]);
-//                }
-
-            }
         }
     }
 
