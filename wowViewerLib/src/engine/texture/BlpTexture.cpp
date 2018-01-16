@@ -67,6 +67,14 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
     int32_t width = blpFile->width;
     int32_t height = blpFile->height;
 
+    int minSize = 0;
+    if ((textureFormat == TextureFormat::S3TC_RGBA_DXT5) || (textureFormat == TextureFormat::S3TC_RGBA_DXT3)) {
+        minSize = (int32_t) (floor((1 + 3) / 4) * floor((1 + 3) / 4) * 16);
+    }
+    if ((textureFormat == TextureFormat::S3TC_RGB_DXT1) || (textureFormat == TextureFormat::S3TC_RGBA_DXT1)) {
+        minSize = (int32_t) (floor((1 + 3) / 4) * floor((1 + 3) / 4) * 8);
+    }
+
     for (int i = 0; i < 15; i++) {
         if ((blpFile->lengths[i] == 0) || (blpFile->offsets[i] == 0)) break;
 
@@ -80,6 +88,8 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
         if ((textureFormat == TextureFormat::S3TC_RGB_DXT1) || (textureFormat == TextureFormat::S3TC_RGBA_DXT1)) {
             validSize = (int32_t) (floor((width + 3) / 4) * floor((height + 3) / 4) * 8);
         }
+
+//        if (minSize == validSize) break;
 
         mipmapStruct_t mipmapStruct;
         mipmapStruct.height = height;
@@ -104,7 +114,9 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
                 mipmapStruct.texture[j*4 + 3] = a;
             }
         } else {
-            mipmapStruct.texture.assign(data, data+blpFile->lengths[i]);
+            std::copy(data, data+blpFile->lengths[i], &mipmapStruct.texture[0]);
+
+//            mipmapStruct.texture.assign(data, data+blpFile->lengths[i]);
         }
 
         mipmaps.push_back(mipmapStruct);
@@ -177,7 +189,7 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
 //                    gl.texImage2D(gl.TEXTURE_2D, k, gl.RGBA, mipmaps[k].width, mipmaps[k].height, 0, gl.RGBA, gl.UNSIGNED_BYTE, decodedResult);
                 } else {
                     glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width, mipmaps[k].height, 0,
-                                           mipmaps[k].texture.size(), &mipmaps[k].texture[0]);
+                                           (GLsizei) mipmaps[k].texture.size(), &mipmaps[k].texture[0]);
                 }
             }
             break;
@@ -190,7 +202,7 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
 //                    gl.texImage2D(gl.TEXTURE_2D, k, gl.RGBA, mipmaps[k].width, mipmaps[k].height, 0, gl.RGBA, gl.UNSIGNED_BYTE,  decodedResult);
                 } else {
                     glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width, mipmaps[k].height, 0,
-                                           mipmaps[k].texture.size(), &mipmaps[k].texture[0]);
+                                           (GLsizei) mipmaps[k].texture.size(), &mipmaps[k].texture[0]);
                 }
             }
 
@@ -204,7 +216,7 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
 //                    gl.texImage2D(gl.TEXTURE_2D, k, gl.RGBA, mipmaps[k].width, mipmaps[k].height, 0, gl.RGBA, gl.UNSIGNED_BYTE,  decodedResult);
                 } else {
                     glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width, mipmaps[k].height, 0,
-                                           mipmaps[k].texture.size(), &mipmaps[k].texture[0]);
+                                           (GLsizei) mipmaps[k].texture.size(), &mipmaps[k].texture[0]);
                 }
             }
 
@@ -217,12 +229,12 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
             }
             break;
     }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmaps.size());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) mipmaps.size()-1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    bool anisFilterExt = true;
+    bool anisFilterExt = false;
     if (anisFilterExt) {
         float aniso = 0.0f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);

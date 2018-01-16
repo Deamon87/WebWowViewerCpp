@@ -527,8 +527,8 @@ int main(){
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
         //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
         //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-//        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
+        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);

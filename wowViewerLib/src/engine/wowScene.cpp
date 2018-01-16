@@ -111,20 +111,24 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
 //    currentScene = new Map(this, "Northrend");
 //
-//  m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
+//    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
 //    currentScene = new Map(this, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
 //    currentScene = new Map(this, "MaelstromShaman");
 
-    m_firstCamera.setCameraPos( 0,  0, 470); // Ulduar Raid
-    currentScene = new Map(this, "HawaiiMainLand");
+//    m_firstCamera.setCameraPos( 0,  0, 470); // Pandaria
+//    currentScene = new Map(this, "HawaiiMainLand");
 
 
     //Test scene 2: tree from shattrath
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "WORLD\\EXPANSION01\\DOODADS\\TEROKKAR\\TREES\\TEROKKARTREEMEDIUMPINECONES.m2");
+//
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//       "WORLD\\GENERIC\\HUMAN\\PASSIVE DOODADS\\BANNERS\\STORMWINDLIONBANNER.m2");
 //
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -143,9 +147,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
 //
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "WORLD\\GENERIC\\HUMAN\\PASSIVE DOODADS\\STATUES\\STATUEDANATH.m2");
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new M2Scene(this,
+        "WORLD\\GENERIC\\HUMAN\\PASSIVE DOODADS\\STATUES\\STATUEDANATH.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
