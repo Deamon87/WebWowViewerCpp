@@ -605,8 +605,12 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
 
         const SMOMaterial &material = materials[texIndex];
         assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
-        int pixelShader = wmoMaterialShader[material.shader].pixelShader;
-        int vertexShader = wmoMaterialShader[material.shader].vertexShader;
+        auto shaderId = material.shader;
+//        if (shaderId >= MAX_WMO_SHADERS) {
+//            shaderId = 0;
+//        }
+        int pixelShader = wmoMaterialShader[shaderId].pixelShader;
+        int vertexShader = wmoMaterialShader[shaderId].vertexShader;
 
         glUniform1i(wmoShader->getUnf("uVertexShader"), vertexShader);
         glUniform1i(wmoShader->getUnf("uPixelShader"), pixelShader);

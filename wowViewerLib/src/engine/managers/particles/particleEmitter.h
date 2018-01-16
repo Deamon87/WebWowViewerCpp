@@ -7,7 +7,10 @@
 
 
 class ParticleEmitter {
+public:
+    ParticleEmitter() {
 
+    }
 };
 
 

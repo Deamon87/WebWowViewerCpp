@@ -6,8 +6,14 @@
 #define WEBWOWVIEWERCPP_PARTICLE_H
 
 
-class CParticle2 {
+#include "../../persistance/header/commonFileStructs.h"
 
+class CParticle2 {
+    C3Vector position;
+    float age;
+    C3Vector velocity;
+    fixed16 lifespan;
+    uint16_t seed;
 };
 
 

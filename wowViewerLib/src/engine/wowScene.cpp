@@ -93,9 +93,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
 //    currentScene = new Map(this, "AzeriteBG1");
 
-//    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
+    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
 //    m_firstCamera.setCameraPos( 5333.3335, 10666.667, 1); //Strange WMO
-//    currentScene = new Map(this, "argus 1");
+    currentScene = new Map(this, "argus 1");
 
 //    m_firstCamera.setCameraPos( 4266.67, -2133.33, 200); // VoidElf
 //    currentScene = new Map(this, "VoildElf");
@@ -147,9 +147,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
 //
-   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "WORLD\\GENERIC\\HUMAN\\PASSIVE DOODADS\\STATUES\\STATUEDANATH.m2");
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "WORLD\\GENERIC\\HUMAN\\PASSIVE DOODADS\\STATUES\\STATUEDANATH.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -199,11 +199,17 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
+//  m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//    "World\\wmo\\BrokenIsles\\Suramar\\7SR_SuramarCity_Single_B_Core_C.wmo");
+//
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
 //    m_firstCamera.setCameraPos(-1161.35, -798.59, 835.05);
 //    currentScene = new Map(this, "grimbatolraid");
+
+
 
 //   currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_tower.wmo");
