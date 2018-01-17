@@ -12,8 +12,9 @@
 #include "../CRndSeed.h"
 
 class CParticleGenerator {
-    CParticleGenerator() {
-        seed = new CRndSeed(0);
+public:
+    CParticleGenerator(CRndSeed *seed) {
+        this->seed = seed;
     }
 
 public:
@@ -24,6 +25,7 @@ private:
     CGeneratorAniProp aniProp;
     CRndSeed *seed;
 
+public:
     float GetMaxEmissionRate();
 
     float GetMaxLifeSpan();

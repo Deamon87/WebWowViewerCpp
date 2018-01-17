@@ -9,7 +9,10 @@
 #include "CParticleGenerator.h"
 
 class CSphereGenerator : public CParticleGenerator {
-
+public:
+    CSphereGenerator(CRndSeed &seed, bool particlesGoUp) : CParticleGenerator() {
+        ;
+    }
 };
 
 

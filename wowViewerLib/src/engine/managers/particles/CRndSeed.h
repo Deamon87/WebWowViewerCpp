@@ -19,6 +19,8 @@ public:
 
     float Uniform();
     float UniformPos();
+
+    uint32_t uint32t();
 };
 
 

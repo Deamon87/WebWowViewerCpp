@@ -874,12 +874,6 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
         }
     }
 
-//    mathfu::vec4 meshColor = mathfu::vec4(1,1,1,1);
-//    float transparency = 1;
-//
-
-//
-//
     int pixelShaderIndex = materialData.pixelShader;
     int vertexShaderIndex = materialData.vertexShader;
     this->m_m2Geom->drawMesh(m_api, materialData, *skinData , meshColor, transparency, textureMatrix1, textureMatrix2, vertexShaderIndex, pixelShaderIndex, originalFogColor, instanceCount);

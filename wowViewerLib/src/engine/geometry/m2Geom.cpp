@@ -299,16 +299,10 @@ M2Geom::setupUniforms(
     if (!instanced) {
         glUniform4fv(m2Shader->getUnf("uDiffuseColor"), 1, &diffuseColor[0]);
     }
-//    }
-//    if (drawTransparent) {
-//        glUniform1i(m2Shader->getUnf("isTransparent"), 1);
-//    } else {
-//        glUniform1i(m2Shader->getUnf("isTransparent"), 0);
-//    }
 
     //Setup lights
 
-//    ?var activeLights = (lights) ? (lights.length | 0) : 0;
+//    var activeLights = (lights) ? (lights.length | 0) : 0;
     /*
     for (var i = 0; i < lights.length; i++) {
         if (lights[i].attenuation_end - lights[i].attenuation_start > 0.01) {

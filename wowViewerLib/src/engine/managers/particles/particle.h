@@ -7,13 +7,16 @@
 
 
 #include "../../persistance/header/commonFileStructs.h"
+#include "../../../include/wowScene.h"
 
 class CParticle2 {
     C3Vector position;
-    float age;
+    animTime_t age;
     C3Vector velocity;
     fixed16 lifespan;
     uint16_t seed;
+    C3Vector texPos;
+    float texVel;
 };
 
 
