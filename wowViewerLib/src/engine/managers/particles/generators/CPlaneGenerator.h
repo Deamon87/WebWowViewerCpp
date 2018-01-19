@@ -7,10 +7,11 @@
 
 
 #include "../CRndSeed.h"
+#include "CParticleGenerator.h"
 
 class CPlaneGenerator : public CParticleGenerator {
 public:
-    CPlaneGenerator(CRndSeed &cRndSeed) {
+    CPlaneGenerator(CRndSeed &cRndSeed) : CParticleGenerator(&cRndSeed) {
 
     }
 };

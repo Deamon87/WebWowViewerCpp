@@ -10,7 +10,7 @@
 
 class CSphereGenerator : public CParticleGenerator {
 public:
-    CSphereGenerator(CRndSeed &seed, bool particlesGoUp) : CParticleGenerator() {
+    CSphereGenerator(CRndSeed &seed, bool particlesGoUp) : CParticleGenerator(&seed) {
         ;
     }
 };

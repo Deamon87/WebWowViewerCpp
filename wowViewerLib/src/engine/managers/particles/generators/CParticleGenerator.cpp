@@ -6,25 +6,25 @@
 
 float CParticleGenerator::GetEmissionRate() {
     float rate = aniProp.emissionRate;
-    return rate + seed->Uniform() * FixedProp[0];
+    return rate + seed->Uniform(); //* FixedProp[0];
 }
 
 float CParticleGenerator::GetMaxEmissionRate() {
-    return aniProp.emissionRate + FixedProp[0];
+    return aniProp.emissionRate ;//+ FixedProp[0];
 }
 
 float CParticleGenerator::GetMaxLifeSpan() {
-    return aniProp.lifespan + FixedProp[1];
+    return aniProp.lifespan; //+ FixedProp[1];
 }
 
 float CParticleGenerator::GetLifeSpan(float m) {
-    return aniProp.lifespan + m * FixedProp[1];
+    return aniProp.lifespan ;//+ m * FixedProp[1];
 }
 
 void CParticleGenerator::CalcVelocity(CParticle2 *p, float delta) {
-    float velocity = p->aniProp.emissionSpeed;
-    velocity *= 1.0 + p->aniProp.speedVariation * m_seed.Uniform();
-    return velocity;
+//    float velocity = p->aniProp.emissionSpeed;
+//    velocity *= 1.0 + p->aniProp.speedVariation * m_seed.Uniform();
+//    return velocity;
 }
 
 

@@ -93,9 +93,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
 //    currentScene = new Map(this, "AzeriteBG1");
 
-    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
+//    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
 //    m_firstCamera.setCameraPos( 5333.3335, 10666.667, 1); //Strange WMO
-    currentScene = new Map(this, "argus 1");
+//    currentScene = new Map(this, "argus 1");
 
 //    m_firstCamera.setCameraPos( 4266.67, -2133.33, 200); // VoidElf
 //    currentScene = new Map(this, "VoildElf");
@@ -116,6 +116,19 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
 //    currentScene = new Map(this, "MaelstromShaman");
+//
+//    m_firstCamera.setCameraPos(3062, 495, 200 ); //Valhalla
+//    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt
+//    currentScene = new Map(this, "Valhallas");
+//
+//    m_firstCamera.setCameraPos(2902, 2525, 200); //Field of the Eternal Hunt
+//    m_firstCamera.setCameraPos(3993, 2302, 1043); //Field of the Eternal Hunt
+//    currentScene = new Map(this, "NagaDungeon");
+//    m_firstCamera.setCameraPos(829, -296, 200 ); //Field of the Eternal Hunt
+//    currentScene = new Map(this, "unused");ццццццццццццццццц
+
+//    m_firstCamera.setCameraPos(-2825, -4546, 200 ); //Field of the Eternal Hunt
+//    currentScene = new Map(this, "ScenarioAlcazIsland");
 
 //    m_firstCamera.setCameraPos( 0,  0, 470); // Pandaria
 //    currentScene = new Map(this, "HawaiiMainLand");
@@ -195,9 +208,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
 
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,

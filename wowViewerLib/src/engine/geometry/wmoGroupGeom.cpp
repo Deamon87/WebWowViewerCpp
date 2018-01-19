@@ -616,6 +616,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
         glUniform1i(wmoShader->getUnf("uPixelShader"), pixelShader);
 
         bool isAffectedByMOCV = j < (mogp->transBatchCount + mogp->intBatchCount);
+        isAffectedByMOCV = true;
         bool isAffectedByAmbient = (j > 0 && j < (mogp->transBatchCount)) ||
                 (j > (mogp->transBatchCount + mogp->intBatchCount));
         isAffectedByAmbient = true;
