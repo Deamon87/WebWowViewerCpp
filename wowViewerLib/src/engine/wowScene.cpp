@@ -133,6 +133,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( 0,  0, 470); // Pandaria
 //    currentScene = new Map(this, "HawaiiMainLand");
 
+//    m_firstCamera.setCameraPos(-12886, -165, 200); // Pandaria
+//    currentScene = new Map(this, "Azeroth");
+//
+//   m_firstCamera.setCameraPos(0, 0, 0); // Pandaria
+//    currentScene = new Map(this, "Ulduar80");
+
 
     //Test scene 2: tree from shattrath
 //    m_firstCamera.setCameraPos(0, 0, 0);
