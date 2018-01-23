@@ -10,13 +10,14 @@
 #include "../../../include/wowScene.h"
 
 class CParticle2 {
-    C3Vector position;
+public:
+    mathfu::vec3 position;
     animTime_t age;
-    C3Vector velocity;
+    mathfu::vec3 velocity;
     fixed16 lifespan;
     uint16_t seed;
-    C3Vector texPos;
-    float texVel;
+    mathfu::vec2 texPos[2];
+    mathfu::vec2 texVel[2];
 };
 
 

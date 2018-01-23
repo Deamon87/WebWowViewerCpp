@@ -11,6 +11,13 @@
 #include "generators/CSphereGenerator.h"
 #include "generators/CPlaneGenerator.h"
 
+struct ParticleForces {
+    mathfu::vec3 drift; // 0
+    mathfu::vec3 velocity; // 3
+    mathfu::vec3 position; // 6
+    float drag; // 9
+};
+
 class ParticleEmitter {
 public:
     ParticleEmitter(M2Particle *particle) : m_seed(0) {
@@ -134,6 +141,141 @@ public:
 //        }
     }
 
+    void Simulate(animTime_t delta) {
+        ParticleForces forces;
+
+        this->CalculateForces(forces, delta);
+        this->EmitNewParticles(delta);
+        for (int i = 0; i < this->particles.size(); i++) {
+            auto &p = this->particles[i];
+            p.age = p.age + delta;
+            auto life = p.lifespan;
+            if (life > this->generator->GetLifeSpan(life)) {
+                this->KillParticle(i);
+                i--;
+            }
+            else {
+                if (!this->UpdateParticle(p, delta, forces)) {
+                    this->KillParticle(i);
+                    i--;
+                }
+            }
+        }
+    }
+    void EmitNewParticles(animTime_t delta) {
+            float rate = this->generator->GetEmissionRate();
+            if (6 == (this->flags & 6)) {
+                int count = rate ;
+                for (int i = 0; i < count; i++) {
+                    this->CreateParticle(0);
+                }
+            }
+            if (3 == (this->flags & 3)) {
+                this->emission += delta * rate;
+                while (this->emission > 1) {
+                    this->CreateParticle(delta);
+                    this->emission -= 1;
+                }
+            }
+    }
+    void CreateParticle(animTime_t delta) {
+        CParticle2 &p = this->BirthParticle();
+//            if (p == 0)
+//            return;
+
+        mathfu::vec3 r0 = mathfu::vec3(0,0,0);
+        this->generator->CreateParticle(p, delta);
+        if (!(this->m_data->old.flags & 0x10)) {
+            p.position = this->transform * p.position;
+            p.velocity = this->transform * p.velocity;
+            if (this->m_data->old.flags & 0x2000) {
+                // Snap to ground; set z to 0:
+                p.position.z = 0.0;
+            }
+        }
+        if (this->m_data->old.flags & 0x40) {
+            float speedMul = 1 + this->generator->GetSpeedVariation() * this->m_seed.Uniform();
+            //r0 = this->burstVec * speedMul;
+            p.velocity += r0;
+        }
+        if (this->particleType >= 2) {
+            for (int i = 0; i < 2; i++) {
+                p.texPos[i].x = this->m_seed.UniformPos();
+                p.texPos[i].y = this->m_seed.UniformPos();
+
+                mathfu::vec2 v2 = convertV69ToV2(this->m_data->multiTextureParam1[i]) * this->m_seed.Uniform();
+                p.texVel[i] = v2  + convertV69ToV2(this->m_data->multiTextureParam0[i]);
+            }
+        }
+    }
+
+
+    void CalculateForces(ParticleForces &forces, animTime_t delta) {
+        if (false && (this->m_data->old.flags & 0x80000000)) {
+            forces.drift = mathfu::vec3(0.707, 0.707, 0);
+            forces.drift = forces.drift * delta;
+        }
+        else {
+            forces.drift = mathfu::vec3(this->m_data->old.WindVector) * delta;
+        }
+
+        auto g = this->generator->GetGravity();
+        forces.velocity = g * delta;
+        forces.position = g * delta * delta * 0.5;
+        forces.drag = this->m_data->old.drag * delta;
+    }
+
+    bool UpdateParticle(CParticle2 p, animTime_t delta, ParticleForces &forces) {
+
+        if (this->particleType >= 2) {
+            for (int i = 0; i < 2; i++) {
+                // s = frac(s + v * dt)
+                float val = (float) (p.texPos[i].x + delta * p.texVel[i].x);
+                p.texPos[i].x = (float) (val - floor(val));
+
+                val = (float) (p.texPos[i].y + delta * p.texVel[i].y);
+                p.texPos[i].y = (float) (val - floor(val));
+            }
+        }
+
+        p.velocity = p.velocity + forces.drift;
+        if ((this->m_data->old.flags & 0x4000) && 2 * delta < p.age) {
+            p.position = p.position + this->deltaPosition);
+        }
+
+        mathfu::vec3 r0 = p.velocity * delta; // v*dt
+
+        p.velocity = p.velocity + forces.velocity;
+        p.velocity = p.velocity *  (1 - forces.drag);
+
+        p.position = p.position + r0;
+        p.position = p.position + forces.position;
+
+        if (this->m_data->old.emitterType == 2 && (this->m_data->old.flags & 0x80)) {
+            mathfu::vec3 r1 = p.position;
+            if (!(this->m_data->old.flags & 0x10)) {
+                Mat34.ToT(this.transform, r1);
+                r1 = pos - r1;
+            }
+            if (mathfu::vec3::DotProduct(r1, r0) > 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    void KillParticle(int index) {
+        particles[index] = particles[particles.size()-1];
+        particles.resize(particles.size() - 1);
+    }
+    CParticle2& BirthParticle() {
+        particles.resize(particles.size()+1);
+
+        auto &p = particles[particles.size()-1];
+        return p;
+    }
+
 private:
     M2Particle *m_data;
     CRndSeed m_seed;
@@ -142,6 +284,7 @@ private:
 
     std::vector<CParticle2> particles;
 
+    mathfu::vec3 deltaPosition;
 
     int particleType;
 
