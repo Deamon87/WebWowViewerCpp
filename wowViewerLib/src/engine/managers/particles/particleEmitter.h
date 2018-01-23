@@ -6,6 +6,8 @@
 #define WEBWOWVIEWERCPP_PARTICLEEMITTER_H
 
 #include <cstdlib>
+#include <vector>
+#include <x86intrin.h>
 #include "../../persistance/header/M2FileHeader.h"
 #include "generators/CParticleGenerator.h"
 #include "generators/CSphereGenerator.h"
@@ -76,62 +78,55 @@ public:
         }
     }
     void Update(animTime_t delta) {
-//        this->resizeParticleBuffer();
-//        const currPos = mem.Push(3);
-//        let lastPos = mem.Push(3);
-//        const dPos = mem.Push(3);
-//        Mat34.ToT(transform, currPos);
-//        if (this.transform == null) {
-//            lastPos = currPos;
-//        }
-//        else {
-//            Mat34.ToT(this.transform, lastPos);
-//        }
-//        Mat34.Copy(this.transform, transform);
-//        this.inheritedScale = Mat34.GetUniformScale(transform);
-//        Vec3.Sub(dPos, currPos, lastPos);
-//        if (this.data.Flags & 0x4000) {
-//            let x = this.followMult * (Vec3.Length(dPos) / delta) + this.followBase;
-//            if (x < 0)
-//                x = 0;
-//            if (x > 1)
-//                x = 1;
-//            Vec3.Mul(this.deltaPosition, dPos, x);
-//        }
-//        if (this.data.Flags & 0x40) {
-//            this.burstTime += delta;
-//            const frameTime = 30 / 1000;
-//            if (this.burstTime > frameTime) {
-//                if (this->particles.size() == 0) {
-//                    const frameAmount = frameTime / this.burstTime;
-//                    this.burstTime = 0;
-//                    Vec3.Mul(this.burstVec, dPos, frameAmount * this.data.BurstMultiplier);
-//                }
-//                else {
-//                    Vec3.Set(this.burstVec, 0, 0, 0);
-//                }
-//            }
-//        }
-//        if (this->particles.size() > 0 && 0 == (this->flags & 16)) {
-//            delta += 5;
-//            this->flags |= 16;
-//        }
-//         if (delta > 0.1) {
-//            animTime_t clamped = delta;
-//            if (delta > 5) {
-//                clamped = 5;
-//            }
-//            for (int i = 0; i < clamped; i += 0.05) {
-//                animTime_t d = 0.05;
-//                if (clamped - i < 0.05) {
-//                    d = clamped - i;
-//                }
-//                this->Simulate(d);
-//            }
-//        }
-//        else {
-//            this->Simulate(delta);
-//        }
+        this->resizeParticleBuffer();
+        mathfu::vec3 lastPos;
+        mathfu::vec3 currPos;
+        mathfu::vec3 dPos;
+
+        //this->inheritedScale = Mat34.GetUniformScale(transform);
+        dPos = lastPos - currPos;
+        if (this->m_data->old.flags & 0x4000 > 0) {
+            float x = this->followMult * (dPos.Length() / delta) + this->followBase;
+            if (x < 0)
+                x = 0;
+            if (x > 1)
+                x = 1;
+            this->deltaPosition =  dPos * x;
+        }
+        if (this->m_data->old.flags & 0x40) {
+            this->burstTime += delta;
+            animTime_t frameTime = 30.0 / 1000.0;
+            if (this->burstTime > frameTime) {
+                if (this->particles.size() == 0) {
+                    animTime_t frameAmount = frameTime / this->burstTime;
+                    this->burstTime = 0;
+                    this->burstVec = dPos * frameAmount * this->m_data->old.BurstMultiplier;
+                }
+                else {
+                    this->burstVec = mathfu::vec3(0, 0, 0);
+                }
+            }
+        }
+        if (this->particles.size() > 0 && 0 == (this->flags & 16)) {
+            delta += 5;
+            this->flags |= 16;
+        }
+         if (delta > 0.1) {
+            animTime_t clamped = delta;
+            if (delta > 5) {
+                clamped = 5;
+            }
+            for (int i = 0; i < clamped; i += 0.05) {
+                animTime_t d = 0.05;
+                if (clamped - i < 0.05) {
+                    d = clamped - i;
+                }
+                this->Simulate(d);
+            }
+        }
+        else {
+            this->Simulate(delta);
+        }
     }
 
 private:
@@ -142,6 +137,7 @@ private:
 
     std::vector<CParticle2> particles;
 
+    mathfu::vec3 deltaPosition;
 
     int particleType;
 
@@ -149,6 +145,7 @@ private:
     float followBase;
 
     animTime_t burstTime = 0;
+    mathfu::vec3 burstVec;//(0,0,0);
     float inheritedScale = 1;
     float emission = 0;
     bool emittingLastFrame = false;

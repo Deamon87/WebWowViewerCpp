@@ -158,7 +158,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
-//        "CREATURE\\THUNDERISLEBIRD\\THUNDERISLEBABYBIRD.M2");
+//        "creature/celestialdragonwyrm/celestialdragonwyrm.m2");
 //
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -176,9 +176,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "world/expansion06/doodads/brokenshore/7bs_tombofsargerasfxbeam_01_reduced.m2");
 //
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "world\\expansion06\\doodads\\legion\\7fx_sargerassword_fx.m2");
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new M2Scene(this,
+                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2");
@@ -208,9 +208,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
 
-   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
