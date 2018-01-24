@@ -40,6 +40,6 @@ mathfu::vec3 CParticleGenerator::GetGravity() {
     return mathfu::vec3(aniProp.gravity);
 }
 
-long CParticleGenerator::GetSpeedVariation() {
+float CParticleGenerator::GetSpeedVariation() {
     return 0;
 }
