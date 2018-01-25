@@ -272,7 +272,6 @@ struct M2ParticleOld {
     M2Track<unsigned char> enabledIn;                 // (boolean) Appears to be used sparely now, probably there's a flag that links particles to animation sets where they are enabled.
 });
 
-PACK(struct vector_2fp_6_9 { uint16_t x; uint16_t y; });
 PACK(
 struct M2Particle
 {
@@ -280,17 +279,6 @@ struct M2Particle
     vector_2fp_6_9 multiTextureParam0[2];
     vector_2fp_6_9 multiTextureParam1[2];
 });
-
-float fp69ToFloat(uint16_t x) {
-    static const float divider = float(2 << 9);
-    float int_part = (x >> 9);
-    float float_part = (x & (1<<10) - 1) / divider;
-    return int_part + float_part;
-}
-
-mathfu::vec2 convertV69ToV2(vector_2fp_6_9 &fp69) {
-    return mathfu::vec2(fp69ToFloat(fp69.x), fp69ToFloat(fp69.y));
-}
 
 struct M2Data {
     uint32_t magic;                                       // "MD20". Legion uses a chunked file format starting with MD21.

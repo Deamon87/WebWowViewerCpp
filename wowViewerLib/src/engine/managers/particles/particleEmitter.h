@@ -85,7 +85,7 @@ public:
     }
 
 
-    void Update(animTime_t delta);
+    void Update(animTime_t delta, mathfu::mat4 transform);
     void prepearBuffers(mathfu::mat4 &viewMatrix, mathfu::mat4 &projMatrix);
 
 private:
@@ -94,6 +94,9 @@ private:
     M2Particle *m_data;
     M2Data *m_m2Data;
     CRndSeed m_seed;
+
+    mathfu::mat4 transform;
+    mathfu::mat4 particleToView;
 
     CParticleGenerator *generator;
 
@@ -122,6 +125,7 @@ private:
 
     int particleSize;
     int flags;
+private:
 
     CParticle2 &BirthParticle();
 

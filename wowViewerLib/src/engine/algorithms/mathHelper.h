@@ -14,6 +14,11 @@
 
 class MathHelper {
 public:
+
+    static float fp69ToFloat(uint16_t x);
+
+    static mathfu::vec2 convertV69ToV2(vector_2fp_6_9 &fp69);
+
     static CAaBox transformAABBWithMat4(mathfu::mat4 matrix, mathfu::vec4 min, mathfu::vec4 max);
     static std::vector<mathfu::vec4> getFrustumClipsFromMatrix(mathfu::mat4 &mat);
     static void fixNearPlane(std::vector<mathfu::vec4> &planes, mathfu::vec4 &camera) {

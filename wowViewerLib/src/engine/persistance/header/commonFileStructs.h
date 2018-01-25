@@ -197,4 +197,5 @@ struct C4Plane // todo: verify
         C4Vector planeVector;
     };
 };
+PACK(struct vector_2fp_6_9 { uint16_t x; uint16_t y; });
 #endif //WOWVIEWERLIB_COMMONFILESTRUCTS_H

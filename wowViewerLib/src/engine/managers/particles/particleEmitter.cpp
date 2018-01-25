@@ -3,6 +3,7 @@
 //
 
 #include "particleEmitter.h"
+#include "../../algorithms/mathHelper.h"
 
 void ParticleEmitter::resizeParticleBuffer() {
     int newCount = this->generator->GetMaxEmissionRate() * this->generator->GetMaxLifeSpan() * 1.15;
@@ -11,7 +12,8 @@ void ParticleEmitter::resizeParticleBuffer() {
     }
 }
 
-void ParticleEmitter::Update(animTime_t delta) {
+void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
+    this->transform = boneModelMat;
     this->resizeParticleBuffer();
     mathfu::vec3 lastPos;
     mathfu::vec3 currPos;
@@ -108,8 +110,8 @@ void ParticleEmitter::CreateParticle(animTime_t delta) {
     mathfu::vec3 r0 = mathfu::vec3(0,0,0);
     this->generator->CreateParticle(p, delta);
     if (!(this->m_data->old.flags & 0x10)) {
-        p.position = this->transform * p.position;
-        p.velocity = this->transform * p.velocity;
+        p.position = (this->transform * mathfu::vec4(p.position, 1.0f)).xyz();
+        p.velocity = (this->transform * mathfu::vec4(p.velocity, 0.0f)).xyz();
         if (this->m_data->old.flags & 0x2000) {
             // Snap to ground; set z to 0:
             p.position.z = 0.0;
@@ -125,8 +127,8 @@ void ParticleEmitter::CreateParticle(animTime_t delta) {
             p.texPos[i].x = this->m_seed.UniformPos();
             p.texPos[i].y = this->m_seed.UniformPos();
 
-            mathfu::vec2 v2 = convertV69ToV2(this->m_data->multiTextureParam1[i]) * this->m_seed.Uniform();
-            p.texVel[i] = v2  + convertV69ToV2(this->m_data->multiTextureParam0[i]);
+            mathfu::vec2 v2 = MathHelper::convertV69ToV2(this->m_data->multiTextureParam1[i]) * this->m_seed.Uniform();
+            p.texVel[i] = v2  + MathHelper::convertV69ToV2(this->m_data->multiTextureParam0[i]);
         }
     }
 }
@@ -176,8 +178,9 @@ bool ParticleEmitter::UpdateParticle(CParticle2 p, animTime_t delta, ParticleFor
     if (this->m_data->old.emitterType == 2 && (this->m_data->old.flags & 0x80)) {
         mathfu::vec3 r1 = p.position;
         if (!(this->m_data->old.flags & 0x10)) {
-            Mat34.ToT(this.transform, r1);
-            r1 = pos - r1;
+
+            this->transform.GetColumn(3) = mathfu::vec4(r1, 1.0);
+            r1 = p.position - r1;
         }
         if (mathfu::vec3::DotProduct(r1, r0) > 0) {
             return false;
@@ -226,10 +229,10 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix, mathfu::mat4 &pro
 
     if (this->m_data->old.flags & 0x10) {
         // apply the model transform
-        Mat34.Mul(this.particleToView, viewMatrix, this.transform);
+        this->particleToView = viewMatrix * this->transform;
     }
     else {
-        Mat34.Copy(this.particleToView, viewMatrix);
+        this->particleToView = viewMatrix;
     }
     // Mat34.Col(this.particleNormal, viewMatrix, 2);
     // Build vertices for each particle
@@ -261,6 +264,42 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix, mathfu::mat4 &pro
 bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> &szVertexBuf) {
     float twinkle = this->m_data->old.TwinklePercent;
     auto twinkleRange = this->m_data->old.twinkleScale;
+
+    float twinkleMin = twinkleRange.min;
+    float twinkleVary = twinkleRange.max - twinkleMin;
+    uint16_t seed = p.seed;
+    animTime_t age = p.age;
+    mathfu::vec3 pos = p.position;
+    mathfu::vec3 vel = p.velocity;
+    int rndIdx = 0;
+    if (twinkle < 1 || twinkleVary != 0) {
+        rndIdx = 0x7f & ((int)(age * this->m_data->old.TwinkleSpeed) + seed);
+    }
+//    if (twinkle < ParticleEmitter.RandTable[rndIdx]) {
+//        return false;
+//    }
+
+    mathfu::quat quadRot;
+    mathfu::vec3 viewPos;
+    mathfu::vec3 viewVel;
+    mathfu::vec3 m0;
+    mathfu::vec3 m1;
+    mathfu::vec3 scaleViewX;
+    mathfu::vec3 scaleViewY;
+    mathfu::vec3 viewUp;
+    mathfu::vec3 screenVel;
+    mathfu::vec2 screenVelNorm;
+//    this.InterpolateTracks(p, data);
+    mathfu::vec3 color;
+    float scale;
+    mathfu::vec3 alpha;
+    float headCell;
+    float tailCell;
+
+    CRndSeed rand(seed);
+
+
+
 
     return true;
 }
