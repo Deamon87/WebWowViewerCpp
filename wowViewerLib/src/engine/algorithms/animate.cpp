@@ -33,32 +33,3 @@ int binary_search(M2Array<uint32_t>& vec, int start, int end, animTime_t & key)
     return binary_search(vec, middle + 1, end, key);
 }
 
-int32_t findTimeIndex(
-        animTime_t currTime,
-        int animationIndex,
-        M2Array<M2Array<uint32_t>> &timestamps
-) {
-    int timeIndex = -1;
-    if (timestamps.size == 0 || animationIndex >= timestamps.size ) {
-        return -1;
-    }
-
-    M2Array<uint32_t> *timeStamp = timestamps[animationIndex];
-    int32_t times_len = timeStamp->size;
-
-    if (times_len > 1 ) {
-        //return std::binary_search((*timeStamp)[0], (*timeStamp)[timeStamp->size-1], currTime);
-//        return binary_search(*timeStamp, 0, times_len-1, currTime) - 1;
-        for (int i = 1; i < times_len; i++) {
-            unsigned int timestamp_time = *timeStamp->getElement(i);
-            if (timestamp_time > currTime) {
-                return i-1;
-            }
-        }
-        return times_len-1;
-    } else if (times_len == 1){
-        return 0;
-    } else {
-        return -1;
-    }
-}

@@ -4,6 +4,7 @@
 
 #include "particleEmitter.h"
 #include "../../algorithms/mathHelper.h"
+#include "../../algorithms/animate.h"
 
 void ParticleEmitter::resizeParticleBuffer() {
     int newCount = this->generator->GetMaxEmissionRate() * this->generator->GetMaxLifeSpan() * 1.15;
@@ -289,15 +290,51 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> 
     mathfu::vec3 viewUp;
     mathfu::vec3 screenVel;
     mathfu::vec2 screenVelNorm;
-//    this.InterpolateTracks(p, data);
-    mathfu::vec3 color;
-    float scale;
-    mathfu::vec3 alpha;
-    float headCell;
-    float tailCell;
+
+
+    mathfu::vec3 defaultColor(1.0f, 1.0f, 1.0f);
+    mathfu::vec2 defaultScale(1.0f, 1.0f);
+    float defaultAlpha = 1.0f;
+    uint16_t defaultCell = 0;
+
+    mathfu::vec3 color = animatePartTrack<C3Vector, mathfu::vec3>(p.age, &m_data->old.colorTrack, defaultColor);
+    mathfu::vec2 scale = animatePartTrack<C2Vector, mathfu::vec2>(p.age, &m_data->old.scaleTrack, defaultScale);
+    float alpha = animatePartTrack<fixed16, float>(p.age, &m_data->old.alphaTrack, defaultAlpha);
+    uint16_t headCell = animatePartTrack<uint16_t, uint16_t>(p.age, &m_data->old.headCellTrack, defaultCell);
+    uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(p.age, &m_data->old.headCellTrack, defaultCell);
+
 
     CRndSeed rand(seed);
 
+    float baseSpin = this->m_data->old.baseSpin + rand.Uniform() * this->m_data->old.baseSpinVary;
+    float deltaSpin = this->m_data->old.Spin + rand.Uniform() * this->m_data->old.spinVary;
+//    float weight = twinkleVary * ParticleEmitter.RandTable[rndIdx] + twinkleMin;
+    float weight = twinkleVary * rand.Uniform() + twinkleMin;
+    scale = scale * weight;
+    if (this->m_data->old.flags & 0x20) {
+        //Vec2.Mul(scale, scale, this.inheritedScale);
+    }
+    viewPos = this->particleToView * pos;
+
+    if (this->m_data->old.flags & 0x20000) {
+        // head cell
+        float texStartX = headCell & this->textureColMask;
+        float texStartY = headCell >> this->textureColBits;
+        texStartX *= this->texScaleX;
+        texStartY *= this->texScaleY;
+        // 4x4 affine matrix, viewPos is w column, and the z column is 0
+        // this multiplies our quad coords
+        // these are the column 0 and 1 vectors:
+        m0 = mathfu::vec3(0, 0, 0);
+        m1 = mathfu::vec3(0, 0, 0);
+        float theta = 0;
+        if (this->m_data->old.Spin != 0 || this->m_data->old.spinVary != 0) {
+            theta = baseSpin + deltaSpin * age;
+            if ((this->m_data->old.flags & 0x200) && (seed & 1)) {
+                theta = -theta;
+            }
+        }
+    }
 
 
 

@@ -11,11 +11,6 @@
 
 int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key);
 
-int32_t findTimeIndex(
-        animTime_t currTime,
-        int animationIndex,
-        M2Array<M2Array<uint32_t>> &timestamps
-);
 
 template<typename T, typename R>
 inline R convertHelper(T &value) {
@@ -74,9 +69,46 @@ inline float convertHelper<fixed16, float>(fixed16 &a ) {
 };
 
 template<>
+inline animTime_t convertHelper<fixed16, animTime_t>(fixed16 &a ) {
+    return (animTime_t)(a / 32768.0);
+};
+
+template<>
+inline uint32_t convertHelper<animTime_t, uint32_t>(animTime_t &a ) {
+    return (uint32_t)a;
+};
+
+
+template<>
 inline mathfu::vec4 convertHelper<mathfu::vec3_packed, mathfu::vec4>(mathfu::vec3_packed &a ) {
     return mathfu::vec4(a.x, a.y, a.z, 0);
 };
+
+template <typename T, typename R>
+int32_t findTimeIndex(
+        R currTime,
+        T *timestamps,
+        int times_len
+) {
+    T timeConverted = convertHelper<R, T>(currTime);
+    if (times_len > 1 ) {
+        //return std::binary_search((*timeStamp)[0], (*timeStamp)[timeStamp->size-1], currTime);
+//        return binary_search(*timeStamp, 0, times_len-1, currTime) - 1;
+        for (int i = 1; i < times_len; i++) {
+            T timestamp_time = timestamps[i];
+            if (timestamp_time > timeConverted) {
+                return i-1;
+            }
+        }
+        return times_len-1;
+    } else if (times_len == 1){
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+
 
 template<typename T>
 inline T lerpHelper(T &value1, T &value2, float percent) {
@@ -197,7 +229,13 @@ R animateTrack(
 
     currTime = fmod(currTime , maxTime);
 
-    timeIndex = findTimeIndex(currTime, animationIndex, animationBlock.timestamps);
+    if (animationBlock.timestamps.size == 0 || animationIndex >= animationBlock.timestamps.size ) {
+        return defaultValue;
+    }
+
+    M2Array<uint32_t> *timeStamp = animationBlock.timestamps[animationIndex];
+
+    timeIndex = findTimeIndex(currTime, timeStamp->getElement(0), timeStamp->size);
 
     if (timeIndex == times->size-1) {
         return convertHelper<T, R>(*values->getElement(timeIndex));
@@ -208,14 +246,43 @@ R animateTrack(
         int time1 = *times->getElement(timeIndex);
         int time2 = *times->getElement(timeIndex+1);
 
-        if (time2 > maxTime) time2 = maxTime;
-
         uint16_t interpolType = animationBlock.interpolation_type;
         if (interpolType == 0) {
             return value1;
         } else if (interpolType >= 1) {
             return lerpHelper<R>(value1, value2, (float)((float)currTime - time1)/(float)(time2 - time1));
         }
+    } else {
+        return convertHelper<T, R>(*values->getElement(0));
+//        return defaultValue;
+    }
+}
+
+template<typename T, typename R>
+R animatePartTrack(
+        animTime_t age,
+        M2PartTrack<T> *animationPartBlock,
+        R &defaultValue) {
+
+    if (animationPartBlock->timestamps.size <= 0) {
+        return defaultValue;
+    }
+
+    auto timeStamps = &animationPartBlock->timestamps;
+    M2Array<T> *values = &animationPartBlock->values;
+    int32_t timeIndex = findTimeIndex(age, timeStamps->getElement(0), timeStamps->size);
+
+    if (timeIndex == timeStamps->size-1) {
+        return convertHelper<T, R>(*values->getElement(timeIndex));
+    } else if (timeIndex >= 0) {
+        R value1 = convertHelper<T, R>(*values->getElement(timeIndex));
+        R value2 = convertHelper<T, R>(*values->getElement(timeIndex+1));
+
+        float currTimeF = convertHelper<animTime_t, float>(age);
+        float time1 = convertHelper<fixed16, float>(*timeStamps->getElement(timeIndex));
+        float time2 = convertHelper<fixed16, float>(*timeStamps->getElement(timeIndex+1));
+
+        return lerpHelper<R>(value1, value2, (float)(currTimeF - time1)/(float)(time2 - time1));
     } else {
         return convertHelper<T, R>(*values->getElement(0));
 //        return defaultValue;

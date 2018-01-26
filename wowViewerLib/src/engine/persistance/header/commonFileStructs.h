@@ -147,10 +147,10 @@ struct M2TrackBase {
 
 template<typename T>
 struct M2PartTrack {
-    M2Array<fixed16> times;
+    M2Array<fixed16> timestamps;
     M2Array<T> values;
     void initPartTrack(void * m2File){
-        times.initM2Array(m2File);
+        timestamps.initM2Array(m2File);
         values.initM2Array(m2File);
     };
 };
@@ -187,7 +187,7 @@ struct CImVector
 };
 using CArgb = CImVector;
 
-struct C4Plane // todo: verify
+struct C4Plane
 {
     union {
         struct {
