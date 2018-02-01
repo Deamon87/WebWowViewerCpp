@@ -13,5 +13,6 @@ public:
     virtual void draw() = 0;
 
     virtual void update(double deltaTime, mathfu::vec3 &cameraVec3,  mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) = 0;
+    virtual mathfu::vec4 getAmbientColor() = 0;
 };
 #endif //WEBWOWVIEWERCPP_IINNERSCENEAPI_H

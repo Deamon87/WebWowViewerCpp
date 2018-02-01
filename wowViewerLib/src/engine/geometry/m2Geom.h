@@ -28,6 +28,7 @@ public:
             std::vector<mathfu::mat4> &boneMatrices,
             mathfu::vec4 &diffuseColor,
             bool drawTransparent,
+            std::vector<M2LightResult> &lights,
             bool instanced);
 
     void setupPlacementAttribute(GLuint placementVBO);

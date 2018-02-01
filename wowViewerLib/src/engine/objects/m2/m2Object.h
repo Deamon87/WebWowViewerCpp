@@ -71,7 +71,7 @@ private:
     std::vector<mathfu::mat4> textAnimMatrices;
     std::vector<mathfu::vec4> subMeshColors;
     std::vector<float> transparencies;
-    std::vector<AnimationManager::M2LightResult> lights;
+    std::vector<M2LightResult> lights;
 
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
@@ -88,10 +88,9 @@ private:
     void drawMaterial(M2MaterialInst &materialData, bool drawTransparent, int instanceCount);
 
     void initTextAnimMatrices();
-
     void initSubmeshColors();
-
     void initTransparencies();
+    void initLights();
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &lookAtMat4);
     bool checkIfHasBillboarded();
@@ -153,7 +152,12 @@ public:
 
     void drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO);
 
-    void initLights();
+    mathfu::vec4 getAmbientLight() {
+        if (lights.size() > 0 && lights[0].ambient_intensity != 0) {
+            return lights[0].diffuse_color;
+        }
+        return mathfu::vec4(0.5, 0.5, 0.5, 0.5);
+    };
 };
 
 

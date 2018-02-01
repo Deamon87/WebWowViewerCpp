@@ -125,7 +125,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(3993, 2302, 1043); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "NagaDungeon");
 //    m_firstCamera.setCameraPos(829, -296, 200 ); //Field of the Eternal Hunt
-//    currentScene = new Map(this, "unused");ццццццццццццццццц
+//    currentScene = new Map(this, "unused");
 
 //    m_firstCamera.setCameraPos(-2825, -4546, 200 ); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "ScenarioAlcazIsland");
@@ -138,6 +138,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //   m_firstCamera.setCameraPos(0, 0, 0); // Pandaria
 //    currentScene = new Map(this, "Ulduar80");
+//
+//    m_firstCamera.setCameraPos( -8517, 1104, 200);
+//    currentScene = new Map(this, "escapefromstockades");
 
 
     //Test scene 2: tree from shattrath
@@ -185,9 +188,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2");
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2");
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2");
 //    currentScene = new M2Scene(this,
@@ -197,8 +200,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2");
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2");
-//   currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2");
+   currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2");
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2");
 
@@ -761,6 +764,16 @@ void WoWSceneImpl::activateM2Shader() {
     glUniform1f(this->m2Shader->getUnf("uFogEnd"), this->uFogEnd);
 
     glUniform3fv(this->m2Shader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+
+
+    mathfu::vec4 ambient = this->currentScene->getAmbientColor();
+    glUniform4fv(this->m2Shader->getUnf("uAmbientLight"), 1, &ambient[0]);
+
+    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+    upVector = (this->m_lookAtMat4.Transpose() * upVector);
+    glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
+
+    glUniform3fv(this->wmoShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
 
 
     glActiveTexture(GL_TEXTURE0);

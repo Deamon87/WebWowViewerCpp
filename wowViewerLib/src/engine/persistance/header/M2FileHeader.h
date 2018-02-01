@@ -343,5 +343,17 @@ struct M2Data {
     M2Array<uint16_t> blend_map_overrides;             // When set, textures blending is overriden by the associated array.
 };
 
+class M2LightResult {
+public:
+    mathfu::vec4 ambient_color;
+    float ambient_intensity;
+    mathfu::vec4 diffuse_color;
+    float diffuse_intensity;
+    float attenuation_start;
+    float attenuation_end;
+    mathfu::vec4 position;
+    unsigned char visibility;
+};
+
 
 #endif //WOWVIEWERLIB_M2FILEHEADER_H

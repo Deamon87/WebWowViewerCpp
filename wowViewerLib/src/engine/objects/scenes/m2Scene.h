@@ -34,6 +34,7 @@ public:
     void draw() override;
 
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
+    mathfu::vec4 getAmbientColor() override;
 
 };
 

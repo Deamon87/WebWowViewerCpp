@@ -10,6 +10,8 @@
 #include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
 
+
+
 class AnimationManager {
 private:
     M2Data *m_m2File;
@@ -43,18 +45,6 @@ private:
     void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, animTime_t time);
 
 public:
-    class M2LightResult {
-    public:
-        mathfu::vec3 ambient_color;
-        float ambient_intensity;
-        mathfu::vec3 diffuse_color;
-        float diffuse_intensity;
-        float attenuation_start;
-        float attenuation_end;
-        mathfu::vec4 position;
-        unsigned char visibility;
-    };
-
     AnimationManager(M2Data* m2File);
     bool setAnimationId(int animationId, bool reset);
     void update (animTime_t deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,

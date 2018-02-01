@@ -112,10 +112,7 @@ int32_t findTimeIndex(
 
 template<typename T>
 inline T lerpHelper(T &value1, T &value2, float percent) {
-//    REGISTER_PARSE_TYPE(T);
-//    template <typename T> struct MyClassTemplate<T*>;
     throw "This function was not meant to be called";
-
 };
 template<>
 inline mathfu::vec4 lerpHelper<mathfu::vec4>(mathfu::vec4 &value1, mathfu::vec4 &value2, float percent) {
@@ -124,7 +121,7 @@ inline mathfu::vec4 lerpHelper<mathfu::vec4>(mathfu::vec4 &value1, mathfu::vec4 
 
 template<>
 inline unsigned char lerpHelper<unsigned char>(unsigned char &value1, unsigned char &value2, float percent) {
-    return (value1 * percent) + ((1 - percent) * value2);;
+    return (unsigned char) ((value1 * (1 - percent)) + (value2 * percent));;
 };
 template<>
 inline mathfu::vec3 lerpHelper<mathfu::vec3>(mathfu::vec3 &value1, mathfu::vec3 &value2, float percent) {
@@ -182,7 +179,7 @@ inline mathfu::quat lerpHelper<mathfu::quat>(mathfu::quat &value1, mathfu::quat 
 };
 template<>
 inline float lerpHelper<float>(float &value1, float &value2, float percent) {
-    return (value1 * percent) + ((1 - percent) * value2);
+    return (value1 * (1 - percent)) + (value2 * percent);
 
 };
 

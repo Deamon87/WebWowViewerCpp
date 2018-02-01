@@ -55,6 +55,7 @@ public:
     virtual bool getIsDebugCamera() = 0;
     virtual void drawCamera() = 0;
 
+    virtual mathfu::mat4& getViewMat() = 0;
 
     virtual GLuint getBlackPixelTexture() = 0;
     virtual Config *getConfig() = 0;

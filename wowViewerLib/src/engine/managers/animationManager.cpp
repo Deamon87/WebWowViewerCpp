@@ -624,8 +624,8 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
     for (int i = 0; i < lightRecords.size; i++) {
         M2Light * lightRecord = lightRecords.getElement(i);
 
-        mathfu::vec3 ambient_color =
-            animateTrack<C3Vector, mathfu::vec3>(
+        mathfu::vec4 ambient_color =
+            mathfu::vec4(animateTrack<C3Vector, mathfu::vec3>(
                     animationTime,
                     animationRecord->duration,
                     animationIndex,
@@ -633,7 +633,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                     this->m_m2File->global_loops,
                     this->globalSequenceTimes,
                     defaultVector
-            );
+            ), 1.0);
 
         float ambient_intensity =
                 animateTrack<float, float>(
@@ -645,8 +645,8 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                         this->globalSequenceTimes,
                         defaultFloat
                 );
-        mathfu::vec3 diffuse_color =
-                animateTrack<C3Vector, mathfu::vec3>(
+        mathfu::vec4 diffuse_color =
+                mathfu::vec4(animateTrack<C3Vector, mathfu::vec3>(
                         animationTime,
                         animationRecord->duration,
                         animationIndex,
@@ -654,7 +654,8 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                         this->m_m2File->global_loops,
                         this->globalSequenceTimes,
                         defaultVector
-                );
+                ), 1.0);
+
 
         float diffuse_intensity =
                 animateTrack<float, float>(
@@ -704,7 +705,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
         C3Vector &pos_vec = lightRecord->position;
 
         mathfu::vec4 lightWorldPos = boneMat * mathfu::vec4(mathfu::vec3(pos_vec), 1.0);
-
+        lightWorldPos.w = 1.0;
 
         lights[i].ambient_color = ambient_color;
         lights[i].ambient_intensity = ambient_intensity;

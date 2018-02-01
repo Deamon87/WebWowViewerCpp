@@ -280,6 +280,7 @@ M2Geom::setupUniforms(
         std::vector<mathfu::mat4> &boneMatrices,
         mathfu::vec4 &diffuseColor,
         bool drawTransparent,
+        std::vector<M2LightResult> &lights,
         bool instanced) {
     ShaderRuntimeData *m2Shader;
     if (!instanced) {
@@ -302,25 +303,11 @@ M2Geom::setupUniforms(
 
     //Setup lights
 
-//    var activeLights = (lights) ? (lights.length | 0) : 0;
-    /*
-    for (var i = 0; i < lights.length; i++) {
-        if (lights[i].attenuation_end - lights[i].attenuation_start > 0.01) {
-            activeLights++;
-        }
-    }*/
-//    gl.uniform1i(m2Shader->getUnf("uLightCount, activeLights);
-    glUniform1i(m2Shader->getUnf("uLightCount"), 0);
+    mathfu::mat4 viewModelMat = api->getViewMat()*placementMatrix;
+    glUniform1i(m2Shader->getUnf("uLightCount"), lights.size());
     int index = 0;
-//    for (var i = 0; i < lights.length; i++) {
-//        //if (lights[i].attenuation_end - lights[i].attenuation_start <= 0.01) continue;
-//        gl.uniform4fv(uniforms["pc_lights["+index+"].color"], new Float32Array(lights[i].diffuse_color));
-//        gl.uniform4fv(uniforms["pc_lights["+index+"].attenuation"], new Float32Array([lights[i].attenuation_start, lights[i].diffuse_intensity, lights[i].attenuation_end, activeLights]));
-//        gl.uniform4fv(uniforms["pc_lights["+index+"].position"], new Float32Array(lights[i].position));
-//        index++;
-//    }
     float indet[4] = {0,0,0,0};
-    static const size_t pcLightNames[4][3] = {
+    static const size_t pcLightNames[3][3] = {
             {
                 CalculateFNV("pc_lights[0].color"),
                 CalculateFNV("pc_lights[0].attenuation"),
@@ -337,6 +324,19 @@ M2Geom::setupUniforms(
                 CalculateFNV("pc_lights[2].position")
             }
     };
+
+    for (int i = 0; i < std::min((int)lights.size(), 3); i++) {
+        std::string uniformName;
+//        if ((lights[i].attenuation_end - lights[i].attenuation_start < 0.0001)) continue;
+
+        mathfu::vec4 attenVec(lights[i].attenuation_start, lights[i].diffuse_intensity, lights[i].attenuation_end, lights.size());
+        glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][0]), 1, &lights[i].diffuse_color.data_[0]);
+        glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][1]), 1, &attenVec.data_[0]);
+
+        mathfu::vec4 viewPos = viewModelMat * lights[i].position;
+        glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][2]), 1, &viewPos.data_[0]);
+        index++;
+    }
     for (int i = index; i < 3; i++) {
         std::string uniformName;
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][0]), 1, indet);
@@ -482,7 +482,7 @@ M2Geom::drawMesh(
                     break;
             }
 
-            if (((renderFlag->flags & 0x1) > 0)|| (renderFlag->blending_mode == 5) || (renderFlag->blending_mode == 6)) {
+            if (((renderFlag->flags & 0x1) > 0) || (renderFlag->blending_mode == 5) || (renderFlag->blending_mode == 6)) {
                 glUniform1i(m2Shader->getUnf("uUseDiffuseColor"), 0);
             } else {
                 glUniform1i(m2Shader->getUnf("uUseDiffuseColor"), 1);

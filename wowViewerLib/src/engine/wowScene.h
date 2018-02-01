@@ -126,6 +126,9 @@ public:
     virtual ShaderRuntimeData *getDrawPointsShader() override {
         return drawPoints;
     }
+    virtual mathfu::mat4& getViewMat() override {
+        return m_lookAtMat4;
+    }
 
     virtual GLuint getBlackPixelTexture();
     virtual Config *getConfig() {

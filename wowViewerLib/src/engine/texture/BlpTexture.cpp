@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <cmath>
+#include <iostream>
 #include "../opengl/header.h"
 
 #include "BlpTexture.h"
@@ -256,6 +257,9 @@ void BlpTexture::process(std::vector<unsigned char> &blpFile) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
     BlpFile *pBlpFile = (BlpFile *) &blpFile[0];
+    if (pBlpFile->fileIdent != '2PLB') {
+        std::cout << pBlpFile->fileIdent;
+    }
     TextureFormat textureFormat = getTextureType(pBlpFile);
 
 
