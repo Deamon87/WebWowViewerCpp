@@ -30,5 +30,14 @@ void M2Scene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &f
 }
 
 mathfu::vec4 M2Scene::getAmbientColor() {
+    return mathfu::vec4(0,0,0,0);
     return m_m2Object->getAmbientLight();
+}
+
+bool M2Scene::getCameraSettings(M2CameraResult &result) {
+    if (m_cameraView > -1 && m_m2Object->getGetIsLoaded()) {
+        result = m_m2Object->updateCamera(0, m_cameraView);
+        return true;
+    }
+    return false;
 }

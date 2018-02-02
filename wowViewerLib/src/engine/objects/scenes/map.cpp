@@ -100,7 +100,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
             this->m2RenderedThisFrameArr.begin(),
             this->m2RenderedThisFrameArr.end(),
             [] (M2Object *a, M2Object *b) -> bool const {
-                return b->getCurrentDistance() - a->getCurrentDistance() > 0;
+                return a->getCurrentDistance() - b->getCurrentDistance() > 0;
             }        
         );
 

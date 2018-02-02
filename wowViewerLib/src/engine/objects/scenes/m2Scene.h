@@ -13,12 +13,13 @@ class M2Scene : public iInnerSceneApi {
 private:
     IWoWInnerApi *m_api;
     std::string m_m2Model;
+    int m_cameraView;
 
     M2Object *m_m2Object;
     bool m_drawModel = false;
 
 public:
-    M2Scene(IWoWInnerApi *api, std::string m2Model) : m_api(api), m_m2Model(m2Model){
+    M2Scene(IWoWInnerApi *api, std::string m2Model, int cameraView = - 1) : m_api(api), m_m2Model(m2Model), m_cameraView(cameraView){
         M2Object *m2Object = new M2Object(m_api);
         m2Object->setLoadParams(0, {},{});
         m2Object->setModelFileName(m_m2Model);
@@ -35,6 +36,7 @@ public:
 
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
     mathfu::vec4 getAmbientColor() override;
+    bool getCameraSettings(M2CameraResult &result);
 
 };
 

@@ -191,8 +191,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2");
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2");
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2");
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2");
 //
@@ -200,8 +200,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2");
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2");
-   currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2");
+//   currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2");
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2");
 
@@ -766,14 +766,14 @@ void WoWSceneImpl::activateM2Shader() {
     glUniform3fv(this->m2Shader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 
 
-    mathfu::vec4 ambient = this->currentScene->getAmbientColor();
-    glUniform4fv(this->m2Shader->getUnf("uAmbientLight"), 1, &ambient[0]);
+//    mathfu::vec4 ambient = this->currentScene->getAmbientColor();
+//    glUniform4fv(this->m2Shader->getUnf("uAmbientLight"), 1, &ambient[0]);
 
-    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    upVector = (this->m_lookAtMat4.Transpose() * upVector);
-    glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
-
-    glUniform3fv(this->wmoShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
+//    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+//    upVector = (this->m_lookAtMat4.Transpose() * upVector);
+//    glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
+//
+//    glUniform3fv(this->wmoShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
 
 
     glActiveTexture(GL_TEXTURE0);
@@ -1031,28 +1031,28 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     //If use camera settings
     //Figure out way to assign the object with camera
-    //config.setCameraM2(this.graphManager.m2Object[0]);
-//    M2Object *m2Object = ((M2Scene *)this->currentScene)->getM2Object();
-//    if (m2Object && m2Object->getGetIsLoaded()) {
-//        m2Object->updateCameras(deltaTime);
-//
-//        var cameraSettings = m2Object.cameras[0];
-//        farPlane = cameraSettings.farClip;
-//        nearPlane = cameraSettings.nearClip;
-//        fov = cameraSettings.fov * 32 * Math.PI / 180;
-//
-//        this.mainCamera = cameraSettings.currentPosition;
-//        vec4.transformMat4(this.mainCamera, this.mainCamera, m2Object.placementMatrix);
-//        this.mainCameraLookAt = cameraSettings.currentTarget;
-//        vec4.transformMat4(this.mainCameraLookAt, this.mainCameraLookAt, m2Object.placementMatrix);
-//        cameraVecs = {
-//                lookAtVec3: this.mainCameraLookAt,
-//                cameraVec3: this.mainCamera,
-//                staticCamera: true
-//        }
-//    }
+    if (!m_config->getUseSecondCamera()){
+        this->m_firstCamera.tick(deltaTime);
+    } else {
+        this->m_secondCamera.tick(deltaTime);
+    }
 
+    M2CameraResult cameraResult;
+    mathfu::mat4 lookAtMat4;
+    if ( currentScene->getCameraSettings(cameraResult)) {
+        farPlane = cameraResult.far_clip;
+        nearPlane = cameraResult.near_clip;
 
+        lookAtMat4 =
+            mathfu::mat4::LookAt(
+                cameraResult.position.xyz(),
+                cameraResult.target_position.xyz(),
+                upVector);
+
+    } else {
+        lookAtMat4 = this->m_firstCamera.getLookatMat();
+        m_lookAtMat4 = lookAtMat4;
+    }
 
     if (this->uFogStart < 0) {
         this->uFogStart = farPlane+8000;
@@ -1060,22 +1060,11 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     if (this->uFogEnd < 0) {
         this->uFogEnd = farPlane+12000;
     }
-
-    if (!m_config->getUseSecondCamera()){
-        this->m_firstCamera.tick(deltaTime);
-    } else {
-        this->m_secondCamera.tick(deltaTime);
-    }
-
 //    mathfu::mat4 lookAtMat4 =
 //        mathfu::mat4::LookAt(
 //                this->m_firstCamera.getCameraPosition(),
 //                this->m_firstCamera.getCameraLookAt(),
 //                upVector);
-
-    mathfu::mat4 lookAtMat4 = this->m_firstCamera.getLookatMat();
-    m_lookAtMat4 = lookAtMat4;
-
 
 // Second camera for debug
     mathfu::mat4 secondLookAtMat =
@@ -1084,7 +1073,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                     this->m_secondCamera.getCameraLookAt(),
                     upVector);
 
-//
     mathfu::mat4 perspectiveMatrix =
         mathfu::mat4::Perspective(
                 fov,
@@ -1105,11 +1093,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //
     m_perspectiveMatrix = perspectiveMatrix;
 
-    //var o_height = (this.canvas.height * (533.333/256/* zoom 7 in Alram viewer */))/ 8 ;
-    //var o_width = o_height * this.canvas.width / this.canvas.height;
-    //mat4.ortho(perspectiveMatrix, -o_width, o_width, -o_height, o_height, 1, 1000);
-
-
     mathfu::mat4 perspectiveMatrixForCulling =
             mathfu::mat4::Perspective(
                     fov,
@@ -1125,19 +1108,9 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     mathfu::mat4 viewCameraForRender =
             perspectiveMatrixForCameraRender * lookAtMat4;
 
-//    this.perspectiveMatrix = perspectiveMatrix;
     this->m_viewCameraForRender = viewCameraForRender;
     this->SetDirection();
-//
-//    var cameraPos = vec4.fromValues(
-//            this.mainCamera[0],
-//            this.mainCamera[1],
-//            this.mainCamera[2],
-//            1
-//    );
-//
-//    // Update objects
-//    this.adtGeomCache.processCacheQueue(10);
+
     this->adtObjectCache.processCacheQueue(10);
     this->wdtCache.processCacheQueue(10);
     this->wdlCache.processCacheQueue(10);

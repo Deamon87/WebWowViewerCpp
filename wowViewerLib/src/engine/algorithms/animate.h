@@ -129,6 +129,16 @@ inline mathfu::vec3 lerpHelper<mathfu::vec3>(mathfu::vec3 &value1, mathfu::vec3 
 };
 
 
+template<>
+inline mathfu::quat lerpHelper<mathfu::quat>(mathfu::quat &value1, mathfu::quat &value2, float percent) {
+    return mathfu::quat::Slerp(value1, value2, percent);
+   //return custom_slerp(value1, value2, percent);
+};
+template<>
+inline float lerpHelper<float>(float &value1, float &value2, float percent) {
+    return (value1 * (1 - percent)) + (value2 * percent);
+};
+
 static inline mathfu::quat custom_slerp(mathfu::quat &a, mathfu::quat &b, double t) {
     // benchmarks:
     //    http://jsperf.com/quaternion-slerp-implementations
@@ -172,15 +182,16 @@ static inline mathfu::quat custom_slerp(mathfu::quat &a, mathfu::quat &b, double
     return result;
 }
 
-template<>
-inline mathfu::quat lerpHelper<mathfu::quat>(mathfu::quat &value1, mathfu::quat &value2, float percent) {
-    return mathfu::quat::Slerp(value1, value2, percent);
-    //return custom_slerp(value1, value2, percent);
-};
-template<>
-inline float lerpHelper<float>(float &value1, float &value2, float percent) {
-    return (value1 * (1 - percent)) + (value2 * percent);
+template <typename T, typename R>
+R interpolateHermite(M2SplineKey<T> *value1, M2SplineKey<T> *value2, float percent) {
 
+    float h1 = 2.0f*percent*percent*percent - 3.0f*percent*percent + 1.0f;
+    float h2 = -2.0f*percent*percent*percent + 3.0f*percent*percent;
+    float h3 = percent*percent*percent - 2.0f*percent*percent + percent;
+    float h4 = percent*percent*percent - percent*percent;
+
+    // interpolation
+    return convertHelper<T, R>(value1->value*h1 + value2->value*h2 + value1->inTan*h3 + value2->outTan*h4);
 };
 
 
@@ -218,12 +229,6 @@ R animateTrack(
     M2Array<uint32_t > *times = animationBlock.timestamps[animationIndex];
     M2Array<T> *values = animationBlock.values[animationIndex];
 
-//    if (maxTime == 0 ) {
-//        maxTime = *times->getElement(times->size - 1);
-//        if (maxTime > 0)
-//            currTime = currTime % maxTime;
-//    }
-
     currTime = fmod(currTime , maxTime);
 
     if (animationBlock.timestamps.size == 0 || animationIndex >= animationBlock.timestamps.size ) {
@@ -233,21 +238,36 @@ R animateTrack(
     M2Array<uint32_t> *timeStamp = animationBlock.timestamps[animationIndex];
 
     timeIndex = findTimeIndex(currTime, timeStamp->getElement(0), timeStamp->size);
+    uint16_t interpolType = animationBlock.interpolation_type;
 
     if (timeIndex == times->size-1) {
         return convertHelper<T, R>(*values->getElement(timeIndex));
     } else if (timeIndex >= 0) {
-        R value1 = convertHelper<T, R>(*values->getElement(timeIndex));
-        R value2 = convertHelper<T, R>(*values->getElement(timeIndex+1));
+        if (std::is_same<T, M2SplineKey>::value) {
+            R value1 = convertHelper<T, R>(*values->getElement(timeIndex));
+            R value2 = convertHelper<T, R>(*values->getElement(timeIndex + 1));
 
-        int time1 = *times->getElement(timeIndex);
-        int time2 = *times->getElement(timeIndex+1);
+            int time1 = *times->getElement(timeIndex);
+            int time2 = *times->getElement(timeIndex + 1);
 
-        uint16_t interpolType = animationBlock.interpolation_type;
-        if (interpolType == 0) {
-            return value1;
-        } else if (interpolType >= 1) {
-            return lerpHelper<R>(value1, value2, (float)((float)currTime - time1)/(float)(time2 - time1));
+            if (interpolType == 0) {
+                return value1;
+            } else if (interpolType == 1) {
+                return lerpHelper<R>(value1, value2, ((float) currTime - time1) / (float) (time2 - time1));
+            }
+        } else {
+            T *value1 = (values->getElement(timeIndex));
+            T *value2 = (values->getElement(timeIndex + 1));
+
+            int time1 = *times->getElement(timeIndex);
+            int time2 = *times->getElement(timeIndex + 1);
+            if (interpolType == 2) {
+                return interpolateHermite<T, R>(value1, value2, ((float) currTime - time1) / (float) (time2 - time1));
+            } else if (interpolType == 3) {
+                return interpolateHermite<T, R>(value1, value2, ((float) currTime - time1) / (float) (time2 - time1));
+            } else {
+                return convertHelper<T, R>(*values->getElement(0));
+            }
         }
     } else {
         return convertHelper<T, R>(*values->getElement(0));

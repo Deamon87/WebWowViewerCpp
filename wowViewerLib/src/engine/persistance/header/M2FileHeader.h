@@ -343,7 +343,7 @@ struct M2Data {
     M2Array<uint16_t> blend_map_overrides;             // When set, textures blending is overriden by the associated array.
 };
 
-class M2LightResult {
+struct M2LightResult {
 public:
     mathfu::vec4 ambient_color;
     float ambient_intensity;
@@ -354,6 +354,13 @@ public:
     mathfu::vec4 position;
     unsigned char visibility;
 };
-
+struct M2CameraResult {
+    float far_clip;
+    float near_clip;
+    mathfu::vec4 position;
+    mathfu::vec4 target_position;
+    float roll; // The camera can have some roll-effect. Its 0 to 2*Pi.
+    float diagFov;
+};
 
 #endif //WOWVIEWERLIB_M2FILEHEADER_H

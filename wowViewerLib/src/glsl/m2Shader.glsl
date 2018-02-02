@@ -101,7 +101,7 @@ void main() {
     mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
 
-    vec3 normal = mat3(cameraMatrix) * aNormal;
+    vec3 normal = normalize(mat3(cameraMatrix) * aNormal);
     vec4 combinedColor = clamp(lDiffuseColor /*+ vc_matEmissive*/, 0.000000, 1.000000);
     vec4 combinedColorHalved = combinedColor * 0.5;
     
@@ -295,9 +295,9 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
 //    return currColor.rgb * matDiffuse;
 //    return sqrt((matDiffuse*matDiffuse)*0.5 + currColor.rgb*(matDiffuse*matDiffuse));
     vec3 gammaDiffTerm = matDiffuse * currColor;
-    vec3 linearDiffTerm =  (matDiffuse * matDiffuse) * accumLight;
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * accumLight;
 //    return sqrt((matDiffuse*matDiffuse)*mult + currColor.rgb*(matDiffuse*matDiffuse)*3) ;
-    return sqrt(gammaDiffTerm * gammaDiffTerm*mult + linearDiffTerm) ;
+    return sqrt(linearDiffTerm) ;
 }
 
 void main() {
@@ -325,8 +325,8 @@ void main() {
         vec3 vNormal3 = normalize(vNormal.xyz);
         int count = int(pc_lights[0].attenuation.w);
         vec3 lightColor = vec3(0.0);
-
-        for (int index = 0;index < 4;index++)
+        int index = 0;
+        for (;;)
         {
             if ( index >= uLightCount) break;
             LocalLight lightRecord = pc_lights[index];
@@ -334,20 +334,14 @@ void main() {
             float distanceToLightSqr = dot(vectorToLight, vectorToLight);
             float distanceToLightInv = inversesqrt(distanceToLightSqr);
             float distanceToLight = (distanceToLightSqr * distanceToLightInv);
-            float diffuseTerm = max((dot(vectorToLight, vNormal3) * distanceToLightInv), 0.0);
+            float diffuseTerm1 = max((dot(vectorToLight, vNormal3) * distanceToLightInv), 0.0);
             vec4 attenuationRec = lightRecord.attenuation;
-            //float attenuationDiv = (1.0 ) / (( attenuationRec.z -  attenuationRec.x));
-//            float atten1 = distanceToLightSqr * 0.03 + distanceToLight*0.7;
-            float atten1 = (1.0 - clamp((distanceToLight - attenuationRec.x) * attenuationRec.y * (attenuationRec.z - attenuationRec.x), 0, 1));
-//            float atten2 = 1.0 / atten1;
-//            float lightAtten = diffuseTerm * atten2;
-            float lightAtten = diffuseTerm * atten1;
 
-            //float attenuation = (1.0 - clamp(((distanceToLight - attenuationRec.x) * attenuationDiv), 0.0, 1.0));
-            //vec3 light_atten = ((lightRecord.color.xyz ) * attenuation * diffuseTerm)   ;
-//            lightColor = (lightColor + (lightRecord.color.xyz * attenuationRec.y * lightAtten));
-            vec3 attenuatedColor = lightAtten * lightRecord.color.xyz ;
-            lightColor = (lightColor + vec3(attenuatedColor * attenuatedColor * diffuseTerm ));
+            float attenuation = (1.0 - clamp((distanceToLight - attenuationRec.x) * (1 / (attenuationRec.z - attenuationRec.x)), 0, 1));
+
+            vec3 attenuatedColor = attenuation * lightRecord.color.xyz;
+            lightColor = (lightColor + vec3(attenuatedColor * attenuatedColor * diffuseTerm1 ));
+            index++;
         }
 
         meshResColor.rgb = clamp(lightColor , 0.0, 1.0);
@@ -593,4 +587,5 @@ void main() {
 }
 
 #endif //COMPILING_FS
+
 

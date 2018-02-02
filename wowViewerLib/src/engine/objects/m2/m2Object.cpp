@@ -626,6 +626,8 @@ void M2Object::debugDumpAnimationSequences() {
 
 }
 
+
+
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
     if (!this->m_loaded) {
         if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded()) {
@@ -1068,4 +1070,11 @@ void M2Object::setModelFileName(std::string modelName) {
 void M2Object::setModelFileId(int fileId) {
     useFileId = true;
     m_modelFileId = fileId;
+}
+
+M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {
+    M2CameraResult result;
+    m_animationManager->calcCamera(result, cameraId, m_placementMatrix);
+
+    return result;
 }

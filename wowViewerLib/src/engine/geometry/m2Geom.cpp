@@ -304,7 +304,7 @@ M2Geom::setupUniforms(
     //Setup lights
 
     mathfu::mat4 viewModelMat = api->getViewMat()*placementMatrix;
-    glUniform1i(m2Shader->getUnf("uLightCount"), lights.size());
+
     int index = 0;
     float indet[4] = {0,0,0,0};
     static const size_t pcLightNames[3][3] = {
@@ -337,6 +337,7 @@ M2Geom::setupUniforms(
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][2]), 1, &viewPos.data_[0]);
         index++;
     }
+    glUniform1i(m2Shader->getUnf("uLightCount"), index);
     for (int i = index; i < 3; i++) {
         std::string uniformName;
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][0]), 1, indet);
@@ -344,6 +345,7 @@ M2Geom::setupUniforms(
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][2]), 1, indet);
         index++;
     }
+
 
     bool diffuseFound = false;
 //    for (int i = 0; i < lights.length; i++) {

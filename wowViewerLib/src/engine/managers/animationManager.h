@@ -84,6 +84,8 @@ public:
                     std::vector<mathfu::mat4> &bonesMatrices,
                     int animationIndex,
                     animTime_t animationTime);
+
+    void calcCamera(M2CameraResult &camera, int cameraId, mathfu::mat4 &placementMatrix);
 };
 
 
