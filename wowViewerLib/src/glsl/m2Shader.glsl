@@ -296,8 +296,8 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
 //    return sqrt((matDiffuse*matDiffuse)*0.5 + currColor.rgb*(matDiffuse*matDiffuse));
     vec3 gammaDiffTerm = matDiffuse * currColor;
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * accumLight;
-//    return sqrt((matDiffuse*matDiffuse)*mult + currColor.rgb*(matDiffuse*matDiffuse)*3) ;
-    return sqrt(linearDiffTerm) ;
+//    return sqrt((matDiffuse*matDiffuse)*mult + currColor.rgb*(matDiffuse*matDiffuse)) ;
+    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
 }
 
 void main() {

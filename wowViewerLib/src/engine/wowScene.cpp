@@ -191,8 +191,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
 //
@@ -203,7 +203,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
 //    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2");
+//        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
 
 //    currentScene = new M2Scene(this,
 //        "character\\nightelf\\male\\nightelfmale.m2");
@@ -1042,7 +1042,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     mathfu::vec4 cameraVec4;
     if ( currentScene->getCameraSettings(cameraResult)) {
         farPlane = cameraResult.far_clip;
-        nearPlane = 1;
+        nearPlane = cameraResult.near_clip;
         fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
 
         lookAtMat4 =
