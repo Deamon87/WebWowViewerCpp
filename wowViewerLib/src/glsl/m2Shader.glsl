@@ -339,7 +339,7 @@ void main() {
 
             float attenuation = (1.0 - clamp((distanceToLight - attenuationRec.x) * (1 / (attenuationRec.z - attenuationRec.x)), 0, 1));
 
-            vec3 attenuatedColor = attenuation * lightRecord.color.xyz;
+            vec3 attenuatedColor = attenuation * lightRecord.color.xyz * attenuationRec.y;
             lightColor = (lightColor + vec3(attenuatedColor * attenuatedColor * diffuseTerm1 ));
             index++;
         }
