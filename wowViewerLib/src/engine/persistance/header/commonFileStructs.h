@@ -159,7 +159,7 @@ template<typename T>
 struct M2Track
 {
     uint16_t interpolation_type;
-    uint16_t global_sequence;
+    int16_t global_sequence;
     M2Array<M2Array<uint32_t>> timestamps;
     M2Array<M2Array<T>> values;
     void initTrack(void * m2File){
@@ -171,11 +171,11 @@ struct M2Track
 
 
 template<typename T>
-struct M2SplineKey {
+PACK(struct M2SplineKey {
     T value;
     T inTan;
     T outTan;
-};
+});
 
 
 struct CImVector

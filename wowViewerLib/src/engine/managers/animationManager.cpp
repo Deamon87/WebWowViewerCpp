@@ -489,7 +489,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
     this->calcTransparencies(transparencies, this->currentAnimationIndex, this->currentAnimationTime, blendAnimationIndex,
                             this->nextSubAnimationTime, blendAlpha);
 
-    this->calcCameras(cameraDetails, this->currentAnimationIndex, this->currentAnimationTime);
+//    this->calcCameras(cameraDetails, this->currentAnimationIndex, this->currentAnimationTime);
     this->calcLights(lights, bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime);
 //    this->calcParticleEmitters(particleEmitters, this->currentAnimationIndex, this->currentAnimationTime);
 }
@@ -726,39 +726,39 @@ void AnimationManager::calcCamera(M2CameraResult &camera, int cameraId, mathfu::
 
     auto &cameraRecords = m_m2File->cameras;
     if (cameraRecords.size <= 0) return;
-    static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
+    static mathfu::vec3 defaultVector(0.0, 0.0, 0.0);
     static float defaultFloat = 1.0;
 
     auto animationRecord = m_m2File->sequences[animationIndex];
     M2Camera * cameraRecord = cameraRecords.getElement(cameraId);
 
     mathfu::vec3 currentPosition =
-        animateTrack<M2SplineKey<C3Vector>, mathfu::vec3>(
-        animationTime,
-        animationRecord->duration,
-        animationIndex,
-        cameraRecord->positions,
-        this->m_m2File->global_loops,
-        this->globalSequenceTimes,
-        defaultVector
+        animateSplineTrack<C3Vector, mathfu::vec3>(
+            animationTime,
+            animationRecord->duration,
+            animationIndex,
+            cameraRecord->positions,
+            this->m_m2File->global_loops,
+            this->globalSequenceTimes,
+            defaultVector
     );
-    currentPosition += mathfu::vec3(cameraRecord->position_base);
+    currentPosition = currentPosition + mathfu::vec3(cameraRecord->position_base);
 
     mathfu::vec3 currentTarget =
-        animateTrack<M2SplineKey<C3Vector>, mathfu::vec3>(
-          animationTime,
-          animationRecord->duration,
-          animationIndex,
-          cameraRecord->target_position,
-          this->m_m2File->global_loops,
-          this->globalSequenceTimes,
-          defaultVector
+        animateSplineTrack<C3Vector, mathfu::vec3>(
+            animationTime,
+            animationRecord->duration,
+            animationIndex,
+            cameraRecord->target_position,
+            this->m_m2File->global_loops,
+            this->globalSequenceTimes,
+            defaultVector
         );
 
-    currentTarget += cameraRecord->target_position_base.x;
+    currentTarget = currentTarget + mathfu::vec3(cameraRecord->target_position_base);
 
     float fov =
-        animateTrack<M2SplineKey<float>, float>(
+        animateSplineTrack<float, float>(
             animationTime,
             animationRecord->duration,
             animationIndex,
@@ -769,11 +769,11 @@ void AnimationManager::calcCamera(M2CameraResult &camera, int cameraId, mathfu::
         );
 
     float roll =
-        animateTrack<M2SplineKey<float>, float>(
+        animateSplineTrack<float, float>(
             animationTime,
             animationRecord->duration,
             animationIndex,
-            cameraRecord->FoV,
+            cameraRecord->roll,
             this->m_m2File->global_loops,
             this->globalSequenceTimes,
             defaultFloat
@@ -786,4 +786,7 @@ void AnimationManager::calcCamera(M2CameraResult &camera, int cameraId, mathfu::
     camera.near_clip = cameraRecord->near_clip;
     camera.roll = roll;
     camera.diagFov = fov;
+
+//    camera.position = mathfu::vec4(camera.position.z, camera.position.y, camera.position.x, 1.0);
+//    camera.target_position = mathfu::vec4(camera.target_position.z, camera.target_position.y, camera.target_position.x, 1.0);
 }

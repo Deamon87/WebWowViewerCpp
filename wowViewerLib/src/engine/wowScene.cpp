@@ -188,20 +188,20 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-//   m_firstCamera.setCameraPos(0, 0, 0);
+   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2");
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
     currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2");
+        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2");
+//        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
 //
 //   currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2");
+//        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
 //   currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2");
+//        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
 //   currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2");
+//        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2");
 
@@ -1022,9 +1022,9 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
-    int farPlane = 300;
-    int nearPlane = 1;
-    float fov = toRadian(50.0);
+    float farPlane = 300;
+    float nearPlane = 1;
+    float fov = toRadian(100.0);
 
 //    float diagFov = 2.0944;
 //    float fov = diagFov / sqrt(1 + canvAspect*canvAspect);
@@ -1039,17 +1039,22 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     M2CameraResult cameraResult;
     mathfu::mat4 lookAtMat4;
+    mathfu::vec4 cameraVec4;
     if ( currentScene->getCameraSettings(cameraResult)) {
         farPlane = cameraResult.far_clip;
-        nearPlane = cameraResult.near_clip;
+        nearPlane = 1;
+        fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
 
         lookAtMat4 =
             mathfu::mat4::LookAt(
-                cameraResult.position.xyz(),
-                cameraResult.target_position.xyz(),
-                upVector);
+                -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
+                mathfu::vec3(0,0,0),
+                upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
+        cameraVec4 = cameraResult.position;
+        m_lookAtMat4 = lookAtMat4;
 
     } else {
+        cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
         lookAtMat4 = this->m_firstCamera.getLookatMat();
         m_lookAtMat4 = lookAtMat4;
     }
@@ -1120,7 +1125,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     this->skinGeomCache.processCacheQueue(10);
     this->textureCache.processCacheQueue(10);
 
-    mathfu::vec4 cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
     mathfu::vec3 cameraVec3 = cameraVec4.xyz();
     currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);

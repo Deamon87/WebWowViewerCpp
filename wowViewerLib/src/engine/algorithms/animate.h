@@ -183,15 +183,22 @@ static inline mathfu::quat custom_slerp(mathfu::quat &a, mathfu::quat &b, double
 }
 
 template <typename T, typename R>
-R interpolateHermite(M2SplineKey<T> *value1, M2SplineKey<T> *value2, float percent) {
+inline R interpolateHermite(M2SplineKey<T> &value1, M2SplineKey<T> &value2, float percent) {
 
     float h1 = 2.0f*percent*percent*percent - 3.0f*percent*percent + 1.0f;
     float h2 = -2.0f*percent*percent*percent + 3.0f*percent*percent;
     float h3 = percent*percent*percent - 2.0f*percent*percent + percent;
     float h4 = percent*percent*percent - percent*percent;
 
+    T t1 = value1.value;
+    T t2 = value2.value;
+    T t3 = value1.inTan;
+    T t4 = value2.outTan;
     // interpolation
-    return convertHelper<T, R>(value1->value*h1 + value2->value*h2 + value1->inTan*h3 + value2->outTan*h4);
+    return convertHelper<T, R>(t1)*h1 +
+            convertHelper<T, R>(t2)*h2 +
+            convertHelper<T, R>(t3)*h3 +
+            convertHelper<T, R>(t4)*h4;
 };
 
 
@@ -243,7 +250,6 @@ R animateTrack(
     if (timeIndex == times->size-1) {
         return convertHelper<T, R>(*values->getElement(timeIndex));
     } else if (timeIndex >= 0) {
-        if (std::is_same<T, M2SplineKey>::value) {
             R value1 = convertHelper<T, R>(*values->getElement(timeIndex));
             R value2 = convertHelper<T, R>(*values->getElement(timeIndex + 1));
 
@@ -255,25 +261,86 @@ R animateTrack(
             } else if (interpolType == 1) {
                 return lerpHelper<R>(value1, value2, ((float) currTime - time1) / (float) (time2 - time1));
             }
-        } else {
-            T *value1 = (values->getElement(timeIndex));
-            T *value2 = (values->getElement(timeIndex + 1));
-
-            int time1 = *times->getElement(timeIndex);
-            int time2 = *times->getElement(timeIndex + 1);
-            if (interpolType == 2) {
-                return interpolateHermite<T, R>(value1, value2, ((float) currTime - time1) / (float) (time2 - time1));
-            } else if (interpolType == 3) {
-                return interpolateHermite<T, R>(value1, value2, ((float) currTime - time1) / (float) (time2 - time1));
-            } else {
-                return convertHelper<T, R>(*values->getElement(0));
-            }
-        }
     } else {
         return convertHelper<T, R>(*values->getElement(0));
 //        return defaultValue;
     }
 }
+
+template<typename T, typename R>
+R animateSplineTrack(
+        animTime_t currTime,
+        uint32_t maxTime,
+        int animationIndex,
+        M2Track<M2SplineKey<T>> &animationBlock,
+        M2Array<M2Loop> &global_loops,
+        std::vector<animTime_t> &globalSequenceTimes,
+        R &defaultValue) {
+
+    if (animationBlock.timestamps.size <= animationIndex) {
+        animationIndex = 0;
+    }
+
+    if (animationBlock.timestamps.size <= 0) {
+        return defaultValue;
+    }
+
+    if (animationIndex <= animationBlock.timestamps.size && animationBlock.timestamps[animationIndex]->size == 0) {
+        return defaultValue;
+    }
+
+    int16_t globalSequence = animationBlock.global_sequence;
+
+    int32_t timeIndex;
+    if (globalSequence >=0) {
+        currTime = globalSequenceTimes[globalSequence];
+        maxTime = global_loops[globalSequence]->timestamp;
+    }
+
+    M2Array<uint32_t > *times = animationBlock.timestamps[animationIndex];
+    M2Array<M2SplineKey<T>> *values = animationBlock.values[animationIndex];
+
+    currTime = fmod(currTime , maxTime);
+
+    if (animationBlock.timestamps.size == 0 || animationIndex >= animationBlock.timestamps.size ) {
+        return defaultValue;
+    }
+
+    M2Array<uint32_t> *timeStamp = animationBlock.timestamps[animationIndex];
+
+    timeIndex = findTimeIndex(currTime, timeStamp->getElement(0), timeStamp->size);
+    uint16_t interpolType = animationBlock.interpolation_type;
+
+    if (timeIndex == times->size-1) {
+        T value13 = values->getElement(timeIndex)->value;
+        return convertHelper<T, R>(value13);
+    } else if (timeIndex >= 0) {
+        M2SplineKey<T> value1 = *(values->getElement(timeIndex));
+        M2SplineKey<T> value2 = *(values->getElement(timeIndex + 1));
+
+        int time1 = *times->getElement(timeIndex);
+        int time2 = *times->getElement(timeIndex + 1);
+
+        if (interpolType == 1) {
+            T value13 = value1.value;
+            T value23 = value2.value;
+            R value11 = convertHelper<T, R>(value13);
+            R value22 = convertHelper<T, R>(value23);
+            return lerpHelper<R>(value11, value22, ((float) currTime - time1) / (float) (time2 - time1));
+        } else if (interpolType == 2) {
+            return interpolateHermite<T,R>(value1, value2, ((float) currTime - time1) / (float) (time2 - time1));
+        } else if (interpolType == 3) {
+            return interpolateHermite<T,R>(value1, value2, ((float) currTime - time1) / (float) (time2 - time1));
+        } else {
+            T value13 = values->getElement(timeIndex)->value;
+            return convertHelper<T, R>(value13);
+        }
+    } else {
+        T value13 = values->getElement(timeIndex)->value;
+        return convertHelper<T, R>(value13);
+//        return defaultValue;
+    }
+};
 
 template<typename T, typename R>
 R animatePartTrack(

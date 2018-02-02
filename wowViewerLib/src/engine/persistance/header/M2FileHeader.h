@@ -127,7 +127,7 @@ struct M2Light
 
 struct M2Camera
 {
-    uint32_t type; // 0: portrait, 1: characterinfo; -1: else (flyby etc.); referenced backwards in the lookup table.
+    int32_t type; // 0: portrait, 1: characterinfo; -1: else (flyby etc.); referenced backwards in the lookup table.
 //#if  < Cata
 //    float fov; // rad_fov = fov * 0.6 -- No radians, no degrees. Multiply by 35 to get degrees. -- the default fov is 0.94247788rad
 //#endif
