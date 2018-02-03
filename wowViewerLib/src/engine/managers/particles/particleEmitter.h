@@ -91,6 +91,8 @@ public:
         return generator;
     }
 
+    int flags = 2;
+    bool emittingLastFrame = false;
 private:
     IWoWInnerApi *m_api;
 
@@ -107,7 +109,7 @@ private:
 
     mathfu::vec3 deltaPosition;
 
-    int particleType;
+    int particleType = 0;
 
     float followMult;
     float followBase;
@@ -116,7 +118,7 @@ private:
     mathfu::vec3 burstVec;//(0,0,0);
     float inheritedScale = 1;
     float emission = 0;
-    bool emittingLastFrame = false;
+
 
     int32_t textureIndexMask;
     int32_t textureStartIndex;
@@ -127,7 +129,7 @@ private:
     float texScaleY;
 
     int particleSize;
-    int flags;
+
 private:
 
     CParticle2 &BirthParticle();

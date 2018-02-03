@@ -332,8 +332,8 @@ M2Geom::setupUniforms(
         if (BCLoginScreenHack) {
             attenVec = mathfu::vec4(lights[i].attenuation_start, 1.0, lights[i].attenuation_end, lights.size());
         } else {
-            if ((lights[i].attenuation_end - lights[i].attenuation_start < 0.1)) continue;
-            mathfu::vec4 attenVec(lights[i].attenuation_start, lights[i].diffuse_intensity, lights[i].attenuation_end, lights.size());
+//            if ((lights[i].attenuation_end - lights[i].attenuation_start < 0.1)) continue;
+            attenVec = mathfu::vec4(lights[i].attenuation_start, lights[i].diffuse_intensity, lights[i].attenuation_end, lights.size());
         }
 
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][0]), 1, &lights[i].diffuse_color.data_[0]);
@@ -351,24 +351,6 @@ M2Geom::setupUniforms(
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][2]), 1, indet);
         index++;
     }
-
-
-    bool diffuseFound = false;
-//    for (int i = 0; i < lights.length; i++) {
-//        if (lights[i].ambient_color) {
-//            if (lights[i].ambient_color[0] != 0 && lights[i].ambient_color[1] != 0 && lights[i].ambient_color[2] != 0) {
-//                gl.uniform4fv(m2Shader->getUnf("uPcColor, new Float32Array(lights[i].ambient_color));
-//                diffuseFound = true;
-//                break;
-//            }
-//        }
-//    }
-
-//    if (!diffuseFound) {
-
-    float pcColor[4];
-//    glUniform4fv(m2Shader->getUnf("uPcColor"), 1, pcColor);
-//    }
 }
 
 void

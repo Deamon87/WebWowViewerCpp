@@ -75,7 +75,7 @@ void ParticleEmitter::Simulate(animTime_t delta) {
         auto &p = this->particles[i];
         p.age = p.age + delta;
         auto life = p.lifespan;
-        if (life > this->generator->GetLifeSpan(life)) {
+        if (p.age > this->generator->GetLifeSpan(life)) {
             this->KillParticle(i);
             i--;
         }

@@ -797,7 +797,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter> &partic
     if (peRecords.size <= 0) return;
     static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
     static float defaultFloat = 1.0;
-    static unsigned char defaultChar = 0;
+    static unsigned char defaultChar = 1;
 
     check_size<M2ParticleOld, 476>();
     check_size<M2Particle, 492>();
@@ -923,6 +923,33 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter> &partic
                 this->globalSequenceTimes,
                 defaultFloat
             );
+
+        bool enabled = enabledIn != 0;
+        bool emitterEnabled = enabled && 0 != (particleEmitter.flags & 2);
+        bool shouldUpdate = enabled;
+        if (peRecord.old.flags & 0x8000) {
+            if (!enabled) {
+                particleEmitter.emittingLastFrame = false;
+            }
+            else {
+                if (aniProp.emissionRate > 0 && !particleEmitter.emittingLastFrame) {
+                    particleEmitter.flags |= 4;
+                    particleEmitter.emittingLastFrame = true;
+                }
+            }
+        }
+        else {
+            if (emitterEnabled) {
+                particleEmitter.flags |= 1;
+            }
+            else {
+                particleEmitter.flags &= ~1;
+            }
+        }
+
+        if (!emitterEnabled) {
+            aniProp.emissionRate = 0;
+        }
     }
 
 }
