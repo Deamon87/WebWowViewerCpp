@@ -207,6 +207,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new M2Scene(this,
 //        "character\\nightelf\\male\\nightelfmale.m2");
+//    currentScene = new M2Scene(this,
+//        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
@@ -766,14 +768,14 @@ void WoWSceneImpl::activateM2Shader() {
     glUniform3fv(this->m2Shader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 
 
-//    mathfu::vec4 ambient = this->currentScene->getAmbientColor();
-//    glUniform4fv(this->m2Shader->getUnf("uAmbientLight"), 1, &ambient[0]);
+    mathfu::vec4 ambient = this->currentScene->getAmbientColor();
+    glUniform4fv(this->m2Shader->getUnf("uAmbientLight"), 1, &ambient[0]);
 
-//    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-//    upVector = (this->m_lookAtMat4.Transpose() * upVector);
-//    glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
-//
-//    glUniform3fv(this->wmoShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
+    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+    upVector = (this->m_lookAtMat4.Transpose() * upVector);
+    glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
+
+    glUniform3fv(this->wmoShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
 
 
     glActiveTexture(GL_TEXTURE0);

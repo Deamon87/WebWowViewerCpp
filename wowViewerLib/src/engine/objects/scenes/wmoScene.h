@@ -56,6 +56,10 @@ public:
     mathfu::vec4 getAmbientColor() override {
         return mathfu::vec4(1.0, 1.0, 1.0, 1.0);
     };
+
+    bool getCameraSettings(M2CameraResult&) override {
+        return false;
+    }
 };
 
 

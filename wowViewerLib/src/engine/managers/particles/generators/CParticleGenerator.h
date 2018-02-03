@@ -26,6 +26,7 @@ private:
     CRndSeed *seed;
 
 public:
+    CGeneratorAniProp &getAniProp(){ return aniProp;};
     float GetSpeedVariation();
     float GetMaxEmissionRate();
 

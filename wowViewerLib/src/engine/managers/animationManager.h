@@ -9,7 +9,7 @@
 #include <vector>
 #include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
-
+#include "particles/particleEmitter.h"
 
 
 class AnimationManager {
@@ -51,7 +51,8 @@ public:
                  std::vector<mathfu::mat4> &textAnimMatrices,
                  std::vector<mathfu::vec4> &subMeshColors,
                  std::vector<float> &transparencies,
-                 std::vector<M2LightResult> &lights
+                 std::vector<M2LightResult> &lights,
+                 std::vector<ParticleEmitter> &particleEmitters
             /*cameraDetails, particleEmitters*/);
 
     void calcBones(std::vector<mathfu::mat4> &boneMatrices, int animation, animTime_t time, mathfu::vec3 &cameraPosInLocal);
@@ -81,6 +82,10 @@ public:
     }
 
     void calcLights(std::vector<M2LightResult> &lights,
+                    std::vector<mathfu::mat4> &bonesMatrices,
+                    int animationIndex,
+                    animTime_t animationTime);
+    void calcParticleEmitters(std::vector<ParticleEmitter> &particleEmitters,
                     std::vector<mathfu::mat4> &bonesMatrices,
                     int animationIndex,
                     animTime_t animationTime);

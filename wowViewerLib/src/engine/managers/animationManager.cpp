@@ -387,7 +387,9 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
                               std::vector<mathfu::mat4> &textAnimMatrices,
                               std::vector<mathfu::vec4> &subMeshColors,
                               std::vector<float> &transparencies,
-                              std::vector<M2LightResult> &lights
+                              std::vector<M2LightResult> &lights,
+                              std::vector<ParticleEmitter> &particleEmitters
+
         /*cameraDetails, , particleEmitters*/) {
 
     const M2Sequence* mainAnimationRecord = m_m2File->sequences[this->mainAnimationIndex];
@@ -491,7 +493,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
 
 //    this->calcCameras(cameraDetails, this->currentAnimationIndex, this->currentAnimationTime);
     this->calcLights(lights, bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime);
-//    this->calcParticleEmitters(particleEmitters, this->currentAnimationIndex, this->currentAnimationTime);
+    this->calcParticleEmitters(particleEmitters, bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime);
 }
 
 void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors,
@@ -786,7 +788,141 @@ void AnimationManager::calcCamera(M2CameraResult &camera, int cameraId, mathfu::
     camera.near_clip = cameraRecord->near_clip;
     camera.roll = roll;
     camera.diagFov = fov;
+}
 
-//    camera.position = mathfu::vec4(camera.position.z, camera.position.y, camera.position.x, 1.0);
-//    camera.target_position = mathfu::vec4(camera.target_position.z, camera.target_position.y, camera.target_position.x, 1.0);
+void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter> &particleEmitters,
+                                            std::vector<mathfu::mat4> &bonesMatrices, int animationIndex,
+                                            animTime_t animationTime) {
+    auto &peRecords = m_m2File->particle_emitters;
+    if (peRecords.size <= 0) return;
+    static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
+    static float defaultFloat = 1.0;
+    static unsigned char defaultChar = 0;
+
+    check_size<M2ParticleOld, 476>();
+    check_size<M2Particle, 492>();
+
+    auto animationRecord = m_m2File->sequences[animationIndex];
+
+
+
+    for (int i = 0; i < peRecords.size; i++) {
+        auto &peRecord = *peRecords.getElement(i);
+        auto &particleEmitter = particleEmitters[i];
+        CGeneratorAniProp &aniProp = particleEmitters[i].getGenerator()->getAniProp();
+
+        unsigned char enabledIn =
+            animateTrack<unsigned char, unsigned char>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.enabledIn,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultChar
+            );
+
+        aniProp.emissionSpeed =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.emissionSpeed,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        aniProp.speedVariation =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.speedVariation,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        aniProp.verticalRange =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.verticalRange,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        aniProp.horizontalRange =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.horizontalRange,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        aniProp.gravity.x =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.gravity,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+
+        aniProp.lifespan =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.lifespan,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        aniProp.emissionRate =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.emissionRate,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        aniProp.emissionAreaY =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.emissionAreaLength,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        aniProp.emissionAreaX =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.emissionAreaWidth,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        aniProp.zSource =
+            animateTrack<float, float>(
+                animationTime,
+                animationRecord->duration,
+                animationIndex,
+                peRecord.old.zSource,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+    }
+
 }

@@ -15,7 +15,7 @@ public:
     float lifespan;
     float emissionRate;
     C3Vector gravity;
-    float gravity2;
+    float zSource;
     float emissionAreaX;
     float emissionAreaY;
     float verticalRange;

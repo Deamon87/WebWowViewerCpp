@@ -325,11 +325,17 @@ M2Geom::setupUniforms(
             }
     };
 
-    for (int i = 0; i < std::min((int)lights.size(), 3); i++) {
+    bool BCLoginScreenHack = false;
+    for (int i = 0; i < (int)lights.size() && index < 3; i++) {
         std::string uniformName;
-//        if ((lights[i].attenuation_end - lights[i].attenuation_start < 0.0001)) continue;
+        mathfu::vec4 attenVec;
+        if (BCLoginScreenHack) {
+            attenVec = mathfu::vec4(lights[i].attenuation_start, 1.0, lights[i].attenuation_end, lights.size());
+        } else {
+            if ((lights[i].attenuation_end - lights[i].attenuation_start < 0.1)) continue;
+            mathfu::vec4 attenVec(lights[i].attenuation_start, lights[i].diffuse_intensity, lights[i].attenuation_end, lights.size());
+        }
 
-        mathfu::vec4 attenVec(lights[i].attenuation_start, lights[i].diffuse_intensity, lights[i].attenuation_end, lights.size());
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][0]), 1, &lights[i].diffuse_color.data_[0]);
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][1]), 1, &attenVec.data_[0]);
 

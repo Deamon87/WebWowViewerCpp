@@ -87,6 +87,9 @@ public:
 
     void Update(animTime_t delta, mathfu::mat4 transform);
     void prepearBuffers(mathfu::mat4 &viewMatrix, mathfu::mat4 &projMatrix);
+    CParticleGenerator * getGenerator(){
+        return generator;
+    }
 
 private:
     IWoWInnerApi *m_api;

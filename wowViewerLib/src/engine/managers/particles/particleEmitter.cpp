@@ -53,7 +53,7 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
         if (delta > 5) {
             clamped = 5;
         }
-        for (int i = 0; i < clamped; i += 0.05) {
+        for (float i = 0; i < clamped; i += 0.05) {
             animTime_t d = 0.05;
             if (clamped - i < 0.05) {
                 d = clamped - i;

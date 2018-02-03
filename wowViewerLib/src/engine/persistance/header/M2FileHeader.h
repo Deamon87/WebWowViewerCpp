@@ -167,7 +167,6 @@ struct M2Ribbon
 //#endif
 };
 
-PACK(
 struct M2ParticleOld {
     uint32_t particleId;                        // Always (as I have seen): -1.
     uint32_t flags;                             // See Below
@@ -270,15 +269,15 @@ struct M2ParticleOld {
     float followScale2;
     M2Array<C3Vector> splinePoints;                   //Set only for spline praticle emitter. Contains array of points for spline
     M2Track<unsigned char> enabledIn;                 // (boolean) Appears to be used sparely now, probably there's a flag that links particles to animation sets where they are enabled.
-});
+};
 
-PACK(
+
 struct M2Particle
 {
     M2ParticleOld old;
     vector_2fp_6_9 multiTextureParam0[2];
     vector_2fp_6_9 multiTextureParam1[2];
-});
+};
 
 struct M2Data {
     uint32_t magic;                                       // "MD20". Legion uses a chunked file format starting with MD21.
@@ -362,5 +361,10 @@ struct M2CameraResult {
     float roll; // The camera can have some roll-effect. Its 0 to 2*Pi.
     float diagFov;
 };
+
+template <typename ToCheck, std::size_t ExpectedSize, std::size_t RealSize = sizeof(ToCheck)>
+void check_size() {
+    static_assert(ExpectedSize == RealSize, "Size is off!");
+}
 
 #endif //WOWVIEWERLIB_M2FILEHEADER_H

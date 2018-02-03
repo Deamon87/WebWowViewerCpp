@@ -654,6 +654,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             this->initSubmeshColors();
             this->initTransparencies();
             this->initLights();
+            this->initParticleEmitters();
             m_hasBillboards = checkIfHasBillboarded();
 
         } else {
@@ -678,9 +679,13 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         this->subMeshColors,
         this->transparencies,
         //this->cameras,
-        this->lights
-        //this->particleEmittersArray
+        this->lights,
+        this->particleEmitters
     );
+
+    for (auto &particleEmitter: particleEmitters) {
+        particleEmitter.Update(deltaTime, viewMat);
+    }
 
     this->sortMaterials(viewMat);
 //
@@ -695,6 +700,11 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 //    this.currentTime += deltaTime;
 }
 
+bool M2Object::getIsInstancable() {
+    if (!m_loaded || this->m_animationManager == nullptr) return false;
+
+    return !(this->m_animationManager->getIsFirstCalc()|| this->m_animationManager->getIsAnimated());
+}
 const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const std::vector<mathfu::vec4> &frustumPlanes, const std::vector<mathfu::vec3> &frustumPoints) {
     if (!m_loaded) {
         return true;
@@ -817,13 +827,17 @@ void M2Object::drawBB(mathfu::vec3 &color) {
 }
 
 void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
+    Config * config = m_api->getConfig();
+    int minBatch = config->getMinBatch();
+    int maxBatch = std::min(config->getMaxBatch(), static_cast<const int &>(m_materialArray.size()));
+
     if (!drawTransparent) {
-        for (int i = 0; i < this->m_materialArray.size(); i++) {
+        for (int i = minBatch; i < maxBatch; i++) {
             auto &materialData = this->m_materialArray[i];
             this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
     } else {
-        for (int i = (int) (this->m_materialArray.size() - 1); i >= 0; i--) {
+        for (int i = (int) maxBatch - 1; i >= minBatch; i--) {
             auto &materialData = this->m_materialArray[i];
             this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
@@ -1041,7 +1055,13 @@ void M2Object::initTransparencies() {
 void M2Object::initLights() {
     lights = std::vector<M2LightResult>(m_m2Geom->getM2Data()->lights.size);
 }
-
+void M2Object::initParticleEmitters() {
+    particleEmitters = std::vector<ParticleEmitter>();
+    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
+    for (int i = 0; i < m_m2Geom->getM2Data()->particle_emitters.size; i++) {
+        particleEmitters.emplace_back(ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), m_m2Geom->getM2Data()));
+    }
+};
 
 void M2Object::drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO) {
     if (!this->m_loaded) return;

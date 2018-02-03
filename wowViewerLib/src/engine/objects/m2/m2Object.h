@@ -5,9 +5,12 @@
 #ifndef WOWVIEWERLIB_M2OBJECT_H
 #define WOWVIEWERLIB_M2OBJECT_H
 
+class ParticleEmitter;
+class AnimationManager;
 #include <cstdint>
 #include <mathfu/glsl_mappings.h>
 #include "../../wowInnerApi.h"
+#include "../../managers/particles/particleEmitter.h"
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../../geometry/m2Geom.h"
 #include "../../geometry/skinGeom.h"
@@ -15,6 +18,7 @@
 #include "../../managers/animationManager.h"
 #include "mathfu/matrix.h"
 #include "../../persistance/header/skinFileHeader.h"
+
 #include "mathfu/internal/vector_4.h"
 
 class M2Object {
@@ -72,6 +76,7 @@ private:
     std::vector<mathfu::vec4> subMeshColors;
     std::vector<float> transparencies;
     std::vector<M2LightResult> lights;
+    std::vector<ParticleEmitter> particleEmitters;
 
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
@@ -91,6 +96,7 @@ private:
     void initSubmeshColors();
     void initTransparencies();
     void initLights();
+    void initParticleEmitters();
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &lookAtMat4);
     bool checkIfHasBillboarded();
@@ -125,11 +131,7 @@ public:
     bool getHasBillboarded() {
         return m_hasBillboards;
     }
-    bool getIsInstancable() {
-        if (!m_loaded || this->m_animationManager == nullptr) return false;
-
-        return !(this->m_animationManager->getIsFirstCalc()|| this->m_animationManager->getIsAnimated());
-    }
+    bool getIsInstancable();
     std::string getModelIdent() { return m_modelIdent; };
 
     void makeTextureArray();
@@ -154,10 +156,13 @@ public:
     void drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO);
 
     mathfu::vec4 getAmbientLight() {
-        if (lights.size() > 0 && lights[0].ambient_intensity != 0) {
-            return lights[0].diffuse_color;
+        mathfu::vec4 ambientColor = mathfu::vec4(0.0,0.0,0.0,0.0);
+        for (int i = 0; i < lights.size(); ++i) {
+            if (lights[i].ambient_intensity > 0) {
+                ambientColor += lights[i].ambient_color * lights[i].ambient_intensity;
+            }
         }
-        return mathfu::vec4(0.5, 0.5, 0.5, 0.5);
+        return ambientColor;
     };
 };
 
