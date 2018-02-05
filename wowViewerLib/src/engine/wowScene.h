@@ -108,6 +108,9 @@ public:
     virtual ShaderRuntimeData *getM2Shader() override {
         return m2Shader;
     };
+    virtual ShaderRuntimeData *getM2ParticleShader() override {
+        return m2ParticleShader;
+    };
     virtual ShaderRuntimeData *getM2InstancingShader() override {
         return m2InstancingShader;
     };
@@ -164,6 +167,7 @@ private:
     ShaderRuntimeData *wmoShader = nullptr;
     ShaderRuntimeData *wmoInstancingShader = nullptr;
     ShaderRuntimeData *m2Shader = nullptr;
+    ShaderRuntimeData *m2ParticleShader = nullptr;
     ShaderRuntimeData *m2InstancingShader = nullptr;
     ShaderRuntimeData *bbShader = nullptr;
     ShaderRuntimeData *adtShader = nullptr;
@@ -219,22 +223,24 @@ private:
     void activateRenderFrameShader();
     void activateRenderDepthShader();
     void activateReadDepthBuffer();
-    void activateAdtShader();
-    void deactivateAdtShader();
-    void activateWMOShader();
-    void deactivateWMOShader();
+    void activateAdtShader() override;
+    void deactivateAdtShader() override;
+    void activateWMOShader() override;
+    void deactivateWMOShader() override;
     void deactivateTextureCompositionShader();
-    void activateM2ShaderAttribs();
+    void activateM2ShaderAttribs() ;
     void deactivateM2ShaderAttribs();
-    void activateM2Shader();
-    void deactivateM2Shader();
-    void activateM2InstancingShader();
-    void deactivateM2InstancingShader();
-    void activateBoundingBoxShader();
-    void deactivateBoundingBoxShader();
-    void activateFrustumBoxShader();
-    void activateDrawLinesShader();
-    void activateDrawPortalShader();
+    void activateM2Shader() override;
+    void activateM2ParticleShader() override;
+    void deactivateM2ParticleShader() override;
+    void deactivateM2Shader() override;
+    void activateM2InstancingShader() override;
+    void deactivateM2InstancingShader() override;
+    void activateBoundingBoxShader() override;
+    void deactivateBoundingBoxShader() override;
+    void activateFrustumBoxShader() override;
+    void activateDrawLinesShader() ;
+    void activateDrawPortalShader() override;
 
     void activateTextureCompositionShader(GLuint texture);
 

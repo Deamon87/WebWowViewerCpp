@@ -13,7 +13,7 @@
 
 class CParticleGenerator {
 public:
-    CParticleGenerator(CRndSeed *seed) {
+    CParticleGenerator(CRndSeed &seed) {
         this->seed = seed;
     }
 
@@ -23,7 +23,7 @@ public:
     virtual void CreateParticle(CParticle2 &, animTime_t );
 private:
     CGeneratorAniProp aniProp;
-    CRndSeed *seed;
+    CRndSeed seed = CRndSeed(0);
 
 public:
     CGeneratorAniProp &getAniProp(){ return aniProp;};

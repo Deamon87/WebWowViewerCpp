@@ -189,8 +189,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //    currentScene = new M2Scene(this,
@@ -202,8 +202,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
 
 //    currentScene = new M2Scene(this,
 //        "character\\nightelf\\male\\nightelfmale.m2");
@@ -470,6 +470,9 @@ void WoWSceneImpl::initShaders() {
     this->m2InstancingShader       = this->compileShader("m2Shader", m2Shader, m2Shader,
                                                          new std::string("#define INSTANCED 1\r\n "),
                                                          new std::string("#define INSTANCED 1\r\n "));
+
+    const  std::string m2ParticleShader = getShaderDef("m2ParticleShader")->shaderString;
+    this->m2ParticleShader         = this->compileShader("m2ParticleShader", m2ParticleShader, m2ParticleShader);
 
     const  std::string bbShader = getShaderDef("drawBBShader")->shaderString;
     this->bbShader                 = this->compileShader("drawBBShader", bbShader, bbShader);
@@ -773,13 +776,44 @@ void WoWSceneImpl::activateM2Shader() {
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
     upVector = (this->m_lookAtMat4.Transpose() * upVector);
-    glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
+    glUniform3fv(this->m2Shader->getUnf("uViewUp"), 1, &upVector[0]);
 
-    glUniform3fv(this->wmoShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
+    glUniform3fv(this->m2Shader->getUnf("uSunDir"), 1, &m_sunDir[0]);
 
 
     glActiveTexture(GL_TEXTURE0);
 }
+
+void WoWSceneImpl::activateM2ParticleShader() {
+    glUseProgram(this->m2ParticleShader->getProgram());
+//    glEnableVertexAttribArray(0);
+//    if (!this.vao_ext) {
+
+
+    glEnableVertexAttribArray(+m2ParticleShader::Attribute::aPosition);
+    glEnableVertexAttribArray(+m2ParticleShader::Attribute::aColor);
+//    glEnableVertexAttribArray(+m2ParticleShader::Attribute::alpha);
+    glEnableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord0);
+    glEnableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord1);
+    glEnableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord2);
+//    }
+
+    glUniformMatrix4fv(this->m2ParticleShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+
+    glUniform1i(this->m2ParticleShader->getUnf("uTexture"), 0);
+//    glUniform1i(this->m2ParticleShader->getUnf("uTexture2"), 1);
+//    glUniform1i(this->m2ParticleShader->getUnf("uTexture3"), 2);
+
+    glActiveTexture(GL_TEXTURE0);
+}
+void WoWSceneImpl::deactivateM2ParticleShader() {
+    glDisableVertexAttribArray(+m2ParticleShader::Attribute::aColor);
+    glDisableVertexAttribArray(+m2ParticleShader::Attribute::alpha);
+    glDisableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord0);
+    glDisableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord1);
+    glDisableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord2);
+}
+
 
 void WoWSceneImpl::deactivateM2Shader() {
     //glDisableVertexAttribArray(+m2Shader::Attribute::aPosition);

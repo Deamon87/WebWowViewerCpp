@@ -6,7 +6,7 @@
 
 float CParticleGenerator::GetEmissionRate() {
     float rate = aniProp.emissionRate;
-    return rate + seed->Uniform(); //* FixedProp[0];
+    return rate + seed.Uniform(); //* FixedProp[0];
 }
 
 float CParticleGenerator::GetMaxEmissionRate() {

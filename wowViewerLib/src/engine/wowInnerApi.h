@@ -31,6 +31,7 @@ public:
     virtual Cache<WdlFile>* getWdlFileCache() = 0;
 
     virtual ShaderRuntimeData *getM2Shader() = 0;
+    virtual ShaderRuntimeData *getM2ParticleShader() = 0;
     virtual ShaderRuntimeData *getM2InstancingShader() = 0;
     virtual ShaderRuntimeData *getBBShader() = 0;
     virtual ShaderRuntimeData *getWmoShader() = 0;
@@ -40,6 +41,8 @@ public:
 
     virtual void activateM2Shader() = 0;
     virtual void deactivateM2Shader() = 0;
+    virtual void activateM2ParticleShader() = 0;
+    virtual void deactivateM2ParticleShader() = 0;
     virtual void activateM2InstancingShader() = 0;
     virtual void deactivateM2InstancingShader() = 0;
     virtual void activateAdtShader() = 0;

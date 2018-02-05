@@ -116,8 +116,6 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
             }
         } else {
             std::copy(data, data+blpFile->lengths[i], &mipmapStruct.texture[0]);
-
-//            mipmapStruct.texture.assign(data, data+blpFile->lengths[i]);
         }
 
         mipmaps.push_back(mipmapStruct);

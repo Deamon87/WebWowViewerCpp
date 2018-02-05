@@ -164,6 +164,8 @@ public:
         }
         return ambientColor;
     };
+
+    void drawParticles();
 };
 
 

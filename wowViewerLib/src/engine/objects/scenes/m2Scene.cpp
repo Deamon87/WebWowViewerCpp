@@ -23,6 +23,10 @@ void M2Scene::draw() {
     m_m2Object->draw(false);
     m_m2Object->draw(true);
     this->m_api->deactivateM2Shader();
+
+    this->m_api->activateM2ParticleShader();
+    m_m2Object->drawParticles();
+    this->m_api->deactivateM2ParticleShader();
 }
 
 void M2Scene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {

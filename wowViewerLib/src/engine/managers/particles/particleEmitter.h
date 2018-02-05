@@ -90,6 +90,7 @@ public:
     CParticleGenerator * getGenerator(){
         return generator;
     }
+    void Render();
 
     int flags = 2;
     bool emittingLastFrame = false;
@@ -130,6 +131,10 @@ private:
 
     int particleSize;
 
+    std::vector<uint8_t> szVertexBuf;
+    std::vector<uint16_t> szIndexBuff;
+
+
 private:
 
     CParticle2 &BirthParticle();
@@ -148,11 +153,16 @@ private:
 
     void resizeParticleBuffer();
 
-    bool RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> &szVertexBuf);
+    bool RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVertexBuf);
 
     void
-    BuildQuadT3(mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
+    BuildQuadT3(
+            std::vector<uint8_t> &szVertexBuf,
+            mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
                 float texStartY, mathfu::vec2 *texPos);
+
+
+
 };
 
 

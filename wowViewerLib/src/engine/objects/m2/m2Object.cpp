@@ -741,7 +741,6 @@ void M2Object::draw(bool drawTransparent) {
 //        this.m2Geom.unbindVao()
 //    }
 }
-
 void M2Object::drawDebugLight() {
 
     std::vector<float> points;
@@ -1088,4 +1087,10 @@ M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {
     m_animationManager->calcCamera(result, cameraId, m_placementMatrix);
 
     return result;
+}
+
+void M2Object::drawParticles() {
+    for (auto& particleEmitter : particleEmitters) {
+        particleEmitter.Render();
+    }
 }

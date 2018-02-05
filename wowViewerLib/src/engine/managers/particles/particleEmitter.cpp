@@ -5,10 +5,11 @@
 #include "particleEmitter.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/animate.h"
+#include "../../shaderDefinitions.h"
 
 void ParticleEmitter::resizeParticleBuffer() {
     int newCount = this->generator->GetMaxEmissionRate() * this->generator->GetMaxLifeSpan() * 1.15;
-    if (newCount > this->particles.size()) {
+    if (newCount > (int)this->particles.size()) {
         this->particles.reserve(newCount);
     }
 }
@@ -135,7 +136,7 @@ void ParticleEmitter::CreateParticle(animTime_t delta) {
 }
 
 
-void ParticleEmitter::CalculateForces(ParticleForces &forces, animTime_t delta) {
+void ParticleEmitter:: CalculateForces(ParticleForces &forces, animTime_t delta) {
     if (false && (this->m_data->old.flags & 0x80000000)) {
         forces.drift = mathfu::vec3(0.707, 0.707, 0);
         forces.drift = forces.drift * delta;
@@ -208,27 +209,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     }
 
     // Load textures at top so we can bail out early
-    auto textureCache = m_api->getTextureCache();
-    BlpTexture* tex0 = textureCache->get(
-            m_m2Data->textures.getElement(
-                    *m_m2Data->texture_lookup_table.getElement(this->m_data->old.texture_0))->filename.toString());
-
-    if (tex0 == nullptr) {
-        return;
-    }
-
-    bool multitex = this->particleType >= 2;
-    if (multitex) {
-        BlpTexture* tex1 = textureCache->get(
-                m_m2Data->textures.getElement(
-                        *m_m2Data->texture_lookup_table[this->m_data->old.texture_1])->filename.toString());
-        BlpTexture* tex2 = textureCache->get(
-                m_m2Data->textures.getElement(
-                        *m_m2Data->texture_lookup_table[this->m_data->old.texture_2])->filename.toString());
-    }
-
-
-    if (this->m_data->old.flags & 0x10) {
+     if (this->m_data->old.flags & 0x10) {
         // apply the model transform
         this->particleToView = viewMatrix * this->transform;
     }
@@ -241,28 +222,31 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     // Vertex format: {float3 pos; float3 norm; float4 col; float2 texcoord} = 12
     // Multitex format: {float3 pos; float4 col; float2 texcoord[3]} = 13
 
-    std::vector<vectorMultiTex> szVertexBuf;
-    std::vector<uint16_t> szIndexBuff;
+    szVertexBuf = std::vector<uint8_t>(0);
+    szIndexBuff = std::vector<uint16_t>(0);
     // TODO: z-sort
+    int vo = 0;
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = this->particles[i];
+
         if (this->RenderParticle(p, szVertexBuf)) {
 //            for (int j = 0; j < nIndices; j += 6) {
                 // 0 2
                 // 1 3
                 // 0, 1, 2; 3, 2, 1
-                szIndexBuff.push_back(0);
-                szIndexBuff.push_back(1);
-                szIndexBuff.push_back(2);
-                szIndexBuff.push_back(3);
-                szIndexBuff.push_back(2);
-                szIndexBuff.push_back(1);
+                szIndexBuff.push_back(vo + 0);
+                szIndexBuff.push_back(vo + 1);
+                szIndexBuff.push_back(vo + 2);
+                szIndexBuff.push_back(vo + 3);
+                szIndexBuff.push_back(vo + 2);
+                szIndexBuff.push_back(vo + 1);
+                vo += 4;
 //            }
         }
     }
 }
 
-bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> &szVertexBuf) {
+bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVertexBuf) {
     float twinkle = this->m_data->old.TwinklePercent;
     auto twinkleRange = this->m_data->old.twinkleScale;
 
@@ -297,11 +281,12 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> 
     float defaultAlpha = 1.0f;
     uint16_t defaultCell = 0;
 
-    mathfu::vec3 color = animatePartTrack<C3Vector, mathfu::vec3>(p.age, &m_data->old.colorTrack, defaultColor);
-    mathfu::vec2 scale = animatePartTrack<C2Vector, mathfu::vec2>(p.age, &m_data->old.scaleTrack, defaultScale);
-    float alpha = animatePartTrack<fixed16, float>(p.age, &m_data->old.alphaTrack, defaultAlpha);
-    uint16_t headCell = animatePartTrack<uint16_t, uint16_t>(p.age, &m_data->old.headCellTrack, defaultCell);
-    uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(p.age, &m_data->old.tailCellTrack, defaultCell);
+    float percentTime = p.age /  this->getGenerator()->GetLifeSpan(p.lifespan);
+    mathfu::vec3 color = animatePartTrack<C3Vector, mathfu::vec3>(percentTime, &m_data->old.colorTrack, defaultColor) / 256.0;
+    mathfu::vec2 scale = animatePartTrack<C2Vector, mathfu::vec2>(percentTime, &m_data->old.scaleTrack, defaultScale);
+    float alpha = animatePartTrack<fixed16, float>(percentTime, &m_data->old.alphaTrack, defaultAlpha);
+    uint16_t headCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.headCellTrack, defaultCell);
+    uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
 
 
     CRndSeed rand(seed);
@@ -360,11 +345,11 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> 
             scaleViewX = this->particleToView.GetColumn(0).xyz();
             scaleViewY =  this->particleToView.GetColumn(1).xyz();
             scaleViewX = scaleViewX * transformInvScale * scale.x;
-            scaleViewY = scaleViewY * transformInvScale * scale.y);
+            scaleViewY = scaleViewY * transformInvScale * scale.y;
             // 2. rotate the transformed scale vectors around the up vector
             if (theta != 0) {
                 viewUp = this->particleToView.GetColumn(2).xyz();
-                quadRot = mathfu::quat::FromAngleAxis(viewUp, theta);
+                quadRot = mathfu::quat::FromAngleAxis(theta,viewUp);
 
                 m0 = quadRot.ToMatrix4() * scaleViewX;
                 m1 = quadRot.ToMatrix4() * scaleViewY;
@@ -379,26 +364,235 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> 
                 float cosTheta = cos(theta);
                 float sinTheta = sin(theta);
                 m0 = mathfu::vec3(cosTheta * scale.x, sinTheta * scale.x, 0);
-                m0 = mathfu::vec3(-sinTheta * scale.y, cosTheta * scale.y, 0);
+                m1 = mathfu::vec3(-sinTheta * scale.y, cosTheta * scale.y, 0);
             }
             else {
                 m0 = mathfu::vec3(scale.x, scale.y, 0);
             }
         }
         // build vertices from coords:
-        if (this->particleType >= 2) {
-            this->BuildQuadT3(m0, m1, viewPos, color, alpha, texStartX, texStartY, p.texPos);
-        }
-        else {
-            this->BuildQuad(m0, m1, viewPos, color, alpha, texStartX, texStartY);
-        }
+//        if (this->particleType >= 2) {
+            this->BuildQuadT3(szVertexBuf, m0, m1, viewPos, color, alpha, texStartX, texStartY, p.texPos);
+            return true;
+//        }
+//        else {
+//            this->BuildQuad(m0, m1, viewPos, color, alpha, texStartX, texStartY);
+//        }
     }
 
-    return true;
+    return false;
 }
 
 void
-ParticleEmitter::BuildQuadT3(mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
-                             float texStartX, float texStartY, mathfu::vec2 *texPos) {
+ParticleEmitter::BuildQuadT3(
+    std::vector<uint8_t> &szVertexBuf,
+    mathfu::vec3 &m0, mathfu::vec3 &m1,
+    mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
+    float texStartX, float texStartY, mathfu::vec2 *texPos) {
 
+    static const float vxs[4] = {-1, -1, 1, 1};
+    static const float vys[4] = {1, -1, 1, -1};
+    static const float txs[4] = {0, 0, 1, 1};
+    static const float tys[4] = {0, 1, 0, 1};
+
+    struct ParticleBuffStruct {
+        C3Vector position; //0
+        C3Vector color;    //12
+        float alpha;       //24
+        C2Vector textCoord0; //28
+        C2Vector textCoord1; //36
+        C2Vector textCoord2; //44
+    };
+
+    std::vector<ParticleBuffStruct> buffer;
+    buffer.reserve(4);
+
+    for (int i = 0; i < 4; i++) {
+        ParticleBuffStruct record;
+        record.position = mathfu::vec3(
+                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
+                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
+                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z
+        );
+        record.color = color;
+
+        record.alpha = alpha;
+        record.textCoord0 =
+            mathfu::vec2(txs[i] * this->texScaleX + texStartX,
+                         tys[i] * this->texScaleY + texStartY);
+
+        record.textCoord1 =
+            mathfu::vec2(
+                txs[i] * this->m_data->old.multiTextureParamX[0]/256.0 + texPos[0].x,
+                tys[i] * this->m_data->old.multiTextureParamX[0]/256.0 + texPos[0].y);
+        record.textCoord2 =
+            mathfu::vec2(
+                txs[i] * this->m_data->old.multiTextureParamX[1]/256.0 + texPos[1].x,
+                tys[i] * this->m_data->old.multiTextureParamX[1]/256.0 + texPos[1].y);
+
+        buffer.emplace_back(record);
+    }
+
+    std::copy((uint8_t *)&buffer[0], (uint8_t *)&buffer[0] + buffer.size()*sizeof(ParticleBuffStruct), std::back_inserter(szVertexBuf));
+}
+
+void ParticleEmitter::Render() {
+    if (this->szVertexBuf.size() <= 0) return;
+
+    auto particleShader = m_api->getM2ParticleShader();
+    auto textureCache = m_api->getTextureCache();
+    GLuint blackPixelText = m_api->getBlackPixelTexture();
+
+//    BlpTexture* tex0 = textureCache->get(
+//            m_m2Data->textures.getElement(this->m_data->old.texture)->filename.toString());
+ BlpTexture* tex0 = textureCache->get(
+            m_m2Data->textures.getElement( this->m_data->old.texture_0)->filename.toString());
+
+    if (tex0 == nullptr || !tex0->getIsLoaded()) {
+        return;
+    }
+    BlpTexture* tex1 = nullptr;
+    BlpTexture* tex2 = nullptr;
+    bool multitex = this->particleType >= 2;
+    if (multitex) {
+        tex1 = textureCache->get(
+                m_m2Data->textures.getElement(
+                        *m_m2Data->texture_lookup_table[this->m_data->old.texture_1])->filename.toString());
+        tex2 = textureCache->get(
+                m_m2Data->textures.getElement(
+                        *m_m2Data->texture_lookup_table[this->m_data->old.texture_2])->filename.toString());
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+    if (tex0->getIsLoaded()) {
+        glBindTexture(GL_TEXTURE_2D, tex0->getGlTexture());
+    } else {
+        glBindTexture(GL_TEXTURE_2D, blackPixelText);
+    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+//    glActiveTexture(GL_TEXTURE1);
+//    if (tex1!= nullptr && tex1->getIsLoaded()) {
+//        glBindTexture(GL_TEXTURE_2D, tex1->getGlTexture());
+//    } else {
+//        glBindTexture(GL_TEXTURE_2D, blackPixelText);
+//    }
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//
+//    glActiveTexture(GL_TEXTURE2);
+//    if (tex2!= nullptr && tex2->getIsLoaded()) {
+//        glBindTexture(GL_TEXTURE_2D, tex2->getGlTexture());
+//    } else {
+//        glBindTexture(GL_TEXTURE_2D, blackPixelText);
+//    }
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+
+    GLuint indexVBO;
+    glGenBuffers(1, &indexVBO);
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->szIndexBuff.size()*2, &this->szIndexBuff[0], GL_STREAM_DRAW);
+
+    GLuint bufferVBO;
+    glGenBuffers(1, &bufferVBO);
+    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
+    glBufferData(GL_ARRAY_BUFFER, this->szVertexBuf.size(), &this->szVertexBuf[0], GL_STREAM_DRAW);
+
+    int nFloats = 13;
+    int stride = nFloats * 4;
+
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aPosition, 3, GL_FLOAT, false, stride, 0);
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aColor, 4, GL_FLOAT, false, stride, (void *)12);
+    glVertexAttrib4f(+m2ParticleShader::Attribute::alpha, 1,1,1,1);
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord0, 2, GL_FLOAT, false, stride, (void *)28);
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord1, 2, GL_FLOAT, false, stride, (void *)36);
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord2, 2, GL_FLOAT, false, stride, (void *)44);
+
+    auto blendMode = m_data->old.blendingType;
+    switch (blendMode) {
+        case 0 : //Blend_Opaque
+            glDisable(GL_BLEND);
+            glUniform1f(particleShader->getUnf("uAlphaTest"), -1.0);
+            break;
+        case 1 : //Blend_AlphaKey
+            glDisable(GL_BLEND);
+            //GL_uniform1f(m2Shader->getUnf("uAlphaTest, 2.9);
+            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
+            //GL_uniform1f(m2Shader->getUnf("uAlphaTest, meshColor[4]*transparency*(252/255));
+            break;
+        case 2 : //Blend_Alpha
+            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // default blend func
+            break;
+        case 3 : //Blend_NoAlphaAdd
+            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE);
+
+            //Override fog
+//            glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_zero);
+//            fogChanged = true;
+
+            break;
+        case 4 : //Blend_Add
+            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.00392157);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+//            glUniform3fv(m2Shader->getUnf("uFogColor"),  1, fog_zero);
+//            fogChanged = true;
+            break;
+
+        case 5: //Blend_Mod
+            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.00392157);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_DST_COLOR, GL_ZERO);
+
+//            glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_one);
+//            fogChanged = true;
+            break;
+
+        case 6: //Blend_Mod2x
+            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.00392157);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+
+//            glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_half);
+//            fogChanged = true;
+            break;
+
+        case 7: //Blend_Mod2x
+            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.00392157);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+//            glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_half);
+//            fogChanged = true;
+            break;
+        default :
+            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+
+            break;
+    }
+
+
+//    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    glDisable(GL_BLEND);
+    glDisable(GL_CULL_FACE);
+
+    glDrawElements(GL_TRIANGLES, this->szIndexBuff.size(), GL_UNSIGNED_SHORT, 0);
+    glDepthMask(GL_TRUE);
+//    glEnable(GL_DEPTH_TEST);
+
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer( GL_ARRAY_BUFFER, 0);
+    glDeleteBuffers(1, &bufferVBO);
+    glDeleteBuffers(1, &indexVBO);
 }

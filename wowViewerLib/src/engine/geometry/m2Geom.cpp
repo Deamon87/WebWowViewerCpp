@@ -369,9 +369,6 @@ M2Geom::drawMesh(
         m2Shader = api->getM2InstancingShader();
     }
     GLuint blackPixelText = api->getBlackPixelTexture();
-    //var blackPixelText = this.sceneApi.getBlackPixelTexture();
-
-    //materialData = new M2Material();
     bool fogChanged = false;
 
     glUniformMatrix4fv(m2Shader->getUnf("uTextMat1"), 1, GL_FALSE, &textureMatrix1[0]);
