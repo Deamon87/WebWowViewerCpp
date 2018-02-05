@@ -366,5 +366,27 @@ template <typename ToCheck, std::size_t ExpectedSize, std::size_t RealSize = siz
 void check_size() {
     static_assert(ExpectedSize == RealSize, "Size is off!");
 }
+template <std::size_t ExpectedOffset, std::size_t RealOffset>
+void check_offset() {
+    static_assert(ExpectedOffset == RealOffset, "Offset is off!");
+}
+
+template <typename T, typename M> M get_member_type(M T::*);
+template <typename T, typename M> T get_class_type(M T::*);
+
+template <typename T,
+        typename R,
+        R T::*M
+>
+constexpr std::size_t offset_of()
+{
+    return reinterpret_cast<std::size_t>(&(((T*)0)->*M));
+}
+
+#define OFFSET_OF(m) offset_of<decltype(get_class_type(m)), \
+                     decltype(get_member_type(m)), m>()
+
+
+
 
 #endif //WOWVIEWERLIB_M2FILEHEADER_H

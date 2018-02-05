@@ -14,7 +14,7 @@ public:
     mathfu::vec3 position;
     animTime_t age;
     mathfu::vec3 velocity;
-    fixed16 lifespan;
+    float lifespan;
     uint16_t seed;
     mathfu::vec2 texPos[2];
     mathfu::vec2 texVel[2];

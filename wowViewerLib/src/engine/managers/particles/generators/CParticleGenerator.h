@@ -21,7 +21,8 @@ public:
     virtual float GetEmissionRate();
     virtual void Update(animTime_t time, mathfu::mat4 &viewMat);
     virtual void CreateParticle(CParticle2 &, animTime_t );
-private:
+
+protected:
     CGeneratorAniProp aniProp;
     CRndSeed seed = CRndSeed(0);
 
@@ -35,7 +36,7 @@ public:
     float GetLifeSpan(float m);
     mathfu::vec3 GetGravity();
 
-    void CalcVelocity(CParticle2 *p, animTime_t  delta);
+    float CalcVelocity( );
 };
 
 

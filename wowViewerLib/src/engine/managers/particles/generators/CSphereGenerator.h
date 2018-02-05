@@ -10,9 +10,14 @@
 
 class CSphereGenerator : public CParticleGenerator {
 public:
-    CSphereGenerator(CRndSeed &seed, bool particlesGoUp) : CParticleGenerator(seed) {
+    CSphereGenerator(CRndSeed &seed, bool particlesGoUp) : CParticleGenerator(seed), particlesGoUp(particlesGoUp) {
         ;
     }
+
+    void CreateParticle(CParticle2 &p, animTime_t delta) override;
+
+private:
+    bool particlesGoUp = false;
 };
 
 

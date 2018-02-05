@@ -388,7 +388,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
                               std::vector<mathfu::vec4> &subMeshColors,
                               std::vector<float> &transparencies,
                               std::vector<M2LightResult> &lights,
-                              std::vector<ParticleEmitter> &particleEmitters
+                              std::vector<ParticleEmitter *> &particleEmitters
 
         /*cameraDetails, , particleEmitters*/) {
 
@@ -790,7 +790,7 @@ void AnimationManager::calcCamera(M2CameraResult &camera, int cameraId, mathfu::
     camera.diagFov = fov;
 }
 
-void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter> &particleEmitters,
+void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &particleEmitters,
                                             std::vector<mathfu::mat4> &bonesMatrices, int animationIndex,
                                             animTime_t animationTime) {
     auto &peRecords = m_m2File->particle_emitters;
@@ -799,6 +799,9 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter> &partic
     static float defaultFloat = 1.0;
     static unsigned char defaultChar = 1;
 
+//    check_offset<offsetof(M2Particle, old.geometry_model_filename), 24>();
+//    check_offset<offsetof(M2Particle, old.blendingType), 40>();
+    check_offset<offsetof(M2Particle, old.textureDimensions_rows), 48>();
     check_size<M2ParticleOld, 476>();
     check_size<M2Particle, 492>();
 
@@ -809,7 +812,8 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter> &partic
     for (int i = 0; i < peRecords.size; i++) {
         auto &peRecord = *peRecords.getElement(i);
         auto &particleEmitter = particleEmitters[i];
-        CGeneratorAniProp &aniProp = particleEmitters[i].getGenerator()->getAniProp();
+        if (particleEmitter->getGenerator() == nullptr) continue;
+        CGeneratorAniProp &aniProp = particleEmitters[i]->getGenerator()->getAniProp();
 
         unsigned char enabledIn =
             animateTrack<unsigned char, unsigned char>(
@@ -925,25 +929,25 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter> &partic
             );
 
         bool enabled = enabledIn != 0;
-        bool emitterEnabled = enabled && 0 != (particleEmitter.flags & 2);
+        bool emitterEnabled = enabled && 0 != (particleEmitter->flags & 2);
         bool shouldUpdate = enabled;
         if (peRecord.old.flags & 0x8000) {
             if (!enabled) {
-                particleEmitter.emittingLastFrame = false;
+                particleEmitter->emittingLastFrame = false;
             }
             else {
-                if (aniProp.emissionRate > 0 && !particleEmitter.emittingLastFrame) {
-                    particleEmitter.flags |= 4;
-                    particleEmitter.emittingLastFrame = true;
+                if (aniProp.emissionRate > 0 && !particleEmitter->emittingLastFrame) {
+                    particleEmitter->flags |= 4;
+                    particleEmitter->emittingLastFrame = true;
                 }
             }
         }
         else {
             if (emitterEnabled) {
-                particleEmitter.flags |= 1;
+                particleEmitter->flags |= 1;
             }
             else {
-                particleEmitter.flags &= ~1;
+                particleEmitter->flags &= ~1;
             }
         }
 

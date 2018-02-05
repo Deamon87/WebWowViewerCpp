@@ -76,7 +76,7 @@ private:
     std::vector<mathfu::vec4> subMeshColors;
     std::vector<float> transparencies;
     std::vector<M2LightResult> lights;
-    std::vector<ParticleEmitter> particleEmitters;
+    std::vector<ParticleEmitter*> particleEmitters;
 
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;

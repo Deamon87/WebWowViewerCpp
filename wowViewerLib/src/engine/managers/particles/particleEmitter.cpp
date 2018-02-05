@@ -15,6 +15,7 @@ void ParticleEmitter::resizeParticleBuffer() {
 }
 
 void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
+    if (getGenerator() == nullptr) return;
     this->transform = boneModelMat;
     this->resizeParticleBuffer();
     mathfu::vec3 lastPos;
@@ -397,8 +398,7 @@ ParticleEmitter::BuildQuadT3(
 
     struct ParticleBuffStruct {
         C3Vector position; //0
-        C3Vector color;    //12
-        float alpha;       //24
+        C4Vector color;    //12
         C2Vector textCoord0; //28
         C2Vector textCoord1; //36
         C2Vector textCoord2; //44
@@ -414,9 +414,8 @@ ParticleEmitter::BuildQuadT3(
                 m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
                 m0.z * vxs[i] + m1.z * vys[i] + viewPos.z
         );
-        record.color = color;
+        record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
 
-        record.alpha = alpha;
         record.textCoord0 =
             mathfu::vec2(txs[i] * this->texScaleX + texStartX,
                          tys[i] * this->texScaleY + texStartY);
@@ -443,24 +442,36 @@ void ParticleEmitter::Render() {
     auto textureCache = m_api->getTextureCache();
     GLuint blackPixelText = m_api->getBlackPixelTexture();
 
-//    BlpTexture* tex0 = textureCache->get(
-//            m_m2Data->textures.getElement(this->m_data->old.texture)->filename.toString());
- BlpTexture* tex0 = textureCache->get(
-            m_m2Data->textures.getElement( this->m_data->old.texture_0)->filename.toString());
+
+    bool multitex = this->particleType >= 2;
+    BlpTexture* tex0 = nullptr;
+    if (multitex) {
+        tex0 = textureCache->get(
+                m_m2Data->textures.getElement(
+                        this->m_data->old.texture_0
+//                    *m_m2Data->texture_lookup_table.getElement(this->m_data->old.texture)
+                )->filename.toString());
+    } else {
+        tex0 = textureCache->get(
+                m_m2Data->textures.getElement(
+                        this->m_data->old.texture
+//                    *m_m2Data->texture_lookup_table.getElement(this->m_data->old.texture)
+                )->filename.toString());
+    }
 
     if (tex0 == nullptr || !tex0->getIsLoaded()) {
         return;
     }
     BlpTexture* tex1 = nullptr;
     BlpTexture* tex2 = nullptr;
-    bool multitex = this->particleType >= 2;
+
     if (multitex) {
         tex1 = textureCache->get(
                 m_m2Data->textures.getElement(
-                        *m_m2Data->texture_lookup_table[this->m_data->old.texture_1])->filename.toString());
+                        this->m_data->old.texture_1)->filename.toString());
         tex2 = textureCache->get(
                 m_m2Data->textures.getElement(
-                        *m_m2Data->texture_lookup_table[this->m_data->old.texture_2])->filename.toString());
+                        this->m_data->old.texture_2)->filename.toString());
     }
 
     glActiveTexture(GL_TEXTURE0);
@@ -472,24 +483,35 @@ void ParticleEmitter::Render() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-//    glActiveTexture(GL_TEXTURE1);
-//    if (tex1!= nullptr && tex1->getIsLoaded()) {
-//        glBindTexture(GL_TEXTURE_2D, tex1->getGlTexture());
-//    } else {
-//        glBindTexture(GL_TEXTURE_2D, blackPixelText);
-//    }
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//
-//    glActiveTexture(GL_TEXTURE2);
-//    if (tex2!= nullptr && tex2->getIsLoaded()) {
-//        glBindTexture(GL_TEXTURE_2D, tex2->getGlTexture());
-//    } else {
-//        glBindTexture(GL_TEXTURE_2D, blackPixelText);
-//    }
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glActiveTexture(GL_TEXTURE1);
+    if (tex1!= nullptr && tex1->getIsLoaded()) {
+        glBindTexture(GL_TEXTURE_2D, tex1->getGlTexture());
+    } else {
+        glBindTexture(GL_TEXTURE_2D, blackPixelText);
+    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    glActiveTexture(GL_TEXTURE2);
+    if (tex2!= nullptr && tex2->getIsLoaded()) {
+        glBindTexture(GL_TEXTURE_2D, tex2->getGlTexture());
+    } else {
+        glBindTexture(GL_TEXTURE_2D, blackPixelText);
+    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    int uPixelShader = -1;
+    if (multitex) {
+        if (this->m_data->old.flags & 0x20000000) {
+            uPixelShader = 0;
+        }
+        if (this->m_data->old.flags & 0x40000000) {
+            uPixelShader = 1;
+        }
+    }
+
+    glUniform1i(particleShader->getUnf("uPixelShader"), uPixelShader);
 
     GLuint indexVBO;
     glGenBuffers(1, &indexVBO);
