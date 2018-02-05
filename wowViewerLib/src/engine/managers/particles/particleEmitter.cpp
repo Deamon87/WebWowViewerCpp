@@ -202,7 +202,7 @@ CParticle2& ParticleEmitter::BirthParticle() {
     return p;
 }
 
-void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix, mathfu::mat4 &projMatrix) {
+void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     if (particles.size() == 0 && this->generator != nullptr) {
         return;
     }
@@ -211,7 +211,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix, mathfu::mat4 &pro
     auto textureCache = m_api->getTextureCache();
     BlpTexture* tex0 = textureCache->get(
             m_m2Data->textures.getElement(
-                    *m_m2Data->texture_lookup_table[this->m_data->old.texture_0])->filename.toString());
+                    *m_m2Data->texture_lookup_table.getElement(this->m_data->old.texture_0))->filename.toString());
 
     if (tex0 == nullptr) {
         return;
@@ -301,7 +301,7 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> 
     mathfu::vec2 scale = animatePartTrack<C2Vector, mathfu::vec2>(p.age, &m_data->old.scaleTrack, defaultScale);
     float alpha = animatePartTrack<fixed16, float>(p.age, &m_data->old.alphaTrack, defaultAlpha);
     uint16_t headCell = animatePartTrack<uint16_t, uint16_t>(p.age, &m_data->old.headCellTrack, defaultCell);
-    uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(p.age, &m_data->old.headCellTrack, defaultCell);
+    uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(p.age, &m_data->old.tailCellTrack, defaultCell);
 
 
     CRndSeed rand(seed);
@@ -334,9 +334,71 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> 
                 theta = -theta;
             }
         }
+        if ((this->m_data->old.flags & 4) && mathfu::vec3::DotProduct(vel,vel) > 0.0001) {
+            // scale and rotation align to particle velocity
+            viewVel = (this->particleToView * mathfu::vec4(vel, 0)).xyz();
+            screenVel = viewVel;
+            float screenVelMag = screenVel.Length();
+            screenVelNorm = screenVel.xy() * (1 / screenVelMag);
+            float scaleMod = screenVelMag / viewVel.Length();
+            float scaleModX = scale.x * scaleMod;
+            float scaleModY = scale.y * scaleMod;
+            m0 = mathfu::vec3(screenVelNorm.x * scaleModX, screenVelNorm.y * scaleModX, 0);
+            m1 = mathfu::vec3(-screenVelNorm.y * scaleModY, screenVelNorm.x * scaleModY, 0);
+        }
+        else if (this->m_data->old.flags & 0x1000) {
+            // quad aligns to world-space ground plane instead of view plane
+            // the viewPos is still correct, but the (x, y) offsets need to
+            // be transformed as world-space offsets (and scaled/rotated)
+            // 1. transform the scale vector (which is in XY) to view space
+            float transformInvScale = 1;
+            if (this->m_data->old.flags & 0x10) {
+                // particleToView has the model transform in it, we need to
+                // scale that away
+                transformInvScale = 1 / this->inheritedScale;
+            }
+            scaleViewX = this->particleToView.GetColumn(0).xyz();
+            scaleViewY =  this->particleToView.GetColumn(1).xyz();
+            scaleViewX = scaleViewX * transformInvScale * scale.x;
+            scaleViewY = scaleViewY * transformInvScale * scale.y);
+            // 2. rotate the transformed scale vectors around the up vector
+            if (theta != 0) {
+                viewUp = this->particleToView.GetColumn(2).xyz();
+                quadRot = mathfu::quat::FromAngleAxis(viewUp, theta);
+
+                m0 = quadRot.ToMatrix4() * scaleViewX;
+                m1 = quadRot.ToMatrix4() * scaleViewY;
+            }
+            else {
+                m0 = scaleViewX;
+                m1 = scaleViewY;
+            }
+        }
+        else {
+            if (theta != 0) {
+                float cosTheta = cos(theta);
+                float sinTheta = sin(theta);
+                m0 = mathfu::vec3(cosTheta * scale.x, sinTheta * scale.x, 0);
+                m0 = mathfu::vec3(-sinTheta * scale.y, cosTheta * scale.y, 0);
+            }
+            else {
+                m0 = mathfu::vec3(scale.x, scale.y, 0);
+            }
+        }
+        // build vertices from coords:
+        if (this->particleType >= 2) {
+            this->BuildQuadT3(m0, m1, viewPos, color, alpha, texStartX, texStartY, p.texPos);
+        }
+        else {
+            this->BuildQuad(m0, m1, viewPos, color, alpha, texStartX, texStartY);
+        }
     }
 
-
-
     return true;
+}
+
+void
+ParticleEmitter::BuildQuadT3(mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
+                             float texStartX, float texStartY, mathfu::vec2 *texPos) {
+
 }

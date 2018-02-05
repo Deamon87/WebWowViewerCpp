@@ -684,20 +684,11 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     );
 
     for (auto &particleEmitter: particleEmitters) {
-        particleEmitter.Update(deltaTime, viewMat);
+        particleEmitter.Update(deltaTime, m_placementMatrix);
+        particleEmitter.prepearBuffers(viewMat);
     }
 
     this->sortMaterials(viewMat);
-//
-//    for (var i = 0; i < this.lights.length; i++) {
-//    var light = this.lights[i];
-//    vec4.transformMat4(light.position, light.position, this.placementMatrix);
-//    vec4.transformMat4(light.position, light.position, viewMat);
-//    }
-//
-//    this.combinedBoneMatrix = this.combineBoneMatrixes();
-//
-//    this.currentTime += deltaTime;
 }
 
 bool M2Object::getIsInstancable() {

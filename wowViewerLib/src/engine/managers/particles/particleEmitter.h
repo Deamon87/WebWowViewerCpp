@@ -29,7 +29,7 @@ struct vectorMultiTex {
 
 class ParticleEmitter {
 public:
-    ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Data *data) : m_seed(0), m_api(api) {
+    ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Data *data) : m_seed(0), m_api(api), m_m2Data(data) {
 
         m_data = particle;
 
@@ -86,7 +86,7 @@ public:
 
 
     void Update(animTime_t delta, mathfu::mat4 transform);
-    void prepearBuffers(mathfu::mat4 &viewMatrix, mathfu::mat4 &projMatrix);
+    void prepearBuffers(mathfu::mat4 &viewMatrix);
     CParticleGenerator * getGenerator(){
         return generator;
     }
@@ -149,6 +149,10 @@ private:
     void resizeParticleBuffer();
 
     bool RenderParticle(CParticle2 &p, std::vector<vectorMultiTex> &szVertexBuf);
+
+    void
+    BuildQuadT3(mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
+                float texStartY, mathfu::vec2 *texPos);
 };
 
 

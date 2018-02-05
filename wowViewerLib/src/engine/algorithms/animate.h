@@ -33,11 +33,18 @@ template<>
 inline unsigned char convertHelper<unsigned char, unsigned char>(unsigned char &a ) {
     return a;
 };
-
+template<>
+inline unsigned short convertHelper<unsigned short, unsigned short>(unsigned short &a ) {
+    return a;
+};
 
 template<>
 inline mathfu::vec3 convertHelper<mathfu::vec3_packed, mathfu::vec3>(mathfu::vec3_packed &a ) {
     return mathfu::vec3(a);
+};
+template<>
+inline mathfu::vec2 convertHelper<mathfu::vec2_packed, mathfu::vec2>(mathfu::vec2_packed &a ) {
+    return mathfu::vec2(a);
 };
 inline float stf(unsigned short Short) {
     return (Short / float (32767)) - 1.0f; // (Short > 0 ? Short-32767 : Short+32767)/32767.0;
@@ -71,6 +78,11 @@ inline float convertHelper<fixed16, float>(fixed16 &a ) {
 template<>
 inline animTime_t convertHelper<fixed16, animTime_t>(fixed16 &a ) {
     return (animTime_t)(a / 32768.0);
+};
+
+template<>
+inline fixed16 convertHelper<double, fixed16>(double &a ) {
+    return (a * 32768.0);
 };
 
 template<>
@@ -118,10 +130,18 @@ template<>
 inline mathfu::vec4 lerpHelper<mathfu::vec4>(mathfu::vec4 &value1, mathfu::vec4 &value2, float percent) {
     return mathfu::vec4::Lerp(value1, value2, percent);
 };
+template<>
+inline mathfu::vec2 lerpHelper<mathfu::vec2>(mathfu::vec2 &value1, mathfu::vec2 &value2, float percent) {
+    return mathfu::vec2::Lerp(value1, value2, percent);
+};
 
 template<>
 inline unsigned char lerpHelper<unsigned char>(unsigned char &value1, unsigned char &value2, float percent) {
     return (unsigned char) ((value1 * (1 - percent)) + (value2 * percent));;
+};
+template<>
+inline uint16_t lerpHelper<uint16_t >(uint16_t &value1, uint16_t &value2, float percent) {
+    return (uint16_t) ((value1 * (1 - percent)) + (value2 * percent));;
 };
 template<>
 inline mathfu::vec3 lerpHelper<mathfu::vec3>(mathfu::vec3 &value1, mathfu::vec3 &value2, float percent) {
@@ -362,7 +382,7 @@ R animatePartTrack(
         R value1 = convertHelper<T, R>(*values->getElement(timeIndex));
         R value2 = convertHelper<T, R>(*values->getElement(timeIndex+1));
 
-        float currTimeF = convertHelper<animTime_t, float>(age);
+        float currTimeF = age;
         float time1 = convertHelper<fixed16, float>(*timeStamps->getElement(timeIndex));
         float time2 = convertHelper<fixed16, float>(*timeStamps->getElement(timeIndex+1));
 
