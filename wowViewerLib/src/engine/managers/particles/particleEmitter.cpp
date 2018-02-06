@@ -22,7 +22,8 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
     mathfu::vec3 currPos;
     mathfu::vec3 dPos;
 
-    currPos = -transform.TranslationVector3D();
+    lastPos = -transform.TranslationVector3D();
+    currPos = -boneModelMat.TranslationVector3D();
     this->transform = boneModelMat;
 
     this->inheritedScale = 1.0;//this->transform.GetUniformScale(transform);
@@ -95,7 +96,7 @@ void ParticleEmitter::Simulate(animTime_t delta) {
 void ParticleEmitter::EmitNewParticles(animTime_t delta) {
     float rate = this->generator->GetEmissionRate();
     if (6 == (this->flags & 6)) {
-        int count = rate ;
+        int count = rate;
         for (int i = 0; i < count; i++) {
             this->CreateParticle(0);
         }
@@ -291,9 +292,9 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
     mathfu::vec2 scale = animatePartTrack<C2Vector, mathfu::vec2>(percentTime, &m_data->old.scaleTrack, defaultScale);
     float alpha = animatePartTrack<fixed16, float>(percentTime, &m_data->old.alphaTrack, defaultAlpha);
 //    if (alpha < 0.9) alpha = 1.0;
-    if (color.x < 0.1 && color.y < 0.1 && color.z < 0.1) {
-        color = mathfu::vec3(1.0,1.0,1.0);
-    }
+//    if (color.x < 0.1 && color.y < 0.1 && color.z < 0.1) {
+//        color = mathfu::vec3(1.0,1.0,1.0);
+//    }
     uint16_t headCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.headCellTrack, defaultCell);
     uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
 
@@ -478,12 +479,12 @@ ParticleEmitter::BuildQuadT3(
 
         record.textCoord1 =
             mathfu::vec2(
-                txs[i] * this->m_data->old.multiTextureParamX[0]/256.0 + texPos[0].x,
-                tys[i] * this->m_data->old.multiTextureParamX[0]/256.0 + texPos[0].y);
+                txs[i] * this->m_data->old.multiTextureParamX[0]/32.0 + texPos[0].x,
+                tys[i] * this->m_data->old.multiTextureParamX[0]/32.0 + texPos[0].y);
         record.textCoord2 =
             mathfu::vec2(
-                txs[i] * this->m_data->old.multiTextureParamX[1]/256.0 + texPos[1].x,
-                tys[i] * this->m_data->old.multiTextureParamX[1]/256.0 + texPos[1].y);
+                txs[i] * this->m_data->old.multiTextureParamX[1]/32.0 + texPos[1].x,
+                tys[i] * this->m_data->old.multiTextureParamX[1]/32.0 + texPos[1].y);
 
         buffer.emplace_back(record);
     }
@@ -646,7 +647,7 @@ void ParticleEmitter::Render() {
         case 1 : //Blend_AlphaKey
             glDisable(GL_BLEND);
             //GL_uniform1f(m2Shader->getUnf("uAlphaTest, 2.9);
-            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
+            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
             //GL_uniform1f(m2Shader->getUnf("uAlphaTest, meshColor[4]*transparency*(252/255));
             break;
         case 2 : //Blend_Alpha

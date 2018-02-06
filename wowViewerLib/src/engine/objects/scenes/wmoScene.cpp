@@ -222,6 +222,14 @@ void WmoScene::drawM2s() {
     }
     this->m_api->deactivateM2Shader();
 
+    this->m_api->activateM2ParticleShader();
+    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
+
+        M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+        m2Object->drawParticles();
+    }
+    this->m_api->deactivateM2ParticleShader();
+
     //7. Draw BBs
     //7.1 Draw M2 BBs
     if (this->m_api->getConfig()->getDrawM2BB()) {

@@ -826,6 +826,8 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 defaultChar
             );
 
+        enabledIn = 1;
+
         particleEmitter->isEnabled = enabledIn;
 
         aniProp.emissionSpeed =
@@ -868,7 +870,9 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp.gravity.x =
+        aniProp.gravity = mathfu::vec3(
+                0,
+                0,
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -877,7 +881,9 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->m_m2File->global_loops,
                 this->globalSequenceTimes,
                 defaultFloat
-            );
+            ));
+
+        aniProp.gravity = mathfu::vec3(0,0,0);
 
         aniProp.lifespan =
             animateTrack<float, float>(

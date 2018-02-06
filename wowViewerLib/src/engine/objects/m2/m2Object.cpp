@@ -692,7 +692,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         mathfu::quat::FromAngleAxis(M_PI_2, mathfu::vec3(0,0,1)).ToMatrix4();
 
 
-        particleEmitters[i]->Update(deltaTime * 0.0001 , transformMat);
+        particleEmitters[i]->Update(deltaTime * 0.001 , transformMat);
         particleEmitters[i]->prepearBuffers(viewMat);
     }
 

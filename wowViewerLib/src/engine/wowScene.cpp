@@ -196,8 +196,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
 //
-   currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
+//   currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
 //   currentScene = new M2Scene(this,
@@ -269,9 +269,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/brokenisles/valsharah/7vs_nightmare_worldtree.wmo");
 //
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -1059,7 +1059,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     float farPlane = 300;
     float nearPlane = 1;
-    float fov = toRadian(100.0);
+    float fov = toRadian(45.0);
 
 //    float diagFov = 2.0944;
 //    float fov = diagFov / sqrt(1 + canvAspect*canvAspect);
