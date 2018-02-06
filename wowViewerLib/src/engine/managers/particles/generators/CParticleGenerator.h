@@ -20,7 +20,7 @@ public:
 public:
     virtual float GetEmissionRate();
     virtual void Update(animTime_t time, mathfu::mat4 &viewMat);
-    virtual void CreateParticle(CParticle2 &, animTime_t );
+    virtual void CreateParticle(CParticle2 &, animTime_t ) = 0;
 
 protected:
     CGeneratorAniProp aniProp;

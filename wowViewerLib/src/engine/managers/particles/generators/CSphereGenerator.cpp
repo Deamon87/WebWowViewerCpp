@@ -13,7 +13,7 @@ void CSphereGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     if (lifespan < 0.001) {
         lifespan = 0.001;
     }
-    p.age = fmod(dvary, lifespan);
+    p.age = 0.0;
     p.seed = 0xffff & this->seed.uint32t();
     float emissionArea = this->aniProp.emissionAreaY - this->aniProp.emissionAreaX;
     float radius = this->aniProp.emissionAreaX + emissionArea* this->seed.UniformPos();

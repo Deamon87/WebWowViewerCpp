@@ -16,15 +16,18 @@ void ParticleEmitter::resizeParticleBuffer() {
 
 void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
     if (getGenerator() == nullptr) return;
-    this->transform = boneModelMat;
+
     this->resizeParticleBuffer();
     mathfu::vec3 lastPos;
     mathfu::vec3 currPos;
     mathfu::vec3 dPos;
 
-    //this->inheritedScale = Mat34.GetUniformScale(transform);
+    currPos = -transform.TranslationVector3D();
+    this->transform = boneModelMat;
+
+    this->inheritedScale = 1.0;//this->transform.GetUniformScale(transform);
     dPos = lastPos - currPos;
-    if (this->m_data->old.flags & 0x4000 > 0) {
+    if ((this->m_data->old.flags & 0x4000) > 0) {
         float x = this->followMult * (dPos.Length() / delta) + this->followBase;
         if (x < 0)
             x = 0;
@@ -121,8 +124,8 @@ void ParticleEmitter::CreateParticle(animTime_t delta) {
         }
     }
     if (this->m_data->old.flags & 0x40) {
-        float speedMul = 1 + this->generator->GetSpeedVariation() * this->m_seed.Uniform();
-        //r0 = this->burstVec * speedMul;
+        float speedMul = 1 + this->generator->getAniProp().speedVariation * this->m_seed.Uniform();
+        r0 = this->burstVec * speedMul;
         p.velocity += r0;
     }
     if (this->particleType >= 2) {
@@ -152,7 +155,7 @@ void ParticleEmitter:: CalculateForces(ParticleForces &forces, animTime_t delta)
     forces.drag = this->m_data->old.drag * delta;
 }
 
-bool ParticleEmitter::UpdateParticle(CParticle2 p, animTime_t delta, ParticleForces &forces) {
+bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleForces &forces) {
 
     if (this->particleType >= 2) {
         for (int i = 0; i < 2; i++) {
@@ -200,7 +203,7 @@ void ParticleEmitter::KillParticle(int index) {
 CParticle2& ParticleEmitter::BirthParticle() {
     particles.resize(particles.size()+1);
 
-    auto &p = particles[particles.size()-1];
+    CParticle2 &p = particles[particles.size()-1];
     return p;
 }
 
@@ -229,9 +232,9 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     int vo = 0;
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = this->particles[i];
-
-        if (this->RenderParticle(p, szVertexBuf)) {
-//            for (int j = 0; j < nIndices; j += 6) {
+        int rendered = this->RenderParticle(p, szVertexBuf);
+        if ((rendered) > 0) {
+            for (int j = 0; j < rendered; j++) {
                 // 0 2
                 // 1 3
                 // 0, 1, 2; 3, 2, 1
@@ -242,12 +245,12 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
                 szIndexBuff.push_back(vo + 2);
                 szIndexBuff.push_back(vo + 1);
                 vo += 4;
-//            }
+            }
         }
     }
 }
 
-bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVertexBuf) {
+int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVertexBuf) {
     float twinkle = this->m_data->old.TwinklePercent;
     auto twinkleRange = this->m_data->old.twinkleScale;
 
@@ -264,6 +267,7 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVert
 //    if (twinkle < ParticleEmitter.RandTable[rndIdx]) {
 //        return false;
 //    }
+    int amountrendered = 0;
 
     mathfu::quat quadRot;
     mathfu::vec3 viewPos;
@@ -277,15 +281,19 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVert
     mathfu::vec2 screenVelNorm;
 
 
-    mathfu::vec3 defaultColor(1.0f, 1.0f, 1.0f);
+    mathfu::vec3 defaultColor(255.0f, 255.0f, 255.0f);
     mathfu::vec2 defaultScale(1.0f, 1.0f);
     float defaultAlpha = 1.0f;
-    uint16_t defaultCell = 0;
+    uint16_t defaultCell = 1;
 
-    float percentTime = p.age /  this->getGenerator()->GetLifeSpan(p.lifespan);
-    mathfu::vec3 color = animatePartTrack<C3Vector, mathfu::vec3>(percentTime, &m_data->old.colorTrack, defaultColor) / 256.0;
+    float percentTime = p.age /  this->getGenerator()->GetMaxLifeSpan();
+    mathfu::vec3 color = animatePartTrack<C3Vector, mathfu::vec3>(percentTime, &m_data->old.colorTrack, defaultColor) / 128.0;
     mathfu::vec2 scale = animatePartTrack<C2Vector, mathfu::vec2>(percentTime, &m_data->old.scaleTrack, defaultScale);
     float alpha = animatePartTrack<fixed16, float>(percentTime, &m_data->old.alphaTrack, defaultAlpha);
+//    if (alpha < 0.9) alpha = 1.0;
+    if (color.x < 0.1 && color.y < 0.1 && color.z < 0.1) {
+        color = mathfu::vec3(1.0,1.0,1.0);
+    }
     uint16_t headCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.headCellTrack, defaultCell);
     uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
 
@@ -298,7 +306,7 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVert
     float weight = twinkleVary * rand.Uniform() + twinkleMin;
     scale = scale * weight;
     if (this->m_data->old.flags & 0x20) {
-        //Vec2.Mul(scale, scale, this.inheritedScale);
+        scale = scale * this->inheritedScale;
     }
     viewPos = this->particleToView * pos;
 
@@ -372,16 +380,57 @@ bool ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVert
             }
         }
         // build vertices from coords:
-//        if (this->particleType >= 2) {
+        if (this->particleType >= 2) {
             this->BuildQuadT3(szVertexBuf, m0, m1, viewPos, color, alpha, texStartX, texStartY, p.texPos);
-            return true;
-//        }
-//        else {
-//            this->BuildQuad(m0, m1, viewPos, color, alpha, texStartX, texStartY);
-//        }
+            amountrendered++;
+//            return true;
+        } else {
+            this->BuildQuad(szVertexBuf, m0, m1, viewPos, color, alpha, texStartX, texStartY);
+            amountrendered++;
+//            return true;
+        }
+    }
+    if (this->m_data->old.flags & 0x40000) {
+        // tail cell
+        float texStartX = tailCell & this->textureColMask;
+        float texStartY = tailCell >> this->textureColBits;
+        texStartX *= this->texScaleX;
+        texStartY *= this->texScaleY;
+        m0 = mathfu::vec3(0, 0, 0);
+        m1 = mathfu::vec3(0, 0, 0);
+        // as above, scale and rotation align to particle velocity
+        float trailTime = this->m_data->old.tailLength;
+        if ((this->m_data->old.flags & 0x400) && trailTime > age) {
+            trailTime = age;
+        }
+        viewVel = vel * -1;
+        viewVel = (this->particleToView *mathfu::vec4(viewVel, 0)).xyz() * trailTime;
+        screenVel = mathfu::vec3(viewVel.xy(), 0);
+        if (mathfu::vec3::DotProduct(screenVel, screenVel) > 0.0001) {
+            float invScreenVelMag = 1 / screenVel.Length();
+            scale = scale * invScreenVelMag;
+            screenVel = mathfu::vec3(mathfu::vec2::HadamardProduct(screenVel.xy(), scale), 0);
+            m1 = mathfu::vec3(-screenVel.y, screenVel.x, 0);
+            m0 = viewVel * 0.5;
+            viewPos = viewPos + m0;
+        }
+        else {
+            m0 = mathfu::vec3(scale, 0);
+        }
+        if (this->particleType >= 2) {
+            this->BuildQuadT3(szVertexBuf, m0, m1, viewPos, color, alpha, texStartX, texStartY,  p.texPos);
+            amountrendered++;
+//            return true;
+        }
+        else {
+            this->BuildQuad(szVertexBuf, m0, m1, viewPos, color, alpha, texStartX, texStartY);
+            amountrendered++;
+//            return true;
+        }
     }
 
-    return false;
+
+    return amountrendered;
 }
 
 void
@@ -390,6 +439,13 @@ ParticleEmitter::BuildQuadT3(
     mathfu::vec3 &m0, mathfu::vec3 &m1,
     mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
     float texStartX, float texStartY, mathfu::vec2 *texPos) {
+
+    if (this->texScaleX < 0.001) {
+        this->texScaleX = 0.1;
+    }
+    if (this->texScaleY < 0.001) {
+        this->texScaleY = 0.1;
+    }
 
     static const float vxs[4] = {-1, -1, 1, 1};
     static const float vys[4] = {1, -1, 1, -1};
@@ -433,6 +489,55 @@ ParticleEmitter::BuildQuadT3(
     }
 
     std::copy((uint8_t *)&buffer[0], (uint8_t *)&buffer[0] + buffer.size()*sizeof(ParticleBuffStruct), std::back_inserter(szVertexBuf));
+}
+
+void
+ParticleEmitter::BuildQuad(
+    std::vector<uint8_t> &szVertexBuf,
+    mathfu::vec3 &m0, mathfu::vec3 &m1,
+    mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
+    float texStartX, float texStartY) {
+
+        if (this->texScaleX < 0.001) {
+            this->texScaleX = 0.1;
+        }
+        if (this->texScaleY < 0.001) {
+            this->texScaleY = 0.1;
+        }
+
+        static const float vxs[4] = {-1, -1, 1, 1};
+        static const float vys[4] = {1, -1, 1, -1};
+        static const float txs[4] = {0, 0, 1, 1};
+        static const float tys[4] = {0, 1, 0, 1};
+
+        struct ParticleBuffStruct {
+            C3Vector position; //0
+            C4Vector color;    //12
+            C2Vector textCoord0; //28
+            C2Vector textCoord1; //36
+            C2Vector textCoord2; //44
+        };
+
+        std::vector<ParticleBuffStruct> buffer;
+        buffer.reserve(4);
+
+        for (int i = 0; i < 4; i++) {
+            ParticleBuffStruct record;
+            record.position = mathfu::vec3(
+                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
+                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
+                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z
+            );
+            record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
+
+            record.textCoord0 =
+                mathfu::vec2(txs[i] * this->texScaleX + texStartX,
+                             tys[i] * this->texScaleY + texStartY);
+
+            buffer.emplace_back(record);
+        }
+
+        std::copy((uint8_t *)&buffer[0], (uint8_t *)&buffer[0] + buffer.size()*sizeof(ParticleBuffStruct), std::back_inserter(szVertexBuf));
 }
 
 void ParticleEmitter::Render() {
@@ -526,12 +631,11 @@ void ParticleEmitter::Render() {
     int nFloats = 13;
     int stride = nFloats * 4;
 
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aPosition, 3, GL_FLOAT, false, stride, 0);
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aColor, 4, GL_FLOAT, false, stride, (void *)12);
-    glVertexAttrib4f(+m2ParticleShader::Attribute::alpha, 1,1,1,1);
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord0, 2, GL_FLOAT, false, stride, (void *)28);
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord1, 2, GL_FLOAT, false, stride, (void *)36);
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord2, 2, GL_FLOAT, false, stride, (void *)44);
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, stride, 0);
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aColor, 4, GL_FLOAT, GL_FALSE, stride, (void *)12);
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord0, 2, GL_FLOAT, GL_FALSE, stride, (void *)28);
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord1, 2, GL_FLOAT, GL_FALSE, stride, (void *)36);
+    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord2, 2, GL_FLOAT, GL_FALSE, stride, (void *)44);
 
     auto blendMode = m_data->old.blendingType;
     switch (blendMode) {
@@ -542,7 +646,7 @@ void ParticleEmitter::Render() {
         case 1 : //Blend_AlphaKey
             glDisable(GL_BLEND);
             //GL_uniform1f(m2Shader->getUnf("uAlphaTest, 2.9);
-            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
+            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
             //GL_uniform1f(m2Shader->getUnf("uAlphaTest, meshColor[4]*transparency*(252/255));
             break;
         case 2 : //Blend_Alpha
@@ -606,12 +710,11 @@ void ParticleEmitter::Render() {
 
 //    glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
-    glDisable(GL_BLEND);
     glDisable(GL_CULL_FACE);
 
     glDrawElements(GL_TRIANGLES, this->szIndexBuff.size(), GL_UNSIGNED_SHORT, 0);
     glDepthMask(GL_TRUE);
-//    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
 
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer( GL_ARRAY_BUFFER, 0);

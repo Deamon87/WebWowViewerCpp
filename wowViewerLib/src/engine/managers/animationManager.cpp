@@ -826,6 +826,8 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 defaultChar
             );
 
+        particleEmitter->isEnabled = enabledIn;
+
         aniProp.emissionSpeed =
             animateTrack<float, float>(
                 animationTime,

@@ -31,11 +31,6 @@ float CParticleGenerator::CalcVelocity() {
 void CParticleGenerator::Update(animTime_t time, mathfu::mat4 &viewMat) {
 
 }
-
-void CParticleGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
-
-}
-
 mathfu::vec3 CParticleGenerator::GetGravity() {
     return mathfu::vec3(aniProp.gravity);
 }

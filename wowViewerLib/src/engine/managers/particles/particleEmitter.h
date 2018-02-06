@@ -42,8 +42,15 @@ public:
                 break;
             default:
                 this->generator = nullptr;
+                std::cout << "Found unimplemented generator " << m_data->old.emitterType << std::flush;
                 break;
         }
+
+        std::cout << "particleId = " << m_data->old.particleId
+                  << "Mentioned models :" << std::endl
+                  << "geometry_model_filename = " << m_data->old.geometry_model_filename.toString() << std::endl
+                  << "recursion_model_filename = " << m_data->old.recursion_model_filename.toString()
+                  << std::endl << std::endl << std::flush;
 
         const float followDen = m_data->old.followSpeed2 - m_data->old.followSpeed1;
         if (followDen != 0) {
@@ -94,6 +101,7 @@ public:
 
     int flags = 2;
     bool emittingLastFrame = false;
+    bool isEnabled = false;
 private:
     IWoWInnerApi *m_api;
 
@@ -141,7 +149,7 @@ private:
 
     void KillParticle(int index);
 
-    bool UpdateParticle(CParticle2 p, animTime_t delta, ParticleForces &forces);
+    bool UpdateParticle(CParticle2 &p, animTime_t delta, ParticleForces &forces);
 
     void CalculateForces(ParticleForces &forces, animTime_t delta);
 
@@ -153,7 +161,7 @@ private:
 
     void resizeParticleBuffer();
 
-    bool RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVertexBuf);
+    int RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVertexBuf);
 
     void
     BuildQuadT3(
@@ -161,6 +169,12 @@ private:
             mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
                 float texStartY, mathfu::vec2 *texPos);
 
+    void
+    BuildQuad(
+        std::vector<uint8_t> &szVertexBuf,
+        mathfu::vec3 &m0, mathfu::vec3 &m1,
+        mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
+        float texStartX, float texStartY);
 
 
 };

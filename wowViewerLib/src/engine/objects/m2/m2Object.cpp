@@ -684,7 +684,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     );
 
     for (int i = 0; i < particleEmitters.size(); i++) {
-        auto &particleEmitter = particleEmitters[i];
+
         auto *peRecord = m_m2Geom->m_m2Data->particle_emitters.getElement(i);
 
         mathfu::mat4 transformMat = m_placementMatrix * bonesMatrices[peRecord->old.bone] *
@@ -692,8 +692,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         mathfu::quat::FromAngleAxis(M_PI_2, mathfu::vec3(0,0,1)).ToMatrix4();
 
 
-        particleEmitter->Update(deltaTime, transformMat);
-        particleEmitter->prepearBuffers(viewMat);
+        particleEmitters[i]->Update(deltaTime * 0.0001 , transformMat);
+        particleEmitters[i]->prepearBuffers(viewMat);
     }
 
     this->sortMaterials(viewMat);
@@ -1055,10 +1055,10 @@ void M2Object::initLights() {
 }
 void M2Object::initParticleEmitters() {
     particleEmitters = std::vector<ParticleEmitter *>();
-    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
+//    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->particle_emitters.size; i++) {
         ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), m_m2Geom->getM2Data());
-        particleEmitters.emplace_back(emitter);
+        particleEmitters.push_back(emitter);
     }
 };
 
@@ -1099,7 +1099,8 @@ M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {
 }
 
 void M2Object::drawParticles() {
-    for (auto& particleEmitter : particleEmitters) {
-        particleEmitter->Render();
+    for (int i = 0; i< particleEmitters.size(); i++) {
+//        if (particleEmitter->isEnabled)
+        particleEmitters[i]->Render();
     }
 }

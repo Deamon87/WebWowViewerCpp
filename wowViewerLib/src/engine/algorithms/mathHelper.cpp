@@ -8,7 +8,7 @@
 #include "../../../3rdparty/mathfu/include/mathfu/internal/vector_4.h"
 
 float MathHelper::fp69ToFloat(uint16_t x) {
-    const float divider = float(2 << 9);
+    const float divider = float(1 << 9);
     float int_part = (x >> 9);
     float float_part = (x & (1<<10) - 1) / divider;
     return int_part + float_part;

@@ -39,7 +39,7 @@
 #endif
 
 
-using fixed16 = short;
+using fixed16 = int16_t;
 typedef mathfu::vec4_packed C4Vector;
 typedef mathfu::vec3_packed C3Vector;
 typedef mathfu::vec2_packed C2Vector;

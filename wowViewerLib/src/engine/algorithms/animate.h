@@ -72,7 +72,7 @@ inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(C4Quaternion &a ) 
 };
 template<>
 inline float convertHelper<fixed16, float>(fixed16 &a ) {
-    return a / 32768.0;
+    return (float)(a / 32768.0);
 };
 
 template<>
@@ -82,7 +82,7 @@ inline animTime_t convertHelper<fixed16, animTime_t>(fixed16 &a ) {
 
 template<>
 inline fixed16 convertHelper<double, fixed16>(double &a ) {
-    return (a * 32768.0);
+    return (fixed16)(floor(a * 32768.0));
 };
 
 template<>

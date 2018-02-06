@@ -144,21 +144,20 @@ constexpr const char* const m2ParticleShaderString =
 
 struct m2ParticleShader {
  enum class Attribute { 
- aPosition = 0, aColor = 1, alpha = 2, aTexcoord0 = 3, aTexcoord1 = 4, aTexcoord2 = 5, m2ParticleShaderAttributeEnd
+ aPosition = 0, aColor = 1, aTexcoord0 = 2, aTexcoord1 = 3, aTexcoord2 = 4, m2ParticleShaderAttributeEnd
  };
  };
 inline constexpr const int operator+ (m2ParticleShader::Attribute const val) { return static_cast<const int>(val); };
 constexpr shaderItem m2ParticleShaderAttributes [] = {
  {"aPosition", +m2ParticleShader::Attribute::aPosition},
  {"aColor", +m2ParticleShader::Attribute::aColor},
- {"alpha", +m2ParticleShader::Attribute::alpha},
  {"aTexcoord0", +m2ParticleShader::Attribute::aTexcoord0},
  {"aTexcoord1", +m2ParticleShader::Attribute::aTexcoord1},
  {"aTexcoord2", +m2ParticleShader::Attribute::aTexcoord2},
  };
 constexpr const static shaderDefinition m2ParticleShaderDef = { 
 m2ParticleShaderString,
-6,
+5,
 m2ParticleShaderAttributes
 };
 

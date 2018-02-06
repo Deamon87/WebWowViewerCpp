@@ -188,7 +188,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-//   m_firstCamera.setCameraPos(0, 0, 0);
+//   m_firstCamera.setCameraPos(0,  0, 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
@@ -196,15 +196,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
 //
-//   currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
+        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
+//   currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
-
+//
 //    currentScene = new M2Scene(this,
 //        "character\\nightelf\\male\\nightelfmale.m2");
 //    currentScene = new M2Scene(this,
@@ -808,7 +808,6 @@ void WoWSceneImpl::activateM2ParticleShader() {
 }
 void WoWSceneImpl::deactivateM2ParticleShader() {
     glDisableVertexAttribArray(+m2ParticleShader::Attribute::aColor);
-    glDisableVertexAttribArray(+m2ParticleShader::Attribute::alpha);
     glDisableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord0);
     glDisableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord1);
     glDisableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord2);
