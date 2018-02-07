@@ -688,8 +688,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         auto *peRecord = m_m2Geom->m_m2Data->particle_emitters.getElement(i);
 
         mathfu::mat4 transformMat = m_placementMatrix * bonesMatrices[peRecord->old.bone] *
-        mathfu::mat4::FromTranslationVector(mathfu::vec3(peRecord->old.Position))*
-        mathfu::quat::FromAngleAxis(M_PI_2, mathfu::vec3(0,0,1)).ToMatrix4();
+            mathfu::mat4::FromTranslationVector(mathfu::vec3(peRecord->old.Position))*
+            mathfu::quat::FromAngleAxis(M_PI_2, mathfu::vec3(0,0,1)).ToMatrix4();
 
 
         particleEmitters[i]->Update(deltaTime * 0.001 , transformMat);

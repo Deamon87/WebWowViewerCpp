@@ -200,8 +200,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
-//   currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
+   currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
 //
@@ -269,9 +269,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/brokenisles/valsharah/7vs_nightmare_worldtree.wmo");
 //
-   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,

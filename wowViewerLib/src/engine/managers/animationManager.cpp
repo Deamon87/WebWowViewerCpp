@@ -813,7 +813,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
         auto &peRecord = *peRecords.getElement(i);
         auto &particleEmitter = particleEmitters[i];
         if (particleEmitter->getGenerator() == nullptr) continue;
-        CGeneratorAniProp &aniProp = particleEmitters[i]->getGenerator()->getAniProp();
+        CGeneratorAniProp *aniProp = particleEmitters[i]->getGenerator()->getAniProp();
 
         unsigned char enabledIn =
             animateTrack<unsigned char, unsigned char>(
@@ -830,7 +830,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
 
         particleEmitter->isEnabled = enabledIn;
 
-        aniProp.emissionSpeed =
+        aniProp->emissionSpeed =
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -840,7 +840,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp.speedVariation =
+        aniProp->speedVariation =
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -850,7 +850,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp.verticalRange =
+        aniProp->verticalRange =
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -860,7 +860,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp.horizontalRange =
+        aniProp->horizontalRange =
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -870,7 +870,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp.gravity = mathfu::vec3(
+        aniProp->gravity = mathfu::vec3(
                 0,
                 0,
             animateTrack<float, float>(
@@ -883,9 +883,9 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 defaultFloat
             ));
 
-        aniProp.gravity = mathfu::vec3(0,0,0);
+        aniProp->gravity = mathfu::vec3(0,0,0);
 
-        aniProp.lifespan =
+        aniProp->lifespan =
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -895,7 +895,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp.emissionRate =
+        aniProp->emissionRate =
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -905,7 +905,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp.emissionAreaY =
+        aniProp->emissionAreaY =
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -915,7 +915,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp.emissionAreaX =
+        aniProp->emissionAreaX =
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -925,7 +925,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp.zSource =
+        aniProp->zSource =
             animateTrack<float, float>(
                 animationTime,
                 animationRecord->duration,
@@ -944,7 +944,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 particleEmitter->emittingLastFrame = false;
             }
             else {
-                if (aniProp.emissionRate > 0 && !particleEmitter->emittingLastFrame) {
+                if (aniProp->emissionRate > 0 && !particleEmitter->emittingLastFrame) {
                     particleEmitter->flags |= 4;
                     particleEmitter->emittingLastFrame = true;
                 }
@@ -960,7 +960,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
         }
 
         if (!emitterEnabled) {
-            aniProp.emissionRate = 0;
+            aniProp->emissionRate = 0;
         }
     }
 

@@ -18,16 +18,14 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
     if (getGenerator() == nullptr) return;
 
     this->resizeParticleBuffer();
-    mathfu::vec3 lastPos;
-    mathfu::vec3 currPos;
-    mathfu::vec3 dPos;
 
-    lastPos = -transform.TranslationVector3D();
-    currPos = -boneModelMat.TranslationVector3D();
+
+    mathfu::vec3 lastPos = -transform.TranslationVector3D();
+    mathfu::vec3 currPos = -boneModelMat.TranslationVector3D();
     this->transform = boneModelMat;
 
     this->inheritedScale = 1.0;//this->transform.GetUniformScale(transform);
-    dPos = lastPos - currPos;
+    mathfu::vec3 dPos = lastPos - currPos;
     if ((this->m_data->old.flags & 0x4000) > 0) {
         float x = this->followMult * (dPos.Length() / delta) + this->followBase;
         if (x < 0)
@@ -77,20 +75,21 @@ void ParticleEmitter::Simulate(animTime_t delta) {
 
     this->CalculateForces(forces, delta);
     this->EmitNewParticles(delta);
-    for (int i = 0; i < this->particles.size(); i++) {
+    int i = 0;
+    while (i < this->particles.size()) {
         auto &p = this->particles[i];
         p.age = p.age + delta;
         auto life = p.lifespan;
         if (p.age > this->generator->GetLifeSpan(life)) {
             this->KillParticle(i);
             i--;
-        }
-        else {
+        } else {
             if (!this->UpdateParticle(p, delta, forces)) {
                 this->KillParticle(i);
                 i--;
             }
         }
+        i++;
     }
 }
 void ParticleEmitter::EmitNewParticles(animTime_t delta) {
@@ -111,10 +110,7 @@ void ParticleEmitter::EmitNewParticles(animTime_t delta) {
 }
 void ParticleEmitter::CreateParticle(animTime_t delta) {
     CParticle2 &p = this->BirthParticle();
-//            if (p == 0)
-//            return;
 
-    mathfu::vec3 r0 = mathfu::vec3(0,0,0);
     this->generator->CreateParticle(p, delta);
     if (!(this->m_data->old.flags & 0x10)) {
         p.position = (this->transform * mathfu::vec4(p.position, 1.0f)).xyz();
@@ -125,8 +121,8 @@ void ParticleEmitter::CreateParticle(animTime_t delta) {
         }
     }
     if (this->m_data->old.flags & 0x40) {
-        float speedMul = 1 + this->generator->getAniProp().speedVariation * this->m_seed.Uniform();
-        r0 = this->burstVec * speedMul;
+        float speedMul = 1 + this->generator->getAniProp()->speedVariation * this->m_seed.Uniform();
+        mathfu::vec3 r0 = this->burstVec * speedMul;
         p.velocity += r0;
     }
     if (this->particleType >= 2) {
@@ -270,18 +266,6 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
 //    }
     int amountrendered = 0;
 
-    mathfu::quat quadRot;
-    mathfu::vec3 viewPos;
-    mathfu::vec3 viewVel;
-    mathfu::vec3 m0;
-    mathfu::vec3 m1;
-    mathfu::vec3 scaleViewX;
-    mathfu::vec3 scaleViewY;
-    mathfu::vec3 viewUp;
-    mathfu::vec3 screenVel;
-    mathfu::vec2 screenVelNorm;
-
-
     mathfu::vec3 defaultColor(255.0f, 255.0f, 255.0f);
     mathfu::vec2 defaultScale(1.0f, 1.0f);
     float defaultAlpha = 1.0f;
@@ -298,18 +282,36 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
     uint16_t headCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.headCellTrack, defaultCell);
     uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
 
+    headCell = (headCell + this->textureStartIndex) & this->textureIndexMask;
 
     CRndSeed rand(seed);
+
+    float u0 = rand.Uniform();
+    float vx = 1 + u0 * this->m_data->old.scaleVary.x;
+    if (vx < 0.0001) {
+        vx = 0.0001;
+    }
+    if (this->m_data->old.flags & 0x80000) {
+        float u1 = rand.Uniform();
+        float vy = 1 + u1 * this->m_data->old.scaleVary.y;
+        if (vy < 0.0001) {
+            vy = 0.0001;
+        }
+        scale = mathfu::vec2::HadamardProduct(scale, mathfu::vec2(vx, vy));
+    }
+    else {
+        scale *= vx;
+    }
 
     float baseSpin = this->m_data->old.baseSpin + rand.Uniform() * this->m_data->old.baseSpinVary;
     float deltaSpin = this->m_data->old.Spin + rand.Uniform() * this->m_data->old.spinVary;
 //    float weight = twinkleVary * ParticleEmitter.RandTable[rndIdx] + twinkleMin;
-    float weight = twinkleVary * rand.Uniform() + twinkleMin;
+    float weight = twinkleVary * (rand.Uniform()/2 + 0.5) + twinkleMin;
     scale = scale * weight;
     if (this->m_data->old.flags & 0x20) {
         scale = scale * this->inheritedScale;
     }
-    viewPos = this->particleToView * pos;
+    mathfu::vec3 viewPos = this->particleToView * pos;
 
     if (this->m_data->old.flags & 0x20000) {
         // head cell
@@ -320,8 +322,8 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
         // 4x4 affine matrix, viewPos is w column, and the z column is 0
         // this multiplies our quad coords
         // these are the column 0 and 1 vectors:
-        m0 = mathfu::vec3(0, 0, 0);
-        m1 = mathfu::vec3(0, 0, 0);
+        mathfu::vec3 m0 = mathfu::vec3(0, 0, 0);
+        mathfu::vec3 m1 = mathfu::vec3(0, 0, 0);
         float theta = 0;
         if (this->m_data->old.Spin != 0 || this->m_data->old.spinVary != 0) {
             theta = baseSpin + deltaSpin * age;
@@ -331,10 +333,10 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
         }
         if ((this->m_data->old.flags & 4) && mathfu::vec3::DotProduct(vel,vel) > 0.0001) {
             // scale and rotation align to particle velocity
-            viewVel = (this->particleToView * mathfu::vec4(vel, 0)).xyz();
-            screenVel = viewVel;
+            mathfu::vec3 viewVel = (this->particleToView * mathfu::vec4(vel, 0)).xyz();
+            mathfu::vec3 screenVel = viewVel;
             float screenVelMag = screenVel.Length();
-            screenVelNorm = screenVel.xy() * (1 / screenVelMag);
+            mathfu::vec2 screenVelNorm = screenVel.xy() * (1 / screenVelMag);
             float scaleMod = screenVelMag / viewVel.Length();
             float scaleModX = scale.x * scaleMod;
             float scaleModY = scale.y * scaleMod;
@@ -352,14 +354,14 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
                 // scale that away
                 transformInvScale = 1 / this->inheritedScale;
             }
-            scaleViewX = this->particleToView.GetColumn(0).xyz();
-            scaleViewY =  this->particleToView.GetColumn(1).xyz();
+            mathfu::vec3 scaleViewX = this->particleToView.GetColumn(0).xyz();
+            mathfu::vec3 scaleViewY =  this->particleToView.GetColumn(1).xyz();
             scaleViewX = scaleViewX * transformInvScale * scale.x;
             scaleViewY = scaleViewY * transformInvScale * scale.y;
             // 2. rotate the transformed scale vectors around the up vector
             if (theta != 0) {
-                viewUp = this->particleToView.GetColumn(2).xyz();
-                quadRot = mathfu::quat::FromAngleAxis(theta,viewUp);
+                mathfu::vec3 viewUp = this->particleToView.GetColumn(2).xyz();
+                mathfu::quat quadRot = mathfu::quat::FromAngleAxis(theta,viewUp);
 
                 m0 = quadRot.ToMatrix4() * scaleViewX;
                 m1 = quadRot.ToMatrix4() * scaleViewY;
@@ -397,16 +399,16 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
         float texStartY = tailCell >> this->textureColBits;
         texStartX *= this->texScaleX;
         texStartY *= this->texScaleY;
-        m0 = mathfu::vec3(0, 0, 0);
-        m1 = mathfu::vec3(0, 0, 0);
+        mathfu::vec3 m0 = mathfu::vec3(0, 0, 0);
+        mathfu::vec3 m1 = mathfu::vec3(0, 0, 0);
         // as above, scale and rotation align to particle velocity
         float trailTime = this->m_data->old.tailLength;
         if ((this->m_data->old.flags & 0x400) && trailTime > age) {
             trailTime = age;
         }
-        viewVel = vel * -1;
+        mathfu::vec3 viewVel = vel * -1;
         viewVel = (this->particleToView *mathfu::vec4(viewVel, 0)).xyz() * trailTime;
-        screenVel = mathfu::vec3(viewVel.xy(), 0);
+        mathfu::vec3 screenVel = mathfu::vec3(viewVel.xy(), 0);
         if (mathfu::vec3::DotProduct(screenVel, screenVel) > 0.0001) {
             float invScreenVelMag = 1 / screenVel.Length();
             scale = scale * invScreenVelMag;
@@ -429,7 +431,6 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
 //            return true;
         }
     }
-
 
     return amountrendered;
 }

@@ -10,7 +10,7 @@
 
 class CRndSeed {
     uint32_t seed;
-    uint32_t state;
+    uint32_t state = 0xFEEFDFA;
 
 public:
     CRndSeed(uint32_t seed) {
