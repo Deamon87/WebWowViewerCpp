@@ -9,9 +9,9 @@
 
 void ParticleEmitter::resizeParticleBuffer() {
     int newCount = this->generator->GetMaxEmissionRate() * this->generator->GetMaxLifeSpan() * 1.15;
-    if (newCount > (int)this->particles.size()) {
-        this->particles.reserve(newCount);
-    }
+//    if (newCount > (int)this->particles.size()) {
+//        this->particles.reserve(newCount);
+//    }
 }
 
 void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
@@ -80,7 +80,7 @@ void ParticleEmitter::Simulate(animTime_t delta) {
         auto &p = this->particles[i];
         p.age = p.age + delta;
         auto life = p.lifespan;
-        if (p.age > this->generator->GetLifeSpan(life)) {
+        if (p.age > (this->generator->GetLifeSpan(life))) {
             this->KillParticle(i);
             i--;
         } else {
@@ -194,13 +194,13 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
 }
 
 void ParticleEmitter::KillParticle(int index) {
-    particles[index] = particles[particles.size()-1];
-    particles.resize(particles.size() - 1);
+    particles.erase(particles.begin()+index);
 }
 CParticle2& ParticleEmitter::BirthParticle() {
-    particles.resize(particles.size()+1);
+    CParticle2 p1;
+    particles.push_back(p1);
 
-    CParticle2 &p = particles[particles.size()-1];
+    CParticle2 &p = *(particles.end()-1);
     return p;
 }
 
@@ -265,6 +265,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
 //        return false;
 //    }
     int amountrendered = 0;
+    CRndSeed rand(seed);
 
     mathfu::vec3 defaultColor(255.0f, 255.0f, 255.0f);
     mathfu::vec2 defaultScale(1.0f, 1.0f);
@@ -282,9 +283,12 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
     uint16_t headCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.headCellTrack, defaultCell);
     uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
 
-    headCell = (headCell + this->textureStartIndex) & this->textureIndexMask;
+    if ((this->m_data->old.flags & 0x10000 && m_data->old.headCellTrack.values.size == 0)) {
+        headCell = rand.uint32t() & this->textureIndexMask;
+    } else {
+        headCell = (headCell + this->textureStartIndex) & this->textureIndexMask;
+    }
 
-    CRndSeed rand(seed);
 
     float u0 = rand.Uniform();
     float vx = 1 + u0 * this->m_data->old.scaleVary.x;
