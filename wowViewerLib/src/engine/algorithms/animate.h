@@ -90,6 +90,19 @@ inline uint32_t convertHelper<animTime_t, uint32_t>(animTime_t &a ) {
     return (uint32_t)a;
 };
 
+template<>
+inline mathfu::vec3 convertHelper<CompressedParticleGravity, mathfu::vec3>(CompressedParticleGravity &a ) {
+    mathfu::vec3 dir = mathfu::vec3(a.x, a.y, 0) * (1.0f / 128.0f);
+    float z = sqrtf(1.0f - mathfu::vec3::DotProduct(dir,dir));
+    float mag = a.z * 0.04238648f;
+    if (mag < 0) {
+        z = -z;
+        mag = -mag;
+    }
+    dir.z = z;
+    dir *= mag;
+    return dir;
+};
 
 template<>
 inline mathfu::vec4 convertHelper<mathfu::vec3_packed, mathfu::vec4>(mathfu::vec3_packed &a ) {

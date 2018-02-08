@@ -87,8 +87,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     // .go 668 5243 1938 760
     // .go 668 0 0 0
 
-    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
-    currentScene = new Map(this, "UlduarRaid");
+//    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
+//    currentScene = new Map(this, "UlduarRaid");
 //
 //   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
 //    currentScene = new Map(this, "AzeriteBG1");
@@ -200,8 +200,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
-//   currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
+   currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
 //

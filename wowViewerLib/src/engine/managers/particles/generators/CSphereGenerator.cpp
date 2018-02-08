@@ -31,7 +31,7 @@ void CSphereGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     float velocity = this->CalcVelocity();
     float zSource = this->aniProp.zSource;
 
-    mathfu::vec3 r0;
+    mathfu::vec3 r0(0.5,0.5,0.5);
     if (zSource < 0.001) {
         if (this->particlesGoUp) {
             r0 = mathfu::vec3(0,0,1);

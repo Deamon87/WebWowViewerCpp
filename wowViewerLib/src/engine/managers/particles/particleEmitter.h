@@ -13,6 +13,7 @@
 #include "generators/CSphereGenerator.h"
 #include "generators/CPlaneGenerator.h"
 #include "../../wowInnerApi.h"
+#include "../../algorithms/mathHelper.h"
 
 struct ParticleForces {
     mathfu::vec3 drift; // 0
@@ -46,14 +47,14 @@ public:
                 break;
         }
 
-        std::cout << "particleId = " << m_data->old.particleId
-                  << "Mentioned models :" << std::endl
-                  << "geometry_model_filename = " << m_data->old.geometry_model_filename.toString() << std::endl
-                  << "recursion_model_filename = " << m_data->old.recursion_model_filename.toString()
-                  << std::endl << std::endl << std::flush;
+//        std::cout << "particleId = " << m_data->old.particleId
+//                  << "Mentioned models :" << std::endl
+//                  << "geometry_model_filename = " << m_data->old.geometry_model_filename.toString() << std::endl
+//                  << "recursion_model_filename = " << m_data->old.recursion_model_filename.toString()
+//                  << std::endl << std::endl << std::flush;
 
         const float followDen = m_data->old.followSpeed2 - m_data->old.followSpeed1;
-        if (followDen != 0) {
+        if (!feq(followDen, 0)) {
             this->followMult = (m_data->old.followScale2 - m_data->old.followScale1) / followDen;
             this->followBase = m_data->old.followScale1 - m_data->old.followSpeed1 * this->followMult;
         }
@@ -77,17 +78,16 @@ public:
         if (m_data->old.flags & 0x200000) {
             this->textureStartIndex = this->m_seed.uint32t() & this->textureIndexMask;
         }
-        this->texScaleX = 1 / cols;
-        this->texScaleY = 1 / rows;
+        this->texScaleX = 1.0f / cols;
+        this->texScaleY = 1.0f / rows;
         if (m_data->old.flags & 0x10100000) {
-            const bool isMultitex = 0 != (1 & (m_data->old.flags >> 0x1c));
+            const bool isMultitex = (0 != (1 & (m_data->old.flags >> 0x1c)));
             if (isMultitex) {
                 this->particleType = 2;
             }
             else {
                 this->particleType = 3;
             }
-            this->particleSize = 17;
         }
     }
 
@@ -136,8 +136,6 @@ private:
 
     float texScaleX;
     float texScaleY;
-
-    int particleSize;
 
     std::vector<uint8_t> szVertexBuf;
     std::vector<uint16_t> szIndexBuff;

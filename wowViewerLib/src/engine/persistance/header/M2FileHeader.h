@@ -167,6 +167,12 @@ struct M2Ribbon
 //#endif
 };
 
+
+struct CompressedParticleGravity {
+    int8_t x, y;
+    int16_t z;
+};
+
 struct M2ParticleOld {
     uint32_t particleId;                        // Always (as I have seen): -1.
     uint32_t flags;                             // See Below
@@ -213,7 +219,10 @@ struct M2ParticleOld {
     M2Track<float> horizontalRange;           // They can do it horizontally too! (range: 0 to 2*pi) For plane generators, this is the maximum azimuth angle of the initial velocity;
     // 0 makes the velocity have no sideways (y-axis) component.
     // For sphere generators, this is the maximum azimuth angle of the initial position.
-    M2Track<float> gravity;                   // Not necessarily a float; see below.
+    union {
+        M2Track<float> gravity;                   // Not necessarily a float; see below.
+        M2Track<CompressedParticleGravity> gravityCompr;
+    };
     M2Track<float> lifespan;
 //#if ≥ Wrath
     float lifespanVary;                       // An individual particle's lifespan is added to by lifespanVary * random(-1, 1)
@@ -270,6 +279,7 @@ struct M2ParticleOld {
     M2Array<C3Vector> splinePoints;                   //Set only for spline praticle emitter. Contains array of points for spline
     M2Track<unsigned char> enabledIn;                 // (boolean) Appears to be used sparely now, probably there's a flag that links particles to animation sets where they are enabled.
 };
+
 
 
 struct M2Particle
