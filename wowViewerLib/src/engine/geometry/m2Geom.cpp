@@ -333,6 +333,7 @@ M2Geom::setupUniforms(
             attenVec = mathfu::vec4(lights[i].attenuation_start, 1.0, lights[i].attenuation_end, lights.size());
         } else {
 //            if ((lights[i].attenuation_end - lights[i].attenuation_start < 0.1)) continue;
+//            attenVec = mathfu::vec4(lights[i].attenuation_start, 1.0, lights[i].attenuation_end, lights.size());
             attenVec = mathfu::vec4(lights[i].attenuation_start, lights[i].diffuse_intensity, lights[i].attenuation_end, lights.size());
         }
 

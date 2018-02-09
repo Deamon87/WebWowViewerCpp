@@ -49,13 +49,13 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
         }
     }
     if (this->particles.size() > 0 && 0 == (this->flags & 16)) {
-        delta += 5;
+        delta += 5.0;
         this->flags |= 16;
     }
     if (delta > 0.1) {
         animTime_t clamped = delta;
-        if (delta > 5) {
-            clamped = 5;
+        if (delta > 5.0f) {
+            clamped = 5.0f;
         }
         for (float i = 0; i < clamped; i += 0.05) {
             animTime_t d = 0.05;
@@ -85,7 +85,7 @@ void ParticleEmitter::Simulate(animTime_t delta) {
             i--;
         } else {
             if (!this->UpdateParticle(p, delta, forces)) {
-                this->KillParticle(i);
+//                this->KillParticle(i);
                 i--;
             }
         }
@@ -148,7 +148,7 @@ void ParticleEmitter:: CalculateForces(ParticleForces &forces, animTime_t delta)
 
     auto g = this->generator->GetGravity();
     forces.velocity = g * delta;
-    forces.position = g * delta * delta * 0.5;
+    forces.position = g * delta * delta * 0.5f;
     forces.drag = this->m_data->old.drag * delta;
 }
 
@@ -291,7 +291,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
 
 
     float u0 = rand.Uniform();
-    float vx = 1 + u0 * this->m_data->old.scaleVary.x;
+    float vx = 1.0f + u0 * this->m_data->old.scaleVary.x;
     if (vx < 0.0001) {
         vx = 0.0001;
     }
@@ -310,7 +310,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
     float baseSpin = this->m_data->old.baseSpin + rand.Uniform() * this->m_data->old.baseSpinVary;
     float deltaSpin = this->m_data->old.Spin + rand.Uniform() * this->m_data->old.spinVary;
 //    float weight = twinkleVary * ParticleEmitter.RandTable[rndIdx] + twinkleMin;
-    float weight = twinkleVary * (rand.Uniform()/2 + 0.5) + twinkleMin;
+    float weight = twinkleVary * rand.UniformPos() + twinkleMin;
     scale = scale * weight;
     if (this->m_data->old.flags & 0x20) {
         scale = scale * this->inheritedScale;
@@ -359,7 +359,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
                 transformInvScale = 1.0f / this->inheritedScale;
             }
             mathfu::vec3 scaleViewX = this->particleToView.GetColumn(0).xyz();
-            mathfu::vec3 scaleViewY =  this->particleToView.GetColumn(1).xyz();
+            mathfu::vec3 scaleViewY = this->particleToView.GetColumn(1).xyz();
             scaleViewX = scaleViewX * transformInvScale * scale.x;
             scaleViewY = scaleViewY * transformInvScale * scale.y;
             // 2. rotate the transformed scale vectors around the up vector
@@ -367,8 +367,8 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
                 mathfu::vec3 viewUp = this->particleToView.GetColumn(2).xyz().Normalized();
                 mathfu::quat quadRot = mathfu::quat::FromAngleAxis(theta,viewUp);
 
-                m0 = quadRot.ToMatrix4() * scaleViewX;
-                m1 = quadRot.ToMatrix4() * scaleViewY;
+                m0 = (quadRot.ToMatrix4() * mathfu::vec4(scaleViewX, 0)).xyz();
+                m1 = (quadRot.ToMatrix4() * mathfu::vec4(scaleViewY, 0)).xyz();
             }
             else {
                 m0 = scaleViewX;
@@ -446,13 +446,6 @@ ParticleEmitter::BuildQuadT3(
     mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
     float texStartX, float texStartY, mathfu::vec2 *texPos) {
 
-    if (this->texScaleX < 0.001) {
-        this->texScaleX = 0.5;
-    }
-    if (this->texScaleY < 0.001) {
-        this->texScaleY = 0.5;
-    }
-
     static const float vxs[4] = {-1, -1, 1, 1};
     static const float vys[4] = {1, -1, 1, -1};
     static const float txs[4] = {0, 0, 1, 1};
@@ -503,12 +496,6 @@ ParticleEmitter::BuildQuad(
     mathfu::vec3 &m0, mathfu::vec3 &m1,
     mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
     float texStartX, float texStartY) {
-        if (this->texScaleX < 0.001) {
-            this->texScaleX = 0.5;
-        }
-        if (this->texScaleY < 0.001) {
-            this->texScaleY = 0.5;
-        }
 
         static const float vxs[4] = {-1, -1, 1, 1};
         static const float vys[4] = {1, -1, 1, -1};
@@ -650,8 +637,8 @@ void ParticleEmitter::Render() {
             break;
         case 1 : //Blend_AlphaKey
             glDisable(GL_BLEND);
-//            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
-            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
+            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
+//            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
             break;
         case 2 : //Blend_Alpha
             glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
