@@ -13,6 +13,7 @@ varying vec2 vTexcoord2;
 
 
 uniform mat4 uPMatrix;
+uniform mat4 uViewMatrix;
 void main() {
     vec4 aPositionVec4 = vec4(aPosition, 1);
 
@@ -20,7 +21,7 @@ void main() {
     vTexcoord0 = aTexcoord0;
     vTexcoord1 = aTexcoord1;
     vTexcoord2 = aTexcoord2;
-    gl_Position = uPMatrix * aPositionVec4;
+    gl_Position = uPMatrix * uViewMatrix * aPositionVec4;
 }
 #endif //COMPILING_VS
 

@@ -217,6 +217,8 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     else {
         this->particleToView = viewMatrix;
     }
+
+    this->viewMatrix = viewMatrix;
     // Mat34.Col(this.particleNormal, viewMatrix, 2);
     // Build vertices for each particle
 
@@ -280,6 +282,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
 //    if (color.x < 0.1 && color.y < 0.1 && color.z < 0.1) {
 //        color = mathfu::vec3(1.0,1.0,1.0);
 //    }
+
     uint16_t headCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.headCellTrack, defaultCell);
     uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
 
@@ -386,6 +389,11 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
                 m0 = mathfu::vec3(scale.x, scale.y, 0);
             }
         }
+
+
+//        m0 += 0.5;
+//        m1 += 0.5;
+
         // build vertices from coords:
         if (this->particleType >= 2) {
             this->BuildQuadT3(szVertexBuf, m0, m1, viewPos, color, alpha, texStartX, texStartY, p.texPos);
@@ -461,14 +469,16 @@ ParticleEmitter::BuildQuadT3(
 
     std::vector<ParticleBuffStruct> buffer;
     buffer.reserve(4);
+    mathfu::mat4 inverseLookAt = this->viewMatrix.Inverse();
 
     for (int i = 0; i < 4; i++) {
         ParticleBuffStruct record;
-        record.position = mathfu::vec3(
+        record.position = ( inverseLookAt * mathfu::vec4(
                 m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
                 m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
-                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z
-        );
+                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
+                1.0
+        )).xyz();
         record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
 
         record.textCoord0 =
@@ -513,13 +523,16 @@ ParticleEmitter::BuildQuad(
         std::vector<ParticleBuffStruct> buffer;
         buffer.reserve(4);
 
+        mathfu::mat4 inverseLookAt = this->viewMatrix.Inverse();
+
         for (int i = 0; i < 4; i++) {
             ParticleBuffStruct record;
-            record.position = mathfu::vec3(
+            record.position = ( inverseLookAt * mathfu::vec4(
                 m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
                 m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
-                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z
-            );
+                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
+                1.0
+            )).xyz();
             record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
 
             record.textCoord0 =
@@ -637,8 +650,8 @@ void ParticleEmitter::Render() {
             break;
         case 1 : //Blend_AlphaKey
             glDisable(GL_BLEND);
-            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
-//            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
+//            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
+            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
             break;
         case 2 : //Blend_Alpha
             glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
@@ -699,7 +712,7 @@ void ParticleEmitter::Render() {
     }
 
 
-//    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDisable(GL_CULL_FACE);
 

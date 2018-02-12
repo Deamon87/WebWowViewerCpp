@@ -196,14 +196,14 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
 //
-   currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
+//   currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
 //
 //    currentScene = new M2Scene(this,
 //        "character\\nightelf\\male\\nightelfmale.m2");
@@ -799,6 +799,8 @@ void WoWSceneImpl::activateM2ParticleShader() {
 //    }
 
     glUniformMatrix4fv(this->m2ParticleShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+    glUniformMatrix4fv(this->m2ParticleShader->getUnf("uViewMatrix"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+//    glUniformMatrix4fv(this->m2ParticleShader->getUnf("uViewMatrix"), 1, GL_FALSE, &mathfu::mat4::Identity()[0]);
 
     glUniform1i(this->m2ParticleShader->getUnf("uTexture"), 0);
     glUniform1i(this->m2ParticleShader->getUnf("uTexture2"), 1);

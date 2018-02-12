@@ -80,6 +80,7 @@ public:
         }
         this->texScaleX = 1.0f / cols;
         this->texScaleY = 1.0f / rows;
+
         if (m_data->old.flags & 0x10100000) {
             const bool isMultitex = (0 != (1 & (m_data->old.flags >> 0x1c)));
             if (isMultitex) {
@@ -111,6 +112,7 @@ private:
 
     mathfu::mat4 transform;
     mathfu::mat4 particleToView;
+    mathfu::mat4 viewMatrix;
 
     CParticleGenerator *generator;
 

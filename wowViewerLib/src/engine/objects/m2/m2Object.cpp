@@ -682,7 +682,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         this->lights,
         this->particleEmitters
     );
-
+//    for (int i = 0; i < std::min((int)particleEmitters.size(), 10); i++) {
     for (int i = 0; i < particleEmitters.size(); i++) {
 
         auto *peRecord = m_m2Geom->m_m2Data->particle_emitters.getElement(i);
@@ -1099,6 +1099,7 @@ M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {
 }
 
 void M2Object::drawParticles() {
+//        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
     for (int i = 0; i< particleEmitters.size(); i++) {
 //        if (particleEmitter->isEnabled)
         particleEmitters[i]->Render();
