@@ -85,7 +85,7 @@ void ParticleEmitter::Simulate(animTime_t delta) {
             i--;
         } else {
             if (!this->UpdateParticle(p, delta, forces)) {
-//                this->KillParticle(i);
+                this->KillParticle(i);
                 i--;
             }
         }
@@ -386,7 +386,8 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
                 m1 = mathfu::vec3(-sinTheta * scale.y, cosTheta * scale.y, 0);
             }
             else {
-                m0 = mathfu::vec3(scale.x, scale.y, 0);
+                m0 = mathfu::vec3(scale.x, 0, 0);
+                m1 = mathfu::vec3(0, scale.y, 0);
             }
         }
 
@@ -712,7 +713,7 @@ void ParticleEmitter::Render() {
     }
 
 
-    glDisable(GL_DEPTH_TEST);
+//    glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDisable(GL_CULL_FACE);
 

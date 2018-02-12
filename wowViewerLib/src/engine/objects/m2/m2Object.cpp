@@ -1101,7 +1101,7 @@ M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {
 void M2Object::drawParticles() {
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
     for (int i = 0; i< particleEmitters.size(); i++) {
-//        if (particleEmitter->isEnabled)
+        if (particleEmitters[i]->isEnabled)
         particleEmitters[i]->Render();
     }
 }
