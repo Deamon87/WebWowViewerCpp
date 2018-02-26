@@ -17,8 +17,8 @@ void CPlaneGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     p.age = fmod(dvary, lifespan);
     p.seed = 0xffff & this->seed.uint32t();
     p.position = mathfu::vec3(
-            this->seed.Uniform() * this->aniProp.emissionAreaY * 0.5,
-            this->seed.Uniform() * this->aniProp.emissionAreaY * 0.5,
+            this->seed.Uniform() * this->aniProp.emissionAreaX * 0.5f,
+            this->seed.Uniform() * this->aniProp.emissionAreaY * 0.5f,
             0
     );
     float velocity = this->CalcVelocity();
@@ -27,10 +27,10 @@ void CPlaneGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     if (zSource < 0.001) {
         float polar = this->aniProp.verticalRange * this->seed.Uniform();
         float azimuth = this->aniProp.horizontalRange * this->seed.Uniform();
-        float sinPolar = sin(polar);
-        float sinAzimuth = sin(azimuth);
-        float cosPolar = cos(polar);
-        float cosAzimuth = cos(azimuth);
+        float sinPolar = sinf(polar);
+        float sinAzimuth = sinf(azimuth);
+        float cosPolar = cosf(polar);
+        float cosAzimuth = cosf(azimuth);
         p.velocity = mathfu::vec3(
             cosAzimuth * sinPolar * velocity,
             sinAzimuth * sinPolar * velocity,
