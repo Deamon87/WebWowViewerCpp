@@ -7,6 +7,9 @@
 #include "../../algorithms/animate.h"
 #include "../../shaderDefinitions.h"
 
+bool ParticleEmitter::randTableInited = false;
+float ParticleEmitter::RandTable[128] = {};
+
 void ParticleEmitter::resizeParticleBuffer() {
     int newCount = this->generator->GetMaxEmissionRate() * this->generator->GetMaxLifeSpan() * 1.15;
 //    if (newCount > (int)this->particles.size()) {
@@ -166,7 +169,7 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
     }
 
     p.velocity = p.velocity + forces.drift;
-    if ((this->m_data->old.flags & 0x4000) && 2 * delta < p.age) {
+    if ((this->m_data->old.flags & 0x4000) && (2 * delta < p.age)) {
         p.position = p.position + this->deltaPosition;
     }
 
@@ -199,8 +202,9 @@ void ParticleEmitter::KillParticle(int index) {
 CParticle2& ParticleEmitter::BirthParticle() {
     CParticle2 p1;
     particles.push_back(p1);
+    
 
-    CParticle2 &p = *(particles.end()-1);
+    CParticle2 &p = particles[particles.size() - 1];
     return p;
 }
 
@@ -251,7 +255,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
 
 int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVertexBuf) {
     float twinkle = this->m_data->old.TwinklePercent;
-    auto twinkleRange = this->m_data->old.twinkleScale;
+    auto &twinkleRange = this->m_data->old.twinkleScale;
 
     float twinkleMin = twinkleRange.min;
     float twinkleVary = twinkleRange.max - twinkleMin;
@@ -263,7 +267,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
     if (twinkle < 1 || !feq(twinkleVary,0)) {
         rndIdx = 0x7f & ((int)(age * this->m_data->old.TwinkleSpeed) + seed);
     }
-//    if (twinkle < ParticleEmitter.RandTable[rndIdx]) {
+//    if (twinkle < ParticleEmitter::RandTable[rndIdx]) {
 //        return false;
 //    }
     int amountrendered = 0;
@@ -312,13 +316,12 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
 
     float baseSpin = this->m_data->old.baseSpin + rand.Uniform() * this->m_data->old.baseSpinVary;
     float deltaSpin = this->m_data->old.Spin + rand.Uniform() * this->m_data->old.spinVary;
-//    float weight = twinkleVary * ParticleEmitter.RandTable[rndIdx] + twinkleMin;
-    float weight = twinkleVary * rand.UniformPos() + twinkleMin;
+    float weight = twinkleVary * ParticleEmitter::RandTable[rndIdx] + twinkleMin;
     scale = scale * weight;
     if (this->m_data->old.flags & 0x20) {
         scale = scale * this->inheritedScale;
     }
-    mathfu::vec3 viewPos = this->particleToView * pos;
+    mathfu::vec3 viewPos = (this->particleToView * mathfu::vec4(pos, 1.0)).xyz();
 
     if (this->m_data->old.flags & 0x20000) {
         // head cell
@@ -651,8 +654,8 @@ void ParticleEmitter::Render() {
             break;
         case 1 : //Blend_AlphaKey
             glDisable(GL_BLEND);
-//            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
-            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
+            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
+//            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
             break;
         case 2 : //Blend_Alpha
             glUniform1f(particleShader->getUnf("uAlphaTest"), -1);

@@ -27,6 +27,9 @@ private:
     int minBatch = 0;
     int maxBatch = 9999;
 
+    int minParticle = 0;
+    int maxParticle = 9999;
+
     bool useWotlkLogic = false;
 public:
     bool getRenderM2 () {
@@ -116,6 +119,19 @@ public:
     }
     int getMaxBatch() {
         return maxBatch;
+    }
+
+    void setMinParticle(int value) {
+        minParticle = value;
+    }
+    int getMinParticle() {
+        return minParticle;
+    }
+    void setMaxParticle(int value) {
+        maxParticle = value;
+    }
+    int getMaxParticle() {
+        return maxParticle;
     }
 };
 

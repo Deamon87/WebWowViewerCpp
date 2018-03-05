@@ -29,8 +29,8 @@ float CRndSeed::Uniform() {
     } else {
         result = fi.f - 2.0f;
     }
-    result = (float) (drand48() * 2.0f - 1.0f);
-
+//    result = (float) (drand48() * 2.0f - 1.0f);
+//    result = 0.0;
     assert(result < 1.0 || result > -1.0);
     return result;
 }
@@ -51,6 +51,7 @@ float CRndSeed::UniformPos() {
     }
 
     result = (float) drand48();
+//    result = 0.5;
 
     assert(result > 0.0 || result < 1.0);
     return result;

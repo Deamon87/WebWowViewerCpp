@@ -251,6 +251,9 @@ struct my_nkc_app {
     int minBatch = 0;
     int maxBatch = 9999;
 
+    int minParticle = 0;
+    int maxParticle = 9999;
+
     WoWScene *scene;
     RequestProcessor *processor;
 
@@ -448,7 +451,40 @@ void mainLoop(void* loopArg){
 
             testConf->setMinBatch(myapp->minBatch);
             testConf->setMaxBatch(myapp->maxBatch);
+        }
 
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+        {
+            char buffer[10];
+            CopyAndNullTerminate(std::to_string(myapp->minParticle), buffer, 10);
+            nk_layout_row_push(ctx, 50);
+            nk_flags event = nk_edit_string_zero_terminated(ctx,
+                                                            NK_EDIT_BOX |
+                                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
+                                                            buffer, sizeof(buffer),
+                                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
+
+            try {
+                myapp->minParticle = std::stoi(buffer);
+            } catch(...) {
+                myapp->minParticle = 0;
+            }
+            nk_layout_row_push(ctx, 50);
+            CopyAndNullTerminate(std::to_string(myapp->maxParticle), buffer, 10);
+            nk_edit_string_zero_terminated(ctx,
+                                           NK_EDIT_BOX |
+                                           NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
+                                           buffer, sizeof(buffer),
+                                           nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
+
+            try {
+                myapp->maxParticle = std::stoi(buffer);
+            } catch(...) {
+                myapp->maxParticle = 9999;
+            }
+
+            testConf->setMinParticle(myapp->minParticle);
+            testConf->setMaxParticle(myapp->maxParticle);
         }
 //
         /* custom widget pixel width */

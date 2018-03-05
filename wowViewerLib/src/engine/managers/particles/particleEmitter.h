@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <vector>
 #include <x86intrin.h>
+#include <random>
 #include "../../persistance/header/M2FileHeader.h"
 #include "generators/CParticleGenerator.h"
 #include "generators/CSphereGenerator.h"
@@ -32,14 +33,21 @@ class ParticleEmitter {
 public:
     ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Data *data) : m_seed(0), m_api(api), m_m2Data(data) {
 
+        if (!randTableInited) {
+            for (int i = 0; i < 128; i++) {
+                RandTable[i] = (float)std::rand() / (float)RAND_MAX;
+            }
+            randTableInited = true;
+        }
+
         m_data = particle;
 
         switch (m_data->old.emitterType) {
             case 1:
-                this->generator = new CPlaneGenerator(this->m_seed);
+                this->generator = new CPlaneGenerator(this->m_seed, particle);
                 break;
             case 2:
-                this->generator = new CSphereGenerator(this->m_seed, 0 != (m_data->old.flags & 0x100));
+                this->generator = new CSphereGenerator(this->m_seed, particle, 0 != (m_data->old.flags & 0x100));
                 break;
             default:
                 this->generator = nullptr;
@@ -103,6 +111,9 @@ public:
     int flags = 2;
     bool emittingLastFrame = false;
     bool isEnabled = false;
+
+    static float RandTable[128];
+    static bool randTableInited;
 private:
     IWoWInnerApi *m_api;
 
@@ -143,6 +154,7 @@ private:
     std::vector<uint16_t> szIndexBuff;
 
 
+
 private:
 
     CParticle2 &BirthParticle();
@@ -175,8 +187,6 @@ private:
         mathfu::vec3 &m0, mathfu::vec3 &m1,
         mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
         float texStartX, float texStartY);
-
-
 };
 
 

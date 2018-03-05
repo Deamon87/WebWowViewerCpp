@@ -11,7 +11,7 @@
 
 class CPlaneGenerator : public CParticleGenerator {
 public:
-    CPlaneGenerator(CRndSeed &cRndSeed) : CParticleGenerator(cRndSeed) {
+    CPlaneGenerator(CRndSeed &cRndSeed, M2Particle *particle) : CParticleGenerator(cRndSeed, particle) {
 
     }
 

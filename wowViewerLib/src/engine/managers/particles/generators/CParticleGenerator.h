@@ -10,11 +10,13 @@
 #include "../particle.h"
 #include "../CGeneratorAniProp.h"
 #include "../CRndSeed.h"
+#include "../../../persistance/header/M2FileHeader.h"
 
 class CParticleGenerator {
 public:
-    CParticleGenerator(CRndSeed &seed) {
+    CParticleGenerator(CRndSeed &seed, M2Particle *particle) {
         this->seed = seed;
+        this->m_particleData = particle;
     }
 
 public:
@@ -25,6 +27,7 @@ public:
 protected:
     CGeneratorAniProp aniProp;
     CRndSeed seed = CRndSeed(0);
+    M2Particle *m_particleData;
 
 public:
     CGeneratorAniProp *getAniProp(){ return &aniProp;};

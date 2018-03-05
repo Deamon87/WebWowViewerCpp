@@ -6,7 +6,7 @@
 
 void CPlaneGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
 
-    float dvary = delta * this->seed.UniformPos();
+    float dvary = (float) (delta * this->seed.UniformPos());
     float life = this->seed.Uniform();
     p.lifespan = life;
     float lifespan = this->GetLifeSpan(life);
@@ -15,7 +15,7 @@ void CPlaneGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     }
 //    p.age = 0.0;
     p.age = fmod(dvary, lifespan);
-    p.seed = 0xffff & this->seed.uint32t();
+    p.seed = (uint16_t) (0xffff & this->seed.uint32t());
     p.position = mathfu::vec3(
             this->seed.Uniform() * this->aniProp.emissionAreaX * 0.5f,
             this->seed.Uniform() * this->aniProp.emissionAreaY * 0.5f,
