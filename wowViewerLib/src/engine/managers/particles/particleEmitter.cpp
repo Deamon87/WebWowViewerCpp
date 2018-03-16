@@ -27,7 +27,7 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
     mathfu::vec3 currPos = -boneModelMat.TranslationVector3D();
     this->transform = boneModelMat;
 
-    this->inheritedScale = this->transform.GetColumn(0).Length();
+    this->inheritedScale = this->transform.GetColumn(0).xyz().Length();
     mathfu::vec3 dPos = lastPos - currPos;
     if ((this->m_data->old.flags & 0x4000) > 0) {
         float x = this->followMult * (dPos.Length() / delta) + this->followBase;
@@ -279,7 +279,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
     uint16_t defaultCell = 1;
 
     float percentTime = p.age /  this->getGenerator()->GetMaxLifeSpan();
-    mathfu::vec3 color = animatePartTrack<C3Vector, mathfu::vec3>(percentTime, &m_data->old.colorTrack, defaultColor) / 255.0;
+    mathfu::vec3 color = animatePartTrack<C3Vector, mathfu::vec3>(percentTime, &m_data->old.colorTrack, defaultColor) / 255.0f;
     mathfu::vec2 scale = animatePartTrack<C2Vector, mathfu::vec2>(percentTime, &m_data->old.scaleTrack, defaultScale);
     float alpha = animatePartTrack<fixed16, float>(percentTime, &m_data->old.alphaTrack, defaultAlpha);
 //    if (alpha < 0.9) alpha = 1.0;
@@ -291,9 +291,9 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
     uint16_t tailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
 
     if ((this->m_data->old.flags & 0x10000 && (m_data->old.headCellTrack.values.size == 0))) {
-        headCell = rand.uint32t() & this->textureIndexMask;
+        headCell = (uint16_t) ((rand.uint32t() & this->textureIndexMask) & 0xFFFF);
     } else {
-        headCell = (headCell + this->textureStartIndex) & this->textureIndexMask;
+        headCell = (uint16_t) (((headCell + this->textureStartIndex) & this->textureIndexMask) & 0xFFFF);
     }
 
 
@@ -422,8 +422,8 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
         if ((this->m_data->old.flags & 0x400) && trailTime > age) {
             trailTime = age;
         }
-        mathfu::vec3 viewVel = vel * -1;
-        viewVel = (this->particleToView *mathfu::vec4(viewVel, 0)).xyz() * trailTime;
+        mathfu::vec3 viewVel = vel * -1.0f;
+        viewVel = (this->particleToView * mathfu::vec4(viewVel, 0)).xyz() * trailTime;
         mathfu::vec3 screenVel = mathfu::vec3(viewVel.xy(), 0);
         if (mathfu::vec3::DotProduct(screenVel, screenVel) > 0.0001) {
             float invScreenVelMag = 1.0f / screenVel.Length();
@@ -563,13 +563,11 @@ void ParticleEmitter::Render() {
         tex0 = textureCache->get(
                 m_m2Data->textures.getElement(
                         this->m_data->old.texture_0
-//                    *m_m2Data->texture_lookup_table.getElement(this->m_data->old.texture)
                 )->filename.toString());
     } else {
         tex0 = textureCache->get(
                 m_m2Data->textures.getElement(
                         this->m_data->old.texture
-//                    *m_m2Data->texture_lookup_table.getElement(this->m_data->old.texture)
                 )->filename.toString());
     }
 
@@ -716,7 +714,7 @@ void ParticleEmitter::Render() {
     }
 
 
-//    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDisable(GL_CULL_FACE);
 

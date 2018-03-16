@@ -1,8 +1,21 @@
-cmake_minimum_required(VERSION 3.8)
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.6)
 
 project(WebWoWViewerCpp)
 include(ExternalProject)
+
+if (CMAKE_NDK_BUILD MATCHES 1)
+	include_directories(BEFORE SYSTEM "${NDK_PATH}/include/c++/4.9.x/" "${NDK_PATH}/sysroot/usr/include/")
+	if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
+		include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
+	elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
+		include_directories(${ANDROID_SYSROOT}/usr/include/aarch64-linux-android)
+	elseif(${ANDROID_ABI} STREQUAL "x86_64")
+		include_directories(${ANDROID_SYSROOT}/usr/include/x86_64-linux-android)
+	else()
+		include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
+	endif()
+endif()
 
 #set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ")
@@ -30,9 +43,7 @@ ExternalProject_Add("LibZip"
 		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
 		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/libzip -DEXTRA_LIBS=${extra_libraries}
 		)
-#add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libzip)
 set(libzip_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/lib/libzip/include/")
-#set(libzip_HEADER_FILES ${CMAKE_BINARY_DIR}/3rdparty/libzip/)
 set(libzip_HEADER_FILES ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip/include)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	set(libzip_library ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip.dll.a)
@@ -47,41 +58,38 @@ include_directories(${libzip_HEADER_FILES})
 include_directories(${libzip_INCLUDE_DIRS})
 
 #GLFW
-ExternalProject_Add("GLFW"
-        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/glfw"
-        CMAKE_ARGS
-			-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-			-DBUILD_SHARED_LIBS=ON
-			-DGLFW_BUILD_EXAMPLES=OFF
-			-DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/glfw
-			-DEXTRA_LIBS=${extra_libraries}
-			-DVULKAN_LIBRARY=NO
-			-DGLFW_VULKAN_STATIC=OFF
-			-DGLFW_BUILD_DOCS=OFF
-			-DGLFW_DOCUMENT_INTERNALS=OFF
-			-DGLFW_VULKAN_STATIC=OFF
-        )
-ExternalProject_Get_Property(GLFW install_dir)
-set(glfw_install_dir ${CMAKE_SOURCE_DIR}/lib/glfw)
-include_directories(${glfw_install_dir}/include)
+set(UNIX "1")
+#ExternalProject_Add("GLFW"
+#        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/glfw"
+#        CMAKE_ARGS
+#			-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+#			-DBUILD_SHARED_LIBS=ON
+#			-DGLFW_BUILD_EXAMPLES=OFF
+#			-DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/glfw
+#			-DEXTRA_LIBS=${extra_libraries}
+#			-DVULKAN_LIBRARY=NO
+#			-DGLFW_VULKAN_STATIC=OFF
+#			-DGLFW_BUILD_DOCS=OFF
+#			-DGLFW_DOCUMENT_INTERNALS=OFF
+#			-DGLFW_VULKAN_STATIC=OFF
+#        )
+#ExternalProject_Get_Property(GLFW install_dir)
+#set(glfw_install_dir ${CMAKE_SOURCE_DIR}/lib/glfw)
+#include_directories(${glfw_install_dir}/include)
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw GLFW)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}//lib/libglfw3dll.a)
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}//lib/libglfw.so.3)
+	set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}/lib/libglfw3dll.a)
+else()
+    set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}/lib/libglfw.so.3)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
-#CURL
-#ExternalProject_Add("CURL"
-#        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/curl"
-#        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBUILDING_LIBCURL=1 -DBUILD_CURL_EXE=OFF -DCURL_STATICLIB=ON -DHTTP_ONLY=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/curl -DEXTRA_LIBS=${extra_libraries}
-#        )
-
-#include_directories(${CMAKE_SOURCE_DIR}/3rdparty/curl/include)
-#link_directories(${CURL_LIBRARIES})
+#bz2
+add_subdirectory(3rdparty/bzip)
 
 #CPR
-set(CMAKE_USE_OPENSSL OFF)
+set(ENV{BUILD_CPR_TESTS} OFF)
+set(ENV{CMAKE_USE_OPENSSL} OFF)
 add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 
@@ -90,28 +98,18 @@ add_subdirectory(3rdparty/PolyM)
 include_directories(3rdparty/PolyM)
 
 #StormLib
-add_subdirectory(3rdparty/stormlib)
+#add_subdirectory(3rdparty/stormlib)
 
 #CascLib
 #set(CASC_BUILD_STATIC_LIB ON)
 set(CASC_BUILD_SHARED_LIB ON)
+set(CMAKE_SYSTEM_NAME_TEMPTEMP ${CMAKE_SYSTEM_NAME})
+set(CMAKE_SYSTEM_NAME "Linux")
 add_subdirectory(3rdparty/casclib)
+set(CMAKE_SYSTEM_NAME "${CMAKE_SYSTEM_NAME_TEMPTEMP}")
 
 #nuklear_cross
 include_directories(3rdparty/nuklear_cross)
-
-#Main library
-#ExternalProject_Add("WowViewerLib"
-#        SOURCE_DIR "${CMAKE_SOURCE_DIR}/wowViewerLib"
-#        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib
-#        STEP_TARGETS build
-#        EXCLUDE_FROM_ALL TRUE
-#        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
-#        -DBUILD_WITHOUT_CULLED_PORTAL_DRAWING=${BUILD_WITHOUT_CULLED_PORTAL_DRAWING}
-#        )
-#ExternalProject_Get_Property(WowViewerLib install_dir)
-#include_directories(${install_dir}/include)
-set(WowViewerLib "${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib/libWoWViewerLib.a")
 
 add_subdirectory(wowViewerLib)
 
@@ -134,38 +132,64 @@ set(SOURCE_FILES
 #########################################################
 # FIND OPENGL
 #########################################################
-find_package(OpenGL REQUIRED)
-include_directories(${OpenGL_INCLUDE_DIRS})
-link_directories(${OpenGL_LIBRARY_DIRS})
-message(OpenGL_LIBRARY_DIRS = ${OpenGL_LIBRARY_DIRS})
-add_definitions(${OpenGL_DEFINITIONS})
-if(NOT OPENGL_FOUND)
-    message(ERROR " OPENGL not found!")
-endif(NOT OPENGL_FOUND)
+if (NOT CMAKE_NDK_BUILD MATCHES 1)
+	find_package(OpenGL REQUIRED)
+	include_directories(${OpenGL_INCLUDE_DIRS})
+	link_directories(${OpenGL_LIBRARY_DIRS})
+	message(OpenGL_LIBRARY_DIRS = ${OpenGL_LIBRARY_DIRS})
+	add_definitions(${OpenGL_DEFINITIONS})
+	if(NOT OPENGL_FOUND)
+		message(ERROR " OPENGL not found!")
+	endif(NOT OPENGL_FOUND)
+else()
+#	if (${ANDROID_PLATFORM_LEVEL} LESS 12)
+#		message(FATAL_ERROR "OpenGL 2 is not supported before API level 11 \
+#                      (currently using ${ANDROID_PLATFORM_LEVEL}).")
+#		return()
+#	elseif (${ANDROID_PLATFORM_LEVEL} LESS 18)
+		add_definitions("-DDYNAMIC_ES3")
+		set(GL3STUB_SRC gl3stub.c)
+		set(OPENGL_LIB GLESv2)
+#	else ()
+#		set(OPENGL_LIB GLESv3)
+#	endif (${ANDROID_PLATFORM_LEVEL} LESS 12)
+endif()
 
 #Build the executiable
 include_directories(${glew_include})
 add_executable(WebWoWViewerCpp ${SOURCE_FILES})
 
-add_dependencies(WebWoWViewerCpp libz)
-add_dependencies(WebWoWViewerCpp LibZip)
-add_dependencies(WebWoWViewerCpp GLFW)
+if (CMAKE_NDK_BUILD MATCHES 1)
+	target_compile_definitions(WebWoWViewerCpp PRIVATE WITH_GLESv2=1)
+	target_compile_definitions(WoWViewerLib PRIVATE WITH_GLESv2=1)
+	add_dependencies(WebWoWViewerCpp GLFW)
+
+elseif()
+	add_dependencies(WebWoWViewerCpp LibZip)
+	add_dependencies(WebWoWViewerCpp GLFW)
+	add_dependencies(WebWoWViewerCpp libz)
+endif()
+
+
 add_dependencies(WebWoWViewerCpp WoWViewerLib)
-add_dependencies(WebWoWViewerCpp storm)
+#add_dependencies(WebWoWViewerCpp storm)
 add_dependencies(WebWoWViewerCpp casc)
 
 #TODO: platform dependant!!
 #target_link_libraries(WebWoWViewerCpp ${install_dir}/lib/libWoWViewerLib)
 #target_link_libraries(WebWoWViewerCpp ${glfw_install_dir}/lib/libglfw3dll)
 
-
-set_property(TARGET WebWoWViewerCpp PROPERTY CXX_STANDARD 17)
+if (NOT CMAKE_NDK_BUILD MATCHES 1)
+	set_property(TARGET WebWoWViewerCpp PROPERTY CXX_STANDARD 17)
+endif()
 message(INFO ${OPENGL_LIBRARIES})
 #glu32.a opengl32.a z
 target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} -lpthread ${CURL_LIBRARIES} ${libzip_library} ${WowViewerLib})
 target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES})
+target_link_libraries(WebWoWViewerCpp GLFW)
 target_link_libraries(WebWoWViewerCpp polym)
-target_link_libraries(WebWoWViewerCpp storm)
+target_link_libraries(WebWoWViewerCpp cpr)
+#target_link_libraries(WebWoWViewerCpp storm)
 target_link_libraries(WebWoWViewerCpp casc)
 target_link_libraries(WebWoWViewerCpp ${glew_lib})
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")

@@ -77,7 +77,7 @@ private:
     void createBB(CAaBox bbox);
     void postWmoGroupObjectLoad(int groupId, int lod) override;
 public:
-    M2Object *getDoodad(int index);
+    M2Object *getDoodad(int index) override ;
     BlpTexture * getTexture(int materialId, bool isSpec);
     void setLoadingParam( SMMapObjDef &mapObjDef);
     void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
@@ -111,7 +111,7 @@ public:
     void update();
 
     void createM2Array();
-    void updateBB();
+    void updateBB() override ;
 
 public:
     std::vector<PortalResults> interiorPortals;

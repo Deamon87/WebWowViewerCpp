@@ -1,10 +1,11 @@
 #ifndef WOWMAPVIEWERREVIVED_HTTPFILE_H
 #define WOWMAPVIEWERREVIVED_HTTPFILE_H
 
-#include <curl/curl.h>
 #include <string>
 #include <vector>
 #include <functional>
+//curl
+#include "cpr/cpr.h"
 
 class HttpFile;
 
@@ -37,7 +38,6 @@ public:
 private:
     std::string m_httpUrl;
     HTTPReadyCallback m_callback;
-    CURL *curlInstance;
 
     long int fileSize;
     long int written;

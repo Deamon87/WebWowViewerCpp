@@ -41,7 +41,7 @@ public:
             tmpString  =  pathToDist +  mpqPriorityOrder[i];
 
             SFileOpenArchive(tmpString.c_str(), 0, STREAM_FLAG_READ_ONLY, &hMPQFileCurr);
-            if (hMPQFileCurr > 0) {
+            if (hMPQFileCurr != nullptr) {
                 m_MPQArchiveHandles.push_back(hMPQFileCurr);
             }
         }

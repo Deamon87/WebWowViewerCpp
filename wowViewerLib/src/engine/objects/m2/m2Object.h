@@ -8,7 +8,7 @@
 class ParticleEmitter;
 class AnimationManager;
 #include <cstdint>
-#include <mathfu/glsl_mappings.h>
+#include "mathfu/glsl_mappings.h"
 #include "../../wowInnerApi.h"
 #include "../../managers/particles/particleEmitter.h"
 #include "../../persistance/header/wmoFileHeader.h"

@@ -33,7 +33,7 @@ public:
     void draw(animTime_t deltaTime) override;
     void setScreenSize(int canvWidth, int canvHeight) override;
 
-    virtual void provideFile(const char* fileName, unsigned char* data, int fileLength){
+    virtual void provideFile(const char* fileName, unsigned char* data, int fileLength) override {
         std::vector<unsigned char> fileData;
         fileData.assign(data, data+fileLength);
         std::string s_fileName(fileName);
@@ -47,7 +47,7 @@ public:
         wdtCache.provideFile(s_fileName, fileData);
         wdlCache.provideFile(s_fileName, fileData);
     };
-    virtual void rejectFile(const char* fileName) {
+    virtual void rejectFile(const char* fileName) override {
         std::string s_fileName(fileName);
 
         adtObjectCache.reject(s_fileName);
@@ -59,15 +59,15 @@ public:
         wdtCache.reject(s_fileName);
         wdlCache.reject(s_fileName);
     }
-    void setFileRequestProcessor(IFileRequest*){};
+    void setFileRequestProcessor(IFileRequest*) override {} ;
 
     IControllable* controllable = &m_firstCamera;
 
-    IControllable* getCurrentCamera() {
+    IControllable* getCurrentCamera() override {
         return this->controllable;
     };
 
-    void switchCameras() {
+    void switchCameras() override {
         if (controllable == &m_firstCamera) {
             this->m_config->setUseSecondCamera(true);
             controllable = &m_secondCamera;
@@ -133,8 +133,8 @@ public:
         return m_lookAtMat4;
     }
 
-    virtual GLuint getBlackPixelTexture();
-    virtual Config *getConfig() {
+    virtual GLuint getBlackPixelTexture() override ;
+    virtual Config *getConfig() override {
         return m_config;
     }
 
@@ -250,14 +250,14 @@ private:
     void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
                           bool drawDepth);
 
-    void drawCamera();
-    bool getIsDebugCamera() {
+    void drawCamera() override ;
+    bool getIsDebugCamera() override {
         return m_isDebugCamera;
     }
 
-    void activateDrawPointShader();
+    void activateDrawPointShader() override ;
 
-    void deactivateDrawPointShader();
+    void deactivateDrawPointShader() override ;
 
     void SetDirection();
 };

@@ -7,7 +7,7 @@
 #include "animationManager.h"
 #include "../algorithms/animate.h"
 #include "../persistance/header/M2FileHeader.h"
-#include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
+#include "mathfu/glsl_mappings.h"
 
 AnimationManager::AnimationManager(M2Data* m2File) {
     this->m_m2File = m2File;
@@ -350,7 +350,7 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
          */
 
         int closedHandAnimation = -1;
-        if (m_m2File->sequence_lookups.size > 15 && m_m2File->sequence_lookups[15] > 0) { //ANIMATION_HANDSCLOSED = 15
+        if (m_m2File->sequence_lookups.size > 15 && *m_m2File->sequence_lookups[15] > 0) { //ANIMATION_HANDSCLOSED = 15
             closedHandAnimation = *m_m2File->sequence_lookups[15];
         }
 
@@ -434,7 +434,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
     */
 
     int subAnimBlendTime = 0;
-    double blendAlpha = 1.0;
+    float blendAlpha = 1.0;
     if (this->nextSubAnimationIndex > -1) {
         subAnimRecord = m_m2File->sequences[this->nextSubAnimationIndex];
         subAnimBlendTime = subAnimRecord->blendtime;
@@ -501,7 +501,7 @@ void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColor
                                          animTime_t time,
                                          int blendAnimationIndex,
                                          animTime_t blendAnimationTime,
-                                         double blendAlpha) {
+                                         float blendAlpha) {
     M2Array<M2Color> &colors = this->m_m2File->colors;
     const M2Sequence* animationRecord = this->m_m2File->sequences[animationIndex];
     const M2Sequence* blendAnimationRecord = nullptr;
@@ -534,7 +534,7 @@ void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColor
                     defaultVector
             );
 
-            colorResult1 = colorResult1 * blendAlpha + (colorResult2 * (1.0 - blendAlpha));
+            colorResult1 = colorResult1 * blendAlpha + (colorResult2 * (1.0f - (float)blendAlpha));
         }
 
         subMeshColors[i].x = colorResult1.x;

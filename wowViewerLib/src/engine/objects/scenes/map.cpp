@@ -160,7 +160,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     nearPlaneCenter += frustumPoints[1];
     nearPlaneCenter += frustumPoints[6];
     nearPlaneCenter += frustumPoints[7];
-    nearPlaneCenter *= 0.25;
+    nearPlaneCenter = nearPlaneCenter * 0.25f;
 
     for (auto &checkingWmoObj : this->wmoRenderedThisFrameArr) {
         WmoGroupResult groupResult;

@@ -343,7 +343,7 @@ void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &
     nearPlaneCenter += frustumPoints[1];
     nearPlaneCenter += frustumPoints[6];
     nearPlaneCenter += frustumPoints[7];
-    nearPlaneCenter *= 0.25;
+    nearPlaneCenter *= 0.25f;
 
 //    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
         WmoObject *checkingWmoObj = this->m_wmoObject;

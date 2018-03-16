@@ -75,10 +75,10 @@ inline float convertHelper<fixed16, float>(fixed16 &a ) {
     return (float)(a / 32768.0);
 };
 
-template<>
-inline animTime_t convertHelper<fixed16, animTime_t>(fixed16 &a ) {
-    return (animTime_t)(a / 32768.0);
-};
+//template<>
+//inline animTime_t convertHelper<fixed16, animTime_t>(fixed16 &a ) {
+//    return (animTime_t)(a / 32768.0);
+//};
 
 template<>
 inline fixed16 convertHelper<double, fixed16>(double &a ) {

@@ -6,18 +6,22 @@
 #define NKC_IMPLEMENTATION
 #define NKCD NKC_GLFW
 #define NKC_USE_OPENGL 3
+#define GLFW_INCLUDE_ES2
+#define GLES
+
+//#define __EMSCRIPTEN__
+#include "engine/HeadersGL.h"
 #include <nuklear_cross.h>
 
 
 
 #undef GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <curl/curl.h>
 #include <string>
 #include <iostream>
 #include <cmath>
 #include "../wowViewerLib/src/include/wowScene.h"
-#include "persistance/ZipRequestProcessor.h"
+//#include "persistance/ZipRequestProcessor.h"
 #include "persistance/CascRequestProcessor.h"
 #include "persistance/HttpZipRequestProcessor.h"
 #include "persistance/MpqRequestProcessor.h"

@@ -776,7 +776,9 @@ void M2Object::drawDebugLight() {
     glUniformMatrix4fv(drawPointsShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
     glUniform3fv(drawPointsShader->getUnf("uColor"), 1, &colorArr[0]);
 
+#ifndef WITH_GLESv2
     glEnable( GL_PROGRAM_POINT_SIZE );
+#endif
     glVertexAttribPointer(+drawPoints::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
 
 
@@ -785,8 +787,9 @@ void M2Object::drawDebugLight() {
 
     glDrawArrays(GL_POINTS, 0, points.size()/3);
 
-
+#ifndef WITH_GLESv2
     glDisable( GL_PROGRAM_POINT_SIZE );
+#endif
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
     glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
 
@@ -878,7 +881,7 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
 
     if (materialData.texUnit1TexIndex >= 0) {
         auto textureAnim = skinData->batches[materialData.texUnit1TexIndex]->textureTransformComboIndex;
-        uint16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
+        int16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
         if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
             textureMatrix1 = this->textAnimMatrices[textureMatIndex];
         }

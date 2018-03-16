@@ -8,14 +8,24 @@ if (BUILD_WITHOUT_CULLED_PORTAL_DRAWING)
 endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING)
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize -DMATHFU_COMPILE_WITH_SIMD " )
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize -DMATHFU_COMPILE_WITH_SIMD ")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize" )
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize")
+
+if (NOT CMAKE_NDK_BUILD MATCHES 1)
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DMATHFU_COMPILE_WITH_SIMD")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DMATHFU_COMPILE_WITH_SIMD")
+endif()
 
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 
 IF(CMAKE_BUILD_TYPE MATCHES Release)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
+
+if (CMAKE_NDK_BUILD MATCHES 1)
+#    include_directories(BEFORE SYSTEM "e:/temp/ndk_toolchain/sysroot/usr/include/" "e:/temp/ndk_toolchain/include/c++/4.9.x/")
+#    set(CMAKE_INCLUDE_PATH "${CMAKE_INCLUDE_PATH} e:/temp/ndk_toolchain/sysroot/usr/include/ e:/temp/ndk_toolchain/include/c++/4.9.x/")
+endif()
 
 
 
@@ -40,12 +50,14 @@ if (WIN32)
     endif()
 
 else()
-    find_package(GLEW REQUIRED)
-    if (GLEW_FOUND)
-        set(glew_include ${GLEW_INCLUDE_DIRS})
-        include_directories(${GLEW_INCLUDE_DIRS})
-        link_libraries(${GLEW_LIBRARIES})
-        set(glew_lib ${GLEW_LIBRARIES} )
+    if (NOT CMAKE_NDK_BUILD MATCHES 1)
+        find_package(GLEW REQUIRED)
+        if (GLEW_FOUND)
+            set(glew_include ${GLEW_INCLUDE_DIRS})
+            include_directories(${GLEW_INCLUDE_DIRS})
+            link_libraries(${GLEW_LIBRARIES})
+            set(glew_lib ${GLEW_LIBRARIES} )
+        endif()
     endif()
     if(NOT GLEW_FOUND)
         message(ERROR " GLEW not found!")
@@ -127,11 +139,22 @@ set(SOURCE_FILES src/engine/wowScene.cpp
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
-
-set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+if (NOT CMAKE_NDK_BUILD MATCHES 1)
+    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+endif()
 target_link_libraries(WoWViewerLib ${glew_lib})
-target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
-mathfu_configure_flags(WoWViewerLib ON)
+
+if (NOT CMAKE_NDK_BUILD MATCHES 1)
+    target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
+    mathfu_configure_flags(WoWViewerLib TRUE)
+else()
+    mathfu_configure_flags(WoWViewerLib FALSE)
+    target_include_directories(WoWViewerLib PRIVATE "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include" "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include")
+endif()
+
+
+
+
 
 INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/include/wowScene.h
               ${PROJECT_SOURCE_DIR}/src/include/config.h

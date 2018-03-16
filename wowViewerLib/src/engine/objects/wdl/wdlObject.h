@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <set>
-#include <mathfu/glsl_mappings.h>
+#include "mathfu/glsl_mappings.h"
 #include "../m2/m2Object.h"
 #include "../../persistance/wdlFile.h"
 

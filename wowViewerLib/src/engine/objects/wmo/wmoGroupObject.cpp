@@ -57,7 +57,9 @@ void WmoGroupObject::drawDebugLights() {
     static float colorArr[4] = {0.058, 0.819607843, 0.058, 0.3};
     glUniform3fv(drawPointsShader->getUnf("uColor"), 1, &colorArr[0]);
 
+#ifndef WITH_GLESv2
     glEnable( GL_PROGRAM_POINT_SIZE );
+#endif
     glVertexAttribPointer(+drawPoints::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
 
 
@@ -66,8 +68,9 @@ void WmoGroupObject::drawDebugLights() {
 
     glDrawArrays(GL_POINTS, 0, points.size()/3);
 
-
+#ifndef WITH_GLESv2
     glDisable( GL_PROGRAM_POINT_SIZE );
+#endif
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
     glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
 

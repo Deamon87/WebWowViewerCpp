@@ -36,7 +36,7 @@ public:
 
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
     mathfu::vec4 getAmbientColor() override;
-    bool getCameraSettings(M2CameraResult &result);
+    bool getCameraSettings(M2CameraResult &result) override ;
 
 };
 

@@ -260,7 +260,7 @@ void WmoObject::createWorldPortals() {
         for (int k = 0; k < portalVecs.size(); k++) {
             center += portalVecs[k];
         }
-        center *= 1.0 / portalVecs.size();
+        center *= 1.0f / (float)portalVecs.size();
 
         //Calculate create projection and calc simplified, sorted polygon
         mathfu::vec3 lookAt = center + mathfu::vec3(portalInfo->plane.planeGeneral.normal);
@@ -390,17 +390,20 @@ void WmoObject::drawDebugLights(){
      static float colorArr[4] = {0.819607843, 0.058, 0.058, 0.3};
     glUniform3fv(drawPointsShader->getUnf("uColor"), 1, &colorArr[0]);
 
+#ifndef WITH_GLESv2
     glEnable( GL_PROGRAM_POINT_SIZE );
+#endif
     glVertexAttribPointer(+drawPoints::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
 
 
     glDisable(GL_CULL_FACE);
     glDepthMask(GL_FALSE);
 
-    glDrawArrays(GL_POINTS, 0, points.size()/3);
+    glDrawArrays(GL_POINTS, 0, points.size()/3.0f);
 
-
+#ifndef WITH_GLESv2
     glDisable( GL_PROGRAM_POINT_SIZE );
+#endif
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
     glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
 
@@ -993,7 +996,7 @@ void WmoObject::transverseGroupWMO(
             mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(cameraLocal.xyz(), portalVerticesVec[i], portalVerticesVec[i2]);
 
             if (flip) {
-                n *= -1;
+                n *= -1.0f;
             }
 
             thisPortalPlanes.push_back(n);

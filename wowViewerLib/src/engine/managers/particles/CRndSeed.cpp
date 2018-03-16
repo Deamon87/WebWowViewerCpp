@@ -50,7 +50,7 @@ float CRndSeed::UniformPos() {
         result =  fi.f - 1.0f;
     }
 
-    result = (float) drand48();
+//    result = (float) drand48();
 //    result = 0.5;
 
     assert(result > 0.0 || result < 1.0);

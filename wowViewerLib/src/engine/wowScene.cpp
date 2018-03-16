@@ -6,8 +6,9 @@
 #include "objects/scenes/m2Scene.h"
 #include "objects/scenes/wmoScene.h"
 
-#include <mathfu/glsl_mappings.h>
+#include "mathfu/glsl_mappings.h"
 #include <iostream>
+#include <cmath>
 
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
         :
@@ -64,8 +65,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
-    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-    currentScene = new Map(this, "Troll Raid");
+//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+//    currentScene = new Map(this, "Troll Raid");
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -208,15 +209,16 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
-//   currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
+   currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
 //
 //    currentScene = new M2Scene(this,
-//        "character\\nightelf\\male\\nightelfmale.m2");
+//        "interface/glues/models/ui_nightelf/ui_nightelf.m2", 0);
+
 //    currentScene = new M2Scene(this,
 //        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 
@@ -686,7 +688,7 @@ void WoWSceneImpl::activateRenderFrameShader () {
 
     //glDisableVertexAttribArray(1);
 
-    float uResolution[2] = {this->canvWidth, this->canvHeight };
+    float uResolution[2] = {(float)this->canvWidth, (float)this->canvHeight };
     glUniform2fv(this->renderFrameShader->getUnf("uResolution"), 2, uResolution);
 
     glUniform1i(this->renderFrameShader->getUnf("u_sampler"), 0);
@@ -864,6 +866,8 @@ void WoWSceneImpl::activateM2InstancingShader() {
     glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 2);
     glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 3);
     glEnableVertexAttribArray(+m2Shader::Attribute::aDiffuseColor);
+
+#ifndef WITH_GLESv2
     if ( true/*instExt != null */) {
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 0, 1);
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 1);
@@ -871,6 +875,7 @@ void WoWSceneImpl::activateM2InstancingShader() {
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 3, 1);
         glVertexAttribDivisor(+m2Shader::Attribute::aDiffuseColor, 1);
     }
+#endif
 
     glUniform3fv(this->m2InstancingShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 }
@@ -885,13 +890,14 @@ void WoWSceneImpl::deactivateM2InstancingShader() {
     glDisableVertexAttribArray(+m2Shader::Attribute::bones);
     glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord);
     glDisableVertexAttribArray(+m2Shader::Attribute::aTexCoord2);
-
+#ifndef WITH_GLESv2
     if (true /*instExt*/) {
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 0, 0);
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 0);
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 2, 0);
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 3, 0);
     }
+#endif
     glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 0);
     glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 1);
     glDisableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 2);
@@ -1036,7 +1042,11 @@ GLuint WoWSceneImpl::getBlackPixelTexture(){
 }
 
 void glClearScreen() {
+#ifndef WITH_GLESv2
     glClearDepth(1.0);
+#else
+    glClearDepthf(1.0f);
+#endif
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 

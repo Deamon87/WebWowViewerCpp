@@ -318,20 +318,20 @@ struct M2Data {
     M2Array<M2Sequence> sequences;                       // Information about the animations in the model.
     M2Array<uint16_t> sequence_lookups;                  // Mapping of sequence IDs to the entries in the Animation sequences block.
     M2Array<M2CompBone> bones;                           // MAX_BONES = 0x100
-    M2Array<uint16_t> key_bone_lookup;                   // Lookup table for key skeletal bones.
+    M2Array<int16_t> key_bone_lookup;                   // Lookup table for key skeletal bones.
     M2Array<M2Vertex> vertices;
     uint32_t num_skin_profiles;                           // Views (LOD) are now in .skins.
     M2Array<M2Color> colors;                             // Color and alpha animations definitions.
     M2Array<M2Texture> textures;
     M2Array<M2TextureWeight> texture_weights;            // Transparency of textures.
     M2Array<M2TextureTransform> texture_transforms;
-    M2Array<uint16_t> replacable_texture_lookup;
+    M2Array<int16_t> replacable_texture_lookup;
     M2Array<M2Material> materials;                       // Blending modes / render flags.
-    M2Array<uint16_t> bone_lookup_table;
-    M2Array<uint16_t> texture_lookup_table;
-    M2Array<uint16_t> tex_unit_lookup_table;             // ≥ Cata : unused
-    M2Array<uint16_t> transparency_lookup_table;
-    M2Array<uint16_t> texture_transforms_lookup_table;
+    M2Array<int16_t> bone_lookup_table;
+    M2Array<int16_t> texture_lookup_table;
+    M2Array<int16_t> tex_unit_lookup_table;             // ≥ Cata : unused
+    M2Array<int16_t> transparency_lookup_table;
+    M2Array<int16_t> texture_transforms_lookup_table;
 
     CAaBox bounding_box;                                 // min/max( [1].z, 2.0277779f ) - 0.16f seems to be the maximum camera height
     float bounding_sphere_radius;                         // detail doodad draw dist = clamp (bounding_sphere_radius * detailDoodadDensityFade * detailDoodadDist, …)

@@ -5,7 +5,7 @@
 #ifndef WEBWOWVIEWERCPP_IINNERSCENEAPI_H
 #define WEBWOWVIEWERCPP_IINNERSCENEAPI_H
 
-#include <mathfu/glsl_mappings.h>
+#include "mathfu/glsl_mappings.h"
 #include "../persistance/header/M2FileHeader.h"
 
 class iInnerSceneApi {

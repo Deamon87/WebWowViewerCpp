@@ -68,7 +68,7 @@ public:
             animTime_t time,
             int blendAnimationIndex,
             animTime_t blendAnimationTime,
-            double blendAlpha);
+            float blendAlpha);
 
     void calcTransparencies(std::vector<float> &transparencies, int animationIndex, animTime_t time,
                             int blendAnimationIndex,

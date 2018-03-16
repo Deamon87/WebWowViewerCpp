@@ -2,7 +2,12 @@
 #define WOWMAPVIEWERREVIVED_WOWSCENE_H_H
 
 #include <cstdint>
+#ifdef WITH_GLESv2
+typedef float animTime_t;
+#else
 typedef double animTime_t;
+#endif
+
 
 #include <string>
 #include "config.h"

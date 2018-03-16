@@ -6,7 +6,7 @@
 #define WOWMAPVIEWERREVIVED_FIRSTPERSONCAMERA_H
 
 #include <mathfu/vector.h>
-#include <mathfu/glsl_mappings.h>
+#include "mathfu/glsl_mappings.h"
 #include "CameraInterface.h"
 #include "../../include/wowScene.h"
 
@@ -37,21 +37,21 @@ private:
     float av = 0;
 public:
     //Implemented IControllable
-    void addHorizontalViewDir(float val);
-    void addVerticalViewDir(float val);
-    void addForwardDiff(float val);
-    void startMovingForward();
-    void stopMovingForward();
-    void startMovingBackwards();
-    void stopMovingBackwards();
-    void startStrafingLeft();
-    void stopStrafingLeft();
-    void startStrafingRight();
-    void stopStrafingRight();
-    void startMovingUp();
-    void stopMovingUp();
-    void startMovingDown();
-    void stopMovingDown();
+    void addHorizontalViewDir(float val) override;
+    void addVerticalViewDir(float val) override;
+    void addForwardDiff(float val) override;
+    void startMovingForward() override;
+    void stopMovingForward() override;
+    void startMovingBackwards() override;
+    void stopMovingBackwards() override;
+    void startStrafingLeft() override;
+    void stopStrafingLeft() override;
+    void startStrafingRight() override;
+    void stopStrafingRight() override;
+    void startMovingUp() override;
+    void stopMovingUp() override;
+    void startMovingDown() override;
+    void stopMovingDown() override;
 
     void getCameraPosition(float *position) override {
         position[0] = camera.x;
@@ -65,8 +65,8 @@ public:
 
 public:
     //Implemented ICamera
-    mathfu::vec3 getCameraPosition();
-    mathfu::vec3 getCameraLookAt();
+    mathfu::vec3 getCameraPosition() override;
+    mathfu::vec3 getCameraLookAt() override;
 
 public:
     void tick(animTime_t timeDelta);
