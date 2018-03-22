@@ -53,7 +53,7 @@ void RequestProcessor::processRequests (bool calledFromThread) {
 
 }
 
-void RequestProcessor::provideResult(std::string fileName, std::vector<unsigned char> &content) {
+void RequestProcessor::provideResult(std::string &fileName, std::vector<unsigned char> &content) {
     std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
 
 

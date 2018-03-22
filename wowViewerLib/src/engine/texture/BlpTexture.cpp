@@ -8,6 +8,8 @@
 #include "../opengl/header.h"
 
 #include "BlpTexture.h"
+#include "DxtDecompress.h"
+
 enum class TextureFormat {
     None,
     S3TC_RGBA_DXT1,
@@ -161,65 +163,80 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
 //    var useDXT3Decoding = ((!ext) || (!ext.COMPRESSED_RGBA_S3TC_DXT3_EXT));
 //    var useDXT5Decoding = ((!ext) || (!ext.COMPRESSED_RGBA_S3TC_DXT5_EXT));
 
-    bool useDXT1Decoding = false;
-    bool useDXT3Decoding = false;
-    bool useDXT5Decoding = false;
-
-
-    /* Hack for DXT1. It still falls on gpu when width is not equal to height and one of them is less than 8 :/ */
-    /*
-    useDXT1Decoding = useDXT1Decoding ||
-        (
-            (textureFormat === "S3TC_RGB_DXT1") ||
-            (textureFormat === "S3TC_RGBA_DXT1")
-        ) &&( mipmaps[0].width !== mipmaps[0].height );
-    */
+    bool useDXT1Decoding = true;
+    bool useDXT3Decoding = true;
+    bool useDXT5Decoding = true;
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
     bool generateMipMaps = false;
     switch (textureFormat) {
         case TextureFormat::S3TC_RGB_DXT1:
-        case TextureFormat::S3TC_RGBA_DXT1:
-            for( int k = 0; k < mipmaps.size(); k++) {
+        case TextureFormat::S3TC_RGBA_DXT1: {
+            unsigned char *decodedResult = nullptr;
+            if (useDXT1Decoding)
+                decodedResult = new unsigned char[mipmaps[0].width * mipmaps[0].height * 4];
+
+            for (int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT1Decoding) {
-//                    var decodedResult = decodeDxt(new DataView(mipmaps[k].texture.buffer), mipmaps[k].width, mipmaps[k].height, 'dxt1');
-//
-//                    gl.texImage2D(gl.TEXTURE_2D, k, gl.RGBA, mipmaps[k].width, mipmaps[k].height, 0, gl.RGBA, gl.UNSIGNED_BYTE, decodedResult);
+                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
+                    glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
+                                 GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {
-                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width, mipmaps[k].height, 0,
-                                           (GLsizei) mipmaps[k].texture.size(), &mipmaps[k].texture[0]);
+                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width,
+                                           mipmaps[k].height, 0,
+                                           (GLsizei) mipmaps[k].texture.size(),
+                                           &mipmaps[k].texture[0]);
                 }
             }
-            break;
+            if (useDXT1Decoding)
+                delete decodedResult;
+        }
+        break;
 
-        case TextureFormat::S3TC_RGBA_DXT3:
-            for( int k = 0; k < mipmaps.size(); k++) {
+        case TextureFormat::S3TC_RGBA_DXT3: {
+            unsigned char *decodedResult = nullptr;
+            if (useDXT3Decoding)
+                decodedResult = new unsigned char[mipmaps[0].width * mipmaps[0].height * 4];
+
+            for (int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT3Decoding) {
-//                    var decodedResult = decodeDxt(new DataView(mipmaps[k].texture.buffer), mipmaps[k].width, mipmaps[k].height, 'dxt3');
-//                    //var decodedResult = dxtLib.decodeDXT3toBitmap32(mipmaps[k].texture , mipmaps[k].width, mipmaps[k].height);
-//                    gl.texImage2D(gl.TEXTURE_2D, k, gl.RGBA, mipmaps[k].width, mipmaps[k].height, 0, gl.RGBA, gl.UNSIGNED_BYTE,  decodedResult);
+                    DecompressBC2(mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
+                    glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
+                                 GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {
-                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width, mipmaps[k].height, 0,
-                                           (GLsizei) mipmaps[k].texture.size(), &mipmaps[k].texture[0]);
+                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width,
+                                           mipmaps[k].height, 0,
+                                           (GLsizei) mipmaps[k].texture.size(),
+                                           &mipmaps[k].texture[0]);
                 }
             }
+            if (useDXT3Decoding)
+                delete decodedResult;
+        }
+        break;
 
-            break;
-
-        case TextureFormat::S3TC_RGBA_DXT5:
-            for( int k = 0; k < mipmaps.size(); k++) {
+        case TextureFormat::S3TC_RGBA_DXT5: {
+            unsigned char *decodedResult = nullptr;
+            if (useDXT5Decoding)
+                decodedResult = new unsigned char[mipmaps[0].width * mipmaps[0].height * 4];
+            for (int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT5Decoding) {
-//                    var decodedResult = decodeDxt(new DataView(mipmaps[k].texture.buffer), mipmaps[k].width, mipmaps[k].height, 'dxt5');
-//                    //var decodedResult = dxtLib.decodeDXT5toBitmap32(mipmaps[k].texture , mipmaps[k].width, mipmaps[k].height);
-//                    gl.texImage2D(gl.TEXTURE_2D, k, gl.RGBA, mipmaps[k].width, mipmaps[k].height, 0, gl.RGBA, gl.UNSIGNED_BYTE,  decodedResult);
+                    DecompressBC3(mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
+                    glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
+                                 GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {
-                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width, mipmaps[k].height, 0,
-                                           (GLsizei) mipmaps[k].texture.size(), &mipmaps[k].texture[0]);
+                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width,
+                                           mipmaps[k].height, 0,
+                                           (GLsizei) mipmaps[k].texture.size(),
+                                           &mipmaps[k].texture[0]);
                 }
             }
+            if (useDXT5Decoding)
+                delete decodedResult;
+        }
 
-            break;
+        break;
 
         case TextureFormat::BGRA:
             for( int k = 0; k < mipmaps.size(); k++) {
@@ -245,9 +262,9 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
 //        gl.texParameterf(GL_TEXTURE_2D, anisFilterExt.TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy);
     }
 
-//    if (generateMipMaps) {
-//        glGenerateMipmap(GL_TEXTURE_2D);
-//    }
+#ifdef WITH_GLESv2
+        glGenerateMipmap(GL_TEXTURE_2D);
+#endif
 
     glBindTexture(GL_TEXTURE_2D, 0);
     return texture;

@@ -11,6 +11,7 @@
 
 #ifdef COMPILING_VS
 /* vertex shader code */
+precision lowp float;
 attribute vec3 aPosition;
 attribute vec3 aNormal;
 attribute vec2 aTexCoord;
@@ -23,7 +24,7 @@ uniform mat4 uLookAtMat;
 uniform mat4 uPMatrix;
 uniform int uVertexShader;
 
-uniform int uUseLitColor;
+uniform lowp int uUseLitColor;
 
 uniform mat4 uPlacementMat;
 uniform vec4 uAmbientLight;
@@ -134,7 +135,7 @@ uniform float uAlphaTest;
 uniform vec3 uViewUp;
 uniform vec3 uSunDir;
 uniform vec4 uAmbientLight;
-uniform int uUseLitColor;
+uniform lowp int uUseLitColor;
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
@@ -268,7 +269,7 @@ void main() {
 
     } else if (uPixelShader == 10) { //MapObjMaskedEnvMetal
 
-        float mixFactor = clamp((tex3.a * vColor2.a), 0, 1);
+        float mixFactor = clamp((tex3.a * vColor2.a), 0.0, 1.0);
         vec3 matDiffuse =
             (vColor.rgb * 2.0) *
             mix(mix(((tex.rgb * tex2.rgb) * 2.0), tex3.rgb, mixFactor), tex.rgb, tex.a);

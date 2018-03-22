@@ -188,7 +188,7 @@ void main() {
 
 
     vec4 layer_pct_max = vec4(max(max(max(layer_pct.x, layer_pct.y), layer_pct.y), layer_pct.z));
-    layer_pct = layer_pct * (vec4(1.0) - clamp(layer_pct_max - layer_pct, 0, 1));
+    layer_pct = layer_pct * (vec4(1.0) - clamp(layer_pct_max - layer_pct, 0.0, 1.0));
     layer_pct = layer_pct / vec4(dot(layer_pct, vec4(1.0)));
 
     vec4 weightedLayer_0 = tex1 * layer_pct.x;
@@ -199,7 +199,7 @@ void main() {
     vec4 finalColor;
     finalColor.rgb = (weightedLayer_0.rgb + weightedLayer_1.rgb + weightedLayer_2.rgb + weightedLayer_3.rgb);
 
-    finalColor.rgb = finalColor.rgb * 2*vColor.rgb;
+    finalColor.rgb = finalColor.rgb * 2.0 * vColor.rgb;
 
     // --- Fog start ---
     vec3 fogColor = uFogColor;

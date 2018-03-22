@@ -80,7 +80,7 @@ void HttpFile::startDownloading() {
 //    }
 
     std::string escaped_url = url_encode(m_httpUrl);
-    auto r = cpr::Get(cpr::Url{"m_httpUrl"});
+    auto r = cpr::Get(cpr::Url{escaped_url});
     if (r.status_code == 200) {
         if (this->m_fileBuffer != nullptr) delete(this->m_fileBuffer);
         this->m_fileBuffer = new std::vector<unsigned char>(r.text.begin(), r.text.end());

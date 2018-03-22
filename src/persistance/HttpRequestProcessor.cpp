@@ -30,7 +30,8 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
     HttpFile * httpFile = new HttpFile(fullUrl.c_str());
     httpFile->setCallback(
             [=](std::vector<unsigned char> * fileContent) -> void {
-                provideResult(fileName, *fileContent);
+                std::string newFileName = fileName;
+                provideResult(newFileName, *fileContent);
 
                 //m_fileRequester->provideFile(fileName.c_str(), &((*fileContent)[0]), fileContent->size());
 

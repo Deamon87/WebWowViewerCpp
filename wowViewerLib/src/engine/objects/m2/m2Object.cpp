@@ -684,7 +684,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     );
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
-//    int maxBatch = particleEmitters.size();
+    int maxBatch = particleEmitters.size();
     for (int i = minParticle; i < maxParticle; i++) {
 
         auto *peRecord = m_m2Geom->m_m2Data->particle_emitters.getElement(i);

@@ -312,7 +312,7 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
     }
 
 
-    bool glsl330 = true;
+    bool glsl330 = false;
     if (glsl330) {
         vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
         vertExtraDefStrings += "#define varying out\n";
@@ -335,7 +335,7 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
                 fragmentShaderString.find("void main(", fragmentShaderString.find("COMPILING_FS", 0)),
                 "\n out vec4 gl_FragColor; \n"));
     } else {
-        vertExtraDefStrings += "#version 120\n";
+        vertExtraDefStrings += "#version 100\n";
 
         fragExtraDefStrings += "#define gl_FragColorDef uniform vec4 notUsed\n";
     }
@@ -479,9 +479,9 @@ void WoWSceneImpl::initShaders() {
 
     const  std::string m2Shader = getShaderDef("m2Shader")->shaderString;
     this->m2Shader                 = this->compileShader("m2Shader", m2Shader, m2Shader);
-    this->m2InstancingShader       = this->compileShader("m2Shader", m2Shader, m2Shader,
-                                                         new std::string("#define INSTANCED 1\r\n "),
-                                                         new std::string("#define INSTANCED 1\r\n "));
+//    this->m2InstancingShader       = this->compileShader("m2Shader", m2Shader, m2Shader,
+//                                                         new std::string("#define INSTANCED 1\r\n "),
+//                                                         new std::string("#define INSTANCED 1\r\n "));
 
     const  std::string m2ParticleShader = getShaderDef("m2ParticleShader")->shaderString;
     this->m2ParticleShader         = this->compileShader("m2ParticleShader", m2ParticleShader, m2ParticleShader);
@@ -489,8 +489,8 @@ void WoWSceneImpl::initShaders() {
     const  std::string bbShader = getShaderDef("drawBBShader")->shaderString;
     this->bbShader                 = this->compileShader("drawBBShader", bbShader, bbShader);
 
-    const  std::string adtShader = getShaderDef("adtShader")->shaderString;
-    this->adtShader                = this->compileShader("adtShader", adtShader, adtShader);
+//    const  std::string adtShader = getShaderDef("adtShader")->shaderString;
+//    this->adtShader                = this->compileShader("adtShader", adtShader, adtShader);
 
     const  std::string drawPortalShader = getShaderDef("drawPortalShader")->shaderString;
     this->drawPortalShader         = this->compileShader("drawPortalShader", drawPortalShader, drawPortalShader);
@@ -1051,8 +1051,8 @@ void glClearScreen() {
     glDepthFunc(GL_LESS);
 
     glDisable(GL_BLEND);
-    glClearColor(0.0, 0.0, 0.0, 1);
-    //glClearColor(0.117647, 0.207843, 0.392157, 1);
+//    glClearColor(0.0, 0.0, 0.0, 1);
+    glClearColor(0.117647, 0.207843, 0.392157, 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -1073,7 +1073,7 @@ void WoWSceneImpl::drawCamera () {
 }
 
 void WoWSceneImpl::draw(animTime_t deltaTime) {
-    glBindVertexArray(vao);
+//    glBindVertexArray(vao);
     glClearScreen();
     mathfu::vec3 *cameraVector;
 
@@ -1255,7 +1255,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         }
     }
 
-    glBindVertexArray(0);
+//    glBindVertexArray(0);
 }
 
 void WoWSceneImpl::SetDirection() {

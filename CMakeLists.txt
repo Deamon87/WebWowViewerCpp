@@ -32,17 +32,21 @@ else()
 endif()
 
 #ZLib library
-ExternalProject_Add("libz"
-        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/zlib"
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/libz -DEXTRA_LIBS=${extra_libraries}
-        )
+#ExternalProject_Add("libz"
+#        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/zlib"
+#        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/libz -DEXTRA_LIBS=${extra_libraries}
+#        )
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
 set(LIBZ_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/lib/libz/include")
 
 #Zlib
-ExternalProject_Add("LibZip"
-		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
-		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/libzip -DEXTRA_LIBS=${extra_libraries}
-		)
+#ExternalProject_Add("LibZip"
+#		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
+#		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/libzip -DEXTRA_LIBS=${extra_libraries}
+#		)
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libzip)
+
 set(libzip_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/lib/libzip/include/")
 set(libzip_HEADER_FILES ${CMAKE_SOURCE_DIR}/lib/libzip/lib/libzip/include)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -58,7 +62,6 @@ include_directories(${libzip_HEADER_FILES})
 include_directories(${libzip_INCLUDE_DIRS})
 
 #GLFW
-set(UNIX "1")
 #ExternalProject_Add("GLFW"
 #        SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/glfw"
 #        CMAKE_ARGS
@@ -76,14 +79,15 @@ set(UNIX "1")
 #ExternalProject_Get_Property(GLFW install_dir)
 #set(glfw_install_dir ${CMAKE_SOURCE_DIR}/lib/glfw)
 #include_directories(${glfw_install_dir}/include)
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw GLFW)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}/lib/libglfw3dll.a)
-else()
-    set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}/lib/libglfw.so.3)
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-
+if (NOT CMAKE_NDK_BUILD MATCHES 1)
+	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw GLFW)
+	if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+		set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}/lib/libglfw3dll.a)
+	else()
+		set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}/lib/libglfw.so.3)
+	endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+endif()
 #bz2
 add_subdirectory(3rdparty/bzip)
 
@@ -114,7 +118,6 @@ include_directories(3rdparty/nuklear_cross)
 add_subdirectory(wowViewerLib)
 
 set(SOURCE_FILES
-		src/main.cpp
 		src/persistance/httpFile/httpFile.cpp
 		src/persistance/httpFile/httpFile.h
 		src/persistance/RequestProcessor.cpp
@@ -123,12 +126,20 @@ set(SOURCE_FILES
 		src/persistance/ZipRequestProcessor.h
 		src/persistance/HttpZipRequestProcessor.cpp
 		src/persistance/HttpZipRequestProcessor.h
-		src/persistance/MpqRequestProcessor.cpp
-		src/persistance/MpqRequestProcessor.h
 		src/persistance/CascRequestProcessor.cpp
 		src/persistance/CascRequestProcessor.h
 		src/persistance/HttpRequestProcessor.cpp
 		src/persistance/HttpRequestProcessor.h)
+
+if (NOT CMAKE_NDK_BUILD MATCHES 1)
+	set(SOURCE_FILES ${SOURCE_FILES}
+		src/main.cpp)
+else()
+	set(SOURCE_FILES ${SOURCE_FILES}
+			src/jniLib.cpp)
+endif()
+
+
 #########################################################
 # FIND OPENGL
 #########################################################
@@ -157,19 +168,19 @@ endif()
 
 #Build the executiable
 include_directories(${glew_include})
-add_executable(WebWoWViewerCpp ${SOURCE_FILES})
+
 
 if (CMAKE_NDK_BUILD MATCHES 1)
+	add_library(WebWoWViewerCpp SHARED ${SOURCE_FILES})
 	target_compile_definitions(WebWoWViewerCpp PRIVATE WITH_GLESv2=1)
 	target_compile_definitions(WoWViewerLib PRIVATE WITH_GLESv2=1)
-	add_dependencies(WebWoWViewerCpp GLFW)
+else()
+	add_executable(WebWoWViewerCpp ${SOURCE_FILES})
 
-elseif()
-	add_dependencies(WebWoWViewerCpp LibZip)
-	add_dependencies(WebWoWViewerCpp GLFW)
-	add_dependencies(WebWoWViewerCpp libz)
 endif()
 
+add_dependencies(WebWoWViewerCpp zlib)
+add_dependencies(WebWoWViewerCpp zip)
 
 add_dependencies(WebWoWViewerCpp WoWViewerLib)
 #add_dependencies(WebWoWViewerCpp storm)
@@ -184,9 +195,17 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 endif()
 message(INFO ${OPENGL_LIBRARIES})
 #glu32.a opengl32.a z
-target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} -lpthread ${CURL_LIBRARIES} ${libzip_library} ${WowViewerLib})
+target_link_libraries(WebWoWViewerCpp ${GLFW_STATIC_LIBRARIES} ${CURL_LIBRARIES} ${libzip_library})
 target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES})
+target_link_libraries(WebWoWViewerCpp zip)
+target_link_libraries(WebWoWViewerCpp WoWViewerLib)
+if (NOT CMAKE_NDK_BUILD MATCHES 1)
 target_link_libraries(WebWoWViewerCpp GLFW)
+target_link_libraries(WebWoWViewerCpp -lpthread)
+else()
+	target_link_libraries(WebWoWViewerCpp EGL)
+	target_link_libraries(WebWoWViewerCpp GLESv2)
+endif()
 target_link_libraries(WebWoWViewerCpp polym)
 target_link_libraries(WebWoWViewerCpp cpr)
 #target_link_libraries(WebWoWViewerCpp storm)

@@ -81,6 +81,11 @@ inline float convertHelper<fixed16, float>(fixed16 &a ) {
 //};
 
 template<>
+inline fixed16 convertHelper<float, fixed16>(float &a ) {
+    return (fixed16)(floor(a * 32768.0));
+};
+
+template<>
 inline fixed16 convertHelper<double, fixed16>(double &a ) {
     return (fixed16)(floor(a * 32768.0));
 };
