@@ -267,9 +267,11 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
     if (twinkle < 1 || !feq(twinkleVary,0)) {
         rndIdx = 0x7f & ((int)(age * this->m_data->old.TwinkleSpeed) + seed);
     }
-//    if (twinkle < ParticleEmitter::RandTable[rndIdx]) {
-//        return false;
-//    }
+
+    if (twinkle < ParticleEmitter::RandTable[rndIdx]) {
+        return false;
+    }
+
     int amountrendered = 0;
     CRndSeed rand(seed);
 
