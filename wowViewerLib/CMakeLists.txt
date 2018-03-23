@@ -30,8 +30,6 @@ endif()
 
 
 include(ExternalProject)
-#set(mathfu_build_benchmarks OFF CACHE BOOL "")
-#set(mathfu_build_tests OFF CACHE BOOL "")
 
 set(mathfu_build_benchmarks OFF CACHE BOOL "")
 set(mathfu_build_tests OFF CACHE BOOL "")
@@ -146,15 +144,11 @@ target_link_libraries(WoWViewerLib ${glew_lib})
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
     target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
-    mathfu_configure_flags(WoWViewerLib TRUE)
+    mathfu_configure_flags(WoWViewerLib ON)
 else()
     mathfu_configure_flags(WoWViewerLib FALSE)
     target_include_directories(WoWViewerLib PRIVATE "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include" "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include")
 endif()
-
-
-
-
 
 INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/include/wowScene.h
               ${PROJECT_SOURCE_DIR}/src/include/config.h

@@ -330,7 +330,7 @@ M2Geom::setupUniforms(
             }
     };
 
-    bool BCLoginScreenHack = false;
+    bool BCLoginScreenHack = api->getConfig()->getBCLightHack();
     for (int i = 0; i < (int)lights.size() && index < 4; i++) {
         std::string uniformName;
         mathfu::vec4 attenVec;

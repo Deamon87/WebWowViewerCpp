@@ -21,6 +21,8 @@ private:
     bool secondCamera = false;
     bool doubleCameraDebug = false;
 
+    bool BCLightHack = false;
+
     bool drawDepthBuffer = false;
     int cameraM2 = -1; // this will be sceneNumber of object
 
@@ -101,6 +103,13 @@ public:
     }
     void setCameraM2 (bool value) {
         cameraM2 = value;
+    }
+
+    bool getBCLightHack () {
+        return BCLightHack;
+    }
+    void setBCLightHack (bool value) {
+        BCLightHack = value;
     }
 
     bool getUseWotlkLogic() {
