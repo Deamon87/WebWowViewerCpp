@@ -163,9 +163,9 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
 //    var useDXT3Decoding = ((!ext) || (!ext.COMPRESSED_RGBA_S3TC_DXT3_EXT));
 //    var useDXT5Decoding = ((!ext) || (!ext.COMPRESSED_RGBA_S3TC_DXT5_EXT));
 
-    bool useDXT1Decoding = true;
-    bool useDXT3Decoding = true;
-    bool useDXT5Decoding = true;
+    bool useDXT1Decoding = false;
+    bool useDXT3Decoding = false;
+    bool useDXT5Decoding = false;
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
@@ -257,9 +257,6 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
         float aniso = 0.0f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
-
-//        var max_anisotropy = this.sceneApi.extensions.getMaxTextAnisotropic();
-//        gl.texParameterf(GL_TEXTURE_2D, anisFilterExt.TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy);
     }
 
 #ifdef WITH_GLESv2

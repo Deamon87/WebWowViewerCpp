@@ -307,7 +307,7 @@ M2Geom::setupUniforms(
 
     int index = 0;
     float indet[4] = {0,0,0,0};
-    static const size_t pcLightNames[3][3] = {
+    static const size_t pcLightNames[4][3] = {
             {
                 CalculateFNV("pc_lights[0].color"),
                 CalculateFNV("pc_lights[0].attenuation"),
@@ -322,11 +322,16 @@ M2Geom::setupUniforms(
                 CalculateFNV("pc_lights[2].color"),
                 CalculateFNV("pc_lights[2].attenuation"),
                 CalculateFNV("pc_lights[2].position")
+            },
+            {
+                CalculateFNV("pc_lights[3].color"),
+                CalculateFNV("pc_lights[3].attenuation"),
+                CalculateFNV("pc_lights[3].position")
             }
     };
 
     bool BCLoginScreenHack = false;
-    for (int i = 0; i < (int)lights.size() && index < 3; i++) {
+    for (int i = 0; i < (int)lights.size() && index < 4; i++) {
         std::string uniformName;
         mathfu::vec4 attenVec;
         if (BCLoginScreenHack) {
@@ -345,7 +350,7 @@ M2Geom::setupUniforms(
         index++;
     }
     glUniform1i(m2Shader->getUnf("uLightCount"), index);
-    for (int i = index; i < 3; i++) {
+    for (int i = index; i < 4; i++) {
         std::string uniformName;
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][0]), 1, indet);
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][1]), 1, indet);

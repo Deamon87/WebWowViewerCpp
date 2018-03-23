@@ -254,7 +254,7 @@ struct LocalLight
 
 uniform vec4 uPcColor;
 
-uniform LocalLight pc_lights[3];
+uniform LocalLight pc_lights[4];
 uniform lowp int uLightCount;
 #ifdef drawBuffersIsSupported
 varying float fs_Depth;

@@ -6,8 +6,7 @@
 #define NKC_IMPLEMENTATION
 #define NKCD NKC_GLFW
 #define NKC_USE_OPENGL 3
-#define GLFW_INCLUDE_ES2
-#define GLES
+#define GLFW_INCLUDE_GLCOREARB
 
 //#define __EMSCRIPTEN__
 #include "engine/HeadersGL.h"

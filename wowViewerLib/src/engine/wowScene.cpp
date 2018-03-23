@@ -26,11 +26,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     this->canvHeight = canvHeight;
     this->canvAspect = (float)canvWidth / (float)canvHeight;
 
+#ifndef WITH_GLESv2
     /* Allocate and assign a Vertex Array Object to our handle */
     glGenVertexArrays(1, &vao);
 
     /* Bind our Vertex Array Object as the current used object */
     glBindVertexArray(vao);
+#endif
 
 //    self.initGlContext(canvas);
     this->initArrayInstancedExt();
@@ -85,7 +87,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //    m_firstCamera.setCameraPos(5243.2461346537075f, 1938.6550422193939f, 717.0332923206179f); //HallsOfReflection
 //    currentScene = new Map(this, "HallsOfReflection");
-    // .go 668 5243 1938 760
+//     .go 668 5243 1938 760
     // .go 668 0 0 0
 
 //    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
@@ -202,15 +204,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0,  0, 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
 
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
-   currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
+//   currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
 //    currentScene = new M2Scene(this,
@@ -294,8 +296,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 
-
+#ifndef WITH_GLESv2
     glBindVertexArray(0);
+#endif
 }
 
 ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
@@ -312,7 +315,7 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
     }
 
 
-    bool glsl330 = false;
+    bool glsl330 = true;
     if (glsl330) {
         vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
         vertExtraDefStrings += "#define varying out\n";
@@ -489,8 +492,8 @@ void WoWSceneImpl::initShaders() {
     const  std::string bbShader = getShaderDef("drawBBShader")->shaderString;
     this->bbShader                 = this->compileShader("drawBBShader", bbShader, bbShader);
 
-//    const  std::string adtShader = getShaderDef("adtShader")->shaderString;
-//    this->adtShader                = this->compileShader("adtShader", adtShader, adtShader);
+    const  std::string adtShader = getShaderDef("adtShader")->shaderString;
+    this->adtShader                = this->compileShader("adtShader", adtShader, adtShader);
 
     const  std::string drawPortalShader = getShaderDef("drawPortalShader")->shaderString;
     this->drawPortalShader         = this->compileShader("drawPortalShader", drawPortalShader, drawPortalShader);
@@ -1073,7 +1076,10 @@ void WoWSceneImpl::drawCamera () {
 }
 
 void WoWSceneImpl::draw(animTime_t deltaTime) {
-//    glBindVertexArray(vao);
+#ifndef WITH_GLESv2
+    glBindVertexArray(vao);
+#endif
+
     glClearScreen();
     mathfu::vec3 *cameraVector;
 
@@ -1255,7 +1261,9 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         }
     }
 
-//    glBindVertexArray(0);
+#ifndef WITH_GLESv2
+    glBindVertexArray(0);
+#endif
 }
 
 void WoWSceneImpl::SetDirection() {
