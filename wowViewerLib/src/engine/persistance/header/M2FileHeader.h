@@ -175,7 +175,43 @@ struct CompressedParticleGravity {
 
 struct M2ParticleOld {
     uint32_t particleId;                        // Always (as I have seen): -1.
-    uint32_t flags;                             // See Below
+    union {
+        uint32_t flags;                             // See Below
+        struct {
+            uint8_t hex_1 : 1;
+            uint8_t hex_2 : 1;
+            uint8_t hex_4 : 1;
+            uint8_t hex_8 : 1;
+            uint8_t hex_10 : 1;
+            uint8_t hex_20 : 1;
+            uint8_t hex_40 : 1;
+            uint8_t hex_80 : 1;
+            uint8_t hex_100 : 1;
+            uint8_t hex_200 : 1;
+            uint8_t hex_400 : 1;
+            uint8_t hex_800 : 1;
+            uint8_t hex_1000 : 1;
+            uint8_t hex_2000 : 1;
+            uint8_t hex_4000 : 1;
+            uint8_t hex_8000 : 1;
+            uint8_t hex_10000 : 1;
+            uint8_t hex_20000 : 1;
+            uint8_t hex_40000 : 1;
+            uint8_t hex_80000 : 1;
+            uint8_t hex_100000 : 1;
+            uint8_t hex_200000 : 1;
+            uint8_t hex_400000 : 1;
+            uint8_t hex_800000 : 1;
+            uint8_t hex_1000000 : 1;
+            uint8_t hex_2000000 : 1;
+            uint8_t hex_4000000 : 1;
+            uint8_t hex_8000000 : 1;
+            uint8_t hex_10000000 : 1;
+            uint8_t hex_20000000 : 1;
+            uint8_t hex_40000000 : 1;
+            uint8_t hex_80000000 : 1;
+        } flags_per_number;
+    };
     C3Vector Position;                       // The position. Relative to the following bone.
     uint16_t bone;                              // The bone its attached to.
     PACK(union

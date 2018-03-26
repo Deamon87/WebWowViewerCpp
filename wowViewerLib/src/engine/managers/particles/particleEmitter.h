@@ -28,6 +28,19 @@ struct vectorMultiTex {
     float texcoord[3][2];
 };
 
+
+struct ParticleBuffStruct {
+    C3Vector position; //0
+    C4Vector color;    //12
+    C2Vector textCoord0; //28
+    C2Vector textCoord1; //36
+    C2Vector textCoord2; //44
+};
+
+struct ParticleBuffStructQuad {
+    ParticleBuffStruct particle[4];
+};
+
 class ParticleEmitter {
 public:
     ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Data *data) : m_seed(0), m_api(api), m_m2Data(data) {
@@ -38,6 +51,10 @@ public:
             }
             randTableInited = true;
         }
+
+        glGenBuffers(1, &indexVBO);
+        glGenBuffers(1, &bufferVBO);
+
 
         m_data = particle;
 
@@ -123,6 +140,7 @@ private:
     mathfu::mat4 transform;
     mathfu::mat4 particleToView;
     mathfu::mat4 viewMatrix;
+    mathfu::mat4 inverseViewMatrix;
 
     CParticleGenerator *generator;
 
@@ -149,7 +167,7 @@ private:
     float texScaleX;
     float texScaleY;
 
-    std::vector<uint8_t> szVertexBuf;
+    std::vector<ParticleBuffStructQuad> szVertexBuf;
     std::vector<uint16_t> szIndexBuff;
 
 
@@ -172,20 +190,23 @@ private:
 
     void resizeParticleBuffer();
 
-    int RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVertexBuf);
+    int RenderParticle(CParticle2 &p, std::vector<ParticleBuffStructQuad> &szVertexBuf);
 
     void
     BuildQuadT3(
-            std::vector<uint8_t> &szVertexBuf,
+            std::vector<ParticleBuffStructQuad> &szVertexBuf,
             mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
                 float texStartY, mathfu::vec2 *texPos);
 
     void
     BuildQuad(
-        std::vector<uint8_t> &szVertexBuf,
+        std::vector<ParticleBuffStructQuad> &szVertexBuf,
         mathfu::vec3 &m0, mathfu::vec3 &m1,
         mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
         float texStartX, float texStartY);
+
+    GLuint indexVBO;
+    GLuint bufferVBO;
 };
 
 

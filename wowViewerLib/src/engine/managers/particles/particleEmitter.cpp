@@ -7,6 +7,7 @@
 #include "../../algorithms/animate.h"
 #include "../../shaderDefinitions.h"
 
+
 bool ParticleEmitter::randTableInited = false;
 float ParticleEmitter::RandTable[128] = {};
 
@@ -214,7 +215,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     }
 
     // Load textures at top so we can bail out early
-     if (this->m_data->old.flags & 0x10) {
+     if (this->m_data->old.flags & 0x10 ) {
         // apply the model transform
         this->particleToView = viewMatrix * this->transform;
     }
@@ -223,21 +224,22 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     }
 
     this->viewMatrix = viewMatrix;
+    this->inverseViewMatrix = viewMatrix.Inverse();
     // Mat34.Col(this.particleNormal, viewMatrix, 2);
     // Build vertices for each particle
 
     // Vertex format: {float3 pos; float3 norm; float4 col; float2 texcoord} = 12
     // Multitex format: {float3 pos; float4 col; float2 texcoord[3]} = 13
 
-    szVertexBuf = std::vector<uint8_t>(0);
+    szVertexBuf = std::vector<ParticleBuffStructQuad>(0);
     szIndexBuff = std::vector<uint16_t>(0);
     // TODO: z-sort
     int vo = 0;
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = this->particles[i];
         int rendered = this->RenderParticle(p, szVertexBuf);
-        if ((rendered) > 0) {
-            for (int j = 0; j < rendered; j++) {
+        if (rendered > 0) {
+//            for (int j = 0; j < rendered; j++) {
                 // 0 2
                 // 1 3
                 // 0, 1, 2; 3, 2, 1
@@ -248,12 +250,12 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
                 szIndexBuff.push_back(vo + 2);
                 szIndexBuff.push_back(vo + 1);
                 vo += 4;
-            }
+//            }
         }
     }
 }
 
-int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVertexBuf) {
+int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<ParticleBuffStructQuad> &szVertexBuf) {
     float twinkle = this->m_data->old.TwinklePercent;
     auto &twinkleRange = this->m_data->old.twinkleScale;
 
@@ -269,7 +271,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
     }
 
     if (twinkle < ParticleEmitter::RandTable[rndIdx]) {
-        return false;
+        return 0;
     }
 
     int amountrendered = 0;
@@ -455,7 +457,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<uint8_t> &szVerte
 
 void
 ParticleEmitter::BuildQuadT3(
-    std::vector<uint8_t> &szVertexBuf,
+    std::vector<ParticleBuffStructQuad> &szVertexBuf,
     mathfu::vec3 &m0, mathfu::vec3 &m1,
     mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
     float texStartX, float texStartY, mathfu::vec2 *texPos) {
@@ -475,40 +477,40 @@ ParticleEmitter::BuildQuadT3(
 
     std::vector<ParticleBuffStruct> buffer;
     buffer.reserve(4);
-    mathfu::mat4 inverseLookAt = this->viewMatrix.Inverse();
+    mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
+//
+//    for (int i = 0; i < 4; i++) {
+//        ParticleBuffStruct record;
+//        record.position = ( inverseLookAt * mathfu::vec4(
+//                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
+//                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
+//                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
+//                1.0
+//        )).xyz();
+//        record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
+//
+//        record.textCoord0 =
+//            mathfu::vec2(txs[i] * this->texScaleX + texStartX,
+//                         tys[i] * this->texScaleY + texStartY);
+//
+//        record.textCoord1 =
+//            mathfu::vec2(
+//                txs[i] * (this->m_data->old.multiTextureParamX[0]/32.0f) + texPos[0].x,
+//                tys[i] * (this->m_data->old.multiTextureParamX[0]/32.0f) + texPos[0].y);
+//        record.textCoord2 =
+//            mathfu::vec2(
+//                txs[i] * (this->m_data->old.multiTextureParamX[1]/32.0f) + texPos[1].x,
+//                tys[i] * (this->m_data->old.multiTextureParamX[1]/32.0f) + texPos[1].y);
+//
+//        buffer.emplace_back(record);
+//    }
 
-    for (int i = 0; i < 4; i++) {
-        ParticleBuffStruct record;
-        record.position = ( inverseLookAt * mathfu::vec4(
-                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
-                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
-                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
-                1.0
-        )).xyz();
-        record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
-
-        record.textCoord0 =
-            mathfu::vec2(txs[i] * this->texScaleX + texStartX,
-                         tys[i] * this->texScaleY + texStartY);
-
-        record.textCoord1 =
-            mathfu::vec2(
-                txs[i] * (this->m_data->old.multiTextureParamX[0]/32.0f) + texPos[0].x,
-                tys[i] * (this->m_data->old.multiTextureParamX[0]/32.0f) + texPos[0].y);
-        record.textCoord2 =
-            mathfu::vec2(
-                txs[i] * (this->m_data->old.multiTextureParamX[1]/32.0f) + texPos[1].x,
-                tys[i] * (this->m_data->old.multiTextureParamX[1]/32.0f) + texPos[1].y);
-
-        buffer.emplace_back(record);
-    }
-
-    std::copy((uint8_t *)&buffer[0], (uint8_t *)&buffer[0] + buffer.size()*sizeof(ParticleBuffStruct), std::back_inserter(szVertexBuf));
+//    std::copy((uint8_t *)&buffer[0], (uint8_t *)&buffer[0] + buffer.size()*sizeof(ParticleBuffStruct), std::back_inserter(szVertexBuf));
 }
 
 void
 ParticleEmitter::BuildQuad(
-    std::vector<uint8_t> &szVertexBuf,
+    std::vector<ParticleBuffStructQuad> &szVertexBuf,
     mathfu::vec3 &m0, mathfu::vec3 &m1,
     mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
     float texStartX, float texStartY) {
@@ -518,41 +520,87 @@ ParticleEmitter::BuildQuad(
         static const float txs[4] = {0, 0, 1, 1};
         static const float tys[4] = {0, 1, 0, 1};
 
-        struct ParticleBuffStruct {
-            C3Vector position; //0
-            C4Vector color;    //12
-            C2Vector textCoord0; //28
-            C2Vector textCoord1; //36
-            C2Vector textCoord2; //44
-        };
+        mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
 
-        std::vector<ParticleBuffStruct> buffer;
-        buffer.reserve(4);
+//        for (int i = 0; i < 4; i++) {
+//            ParticleBuffStruct record;
+//            record.position = ( inverseLookAt * mathfu::vec4(
+//                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
+//                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
+//                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
+//                1.0
+//            )).xyz();
+//            record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
+//
+//            record.textCoord0 =
+//                mathfu::vec2(txs[i] * this->texScaleX + texStartX,
+//                             tys[i] * this->texScaleY + texStartY);
+//
+//            buffer[i] = record;
+//        }
 
-        mathfu::mat4 inverseLookAt = this->viewMatrix.Inverse();
-
-        for (int i = 0; i < 4; i++) {
-            ParticleBuffStruct record;
-            record.position = ( inverseLookAt * mathfu::vec4(
-                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
-                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
-                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
+    static ParticleBuffStructQuad record;
+    const C4Vector colorCombined = mathfu::vec4_packed(mathfu::vec4(color, alpha));
+    //Unroll 1
+    record.particle[0].position = ( inverseLookAt * mathfu::vec4(
+                m0.x * vxs[0] + m1.x * vys[0] + viewPos.x,
+                m0.y * vxs[0] + m1.y * vys[0] + viewPos.y,
+                m0.z * vxs[0] + m1.z * vys[0] + viewPos.z,
                 1.0
             )).xyz();
-            record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
+    record.particle[0].color = colorCombined;
 
-            record.textCoord0 =
-                mathfu::vec2(txs[i] * this->texScaleX + texStartX,
-                             tys[i] * this->texScaleY + texStartY);
+    record.particle[0].textCoord0 =
+        mathfu::vec2(txs[0] * this->texScaleX + texStartX,
+                     tys[0] * this->texScaleY + texStartY);
 
-            buffer.emplace_back(record);
-        }
 
-        std::copy((uint8_t *)&buffer[0], (uint8_t *)&buffer[0] + buffer.size()*sizeof(ParticleBuffStruct), std::back_inserter(szVertexBuf));
+
+    //Unroll 2
+    record.particle[1].position = ( inverseLookAt * mathfu::vec4(
+            m0.x * vxs[1] + m1.x * vys[1] + viewPos.x,
+            m0.y * vxs[1] + m1.y * vys[1] + viewPos.y,
+            m0.z * vxs[1] + m1.z * vys[1] + viewPos.z,
+            1.0
+    )).xyz();
+    record.particle[1].color = colorCombined;
+    record.particle[1].textCoord0 =
+            mathfu::vec2(txs[1] * this->texScaleX + texStartX,
+                         tys[1] * this->texScaleY + texStartY);
+
+    //Unroll 3
+    record.particle[2].position = ( inverseLookAt * mathfu::vec4(
+            m0.x * vxs[2] + m1.x * vys[2] + viewPos.x,
+            m0.y * vxs[2] + m1.y * vys[2] + viewPos.y,
+            m0.z * vxs[2] + m1.z * vys[2] + viewPos.z,
+            1.0
+    )).xyz();
+    record.particle[2].color = colorCombined;
+    record.particle[2].textCoord0 =
+            mathfu::vec2(txs[2] * this->texScaleX + texStartX,
+                         tys[2] * this->texScaleY + texStartY);
+
+
+    //Unroll 4
+    record.particle[3].position = ( inverseLookAt * mathfu::vec4(
+            m0.x * vxs[3] + m1.x * vys[3] + viewPos.x,
+            m0.y * vxs[3] + m1.y * vys[3] + viewPos.y,
+            m0.z * vxs[3] + m1.z * vys[3] + viewPos.z,
+            1.0
+    )).xyz();
+    record.particle[3].color = colorCombined;
+    record.particle[3].textCoord0 =
+            mathfu::vec2(txs[3] * this->texScaleX + texStartX,
+                         tys[3] * this->texScaleY + texStartY);
+
+
+    long index = szVertexBuf.size();
+    szVertexBuf.resize(szVertexBuf.size() + 1);
+    szVertexBuf[index] = record;
 }
 
 void ParticleEmitter::Render() {
-    if (this->szVertexBuf.size() <= 0) return;
+    if (this->szVertexBuf.size() <= 1) return;
 
     auto particleShader = m_api->getM2ParticleShader();
     auto textureCache = m_api->getTextureCache();
@@ -627,15 +675,11 @@ void ParticleEmitter::Render() {
 
     glUniform1i(particleShader->getUnf("uPixelShader"), uPixelShader);
 
-    GLuint indexVBO;
-    glGenBuffers(1, &indexVBO);
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->szIndexBuff.size()*2, &this->szIndexBuff[0], GL_STREAM_DRAW);
 
-    GLuint bufferVBO;
-    glGenBuffers(1, &bufferVBO);
     glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-    glBufferData(GL_ARRAY_BUFFER, this->szVertexBuf.size(), &this->szVertexBuf[0], GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, this->szVertexBuf.size() * sizeof(this->szVertexBuf[0]), &this->szVertexBuf[0], GL_STREAM_DRAW);
 
     int nFloats = 13;
     int stride = nFloats * 4;
@@ -715,7 +759,6 @@ void ParticleEmitter::Render() {
             break;
     }
 
-
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDisable(GL_CULL_FACE);
@@ -726,6 +769,4 @@ void ParticleEmitter::Render() {
 
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer( GL_ARRAY_BUFFER, 0);
-    glDeleteBuffers(1, &bufferVBO);
-    glDeleteBuffers(1, &indexVBO);
 }

@@ -807,8 +807,6 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
 
     auto animationRecord = m_m2File->sequences[animationIndex];
 
-
-
     for (int i = 0; i < peRecords.size; i++) {
         auto &peRecord = *peRecords.getElement(i);
         auto &particleEmitter = particleEmitters[i];
@@ -826,8 +824,6 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 defaultChar
             );
 
-        enabledIn = 1;
-//
         particleEmitter->isEnabled = enabledIn;
 
         aniProp->emissionSpeed =
