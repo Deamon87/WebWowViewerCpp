@@ -28,17 +28,16 @@ uniform mat4 uPMatrix;
 uniform mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 uniform int uVertexShader;
 
-uniform lowp int uUseDiffuseColor;
+uniform lowp int uIsAffectedByLight;
 uniform vec4 uColor;
 uniform float uTransparency;
 
 #ifdef INSTANCED
-attribute vec4 aDiffuseColor;
 attribute mat4 aPlacementMat;
 
 #else
 uniform mat4 uPlacementMat;
-uniform vec4 uDiffuseColor;
+uniform vec4 uAmbientColor;
 #endif
 
 varying vec2 vTexCoord;
@@ -84,20 +83,8 @@ void main() {
     placementMat = uPlacementMat;
 #endif
 
-    vec4 lDiffuseColor;
-    if ((uUseDiffuseColor == 1)) {
-#ifdef INSTANCED
-        lDiffuseColor = aDiffuseColor;
-#else
-        lDiffuseColor = uDiffuseColor;
-#endif
-    } else {
-        lDiffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
-    }
-
     vec4 meshColor = uColor;
-    lDiffuseColor = vec4(meshColor.rgb * lDiffuseColor.bgr, uTransparency);
-
+    vec4 lDiffuseColor = vec4(meshColor.rgb, uTransparency);
 
     mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
@@ -237,6 +224,7 @@ uniform sampler2D uTexture4;
 
 uniform vec3 uViewUp;
 uniform vec3 uSunDir;
+uniform vec3 uSunColor;
 uniform vec4 uAmbientLight;
 
 uniform float uFogStart;
@@ -244,7 +232,7 @@ uniform float uFogEnd;
 
 uniform mediump mat4 uLookAtMat;
 
-uniform lowp int uUseDiffuseColor;
+uniform lowp int uIsAffectedByLight;
 struct LocalLight
 {
     vec4 color;
@@ -263,14 +251,17 @@ varying float fs_Depth;
 vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
     vec3 currColor;
     float mult = 1.0;
-    if (uUseDiffuseColor == 1) {
+    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
+    if (uIsAffectedByLight == 1) {
         vec3 normalizedN = normalize(vNormal);
         float t823 = dot(normalizedN, -(uSunDir.xyz));
         float t846 = dot(normalizedN, uViewUp.xyz);
 
-        vec3 adjAmbient = (uAmbientLight.rgb );
-        vec3 adjHorizAmbient = (uAmbientLight.rgb );
-        vec3 adjGroundAmbient = (uAmbientLight.rgb );
+        vec4 AmbientLight = uAmbientLight;
+
+        vec3 adjAmbient = (AmbientLight.rgb );
+        vec3 adjHorizAmbient = (AmbientLight.rgb );
+        vec3 adjGroundAmbient = (AmbientLight.rgb );
 
         if ((t846 >= 0.0))
         {
@@ -283,6 +274,9 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
 
         vec3 skyColor = (currColor * 1.10000002);
         vec3 groundColor = (currColor* 0.699999988);
+        float nDotL = clamp(dot(vNormal, -(uSunDir.xyz)), 0.0, 1.0);
+
+        lDiffuse = (uSunColor * nDotL);
         currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * t823))));
 //
 
@@ -295,7 +289,7 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
 
 //    return currColor.rgb * matDiffuse;
 //    return sqrt((matDiffuse*matDiffuse)*0.5 + currColor.rgb*(matDiffuse*matDiffuse));
-    vec3 gammaDiffTerm = matDiffuse * currColor;
+    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * accumLight;
 //    return sqrt((matDiffuse*matDiffuse)*mult + currColor.rgb*(matDiffuse*matDiffuse)) ;
     return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
@@ -321,7 +315,7 @@ void main() {
 //    if(meshResColor.a < uAlphaTest)
 //        discard;
     vec3 accumLight;
-    if ((uUseDiffuseColor == 1)) {
+    if ((uIsAffectedByLight == 1)) {
         vec3 vPos3 = vPosition.xyz;
         vec3 vNormal3 = normalize(vNormal.xyz);
         int count = int(pc_lights[0].attenuation.w);

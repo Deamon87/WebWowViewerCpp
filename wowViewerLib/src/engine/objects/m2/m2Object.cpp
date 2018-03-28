@@ -738,7 +738,7 @@ void M2Object::draw(bool drawTransparent) {
         this->m_skinGeom->setupAttributes();
 //    }
 
-    static mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
+    static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
     mathfu::vec4 localDiffuse = diffuseNon;
     if (m_useLocalDiffuseColor) {
         localDiffuse = m_localDiffuseColorV;

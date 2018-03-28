@@ -269,7 +269,7 @@ M2Geom::setupPlacementAttribute(GLuint placementVBO) {
         glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 1, 4, GL_FLOAT, GL_FALSE, 20 * 4, (void*)16);  // position
         glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 2, 4, GL_FLOAT, GL_FALSE, 20 * 4, (void*)32);  // position
         glVertexAttribPointer(+m2Shader::Attribute::aPlacementMat + 3, 4, GL_FLOAT, GL_FALSE, 20 * 4, (void*)48);  // position
-        glVertexAttribPointer(+m2Shader::Attribute::aDiffuseColor, 4, GL_FLOAT, GL_FALSE, 20 * 4, (void*)64); //Diffuse color
+//        glVertexAttribPointer(+m2Shader::Attribute::aAmbientColor, 4, GL_FLOAT, GL_FALSE, 20 * 4, (void*)64); //Diffuse color
 
 }
 
@@ -298,7 +298,7 @@ M2Geom::setupUniforms(
     //Set proper color
 //    if (diffuseColor) {
     if (!instanced) {
-        glUniform4fv(m2Shader->getUnf("uDiffuseColor"), 1, &diffuseColor[0]);
+        glUniform3fv(m2Shader->getUnf("uSunColor"), 1, &diffuseColor[0]);
     }
 
     //Setup lights
@@ -475,10 +475,10 @@ M2Geom::drawMesh(
                     break;
             }
 
-            if (((renderFlag->flags & 0x1) > 0) || (renderFlag->blending_mode == 5) || (renderFlag->blending_mode == 6)) {
-                glUniform1i(m2Shader->getUnf("uUseDiffuseColor"), 0);
+            if (((renderFlag->flags & 0x1) > 0)) {
+                glUniform1i(m2Shader->getUnf("uIsAffectedByLight"), 0);
             } else {
-                glUniform1i(m2Shader->getUnf("uUseDiffuseColor"), 1);
+                glUniform1i(m2Shader->getUnf("uIsAffectedByLight"), 1);
             }
             if ((renderFlag->flags & 0x2) > 0 ) {
                 glUniform1i(m2Shader->getUnf("uUnFogged"), 1);

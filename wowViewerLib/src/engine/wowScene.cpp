@@ -183,7 +183,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
-//        "WORLD\\GENERIC\\HUMAN\\PASSIVE DOODADS\\STATUES\\STATUEDANATH.m2");
+//        "WORLD\\EXPANSION02\\DOODADS\\CRYSTALSONGFOREST\\BUBBLE\\CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -238,10 +238,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 
     //Test scene 3: Ironforge
-//    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
+    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
 //    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
-//    currentScene = new WmoScene(this,
-//        "world\\wmo\\brokenisles\\dalaran2.wmo");
+    currentScene = new WmoScene(this,
+        "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
@@ -897,7 +897,7 @@ void WoWSceneImpl::activateM2InstancingShader() {
     glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 1);
     glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 2);
     glEnableVertexAttribArray(+m2Shader::Attribute::aPlacementMat + 3);
-    glEnableVertexAttribArray(+m2Shader::Attribute::aDiffuseColor);
+//    glEnableVertexAttribArray(+m2Shader::Attribute::aAmbientColor);
 
 #ifndef WITH_GLESv2
     if ( true/*instExt != null */) {
@@ -905,7 +905,7 @@ void WoWSceneImpl::activateM2InstancingShader() {
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 1);
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 2, 1);
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 3, 1);
-        glVertexAttribDivisor(+m2Shader::Attribute::aDiffuseColor, 1);
+//        glVertexAttribDivisor(+m2Shader::Attribute::aAmbientColor, 1);
     }
 #endif
 

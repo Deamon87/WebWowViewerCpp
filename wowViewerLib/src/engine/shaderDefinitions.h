@@ -167,7 +167,7 @@ constexpr const char* const m2ShaderString =
 
 struct m2Shader {
  enum class Attribute { 
- aPosition = 0, aNormal = 1, bones = 2, boneWeights = 3, aTexCoord = 4, aTexCoord2 = 5, aDiffuseColor = 6, aPlacementMat = 7, m2ShaderAttributeEnd
+ aPosition = 0, aNormal = 1, bones = 2, boneWeights = 3, aTexCoord = 4, aTexCoord2 = 5, aPlacementMat = 6, m2ShaderAttributeEnd
  };
  };
 inline constexpr const int operator+ (m2Shader::Attribute const val) { return static_cast<const int>(val); };
@@ -178,12 +178,11 @@ constexpr shaderItem m2ShaderAttributes [] = {
  {"boneWeights", +m2Shader::Attribute::boneWeights},
  {"aTexCoord", +m2Shader::Attribute::aTexCoord},
  {"aTexCoord2", +m2Shader::Attribute::aTexCoord2},
- {"aDiffuseColor", +m2Shader::Attribute::aDiffuseColor},
  {"aPlacementMat", +m2Shader::Attribute::aPlacementMat},
  };
 constexpr const static shaderDefinition m2ShaderDef = { 
 m2ShaderString,
-8,
+7,
 m2ShaderAttributes
 };
 

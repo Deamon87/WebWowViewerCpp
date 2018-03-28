@@ -90,6 +90,12 @@ public:
     bool hasPortals() {
         return mainGeom->header->nPortals != 0;
     }
+    mathfu::vec3 getAmbientLight() {
+        return mathfu::vec3(
+            mainGeom->header->ambColor.b/255.0,
+            mainGeom->header->ambColor.g/255.0,
+            mainGeom->header->ambColor.r/255.0        );
+    }
     virtual SMOHeader *getWmoHeader() override {
         return mainGeom->header;
     }

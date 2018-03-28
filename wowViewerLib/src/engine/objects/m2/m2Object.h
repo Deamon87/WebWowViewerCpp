@@ -53,6 +53,9 @@ private:
     M2Geom *m_m2Geom = nullptr;
     SkinGeom *m_skinGeom = nullptr;
 
+    mathfu::vec4 m_ambientColorOverride;
+    bool m_setAmbientColor = false;
+
 
     bool m_hasBillboards = false;
     std::string m_modelName;
@@ -155,7 +158,11 @@ public:
 
     void drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO);
 
+
     mathfu::vec4 getAmbientLight() {
+        if (m_setAmbientColor) {
+            return m_ambientColorOverride;
+        }
         mathfu::vec4 ambientColor = mathfu::vec4(0.0,0.0,0.0,0.0);
         for (int i = 0; i < lights.size(); ++i) {
             if (lights[i].ambient_intensity > 0) {
