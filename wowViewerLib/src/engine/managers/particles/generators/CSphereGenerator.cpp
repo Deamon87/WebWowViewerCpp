@@ -3,6 +3,7 @@
 //
 
 #include "CSphereGenerator.h"
+#include "../../../algorithms/mathHelper.h"
 
 void CSphereGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
 
@@ -32,9 +33,11 @@ void CSphereGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     float zSource = this->aniProp.zSource;
 
     mathfu::vec3 r0(0.5,0.5,0.5);
-    if (zSource < 0.001 & ((this->m_particleData->old.flags & 0x20000) <= 0)) {
+    if (feq(zSource, 0)) {
         if (this->particlesGoUp) {
             r0 = mathfu::vec3(0,0,1);
+        } else {
+            r0 = mathfu::vec3(cosPolar * cos(azimuth), cosPolar * sin(azimuth), sin(polar));
         }
     }
     else {
@@ -44,5 +47,7 @@ void CSphereGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
             r0 = r0.Normalized();
         }
     }
-    p.velocity = r0 * velocity;
+    mathfu::vec3 velocityCandidate = r0 * velocity;
+    p.velocity = velocityCandidate;
+
 }

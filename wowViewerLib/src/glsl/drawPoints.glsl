@@ -20,7 +20,7 @@ void main() {
 #endif
 
 #ifdef COMPILING_FS
-precision lowp float;
+precision highp float;
 
 varying vec4 vPos;
 

@@ -14,6 +14,8 @@ private:
     IWoWInnerApi *m_api;
     std::string m_m2Model;
     int m_cameraView;
+    mathfu::vec4 m_ambientColorOverride;
+    bool doOverride = false;
 
     M2Object *m_m2Object;
     bool m_drawModel = false;
@@ -36,6 +38,7 @@ public:
 
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
     mathfu::vec4 getAmbientColor() override;
+    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override;
     bool getCameraSettings(M2CameraResult &result) override ;
 
 };

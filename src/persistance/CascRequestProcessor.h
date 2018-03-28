@@ -7,14 +7,14 @@
 
 #include "RequestProcessor.h"
 #include <iostream>
-namespace CascLib {
+
     #include "../../3rdparty/casclib/src/CascLib.h"
-}
+
 
 class CascRequestProcessor : public RequestProcessor {
 public:
     CascRequestProcessor(const char *path) : m_cascDir(path){
-        if (CascLib::CascOpenStorage(path, 0xFFFFFFFF, &this->m_storage)) {
+        if (CascOpenStorage(path, 0xFFFFFFFF, &this->m_storage)) {
             std::cout << "Opened CascStorage at "<< path;
         } else {
             std::cout << "Could not open CascStorage at "<< path;

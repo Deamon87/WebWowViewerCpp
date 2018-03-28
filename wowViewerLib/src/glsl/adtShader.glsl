@@ -47,7 +47,7 @@ void main() {
 #endif //COMPILING_VS
 
 #ifdef COMPILING_FS
-precision lowp float;
+precision highp float;
 
 varying vec2 vChunkCoords;
 varying vec3 vPosition;
@@ -180,14 +180,14 @@ void main() {
     vec4 tex2 = texture2D(uLayer1, vTexCoord).rgba;
     vec4 tex1 = texture2D(uLayer0, vTexCoord).rgba;
 
-    vec4 layer_pct = vec4 ( layer_weights.x * (texture(uLayerHeight0, alphaCoord).a * uHeightScale[0] + uHeightOffset[0])
-                         , layer_weights.y * (texture(uLayerHeight1, alphaCoord).a * uHeightScale[1] + uHeightOffset[1])
-                         , layer_weights.z * (texture(uLayerHeight2, alphaCoord).a * uHeightScale[2] + uHeightOffset[2])
-                         , layer_weights.w * (texture(uLayerHeight3, alphaCoord).a * uHeightScale[3] + uHeightOffset[3])
+    vec4 layer_pct = vec4 ( layer_weights.x * (texture2D(uLayerHeight0, alphaCoord).a * uHeightScale[0] + uHeightOffset[0])
+                         , layer_weights.y * (texture2D(uLayerHeight1, alphaCoord).a * uHeightScale[1] + uHeightOffset[1])
+                         , layer_weights.z * (texture2D(uLayerHeight2, alphaCoord).a * uHeightScale[2] + uHeightOffset[2])
+                         , layer_weights.w * (texture2D(uLayerHeight3, alphaCoord).a * uHeightScale[3] + uHeightOffset[3])
                          );
 
 
-    vec4 layer_pct_max = vec4(max(max(max(layer_pct.x, layer_pct.y), layer_pct.y), layer_pct.z));
+    vec4 layer_pct_max = vec4(max(max(max(layer_pct.x, layer_pct.y), layer_pct.z), layer_pct.w));
     layer_pct = layer_pct * (vec4(1.0) - clamp(layer_pct_max - layer_pct, 0.0, 1.0));
     layer_pct = layer_pct / vec4(dot(layer_pct, vec4(1.0)));
 

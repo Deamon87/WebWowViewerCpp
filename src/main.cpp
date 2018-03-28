@@ -2,6 +2,10 @@
 #include <emscripten.h>
 #endif
 
+#ifdef _WIN32
+#include <errhandlingapi.h>
+#endif
+
 // Include GLEW. Always include it before gl.h and glfw.h, since it's a bit magic.
 #define NKC_IMPLEMENTATION
 #define NKCD NKC_GLFW

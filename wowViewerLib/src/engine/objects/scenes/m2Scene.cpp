@@ -34,7 +34,11 @@ void M2Scene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &f
 }
 
 mathfu::vec4 M2Scene::getAmbientColor() {
-    return m_m2Object->getAmbientLight();
+    if (doOverride) {
+        return m_ambientColorOverride;
+    } else {
+        return m_m2Object->getAmbientLight();
+    }
 }
 
 bool M2Scene::getCameraSettings(M2CameraResult &result) {
@@ -43,4 +47,9 @@ bool M2Scene::getCameraSettings(M2CameraResult &result) {
         return true;
     }
     return false;
+}
+
+void M2Scene::setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
+    doOverride = override;
+    m_ambientColorOverride = ambientColor;
 }

@@ -3,16 +3,24 @@ cmake_minimum_required(VERSION 3.6)
 project(WebWoWViewerCpp)
 include(ExternalProject)
 
+set(USE_NEON 0)
 if (CMAKE_NDK_BUILD MATCHES 1)
 	include_directories(BEFORE SYSTEM "${NDK_PATH}/include/c++/4.9.x/" "${NDK_PATH}/sysroot/usr/include/")
+	message(ERROR " CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
+	message(ERROR " ANDROID_ABI = ${ANDROID_ABI}")
+	#TODO: check ANDROID_ARM_NEON too
 	if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
 		include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
+		set(USE_NEON 1)
 	elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
 		include_directories(${ANDROID_SYSROOT}/usr/include/aarch64-linux-android)
+		set(USE_NEON 1)
 	elseif(${ANDROID_ABI} STREQUAL "x86_64")
 		include_directories(${ANDROID_SYSROOT}/usr/include/x86_64-linux-android)
+		set(USE_NEON 0)
 	else()
 		include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
+		set(USE_NEON 0)
 	endif()
 endif()
 
@@ -34,21 +42,17 @@ endif()
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
 
 #Zlib
-ExternalProject_Add("LibZip"
-		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
-		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR} -DEXTRA_LIBS=${extra_libraries}
-		)
+#ExternalProject_Add("LibZip"
+#		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
+#		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR} -DEXTRA_LIBS=${extra_libraries}
+#		)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libzip)
 include_directories("lib/libzip/include")
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw)
-	if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-		set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}/lib/libglfw3dll.a)
-	else()
-		set(GLFW_STATIC_LIBRARIES ${glfw_install_dir}/lib/libglfw.so.3)
-	endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 endif()
+
 #bz2
 add_subdirectory(3rdparty/bzip)
 
@@ -66,17 +70,24 @@ include_directories(3rdparty/PolyM)
 #add_subdirectory(3rdparty/stormlib)
 
 #CascLib
-#set(CASC_BUILD_STATIC_LIB ON)
-set(CASC_BUILD_SHARED_LIB ON)
-set(CMAKE_SYSTEM_NAME_TEMPTEMP ${CMAKE_SYSTEM_NAME})
-set(CMAKE_SYSTEM_NAME "Linux")
+set(CASC_BUILD_STATIC_LIB ON)
+if (CMAKE_NDK_BUILD MATCHES 1)
+	#set(CASC_BUILD_SHARED_LIB ON)
+	set(CMAKE_SYSTEM_NAME_TEMPTEMP ${CMAKE_SYSTEM_NAME})
+	set(CMAKE_SYSTEM_NAME "Linux")
+endif()
+set(WITH_LIBTOMCRYPT true)
 add_subdirectory(3rdparty/casclib)
-set(CMAKE_SYSTEM_NAME "${CMAKE_SYSTEM_NAME_TEMPTEMP}")
+if (CMAKE_NDK_BUILD MATCHES 1)
+	target_compile_definitions(casc PUBLIC -DCMAKE_SYSTEM_NAME=Linux)
+	set(CMAKE_SYSTEM_NAME "${CMAKE_SYSTEM_NAME_TEMPTEMP}")
+endif()
 
 #nuklear_cross
 include_directories(3rdparty/nuklear_cross)
 
 add_subdirectory(wowViewerLib)
+include_directories(${GLEW_INCLUDE_DIRS})
 
 set(SOURCE_FILES
 		src/persistance/httpFile/httpFile.cpp
@@ -132,26 +143,30 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 	add_library(WebWoWViewerCpp SHARED ${SOURCE_FILES})
 	target_compile_definitions(WebWoWViewerCpp PRIVATE WITH_GLESv2=1)
 	target_compile_definitions(WoWViewerLib PRIVATE WITH_GLESv2=1)
+	if (USE_NEON MATCHES 1)
+		target_compile_definitions(WoWViewerLib PRIVATE VECTORIAL_NEON=1)
+		target_compile_definitions(WoWViewerLib PRIVATE VECTORIAL_FORCED=1)
+		target_compile_definitions(WoWViewerLib PRIVATE MATHFU_COMPILE_WITH_SIMD=1)
+	endif ()
 else()
 	add_executable(WebWoWViewerCpp ${SOURCE_FILES})
 
 endif()
 
-add_dependencies(WebWoWViewerCpp LibZip)
+#add_dependencies(WebWoWViewerCpp LibZip)
 add_dependencies(WebWoWViewerCpp zip)
 add_dependencies(WebWoWViewerCpp zlib)
-add_dependencies(WebWoWViewerCpp glfw)
-
 add_dependencies(WebWoWViewerCpp WoWViewerLib)
 #add_dependencies(WebWoWViewerCpp storm)
 add_dependencies(WebWoWViewerCpp casc)
 
 #TODO: platform dependant!!
-
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
+	add_dependencies(WebWoWViewerCpp glfw)
 	set_property(TARGET WebWoWViewerCpp PROPERTY CXX_STANDARD 17)
 endif()
 
+link_libraries(WebWoWViewerCpp ${GLEW_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp ${CURL_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp zip)
@@ -162,6 +177,7 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 else()
 	target_link_libraries(WebWoWViewerCpp EGL)
 	target_link_libraries(WebWoWViewerCpp GLESv2)
+	target_link_libraries(WebWoWViewerCpp log)
 endif()
 target_link_libraries(WebWoWViewerCpp polym)
 target_link_libraries(WebWoWViewerCpp cpr)
@@ -171,5 +187,6 @@ target_link_libraries(WebWoWViewerCpp ${glew_lib})
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	target_link_libraries(WebWoWViewerCpp opengl32)
 	target_link_libraries(WebWoWViewerCpp -lm)
+	target_link_libraries(WebWoWViewerCpp -lwininet)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 

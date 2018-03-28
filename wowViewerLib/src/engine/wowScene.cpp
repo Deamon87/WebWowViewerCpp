@@ -5,6 +5,7 @@
 #include "algorithms/mathHelper.h"
 #include "objects/scenes/m2Scene.h"
 #include "objects/scenes/wmoScene.h"
+#include "androidLogSupport.h"
 
 #include "mathfu/glsl_mappings.h"
 #include <iostream>
@@ -202,8 +203,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0,  0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //    currentScene = new M2Scene(this,
@@ -213,12 +214,22 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
-//   currentScene = new M2Scene(this,
+//    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
+//    mathfu::vec4 ambientColorOver = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+//    currentScene->setAmbientColorOverride(ambientColorOver, true);
 //    config->setBCLightHack(true);
+
+
 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
+
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_worgen/ui_worgen.m2", 0);
+
+//    currentScene = new M2Scene(this,
+//        "\tinterface/glues/models/ui_pandaren/ui_pandaren.m2", 0);
 //
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_nightelf/ui_nightelf.m2", 0);
@@ -318,6 +329,22 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
 
 
     bool glsl330 = true;
+#ifdef __ANDROID_API__
+    glsl330 = false;
+#endif
+#ifdef __APPLE__
+#include "TargetConditionals.h"
+#if TARGET_IPHONE_SIMULATOR
+    glsl330 = false;
+#elif TARGET_OS_IPHONE
+    glsl330 = false;
+#elif TARGET_OS_MAC
+    glsl330 = true;
+#else
+#   error "Unknown Apple platform"
+#endif
+#endif
+
     if (glsl330) {
         vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
         vertExtraDefStrings += "#define varying out\n";
@@ -1056,8 +1083,8 @@ void glClearScreen() {
     glDepthFunc(GL_LESS);
 
     glDisable(GL_BLEND);
-//    glClearColor(0.0, 0.0, 0.0, 1);
-    glClearColor(0.117647, 0.207843, 0.392157, 1);
+    glClearColor(0.0, 0.0, 0.0, 1);
+//    glClearColor(0.117647, 0.207843, 0.392157, 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -1317,5 +1344,9 @@ void WoWSceneImpl::SetDirection() {
 		return nullptr;
 	}
 #endif
+#ifdef __ANDROID_API__
+     std::cout.rdbuf(new androidbuf);
+#endif
+
     return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);
 }

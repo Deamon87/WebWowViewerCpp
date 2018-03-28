@@ -14,7 +14,7 @@
 #endif
 
 #ifdef COMPILING_VS
-precision lowp float;
+precision highp float;
 /* vertex shader code */
 attribute vec3 aPosition;
 attribute vec3 aNormal;
@@ -209,7 +209,7 @@ void main() {
 
 #ifdef COMPILING_FS
 
-precision lowp float;
+precision highp float;
 varying vec3 vNormal;
 varying vec2 vTexCoord;
 varying vec2 vTexCoord2;

@@ -551,7 +551,6 @@ M2Geom::drawMesh(
                                GL_UNSIGNED_SHORT,
                                (const void *) ((mesh->indexStart + (mesh->Level << 16)) * 2));
             } else {
-//                instExt.drawElementsInstancedANGLE(gl.TRIANGLES, skinData.subMeshes[meshIndex].nTriangles, gl.UNSIGNED_SHORT, skinData.subMeshes[meshIndex].StartTriangle * 2, instanceCount);
 #ifndef WITH_GLESv2
                 glDrawElementsInstanced(GL_TRIANGLES, skinData.submeshes[meshIndex]->indexCount,
                                         GL_UNSIGNED_SHORT,

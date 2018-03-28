@@ -1,5 +1,5 @@
 #ifdef COMPILING_VS
-precision lowp float;
+precision highp float;
 attribute vec3 aPosition;
 attribute vec4 aColor;
 attribute vec2 aTexcoord0;
@@ -27,7 +27,7 @@ void main() {
 #endif //COMPILING_VS
 
 #ifdef COMPILING_FS
-precision lowp float;
+precision highp float;
 varying vec4 vColor;
 varying vec2 vTexcoord0;
 varying vec2 vTexcoord1;

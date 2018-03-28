@@ -14,7 +14,7 @@ void main() {
 #endif //COMPILING_VS
 
 #ifdef COMPILING_FS
-precision lowp float;
+precision highp float;
 
 uniform vec4 uColor;
 

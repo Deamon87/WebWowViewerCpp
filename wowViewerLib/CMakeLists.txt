@@ -11,11 +11,6 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING)
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize")
 
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DMATHFU_COMPILE_WITH_SIMD")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DMATHFU_COMPILE_WITH_SIMD")
-endif()
-
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 
@@ -35,35 +30,31 @@ set(mathfu_build_benchmarks OFF CACHE BOOL "")
 set(mathfu_build_tests OFF CACHE BOOL "")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu mathfu)
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu)
 
-if (WIN32)
-    MESSAGE(IT IS WINDOWS!!!!)
+if (NOT CMAKE_NDK_BUILD MATCHES 1)
     include_directories(${PROJECT_SOURCE_DIR}/3rdparty/glew_win/include)
-    set(glew_include ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/include)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(glew_lib ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32s.lib )
-    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-        set(glew_lib ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32s.lib )
-    endif()
-
-else()
-    if (NOT CMAKE_NDK_BUILD MATCHES 1)
+    if (WIN32)
+        MESSAGE(IT IS WINDOWS!!!!)
+        set(GLEW_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/include)
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(GLEW_LIBRARIES ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32.lib )
+        elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+            set(GLEW_LIBRARIES ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32.lib )
+        endif()
+    else()
         find_package(GLEW REQUIRED)
         if (GLEW_FOUND)
             set(glew_include ${GLEW_INCLUDE_DIRS})
             include_directories(${GLEW_INCLUDE_DIRS})
             link_libraries(${GLEW_LIBRARIES})
-            set(glew_lib ${GLEW_LIBRARIES} )
         endif()
-    endif()
-    if(NOT GLEW_FOUND)
-        message(ERROR " GLEW not found!")
-    endif(NOT GLEW_FOUND)
-endif(WIN32)
+    endif(WIN32)
+else()
+endif(NOT CMAKE_NDK_BUILD MATCHES 1)
 
-set(glew_lib ${glew_lib} PARENT_SCOPE)
-set(glew_include ${glew_include} PARENT_SCOPE)
+set(GLEW_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS} PARENT_SCOPE)
+include_directories(${GLEW_INCLUDE_DIRS})
 
 IF(CMAKE_BUILD_TYPE MATCHES Release)
     include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
@@ -133,22 +124,45 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/m2/m2Instancing/m2InstancingObject.h
         src/engine/algorithms/hashString.h
         src/engine/persistance/header/wdtFileHeader.h
-        src/engine/persistance/wdtFile.cpp src/engine/persistance/wdtFile.h src/engine/managers/particleManager.cpp src/engine/managers/particleManager.h src/engine/managers/particles/particleEmitter.cpp src/engine/managers/particles/particleEmitter.h src/engine/managers/particles/generators/CParticleGenerator.cpp src/engine/managers/particles/generators/CParticleGenerator.h src/engine/managers/particles/generators/CSphereGenerator.cpp src/engine/managers/particles/generators/CSphereGenerator.h src/engine/managers/particles/particle.cpp src/engine/managers/particles/particle.h src/engine/managers/particles/generators/CSplineGenerator.cpp src/engine/managers/particles/generators/CSplineGenerator.h src/engine/managers/particles/generators/CBoneGenerator.cpp src/engine/managers/particles/generators/CBoneGenerator.h src/engine/persistance/wdlFile.cpp src/engine/persistance/wdlFile.cpp src/engine/persistance/wdlFile.h src/engine/objects/wdl/wdlObject.cpp src/engine/objects/wdl/wdlObject.h src/engine/managers/particles/CGeneratorAniProp.cpp src/engine/managers/particles/CGeneratorAniProp.h src/engine/managers/particles/CRndSeed.cpp src/engine/managers/particles/CRndSeed.h src/engine/managers/particles/generators/CPlaneGenerator.cpp src/engine/managers/particles/generators/CPlaneGenerator.h src/engine/texture/DxtDecompress.cpp src/engine/texture/DxtDecompress.h)
+        src/engine/persistance/wdtFile.cpp
+        src/engine/persistance/wdtFile.h
+        src/engine/managers/particleManager.cpp
+        src/engine/managers/particleManager.h
+        src/engine/managers/particles/particleEmitter.cpp
+        src/engine/managers/particles/particleEmitter.h
+        src/engine/managers/particles/generators/CParticleGenerator.cpp src/engine/managers/particles/generators/CParticleGenerator.h src/engine/managers/particles/generators/CSphereGenerator.cpp src/engine/managers/particles/generators/CSphereGenerator.h src/engine/managers/particles/particle.cpp src/engine/managers/particles/particle.h src/engine/managers/particles/generators/CSplineGenerator.cpp src/engine/managers/particles/generators/CSplineGenerator.h src/engine/managers/particles/generators/CBoneGenerator.cpp src/engine/managers/particles/generators/CBoneGenerator.h
+        src/engine/persistance/wdlFile.cpp
+        src/engine/persistance/wdlFile.cpp
+        src/engine/persistance/wdlFile.h
+        src/engine/objects/wdl/wdlObject.cpp
+        src/engine/objects/wdl/wdlObject.h
+        src/engine/managers/particles/CGeneratorAniProp.cpp
+        src/engine/managers/particles/CGeneratorAniProp.h
+        src/engine/managers/particles/CRndSeed.cpp
+        src/engine/managers/particles/CRndSeed.h
+        src/engine/managers/particles/generators/CPlaneGenerator.cpp
+        src/engine/managers/particles/generators/CPlaneGenerator.h
+        src/engine/texture/DxtDecompress.cpp
+        src/engine/texture/DxtDecompress.h
+        src/engine/androidLogSupport.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
     set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 endif()
-target_link_libraries(WoWViewerLib ${glew_lib})
+target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
     target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
     mathfu_configure_flags(WoWViewerLib ON)
 else()
-    mathfu_configure_flags(WoWViewerLib FALSE)
-    target_include_directories(WoWViewerLib PRIVATE "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include" "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include")
+    mathfu_configure_flags(WoWViewerLib ON)
+#    target_include_directories(WoWViewerLib PRIVATE "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include" "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include")
 endif()
+
+target_include_directories(WoWViewerLib
+        PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
 
 INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/include/wowScene.h
               ${PROJECT_SOURCE_DIR}/src/include/config.h

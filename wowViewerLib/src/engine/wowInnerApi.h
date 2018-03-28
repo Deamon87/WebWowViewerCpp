@@ -66,8 +66,9 @@ public:
 };
 
 #include "geometry/m2Geom.h"
-
 #include "geometry/wmoMainGeom.h"
 #include "geometry/wmoGroupGeom.h"
+
+
 
 #endif //WOWVIEWERLIB_WOWINNERAPI_H

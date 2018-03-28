@@ -28,7 +28,7 @@ void main(void) {
 
 #ifdef COMPILING_FS
 
-precision mediump float;
+precision highp float;
 uniform sampler2D diffuse;
 uniform int drawDepth;
 uniform float uFarPlane;

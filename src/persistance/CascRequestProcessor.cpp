@@ -14,19 +14,19 @@ void CascRequestProcessor::processFileRequest(std::string &fileName) {
     std::string fileNameFixed = fileName;
     std::replace( fileNameFixed.begin(), fileNameFixed.end(), '/', '\\');
 
-    CascLib::HANDLE fileHandle;
+    HANDLE fileHandle;
     std::vector<unsigned char> fileContent;
     bool fileOpened = false;
-    if (CascLib::CascOpenFile(m_storage, fileNameFixed.c_str(), 0,  0, &fileHandle)) {
-        CascLib::DWORD fileSize1 = CascLib::CascGetFileSize(fileHandle, 0);
+    if (CascOpenFile(m_storage, fileNameFixed.c_str(), 0,  0, &fileHandle)) {
+        DWORD fileSize1 = CascGetFileSize(fileHandle, 0);
         fileOpened = true;
         fileContent = std::vector<unsigned char> (fileSize1+1);
 
-        CascLib::DWORD totalBytesRead = 0;
+        DWORD totalBytesRead = 0;
         while (true) {
-            CascLib::DWORD dwBytesRead;
+            DWORD dwBytesRead;
 
-            CascLib::CascReadFile(fileHandle, &fileContent[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
+            CascReadFile(fileHandle, &fileContent[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
 
             if(dwBytesRead == 0) {
                 break;

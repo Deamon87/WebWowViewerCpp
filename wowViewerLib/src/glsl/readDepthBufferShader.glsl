@@ -11,7 +11,7 @@ void main() {
 #endif //COMPILING_VS
 
 #ifdef COMPILING_FS
-precision mediump float;
+precision highp float;
 varying vec2 v_texcoord;
 uniform sampler2D u_sampler;
 

@@ -159,13 +159,9 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
 //    }
 
     /* S3TC is not supported on mobile platforms */
-//    var useDXT1Decoding = ((!ext) || (!ext.COMPRESSED_RGB_S3TC_DXT1_EXT)) || ((!ext) || (!ext.COMPRESSED_RGBA_S3TC_DXT1_EXT));
-//    var useDXT3Decoding = ((!ext) || (!ext.COMPRESSED_RGBA_S3TC_DXT3_EXT));
-//    var useDXT5Decoding = ((!ext) || (!ext.COMPRESSED_RGBA_S3TC_DXT5_EXT));
-
-    bool useDXT1Decoding = false;
-    bool useDXT3Decoding = false;
-    bool useDXT5Decoding = false;
+    bool useDXT1Decoding = true;
+    bool useDXT3Decoding = true;
+    bool useDXT5Decoding = true;
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
@@ -272,6 +268,7 @@ void BlpTexture::process(std::vector<unsigned char> &blpFile) {
     /* Determine texture format */
     BlpFile *pBlpFile = (BlpFile *) &blpFile[0];
     if (pBlpFile->fileIdent != '2PLB') {
+
         std::cout << pBlpFile->fileIdent;
     }
     TextureFormat textureFormat = getTextureType(pBlpFile);

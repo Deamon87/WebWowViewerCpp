@@ -8,7 +8,6 @@ typedef float animTime_t;
 typedef double animTime_t;
 #endif
 
-
 #include <string>
 #include "config.h"
 #include "controllable.h"

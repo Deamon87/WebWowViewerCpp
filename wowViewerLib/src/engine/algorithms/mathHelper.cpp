@@ -5,7 +5,7 @@
 #include "mathHelper.h"
 #include "grahamScan.h"
 #include <cmath>
-#include "../../../3rdparty/mathfu/include/mathfu/internal/vector_4.h"
+
 
 float MathHelper::fp69ToFloat(uint16_t x) {
     const float divider = float(1 << 9);

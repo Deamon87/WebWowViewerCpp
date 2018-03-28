@@ -8,8 +8,8 @@
 
 #include "../persistance/header/commonFileStructs.h"
 #include "mathfu/glsl_mappings.h"
-#include "mathfu/internal/vector_4.h"
 #include <vector>
+
 #define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
 const float ROUNDING_ERROR_f32 = 0.001f;
 inline bool feq(const float a, const float b, const float tolerance = ROUNDING_ERROR_f32)
