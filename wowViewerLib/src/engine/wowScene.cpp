@@ -238,8 +238,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 
     //Test scene 3: Ironforge
-    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
-//    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
+//    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
+    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
     currentScene = new WmoScene(this,
         "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,

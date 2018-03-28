@@ -60,14 +60,8 @@ void main() {
     vPosition = cameraPoint.xyz;
 #endif //drawBuffersIsSupported
 
-    if (uUseLitColor == 1) {
-        vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
-    } else {
-        vColor.rgb = clamp(aColor.bgr,  vec3(0.0), vec3(1.0)) ;
-        vColor.a = aColor.a;
-//        vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
-    }
-    vColor2 = aColor2.bgra;
+    vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
+    vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
 
     if ( uVertexShader == -1 ) {
         vTexCoord = aTexCoord;
@@ -77,15 +71,10 @@ void main() {
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2; //not used
         vTexCoord3 = aTexCoord3; //not used
-
-
-        vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
     } else if (uVertexShader == 1) { //MapObjDiffuse_T1_Refl
         vTexCoord = aTexCoord;
         vTexCoord2 = reflect(normalize(cameraPoint.xyz), vNormal).xy;
         vTexCoord3 = aTexCoord3; //not used
-
-        vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
     } else if (uVertexShader == 2) { //MapObjDiffuse_T1_Env_T2
         vTexCoord = aTexCoord;
 
@@ -103,8 +92,6 @@ void main() {
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2; //not used
         vTexCoord3 = aTexCoord3; //not used
-
-        vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
     } else if (uVertexShader == 5) { //MapObjDiffuse_Comp_Refl
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2;

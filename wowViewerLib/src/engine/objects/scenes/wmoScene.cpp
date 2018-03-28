@@ -81,12 +81,12 @@ void WmoScene::draw() {
 //        }
     }
     this->m_api->deactivateWMOShader();
-
-    this->m_api->activateDrawPointShader();
-    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
-        this->wmoRenderedThisFrameArr[i]->drawDebugLights();
-    }
-    this->m_api->deactivateDrawPointShader();
+//
+//    this->m_api->activateDrawPointShader();
+//    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
+//        this->wmoRenderedThisFrameArr[i]->drawDebugLights();
+//    }
+//    this->m_api->deactivateDrawPointShader();
 
     this->m_api->activateDrawPortalShader();
     for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
@@ -241,13 +241,13 @@ void WmoScene::drawM2s() {
         }
         this->m_api->deactivateBoundingBoxShader();
     }
-    this->m_api->activateDrawPointShader();
-
-    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-        this->m2RenderedThisFrameArr[i]->drawDebugLight();
-    }
-
-    this->m_api->deactivateDrawPointShader();
+//    this->m_api->activateDrawPointShader();
+//
+//    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
+//        this->m2RenderedThisFrameArr[i]->drawDebugLight();
+//    }
+//
+//    this->m_api->deactivateDrawPointShader();
 }
 
 
