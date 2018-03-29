@@ -29,7 +29,7 @@ public:
     bool isLoaded() const { return m_loaded; };
     void createIndexVBO();
 
-    void draw(IWoWInnerApi *api, SMOMaterial const *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc);
+    void draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu::vec4 &ambColor, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc);
 
 private:
     bool m_loaded = false;

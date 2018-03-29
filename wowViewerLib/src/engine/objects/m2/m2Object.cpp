@@ -512,9 +512,9 @@ void M2Object::setDiffuseColor(CImVector& value) {
     this->m_localDiffuseColor = value;
 
     this->m_localDiffuseColorV = mathfu::vec4(
-            value.b / 255.0f,
-            value.g / 255.0f,
             value.r / 255.0f,
+            value.g / 255.0f,
+            value.b / 255.0f,
             value.a / 255.0f);
 }
 void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
@@ -743,8 +743,9 @@ void M2Object::draw(bool drawTransparent) {
     if (m_useLocalDiffuseColor) {
         localDiffuse = m_localDiffuseColorV;
     }
+    mathfu::vec4 ambientLight = getAmbientLight();
 
-    this->m_m2Geom->setupUniforms(this->m_api, m_placementMatrix, bonesMatrices, localDiffuse, drawTransparent, lights, false);
+    this->m_m2Geom->setupUniforms(this->m_api, m_placementMatrix, bonesMatrices, localDiffuse, ambientLight, drawTransparent, lights, false);
 
     this->drawMeshes(drawTransparent, -1);
 
@@ -1071,9 +1072,10 @@ void M2Object::initParticleEmitters() {
 void M2Object::drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO) {
     if (!this->m_loaded) return;
 
+    mathfu::vec4 ambientLight = getAmbientLight();
     this->m_m2Geom->setupAttributes(/*this->m_skinGeom*/);
     this->m_skinGeom->setupAttributes();
-    this->m_m2Geom->setupUniforms(m_api, m_placementMatrix, bonesMatrices, m_localDiffuseColorV, drawTransparent, this->lights,  true);
+    this->m_m2Geom->setupUniforms(m_api, m_placementMatrix, bonesMatrices, m_localDiffuseColorV, ambientLight, drawTransparent, this->lights,  true);
     this->m_m2Geom->setupPlacementAttribute(placementVBO);
     this->drawMeshes(drawTransparent, instanceCount);
 }

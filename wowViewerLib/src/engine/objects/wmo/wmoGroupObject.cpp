@@ -29,8 +29,8 @@ void WmoGroupObject::draw(SMOMaterial *materials, std::function<BlpTexture *(int
     if (!this->m_loaded) return;
     if (m_geom->batchesLen <= 0) return;
 
-
-    m_geom->draw(m_api, materials, getTextureFunc);
+    mathfu::vec4 ambColor = getAmbientColor();
+    m_geom->draw(m_api, materials, ambColor, getTextureFunc);
 }
 
 void WmoGroupObject::drawDebugLights() {
@@ -521,11 +521,18 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 
 
 bool WmoGroupObject::checkDoodads(std::set<M2Object *> &wmoM2Candidates) {
+    if (!m_loaded) return false;
+
+    mathfu::vec4 ambientColor = getAmbientColor();
+
     for (int i = 0; i < this->m_doodads.size(); i++) {
         if (this->m_doodads[i] != nullptr) {
             if (this->m_dontUseLocalLightingForM2) {
                 this->m_doodads[i]->setUseLocalLighting(false);
             }
+
+            this->m_doodads[i]->setAmbientColorOverride(ambientColor, true);
+
             wmoM2Candidates.insert(this->m_doodads[i]);
         }
     }
@@ -542,4 +549,24 @@ void WmoGroupObject::setModelFileName(std::string modelName) {
 void WmoGroupObject::setModelFileId(int fileId) {
     useFileId = true;
     m_modelFileId = fileId;
+}
+
+mathfu::vec4 WmoGroupObject::getAmbientColor() {
+    mathfu::vec4 ambColor = mathfu::vec4(
+            ((float) m_geom->mohd->ambColor.r / 255.0f),
+            ((float) m_geom->mohd->ambColor.g / 255.0f),
+            ((float) m_geom->mohd->ambColor.b / 255.0f),
+            ((float) m_geom->mohd->ambColor.a / 255.0f)
+    );
+
+    if ((m_geom->use_replacement_for_header_color == 1) && (*(int *) &m_geom->replacement_for_header_color != -1)) {
+        ambColor = mathfu::vec4(
+                ((float) m_geom->replacement_for_header_color.r / 255.0f),
+                ((float) m_geom->replacement_for_header_color.g / 255.0f),
+                ((float) m_geom->replacement_for_header_color.b / 255.0f),
+                ((float) m_geom->replacement_for_header_color.a / 255.0f)
+        );
+    }
+
+    return ambColor;
 }

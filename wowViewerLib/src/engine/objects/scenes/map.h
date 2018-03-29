@@ -75,6 +75,7 @@ public:
     bool getCameraSettings(M2CameraResult &cameraResult) override{
         return false;
     };
+    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        std::vector<mathfu::vec4> &frustumPlanes,

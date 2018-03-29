@@ -69,8 +69,8 @@ private:
     std::vector<std::function<void()>> m_postLoadEvents;
 
     int m_skinNum = 0;
-    CImVector m_localDiffuseColor = {0xff, 0xff, 0xff, 0xff};
-    mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0xff, 0xff, 0xff, 0xff);
+    CImVector m_localDiffuseColor = {0, 0, 0, 0};
+    mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
     bool m_useLocalDiffuseColor = false;
     std::vector<uint8_t> m_meshIds;
     std::vector<std::string> m_replaceTextures;
@@ -161,7 +161,8 @@ public:
 
     mathfu::vec4 getAmbientLight() {
         if (m_setAmbientColor) {
-            return m_ambientColorOverride;
+//            return m_ambientColorOverride;
+            return mathfu::vec4(m_ambientColorOverride.z, m_ambientColorOverride.y, m_ambientColorOverride.x, m_ambientColorOverride.w);
         }
         mathfu::vec4 ambientColor = mathfu::vec4(0.0,0.0,0.0,0.0);
         for (int i = 0; i < lights.size(); ++i) {
@@ -171,6 +172,10 @@ public:
         }
         return ambientColor;
     };
+    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
+        m_setAmbientColor = override;
+        m_ambientColorOverride = ambientColor;
+    }
 
     void drawParticles();
 };

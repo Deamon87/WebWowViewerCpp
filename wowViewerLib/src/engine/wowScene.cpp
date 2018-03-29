@@ -118,8 +118,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
 //    currentScene = new Map(this, "Northrend");
 //
-//    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-//    currentScene = new Map(this, "Azeroth");
+    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
+    currentScene = new Map(this, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, "Zandalar");
@@ -137,7 +137,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(3993, 2302, 1043); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "NagaDungeon");
 //    m_firstCamera.setCameraPos(829, -296, 200 ); //Field of the Eternal Hunt
-//    currentScene = new Map(this, "unused");
+//    currentScene = new Map(this, "unused");w
 
 //    m_firstCamera.setCameraPos(-2825, -4546, 200 ); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "ScenarioAlcazIsland");
@@ -239,9 +239,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
-    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
-    currentScene = new WmoScene(this,
-        "world\\wmo\\brokenisles\\dalaran2.wmo");
+//    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
@@ -1333,7 +1333,7 @@ void WoWSceneImpl::SetDirection() {
     float cosTheta = (float) cos(theta);
 
     mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-    m_sunDir = (m_lookAtMat4.Transpose() * sunDirWorld).xyz();
+    m_sunDir = (m_lookAtMat4 * sunDirWorld).xyz();
 }
 
  WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){

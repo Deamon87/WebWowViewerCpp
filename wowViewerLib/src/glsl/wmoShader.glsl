@@ -150,9 +150,9 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
         float t846 = dot(normalizedN, uViewUp.xyz);
 
         vec3 precomputed = vColor2.rgb;
-        vec3 adjAmbient = (uAmbientLight.bgr + precomputed);
-        vec3 adjHorizAmbient = (uAmbientLight.bgr + precomputed);
-        vec3 adjGroundAmbient = (uAmbientLight.bgr + precomputed);
+        vec3 adjAmbient = (uAmbientLight.rgb + precomputed);
+        vec3 adjHorizAmbient = (uAmbientLight.rgb + precomputed);
+        vec3 adjGroundAmbient = (uAmbientLight.rgb + precomputed);
 
         if ((t846 >= 0.0))
         {

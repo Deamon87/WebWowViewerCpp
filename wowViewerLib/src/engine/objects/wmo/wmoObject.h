@@ -92,9 +92,9 @@ public:
     }
     mathfu::vec3 getAmbientLight() {
         return mathfu::vec3(
-            mainGeom->header->ambColor.b/255.0,
-            mainGeom->header->ambColor.g/255.0,
-            mainGeom->header->ambColor.r/255.0        );
+            mainGeom->header->ambColor.r/255.0f,
+            mainGeom->header->ambColor.g/255.0f,
+            mainGeom->header->ambColor.b/255.0f);
     }
     virtual SMOHeader *getWmoHeader() override {
         return mainGeom->header;

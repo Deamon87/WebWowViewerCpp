@@ -279,6 +279,7 @@ M2Geom::setupUniforms(
         mathfu::mat4 &placementMatrix,
         std::vector<mathfu::mat4> &boneMatrices,
         mathfu::vec4 &diffuseColor,
+        mathfu::vec4 &ambientColor,
         bool drawTransparent,
         std::vector<M2LightResult> &lights,
         bool instanced) {
@@ -299,7 +300,9 @@ M2Geom::setupUniforms(
 //    if (diffuseColor) {
     if (!instanced) {
         glUniform3fv(m2Shader->getUnf("uSunColor"), 1, &diffuseColor[0]);
+        glUniform4fv(m2Shader->getUnf("uAmbientLight"), 1, &ambientColor[0]);
     }
+
 
     //Setup lights
 

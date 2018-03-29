@@ -27,6 +27,7 @@ public:
             mathfu::mat4 &placementMatrix,
             std::vector<mathfu::mat4> &boneMatrices,
             mathfu::vec4 &diffuseColor,
+            mathfu::vec4 &ambientColor,
             bool drawTransparent,
             std::vector<M2LightResult> &lights,
             bool instanced);

@@ -43,6 +43,8 @@ public:
                            std::vector<mathfu::vec3> &points,
                            std::set<M2Object*> &wmoM2Candidates);
 
+    mathfu::vec4 getAmbientColor();
+
     bool checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                             mathfu::vec4 &cameraLocal,
                             C3Vector *portalVerticles,

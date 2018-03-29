@@ -326,12 +326,20 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         'MOCV', {
                             handler: [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOCV");
-                                if (object.mocvRead == 0) {
-                                    object.cvLen = chunkData.chunkLen / 4;
-                                    chunkData.readValues(object.colorArray, object.cvLen);
-                                } else if (object.mocvRead == 1) {
-                                    object.cvLen2 = chunkData.chunkLen / 4;
-                                    chunkData.readValues(object.colorArray2, object.cvLen2);
+                                if (object.mocvRead == 0 && object.mogp->flags.hasVertexColors) {
+                                    if (object.mogp->flags.hasVertexColors) {
+                                        object.cvLen = chunkData.chunkLen / 4;
+                                        chunkData.readValues(object.colorArray, object.cvLen);
+                                    } else {
+                                        object.mocvRead++;
+                                    }
+                                }
+
+                                if (object.mocvRead == 1) {
+                                    if (object.mogp->flags.CVERTS2) {
+                                        object.cvLen2 = chunkData.chunkLen / 4;
+                                        chunkData.readValues(object.colorArray2, object.cvLen2);
+                                    }
                                 }
 
                                 object.mocvRead++;
@@ -461,16 +469,16 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
 //                v37 = replacement_for_header_color.g;
 //                v36 = replacement_for_header_color.r;
 //            } else {
-                v35 = mohd->ambColor.b;
-                v37 = mohd->ambColor.g;
                 v36 = mohd->ambColor.r;
+                v37 = mohd->ambColor.g;
+                v35 = mohd->ambColor.b;
 //            }
         }
 
         for (int mocv_index(0); mocv_index < begin_second_fixup; ++mocv_index) {
-            colorArray[mocv_index].r -= v36;
+            colorArray[mocv_index].b -= v36;
             colorArray[mocv_index].g -= v37;
-            colorArray[mocv_index].b -= v35;
+            colorArray[mocv_index].r -= v35;
 
             float v38 = colorArray[mocv_index].a / 255.0f;
 
@@ -554,7 +562,7 @@ void WmoGroupGeom::createIndexVBO() {
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
+void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu::vec4 &ambColor, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
 
     GLuint blackPixelText = api->getBlackPixelTexture();
     Config * config = api->getConfig();
@@ -639,34 +647,10 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, std::fu
             glVertexAttrib4f(+wmoShader::Attribute::aColor2, 0.0, 0.0, 0.0, 0.0);
         }
 
-        if ((isAffectedByAmbient)) {
-            mathfu::vec4 ambColor = mathfu::vec4(
-                    ((float)mohd->ambColor.r / 255.0f),
-                    ((float)mohd->ambColor.g / 255.0f),
-                    ((float)mohd->ambColor.b / 255.0f),
-                    ((float)mohd->ambColor.a / 255.0f)
-            );
-
-            if ((use_replacement_for_header_color == 1) && (*(int *)&replacement_for_header_color != -1)) {
-                ambColor = mathfu::vec4(
-                        ((float)replacement_for_header_color.r / 255.0f),
-                        ((float)replacement_for_header_color.g / 255.0f),
-                        ((float)replacement_for_header_color.b / 255.0f),
-                        ((float)replacement_for_header_color.a / 255.0f)
-                ) ;
-            }
-
-            glUniform4fv(wmoShader->getUnf("uAmbientLight"),
-                1,
-                &ambColor[0]
-            );
-        } else {
-            glUniform4f(wmoShader->getUnf("uAmbientLight"),
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0);
-        }
+        glUniform4fv(wmoShader->getUnf("uAmbientLight"),
+            1,
+            &ambColor[0]
+        );
 
         glUniform1i(wmoShader->getUnf("uUseLitColor"), 1);
 
