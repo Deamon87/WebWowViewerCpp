@@ -256,7 +256,7 @@ void main() {
     finalColor.rgba = vec4(makeDiffTerm(matDiffuse), 1.0);
 
     //Spec part
-    float specBlend = tex1.a;
+//    float specBlend = tex1.a;
     vec3 halfVec = -(normalize((uSunDir.xyz + normalize(vPosition))));
     vec3 lSpecular = ((uSunColor * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
     vec3 specTerm = (vec3(specBlend) * lSpecular);

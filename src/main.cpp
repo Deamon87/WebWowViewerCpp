@@ -407,7 +407,7 @@ void mainLoop(void* loopArg){
 //            nk_menubar_end(ctx);
 //        }
 
-        nk_layout_row_push(ctx, 50);
+
         nk_label(ctx, "Draw M2 AABB:", NK_TEXT_LEFT);
 
         /* fixed widget window ratio width */
@@ -636,8 +636,8 @@ int main(){
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
         //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
         //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-//        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
+        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);

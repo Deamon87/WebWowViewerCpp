@@ -25,6 +25,7 @@
 #include "objects/scenes/map.h"
 #include "persistance/wdtFile.h"
 #include "persistance/wdlFile.h"
+#include "persistance/db2/base/DB2Base.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -46,6 +47,7 @@ public:
         textureCache.provideFile(s_fileName, fileData);
         wdtCache.provideFile(s_fileName, fileData);
         wdlCache.provideFile(s_fileName, fileData);
+        db2Cache.provideFile(s_fileName, fileData);
     };
     virtual void rejectFile(const char* fileName) override {
         std::string s_fileName(fileName);
@@ -58,6 +60,7 @@ public:
         textureCache.reject(s_fileName);
         wdtCache.reject(s_fileName);
         wdlCache.reject(s_fileName);
+        db2Cache.reject(s_fileName);
     }
     void setFileRequestProcessor(IFileRequest*) override {} ;
 
@@ -225,6 +228,7 @@ private:
     Cache<M2Geom> m2GeomCache;
     Cache<SkinGeom> skinGeomCache;
     Cache<BlpTexture> textureCache;
+    Cache<DB2Base> db2Cache;
 
     iInnerSceneApi *currentScene;
 

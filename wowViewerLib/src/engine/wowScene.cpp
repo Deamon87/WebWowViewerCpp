@@ -8,6 +8,7 @@
 #include "androidLogSupport.h"
 
 #include "mathfu/glsl_mappings.h"
+#include "persistance/db2/DB2Light.h"
 #include <iostream>
 #include <cmath>
 
@@ -20,7 +21,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         m2GeomCache(requestProcessor),
         skinGeomCache(requestProcessor),
         textureCache(requestProcessor),
-        adtObjectCache(requestProcessor)  {
+        adtObjectCache(requestProcessor),
+        db2Cache(requestProcessor){
     this->m_config = config;
 
     this->canvWidth = canvWidth;
@@ -62,9 +64,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     //Test scene 1: Shattrath
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
-    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
+//    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-    currentScene = new Map(this, "Expansion01");
+//    currentScene = new Map(this, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
@@ -244,9 +246,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
 
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -310,6 +312,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
+
+    DB2Light db2Light(db2Cache.get("dbfilesclient/light.db2"));
 
 #ifndef WITH_GLESv2
     glBindVertexArray(0);
@@ -1239,6 +1243,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     this->m2GeomCache.processCacheQueue(10);
     this->skinGeomCache.processCacheQueue(10);
     this->textureCache.processCacheQueue(10);
+    this->db2Cache.processCacheQueue(10);
 
     mathfu::vec3 cameraVec3 = cameraVec4.xyz();
     currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);

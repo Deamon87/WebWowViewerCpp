@@ -485,15 +485,15 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
             float v11 = colorArray[mocv_index].r - v38 * colorArray[mocv_index].r;
             assert (v11 > -0.5f);
             assert (v11 < 255.5f);
-            colorArray[mocv_index].r = (unsigned char) std::max(0.0f, floor(v11 / 2));
+            colorArray[mocv_index].r = (unsigned char) std::max(0.0f, floorf(v11 / 2.0f));
             float v13 = colorArray[mocv_index].g - v38 * colorArray[mocv_index].g;
             assert (v13 > -0.5f);
             assert (v13 < 255.5f);
-            colorArray[mocv_index].g = (unsigned char) std::max(0.0f, floor(v13 / 2));
+            colorArray[mocv_index].g = (unsigned char) std::max(0.0f, floorf(v13 / 2.0f));
             float v14 = colorArray[mocv_index].b - v38 * colorArray[mocv_index].b;
             assert (v14 > -0.5f);
             assert (v14 < 255.5f);
-            colorArray[mocv_index++].b = (unsigned char) std::max(0.0f, floor(v14 / 2));
+            colorArray[mocv_index++].b = (unsigned char) std::max(0.0f, floorf(v14 / 2.0f));
         }
 
         for (int i(begin_second_fixup); i < cvLen; ++i) {
