@@ -3,11 +3,13 @@
 //
 
 #include <cstdint>
+#include <algorithm>
+#include <iostream>
 #include "DB2Base.h"
 
 void DB2Base::process(std::vector<unsigned char> &db2File) {
     this->db2File = db2File;
-    fileData = &db2File[0];
+    fileData = &this->db2File[0];
 
     currentOffset = 0;
     bytesRead = 0;
@@ -31,7 +33,7 @@ void DB2Base::process(std::vector<unsigned char> &db2File) {
 
             for (int j = 0; j < section_headers->record_count; j++) {
                 record_data recordData;
-                readValues(recordData.data, itemSectionHeader.record_count);
+                readValues(recordData.data, header->record_size);
 
                 section.records.push_back(recordData);
             }
@@ -59,6 +61,34 @@ void DB2Base::process(std::vector<unsigned char> &db2File) {
         }
     }
 
+    m_loaded = true;
+}
 
+bool DB2Base::readRecord(int id, std::function<void(int fieldNum, char *data, size_t length)> callback) {
+    //1. Get id offset
+    int idDiff = id - header->min_id;
 
+    //2. Find index in id_list
+    auto &sectionDef = sections[0];
+    uint32_t *end = sections[0].id_list+(section_headers->id_list_size/4);
+    uint32_t *indx = std::lower_bound(sections[0].id_list, end, id);
+    int pos = indx-sections[0].id_list;
+    if(indx == end || *indx != id)
+        return false;
+
+    int index = pos;
+    if ((header->flags & 1) == 0) {
+        char * recordPointer = sectionDef.records[index].data;
+        for (int i = 0; i < header->field_count; i++) {
+            auto &fieldInfo = field_info[i];
+            if (fieldInfo.storage_type == field_compression_none) {
+                int byteOffset = fieldInfo.field_offset_bits / 8;
+                int bytesToRead = fieldInfo.field_size_bits;
+
+                char * fieldDataPointer = &recordPointer[byteOffset];
+
+                callback(i, fieldDataPointer, bytesToRead);
+            }
+        }
+    }
 }

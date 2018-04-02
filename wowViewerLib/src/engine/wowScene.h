@@ -26,6 +26,7 @@
 #include "persistance/wdtFile.h"
 #include "persistance/wdlFile.h"
 #include "persistance/db2/base/DB2Base.h"
+#include "persistance/db2/DB2Light.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -200,6 +201,8 @@ private:
 
     GLuint vbo_vertices;
     GLuint ibo_elements;
+
+    DB2Light *db2Light;
 
     int canvWidth;
     int canvHeight;

@@ -313,7 +313,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 
-    DB2Light db2Light(db2Cache.get("dbfilesclient/light.db2"));
+    db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
 
 #ifndef WITH_GLESv2
     glBindVertexArray(0);
@@ -1234,6 +1234,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     this->m_viewCameraForRender = viewCameraForRender;
     this->SetDirection();
+
+    if (db2Light->getIsLoaded()) {
+        db2Light->getRecord(1);
+    }
 
     this->adtObjectCache.processCacheQueue(10);
     this->wdtCache.processCacheQueue(10);

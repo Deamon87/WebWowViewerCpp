@@ -6,6 +6,7 @@
 #define WEBWOWVIEWERCPP_DB2BASE_H
 
 #include <vector>
+#include <functional>
 
 struct wdc2_db2_header
 {
@@ -172,6 +173,7 @@ class DB2Base {
 public:
     void process(std::vector<unsigned char> &db2File);
     bool getIsLoaded() { return m_loaded; };
+    bool readRecord(int id, std::function<void(int fieldNum, char *data, size_t length)>callback);
 private:
     bool m_loaded = false;
     std::vector<uint8_t> db2File;
