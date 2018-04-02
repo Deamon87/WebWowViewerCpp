@@ -512,9 +512,9 @@ void M2Object::setDiffuseColor(CImVector& value) {
     this->m_localDiffuseColor = value;
 
     this->m_localDiffuseColorV = mathfu::vec4(
-            value.r / 255.0f,
-            value.g / 255.0f,
             value.b / 255.0f,
+            value.g / 255.0f,
+            value.r / 255.0f,
             value.a / 255.0f);
 }
 void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
@@ -742,6 +742,8 @@ void M2Object::draw(bool drawTransparent) {
     mathfu::vec4 localDiffuse = diffuseNon;
     if (m_useLocalDiffuseColor) {
         localDiffuse = m_localDiffuseColorV;
+    } else {
+        localDiffuse = m_api->getGlobalSunColor();
     }
     mathfu::vec4 ambientLight = getAmbientLight();
 
@@ -1105,6 +1107,19 @@ M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {
 
     return result;
 }
+mathfu::vec4 M2Object::getAmbientLight() {
+    if (m_setAmbientColor) {
+//            return m_ambientColorOverride;
+        return mathfu::vec4(m_ambientColorOverride.x, m_ambientColorOverride.y, m_ambientColorOverride.z, m_ambientColorOverride.w);
+    }
+    mathfu::vec4 ambientColor = m_api->getGlobalAmbientColor();
+//        for (int i = 0; i < lights.size(); ++i) {
+//            if (lights[i].ambient_intensity > 0) {
+//                ambientColor += lights[i].ambient_color * lights[i].ambient_intensity;
+//            }
+//        }
+    return ambientColor;
+};
 
 void M2Object::drawParticles() {
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {

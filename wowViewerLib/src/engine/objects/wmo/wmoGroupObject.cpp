@@ -529,9 +529,9 @@ bool WmoGroupObject::checkDoodads(std::set<M2Object *> &wmoM2Candidates) {
         if (this->m_doodads[i] != nullptr) {
             if (this->m_dontUseLocalLightingForM2) {
                 this->m_doodads[i]->setUseLocalLighting(false);
+            } else {
+                this->m_doodads[i]->setAmbientColorOverride(ambientColor, true);
             }
-
-            this->m_doodads[i]->setAmbientColorOverride(ambientColor, true);
 
             wmoM2Candidates.insert(this->m_doodads[i]);
         }
@@ -552,21 +552,36 @@ void WmoGroupObject::setModelFileId(int fileId) {
 }
 
 mathfu::vec4 WmoGroupObject::getAmbientColor() {
-    mathfu::vec4 ambColor = mathfu::vec4(
-            ((float) m_geom->mohd->ambColor.r / 255.0f),
-            ((float) m_geom->mohd->ambColor.g / 255.0f),
-            ((float) m_geom->mohd->ambColor.b / 255.0f),
-            ((float) m_geom->mohd->ambColor.a / 255.0f)
-    );
 
-    if ((m_geom->use_replacement_for_header_color == 1) && (*(int *) &m_geom->replacement_for_header_color != -1)) {
-        ambColor = mathfu::vec4(
+    if (!m_geom->mogp->flags.EXTERIOR && !m_geom->mogp->flags.EXTERIOR_LIT) {
+        mathfu::vec4 ambColor;
+        if (m_geom->mohd->flags.maybeMohdColor) {
+            ambColor = mathfu::vec4(
+                ((float) m_geom->mohd->ambColor.r / 255.0f),
+                ((float) m_geom->mohd->ambColor.g / 255.0f),
+                ((float) m_geom->mohd->ambColor.b / 255.0f),
+                ((float) m_geom->mohd->ambColor.a / 255.0f)
+            ) ;
+        } else {
+            ambColor = mathfu::vec4(
+                ((float) m_geom->mohd->ambColor.b / 255.0f),
+                ((float) m_geom->mohd->ambColor.g / 255.0f),
+                ((float) m_geom->mohd->ambColor.r / 255.0f),
+                ((float) m_geom->mohd->ambColor.a / 255.0f)
+            );
+        }
+
+        if ((m_geom->use_replacement_for_header_color == 1) && (*(int *) &m_geom->replacement_for_header_color != -1)) {
+            ambColor = mathfu::vec4(
                 ((float) m_geom->replacement_for_header_color.r / 255.0f),
                 ((float) m_geom->replacement_for_header_color.g / 255.0f),
                 ((float) m_geom->replacement_for_header_color.b / 255.0f),
                 ((float) m_geom->replacement_for_header_color.a / 255.0f)
-        );
-    }
+            );
+        }
 
-    return ambColor;
+        return ambColor ;
+    } else {
+        return m_api->getGlobalAmbientColor();
+    }
 }

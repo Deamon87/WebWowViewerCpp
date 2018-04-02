@@ -2,7 +2,8 @@
 /* vertex shader code */
 attribute float aHeight;
 attribute vec4 aColor;
-attribute float aNormal;
+attribute vec4 aVertexLighting;
+attribute vec3 aNormal;
 attribute float aIndex;
 
 uniform vec3 uPos;
@@ -12,6 +13,8 @@ uniform mat4 uPMatrix;
 varying vec2 vChunkCoords;
 varying vec3 vPosition;
 varying vec4 vColor;
+varying vec3 vNormal;
+varying vec3 vVertexLighting;
 
 const float UNITSIZE_X =  (1600.0 / 3.0) / 16.0 / 8.0;
 const float UNITSIZE_Y =  (1600.0 / 3.0) / 16.0 / 8.0;
@@ -41,6 +44,8 @@ void main() {
 
     vPosition = (uLookAtMat * worldPoint).xyz;
     vColor = aColor;
+    vVertexLighting = aVertexLighting.rgb;
+    vNormal = (uLookAtMat * vec4(aNormal, 0.0)).xyz;
 
     gl_Position = uPMatrix * uLookAtMat * worldPoint;
 }
@@ -52,6 +57,8 @@ precision highp float;
 varying vec2 vChunkCoords;
 varying vec3 vPosition;
 varying vec4 vColor;
+varying vec3 vNormal;
+varying vec3 vVertexLighting;
 
 uniform int uNewFormula;
 
@@ -67,6 +74,11 @@ uniform sampler2D uLayerHeight3;
 
 uniform float uHeightScale[4];
 uniform float uHeightOffset[4];
+
+uniform vec3 uViewUp;
+uniform vec3 uSunDir;
+uniform vec3 uSunColor;
+uniform vec4 uAmbientLight;
 
 uniform vec3 uFogColor;
 
@@ -165,6 +177,46 @@ float filterFunc(float x) {
     return x;
 }
 
+vec3 makeDiffTerm(vec3 matDiffuse) {
+  vec3 currColor;
+    float mult = 1.0;
+    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
+    if (true) {
+        vec3 normalizedN = normalize(vNormal);
+        float nDotL = dot(normalizedN, -(uSunDir.xyz));
+        float nDotUp = dot(normalizedN, uViewUp.xyz);
+
+        vec4 AmbientLight = uAmbientLight;
+
+        vec3 adjAmbient = (AmbientLight.rgb );
+        vec3 adjHorizAmbient = (AmbientLight.rgb );
+        vec3 adjGroundAmbient = (AmbientLight.rgb );
+
+        if ((nDotUp >= 0.0))
+        {
+            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
+        }
+        else
+        {
+            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
+        }
+
+        vec3 skyColor = (currColor * 1.10000002);
+        vec3 groundColor = (currColor* 0.699999988);
+
+        lDiffuse = (uSunColor * clamp(nDotL, 0.0, 1.0));
+        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
+    } else {
+        currColor = vec3 (1.0, 1.0, 1.0) ;
+        mult = 1.0;
+    }
+
+    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vVertexLighting;
+    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
+}
+
+
 void main() {
     vec2 vTexCoord = vChunkCoords;
     const float threshold = 1.5;
@@ -197,9 +249,18 @@ void main() {
     vec4 weightedLayer_3 = tex4 * layer_pct.w;
 
     vec4 finalColor;
-    finalColor.rgb = (weightedLayer_0.rgb + weightedLayer_1.rgb + weightedLayer_2.rgb + weightedLayer_3.rgb);
+    vec3 matDiffuse = (weightedLayer_0.rgb + weightedLayer_1.rgb + weightedLayer_2.rgb + weightedLayer_3.rgb);
+    float specBlend = (weightedLayer_0.a + weightedLayer_1.a + weightedLayer_2.a + weightedLayer_3.a);
 
-    finalColor.rgb = finalColor.rgb * 2.0 * vColor.rgb;
+    matDiffuse.rgb = matDiffuse.rgb * 2.0 * vColor.rgb;
+    finalColor.rgba = vec4(makeDiffTerm(matDiffuse), 1.0);
+
+    //Spec part
+    float specBlend = tex1.a;
+    vec3 halfVec = -(normalize((uSunDir.xyz + normalize(vPosition))));
+    vec3 lSpecular = ((uSunColor * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
+    vec3 specTerm = (vec3(specBlend) * lSpecular);
+    finalColor.rgb += specTerm;
 
     // --- Fog start ---
     vec3 fogColor = uFogColor;

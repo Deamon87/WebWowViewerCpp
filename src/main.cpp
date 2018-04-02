@@ -37,7 +37,10 @@ int mleft_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
 
+bool stopInputs = true;
+
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
+    if (stopInputs) return;
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
     IControllable* controllable = scene->getCurrentCamera();
 
@@ -66,6 +69,7 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+    if (stopInputs) return;
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         mleft_pressed = 1;
         double xpos, ypos;
@@ -81,6 +85,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 Config *testConf;
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+    if (stopInputs) return;
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
     IControllable* controllable = scene->getCurrentCamera();
     if ( action == GLFW_PRESS) {
@@ -266,6 +271,9 @@ struct my_nkc_app {
 
     double currentFrame;
     double lastFrame;
+
+    struct nk_color ambientColor;
+    struct nk_color sunColor;
 };
 
 inline void CopyAndNullTerminate( const std::string& source,
@@ -301,7 +309,7 @@ void mainLoop(void* loopArg){
 
     myapp->scene->draw((deltaTime*1000));
 
-
+    stopInputs = false;
     /* Nuklear GUI code */
     if (nk_begin(ctx, "Show", nk_rect(50, 50, 300, 300),
                  NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
@@ -399,7 +407,7 @@ void mainLoop(void* loopArg){
 //            nk_menubar_end(ctx);
 //        }
 
-
+        nk_layout_row_push(ctx, 50);
         nk_label(ctx, "Draw M2 AABB:", NK_TEXT_LEFT);
 
         /* fixed widget window ratio width */
@@ -424,6 +432,64 @@ void mainLoop(void* loopArg){
 
         testConf->setDrawM2BB(myapp->drawM2AABB);
         testConf->setDrawWmoBB(myapp->drawWMOAABB);
+
+
+        nk_layout_row_push(ctx, 50);
+        nk_label(ctx, "AmbientColor:", NK_TEXT_LEFT);
+        nk_layout_row_dynamic(ctx, 25, 1);
+        if (nk_combo_begin_color(ctx, myapp->ambientColor, nk_vec2(nk_widget_width(ctx),400))) {
+
+            nk_layout_row_dynamic(ctx, 120, 1);
+            myapp->ambientColor = nk_color_picker(ctx, myapp->ambientColor, NK_RGBA);
+            nk_layout_row_dynamic(ctx, 25, 1);
+            myapp->ambientColor.r = (nk_byte)nk_propertyi(ctx, "#R:", 0, myapp->ambientColor.r, 255, 1,1);
+            myapp->ambientColor.g = (nk_byte)nk_propertyi(ctx, "#G:", 0, myapp->ambientColor.g, 255, 1,1);
+            myapp->ambientColor.b = (nk_byte)nk_propertyi(ctx, "#B:", 0, myapp->ambientColor.b, 255, 1,1);
+            myapp->ambientColor.a = (nk_byte)nk_propertyi(ctx, "#A:", 0, myapp->ambientColor.a, 255, 1,1);
+            nk_combo_end(ctx);
+
+            testConf->setAmbientColor(
+                myapp->ambientColor.r / 255.0f,
+                myapp->ambientColor.g / 255.0f,
+                myapp->ambientColor.b / 255.0f,
+                myapp->ambientColor.a / 255.0f
+            );
+            stopInputs = true;
+        }
+
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+        {
+            nk_layout_row_push(ctx, 50);
+            nk_label(ctx, "Ambient intensity:", NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 110);
+            if (nk_slider_float(ctx, 0, &(myapp->value), 1.0f, 0.1f)) {
+                stopInputs = true;
+            }
+        }
+        nk_layout_row_end(ctx);
+
+        nk_layout_row_push(ctx, 50);
+        nk_label(ctx, "SunColor:", NK_TEXT_LEFT);
+        nk_layout_row_dynamic(ctx, 25, 1);
+        if (nk_combo_begin_color(ctx, myapp->sunColor, nk_vec2(nk_widget_width(ctx),400))) {
+
+            nk_layout_row_dynamic(ctx, 120, 1);
+            myapp->sunColor = nk_color_picker(ctx, myapp->sunColor, NK_RGBA);
+            nk_layout_row_dynamic(ctx, 25, 1);
+            myapp->sunColor.r = (nk_byte)nk_propertyi(ctx, "#R:", 0, myapp->sunColor.r, 255, 1,1);
+            myapp->sunColor.g = (nk_byte)nk_propertyi(ctx, "#G:", 0, myapp->sunColor.g, 255, 1,1);
+            myapp->sunColor.b = (nk_byte)nk_propertyi(ctx, "#B:", 0, myapp->sunColor.b, 255, 1,1);
+            myapp->sunColor.a = (nk_byte)nk_propertyi(ctx, "#A:", 0, myapp->sunColor.a, 255, 1,1);
+            nk_combo_end(ctx);
+
+            testConf->setSunColor(
+                myapp->sunColor.r / 255.0f,
+                myapp->sunColor.g / 255.0f,
+                myapp->sunColor.b / 255.0f,
+                myapp->sunColor.a / 255.0f
+            );
+            stopInputs = true;
+        }
 
         //Debug batch stuff
         nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
@@ -570,8 +636,8 @@ int main(){
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
         //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
         //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
+//        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);

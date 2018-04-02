@@ -129,6 +129,16 @@ void AdtObject::createVBO() {
         }
     }
 
+    /* 1.2 Normals */
+    this->normalOffset = vboArray.size();
+    for (int i = 0; i <= m_adtFile->mcnkRead; i++) {
+        for (int j = 0; j < 145; j++) {
+            for (int k = 0; k < 3; k++) {
+                vboArray.push_back(m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k] / 127.0f);
+            }
+        }
+    }
+
     /* 1.3 MCCV */
     this->colorOffset = vboArray.size();
     for (int i = 0; i <= m_adtFile->mcnkRead; i++) {
@@ -150,6 +160,30 @@ void AdtObject::createVBO() {
             }
         }
     }
+
+    /* 1.4 MCLV */
+    this->lightingOffset = vboArray.size();
+    for (int i = 0; i <= m_adtFile->mcnkRead; i++) {
+        if (m_adtFile->mcnkStructs[i].mclv != nullptr) {
+            auto &mclv = m_adtFile->mcnkStructs[i].mclv;
+            for (int j = 0; j < 145; j++) {
+                vboArray.push_back(mclv->values[j].b / 255.0f);
+                vboArray.push_back(mclv->values[j].g / 255.0f);
+                vboArray.push_back(mclv->values[j].r / 255.0f);
+                vboArray.push_back(mclv->values[j].a / 255.0f);
+            }
+        } else {
+            for (int j = 0; j < 145; j++) {
+                // 0.5 to mitigate multiplication by 2 in shader
+                vboArray.push_back(0.0f);
+                vboArray.push_back(0.0f);
+                vboArray.push_back(0.0f);
+                vboArray.push_back(0.0f);
+            }
+        }
+    }
+
+
 
     /* 1.3 Make combinedVbo */
     glGenBuffers(1, &combinedVbo);
@@ -248,6 +282,8 @@ void AdtObject::draw() {
 
         glVertexAttribPointer(+adtShader::Attribute::aHeight, 1, GL_FLOAT, GL_FALSE, 0, (void *)((this->heightOffset + i * 145) * 4));
         glVertexAttribPointer(+adtShader::Attribute::aColor, 4, GL_FLOAT, GL_FALSE, 0, (void *)((this->colorOffset + (i*4) * 145) * 4));
+        glVertexAttribPointer(+adtShader::Attribute::aNormal, 3, GL_FLOAT, GL_FALSE, 0, (void *)((this->normalOffset + (i*3) * 145) * 4));
+        glVertexAttribPointer(+adtShader::Attribute::aVertexLighting, 3, GL_FLOAT, GL_FALSE, 0, (void *)((this->lightingOffset+ (4*4) * 145) * 4));
         glUniform3f(adtShader->getUnf("uPos"),
                     m_adtFile->mapTile[i].position.x,
                     m_adtFile->mapTile[i].position.y,

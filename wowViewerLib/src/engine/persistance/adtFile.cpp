@@ -229,6 +229,7 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         {
                             handler: [](AdtFile& file, ChunkData& chunkData){
                                 debuglog("Entered MCLV");
+                                chunkData.readValue(file.mcnkStructs[file.mcnkRead].mclv);
                             }
                         }
                     },

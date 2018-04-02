@@ -476,35 +476,35 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
         }
 
         for (int mocv_index(0); mocv_index < begin_second_fixup; ++mocv_index) {
-            colorArray[mocv_index].b -= v36;
+            colorArray[mocv_index].r -= v36;
             colorArray[mocv_index].g -= v37;
-            colorArray[mocv_index].r -= v35;
+            colorArray[mocv_index].b -= v35;
 
             float v38 = colorArray[mocv_index].a / 255.0f;
 
             float v11 = colorArray[mocv_index].r - v38 * colorArray[mocv_index].r;
             assert (v11 > -0.5f);
             assert (v11 < 255.5f);
-            colorArray[mocv_index].r = v11 / 2;
+            colorArray[mocv_index].r = (unsigned char) std::max(0.0f, floor(v11 / 2));
             float v13 = colorArray[mocv_index].g - v38 * colorArray[mocv_index].g;
             assert (v13 > -0.5f);
             assert (v13 < 255.5f);
-            colorArray[mocv_index].g = v13 / 2;
+            colorArray[mocv_index].g = (unsigned char) std::max(0.0f, floor(v13 / 2));
             float v14 = colorArray[mocv_index].b - v38 * colorArray[mocv_index].b;
             assert (v14 > -0.5f);
             assert (v14 < 255.5f);
-            colorArray[mocv_index++].b = v14 / 2;
+            colorArray[mocv_index++].b = (unsigned char) std::max(0.0f, floor(v14 / 2));
         }
 
         for (int i(begin_second_fixup); i < cvLen; ++i) {
             float v19 = (colorArray[i].r * colorArray[i].a) / 64 + colorArray[i].r - v36;
-            colorArray[i].r = std::min(255.0f, std::max(v19 / 2.0f, 0.0f));
+            colorArray[i].r = (unsigned char) std::min(255.0f, std::max(v19 / 2.0f, 0.0f));
 
             float v30 = (colorArray[i].g * colorArray[i].a) / 64 + colorArray[i].g - v37;
-            colorArray[i].g = std::min(255.0f, std::max(v30 / 2.0f, 0.0f));
+            colorArray[i].g = (unsigned char) std::min(255.0f, std::max(v30 / 2.0f, 0.0f));
 
             float v33 = (colorArray[i].a * colorArray[i].b) / 64 + colorArray[i].b - v35;
-            colorArray[i].b = std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
+            colorArray[i].b = (unsigned char) std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
 
             colorArray[i].a = (unsigned char) ((mogp->flags.EXTERIOR ) > 0 ? 0xFF : 0x00);
 

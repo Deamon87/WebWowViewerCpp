@@ -60,7 +60,9 @@ private:
 
     int indexOffset = 0;
     int heightOffset = 0;
+    int normalOffset = 0;
     int colorOffset = 0;
+    int lightingOffset = 0;
 
     std::unordered_map<int, BlpTexture*> m_requestedTextures;
     std::unordered_map<int, BlpTexture*> m_requestedTexturesHeight;

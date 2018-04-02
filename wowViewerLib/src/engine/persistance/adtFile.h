@@ -10,6 +10,7 @@
 
 struct mcnkStruct_t {
     MCVT *mcvt = nullptr;
+    MCLV *mclv = nullptr;
     MCCV *mccv = nullptr;
     SMNormal *mcnr = nullptr;
     SMLayer *mcly = nullptr;

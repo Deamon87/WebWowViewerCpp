@@ -62,9 +62,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     //Test scene 1: Shattrath
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
-//    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
+    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-//    currentScene = new Map(this, "Expansion01");
+    currentScene = new Map(this, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
@@ -76,7 +76,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
 //    currentScene = new Map(this, "silithusphase01");
 //
-//   m_firstCamera.setCameraPos( -594, 4664, 200);
+//    m_firstCamera.setCameraPos( -594, 4664, 200);
 //    currentScene = new Map(this, "Artifact-MageOrderHall");
 
 //    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0);
@@ -118,8 +118,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
 //    currentScene = new Map(this, "Northrend");
 //
-    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-    currentScene = new Map(this, "Azeroth");
+//    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
+//    currentScene = new Map(this, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, "Zandalar");
@@ -220,8 +220,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene->setAmbientColorOverride(ambientColorOver, true);
 //    config->setBCLightHack(true);
 
-
-
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
 
@@ -270,6 +268,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/wmo/dungeon/grimbatol/kz_grimbatol.wmo");
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/grimbatol/kz_grimbatol_raid.wmo");
+
+
+//    currentScene = new WmoScene(this,
+//        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
 
 
 
@@ -821,9 +823,10 @@ void WoWSceneImpl::activateM2Shader() {
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
     upVector = (this->m_lookAtMat4.Transpose() * upVector);
     glUniform3fv(this->m2Shader->getUnf("uViewUp"), 1, &upVector[0]);
-
     glUniform3fv(this->m2Shader->getUnf("uSunDir"), 1, &m_sunDir[0]);
 
+    mathfu::vec4 &sunColor = m_globalSunColor;
+    glUniform3fv(this->m2Shader->getUnf("uSunColor"), 1, &sunColor[0]);
 
     glActiveTexture(GL_TEXTURE0);
 }
@@ -989,10 +992,10 @@ void WoWSceneImpl::activateWMOShader() {
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
     upVector = (this->m_lookAtMat4.Transpose() * upVector);
     glUniform3fv(this->wmoShader->getUnf("uViewUp"), 1, &upVector[0]);
-
     glUniform3fv(this->wmoShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
 
-
+    mathfu::vec4 &sunColor = m_globalSunColor;
+    glUniform3fv(this->wmoShader->getUnf("uSunColor"), 1, &sunColor[0]);
 
 
     glActiveTexture(GL_TEXTURE0);
@@ -1011,7 +1014,9 @@ void WoWSceneImpl::activateAdtShader (){
 
     glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
     glEnableVertexAttribArray(+adtShader::Attribute::aIndex);
+    glEnableVertexAttribArray(+adtShader::Attribute::aNormal);
     glEnableVertexAttribArray(+adtShader::Attribute::aColor);
+    glEnableVertexAttribArray(+adtShader::Attribute::aVertexLighting);
 
     glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
     glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
@@ -1030,14 +1035,25 @@ void WoWSceneImpl::activateAdtShader (){
     glUniform1f(adtShader->getUnf("uFogEnd"), this->uFogEnd);
 
     glUniform3fv(adtShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+
+    mathfu::vec4 ambient = this->currentScene->getAmbientColor();
+    glUniform4fv(this->adtShader->getUnf("uAmbientLight"), 1, &ambient[0]);
+
+    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+
+    upVector = (this->m_lookAtMat4.Transpose() * upVector);
+    glUniform3fv(this->adtShader->getUnf("uViewUp"), 1, &upVector[0]);
+    glUniform3fv(this->adtShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
+
+    mathfu::vec4 &sunColor = m_globalSunColor;
+    glUniform3fv(this->adtShader->getUnf("uSunColor"), 1, &sunColor[0]);
 }
 void WoWSceneImpl::deactivateAdtShader() {
     glDisableVertexAttribArray(+adtShader::Attribute::aIndex);
     glDisableVertexAttribArray(+adtShader::Attribute::aColor);
+    glDisableVertexAttribArray(+adtShader::Attribute::aNormal);
+    glDisableVertexAttribArray(+adtShader::Attribute::aVertexLighting);
     glUseProgram(0);
-
-    glDisableVertexAttribArray(+adtShader::Attribute::aIndex);
-    glDisableVertexAttribArray(+adtShader::Attribute::aColor);
 }
 
 void WoWSceneImpl::activateFrustumBoxShader() {
@@ -1111,6 +1127,13 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glClearScreen();
     mathfu::vec3 *cameraVector;
+    float ambient[4];
+    m_config->getAmbientColor(ambient);
+    m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]) * 2.0f;
+
+    float sunColor[4];
+    m_config->getSunColor(sunColor);
+    m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]) * 2.0f;
 
     static const mathfu::vec3 upVector(0,0,1);
 

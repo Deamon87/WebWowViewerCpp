@@ -159,19 +159,7 @@ public:
     void drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO);
 
 
-    mathfu::vec4 getAmbientLight() {
-        if (m_setAmbientColor) {
-//            return m_ambientColorOverride;
-            return mathfu::vec4(m_ambientColorOverride.z, m_ambientColorOverride.y, m_ambientColorOverride.x, m_ambientColorOverride.w);
-        }
-        mathfu::vec4 ambientColor = mathfu::vec4(0.0,0.0,0.0,0.0);
-        for (int i = 0; i < lights.size(); ++i) {
-            if (lights[i].ambient_intensity > 0) {
-                ambientColor += lights[i].ambient_color * lights[i].ambient_intensity;
-            }
-        }
-        return ambientColor;
-    };
+    mathfu::vec4 getAmbientLight();
     void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
         m_setAmbientColor = override;
         m_ambientColorOverride = ambientColor;

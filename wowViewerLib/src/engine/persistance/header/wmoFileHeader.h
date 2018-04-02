@@ -25,7 +25,8 @@ struct SMOHeader
 /*03Ch*/      uint16_t flag_use_liquid_type_dbc_id : 1;                // use real liquid type ID from DBCs instead of local one. See MLIQ for further reference.
 /*03Ch*/      uint16_t flag_lighten_interiors : 1;                     // makes iterior groups much brighter, effects MOCV rendering. Used e.g.in Stormwind for having shiny bright interiors,
 /*03Ch*/      uint16_t Flag_Lod : 1;                                   // ≥ Legion (20740)
-/*03Ch*/      uint16_t unknown : 11; // unused as of Legion (20994)
+/*03Ch*/      uint16_t maybeMohdColor : 1; // unused as of Legion (20994)
+/*03Ch*/      uint16_t unknown : 10; // unused as of Legion (20994)
 /*03Ch*/  } flags;
 /*03Eh*/  uint16_t numLod;                                         // ≥ Legion (21108)  includes base lod (→ numLod = 3 means '.wmo', 'lod0.wmo' and 'lod1.wmo')
 };

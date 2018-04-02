@@ -132,7 +132,12 @@ public:
     virtual mathfu::mat4& getViewMat() override {
         return m_lookAtMat4;
     }
-
+    virtual mathfu::vec4 getGlobalAmbientColor() override {
+        return m_globalAmbientColor ;
+    }
+    virtual mathfu::vec4 getGlobalSunColor() override {
+        return m_globalSunColor;
+    }
     virtual GLuint getBlackPixelTexture() override ;
     virtual Config *getConfig() override {
         return m_config;
@@ -183,6 +188,9 @@ private:
     mathfu::mat4 m_perspectiveMatrix;
 
     mathfu::vec3 m_sunDir;
+    mathfu::vec4 m_globalAmbientColor;
+    mathfu::vec4 m_globalSunColor;
+
 
     FirstPersonCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;

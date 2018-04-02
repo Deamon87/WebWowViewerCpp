@@ -254,8 +254,8 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
     vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
     if (uIsAffectedByLight == 1) {
         vec3 normalizedN = normalize(vNormal);
-        float t823 = dot(normalizedN, -(uSunDir.xyz));
-        float t846 = dot(normalizedN, uViewUp.xyz);
+        float nDotL = clamp(dot(normalizedN, -(uSunDir.xyz)), 0.0, 1.0);
+        float nDotUp = dot(normalizedN, uViewUp.xyz);
 
         vec4 AmbientLight = uAmbientLight;
 
@@ -263,21 +263,21 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
         vec3 adjHorizAmbient = (AmbientLight.rgb );
         vec3 adjGroundAmbient = (AmbientLight.rgb );
 
-        if ((t846 >= 0.0))
+        if ((nDotUp >= 0.0))
         {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(t846));
+            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
         }
         else
         {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(t846)));
+            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
         }
 
         vec3 skyColor = (currColor * 1.10000002);
         vec3 groundColor = (currColor* 0.699999988);
-        float nDotL = clamp(dot(vNormal, -(uSunDir.xyz)), 0.0, 1.0);
+
 
         lDiffuse = (uSunColor * nDotL);
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * t823))));
+        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
 //
 
     } else {

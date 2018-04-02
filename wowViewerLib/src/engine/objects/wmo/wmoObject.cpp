@@ -897,9 +897,12 @@ void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
             M2Object *mdxObject = doodads->at(j);
             if (!mdxObject) continue;
             if (m2ObjectSet.count(mdxObject) > 0) continue;
-
-            mdxObject->setUseLocalLighting(!groupWmoObject->getDontUseLocalLightingForM2());
-            mdxObject->setAmbientColorOverride(ambientColor, true);
+            if (groupWmoObject->getDontUseLocalLightingForM2()) {
+                mdxObject->setUseLocalLighting(false);
+            } else {
+                mdxObject->setUseLocalLighting(true);
+                mdxObject->setAmbientColorOverride(ambientColor, true);
+            }
 
             bool inFrustum = true;
             inFrustum = inFrustum && mdxObject->checkFrustumCulling(cameraVec4, frustumPlane, {});

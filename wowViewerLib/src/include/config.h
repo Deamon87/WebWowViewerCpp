@@ -33,6 +33,9 @@ private:
     int maxParticle = 9999;
 
     bool useWotlkLogic = false;
+
+    float ambientColor[4];
+    float sunColor[4];
 public:
     bool getRenderM2 () {
         return renderMd2;
@@ -141,6 +144,34 @@ public:
     }
     int getMaxParticle() {
         return maxParticle;
+    }
+
+    void setAmbientColor(float r, float g, float b, float a) {
+        ambientColor[0] = r;
+        ambientColor[1] = g;
+        ambientColor[2] = b;
+        ambientColor[3] = a;
+    }
+
+    void getAmbientColor(float *ambient){
+        ambient[0] = ambientColor[0];
+        ambient[1] = ambientColor[1];
+        ambient[2] = ambientColor[2];
+        ambient[3] = ambientColor[3];
+    }
+
+    void setSunColor(float r, float g, float b, float a) {
+        sunColor[0] = r;
+        sunColor[1] = g;
+        sunColor[2] = b;
+        sunColor[3] = a;
+    }
+
+    void getSunColor(float *aSunColor){
+        aSunColor[0] = sunColor[0];
+        aSunColor[1] = sunColor[1];
+        aSunColor[2] = sunColor[2];
+        aSunColor[3] = sunColor[3];
     }
 };
 

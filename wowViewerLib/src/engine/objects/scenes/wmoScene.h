@@ -54,10 +54,11 @@ public:
     void drawM2s();
 
     mathfu::vec4 getAmbientColor() override {
-        if (m_wmoObject->isLoaded()) {
-            return mathfu::vec4(m_wmoObject->getAmbientLight(), 0.0);
-        } else
-        return mathfu::vec4(0.0, 0.0, 0.0, 0.0);
+//        if (m_wmoObject->isLoaded()) {
+//            return mathfu::vec4(m_wmoObject->getAmbientLight(), 0.0);
+//        } else
+//        return mathfu::vec4(0.0, 0.0, 0.0, 0.0);
+        return m_api->getGlobalAmbientColor();
     };
 
     bool getCameraSettings(M2CameraResult&) override {

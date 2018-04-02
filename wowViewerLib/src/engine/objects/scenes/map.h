@@ -70,7 +70,7 @@ public:
 
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
     mathfu::vec4 getAmbientColor() override {
-            return mathfu::vec4(1.0, 1.0, 1.0, 1.0);
+        return m_api->getGlobalAmbientColor();
     };
     bool getCameraSettings(M2CameraResult &cameraResult) override{
         return false;
