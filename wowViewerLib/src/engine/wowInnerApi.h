@@ -18,6 +18,8 @@ class WmoGroupGeom;
 #include "persistance/adtFile.h"
 #include "persistance/wdtFile.h"
 #include "persistance/wdlFile.h"
+#include "persistance/db2/DB2Light.h"
+#include "persistance/db2/DB2LightIntBand.h"
 
 class IWoWInnerApi {
 public:
@@ -64,6 +66,9 @@ public:
 
     virtual GLuint getBlackPixelTexture() = 0;
     virtual Config *getConfig() = 0;
+
+    virtual DB2Light *getDB2Light() = 0;
+    virtual DB2LightIntBand *getDB2LightIntBand() = 0;
 
 };
 

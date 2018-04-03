@@ -2,6 +2,7 @@
 // Created by deamon on 02.04.18.
 //
 
+#include <mathfu/glsl_mappings.h>
 #include "DB2Light.h"
 const float ROUNDING_ERROR_f32 = 0.001f;
 inline bool feq(const float a, const float b, const float tolerance = ROUNDING_ERROR_f32)
@@ -48,7 +49,7 @@ void DB2Light::fillRTree() {
         min[2] = min[2] - diff;
         min[3] = dbLightRecord.continentID - 0.1f;
 
-        lightRTree.Insert(min, max, id);
+//        lightRTree.Insert(min, max, id);
     }
 
     //test
@@ -62,5 +63,63 @@ void DB2Light::fillRTree() {
 //        std::cout << "found id = " << a << std::endl;
 //        return true;
 //    });
+}
+
+DBLightRecord DB2Light::findRecord(int mapId, mathfu::vec3 &pos) {
+    struct FoundLightRecord {
+        DBLightRecord lightRec;
+        float blendAlpha;
+    };
+
+    std::vector<FoundLightRecord> result;
+
+    bool lightRecordDefaultFound = false;
+    DBLightRecord lightRecordDefault;
+
+    for (int i = 0; i < m_base->getRecordCount(); i++) {
+        FoundLightRecord record;
+        record.lightRec = getRecord(m_base->getIdForRecord(i));
+        DBLightRecord &lightRec = record.lightRec;
+
+        if (lightRec.continentID == mapId) {
+            if (feq(lightRec.gameCoords[0], 0.0f) &&
+                feq(lightRec.gameCoords[1], 0.0f) &&
+                feq(lightRec.gameCoords[2], 0.0f) &&
+                feq(lightRec.gameFalloffStart, 0.0f)) {
+                lightRecordDefaultFound = true;
+                lightRecordDefault = lightRec;
+                continue;
+            }
+
+            static const mathfu::vec3 constant = mathfu::vec3(17066.666f, 17066.666f, 0);
+            static const float convertConst = 1.0f / 36.0f;
+            mathfu::vec3 lightPos = constant - mathfu::vec3(
+                    lightRec.gameCoords[2],
+                    lightRec.gameCoords[0],
+                    lightRec.gameCoords[1]) * convertConst;
+
+            float distanceToLightPos = (lightPos -  pos).Length();
+            record.blendAlpha =
+                    (distanceToLightPos  - (lightRec.gameFalloffStart * convertConst)) /
+                    ((lightRec.gameFalloffEnd - lightRec.gameFalloffStart) * convertConst);
+
+            if (record.blendAlpha <= 1.0f) {
+                result.push_back(record);
+            }
+        }
+    }
+
+    if (result.size() == 0) {
+        if (lightRecordDefaultFound)
+            return lightRecordDefault;
+        return getRecord(1);
+    }
+
+    std::sort(result.begin(), result.end(),
+       [] (FoundLightRecord &a, FoundLightRecord &b) -> bool const {
+            return a.blendAlpha - b.blendAlpha > 0;
+    });
+
+    return result[0].lightRec;
 }
 

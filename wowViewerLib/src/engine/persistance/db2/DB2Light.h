@@ -7,8 +7,9 @@
 
 #include <cstdint>
 #include <iostream>
+#include <cstring>
 #include "base/DB2Base.h"
-#include "../../../../3rdparty/RTree/RTree.h"
+//#include "../../../../3rdparty/RTree/RTree.h"
 
 
 struct DBLightRecord {
@@ -25,6 +26,10 @@ public:
 
     };
 
+    int getRecordCount() {
+        return m_base->getRecordCount();
+    }
+
     bool getIsLoaded() {
         if (m_base->getIsLoaded() && !rTreeFilled) {
             fillRTree();
@@ -33,6 +38,7 @@ public:
         return m_base->getIsLoaded();
     }
 
+    DBLightRecord findRecord(int mapId, mathfu::vec3 &pos) ;
     DBLightRecord getRecord(int id) {
         DBLightRecord dbLightRecord;
 
@@ -53,13 +59,15 @@ public:
         return dbLightRecord;
     };
 
+
+
     void fillRTree();
 
 private:
     DB2Base *m_base;
 
     bool rTreeFilled = false;
-    RTree<int, float, 4, float> lightRTree;
+//    RTree<int, float, 4, float> lightRTree;
 };
 
 

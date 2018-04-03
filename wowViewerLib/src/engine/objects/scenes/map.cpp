@@ -215,9 +215,9 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 //        }
 //    }
 //
-//    //8. Check fog color every 2 seconds
-//    var fogRecordWasFound = false;
-//    if (this.currentTime + deltaTime - this.lastFogParamCheck > 2000) {
+    //8. Check fog color every 2 seconds
+    bool fogRecordWasFound = false;
+    if (this->m_currentTime + deltaTime - this->m_lastTimeLightCheck > 2000) {
 //        if (this.currentWMO) {
 //            var wmoFile = this.currentWMO.wmoObj;
 //            var cameraLocal = vec4.create();
@@ -238,32 +238,28 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 //            }
 //        }
 //        var lightIntBandDBC = this.sceneApi.dbc.getLightIntBandDBC();
-//        if (!fogRecordWasFound && lightIntBandDBC) {
-//            //Check areaRecord
-//            /*
-//            //It's always 0 in WotLK
-//            if (areaRecord && lightTableDBC) {
-//                var lightRecord = lightTableDBC[areaRecord.lightId];
-//            }
-//            */
-//            //Query Light Record
-//            var result = this.sceneApi.findLightRecord(this.position);
-//            if (result && result.length > 0) {
-//                result.sort(function(a,b){
-//                    if (a.distance < b.distance) return -1;
-//                    if (a.distance > b.distance) return 1;
-//                    return 0;
-//                });
-//                var fogIntRec = lightIntBandDBC[result[0].record.skyAndFog*18 - 17 + 7];
-//                this.sceneApi.setFogColor(fogIntRec.floatValues[0]);
-//
-//                //Take fog params from here
-//
-//            }
-//
-//        }
-//        this.lastFogParamCheck = this.currentTime;
-//    }
+        if (!fogRecordWasFound && m_api->getDB2Light()->getIsLoaded()) {
+            //Check areaRecord
+
+            //Query Light Record
+            DBLightRecord result = m_api->getDB2Light()->findRecord(530, cameraVec3);
+            DB2LightIntBandRecord diffuseColor = m_api->getDB2LightIntBand()->getRecord(result.lightParamsID[0]*18 - 17 + DB2LightIntBand::DIFFUSE_INDEX);
+            DB2LightIntBandRecord ambientColor = m_api->getDB2LightIntBand()->getRecord(result.lightParamsID[0]*18 - 17 + DB2LightIntBand::AMBIENT_INDEX);
+            config->setAmbientColor(
+                ambientColor.data[0] & 0xFF,
+                (ambientColor.data[0] >> 8) & 0xFF,
+                (ambientColor.data[0] >> 16) & 0xFF,
+                (ambientColor.data[0] >> 24) & 0xFF
+            );
+            config->setSunColor(
+                diffuseColor.data[0] & 0xFF,
+                (diffuseColor.data[0] >> 8) & 0xFF,
+                (diffuseColor.data[0] >> 16) & 0xFF,
+                (diffuseColor.data[0] >> 24) & 0xFF
+            );
+        }
+        this->m_lastTimeLightCheck = this->m_currentTime;
+    }
     this->m_currentTime += deltaTime;
 }
 

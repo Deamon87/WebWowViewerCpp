@@ -18,6 +18,10 @@ struct DB2LightIntBandRecord {
 
 class DB2LightIntBand {
 public:
+    static const int DIFFUSE_INDEX = 0;
+    static const int AMBIENT_INDEX = 1;
+    static const int FOG_INDEX = 7;
+
     explicit DB2LightIntBand(DB2Base *base) : m_base(base) {
     };
 

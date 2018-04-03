@@ -146,6 +146,12 @@ public:
     virtual Config *getConfig() override {
         return m_config;
     }
+    virtual DB2Light *getDB2Light() override {
+        return db2Light;
+    };
+    virtual DB2LightIntBand *getDB2LightIntBand() override {
+        return db2LightIntBand;
+    }
 
 private:
     ShaderRuntimeData *compileShader (std::string shaderName, std::string vertShaderString, std::string fragmentShaderString,
@@ -203,6 +209,7 @@ private:
     GLuint ibo_elements;
 
     DB2Light *db2Light;
+    DB2LightIntBand *db2LightIntBand;
 
     int canvWidth;
     int canvHeight;
