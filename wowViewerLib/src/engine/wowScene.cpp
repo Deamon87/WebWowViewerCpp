@@ -75,8 +75,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
-//    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
-//    currentScene = new Map(this, "silithusphase01");
+    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
+    currentScene = new Map(this, "silithusphase01");
 //
 //    m_firstCamera.setCameraPos( -594, 4664, 200);
 //    currentScene = new Map(this, "Artifact-MageOrderHall");
@@ -246,9 +246,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
 
-   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,

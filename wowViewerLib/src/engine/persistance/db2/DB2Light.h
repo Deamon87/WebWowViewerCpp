@@ -6,7 +6,10 @@
 #define WEBWOWVIEWERCPP_DB2LIGHT_H
 
 #include <cstdint>
+#include <iostream>
 #include "base/DB2Base.h"
+#include "../../../../3rdparty/RTree/RTree.h"
+
 
 struct DBLightRecord {
     float gameCoords[3];
@@ -18,18 +21,22 @@ struct DBLightRecord {
 
 class DB2Light {
 public:
-    DB2Light(DB2Base *base) : m_base(base) {
+    explicit DB2Light(DB2Base *base) : m_base(base) {
 
     };
 
     bool getIsLoaded() {
+        if (m_base->getIsLoaded() && !rTreeFilled) {
+            fillRTree();
+            rTreeFilled = true;
+        }
         return m_base->getIsLoaded();
     }
 
     DBLightRecord getRecord(int id) {
         DBLightRecord dbLightRecord;
 
-        m_base->readRecord(id, [&dbLightRecord](int fieldNum, char *data, size_t length) -> void {
+        m_base->readRecord(id, 0, -1, [&dbLightRecord](int fieldNum, char *data, size_t length) -> void {
             if (fieldNum == 0) {
                 memcpy(&dbLightRecord.gameCoords[0], data, length);
             } else if (fieldNum == 1) {
@@ -46,9 +53,13 @@ public:
         return dbLightRecord;
     };
 
+    void fillRTree();
 
 private:
     DB2Base *m_base;
+
+    bool rTreeFilled = false;
+    RTree<int, float, 4, float> lightRTree;
 };
 
 

@@ -34,3 +34,6 @@
 [submodule "3rdparty/nuklear_cross"]
 	path = 3rdparty/nuklear_cross
 	url = https://github.com/DeXP/nuklear_cross.git
+[submodule "wowViewerLib/3rdparty/RTree"]
+	path = wowViewerLib/3rdparty/RTree
+	url = https://github.com/nushoin/RTree

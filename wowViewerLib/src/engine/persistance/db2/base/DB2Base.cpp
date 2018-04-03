@@ -64,7 +64,9 @@ void DB2Base::process(std::vector<unsigned char> &db2File) {
     m_loaded = true;
 }
 
-bool DB2Base::readRecord(int id, std::function<void(int fieldNum, char *data, size_t length)> callback) {
+bool DB2Base::readRecord(int id, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, char *data, size_t length)> callback) {
+    int numOfFieldToRead = fieldsToRead >=0 ? fieldsToRead : header->field_count;
+
     //1. Get id offset
     int idDiff = id - header->min_id;
 
@@ -76,14 +78,16 @@ bool DB2Base::readRecord(int id, std::function<void(int fieldNum, char *data, si
     if(indx == end || *indx != id)
         return false;
 
+    //3. Read the record
     int index = pos;
     if ((header->flags & 1) == 0) {
         char * recordPointer = sectionDef.records[index].data;
-        for (int i = 0; i < header->field_count; i++) {
+
+        for (int i = minFieldNum; i < numOfFieldToRead; i++) {
             auto &fieldInfo = field_info[i];
             if (fieldInfo.storage_type == field_compression_none) {
                 int byteOffset = fieldInfo.field_offset_bits / 8;
-                int bytesToRead = fieldInfo.field_size_bits;
+                int bytesToRead = fieldInfo.field_size_bits / 8;
 
                 char * fieldDataPointer = &recordPointer[byteOffset];
 
@@ -91,4 +95,6 @@ bool DB2Base::readRecord(int id, std::function<void(int fieldNum, char *data, si
             }
         }
     }
+
+    return true;
 }
