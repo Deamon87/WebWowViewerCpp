@@ -16,7 +16,7 @@ void DB2Light::fillRTree() {
     for (int i = 0; i < recordCount; i++) {
         DBLightRecord dbLightRecord;
         int id = m_base->getIdForRecord(i);
-        m_base->readRecord(id, 0, 4, [&dbLightRecord](int fieldNum, char *data, size_t length) -> void {
+        m_base->readRecord(id, false, 0, 4, [&dbLightRecord](int fieldNum, char *data, size_t length) -> void {
             if (fieldNum == 0) {
                 memcpy(&dbLightRecord.gameCoords[0], data, length);
             } else if (fieldNum == 1) {
@@ -65,12 +65,7 @@ void DB2Light::fillRTree() {
 //    });
 }
 
-DBLightRecord DB2Light::findRecord(int mapId, mathfu::vec3 &pos) {
-    struct FoundLightRecord {
-        DBLightRecord lightRec;
-        float blendAlpha;
-    };
-
+std::vector<FoundLightRecord> DB2Light::findRecord(int mapId, mathfu::vec3 &pos) {
     std::vector<FoundLightRecord> result;
 
     bool lightRecordDefaultFound = false;
@@ -84,8 +79,7 @@ DBLightRecord DB2Light::findRecord(int mapId, mathfu::vec3 &pos) {
         if (lightRec.continentID == mapId) {
             if (feq(lightRec.gameCoords[0], 0.0f) &&
                 feq(lightRec.gameCoords[1], 0.0f) &&
-                feq(lightRec.gameCoords[2], 0.0f) &&
-                feq(lightRec.gameFalloffStart, 0.0f)) {
+                feq(lightRec.gameCoords[2], 0.0f) ) {
                 lightRecordDefaultFound = true;
                 lightRecordDefault = lightRec;
                 continue;
@@ -93,26 +87,38 @@ DBLightRecord DB2Light::findRecord(int mapId, mathfu::vec3 &pos) {
 
             static const mathfu::vec3 constant = mathfu::vec3(17066.666f, 17066.666f, 0);
             static const float convertConst = 1.0f / 36.0f;
-            mathfu::vec3 lightPos = constant - mathfu::vec3(
-                    lightRec.gameCoords[2],
+//            mathfu::vec3 lightPos = constant - mathfu::vec3(
+//                    lightRec.gameCoords[2],
+//                    lightRec.gameCoords[0],
+//                    lightRec.gameCoords[1]) * convertConst;
+                mathfu::vec3 lightPos = mathfu::vec3(
                     lightRec.gameCoords[0],
-                    lightRec.gameCoords[1]) * convertConst;
+                    lightRec.gameCoords[1],
+                    lightRec.gameCoords[2]);
+
 
             float distanceToLightPos = (lightPos -  pos).Length();
-            record.blendAlpha =
-                    (distanceToLightPos  - (lightRec.gameFalloffStart * convertConst)) /
-                    ((lightRec.gameFalloffEnd - lightRec.gameFalloffStart) * convertConst);
+            record.blendAlpha = 1.0f -
+                    (distanceToLightPos  - (lightRec.gameFalloffStart )) /
+                    ((lightRec.gameFalloffEnd - lightRec.gameFalloffStart) );
 
-            if (record.blendAlpha <= 1.0f) {
+            if (record.blendAlpha >= 0 ) {
                 result.push_back(record);
             }
         }
     }
 
     if (result.size() == 0) {
-        if (lightRecordDefaultFound)
-            return lightRecordDefault;
-        return getRecord(1);
+        FoundLightRecord record;
+        record.blendAlpha = 1.0;
+        if (lightRecordDefaultFound) {
+            record.lightRec = lightRecordDefault;
+        } else {
+            record.lightRec = getRecord(1);
+        }
+
+        result.push_back(record);
+        return result;
     }
 
     std::sort(result.begin(), result.end(),
@@ -120,6 +126,6 @@ DBLightRecord DB2Light::findRecord(int mapId, mathfu::vec3 &pos) {
             return a.blendAlpha - b.blendAlpha > 0;
     });
 
-    return result[0].lightRec;
+    return result;
 }
 

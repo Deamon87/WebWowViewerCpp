@@ -173,7 +173,7 @@ class DB2Base {
 public:
     void process(std::vector<unsigned char> &db2File);
     bool getIsLoaded() { return m_loaded; };
-    bool readRecord(int id, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, char *data, size_t length)>callback);
+    bool readRecord(int id, bool useRelationMappin, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, char *data, size_t length)>callback);
     int getRecordCount() { return header->record_count; };
     int getIdForRecord(int recordIndex){ return sections[0].id_list[recordIndex]; };
 private:

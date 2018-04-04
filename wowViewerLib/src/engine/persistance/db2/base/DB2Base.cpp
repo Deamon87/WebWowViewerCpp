@@ -64,20 +64,37 @@ void DB2Base::process(std::vector<unsigned char> &db2File) {
     m_loaded = true;
 }
 
-bool DB2Base::readRecord(int id, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, char *data, size_t length)> callback) {
+bool DB2Base::readRecord(int id, bool useRelationMappin, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, char *data, size_t length)> callback) {
     int numOfFieldToRead = fieldsToRead >=0 ? fieldsToRead : header->field_count;
 
     //1. Get id offset
     int idDiff = id - header->min_id;
 
-    //2. Find index in id_list
+    //2. Find index
+    int pos;
     auto &sectionDef = sections[0];
-    uint32_t *end = sections[0].id_list+(section_headers->id_list_size/4);
-    uint32_t *indx = std::lower_bound(sections[0].id_list, end, id);
-    int pos = indx-sections[0].id_list;
-    if(indx == end || *indx != id)
-        return false;
+    if (useRelationMappin) {
+        //2.1 Find index using relation mapping
+        relationship_entry entry;
+        entry.foreign_id = id;
+        entry.record_index = 0;
+        relationship_entry *start = sections[0].relationship_map.entries + 3; //hack
+        relationship_entry *end = sections[0].relationship_map.entries + (sections[0].relationship_map.num_entries - 1);
+        relationship_entry *indx = std::find_if(start, end, [&id](relationship_entry &entry) -> bool {
+            return entry.foreign_id == id;
+        });
+        pos = indx - sections[0].relationship_map.entries;
+        if (indx == end || indx->foreign_id != id)
+            return false;
+    } else {
+        //2.2 Find index in id_list
 
+        uint32_t *end = sections[0].id_list + (section_headers->id_list_size / 4);
+        uint32_t *indx = std::lower_bound(sections[0].id_list, end, id);
+        pos = indx - sections[0].id_list;
+        if (indx == end || *indx != id)
+            return false;
+    }
     //3. Read the record
     int index = pos;
     if ((header->flags & 1) == 0) {

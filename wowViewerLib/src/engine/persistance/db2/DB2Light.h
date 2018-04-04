@@ -20,6 +20,12 @@ struct DBLightRecord {
     int16_t lightParamsID[8];
 };
 
+struct FoundLightRecord {
+    DBLightRecord lightRec;
+    float blendAlpha;
+};
+
+
 class DB2Light {
 public:
     explicit DB2Light(DB2Base *base) : m_base(base) {
@@ -38,11 +44,11 @@ public:
         return m_base->getIsLoaded();
     }
 
-    DBLightRecord findRecord(int mapId, mathfu::vec3 &pos) ;
+    std::vector<FoundLightRecord> findRecord(int mapId, mathfu::vec3 &pos) ;
     DBLightRecord getRecord(int id) {
         DBLightRecord dbLightRecord;
 
-        m_base->readRecord(id, 0, -1, [&dbLightRecord](int fieldNum, char *data, size_t length) -> void {
+        m_base->readRecord(id, false, 0, -1, [&dbLightRecord](int fieldNum, char *data, size_t length) -> void {
             if (fieldNum == 0) {
                 memcpy(&dbLightRecord.gameCoords[0], data, length);
             } else if (fieldNum == 1) {

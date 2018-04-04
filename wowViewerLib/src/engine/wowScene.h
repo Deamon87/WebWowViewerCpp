@@ -149,8 +149,8 @@ public:
     virtual DB2Light *getDB2Light() override {
         return db2Light;
     };
-    virtual DB2LightIntBand *getDB2LightIntBand() override {
-        return db2LightIntBand;
+    virtual DB2LightData *getDB2LightData() override {
+        return db2LightData;
     }
 
 private:
@@ -209,7 +209,7 @@ private:
     GLuint ibo_elements;
 
     DB2Light *db2Light;
-    DB2LightIntBand *db2LightIntBand;
+    DB2LightData *db2LightData;
 
     int canvWidth;
     int canvHeight;

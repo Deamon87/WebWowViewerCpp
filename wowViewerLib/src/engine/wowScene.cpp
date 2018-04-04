@@ -64,9 +64,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     //Test scene 1: Shattrath
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
-    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
+//    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-    currentScene = new Map(this, "Expansion01");
+//    currentScene = new Map(this, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
@@ -103,8 +103,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "Islands_7VR_Swamp_Prototype2");
 
 //    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
-//    m_firstCamera.setCameraPos( 5333.3335, 10666.667, 1); //Strange WMO
-//    currentScene = new Map(this, "argus 1");
+    m_firstCamera.setCameraPos( 5333.3335, 10666.667, 1); //Strange WMO
+    currentScene = new Map(this, "argus 1");
 
 //    m_firstCamera.setCameraPos( 4266.67, -2133.33, 200); // VoidElf
 //    currentScene = new Map(this, "VoildElf");
@@ -314,7 +314,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 
     db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
-    db2LightIntBand = new DB2LightIntBand(db2Cache.get("dbfilesclient/LightIntBand.db2"));
+    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
 
 #ifndef WITH_GLESv2
     glBindVertexArray(0);
@@ -1134,11 +1134,15 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     mathfu::vec3 *cameraVector;
     float ambient[4];
     m_config->getAmbientColor(ambient);
-    m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]) * 2.0f;
+    m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]);
 
     float sunColor[4];
     m_config->getSunColor(sunColor);
-    m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]) * 2.0f;
+    m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
+
+//    float fogColor[4];
+    m_config->getFogColor(m_fogColor);
+//    m_globalSunColor = mathfu::vec4(fogColor[0],fogColor[1],fogColor[2],fogColor[3]);
 
     static const mathfu::vec3 upVector(0,0,1);
 
@@ -1180,10 +1184,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     }
 
     if (this->uFogStart < 0) {
-        this->uFogStart = farPlane+8000;
+        this->uFogStart = farPlane-100;
     }
     if (this->uFogEnd < 0) {
-        this->uFogEnd = farPlane+12000;
+        this->uFogEnd = farPlane;
     }
 //    mathfu::mat4 lookAtMat4 =
 //        mathfu::mat4::LookAt(
@@ -1235,10 +1239,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     this->m_viewCameraForRender = viewCameraForRender;
     this->SetDirection();
-
-    if (db2Light->getIsLoaded()) {
-        db2Light->getRecord(1);
-    }
 
     this->adtObjectCache.processCacheQueue(10);
     this->wdtCache.processCacheQueue(10);

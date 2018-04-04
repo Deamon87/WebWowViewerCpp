@@ -238,25 +238,63 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 //            }
 //        }
 //        var lightIntBandDBC = this.sceneApi.dbc.getLightIntBandDBC();
-        if (!fogRecordWasFound && m_api->getDB2Light()->getIsLoaded()) {
+        if (!fogRecordWasFound && m_api->getDB2Light()->getIsLoaded() && m_api->getDB2LightData()->getIsLoaded()) {
             //Check areaRecord
 
             //Query Light Record
-            DBLightRecord result = m_api->getDB2Light()->findRecord(530, cameraVec3);
-            DB2LightIntBandRecord diffuseColor = m_api->getDB2LightIntBand()->getRecord(result.lightParamsID[0]*18 - 17 + DB2LightIntBand::DIFFUSE_INDEX);
-            DB2LightIntBandRecord ambientColor = m_api->getDB2LightIntBand()->getRecord(result.lightParamsID[0]*18 - 17 + DB2LightIntBand::AMBIENT_INDEX);
+            std::vector<FoundLightRecord> result = m_api->getDB2Light()->findRecord(1669, cameraVec3);
+            float totalSummator = 0.0f;
+            mathfu::vec3 ambientColor = mathfu::vec3(0.0,0.0,0.0);
+            mathfu::vec3 directColor = mathfu::vec3(0.0,0.0,0.0);
+            mathfu::vec3 endFogColor = mathfu::vec3(0.0,0.0,0.0);;
+
+            for (int i = 0; i < result.size() && totalSummator < 1.0f; i++) {
+                DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(result[i].lightRec.lightParamsID[0]);
+                float blendPart = result[i].blendAlpha < 1.0f ? result[i].blendAlpha : 1.0f;
+                ambientColor = ambientColor +
+                    mathfu::vec3((lightData.ambientColor & 0xFF) / 255.0f,
+                    ((lightData.ambientColor >> 8) & 0xFF) / 255.0f,
+                    ((lightData.ambientColor >> 16) & 0xFF) / 255.0f) * blendPart ;
+                directColor = directColor +
+                    mathfu::vec3((lightData.directColor & 0xFF) / 255.0f,
+                        ((lightData.directColor >> 8) & 0xFF) / 255.0f,
+                        ((lightData.directColor >> 16) & 0xFF) / 255.0f) * blendPart ;
+                endFogColor = endFogColor +
+                    mathfu::vec3((lightData.endFogColor & 0xFF) / 255.0f,
+                        ((lightData.endFogColor >> 8) & 0xFF) / 255.0f,
+                        ((lightData.endFogColor >> 16) & 0xFF) / 255.0f) * blendPart ;
+
+                totalSummator += result[i].blendAlpha;
+            }
+//            DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(20947);
+
+//            for (int jk = 0; jk < 10000; jk++) {
+//                DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(20947+jk);
+//                std::cout << "lightParamID = " << lightData.lightParamID << ", time = " << lightData.time << std::endl;
+//                if (lightData.lightParamID == 379) {
+//                    std::cout << "found :D" << std::endl;
+//                }
+//            }
+
             config->setAmbientColor(
-                ambientColor.data[0] & 0xFF,
-                (ambientColor.data[0] >> 8) & 0xFF,
-                (ambientColor.data[0] >> 16) & 0xFF,
-                (ambientColor.data[0] >> 24) & 0xFF
+                ambientColor.x,
+                ambientColor.y,
+                ambientColor.z,
+                1.0
             );
             config->setSunColor(
-                diffuseColor.data[0] & 0xFF,
-                (diffuseColor.data[0] >> 8) & 0xFF,
-                (diffuseColor.data[0] >> 16) & 0xFF,
-                (diffuseColor.data[0] >> 24) & 0xFF
+                directColor.x,
+                directColor.y,
+                directColor.z,
+                1.0
             );
+            config->setFogColor(
+                endFogColor.x,
+                endFogColor.y,
+                endFogColor.z,
+                1.0
+            );
+
         }
         this->m_lastTimeLightCheck = this->m_currentTime;
     }

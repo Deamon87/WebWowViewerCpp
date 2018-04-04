@@ -36,6 +36,7 @@ private:
 
     float ambientColor[4];
     float sunColor[4];
+    float fogColor[4];
 public:
     bool getRenderM2 () {
         return renderMd2;
@@ -172,6 +173,20 @@ public:
         aSunColor[1] = sunColor[1];
         aSunColor[2] = sunColor[2];
         aSunColor[3] = sunColor[3];
+    }
+
+    void setFogColor(float r, float g, float b, float a) {
+        fogColor[0] = r;
+        fogColor[1] = g;
+        fogColor[2] = b;
+        fogColor[3] = a;
+    }
+
+    void getFogColor(float *aFogColor){
+        aFogColor[0] = fogColor[0];
+        aFogColor[1] = fogColor[1];
+        aFogColor[2] = fogColor[2];
+        aFogColor[3] = fogColor[3];
     }
 };
 
