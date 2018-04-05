@@ -283,7 +283,7 @@ void AdtObject::draw() {
         glVertexAttribPointer(+adtShader::Attribute::aHeight, 1, GL_FLOAT, GL_FALSE, 0, (void *)((this->heightOffset + i * 145) * 4));
         glVertexAttribPointer(+adtShader::Attribute::aColor, 4, GL_FLOAT, GL_FALSE, 0, (void *)((this->colorOffset + (i*4) * 145) * 4));
         glVertexAttribPointer(+adtShader::Attribute::aNormal, 3, GL_FLOAT, GL_FALSE, 0, (void *)((this->normalOffset + (i*3) * 145) * 4));
-        glVertexAttribPointer(+adtShader::Attribute::aVertexLighting, 3, GL_FLOAT, GL_FALSE, 0, (void *)((this->lightingOffset+ (4*4) * 145) * 4));
+        glVertexAttribPointer(+adtShader::Attribute::aVertexLighting, 3, GL_FLOAT, GL_FALSE, 0, (void *)((this->lightingOffset+ (i*4) * 145) * 4));
         glUniform3f(adtShader->getUnf("uPos"),
                     m_adtFile->mapTile[i].position.x,
                     m_adtFile->mapTile[i].position.y,

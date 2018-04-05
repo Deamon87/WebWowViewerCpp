@@ -66,45 +66,45 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
 //    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-//    currentScene = new Map(this, "Expansion01");
+//    currentScene = new Map(this, 530 "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
 //    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-//    currentScene = new Map(this, "Troll Raid");
+//    currentScene = new Map(this, 1220, "Troll Raid");
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 //    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
-//    currentScene = new Map(this, "silithusphase01");
+//    currentScene = new Map(this, 1817, "silithusphase01");
 //
 //    m_firstCamera.setCameraPos( -594, 4664, 200);
-//    currentScene = new Map(this, "Artifact-MageOrderHall");
+//    currentScene = new Map(this, 1513, "Artifact-MageOrderHall");
 
 //    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0);
 //    currentScene = new Map(this, "BLTestMap");
 
-//    currentScene = new Map(this, "argus_rifts");
+//    currentScene = new Map(this, 1779, "argus_rifts");
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
 //
 //    m_firstCamera.setCameraPos(5243.2461346537075f, 1938.6550422193939f, 717.0332923206179f); //HallsOfReflection
-//    currentScene = new Map(this, "HallsOfReflection");
+//    currentScene = new Map(this, 668, "HallsOfReflection");
 //     .go 668 5243 1938 760
     // .go 668 0 0 0
 
 //    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
-//    currentScene = new Map(this, "UlduarRaid");
+//    currentScene = new Map(this, 603, "UlduarRaid");
 //
 //   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
-//    currentScene = new Map(this, "AzeriteBG1");
+//    currentScene = new Map(this, 1803, "AzeriteBG1");
 //
 //    m_firstCamera.setCameraPos(  2843, 847, 200); // Ulduar Raid
 //    currentScene = new Map(this, "Islands_7VR_Swamp_Prototype2");
 
 //    m_firstCamera.setCameraPos( -2925, 8997, 200); // Antorus
-    m_firstCamera.setCameraPos( 5333.3335, 10666.667, 1); //Strange WMO
-    currentScene = new Map(this, "argus 1");
+//    m_firstCamera.setCameraPos( 5333.3335, 10666.667, 1); //Strange WMO
+//    currentScene = new Map(this, 1669, "argus 1");
 
 //    m_firstCamera.setCameraPos( 4266.67, -2133.33, 200); // VoidElf
 //    currentScene = new Map(this, "VoildElf");
@@ -118,13 +118,16 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //    m_firstCamera.setCameraPos(939, -4813 , 0); //Scholozar Basin
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
-//    currentScene = new Map(this, "Northrend");
+//    currentScene = new Map(this, 571, "Northrend");
 //
 //    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-//    currentScene = new Map(this, "Azeroth");
+//    currentScene = new Map(this, 0, "Azeroth");
+//
+//   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
-//    currentScene = new Map(this, "Zandalar");
+//    currentScene = new Map(this, 1642, "Zandalar");
 //
 
 //
@@ -133,13 +136,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //    m_firstCamera.setCameraPos(3062, 495, 200 ); //Valhalla
 //    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt
-//    currentScene = new Map(this, "Valhallas");
+//    currentScene = new Map(this, 1477, "Valhallas");
 //
 //    m_firstCamera.setCameraPos(2902, 2525, 200); //Field of the Eternal Hunt
 //    m_firstCamera.setCameraPos(3993, 2302, 1043); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "NagaDungeon");
 //    m_firstCamera.setCameraPos(829, -296, 200 ); //Field of the Eternal Hunt
-//    currentScene = new Map(this, "unused");w
+//    currentScene = new Map(this, "unused");s
 
 //    m_firstCamera.setCameraPos(-2825, -4546, 200 ); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "ScenarioAlcazIsland");
@@ -1140,9 +1143,9 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     m_config->getSunColor(sunColor);
     m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
 
-//    float fogColor[4];
-    m_config->getFogColor(m_fogColor);
-//    m_globalSunColor = mathfu::vec4(fogColor[0],fogColor[1],fogColor[2],fogColor[3]);
+    float fogColor[4];
+    m_config->getFogColor(fogColor);
+    m_fogColor = mathfu::vec4(fogColor);
 
     static const mathfu::vec3 upVector(0,0,1);
 

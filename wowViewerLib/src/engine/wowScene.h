@@ -142,6 +142,9 @@ public:
     virtual mathfu::vec4 getGlobalSunColor() override {
         return m_globalSunColor;
     }
+    virtual mathfu::vec4 getGlobalFogColor() override {
+        return m_fogColor;
+    }
     virtual GLuint getBlackPixelTexture() override ;
     virtual Config *getConfig() override {
         return m_config;
@@ -219,7 +222,7 @@ private:
 
     float uFogStart = -1;
     float uFogEnd = -1;
-    float m_fogColor[4] = {1.0, 1.0, 1.0, 1.0};
+    mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
 
     bool m_isDebugCamera = false;
 

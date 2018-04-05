@@ -31,6 +31,7 @@ private:
     std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
 
+    int m_mapId = -1;
     WdtFile * m_wdtfile;
     WdlObject * m_wdlObject;
 
@@ -57,7 +58,7 @@ private:
     WmoObject *getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) override ;
     WmoObject *getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
 public:
-    Map(IWoWInnerApi *api, std::string mapName) : m_api(api), mapName(mapName){
+    explicit Map(IWoWInnerApi *api, int mapId, std::string mapName) : m_mapId(mapId), m_api(api), mapName(mapName){
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 

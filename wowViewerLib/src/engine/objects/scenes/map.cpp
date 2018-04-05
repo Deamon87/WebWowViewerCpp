@@ -218,35 +218,27 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     //8. Check fog color every 2 seconds
     bool fogRecordWasFound = false;
     if (this->m_currentTime + deltaTime - this->m_lastTimeLightCheck > 2000) {
-//        if (this.currentWMO) {
-//            var wmoFile = this.currentWMO.wmoObj;
-//            var cameraLocal = vec4.create();
-//            vec4.transformMat4(cameraLocal, this.position, this.currentWMO.placementInvertMatrix);
-//
-//            for (var i = wmoFile.mfogArray.length-1; i >= 0; i--) {
-//                var fogRecord = wmoFile.mfogArray[i];
-//                var fogPosVec = vec4.fromValues(fogRecord.pos.x,fogRecord.pos.y,fogRecord.pos.z,1);
-//
-//                var distanceToFog = vec4.distance(fogPosVec, cameraLocal);
-//                if ((distanceToFog < fogRecord.larger_radius) /*|| fogRecord.larger_radius == 0*/) {
-//                    this.sceneApi.setFogColor(fogRecord.fog_colorF);
-//                    //this.sceneApi.setFogStart(wmoFile.mfog.fog_end);
-//                    this.sceneApi.setFogEnd(fogRecord.fog_end);
-//                    fogRecordWasFound = true;
-//                    break;
-//                }
-//            }
-//        }
-//        var lightIntBandDBC = this.sceneApi.dbc.getLightIntBandDBC();
-        if (!fogRecordWasFound && m_api->getDB2Light()->getIsLoaded() && m_api->getDB2LightData()->getIsLoaded()) {
+        mathfu::vec3 ambientColor = mathfu::vec3(0.0,0.0,0.0);
+        mathfu::vec3 directColor = mathfu::vec3(0.0,0.0,0.0);
+        mathfu::vec3 endFogColor = mathfu::vec3(0.0,0.0,0.0);
+
+        if (this->m_currentWMO != nullptr) {
+            CImVector sunFogColor;
+            fogRecordWasFound = this->m_currentWMO->checkFog(cameraVec3, sunFogColor);
+            if (fogRecordWasFound) {
+                endFogColor =
+                  mathfu::vec3((sunFogColor.r & 0xFF) / 255.0f,
+                               ((sunFogColor.g ) & 0xFF) / 255.0f,
+                               ((sunFogColor.b ) & 0xFF) / 255.0f);
+            }
+        }
+
+        if (m_api->getDB2Light()->getIsLoaded() && m_api->getDB2LightData()->getIsLoaded()) {
             //Check areaRecord
 
             //Query Light Record
-            std::vector<FoundLightRecord> result = m_api->getDB2Light()->findRecord(1669, cameraVec3);
+            std::vector<FoundLightRecord> result = m_api->getDB2Light()->findRecord(m_mapId, cameraVec3);
             float totalSummator = 0.0f;
-            mathfu::vec3 ambientColor = mathfu::vec3(0.0,0.0,0.0);
-            mathfu::vec3 directColor = mathfu::vec3(0.0,0.0,0.0);
-            mathfu::vec3 endFogColor = mathfu::vec3(0.0,0.0,0.0);;
 
             for (int i = 0; i < result.size() && totalSummator < 1.0f; i++) {
                 DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(result[i].lightRec.lightParamsID[0]);
@@ -259,10 +251,13 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
                     mathfu::vec3((lightData.directColor & 0xFF) / 255.0f,
                         ((lightData.directColor >> 8) & 0xFF) / 255.0f,
                         ((lightData.directColor >> 16) & 0xFF) / 255.0f) * blendPart ;
-                endFogColor = endFogColor +
-                    mathfu::vec3((lightData.endFogColor & 0xFF) / 255.0f,
-                        ((lightData.endFogColor >> 8) & 0xFF) / 255.0f,
-                        ((lightData.endFogColor >> 16) & 0xFF) / 255.0f) * blendPart ;
+
+                if (!fogRecordWasFound) {
+                    endFogColor = endFogColor +
+                                  mathfu::vec3((lightData.sunFogColor & 0xFF) / 255.0f,
+                                               ((lightData.sunFogColor >> 8) & 0xFF) / 255.0f,
+                                               ((lightData.sunFogColor >> 16) & 0xFF) / 255.0f) * blendPart;
+                }
 
                 totalSummator += result[i].blendAlpha;
             }
@@ -275,27 +270,26 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 //                    std::cout << "found :D" << std::endl;
 //                }
 //            }
-
-            config->setAmbientColor(
+        }
+        config->setAmbientColor(
                 ambientColor.x,
                 ambientColor.y,
                 ambientColor.z,
                 1.0
-            );
-            config->setSunColor(
+        );
+        config->setSunColor(
                 directColor.x,
                 directColor.y,
                 directColor.z,
                 1.0
-            );
-            config->setFogColor(
+        );
+        config->setFogColor(
                 endFogColor.x,
                 endFogColor.y,
                 endFogColor.z,
                 1.0
-            );
+        );
 
-        }
         this->m_lastTimeLightCheck = this->m_currentTime;
     }
     this->m_currentTime += deltaTime;

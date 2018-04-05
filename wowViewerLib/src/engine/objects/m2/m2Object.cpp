@@ -512,9 +512,9 @@ void M2Object::setDiffuseColor(CImVector& value) {
     this->m_localDiffuseColor = value;
 
     this->m_localDiffuseColorV = mathfu::vec4(
-            value.b / 255.0f,
-            value.g / 255.0f,
             value.r / 255.0f,
+            value.g / 255.0f,
+            value.b / 255.0f,
             value.a / 255.0f);
 }
 void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
@@ -862,7 +862,7 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
     mathfu::mat4 identMat = mathfu::mat4::Identity();
 
     //mathfu::vec4 originalFogColor = this.sceneApi.getFogColor();
-    mathfu::vec4 originalFogColor = mathfu::vec4(1,1,1,1);
+    mathfu::vec4 originalFogColor = m_api->getGlobalFogColor();
 //
 //
     /* Get right texture animation matrix */

@@ -15,6 +15,7 @@ class WmoGroupObject;
 #include "../m2/m2Object.h"
 #include "../../geometry/wmoMainGeom.h"
 #include "../iWmoApi.h"
+#include "../../persistance/header/wmoFileHeader.h"
 
 
 struct WmoGroupResult {
@@ -113,6 +114,27 @@ public:
 
     bool checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                              std::vector<mathfu::vec3> &frustumPoints, std::unordered_set<M2Object *> &m2RenderedThisFrame);
+    bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor) {
+        mathfu::vec3 cameraLocal = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1.0)).xyz();
+        for (int i = mainGeom->fogsLen-1; i >= 0; i--) {
+            SMOFog &fogRecord = mainGeom->fogs[i];
+            mathfu::vec3 fogPosVec = mathfu::vec3(fogRecord.pos);
+
+            float distanceToFog = (fogPosVec - cameraLocal).Length();
+            if ((distanceToFog < fogRecord.larger_radius) /*|| fogRecord.larger_radius == 0*/) {
+
+                fogColor.r = fogRecord.fog.color.r;
+                fogColor.g = fogRecord.fog.color.g;
+                fogColor.b = fogRecord.fog.color.b;
+//                this.sceneApi.setFogColor(fogRecord.fog_colorF);
+                //this.sceneApi.setFogStart(wmoFile.mfog.fog_end);
+//                this.sceneApi.setFogEnd(fogRecord.fog_end);
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     void update();
 
