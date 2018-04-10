@@ -144,7 +144,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/managers/particles/generators/CPlaneGenerator.h
         src/engine/texture/DxtDecompress.cpp
         src/engine/texture/DxtDecompress.h
-        src/engine/androidLogSupport.h src/engine/persistance/db2/base/DB2Base.cpp src/engine/persistance/db2/base/DB2Base.h src/engine/persistance/db2/DB2Light.cpp src/engine/persistance/db2/DB2Light.h src/engine/persistance/db2/DB2LightData.cpp src/engine/persistance/db2/DB2LightData.h src/engine/persistance/db2/DB2LightParams.cpp src/engine/persistance/db2/DB2LightParams.h)
+        src/engine/androidLogSupport.h src/engine/persistance/db2/base/DB2Base.cpp src/engine/persistance/db2/base/DB2Base.h src/engine/persistance/db2/DB2Light.cpp src/engine/persistance/db2/DB2Light.h src/engine/persistance/db2/DB2LightData.cpp src/engine/persistance/db2/DB2LightData.h src/engine/persistance/db2/DB2LightParams.cpp src/engine/persistance/db2/DB2LightParams.h src/engine/persistance/db2/DB2WmoAreaTable.cpp src/engine/persistance/db2/DB2WmoAreaTable.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})

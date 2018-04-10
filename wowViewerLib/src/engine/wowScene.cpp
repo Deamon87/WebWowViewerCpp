@@ -123,8 +123,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
 //    currentScene = new Map(this, 0, "Azeroth");
 //
-//   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-//    currentScene = new Map(this, 0, "Azeroth");
+   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
+    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -318,6 +318,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
     db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
+    db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
 #ifndef WITH_GLESv2
     glBindVertexArray(0);

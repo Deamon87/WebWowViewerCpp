@@ -173,9 +173,11 @@ class DB2Base {
 public:
     void process(std::vector<unsigned char> &db2File);
     bool getIsLoaded() { return m_loaded; };
-    bool readRecord(int id, bool useRelationMappin, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, char *data, size_t length)>callback);
+    int readRecord(int id, bool useRelationMappin, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, int stringOffset, char *data, size_t length)>callback);
+    bool readRecordByIndex(int index, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, int fieldOffset, char *data, size_t length)>callback);
     int getRecordCount() { return header->record_count; };
     int getIdForRecord(int recordIndex){ return sections[0].id_list[recordIndex]; };
+    std::string readString(int index);
 private:
     bool m_loaded = false;
     std::vector<uint8_t> db2File;
@@ -210,6 +212,8 @@ private:
     char *pallet_data;
     char *common_data;
     std::vector<section> sections;
+
+
 };
 
 

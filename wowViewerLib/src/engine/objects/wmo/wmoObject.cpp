@@ -732,14 +732,14 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
 
     for (int i = 0; i < wmoGroupsResults.size(); i++) {
         this->interiorPortals.push_back({
-                groupId: wmoGroupsResults[i].groupId,
+                groupId: wmoGroupsResults[i].groupIndex,
                 portalIndex: -1,
 #ifndef CULLED_NO_PORTAL_DRAWING
                 portalVertices: {},
 #endif
                 frustumPlanes: frustumPlanes1,
                 level: 0});
-        this->transverseGroupWMO(wmoGroupsResults[i].groupId, true, cameraVec4, headOfPyramidLocal1,
+        this->transverseGroupWMO(wmoGroupsResults[i].groupIndex, true, cameraVec4, headOfPyramidLocal1,
                                  inverseTransposeModelMat,
                                  transverseVisitedGroups,
                                  transverseVisitedPortals,
@@ -1092,7 +1092,7 @@ bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroup
         bool result = false;
         for (int i = 0; i < candidateGroups.size(); i++) {
             WmoGroupResult *candidate = &candidateGroups[i];
-            SMOGroupInfo *groupInfo = &this->mainGeom->groups[candidate->groupId];
+            SMOGroupInfo *groupInfo = &this->mainGeom->groups[candidate->groupIndex];
             /*if ((candidate.topBottom.bottomZ < 99999) && (candidate.topBottom.topZ > -99999)){
                 if ((cameraLocal[2] < candidateGroups[i].topBottom.bottomZ) || (cameraLocal[2] > candidateGroups[i].topBottom.topZ))
                     continue

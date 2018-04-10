@@ -20,6 +20,7 @@ class WmoGroupGeom;
 #include "persistance/wdlFile.h"
 #include "persistance/db2/DB2Light.h"
 #include "persistance/db2/DB2LightData.h"
+#include "persistance/db2/DB2WmoAreaTable.h"
 
 class IWoWInnerApi {
 public:
@@ -70,6 +71,7 @@ public:
 
     virtual DB2Light *getDB2Light() = 0;
     virtual DB2LightData *getDB2LightData() = 0;
+    virtual DB2WmoAreaTable *getDB2WmoAreaTable() = 0;
 
 };
 

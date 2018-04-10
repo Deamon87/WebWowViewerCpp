@@ -440,7 +440,8 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 
         candidateGroups.push_back({
                                       topBottom : topBottom,
-                                      groupId : m_groupNumber,
+                                      groupIndex : m_groupNumber,
+                                      WMOGroupID : -1,
                                       bspLeafList : {},
                                       nodeId: -1
                                   });
@@ -508,7 +509,8 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 
         candidateGroups.push_back({
             topBottom : topBottom,
-            groupId : m_groupNumber,
+            groupIndex : m_groupNumber,
+            WMOGroupID : groupInfo->wmoGroupID,
             bspLeafList : bspLeafList,
             nodeId: nodeId
         });

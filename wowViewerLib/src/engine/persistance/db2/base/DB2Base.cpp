@@ -64,9 +64,8 @@ void DB2Base::process(std::vector<unsigned char> &db2File) {
     m_loaded = true;
 }
 
-bool DB2Base::readRecord(int id, bool useRelationMappin, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, char *data, size_t length)> callback) {
-    int numOfFieldToRead = fieldsToRead >=0 ? fieldsToRead : header->field_count;
-
+//Returns index
+int DB2Base::readRecord(int id, bool useRelationMappin, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, int stringOffset, char *data, size_t length)> callback) {
     //1. Get id offset
     int idDiff = id - header->min_id;
 
@@ -93,25 +92,60 @@ bool DB2Base::readRecord(int id, bool useRelationMappin, int minFieldNum, int fi
         uint32_t *indx = std::lower_bound(sections[0].id_list, end, id);
         pos = indx - sections[0].id_list;
         if (indx == end || *indx != id)
-            return false;
+            return -1;
     }
     //3. Read the record
-    int index = pos;
-    if ((header->flags & 1) == 0) {
-        char * recordPointer = sectionDef.records[index].data;
+    readRecordByIndex(pos, minFieldNum, fieldsToRead, callback);
 
+    return pos;
+}
+
+std::string DB2Base::readString(int index) {
+    return std::string(&sections[0].string_data[index]);
+}
+bool DB2Base::readRecordByIndex(int index, int minFieldNum, int fieldsToRead,
+                                std::function<void(int fieldNum, int stringOffset, char *data, size_t length)> callback) {
+    auto &sectionDef = sections[0];
+    int numOfFieldToRead = fieldsToRead >=0 ? fieldsToRead : header->field_count;
+
+    if ((header->flags & 1) == 0) {
         for (int i = minFieldNum; i < numOfFieldToRead; i++) {
             auto &fieldInfo = field_info[i];
             if (fieldInfo.storage_type == field_compression_none) {
-                int byteOffset = fieldInfo.field_offset_bits / 8;
-                int bytesToRead = fieldInfo.field_size_bits / 8;
+                char * recordPointer = sectionDef.records[index].data;
+                int byteOffset = fieldInfo.field_offset_bits >> 3;
+                int bytesToRead = fieldInfo.field_size_bits >> 3;
 
                 char * fieldDataPointer = &recordPointer[byteOffset];
 
-                callback(i, fieldDataPointer, bytesToRead);
+                callback(i, &recordPointer[byteOffset] - sectionDef.string_data, fieldDataPointer,  bytesToRead);
+            } else if (fieldInfo.storage_type == field_compression_bitpacked) {
+                char * recordPointer = sectionDef.records[index].data;
+                char buffer[128];
+
+                int byteOffset = fieldInfo.additional_data_size * index + (fieldInfo.field_offset_bits) >> 3;
+                int bitOffset = fieldInfo.field_size_bits & 8;
+                int bitesToRead = fieldInfo.field_size_bits;
+
+                //Zero the buffer
+                for (int j = 0; j < bitesToRead/8; j++) buffer[j] = 0;
+
+                //Read bites
+                int firstBitesToExtract = bitesToRead+bitOffset > 8 ? 8-bitOffset : bitesToRead ;
+                unsigned char startMask = (unsigned char) (((1 << firstBitesToExtract) - 1)) << bitOffset;
+                unsigned char endMask = (unsigned char) (0xFF ^ startMask);
+
+                buffer[0] = recordPointer[byteOffset] & (startMask) >> bitOffset;
+                int totalBytesToRead = (bitesToRead + 7) >> 3;
+                for (int j = 0; j < totalBytesToRead-1; j++) {
+                    buffer[j] = buffer[j] | (recordPointer[byteOffset + j]     & (endMask) << bitOffset);
+                    buffer[j + 1] =         (recordPointer[byteOffset + j + 1] & (startMask) >> bitOffset);
+                }
+                int endByteOffset = totalBytesToRead-1;
+                buffer[endByteOffset] = buffer[endByteOffset] | (recordPointer[byteOffset] & (endMask) << bitOffset);
+
+                callback(i, 0, &buffer[0], bitesToRead >> 3);
             }
         }
     }
-
-    return true;
 }

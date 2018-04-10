@@ -168,11 +168,24 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 
         if (result) {
             this->m_currentWMO = checkingWmoObj;
-            currentWmoGroup = groupResult.groupId;
-            if (checkingWmoObj->isGroupWmoInterior(groupResult.groupId)) {
+            currentWmoGroup = groupResult.groupIndex;
+            if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
                 this->m_currentInteriorGroups.push_back(groupResult);
-                interiorGroupNum = groupResult.groupId;
+                interiorGroupNum = groupResult.groupIndex;
             } else {
+            }
+
+            if (m_api->getDB2WmoAreaTable()->getIsLoaded()) {
+                DBWmoAreaTableRecord areaTableRecord;
+                if (m_api->getDB2WmoAreaTable()->findRecord(
+                    this->m_currentWMO->getWmoHeader()->wmoID,
+                    this->m_currentWMO->getNameSet(),
+                    groupResult.WMOGroupID,
+                    areaTableRecord
+                )) {
+                    std::cout << "AreaName = " << areaTableRecord.AreaName << std::endl;
+                }
+
             }
 
             bspNodeId = groupResult.nodeId;

@@ -20,7 +20,8 @@ class WmoGroupObject;
 
 struct WmoGroupResult {
     M2Range topBottom;
-    int groupId;
+    int groupIndex;
+    int WMOGroupID;
     std::vector<int> bspLeafList;
     int nodeId;
 };
@@ -96,6 +97,9 @@ public:
             mainGeom->header->ambColor.r/255.0f,
             mainGeom->header->ambColor.g/255.0f,
             mainGeom->header->ambColor.b/255.0f);
+    }
+    int getNameSet() {
+        return m_nameSet;
     }
     virtual SMOHeader *getWmoHeader() override {
         return mainGeom->header;

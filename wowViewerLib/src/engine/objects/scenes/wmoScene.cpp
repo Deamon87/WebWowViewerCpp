@@ -352,10 +352,10 @@ void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &
 
         if (result) {
             this->m_currentWMO = checkingWmoObj;
-            currentWmoGroup = groupResult.groupId;
-            if (checkingWmoObj->isGroupWmoInterior(groupResult.groupId)) {
+            currentWmoGroup = groupResult.groupIndex;
+            if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
                 this->m_currentInteriorGroups.push_back(groupResult);
-                interiorGroupNum = groupResult.groupId;
+                interiorGroupNum = groupResult.groupIndex;
             } else {
             }
 

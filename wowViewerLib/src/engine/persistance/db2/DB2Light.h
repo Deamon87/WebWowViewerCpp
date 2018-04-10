@@ -48,7 +48,7 @@ public:
     DBLightRecord getRecord(int id) {
         DBLightRecord dbLightRecord;
 
-        m_base->readRecord(id, false, 0, -1, [&dbLightRecord](int fieldNum, char *data, size_t length) -> void {
+        m_base->readRecord(id, false, 0, -1, [&dbLightRecord](int fieldNum, int stringOffset, char *data, size_t length) -> void {
             if (fieldNum == 0) {
                 memcpy(&dbLightRecord.gameCoords[0], data, length);
             } else if (fieldNum == 1) {

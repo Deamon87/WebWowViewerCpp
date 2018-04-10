@@ -154,7 +154,10 @@ public:
     };
     virtual DB2LightData *getDB2LightData() override {
         return db2LightData;
-    }
+    };
+    virtual DB2WmoAreaTable *getDB2WmoAreaTable() override {
+        return db2WmoAreaTable;
+    };
 
 private:
     ShaderRuntimeData *compileShader (std::string shaderName, std::string vertShaderString, std::string fragmentShaderString,
@@ -213,6 +216,7 @@ private:
 
     DB2Light *db2Light;
     DB2LightData *db2LightData;
+    DB2WmoAreaTable *db2WmoAreaTable;
 
     int canvWidth;
     int canvHeight;

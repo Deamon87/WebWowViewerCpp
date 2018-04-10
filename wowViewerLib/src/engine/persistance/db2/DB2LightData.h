@@ -66,7 +66,7 @@ public:
     DB2LightDataRecord getRecord(int id) {
         DB2LightDataRecord dbLightIntBandRecord;
 
-        m_base->readRecord(id, true, 0, -1, [&dbLightIntBandRecord](int fieldNum, char *data, size_t length) -> void {
+        m_base->readRecord(id, true, 0, -1, [&dbLightIntBandRecord](int fieldNum, int stringOffset, char *data, size_t length) -> void {
             if (fieldNum == 0) {
                 memcpy(&dbLightIntBandRecord.directColor, data, length);
             } else if (fieldNum == 1) {
