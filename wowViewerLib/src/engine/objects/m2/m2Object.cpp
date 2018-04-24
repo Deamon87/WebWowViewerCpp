@@ -512,9 +512,9 @@ void M2Object::setDiffuseColor(CImVector& value) {
     this->m_localDiffuseColor = value;
 
     this->m_localDiffuseColorV = mathfu::vec4(
-            value.r / 255.0f,
-            value.g / 255.0f,
             value.b / 255.0f,
+            value.g / 255.0f,
+            value.r / 255.0f,
             value.a / 255.0f);
 }
 void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {

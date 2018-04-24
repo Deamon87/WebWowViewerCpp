@@ -37,6 +37,8 @@ private:
     float ambientColor[4];
     float sunColor[4];
     float fogColor[4];
+
+    std::string areaName;
 public:
     bool getRenderM2 () {
         return renderMd2;
@@ -187,6 +189,14 @@ public:
         aFogColor[1] = fogColor[1];
         aFogColor[2] = fogColor[2];
         aFogColor[3] = fogColor[3];
+    }
+
+    void setAreaName(std::string a) {
+        areaName = a;
+    }
+
+    std::string getAreaName() {
+        return areaName;
     }
 };
 

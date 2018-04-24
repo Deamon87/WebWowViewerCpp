@@ -891,7 +891,7 @@ void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
     if (groupWmoObject != nullptr && groupWmoObject->getIsLoaded()) {
         const std::vector <M2Object *> *doodads = groupWmoObject->getDoodads();
 
-        mathfu::vec4 ambientColor = groupWmoObject->getAmbientColor();
+        mathfu::vec4 ambientColor = groupWmoObject->getAmbientColor() ;
 
         for (int j = 0; j < doodads->size(); j++) {
             M2Object *mdxObject = doodads->at(j);

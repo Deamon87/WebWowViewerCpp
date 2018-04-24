@@ -69,7 +69,6 @@ std::vector<FoundLightRecord> DB2Light::findRecord(int mapId, mathfu::vec3 &pos)
     std::vector<FoundLightRecord> result;
 
     bool lightRecordDefaultFound = false;
-    DBLightRecord lightRecordDefault;
 
     for (int i = 0; i < m_base->getRecordCount(); i++) {
         FoundLightRecord record;
@@ -80,13 +79,19 @@ std::vector<FoundLightRecord> DB2Light::findRecord(int mapId, mathfu::vec3 &pos)
             if (feq(lightRec.gameCoords[0], 0.0f) &&
                 feq(lightRec.gameCoords[1], 0.0f) &&
                 feq(lightRec.gameCoords[2], 0.0f) ) {
+
                 lightRecordDefaultFound = true;
-                lightRecordDefault = lightRec;
+
+                record.lightRec = lightRec;
+                record.blendAlpha = std::numeric_limits<float>::max();
+
+                result.push_back(record);
                 continue;
             }
 
             static const mathfu::vec3 constant = mathfu::vec3(17066.666f, 17066.666f, 0);
-            static const float convertConst = 1.0f / 36.0f;
+//            static const float convertConst = 1.0f / 36.0f;
+            static const float convertConst = 1.0f;
 //            mathfu::vec3 lightPos = constant - mathfu::vec3(
 //                    lightRec.gameCoords[2],
 //                    lightRec.gameCoords[0],
@@ -107,23 +112,22 @@ std::vector<FoundLightRecord> DB2Light::findRecord(int mapId, mathfu::vec3 &pos)
             }
         }
     }
+    if (!lightRecordDefaultFound) {
+        FoundLightRecord record;
+        record.lightRec = getRecord(1);
+        record.blendAlpha = std::numeric_limits<float>::max();
+        result.push_back(record);
+    }
+
 
     if (result.size() == 0) {
-        FoundLightRecord record;
-        record.blendAlpha = 1.0;
-        if (lightRecordDefaultFound) {
-            record.lightRec = lightRecordDefault;
-        } else {
-            record.lightRec = getRecord(1);
-        }
-
-        result.push_back(record);
         return result;
     }
 
+    //From lowest to highest
     std::sort(result.begin(), result.end(),
        [] (FoundLightRecord &a, FoundLightRecord &b) -> bool const {
-            return a.blendAlpha - b.blendAlpha > 0;
+            return a.blendAlpha - b.blendAlpha < 0;
     });
 
     return result;

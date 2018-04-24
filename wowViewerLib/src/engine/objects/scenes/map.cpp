@@ -10,6 +10,7 @@
 #include "../../algorithms/grahamScan.h"
 #include "../m2/m2Instancing/m2InstancingObject.h"
 #include "../../persistance/wdtFile.h"
+#include "../../persistance/db2/DB2WmoAreaTable.h"
 
 void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
     std::string fileIdent = m2Object->getModelIdent();
@@ -183,7 +184,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
                     groupResult.WMOGroupID,
                     areaTableRecord
                 )) {
-                    std::cout << "AreaName = " << areaTableRecord.AreaName << std::endl;
+                    config->setAreaName(areaTableRecord.AreaName);
                 }
 
             }
@@ -230,7 +231,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 //
     //8. Check fog color every 2 seconds
     bool fogRecordWasFound = false;
-    if (this->m_currentTime + deltaTime - this->m_lastTimeLightCheck > 2000) {
+    if (this->m_currentTime + deltaTime - this->m_lastTimeLightCheck > 30) {
         mathfu::vec3 ambientColor = mathfu::vec3(0.0,0.0,0.0);
         mathfu::vec3 directColor = mathfu::vec3(0.0,0.0,0.0);
         mathfu::vec3 endFogColor = mathfu::vec3(0.0,0.0,0.0);
@@ -256,6 +257,8 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
             for (int i = 0; i < result.size() && totalSummator < 1.0f; i++) {
                 DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(result[i].lightRec.lightParamsID[0]);
                 float blendPart = result[i].blendAlpha < 1.0f ? result[i].blendAlpha : 1.0f;
+                blendPart = blendPart + totalSummator < 1.0f ? blendPart : 1.0f - totalSummator;
+
                 ambientColor = ambientColor +
                     mathfu::vec3((lightData.ambientColor & 0xFF) / 255.0f,
                     ((lightData.ambientColor >> 8) & 0xFF) / 255.0f,
@@ -272,7 +275,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
                                                ((lightData.sunFogColor >> 16) & 0xFF) / 255.0f) * blendPart;
                 }
 
-                totalSummator += result[i].blendAlpha;
+                totalSummator += blendPart;
             }
 //            DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(20947);
 
@@ -309,7 +312,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 }
 
 inline int worldCoordinateToAdtIndex(float x) {
-    return floor((32 - (x / 533.33333)));
+    return floor((32.0f - (x / 533.33333f)));
 }
 
 float AdtIndexToWorldCoordinate(int x) {

@@ -533,6 +533,7 @@ bool WmoGroupObject::checkDoodads(std::set<M2Object *> &wmoM2Candidates) {
             if (this->m_dontUseLocalLightingForM2) {
                 this->m_doodads[i]->setUseLocalLighting(false);
             } else {
+                this->m_doodads[i]->setUseLocalLighting(true);
                 this->m_doodads[i]->setAmbientColorOverride(ambientColor, true);
             }
 
@@ -559,9 +560,9 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
     if (!m_geom->mogp->flags.EXTERIOR && !m_geom->mogp->flags.EXTERIOR_LIT) {
         mathfu::vec4 ambColor;
         ambColor = mathfu::vec4(
-            ((float) m_geom->mohd->ambColor.b / 255.0f),
-            ((float) m_geom->mohd->ambColor.g / 255.0f),
             ((float) m_geom->mohd->ambColor.r / 255.0f),
+            ((float) m_geom->mohd->ambColor.g / 255.0f),
+            ((float) m_geom->mohd->ambColor.b / 255.0f),
             ((float) m_geom->mohd->ambColor.a / 255.0f)
         );
 

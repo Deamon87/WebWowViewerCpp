@@ -408,9 +408,21 @@ void mainLoop(void* loopArg){
 //        }
 
 
-        nk_label(ctx, "Draw M2 AABB:", NK_TEXT_LEFT);
 
+
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
+        {
+            nk_layout_row_push(ctx, 250);
+            std::string areaName = "AreaName: " + testConf->getAreaName();
+            nk_label(ctx, areaName.c_str(), NK_TEXT_LEFT);
+        }
         /* fixed widget window ratio width */
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
+        {
+            nk_layout_row_push(ctx, 50);
+            nk_label(ctx, "Draw M2 AABB:", NK_TEXT_LEFT);
+        }
+        nk_layout_row_end(ctx);
         nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
         {
             nk_layout_row_push(ctx, 50);
