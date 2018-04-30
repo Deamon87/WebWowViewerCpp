@@ -66,9 +66,11 @@ private:
 
     std::vector<WmoGroupObject*> groupObjects = std::vector<WmoGroupObject*>(0);
     std::vector<WmoGroupObject*> groupObjectsLod1 = std::vector<WmoGroupObject*>(0);
+    std::vector<WmoGroupObject*> groupObjectsLod2 = std::vector<WmoGroupObject*>(0);
     std::vector<BlpTexture> blpTextures;
 
     std::vector<bool> drawGroupWMO;
+    std::vector<int> lodGroupLevelWMO;
     std::vector<M2Object*> m_doodadsArray;
 
     std::unordered_map<int, BlpTexture*> diffuseTextures;
@@ -78,6 +80,7 @@ private:
     void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
     void createBB(CAaBox bbox);
     void postWmoGroupObjectLoad(int groupId, int lod) override;
+    void fillLodGroup(mathfu::vec3 &cameraLocal);
 public:
     M2Object *getDoodad(int index) override ;
     BlpTexture * getTexture(int materialId, bool isSpec);

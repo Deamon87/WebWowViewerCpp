@@ -6,6 +6,7 @@
 #define WEBWOWVIEWERCPP_DB2WMOAREATABLE_H
 
 #include <cstring>
+#include <iostream>
 #include "base/DB2Base.h"
 struct DBWmoAreaTableRecord {
     std::string AreaName;
@@ -96,10 +97,10 @@ public:
             }
         };
 
-        int foundIndex = -1;
-        if ((foundIndex = m_base->readRecord(WMOID, true, 0, -1, partialCallback)) < 0) {
-            return false;
-        }
+        int foundIndex = 0;
+//        if ((foundIndex = m_base->readRecord(WMOID, true, 0, -1, partialCallback)) < 0) {
+//            return false;
+//        }
 
         while (foundIndex < getRecordCount() - 1) {
             if (record.WMOID == WMOID && record.NameSetID == NameSetID && record.WMOGroupID == -1) {

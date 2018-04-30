@@ -439,7 +439,7 @@ void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortal
     });
 }
 
-bool MathHelper::isPointInsideAABB(CAaBox &aabb, mathfu::vec3 &p) {
+bool MathHelper::isPointInsideAABB(const CAaBox &aabb, mathfu::vec3 &p) {
     bool result = p[0] > aabb.min.x && p[0] < aabb.max.x &&
              p[1] > aabb.min.y && p[1] < aabb.max.y &&
              p[2] > aabb.min.z && p[2] < aabb.max.z;
@@ -452,7 +452,7 @@ static float distance_aux(float p, float lower, float upper) {
     return 0;
 }
 
-float MathHelper::distanceFromAABBToPoint(CAaBox &aabb, mathfu::vec3 &p) {
+float MathHelper::distanceFromAABBToPoint(const CAaBox &aabb, mathfu::vec3 &p) {
 
     float dx = distance_aux(p.x, aabb.min.x, aabb.max.x);
     float dy = distance_aux(p.y, aabb.min.y, aabb.max.y);

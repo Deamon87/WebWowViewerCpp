@@ -80,9 +80,9 @@ public:
         const mathfu::vec3 &vertex1,
         const mathfu::vec3 &vertex2);
 
-    static float distanceFromAABBToPoint(CAaBox &aabb, mathfu::vec3 &p);
+    static float distanceFromAABBToPoint(const CAaBox &aabb, mathfu::vec3 &p);
 
-    static bool isPointInsideAABB(CAaBox &aabb, mathfu::vec3 &p);
+    static bool isPointInsideAABB(const CAaBox &aabb, mathfu::vec3 &p);
 
     static mathfu::vec3 getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &c);
 

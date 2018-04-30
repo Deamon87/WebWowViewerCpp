@@ -268,9 +268,17 @@ void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &
     //2. Calc distance every 100 ms
     if (this->m_currentTime + deltaTime - this->m_lastTimeDistanceCalc > 100) {
         for (int j = 0; j < this->m2RenderedThisFrameArr.size(); j++) {
-            //if (this.m2Objects[j].getIsRendered()) {
             this->m2RenderedThisFrameArr[j]->calcDistance(cameraVec3);
-            //}
+        }
+
+        //Limit M2 count based on distance/m2 height
+        for (auto it = this->m2RenderedThisFrameArr.begin();
+             it != this->m2RenderedThisFrameArr.end();) {
+            if ((*it)->getCurrentDistance() > ((*it)->getHeight() * 5)) {
+                it = this->m2RenderedThisFrameArr.erase(it);
+            } else {
+                ++it;
+            }
         }
 
         this->m_lastTimeDistanceCalc = this->m_currentTime;

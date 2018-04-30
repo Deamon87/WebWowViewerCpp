@@ -67,12 +67,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
 //    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-//    currentScene = new Map(this, 530 "Expansion01");
+//    currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
-//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-//    currentScene = new Map(this, 1220, "Troll Raid");
+    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+    currentScene = new Map(this, 1220, "Troll Raid");
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -89,8 +89,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    m_secondCamera.setCameraPos(-1663, 5098, 27);
 //
-    m_firstCamera.setCameraPos(5243.2461346537075f, 1938.6550422193939f, 717.0332923206179f); //HallsOfReflection
-    currentScene = new Map(this, 668, "HallsOfReflection");
+//    m_firstCamera.setCameraPos(5243.2461346537075f, 1938.6550422193939f, 717.0332923206179f); //HallsOfReflection
+//    currentScene = new Map(this, 668, "HallsOfReflection");
 //     .go 668 5243 1938 760
     // .go 668 0 0 0
 
@@ -268,6 +268,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //   currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_tower.wmo");
+
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_nether.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\mantidraid\\pa_mantid_raid.wmo");
 //    currentScene = new WmoScene(this,
@@ -1135,37 +1138,15 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     glBindVertexArray(vao);
 #endif
 
-    glClearScreen();
-    mathfu::vec3 *cameraVector;
-    float ambient[4];
-    m_config->getAmbientColor(ambient);
-    m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]);
-
-    float sunColor[4];
-    m_config->getSunColor(sunColor);
-    m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
-
-    float fogColor[4];
-    m_config->getFogColor(fogColor);
-    m_fogColor = mathfu::vec4(fogColor);
-
     static const mathfu::vec3 upVector(0,0,1);
 
-    float farPlane = 300;
+    glClearScreen();
+
+    glViewport(0,0,this->canvWidth, this->canvHeight);
+
+    float farPlane = 500;
     float nearPlane = 1;
     float fov = toRadian(45.0);
-
-//    float diagFov = 2.0944;
-//    float fov = diagFov / sqrt(1 + canvAspect*canvAspect);
-
-    //If use camera settings
-    //Figure out way to assign the object with camera
-    if (!m_config->getUseSecondCamera()){
-        this->m_firstCamera.tick(deltaTime);
-    } else {
-        this->m_secondCamera.tick(deltaTime);
-    }
-
     M2CameraResult cameraResult;
     mathfu::mat4 lookAtMat4;
     mathfu::vec4 cameraVec4;
@@ -1175,10 +1156,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
 
         lookAtMat4 =
-            mathfu::mat4::LookAt(
-                -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
-                mathfu::vec3(0,0,0),
-                upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
+                mathfu::mat4::LookAt(
+                        -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
+                        mathfu::vec3(0,0,0),
+                        upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
         cameraVec4 = cameraResult.position;
         m_lookAtMat4 = lookAtMat4;
 
@@ -1188,19 +1169,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         m_lookAtMat4 = lookAtMat4;
     }
 
-    if (this->uFogStart < 0) {
-        this->uFogStart = farPlane-100;
-    }
-    if (this->uFogEnd < 0) {
-        this->uFogEnd = farPlane;
-    }
-//    mathfu::mat4 lookAtMat4 =
-//        mathfu::mat4::LookAt(
-//                this->m_firstCamera.getCameraPosition(),
-//                this->m_firstCamera.getCameraLookAt(),
-//                upVector);
 
-// Second camera for debug
     mathfu::mat4 secondLookAtMat =
             mathfu::mat4::LookAt(
                     this->m_secondCamera.getCameraPosition(),
@@ -1208,23 +1177,11 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                     upVector);
 
     mathfu::mat4 perspectiveMatrix =
-        mathfu::mat4::Perspective(
-                fov,
-                this->canvAspect,
-                nearPlane,
-                farPlane);
-//    float o_height = (this->canvHeight * (533.333/256/* zoom 5 in Alram viewer */))/ 8 ;
-//    float o_width = o_height * this->canvWidth / this->canvHeight ;
-
-//    mathfu::mat4 perspectiveMatrix =
-//        mathfu::mat4::Ortho(
-//                -o_width,
-//                o_width,
-//                -o_height,
-//                o_height,
-//                1,
-//                4000);
-//
+            mathfu::mat4::Perspective(
+                    fov,
+                    this->canvAspect,
+                    nearPlane,
+                    farPlane);
     m_perspectiveMatrix = perspectiveMatrix;
 
     mathfu::mat4 perspectiveMatrixForCulling =
@@ -1236,33 +1193,13 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     //Camera for rendering
     mathfu::mat4 perspectiveMatrixForCameraRender =
             mathfu::mat4::Perspective(fov,
-                                        this->canvAspect,
-                                        nearPlane,
-                                        farPlane);
+                                      this->canvAspect,
+                                      nearPlane,
+                                      farPlane);
     mathfu::mat4 viewCameraForRender =
             perspectiveMatrixForCameraRender * lookAtMat4;
 
     this->m_viewCameraForRender = viewCameraForRender;
-    this->SetDirection();
-
-    this->adtObjectCache.processCacheQueue(10);
-    this->wdtCache.processCacheQueue(10);
-    this->wdlCache.processCacheQueue(10);
-    this->wmoGeomCache.processCacheQueue(10);
-    this->wmoMainCache.processCacheQueue(10);
-    this->m2GeomCache.processCacheQueue(10);
-    this->skinGeomCache.processCacheQueue(10);
-    this->textureCache.processCacheQueue(10);
-    this->db2Cache.processCacheQueue(10);
-
-    mathfu::vec3 cameraVec3 = cameraVec4.xyz();
-    currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
-//    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
-//
-    currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
-//
-
-    glViewport(0,0,this->canvWidth, this->canvHeight);
 
     if (this->m_config->getDoubleCameraDebug()) {
         //Draw static camera
@@ -1327,6 +1264,57 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                                    this->canvHeight, true);
         }
     }
+
+    mathfu::vec3 *cameraVector;
+    float ambient[4];
+    m_config->getAmbientColor(ambient);
+    m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]);
+
+    float sunColor[4];
+    m_config->getSunColor(sunColor);
+    m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
+
+    float fogColor[4];
+    m_config->getFogColor(fogColor);
+    m_fogColor = mathfu::vec4(fogColor);
+
+//    float diagFov = 2.0944;
+//    float fov = diagFov / sqrt(1 + canvAspect*canvAspect);
+
+    //If use camera settings
+    //Figure out way to assign the object with camera
+    if (!m_config->getUseSecondCamera()){
+        this->m_firstCamera.tick(deltaTime);
+    } else {
+        this->m_secondCamera.tick(deltaTime);
+    }
+
+    if (this->uFogStart < 0) {
+        this->uFogStart = farPlane-100;
+    }
+    if (this->uFogEnd < 0) {
+        this->uFogEnd = farPlane;
+    }
+
+    this->SetDirection();
+
+    this->adtObjectCache.processCacheQueue(10);
+    this->wdtCache.processCacheQueue(10);
+    this->wdlCache.processCacheQueue(10);
+    this->wmoGeomCache.processCacheQueue(10);
+    this->wmoMainCache.processCacheQueue(10);
+    this->m2GeomCache.processCacheQueue(10);
+    this->skinGeomCache.processCacheQueue(10);
+    this->textureCache.processCacheQueue(10);
+    this->db2Cache.processCacheQueue(10);
+
+    mathfu::vec3 cameraVec3 = cameraVec4.xyz();
+    currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
+//    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
+//
+    currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
+//
+
 
 #ifndef WITH_GLESv2
     glBindVertexArray(0);

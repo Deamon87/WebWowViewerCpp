@@ -20,94 +20,90 @@ void AdtObject::loadingFinished() {
 
 }
 
+inline int worldCoordinateToGlobalAdtChunk(float x) {
+    return floor(( (32.0f*16.0f) - (x / (533.33333f / 16.0f)   )));
+}
+
 void AdtObject::loadM2s() {
     uint32_t offset = 0;
     int32_t length = m_adtFileObj->doodadDef_len;
-//
-    bool useLod1Version = m_adtFileObjLod->lod_levels_for_objects != nullptr;
-    useLod1Version = false;
-    if (useLod1Version) {
-        if (m_adtFileObjLod->lod_levels_for_objects != nullptr) {
-            offset = m_adtFileObjLod->lod_levels_for_objects->m2LodOffset[2];
-            length = m_adtFileObjLod->lod_levels_for_objects->m2LodLength[2];
+    //1. Load non-lod
+    objectLods[0].m2Objects = std::vector<M2Object *>(length, nullptr);
+    objectLods[1].m2Objects = std::vector<M2Object *>(length, nullptr);
+    for (int j = 0, i = offset; i < offset+length; i++, j++) {
+        SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
+        if (doodadDef.flags.mddf_entry_is_filedata_id) {
+            //2. Get model
+            int fileDataId = m_adtFileObj->mmid[doodadDef.nameId];
+            objectLods[0].m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
         } else {
-            length = m_adtFileObjLod->doodadDefObj1_len;
-        };
+            std::string fileName = &m_adtFileObj->doodadNamesField[m_adtFileObj->mmid[doodadDef.nameId]];
+            //2. Get model
+            objectLods[0].m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
+        }
     }
 
-    m2Objects = std::vector<M2Object *>(length);
+    //2. Load lod
+    bool useLod1Version = m_adtFileObjLod->lod_levels_for_objects != nullptr;
+
+    if (m_adtFileObjLod->lod_levels_for_objects != nullptr) {
+        offset = m_adtFileObjLod->lod_levels_for_objects->m2LodOffset[2];
+        length = m_adtFileObjLod->lod_levels_for_objects->m2LodLength[2];
+    } else {
+        length = m_adtFileObjLod->doodadDefObj1_len;
+    };
     for (int j = 0, i = offset; i < offset+length; i++, j++) {
         //1. Get filename
-        if (useLod1Version) {
-            SMDoodadDef &doodadDef = m_adtFileObjLod->doodadDefObj1[i];
-            if (doodadDef.flags.mddf_entry_is_filedata_id == 1) {
-                //2. Get model
-                int fileDataId = doodadDef.nameId;
-                m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
-            } else {
-                std::string fileName = &m_adtFileObjLod->doodadNamesField[m_adtFileObjLod->mmid[doodadDef.nameId]];
-                //2. Get model
-                m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
-            }
+        SMDoodadDef &doodadDef = m_adtFileObjLod->doodadDefObj1[i];
+        if (doodadDef.flags.mddf_entry_is_filedata_id == 1) {
+            //2. Get model
+            int fileDataId = doodadDef.nameId;
+            objectLods[1].m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
         } else {
-
-            SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
-            if (doodadDef.flags.mddf_entry_is_filedata_id) {
-                //2. Get model
-                int fileDataId = m_adtFileObj->mmid[doodadDef.nameId];
-                m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
-            } else {
-                std::string fileName = &m_adtFileObj->doodadNamesField[m_adtFileObj->mmid[doodadDef.nameId]];
-                //2. Get model
-                m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
-            }
-
-
+            std::string fileName = &m_adtFileObjLod->doodadNamesField[m_adtFileObjLod->mmid[doodadDef.nameId]];
+            //2. Get model
+            objectLods[1].m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
         }
-
     }
 }
 void AdtObject::loadWmos() {
     uint32_t offset = 0;
     int32_t length = m_adtFileObj->mapObjDef_len;
 
-    bool useLod1Version = m_adtFileObjLod->lod_levels_for_objects != nullptr;
-    useLod1Version = false;
-    if (useLod1Version) {
-        if (m_adtFileObjLod->lod_levels_for_objects != nullptr) {
-            offset = m_adtFileObjLod->lod_levels_for_objects->wmoLodOffset[2];
-            length = m_adtFileObjLod->lod_levels_for_objects->wmoLodLength[2];
-        } else {
-            length = m_adtFileObjLod->mapObjDefObj1_len;
-        }
-    }
-
-
-    wmoObjects = std::vector<WmoObject *>(length);
+    //1. Load non lod
+    objectLods[0].wmoObjects = std::vector<WmoObject *>(length, nullptr);
+    objectLods[1].wmoObjects = std::vector<WmoObject *>(length, nullptr);
     for (int j = 0, i = offset; i < offset + length; i++, j++) {
         //1. Get filename
-
         std::string fileName;
-        if (useLod1Version) {
-            auto &mapDef = m_adtFileObjLod->mapObjDefObj1[i];
-            if (mapDef.flags.modf_entry_is_filedata_id == 0) {
-                fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
-                wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
-            } else {
-                uint32_t fileDataId = mapDef.nameId;
-                wmoObjects[j] = m_mapApi->getWmoObject(fileDataId, mapDef);
-            }
-        } else {
-            auto &mapDef = m_adtFileObj->mapObjDef[i];
 
-            fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
-            wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
-        }
-
+        auto &mapDef = m_adtFileObj->mapObjDef[i];
+        fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
+        objectLods[0].wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
 //        std::cout << "wmo filename = "<< fileName << std::endl;
+    }
 
-        //2. Get model
-
+    //2. Load lod!
+    offset = 0;
+    length = m_adtFileObjLod->mapObjDefObj1_len;
+    bool useLod1Version = m_adtFileObjLod->lod_levels_for_objects != nullptr;
+    if (m_adtFileObjLod->lod_levels_for_objects != nullptr) {
+        offset = m_adtFileObjLod->lod_levels_for_objects->wmoLodOffset[2];
+        length = m_adtFileObjLod->lod_levels_for_objects->wmoLodLength[2];
+    } else {
+        length = m_adtFileObjLod->mapObjDefObj1_len;
+    }
+    for (int j = 0, i = offset; i < offset + length; i++, j++) {
+        //Load Lods
+        std::string fileName;
+        auto &mapDefLod = m_adtFileObjLod->mapObjDefObj1[i];
+        if (mapDefLod.flags.modf_entry_is_filedata_id == 0) {
+            fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDefLod.nameId]];
+            objectLods[1].wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDefLod);
+        } else {
+            uint32_t fileDataId = mapDefLod.nameId;
+            objectLods[1].wmoObjects[j] = m_mapApi->getWmoObject(fileDataId, mapDefLod);
+        }
     }
 }
 
@@ -224,6 +220,9 @@ void AdtObject::calcBoundingBoxes() {
             C3Vector(mathfu::vec3(minX, minY, minZ)),
             C3Vector(mathfu::vec3(maxX, maxY, maxZ))
         );
+
+        this->globIndexY[i] = worldCoordinateToGlobalAdtChunk((minX + maxX) / 2.0f);
+        this->globIndexX[i] = worldCoordinateToGlobalAdtChunk((minY + maxY) / 2.0f);
     }
 }
 
@@ -415,6 +414,8 @@ BlpTexture &AdtObject::getAdtSpecularTexture(int textureId) {
 }
 
 bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
+                                    int adt_glob_x,
+                                    int adt_glob_y,
                                     std::vector<mathfu::vec4> &frustumPlanes,
                                     std::vector<mathfu::vec3> &frustumPoints,
                                     std::vector<mathfu::vec3> &hullLines,
@@ -451,6 +452,9 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
             atLeastOneIsDrawn = true;
         }
 
+        int chunkDist = (int) (sqrt(
+            ((adt_glob_y - globIndexY[i])*(adt_glob_y - globIndexY[i])) +
+            ((adt_glob_x - globIndexX[i])*(adt_glob_x - globIndexX[i]))));
 
         //2. Check aabb is inside camera frustum
         bool result = false;
@@ -467,22 +471,29 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
         if (checkRefs) {
             bool wotlk = false;
             if (wotlk) {
-                SMChunk *mapTile = &m_adtFile->mapTile[i];
-                mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
-
-
-                if (mcnkContent != nullptr && mcnkContent->mcrf.doodad_refs != nullptr) {
-                    for (int j = 0; j < mapTile->nDoodadRefs; j++) {
-                        uint32_t m2Ref = mcnkContent->mcrf.doodad_refs[j];
-                        m2ObjectsCandidates.insert(this->m2Objects[m2Ref]);
-                    }
-                }
-                if (mcnkContent != nullptr && mcnkContent->mcrf.object_refs != nullptr) {
-                    for (int j = 0; j < mapTile->nMapObjRefs; j++) {
-                        uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
-                        wmoCandidates.insert(this->wmoObjects[wmoRef]);
-                    }
-                }
+//                SMChunk *mapTile = &m_adtFile->mapTile[i];
+//                mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
+//
+//
+//                if (mcnkContent != nullptr && mcnkContent->mcrf.doodad_refs != nullptr) {
+//                    for (int j = 0; j < mapTile->nDoodadRefs; j++) {
+//                        uint32_t m2Ref = mcnkContent->mcrf.doodad_refs[j];
+//                        m2ObjectsCandidates.insert(this->m2Objects[m2Ref]);
+//                    }
+//                }
+//                if (mcnkContent != nullptr && mcnkContent->mcrf.object_refs != nullptr) {
+//                    for (int j = 0; j < mapTile->nMapObjRefs; j++) {
+//                        uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
+//                        wmoCandidates.insert(this->wmoObjects[wmoRef]);
+//                    }
+//                }
+//            for (int j = 0; j < this->m2Objects.size(); j++) {
+//                m2ObjectsCandidates.insert(this->m2Objects[j]);
+//            }
+//            for (int j = 0; j < wmoObjects.size(); j++) {
+//                uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
+//                wmoCandidates.insert(this->wmoObjects[j]);
+//            }
             } else {
                 SMChunk *mapTile = &m_adtFile->mapTile[i];
                 mcnkStruct_t *mcnkContent = &m_adtFileObj->mcnkStructs[i];
@@ -490,26 +501,24 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                 if (mcnkContent->mcrd_doodad_refs_len > 0) {
                     for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
                         uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
-                        m2ObjectsCandidates.insert(this->m2Objects[m2Ref]);
+                        if (chunkDist < 5) {
+                            m2ObjectsCandidates.insert(this->objectLods[0].m2Objects[m2Ref]);
+                        } else if (this->objectLods[1].m2Objects[m2Ref] != nullptr) {
+                            m2ObjectsCandidates.insert(this->objectLods[1].m2Objects[m2Ref]);
+                        }
                     }
                 }
                 if (mcnkContent->mcrw_object_refs_len > 0) {
                     for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
                         uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
-                        wmoCandidates.insert(this->wmoObjects[wmoRef]);
+                        if (chunkDist < 5) {
+                            wmoCandidates.insert(this->objectLods[0].wmoObjects[wmoRef]);
+                        } else if (this->objectLods[1].wmoObjects[wmoRef] != nullptr){
+                            wmoCandidates.insert(this->objectLods[1].wmoObjects[wmoRef]);
+                        }
                     }
                 }
             }
-
-//            for (int j = 0; j < this->m2Objects.size(); j++) {
-//                m2ObjectsCandidates.insert(this->m2Objects[j]);
-//            }
-//            for (int j = 0; j < wmoObjects.size(); j++) {
-////                    uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
-//                    wmoCandidates.insert(this->wmoObjects[j]);
-////                }
-//
-//            }
         }
     }
 
@@ -519,6 +528,8 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
 AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, WdtFile *wdtFile) : alphaTextures(){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
+    globIndexX = std::vector<int>(256);
+    globIndexY = std::vector<int>(256);
     adtFileTemplate = adtFileTemplate;
 
     m_wdtFile = wdtFile;

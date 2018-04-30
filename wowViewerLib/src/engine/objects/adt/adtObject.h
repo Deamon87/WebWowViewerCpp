@@ -34,6 +34,8 @@ public:
 
     bool checkFrustumCulling(
             mathfu::vec4 &cameraPos,
+            int adt_glob_x,
+            int adt_glob_y,
             std::vector<mathfu::vec4> &frustumPlanes,
             std::vector<mathfu::vec3> &frustumPoints,
             std::vector<mathfu::vec3> &hullLines,
@@ -74,13 +76,17 @@ private:
 private:
     std::vector<GLuint> alphaTextures;
     std::vector<CAaBox> tileAabb;
+    std::vector<int> globIndexX;
+    std::vector<int> globIndexY;
 
     std::string m_adtFileTemplate;
 
     bool drawChunk[256] = {};
 
-    std::vector<M2Object*> m2Objects;
-    std::vector<WmoObject*> wmoObjects;
+    struct {
+        std::vector<M2Object *> m2Objects;
+        std::vector<WmoObject *> wmoObjects;
+    } objectLods[2];
 
     BlpTexture & getAdtTexture(int textureId);
     BlpTexture & getAdtHeightTexture(int textureId);

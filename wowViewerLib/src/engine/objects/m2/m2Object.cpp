@@ -477,6 +477,9 @@ void M2Object::calcDistance(mathfu::vec3 cameraPos) {
 float M2Object::getCurrentDistance() {
     return m_currentDistance;
 }
+float M2Object::getHeight(){
+    return this->aabb.max.z -this->aabb.min.z;
+}
 
 mathfu::vec4 M2Object::getCombinedColor(
         M2SkinProfile *skinData,

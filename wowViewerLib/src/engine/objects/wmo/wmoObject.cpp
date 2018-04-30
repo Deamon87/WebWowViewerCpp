@@ -204,30 +204,44 @@ void WmoObject::createPlacementMatrix(SMMapObjDefObj1 &mapObjDef){
 void WmoObject::createGroupObjects(){
     groupObjects = std::vector<WmoGroupObject*>(mainGeom->groupsLen, nullptr);
     groupObjectsLod1 = std::vector<WmoGroupObject*>(mainGeom->groupsLen, nullptr);
+    groupObjectsLod2 = std::vector<WmoGroupObject*>(mainGeom->groupsLen, nullptr);
     drawGroupWMO = std::vector<bool>(mainGeom->groupsLen, false);
+    lodGroupLevelWMO = std::vector<int>(mainGeom->groupsLen, 0);
 
     std::string nameTemplate = m_modelName.substr(0, m_modelName.find_last_of("."));
     for(int i = 0; i < mainGeom->groupsLen; i++) {
 
         groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
         groupObjects[i]->setWmoApi(this);
+        if (mainGeom->gfids.size() > 1) {
+            groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
+            groupObjectsLod1[i]->setWmoApi(this);
+        }
+        if (mainGeom->gfids.size() > 2) {
+            groupObjectsLod2[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
+            groupObjectsLod2[i]->setWmoApi(this);
+        }
+
         if (useFileId) {
             groupObjects[i]->setModelFileId(mainGeom->gfids[0][i]);
+            if (groupObjectsLod1[i] != nullptr)
+                groupObjectsLod1[i]->setModelFileId(mainGeom->gfids[1][i]);
+
+            if (groupObjectsLod2[i] != nullptr)
+                groupObjectsLod2[i]->setModelFileId(mainGeom->gfids[2][i]);
         } else {
             std::string numStr = std::to_string(i);
             for (int j = numStr.size(); j < 3; j++) numStr = '0' + numStr;
 
             std::string groupFilename = nameTemplate + "_" + numStr + ".wmo";
             std::string groupFilenameLod1 = nameTemplate + "_" + numStr + "_lod1.wmo";
+            std::string groupFilenameLod2 = nameTemplate + "_" + numStr + "_lod2.wmo";
             groupObjects[i]->setModelFileName(groupFilename);
+            if (groupObjectsLod1[i] != nullptr)
+                groupObjectsLod1[i]->setModelFileName(groupFilenameLod1);
+            if (groupObjectsLod2[i] != nullptr)
+                groupObjectsLod2[i]->setModelFileName(groupFilenameLod2);
         }
-
-
-
-//        groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, groupFilenameLod1, mainGeom->groups[i], i);
-//        groupObjectsLod1[i]->setWmoApi(this);
-
-
     }
 }
 
@@ -354,9 +368,16 @@ void WmoObject::draw(){
     glUniformMatrix4fv(wmoShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
 
     for (int i= 0; i < groupObjects.size(); i++) {
-        if(groupObjects[i] != nullptr && drawGroupWMO[i]) {
-            groupObjects[i]->draw(mainGeom->materials, m_getTextureFunc);
-//            groupObjectsLod1[i]->draw(mainGeom->materials, m_getTextureFunc);
+        if(drawGroupWMO[i]) {
+           if (groupObjects[i] != nullptr && lodGroupLevelWMO[i] == 0) {
+               groupObjects[i]->draw(mainGeom->materials, m_getTextureFunc);
+           } else if (groupObjectsLod1[i] != nullptr && lodGroupLevelWMO[i] == 1) {
+               groupObjectsLod1[i]->draw(mainGeom->materials, m_getTextureFunc);
+           } else if (groupObjectsLod2[i] != nullptr && lodGroupLevelWMO[i] == 2) {
+               groupObjectsLod2[i]->draw(mainGeom->materials, m_getTextureFunc);
+           } else if (groupObjects[i] != nullptr) {
+               groupObjects[i]->draw(mainGeom->materials, m_getTextureFunc);
+           }
         }
     }
 }
@@ -790,6 +811,9 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
         drawGroupWMO[i] = transverseVisitedGroups[i];
     }
 
+    mathfu::vec3 cameraLocal3 = cameraLocal.xyz();
+    fillLodGroup(cameraLocal3);
+
     return atLeastOneIsDrawn;
 }
 
@@ -880,6 +904,9 @@ WmoObject::startTraversingFromExterior(mathfu::vec4 &cameraVec4,
         if (transverseVisitedGroups[i]) atLeastOneIsDrawn = true;
         drawGroupWMO[i] = transverseVisitedGroups[i];
     }
+
+    mathfu::vec3 cameraLocal3 = cameraLocal.xyz();
+    fillLodGroup(cameraLocal3);
 
     return atLeastOneIsDrawn;
 }
@@ -1118,5 +1145,23 @@ void WmoObject::setModelFileName(std::string modelName) {
 void WmoObject::setModelFileId(int fileId) {
     useFileId = true;
     m_modelFileId = fileId;
+}
+
+void WmoObject::fillLodGroup(mathfu::vec3 &cameraLocal) {
+    for(int i = 0; i < mainGeom->groupsLen; i++) {
+        if (drawGroupWMO[i]) {
+            float distance = MathHelper::distanceFromAABBToPoint(groupObjects[i]->getLocalAABB(), cameraLocal);
+            if (distance > 100) {
+                lodGroupLevelWMO[i] = 2;
+            } else if (distance > 50) {
+                lodGroupLevelWMO[i] = 1;
+            } else {
+                lodGroupLevelWMO[i] = 0;
+            }
+        } else {
+            lodGroupLevelWMO[i] = 0;
+        }
+    }
+
 }
 

@@ -28,6 +28,9 @@ public:
     CAaBox getWorldAABB() {
         return m_worldGroupBorder;
     }
+    const CAaBox &getLocalAABB() {
+        return m_localGroupBorder;
+    }
     const WmoGroupGeom *getWmoGroupGeom() const { return m_geom; };
     const std::vector <M2Object *> *getDoodads() const { return &m_doodads; };
 
@@ -61,6 +64,7 @@ private:
     int m_modelFileId;
 
     CAaBox m_worldGroupBorder;
+    CAaBox m_localGroupBorder;
     CAaBox m_volumeWorldGroupBorder;
     mathfu::mat4 *m_modelMatrix;
     int m_groupNumber;

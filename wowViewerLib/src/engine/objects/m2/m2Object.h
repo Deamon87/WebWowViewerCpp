@@ -130,6 +130,7 @@ public:
     }
     void calcDistance(mathfu::vec3 cameraPos);
     float getCurrentDistance();
+    float getHeight();
     bool getGetIsLoaded() { return m_loaded; };
     bool getHasBillboarded() {
         return m_hasBillboards;

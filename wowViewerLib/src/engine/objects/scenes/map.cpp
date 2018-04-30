@@ -92,6 +92,16 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
             m2Object->calcDistance(cameraVec3);
         }
 
+        //Limit M2 count based on distance/m2 height
+        for (auto it = this->m2RenderedThisFrameArr.begin();
+             it != this->m2RenderedThisFrameArr.end();) {
+            if ((*it)->getCurrentDistance() > ((*it)->getHeight() * 5)) {
+                it = this->m2RenderedThisFrameArr.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
         this->m_lastTimeDistanceCalc = this->m_currentTime;
     }
 
@@ -315,6 +325,10 @@ inline int worldCoordinateToAdtIndex(float x) {
     return floor((32.0f - (x / 533.33333f)));
 }
 
+inline int worldCoordinateToGlobalAdtChunk(float x) {
+    return floor(( (32.0f*16.0f) - (x / (533.33333f / 16.0f)   )));
+}
+
 float AdtIndexToWorldCoordinate(int x) {
     return (32 - x) * 533.33333;
 }
@@ -353,6 +367,10 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     int adt_y_min = worldCoordinateToAdtIndex(maxx);
     int adt_y_max = worldCoordinateToAdtIndex(minx);
 
+    int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
+    int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
+
+
 //    for (int i = 0; i < 64; i++)
 //        for (int j = 0; j < 64; j++) {
 //            if (this->m_wdtfile->mapTileTable->mainInfo[i][j].Flag_AllWater) {
@@ -375,8 +393,12 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
             AdtObject *adtObject = this->mapTiles[i][j];
             if (adtObject != nullptr) {
+
                 bool result = adtObject->checkFrustumCulling(
-                        cameraPos, frustumPlanes,
+                        cameraPos,
+                        adt_global_x,
+                        adt_global_y,
+                        frustumPlanes,
                         frustumPoints,
                         hullLines,
                         lookAtMat4, m2ObjectsCandidates, wmoCandidates);
