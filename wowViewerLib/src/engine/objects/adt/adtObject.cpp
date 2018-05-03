@@ -427,6 +427,7 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
         if (m_adtFile->getIsLoaded() &&
                 m_adtFileObj->getIsLoaded() &&
                 m_adtFileObjLod->getIsLoaded() &&
+                m_adtFileLod->getIsLoaded() &&
                 m_adtFileTex->getIsLoaded()) {
             this->loadingFinished();
             m_loaded = true;
@@ -435,6 +436,10 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
         }
     }
     bool atLeastOneIsDrawn = false;
+
+    mostDetailedLod = 5;
+    leastDetiledLod = 0;
+
 
     for (int i = 0; i < 256; i++) {
         mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
@@ -455,6 +460,18 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
         int chunkDist = (int) (sqrt(
             ((adt_glob_y - globIndexY[i])*(adt_glob_y - globIndexY[i])) +
             ((adt_glob_x - globIndexX[i])*(adt_glob_x - globIndexX[i]))));
+
+        int currentLod = 0;
+        if (chunkDist > 7) {
+            currentLod = 2;
+        }
+        if (chunkDist > 10) {
+            currentLod = 5;
+        }
+
+        if (currentLod < mostDetailedLod) mostDetailedLod = currentLod;
+        if (currentLod > leastDetiledLod) leastDetiledLod = currentLod;
+
 
         //2. Check aabb is inside camera frustum
         bool result = false;
@@ -539,4 +556,5 @@ AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, WdtFile *w
     m_adtFileTex = m_api->getAdtGeomCache()->get(adtFileTemplate+"_tex"+std::to_string(0)+".adt");
     m_adtFileObj = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt");
     m_adtFileObjLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(1)+".adt");
+    m_adtFileLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_lod.adt");
 }

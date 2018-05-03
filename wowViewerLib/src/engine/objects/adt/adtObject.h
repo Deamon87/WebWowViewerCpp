@@ -56,6 +56,7 @@ private:
     AdtFile *m_adtFileTex;
     AdtFile *m_adtFileObj;
     AdtFile *m_adtFileObjLod;
+    AdtFile *m_adtFileLod;
 
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;
@@ -65,6 +66,9 @@ private:
     int normalOffset = 0;
     int colorOffset = 0;
     int lightingOffset = 0;
+
+    int mostDetailedLod = 0; // 0 = most detailed LOD, 5 = least detailed lod
+    int leastDetiledLod = 0;
 
     std::unordered_map<int, BlpTexture*> m_requestedTextures;
     std::unordered_map<int, BlpTexture*> m_requestedTexturesHeight;
