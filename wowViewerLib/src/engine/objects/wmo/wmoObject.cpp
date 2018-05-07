@@ -1158,6 +1158,8 @@ void WmoObject::fillLodGroup(mathfu::vec3 &cameraLocal) {
             } else {
                 lodGroupLevelWMO[i] = 0;
             }
+
+            lodGroupLevelWMO[i] = std::max(lodGroupLevelWMO[i], getWmoHeader()->numLod-1);
         } else {
             lodGroupLevelWMO[i] = 0;
         }
