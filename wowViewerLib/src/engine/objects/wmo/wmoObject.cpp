@@ -1151,9 +1151,9 @@ void WmoObject::fillLodGroup(mathfu::vec3 &cameraLocal) {
     for(int i = 0; i < mainGeom->groupsLen; i++) {
         if (drawGroupWMO[i]) {
             float distance = MathHelper::distanceFromAABBToPoint(groupObjects[i]->getLocalAABB(), cameraLocal);
-            if (distance > 100) {
+            if (distance > 400) {
                 lodGroupLevelWMO[i] = 2;
-            } else if (distance > 50) {
+            } else if (distance > 200) {
                 lodGroupLevelWMO[i] = 1;
             } else {
                 lodGroupLevelWMO[i] = 0;

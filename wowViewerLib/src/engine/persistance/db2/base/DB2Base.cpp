@@ -15,6 +15,8 @@ void DB2Base::process(std::vector<unsigned char> &db2File) {
     bytesRead = 0;
 
     readValue(header);
+    if (header->magic != 'WDC2') return;
+
     readValues(section_headers, header->section_count);
     readValues(fields, header->total_field_count);
     fieldInfoLength = header->field_storage_info_size / sizeof(field_storage_info);

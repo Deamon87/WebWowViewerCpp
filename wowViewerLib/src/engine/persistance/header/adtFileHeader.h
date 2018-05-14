@@ -237,6 +237,23 @@ struct SMTextureParams {
     uint32_t padding;     // no default, no non-zero values in 20490
 };
 
+struct MLLL {
+    float lod; //lod bands: 32, 16, 8…
+    uint32_t height_length;
+    uint32_t height_index; //index into MLVI
+    uint32_t mapAreaLow_length;
+    uint32_t mapAreaLow_index; //index into MLVI
+};
+
+struct MLND
+{
+    uint32_t index;  //index into MLVI
+    uint32_t length; //number of elements in MLVI used
+    uint32_t _2;
+    uint32_t _3;
+    int16_t indices[4]; // indexes into MLND for child leaves
+};
+
 
 
 #endif //WOWVIEWERLIB_ADTFILEHEADER_H

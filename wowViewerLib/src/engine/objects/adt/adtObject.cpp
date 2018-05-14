@@ -179,21 +179,34 @@ void AdtObject::createVBO() {
         }
     }
 
-
-
     /* 1.3 Make combinedVbo */
     glGenBuffers(1, &combinedVbo);
     glBindBuffer(GL_ARRAY_BUFFER, this->combinedVbo);
     glBufferData(GL_ARRAY_BUFFER, vboArray.size()*sizeof(float), &vboArray[0], GL_STATIC_DRAW);
 
     /* 2. Strips */
-        glGenBuffers(1, &stripVBO);
-        if (m_adtFile->strips.size() > 0) {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_adtFile->strips.size() * sizeof(int16_t), &m_adtFile->strips[0],
-                         GL_STATIC_DRAW);
-        }
+    glGenBuffers(1, &stripVBO);
+    if (m_adtFile->strips.size() > 0) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_adtFile->strips.size() * sizeof(int16_t), &m_adtFile->strips[0],
+                     GL_STATIC_DRAW);
     }
+
+    //Generate MLLL buffers
+    /* 1.3 Make combinedVbo */
+    glGenBuffers(1, &combinedVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, this->combinedVbo);
+    glBufferData(GL_ARRAY_BUFFER, vboArray.size()*sizeof(float), &vboArray[0], GL_STATIC_DRAW);
+
+    /* 2. Strips */
+    glGenBuffers(1, &stripVBO);
+    if (m_adtFile->strips.size() > 0) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_adtFile->strips.size() * sizeof(int16_t), &m_adtFile->strips[0],
+                     GL_STATIC_DRAW);
+    }
+
+}
 
 void AdtObject::calcBoundingBoxes() {
     for (int i = 0; i < 256; i++) {

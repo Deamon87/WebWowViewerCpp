@@ -69,6 +69,17 @@ public:
     uint32_t *mldd = nullptr;
     int mldd_len = -1;
 
+    float *floatDataBlob;
+    int floatDataBlob_len = -1;
+
+    uint16_t *mvli_indicies = nullptr;
+    int mvli_len = -1;
+
+    MLLL * mllls = nullptr;
+    int mlll_len = -1;
+
+    MLND * mlnds = nullptr;
+    int mlnd_len = -1;
 
     SMLodLevelPerObject * lod_levels_for_objects = nullptr;
 

@@ -1144,7 +1144,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    float farPlane = 500;
+    float farPlane = 2000;
     float nearPlane = 1;
     float fov = toRadian(45.0);
     M2CameraResult cameraResult;
@@ -1290,7 +1290,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     }
 
     if (this->uFogStart < 0) {
-        this->uFogStart = farPlane-100;
+        this->uFogStart = farPlane-1;
     }
     if (this->uFogEnd < 0) {
         this->uFogEnd = farPlane;

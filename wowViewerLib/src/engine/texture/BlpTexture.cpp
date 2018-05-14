@@ -127,8 +127,9 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
         height = (height == 0) ? 1 : height;
         width = (width == 0) ? 1 : width;
     }
-
 }
+
+
 GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &mipmaps) {
     bool hasAlpha = blpFile->alphaChannelBitDepth > 0;
 

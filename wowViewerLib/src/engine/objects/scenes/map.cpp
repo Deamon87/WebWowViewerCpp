@@ -69,6 +69,16 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     adtRenderedThisFrameArr = std::vector<AdtObject*>(adtRenderedThisFrame.begin(), adtRenderedThisFrame.end());
     m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.begin(), m2RenderedThisFrame.end());
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
+
+    //Limit M2 count based on distance/m2 height
+    for (auto it = this->m2RenderedThisFrameArr.begin();
+         it != this->m2RenderedThisFrameArr.end();) {
+        if ((*it)->getCurrentDistance() > ((*it)->getHeight() * 5)) {
+            it = this->m2RenderedThisFrameArr.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
@@ -90,16 +100,6 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     if (this->m_currentTime + deltaTime - this->m_lastTimeDistanceCalc > 100) {
         for (auto &m2Object : this->m2RenderedThisFrameArr) {
             m2Object->calcDistance(cameraVec3);
-        }
-
-        //Limit M2 count based on distance/m2 height
-        for (auto it = this->m2RenderedThisFrameArr.begin();
-             it != this->m2RenderedThisFrameArr.end();) {
-            if ((*it)->getCurrentDistance() > ((*it)->getHeight() * 5)) {
-                it = this->m2RenderedThisFrameArr.erase(it);
-            } else {
-                ++it;
-            }
         }
 
         this->m_lastTimeDistanceCalc = this->m_currentTime;
@@ -296,19 +296,20 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 //                    std::cout << "found :D" << std::endl;
 //                }
 //            }
-        }
-        config->setAmbientColor(
+            config->setAmbientColor(
                 ambientColor.x,
                 ambientColor.y,
                 ambientColor.z,
                 1.0
-        );
-        config->setSunColor(
+            );
+            config->setSunColor(
                 directColor.x,
                 directColor.y,
                 directColor.z,
                 1.0
-        );
+            );
+        }
+
         config->setFogColor(
                 endFogColor.x,
                 endFogColor.y,

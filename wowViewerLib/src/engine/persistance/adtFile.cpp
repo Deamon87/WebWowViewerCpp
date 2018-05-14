@@ -326,6 +326,50 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                 }
             }
         },
+        {
+            'MLVH',
+            {
+                handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLVH");
+
+                    file.floatDataBlob_len = chunkData.chunkLen / sizeof(float);
+                    chunkData.readValues(file.floatDataBlob, file.floatDataBlob_len);
+                }
+            }
+        },
+        {
+            'MLVI',
+            {
+                handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLVI");
+
+                    file.mvli_len = chunkData.chunkLen / sizeof(uint16_t);
+                    chunkData.readValues(file.mvli_indicies, file.mvli_len);
+                }
+            }
+        },
+        {
+            'MLLL',
+            {
+                handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLLL");
+
+                    file.mlll_len = chunkData.chunkLen / sizeof(MLLL);
+                    chunkData.readValues(file.mllls, file.mlll_len);
+                }
+            }
+        },
+        {
+            'MLND',
+            {
+                handler: [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLND");
+
+                    file.mlnd_len = chunkData.chunkLen / sizeof(MLND);
+                    chunkData.readValues(file.mlnds, file.mlnd_len);
+                }
+            }
+        }
     }
 };
 

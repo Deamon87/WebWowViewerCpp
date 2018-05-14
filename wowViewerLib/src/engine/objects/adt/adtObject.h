@@ -77,6 +77,9 @@ private:
     GLuint combinedVbo = 0;
     GLuint stripVBO = 0;
 
+    GLuint heightVboLod = 0;
+    GLuint stripVBOLod = 0;
+
 private:
     std::vector<GLuint> alphaTextures;
     std::vector<CAaBox> tileAabb;
