@@ -371,6 +371,11 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
     int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
 
+    //FOR DEBUG
+    adt_x_min = worldCoordinateToAdtIndex(cameraPos.y) - 2;
+    adt_x_max = adt_x_min + 2;
+    adt_y_min = worldCoordinateToAdtIndex(cameraPos.x) - 2;
+    adt_y_max = adt_y_min + 2;
 
 //    for (int i = 0; i < 64; i++)
 //        for (int j = 0; j < 64; j++) {

@@ -91,7 +91,7 @@ public:
     int mcnkRead = -1;
     SMChunk mapTile[16*16];
     mcnkStruct_t mcnkStructs[16*16];
-    int mcnkMap[16][16] = {-1};
+    int mcnkMap[16][16] = {{-1}};
 
     std::vector<int16_t> strips;
     std::vector<int> stripOffsets;

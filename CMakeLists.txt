@@ -26,9 +26,9 @@ endif()
 
 #set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -pthread")
 
 if (WIN32)
 	SET(zlibLib zlibstaticd)
@@ -140,6 +140,13 @@ endif()
 
 #Build the executiable
 include_directories(${glew_include})
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package( Threads REQUIRED )
+
+if(CMAKE_USE_PTHREADS_INIT)
+    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-pthread")
+endif()
 
 if (CMAKE_NDK_BUILD MATCHES 1)
 	add_library(WebWoWViewerCpp SHARED ${SOURCE_FILES})
@@ -173,9 +180,10 @@ target_link_libraries(WebWoWViewerCpp ${CURL_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(WebWoWViewerCpp zip)
 target_link_libraries(WebWoWViewerCpp WoWViewerLib)
+
+  target_link_libraries(WebWoWViewerCpp Threads::Threads)
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	target_link_libraries(WebWoWViewerCpp glfw)
-	target_link_libraries(WebWoWViewerCpp -lpthread)
 else()
 	target_link_libraries(WebWoWViewerCpp EGL)
 	target_link_libraries(WebWoWViewerCpp GLESv2)

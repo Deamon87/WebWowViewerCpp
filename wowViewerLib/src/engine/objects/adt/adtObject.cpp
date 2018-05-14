@@ -435,10 +435,13 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                 std::set<M2Object *> &m2ObjectsCandidates,
                                 std::set<WmoObject *> &wmoCandidates) {
 
-    static float perLodDist[7] = {std::pow(500.0f, 2), std::pow(400.0f, 2), std::pow(300.0f, 2),
-                                  std::pow(250.0f, 2), std::pow(200.0f, 2), std::pow(150.0f, 2), std::pow(100.0f, 2)};
-
-    const fullAdtLen = 16;
+    const float dist = 533.0f;
+    static float perLodDist[5] = {std::pow(dist, 2),        //32
+                                  std::pow(dist / (2.0f/1.8f), 2), //16
+                                  std::pow(dist / (2.0f/1.6f), 2), //8
+                                  std::pow(dist / (2.0f/1.3f), 2), //4
+                                  std::pow(dist / (2.0f), 2) //2
+                                  };
 
     bool drawLod = false;
     bool drawMostDetailed = true;
@@ -452,42 +455,48 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                  quadTreeNode->indices[3] == -1);
 
         mathfu::vec2 center =
-                pos.xy() - mathfu::vec2(1.0f - (x_offset + cell_len / 2.0f), 1.0f - (y_offset + cell_len / 2.0f));
-        float dist = (center - camera).LengthSquared();
+                pos.xy() -  533.3333f * mathfu::vec2(x_offset+ cell_len/2.0f, y_offset + cell_len/2.0f) ;
+        float dist = (center - camera.xy()).LengthSquared();
         drawLod = dist > perLodDist[lod];
     }
 
     if (drawLod) {
         //Push the drawCall for this lod
 
-        //checkRefs()
+
+        checkReferences(camera, frustumPlanes, frustumPoints, hullLines,
+                  lookAtMat4, m2ObjectsCandidates, wmoCandidates,
+                  16.0f*x_offset, 16.0f*y_offset,
+                  16.0f*cell_len, 16.0f*cell_len);
 
         return true;
     } else if (drawMostDetailed) {
         //General frustum cull!
         bool atLeasOneIsDrawn = checkNonLodChunkCulling(camera, frustumPlanes, frustumPoints, hullLines,
-                trunc(16.0f*x_offset), trunc(16.0f*y_offset),
-                trunc(16.0f*cell_len), trunc(16.0f*cell_len)
+                16.0f*x_offset, 16.0f*y_offset,
+                16.0f*cell_len, 16.0f*cell_len
         );
-
-
 
         return atLeasOneIsDrawn;
     }
 
     //Otherwise: check all others
     float newCellLen = cell_len/2.0f;
+    bool atLeasOneIsDrawn = false;
     //1. Node 1
-    iterateQuadTree(camera, pos, x_offset, y_offset, newCellLen, lod - 1, quadTree, quadTreeNode->indices[0],
+    atLeasOneIsDrawn |= iterateQuadTree(camera, pos, x_offset, y_offset, newCellLen, lod + 1, quadTree, quadTreeNode->indices[0],
                     frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
     //2. Node 2
-    iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset, newCellLen, lod - 1, quadTree, quadTreeNode->indices[1],
+    atLeasOneIsDrawn |= iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset, newCellLen, lod + 1, quadTree, quadTreeNode->indices[1],
                     frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
     //3. Node 3
-    iterateQuadTree(camera, pos, x_offset, y_offset + newCellLen, newCellLen, lod - 1, quadTree, quadTreeNode->indices[2],
-                    frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);    //4. Node 4
-    iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset + newCellLen, newCellLen, lod - 1, quadTree, quadTreeNode->indices[3],
+    atLeasOneIsDrawn |= iterateQuadTree(camera, pos, x_offset, y_offset + newCellLen, newCellLen, lod + 1, quadTree, quadTreeNode->indices[2],
                     frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+    //4. Node 4
+    atLeasOneIsDrawn |= iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset + newCellLen, newCellLen, lod + 1, quadTree, quadTreeNode->indices[3],
+                    frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+
+    return atLeasOneIsDrawn;
 }
 
 bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
@@ -499,8 +508,8 @@ bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
 
     bool atLeastOneIsDrawn = false;
     for (int k = x; k < x+x_len; k++) {
-        for (int l = y; l < y + y_len; y++) {
-            int i = this->m_adtFile->mcnkMap[x][y];
+        for (int l = y; l < y + y_len; l++) {
+            int i = this->m_adtFile->mcnkMap[l][k];
 
 
             mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
@@ -535,17 +544,22 @@ bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
     return atLeastOneIsDrawn;
 }
 
-bool AdtObject::checkRefs(mathfu::vec4 &cameraPos,
+bool AdtObject::checkReferences(mathfu::vec4 &cameraPos,
                           std::vector<mathfu::vec4> &frustumPlanes,
                           std::vector<mathfu::vec3> &frustumPoints,
                           std::vector<mathfu::vec3> &hullLines,
                           mathfu::mat4 &lookAtMat4,
                           std::set<M2Object *> &m2ObjectsCandidates,
                           std::set<WmoObject *> &wmoCandidates,
-
                           int x, int y, int x_len, int y_len) {
-    bool wotlk = false;
-    if (wotlk) {
+    return false;
+    for (int k = x; k < x+x_len; k++) {
+        for (int l = y; l < y + y_len; l++) {
+            int i = this->m_adtFile->mcnkMap[k][l];
+
+            bool wotlk = false;
+            float chunkDist = 1.0;
+            if (wotlk) {
 //                SMChunk *mapTile = &m_adtFile->mapTile[i];
 //                mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
 //
@@ -569,27 +583,29 @@ bool AdtObject::checkRefs(mathfu::vec4 &cameraPos,
 //                uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
 //                wmoCandidates.insert(this->wmoObjects[j]);
 //            }
-    } else {
-        SMChunk *mapTile = &m_adtFile->mapTile[i];
-        mcnkStruct_t *mcnkContent = &m_adtFileObj->mcnkStructs[i];
+            } else {
+                SMChunk *mapTile = &m_adtFile->mapTile[i];
+                mcnkStruct_t *mcnkContent = &m_adtFileObj->mcnkStructs[i];
 
-        if (mcnkContent->mcrd_doodad_refs_len > 0) {
-            for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
-                uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
-                if (chunkDist < 5) {
-                    m2ObjectsCandidates.insert(this->objectLods[0].m2Objects[m2Ref]);
-                } else if (this->objectLods[1].m2Objects[m2Ref] != nullptr) {
-                    m2ObjectsCandidates.insert(this->objectLods[1].m2Objects[m2Ref]);
+                if (mcnkContent->mcrd_doodad_refs_len > 0) {
+                    for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
+                        uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
+                        if (chunkDist < 5) {
+                            m2ObjectsCandidates.insert(this->objectLods[0].m2Objects[m2Ref]);
+                        } else if (this->objectLods[1].m2Objects[m2Ref] != nullptr) {
+                            m2ObjectsCandidates.insert(this->objectLods[1].m2Objects[m2Ref]);
+                        }
+                    }
                 }
-            }
-        }
-        if (mcnkContent->mcrw_object_refs_len > 0) {
-            for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
-                uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
-                if (chunkDist < 5) {
-                    wmoCandidates.insert(this->objectLods[0].wmoObjects[wmoRef]);
-                } else if (this->objectLods[1].wmoObjects[wmoRef] != nullptr){
-                    wmoCandidates.insert(this->objectLods[1].wmoObjects[wmoRef]);
+                if (mcnkContent->mcrw_object_refs_len > 0) {
+                    for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
+                        uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
+                        if (chunkDist < 5) {
+                            wmoCandidates.insert(this->objectLods[0].wmoObjects[wmoRef]);
+                        } else if (this->objectLods[1].wmoObjects[wmoRef] != nullptr) {
+                            wmoCandidates.insert(this->objectLods[1].wmoObjects[wmoRef]);
+                        }
+                    }
                 }
             }
         }
@@ -623,13 +639,11 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     mostDetailedLod = 5;
     leastDetiledLod = 0;
 
-
-    for (int i = 0; i < 256; i++) {
-
-        if (checkRefs) {
-
-        }
-    }
+    atLeastOneIsDrawn |= iterateQuadTree(cameraPos, mathfu::vec3(m_adtFile->mapTile[m_adtFile->mcnkMap[15][15]].position),
+                    0, 0, 1.0, 0,
+                    m_adtFileLod->mlnds, 0,
+                    frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates,
+                    wmoCandidates);
 
     return atLeastOneIsDrawn;
 }
