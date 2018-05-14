@@ -176,11 +176,12 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
 
                     file.mcnkRead++;
 
-                    SMChunk chunk = file.mapTile[file.mcnkRead];
+                    SMChunk &chunk = file.mapTile[file.mcnkRead];
                     chunkDef<AdtFile> *def = &AdtFile::adtFileTable.subChunks['MCNK'];
 
                     if (file.m_mainAdt) {
-                        chunkData.readValue(file.mapTile[file.mcnkRead]);
+                        chunkData.readValue(chunk);
+                        file.mcnkMap[chunk.IndexX][chunk.IndexY] = file.mcnkRead;
 
 //1. Load MCVT
 //                        if (chunk.ofsHeight > 0) {
