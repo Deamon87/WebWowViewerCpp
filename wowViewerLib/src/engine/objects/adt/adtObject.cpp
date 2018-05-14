@@ -426,6 +426,43 @@ BlpTexture &AdtObject::getAdtSpecularTexture(int textureId) {
     return *texture;
 }
 
+void iterateQuadTree(mathfu::vec3 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len, int lod, const MLND *quadTree, int quadTreeInd) {
+
+    static float perLodDist[7] = {std::pow(500.0f, 2), std::pow(400.0f, 2), std::pow(300.0f, 2),
+                                  std::pow(250.0f, 2), std::pow(200.0f, 2), std::pow(150.0f, 2), std::pow(100.0f, 2)};
+
+    const MLND * quadTreeNode = &quadTree[quadTreeInd];
+
+    bool drawMostDetailed = (quadTreeNode->indices[0] == -1 &&
+        quadTreeNode->indices[1] == -1 &&
+        quadTreeNode->indices[2] == -1 &&
+        quadTreeNode->indices[3] == -1);
+
+    mathfu::vec2 center = pos.xy() - mathfu::vec2(1.0f - (x_offset + cell_len/2.0f), 1.0f - (y_offset + cell_len/2.0f));
+    float dist = (center - camera).LengthSquared();
+    if (dist > perLodDist[lod]) {
+        //Push the drawCall for this lod
+
+
+        return;
+    } else if (drawMostDetailed) {
+        //General frustum cull!
+
+        return;
+    }
+
+    //Otherwise: check all others
+    float newCellLen = cell_len/2.0f;
+    //1. Node 1
+    iterateQuadTree(camera, pos, x_offset, y_offset, newCellLen, lod - 1, quadTree, quadTreeNode->indices[0]);
+    //2. Node 2
+    iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset, newCellLen, lod - 1, quadTree, quadTreeNode->indices[1]);
+    //3. Node 3
+    iterateQuadTree(camera, pos, x_offset, y_offset + newCellLen, newCellLen, lod - 1, quadTree, quadTreeNode->indices[2]);
+    //4. Node 4
+    iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset + newCellLen, newCellLen, lod - 1, quadTree, quadTreeNode->indices[3]);
+}
+
 bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                                     int adt_glob_x,
                                     int adt_glob_y,
@@ -470,20 +507,20 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
             atLeastOneIsDrawn = true;
         }
 
-        int chunkDist = (int) (sqrt(
-            ((adt_glob_y - globIndexY[i])*(adt_glob_y - globIndexY[i])) +
-            ((adt_glob_x - globIndexX[i])*(adt_glob_x - globIndexX[i]))));
-
-        int currentLod = 0;
-        if (chunkDist > 7) {
-            currentLod = 2;
-        }
-        if (chunkDist > 10) {
-            currentLod = 5;
-        }
-
-        if (currentLod < mostDetailedLod) mostDetailedLod = currentLod;
-        if (currentLod > leastDetiledLod) leastDetiledLod = currentLod;
+//        int chunkDist = (int) (sqrt(
+//            ((adt_glob_y - globIndexY[i])*(adt_glob_y - globIndexY[i])) +
+//            ((adt_glob_x - globIndexX[i])*(adt_glob_x - globIndexX[i]))));
+//
+//        int currentLod = 0;
+//        if (chunkDist > 7) {
+//            currentLod = 2;
+//        }
+//        if (chunkDist > 10) {
+//            currentLod = 5;
+//        }
+//
+//        if (currentLod < mostDetailedLod) mostDetailedLod = currentLod;
+//        if (currentLod > leastDetiledLod) leastDetiledLod = currentLod;
 
 
         //2. Check aabb is inside camera frustum
