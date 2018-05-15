@@ -130,6 +130,9 @@ public:
     virtual ShaderRuntimeData *getAdtShader() override {
         return adtShader;
     }
+    virtual ShaderRuntimeData *getAdtLodShader() override {
+        return adtShader;
+    }
     virtual ShaderRuntimeData *getDrawPointsShader() override {
         return drawPoints;
     }
@@ -254,6 +257,8 @@ private:
     void activateReadDepthBuffer();
     void activateAdtShader() override;
     void deactivateAdtShader() override;
+    void activateAdtLodShader() override;
+    void deactivateAdtLodShader() override;
     void activateWMOShader() override;
     void deactivateWMOShader() override;
     void deactivateTextureCompositionShader();

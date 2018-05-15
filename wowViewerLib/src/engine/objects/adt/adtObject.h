@@ -31,6 +31,7 @@ public:
 
 
     void draw();
+    void drawLod();
 
     bool checkFrustumCulling(
             mathfu::vec4 &cameraPos,
@@ -44,6 +45,11 @@ public:
             std::set<WmoObject*> &wmoCandidates);
 
 private:
+    struct LodCommand {
+        int index;
+        int length;
+    };
+
     void loadingFinished();
     void createVBO();
     void loadAlphaTextures(int limit);
@@ -73,6 +79,8 @@ private:
     std::unordered_map<int, BlpTexture*> m_requestedTextures;
     std::unordered_map<int, BlpTexture*> m_requestedTexturesHeight;
     std::unordered_map<int, BlpTexture*> m_requestedTexturesSpec;
+
+    std::vector<LodCommand> lodCommands;
 
     GLuint combinedVbo = 0;
     GLuint stripVBO = 0;

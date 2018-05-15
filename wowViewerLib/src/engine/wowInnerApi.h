@@ -40,6 +40,7 @@ public:
     virtual ShaderRuntimeData *getWmoShader() = 0;
     virtual ShaderRuntimeData *getPortalShader() = 0;
     virtual ShaderRuntimeData *getAdtShader() = 0;
+    virtual ShaderRuntimeData *getAdtLodShader() = 0;
     virtual ShaderRuntimeData *getDrawPointsShader() = 0;
 
     virtual void activateM2Shader() = 0;
@@ -50,6 +51,8 @@ public:
     virtual void deactivateM2InstancingShader() = 0;
     virtual void activateAdtShader() = 0;
     virtual void deactivateAdtShader() = 0;
+    virtual void activateAdtLodShader() = 0;
+    virtual void deactivateAdtLodShader() = 0;
     virtual void activateDrawPointShader() = 0;
     virtual void deactivateDrawPointShader() = 0;
     virtual void activateWMOShader() = 0;

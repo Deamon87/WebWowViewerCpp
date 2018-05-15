@@ -83,11 +83,16 @@ public:
     static float distanceFromAABBToPoint(const CAaBox &aabb, mathfu::vec3 &p);
 
     static bool isPointInsideAABB(const CAaBox &aabb, mathfu::vec3 &p);
+    static bool isPointInsideAABB(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
 
     static mathfu::vec3 getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &c);
 
     static mathfu::vec4 planeLineIntersection(mathfu::vec4 &plane, mathfu::vec4 &p1, mathfu::vec4 &p2);
     static mathfu::vec3 getIntersection( mathfu::vec3 &tail1, mathfu::vec3 &head1, mathfu::vec3 &tail2, mathfu::vec3 &head2);
+
+    static float distance_aux(float p, float lower, float upper);
+
+    static float distanceFromAABBToPoint2DSquared(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
 };
 
 

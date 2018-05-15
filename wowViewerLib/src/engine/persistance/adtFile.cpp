@@ -370,6 +370,17 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                     chunkData.readValues(file.mlnds, file.mlnd_len);
                 }
             }
+        },
+        {
+            'MLSI',
+                {
+                    handler: [](AdtFile& file, ChunkData& chunkData){
+                        debuglog("Entered MLSI");
+
+                        file.mlsi_len = chunkData.chunkLen / sizeof(uint16_t);
+                        chunkData.readValues(file.mlsi_indicies, file.mlsi_len);
+                    }
+                }
         }
     }
 };

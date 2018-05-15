@@ -193,18 +193,15 @@ void AdtObject::createVBO() {
     }
 
     //Generate MLLL buffers
-    /* 1.3 Make combinedVbo */
-    glGenBuffers(1, &combinedVbo);
-    glBindBuffer(GL_ARRAY_BUFFER, this->combinedVbo);
-    glBufferData(GL_ARRAY_BUFFER, vboArray.size()*sizeof(float), &vboArray[0], GL_STATIC_DRAW);
+    glGenBuffers(1, &heightVboLod);
+    glBindBuffer(GL_ARRAY_BUFFER, this->stripVBOLod);
+    glBufferData(GL_ARRAY_BUFFER, m_adtFileLod->floatDataBlob_len*sizeof(float), this->m_adtFileLod->floatDataBlob, GL_STATIC_DRAW);
 
     /* 2. Strips */
-    glGenBuffers(1, &stripVBO);
-    if (m_adtFile->strips.size() > 0) {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_adtFile->strips.size() * sizeof(int16_t), &m_adtFile->strips[0],
-                     GL_STATIC_DRAW);
-    }
+    glGenBuffers(1, &stripVBOLod);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBOLod);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_adtFileLod->mvli_len * sizeof(int16_t), m_adtFileLod->mvli_indicies,
+                 GL_STATIC_DRAW);
 
 }
 
@@ -380,6 +377,9 @@ void AdtObject::draw() {
         }
     }
 }
+void AdtObject::drawLod() {
+
+}
 
 BlpTexture &AdtObject::getAdtTexture(int textureId) {
     auto item = m_requestedTextures.find(textureId);
@@ -435,68 +435,101 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                 std::set<M2Object *> &m2ObjectsCandidates,
                                 std::set<WmoObject *> &wmoCandidates) {
 
-    const float dist = 533.0f;
-    static float perLodDist[5] = {std::pow(dist, 2),        //32
-                                  std::pow(dist / (2.0f/1.8f), 2), //16
-                                  std::pow(dist / (2.0f/1.6f), 2), //8
-                                  std::pow(dist / (2.0f/1.3f), 2), //4
-                                  std::pow(dist / (2.0f), 2) //2
+    const float dist = 533.0f*1.5;
+    static float perLodDist[5] = {9999999999.99f,
+                                  std::pow(dist, 2),        //32
+                                  std::pow(dist / (2), 2), //16
+                                  std::pow(dist / (4), 2), //8
+                                  std::pow(dist / (8), 2), //4
+//                                  std::pow(dist / (16), 2) //2
                                   };
 
-    bool drawLod = false;
-    bool drawMostDetailed = true;
+    bool drawLodBasedOnDist = false;
     const MLND *quadTreeNode = nullptr;
-    if (quadTree != nullptr) {
+
+    if (quadTree == nullptr || quadTreeInd == -1) {
+        mathfu::vec2 aabb2D[2];
+        aabb2D[0] = pos.xy() - mathfu::vec2(533.3333f * (x_offset + cell_len), 533.3333f*(y_offset + cell_len));
+        aabb2D[1] = pos.xy() -  mathfu::vec2(533.3333f *x_offset, 533.3333f*y_offset);
+        mathfu::vec2 point = camera.xy();
+        float dist = MathHelper::distanceFromAABBToPoint2DSquared(aabb2D, point);
+        bool drawDetailed = dist < perLodDist[4];
+
+
+
+        //General frustum cull!
+        bool atLeastOneIsDrawn = false;
+        if (drawDetailed) {
+            atLeastOneIsDrawn = checkNonLodChunkCulling(camera, frustumPlanes, frustumPoints, hullLines,
+                                                             16.0f * x_offset, 16.0f * y_offset,
+                                                             16.0f * cell_len, 16.0f * cell_len
+            );
+        }
+        return atLeastOneIsDrawn;
+    }
+
+    if (quadTree != nullptr && quadTreeInd != -1) {
         quadTreeNode = &quadTree[quadTreeInd];
 
-        drawMostDetailed = (quadTreeNode->indices[0] == -1 &&
-                                 quadTreeNode->indices[1] == -1 &&
-                                 quadTreeNode->indices[2] == -1 &&
-                                 quadTreeNode->indices[3] == -1);
+        mathfu::vec2 aabb2D[2];
+        aabb2D[0] = pos.xy() - mathfu::vec2(533.3333f * (x_offset + cell_len), 533.3333f*(y_offset + cell_len));
+        aabb2D[1] = pos.xy() -  mathfu::vec2(533.3333f *x_offset, 533.3333f*y_offset);
 
-        mathfu::vec2 center =
-                pos.xy() -  533.3333f * mathfu::vec2(x_offset+ cell_len/2.0f, y_offset + cell_len/2.0f) ;
-        float dist = (center - camera.xy()).LengthSquared();
-        drawLod = dist > perLodDist[lod];
+        mathfu::vec2 point = camera.xy();
+        float dist = MathHelper::distanceFromAABBToPoint2DSquared(aabb2D, point);
+
+//        mathfu::vec2 center =
+//                pos.xy() -  (533.3333f * mathfu::vec2(x_offset + (cell_len/2.0f), y_offset + (cell_len/2.0f))) ;
+//        float dist = (camera.xy() - center).LengthSquared();
+
+        drawLodBasedOnDist = dist < perLodDist[lod];
     }
 
-    if (drawLod) {
-        //Push the drawCall for this lod
 
 
-        checkReferences(camera, frustumPlanes, frustumPoints, hullLines,
-                  lookAtMat4, m2ObjectsCandidates, wmoCandidates,
-                  16.0f*x_offset, 16.0f*y_offset,
-                  16.0f*cell_len, 16.0f*cell_len);
+    if (drawLodBasedOnDist) {
+        //check all others
+        float newCellLen = cell_len/2.0f;
+        bool atLeastOneIsDrawn = false;
 
-        return true;
-    } else if (drawMostDetailed) {
-        //General frustum cull!
-        bool atLeasOneIsDrawn = checkNonLodChunkCulling(camera, frustumPlanes, frustumPoints, hullLines,
-                16.0f*x_offset, 16.0f*y_offset,
-                16.0f*cell_len, 16.0f*cell_len
-        );
+        //1. Node 1
+        atLeastOneIsDrawn |= iterateQuadTree(camera, pos, x_offset, y_offset, newCellLen, lod + 1, quadTree, quadTreeNode->indices[0],
+                                            frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+        //2. Node 2
+        atLeastOneIsDrawn |= iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset, newCellLen, lod + 1, quadTree, quadTreeNode->indices[1],
+                                            frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+        //3. Node 3
+        atLeastOneIsDrawn |= iterateQuadTree(camera, pos, x_offset, y_offset + newCellLen, newCellLen, lod + 1, quadTree, quadTreeNode->indices[2],
+                                            frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+        //4. Node 4
+        atLeastOneIsDrawn |= iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset + newCellLen, newCellLen, lod + 1, quadTree, quadTreeNode->indices[3],
+                                            frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
 
-        return atLeasOneIsDrawn;
+        if (!atLeastOneIsDrawn) {
+            //Push the drawCall for this lod
+            LodCommand command;
+            command.index = quadTreeNode->index;
+            command.length = quadTreeNode->length;
+
+            lodCommands.push_back(command);
+
+            checkReferences(camera, frustumPlanes, frustumPoints, hullLines,
+                            lookAtMat4, m2ObjectsCandidates, wmoCandidates,
+                            16.0f * x_offset, 16.0f * y_offset,
+                            16.0f * cell_len, 16.0f * cell_len);
+
+            atLeastOneIsDrawn = true;
+        }
+
+        return atLeastOneIsDrawn;
+    } else {
+//        //General frustum cull!
+//        bool atLeastOneIsDrawn = checkNonLodChunkCulling(camera, frustumPlanes, frustumPoints, hullLines,
+//                                                         16.0f*x_offset, 16.0f*y_offset,
+//                                                         16.0f*cell_len, 16.0f*cell_len
+//        );
+//        return atLeastOneIsDrawn;
     }
-
-    //Otherwise: check all others
-    float newCellLen = cell_len/2.0f;
-    bool atLeasOneIsDrawn = false;
-    //1. Node 1
-    atLeasOneIsDrawn |= iterateQuadTree(camera, pos, x_offset, y_offset, newCellLen, lod + 1, quadTree, quadTreeNode->indices[0],
-                    frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-    //2. Node 2
-    atLeasOneIsDrawn |= iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset, newCellLen, lod + 1, quadTree, quadTreeNode->indices[1],
-                    frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-    //3. Node 3
-    atLeasOneIsDrawn |= iterateQuadTree(camera, pos, x_offset, y_offset + newCellLen, newCellLen, lod + 1, quadTree, quadTreeNode->indices[2],
-                    frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-    //4. Node 4
-    atLeasOneIsDrawn |= iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset + newCellLen, newCellLen, lod + 1, quadTree, quadTreeNode->indices[3],
-                    frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-
-    return atLeasOneIsDrawn;
 }
 
 bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
@@ -507,7 +540,7 @@ bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
                                         int x, int y, int x_len, int y_len) {
 
     bool atLeastOneIsDrawn = false;
-    for (int k = x; k < x+x_len; k++) {
+    for (int k = x; k < x + x_len; k++) {
         for (int l = y; l < y + y_len; l++) {
             int i = this->m_adtFile->mcnkMap[l][k];
 
@@ -639,11 +672,18 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     mostDetailedLod = 5;
     leastDetiledLod = 0;
 
-    atLeastOneIsDrawn |= iterateQuadTree(cameraPos, mathfu::vec3(m_adtFile->mapTile[m_adtFile->mcnkMap[15][15]].position),
-                    0, 0, 1.0, 0,
-                    m_adtFileLod->mlnds, 0,
-                    frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates,
-                    wmoCandidates);
+    for (int i = 0; i < 256; i++) {
+        drawChunk[i] = false;
+    }
+    lodCommands.clear();
+
+//    mathfu::vec3 adtPos = mathfu::vec3((32.f - (adt_glob_y-1))*533.3333f, (32.f - (adt_glob_x-1))*533.3333f, 0);
+    mathfu::vec3 adtPos = mathfu::vec3(m_adtFile->mapTile[m_adtFile->mcnkMap[0][0]].position);
+    atLeastOneIsDrawn |= iterateQuadTree(cameraPos, adtPos,
+        0, 0, 1.0, 0,
+        m_adtFileLod->mlnds, 0,
+        frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates,
+        wmoCandidates);
 
     return atLeastOneIsDrawn;
 }

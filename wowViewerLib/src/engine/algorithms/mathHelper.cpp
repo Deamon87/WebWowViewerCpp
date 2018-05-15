@@ -446,7 +446,13 @@ bool MathHelper::isPointInsideAABB(const CAaBox &aabb, mathfu::vec3 &p) {
     return result;
 }
 
-static float distance_aux(float p, float lower, float upper) {
+bool MathHelper::isPointInsideAABB(const mathfu::vec2 aabb[2], mathfu::vec2 &p) {
+    bool result = p[0] > aabb[0].x && p[0] < aabb[1].x &&
+             p[1] > aabb[0].y && p[1] < aabb[1].y;
+    return result;
+}
+
+float MathHelper::distance_aux(float p, float lower, float upper) {
     if (p < lower) return lower - p;
     if (p > upper) return p - upper;
     return 0;
@@ -454,14 +460,25 @@ static float distance_aux(float p, float lower, float upper) {
 
 float MathHelper::distanceFromAABBToPoint(const CAaBox &aabb, mathfu::vec3 &p) {
 
-    float dx = distance_aux(p.x, aabb.min.x, aabb.max.x);
-    float dy = distance_aux(p.y, aabb.min.y, aabb.max.y);
-    float dz = distance_aux(p.z, aabb.min.z, aabb.max.z);
+    float dx = MathHelper::distance_aux(p.x, aabb.min.x, aabb.max.x);
+    float dy = MathHelper::distance_aux(p.y, aabb.min.y, aabb.max.y);
+    float dz = MathHelper::distance_aux(p.z, aabb.min.z, aabb.max.z);
 
     if (MathHelper::isPointInsideAABB(aabb, p))
         return std::min(std::min(dx, dy), dz);    // or 0 in case of distance from the area
     else
         return sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+float MathHelper::distanceFromAABBToPoint2DSquared(const mathfu::vec2 aabb[2], mathfu::vec2 &p) {
+
+    float dx = MathHelper::distance_aux(p.x, aabb[0].x, aabb[1].x);
+    float dy = MathHelper::distance_aux(p.y, aabb[0].y, aabb[1].y);
+
+    if (MathHelper::isPointInsideAABB(aabb, p))
+        return std::min(dx, dy);    // or 0 in case of distance from the area
+    else
+        return dx * dx + dy * dy;
 }
 
 mathfu::vec3 MathHelper::getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &c) {

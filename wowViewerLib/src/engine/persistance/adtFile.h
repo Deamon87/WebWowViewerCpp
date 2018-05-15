@@ -75,6 +75,9 @@ public:
     uint16_t *mvli_indicies = nullptr;
     int mvli_len = -1;
 
+    uint16_t *mlsi_indicies = nullptr;
+    int mlsi_len = -1;
+
     MLLL * mllls = nullptr;
     int mlll_len = -1;
 
