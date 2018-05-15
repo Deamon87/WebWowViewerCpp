@@ -131,7 +131,7 @@ public:
         return adtShader;
     }
     virtual ShaderRuntimeData *getAdtLodShader() override {
-        return adtShader;
+        return adtLodShader;
     }
     virtual ShaderRuntimeData *getDrawPointsShader() override {
         return drawPoints;
@@ -195,6 +195,7 @@ private:
     ShaderRuntimeData *m2InstancingShader = nullptr;
     ShaderRuntimeData *bbShader = nullptr;
     ShaderRuntimeData *adtShader = nullptr;
+    ShaderRuntimeData *adtLodShader = nullptr;
     ShaderRuntimeData *drawPortalShader = nullptr;
     ShaderRuntimeData *drawFrustumShader = nullptr;
     ShaderRuntimeData *drawLinesShader = nullptr;

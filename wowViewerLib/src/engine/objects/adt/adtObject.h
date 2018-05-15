@@ -24,7 +24,7 @@ class M2Object;
 
 class AdtObject {
 public:
-    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, WdtFile * wdtfile);
+    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, WdtFile * wdtfile);
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
     }
@@ -87,9 +87,13 @@ private:
 
     GLuint heightVboLod = 0;
     GLuint stripVBOLod = 0;
+    GLuint indexVBOLod = 0;
 
 private:
     std::vector<GLuint> alphaTextures;
+    BlpTexture * lodDiffuseTexture  = nullptr;
+    BlpTexture * lodNormalTexture  = nullptr;
+
     std::vector<CAaBox> tileAabb;
     std::vector<int> globIndexX;
     std::vector<int> globIndexY;

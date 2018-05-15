@@ -1,6 +1,26 @@
 #include <string>
 #include "shadersStructures.h"
 
+constexpr const char* const adtLodShaderString =
+ #include <../glsl/adtLodShader.glsl>
+;
+
+struct adtLodShader {
+ enum class Attribute { 
+ aHeight = 0, aIndex = 1, adtLodShaderAttributeEnd
+ };
+ };
+inline constexpr const int operator+ (adtLodShader::Attribute const val) { return static_cast<const int>(val); };
+constexpr shaderItem adtLodShaderAttributes [] = {
+ {"aHeight", +adtLodShader::Attribute::aHeight},
+ {"aIndex", +adtLodShader::Attribute::aIndex},
+ };
+constexpr const static shaderDefinition adtLodShaderDef = { 
+adtLodShaderString,
+2,
+adtLodShaderAttributes
+};
+
 constexpr const char* const adtShaderString =
  #include <../glsl/adtShader.glsl>
 ;
@@ -271,7 +291,8 @@ wmoShaderAttributes
 };
 
 constexpr innerType map[] = {
-  { "adtShader", adtShaderDef },
+  { "adtLodShader", adtLodShaderDef },
+ { "adtShader", adtShaderDef },
  { "drawBBShader", drawBBShaderDef },
  { "drawDepthShader", drawDepthShaderDef },
  { "drawFrustumShader", drawFrustumShaderDef },

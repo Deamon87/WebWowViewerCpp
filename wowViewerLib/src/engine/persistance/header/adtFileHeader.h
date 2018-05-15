@@ -239,10 +239,10 @@ struct SMTextureParams {
 
 struct MLLL {
     float lod; //lod bands: 32, 16, 8…
-    uint32_t height_length;
     uint32_t height_index; //index into MLVI
-    uint32_t mapAreaLow_length;
+    uint32_t height_length;
     uint32_t mapAreaLow_index; //index into MLVI
+    uint32_t mapAreaLow_length;
 };
 
 struct MLND

@@ -414,7 +414,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                 }
             } else {
                 std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-                adtObject = new AdtObject(m_api, adtFileTemplate, m_wdtfile);
+                adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
 
                 adtObject->setMapApi(this);
                 this->mapTiles[i][j] = adtObject;
@@ -560,10 +560,19 @@ void Map::draw() {
 
 void Map::drawExterior() {
 //    if (config.getRenderAdt()) {
-        this->m_api->activateAdtShader();
+//        this->m_api->activateAdtShader();
+//        for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
+//            this->adtRenderedThisFrameArr[i]->draw();
+//        }
+//        this->m_api->deactivateAdtShader();
+//
+        this->m_api->activateAdtLodShader();
         for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
-            this->adtRenderedThisFrameArr[i]->draw();
+            this->adtRenderedThisFrameArr[i]->drawLod();
         }
+//        this->m_api->deactivateAdtLodShader();
+
+
 //    }
 
 

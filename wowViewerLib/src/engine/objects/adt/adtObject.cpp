@@ -17,7 +17,6 @@ void AdtObject::loadingFinished() {
 
     loadM2s();
     loadWmos();
-
 }
 
 inline int worldCoordinateToGlobalAdtChunk(float x) {
@@ -25,6 +24,7 @@ inline int worldCoordinateToGlobalAdtChunk(float x) {
 }
 
 void AdtObject::loadM2s() {
+    return;
     uint32_t offset = 0;
     int32_t length = m_adtFileObj->doodadDef_len;
     //1. Load non-lod
@@ -67,6 +67,8 @@ void AdtObject::loadM2s() {
     }
 }
 void AdtObject::loadWmos() {
+    return;
+
     uint32_t offset = 0;
     int32_t length = m_adtFileObj->mapObjDef_len;
 
@@ -110,6 +112,33 @@ void AdtObject::loadWmos() {
 void AdtObject::createVBO() {
     /* 1. help index + Heights + texCoords +  */
     std::vector<float> vboArray ;
+
+    //DEBUG
+//    //Interate MLLL
+//    for (int i = 0; i < m_adtFileLod->mlll_len; i++) {
+//        std::cout<< "MLLL index "<< i << std::endl << std::flush;
+//        MLLL & mlll = m_adtFileLod->mllls[i];
+//
+//        int max_index = -999999;
+//        int min_index = 999999;
+//
+//        for (int j = mlll.height_index; j < mlll.height_index+mlll.height_length; j++) {
+//            int index = m_adtFileLod->mvli_indicies[j];
+//            if (index < min_index) min_index = index;
+//            if (index > max_index) max_index = index;
+//        }
+//
+//        std::cout<< "min_index = "<< min_index << " max_index = " << max_index<< std::endl << std::flush;
+//    }
+
+//    int max_index = -999999;
+//    int min_index = 999999;
+//    for (int i = 0; i < m_adtFileLod->mlsi_len; i++) {
+//        int index = m_adtFileLod->mlsi_indicies[i];
+//        if (index < min_index) min_index = index;
+//        if (index > max_index) max_index = index;
+//    }
+//    std::cout<< "mlsi: min_index = "<< min_index << " max_index = " << max_index<< std::endl << std::flush;
 
     /* 1.1 help index */
     this->indexOffset = vboArray.size();
@@ -194,15 +223,23 @@ void AdtObject::createVBO() {
 
     //Generate MLLL buffers
     glGenBuffers(1, &heightVboLod);
-    glBindBuffer(GL_ARRAY_BUFFER, this->stripVBOLod);
+    glBindBuffer(GL_ARRAY_BUFFER, this->heightVboLod);
     glBufferData(GL_ARRAY_BUFFER, m_adtFileLod->floatDataBlob_len*sizeof(float), this->m_adtFileLod->floatDataBlob, GL_STATIC_DRAW);
 
-    /* 2. Strips */
+    /* 2. Index buffer */
     glGenBuffers(1, &stripVBOLod);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBOLod);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_adtFileLod->mvli_len * sizeof(int16_t), m_adtFileLod->mvli_indicies,
                  GL_STATIC_DRAW);
 
+    //Index buffer for lod
+    std::vector<float> lodIndexes;
+    for (float i = 0; i < 129*129 + 128*128; i++) {
+        lodIndexes.push_back(i);
+    }
+    glGenBuffers(1, &indexVBOLod);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexVBOLod);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, lodIndexes.size()*sizeof(float), &lodIndexes[0], GL_STATIC_DRAW);
 }
 
 void AdtObject::calcBoundingBoxes() {
@@ -378,7 +415,41 @@ void AdtObject::draw() {
     }
 }
 void AdtObject::drawLod() {
+    if (!m_loaded) return;
+    GLuint blackPixelTexture = this->m_api->getBlackPixelTexture();
+    ShaderRuntimeData *adtLodShader = this->m_api->getAdtLodShader();
 
+    mathfu::vec3 adtPos = mathfu::vec3(m_adtFile->mapTile[m_adtFile->mcnkMap[0][0]].position);
+    glUniform3f(adtLodShader->getUnf("uPos"),
+                adtPos.x,
+                adtPos.y,
+                adtPos.z);
+
+    glBindBuffer(GL_ARRAY_BUFFER, this->heightVboLod);
+    glVertexAttribPointer(+adtLodShader::Attribute::aHeight, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    glBindBuffer(GL_ARRAY_BUFFER, this->indexVBOLod);
+    glVertexAttribPointer(+adtLodShader::Attribute::aIndex, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBOLod);
+
+    glActiveTexture(GL_TEXTURE0);
+    if (lodDiffuseTexture->getIsLoaded()) {
+        glBindTexture(GL_TEXTURE_2D, lodDiffuseTexture->getGlTexture());
+    } else {
+        glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
+    }
+
+    glActiveTexture(GL_TEXTURE1);
+    if (lodNormalTexture->getIsLoaded()) {
+        glBindTexture(GL_TEXTURE_2D, lodNormalTexture->getGlTexture());
+    } else {
+        glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
+    }
+
+    for (int i = 0; i < lodCommands.size(); i++) {
+        glDrawElements(GL_TRIANGLE_STRIP, lodCommands[i].length, GL_UNSIGNED_SHORT, (void *)(lodCommands[i].index * 2));
+    }
 }
 
 BlpTexture &AdtObject::getAdtTexture(int textureId) {
@@ -688,7 +759,7 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     return atLeastOneIsDrawn;
 }
 
-AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, WdtFile *wdtFile) : alphaTextures(){
+AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, WdtFile *wdtFile) : alphaTextures(){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);
@@ -703,4 +774,10 @@ AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, WdtFile *w
     m_adtFileObj = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt");
     m_adtFileObjLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(1)+".adt");
     m_adtFileLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_lod.adt");
+
+    lodDiffuseTexture = m_api->getTextureCache()->get("world/maptextures/"+mapname+"/"
+        +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+".blp");
+    lodNormalTexture = m_api->getTextureCache()->get("world/maptextures/"+mapname+"/"
+        +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+"_n.blp");
+
 }

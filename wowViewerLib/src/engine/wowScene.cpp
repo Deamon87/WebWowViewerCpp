@@ -539,6 +539,9 @@ void WoWSceneImpl::initShaders() {
     const  std::string adtShader = getShaderDef("adtShader")->shaderString;
     this->adtShader                = this->compileShader("adtShader", adtShader, adtShader);
 
+    const std::string adtLodShader = getShaderDef("adtLodShader")->shaderString;
+    this->adtLodShader                = this->compileShader("adtLodShader", adtLodShader, adtLodShader);
+
     const  std::string drawPortalShader = getShaderDef("drawPortalShader")->shaderString;
     this->drawPortalShader         = this->compileShader("drawPortalShader", drawPortalShader, drawPortalShader);
 
@@ -1069,49 +1072,36 @@ void WoWSceneImpl::deactivateAdtShader() {
     glUseProgram(0);
 }
 void WoWSceneImpl::activateAdtLodShader (){
-    glUseProgram(adtShader->getProgram());
+    glUseProgram(adtLodShader->getProgram());
 
-    glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
-    glEnableVertexAttribArray(+adtShader::Attribute::aIndex);
-    glEnableVertexAttribArray(+adtShader::Attribute::aNormal);
-    glEnableVertexAttribArray(+adtShader::Attribute::aColor);
-    glEnableVertexAttribArray(+adtShader::Attribute::aVertexLighting);
+    glEnableVertexAttribArray(+adtLodShader::Attribute::aHeight);
+    glEnableVertexAttribArray(+adtLodShader::Attribute::aIndex);
 
-    glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+    glUniformMatrix4fv(adtLodShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(adtLodShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
 
-    glUniform1i(adtShader->getUnf("uAlphaTexture"), 0);
-    glUniform1i(adtShader->getUnf("uLayer0"), 1);
-    glUniform1i(adtShader->getUnf("uLayer1"), 2);
-    glUniform1i(adtShader->getUnf("uLayer2"), 3);
-    glUniform1i(adtShader->getUnf("uLayer3"), 4);
-    glUniform1i(adtShader->getUnf("uLayerHeight0"), 5);
-    glUniform1i(adtShader->getUnf("uLayerHeight1"), 6);
-    glUniform1i(adtShader->getUnf("uLayerHeight2"), 7);
-    glUniform1i(adtShader->getUnf("uLayerHeight3"), 8);
+    glUniform1i(adtLodShader->getUnf("uDiffuseTexture"), 0);
+    glUniform1i(adtLodShader->getUnf("uNormalTexture"), 1);
 
-    glUniform1f(adtShader->getUnf("uFogStart"), this->uFogStart);
-    glUniform1f(adtShader->getUnf("uFogEnd"), this->uFogEnd);
+    glUniform1f(adtLodShader->getUnf("uFogStart"), this->uFogStart);
+    glUniform1f(adtLodShader->getUnf("uFogEnd"), this->uFogEnd);
 
-    glUniform3fv(adtShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+    glUniform3fv(adtLodShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 
     mathfu::vec4 ambient = this->currentScene->getAmbientColor();
-    glUniform4fv(this->adtShader->getUnf("uAmbientLight"), 1, &ambient[0]);
+    glUniform4fv(this->adtLodShader->getUnf("uAmbientLight"), 1, &ambient[0]);
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
 
     upVector = (this->m_lookAtMat4.Transpose() * upVector);
-    glUniform3fv(this->adtShader->getUnf("uViewUp"), 1, &upVector[0]);
-    glUniform3fv(this->adtShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
+    glUniform3fv(this->adtLodShader->getUnf("uViewUp"), 1, &upVector[0]);
+    glUniform3fv(this->adtLodShader->getUnf("uSunDir"), 1, &m_sunDir[0]);
 
     mathfu::vec4 &sunColor = m_globalSunColor;
-    glUniform3fv(this->adtShader->getUnf("uSunColor"), 1, &sunColor[0]);
+    glUniform3fv(this->adtLodShader->getUnf("uSunColor"), 1, &sunColor[0]);
 }
 void WoWSceneImpl::deactivateAdtLodShader() {
-    glDisableVertexAttribArray(+adtShader::Attribute::aIndex);
-    glDisableVertexAttribArray(+adtShader::Attribute::aColor);
-    glDisableVertexAttribArray(+adtShader::Attribute::aNormal);
-    glDisableVertexAttribArray(+adtShader::Attribute::aVertexLighting);
+    glDisableVertexAttribArray(+adtLodShader::Attribute::aIndex);
     glUseProgram(0);
 }
 

@@ -10,8 +10,8 @@
 #include <vector>
 #include <iostream>
 
-#define debuglog(x) std::cout<< x <<std::endl;
-//#define debuglog(x)
+//#define debuglog(x) std::cout<< x <<std::endl;
+#define debuglog(x)
 
 class CChunkFileReader;
 typedef CChunkFileReader ChunkData;
