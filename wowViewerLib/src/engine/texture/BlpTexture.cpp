@@ -160,9 +160,9 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
 //    }
 
     /* S3TC is not supported on mobile platforms */
-    bool useDXT1Decoding = true;
-    bool useDXT3Decoding = true;
-    bool useDXT5Decoding = true;
+    bool useDXT1Decoding = false;
+    bool useDXT3Decoding = false;
+    bool useDXT5Decoding = false;
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
@@ -249,7 +249,7 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    bool anisFilterExt = false;
+    bool anisFilterExt = true;
     if (anisFilterExt) {
         float aniso = 0.0f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);

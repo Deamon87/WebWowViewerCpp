@@ -515,9 +515,9 @@ void M2Object::setDiffuseColor(CImVector& value) {
     this->m_localDiffuseColor = value;
 
     this->m_localDiffuseColorV = mathfu::vec4(
-            value.b / 255.0f,
-            value.g / 255.0f,
             value.r / 255.0f,
+            value.g / 255.0f,
+            value.b / 255.0f,
             value.a / 255.0f);
 }
 void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
@@ -549,8 +549,6 @@ void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
     mathfu::mat4 modelViewMat = lookAtMat4 * this->m_placementMatrix;
-
-
     mathfu::vec3 zeroVect(0,0,0);
 
     /* 3.1 Transform aabb with current mat */

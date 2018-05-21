@@ -50,6 +50,7 @@ struct MPHD {
 };
 
 struct MAIN {
+    uint32_t Flag_HasADT : 1;
     uint32_t Flag_AllWater : 1;
     uint32_t Flag_Loaded : 1;
     uint32_t asyncId;    // only set during runtime.

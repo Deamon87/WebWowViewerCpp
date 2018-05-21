@@ -70,15 +70,15 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.begin(), m2RenderedThisFrame.end());
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 
-    //Limit M2 count based on distance/m2 height
-    for (auto it = this->m2RenderedThisFrameArr.begin();
-         it != this->m2RenderedThisFrameArr.end();) {
-        if ((*it)->getCurrentDistance() > ((*it)->getHeight() * 5)) {
-            it = this->m2RenderedThisFrameArr.erase(it);
-        } else {
-            ++it;
-        }
-    }
+//    //Limit M2 count based on distance/m2 height
+//    for (auto it = this->m2RenderedThisFrameArr.begin();
+//         it != this->m2RenderedThisFrameArr.end();) {
+//        if ((*it)->getCurrentDistance() > ((*it)->getHeight() * 5)) {
+//            it = this->m2RenderedThisFrameArr.erase(it);
+//        } else {
+//            ++it;
+//        }
+//    }
 }
 
 void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
@@ -371,11 +371,11 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
     int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
 
-    //FOR DEBUG
-    adt_x_min = worldCoordinateToAdtIndex(cameraPos.y) - 2;
-    adt_x_max = adt_x_min + 4;
-    adt_y_min = worldCoordinateToAdtIndex(cameraPos.x) - 2;
-    adt_y_max = adt_y_min + 4;
+//    //FOR DEBUG
+//    adt_x_min = worldCoordinateToAdtIndex(cameraPos.y) - 2;
+//    adt_x_max = adt_x_min + 4;
+//    adt_y_min = worldCoordinateToAdtIndex(cameraPos.x) - 2;
+//    adt_y_max = adt_y_min + 4;
 
 //    for (int i = 0; i < 64; i++)
 //        for (int j = 0; j < 64; j++) {
@@ -412,7 +412,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
                     adtRenderedThisFrame.insert(adtObject);
                 }
-            } else {
+            } else if (m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
                 std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
                 adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
 
@@ -560,17 +560,17 @@ void Map::draw() {
 
 void Map::drawExterior() {
 //    if (config.getRenderAdt()) {
-//        this->m_api->activateAdtShader();
-//        for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
-//            this->adtRenderedThisFrameArr[i]->draw();
-//        }
-//        this->m_api->deactivateAdtShader();
+        this->m_api->activateAdtShader();
+        for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
+            this->adtRenderedThisFrameArr[i]->draw();
+        }
+        this->m_api->deactivateAdtShader();
 //
         this->m_api->activateAdtLodShader();
         for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
             this->adtRenderedThisFrameArr[i]->drawLod();
         }
-//        this->m_api->deactivateAdtLodShader();
+        this->m_api->deactivateAdtLodShader();
 
 
 //    }

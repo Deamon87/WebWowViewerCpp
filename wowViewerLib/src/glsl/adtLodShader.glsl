@@ -18,17 +18,21 @@ void main() {
 
     float stepX = floor(aIndex / (129.0*129.0));
     float division = 129.0;
-    if (stepX > 0.0)
+    if (stepX > 0.1)
         division = 128.0;
     float offset =stepX*129.0*129.0;
 
-    float iX = mod(aIndex - offset, division) ;
-    float iY = floor((aIndex - offset)/division) ;
+    float iX = mod(aIndex - offset, division) + stepX*0.5;
+    float iY = floor((aIndex - offset)/division) + stepX*0.5;
+
+//    if (stepX < 0.1 && iY > 126) {
+//        iY  = 0;
+//    }
 
     vec4 worldPoint = vec4(
         uPos.x - iY * UNITSIZE_Y,
         uPos.y - iX * UNITSIZE_X,
-        uPos.z + aHeight,
+        aHeight,
         1);
 
 
@@ -54,11 +58,13 @@ void main() {
 }
 #endif //COMPILING_VS
 
+
 #ifdef COMPILING_FS
 precision highp float;
 
 varying vec2 vChunkCoords;
 varying vec3 vPosition;
+varying vec3 baryCoord;
 
 uniform int uNewFormula;
 
@@ -110,7 +116,8 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 vNormal) {
     }
 
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse);
+//    vec3 linearDiffTerm = (matDiffuse * matDiffuse);
+    vec3 linearDiffTerm = vec3(0.0, 0.0, 0.0);
     return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
 }
 
@@ -125,6 +132,7 @@ void main() {
     vec4 texDiffuse =  texture2D(uDiffuseTexture, TextureCoords).rgba;
     matDiffuse.rgb = texDiffuse.rgb;
     vec3 vNormal = 2.0*texture2D(uNormalTexture, TextureCoords).rgb - 1.0 ;
+    vNormal = vec3(-(vNormal.z), -(vNormal.x), vNormal.y);
 
 
 
@@ -158,6 +166,10 @@ void main() {
 
     finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
     // --- Fog end ---
+
+    if(any(lessThan(vBaryCoord, vec3(0.02)))){
+        finalColor = vec4(1.0, 0.0, 0.0, 0.0);
+    }
 
     finalColor.a = 1.0;
     gl_FragColor = finalColor;

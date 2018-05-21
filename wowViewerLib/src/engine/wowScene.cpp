@@ -66,13 +66,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Test scene 1: Shattrath
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
 //    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
-
+//
 //    currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
-    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-    currentScene = new Map(this, 1220, "Troll Raid");
+//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+//    currentScene = new Map(this, 1220, "Troll Raid");
 //    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -121,8 +121,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
 //    currentScene = new Map(this, 571, "Northrend");
 //
-//    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-//    currentScene = new Map(this, 0, "Azeroth");
+    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
+    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
 //    currentScene = new Map(this, 0, "Azeroth");
@@ -336,6 +336,7 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
 
     std::string vertExtraDefStrings = (vertExtraDefStringsExtern != nullptr) ? *vertExtraDefStringsExtern : "";
     std::string fragExtraDefStrings = (fragExtraDefStringsExtern != nullptr) ? *fragExtraDefStringsExtern : "";
+    std::string geomExtraDefStrings = "";
 
 
     if (fragExtraDefStringsExtern == nullptr) {
@@ -359,7 +360,7 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
 #   error "Unknown Apple platform"
 #endif
 #endif
-
+    bool geomShaderExists = false;
     if (glsl330) {
         vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
         vertExtraDefStrings += "#define varying out\n";
@@ -369,6 +370,10 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
                 "#define mediump\n"
                 "#define highp\n";
 
+        geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
+
+        geomExtraDefStrings = "#version 330\n";
+
         fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
         fragExtraDefStrings += "#define varying in\n"
                 "#define precision\n"
@@ -377,10 +382,14 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
                 "#define highp\n";
 //        fragExtraDefStrings += "#define gl_FragColorDef out vec4 gl_FragColor\n";
 
+
+
         //Insert gl_FragColor for glsl 330
         fragmentShaderString = trimmed(fragmentShaderString.insert(
                 fragmentShaderString.find("void main(", fragmentShaderString.find("COMPILING_FS", 0)),
                 "\n out vec4 gl_FragColor; \n"));
+
+
     } else {
         vertExtraDefStrings += "#version 100\n";
 
@@ -398,6 +407,7 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
     int maxMatrixUniforms = (maxVertexUniforms / 4) - 9;
 
     vertExtraDefStrings = vertExtraDefStrings + "#define MAX_MATRIX_NUM "+std::to_string(maxMatrixUniforms)+"\r\n"+"#define COMPILING_VS 1\r\n ";
+    geomExtraDefStrings = geomExtraDefStrings + "#define COMPILING_GS 1\r\n";
     fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
 
 //    vertShaderString = trimmed(vertShaderString.insert(
@@ -408,8 +418,11 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
 //            fragmentShaderString.find("\n",fragmentShaderString.find("#version", 0)+1)+1,
 //            fragExtraDefStrings));
 
+    std::string geometryShaderString = vertShaderString;
+
     vertShaderString = vertShaderString.insert(0, vertExtraDefStrings);
     fragmentShaderString = fragmentShaderString.insert(0, fragExtraDefStrings);
+    geometryShaderString = geometryShaderString.insert(0, geomExtraDefStrings);
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     const GLchar *vertexShaderConst = (const GLchar *)vertShaderString.c_str();
@@ -457,10 +470,42 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
         throw "" ;
     }
 
+    GLuint geometryShader = 0;
+
+    if (geomShaderExists) {
+        /* 1.2.1 Compile geometry shader */
+        geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+        const GLchar *geometryShaderConst = (const GLchar *) geometryShaderString.c_str();
+        glShaderSource(geometryShader, 1, &geometryShaderConst, 0);
+        glCompileShader(geometryShader);
+
+        // Check if it compiled
+        success = 0;
+        glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            // Something went wrong during compilation; get the error
+            GLint maxLength = 0;
+            glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+            //The maxLength includes the NULL character
+            std::vector<GLchar> infoLog(maxLength);
+            glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
+            std::cout << "\ncould not compile fragment shader " << shaderName << ":" << std::endl
+                      << fragmentShaderConst << std::endl << std::endl
+                      << "error: " << std::string(infoLog.begin(), infoLog.end()) << std::endl << std::flush;
+
+            throw "";
+        }
+    }
+
+
+
     /* 1.3 Link the program */
     GLuint program = glCreateProgram();
     glAttachShader(program, vertexShader);
     glAttachShader(program, fragmentShader);
+    if (geomShaderExists)
+        glAttachShader(program, geometryShader);
 
     const shaderDefinition *shaderDefinition1 = getShaderDef(shaderName.c_str());
     for (int i = 0; i < shaderDefinition1->attributesNum; i++) {
@@ -1065,6 +1110,7 @@ void WoWSceneImpl::activateAdtShader (){
     glUniform3fv(this->adtShader->getUnf("uSunColor"), 1, &sunColor[0]);
 }
 void WoWSceneImpl::deactivateAdtShader() {
+    glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
     glDisableVertexAttribArray(+adtShader::Attribute::aIndex);
     glDisableVertexAttribArray(+adtShader::Attribute::aColor);
     glDisableVertexAttribArray(+adtShader::Attribute::aNormal);
@@ -1180,7 +1226,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    float farPlane = 2000;
+    float farPlane = 1500;
     float nearPlane = 1;
     float fov = toRadian(45.0);
     M2CameraResult cameraResult;
@@ -1234,6 +1280,60 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                                       farPlane);
     mathfu::mat4 viewCameraForRender =
             perspectiveMatrixForCameraRender * lookAtMat4;
+
+
+
+    mathfu::vec3 *cameraVector;
+    float ambient[4];
+    m_config->getAmbientColor(ambient);
+    m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]);
+
+    float sunColor[4];
+    m_config->getSunColor(sunColor);
+    m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
+
+    float fogColor[4];
+    m_config->getFogColor(fogColor);
+    m_fogColor = mathfu::vec4(fogColor);
+
+//    float diagFov = 2.0944;
+//    float fov = diagFov / sqrt(1 + canvAspect*canvAspect);
+
+    //If use camera settings
+    //Figure out way to assign the object with camera
+    if (!m_config->getUseSecondCamera()){
+        this->m_firstCamera.tick(deltaTime);
+    } else {
+        this->m_secondCamera.tick(deltaTime);
+    }
+
+    if (this->uFogStart < 0) {
+        this->uFogStart = 3.0 * farPlane;
+    }
+    if (this->uFogEnd < 0) {
+        this->uFogEnd = 4.0 * farPlane;
+    }
+
+    this->SetDirection();
+
+    this->adtObjectCache.processCacheQueue(10);
+    this->wdtCache.processCacheQueue(10);
+    this->wdlCache.processCacheQueue(10);
+    this->wmoGeomCache.processCacheQueue(10);
+    this->wmoMainCache.processCacheQueue(10);
+    this->m2GeomCache.processCacheQueue(10);
+    this->skinGeomCache.processCacheQueue(10);
+    this->textureCache.processCacheQueue(10);
+    this->db2Cache.processCacheQueue(10);
+
+    mathfu::vec3 cameraVec3 = cameraVec4.xyz();
+    currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
+
+    currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
+//    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
+//
+
+//
 
     this->m_viewCameraForRender = viewCameraForRender;
 
@@ -1300,57 +1400,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                                    this->canvHeight, true);
         }
     }
-
-    mathfu::vec3 *cameraVector;
-    float ambient[4];
-    m_config->getAmbientColor(ambient);
-    m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]);
-
-    float sunColor[4];
-    m_config->getSunColor(sunColor);
-    m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
-
-    float fogColor[4];
-    m_config->getFogColor(fogColor);
-    m_fogColor = mathfu::vec4(fogColor);
-
-//    float diagFov = 2.0944;
-//    float fov = diagFov / sqrt(1 + canvAspect*canvAspect);
-
-    //If use camera settings
-    //Figure out way to assign the object with camera
-    if (!m_config->getUseSecondCamera()){
-        this->m_firstCamera.tick(deltaTime);
-    } else {
-        this->m_secondCamera.tick(deltaTime);
-    }
-
-    if (this->uFogStart < 0) {
-        this->uFogStart = farPlane-1;
-    }
-    if (this->uFogEnd < 0) {
-        this->uFogEnd = farPlane;
-    }
-
-    this->SetDirection();
-
-    this->adtObjectCache.processCacheQueue(10);
-    this->wdtCache.processCacheQueue(10);
-    this->wdlCache.processCacheQueue(10);
-    this->wmoGeomCache.processCacheQueue(10);
-    this->wmoMainCache.processCacheQueue(10);
-    this->m2GeomCache.processCacheQueue(10);
-    this->skinGeomCache.processCacheQueue(10);
-    this->textureCache.processCacheQueue(10);
-    this->db2Cache.processCacheQueue(10);
-
-    mathfu::vec3 cameraVec3 = cameraVec4.xyz();
-    currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
-//    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
-//
-    currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
-//
-
 
 #ifndef WITH_GLESv2
     glBindVertexArray(0);
