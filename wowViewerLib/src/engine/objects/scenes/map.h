@@ -38,9 +38,9 @@ private:
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;
 
-    std::unordered_set<AdtObject*> adtRenderedThisFrame;
-    std::unordered_set<M2Object*> m2RenderedThisFrame;
-    std::unordered_set<WmoObject*> wmoRenderedThisFrame;
+    std::vector<AdtObject*> adtRenderedThisFrame;
+    std::vector<M2Object*> m2RenderedThisFrame;
+    std::vector<WmoObject*> wmoRenderedThisFrame;
 
     std::vector<AdtObject*> adtRenderedThisFrameArr;
     std::vector<M2Object*> m2RenderedThisFrameArr;
@@ -85,9 +85,9 @@ private:
                        std::vector<mathfu::vec3> &hullLines,
                        mathfu::mat4 &lookAtMat4,
                        mathfu::mat4 &projectionModelMat,
-                       std::unordered_set<AdtObject*> &adtRenderedThisFrame,
-                       std::unordered_set<M2Object*> &m2RenderedThisFrame,
-                       std::unordered_set<WmoObject*> &wmoRenderedThisFrame);
+                       std::vector<AdtObject*> &adtRenderedThisFrame,
+                       std::vector<M2Object*> &m2RenderedThisFrame,
+                       std::vector<WmoObject*> &wmoRenderedThisFrame);
 
     void drawExterior();
     void drawM2s();

@@ -30,10 +30,18 @@ void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
 void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     if (!m_wdtfile->getIsLoaded()) return;
 
+    size_t adtRenderedThisFramePrev = adtRenderedThisFrame.size();
+    adtRenderedThisFrame = std::vector<AdtObject*>();
+    adtRenderedThisFrame.reserve(adtRenderedThisFramePrev);
 
-    adtRenderedThisFrame = std::unordered_set<AdtObject*>();
-    m2RenderedThisFrame = std::unordered_set<M2Object*>();
-    wmoRenderedThisFrame = std::unordered_set<WmoObject*>();
+    size_t m2RenderedThisFramePrev = m2RenderedThisFrame.size();
+    m2RenderedThisFrame = std::vector<M2Object*>();
+    adtRenderedThisFrame.reserve(m2RenderedThisFramePrev);
+
+    size_t wmoRenderedThisFramePrev = wmoRenderedThisFrame.size();
+    wmoRenderedThisFrame = std::vector<WmoObject*>();
+    wmoRenderedThisFrame.reserve(wmoRenderedThisFramePrev);
+
 
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
@@ -50,7 +58,7 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
                 projectionModelMat,
                 m2RenderedThisFrame)) {
 
-            wmoRenderedThisFrame.insert(this->m_currentWMO);
+            wmoRenderedThisFrame.push_back(this->m_currentWMO);
 
             if (!this->m_currentWMO->exteriorPortals.empty()) {
                 std::vector<std::vector<mathfu::vec4>> portalsToExt;
@@ -340,12 +348,12 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::vector<mathfu::vec3> &hullLines,
                         mathfu::mat4 &lookAtMat4,
                         mathfu::mat4 &projectionModelMat,
-                        std::unordered_set<AdtObject*> &adtRenderedThisFrame,
-                        std::unordered_set<M2Object*> &m2RenderedThisFrame,
-                        std::unordered_set<WmoObject*> &wmoRenderedThisFrame) {
+                        std::vector<AdtObject*> &adtRenderedThisFrame,
+                        std::vector<M2Object*> &m2RenderedThisFrame,
+                        std::vector<WmoObject*> &wmoRenderedThisFrame) {
 
-    std::set<M2Object *> m2ObjectsCandidates;
-    std::set<WmoObject *> wmoCandidates;
+    std::vector<M2Object *> m2ObjectsCandidates;
+    std::vector<WmoObject *> wmoCandidates;
 
 //    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
 //    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
@@ -410,7 +418,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         lookAtMat4, m2ObjectsCandidates, wmoCandidates);
                 if (result) {
 
-                    adtRenderedThisFrame.insert(adtObject);
+                    adtRenderedThisFrame.push_back(adtObject);
                 }
             } else if (m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
                 std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
@@ -422,34 +430,61 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 
-    //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
-    for (auto it = m2ObjectsCandidates.begin(); it != m2ObjectsCandidates.end(); ++it) {
-        M2Object *m2ObjectCandidate  = *it;
-        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints);
-        if (frustumResult) {
-            m2RenderedThisFrame.insert(m2ObjectCandidate);
+    //Sort and delete duplicates
+    std::vector<WmoObject *> wmoCandidatesFiltered;
+    wmoCandidatesFiltered.reserve(wmoCandidates.size());
+    std::sort(wmoCandidates.begin(), wmoCandidates.end()); // sort data
+    WmoObject *wmoCandidatePrev = nullptr;
+    for (WmoObject * wmoCandidate : wmoCandidates) {
+        if (wmoCandidatePrev != wmoCandidate) {
+            wmoCandidatesFiltered.push_back(wmoCandidate);
+            wmoCandidatePrev = wmoCandidate;
         }
     }
 
-    for (auto it = wmoCandidates.begin(); it != wmoCandidates.end(); ++it) {
+
+    //Frustum cull
+    for (auto it = wmoCandidatesFiltered.begin(); it != wmoCandidatesFiltered.end(); ++it) {
         WmoObject *wmoCandidate = *it;
 
         if (!wmoCandidate->isLoaded()) {
-            wmoRenderedThisFrame.insert(wmoCandidate);
+            wmoRenderedThisFrame.push_back(wmoCandidate);
             continue;
         }
-        if( wmoRenderedThisFrame.count(wmoCandidate) > 0) continue;
 
         if ( wmoCandidate->hasPortals() && m_api->getConfig()->getUsePortalCulling() ) {
-            if(wmoCandidate->startTraversingFromExterior(cameraPos, projectionModelMat, m2RenderedThisFrame)){
-                wmoRenderedThisFrame.insert(wmoCandidate);
+            if(wmoCandidate->startTraversingFromExterior(cameraPos, projectionModelMat, m2ObjectsCandidates)){
+                wmoRenderedThisFrame.push_back(wmoCandidate);
             }
         } else {
-            if (wmoCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints, m2RenderedThisFrame)) {
-                wmoRenderedThisFrame.insert(wmoCandidate);
+            if (wmoCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints, m2ObjectsCandidates)) {
+                wmoRenderedThisFrame.push_back(wmoCandidate);
             }
         }
     }
+
+
+    //Sort and delete duplicates
+    std::vector<M2Object *> m2ObjectsCandidatesFiltered;
+    m2ObjectsCandidatesFiltered.reserve(m2ObjectsCandidates.size());
+    std::sort(m2ObjectsCandidates.begin(), m2ObjectsCandidates.end()); // sort data
+    M2Object *m2ObjectCandidatePrev = nullptr;
+    for (M2Object * m2ObjectCandidate : m2ObjectsCandidates) {
+        if (m2ObjectCandidate != m2ObjectCandidatePrev) {
+            m2ObjectsCandidatesFiltered.push_back(m2ObjectCandidate);
+            m2ObjectCandidatePrev = m2ObjectCandidate;
+        }
+    }
+
+    //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
+    for (auto it = m2ObjectsCandidatesFiltered.begin(); it != m2ObjectsCandidatesFiltered.end(); ++it) {
+        M2Object *m2ObjectCandidate  = *it;
+        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints);
+        if (frustumResult) {
+            m2RenderedThisFrame.push_back(m2ObjectCandidate);
+        }
+    }
+
 
 
 }

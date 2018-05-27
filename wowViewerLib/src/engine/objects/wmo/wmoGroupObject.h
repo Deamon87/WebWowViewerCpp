@@ -44,7 +44,7 @@ public:
     bool checkGroupFrustum(mathfu::vec4 &cameraVec4,
                            std::vector<mathfu::vec4> &frustumPlanes,
                            std::vector<mathfu::vec3> &points,
-                           std::set<M2Object*> &wmoM2Candidates);
+                           std::vector<M2Object*> &wmoM2Candidates);
 
     mathfu::vec4 getAmbientColor();
 
@@ -84,7 +84,7 @@ private:
     void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
 
     void updateWorldGroupBBWithM2();
-    bool checkDoodads(std::set<M2Object*> &wmoM2Candidates);
+    bool checkDoodads(std::vector<M2Object*> &wmoM2Candidates);
 
     void postLoad();
 

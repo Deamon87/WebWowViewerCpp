@@ -120,7 +120,7 @@ public:
 
 
     bool checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
-                             std::vector<mathfu::vec3> &frustumPoints, std::unordered_set<M2Object *> &m2RenderedThisFrame);
+                             std::vector<mathfu::vec3> &frustumPoints, std::vector<M2Object *> &m2RenderedThisFrame);
     bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor) {
         mathfu::vec3 cameraLocal = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1.0)).xyz();
         for (int i = mainGeom->fogsLen-1; i >= 0; i--) {
@@ -159,19 +159,19 @@ public:
         std::vector<WmoGroupResult> &wmoGroupsResult,
         mathfu::vec4 &cameraVec4,
         mathfu::mat4 &viewPerspectiveMat,
-        std::unordered_set<M2Object*> &m2RenderedThisFrame);
+        std::vector<M2Object*> &m2RenderedThisFrame);
 
     bool startTraversingFromExterior (
         mathfu::vec4 &cameraVec4,
         mathfu::mat4 &viewPerspectiveMat,
-        std::unordered_set<M2Object*> &m2RenderedThisFrame);
+        std::vector<M2Object*> &m2RenderedThisFrame);
 
     void checkGroupDoodads(
         int groupId,
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
         int level,
-        std::unordered_set<M2Object*> &m2RenderedThisFrame);
+        std::vector<M2Object*> &m2Candidates);
 
     void transverseGroupWMO (
         int groupId,
@@ -183,7 +183,7 @@ public:
         std::vector<bool> &transverseVisitedPortals,
         std::vector<mathfu::vec4> &localFrustumPlanes,
         int level,
-        std::unordered_set<M2Object*> &m2ObjectSet);
+        std::vector<M2Object*> &m2ObjectSet);
 
     bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
 

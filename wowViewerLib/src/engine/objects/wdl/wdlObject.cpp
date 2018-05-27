@@ -6,8 +6,8 @@
 
 bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
-                                    mathfu::mat4 &lookAtMat4, std::set<M2Object *> &m2ObjectsCandidates,
-                                    std::set<WmoObject *> &wmoCandidates) {
+                                    mathfu::mat4 &lookAtMat4, std::vector<M2Object *> &m2ObjectsCandidates,
+                                    std::vector<WmoObject *> &wmoCandidates) {
     if (!this->m_loaded) {
         if (m_wdlFile->getIsLoaded()) {
             this->loadingFinished();
@@ -18,11 +18,11 @@ bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu:
     }
 
     for (auto m2Object : m2Objects) {
-        m2ObjectsCandidates.insert(m2Object);
+        m2ObjectsCandidates.push_back(m2Object);
     }
 
     for (auto wmoObject : wmoObjects) {
-        wmoCandidates.insert(wmoObject);
+        wmoCandidates.push_back(wmoObject);
     }
 
     return false;

@@ -250,12 +250,14 @@ R animateTrack(
         std::vector<animTime_t> &globalSequenceTimes,
         R &defaultValue) {
 
-
-    if (animationBlock.timestamps.size <= animationIndex) {
+    int16_t globalSequence = animationBlock.global_sequence;
+    if (globalSequence >=0) {
+        currTime = globalSequenceTimes[globalSequence];
+        maxTime = global_loops[globalSequence]->timestamp;
         animationIndex = 0;
     }
 
-    if (animationBlock.timestamps.size <= 0) {
+    if (animationBlock.timestamps.size == 0 || animationBlock.timestamps.size <= animationIndex) {
         return defaultValue;
     }
 
@@ -263,22 +265,15 @@ R animateTrack(
         return defaultValue;
     }
 
-    int16_t globalSequence = animationBlock.global_sequence;
+
 
     int32_t timeIndex;
-    if (globalSequence >=0) {
-        currTime = globalSequenceTimes[globalSequence];
-        maxTime = global_loops[globalSequence]->timestamp;
-    }
+
 
     M2Array<uint32_t > *times = animationBlock.timestamps[animationIndex];
     M2Array<T> *values = animationBlock.values[animationIndex];
 
     currTime = fmod(currTime , maxTime);
-
-    if (animationBlock.timestamps.size == 0 || animationIndex >= animationBlock.timestamps.size ) {
-        return defaultValue;
-    }
 
     M2Array<uint32_t> *timeStamp = animationBlock.timestamps[animationIndex];
 

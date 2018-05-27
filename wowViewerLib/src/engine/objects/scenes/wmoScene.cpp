@@ -6,8 +6,8 @@
 #include "../../algorithms/mathHelper.h"
 
 void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
-    m2RenderedThisFrame = std::unordered_set<M2Object*>();
-    wmoRenderedThisFrame = std::unordered_set<WmoObject*>();
+    m2RenderedThisFrame = std::vector<M2Object*>();
+    wmoRenderedThisFrame = std::vector<WmoObject*>();
 
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
@@ -19,7 +19,7 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
 
     if (!this->m_wmoObject->isLoaded()) {
 //        this->m_wmoObject->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints, m2RenderedThisFrame);
-        wmoRenderedThisFrame.insert(this->m_wmoObject);
+        wmoRenderedThisFrame.push_back(this->m_wmoObject);
     } else
     if (!this->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded() && this->m_wmoObject->hasPortals() && m_api->getConfig()->getUsePortalCulling()) {
         if (this->m_currentWMO->startTraversingFromInteriorWMO(
@@ -28,16 +28,16 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
                 projectionModelMat,
                 m2RenderedThisFrame)) {
 
-            wmoRenderedThisFrame.insert(this->m_currentWMO);
+            wmoRenderedThisFrame.push_back(this->m_currentWMO);
         }
     } else {
         if ( this->m_wmoObject->isLoaded() && this->m_wmoObject->hasPortals() && m_api->getConfig()->getUsePortalCulling() ) {
             if(this->m_wmoObject->startTraversingFromExterior(cameraPos, projectionModelMat, m2RenderedThisFrame)){
-                wmoRenderedThisFrame.insert(this->m_wmoObject);
+                wmoRenderedThisFrame.push_back(this->m_wmoObject);
             }
         } else {
             if (this->m_wmoObject->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints, m2RenderedThisFrame)) {
-                wmoRenderedThisFrame.insert(this->m_wmoObject);
+                wmoRenderedThisFrame.push_back(this->m_wmoObject);
             }
         }
     }

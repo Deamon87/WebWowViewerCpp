@@ -143,7 +143,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(3993, 2302, 1043); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "NagaDungeon");
 //    m_firstCamera.setCameraPos(829, -296, 200 ); //Field of the Eternal Hunt
-//    currentScene = new Map(this, "unused");s
+//    currentScene = new Map(this, "unused");
 
 //    m_firstCamera.setCameraPos(-2825, -4546, 200 ); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "ScenarioAlcazIsland");

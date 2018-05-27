@@ -48,7 +48,7 @@ void AdtObject::loadM2s() {
         offset = m_adtFileObjLod->lod_levels_for_objects->m2LodOffset[2];
         length = m_adtFileObjLod->lod_levels_for_objects->m2LodLength[2];
     } else {
-        length = m_adtFileObjLod->doodadDefObj1_len;
+        length = 0;
     };
     objectLods[1].m2Objects = std::vector<M2Object *>(length, nullptr);
     for (int j = 0, i = offset; i < offset+length; i++, j++) {
@@ -90,7 +90,7 @@ void AdtObject::loadWmos() {
         offset = m_adtFileObjLod->lod_levels_for_objects->wmoLodOffset[2];
         length = m_adtFileObjLod->lod_levels_for_objects->wmoLodLength[2];
     } else {
-        length = m_adtFileObjLod->mapObjDefObj1_len;
+        length = 0;
     }
     objectLods[1].wmoObjects = std::vector<WmoObject *>(length, nullptr);
     for (int j = 0, i = offset; i < offset + length; i++, j++) {
@@ -327,6 +327,12 @@ void AdtObject::draw() {
     for (int i = 0; i < 256; i++) {
         if (!drawChunk[i]) continue;
 
+        //Cant be used only in Wotlk
+        //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
+        if (m_adtFileTex->mcnkStructs[i].mclyCnt <= 0) continue;
+        if (m_adtFileTex->mcnkStructs[i].mcly == nullptr) continue;
+
+
         glVertexAttribPointer(+adtShader::Attribute::aHeight, 1, GL_FLOAT, GL_FALSE, 0, (void *)((this->heightOffset + i * 145) * 4));
         glVertexAttribPointer(+adtShader::Attribute::aColor, 4, GL_FLOAT, GL_FALSE, 0, (void *)((this->colorOffset + (i*4) * 145) * 4));
         glVertexAttribPointer(+adtShader::Attribute::aNormal, 3, GL_FLOAT, GL_FALSE, 0, (void *)((this->normalOffset + (i*3) * 145) * 4));
@@ -336,10 +342,6 @@ void AdtObject::draw() {
                     m_adtFile->mapTile[i].position.y,
                     m_adtFile->mapTile[i].position.z);
 
-        //Cant be used only in Wotlk
-        //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
-        if (m_adtFileTex->mcnkStructs[i].mclyCnt <= 0) continue;
-        if (m_adtFileTex->mcnkStructs[i].mcly == nullptr) continue;
 
 //        BlpTexture &layer0 = getAdtTexture(m_adtFile->mcnkStructs[i].mcly[0].textureId);
         BlpTexture &layer0 = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[0].textureId);
@@ -512,8 +514,8 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                 std::vector<mathfu::vec3> &frustumPoints,
                                 std::vector<mathfu::vec3> &hullLines,
                                 mathfu::mat4 &lookAtMat4,
-                                std::set<M2Object *> &m2ObjectsCandidates,
-                                std::set<WmoObject *> &wmoCandidates) {
+                                std::vector<M2Object *> &m2ObjectsCandidates,
+                                std::vector<WmoObject *> &wmoCandidates) {
 
     const float dist = 533.0f*1.5;
     static float perLodDist[5] = {9999999999.99f,
@@ -660,8 +662,8 @@ bool AdtObject::checkReferences(mathfu::vec4 &cameraPos,
                           std::vector<mathfu::vec3> &hullLines,
                           mathfu::mat4 &lookAtMat4,
                           int lodLevel,
-                          std::set<M2Object *> &m2ObjectsCandidates,
-                          std::set<WmoObject *> &wmoCandidates,
+                          std::vector<M2Object *> &m2ObjectsCandidates,
+                          std::vector<WmoObject *> &wmoCandidates,
                           int x, int y, int x_len, int y_len) {
     for (int k = x; k < x+x_len; k++) {
         for (int l = y; l < y + y_len; l++) {
@@ -700,12 +702,12 @@ bool AdtObject::checkReferences(mathfu::vec4 &cameraPos,
                     if (mcnkContent->mcrd_doodad_refs_len > 0) {
                         for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
                             uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
-                            m2ObjectsCandidates.insert(this->objectLods[0].m2Objects[m2Ref]);
+                            m2ObjectsCandidates.push_back(this->objectLods[0].m2Objects[m2Ref]);
                         }
                     }
                 } else {
                     for (auto m2Object : this->objectLods[1].m2Objects) {
-                        m2ObjectsCandidates.insert(m2Object);
+                        m2ObjectsCandidates.push_back(m2Object);
                     }
                 }
 
@@ -713,12 +715,12 @@ bool AdtObject::checkReferences(mathfu::vec4 &cameraPos,
                     if (mcnkContent->mcrw_object_refs_len > 0) {
                         for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
                             uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
-                            wmoCandidates.insert(this->objectLods[0].wmoObjects[wmoRef]);
+                            wmoCandidates.push_back(this->objectLods[0].wmoObjects[wmoRef]);
                         }
                     }
                 } else {
                     for (auto wmoObject : this->objectLods[1].wmoObjects) {
-                        wmoCandidates.insert(wmoObject);
+                        wmoCandidates.push_back(wmoObject);
                     }
                 }
             }
@@ -733,8 +735,8 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                                     std::vector<mathfu::vec3> &frustumPoints,
                                     std::vector<mathfu::vec3> &hullLines,
                                     mathfu::mat4 &lookAtMat4,
-                                    std::set<M2Object *> &m2ObjectsCandidates,
-                                    std::set<WmoObject *> &wmoCandidates) {
+                                    std::vector<M2Object *> &m2ObjectsCandidates,
+                                    std::vector<WmoObject *> &wmoCandidates) {
 
     if (!this->m_loaded) {
         if (m_adtFile->getIsLoaded() &&

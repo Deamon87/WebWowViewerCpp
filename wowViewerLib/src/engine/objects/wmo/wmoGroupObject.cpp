@@ -173,7 +173,7 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
                                        std::vector<mathfu::vec4> &frustumPlanes,
                                        std::vector<mathfu::vec3> &points,
-                                       std::set<M2Object *> &wmoM2Candidates) {
+                                       std::vector<M2Object *> &wmoM2Candidates) {
     if (this == nullptr) return false;
     CAaBox bbArray = this->m_worldGroupBorder;
 
@@ -523,7 +523,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 }
 
 
-bool WmoGroupObject::checkDoodads(std::set<M2Object *> &wmoM2Candidates) {
+bool WmoGroupObject::checkDoodads(std::vector<M2Object *> &wmoM2Candidates) {
     if (!m_loaded) return false;
 
     mathfu::vec4 ambientColor = getAmbientColor();
@@ -538,7 +538,7 @@ bool WmoGroupObject::checkDoodads(std::set<M2Object *> &wmoM2Candidates) {
                 this->m_doodads[i]->setAmbientColorOverride(ambientColor, true);
             }
 
-            wmoM2Candidates.insert(this->m_doodads[i]);
+            wmoM2Candidates.push_back(this->m_doodads[i]);
         }
     }
 }

@@ -23,8 +23,8 @@ private:
     std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
 
-    std::unordered_set<M2Object*> m2RenderedThisFrame;
-    std::unordered_set<WmoObject*> wmoRenderedThisFrame;
+    std::vector<M2Object*> m2RenderedThisFrame;
+    std::vector<WmoObject*> wmoRenderedThisFrame;
 
     std::vector<M2Object*> m2RenderedThisFrameArr;
     std::vector<WmoObject*> wmoRenderedThisFrameArr;
