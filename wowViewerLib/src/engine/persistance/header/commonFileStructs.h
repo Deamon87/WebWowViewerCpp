@@ -171,11 +171,11 @@ struct M2Track
 
 
 template<typename T>
-PACK(struct M2SplineKey {
+struct M2SplineKey {
     T value;
     T inTan;
     T outTan;
-});
+};
 
 
 struct CImVector

@@ -270,9 +270,14 @@ mathfu::vec3 MathHelper::getIntersection( mathfu::vec3 &tail1, mathfu::vec3 &hea
 
 bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAaBox &box, const std::vector<mathfu::vec3> &points) {
     // check box outside/inside of frustum
+    mathfu::vec4 boxMin = mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0);
+    mathfu::vec4 boxMax = mathfu::vec4(box.max.x, box.max.y, box.max.z, 1.0);
+
     int num_planes = planes.size();
     for (int i = 0; i < num_planes; i++) {
         int out = 0;
+
+
 
         out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
         out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);

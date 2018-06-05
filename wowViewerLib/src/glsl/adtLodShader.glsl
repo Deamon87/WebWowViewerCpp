@@ -64,7 +64,6 @@ precision highp float;
 
 varying vec2 vChunkCoords;
 varying vec3 vPosition;
-varying vec3 baryCoord;
 
 uniform int uNewFormula;
 
@@ -166,10 +165,6 @@ void main() {
 
     finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
     // --- Fog end ---
-
-    if(any(lessThan(vBaryCoord, vec3(0.02)))){
-        finalColor = vec4(1.0, 0.0, 0.0, 0.0);
-    }
 
     finalColor.a = 1.0;
     gl_FragColor = finalColor;

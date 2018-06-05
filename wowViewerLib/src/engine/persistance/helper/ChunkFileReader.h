@@ -42,7 +42,7 @@ public:
     CChunkFileReader() {
       }
     CChunkFileReader(std::vector<unsigned char> &file){
-        regionSizeToProcess = file.size();
+        regionSizeToProcess = (int) file.size();
         fileData = &file[0];
     }
 

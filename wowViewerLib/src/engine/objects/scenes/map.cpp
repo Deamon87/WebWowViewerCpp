@@ -493,7 +493,7 @@ M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
     M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
     if (m2Object == nullptr) {
         m2Object = new M2Object(m_api);
-        m2Object->setLoadParams(0, {},{});
+        m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileName(fileName);
         m2Object->createPlacementMatrix(doodadDef);
         m2Object->calcWorldPosition();

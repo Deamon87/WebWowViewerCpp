@@ -70,23 +70,23 @@ void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
 
     double dTime = timeDelta;
 
-    float horizontalDiff = dTime * moveSpeed * (this->MDHorizontalPlus - this->MDHorizontalMinus);
-    float depthDiff      = dTime * moveSpeed * (this->MDDepthPlus - this->MDDepthMinus) + this->depthDiff;
-    float verticalDiff   = dTime * moveSpeed * (this->MDVerticalPlus - this->MDVerticalMinus);
+    float horizontalDiff = (float) (dTime * moveSpeed * (this->MDHorizontalPlus - this->MDHorizontalMinus));
+    float depthDiff      = (float) (dTime * moveSpeed * (this->MDDepthPlus - this->MDDepthMinus) + this->depthDiff);
+    float verticalDiff   = (float) (dTime * moveSpeed * (this->MDVerticalPlus - this->MDVerticalMinus));
 
     this->depthDiff = 0;
 
     /* Calc look at position */
 
-    this->av = 89.9999;
+    this->av = 89.9999f;
 
-    dir = mathfu::mat3::RotationY(this->av*M_PI/180) * dir;
-    dir = mathfu::mat3::RotationZ(-this->ah*M_PI/180) * dir;
+    dir = mathfu::mat3::RotationY((float) (this->av * M_PI / 180.0f)) * dir;
+    dir = mathfu::mat3::RotationZ((float) (-this->ah * M_PI / 180.0f)) * dir;
 
     dir = mathfu::normalize(dir);
 
 
-    mathfu::vec3 right_move = mathfu::mat3::RotationZ(-90*M_PI/180) * dir;
+    mathfu::vec3 right_move = mathfu::mat3::RotationZ((float) (-90.0f * M_PI / 180.0f)) * dir;
     right_move[2] = 0;
     right_move = mathfu::normalize(right_move);
 

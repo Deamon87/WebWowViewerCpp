@@ -122,8 +122,8 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
 
         mipmaps.push_back(mipmapStruct);
 
-        height = floor(height / 2);
-        width = floor(width / 2);
+        height = height / 2;
+        width = width / 2;
         height = (height == 0) ? 1 : height;
         width = (width == 0) ? 1 : width;
     }

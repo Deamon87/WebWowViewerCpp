@@ -552,12 +552,12 @@ M2Geom::drawMesh(
                 //var error = gl.getError(); // Drop error flag
                 glDrawElements(GL_TRIANGLES, mesh->indexCount,
                                GL_UNSIGNED_SHORT,
-                               (const void *) ((mesh->indexStart + (mesh->Level << 16)) * 2));
+                               (const void *) (intptr_t)((mesh->indexStart + (mesh->Level << 16)) * 2));
             } else {
 #ifndef WITH_GLESv2
                 glDrawElementsInstanced(GL_TRIANGLES, skinData.submeshes[meshIndex]->indexCount,
                                         GL_UNSIGNED_SHORT,
-                                        (const void *)((mesh->indexStart + (mesh->Level << 16)) * 2),
+                                        (const void *) (intptr_t)((mesh->indexStart + (mesh->Level << 16)) * 2),
                                         instanceCount);
 #endif
             }

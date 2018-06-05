@@ -110,7 +110,7 @@ struct SMLodLevelPerObject
     uint32_t wmoLodLength[3]; //Number of elements used from MLMD per lod
 };
 
-PACK(
+
 struct SMChunk
 {
     struct
@@ -171,7 +171,7 @@ union{
 /*0x078*/  uint32_t ofsMCLV;                             // introduced in Cataclysm
 /*0x07C*/  uint32_t unused;                              // currently unused
 /*0x080*/
-});
+};
 
 struct MCVT {
     float height[9*9 + 8*8];

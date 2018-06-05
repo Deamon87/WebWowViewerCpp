@@ -121,8 +121,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
 //    currentScene = new Map(this, 571, "Northrend");
 //
-    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-    currentScene = new Map(this, 0, "Azeroth");
+//    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
 //    currentScene = new Map(this, 0, "Azeroth");
@@ -213,8 +213,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
 
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
@@ -1226,7 +1226,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    float farPlane = 1500;
+    float farPlane = 500;
     float nearPlane = 1;
     float fov = toRadian(45.0);
     M2CameraResult cameraResult;
