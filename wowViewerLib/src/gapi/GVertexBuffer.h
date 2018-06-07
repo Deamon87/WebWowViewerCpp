@@ -6,21 +6,18 @@
 #define WEBWOWVIEWERCPP_GVERTEXBUFFER_H
 
 class GDevice;
-#include "../engine/opengl/header.h"
 #include "GDevice.h"
 
 class GVertexBuffer {
     friend class GDevice;
 
-    GVertexBuffer(GDevice &device) : m_device(device) {
-            createBuffer();
-    }
-    ~GIndexBuffer(){
-        destroyBuffer();
-    }
+    GVertexBuffer(GDevice &device);
+    ~GIndexBuffer();
 private:
     void createBuffer();
     void destroyBuffer();
+    void bind(); //Should be called only by GDevice
+    void unbind();
 
 public:
     void uploadData(void *, int length);
@@ -29,7 +26,7 @@ private:
     GDevice &m_device;
 
 private:
-    GLuint buffer = 0;
+    void * buffer = nullptr;
 };
 
 

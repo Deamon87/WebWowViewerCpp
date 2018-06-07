@@ -6,22 +6,19 @@
 #define WEBWOWVIEWERCPP_GINDEXBUFFER_H
 
 class GDevice;
-#include "../engine/opengl/header.h"
 #include "GDevice.h"
 
 class GIndexBuffer {
     friend class GDevice;
 
-    GIndexBuffer(GDevice &device) : m_device(device) {
-        createBuffer();
-    }
-    ~GIndexBuffer(){
-        destroyBuffer();
-    }
+    GIndexBuffer(GDevice &device);
+    ~GIndexBuffer();
 
 private:
     void createBuffer();
     void destroyBuffer();
+    void bind();
+    void unbind();
 
 public:
     void uploadData(void *, int length);
@@ -30,7 +27,7 @@ private:
     GDevice &m_device;
 
 private:
-    GLuint buffer = 0;
+    void * buffer = nullptr;
 };
 
 

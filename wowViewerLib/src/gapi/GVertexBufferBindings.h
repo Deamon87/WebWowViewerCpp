@@ -5,10 +5,15 @@
 #ifndef WEBWOWVIEWERCPP_GVERTEXBUFFERBINDINGS_H
 #define WEBWOWVIEWERCPP_GVERTEXBUFFERBINDINGS_H
 
+class GDevice;
+
 #include <vector>
+#include <cstdint>
 #include "GVertexBuffer.h"
 
-struct GVertexBufferBinding{
+#include "GDevice.h"
+
+struct GBufferBinding{
     uint32_t position;
     uint32_t size;
     uint32_t type;
@@ -17,12 +22,35 @@ struct GVertexBufferBinding{
     uint32_t offset;
 };
 
+struct GVertexBufferBinding {
+    GVertexBuffer vertexBuffer;
+    std::vector<GVertexBufferBinding> bindings;
+};
+
 class GVertexBufferBindings {
+private:
+    std::vector<GVertexBufferBinding> m_bindings;
+    GIndexBuffer *m_indexBuffer = nullptr;
+
 
 private:
+    GDevice &m_device;
+private:
+    void * m_buffer;
 
-    std::vector<GVertexBufferBinding> bindings;
+public:
+    GVertexBufferBindings(GDevice &m_device);
+    ~GVertexBufferBindings();
 
+private:
+    void createBuffer();
+    void destroyBuffer();
+    void bind(); //Should be called only by GDevice
+    void unbind();
+    void save();
+
+    void setIndexBuffer(GIndexBuffer &indexBuffer);
+    void addVertexBufferBinding(GVertexBufferBinding binding);
 
 };
 
