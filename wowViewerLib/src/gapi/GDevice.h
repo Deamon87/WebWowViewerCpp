@@ -7,15 +7,19 @@
 
 #include "GIndexBuffer.h"
 #include "GVertexBuffer.h"
+#include "GVertexBufferBindings.h"
 
 class GDevice {
 public:
     void bindIndexBuffer(GIndexBuffer *buffer);
     void bindVertexBuffer(GVertexBuffer *buffer);
+    void bindVertexBufferBindings(GVertexBufferBindings *buffer);
+
+
 private:
     GIndexBuffer *m_lastBindIndexBuffer;
     GVertexBuffer *m_lastBindVertexBuffer;
-
+    GVertexBufferBindings *m_vertexBufferBindings;
 };
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H

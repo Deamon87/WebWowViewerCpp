@@ -39,7 +39,22 @@ void GVertexBufferBindings::addVertexBufferBinding(GVertexBufferBinding binding)
 }
 
 void GVertexBufferBindings::save() {
-
+    m_device.bindVertexBufferBindings(this);
+    m_device.bindIndexBuffer(m_indexBuffer);
+    for (GVertexBufferBinding &binding : m_bindings) {
+        m_device.bindVertexBuffer(binding.vertexBuffer);
+        for (GBufferBinding &bufferBinding : binding.bindings) {
+            glVertexAttribPointer(
+                bufferBinding.position,
+                bufferBinding.size,
+                bufferBinding.type,
+                (GLboolean) (bufferBinding.normalized ? GL_TRUE : GL_FALSE),
+                bufferBinding.stride,
+                (const void *) bufferBinding.offset
+            );
+        }
+    }
+    m_device.bindVertexBufferBindings(nullptr);
 }
 
 

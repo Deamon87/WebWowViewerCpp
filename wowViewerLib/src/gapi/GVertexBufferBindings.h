@@ -23,11 +23,12 @@ struct GBufferBinding{
 };
 
 struct GVertexBufferBinding {
-    GVertexBuffer vertexBuffer;
-    std::vector<GVertexBufferBinding> bindings;
+    GVertexBuffer *vertexBuffer;
+    std::vector<GBufferBinding> bindings;
 };
 
 class GVertexBufferBindings {
+    friend class GDevice;
 private:
     std::vector<GVertexBufferBinding> m_bindings;
     GIndexBuffer *m_indexBuffer = nullptr;
