@@ -1013,14 +1013,21 @@ void M2Object::makeTextureArray() {
 
     for (int i = 0; i < this->m_materialArray.size(); i++) {
         M2MaterialInst* materialData = &this->m_materialArray[i];
+
         if (materialData->textureUnit1TexName.size()>1) {
             materialData->texUnit1Texture = textureCache->get(materialData->textureUnit1TexName);
+        } else if (m_m2Geom->textureFileDataIDs.size() > 0 && materialData->mdxTextureIndex1 >=0){
+            materialData->texUnit1Texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[materialData->mdxTextureIndex1]);
         }
         if (materialData->textureUnit2TexName.size()>1) {
             materialData->texUnit2Texture = textureCache->get(materialData->textureUnit2TexName);
+        } else if (m_m2Geom->textureFileDataIDs.size() > 0 && materialData->mdxTextureIndex2 >=0){
+            materialData->texUnit2Texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[materialData->mdxTextureIndex2]);
         }
         if (materialData->textureUnit3TexName.size()>1) {
             materialData->texUnit3Texture = textureCache->get(materialData->textureUnit3TexName);
+        } else if (m_m2Geom->textureFileDataIDs.size() > 0 && materialData->mdxTextureIndex3 >=0){
+            materialData->texUnit3Texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[materialData->mdxTextureIndex3]);
         }
     }
 }

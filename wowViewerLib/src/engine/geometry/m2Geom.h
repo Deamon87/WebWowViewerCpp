@@ -49,6 +49,7 @@ public:
 
     M2Data *m_m2Data;
     std::vector<uint32_t> skinFileDataIDs;
+    std::vector<uint32_t> textureFileDataIDs;
 private:
     std::vector<uint8_t> m2File;
 

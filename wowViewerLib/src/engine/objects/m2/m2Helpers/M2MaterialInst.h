@@ -18,21 +18,21 @@ public:
 
 
     int texUnit1TexIndex = 01;
-    int mdxTextureIndex1 = 0;
+    int mdxTextureIndex1 = -1;
     bool xWrapTex1 = false;
     bool yWrapTex1 = false;
     std::string textureUnit1TexName = "";
     BlpTexture *texUnit1Texture = nullptr;
 
     int texUnit2TexIndex = -1;
-    int mdxTextureIndex2 = 0;
+    int mdxTextureIndex2 = -1;
     bool xWrapTex2 = false;
     bool yWrapTex2 = false;
     std::string textureUnit2TexName = "";
     BlpTexture *texUnit2Texture = nullptr;
 
     int texUnit3TexIndex = -1;
-    int mdxTextureIndex3 = 0;
+    int mdxTextureIndex3 = -1;
     bool xWrapTex3 = false;
     bool yWrapTex3 = false;
     std::string textureUnit3TexName = "";

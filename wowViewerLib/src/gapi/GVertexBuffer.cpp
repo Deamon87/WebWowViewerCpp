@@ -8,7 +8,7 @@ GVertexBuffer::GVertexBuffer(GDevice &device)  : m_device(device) {
     buffer = new GLuint;
     createBuffer();
 }
-GVertexBuffer::~GIndexBuffer() {
+GVertexBuffer::~GVertexBuffer() {
     destroyBuffer();
     delete (GLuint *)buffer;
 }

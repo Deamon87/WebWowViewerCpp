@@ -6,6 +6,9 @@
 #define WEBWOWVIEWERCPP_GVERTEXBUFFERBINDINGS_H
 
 class GDevice;
+class GVertexBuffer;
+class GIndexBuffer;
+class GVertexBufferBindings;
 
 #include <vector>
 #include <cstdint>

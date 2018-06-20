@@ -420,7 +420,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
                     adtRenderedThisFrame.push_back(adtObject);
                 }
-            } else if (m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
+            } else if (true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
                 std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
                 adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
 

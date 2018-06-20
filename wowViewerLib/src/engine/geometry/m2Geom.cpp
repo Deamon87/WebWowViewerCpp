@@ -37,6 +37,21 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
                         }
                     }
                 }
+        },
+        {
+                'DIXT',
+                {
+                        handler: [](M2Geom &file, ChunkData &chunkData) {
+                            debuglog("Entered DIXT");
+                            file.textureFileDataIDs =
+                                    std::vector<uint32_t>(
+                                            (unsigned long) (chunkData.chunkLen / 4));
+
+                            for (int i = 0; i < file.textureFileDataIDs.size(); i++) {
+                                chunkData.readValue(file.textureFileDataIDs[i]);
+                            }
+                        }
+                }
         }
     }
 };

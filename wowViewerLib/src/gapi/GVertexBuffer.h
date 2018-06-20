@@ -12,7 +12,7 @@ class GVertexBuffer {
     friend class GDevice;
 
     GVertexBuffer(GDevice &device);
-    ~GIndexBuffer();
+    ~GVertexBuffer();
 private:
     void createBuffer();
     void destroyBuffer();

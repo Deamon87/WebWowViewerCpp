@@ -5,9 +5,10 @@
 #ifndef WEBWOWVIEWERCPP_GDEVICE_H
 #define WEBWOWVIEWERCPP_GDEVICE_H
 
+#include "GVertexBufferBindings.h"
 #include "GIndexBuffer.h"
 #include "GVertexBuffer.h"
-#include "GVertexBufferBindings.h"
+
 
 class GDevice {
 public:

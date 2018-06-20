@@ -134,6 +134,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
 //    currentScene = new Map(this, "MaelstromShaman");
+
+//    m_firstCamera.setCameraPos(11733, 3200, 200); //Kalimdor 2
+//    m_firstCamera.setCameraPos(6947, 408, 162); //Kalimdor 2
+//    currentScene = new Map(this, 1, "Kalimdor 2");
+//
+//    m_firstCamera.setCameraPos(347, -2605, 200); //LordaeronScenario
+//    currentScene = new Map(this, 1, "LordaeronScenario");
 //
 //    m_firstCamera.setCameraPos(3062, 495, 200 ); //Valhalla
 //    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt
@@ -203,6 +210,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/expansion06/doodads/brokenshore/7bs_tombofsargerasfx_01_reduced.m2");
 
 //    currentScene = new M2Scene(this,
+//        "world/expansion07/doodads/8xp_burningteldrassil01.m2");
+//currentScene = new M2Scene(this,
 //        "world/expansion06/doodads/brokenshore/7bs_tombofsargerasfxbeam_01_reduced.m2");
 //
 //   m_firstCamera.setCameraPos(0, 0, 0);
@@ -213,8 +222,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
 
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
@@ -1226,7 +1235,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    float farPlane = 500;
+    float farPlane = 600;
     float nearPlane = 1;
     float fov = toRadian(45.0);
     M2CameraResult cameraResult;

@@ -12,8 +12,8 @@ class GMesh {
 
 
 private:
-    GIndexBuffer &indexBuffer;
-    GVertexBuffer &Buffer;
+    GVertexBufferBindings bindings;
+
 };
 
 
