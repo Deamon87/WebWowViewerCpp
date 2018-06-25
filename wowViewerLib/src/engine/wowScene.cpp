@@ -222,6 +222,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
+//
+   currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_battleforazeroth/ui_mainmenu_battleforazeroth.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", 0);
 
@@ -1223,7 +1226,7 @@ void WoWSceneImpl::drawCamera () {
     glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_DEPTH_TEST);
 }
-
+float globalratio = 1.2;
 void WoWSceneImpl::draw(animTime_t deltaTime) {
 #ifndef WITH_GLESv2
     glBindVertexArray(vao);

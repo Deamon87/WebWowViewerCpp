@@ -13,6 +13,13 @@ class GMesh {
 
 private:
     GVertexBufferBindings bindings;
+    bool m_depthWrite;
+    bool m_depthCulling;
+    int blendMode;
+
+    int start;
+    int end;
+    int element;
 
 };
 
