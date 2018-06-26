@@ -24,7 +24,7 @@ class M2Object;
 
 class AdtObject {
 public:
-    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, WdtFile * wdtfile);
+    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
     }
@@ -56,13 +56,13 @@ private:
 
     IWoWInnerApi *m_api;
     IMapApi *m_mapApi;
-    WdtFile *m_wdtFile;
+    HWdtFile m_wdtFile;
 
-    AdtFile *m_adtFile;
-    AdtFile *m_adtFileTex;
-    AdtFile *m_adtFileObj;
-    AdtFile *m_adtFileObjLod;
-    AdtFile *m_adtFileLod;
+    HAdtFile m_adtFile;
+    HAdtFile m_adtFileTex;
+    HAdtFile m_adtFileObj;
+    HAdtFile m_adtFileObjLod;
+    HAdtFile m_adtFileLod;
 
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;
@@ -76,9 +76,9 @@ private:
     int mostDetailedLod = 0; // 0 = most detailed LOD, 5 = least detailed lod
     int leastDetiledLod = 0;
 
-    std::unordered_map<int, BlpTexture*> m_requestedTextures;
-    std::unordered_map<int, BlpTexture*> m_requestedTexturesHeight;
-    std::unordered_map<int, BlpTexture*> m_requestedTexturesSpec;
+    std::unordered_map<int, HBlpTexture> m_requestedTextures;
+    std::unordered_map<int, HBlpTexture> m_requestedTexturesHeight;
+    std::unordered_map<int, HBlpTexture> m_requestedTexturesSpec;
 
     std::vector<LodCommand> lodCommands;
 
@@ -91,8 +91,8 @@ private:
 
 private:
     std::vector<GLuint> alphaTextures;
-    BlpTexture * lodDiffuseTexture  = nullptr;
-    BlpTexture * lodNormalTexture  = nullptr;
+    HBlpTexture lodDiffuseTexture  = nullptr;
+    HBlpTexture lodNormalTexture  = nullptr;
 
     std::vector<CAaBox> tileAabb;
     std::vector<int> globIndexX;

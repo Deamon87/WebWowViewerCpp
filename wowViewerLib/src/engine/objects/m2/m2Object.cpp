@@ -520,7 +520,7 @@ void M2Object::setDiffuseColor(CImVector& value) {
             value.b / 255.0f,
             value.a / 255.0f);
 }
-void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<std::string> replaceTextures) {
+void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<HBlpTexture> replaceTextures) {
     this->m_skinNum = skinNum;
     this->m_meshIds = meshIds;
     this->m_replaceTextures = replaceTextures;
@@ -973,62 +973,30 @@ void M2Object::makeTextureArray() {
             materialData.xWrapTex1 = (mdxTextureDefinition->flags & 1) > 0;
             materialData.yWrapTex1 = (mdxTextureDefinition->flags & 2) > 0;
 
-            if (mdxTextureDefinition->type == 0) {
-                materialData.textureUnit1TexName = mdxTextureDefinition->filename.toString();
-            } else if (mdxTextureDefinition->type < this->m_replaceTextures.size()){
-                materialData.textureUnit1TexName = this->m_replaceTextures[mdxTextureDefinition->type];
-            }
+            materialData.texUnit1Texture = getTexture(mdxTextureIndex);
         }
         if (op_count > 1) {
-            auto mdxTextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
-            M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
+            auto textureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
+            M2Texture* mdxTextureDefinition = m2File->textures[textureIndex];
             materialData.texUnit2TexIndex = i;
-            materialData.mdxTextureIndex2 = mdxTextureIndex;
+            materialData.mdxTextureIndex2 = textureIndex;
             materialData.xWrapTex2 = (mdxTextureDefinition->flags & 1) > 0;
             materialData.yWrapTex2 = (mdxTextureDefinition->flags & 2) > 0;
 
-            if (mdxTextureDefinition->type == 0) {
-                materialData.textureUnit2TexName = mdxTextureDefinition->filename.toString();
-            } else if (mdxTextureDefinition->type < this->m_replaceTextures.size()){
-                materialData.textureUnit2TexName = this->m_replaceTextures[mdxTextureDefinition->type];
-            }
+            materialData.texUnit2Texture = getTexture(textureIndex);
         }
         if (op_count > 2) {
-            auto mdxTextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
-            M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
+            auto textureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
+            M2Texture* mdxTextureDefinition = m2File->textures[textureIndex];
             materialData.texUnit3TexIndex = i;
-            materialData.mdxTextureIndex3 = mdxTextureIndex;
+            materialData.mdxTextureIndex3 = textureIndex;
             materialData.xWrapTex3 = (mdxTextureDefinition->flags & 1) > 0;
             materialData.yWrapTex3 = (mdxTextureDefinition->flags & 2) > 0;
 
-            if (mdxTextureDefinition->type == 0) {
-                materialData.textureUnit3TexName = mdxTextureDefinition->filename.toString();
-            } else if (mdxTextureDefinition->type < this->m_replaceTextures.size()){
-                materialData.textureUnit3TexName = this->m_replaceTextures[mdxTextureDefinition->type];
-            }
+            materialData.texUnit3Texture = getTexture(textureIndex);
         }
 
         this->m_materialArray.push_back(materialData);
-    }
-
-    for (int i = 0; i < this->m_materialArray.size(); i++) {
-        M2MaterialInst* materialData = &this->m_materialArray[i];
-
-        if (materialData->textureUnit1TexName.size()>1) {
-            materialData->texUnit1Texture = textureCache->get(materialData->textureUnit1TexName);
-        } else if (m_m2Geom->textureFileDataIDs.size() > 0 && materialData->mdxTextureIndex1 >=0){
-            materialData->texUnit1Texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[materialData->mdxTextureIndex1]);
-        }
-        if (materialData->textureUnit2TexName.size()>1) {
-            materialData->texUnit2Texture = textureCache->get(materialData->textureUnit2TexName);
-        } else if (m_m2Geom->textureFileDataIDs.size() > 0 && materialData->mdxTextureIndex2 >=0){
-            materialData->texUnit2Texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[materialData->mdxTextureIndex2]);
-        }
-        if (materialData->textureUnit3TexName.size()>1) {
-            materialData->texUnit3Texture = textureCache->get(materialData->textureUnit3TexName);
-        } else if (m_m2Geom->textureFileDataIDs.size() > 0 && materialData->mdxTextureIndex3 >=0){
-            materialData->texUnit3Texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[materialData->mdxTextureIndex3]);
-        }
     }
 }
 
@@ -1074,7 +1042,7 @@ void M2Object::initParticleEmitters() {
     particleEmitters = std::vector<ParticleEmitter *>();
 //    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->particle_emitters.size; i++) {
-        ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), m_m2Geom->getM2Data());
+        ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), this);
         particleEmitters.push_back(emitter);
     }
 };
@@ -1141,4 +1109,37 @@ void M2Object::drawParticles() {
         if (particleEmitters[i]->isEnabled)
         particleEmitters[i]->Render();
     }
+}
+
+inline HBlpTexture M2Object::getTexture(int textureInd) {
+    auto textureCache = m_api->getTextureCache();
+
+    std::unordered_map<int, HBlpTexture> &loadedTextureCache = loadedTextures;
+
+    M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures[textureInd];
+
+    if (textureDefinition->type == 0) {
+        auto i = loadedTextureCache.find(textureInd);
+        if (i != loadedTextureCache.end()) {
+            return i->second;
+        }
+
+        HBlpTexture texture;
+        if (textureDefinition->filename.size > 0) {
+            std::string fileName = textureDefinition->filename.toString();
+            texture = textureCache->get(fileName);
+        } else if (textureInd < m_m2Geom->textureFileDataIDs.size()) {
+            texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[textureInd]);
+        }
+
+        if (texture != nullptr) {
+            loadedTextureCache[textureInd] =  texture;
+        }
+
+        return texture;
+
+    } else if (textureDefinition->type < this->m_replaceTextures.size()){
+        return this->m_replaceTextures[textureDefinition->type];
+    }
+    return nullptr;
 }

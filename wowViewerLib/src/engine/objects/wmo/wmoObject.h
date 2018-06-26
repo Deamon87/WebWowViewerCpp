@@ -45,7 +45,7 @@ public:
 private:
     IWoWInnerApi *m_api;
 
-    WmoMainGeom *mainGeom = nullptr;
+    HWmoMainGeom mainGeom = nullptr;
     bool m_loading = false;
     bool m_loaded = false;
     CAaBox m_bbox;
@@ -55,7 +55,7 @@ private:
 
     std::vector<PortalInfo_t> geometryPerPortal;
 
-    std::function <BlpTexture *(int materialId, bool isSpec)> m_getTextureFunc;
+    std::function <HBlpTexture (int materialId, bool isSpec)> m_getTextureFunc;
 
     mathfu::mat4 m_placementMatrix;
     mathfu::mat4 m_placementInvertMatrix;
@@ -73,8 +73,8 @@ private:
     std::vector<int> lodGroupLevelWMO;
     std::vector<M2Object*> m_doodadsArray;
 
-    std::unordered_map<int, BlpTexture*> diffuseTextures;
-    std::unordered_map<int, BlpTexture*> specularTextures;
+    std::unordered_map<int, HBlpTexture> diffuseTextures;
+    std::unordered_map<int, HBlpTexture> specularTextures;
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
@@ -83,7 +83,7 @@ private:
     void fillLodGroup(mathfu::vec3 &cameraLocal);
 public:
     M2Object *getDoodad(int index) override ;
-    BlpTexture * getTexture(int materialId, bool isSpec);
+    HBlpTexture getTexture(int materialId, bool isSpec);
     void setLoadingParam( SMMapObjDef &mapObjDef);
     void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
 

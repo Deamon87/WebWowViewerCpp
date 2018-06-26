@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstring>
 #include "base/DB2Base.h"
+#include "../../wowCommonClasses.h"
 //#include "../../../../3rdparty/RTree/RTree.h"
 
 
@@ -28,7 +29,7 @@ struct FoundLightRecord {
 
 class DB2Light {
 public:
-    explicit DB2Light(DB2Base *base) : m_base(base) {
+    explicit DB2Light(HDB2Base base) : m_base(base) {
 
     };
 
@@ -70,7 +71,7 @@ public:
     void fillRTree();
 
 private:
-    DB2Base *m_base;
+    HDB2Base m_base;
 
     bool rTreeFilled = false;
 //    RTree<int, float, 4, float> lightRTree;

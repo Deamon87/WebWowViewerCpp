@@ -562,7 +562,7 @@ void WmoGroupGeom::createIndexVBO() {
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu::vec4 &ambColor, std::function <BlpTexture* (int materialId, bool isSpec)> getTextureFunc) {
+void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu::vec4 &ambColor, std::function <HBlpTexture (int materialId, bool isSpec)> getTextureFunc) {
 
     GLuint blackPixelText = api->getBlackPixelTexture();
     Config * config = api->getConfig();
@@ -720,9 +720,9 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu:
         //var textureObject = this.textureArray[j];
         bool isSecondTextSpec = material.shader == 8;
 
-        BlpTexture *texture1 = getTextureFunc(material.diffuseNameIndex, false);
-        BlpTexture *texture2 = getTextureFunc(material.envNameIndex, isSecondTextSpec);
-        BlpTexture *texture3 = getTextureFunc(material.texture_2, false);
+        HBlpTexture texture1 = getTextureFunc(material.diffuseNameIndex, false);
+        HBlpTexture texture2 = getTextureFunc(material.envNameIndex, isSecondTextSpec);
+        HBlpTexture texture3 = getTextureFunc(material.texture_2, false);
 
         glActiveTexture(GL_TEXTURE0);
         if (texture1 != nullptr && texture1->getIsLoaded()) {

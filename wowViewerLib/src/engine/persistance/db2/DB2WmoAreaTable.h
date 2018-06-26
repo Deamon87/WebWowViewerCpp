@@ -8,6 +8,8 @@
 #include <cstring>
 #include <iostream>
 #include "base/DB2Base.h"
+#include "../../wowCommonClasses.h"
+
 struct DBWmoAreaTableRecord {
     std::string AreaName;
     int AreaName_lang;
@@ -29,7 +31,7 @@ struct DBWmoAreaTableRecord {
 
 class DB2WmoAreaTable {
 public:
-    explicit DB2WmoAreaTable(DB2Base *base) : m_base(base) {
+    explicit DB2WmoAreaTable(HDB2Base base) : m_base(base) {
 
     };
 
@@ -168,7 +170,7 @@ public:
         return dbWmoAreaTableRecord;
     };
 private:
-    DB2Base *m_base = nullptr;
+    HDB2Base m_base = nullptr;
 };
 
 

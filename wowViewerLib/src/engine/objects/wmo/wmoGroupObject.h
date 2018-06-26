@@ -23,7 +23,7 @@ public:
         createWorldGroupBB(groupInfo.bounding_box, modelMatrix);
     }
     void drawDebugLights();
-    void draw(SMOMaterial *materials, std::function <BlpTexture *(int materialId, bool isSpec)> m_getTextureFunc);
+    void draw(SMOMaterial *materials, std::function <HBlpTexture (int materialId, bool isSpec)> m_getTextureFunc);
     bool getIsLoaded() { return m_loaded; };
     CAaBox getWorldAABB() {
         return m_worldGroupBorder;
@@ -31,7 +31,7 @@ public:
     const CAaBox &getLocalAABB() {
         return m_localGroupBorder;
     }
-    const WmoGroupGeom *getWmoGroupGeom() const { return m_geom; };
+    const HWmoGroupGeom getWmoGroupGeom() const { return m_geom; };
     const std::vector <M2Object *> *getDoodads() const { return &m_doodads; };
 
     void setWmoApi(IWmoApi *api);
@@ -57,7 +57,7 @@ public:
 private:
     IWoWInnerApi *m_api = nullptr;
     IWmoApi *m_wmoApi = nullptr;
-    WmoGroupGeom *m_geom = nullptr;
+    HWmoGroupGeom m_geom = nullptr;
 
     std::string m_fileName;
     bool useFileId = false;

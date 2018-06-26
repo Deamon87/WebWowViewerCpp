@@ -44,7 +44,7 @@ struct ParticleBuffStructQuad {
 
 class ParticleEmitter {
 public:
-    ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Data *data) : m_seed(0), m_api(api), m_m2Data(data) {
+    ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object) : m_seed(0), m_api(api), m2Object(m2Object) {
 
         if (!randTableInited) {
             for (int i = 0; i < 128; i++) {
@@ -135,7 +135,8 @@ private:
     IWoWInnerApi *m_api;
 
     M2Particle *m_data;
-    M2Data *m_m2Data;
+    M2Object *m2Object;
+
     CRndSeed m_seed;
 
     mathfu::mat4 transform;

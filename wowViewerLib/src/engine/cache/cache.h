@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <memory>
 #include "../../include/wowScene.h"
 #include "../stringTrim.h"
 
@@ -19,16 +20,10 @@
 template <typename T>
 class Cache {
 private:
-    class Container {
-    public:
-        T obj;
-        int counter;
-    };
-
     IFileRequest *m_fileRequestProcessor;
 public:
 
-    std::unordered_map<std::string, Container*> m_cache;
+    std::unordered_map<std::string, std::weak_ptr<T>> m_cache;
     std::unordered_map<std::string, std::vector<unsigned char>> m_objectsToBeProcessed;
 public:
 
@@ -43,10 +38,12 @@ public:
             //ignore value
             //Value v = iter->second;
 
-            Container *container = m_cache.at(fileName);
+            std::weak_ptr<T> weakPtr = m_cache.at(fileName);
 
 //            std::cout << "Processing file " << fileName << std::endl << std::flush;
-            container->obj.process(fileContent);
+            if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
+                sharedPtr->process(fileContent);
+            }
 
             m_objectsToBeProcessed.erase(it++);    // or "it = m.erase(it)" since C++11
 
@@ -69,31 +66,29 @@ public:
     /*
      * Queue load functions
      */
-    T* get (std::string fileName) {
+    std::shared_ptr<T> get (std::string fileName) {
         fileName = trimmed(fileName);
         std::transform(fileName.begin(), fileName.end(),fileName.begin(), ::toupper);
         std::replace(fileName.begin(), fileName.end(), '\\', '/');
 
         auto it = m_cache.find(fileName);
-        if(it != m_cache.end())
-        {
-            //element found;
-            Container *container = it->second;
-            container->counter = container->counter + 1;
-            return &container->obj;
+        if(it != m_cache.end() ) {
+            if (std::shared_ptr<T> shared = it->second.lock()) {
+                //element found;
+                return shared;
+            }
         }
 
-        Container * newContainer = new Container();
-        m_cache[fileName] = newContainer;
-        newContainer->obj = T();
-        newContainer->counter = 1;
+        std::shared_ptr<T> sharedPtr = std::make_shared<T>();
+        std::weak_ptr<T> weakPtr(sharedPtr);
+        m_cache[fileName] = weakPtr;
 
         m_fileRequestProcessor->requestFile(fileName.c_str());
 
-        return &newContainer->obj;
+        return sharedPtr;
     }
 
-    T* getFileId (int id) {
+    std::shared_ptr<T> getFileId (int id) {
         std::stringstream ss;
         ss << "File" << std::setfill('0') << std::setw(8) << std::hex << id <<".unk";
         std::string fileName = ss.str();
@@ -102,41 +97,27 @@ public:
         auto it = m_cache.find(fileName);
         if(it != m_cache.end())
         {
-            //element found;
-            Container *container = it->second;
-            container->counter = container->counter + 1;
-            return &container->obj;
+            if (std::shared_ptr<T> shared = it->second.lock()) {
+                //element found;
+                return shared;
+            }
         }
 
-        Container * newContainer = new Container();
-        m_cache[fileName] = newContainer;
-        newContainer->obj = T();
-        newContainer->counter = 1;
+        std::shared_ptr<T> sharedPtr = std::make_shared<T>();
+        std::weak_ptr<T> weakPtr(sharedPtr);
+        m_cache[fileName] = weakPtr;
+
 
         m_fileRequestProcessor->requestFile(fileName.c_str());
 
-        return &newContainer->obj;
+        return sharedPtr;
     }
 
     void reject(std::string fileName) {
         trim(fileName);
-//        var queue = this.queueForLoad.get(fileName);
-//        for (var i = 0; i < queue.length; i++) {
-//            queue[i].reject(obj)
-//        }
-//        this.queueForLoad.delete(fileName);
-    }
-    void free (std::string fileName) {
-        trim(fileName);
-        Container &container = m_cache.at(fileName);
 
-        /* Destroy container if usage counter is 0 or less */
-        container.counter -= 1;
-        if (container.counter <= 0) {
-            m_cache.erase(fileName);
-        }
-    }
 
+    }
 
 private:
     /*

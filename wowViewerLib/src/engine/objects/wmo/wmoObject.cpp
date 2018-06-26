@@ -7,7 +7,7 @@
 #include "../../shaderDefinitions.h"
 #include "../../persistance/header/commonFileStructs.h"
 
-std::vector<mathfu::vec3> CreateOccluders(const WmoGroupGeom * groupGeom)
+std::vector<mathfu::vec3> CreateOccluders(const HWmoGroupGeom groupGeom)
 {
     std::vector<mathfu::vec3> points(0);
 
@@ -624,10 +624,10 @@ void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
     this->m_nameSet = mapObjDef.nameSet;
 }
 
-BlpTexture *WmoObject::getTexture(int textureId, bool isSpec) {
+HBlpTexture WmoObject::getTexture(int textureId, bool isSpec) {
     if (textureId < 0 || textureId >= mainGeom->textureNamesFieldLen) return nullptr;
 
-    std::unordered_map<int, BlpTexture*> &textureCache = diffuseTextures;
+    std::unordered_map<int, HBlpTexture> &textureCache = diffuseTextures;
     if (isSpec) {
         textureCache = specularTextures;
     }
@@ -644,7 +644,7 @@ BlpTexture *WmoObject::getTexture(int textureId, bool isSpec) {
         materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
     }
 
-    BlpTexture * texture = m_api->getTextureCache()->get(materialTexture);
+    HBlpTexture texture = m_api->getTextureCache()->get(materialTexture);
     textureCache[textureId] =  texture;
 
     return texture;

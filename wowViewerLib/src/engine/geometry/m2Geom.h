@@ -5,12 +5,12 @@
 #ifndef WOWVIEWERLIB_M2GEOM_H
 #define WOWVIEWERLIB_M2GEOM_H
 
-class M2SkinProfile;
 #include <vector>
 #include "../wowInnerApi.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "../objects/m2/m2Helpers/M2MaterialInst.h"
 //#include "../objects/m2Object.h"
+
 
 class M2Geom {
 public:
@@ -59,6 +59,6 @@ private:
     static chunkDef<M2Geom> m2FileTable;
 
 };
-
+typedef std::shared_ptr<M2Geom> HM2Geom;
 
 #endif //WOWVIEWERLIB_M2GEOM_H

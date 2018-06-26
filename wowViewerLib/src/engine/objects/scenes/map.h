@@ -32,7 +32,7 @@ private:
     WmoObject *m_currentWMO = nullptr;
 
     int m_mapId = -1;
-    WdtFile * m_wdtfile;
+    HWdtFile m_wdtfile;
     WdlObject * m_wdlObject;
 
     ObjectCache<M2Object, int> m_m2MapObjects;

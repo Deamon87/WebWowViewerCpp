@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstring>
 #include "base/DB2Base.h"
+#include "../../wowCommonClasses.h"
 
 struct DB2LightDataRecord {
     int32_t directColor;                //1
@@ -54,7 +55,7 @@ public:
     static const int AMBIENT_INDEX = 1;
     static const int FOG_INDEX = 7;
 
-    explicit DB2LightData(DB2Base *base) : m_base(base) {
+    explicit DB2LightData(HDB2Base base) : m_base(base) {
     };
 
     bool getIsLoaded() {
@@ -145,7 +146,7 @@ public:
 
 
 private:
-    DB2Base *m_base;
+    HDB2Base m_base;
 
 
 };

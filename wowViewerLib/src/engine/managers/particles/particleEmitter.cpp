@@ -608,32 +608,22 @@ void ParticleEmitter::Render() {
 
 
     bool multitex = this->particleType >= 2;
-    BlpTexture* tex0 = nullptr;
+    HBlpTexture tex0 = nullptr;
     if (multitex) {
-        tex0 = textureCache->get(
-                m_m2Data->textures.getElement(
-                        this->m_data->old.texture_0
-                )->filename.toString());
+        tex0 = m2Object->getTexture(this->m_data->old.texture_0);
     } else {
-        tex0 = textureCache->get(
-                m_m2Data->textures.getElement(
-                        this->m_data->old.texture
-                )->filename.toString());
+        tex0 = m2Object->getTexture(this->m_data->old.texture);
     }
 
     if (tex0 == nullptr || !tex0->getIsLoaded()) {
         return;
     }
-    BlpTexture* tex1 = nullptr;
-    BlpTexture* tex2 = nullptr;
+    HBlpTexture tex1 = nullptr;
+    HBlpTexture tex2 = nullptr;
 
     if (multitex) {
-        tex1 = textureCache->get(
-                m_m2Data->textures.getElement(
-                        this->m_data->old.texture_1)->filename.toString());
-        tex2 = textureCache->get(
-                m_m2Data->textures.getElement(
-                        this->m_data->old.texture_2)->filename.toString());
+        tex1 = m2Object->getTexture(this->m_data->old.texture_1);
+        tex2 = m2Object->getTexture(this->m_data->old.texture_2);
     }
 
     glActiveTexture(GL_TEXTURE0);

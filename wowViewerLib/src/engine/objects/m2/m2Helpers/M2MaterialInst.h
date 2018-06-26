@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_M2MATERIALINST_H
 
 #include <string>
+#include "../../../wowCommonClasses.h"
 #include "../../../persistance/header/blpFileHeader.h"
 #include "../../../texture/BlpTexture.h"
 
@@ -21,22 +22,19 @@ public:
     int mdxTextureIndex1 = -1;
     bool xWrapTex1 = false;
     bool yWrapTex1 = false;
-    std::string textureUnit1TexName = "";
-    BlpTexture *texUnit1Texture = nullptr;
+    HBlpTexture texUnit1Texture = nullptr;
 
     int texUnit2TexIndex = -1;
     int mdxTextureIndex2 = -1;
     bool xWrapTex2 = false;
     bool yWrapTex2 = false;
-    std::string textureUnit2TexName = "";
-    BlpTexture *texUnit2Texture = nullptr;
+    HBlpTexture texUnit2Texture = nullptr;
 
     int texUnit3TexIndex = -1;
     int mdxTextureIndex3 = -1;
     bool xWrapTex3 = false;
     bool yWrapTex3 = false;
-    std::string textureUnit3TexName = "";
-    BlpTexture *texUnit3Texture = nullptr;
+    HBlpTexture texUnit3Texture = nullptr;
 
     int layer = 0;
     int renderFlagIndex = -1;

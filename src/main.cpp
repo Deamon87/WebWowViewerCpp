@@ -209,8 +209,8 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     return fps;
 }
 
-int canvWidth = 1280;
-int canvHeight = 720;
+int canvWidth = 640;
+int canvHeight = 480;
 bool windowSizeChanged = false;
 
 void window_size_callback(GLFWwindow* window, int width, int height)
@@ -640,7 +640,7 @@ int main(){
 
 
 
-    if( nkc_init( myapp.nkcHandle, "WowViewer", 640, 480, NKC_WIN_NORMAL ) ){
+    if( nkc_init( myapp.nkcHandle, "WowViewer", 1920, 1080, NKC_WIN_NORMAL) ){
         printf("Successfull init. Starting 'infinite' main loop...\n");
 
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);

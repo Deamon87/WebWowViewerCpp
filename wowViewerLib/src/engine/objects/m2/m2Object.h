@@ -5,8 +5,7 @@
 #ifndef WOWVIEWERLIB_M2OBJECT_H
 #define WOWVIEWERLIB_M2OBJECT_H
 
-class ParticleEmitter;
-class AnimationManager;
+
 #include <cstdint>
 #include "mathfu/glsl_mappings.h"
 #include "../../wowInnerApi.h"
@@ -50,8 +49,8 @@ private:
 
     IWoWInnerApi *m_api;
 
-    M2Geom *m_m2Geom = nullptr;
-    SkinGeom *m_skinGeom = nullptr;
+    HM2Geom m_m2Geom ;
+    HSkinGeom m_skinGeom = nullptr;
 
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
@@ -73,13 +72,15 @@ private:
     mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
     bool m_useLocalDiffuseColor = false;
     std::vector<uint8_t> m_meshIds;
-    std::vector<std::string> m_replaceTextures;
+    std::vector<HBlpTexture> m_replaceTextures;
     std::vector<mathfu::mat4> bonesMatrices;
     std::vector<mathfu::mat4> textAnimMatrices;
     std::vector<mathfu::vec4> subMeshColors;
     std::vector<float> transparencies;
     std::vector<M2LightResult> lights;
     std::vector<ParticleEmitter*> particleEmitters;
+
+    std::unordered_map<int, HBlpTexture> loadedTextures;
 
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
@@ -115,7 +116,7 @@ public:
     CAaBox getAABB() { return aabb; };
 
     void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
-                       std::vector<std::string> replaceTextures);
+                       std::vector<HBlpTexture> replaceTextures);
 
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
@@ -159,6 +160,7 @@ public:
 
     void drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO);
 
+    HBlpTexture getTexture(int textureInd);
 
     mathfu::vec4 getAmbientLight();
     void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {

@@ -5,11 +5,14 @@
 #ifndef WOWVIEWERLIB_WOWINNERAPI_H
 #define WOWVIEWERLIB_WOWINNERAPI_H
 
-class M2Geom;
-class SkinGeom;
-class BlpTexture;
-class WmoMainGeom;
-class WmoGroupGeom;
+#include "./wowCommonClasses.h"
+//Functional classes
+class AnimationManager;
+class M2SkinProfile;
+
+class ParticleEmitter;
+
+
 
 #include "opengl/header.h"
 #include "cache/cache.h"

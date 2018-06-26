@@ -468,7 +468,7 @@ BlpTexture &AdtObject::getAdtTexture(int textureId) {
     }
 
     std::string &materialTexture = m_adtFileTex->textureNames[textureId];
-    BlpTexture * texture = m_api->getTextureCache()->get(materialTexture);
+    HBlpTexture texture = m_api->getTextureCache()->get(materialTexture);
     m_requestedTextures[textureId] = texture;
 
     return *texture;
@@ -484,7 +484,7 @@ BlpTexture &AdtObject::getAdtHeightTexture(int textureId) {
 
     std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_h.blp";
 
-    BlpTexture * texture = m_api->getTextureCache()->get(matHeightText);
+    HBlpTexture texture = m_api->getTextureCache()->get(matHeightText);
     m_requestedTexturesHeight[textureId] = texture;
 
     return *texture;
@@ -500,7 +500,7 @@ BlpTexture &AdtObject::getAdtSpecularTexture(int textureId) {
 
     std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_s.blp";
 
-    BlpTexture * texture = m_api->getTextureCache()->get(matHeightText);
+    HBlpTexture texture = m_api->getTextureCache()->get(matHeightText);
     m_requestedTexturesSpec[textureId] = texture;
 
     return *texture;
@@ -784,7 +784,7 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     return atLeastOneIsDrawn;
 }
 
-AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, WdtFile *wdtFile) : alphaTextures(){
+AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);

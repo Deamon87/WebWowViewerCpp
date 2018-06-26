@@ -27,7 +27,7 @@ private:
     IWoWInnerApi *m_api;
     IMapApi *m_mapApi;
 
-    WdlFile *m_wdlFile;
+    HWdlFile m_wdlFile;
     bool m_loaded = false;
 
     void loadingFinished();
