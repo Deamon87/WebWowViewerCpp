@@ -44,6 +44,7 @@ void GVertexBufferBindings::save() {
     for (GVertexBufferBinding &binding : m_bindings) {
         m_device.bindVertexBuffer(binding.vertexBuffer);
         for (GBufferBinding &bufferBinding : binding.bindings) {
+            glEnableVertexAttribArray(bufferBinding.position);
             glVertexAttribPointer(
                 bufferBinding.position,
                 bufferBinding.size,

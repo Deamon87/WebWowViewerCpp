@@ -8,8 +8,8 @@ if (BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Werror -Wno-multichar -Wpedantic -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize" )
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Werror -Wno-multichar -Wpedantic -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize" )
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize")
 
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
@@ -23,7 +23,7 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 endif()
 
 
-
+ 
 include(ExternalProject)
 
 set(mathfu_build_benchmarks OFF CACHE BOOL "")
@@ -56,19 +56,26 @@ endif(NOT CMAKE_NDK_BUILD MATCHES 1)
 set(GLEW_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS} PARENT_SCOPE)
 include_directories(${GLEW_INCLUDE_DIRS})
 
-IF(CMAKE_BUILD_TYPE MATCHES Release)
-    include(cmakeScripts/generateGlslMapping/CMakeLists.txt)
-ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
-include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtLodShader.glsl ${CMAKE_BINARY_DIR}/glsl/adtLodShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtShader.glsl ${CMAKE_BINARY_DIR}/glsl/adtShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawBBShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawBBShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawDepthShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawDepthShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawFrustumShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawFrustumShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawLinesShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawLinesShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPoints.glsl ${CMAKE_BINARY_DIR}/glsl/drawPoints.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPortalShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawPortalShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2ParticleShader.glsl ${CMAKE_BINARY_DIR}/glsl/m2ParticleShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2Shader.glsl ${CMAKE_BINARY_DIR}/glsl/m2Shader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/readDepthBufferShader.glsl ${CMAKE_BINARY_DIR}/glsl/readDepthBufferShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/renderFrameBufferShader.glsl ${CMAKE_BINARY_DIR}/glsl/renderFrameBufferShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/textureCompositionShader.glsl ${CMAKE_BINARY_DIR}/glsl/textureCompositionShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/wmoShader.glsl ${CMAKE_BINARY_DIR}/glsl/wmoShader.glsl COPYONLY)
 
 #include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)
 include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
 
 set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/wowScene.h
-        src/engine/shadersStructures.h
-        src/engine/shaderHelperFunctions.h
-        src/engine/shaders.h
         src/engine/shader/ShaderRuntimeData.cpp
         src/engine/shader/ShaderRuntimeData.h
         src/engine/opengl/header.h
@@ -144,17 +151,17 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/managers/particles/generators/CPlaneGenerator.h
         src/engine/texture/DxtDecompress.cpp
         src/engine/texture/DxtDecompress.h
-        src/engine/androidLogSupport.h src/engine/persistance/db2/base/DB2Base.cpp src/engine/persistance/db2/base/DB2Base.h src/engine/persistance/db2/DB2Light.cpp src/engine/persistance/db2/DB2Light.h src/engine/persistance/db2/DB2LightData.cpp src/engine/persistance/db2/DB2LightData.h src/engine/persistance/db2/DB2LightParams.cpp src/engine/persistance/db2/DB2LightParams.h src/engine/persistance/db2/DB2WmoAreaTable.cpp src/engine/persistance/db2/DB2WmoAreaTable.h src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h src/engine/persistance/header/texFileHeader.h src/gapi/GTexture.cpp src/gapi/GTexture.h src/gapi/GVertexBuffer.cpp src/gapi/GVertexBuffer.h src/gapi/GIndexBuffer.cpp src/gapi/GIndexBuffer.h src/gapi/GRenderTarget.cpp src/gapi/GRenderTarget.h src/gapi/GDevice.cpp src/gapi/GDevice.h src/gapi/GMesh.cpp src/gapi/GMesh.h src/gapi/GVertexBufferBindings.cpp src/gapi/GVertexBufferBindings.h src/engine/wowCommonClasses.h)
+        src/engine/androidLogSupport.h src/engine/persistance/db2/base/DB2Base.cpp src/engine/persistance/db2/base/DB2Base.h src/engine/persistance/db2/DB2Light.cpp src/engine/persistance/db2/DB2Light.h src/engine/persistance/db2/DB2LightData.cpp src/engine/persistance/db2/DB2LightData.h src/engine/persistance/db2/DB2LightParams.cpp src/engine/persistance/db2/DB2LightParams.h src/engine/persistance/db2/DB2WmoAreaTable.cpp src/engine/persistance/db2/DB2WmoAreaTable.h src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h src/engine/persistance/header/texFileHeader.h src/gapi/GTexture.cpp src/gapi/GTexture.h src/gapi/GVertexBuffer.cpp src/gapi/GVertexBuffer.h src/gapi/GIndexBuffer.cpp src/gapi/GIndexBuffer.h src/gapi/GRenderTarget.cpp src/gapi/GRenderTarget.h src/gapi/GDevice.cpp src/gapi/GDevice.h src/gapi/GMesh.cpp src/gapi/GMesh.h src/gapi/GVertexBufferBindings.cpp src/gapi/GVertexBufferBindings.h src/engine/wowCommonClasses.h src/engine/shader/ShaderDefinitions.cpp)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib ${SOURCE_FILES})
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
-    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+    #set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 endif()
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
-    target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
+    #target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
     mathfu_configure_flags(WoWViewerLib ON)
 else()
     mathfu_configure_flags(WoWViewerLib ON)

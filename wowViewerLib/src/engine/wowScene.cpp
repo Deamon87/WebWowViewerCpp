@@ -1,6 +1,5 @@
 #include "opengl/header.h"
 #include "wowScene.h"
-#include "shaders.h"
 #include "shader/ShaderRuntimeData.h"
 #include "algorithms/mathHelper.h"
 #include "objects/scenes/m2Scene.h"
@@ -10,6 +9,7 @@
 #include "mathfu/glsl_mappings.h"
 #include "persistance/db2/DB2Light.h"
 #include "persistance/db2/DB2WmoAreaTable.h"
+#include "shader/ShaderDefinitions.h"
 #include <iostream>
 #include <cmath>
 
@@ -252,6 +252,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new M2Scene(this,
 //        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
+
+//    currentScene = new M2Scene(this,
+//        "character/bloodelf/female/bloodelffemale_hd.m2", 0);
 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(1.78252912,  33.4062042, -126.937592); //Room under dalaran
@@ -519,10 +522,9 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
     if (geomShaderExists)
         glAttachShader(program, geometryShader);
 
-    const shaderDefinition *shaderDefinition1 = getShaderDef(shaderName.c_str());
-    for (int i = 0; i < shaderDefinition1->attributesNum; i++) {
-        glBindAttribLocation(program, shaderDefinition1->attributes[i].number, shaderDefinition1->attributes[i].variableName);
-    }
+//    for (int i = 0; i < shaderDefinition1->attributesNum; i++) {
+//        glBindAttribLocation(program, shaderDefinition1->attributes[i].number, shaderDefinition1->attributes[i].variableName);
+//    }
 
     // link the program.
     glLinkProgram(program);
@@ -566,49 +568,49 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
     return data;
 }
 void WoWSceneImpl::initShaders() {
-    const std::string textureCompositionShader = getShaderDef("textureCompositionShader")->shaderString;
+    const std::string textureCompositionShader = loadShader("textureCompositionShader");
     this->textureCompositionShader = this->compileShader("textureCompositionShader", textureCompositionShader, textureCompositionShader);
 
-    const  std::string renderFrameShader = getShaderDef("renderFrameBufferShader")->shaderString;
+    const  std::string renderFrameShader = loadShader("renderFrameBufferShader");
     this->renderFrameShader        = this->compileShader("renderFrameBufferShader", renderFrameShader, renderFrameShader);
 
-    const  std::string drawDepthBuffer = getShaderDef("drawDepthShader")->shaderString;
+    const  std::string drawDepthBuffer = loadShader("drawDepthShader");
     this->drawDepthBuffer          = this->compileShader("drawDepthShader", drawDepthBuffer, drawDepthBuffer);
 
-    const  std::string readDepthBuffer = getShaderDef("readDepthBufferShader")->shaderString;
+    const  std::string readDepthBuffer = loadShader("readDepthBufferShader");
     this->readDepthBuffer          = this->compileShader("readDepthBufferShader", readDepthBuffer, readDepthBuffer);
 
-    const  std::string wmoShader = getShaderDef("wmoShader")->shaderString;
+    const  std::string wmoShader = loadShader("wmoShader");
     this->wmoShader                = this->compileShader("wmoShader", wmoShader, wmoShader);
 
-    const  std::string m2Shader = getShaderDef("m2Shader")->shaderString;
+    const  std::string m2Shader = loadShader("m2Shader");
     this->m2Shader                 = this->compileShader("m2Shader", m2Shader, m2Shader);
 //    this->m2InstancingShader       = this->compileShader("m2Shader", m2Shader, m2Shader,
 //                                                         new std::string("#define INSTANCED 1\r\n "),
 //                                                         new std::string("#define INSTANCED 1\r\n "));
 
-    const  std::string m2ParticleShader = getShaderDef("m2ParticleShader")->shaderString;
+    const  std::string m2ParticleShader = loadShader("m2ParticleShader");
     this->m2ParticleShader         = this->compileShader("m2ParticleShader", m2ParticleShader, m2ParticleShader);
 
-    const  std::string bbShader = getShaderDef("drawBBShader")->shaderString;
+    const  std::string bbShader = loadShader("drawBBShader");
     this->bbShader                 = this->compileShader("drawBBShader", bbShader, bbShader);
 
-    const  std::string adtShader = getShaderDef("adtShader")->shaderString;
+    const  std::string adtShader = loadShader("adtShader");
     this->adtShader                = this->compileShader("adtShader", adtShader, adtShader);
 
-    const std::string adtLodShader = getShaderDef("adtLodShader")->shaderString;
+    const std::string adtLodShader = loadShader("adtLodShader");
     this->adtLodShader                = this->compileShader("adtLodShader", adtLodShader, adtLodShader);
 
-    const  std::string drawPortalShader = getShaderDef("drawPortalShader")->shaderString;
+    const  std::string drawPortalShader = loadShader("drawPortalShader");
     this->drawPortalShader         = this->compileShader("drawPortalShader", drawPortalShader, drawPortalShader);
 
-    const  std::string drawFrustumShader = getShaderDef("drawFrustumShader")->shaderString;
+    const  std::string drawFrustumShader = loadShader("drawFrustumShader");
     this->drawFrustumShader        = this->compileShader("drawFrustumShader", drawFrustumShader, drawFrustumShader);
 
-    const  std::string drawLinesShader = getShaderDef("drawLinesShader")->shaderString;
+    const  std::string drawLinesShader = loadShader("drawLinesShader");
     this->drawLinesShader          = this->compileShader("drawLinesShader", drawLinesShader, drawLinesShader);
 
-    const  std::string drawPoints = getShaderDef("drawPoints")->shaderString;
+    const  std::string drawPoints = loadShader("drawPoints");
     this->drawPoints          = this->compileShader("drawPoints", drawPoints, drawPoints);
 }
 
@@ -1206,7 +1208,7 @@ void glClearScreen() {
     glDepthFunc(GL_LESS);
 
     glDisable(GL_BLEND);
-    glClearColor(0.0, 0.0, 0.0, 1);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
 //    glClearColor(0.117647, 0.207843, 0.392157, 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
@@ -1238,7 +1240,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    float farPlane = 600;
+    float farPlane = 2000;
     float nearPlane = 1;
     float fov = toRadian(45.0);
     M2CameraResult cameraResult;

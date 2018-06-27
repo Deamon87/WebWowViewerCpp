@@ -1,3 +1,6 @@
+#define _X86_ 1
+
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -226,7 +229,7 @@ void beforeCrash(void);
 static const bool SET_TERMINATE = std::set_terminate(beforeCrash);
 
 void beforeCrash() {
-    __asm("int3");
+    //__asm("int3");
 }
 
 static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
@@ -243,6 +246,7 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
             fputs("Error: EXCEPTION_BREAKPOINT\n", stderr);
             break;
     }
+	return 0;
 }
 #endif
 

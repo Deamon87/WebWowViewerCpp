@@ -8,7 +8,6 @@
 #include <locale>
 #include "wowInnerApi.h"
 
-#include "shadersStructures.h"
 #include "shader/ShaderRuntimeData.h"
 #include "../include/wowScene.h"
 #include "../include/config.h"

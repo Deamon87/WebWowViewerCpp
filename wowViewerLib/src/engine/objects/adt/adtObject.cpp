@@ -3,7 +3,7 @@
 //
 
 #include "adtObject.h"
-#include "../../shaderDefinitions.h"
+#include "../../shader/ShaderDefinitions.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../persistance/adtFile.h"
 
@@ -726,6 +726,7 @@ bool AdtObject::checkReferences(mathfu::vec4 &cameraPos,
             }
         }
     }
+	return true;
 }
 
 bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,

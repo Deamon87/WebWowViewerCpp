@@ -11,6 +11,7 @@
 #include <ios>
 #include <fstream>
 #include <regex>
+#include <functional>
 
 
 using namespace std::placeholders;

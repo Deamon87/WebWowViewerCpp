@@ -4,7 +4,7 @@
 
 #include "wmoGroupObject.h"
 #include "../../algorithms/mathHelper.h"
-#include "../../shaderDefinitions.h"
+#include "../../shader/ShaderDefinitions.h"
 #include <algorithm>
 
 void WmoGroupObject::update() {
@@ -404,7 +404,7 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
         return false;
     }
 
-    result = {min: bottomZ, max: topZ};
+    result = {bottomZ, topZ};
 
     return true;
 }
@@ -439,13 +439,16 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
         topBottom.max = m_main_groupInfo->bounding_box.max.z;
         topBottom.min = m_main_groupInfo->bounding_box.min.z;
 
-        candidateGroups.push_back({
-                                      topBottom : topBottom,
-                                      groupIndex : m_groupNumber,
-                                      WMOGroupID : -1,
-                                      bspLeafList : {},
-                                      nodeId: -1
-                                  });
+
+		WmoGroupResult result;
+		
+		result.topBottom = topBottom;
+		result.groupIndex = m_groupNumber;
+		result.WMOGroupID = -1;
+		result.bspLeafList = {};
+		result.nodeId = -1;
+		
+		candidateGroups.push_back(result);
 
         return true;
     }
@@ -508,13 +511,14 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
             }
         }
 
-        candidateGroups.push_back({
-            topBottom : topBottom,
-            groupIndex : m_groupNumber,
-            WMOGroupID : groupInfo->wmoGroupID,
-            bspLeafList : bspLeafList,
-            nodeId: nodeId
-        });
+		WmoGroupResult candidate;
+		candidate.topBottom = topBottom;
+		candidate.groupIndex = m_groupNumber;
+		candidate.WMOGroupID = groupInfo->wmoGroupID;
+		candidate.bspLeafList = bspLeafList;
+		candidate.nodeId = nodeId;
+
+        candidateGroups.push_back(candidate);
 
         return true;
     }

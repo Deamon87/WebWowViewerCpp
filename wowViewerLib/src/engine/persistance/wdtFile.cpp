@@ -1,12 +1,12 @@
 #include "wdtFile.h"
 
 chunkDef<WdtFile> WdtFile::wdtFileTable = {
-    handler : [](WdtFile &file, ChunkData &chunkData) {},
-    subChunks : {
+    [](WdtFile &file, ChunkData &chunkData) {},
+    {
         {
             'MPHD',
             {
-                    handler: [](WdtFile &file, ChunkData &chunkData) {
+                    [](WdtFile &file, ChunkData &chunkData) {
                         debuglog("Entered MPHD");
                         chunkData.readValue(file.mphd);
                     }
@@ -15,7 +15,7 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
         {
             'MAIN',
             {
-                handler: [](WdtFile &file, ChunkData &chunkData) {
+                [](WdtFile &file, ChunkData &chunkData) {
                     debuglog("Entered MAIN");
                     chunkData.readValue(file.mapTileTable);
                 }
@@ -24,7 +24,7 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
         {
             'MWMO',
             {
-                handler: [](WdtFile &file, ChunkData &chunkData) {
+                [](WdtFile &file, ChunkData &chunkData) {
                     debuglog("Entered MWMO");
                     char * fileName;
                     chunkData.readValues(fileName, chunkData.chunkLen);
@@ -35,7 +35,7 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
         {
             'MODF',
             {
-                handler: [](WdtFile &file, ChunkData &chunkData) {
+                [](WdtFile &file, ChunkData &chunkData) {
                     debuglog("Entered MODF");
                     chunkData.readValue(file.wmoDef);
                 }

@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <vector>
 #include <random>
-#include <strings.h>
+//#include <strings.h>
 #include "../../persistance/header/M2FileHeader.h"
 #include "generators/CParticleGenerator.h"
 #include "generators/CSphereGenerator.h"
@@ -98,7 +98,7 @@ public:
         }
         this->textureIndexMask = cols * rows - 1;
         this->textureStartIndex = 0;
-        this->textureColBits = __builtin_ffs(cols);
+		this->textureColBits = 0;//_BitScanReverse(cols, 0);
         this->textureColMask = cols - 1;
         if (m_data->old.flags & 0x200000) {
             this->textureStartIndex = this->m_seed.uint32t() & this->textureIndexMask;

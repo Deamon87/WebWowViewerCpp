@@ -6,7 +6,7 @@
 #define WEBWOWVIEWERCPP_GMESH_H
 
 
-#include "GIndexBuffer.h"
+#include "GVertexBufferBindings.h"
 
 class GMesh {
 

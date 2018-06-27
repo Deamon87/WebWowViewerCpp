@@ -5,12 +5,12 @@
 #include "texFile.h"
 
 chunkDef<TexFile> TexFile::texFileTable = {
-        handler : [](TexFile &file, ChunkData &chunkData) {},
-        subChunks : {
+        [](TexFile &file, ChunkData &chunkData) {},
+        {
                 {
                         'TXVR',
                         {
-                                handler: [](TexFile &file, ChunkData &chunkData) {
+                                [](TexFile &file, ChunkData &chunkData) {
                                     debuglog("Entered TXVR");
                                     uint32_t version;
                                     chunkData.readValue(version);
@@ -20,7 +20,7 @@ chunkDef<TexFile> TexFile::texFileTable = {
                 {
                         'TXBT',
                         {
-                                handler: [](TexFile &file, ChunkData &chunkData) {
+                                [](TexFile &file, ChunkData &chunkData) {
                                     debuglog("Entered TXBT");
                                     file.entriesNum = chunkData.chunkLen / sizeof(SBlobTexture);
                                     chunkData.readValues(file.entries, file.entriesNum);
@@ -30,7 +30,7 @@ chunkDef<TexFile> TexFile::texFileTable = {
                 {
                         'TXFN',
                         {
-                                handler: [](TexFile &file, ChunkData &chunkData) {
+                                [](TexFile &file, ChunkData &chunkData) {
                                     debuglog("Entered TXFN");
                                     file.filenames_len = chunkData.chunkLen;
                                     chunkData.readValues(file.filenames, chunkData.chunkLen);
@@ -40,7 +40,7 @@ chunkDef<TexFile> TexFile::texFileTable = {
                 {
                         'TXMD',
                         {
-                                handler: [](TexFile &file, ChunkData &chunkData) {
+                                [](TexFile &file, ChunkData &chunkData) {
                                     debuglog("Entered TXMD");
                                     file.textureData_len = chunkData.chunkLen;
                                     chunkData.readValues(file.textureData, file.textureData_len);

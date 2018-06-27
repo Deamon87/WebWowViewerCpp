@@ -33,7 +33,7 @@
 #endif
 
 #ifdef _MSC_VER
-#include "../../../include/stdint_msvc.h"
+//#include "../../../include/stdint_msvc.h"
 #else
 #include <stdint.h>
 #endif
@@ -92,7 +92,7 @@ struct M2Bounds {
 template<typename T>
 struct M2Array {
     int32_t size;
-    uint32_t offset; // pointer to T, relative to begin of m2 data block (i.e. MD21 chunk content or begin of file)
+    int32_t offset; // pointer to T, relative to begin of m2 data block (i.e. MD21 chunk content or begin of file)
 
     void initM2Array(void * m2File) {
         static_assert(std::is_pod<M2Array<T>>::value, "M2Array<> is not POD");

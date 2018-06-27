@@ -4,16 +4,16 @@
 
 #include "m2Geom.h"
 #include "skinGeom.h"
-#include "../shaderDefinitions.h"
+#include "../shader/ShaderDefinitions.h"
 #include "../opengl/header.h"
 
 chunkDef<M2Geom> M2Geom::m2FileTable = {
-    handler : [](M2Geom& file, ChunkData& chunkData){},
-    subChunks : {
+    [](M2Geom& file, ChunkData& chunkData){},
+    {
         {
             '12DM',
                 {
-                    handler: [](M2Geom &file, ChunkData &chunkData) {
+                    [](M2Geom &file, ChunkData &chunkData) {
                         debuglog("Entered MD21");
 
 //                                    chunkData.currentOffset = chunkData.currentOffset - 8;
@@ -26,7 +26,7 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
         {
                 'DIFS',
                 {
-                    handler: [](M2Geom &file, ChunkData &chunkData) {
+                    [](M2Geom &file, ChunkData &chunkData) {
                         debuglog("Entered SFID");
                         file.skinFileDataIDs =
                                 std::vector<uint32_t>(
@@ -41,7 +41,7 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
         {
                 'DIXT',
                 {
-                        handler: [](M2Geom &file, ChunkData &chunkData) {
+                        [](M2Geom &file, ChunkData &chunkData) {
                             debuglog("Entered DIXT");
                             file.textureFileDataIDs =
                                     std::vector<uint32_t>(

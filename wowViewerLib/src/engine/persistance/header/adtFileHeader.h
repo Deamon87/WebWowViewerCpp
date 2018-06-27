@@ -66,7 +66,7 @@ struct SMDoodadDef {
     } flags;               // values from enum MDDFFlags.
 };
 
-;
+
 struct SMMapObjDef {
     uint32_t nameId;              // references an entry in the MWID chunk, specifying the model to use.
     uint32_t uniqueId;            // this ID should be unique for all ADTs currently loaded. Best, they are unique for the whole map.

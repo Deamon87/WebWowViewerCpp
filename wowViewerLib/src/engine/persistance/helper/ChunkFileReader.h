@@ -120,7 +120,7 @@ private:
             } else {
                 char *indentPtr = (char *) &subChunk.chunkIdent;
                 char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
-                debuglog("Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__);
+                //debuglog("Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__);
             }
 
             //TODO: HACK!
@@ -137,7 +137,7 @@ private:
             if (sectionHandlerProc->subChunks.size() == 0) {
                 char *indentPtr = (char *) &chunk.chunkIdent;
                 char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
-                debuglog("Not all data was read from "<< indent << " chunk, parsed from "<< __PRETTY_FUNCTION__);
+                //debuglog("Not all data was read from "<< indent << " chunk, parsed from "<< __PRETTY_FUNCTION__);
             } else {
                 int chunkLoadOffset = chunk.dataOffset+chunk.bytesRead;
                 int chunkEndOffset = chunk.dataOffset + chunk.chunkLen;

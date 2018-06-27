@@ -9,10 +9,10 @@ size_t hashFunction(const size_t & key){
 
 bool ShaderRuntimeData::hasUnf(const HashedString name) const {
     return m_uniformMap.find(name.Hash()) != m_uniformMap.end();
-};
+}
 GLuint ShaderRuntimeData::getUnf(const HashedString name) const {
     return m_uniformMap.at(name.Hash());
-};
+}
 
 
 GLuint ShaderRuntimeData::getUnfRT(const std::string &name) {

@@ -5,7 +5,7 @@
 #include "particleEmitter.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/animate.h"
-#include "../../shaderDefinitions.h"
+#include "../../shader/ShaderDefinitions.h"
 
 
 bool ParticleEmitter::randTableInited = false;

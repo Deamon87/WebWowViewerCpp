@@ -10,7 +10,7 @@
 #include "../../managers/animationManager.h"
 #include "mathfu/matrix.h"
 #include "../../persistance/header/M2FileHeader.h"
-#include "../../shaderDefinitions.h"
+#include "../../shader/ShaderDefinitions.h"
 
 //Legion shader stuff
 

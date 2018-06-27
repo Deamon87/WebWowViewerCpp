@@ -391,6 +391,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
                               std::vector<ParticleEmitter *> &particleEmitters
 
         /*cameraDetails, , particleEmitters*/) {
+    if (m_m2File->sequences.size <= 0) return;
 
     const M2Sequence* mainAnimationRecord = m_m2File->sequences[this->mainAnimationIndex];
     const M2Sequence* currentAnimationRecord = m_m2File->sequences[this->currentAnimationIndex];
@@ -716,7 +717,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
 
         lights[i].ambient_color = ambient_color;
         lights[i].ambient_intensity = ambient_intensity;
-        lights[i].ambient_color *= ambient_intensity;
+        lights[i].ambient_color = ambient_color * ambient_intensity;
 
         lights[i].diffuse_color = diffuse_color;
         lights[i].diffuse_intensity = diffuse_intensity;

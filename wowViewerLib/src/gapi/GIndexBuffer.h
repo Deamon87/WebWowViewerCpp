@@ -11,7 +11,7 @@ class GDevice;
 class GIndexBuffer {
     friend class GDevice;
 
-    GIndexBuffer(GDevice &device);
+    explicit GIndexBuffer(GDevice &device);
     ~GIndexBuffer();
 
 private:

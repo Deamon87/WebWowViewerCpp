@@ -4,6 +4,9 @@
 
 #ifndef WEBWOWVIEWERCPP_GDEVICE_H
 #define WEBWOWVIEWERCPP_GDEVICE_H
+class GVertexBuffer;
+class GVertexBufferBindings;
+class GIndexBuffer;
 
 #include "GVertexBufferBindings.h"
 #include "GIndexBuffer.h"

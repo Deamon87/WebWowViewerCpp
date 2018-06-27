@@ -100,6 +100,14 @@ void main() {
         vTexCoord = aTexCoord;
         vTexCoord2 = vPosition.xy * -0.239999995;
         vTexCoord3 = aTexCoord3; //not used
+    } else if (uVertexShader == 7) { //MapObjDiffuse_CompAlpha
+        vTexCoord = aTexCoord;
+        vTexCoord2 = vPosition.xy * -0.239999995;
+        vTexCoord3 = aTexCoord3; //not used
+    } else if (uVertexShader == 8) { //MapObjParallax
+        vTexCoord = aTexCoord;
+        vTexCoord2 = vPosition.xy * -0.239999995;
+        vTexCoord3 = aTexCoord3; //not used
     }
 
 
@@ -293,7 +301,28 @@ void main() {
         //TODO: there is env missing here
         vec3 env = ((tex2.rgb * tex2.a) * (1.0 - vColor2.a));
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    };
+    } else if (uPixelShader == 13) { //MapObjTwoLayerDiffuseEmissive
+        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+    } else if (uPixelShader == 14) { //MapObjAdditiveMaskedEnvMetal
+        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+    } else if (uPixelShader == 15) { //MapObjTwoLayerDiffuseMod2x
+        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+    } if (uPixelShader == 16) { //MapObjTwoLayerDiffuseMod2xNA
+        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+    } if (uPixelShader == 17) { //MapObjTwoLayerDiffuseAlpha
+        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+    } if (uPixelShader == 18) { //MapObjLod
+        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+    } if (uPixelShader == 19) { //MapObjParallax
+        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+    }
 
     //finalColor.rgb *= 4.0;
 

@@ -4,7 +4,7 @@
 
 #include "wmoGroupGeom.h"
 #include "../persistance/header/wmoFileHeader.h"
-#include "../shaderDefinitions.h"
+#include "../shader/ShaderDefinitions.h"
 #include <iostream>
 /*
 //0
@@ -128,7 +128,10 @@ enum class WmoVertexShader : int {
     MapObjSpecular_T1 = 3,
     MapObjDiffuse_Comp = 4,
     MapObjDiffuse_Comp_Refl = 5,
-    MapObjDiffuse_Comp_Terrain = 6
+    MapObjDiffuse_Comp_Terrain = 6,
+    MapObjDiffuse_CompAlpha = 7,
+    MapObjParallax = 8,
+
 };
 
 enum class WmoPixelShader : int {
@@ -146,111 +149,147 @@ enum class WmoPixelShader : int {
     MapObjMaskedEnvMetal = 10,
     MapObjEnvMetalEmissive = 11,
     MapObjTwoLayerDiffuseOpaque = 12,
-    MapObjTwoLayerDiffuseEmissive = 13
+    MapObjTwoLayerDiffuseEmissive = 13,
+    MapObjAdditiveMaskedEnvMetal = 14,
+    MapObjTwoLayerDiffuseMod2x = 15,
+    MapObjTwoLayerDiffuseMod2xNA = 16,
+    MapObjTwoLayerDiffuseAlpha = 17,
+    MapObjLod = 18,
+    MapObjParallax = 19
 };
 
 inline constexpr const int operator+ (WmoPixelShader const val) { return static_cast<const int>(val); };
 inline constexpr const int operator+ (WmoVertexShader const val) { return static_cast<const int>(val); };
 
-const int MAX_WMO_SHADERS = 17;
+const int MAX_WMO_SHADERS = 23;
 static const struct {
     int vertexShader;
     int pixelShader;
 } wmoMaterialShader[MAX_WMO_SHADERS] = {
     //MapObjDiffuse = 0
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
-        pixelShader: +WmoPixelShader::MapObjDiffuse,
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjDiffuse,
     },
     //MapObjSpecular = 1
     {
-        vertexShader: +WmoVertexShader::MapObjSpecular_T1,
-        pixelShader: +WmoPixelShader::MapObjSpecular,
+        +WmoVertexShader::MapObjSpecular_T1,
+        +WmoPixelShader::MapObjSpecular,
     },
     //MapObjMetal = 2
     {
-        vertexShader: +WmoVertexShader::MapObjSpecular_T1,
-        pixelShader: +WmoPixelShader::MapObjMetal,
+        +WmoVertexShader::MapObjSpecular_T1,
+        +WmoPixelShader::MapObjMetal,
     },
     //MapObjEnv = 3
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_T1_Refl,
-        pixelShader: +WmoPixelShader::MapObjEnv,
+        +WmoVertexShader::MapObjDiffuse_T1_Refl,
+        +WmoPixelShader::MapObjEnv,
     },
     //MapObjOpaque = 4
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
-        pixelShader: +WmoPixelShader::MapObjOpaque,
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjOpaque,
     },
     //MapObjEnvMetal = 5
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_T1_Refl,
-        pixelShader: +WmoPixelShader::MapObjEnvMetal,
+        +WmoVertexShader::MapObjDiffuse_T1_Refl,
+        +WmoPixelShader::MapObjEnvMetal,
     },
     //MapObjTwoLayerDiffuse = 6
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp,
-        pixelShader: +WmoPixelShader::MapObjTwoLayerDiffuse,
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjTwoLayerDiffuse,
     },
     //MapObjTwoLayerEnvMetal = 7
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
-        pixelShader: +  WmoPixelShader::MapObjDiffuse,
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjTwoLayerEnvMetal,
     },
     //TwoLayerTerrain = 8
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp_Terrain,
-        pixelShader: +WmoPixelShader::MapObjTwoLayerTerrain,
+        +WmoVertexShader::MapObjDiffuse_Comp_Terrain,
+        +WmoPixelShader::MapObjTwoLayerTerrain,
     },
     //MapObjDiffuseEmissive = 9
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp,
-        pixelShader: +WmoPixelShader::MapObjDiffuseEmissive,
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjDiffuseEmissive,
     },
     //waterWindow = 10
     {
-        vertexShader: +WmoVertexShader::None,
-        pixelShader: +WmoPixelShader::None,
+        +WmoVertexShader::None,
+        +WmoPixelShader::None,
     },
     //MapObjMaskedEnvMetal = 11
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
-        pixelShader: +WmoPixelShader::MapObjMaskedEnvMetal,
+        +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        +WmoPixelShader::MapObjMaskedEnvMetal,
     },
     //MapObjEnvMetalEmissive = 12
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
-        pixelShader: +WmoPixelShader::MapObjEnvMetalEmissive,
+        +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        +WmoPixelShader::MapObjEnvMetalEmissive,
     },
     //TwoLayerDiffuseOpaque = 13
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp,
-        pixelShader: +WmoPixelShader::MapObjTwoLayerDiffuseOpaque,
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjTwoLayerDiffuseOpaque,
     },
     //submarineWindow = 14
     {
-        vertexShader: +WmoVertexShader::None,
-        pixelShader: +WmoPixelShader::None,
+        +WmoVertexShader::None,
+        +WmoPixelShader::None,
     },
     //TwoLayerDiffuseEmissive = 15
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_Comp,
-        pixelShader: +WmoPixelShader::MapObjTwoLayerDiffuseEmissive,
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjTwoLayerDiffuseEmissive,
     },
     //MapObjDiffuseTerrain = 16
     {
-        vertexShader: +WmoVertexShader::MapObjDiffuse_T1,
-        pixelShader: +WmoPixelShader::MapObjDiffuse,
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjDiffuse,
     },
+    //17
+    {
+        +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        +WmoPixelShader::MapObjAdditiveMaskedEnvMetal,
+    },
+    //18
+    {
+        +WmoVertexShader::MapObjDiffuse_CompAlpha,
+        +WmoPixelShader::MapObjTwoLayerDiffuseMod2x,
+    },
+    //19
+    {
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjTwoLayerDiffuseMod2xNA,
+    },
+    //20
+    {
+        +WmoVertexShader::MapObjDiffuse_CompAlpha,
+        +WmoPixelShader::MapObjTwoLayerDiffuseAlpha,
+    },
+    //21
+    {
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjLod,
+    },
+    //22
+    {
+        +WmoVertexShader::MapObjParallax,
+        +WmoPixelShader::MapObjParallax,
+    }
 };
 
 chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
-    handler : [](WmoGroupGeom& object, ChunkData& chunkData){},
-    subChunks : {
+    [](WmoGroupGeom& object, ChunkData& chunkData){},
+    {
         {
             'MVER',
             {
-                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                [](WmoGroupGeom& object, ChunkData& chunkData){
                     debuglog("Entered MVER");
                 }
             }
@@ -258,14 +297,14 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
         {
             'MOGP',
             {
-                handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                [](WmoGroupGeom& object, ChunkData& chunkData){
                     chunkData.readValue(object.mogp);
                     debuglog("Entered MOGP");
                 },
-                subChunks: {
+                {
                     {
                         'MOPY', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOPY");
                                 object.mopyLen = chunkData.chunkLen / sizeof(SMOPoly);
                                 chunkData.readValues(object.mopy, object.mopyLen);
@@ -274,7 +313,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOVI', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOVI");
                                 object.indicesLen = chunkData.chunkLen / 2;
                                 chunkData.readValues(object.indicies, object.indicesLen);
@@ -283,7 +322,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOVT', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
 
                                 object.verticesLen = chunkData.chunkLen / sizeof(C3Vector);
                                 chunkData.readValues(object.verticles, object.verticesLen);
@@ -293,7 +332,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MONR', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 object.normalsLen = chunkData.chunkLen / sizeof(C3Vector);
                                 chunkData.readValues(object.normals, object.normalsLen);
                                 debuglog("Entered MONR");
@@ -302,7 +341,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOTV', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOTV");
 
                                 if (object.textureCoordsRead == 0) {
@@ -324,7 +363,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOCV', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOCV");
                                 if (object.mocvRead == 0 && object.mogp->flags.hasVertexColors) {
                                     if (object.mogp->flags.hasVertexColors) {
@@ -348,7 +387,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MODR', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 object.doodadRefsLen = chunkData.chunkLen / 2;
                                 chunkData.readValues(object.doodadRefs, object.doodadRefsLen);
                                 debuglog("Entered MODR");
@@ -357,7 +396,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOLR', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOLR");
                                 object.lightRefListLen = chunkData.chunkLen / 2;
                                 chunkData.readValues(object.lightRefList, object.lightRefListLen);
@@ -366,7 +405,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOBA', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 object.batchesLen = chunkData.chunkLen / sizeof(SMOBatch);
                                 chunkData.readValues(object.batches, object.batchesLen);
                                 debuglog("Entered MOBA");
@@ -375,7 +414,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOPB', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOPB");
                                 object.prePassBatchesLen = chunkData.chunkLen / sizeof(SMOBatch);
                                 chunkData.readValues(object.prePassbatches, object.prePassBatchesLen);
@@ -384,7 +423,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOBN', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 object.nodesLen = chunkData.chunkLen / sizeof(t_BSP_NODE);
                                 chunkData.readValues(object.bsp_nodes, object.nodesLen);
                                 debuglog("Entered MOBN");
@@ -393,7 +432,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOBR', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 object.bpsIndiciesLen = chunkData.chunkLen / sizeof(uint16_t);
                                 chunkData.readValues(object.bpsIndicies, object.bpsIndiciesLen);
                                 debuglog("Entered MOBR");
@@ -402,7 +441,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MDAL', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MDAL");
                                 object.use_replacement_for_header_color = 1;
                                 chunkData.readValue(object.replacement_for_header_color);
@@ -412,7 +451,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                     },
                     {
                         'MOLP', {
-                            handler: [](WmoGroupGeom& object, ChunkData& chunkData){
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOLP");
                                 object.molpCnt = chunkData.chunkLen / sizeof(MOLP);
                                 chunkData.readValues(object.molp, object.molpCnt);
@@ -612,7 +651,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu:
         }
 
         const SMOMaterial &material = materials[texIndex];
-//        assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
+        assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
         auto shaderId = material.shader;
         if (shaderId >= MAX_WMO_SHADERS) {
             shaderId = 0;

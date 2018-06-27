@@ -1,16 +1,15 @@
 //
 // Created by deamon on 11.01.18.
 //
-
 #include "wdlFile.h"
 
 chunkDef<WdlFile> WdlFile::wdlFileTable = {
-    handler : [](WdlFile &file, ChunkData &chunkData) {},
-    subChunks : {
+    [](WdlFile &file, ChunkData &chunkData) {},
+    {
         {
             'MLDD',
             {
-                handler: [](WdlFile &file, ChunkData &chunkData) {
+                [](WdlFile &file, ChunkData &chunkData) {
                     debuglog("Entered MLDD");
 
                     file.doodadDefObj_len = chunkData.chunkLen / sizeof(SMDoodadDef);
@@ -21,7 +20,7 @@ chunkDef<WdlFile> WdlFile::wdlFileTable = {
         {
             'MLMD',
             {
-                handler: [](WdlFile& file, ChunkData& chunkData){
+                [](WdlFile& file, ChunkData& chunkData){
                     debuglog("Entered MLMD");
 
                     file.mapObjDefObj_len = chunkData.chunkLen / sizeof(SMMapObjDefObj1);
