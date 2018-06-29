@@ -12,7 +12,7 @@ varying vec2 vTexcoord0;
 varying vec2 vTexcoord1;
 varying vec2 vTexcoord2;
 
-
+//Whole model
 uniform mat4 uPMatrix;
 uniform mat4 uViewMatrix;
 void main() {
@@ -33,6 +33,7 @@ varying vec2 vTexcoord0;
 varying vec2 vTexcoord1;
 varying vec2 vTexcoord2;
 
+//Individual meshes
 uniform float uAlphaTest;
 
 uniform sampler2D uTexture;

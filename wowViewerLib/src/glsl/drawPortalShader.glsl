@@ -2,8 +2,10 @@
 /* vertex shader code */
 attribute vec3 aPosition;
 
+//Whole scene
 uniform mat4 uLookAtMat;
 uniform mat4 uPMatrix;
+//Whole model
 uniform mat4 uPlacementMat;
 
 void main() {
@@ -16,6 +18,7 @@ void main() {
 #ifdef COMPILING_FS
 precision highp float;
 
+//Individual mesh
 uniform vec4 uColor;
 
 void main() {

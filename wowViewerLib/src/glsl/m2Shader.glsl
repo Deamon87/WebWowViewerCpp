@@ -23,33 +23,35 @@ attribute vec4 boneWeights;
 attribute vec2 aTexCoord;
 attribute vec2 aTexCoord2;
 
+//Whole scene
 uniform mediump mat4 uLookAtMat;
 uniform mat4 uPMatrix;
-uniform mat4 uBoneMatrixes[MAX_MATRIX_NUM];
-uniform int uVertexShader;
 
+// Whole model
+uniform mat4 uBoneMatrixes[MAX_MATRIX_NUM];
+
+//Individual meshes
+uniform int uVertexShader;
 uniform lowp int uIsAffectedByLight;
 uniform vec4 uColor;
 uniform float uTransparency;
+uniform mat4 uTextMat1;
+uniform mat4 uTextMat2;
 
-#ifdef INSTANCED
-attribute mat4 aPlacementMat;
-
-#else
+#ifndef INSTANCED
 uniform mat4 uPlacementMat;
 uniform vec4 uAmbientColor;
+#else
+attribute mat4 aPlacementMat;
 #endif
 
+//Shader output
 varying vec2 vTexCoord;
 varying vec2 vTexCoord2;
 varying vec2 vTexCoord3;
 varying vec3 vNormal;
 varying vec3 vPosition;
 varying vec4 vDiffuseColor;
-
-uniform mat4 uTextMat1;
-uniform mat4 uTextMat2;
-
 
 #ifdef drawBuffersIsSupported
 varying float fs_Depth;
@@ -205,23 +207,14 @@ varying vec3 vPosition;
 
 varying vec4 vDiffuseColor;
 
-uniform lowp int isTransparent;
-
-uniform int uBlendMode;
-uniform int uPixelShader;
-uniform int uUnFogged;
-
-
-uniform vec3 uFogColor;
-
-//uniform vec4  uGlobalLighting;
-uniform float uAlphaTest;
-
+//Whole scene
+uniform mediump mat4 uLookAtMat;
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
 uniform sampler2D uTexture4;
 
+//Whole model
 uniform vec3 uViewUp;
 uniform vec3 uSunDir;
 uniform vec3 uSunColor;
@@ -230,7 +223,13 @@ uniform vec4 uAmbientLight;
 uniform float uFogStart;
 uniform float uFogEnd;
 
-uniform mediump mat4 uLookAtMat;
+//Individual meshes
+uniform int uBlendMode;
+uniform int uPixelShader;
+uniform int uUnFogged;
+
+uniform vec3 uFogColor;
+uniform float uAlphaTest;
 
 uniform lowp int uIsAffectedByLight;
 struct LocalLight

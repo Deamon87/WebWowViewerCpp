@@ -14,6 +14,7 @@ class GIndexBuffer;
 #include "GTexture.h"
 
 enum class EGxBlendEnum {
+    GxBlend_UNDEFINED = -1,
     GxBlend_Opaque = 0,
     GxBlend_AlphaKey = 1,
     GxBlend_Alpha = 2,
@@ -32,24 +33,39 @@ enum class EGxBlendEnum {
 };
 
 class GDevice {
-
-
 public:
+    void reset() {
+        m_lastDepthWrite = false;
+        m_lastDepthCulling = false;
+        m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
+        m_lastBindIndexBuffer = nullptr;
+        m_lastBindVertexBuffer = nullptr;
+        m_vertexBufferBindings = nullptr;
+
+        m_lastTexture1 = nullptr;
+        m_lastTexture2 = nullptr;
+        m_lastTexture3 = nullptr;
+    }
+
     void bindIndexBuffer(GIndexBuffer *buffer);
     void bindVertexBuffer(GVertexBuffer *buffer);
     void bindVertexBufferBindings(GVertexBufferBindings *buffer);
 
 private:
-    bool m_lastDepthWrite;
-    bool m_lastDepthCulling;
-    int m_lastBlendMode;
-    GIndexBuffer *m_lastBindIndexBuffer;
-    GVertexBuffer *m_lastBindVertexBuffer;
-    GVertexBufferBindings *m_vertexBufferBindings;
+    bool m_lastDepthWrite = false;
+    bool m_lastDepthCulling = false;
+    EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
+    GIndexBuffer *m_lastBindIndexBuffer = nullptr;
+    GVertexBuffer *m_lastBindVertexBuffer = nullptr;
+    GVertexBufferBindings *m_vertexBufferBindings = nullptr;
 
-    GTexture m_lastTexture1;
-    GTexture m_lastTexture2;
-    GTexture m_lastTexture3;
+    GTexture *m_lastTexture1 = nullptr;
+    GTexture *m_lastTexture2 = nullptr;
+    GTexture *m_lastTexture3 = nullptr;
+
+
 };
+
+
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H
