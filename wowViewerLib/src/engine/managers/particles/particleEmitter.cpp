@@ -6,6 +6,83 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/animate.h"
 #include "../../shader/ShaderDefinitions.h"
+#include "generators/CParticleGenerator.h"
+#include "generators/CSphereGenerator.h"
+#include "generators/CPlaneGenerator.h"
+
+
+ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object) : m_seed(0), m_api(api), m2Object(m2Object) {
+
+    if (!randTableInited) {
+        for (int i = 0; i < 128; i++) {
+            RandTable[i] = (float)std::rand() / (float)RAND_MAX;
+        }
+        randTableInited = true;
+    }
+
+    glGenBuffers(1, &indexVBO);
+    glGenBuffers(1, &bufferVBO);
+
+
+    m_data = particle;
+
+    switch (m_data->old.emitterType) {
+        case 1:
+            this->generator = new CPlaneGenerator(this->m_seed, particle);
+            break;
+        case 2:
+            this->generator = new CSphereGenerator(this->m_seed, particle, 0 != (m_data->old.flags & 0x100));
+            break;
+        default:
+            this->generator = nullptr;
+            std::cout << "Found unimplemented generator " << m_data->old.emitterType << std::flush;
+            break;
+    }
+
+//        std::cout << "particleId = " << m_data->old.particleId
+//                  << "Mentioned models :" << std::endl
+//                  << "geometry_model_filename = " << m_data->old.geometry_model_filename.toString() << std::endl
+//                  << "recursion_model_filename = " << m_data->old.recursion_model_filename.toString()
+//                  << std::endl << std::endl << std::flush;
+
+    const float followDen = m_data->old.followSpeed2 - m_data->old.followSpeed1;
+    if (!feq(followDen, 0)) {
+        this->followMult = (m_data->old.followScale2 - m_data->old.followScale1) / followDen;
+        this->followBase = m_data->old.followScale1 - m_data->old.followSpeed1 * this->followMult;
+    }
+    else {
+        this->followMult = 0;
+        this->followBase = 0;
+    }
+
+    uint16_t cols = m_data->old.textureDimensions_columns;
+    if (cols <= 0) {
+        cols = 1;
+    }
+    uint16_t rows = m_data->old.textureDimensions_rows;
+    if (rows <= 0) {
+        rows = 1;
+    }
+    this->textureIndexMask = cols * rows - 1;
+    this->textureStartIndex = 0;
+    this->textureColBits = 0;//_BitScanReverse(cols, 0);
+    this->textureColMask = cols - 1;
+    if (m_data->old.flags & 0x200000) {
+        this->textureStartIndex = this->m_seed.uint32t() & this->textureIndexMask;
+    }
+    this->texScaleX = 1.0f / cols;
+    this->texScaleY = 1.0f / rows;
+
+    if (m_data->old.flags & 0x10100000) {
+        const bool isMultitex = (0 != (1 & (m_data->old.flags >> 0x1c)));
+        if (isMultitex) {
+            this->particleType = 2;
+        }
+        else {
+            this->particleType = 3;
+        }
+    }
+}
 
 
 bool ParticleEmitter::randTableInited = false;
@@ -18,7 +95,7 @@ void ParticleEmitter::resizeParticleBuffer() {
 //    }
 }
 
-void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 boneModelMat) {
+void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &boneModelMat) {
     if (getGenerator() == nullptr) return;
 
     this->resizeParticleBuffer();
@@ -398,10 +475,6 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<ParticleBuffStruc
             }
         }
 
-
-//        m0 += 0.5;
-//        m1 += 0.5;
-
         // build vertices from coords:
         if (this->particleType >= 2) {
             this->BuildQuadT3(szVertexBuf, m0, m1, viewPos, color, alpha, texStartX, texStartY, p.texPos);
@@ -466,46 +539,38 @@ ParticleEmitter::BuildQuadT3(
     static const float vys[4] = {1, -1, 1, -1};
     static const float txs[4] = {0, 0, 1, 1};
     static const float tys[4] = {0, 1, 0, 1};
+    ParticleBuffStructQuad record;
 
-    struct ParticleBuffStruct {
-        C3Vector position; //0
-        C4Vector color;    //12
-        C2Vector textCoord0; //28
-        C2Vector textCoord1; //36
-        C2Vector textCoord2; //44
-    };
-
-    std::vector<ParticleBuffStruct> buffer;
-    buffer.reserve(4);
     mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
-//
-//    for (int i = 0; i < 4; i++) {
-//        ParticleBuffStruct record;
-//        record.position = ( inverseLookAt * mathfu::vec4(
-//                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
-//                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
-//                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
-//                1.0
-//        )).xyz();
-//        record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
-//
-//        record.textCoord0 =
-//            mathfu::vec2(txs[i] * this->texScaleX + texStartX,
-//                         tys[i] * this->texScaleY + texStartY);
-//
-//        record.textCoord1 =
-//            mathfu::vec2(
-//                txs[i] * (this->m_data->old.multiTextureParamX[0]/32.0f) + texPos[0].x,
-//                tys[i] * (this->m_data->old.multiTextureParamX[0]/32.0f) + texPos[0].y);
-//        record.textCoord2 =
-//            mathfu::vec2(
-//                txs[i] * (this->m_data->old.multiTextureParamX[1]/32.0f) + texPos[1].x,
-//                tys[i] * (this->m_data->old.multiTextureParamX[1]/32.0f) + texPos[1].y);
-//
-//        buffer.emplace_back(record);
-//    }
 
-//    std::copy((uint8_t *)&buffer[0], (uint8_t *)&buffer[0] + buffer.size()*sizeof(ParticleBuffStruct), std::back_inserter(szVertexBuf));
+    for (int i = 0; i < 4; i++) {
+
+        record.particle[i].position = ( inverseLookAt * mathfu::vec4(
+                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
+                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
+                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
+                1.0
+        )).xyz();
+        record.particle[i].color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
+
+        record.particle[i].textCoord0 =
+            mathfu::vec2(txs[i] * this->texScaleX + texStartX,
+                         tys[i] * this->texScaleY + texStartY);
+
+        record.particle[i].textCoord1 =
+            mathfu::vec2(
+                txs[i] * (this->m_data->old.multiTextureParamX[0]/32.0f) + texPos[0].x,
+                tys[i] * (this->m_data->old.multiTextureParamX[0]/32.0f) + texPos[0].y);
+        record.particle[i].textCoord2 =
+            mathfu::vec2(
+                txs[i] * (this->m_data->old.multiTextureParamX[1]/32.0f) + texPos[1].x,
+                tys[i] * (this->m_data->old.multiTextureParamX[1]/32.0f) + texPos[1].y);
+
+    }
+
+    long index = szVertexBuf.size();
+    szVertexBuf.resize(szVertexBuf.size() + 1);
+    szVertexBuf[index] = record;
 }
 
 void

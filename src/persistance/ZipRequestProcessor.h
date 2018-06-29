@@ -12,6 +12,7 @@
 #include <fstream>
 #include <regex>
 #include <functional>
+#include <vector>
 
 
 using namespace std::placeholders;

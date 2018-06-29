@@ -10,11 +10,9 @@
 #include <random>
 //#include <strings.h>
 #include "../../persistance/header/M2FileHeader.h"
-#include "generators/CParticleGenerator.h"
-#include "generators/CSphereGenerator.h"
-#include "generators/CPlaneGenerator.h"
 #include "../../wowInnerApi.h"
 #include "../../algorithms/mathHelper.h"
+#include "generators/CParticleGenerator.h"
 
 struct ParticleForces {
     mathfu::vec3 drift; // 0
@@ -44,81 +42,9 @@ struct ParticleBuffStructQuad {
 
 class ParticleEmitter {
 public:
-    ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object) : m_seed(0), m_api(api), m2Object(m2Object) {
+    ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object);
 
-        if (!randTableInited) {
-            for (int i = 0; i < 128; i++) {
-                RandTable[i] = (float)std::rand() / (float)RAND_MAX;
-            }
-            randTableInited = true;
-        }
-
-        glGenBuffers(1, &indexVBO);
-        glGenBuffers(1, &bufferVBO);
-
-
-        m_data = particle;
-
-        switch (m_data->old.emitterType) {
-            case 1:
-                this->generator = new CPlaneGenerator(this->m_seed, particle);
-                break;
-            case 2:
-                this->generator = new CSphereGenerator(this->m_seed, particle, 0 != (m_data->old.flags & 0x100));
-                break;
-            default:
-                this->generator = nullptr;
-                std::cout << "Found unimplemented generator " << m_data->old.emitterType << std::flush;
-                break;
-        }
-
-//        std::cout << "particleId = " << m_data->old.particleId
-//                  << "Mentioned models :" << std::endl
-//                  << "geometry_model_filename = " << m_data->old.geometry_model_filename.toString() << std::endl
-//                  << "recursion_model_filename = " << m_data->old.recursion_model_filename.toString()
-//                  << std::endl << std::endl << std::flush;
-
-        const float followDen = m_data->old.followSpeed2 - m_data->old.followSpeed1;
-        if (!feq(followDen, 0)) {
-            this->followMult = (m_data->old.followScale2 - m_data->old.followScale1) / followDen;
-            this->followBase = m_data->old.followScale1 - m_data->old.followSpeed1 * this->followMult;
-        }
-        else {
-            this->followMult = 0;
-            this->followBase = 0;
-        }
-
-        uint16_t cols = m_data->old.textureDimensions_columns;
-        if (cols <= 0) {
-            cols = 1;
-        }
-        uint16_t rows = m_data->old.textureDimensions_rows;
-        if (rows <= 0) {
-            rows = 1;
-        }
-        this->textureIndexMask = cols * rows - 1;
-        this->textureStartIndex = 0;
-		this->textureColBits = 0;//_BitScanReverse(cols, 0);
-        this->textureColMask = cols - 1;
-        if (m_data->old.flags & 0x200000) {
-            this->textureStartIndex = this->m_seed.uint32t() & this->textureIndexMask;
-        }
-        this->texScaleX = 1.0f / cols;
-        this->texScaleY = 1.0f / rows;
-
-        if (m_data->old.flags & 0x10100000) {
-            const bool isMultitex = (0 != (1 & (m_data->old.flags >> 0x1c)));
-            if (isMultitex) {
-                this->particleType = 2;
-            }
-            else {
-                this->particleType = 3;
-            }
-        }
-    }
-
-
-    void Update(animTime_t delta, mathfu::mat4 transform);
+    void Update(animTime_t delta, mathfu::mat4 &transform);
     void prepearBuffers(mathfu::mat4 &viewMatrix);
     CParticleGenerator * getGenerator(){
         return generator;

@@ -11,6 +11,7 @@ class GIndexBuffer;
 #include "GVertexBufferBindings.h"
 #include "GIndexBuffer.h"
 #include "GVertexBuffer.h"
+#include "GTexture.h"
 
 enum class EGxBlendEnum {
     GxBlend_Opaque = 0,
@@ -39,12 +40,16 @@ public:
     void bindVertexBufferBindings(GVertexBufferBindings *buffer);
 
 private:
-    bool m_depthWrite;
-    bool m_depthCulling;
-    int blendMode;
+    bool m_lastDepthWrite;
+    bool m_lastDepthCulling;
+    int m_lastBlendMode;
     GIndexBuffer *m_lastBindIndexBuffer;
     GVertexBuffer *m_lastBindVertexBuffer;
     GVertexBufferBindings *m_vertexBufferBindings;
+
+    GTexture m_lastTexture1;
+    GTexture m_lastTexture2;
+    GTexture m_lastTexture3;
 };
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H

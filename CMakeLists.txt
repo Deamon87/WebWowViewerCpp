@@ -174,7 +174,7 @@ add_dependencies(AWebWoWViewerCpp casc_static)
 #TODO: platform dependant!!
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	add_dependencies(AWebWoWViewerCpp glfw)
-	#set_property(TARGET AWebWoWViewerCpp PROPERTY CXX_STANDARD 17)
+	set_property(TARGET AWebWoWViewerCpp PROPERTY CXX_STANDARD 17)
 endif()
 
 link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})

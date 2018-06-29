@@ -218,8 +218,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0,  0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -261,8 +261,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\brokenisles\\dalaran2.wmo");
-//    currentScene = new WmoScene(this,
-//        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
+    currentScene = new WmoScene(this,
+        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
 
 //   m_firstCamera.setCameraPos(0, 0, 0);
@@ -1240,7 +1240,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    float farPlane = 2000;
+    float farPlane = 500;
     float nearPlane = 1;
     float fov = toRadian(45.0);
     M2CameraResult cameraResult;

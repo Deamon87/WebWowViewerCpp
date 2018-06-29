@@ -446,6 +446,7 @@ void WmoObject::drawDebugLights(){
 
 
 void WmoObject::drawTransformedPortalPoints(){
+    return;
 #ifndef CULLED_NO_PORTAL_DRAWING
     if (!m_loaded) return;
 
@@ -528,6 +529,7 @@ void WmoObject::drawTransformedPortalPoints(){
 }
 
 void WmoObject::drawTransformedAntiPortalPoints(){
+    return;
 #ifndef CULLED_NO_PORTAL_DRAWING
     if (!m_loaded) return;
 

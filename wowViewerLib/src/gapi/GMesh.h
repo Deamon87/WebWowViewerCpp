@@ -7,20 +7,24 @@
 
 
 #include "GVertexBufferBindings.h"
+#include "GTexture.h"
 
 class GMesh {
-
+    friend class GDevice;
 
 private:
     GVertexBufferBindings bindings;
     bool m_depthWrite;
     bool m_depthCulling;
-    int blendMode;
+    int m_blendMode;
 
-    int start;
-    int end;
-    int element;
+    int m_start;
+    int m_end;
+    int m_element;
 
+    GTexture m_texture1;
+    GTexture m_texture2;
+    GTexture m_texture3;
 };
 
 

@@ -635,8 +635,8 @@ void Map::drawExterior() {
 //        if (config.getUsePortalCulling()) {
 //            this.wmoRenderedThisFrame[i].drawPortalBased(false)
 //        } else {
-        this->wmoRenderedThisFrameArr[i]->drawTransformedPortalPoints();
-        this->wmoRenderedThisFrameArr[i]->drawTransformedAntiPortalPoints();
+//        this->wmoRenderedThisFrameArr[i]->drawTransformedPortalPoints();
+//        this->wmoRenderedThisFrameArr[i]->drawTransformedAntiPortalPoints();
 //        }
     }
 
