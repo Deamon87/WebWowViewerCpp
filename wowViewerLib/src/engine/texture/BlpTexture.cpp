@@ -9,6 +9,7 @@
 
 #include "BlpTexture.h"
 #include "DxtDecompress.h"
+#include "../persistance/helper/ChunkFileReader.h"
 
 enum class TextureFormat {
     None,
@@ -156,6 +157,10 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
             case TextureFormat::S3TC_RGBA_DXT5:
                 textureGPUFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
                 break;
+
+            default:
+                debuglog("Unknown texture format found")
+                break;
         }
 //    }
 
@@ -237,7 +242,7 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
 
         case TextureFormat::BGRA:
             for( int k = 0; k < mipmaps.size(); k++) {
-                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
                              &mipmaps[k].texture[0]);
             }
             break;

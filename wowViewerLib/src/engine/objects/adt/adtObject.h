@@ -98,6 +98,10 @@ private:
     std::vector<int> globIndexX;
     std::vector<int> globIndexY;
 
+    int adt_x;
+    int adt_y;
+
+
     std::string m_adtFileTemplate;
 
     bool drawChunk[256] = {};

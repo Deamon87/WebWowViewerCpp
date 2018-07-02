@@ -6,6 +6,7 @@
 #include "../../shader/ShaderDefinitions.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../persistance/adtFile.h"
+#include "../../persistance/wdtFile.h"
 
 
 void AdtObject::loadingFinished() {
@@ -743,7 +744,7 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
         if (m_adtFile->getIsLoaded() &&
                 m_adtFileObj->getIsLoaded() &&
                 m_adtFileObjLod->getIsLoaded() &&
-                m_adtFileLod->getIsLoaded() &&
+                (m_adtFileLod->getIsLoaded() || !m_wdtFile->mphd->flags.unk_0x0100) &&
                 m_adtFileTex->getIsLoaded()) {
             this->loadingFinished();
             m_loaded = true;
@@ -762,30 +763,31 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     lodCommands.clear();
 
     //For new ADT with _lod.adt
-    mathfu::vec3 adtPos = mathfu::vec3(m_adtFile->mapTile[m_adtFile->mcnkMap[0][0]].position);
-    atLeastOneIsDrawn |= iterateQuadTree(cameraPos, adtPos,
-        0, 0, 1.0,
-        0, 0,
-        m_adtFileLod->mlnds, 0,
-        frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates,
-        wmoCandidates);
-
-    //For old ADT without _lod.adt
-//    checkNonLodChunkCulling(cameraPos,
-//                            frustumPlanes, frustumPoints, hullLines,
-//                            0, 0, 16, 16);
-//    checkReferences(cameraPos, frustumPlanes, frustumPoints, hullLines,
-//                    lookAtMat4, 5,
-//                    m2ObjectsCandidates, wmoCandidates,
-//                    0, 0,
-//                    16, 16);
-
+    if (m_wdtFile->mphd->flags.unk_0x0100) {
+        mathfu::vec3 adtPos = mathfu::vec3(m_adtFile->mapTile[m_adtFile->mcnkMap[0][0]].position);
+        atLeastOneIsDrawn |= iterateQuadTree(cameraPos, adtPos,
+                                             0, 0, 1.0,
+                                             0, 0,
+                                             m_adtFileLod->mlnds, 0,
+                                             frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates,
+                                             wmoCandidates);
+    } else {
+        //For old ADT without _lod.adt
+        checkNonLodChunkCulling(cameraPos,
+                                frustumPlanes, frustumPoints, hullLines,
+                                0, 0, 16, 16);
+        checkReferences(cameraPos, frustumPlanes, frustumPoints, hullLines,
+                        lookAtMat4, 5,
+                        m2ObjectsCandidates, wmoCandidates,
+                        0, 0,
+                        16, 16);
+    }
 
 
     return atLeastOneIsDrawn;
 }
 
-AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(){
+AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(), adt_x(adt_x), adt_y(adt_y){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);
