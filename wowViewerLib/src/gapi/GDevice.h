@@ -12,6 +12,7 @@ class GIndexBuffer;
 #include "GIndexBuffer.h"
 #include "GVertexBuffer.h"
 #include "GTexture.h"
+#include "GUniformBuffer.h"
 
 enum class EGxBlendEnum {
     GxBlend_UNDEFINED = -1,
@@ -45,10 +46,15 @@ public:
         m_lastTexture1 = nullptr;
         m_lastTexture2 = nullptr;
         m_lastTexture3 = nullptr;
+
+        m_uniformBuffer[0] = nullptr;
+        m_uniformBuffer[1] = nullptr;
+        m_uniformBuffer[2] = nullptr;
     }
 
     void bindIndexBuffer(GIndexBuffer *buffer);
     void bindVertexBuffer(GVertexBuffer *buffer);
+    void bindUniformBuffer(GUniformBuffer *buffer, int slot);
     void bindVertexBufferBindings(GVertexBufferBindings *buffer);
 
 private:
@@ -63,6 +69,7 @@ private:
     GTexture *m_lastTexture2 = nullptr;
     GTexture *m_lastTexture3 = nullptr;
 
+    GUniformBuffer * m_uniformBuffer[3] = {nullptr};
 
 };
 

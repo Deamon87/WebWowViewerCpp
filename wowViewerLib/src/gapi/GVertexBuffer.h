@@ -11,7 +11,7 @@ class GDevice;
 class GVertexBuffer {
     friend class GDevice;
 
-    GVertexBuffer(GDevice &device);
+    explicit GVertexBuffer(GDevice &device);
     ~GVertexBuffer();
 private:
     void createBuffer();
@@ -25,8 +25,11 @@ public:
 private:
     GDevice &m_device;
 
+
+
 private:
-    void * buffer = nullptr;
+    void * pIdentifierBuffer = nullptr;
+
 };
 
 

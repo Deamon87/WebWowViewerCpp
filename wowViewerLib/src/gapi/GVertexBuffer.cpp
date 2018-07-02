@@ -5,20 +5,20 @@
 #include "GVertexBuffer.h"
 
 GVertexBuffer::GVertexBuffer(GDevice &device)  : m_device(device) {
-    buffer = new GLuint;
+    pIdentifierBuffer = new GLuint;
     createBuffer();
 }
 GVertexBuffer::~GVertexBuffer() {
     destroyBuffer();
-    delete (GLuint *)buffer;
+    delete (GLuint *)pIdentifierBuffer;
 }
 
 void GVertexBuffer::createBuffer() {
-    glGenBuffers(1, (GLuint *)this->buffer);
+    glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
 }
 
 void GVertexBuffer::destroyBuffer() {
-    glDeleteBuffers(1, (GLuint *)this->buffer);
+    glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
 }
 
 void GVertexBuffer::uploadData(void * data, int length) {
@@ -28,7 +28,7 @@ void GVertexBuffer::uploadData(void * data, int length) {
 }
 
 void GVertexBuffer::bind() {
-    glBindBuffer(GL_ARRAY_BUFFER, *(GLuint *) this->buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, *(GLuint *) this->pIdentifierBuffer);
 }
 
 void GVertexBuffer::unbind() {

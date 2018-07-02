@@ -43,13 +43,25 @@ void GDevice::bindIndexBuffer(GIndexBuffer *buffer) {
 
 void GDevice::bindVertexBuffer(GVertexBuffer *buffer)  {
     if (buffer == nullptr) {
-      if (m_lastBindVertexBuffer != nullptr) {
+        if (m_lastBindVertexBuffer != nullptr) {
             m_lastBindVertexBuffer->unbind();
             m_lastBindVertexBuffer = nullptr;
         }
     }  else if (buffer != m_lastBindVertexBuffer) {
         buffer->bind();
         m_lastBindVertexBuffer = buffer;
+    }
+}
+
+void GDevice::bindUniformBuffer(GUniformBuffer *buffer, int slot)  {
+    if (buffer == nullptr) {
+        if (m_uniformBuffer[slot] != nullptr) {
+            m_uniformBuffer[slot]->unbind();
+            m_uniformBuffer[slot] = nullptr;
+        }
+    }  else if (buffer != m_uniformBuffer[slot]) {
+        buffer->bind();
+        m_uniformBuffer[slot] = buffer;
     }
 }
 
