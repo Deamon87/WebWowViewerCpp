@@ -568,7 +568,7 @@ void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColor
                     defaultAlpha
             );
 
-            resultAlpha1 = resultAlpha1 * blendAlpha + (resultAlpha2 * (1.0 - blendAlpha));
+            resultAlpha1 = resultAlpha1 * blendAlpha + (resultAlpha2 * (1.0f - blendAlpha));
         }
 
         subMeshColors[i][3] = resultAlpha1;

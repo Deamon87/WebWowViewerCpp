@@ -4,6 +4,6 @@
 
 #include "GShaderPermutation.h"
 
-GShaderPermutation::GShaderPermutation(std::string &shaderName, GDevice & device) {
+GShaderPermutation::GShaderPermutation(std::string &shaderName, GDevice & device) : m_device(device){
 
 }

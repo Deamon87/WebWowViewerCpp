@@ -7,6 +7,7 @@
 class GVertexBuffer;
 class GVertexBufferBindings;
 class GIndexBuffer;
+class GUniformBuffer;
 
 #include "GVertexBufferBindings.h"
 #include "GIndexBuffer.h"

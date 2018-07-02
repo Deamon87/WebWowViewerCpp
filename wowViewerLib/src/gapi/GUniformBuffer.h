@@ -18,7 +18,7 @@ public:
     ~GUniformBuffer();
 
     template <typename T>
-    T& getObject<T>() {
+    T& getObject() {
         assert(sizeof(T) != m_size);
         return *(T *)pContent;
     }
