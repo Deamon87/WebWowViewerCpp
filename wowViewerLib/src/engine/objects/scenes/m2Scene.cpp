@@ -52,4 +52,6 @@ bool M2Scene::getCameraSettings(M2CameraResult &result) {
 void M2Scene::setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
     doOverride = override;
     m_ambientColorOverride = ambientColor;
+
+    m_m2Object->setAmbientColorOverride(ambientColor, override);
 }

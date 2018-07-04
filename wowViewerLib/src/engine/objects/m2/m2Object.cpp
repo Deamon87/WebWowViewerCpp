@@ -1088,13 +1088,18 @@ mathfu::vec4 M2Object::getAmbientLight() {
 //            return m_ambientColorOverride;
         return mathfu::vec4(m_ambientColorOverride.x, m_ambientColorOverride.y, m_ambientColorOverride.z, m_ambientColorOverride.w);
     }
+
     mathfu::vec4 ambientColor = m_api->getGlobalAmbientColor();
-//        for (int i = 0; i < lights.size(); ++i) {
-//            if (lights[i].ambient_intensity > 0) {
-//                ambientColor += lights[i].ambient_color * lights[i].ambient_intensity;
-//            }
-//        }
-    return ambientColor;
+    if (m_modelAsScene) {
+        mathfu::vec4 ambientColor(0,0,0,0);
+        for (int i = 0; i < lights.size(); ++i) {
+            if (lights[i].ambient_intensity > 0) {
+                ambientColor += lights[i].ambient_color; //* lights[i].ambient_intensity;
+            }
+        }
+    }
+
+    return ambientColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
 };
 
 void M2Object::drawParticles() {

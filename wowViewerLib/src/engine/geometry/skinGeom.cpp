@@ -5,7 +5,7 @@
 #include "skinGeom.h"
 #include "../persistance/header/M2FileHeader.h"
 
-void SkinGeom::process(std::vector<unsigned char> &skinFile) {
+void SkinGeom::process(std::vector<unsigned char> &skinFile, std::string &fileName) {
     this->m2Skin = skinFile;
 
     M2SkinProfile *skinHeader = (M2SkinProfile *) &this->m2Skin[0];

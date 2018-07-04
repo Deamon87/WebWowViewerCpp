@@ -12,7 +12,7 @@
 class TexFile {
 public:
     TexFile() {};
-    void process(std::vector<unsigned char> &wdlFile);
+    void process(std::vector<unsigned char> &wdlFile, std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     SBlobTexture * entries = nullptr;

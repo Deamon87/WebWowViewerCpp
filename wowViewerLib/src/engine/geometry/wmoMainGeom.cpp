@@ -155,7 +155,7 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
 
 
 
-void WmoMainGeom::process(std::vector<unsigned char> &wmoMainFile) {
+void WmoMainGeom::process(std::vector<unsigned char> &wmoMainFile, std::string &fileName) {
     m_wmoMainFile = wmoMainFile;
 
     CChunkFileReader reader(m_wmoMainFile);

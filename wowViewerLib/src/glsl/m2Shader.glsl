@@ -197,7 +197,12 @@ void main() {
 #endif //COMPILING_VS
 
 #ifdef COMPILING_FS
-
+struct LocalLight
+{
+    vec4 color;
+    vec4 position;
+    vec4 attenuation;
+};
 precision highp float;
 varying vec3 vNormal;
 varying vec2 vTexCoord;
@@ -232,17 +237,12 @@ uniform vec3 uFogColor;
 uniform float uAlphaTest;
 
 uniform lowp int uIsAffectedByLight;
-struct LocalLight
-{
-    vec4 color;
-    vec4 position;
-    vec4 attenuation;
-};
-
-uniform vec4 uPcColor;
 
 uniform LocalLight pc_lights[4];
 uniform lowp int uLightCount;
+
+uniform vec4 uPcColor;
+
 #ifdef drawBuffersIsSupported
 varying float fs_Depth;
 #endif

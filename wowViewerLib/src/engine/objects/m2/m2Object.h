@@ -54,6 +54,7 @@ private:
 
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
+    bool m_modelAsScene = false;
 
 
     bool m_hasBillboards = false;

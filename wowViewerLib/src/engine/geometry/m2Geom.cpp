@@ -25,8 +25,7 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
         },
         {
                 'DIFS',
-                {
-                    [](M2Geom &file, ChunkData &chunkData) {
+                {[](M2Geom &file, ChunkData &chunkData) {
                         debuglog("Entered SFID");
                         file.skinFileDataIDs =
                                 std::vector<uint32_t>(
@@ -203,7 +202,7 @@ void initM2Camera(M2Data *m2Header, void *m2File) {
     }
 }
 
-void M2Geom::process(std::vector<unsigned char> &m2File) {
+void M2Geom::process(std::vector<unsigned char> &m2File, std::string &fileName) {
     this->m2File = m2File;
 
     if (

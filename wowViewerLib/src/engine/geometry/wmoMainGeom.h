@@ -11,7 +11,7 @@
 
 class WmoMainGeom {
 public:
-    void process(std::vector<unsigned char> &wmoMainFile);
+    void process(std::vector<unsigned char> &wmoMainFile, std::string &fileName);
     bool getIsLoaded();
 
 private:

@@ -12,7 +12,7 @@
 
 class SkinGeom {
 public:
-    void process(std::vector<unsigned char> &skinFile);
+    void process(std::vector<unsigned char> &skinFile, std::string &fileName);
     void createVBO();
     bool isLoaded() { return m_loaded; };
     void setupAttributes();

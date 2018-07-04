@@ -543,9 +543,9 @@ void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColor
             colorResult1 = colorResult1 * blendAlpha + (colorResult2 * (1.0f - (float)blendAlpha));
         }
 
-        subMeshColors[i].x = colorResult1.x;
+        subMeshColors[i].x = colorResult1.z;
         subMeshColors[i].y = colorResult1.y;
-        subMeshColors[i].z = colorResult1.z;
+        subMeshColors[i].z = colorResult1.x;
 
         float resultAlpha1 = animateTrack<fixed16, float>(time,
             animationRecord->duration,
@@ -630,6 +630,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
     auto animationRecord = m_m2File->sequences[animationIndex];
 
     for (int i = 0; i < lightRecords.size; i++) {
+
         M2Light * lightRecord = lightRecords.getElement(i);
 
         mathfu::vec4 ambient_color =
@@ -663,6 +664,13 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                         this->globalSequenceTimes,
                         defaultVector
                 ), 1.0);
+
+        if (i == 1) {
+            diffuse_color = mathfu::vec4(diffuse_color.x, diffuse_color.z, diffuse_color.y, diffuse_color.w);
+        }
+        if (i == 0) {
+//            diffuse_color = mathfu::vec4(diffuse_color.y, diffuse_color.y, diffuse_color.z, diffuse_color.w);
+        }
 
 
         float diffuse_intensity =
@@ -714,6 +722,10 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
 
         mathfu::vec4 lightWorldPos = boneMat * mathfu::vec4(mathfu::vec3(pos_vec), 1.0);
         lightWorldPos.w = 1.0;
+
+//        if (i == 0) {
+            diffuse_intensity = 1.0;
+//        }
 
         lights[i].ambient_color = ambient_color;
         lights[i].ambient_intensity = ambient_intensity;

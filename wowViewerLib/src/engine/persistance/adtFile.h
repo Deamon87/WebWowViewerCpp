@@ -33,7 +33,7 @@ public:
     AdtFile() {};
 
     std::vector<uint8_t> processTexture(const MPHDFlags &wdtObjFlags, int i);
-    void process(std::vector<unsigned char> &adtFile);
+    void process(std::vector<unsigned char> &adtFile, std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
     void setIsMain(bool isMain) { m_mainAdt = isMain; };
 public:

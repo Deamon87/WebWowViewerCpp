@@ -81,6 +81,7 @@ private:
     void createBB(CAaBox bbox);
     void postWmoGroupObjectLoad(int groupId, int lod) override;
     void fillLodGroup(mathfu::vec3 &cameraLocal);
+    friend void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom);
 public:
     M2Object *getDoodad(int index) override ;
     HBlpTexture getTexture(int materialId, bool isSpec);
@@ -104,6 +105,8 @@ public:
     int getNameSet() {
         return m_nameSet;
     }
+
+    virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
     virtual SMOHeader *getWmoHeader() override {
         return mainGeom->header;
     }

@@ -90,6 +90,7 @@ void WmoGroupObject::startLoading() {
             m_geom = m_api->getWmoGroupGeomCache()->get(m_fileName);
         }
         m_geom->setMOHD(this->m_wmoApi->getWmoHeader());
+        m_geom->setAttenuateFunction(this->m_wmoApi->getAttenFunction());
     }
 }
 

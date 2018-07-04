@@ -518,7 +518,7 @@ void AdtFile::createTriangleStrip() {
     stripOffsets.push_back(strips.size());
 }
 
-void AdtFile::process(std::vector<unsigned char> &adtFile) {
+void AdtFile::process(std::vector<unsigned char> &adtFile, std::string &fileName) {
     m_adtFile = std::vector<uint8_t>(adtFile);
     CChunkFileReader reader(m_adtFile);
     reader.processFile(*this, &AdtFile::adtFileTable);

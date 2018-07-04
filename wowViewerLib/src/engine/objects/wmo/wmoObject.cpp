@@ -1158,3 +1158,98 @@ void WmoObject::fillLodGroup(mathfu::vec3 &cameraLocal) {
 
 }
 
+void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom) {
+    float distance(C4Plane &plane, C3Vector vertex) {
+        return (float) sqrt(mathfu::vec4::DotProduct(mathfu::vec4(plane.planeVector), mathfu::vec4(vertex.x, vertex.y, vertex.z, 1.0)));
+    }
+
+    if (!wmoGroupGeom.mogp->transBatchCount)
+    {
+        return;
+    }
+
+    for ( std::size_t vertex_index (0); vertex_index < wmoGroupGeom.batches[wmoGroupGeom.mogp->transBatchCount-1].last_vertex; ++vertex_index) {
+        float opacity_accum (0.0);
+
+        for ( std::size_t portal_ref_index (wmoGroupGeom.mogp->moprIndex);
+              portal_ref_index < (wmoGroupGeom.mogp->moprIndex + wmoGroupGeom.mogp->moprCount);
+              ++portal_ref_index)
+        {
+            SMOPortalRef const& portalRef (mainGeom->portalReferences[portal_ref_index]);
+            SMOPortal const& portal (mainGeom->portals[portalRef.portal_index]);
+            C3Vector const& vertex (wmoGroupGeom.verticles[vertex_index]);
+
+            float const portal_to_vertex (distance(portal.plane, vertex));
+
+            C3Vector vertex_to_use (vertex);
+
+            if (portal_to_vertex > 0.001 || portal_to_vertex < -0.001)
+            {
+                C3Ray ray ( C3Ray::FromStartEnd
+                                    ( vertex
+                                            , vertex
+                                              + (portal_to_vertex > 0 ? -1 : 1) * portal.plane.planeGeneral.normal
+                                            , 0
+                                    )
+                );
+                NTempest::Intersect
+                        (ray, &portal.plane, 0LL, &vertex_to_use, 0.0099999998);
+            }
+
+            float distance_to_use;
+
+            if ( NTempest::Intersect ( vertex_to_use
+                    , &mainGeom->portal_vertices[portal.base_index]
+                    , portal.index_count
+                    , C3Vector::MajorAxis (portal.plane.normal)
+            )
+                    )
+            {
+                distance_to_use = portalRef.side * distance (portal.plane, vertex);
+            }
+            else
+            {
+                distance_to_use = NTempest::DistanceFromPolygonEdge
+                        (vertex, &mainGeom->portal_vertices[portal.base_index], portal.index_count);
+            }
+
+            if (mainGeom->groups[portalRef.group_index].flags.EXTERIOR ||
+                mainGeom->groups[portalRef.group_index].flags.EXTERIOR_LIT)
+            {
+                float v25 (distance_to_use >= 0.0 ? distance_to_use / 6.0f : 0.0f);
+                if ((1.0 - v25) > 0.001)
+                {
+                    opacity_accum += 1.0 - v25;
+                }
+            }
+            else if (distance_to_use > -1.0)
+            {
+                opacity_accum = 0.0;
+                if (distance_to_use < 1.0)
+                {
+                    break;
+                }
+            }
+        }
+
+        float const opacity ( opacity_accum > 0.001
+                              ? std::min (1.0f, opacity_accum)
+                              : 0.0f
+        );
+
+        //! \note all assignments asserted to be > -0.5 && < 255.5f
+        CArgb& color (wmoGroupGeom.colorArray[vertex_index]);
+        color.r = (unsigned char) (((127.0f - color.r) * opacity) + color.r);
+        color.g = (unsigned char) (((127.0f - color.g) * opacity) + color.g);
+        color.b = (unsigned char) (((127.0f - color.b) * opacity) + color.b);
+        color.a = opacity * 255.0;
+    }
+}
+
+std::function<void(WmoGroupGeom &wmoGroupGeom)> WmoObject::getAttenFunction() {
+    HWmoMainGeom &mainGeom = this->mainGeom;
+    return [&mainGeom](  WmoGroupGeom &wmoGroupGeom ) -> void {
+        attenuateTransVerts(mainGeom, wmoGroupGeom);
+    } ;
+}
+

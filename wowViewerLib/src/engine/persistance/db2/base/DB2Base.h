@@ -171,7 +171,7 @@ struct section
 
 class DB2Base {
 public:
-    void process(std::vector<unsigned char> &db2File);
+    void process(std::vector<unsigned char> &db2File, std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
     int readRecord(int id, bool useRelationMappin, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, int stringOffset, char *data, size_t length)>callback);
     bool readRecordByIndex(int index, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, int fieldOffset, char *data, size_t length)>callback);

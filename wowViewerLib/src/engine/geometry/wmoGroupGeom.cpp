@@ -464,19 +464,18 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
     }
 };
 
-
-
-void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile) {
+void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile, std::string &fileName) {
     m_wmoGroupFile = wmoGroupFile;
 
     CChunkFileReader reader(m_wmoGroupFile);
     reader.processFile(*this, &WmoGroupGeom::wmoGroupTable);
 
     fixColorVertexAlpha(mohd);
+    if (!mohd->flags.flag_attenuate_vertices_based_on_distance_to_portal) {
+        this->m_attenuateFunc(*this);
+    }
     createVBO();
     createIndexVBO();
-
-
 
     m_loaded = true;
 }
@@ -664,9 +663,14 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu:
 
         bool isAffectedByMOCV = j < (mogp->transBatchCount + mogp->intBatchCount);
         isAffectedByMOCV = true;
-        bool isAffectedByAmbient = (j > 0 && j < (mogp->transBatchCount)) ||
-                (j > (mogp->transBatchCount + mogp->intBatchCount));
-        isAffectedByAmbient = true;
+        bool isAffectedByAmbient = (j >= 0 && j < (mogp->transBatchCount)) ||
+                (j >= (mogp->transBatchCount + mogp->intBatchCount));
+//        isAffectedByAmbient = true;
+
+        mathfu::vec4 ambientColor = ambColor;
+        if (isAffectedByAmbient) {
+            ambientColor = api->getGlobalAmbientColor();
+        }
 
         if (isAffectedByMOCV && (cvLen > 0)) {
             glEnableVertexAttribArray(+wmoShader::Attribute::aColor);
@@ -688,7 +692,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu:
 
         glUniform4fv(wmoShader->getUnf("uAmbientLight"),
             1,
-            &ambColor[0]
+            &ambientColor[0]
         );
 
         glUniform1i(wmoShader->getUnf("uUseLitColor"), 1);

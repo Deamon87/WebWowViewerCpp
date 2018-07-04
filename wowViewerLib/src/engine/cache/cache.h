@@ -42,7 +42,7 @@ public:
 
 //            std::cout << "Processing file " << fileName << std::endl << std::flush;
             if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
-                sharedPtr->process(fileContent);
+                sharedPtr->process(fileContent, fileName);
             }
 
             m_objectsToBeProcessed.erase(it++);    // or "it = m.erase(it)" since C++11
@@ -115,8 +115,6 @@ public:
 
     void reject(std::string fileName) {
         trim(fileName);
-
-
     }
 
 private:

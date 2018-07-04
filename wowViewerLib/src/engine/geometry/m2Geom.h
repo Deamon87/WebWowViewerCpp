@@ -14,7 +14,7 @@
 
 class M2Geom {
 public:
-    void process(std::vector<unsigned char> &m2File);
+    void process(std::vector<unsigned char> &m2File, std::string &fileName);
     void loadTextures();
     void createVBO();
     void setupAttributes();

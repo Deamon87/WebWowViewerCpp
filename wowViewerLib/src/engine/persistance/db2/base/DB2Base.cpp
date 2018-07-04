@@ -7,7 +7,7 @@
 #include <iostream>
 #include "DB2Base.h"
 
-void DB2Base::process(std::vector<unsigned char> &db2File) {
+void DB2Base::process(std::vector<unsigned char> &db2File, std::string &fileName) {
     this->db2File = db2File;
     fileData = &this->db2File[0];
 

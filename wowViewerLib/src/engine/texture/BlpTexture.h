@@ -11,7 +11,7 @@
 
 class BlpTexture {
 public:
-    void process(std::vector<unsigned char> &blpFile);
+    void process(std::vector<unsigned char> &blpFile, std::string &fileName);
     bool getIsLoaded() { return m_isLoaded; };
     GLuint getGlTexture() {return texture;}
 private:

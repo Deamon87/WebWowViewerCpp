@@ -201,7 +201,7 @@ void main() {
 
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
     if ( uPixelShader == -1 ) {
-        finalColor = vec4(tex.rgb * vColor.rgb + tex2.rgb*vColor2.bgr, tex.a);
+        finalColor = vec4(makeDiffTerm(tex.rgb * vColor.rgb + tex2.rgb*vColor2.bgr), tex.a);
     } else if (uPixelShader == 0) { //MapObjDiffuse
 
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);

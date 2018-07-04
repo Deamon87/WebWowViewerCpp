@@ -131,7 +131,7 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
 }
 
 
-GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &mipmaps) {
+GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &mipmaps, std::string &filename) {
     bool hasAlpha = blpFile->alphaChannelBitDepth > 0;
 
     GLuint texture;
@@ -158,8 +158,11 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
                 textureGPUFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
                 break;
 
+            case TextureFormat::BGRA:
+                break;
+
             default:
-                debuglog("Unknown texture format found")
+                debuglog("Unknown texture format found in file: "+filename)
                 break;
         }
 //    }
@@ -269,7 +272,7 @@ GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVec
     return texture;
 }
 
-void BlpTexture::process(std::vector<unsigned char> &blpFile) {
+void BlpTexture::process(std::vector<unsigned char> &blpFile, std::string &fileName) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
     BlpFile *pBlpFile = (BlpFile *) &blpFile[0];
@@ -279,13 +282,12 @@ void BlpTexture::process(std::vector<unsigned char> &blpFile) {
     }
     TextureFormat textureFormat = getTextureType(pBlpFile);
 
-
     /* Load texture by mipmaps */
     MipmapsVector mipmaps;
     parseMipmaps(pBlpFile, textureFormat, mipmaps);
 
     /* Load texture into GL memory */
-    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps);
+    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
     this->m_isLoaded = true;
 }
 

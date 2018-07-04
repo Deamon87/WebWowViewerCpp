@@ -119,6 +119,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //    m_firstCamera.setCameraPos(939, -4813 , 0); //Scholozar Basin
 //    m_firstCamera.setCameraPos(5783, 850, 200); //Near Dalaran
+//    m_firstCamera.setCameraPos(3608, 5961, 292); //Near Dalaran
 //    currentScene = new Map(this, 571, "Northrend");
 //
 //    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
@@ -240,6 +241,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
+//        config->setBCLightHack(true);
 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_worgen/ui_worgen.m2", 0);
@@ -257,17 +259,17 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "character/bloodelf/female/bloodelffemale_hd.m2", 0);
 
     //Test scene 3: Ironforge
-    m_firstCamera.setCameraPos(1.78252912f,  33.4062042f, -126.937592f); //Room under dalaran
+//    m_firstCamera.setCameraPos(1.78252912f,  33.4062042f, -126.937592f); //Room under dalaran
 //    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
-    currentScene = new WmoScene(this,
-        "world\\wmo\\brokenisles\\dalaran2.wmo");
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
 
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -296,7 +298,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new WmoScene(this,
 //        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
-
 
 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
@@ -334,6 +335,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
+//   currentScene = new WmoScene(this,
+//        "\tworld/wmo/lorderon/undercity/8xp_undercity.wmo");
 
     db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
     db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
@@ -1208,7 +1211,8 @@ void glClearScreen() {
     glDepthFunc(GL_LESS);
 
     glDisable(GL_BLEND);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+//    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClearColor(0.25, 0.06, 0.015, 0.0);
 //    glClearColor(0.117647, 0.207843, 0.392157, 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
@@ -1247,7 +1251,8 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     mathfu::mat4 lookAtMat4;
     mathfu::vec4 cameraVec4;
     if ( currentScene->getCameraSettings(cameraResult)) {
-        farPlane = cameraResult.far_clip;
+//        farPlane = cameraResult.far_clip * 100;
+        farPlane = 300;
         nearPlane = cameraResult.near_clip;
         fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
 

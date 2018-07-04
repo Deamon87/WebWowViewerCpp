@@ -9,7 +9,7 @@ class WdtFile {
 public:
     WdtFile() {};
 
-    void process(std::vector<unsigned char> &wdtFile);
+    void process(std::vector<unsigned char> &wdtFile, std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     MPHD *mphd;

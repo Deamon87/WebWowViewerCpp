@@ -20,11 +20,12 @@ public:
 
     }
 
-    void process(std::vector<unsigned char> &wmoGroupFile);
+    void process(std::vector<unsigned char> &wmoGroupFile, std::string &fileName);
 
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 
     void setMOHD(SMOHeader *mohd) {this->mohd = mohd; };
+    void setAttenuateFunction(std::function<void (WmoGroupGeom& wmoGroupGeom)> attenuateFunc) {this->m_attenuateFunc = attenuateFunc; };
     void createVBO();
     bool isLoaded() const { return m_loaded; };
     void createIndexVBO();
@@ -41,6 +42,7 @@ private:
     int colorOffset = 0;
     int colorOffset2 = 0;
 
+    std::function<void (WmoGroupGeom& wmoGroupGeom)> m_attenuateFunc;
 public:
     std::vector<uint8_t> m_wmoGroupFile;
 
@@ -102,9 +104,12 @@ public:
     MOLP *molp = nullptr;
     int molpCnt = 0;
 
+
+
     GLuint combinedVBO;
     GLuint indexVBO;
 
+private:
     void fixColorVertexAlpha(SMOHeader *mohd);
 };
 

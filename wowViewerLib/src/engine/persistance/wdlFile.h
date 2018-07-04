@@ -14,7 +14,7 @@ class WdlFile {
 public:
    WdlFile() {};
 
-    void process(std::vector<unsigned char> &wdlFile);
+    void process(std::vector<unsigned char> &wdlFile, std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     SMDoodadDef * doodadDefObj = nullptr;
