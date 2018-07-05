@@ -45,6 +45,9 @@ void main() {
     vec4 tex2 = texture2D(uTexture2, vTexcoord1).rgba;
     vec4 tex3 = texture2D(uTexture3, vTexcoord2).rgba;
 
+    if(tex.a < uAlphaTest)
+        discard;
+
     vec4 finalColor = vec4((tex * vColor ).rgb, tex.a*vColor.a );
 
     if (uPixelShader == 0) {//particle_2colortex_3alphatex

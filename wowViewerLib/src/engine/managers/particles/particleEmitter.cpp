@@ -745,74 +745,25 @@ void ParticleEmitter::Render() {
     glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord1, 2, GL_FLOAT, GL_FALSE, stride, (void *)36);
     glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord2, 2, GL_FLOAT, GL_FALSE, stride, (void *)44);
 
-    auto blendMode = m_data->old.blendingType;
-    switch (blendMode) {
-        case 0 : //Blend_Opaque
-            glDisable(GL_BLEND);
-            glUniform1f(particleShader->getUnf("uAlphaTest"), -1.0);
-            break;
-        case 1 : //Blend_AlphaKey
-            glDisable(GL_BLEND);
-            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.903921569);
-//            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
-            break;
-        case 2 : //Blend_Alpha
-            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // default blend func
-            break;
-        case 3 : //Blend_NoAlphaAdd
-            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE);
+    uint8_t blendMode = m_data->old.blendingType;
+    if (blendMode == 4 )
+        blendMode = 3;
 
-            //Override fog
-//            glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_zero);
-//            fogChanged = true;
+//    if (blendMode >= (uint16_t)EGxBlendEnum::GxBlend_Alpha) {
+        glEnable(GL_BLEND);
+//    } else {
+//        glDisable(GL_BLEND);
+//    }
 
-            break;
-        case 4 : //Blend_Add
-            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.00392157);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glUniform1f(particleShader->getUnf("uAlphaTest"), 0.0039215689f);
 
-//            glUniform3fv(m2Shader->getUnf("uFogColor"),  1, fog_zero);
-//            fogChanged = true;
-            break;
-
-        case 5: //Blend_Mod
-            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.00392157);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_DST_COLOR, GL_ZERO);
-
-//            glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_one);
-//            fogChanged = true;
-            break;
-
-        case 6: //Blend_Mod2x
-            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.00392157);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-
-//            glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_half);
-//            fogChanged = true;
-            break;
-
-        case 7: //Blend_Mod2x
-            glUniform1f(particleShader->getUnf("uAlphaTest"), 0.00392157);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-//            glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_half);
-//            fogChanged = true;
-            break;
-        default :
-            glUniform1f(particleShader->getUnf("uAlphaTest"), -1);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-
-            break;
-    }
+    BlendModeDesc &selectedBlendMode = blendModes[blendMode];
+    glBlendFuncSeparate(
+            selectedBlendMode.SrcColor,
+            selectedBlendMode.DestColor,
+            selectedBlendMode.SrcAlpha,
+            selectedBlendMode.DestAlpha
+    );
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);

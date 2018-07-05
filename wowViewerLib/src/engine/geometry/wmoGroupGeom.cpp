@@ -687,7 +687,8 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu:
             glVertexAttribPointer(+wmoShader::Attribute::aColor2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)colorOffset2); // color
         } else {
             glDisableVertexAttribArray(+wmoShader::Attribute::aColor2);
-            glVertexAttrib4f(+wmoShader::Attribute::aColor2, 0.0, 0.0, 0.0, 0.0);
+            //Without 1.0 new Undercity has wrong color on the walls
+            glVertexAttrib4f(+wmoShader::Attribute::aColor2, 0.0, 0.0, 0.0, 1.0);
         }
 
         glUniform4fv(wmoShader->getUnf("uAmbientLight"),
@@ -729,7 +730,6 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu:
                 glUniform1f(wmoShader->getUnf("uAlphaTest"), 70.0/255.0);
                 glUniform1i(wmoShader->getUnf("uEnableAlpha"), 1);
                 break;
-
 
             case 3 : //GxBlend_Add
                 glUniform1f(wmoShader->getUnf("uAlphaTest"), 0.00392157);

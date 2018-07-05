@@ -630,7 +630,10 @@ void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
 }
 
 HBlpTexture WmoObject::getTexture(int textureId, bool isSpec) {
-    if (textureId < 0 || textureId >= mainGeom->textureNamesFieldLen) return nullptr;
+    if (textureId < 0 || textureId >= mainGeom->textureNamesFieldLen) {
+        debuglog("Non valid textureindex for WMO")
+        return nullptr;
+    };
 
     std::unordered_map<int, HBlpTexture> &textureCache = diffuseTextures;
     if (isSpec) {
@@ -778,7 +781,6 @@ bool WmoObject::startTraversingFromInteriorWMO(std::vector<WmoGroupResult> &wmoG
 
     //If there are portals leading to exterior, we need to go through all exterior wmos.
     //Because it's not guaranteed that exterior wmo, that portals lead to, have portal connections to all visible interior wmo
-    std::set<M2Object *> wmoM2Candidates ;
     if (this->exteriorPortals.size() > 0) {
         std::vector<std::vector<mathfu::vec4>> portalsToExt;
         for (auto &a : this->exteriorPortals) {

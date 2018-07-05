@@ -96,7 +96,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
 //    currentScene = new Map(this, 603, "UlduarRaid");
-//
+//Ghbdtn
 //   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
 //    currentScene = new Map(this, 1803, "AzeriteBG1");
 //
@@ -140,8 +140,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(6947, 408, 162); //Kalimdor 2
 //    currentScene = new Map(this, 1, "Kalimdor 2");
 //
-    m_firstCamera.setCameraPos(347, -2605, 200); //LordaeronScenario
-    currentScene = new Map(this, 1, "LordaeronScenario");
+//    m_firstCamera.setCameraPos(347, -2605, 200); //LordaeronScenario
+//    currentScene = new Map(this, 1, "LordaeronScenario");
 //
 //    m_firstCamera.setCameraPos(3062, 495, 200 ); //Valhalla
 //    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt
@@ -206,7 +206,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "environments/stars/hellfireskybox.m2");
 //
 //
-//  m_firstCamera.setCameraPos(0, 0, 0);
+  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "world/expansion06/doodads/brokenshore/7bs_tombofsargerasfx_01_reduced.m2");
 
@@ -336,7 +336,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 //   currentScene = new WmoScene(this,
-//        "\tworld/wmo/lorderon/undercity/8xp_undercity.wmo");
+//        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
 
     db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
     db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
@@ -1211,8 +1211,8 @@ void glClearScreen() {
     glDepthFunc(GL_LESS);
 
     glDisable(GL_BLEND);
-//    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClearColor(0.25, 0.06, 0.015, 0.0);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+//    glClearColor(0.25, 0.06, 0.015, 0.0);
 //    glClearColor(0.117647, 0.207843, 0.392157, 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
@@ -1463,8 +1463,9 @@ void WoWSceneImpl::SetDirection() {
     float cosTheta = (float) cos(theta);
 
 //    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-    mathfu::vec4 sunDirWorld = mathfu::vec4(0, 0, -1, 0);
-    m_sunDir = (m_lookAtMat4 * sunDirWorld).xyz();
+    mathfu::vec4 sunDirWorld = mathfu::vec4(0, 0, 1, 0);
+    m_sunDir = -(m_lookAtMat4 * sunDirWorld).xyz();
+    m_sunDir = m_sunDir.Normalized();
 }
 
  WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){

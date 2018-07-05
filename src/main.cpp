@@ -644,7 +644,7 @@ int main(){
 
 
 
-    if( nkc_init( myapp.nkcHandle, "WowViewer", 1920, 1080, NKC_WIN_NORMAL) ){
+    if( nkc_init( myapp.nkcHandle, "WowViewer", 640, 480, NKC_WIN_NORMAL) ){
         printf("Successfull init. Starting 'infinite' main loop...\n");
 
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);

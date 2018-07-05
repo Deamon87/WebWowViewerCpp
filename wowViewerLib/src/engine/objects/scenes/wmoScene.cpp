@@ -41,6 +41,9 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
             }
         }
     }
+    std::sort( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() );
+    m2RenderedThisFrame.erase( unique( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() ), m2RenderedThisFrame.end() );
+
     m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.begin(), m2RenderedThisFrame.end());
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 }
@@ -266,19 +269,19 @@ void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &
     }
 
     //2. Calc distance every 100 ms
-    if (this->m_currentTime + deltaTime - this->m_lastTimeDistanceCalc > 100) {
+    //if (this->m_currentTime + deltaTime - this->m_lastTimeDistanceCalc > 100) {
         for (int j = 0; j < this->m2RenderedThisFrameArr.size(); j++) {
             this->m2RenderedThisFrameArr[j]->calcDistance(cameraVec3);
         }
 
         this->m_lastTimeDistanceCalc = this->m_currentTime;
-    }
+    //}
 
 
 
 
     //3. Sort m2 by distance every 100 ms
-    if (this->m_currentTime + deltaTime - this->m_lastTimeSort > 100) {
+    //if (this->m_currentTime + deltaTime - this->m_lastTimeSort > 100) {
         std::sort(
                 this->m2RenderedThisFrameArr.begin(),
                 this->m2RenderedThisFrameArr.end(),
@@ -288,7 +291,7 @@ void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &
         );
 
         this->m_lastTimeSort = this->m_currentTime;
-    }
+    //}
 
 //    //4. Collect m2 into instances every 200 ms
 ////        if (this.currentTime + deltaTime - this.lastInstanceCollect > 30) {

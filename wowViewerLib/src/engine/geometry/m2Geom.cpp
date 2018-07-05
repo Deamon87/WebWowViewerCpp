@@ -530,7 +530,9 @@ M2Geom::drawMesh(
             }
 
             if ((renderFlag->flags & 0x8) > 0) {
-                //GL_uniform1i(m2Shader->getUnf("isBillboard, 1);
+                glDisable(GL_DEPTH_TEST);
+            } else {
+                glEnable(GL_DEPTH_TEST);
             }
 
 
