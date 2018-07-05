@@ -140,8 +140,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(6947, 408, 162); //Kalimdor 2
 //    currentScene = new Map(this, 1, "Kalimdor 2");
 //
-//    m_firstCamera.setCameraPos(347, -2605, 200); //LordaeronScenario
-//    currentScene = new Map(this, 1, "LordaeronScenario");
+    m_firstCamera.setCameraPos(347, -2605, 200); //LordaeronScenario
+    currentScene = new Map(this, 1, "LordaeronScenario");
 //
 //    m_firstCamera.setCameraPos(3062, 495, 200 ); //Valhalla
 //    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt
@@ -267,9 +267,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
 
-   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -1244,7 +1244,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    float farPlane = 300;
+    float farPlane = 1000;
     float nearPlane = 1;
     float fov = toRadian(45.0);
     M2CameraResult cameraResult;

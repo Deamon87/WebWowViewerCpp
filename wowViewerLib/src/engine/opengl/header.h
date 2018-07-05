@@ -21,4 +21,32 @@
 #endif
 #endif
 
+enum class EGxBlendEnum {
+    GxBlend_UNDEFINED = -1,
+    GxBlend_Opaque = 0,
+    GxBlend_AlphaKey = 1,
+    GxBlend_Alpha = 2,
+    GxBlend_Add = 3,
+    GxBlend_Mod = 4,
+    GxBlend_Mod2x = 5,
+    GxBlend_ModAdd = 6,
+    GxBlend_InvSrcAlphaAdd = 7,
+    GxBlend_InvSrcAlphaOpaque = 8,
+    GxBlend_SrcAlphaOpaque = 9,
+    GxBlend_NoAlphaAdd = 10,
+    GxBlend_ConstantAlpha = 11,
+    GxBlend_Screen = 12,
+    GxBlend_BlendAdd = 13,
+    GxBlend_MAX
+};
+struct BlendModeDesc {
+    bool blendModeEnable;
+    GLuint SrcColor;
+    GLuint DestColor;
+    GLuint SrcAlpha;
+    GLuint DestAlpha;
+};
+
+extern BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX];
+
 #endif //WOWMAPVIEWERREVIVED_HEADER_H

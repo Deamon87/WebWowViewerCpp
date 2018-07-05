@@ -7,6 +7,36 @@
 #include "../shader/ShaderDefinitions.h"
 #include "../opengl/header.h"
 
+BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
+    /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
+    /*GxBlend_AlphaKey*/         {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
+    /*GxBlend_Alpha*/            {true,GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA},
+    /*GxBlend_Add*/              {true,GL_SRC_ALPHA,GL_ONE,GL_ZERO,GL_ONE},
+    /*GxBlend_Mod*/              {true,GL_DST_COLOR,GL_ZERO,GL_DST_ALPHA,GL_ZERO},
+    /*GxBlend_Mod2x*/            {true,GL_DST_COLOR,GL_SRC_COLOR,GL_DST_ALPHA,GL_SRC_ALPHA},
+    /*GxBlend_ModAdd*/           {true,GL_DST_COLOR,GL_ONE,GL_DST_ALPHA,GL_ONE},
+    /*GxBlend_InvSrcAlphaAdd*/   {true,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE},
+    /*GxBlend_InvSrcAlphaOpaque*/{true,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO},
+    /*GxBlend_SrcAlphaOpaque*/   {true,GL_SRC_ALPHA,GL_ZERO,GL_SRC_ALPHA,GL_ZERO},
+    /*GxBlend_NoAlphaAdd*/       {true,GL_ONE,GL_ONE,GL_ZERO,GL_ONE},
+    /*GxBlend_ConstantAlpha*/    {true,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA},
+    /*GxBlend_Screen*/           {true,GL_ONE_MINUS_DST_COLOR,GL_ONE,GL_ONE,GL_ZERO},
+    /*GxBlend_BlendAdd*/         {true,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA}
+};
+
+int M2BlendingModeToEGxBlendEnum [8] =
+    {
+        static_cast<int>(EGxBlendEnum::GxBlend_Opaque),
+        static_cast<int>(EGxBlendEnum::GxBlend_AlphaKey),
+        static_cast<int>(EGxBlendEnum::GxBlend_Alpha),
+        static_cast<int>(EGxBlendEnum::GxBlend_NoAlphaAdd),
+        static_cast<int>(EGxBlendEnum::GxBlend_Add),
+        static_cast<int>(EGxBlendEnum::GxBlend_Mod),
+        static_cast<int>(EGxBlendEnum::GxBlend_Mod2x),
+        static_cast<int>(EGxBlendEnum::GxBlend_BlendAdd)
+    };
+
+
 chunkDef<M2Geom> M2Geom::m2FileTable = {
     [](M2Geom& file, ChunkData& chunkData){},
     {
@@ -423,72 +453,62 @@ M2Geom::drawMesh(
 //            glUniform1i(m2Shader->getUnf("uBlendMode"), renderFlag->blending_mode);
             auto blendMode = renderFlag->blending_mode;
 //            blendMode = 0;
+            if (blendMode >= (uint16_t)EGxBlendEnum::GxBlend_Alpha) {
+                glEnable(GL_BLEND);
+            } else {
+                glDisable(GL_BLEND);
+            }
+
+            if (blendMode == (uint16_t)EGxBlendEnum::GxBlend_AlphaKey) {
+                glUniform1f(m2Shader->getUnf("uAlphaTest"), 128.0f/255.0f * finalTransparency);
+            } else {
+                glUniform1f(m2Shader->getUnf("uAlphaTest"), 1.0f/255.0f);
+            }
+
+            BlendModeDesc &selectedBlendMode = blendModes[M2BlendingModeToEGxBlendEnum[blendMode]];
+            glBlendFuncSeparate(
+                selectedBlendMode.SrcColor,
+                selectedBlendMode.DestColor,
+                selectedBlendMode.SrcAlpha,
+                selectedBlendMode.DestAlpha
+            );
+
+
             switch (blendMode) {
                 case 0 : //Blend_Opaque
-                    glDisable(GL_BLEND);
-                    glUniform1f(m2Shader->getUnf("uAlphaTest"), -1.0);
+                    glUniform1f(m2Shader->getUnf("uAlphaTest"), -1.0f);
                     break;
                 case 1 : //Blend_AlphaKey
-                    glDisable(GL_BLEND);
-                    //GL_uniform1f(m2Shader->getUnf("uAlphaTest, 2.9);
-                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.903921569);
-                    //GL_uniform1f(m2Shader->getUnf("uAlphaTest, meshColor[4]*transparency*(252/255));
                     break;
                 case 2 : //Blend_Alpha
-                    glUniform1f(m2Shader->getUnf("uAlphaTest"), -1);
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // default blend func
                     break;
                 case 3 : //Blend_NoAlphaAdd
-                    glUniform1f(m2Shader->getUnf("uAlphaTest"), -1);
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_ONE, GL_ONE);
-
                     //Override fog
                     glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_zero);
                     fogChanged = true;
 
                     break;
                 case 4 : //Blend_Add
-                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.00392157);
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
                     glUniform3fv(m2Shader->getUnf("uFogColor"),  1, fog_zero);
                     fogChanged = true;
                     break;
 
                 case 5: //Blend_Mod
-                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.00392157);
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_DST_COLOR, GL_ZERO);
-
                     glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_one);
                     fogChanged = true;
                     break;
 
                 case 6: //Blend_Mod2x
-                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.00392157);
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-
                     glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_half);
                     fogChanged = true;
                     break;
 
                 case 7: //Blend_Mod2x
-                    glUniform1f(m2Shader->getUnf("uAlphaTest"), 0.00392157);
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
                     glUniform3fv(m2Shader->getUnf("uFogColor"), 1, fog_half);
                     fogChanged = true;
                     break;
                 default :
-                    glUniform1f(m2Shader->getUnf("uAlphaTest"), -1);
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-
+                    debuglog("Unknown blending mode in M2 file")
                     break;
             }
 
