@@ -8,12 +8,17 @@ class GVertexBuffer;
 class GVertexBufferBindings;
 class GIndexBuffer;
 class GUniformBuffer;
+class GShaderPermutation;
 
+#include <unordered_set>
+#include <list>
 #include "GVertexBufferBindings.h"
 #include "GIndexBuffer.h"
 #include "GVertexBuffer.h"
 #include "GTexture.h"
 #include "GUniformBuffer.h"
+#include "GShaderPermutation.h"
+#include "GMesh.h"
 
 class GDevice {
 public:
@@ -39,6 +44,12 @@ public:
     void bindUniformBuffer(GUniformBuffer *buffer, int slot);
     void bindVertexBufferBindings(GVertexBufferBindings *buffer);
 
+
+    void drawMeshes(std::vector<GMesh *> &meshes);
+public:
+    GShaderPermutation *getShader(std::string shaderName);
+    GUniformBuffer &createUniformBuffer();
+
 private:
     bool m_lastDepthWrite = false;
     bool m_lastDepthCulling = false;
@@ -52,6 +63,11 @@ private:
     GTexture *m_lastTexture3 = nullptr;
 
     GUniformBuffer * m_uniformBuffer[3] = {nullptr};
+
+private:
+    //Caches
+    std::unordered_map<size_t, GShaderPermutation> m_shaderPermutCache;
+    std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
 
 };
 

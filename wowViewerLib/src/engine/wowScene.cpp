@@ -79,8 +79,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
 //    currentScene = new Map(this, 1817, "silithusphase01");
 //
-//    m_firstCamera.setCameraPos( -594, 4664, 200);
-//    currentScene = new Map(this, 1513, "Artifact-MageOrderHall");
+    m_firstCamera.setCameraPos( -594, 4664, 200);
+    currentScene = new Map(this, 1513, "Artifact-MageOrderHall");
 
 //    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0);
 //    currentScene = new Map(this, "BLTestMap");
@@ -206,7 +206,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "environments/stars/hellfireskybox.m2");
 //
 //
-  m_firstCamera.setCameraPos(0, 0, 0);
+//  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "world/expansion06/doodads/brokenshore/7bs_tombofsargerasfx_01_reduced.m2");
 
@@ -339,7 +339,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
 
     db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
-    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
+    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightDatam_uboBindPoints.db2"));
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
 #ifndef WITH_GLESv2
@@ -569,52 +569,6 @@ ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
 
 
     return data;
-}
-void WoWSceneImpl::initShaders() {
-    const std::string textureCompositionShader = loadShader("textureCompositionShader");
-    this->textureCompositionShader = this->compileShader("textureCompositionShader", textureCompositionShader, textureCompositionShader);
-
-    const  std::string renderFrameShader = loadShader("renderFrameBufferShader");
-    this->renderFrameShader        = this->compileShader("renderFrameBufferShader", renderFrameShader, renderFrameShader);
-
-    const  std::string drawDepthBuffer = loadShader("drawDepthShader");
-    this->drawDepthBuffer          = this->compileShader("drawDepthShader", drawDepthBuffer, drawDepthBuffer);
-
-    const  std::string readDepthBuffer = loadShader("readDepthBufferShader");
-    this->readDepthBuffer          = this->compileShader("readDepthBufferShader", readDepthBuffer, readDepthBuffer);
-
-    const  std::string wmoShader = loadShader("wmoShader");
-    this->wmoShader                = this->compileShader("wmoShader", wmoShader, wmoShader);
-
-    const  std::string m2Shader = loadShader("m2Shader");
-    this->m2Shader                 = this->compileShader("m2Shader", m2Shader, m2Shader);
-//    this->m2InstancingShader       = this->compileShader("m2Shader", m2Shader, m2Shader,
-//                                                         new std::string("#define INSTANCED 1\r\n "),
-//                                                         new std::string("#define INSTANCED 1\r\n "));
-
-    const  std::string m2ParticleShader = loadShader("m2ParticleShader");
-    this->m2ParticleShader         = this->compileShader("m2ParticleShader", m2ParticleShader, m2ParticleShader);
-
-    const  std::string bbShader = loadShader("drawBBShader");
-    this->bbShader                 = this->compileShader("drawBBShader", bbShader, bbShader);
-
-    const  std::string adtShader = loadShader("adtShader");
-    this->adtShader                = this->compileShader("adtShader", adtShader, adtShader);
-
-    const std::string adtLodShader = loadShader("adtLodShader");
-    this->adtLodShader                = this->compileShader("adtLodShader", adtLodShader, adtLodShader);
-
-    const  std::string drawPortalShader = loadShader("drawPortalShader");
-    this->drawPortalShader         = this->compileShader("drawPortalShader", drawPortalShader, drawPortalShader);
-
-    const  std::string drawFrustumShader = loadShader("drawFrustumShader");
-    this->drawFrustumShader        = this->compileShader("drawFrustumShader", drawFrustumShader, drawFrustumShader);
-
-    const  std::string drawLinesShader = loadShader("drawLinesShader");
-    this->drawLinesShader          = this->compileShader("drawLinesShader", drawLinesShader, drawLinesShader);
-
-    const  std::string drawPoints = loadShader("drawPoints");
-    this->drawPoints          = this->compileShader("drawPoints", drawPoints, drawPoints);
 }
 
 void WoWSceneImpl::initGlContext() {

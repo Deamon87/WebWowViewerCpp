@@ -41,6 +41,8 @@ private:
     void * pIdentifierBuffer;
     void * pContent;
     void * pPreviousContent;
+
+    bool m_needsUpdate = false
 };
 
 

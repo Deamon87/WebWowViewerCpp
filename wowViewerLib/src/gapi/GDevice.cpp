@@ -4,6 +4,7 @@
 
 #include "../engine/opengl/header.h"
 #include "GDevice.h"
+#include "../engine/algorithms/hashString.h"
 
 
 void GDevice::bindIndexBuffer(GIndexBuffer *buffer) {
@@ -58,5 +59,33 @@ void GDevice::bindVertexBufferBindings(GVertexBufferBindings *buffer) {
             m_vertexBufferBindings = buffer;
         }
     }
+}
+
+GShaderPermutation* GDevice::getShader(std::string shaderName) {
+    const char * cstr = shaderName.c_str();
+    size_t hash = CalculateFNV(cstr);
+    if (m_shaderPermutCache.count(hash) > 0) {
+        return &m_shaderPermutCache.at(hash);
+    }
+
+    m_shaderPermutCache[hash] = GShaderPermutation(shaderName, *this);
+
+    return &m_shaderPermutCache[hash];
+
+
+
+}
+
+GUniformBuffer &GDevice::createUniformBuffer() {
+    std::shared_ptr<GUniformBuffer> h_uniformBuffer;
+    h_uniformBuffer.reset(new GUniformBuffer(*this, 0));
+
+    std::weak_ptr<GUniformBuffer> w_uniformBuffer = h_uniformBuffer;
+
+    m_unfiormBufferCache.push_back(w_uniformBuffer);
+}
+
+void GDevice::drawMeshes(std::vector<GMesh *> &meshes) {
+
 }
 

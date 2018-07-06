@@ -183,22 +183,6 @@ private:
     void initTextureCompVBO ();
 private:
     bool m_enable;
-    ShaderRuntimeData *textureCompositionShader = nullptr;
-    ShaderRuntimeData *renderFrameShader = nullptr;
-    ShaderRuntimeData *drawDepthBuffer = nullptr;
-    ShaderRuntimeData *readDepthBuffer = nullptr;
-    ShaderRuntimeData *wmoShader = nullptr;
-    ShaderRuntimeData *wmoInstancingShader = nullptr;
-    ShaderRuntimeData *m2Shader = nullptr;
-    ShaderRuntimeData *m2ParticleShader = nullptr;
-    ShaderRuntimeData *m2InstancingShader = nullptr;
-    ShaderRuntimeData *bbShader = nullptr;
-    ShaderRuntimeData *adtShader = nullptr;
-    ShaderRuntimeData *adtLodShader = nullptr;
-    ShaderRuntimeData *drawPortalShader = nullptr;
-    ShaderRuntimeData *drawFrustumShader = nullptr;
-    ShaderRuntimeData *drawLinesShader = nullptr;
-    ShaderRuntimeData *drawPoints = nullptr;
 
     Config * m_config;
 
@@ -209,7 +193,6 @@ private:
     mathfu::vec3 m_sunDir;
     mathfu::vec4 m_globalAmbientColor;
     mathfu::vec4 m_globalSunColor;
-
 
     FirstPersonCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;

@@ -38,14 +38,17 @@ void GUniformBuffer::uploadData(void * data, int length) {
     m_device.bindUniformBuffer(this, 0);
 
     glBufferData(GL_UNIFORM_BUFFER, length, data, GL_STATIC_DRAW);
+
+    m_needsUpdate = false;
 }
 
 void GUniformBuffer::save() {
     if (memcmp(pPreviousContent, pContent, m_size) != 0) {
         //1. Copy new to prev
         memcpy(pPreviousContent, pContent, m_size);
+        m_needsUpdate = true;
 
-        //2. Update UBO
-        this->uploadData(pPreviousContent, 0);
+//        2. Update UBO
+//        this->uploadData(pPreviousContent, 0);
     }
 }
