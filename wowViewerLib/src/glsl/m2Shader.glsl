@@ -24,19 +24,25 @@ attribute vec2 aTexCoord;
 attribute vec2 aTexCoord2;
 
 //Whole scene
-uniform mediump mat4 uLookAtMat;
-uniform mat4 uPMatrix;
+layout(binding = 0) uniform sceneWideBlockVS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
 
 // Whole model
-uniform mat4 uBoneMatrixes[MAX_MATRIX_NUM];
+layout(binding = 1) uniform modelWideBlockVS {
+    mat4 uBoneMatrixes[MAX_MATRIX_NUM];
+};
 
 //Individual meshes
-uniform int uVertexShader;
-uniform lowp int uIsAffectedByLight;
-uniform vec4 uColor;
-uniform float uTransparency;
-uniform mat4 uTextMat1;
-uniform mat4 uTextMat2;
+layout(binding = 2) uniform meshWideBlockVS {
+    int uVertexShader;
+    lowp int uIsAffectedByLight;
+    vec4 uColor;
+    float uTransparency;
+    mat4 uTextMat1;
+    mat4 uTextMat2;
+};
 
 #ifndef INSTANCED
 uniform mat4 uPlacementMat;
@@ -212,36 +218,43 @@ varying vec3 vPosition;
 
 varying vec4 vDiffuseColor;
 
-//Whole scene
-uniform mediump mat4 uLookAtMat;
-uniform sampler2D uTexture;
-uniform sampler2D uTexture2;
-uniform sampler2D uTexture3;
-uniform sampler2D uTexture4;
+sampler2D uTexture;
+sampler2D uTexture2;
+sampler2D uTexture3;
+sampler2D uTexture4;
+
+layout(binding = 0) uniform sceneWideBlockVS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
 
 //Whole model
-uniform vec3 uViewUp;
-uniform vec3 uSunDir;
-uniform vec3 uSunColor;
-uniform vec4 uAmbientLight;
+layout(binding = 1) uniform modelWideBlockVS {
+    vec3 uViewUp;
+    vec3 uSunDir;
+    vec3 uSunColor;
+    vec4 uAmbientLight;
 
-uniform float uFogStart;
-uniform float uFogEnd;
+    float uFogStart;
+    float uFogEnd;
+};
 
 //Individual meshes
-uniform int uBlendMode;
-uniform int uPixelShader;
-uniform int uUnFogged;
+layout(binding = 2) uniform meshWideBlockVS {
+    int uBlendMode;
+    int uPixelShader;
+    int uUnFogged;
 
-uniform vec3 uFogColor;
-uniform float uAlphaTest;
+    vec3 uFogColor;
+    float uAlphaTest;
 
-uniform lowp int uIsAffectedByLight;
+    lowp int uIsAffectedByLight;
 
-uniform LocalLight pc_lights[4];
-uniform lowp int uLightCount;
+    LocalLight pc_lights[4];
+    lowp int uLightCount;
 
-uniform vec4 uPcColor;
+    vec4 uPcColor;
+};
 
 #ifdef drawBuffersIsSupported
 varying float fs_Depth;

@@ -61,19 +61,20 @@ void GDevice::bindVertexBufferBindings(GVertexBufferBindings *buffer) {
     }
 }
 
-GShaderPermutation* GDevice::getShader(std::string shaderName) {
+std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
     const char * cstr = shaderName.c_str();
     size_t hash = CalculateFNV(cstr);
     if (m_shaderPermutCache.count(hash) > 0) {
-        return &m_shaderPermutCache.at(hash);
+
+        std::shared_ptr<GShaderPermutation> ptr =  m_shaderPermutCache.at(hash);
+        return ptr;
     }
 
-    m_shaderPermutCache[hash] = GShaderPermutation(shaderName, *this);
+    std::shared_ptr<GShaderPermutation> sharedPtr = std::make_shared<GShaderPermutation>(GShaderPermutation(shaderName, *this));
 
-    return &m_shaderPermutCache[hash];
+    m_shaderPermutCache[hash] = sharedPtr;
 
-
-
+    return m_shaderPermutCache[hash];
 }
 
 GUniformBuffer &GDevice::createUniformBuffer() {

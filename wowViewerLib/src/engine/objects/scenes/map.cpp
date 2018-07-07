@@ -78,8 +78,18 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     std::sort( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() );
     m2RenderedThisFrame.erase( unique( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() ), m2RenderedThisFrame.end() );
 
+    m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.size());
+
+    size_t j = 0;
+    for (auto &i : m2RenderedThisFrame) {
+        if (i->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints)) {
+            m2RenderedThisFrameArr[j++] = i;
+        }
+    }
+
+    m2RenderedThisFrameArr.resize(j);
+
     adtRenderedThisFrameArr = std::vector<AdtObject*>(adtRenderedThisFrame.begin(), adtRenderedThisFrame.end());
-    m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.begin(), m2RenderedThisFrame.end());
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 
 //    //Limit M2 count based on distance/m2 height
@@ -590,14 +600,17 @@ void Map::draw() {
 //            }
 //        }
         //Draw Wmo portal frustums
+        /*
         this->m_api->activateFrustumBoxShader();
         if (this->m_api->getIsDebugCamera()) {
             this->m_api->drawCamera();
         }
+         */
 //    }
 }
 
 void Map::drawExterior() {
+/*
 //    if (config.getRenderAdt()) {
         this->m_api->activateAdtShader();
         for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
@@ -659,10 +672,11 @@ void Map::drawExterior() {
 //            this.wmoRenderedThisFrame[i].drawBB();
 //        }
 //    }
-
+*/
 }
 
 void Map::drawM2s() {
+    /*
     mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
     Config * config = this->m_api->getConfig();
 
@@ -789,7 +803,7 @@ void Map::drawM2s() {
         this->m_api->deactivateBoundingBoxShader();
 
     }
-
+    */
 //    }
 }
 

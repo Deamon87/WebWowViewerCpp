@@ -44,7 +44,17 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
     std::sort( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() );
     m2RenderedThisFrame.erase( unique( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() ), m2RenderedThisFrame.end() );
 
-    m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.begin(), m2RenderedThisFrame.end());
+    m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.size());
+
+    size_t j = 0;
+    for (size_t i = 0; i < m2RenderedThisFrame.size(); i++ ) {
+        if (m2RenderedThisFrame[i]->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints)) {
+            m2RenderedThisFrameArr[j++] = m2RenderedThisFrame[i];
+        }
+    }
+
+    m2RenderedThisFrameArr.resize(j);
+
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 }
 
@@ -75,6 +85,7 @@ void WmoScene::draw() {
 //        }
 //    } else {
     //2. Draw WMO
+    /*
     this->m_api->activateWMOShader();
     for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
 //        if (config.getUsePortalCulling()) {
@@ -131,6 +142,7 @@ void WmoScene::draw() {
     if (this->m_api->getIsDebugCamera()) {
         this->m_api->drawCamera();
     }
+     */
 //    }
 }
 
@@ -210,6 +222,8 @@ void WmoScene::drawM2s() {
 //        } else {
 //            this->m_api->deactivateM2Shader();
 //        }
+
+    /*
     this->m_api->activateM2Shader();
     mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
     for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
@@ -244,6 +258,8 @@ void WmoScene::drawM2s() {
         }
         this->m_api->deactivateBoundingBoxShader();
     }
+
+     */
 //    this->m_api->activateDrawPointShader();
 //
 //    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {

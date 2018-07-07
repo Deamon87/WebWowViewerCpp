@@ -327,6 +327,7 @@ M2Geom::setupUniforms(
         bool drawTransparent,
         std::vector<M2LightResult> &lights,
         bool instanced) {
+    /*
     ShaderRuntimeData *m2Shader;
     if (!instanced) {
         m2Shader = api->getM2Shader();
@@ -404,6 +405,7 @@ M2Geom::setupUniforms(
         glUniform4fv(m2Shader->getUnfHash(pcLightNames[index][2]), 1, indet);
         index++;
     }
+     */
 }
 
 void
@@ -415,7 +417,7 @@ M2Geom::drawMesh(
         int pixelShaderIndex,
         mathfu::vec4 &originalFogColor, int instanceCount) {
 
-    ShaderRuntimeData *m2Shader;
+   /* ShaderRuntimeData *m2Shader;
     if (instanceCount == -1) {
         m2Shader = api->getM2Shader();
     } else {
@@ -550,7 +552,8 @@ M2Geom::drawMesh(
 //                glUniform1i(m2Shader->getUnf("isEnviroment"), 0);
 //            }
 
-            /* Set up texture animation */
+            //Set up texture animation
+
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, materialData.texUnit1Texture->getGlTexture());
             if (materialData.xWrapTex1) {
@@ -603,12 +606,6 @@ M2Geom::drawMesh(
                 glActiveTexture(GL_TEXTURE0);
             }
 
-            /*
-             if ((renderFlag.flags & 0x8) > 0) {
-             gl.uniform1i(m2Shader->getUnf("isBillboard, 0);
-             }
-             */
-
             glDepthMask(GL_TRUE);
             glDisable(GL_BLEND);
 
@@ -617,6 +614,7 @@ M2Geom::drawMesh(
             }
         }
     }
+    */
 }
 
 

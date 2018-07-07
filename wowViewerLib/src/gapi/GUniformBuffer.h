@@ -42,7 +42,7 @@ private:
     void * pContent;
     void * pPreviousContent;
 
-    bool m_needsUpdate = false
+    bool m_needsUpdate = false;
 };
 
 

@@ -365,7 +365,7 @@ void WmoObject::update() {
 
 void WmoObject::draw(){
     if (!m_loaded) return;
-
+/*
     auto wmoShader = m_api->getWmoShader();
 
     glUniformMatrix4fv(wmoShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
@@ -383,11 +383,13 @@ void WmoObject::draw(){
            }
         }
     }
+    */
 }
 
 void WmoObject::drawDebugLights(){
     if (!m_loaded) return;
 
+    /*
     auto drawPointsShader = m_api->getDrawPointsShader();
 
     glUniformMatrix4fv(drawPointsShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
@@ -442,6 +444,7 @@ void WmoObject::drawDebugLights(){
             groupObjects[i]->drawDebugLights();
         }
     }
+ */
 }
 
 

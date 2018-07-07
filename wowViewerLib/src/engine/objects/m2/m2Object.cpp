@@ -757,7 +757,7 @@ void M2Object::draw(bool drawTransparent) {
 //    }
 }
 void M2Object::drawDebugLight() {
-
+/*
     std::vector<float> points;
 
     for (int i = 0; i < this->lights.size(); i++) {
@@ -802,9 +802,11 @@ void M2Object::drawDebugLight() {
 
     glBindBuffer( GL_ARRAY_BUFFER, 0);
     glDeleteBuffers(1, &bufferVBO);
+    */
 }
 
 void M2Object::drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::mat4 &placementMatrix) {
+    /*
     mathfu::vec3 center = mathfu::vec3(
         (bb.min.x + bb.max.x) / 2,
         (bb.min.y + bb.max.y) / 2,
@@ -824,6 +826,8 @@ void M2Object::drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::mat4 &pla
     glUniformMatrix4fv(shader->getUnf("uPlacementMat"), 1, GL_FALSE, &placementMatrix[0]);
 
     glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
+
+     */
 }
 
 void M2Object::drawBB(mathfu::vec3 &color) {

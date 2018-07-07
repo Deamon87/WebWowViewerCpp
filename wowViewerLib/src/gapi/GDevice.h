@@ -9,6 +9,7 @@ class GVertexBufferBindings;
 class GIndexBuffer;
 class GUniformBuffer;
 class GShaderPermutation;
+class GMesh;
 
 #include <unordered_set>
 #include <list>
@@ -47,7 +48,7 @@ public:
 
     void drawMeshes(std::vector<GMesh *> &meshes);
 public:
-    GShaderPermutation *getShader(std::string shaderName);
+    std::shared_ptr<GShaderPermutation> getShader(std::string shaderName);
     GUniformBuffer &createUniformBuffer();
 
 private:
@@ -66,7 +67,7 @@ private:
 
 private:
     //Caches
-    std::unordered_map<size_t, GShaderPermutation> m_shaderPermutCache;
+    std::unordered_map<size_t, std::shared_ptr<GShaderPermutation>> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
 
 };

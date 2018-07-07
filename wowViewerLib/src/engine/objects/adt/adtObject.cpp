@@ -315,6 +315,7 @@ void AdtObject::loadAlphaTextures(int limit) {
 
 
 void AdtObject::draw() {
+    /*
     if (!m_loaded) return;
     GLuint blackPixelTexture = this->m_api->getBlackPixelTexture();
     ShaderRuntimeData *adtShader = this->m_api->getAdtShader();
@@ -417,8 +418,10 @@ void AdtObject::draw() {
             glDrawElements(GL_TRIANGLE_STRIP, stripLength, GL_UNSIGNED_SHORT, (void *)(m_adtFile->stripOffsets[i] * 2));
         }
     }
+     */
 }
 void AdtObject::drawLod() {
+   /*
     if (!m_loaded) return;
     if (lodCommands.size() <= 0) return;
 
@@ -460,6 +463,7 @@ void AdtObject::drawLod() {
     for (int i = 0; i < lodCommands.size(); i++) {
         glDrawElements(GL_TRIANGLES, lodCommands[i].length, GL_UNSIGNED_SHORT, (void *)(lodCommands[i].index * 2));
     }
+    */
 }
 
 BlpTexture &AdtObject::getAdtTexture(int textureId) {

@@ -306,14 +306,14 @@ void GShaderPermutation::compileShader() {
     glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &numUniformBlocks);
 
 // get information about each uniform block
-    for(int uniformBlock=0; uniformBlock<numUniformBlocks; uniformBlock++) {
+    for(int uniformBlock=0; uniformBlock < numUniformBlocks; uniformBlock++) {
         // get size of name of the uniform block
         GLint nameLength;
         glGetActiveUniformBlockiv(program, uniformBlock,
                                   GL_UNIFORM_BLOCK_NAME_LENGTH, &nameLength);
 
         // get name of uniform block
-        std::unique_ptr blockName(new GLchar[nameLength]);
+        std::unique_ptr<GLchar> blockName(new GLchar[nameLength]);
         glGetActiveUniformBlockName(program, uniformBlock,
                                     nameLength, nullptr, blockName.get());
 
@@ -332,58 +332,62 @@ void GShaderPermutation::compileShader() {
         std::cout << "	Members : " << numberOfUniformsInBlock << std::endl;
 
         // get indices of uniform variables in uniform block
-        std::unique_ptr uniformsIndices(new GLint[numberOfUniformsInBlock]);
+        GLuint *uniformsIndices = new GLuint[numberOfUniformsInBlock];
         glGetActiveUniformBlockiv(program, uniformBlock,
-                                  GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, uniformsIndices.get());
+                                  GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, (GLint *)(uniformsIndices));
 
         // get parameters of all uniform variables in uniform block
         for (int uniformMember = 0; uniformMember < numberOfUniformsInBlock; uniformMember++) {
             if (uniformsIndices[uniformMember] > 0) {
                 // index of uniform variable
-                GLuint tUniformIndex = uniformsIndices[uniformMember];
+                GLuint *tUniformIndex = &uniformsIndices[uniformMember];
 
-                uniformsIndices[uniformMember];
+//                uniformsIndices.get()[uniformMember];
                 GLint uniformNameLength, uniformOffset, uniformSize;
                 GLint uniformType, arrayStride, matrixStride;
 
                 // get length of name of uniform variable
-                glGetActiveUniformsiv(program, 1, &tUniformIndex,
+                glGetActiveUniformsiv(program, 1, tUniformIndex,
                                       GL_UNIFORM_NAME_LENGTH, &uniformNameLength);
                 // get name of uniform variable
-                std::unique_ptr uniformName(new GLchar[uniformNameLength]);
-                glGetActiveUniform(program, tUniformIndex, uniformNameLength,
-                                   nullptr, nullptr, nullptr, uniformName.get());
+                GLchar *uniformName = new GLchar[uniformNameLength];
+                glGetActiveUniform(program, *tUniformIndex, uniformNameLength,
+                                   nullptr, nullptr, nullptr, uniformName);
 
                 // get offset of uniform variable related to start of uniform block
-                glGetActiveUniformsiv(program, 1, &tUniformIndex,
+                glGetActiveUniformsiv(program, 1, tUniformIndex,
                                       GL_UNIFORM_OFFSET, &uniformOffset);
                 // get size of uniform variable (number of elements)
-                glGetActiveUniformsiv(program, 1, &tUniformIndex,
+                glGetActiveUniformsiv(program, 1, tUniformIndex,
                                       GL_UNIFORM_SIZE, &uniformSize);
                 // get type of uniform variable (size depends on this value)
-                glGetActiveUniformsiv(program, 1, &tUniformIndex,
+                glGetActiveUniformsiv(program, 1, tUniformIndex,
                                       GL_UNIFORM_TYPE, &uniformType);
                 // offset between two elements of the array
-                glGetActiveUniformsiv(program, 1, &tUniformIndex,
+                glGetActiveUniformsiv(program, 1, tUniformIndex,
                                       GL_UNIFORM_ARRAY_STRIDE, &arrayStride);
                 // offset between two vectors in matrix
-                glGetActiveUniformsiv(program, 1, &tUniformIndex,
+                glGetActiveUniformsiv(program, 1, tUniformIndex,
                                       GL_UNIFORM_MATRIX_STRIDE, &matrixStride);
 
                 // Size of uniform variable in bytes
                 GLuint sizeInBytes = uniformSize * sizeFromUniformType(uniformType);
 
                 // output data
-                std::cout << "- " << uniformName.get() << std::endl;
+                std::cout << "- " << uniformName << std::endl;
                 std::cout << "size " << sizeInBytes << std::endl;
                 std::cout << "offset " << uniformOffset << std::endl;
                 std::cout << "type " << textFromUniformType(uniformType) << std::endl;
                 std::cout << "array stride " << arrayStride << std::endl;
                 std::cout << "matrix stride " << +matrixStride << std::endl;
+
+                delete uniformName;
             } else {
                 std::cout << "- Bad uniform" << std::endl;
             }
         }
+
+        delete uniformsIndices;
     }
 }
 

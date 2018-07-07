@@ -667,6 +667,7 @@ ParticleEmitter::BuildQuad(
 void ParticleEmitter::Render() {
     if (this->szVertexBuf.size() <= 1) return;
 
+    /*
     auto particleShader = m_api->getM2ParticleShader();
     auto textureCache = m_api->getTextureCache();
     GLuint blackPixelText = m_api->getBlackPixelTexture();
@@ -775,4 +776,5 @@ void ParticleEmitter::Render() {
 
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer( GL_ARRAY_BUFFER, 0);
+     */
 }

@@ -50,8 +50,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     this->initVertexArrayObjectExt();
     this->initCompressedTextureS3tcExt();
 
-    this->initShaders();
-
     this->initSceneApi();
     this->initSceneGraph();
     this->createBlackPixelTexture();
@@ -749,18 +747,18 @@ void WoWSceneImpl::initTextureCompVBO() {
 /* Shaders stuff */
 
 void WoWSceneImpl::activateRenderFrameShader () {
-    glUseProgram(this->renderFrameShader->getProgram());
-    glActiveTexture(GL_TEXTURE0);
-
-    //glDisableVertexAttribArray(1);
-
-    float uResolution[2] = {(float)this->canvWidth, (float)this->canvHeight };
-    glUniform2fv(this->renderFrameShader->getUnf("uResolution"), 2, uResolution);
-
-    glUniform1i(this->renderFrameShader->getUnf("u_sampler"), 0);
-    if (this->renderFrameShader->hasUnf("u_depth")) {
-        glUniform1i(this->renderFrameShader->getUnf("u_depth"), 1);
-    }
+//    glUseProgram(this->renderFrameShader->getProgram());
+//    glActiveTexture(GL_TEXTURE0);
+//
+//    //glDisableVertexAttribArray(1);
+//
+//    float uResolution[2] = {(float)this->canvWidth, (float)this->canvHeight };
+//    glUniform2fv(this->renderFrameShader->getUnf("uResolution"), 2, uResolution);
+//
+//    glUniform1i(this->renderFrameShader->getUnf("u_sampler"), 0);
+//    if (this->renderFrameShader->hasUnf("u_depth")) {
+//        glUniform1i(this->renderFrameShader->getUnf("u_depth"), 1);
+//    }
 }
 /*
 void WoWSceneImpl::activateTextureCompositionShader(GLuint texture) {
@@ -791,15 +789,17 @@ void WoWSceneImpl::activateTextureCompositionShader(GLuint texture) {
 
 }*/
 void WoWSceneImpl::activateRenderDepthShader () {
-    glUseProgram(this->drawDepthBuffer->getProgram());
-    glActiveTexture(GL_TEXTURE0);
+//    glUseProgram(this->drawDepthBuffer->getProgram());
+//    glActiveTexture(GL_TEXTURE0);
 }
 
 void WoWSceneImpl::activateDrawPortalShader () {
+ /*
     glUseProgram(drawPortalShader->getProgram());
 
     glUniformMatrix4fv(drawPortalShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
     glUniformMatrix4fv(drawPortalShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+ */
 }
 
 
@@ -811,6 +811,7 @@ void WoWSceneImpl::drawTexturedQuad(GLuint texture,
                                     float canv_width,
                                     float canv_height,
                                     bool drawDepth) {
+    /*
     glDisable(GL_DEPTH_TEST);
     glBindBuffer(GL_ARRAY_BUFFER, this->vertBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -827,10 +828,12 @@ void WoWSceneImpl::drawTexturedQuad(GLuint texture,
     glBindTexture(GL_TEXTURE_2D, texture);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glEnable(GL_DEPTH_TEST);
+    */
 }
 
 
 void WoWSceneImpl::activateM2Shader() {
+    /*
     glUseProgram(this->m2Shader->getProgram());
 //    glEnableVertexAttribArray(0);
 //    if (!this.vao_ext) {
@@ -861,9 +864,11 @@ void WoWSceneImpl::activateM2Shader() {
     glUniform3fv(this->m2Shader->getUnf("uSunColor"), 1, &sunColor[0]);
 
     glActiveTexture(GL_TEXTURE0);
+     */
 }
 
 void WoWSceneImpl::activateM2ParticleShader() {
+    /*
     glUseProgram(this->m2ParticleShader->getProgram());
 //    glEnableVertexAttribArray(0);
 //    if (!this.vao_ext) {
@@ -871,7 +876,6 @@ void WoWSceneImpl::activateM2ParticleShader() {
 
     glEnableVertexAttribArray(+m2ParticleShader::Attribute::aPosition);
     glEnableVertexAttribArray(+m2ParticleShader::Attribute::aColor);
-//    glEnableVertexAttribArray(+m2ParticleShader::Attribute::alpha);
     glEnableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord0);
     glEnableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord1);
     glEnableVertexAttribArray(+m2ParticleShader::Attribute::aTexcoord2);
@@ -886,6 +890,7 @@ void WoWSceneImpl::activateM2ParticleShader() {
     glUniform1i(this->m2ParticleShader->getUnf("uTexture3"), 2);
 
     glActiveTexture(GL_TEXTURE0);
+     */
 }
 void WoWSceneImpl::deactivateM2ParticleShader() {
     glDisableVertexAttribArray(+m2ParticleShader::Attribute::aColor);
@@ -907,6 +912,7 @@ void WoWSceneImpl::deactivateM2Shader() {
 }
 
 void WoWSceneImpl::activateM2InstancingShader() {
+    /*
     glUseProgram(this->m2InstancingShader->getProgram());
 
     glUniformMatrix4fv(this->m2InstancingShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
@@ -935,7 +941,7 @@ void WoWSceneImpl::activateM2InstancingShader() {
 //    glEnableVertexAttribArray(+m2Shader::Attribute::aAmbientColor);
 
 #ifndef WITH_GLESv2
-    if ( true/*instExt != null */) {
+    if ( true) { //instExt != null
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 0, 1);
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 1, 1);
         glVertexAttribDivisor(+m2Shader::Attribute::aPlacementMat + 2, 1);
@@ -945,6 +951,7 @@ void WoWSceneImpl::activateM2InstancingShader() {
 #endif
 
     glUniform3fv(this->m2InstancingShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+    */
 }
 
 void WoWSceneImpl::deactivateM2InstancingShader() {
@@ -974,6 +981,7 @@ void WoWSceneImpl::deactivateM2InstancingShader() {
 }
 
 void WoWSceneImpl::activateBoundingBoxShader() {
+    /*
     glUseProgram(this->bbShader->getProgram());
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
@@ -984,6 +992,7 @@ void WoWSceneImpl::activateBoundingBoxShader() {
 
     glUniformMatrix4fv(this->bbShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
     glUniformMatrix4fv(this->bbShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+    */
 }
 void WoWSceneImpl::deactivateBoundingBoxShader() {
 
@@ -999,6 +1008,7 @@ void WoWSceneImpl::activateM2ShaderAttribs() {
 }
 
 void WoWSceneImpl::activateWMOShader() {
+    /*
     glUseProgram(this->wmoShader->getProgram());
 
     glEnableVertexAttribArray(+wmoShader::Attribute::aPosition);
@@ -1029,8 +1039,8 @@ void WoWSceneImpl::activateWMOShader() {
     mathfu::vec4 &sunColor = m_globalSunColor;
     glUniform3fv(this->wmoShader->getUnf("uSunColor"), 1, &sunColor[0]);
 
-
     glActiveTexture(GL_TEXTURE0);
+    */
 }
 
 void WoWSceneImpl::deactivateWMOShader() {
@@ -1042,7 +1052,8 @@ void WoWSceneImpl::deactivateWMOShader() {
     glDisableVertexAttribArray(+wmoShader::Attribute::aColor2);
 }
 void WoWSceneImpl::activateAdtShader (){
-    glUseProgram(adtShader->getProgram());
+    /*
+    glUseProgram(this->adtShader->getProgram());
 
     glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
     glEnableVertexAttribArray(+adtShader::Attribute::aIndex);
@@ -1050,23 +1061,23 @@ void WoWSceneImpl::activateAdtShader (){
     glEnableVertexAttribArray(+adtShader::Attribute::aColor);
     glEnableVertexAttribArray(+adtShader::Attribute::aVertexLighting);
 
-    glUniformMatrix4fv(adtShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(adtShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+    glUniformMatrix4fv(this->adtShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->adtShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
 
-    glUniform1i(adtShader->getUnf("uAlphaTexture"), 0);
-    glUniform1i(adtShader->getUnf("uLayer0"), 1);
-    glUniform1i(adtShader->getUnf("uLayer1"), 2);
-    glUniform1i(adtShader->getUnf("uLayer2"), 3);
-    glUniform1i(adtShader->getUnf("uLayer3"), 4);
-    glUniform1i(adtShader->getUnf("uLayerHeight0"), 5);
-    glUniform1i(adtShader->getUnf("uLayerHeight1"), 6);
-    glUniform1i(adtShader->getUnf("uLayerHeight2"), 7);
-    glUniform1i(adtShader->getUnf("uLayerHeight3"), 8);
+    glUniform1i(this->adtShader->getUnf("uAlphaTexture"), 0);
+    glUniform1i(this->adtShader->getUnf("uLayer0"), 1);
+    glUniform1i(this->adtShader->getUnf("uLayer1"), 2);
+    glUniform1i(this->adtShader->getUnf("uLayer2"), 3);
+    glUniform1i(this->adtShader->getUnf("uLayer3"), 4);
+    glUniform1i(this->adtShader->getUnf("uLayerHeight0"), 5);
+    glUniform1i(this->adtShader->getUnf("uLayerHeight1"), 6);
+    glUniform1i(this->adtShader->getUnf("uLayerHeight2"), 7);
+    glUniform1i(this->adtShader->getUnf("uLayerHeight3"), 8);
 
-    glUniform1f(adtShader->getUnf("uFogStart"), this->uFogStart);
-    glUniform1f(adtShader->getUnf("uFogEnd"), this->uFogEnd);
+    glUniform1f(this->adtShader->getUnf("uFogStart"), this->uFogStart);
+    glUniform1f(this->adtShader->getUnf("uFogEnd"), this->uFogEnd);
 
-    glUniform3fv(adtShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+    glUniform3fv(this->adtShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 
     mathfu::vec4 ambient = this->currentScene->getAmbientColor();
     glUniform4fv(this->adtShader->getUnf("uAmbientLight"), 1, &ambient[0]);
@@ -1079,6 +1090,7 @@ void WoWSceneImpl::activateAdtShader (){
 
     mathfu::vec4 &sunColor = m_globalSunColor;
     glUniform3fv(this->adtShader->getUnf("uSunColor"), 1, &sunColor[0]);
+    */
 }
 void WoWSceneImpl::deactivateAdtShader() {
     glEnableVertexAttribArray(+adtShader::Attribute::aHeight);
@@ -1089,21 +1101,22 @@ void WoWSceneImpl::deactivateAdtShader() {
     glUseProgram(0);
 }
 void WoWSceneImpl::activateAdtLodShader (){
-    glUseProgram(adtLodShader->getProgram());
+    /*
+    glUseProgram(this->adtLodShader->getProgram());
 
     glEnableVertexAttribArray(+adtLodShader::Attribute::aHeight);
     glEnableVertexAttribArray(+adtLodShader::Attribute::aIndex);
 
-    glUniformMatrix4fv(adtLodShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(adtLodShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+    glUniformMatrix4fv(this->adtLodShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->adtLodShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
 
-    glUniform1i(adtLodShader->getUnf("uDiffuseTexture"), 0);
-    glUniform1i(adtLodShader->getUnf("uNormalTexture"), 1);
+    glUniform1i(this->adtLodShader->getUnf("uDiffuseTexture"), 0);
+    glUniform1i(this->adtLodShader->getUnf("uNormalTexture"), 1);
 
-    glUniform1f(adtLodShader->getUnf("uFogStart"), this->uFogStart);
-    glUniform1f(adtLodShader->getUnf("uFogEnd"), this->uFogEnd);
+    glUniform1f(this->adtLodShader->getUnf("uFogStart"), this->uFogStart);
+    glUniform1f(this->adtLodShader->getUnf("uFogEnd"), this->uFogEnd);
 
-    glUniform3fv(adtLodShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
+    glUniform3fv(this->adtLodShader->getUnf("uFogColor"), 1, &this->m_fogColor[0]);
 
     mathfu::vec4 ambient = this->currentScene->getAmbientColor();
     glUniform4fv(this->adtLodShader->getUnf("uAmbientLight"), 1, &ambient[0]);
@@ -1116,6 +1129,7 @@ void WoWSceneImpl::activateAdtLodShader (){
 
     mathfu::vec4 &sunColor = m_globalSunColor;
     glUniform3fv(this->adtLodShader->getUnf("uSunColor"), 1, &sunColor[0]);
+     */
 }
 void WoWSceneImpl::deactivateAdtLodShader() {
     glDisableVertexAttribArray(+adtLodShader::Attribute::aIndex);
@@ -1123,7 +1137,8 @@ void WoWSceneImpl::deactivateAdtLodShader() {
 }
 
 void WoWSceneImpl::activateFrustumBoxShader() {
-    glUseProgram(drawFrustumShader->getProgram());
+    /*
+    glUseProgram(this->drawFrustumShader->getProgram());
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
@@ -1131,18 +1146,21 @@ void WoWSceneImpl::activateFrustumBoxShader() {
     glEnableVertexAttribArray(+drawFrustumShader::Attribute::aPosition);
     glVertexAttribPointer(+drawFrustumShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, nullptr);  // position
 
-    glUniformMatrix4fv(drawFrustumShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(drawFrustumShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+    glUniformMatrix4fv(this->drawFrustumShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
+    glUniformMatrix4fv(this->drawFrustumShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+    */
 
 }
 
 void WoWSceneImpl::activateDrawPointShader() {
+    /*
     glUseProgram(drawPoints->getProgram());
 
     glEnableVertexAttribArray(+drawPoints::Attribute::aPosition);
 
     glUniformMatrix4fv(drawPoints->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
     glUniformMatrix4fv(drawPoints->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
+     */
 
 }
 void WoWSceneImpl::deactivateDrawPointShader() {
@@ -1177,6 +1195,7 @@ void glClearScreen() {
 }
 
 void WoWSceneImpl::drawCamera () {
+    /*
     glDisable(GL_DEPTH_TEST);
 
     mathfu::mat4 invViewFrustum = this->m_viewCameraForRender.Inverse();
@@ -1185,6 +1204,7 @@ void WoWSceneImpl::drawCamera () {
 
     glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
     glEnable(GL_DEPTH_TEST);
+    */
 }
 float globalratio = 1.2;
 void WoWSceneImpl::draw(animTime_t deltaTime) {
@@ -1318,6 +1338,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         m_isDebugCamera = false;
 
         if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
+            /*
             //Draw real camera into square at bottom of screen
             this->activateRenderDepthShader();
             glEnableVertexAttribArray(0);
@@ -1331,6 +1352,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                                    this->canvHeight * 0.40f,
                                    this->canvWidth,
                                    this->canvHeight, true);
+           */
         } else {
             //Render real camera
             glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
@@ -1359,6 +1381,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
         if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
             //Draw real camera into square at bottom of screen
+            /*
             this->activateRenderDepthShader();
             glEnableVertexAttribArray(0);
             glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
@@ -1371,6 +1394,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                                    this->canvHeight * 0.40f,
                                    this->canvWidth,
                                    this->canvHeight, true);
+           */
         }
     }
 

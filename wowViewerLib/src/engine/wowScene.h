@@ -108,33 +108,6 @@ public:
         return &wdlCache;
     };
 
-    virtual ShaderRuntimeData *getM2Shader() override {
-        return m2Shader;
-    };
-    virtual ShaderRuntimeData *getM2ParticleShader() override {
-        return m2ParticleShader;
-    };
-    virtual ShaderRuntimeData *getM2InstancingShader() override {
-        return m2InstancingShader;
-    };
-    virtual ShaderRuntimeData *getBBShader() override {
-        return bbShader;
-    };
-    virtual ShaderRuntimeData *getPortalShader() override {
-        return drawPortalShader;
-    }
-    virtual ShaderRuntimeData *getWmoShader() override {
-        return wmoShader;
-    }
-    virtual ShaderRuntimeData *getAdtShader() override {
-        return adtShader;
-    }
-    virtual ShaderRuntimeData *getAdtLodShader() override {
-        return adtLodShader;
-    }
-    virtual ShaderRuntimeData *getDrawPointsShader() override {
-        return drawPoints;
-    }
     virtual mathfu::mat4& getViewMat() override {
         return m_lookAtMat4;
     }
@@ -172,7 +145,6 @@ private:
     void initCompressedTextureS3tcExt();
     void initDepthTextureExt ();
     void initDeferredRendering ();
-    void initShaders();
     void initCaches();
     void initDrawBuffers (int frameBuffer);
     void initRenderBuffers ();
@@ -238,26 +210,28 @@ private:
     void activateRenderFrameShader();
     void activateRenderDepthShader();
     void activateReadDepthBuffer();
-    void activateAdtShader() override;
-    void deactivateAdtShader() override;
-    void activateAdtLodShader() override;
-    void deactivateAdtLodShader() override;
-    void activateWMOShader() override;
-    void deactivateWMOShader() override;
+    void activateAdtShader();
+    void deactivateAdtShader();
+    void activateAdtLodShader();
+    void deactivateAdtLodShader();
+    void activateWMOShader();
+    void deactivateWMOShader();
     void deactivateTextureCompositionShader();
     void activateM2ShaderAttribs() ;
     void deactivateM2ShaderAttribs();
-    void activateM2Shader() override;
-    void activateM2ParticleShader() override;
-    void deactivateM2ParticleShader() override;
-    void deactivateM2Shader() override;
-    void activateM2InstancingShader() override;
-    void deactivateM2InstancingShader() override;
-    void activateBoundingBoxShader() override;
-    void deactivateBoundingBoxShader() override;
-    void activateFrustumBoxShader() override;
+    void activateM2Shader();
+    void activateM2ParticleShader();
+    void deactivateM2ParticleShader();
+    void deactivateM2Shader() ;
+    void activateM2InstancingShader();
+    void deactivateM2InstancingShader();
+    void activateBoundingBoxShader();
+    void deactivateBoundingBoxShader();
+    void activateFrustumBoxShader();
     void activateDrawLinesShader() ;
-    void activateDrawPortalShader() override;
+    void activateDrawPortalShader();
+    void activateDrawPointShader();
+    void deactivateDrawPointShader();
 
     void activateTextureCompositionShader(GLuint texture);
 
@@ -272,9 +246,7 @@ private:
         return m_isDebugCamera;
     }
 
-    void activateDrawPointShader() override ;
 
-    void deactivateDrawPointShader() override ;
 
     void SetDirection();
 };

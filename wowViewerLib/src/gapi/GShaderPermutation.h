@@ -12,7 +12,7 @@
 
 class GShaderPermutation {
     friend class GDevice;
-    GShaderPermutation(std::string &shaderName, GDevice & device);
+    explicit GShaderPermutation(std::string &shaderName, GDevice & device);
 
     void compileShader();
 

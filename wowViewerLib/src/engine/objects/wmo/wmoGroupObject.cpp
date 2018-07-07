@@ -34,6 +34,7 @@ void WmoGroupObject::draw(SMOMaterial *materials, std::function<HBlpTexture (int
 }
 
 void WmoGroupObject::drawDebugLights() {
+    /*
     if (!this->m_loaded) return;
 
     MOLP * lights = m_geom->molp;
@@ -77,6 +78,7 @@ void WmoGroupObject::drawDebugLights() {
     glDepthMask(GL_TRUE);
 
     glDeleteBuffers(1, &bufferVBO);
+     */
 }
 
 

@@ -601,7 +601,7 @@ void WmoGroupGeom::createIndexVBO() {
 }
 
 void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu::vec4 &ambColor, std::function <HBlpTexture (int materialId, bool isSpec)> getTextureFunc) {
-
+    /*
     GLuint blackPixelText = api->getBlackPixelTexture();
     Config * config = api->getConfig();
 
@@ -794,7 +794,7 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-//        /* Hack to skip verticles from node */
+//        // Hack to skip verticles from node
 //        if (bspNodeList) {
 //            var currentTriangle = renderBatch.startIndex / 3;
 //            var triangleCount = renderBatch.count / 3;
@@ -836,5 +836,5 @@ void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu:
         glDisable(GL_BLEND);
     }
     glUniform1f(wmoShader->getUnf("uAlphaTest"), -1.0f);
-
+    */
 }
