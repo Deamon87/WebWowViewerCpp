@@ -18,33 +18,26 @@ void SkinGeom::process(std::vector<unsigned char> &skinFile, std::string &fileNa
     skinHeader->submeshes.initM2Array(skinHeader);
     skinHeader->batches.initM2Array(skinHeader);
 
-    this->createVBO();
-
     m_loaded = true;
 }
+HGIndexBuffer SkinGeom::getIBO(GDevice &device) {
+    if (indexVbo == nullptr) {
+        int indiciesLength = this->m_skinData->indices.size;
 
-void SkinGeom::createVBO() {
-    int indiciesLength = this->m_skinData->indices.size;
+        std::vector<uint16_t> indicies(indiciesLength);
 
-    std::vector<uint16_t> indicies(indiciesLength);
+        for (int i = 0; i < indiciesLength; i++) {
+            indicies[i] = *this->m_skinData->vertices.getElement(*this->m_skinData->indices.getElement(i));
+        }
 
-    for (int i = 0; i < indiciesLength; i++) {
-        indicies[i] = *this->m_skinData->vertices.getElement(*this->m_skinData->indices.getElement(i));
+        indexVbo = device.createIndexBuffer();
+        indexVbo->uploadData(
+            &indicies[0],
+            indiciesLength * sizeof(uint16_t));
     }
 
-    glGenBuffers(1, &this->indexVbo);
-    //There are models, that have no indicies.
-    if (indiciesLength > 0) {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexVbo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesLength * sizeof(uint16_t), &indicies[0], GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
+    return indexVbo;
 }
-
-void SkinGeom::setupAttributes() {
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexVbo);
-}
-
 
 void SkinGeom::fixShaderIdBasedOnBlendOverride(M2Data *m2File) {
     M2SkinProfile* skinFileData = this->m_skinData;

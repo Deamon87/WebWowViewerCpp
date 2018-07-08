@@ -85,43 +85,6 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
     }
 };
 
-void M2Geom::loadTextures() {
-
-}
-
-void M2Geom::createVBO() {
-    glGenBuffers(1, &this->vertexVbo);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vertexVbo);
-    glBufferData(GL_ARRAY_BUFFER, m_m2Data->vertices.size*sizeof(M2Vertex), m_m2Data->vertices.getElement(0), GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-void M2Geom::setupAttributes() {
-    glBindBuffer(GL_ARRAY_BUFFER, this->vertexVbo);
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skinObject.indexVBO);
-    //gl.vertexAttrib4f(shaderAttributes.aColor, 0.5, 0.5, 0.5, 0.5);
-
-    /*
-     {name: "pos",           type : "vector3f"},           0+12 = 12
-     {name: "bonesWeight",   type : "uint8Array", len: 4}, 12+4 = 16
-     {name: "bones",         type : "uint8Array", len: 4}, 16+4 = 20
-     {name: "normal",        type : "vector3f"},           20+12 = 32
-     {name: "textureX",      type : "float32"},            32+4 = 36
-     {name: "textureY",      type : "float32"},            36+4 = 40
-     {name : "textureX2",    type : "float32"},            40+4 = 44
-     {name : "textureY2",    type : "float32"}             44+4 = 48
-     */
-
-    glVertexAttribPointer(+m2Shader::Attribute::aPosition, 3, GL_FLOAT, false, 48, (void *)0);  // position
-    glVertexAttribPointer(+m2Shader::Attribute::boneWeights, 4, GL_UNSIGNED_BYTE, true, 48, (void *)12);  // bonesWeight
-    glVertexAttribPointer(+m2Shader::Attribute::bones, 4, GL_UNSIGNED_BYTE, false, 48, (void *)16);  // bones
-    glVertexAttribPointer(+m2Shader::Attribute::aNormal, 3, GL_FLOAT, false, 48, (void *)20); // normal
-    glVertexAttribPointer(+m2Shader::Attribute::aTexCoord, 2, GL_FLOAT, false, 48, (void *)32); // texcoord
-    glVertexAttribPointer(+m2Shader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 48, (void *)40); // texcoord
-
-}
-
-
 void initM2Textures(M2Data *m2Header, void *m2File){
     int32_t texturesSize = m2Header->textures.size;
     for (int i = 0; i < texturesSize; i++) {
@@ -297,9 +260,6 @@ void M2Geom::process(std::vector<unsigned char> &m2File, std::string &fileName) 
     initM2Camera(m2Header, m2FileP); //TODO: off for now
 
     initM2Textures(m2Header, m2FileP);
-
-    //Step 3: create VBO
-    this->createVBO();
 
     m_loaded = true;
 }
@@ -617,5 +577,11 @@ M2Geom::drawMesh(
     */
 }
 
-
-
+HGVertexBuffer M2Geom::getVBO(GDevice &device) {
+    if (vertexVbo.get() == nullptr) {
+        vertexVbo = device.createVertexBuffer();
+        vertexVbo->uploadData(
+            m_m2Data->vertices.getElement(0),
+            m_m2Data->vertices.size*sizeof(M2Vertex));
+    }
+}

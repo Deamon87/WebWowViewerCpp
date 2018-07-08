@@ -30,8 +30,8 @@ void GVertexBufferBindings::unbind() {
     glBindVertexArray(0);
 }
 
-void GVertexBufferBindings::setIndexBuffer(GIndexBuffer &indexBuffer) {
-    m_indexBuffer = &indexBuffer;
+void GVertexBufferBindings::setIndexBuffer(HGIndexBuffer indexBuffer) {
+    m_indexBuffer = indexBuffer;
 }
 
 void GVertexBufferBindings::addVertexBufferBinding(GVertexBufferBinding binding) {
@@ -40,9 +40,9 @@ void GVertexBufferBindings::addVertexBufferBinding(GVertexBufferBinding binding)
 
 void GVertexBufferBindings::save() {
     m_device.bindVertexBufferBindings(this);
-    m_device.bindIndexBuffer(m_indexBuffer);
+    m_device.bindIndexBuffer(m_indexBuffer.get());
     for (GVertexBufferBinding &binding : m_bindings) {
-        m_device.bindVertexBuffer(binding.vertexBuffer);
+        m_device.bindVertexBuffer(binding.vertexBuffer.get());
         for (GBufferBinding &bufferBinding : binding.bindings) {
             glEnableVertexAttribArray(bufferBinding.position);
             glVertexAttribPointer(

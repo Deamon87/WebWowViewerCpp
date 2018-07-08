@@ -52,6 +52,9 @@ private:
     HM2Geom m_m2Geom ;
     HSkinGeom m_skinGeom = nullptr;
 
+    HGVertexBufferBindings bufferBindings = nullptr;
+    HGUniformBuffer modelWideUniformBuffer = nullptr;
+
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
     bool m_modelAsScene = false;
@@ -83,7 +86,7 @@ private:
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
-    std::vector<M2MaterialInst> m_materialArray;
+    std::vector<HGMesh> m_materialArray;
     AnimationManager *m_animationManager;
 
     void debugDumpAnimationSequences();
@@ -140,7 +143,8 @@ public:
     bool getIsInstancable();
     std::string getModelIdent() { return m_modelIdent; };
 
-    void makeTextureArray();
+    void prepearMatrial(M2MaterialInst &materialData, int materialIndex);
+    void createMeshes();
 
     void setUseLocalLighting(bool value) { m_useLocalDiffuseColor = value; };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
@@ -170,6 +174,8 @@ public:
     }
 
     void drawParticles();
+
+    void createVertexBindings();
 };
 
 

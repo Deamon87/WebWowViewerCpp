@@ -642,13 +642,12 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
                 return;
             }
 
-            this->m_loaded = true;
-            this->m_loading = false;
-
             m_skinGeom->fixData(m_m2Geom->getM2Data());
 
+            this->createVertexBindings();
+
             this->createAABB();
-            this->makeTextureArray();
+            this->createMeshes();
             this->initAnimationManager();
             this->initBoneAnimMatrices();
             this->initTextAnimMatrices();
@@ -657,6 +656,9 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             this->initLights();
             this->initParticleEmitters();
             m_hasBillboards = checkIfHasBillboarded();
+
+            this->m_loaded = true;
+            this->m_loading = false;
 
         } else {
             return;
@@ -733,11 +735,7 @@ void M2Object::draw(bool drawTransparent) {
         return;
     }
 
-//    var vaoBinded = this.m2Geom.bindVao();
-//    if (!vaoBinded) {
-        this->m_m2Geom->setupAttributes();
-        this->m_skinGeom->setupAttributes();
-//    }
+
 
     static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
     mathfu::vec4 localDiffuse = diffuseNon;
@@ -752,9 +750,6 @@ void M2Object::draw(bool drawTransparent) {
 
     this->drawMeshes(drawTransparent, -1);
 
-//    if (vaoBinded) {
-//        this.m2Geom.unbindVao()
-//    }
 }
 void M2Object::drawDebugLight() {
 /*
@@ -907,100 +902,114 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
     this->m_m2Geom->drawMesh(m_api, materialData, *skinData , meshColor, transparency, textureMatrix1, textureMatrix2, vertexShaderIndex, pixelShaderIndex, originalFogColor, instanceCount);
 }
 
-void M2Object::makeTextureArray() {
-    /* 1. Free previous subMeshArray */
-    auto textureCache = m_api->getTextureCache();
-
-    /* 2. Fill the materialArray */
+void M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
     auto & subMeshes = m_skinGeom->getSkinData()->submeshes;
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
 
     auto m2File = m_m2Geom->getM2Data();
 
-    for (int i = 0; i < batches->size; i++) {
-        M2MaterialInst materialData;
+    M2Batch* m2Batch = batches->getElement(materialIndex);
+    auto subMesh = subMeshes[m2Batch->skinSectionIndex];
 
-        M2Batch* m2Batch = batches->getElement(i);
-        auto subMesh = subMeshes[m2Batch->skinSectionIndex];
-
-        if ((this->m_meshIds.size() > 0) && (subMesh->skinSectionId > 0) &&
-                (m_meshIds[(subMesh->skinSectionId / 100)] != (subMesh->skinSectionId % 100))) {
-            continue;
-        }
+    if ((this->m_meshIds.size() > 0) && (subMesh->skinSectionId > 0) &&
+        (m_meshIds[(subMesh->skinSectionId / 100)] != (subMesh->skinSectionId % 100))) {
+        continue;
+    }
 //        materialArray.push(materialData);
 
-        auto op_count = m2Batch->textureCount;
+    auto op_count = m2Batch->textureCount;
 
-        auto renderFlagIndex = m2Batch->materialIndex;
-        //var isTransparent = (mdxObject.m2File.renderFlags[renderFlagIndex].blend >= 2);
-        auto isTransparent = (m2File->materials[renderFlagIndex]->blending_mode >= 2) ||
-                            ((m2File->materials[renderFlagIndex]->flags & 0x10) > 0);
+    auto renderFlagIndex = m2Batch->materialIndex;
+    //var isTransparent = (mdxObject.m2File.renderFlags[renderFlagIndex].blend >= 2);
+    auto isTransparent = (m2File->materials[renderFlagIndex]->blending_mode >= 2) ||
+                         ((m2File->materials[renderFlagIndex]->flags & 0x10) > 0);
 
-        materialData.layer = m2Batch->materialLayer;
-        materialData.isRendered = true;
-        materialData.isTransparent = isTransparent;
-        materialData.meshIndex = m2Batch->skinSectionIndex;
-        materialData.renderFlagIndex = m2Batch->materialIndex;
-        materialData.flags = m2Batch->flags;
-        materialData.priorityPlane = m2Batch->priorityPlane;
+    materialData.layer = m2Batch->materialLayer;
+    materialData.isRendered = true;
+    materialData.isTransparent = isTransparent;
+    materialData.meshIndex = m2Batch->skinSectionIndex;
+    materialData.renderFlagIndex = m2Batch->materialIndex;
+    materialData.flags = m2Batch->flags;
+    materialData.priorityPlane = m2Batch->priorityPlane;
 
-        if (m_api->getConfig()->getUseWotlkLogic()) {
-            std::string vertexShader;
-            std::string pixelShader;
-            getShaderNames(m2Batch, vertexShader, pixelShader);
-            //TODO: this his hack!!!
-            if (pixelShader == "") {
-                materialData.pixelShader = 0;
-            } else {
-                materialData.pixelShader = pixelShaderTable.at(pixelShader);
-            }
+    if (m_api->getConfig()->getUseWotlkLogic()) {
+        std::string vertexShader;
+        std::string pixelShader;
+        getShaderNames(m2Batch, vertexShader, pixelShader);
+        //TODO: this his hack!!!
+        if (pixelShader == "") {
+            materialData.pixelShader = 0;
         } else {
-            //Legion logic
-            materialData.pixelShader = getPixelShaderId(m2Batch->textureCount, m2Batch->shader_id);
-            materialData.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
+            materialData.pixelShader = pixelShaderTable.at(pixelShader);
         }
+    } else {
+        //Legion logic
+        materialData.pixelShader = getPixelShaderId(m2Batch->textureCount, m2Batch->shader_id);
+        materialData.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
+    }
 
-        int textureUnit;
-        if (m2Batch->textureCoordComboIndex < m2File->tex_unit_lookup_table.size) {
-            textureUnit = *m2File->tex_unit_lookup_table[m2Batch->textureCoordComboIndex];
-            if (textureUnit == 0xFFFF) {
-                //Enviroment mapping
-                materialData.isEnviromentMapping = true;
-            }
+    int textureUnit;
+    if (m2Batch->textureCoordComboIndex < m2File->tex_unit_lookup_table.size) {
+        textureUnit = *m2File->tex_unit_lookup_table[m2Batch->textureCoordComboIndex];
+        if (textureUnit == 0xFFFF) {
+            //Enviroment mapping
+
         }
+    }
 
-        if (op_count > 0) {
-            auto mdxTextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex];
-            M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
-            materialData.texUnit1TexIndex = i;
-            materialData.mdxTextureIndex1 = mdxTextureIndex;
-            materialData.xWrapTex1 = (mdxTextureDefinition->flags & 1) > 0;
-            materialData.yWrapTex1 = (mdxTextureDefinition->flags & 2) > 0;
+    if (op_count > 0) {
+        auto mdxTextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex];
+        M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
+        materialData.texUnit1TexIndex = materialIndex;
+        materialData.mdxTextureIndex1 = mdxTextureIndex;
+        materialData.xWrapTex1 = (mdxTextureDefinition->flags & 1) > 0;
+        materialData.yWrapTex1 = (mdxTextureDefinition->flags & 2) > 0;
 
-            materialData.texUnit1Texture = getTexture(mdxTextureIndex);
-        }
-        if (op_count > 1) {
-            auto textureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
-            M2Texture* mdxTextureDefinition = m2File->textures[textureIndex];
-            materialData.texUnit2TexIndex = i;
-            materialData.mdxTextureIndex2 = textureIndex;
-            materialData.xWrapTex2 = (mdxTextureDefinition->flags & 1) > 0;
-            materialData.yWrapTex2 = (mdxTextureDefinition->flags & 2) > 0;
+        materialData.texUnit1Texture = getTexture(mdxTextureIndex);
+    }
+    if (op_count > 1) {
+        auto textureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
+        M2Texture* mdxTextureDefinition = m2File->textures[textureIndex];
+        materialData.texUnit2TexIndex = materialIndex;
+        materialData.mdxTextureIndex2 = textureIndex;
+        materialData.xWrapTex2 = (mdxTextureDefinition->flags & 1) > 0;
+        materialData.yWrapTex2 = (mdxTextureDefinition->flags & 2) > 0;
 
-            materialData.texUnit2Texture = getTexture(textureIndex);
-        }
-        if (op_count > 2) {
-            auto textureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
-            M2Texture* mdxTextureDefinition = m2File->textures[textureIndex];
-            materialData.texUnit3TexIndex = i;
-            materialData.mdxTextureIndex3 = textureIndex;
-            materialData.xWrapTex3 = (mdxTextureDefinition->flags & 1) > 0;
-            materialData.yWrapTex3 = (mdxTextureDefinition->flags & 2) > 0;
+        materialData.texUnit2Texture = getTexture(textureIndex);
+    }
+    if (op_count > 2) {
+        auto textureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
+        M2Texture* mdxTextureDefinition = m2File->textures[textureIndex];
+        materialData.texUnit3TexIndex = materialIndex;
+        materialData.mdxTextureIndex3 = textureIndex;
+        materialData.xWrapTex3 = (mdxTextureDefinition->flags & 1) > 0;
+        materialData.yWrapTex3 = (mdxTextureDefinition->flags & 2) > 0;
 
-            materialData.texUnit3Texture = getTexture(textureIndex);
-        }
+        materialData.texUnit3Texture = getTexture(textureIndex);
+    }
 
-        this->m_materialArray.push_back(materialData);
+
+}
+
+void M2Object::createMeshes() {
+    /* 1. Free previous subMeshArray */
+    auto textureCache = m_api->getTextureCache();
+
+    /* 2. Fill the materialArray */
+    M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
+     for (int i = 0; i < batches->size; i++) {
+        M2MaterialInst material;
+
+        prepearMatrial(material, i);
+
+         //Make mesh
+
+
+
+         m_api->getDevice()->createMesh()
+
+
+        this->m_materialArray.push_back();
     }
 }
 
@@ -1055,8 +1064,6 @@ void M2Object::drawInstanced(bool drawTransparent, int instanceCount, GLuint pla
     if (!this->m_loaded) return;
 
     mathfu::vec4 ambientLight = getAmbientLight();
-    this->m_m2Geom->setupAttributes(/*this->m_skinGeom*/);
-    this->m_skinGeom->setupAttributes();
     this->m_m2Geom->setupUniforms(m_api, m_placementMatrix, bonesMatrices, m_localDiffuseColorV, ambientLight, drawTransparent, this->lights,  true);
     this->m_m2Geom->setupPlacementAttribute(placementVBO);
     this->drawMeshes(drawTransparent, instanceCount);
@@ -1151,4 +1158,44 @@ inline HBlpTexture M2Object::getTexture(int textureInd) {
         return this->m_replaceTextures[textureDefinition->type];
     }
     return nullptr;
+}
+//    /*
+//     {name: "pos",           type : "vector3f"},           0+12 = 12
+//     {name: "bonesWeight",   type : "uint8Array", len: 4}, 12+4 = 16
+//     {name: "bones",         type : "uint8Array", len: 4}, 16+4 = 20
+//     {name: "normal",        type : "vector3f"},           20+12 = 32
+//     {name: "textureX",      type : "float32"},            32+4 = 36
+//     {name: "textureY",      type : "float32"},            36+4 = 40
+//     {name : "textureX2",    type : "float32"},            40+4 = 44
+//     {name : "textureY2",    type : "float32"}             44+4 = 48
+//     */
+static GBufferBinding staticM2Bindings[6] = {
+    {+m2Shader::Attribute::aPosition, 3, GL_FLOAT, false, 48, 0 },
+    {+m2Shader::Attribute::boneWeights, 4, GL_UNSIGNED_BYTE, true, 48, 12},  // bonesWeight
+    {+m2Shader::Attribute::bones, 4, GL_UNSIGNED_BYTE, false, 48, 16},  // bones
+    {+m2Shader::Attribute::aNormal, 3, GL_FLOAT, false, 48, 20}, // normal
+    {+m2Shader::Attribute::aTexCoord, 2, GL_FLOAT, false, 48, 32}, // texcoord
+    {+m2Shader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 48, 40} // texcoord
+};
+
+void M2Object::createVertexBindings() {
+    GDevice *device = m_api->getDevice();
+
+    //1. Get existing buffers
+    HGVertexBuffer vboBuffer = m_m2Geom->getVBO(*device);
+    HGIndexBuffer iboBuffer = m_skinGeom->getIBO(*device);
+
+    //2. Create buffer binding and fill it
+    bufferBindings = device->createVertexBufferBindings();
+    bufferBindings->setIndexBuffer(iboBuffer);
+
+    GVertexBufferBinding vertexBinding;
+    vertexBinding.vertexBuffer = vboBuffer;
+    vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[5]);
+
+    bufferBindings->addVertexBufferBinding(vertexBinding);
+    bufferBindings->save();
+
+    //3. Create model wide uniform buffer
+    modelWideUniformBuffer = device->createUniformBuffer();
 }

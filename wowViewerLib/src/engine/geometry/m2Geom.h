@@ -9,15 +9,15 @@
 #include "../wowInnerApi.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "../objects/m2/m2Helpers/M2MaterialInst.h"
+#include "../../gapi/GDevice.h"
 //#include "../objects/m2Object.h"
 
 
 class M2Geom {
 public:
     void process(std::vector<unsigned char> &m2File, std::string &fileName);
-    void loadTextures();
-    void createVBO();
-    void setupAttributes();
+    HGVertexBuffer getVBO(GDevice &device);
+
     bool isLoaded() { return m_loaded; };
 
     M2Data * getM2Data(){ if (m_loaded) {return m_m2Data;} else {return nullptr;}};
@@ -54,7 +54,7 @@ private:
     std::vector<uint8_t> m2File;
 
     bool m_loaded = false;
-    GLuint vertexVbo;
+    HGVertexBuffer vertexVbo = HGVertexBuffer(nullptr);
 
     static chunkDef<M2Geom> m2FileTable;
 

@@ -14,9 +14,7 @@ class M2MaterialInst {
 public:
     bool isRendered= false;
     bool isTransparent= false;
-    bool isEnviromentMapping= false;
     int meshIndex= -1;
-
 
     int texUnit1TexIndex = 01;
     int mdxTextureIndex1 = -1;

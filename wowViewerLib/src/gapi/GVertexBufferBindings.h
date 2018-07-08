@@ -26,7 +26,7 @@ struct GBufferBinding{
 };
 
 struct GVertexBufferBinding {
-    GVertexBuffer *vertexBuffer;
+    HGVertexBuffer vertexBuffer;
     std::vector<GBufferBinding> bindings;
 };
 
@@ -34,7 +34,7 @@ class GVertexBufferBindings {
     friend class GDevice;
 private:
     std::vector<GVertexBufferBinding> m_bindings;
-    GIndexBuffer *m_indexBuffer = nullptr;
+    HGIndexBuffer m_indexBuffer = HGIndexBuffer(nullptr);
 
 
 private:
@@ -51,12 +51,12 @@ private:
     void destroyBuffer();
     void bind(); //Should be called only by GDevice
     void unbind();
+public:
     void save();
 
-    void setIndexBuffer(GIndexBuffer &indexBuffer);
+    void setIndexBuffer(HGIndexBuffer indexBuffer);
     void addVertexBufferBinding(GVertexBufferBinding binding);
 
 };
-
 
 #endif //WEBWOWVIEWERCPP_GVERTEXBUFFERBINDINGS_H

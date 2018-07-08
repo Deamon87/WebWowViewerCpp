@@ -26,6 +26,7 @@
 #include "persistance/wdlFile.h"
 #include "persistance/db2/base/DB2Base.h"
 #include "persistance/db2/DB2Light.h"
+#include "../gapi/GDevice.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -82,6 +83,10 @@ public:
         }
     }
 public:
+    virtual GDevice * getDevice() override {
+        return &m_gdevice;
+    }
+
     virtual Cache<AdtFile> *getAdtGeomCache() override {
         return &adtObjectCache;
     }
@@ -157,6 +162,8 @@ private:
     bool m_enable;
 
     Config * m_config;
+    GDevice m_gdevice;
+
 
     mathfu::mat4 m_lookAtMat4;
     mathfu::mat4 m_viewCameraForRender;

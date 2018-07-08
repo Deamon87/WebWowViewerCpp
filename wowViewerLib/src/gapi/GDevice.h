@@ -4,12 +4,21 @@
 
 #ifndef WEBWOWVIEWERCPP_GDEVICE_H
 #define WEBWOWVIEWERCPP_GDEVICE_H
+#include <memory>
+
 class GVertexBuffer;
 class GVertexBufferBindings;
 class GIndexBuffer;
 class GUniformBuffer;
 class GShaderPermutation;
 class GMesh;
+
+typedef std::shared_ptr<GVertexBuffer> HGVertexBuffer;
+typedef std::shared_ptr<GIndexBuffer> HGIndexBuffer;
+typedef std::shared_ptr<GVertexBufferBindings> HGVertexBufferBindings;
+typedef std::shared_ptr<GUniformBuffer> HGUniformBuffer;
+typedef std::shared_ptr<GShaderPermutation> HGShaderPermutation;
+typedef std::shared_ptr<GMesh> HGMesh;
 
 #include <unordered_set>
 #include <list>
@@ -20,6 +29,7 @@ class GMesh;
 #include "GUniformBuffer.h"
 #include "GShaderPermutation.h"
 #include "GMesh.h"
+
 
 class GDevice {
 public:
@@ -49,8 +59,26 @@ public:
     void drawMeshes(std::vector<GMesh *> &meshes);
 public:
     std::shared_ptr<GShaderPermutation> getShader(std::string shaderName);
-    GUniformBuffer &createUniformBuffer();
 
+    HGUniformBuffer createUniformBuffer();
+    HGVertexBuffer createVertexBuffer();
+    HGIndexBuffer createIndexBuffer();
+    HGVertexBufferBindings createVertexBufferBindings();
+
+    HGMesh createMesh(GDevice &device,
+                      GVertexBufferBindings &bindings,
+                      GShaderPermutation &shader,
+                      bool m_depthWrite,
+                      bool m_depthCulling,
+                      int m_blendMode,
+
+                      int m_start,
+                      int m_end,
+                      int m_element,
+                      GTexture *m_texture1,
+                      GTexture *m_texture2,
+                      GTexture *m_texture3,
+                      GTexture *m_texture4);
 private:
     bool m_lastDepthWrite = false;
     bool m_lastDepthCulling = false;
@@ -67,7 +95,7 @@ private:
 
 private:
     //Caches
-    std::unordered_map<size_t, std::shared_ptr<GShaderPermutation>> m_shaderPermutCache;
+    std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
 
 };

@@ -48,7 +48,7 @@ GLuint sizeFromUniformType(GLint type)
     GLuint s;
 
 #define UNI_CASE(type, numElementsInType, elementType) \
-      case type : s = numElementsInType * sizeof(elementType); break;
+      case type : s = (numElementsInType) * sizeof(elementType); break;
 
     switch(type)
     {

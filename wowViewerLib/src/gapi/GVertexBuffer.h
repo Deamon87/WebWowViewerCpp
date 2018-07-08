@@ -7,11 +7,13 @@
 
 class GDevice;
 #include "GDevice.h"
+#include <memory>
 
 class GVertexBuffer {
     friend class GDevice;
 
     explicit GVertexBuffer(GDevice &device);
+public:
     ~GVertexBuffer();
 private:
     void createBuffer();
@@ -25,12 +27,12 @@ public:
 private:
     GDevice &m_device;
 
-
-
 private:
     void * pIdentifierBuffer = nullptr;
 
 };
+
+
 
 
 #endif //WEBWOWVIEWERCPP_GVERTEXBUFFER_H

@@ -24,11 +24,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         textureCache(requestProcessor),
         adtObjectCache(requestProcessor),
         db2Cache(requestProcessor){
+    m_gdevice = GDevice();
+
     this->m_config = config;
 
     this->canvWidth = canvWidth;
     this->canvHeight = canvHeight;
     this->canvAspect = (float)canvWidth / (float)canvHeight;
+
+
 
 #ifndef WITH_GLESv2
     /* Allocate and assign a Vertex Array Object to our handle */
