@@ -143,7 +143,7 @@ public:
     bool getIsInstancable();
     std::string getModelIdent() { return m_modelIdent; };
 
-    void prepearMatrial(M2MaterialInst &materialData, int materialIndex);
+    bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
     void createMeshes();
 
     void setUseLocalLighting(bool value) { m_useLocalDiffuseColor = value; };

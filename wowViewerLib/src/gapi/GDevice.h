@@ -41,9 +41,10 @@ public:
         m_lastBindVertexBuffer = nullptr;
         m_vertexBufferBindings = nullptr;
 
-        m_lastTexture1 = nullptr;
-        m_lastTexture2 = nullptr;
-        m_lastTexture3 = nullptr;
+        m_lastTexture[0] = nullptr;
+        m_lastTexture[1] = nullptr;
+        m_lastTexture[2] = nullptr;
+        m_lastTexture[3] = nullptr;
 
         m_uniformBuffer[0] = nullptr;
         m_uniformBuffer[1] = nullptr;
@@ -55,6 +56,7 @@ public:
     void bindUniformBuffer(GUniformBuffer *buffer, int slot);
     void bindVertexBufferBindings(GVertexBufferBindings *buffer);
 
+    void bindTexture(GTexture *texture, int slot);
 
     void drawMeshes(std::vector<GMesh *> &meshes);
 public:
@@ -87,9 +89,7 @@ private:
     GVertexBuffer *m_lastBindVertexBuffer = nullptr;
     GVertexBufferBindings *m_vertexBufferBindings = nullptr;
 
-    GTexture *m_lastTexture1 = nullptr;
-    GTexture *m_lastTexture2 = nullptr;
-    GTexture *m_lastTexture3 = nullptr;
+    GTexture *m_lastTexture[4] = {nullptr};
 
     GUniformBuffer * m_uniformBuffer[3] = {nullptr};
 

@@ -89,6 +89,17 @@ enum class M2VertexShader : int {
 inline constexpr const int operator+ (M2PixelShader const val) { return static_cast<const int>(val); };
 inline constexpr const int operator+ (M2VertexShader const val) { return static_cast<const int>(val); };
 
+int M2BlendingModeToEGxBlendEnum [8] =
+    {
+        static_cast<int>(EGxBlendEnum::GxBlend_Opaque),
+        static_cast<int>(EGxBlendEnum::GxBlend_AlphaKey),
+        static_cast<int>(EGxBlendEnum::GxBlend_Alpha),
+        static_cast<int>(EGxBlendEnum::GxBlend_NoAlphaAdd),
+        static_cast<int>(EGxBlendEnum::GxBlend_Add),
+        static_cast<int>(EGxBlendEnum::GxBlend_Mod),
+        static_cast<int>(EGxBlendEnum::GxBlend_Mod2x),
+        static_cast<int>(EGxBlendEnum::GxBlend_BlendAdd)
+    };
 
 static struct {
     unsigned int pixel;
@@ -486,7 +497,7 @@ mathfu::vec4 M2Object::getCombinedColor(
         M2MaterialInst &materialData,
         std::vector<mathfu::vec4> subMeshColors
 ) {
-    int colorIndex = skinData->batches[materialData.texUnit1TexIndex]->colorIndex;
+    int colorIndex = skinData->batches[materialData.texUnitTexIndex]->colorIndex;
     mathfu::vec4 submeshColor = mathfu::vec4(1,1,1,1);
 
     if ((colorIndex >= 0) && (subMeshColors.size() > colorIndex)) {
@@ -503,7 +514,7 @@ float M2Object::getTransparency(
         std::vector<float> &transparencies) {
     float transparency = 1.0;
 
-    int transpIndex = skinData->batches[materialData.texUnit1TexIndex]->textureWeightComboIndex;
+    int transpIndex = skinData->batches[materialData.texUnitTexIndex]->textureWeightComboIndex;
     if ((transpIndex >= 0) && (transparencies.size() > transpIndex)) {
         transparency = transparencies[transpIndex];
     }
@@ -841,12 +852,12 @@ void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
     if (!drawTransparent) {
         for (int i = minBatch; i < maxBatch; i++) {
             auto &materialData = this->m_materialArray[i];
-            this->drawMaterial(materialData, drawTransparent, instanceCount);
+//            this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
     } else {
         for (int i = (int) maxBatch - 1; i >= minBatch; i--) {
             auto &materialData = this->m_materialArray[i];
-            this->drawMaterial(materialData, drawTransparent, instanceCount);
+//            this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
     }
 }
@@ -875,7 +886,7 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
     float transparency = this->getTransparency(skinData, materialData, this->transparencies);
 
     float finalTransparency = meshColor.w;
-    auto textMaterial = skinData->batches[materialData.texUnit1TexIndex];
+    auto textMaterial = skinData->batches[materialData.texUnitTexIndex];
     if ( textMaterial->textureCount && !(textMaterial->flags & 0x40)) {
         finalTransparency *= transparency;
     }
@@ -883,13 +894,14 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
     //Don't draw meshes with 0 transp
     if ((finalTransparency < 0.0001) ) return;
 
-    if (materialData.texUnit1TexIndex >= 0) {
-        auto textureAnim = skinData->batches[materialData.texUnit1TexIndex]->textureTransformComboIndex;
+    //TODO:: WTF IS THIS CODE?
+    if (materialData.texUnitTexIndex >= 0) {
+        auto textureAnim = skinData->batches[materialData.texUnitTexIndex]->textureTransformComboIndex;
         int16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
         if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
             textureMatrix1 = this->textAnimMatrices[textureMatIndex];
         }
-        if (materialData.texUnit2TexIndex >= 0 && (textureAnim+1 < m2Data->texture_transforms_lookup_table.size)) {
+        if (textureAnim+1 < m2Data->texture_transforms_lookup_table.size) {
             int textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
             if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
                 textureMatrix2 = this-> textAnimMatrices[textureMatIndex];
@@ -902,7 +914,7 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
     this->m_m2Geom->drawMesh(m_api, materialData, *skinData , meshColor, transparency, textureMatrix1, textureMatrix2, vertexShaderIndex, pixelShaderIndex, originalFogColor, instanceCount);
 }
 
-void M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
+bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
     auto & subMeshes = m_skinGeom->getSkinData()->submeshes;
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
 
@@ -913,7 +925,7 @@ void M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
 
     if ((this->m_meshIds.size() > 0) && (subMesh->skinSectionId > 0) &&
         (m_meshIds[(subMesh->skinSectionId / 100)] != (subMesh->skinSectionId % 100))) {
-        continue;
+        return false;
     }
 //        materialArray.push(materialData);
 
@@ -957,43 +969,27 @@ void M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
         }
     }
 
-    if (op_count > 0) {
-        auto mdxTextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex];
-        M2Texture* mdxTextureDefinition = m2File->textures[mdxTextureIndex];
-        materialData.texUnit1TexIndex = materialIndex;
-        materialData.mdxTextureIndex1 = mdxTextureIndex;
-        materialData.xWrapTex1 = (mdxTextureDefinition->flags & 1) > 0;
-        materialData.yWrapTex1 = (mdxTextureDefinition->flags & 2) > 0;
+    materialData.texUnitTexIndex = materialIndex;
+    for (int j = 0; j < op_count; j++) {
+        auto m2TextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + j];
+        M2Texture* m2TextureDefinition = m2File->textures[m2TextureIndex];
 
-        materialData.texUnit1Texture = getTexture(mdxTextureIndex);
-    }
-    if (op_count > 1) {
-        auto textureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
-        M2Texture* mdxTextureDefinition = m2File->textures[textureIndex];
-        materialData.texUnit2TexIndex = materialIndex;
-        materialData.mdxTextureIndex2 = textureIndex;
-        materialData.xWrapTex2 = (mdxTextureDefinition->flags & 1) > 0;
-        materialData.yWrapTex2 = (mdxTextureDefinition->flags & 2) > 0;
+        materialData.textures[j].m2TextureIndex = m2TextureIndex;
+        materialData.textures[j].xWrapTex = (m2TextureDefinition->flags & 1) > 0;
+        materialData.textures[j].yWrapTex = (m2TextureDefinition->flags & 2) > 0;
 
-        materialData.texUnit2Texture = getTexture(textureIndex);
-    }
-    if (op_count > 2) {
-        auto textureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + 1];
-        M2Texture* mdxTextureDefinition = m2File->textures[textureIndex];
-        materialData.texUnit3TexIndex = materialIndex;
-        materialData.mdxTextureIndex3 = textureIndex;
-        materialData.xWrapTex3 = (mdxTextureDefinition->flags & 1) > 0;
-        materialData.yWrapTex3 = (mdxTextureDefinition->flags & 2) > 0;
-
-        materialData.texUnit3Texture = getTexture(textureIndex);
+        materialData.textures[j].texUnitTexture = getTexture(m2TextureIndex);
     }
 
-
+    return true;
 }
 
 void M2Object::createMeshes() {
     /* 1. Free previous subMeshArray */
     auto textureCache = m_api->getTextureCache();
+
+    M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
+    auto m_m2Data = m_m2Geom->getM2Data();
 
     /* 2. Fill the materialArray */
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
@@ -1002,10 +998,26 @@ void M2Object::createMeshes() {
 
         prepearMatrial(material, i);
 
+        auto textMaterial = skinData->batches[material.texUnitTexIndex];
+        int renderFlagIndex = textMaterial->materialIndex;
+        auto renderFlag = m_m2Data->materials[renderFlagIndex];
+
+        bool depthWrite = !(renderFlag->flags & 0x10);
+        bool depthCulling = !(renderFlag->flags & 0x8);
+        bool backFaceCulling = !(renderFlag->flags & 0x4);
+
+        int blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode] ;
+
+        int start;
+        int end;
+        int element;
+        GTexture *texture1;
+        GTexture *texture2;
+        GTexture *texture3;
+        GTexture *texture4;
+
+
          //Make mesh
-
-
-
          m_api->getDevice()->createMesh()
 
 

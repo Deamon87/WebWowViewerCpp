@@ -6,7 +6,7 @@
 #include "GDevice.h"
 #include "../engine/algorithms/hashString.h"
 #include "shaders/GM2ShaderPermutation.h"
-
+#include "../engine/opengl/header.h"
 
 void GDevice::bindIndexBuffer(GIndexBuffer *buffer) {
     if (buffer == nullptr ) {
@@ -143,4 +143,18 @@ HGMesh GDevice::createMesh(GDevice &device,
         m_texture4));
 
     return h_mesh;
+}
+
+void GDevice::bindTexture(GTexture *texture, int slot) {
+    if (texture == nullptr) {
+        if (m_lastTexture[slot] != nullptr) {
+            glActiveTexture(GL_TEXTURE0 + slot);
+            m_lastTexture[slot]->unbind();
+            m_uniformBuffer[slot] = nullptr;
+        }
+    }  else if (texture != m_lastTexture[slot]) {
+        glActiveTexture(GL_TEXTURE0 + slot);
+        texture->bind();
+        m_lastTexture[slot] = texture;
+    }
 }

@@ -24,17 +24,7 @@ BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
     /*GxBlend_BlendAdd*/         {true,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA}
 };
 
-int M2BlendingModeToEGxBlendEnum [8] =
-    {
-        static_cast<int>(EGxBlendEnum::GxBlend_Opaque),
-        static_cast<int>(EGxBlendEnum::GxBlend_AlphaKey),
-        static_cast<int>(EGxBlendEnum::GxBlend_Alpha),
-        static_cast<int>(EGxBlendEnum::GxBlend_NoAlphaAdd),
-        static_cast<int>(EGxBlendEnum::GxBlend_Add),
-        static_cast<int>(EGxBlendEnum::GxBlend_Mod),
-        static_cast<int>(EGxBlendEnum::GxBlend_Mod2x),
-        static_cast<int>(EGxBlendEnum::GxBlend_BlendAdd)
-    };
+
 
 
 chunkDef<M2Geom> M2Geom::m2FileTable = {

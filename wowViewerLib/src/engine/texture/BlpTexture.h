@@ -8,16 +8,41 @@
 #include "../opengl/header.h"
 #include "../persistance/header/blpFileHeader.h"
 #include <vector>
+enum class TextureFormat {
+    None,
+    S3TC_RGBA_DXT1,
+    S3TC_RGB_DXT1,
+    S3TC_RGBA_DXT3,
+    S3TC_RGBA_DXT5,
+    BGRA,
+    PalARGB1555DitherFloydSteinberg,
+    PalARGB4444DitherFloydSteinberg,
+    PalARGB2565DitherFloydSteinberg
+};
+
+struct mipmapStruct_t {
+    std::vector<uint8_t> texture;
+    int32_t width;
+    int32_t height;
+};
+typedef std::vector<mipmapStruct_t> MipmapsVector;
 
 class BlpTexture {
 public:
     void process(std::vector<unsigned char> &blpFile, std::string &fileName);
     bool getIsLoaded() { return m_isLoaded; };
-    GLuint getGlTexture() {return texture;}
+    const MipmapsVector& getMipmapsVector() {
+        return m_mipmaps;
+    }
+
+    TextureFormat getTextureFormat() {
+        return m_textureFormat;
+    }
 private:
-    GLuint texture;
     bool m_isLoaded = false;
 
+    MipmapsVector m_mipmaps;
+    TextureFormat m_textureFormat;
 };
 
 

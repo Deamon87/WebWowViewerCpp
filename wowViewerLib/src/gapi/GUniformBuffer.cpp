@@ -15,9 +15,9 @@ GUniformBuffer::GUniformBuffer(GDevice &device, size_t size) : m_device(device){
 
 GUniformBuffer::~GUniformBuffer() {
     destroyBuffer();
-    delete pIdentifierBuffer;
-    delete pPreviousContent;
-    delete pContent;
+    delete (GLuint *)pIdentifierBuffer;
+    delete (char *)pPreviousContent;
+    delete (char *)pContent;
 }
 
 void GUniformBuffer::createBuffer() {

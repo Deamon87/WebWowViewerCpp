@@ -11,25 +11,6 @@
 #include "DxtDecompress.h"
 #include "../persistance/helper/ChunkFileReader.h"
 
-enum class TextureFormat {
-    None,
-    S3TC_RGBA_DXT1,
-    S3TC_RGB_DXT1,
-    S3TC_RGBA_DXT3,
-    S3TC_RGBA_DXT5,
-    BGRA,
-    PalARGB1555DitherFloydSteinberg,
-    PalARGB4444DitherFloydSteinberg,
-    PalARGB2565DitherFloydSteinberg
-};
-
-struct mipmapStruct_t {
-    std::vector<uint8_t> texture;
-    int32_t width;
-    int32_t height;
-};
-typedef std::vector<mipmapStruct_t> MipmapsVector;
-
 TextureFormat getTextureType(BlpFile *blpFile) {
     TextureFormat textureFormat = TextureFormat::None;
     switch (blpFile->preferredFormat) {
@@ -130,148 +111,6 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
     }
 }
 
-
-GLuint createGlTexture(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &mipmaps, std::string &filename) {
-    bool hasAlpha = blpFile->alphaChannelBitDepth > 0;
-
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    GLuint textureGPUFormat = 0;
-//     if (ext) {
-        switch (textureFormat) {
-            case TextureFormat::S3TC_RGB_DXT1:
-                textureGPUFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-                break;
-
-            case TextureFormat::S3TC_RGBA_DXT1:
-                textureGPUFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-                break;
-
-
-            case TextureFormat::S3TC_RGBA_DXT3:
-                textureGPUFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-                break;
-
-            case TextureFormat::S3TC_RGBA_DXT5:
-                textureGPUFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-                break;
-
-            case TextureFormat::BGRA:
-                break;
-
-            default:
-                debuglog("Unknown texture format found in file: "+filename)
-                break;
-        }
-//    }
-
-    /* S3TC is not supported on mobile platforms */
-    bool useDXT1Decoding = false;
-    bool useDXT3Decoding = false;
-    bool useDXT5Decoding = false;
-
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-
-    bool generateMipMaps = false;
-    switch (textureFormat) {
-        case TextureFormat::S3TC_RGB_DXT1:
-        case TextureFormat::S3TC_RGBA_DXT1: {
-            unsigned char *decodedResult = nullptr;
-            if (useDXT1Decoding)
-                decodedResult = new unsigned char[mipmaps[0].width * mipmaps[0].height * 4];
-
-            for (int k = 0; k < mipmaps.size(); k++) {
-                if (useDXT1Decoding) {
-                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
-                    glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
-                } else {
-                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width,
-                                           mipmaps[k].height, 0,
-                                           (GLsizei) mipmaps[k].texture.size(),
-                                           &mipmaps[k].texture[0]);
-                }
-            }
-            if (useDXT1Decoding)
-                delete decodedResult;
-        }
-        break;
-
-        case TextureFormat::S3TC_RGBA_DXT3: {
-            unsigned char *decodedResult = nullptr;
-            if (useDXT3Decoding)
-                decodedResult = new unsigned char[mipmaps[0].width * mipmaps[0].height * 4];
-
-            for (int k = 0; k < mipmaps.size(); k++) {
-                if (useDXT3Decoding) {
-                    DecompressBC2(mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
-                    glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
-                } else {
-                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width,
-                                           mipmaps[k].height, 0,
-                                           (GLsizei) mipmaps[k].texture.size(),
-                                           &mipmaps[k].texture[0]);
-                }
-            }
-            if (useDXT3Decoding)
-                delete decodedResult;
-        }
-        break;
-
-        case TextureFormat::S3TC_RGBA_DXT5: {
-            unsigned char *decodedResult = nullptr;
-            if (useDXT5Decoding)
-                decodedResult = new unsigned char[mipmaps[0].width * mipmaps[0].height * 4];
-            for (int k = 0; k < mipmaps.size(); k++) {
-                if (useDXT5Decoding) {
-                    DecompressBC3(mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
-                    glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
-                } else {
-                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width,
-                                           mipmaps[k].height, 0,
-                                           (GLsizei) mipmaps[k].texture.size(),
-                                           &mipmaps[k].texture[0]);
-                }
-            }
-            if (useDXT5Decoding)
-                delete decodedResult;
-        }
-
-        break;
-
-        case TextureFormat::BGRA:
-            for( int k = 0; k < mipmaps.size(); k++) {
-                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
-                             &mipmaps[k].texture[0]);
-            }
-            break;
-    }
-#ifndef WITH_GLESv2
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) mipmaps.size()-1);
-#endif
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    bool anisFilterExt = true;
-    if (anisFilterExt) {
-        float aniso = 0.0f;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
-    }
-
-#ifdef WITH_GLESv2
-        glGenerateMipmap(GL_TEXTURE_2D);
-#endif
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return texture;
-}
-
 void BlpTexture::process(std::vector<unsigned char> &blpFile, std::string &fileName) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
@@ -283,11 +122,10 @@ void BlpTexture::process(std::vector<unsigned char> &blpFile, std::string &fileN
     TextureFormat textureFormat = getTextureType(pBlpFile);
 
     /* Load texture by mipmaps */
-    MipmapsVector mipmaps;
-    parseMipmaps(pBlpFile, textureFormat, mipmaps);
+    parseMipmaps(pBlpFile, textureFormat, m_mipmaps);
 
-    /* Load texture into GL memory */
-    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
+//    /* Load texture into GL memory */
+//    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
     this->m_isLoaded = true;
 }
 

@@ -16,23 +16,15 @@ public:
     bool isTransparent= false;
     int meshIndex= -1;
 
-    int texUnit1TexIndex = 01;
-    int mdxTextureIndex1 = -1;
-    bool xWrapTex1 = false;
-    bool yWrapTex1 = false;
-    HBlpTexture texUnit1Texture = nullptr;
+    int textureCount;
 
-    int texUnit2TexIndex = -1;
-    int mdxTextureIndex2 = -1;
-    bool xWrapTex2 = false;
-    bool yWrapTex2 = false;
-    HBlpTexture texUnit2Texture = nullptr;
-
-    int texUnit3TexIndex = -1;
-    int mdxTextureIndex3 = -1;
-    bool xWrapTex3 = false;
-    bool yWrapTex3 = false;
-    HBlpTexture texUnit3Texture = nullptr;
+    int texUnitTexIndex = -1;
+    struct textureParams {
+        int m2TextureIndex = -1;
+        bool xWrapTex = false;
+        bool yWrapTex = false;
+        HBlpTexture texUnitTexture = nullptr;
+    } textures[4];
 
     int layer = 0;
     int renderFlagIndex = -1;
