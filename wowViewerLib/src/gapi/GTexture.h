@@ -8,26 +8,28 @@
 
 #include "../engine/wowCommonClasses.h"
 #include "../engine/texture/BlpTexture.h"
+#include "./GDevice.h"
 
 class GTexture {
     friend class GDevice;
     GTexture(GDevice &device, HBlpTexture &texture);
 public:
     ~GTexture();
-    void createGlTexture(TextureFormat textureFormat, MipmapsVector &mipmaps, std::string &filename);
+    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps);
+
+    bool getIsLoaded();
 private:
-
-
     void createBuffer();
     void destroyBuffer();
     void bind(); //Should be called only by GDevice
     void unbind();
-
 private:
     void * pIdentifierBuffer;
 
     GDevice &m_device;
     HBlpTexture m_texture;
+
+    bool m_loaded = false;
 };
 
 

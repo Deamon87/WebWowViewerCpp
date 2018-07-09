@@ -25,6 +25,7 @@ public:
     M2Object(IWoWInnerApi *api) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr), m_animationManager(nullptr) {}
 
     friend class M2InstancingObject;
+    friend class M2MeshBufferUpdater;
 private:
     void createAABB();
     bool m_loading = false;
@@ -86,7 +87,8 @@ private:
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
-    std::vector<HGMesh> m_materialArray;
+    std::vector<HGMesh> m_meshArray;
+    std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
 
     void debugDumpAnimationSequences();
@@ -145,6 +147,7 @@ public:
 
     bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
     void createMeshes();
+    void fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame);
 
     void setUseLocalLighting(bool value) { m_useLocalDiffuseColor = value; };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,

@@ -220,9 +220,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-//   m_firstCamera.setCameraPos(0,  0, 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+   m_firstCamera.setCameraPos(0,  0, 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -1328,9 +1328,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
 //    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
-//
 
-//
 
     this->m_viewCameraForRender = viewCameraForRender;
 

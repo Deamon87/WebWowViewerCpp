@@ -10,8 +10,11 @@ class GVertexBuffer;
 class GVertexBufferBindings;
 class GIndexBuffer;
 class GUniformBuffer;
+class GTexture;
 class GShaderPermutation;
 class GMesh;
+
+class gMeshTemplate;
 
 typedef std::shared_ptr<GVertexBuffer> HGVertexBuffer;
 typedef std::shared_ptr<GIndexBuffer> HGIndexBuffer;
@@ -19,6 +22,7 @@ typedef std::shared_ptr<GVertexBufferBindings> HGVertexBufferBindings;
 typedef std::shared_ptr<GUniformBuffer> HGUniformBuffer;
 typedef std::shared_ptr<GShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<GMesh> HGMesh;
+typedef std::shared_ptr<GTexture> HGTexture;
 
 #include <unordered_set>
 #include <list>
@@ -67,24 +71,13 @@ public:
     HGIndexBuffer createIndexBuffer();
     HGVertexBufferBindings createVertexBufferBindings();
 
-    HGMesh createMesh(GDevice &device,
-                      GVertexBufferBindings &bindings,
-                      GShaderPermutation &shader,
-                      bool m_depthWrite,
-                      bool m_depthCulling,
-                      int m_blendMode,
-
-                      int m_start,
-                      int m_end,
-                      int m_element,
-                      GTexture *m_texture1,
-                      GTexture *m_texture2,
-                      GTexture *m_texture3,
-                      GTexture *m_texture4);
+    HGTexture createTexture(HBlpTexture &texture);
+    HGMesh createMesh(gMeshTemplate meshTemplate);
 private:
     bool m_lastDepthWrite = false;
     bool m_lastDepthCulling = false;
-   // EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
+    bool m_backFaceCulling = false;
+    EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBuffer *m_lastBindIndexBuffer = nullptr;
     GVertexBuffer *m_lastBindVertexBuffer = nullptr;
     GVertexBufferBindings *m_vertexBufferBindings = nullptr;
@@ -97,7 +90,6 @@ private:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
-
 };
 
 

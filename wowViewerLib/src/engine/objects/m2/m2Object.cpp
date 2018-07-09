@@ -11,6 +11,7 @@
 #include "mathfu/matrix.h"
 #include "../../persistance/header/M2FileHeader.h"
 #include "../../shader/ShaderDefinitions.h"
+#include "../../../gapi/UniformBufferStructures.h"
 
 //Legion shader stuff
 
@@ -578,6 +579,7 @@ void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
         sortDistArray[i] = value;
     }
 
+    /*
     std::sort(this->m_materialArray.begin(),
               this->m_materialArray.end(),
               [&](M2MaterialInst& a, M2MaterialInst& b) -> const bool {
@@ -595,6 +597,7 @@ void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
                   return b.layer > a.layer;
               }
     );
+    */
 }
 
 void M2Object::debugDumpAnimationSequences() {
@@ -746,8 +749,6 @@ void M2Object::draw(bool drawTransparent) {
         return;
     }
 
-
-
     static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
     mathfu::vec4 localDiffuse = diffuseNon;
     if (m_useLocalDiffuseColor) {
@@ -847,8 +848,9 @@ void M2Object::drawBB(mathfu::vec3 &color) {
 void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
     Config * config = m_api->getConfig();
     int minBatch = config->getMinBatch();
-    int maxBatch = std::min(config->getMaxBatch(), static_cast<const int &>(m_materialArray.size()));
+//    int maxBatch = std::min(config->getMaxBatch(), static_cast<const int &>(m_materialArray.size()));
 
+    /*
     if (!drawTransparent) {
         for (int i = minBatch; i < maxBatch; i++) {
             auto &materialData = this->m_materialArray[i];
@@ -860,6 +862,7 @@ void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
 //            this->drawMaterial(materialData, drawTransparent, instanceCount);
         }
     }
+     */
 }
 
 void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, int instanceCount) {
@@ -991,38 +994,98 @@ void M2Object::createMeshes() {
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
     auto m_m2Data = m_m2Geom->getM2Data();
 
+    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2Shader");
+
     /* 2. Fill the materialArray */
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
-     for (int i = 0; i < batches->size; i++) {
+    for (int i = 0; i < batches->size; i++) {
         M2MaterialInst material;
 
         prepearMatrial(material, i);
+        gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
 
         auto textMaterial = skinData->batches[material.texUnitTexIndex];
         int renderFlagIndex = textMaterial->materialIndex;
         auto renderFlag = m_m2Data->materials[renderFlagIndex];
 
-        bool depthWrite = !(renderFlag->flags & 0x10);
-        bool depthCulling = !(renderFlag->flags & 0x8);
-        bool backFaceCulling = !(renderFlag->flags & 0x4);
+        meshTemplate.depthWrite = !(renderFlag->flags & 0x10);
+        meshTemplate.depthCulling = !(renderFlag->flags & 0x8);
+        meshTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
 
-        int blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode] ;
+        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
 
-        int start;
-        int end;
-        int element;
-        GTexture *texture1;
-        GTexture *texture2;
-        GTexture *texture3;
-        GTexture *texture4;
+        auto meshIndex = material.meshIndex;
+        auto mesh = skinData->submeshes[meshIndex];
+        meshTemplate.start= (mesh->indexStart + (mesh->Level << 16)) * 2;
+        meshTemplate.end = mesh->indexCount;
+        meshTemplate.element = GL_TRIANGLES;
 
+        HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
+        for (int j = 0; j < material.textureCount; j++) {
+            HBlpTexture blpTexture = this->getTexture(material.textures[0].m2TextureIndex);
+            meshTemplate.texture[j] = m_api->getDevice()->createTexture(blpTexture);
+        }
+        meshTemplate.buffers[0] = m_api->getDevice()->createUniformBuffer();
+        meshTemplate.buffers[1] = modelWideUniformBuffer;
+        meshTemplate.buffers[2] = m_api->getDevice()->createUniformBuffer();
 
          //Make mesh
-         m_api->getDevice()->createMesh()
+        HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
 
-
-        this->m_materialArray.push_back();
+        this->m_meshArray.push_back(hmesh);
+        this->m_materialArray.push_back(material);
     }
+}
+
+void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
+    //1. Update model wide VS and PS buffer
+    modelWideBlockVS &blockVS = modelWideUniformBuffer->getObject<modelWideBlockVS>();
+    std::copy(&bonesMatrices[0], &bonesMatrices[0] + std::max(bonesMatrices.size(), MAX_MATRIX_NUM),&blockVS.uBoneMatrixes[0]);
+    modelWideUniformBuffer->save();
+
+    for (int i = 0; i < this->m_meshArray.size(); i++) {
+        auto &meshObject = this->m_meshArray[i];
+        auto &material = this->m_materialArray[i];
+
+        //Calculate necessary data
+        material.s;
+
+
+        //2. Update individual VS buffer
+        meshWideBlockVS &meshblockVS = meshObject->getUniformBuffer(2)->getObject<meshWideBlockVS>();
+        meshblockVS.Color_Transparency = mathfu::vec4_packed();
+
+        //3. Update individual PS buffer
+        meshWideBlockPS &meshblockPS = meshObject->getUniformBuffer(2)->getObject<meshWideBlockPS>();
+        meshblockPS.PixelShader = material.pixelShader;
+        //meshblockPS.IsAffectedByLight = material.pixelShader;
+
+        //Lights
+        mathfu::mat4 viewModelMat = m_api->getViewMat()*m_placementMatrix;
+        bool BCLoginScreenHack = m_api->getConfig()->getBCLightHack();
+        int lightCount = (int) std::min(lights.size(), 4);
+        for (int j = 0; i < lightCount; i++) {
+            std::string uniformName;
+            mathfu::vec4 attenVec;
+            if (BCLoginScreenHack) {
+                attenVec = mathfu::vec4(lights[j].attenuation_start, 1.0, lights[j].attenuation_end, lights.size());
+            } else {
+//            if ((lights[i].attenuation_end - lights[i].attenuation_start < 0.1)) continue;
+//            attenVec = mathfu::vec4(lights[i].attenuation_start, 1.0, lights[i].attenuation_end, lights.size());
+                attenVec = mathfu::vec4(lights[j].attenuation_start, lights[j].diffuse_intensity, lights[i].attenuation_end, lights.size());
+            }
+
+            meshblockPS.pc_lights[j].attenuation = attenVec;//;lights[i].diffuse_color);
+            meshblockPS.pc_lights[j].color = lights[j].diffuse_color;
+
+
+            mathfu::vec4 viewPos = viewModelMat * lights[j].position;
+            meshblockPS.pc_lights[j].position = viewPos;
+        }
+        meshblockPS.LightCount = lightCount;
+
+    }
+
 }
 
 void M2Object::initAnimationManager() {
@@ -1071,16 +1134,6 @@ void M2Object::initParticleEmitters() {
         particleEmitters.push_back(emitter);
     }
 };
-
-void M2Object::drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO) {
-    if (!this->m_loaded) return;
-
-    mathfu::vec4 ambientLight = getAmbientLight();
-    this->m_m2Geom->setupUniforms(m_api, m_placementMatrix, bonesMatrices, m_localDiffuseColorV, ambientLight, drawTransparent, this->lights,  true);
-    this->m_m2Geom->setupPlacementAttribute(placementVBO);
-    this->drawMeshes(drawTransparent, instanceCount);
-}
-
 void M2Object::setModelFileName(std::string modelName) {
 
     std::string delimiter = ".";

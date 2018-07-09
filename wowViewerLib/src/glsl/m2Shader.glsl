@@ -2,7 +2,7 @@
 //For drawbuffers in glsl of webgl you need to use GL_EXT_draw_buffers instead of WEBGL_draw_buffers
 
 #ifndef MAX_MATRIX_NUM
-#define MAX_MATRIX_NUM 59 //Max 59 for ANGLE implementation and max 120? bones in Wotlk client
+#define MAX_MATRIX_NUM 64
 #endif
 
 #ifdef ENABLE_DEFERRED
@@ -24,22 +24,21 @@ attribute vec2 aTexCoord;
 attribute vec2 aTexCoord2;
 
 //Whole scene
-layout(binding = 0) uniform sceneWideBlockVS {
+layout(std140, binding = 0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };
 
 // Whole model
-layout(binding = 1) uniform modelWideBlockVS {
+layout(std140, binding = 1) uniform modelWideBlockVS {
     mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 };
 
 //Individual meshes
-layout(binding = 2) uniform meshWideBlockVS {
-    int uVertexShader;
-    lowp int uIsAffectedByLight;
-    vec4 uColor;
-    float uTransparency;
+layout(std140, binding = 2) uniform meshWideBlockVS {
+    ivec4 VertexShader_IsAffectedByLight;
+    vec4 Color_Transparency;
+
     mat4 uTextMat1;
     mat4 uTextMat2;
 };
@@ -223,36 +222,24 @@ sampler2D uTexture2;
 sampler2D uTexture3;
 sampler2D uTexture4;
 
-layout(binding = 0) uniform sceneWideBlockVS {
+layout(std140, binding = 0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };
 
 //Whole model
-layout(binding = 1) uniform modelWideBlockVS {
-    vec3 uViewUp;
-    vec3 uSunDir;
-    vec3 uSunColor;
+layout(std140, binding = 1) uniform modelWideBlockPS {
+    vec4 uViewUp;
+    vec4 uSunDirAndFogStart;
+    vec4 uSunColorAndFogEnd;
     vec4 uAmbientLight;
-
-    float uFogStart;
-    float uFogEnd;
 };
 
 //Individual meshes
-layout(binding = 2) uniform meshWideBlockVS {
-    int uBlendMode;
-    int uPixelShader;
-    int uUnFogged;
-
-    vec3 uFogColor;
-    float uAlphaTest;
-
-    lowp int uIsAffectedByLight;
-
+layout(std140, binding = 2) uniform meshWideBlockPS {
+    ivec4 PixelShader_UnFogged_IsAffectedByLight_LightCount;
+    vec4 uFogColorAndAlphaTest;
     LocalLight pc_lights[4];
-    lowp int uLightCount;
-
     vec4 uPcColor;
 };
 

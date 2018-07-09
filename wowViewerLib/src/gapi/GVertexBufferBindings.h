@@ -30,6 +30,9 @@ struct GVertexBufferBinding {
     std::vector<GBufferBinding> bindings;
 };
 
+
+
+
 class GVertexBufferBindings {
     friend class GDevice;
 private:

@@ -33,7 +33,7 @@ void GTexture::unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void GTexture::createGlTexture(TextureFormat textureFormat, MipmapsVector &mipmaps, std::string &filename) {
+void GTexture::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
     GLuint textureGPUFormat = 0;
 //     if (ext) {
     switch (textureFormat) {
@@ -58,7 +58,7 @@ void GTexture::createGlTexture(TextureFormat textureFormat, MipmapsVector &mipma
             break;
 
         default:
-            debuglog("Unknown texture format found in file: "+filename)
+            debuglog("Unknown texture format found in file: ")
             break;
     }
 //    }
@@ -167,6 +167,14 @@ void GTexture::createGlTexture(TextureFormat textureFormat, MipmapsVector &mipma
 #endif
 
 
+}
+
+bool GTexture::getIsLoaded() {
+    if (!m_loaded && m_texture->getIsLoaded()) {
+        m_device.bindTexture(this, 0);
+        this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
+        m_device.bindTexture(nullptr, 0);
+    }
 }
 
 

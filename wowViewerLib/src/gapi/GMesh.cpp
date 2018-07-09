@@ -5,35 +5,30 @@
 #include "GMesh.h"
 
 GMesh::GMesh(GDevice &device,
-            GVertexBufferBindings &bindings,
-            GShaderPermutation &shader,
-            bool depthWrite,
-            bool depthCulling,
-            int blendMode,
+             gMeshTemplate meshTemplate
+) : m_device(device), m_bindings(meshTemplate.bindings), m_shader(meshTemplate.shader) {
 
-            int start,
-            int end,
-            int element,
-            GTexture *texture1,
-            GTexture *texture2,
-            GTexture *texture3,
-            GTexture *texture4
-) : m_bindings(bindings), m_device(device), m_shader(shader) {
+    m_depthWrite = meshTemplate.depthWrite;
+    m_depthCulling = meshTemplate.depthCulling;
+    m_backFaceCulling = meshTemplate.backFaceCulling;
+    m_blendMode = meshTemplate.blendMode;
 
-    m_depthWrite = depthWrite;
-    m_depthCulling = depthCulling;
-    m_blendMode = blendMode;
+    m_start = meshTemplate.start;
+    m_end = meshTemplate.end;
+    m_element = meshTemplate.element;
+    m_textureCount = meshTemplate.textureCount;
+    m_texture[0] = meshTemplate.texture[0];
+    m_texture[1] = meshTemplate.texture[1];
+    m_texture[2] = meshTemplate.texture[2];
+    m_texture[3] = meshTemplate.texture[3];
 
-    m_start = start;
-    m_end = end;
-    m_element = element;
-    m_texture1 = texture1;
-    m_texture2 = texture2;
-    m_texture3 = texture3;
-    m_texture4 = texture4;
-
+    m_uniformBuffer[0] = meshTemplate.buffers[0];
+    m_uniformBuffer[1] = meshTemplate.buffers[1];
+    m_uniformBuffer[2] = meshTemplate.buffers[2];
 
 }
 GMesh::~GMesh() {
 
 }
+
+

@@ -8,6 +8,23 @@
 #include "shaders/GM2ShaderPermutation.h"
 #include "../engine/opengl/header.h"
 
+BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
+        /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
+        /*GxBlend_AlphaKey*/         {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
+        /*GxBlend_Alpha*/            {true,GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA},
+        /*GxBlend_Add*/              {true,GL_SRC_ALPHA,GL_ONE,GL_ZERO,GL_ONE},
+        /*GxBlend_Mod*/              {true,GL_DST_COLOR,GL_ZERO,GL_DST_ALPHA,GL_ZERO},
+        /*GxBlend_Mod2x*/            {true,GL_DST_COLOR,GL_SRC_COLOR,GL_DST_ALPHA,GL_SRC_ALPHA},
+        /*GxBlend_ModAdd*/           {true,GL_DST_COLOR,GL_ONE,GL_DST_ALPHA,GL_ONE},
+        /*GxBlend_InvSrcAlphaAdd*/   {true,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE},
+        /*GxBlend_InvSrcAlphaOpaque*/{true,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO},
+        /*GxBlend_SrcAlphaOpaque*/   {true,GL_SRC_ALPHA,GL_ZERO,GL_SRC_ALPHA,GL_ZERO},
+        /*GxBlend_NoAlphaAdd*/       {true,GL_ONE,GL_ONE,GL_ZERO,GL_ONE},
+        /*GxBlend_ConstantAlpha*/    {true,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA},
+        /*GxBlend_Screen*/           {true,GL_ONE_MINUS_DST_COLOR,GL_ONE,GL_ONE,GL_ZERO},
+        /*GxBlend_BlendAdd*/         {true,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA}
+};
+
 void GDevice::bindIndexBuffer(GIndexBuffer *buffer) {
     if (buffer == nullptr ) {
         if (m_lastBindIndexBuffer == nullptr) {
@@ -67,7 +84,7 @@ std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
     size_t hash = CalculateFNV(cstr);
     if (m_shaderPermutCache.count(hash) > 0) {
 
-        std::shared_ptr<GShaderPermutation> ptr = m_shaderPermutCache.at(hash);
+        HGShaderPermutation ptr = m_shaderPermutCache.at(hash);
         return ptr;
     }
 
@@ -118,29 +135,9 @@ HGVertexBufferBindings GDevice::createVertexBufferBindings() {
     return h_vertexBufferBindings;
 }
 
-HGMesh GDevice::createMesh(GDevice &device,
-                           GVertexBufferBindings &bindings,
-                           GShaderPermutation &shader,
-                           bool m_depthWrite,
-                           bool m_depthCulling,
-                           int m_blendMode,
-
-                           int m_start,
-                           int m_end,
-                           int m_element,
-                           GTexture *m_texture1,
-                           GTexture *m_texture2,
-                           GTexture *m_texture3,
-                           GTexture *m_texture4) {
+HGMesh GDevice::createMesh(gMeshTemplate meshTemplate) {
     std::shared_ptr<GMesh> h_mesh;
-    h_mesh.reset(new GMesh(device, bindings, shader, m_depthWrite, m_depthCulling, m_blendMode,
-                           m_start,
-        m_end,
-        m_element,
-        m_texture1,
-        m_texture2,
-        m_texture3,
-        m_texture4));
+    h_mesh.reset(new GMesh(*this, meshTemplate));
 
     return h_mesh;
 }
@@ -157,4 +154,8 @@ void GDevice::bindTexture(GTexture *texture, int slot) {
         texture->bind();
         m_lastTexture[slot] = texture;
     }
+}
+
+HGTexture GDevice::createTexture(HBlpTexture &texture) {
+   GTexture gTexture = GTexture(*this, texture);
 }

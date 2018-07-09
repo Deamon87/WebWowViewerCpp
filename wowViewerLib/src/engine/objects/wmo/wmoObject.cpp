@@ -451,6 +451,7 @@ void WmoObject::drawDebugLights(){
 void WmoObject::drawTransformedPortalPoints(){
     return;
 #ifndef CULLED_NO_PORTAL_DRAWING
+    /*
     if (!m_loaded) return;
 
     std::vector<uint16_t> indiciesArray;
@@ -528,12 +529,14 @@ void WmoObject::drawTransformedPortalPoints(){
 
     glDeleteBuffers(1, &indexVBO);
     glDeleteBuffers(1, &bufferVBO);
+     */
 #endif
 }
 
 void WmoObject::drawTransformedAntiPortalPoints(){
     return;
 #ifndef CULLED_NO_PORTAL_DRAWING
+    /*
     if (!m_loaded) return;
 
     std::vector<uint16_t> indiciesArray;
@@ -614,7 +617,9 @@ void WmoObject::drawTransformedAntiPortalPoints(){
 
     glDeleteBuffers(1, &indexVBO);
     glDeleteBuffers(1, &bufferVBO);
+          */
 #endif
+
 }
 
 void WmoObject::setLoadingParam(SMMapObjDef &mapObjDef) {
