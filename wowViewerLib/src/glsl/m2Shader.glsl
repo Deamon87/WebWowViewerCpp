@@ -38,9 +38,7 @@ layout(std140, binding = 1) uniform modelWideBlockVS {
 layout(std140, binding = 2) uniform meshWideBlockVS {
     ivec4 VertexShader_IsAffectedByLight;
     vec4 Color_Transparency;
-
-    mat4 uTextMat1;
-    mat4 uTextMat2;
+    mat4 uTextMat[2];
 };
 
 #ifndef INSTANCED

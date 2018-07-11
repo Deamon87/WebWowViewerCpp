@@ -81,8 +81,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
 //    currentScene = new Map(this, 1817, "silithusphase01");
 //
-    m_firstCamera.setCameraPos( -594, 4664, 200);
-    currentScene = new Map(this, 1513, "Artifact-MageOrderHall");
+//    m_firstCamera.setCameraPos( -594, 4664, 200);
+//    currentScene = new Map(this, 1513, "Artifact-MageOrderHall");
 
 //    m_firstCamera.setCameraPos( 3733.33325, 2666.66675, 0);
 //    currentScene = new Map(this, "BLTestMap");
@@ -341,7 +341,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
 
     db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
-    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightDatam_uboBindPoints.db2"));
+    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightDatam.db2"));
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
 #ifndef WITH_GLESv2
@@ -859,8 +859,6 @@ void WoWSceneImpl::activateM2Shader() {
     mathfu::vec4 ambient = this->currentScene->getAmbientColor();
     glUniform4fv(this->m2Shader->getUnf("uAmbientLight"), 1, &ambient[0]);
 
-    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    upVector = (this->m_lookAtMat4.Transpose() * upVector);
     glUniform3fv(this->m2Shader->getUnf("uViewUp"), 1, &upVector[0]);
     glUniform3fv(this->m2Shader->getUnf("uSunDir"), 1, &m_sunDir[0]);
 
@@ -1446,6 +1444,9 @@ void WoWSceneImpl::SetDirection() {
     mathfu::vec4 sunDirWorld = mathfu::vec4(0, 0, 1, 0);
     m_sunDir = -(m_lookAtMat4 * sunDirWorld).xyz();
     m_sunDir = m_sunDir.Normalized();
+
+    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+    m_upVector = (this->m_lookAtMat4.Transpose() * upVector).xyz();
 }
 
  WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){

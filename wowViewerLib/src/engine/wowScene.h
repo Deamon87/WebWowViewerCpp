@@ -119,12 +119,20 @@ public:
     virtual mathfu::vec4 getGlobalAmbientColor() override {
         return m_globalAmbientColor ;
     }
+    virtual mathfu::vec3 getGlobalSunDir() override {
+        return m_sunDir;
+    };
     virtual mathfu::vec4 getGlobalSunColor() override {
         return m_globalSunColor;
     }
     virtual mathfu::vec4 getGlobalFogColor() override {
         return m_fogColor;
     }
+    virtual float getGlobalFogStart() override { return uFogStart; };
+    virtual float getGlobalFogEnd() override { return uFogEnd; };
+    virtual mathfu::vec3 getViewUp() override { return m_upVector; };
+
+
     virtual GLuint getBlackPixelTexture() override ;
     virtual Config *getConfig() override {
         return m_config;
@@ -169,6 +177,7 @@ private:
     mathfu::mat4 m_viewCameraForRender;
     mathfu::mat4 m_perspectiveMatrix;
 
+    mathfu::vec3 m_upVector;
     mathfu::vec3 m_sunDir;
     mathfu::vec4 m_globalAmbientColor;
     mathfu::vec4 m_globalSunColor;

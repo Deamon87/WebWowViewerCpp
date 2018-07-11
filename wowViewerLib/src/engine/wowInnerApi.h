@@ -44,8 +44,12 @@ public:
 
     virtual mathfu::mat4& getViewMat() = 0;
     virtual mathfu::vec4 getGlobalAmbientColor() = 0;
+    virtual mathfu::vec3 getGlobalSunDir() = 0;
     virtual mathfu::vec4 getGlobalSunColor() = 0;
     virtual mathfu::vec4 getGlobalFogColor() = 0;
+    virtual float getGlobalFogStart() = 0;
+    virtual float getGlobalFogEnd() = 0;
+    virtual mathfu::vec3 getViewUp() = 0;
 
     virtual GLuint getBlackPixelTexture() = 0;
     virtual Config *getConfig() = 0;

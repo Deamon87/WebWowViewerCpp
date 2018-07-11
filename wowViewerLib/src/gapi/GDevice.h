@@ -66,13 +66,13 @@ public:
 public:
     std::shared_ptr<GShaderPermutation> getShader(std::string shaderName);
 
-    HGUniformBuffer createUniformBuffer();
+    HGUniformBuffer createUniformBuffer(size_t size);
     HGVertexBuffer createVertexBuffer();
     HGIndexBuffer createIndexBuffer();
     HGVertexBufferBindings createVertexBufferBindings();
 
     HGTexture createTexture(HBlpTexture &texture);
-    HGMesh createMesh(gMeshTemplate meshTemplate);
+    HGMesh createMesh(gMeshTemplate &meshTemplate);
 private:
     bool m_lastDepthWrite = false;
     bool m_lastDepthCulling = false;

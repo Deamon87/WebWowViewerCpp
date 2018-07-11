@@ -25,11 +25,10 @@ struct modelWideBlockVS {
 struct meshWideBlockVS {
     int VertexShader;
     int IsAffectedByLight;
-    int padding[2]
+    int padding[2];
     mathfu::vec4_packed Color_Transparency;
 
-    mathfu::mat4 uTextMat1;
-    mathfu::mat4 uTextMat2;
+    mathfu::mat4 uTextMat[2];
 };
 
 //M2 Pixel buffer formats
@@ -50,7 +49,7 @@ struct LocalLight
 struct meshWideBlockPS {
     int PixelShader;
     int UnFogged;
-    int IsAffectedByLight
+    int IsAffectedByLight;
     int LightCount;
     mathfu::vec4_packed uFogColorAndAlphaTest;
     LocalLight pc_lights[4];

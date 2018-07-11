@@ -12,6 +12,7 @@
 #include "../../persistance/header/M2FileHeader.h"
 #include "../../shader/ShaderDefinitions.h"
 #include "../../../gapi/UniformBufferStructures.h"
+#include "m2Helpers/M2MeshBufferUpdater.h"
 
 //Legion shader stuff
 
@@ -90,16 +91,16 @@ enum class M2VertexShader : int {
 inline constexpr const int operator+ (M2PixelShader const val) { return static_cast<const int>(val); };
 inline constexpr const int operator+ (M2VertexShader const val) { return static_cast<const int>(val); };
 
-int M2BlendingModeToEGxBlendEnum [8] =
+EGxBlendEnum M2BlendingModeToEGxBlendEnum [8] =
     {
-        static_cast<int>(EGxBlendEnum::GxBlend_Opaque),
-        static_cast<int>(EGxBlendEnum::GxBlend_AlphaKey),
-        static_cast<int>(EGxBlendEnum::GxBlend_Alpha),
-        static_cast<int>(EGxBlendEnum::GxBlend_NoAlphaAdd),
-        static_cast<int>(EGxBlendEnum::GxBlend_Add),
-        static_cast<int>(EGxBlendEnum::GxBlend_Mod),
-        static_cast<int>(EGxBlendEnum::GxBlend_Mod2x),
-        static_cast<int>(EGxBlendEnum::GxBlend_BlendAdd)
+        EGxBlendEnum::GxBlend_Opaque,
+        EGxBlendEnum::GxBlend_AlphaKey,
+        EGxBlendEnum::GxBlend_Alpha,
+        EGxBlendEnum::GxBlend_NoAlphaAdd,
+        EGxBlendEnum::GxBlend_Add,
+        EGxBlendEnum::GxBlend_Mod,
+        EGxBlendEnum::GxBlend_Mod2x,
+        EGxBlendEnum::GxBlend_BlendAdd
     };
 
 static struct {
@@ -898,17 +899,15 @@ void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, 
     if ((finalTransparency < 0.0001) ) return;
 
     //TODO:: WTF IS THIS CODE?
-    if (materialData.texUnitTexIndex >= 0) {
-        auto textureAnim = skinData->batches[materialData.texUnitTexIndex]->textureTransformComboIndex;
-        int16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
+    auto textureAnim = skinData->batches[materialData.texUnitTexIndex]->textureTransformComboIndex;
+    int16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
+    if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
+        textureMatrix1 = this->textAnimMatrices[textureMatIndex];
+    }
+    if (textureAnim+1 < m2Data->texture_transforms_lookup_table.size) {
+        int textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
         if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
-            textureMatrix1 = this->textAnimMatrices[textureMatIndex];
-        }
-        if (textureAnim+1 < m2Data->texture_transforms_lookup_table.size) {
-            int textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
-            if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
-                textureMatrix2 = this-> textAnimMatrices[textureMatIndex];
-            }
+            textureMatrix2 = this-> textAnimMatrices[textureMatIndex];
         }
     }
 
@@ -963,15 +962,6 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
         materialData.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
     }
 
-    int textureUnit;
-    if (m2Batch->textureCoordComboIndex < m2File->tex_unit_lookup_table.size) {
-        textureUnit = *m2File->tex_unit_lookup_table[m2Batch->textureCoordComboIndex];
-        if (textureUnit == 0xFFFF) {
-            //Enviroment mapping
-
-        }
-    }
-
     materialData.texUnitTexIndex = materialIndex;
     for (int j = 0; j < op_count; j++) {
         auto m2TextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + j];
@@ -989,6 +979,9 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
 
 void M2Object::createMeshes() {
     /* 1. Free previous subMeshArray */
+    this->m_meshArray.clear();
+    this->m_materialArray.clear();
+
     auto textureCache = m_api->getTextureCache();
 
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
@@ -1025,9 +1018,13 @@ void M2Object::createMeshes() {
             HBlpTexture blpTexture = this->getTexture(material.textures[0].m2TextureIndex);
             meshTemplate.texture[j] = m_api->getDevice()->createTexture(blpTexture);
         }
-        meshTemplate.buffers[0] = m_api->getDevice()->createUniformBuffer();
-        meshTemplate.buffers[1] = modelWideUniformBuffer;
-        meshTemplate.buffers[2] = m_api->getDevice()->createUniformBuffer();
+        meshTemplate.vertexBuffers[0] = m_api->getDevice()->createUniformBuffer(0);
+        meshTemplate.vertexBuffers[1] = modelVertexWideUniformBuffer;
+        meshTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshWideBlockVS));
+
+        meshTemplate.fragmentBuffers[0] = m_api->getDevice()->createUniformBuffer(0);
+        meshTemplate.fragmentBuffers[1] = modelFragmentWideUniformBuffer;
+        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshWideBlockPS));
 
          //Make mesh
         HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
@@ -1038,54 +1035,44 @@ void M2Object::createMeshes() {
 }
 
 void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
-    //1. Update model wide VS and PS buffer
-    modelWideBlockVS &blockVS = modelWideUniformBuffer->getObject<modelWideBlockVS>();
-    std::copy(&bonesMatrices[0], &bonesMatrices[0] + std::max(bonesMatrices.size(), MAX_MATRIX_NUM),&blockVS.uBoneMatrixes[0]);
-    modelWideUniformBuffer->save();
-
-    for (int i = 0; i < this->m_meshArray.size(); i++) {
-        auto &meshObject = this->m_meshArray[i];
-        auto &material = this->m_materialArray[i];
-
-        //Calculate necessary data
-        material.s;
-
-
-        //2. Update individual VS buffer
-        meshWideBlockVS &meshblockVS = meshObject->getUniformBuffer(2)->getObject<meshWideBlockVS>();
-        meshblockVS.Color_Transparency = mathfu::vec4_packed();
-
-        //3. Update individual PS buffer
-        meshWideBlockPS &meshblockPS = meshObject->getUniformBuffer(2)->getObject<meshWideBlockPS>();
-        meshblockPS.PixelShader = material.pixelShader;
-        //meshblockPS.IsAffectedByLight = material.pixelShader;
-
-        //Lights
-        mathfu::mat4 viewModelMat = m_api->getViewMat()*m_placementMatrix;
-        bool BCLoginScreenHack = m_api->getConfig()->getBCLightHack();
-        int lightCount = (int) std::min(lights.size(), 4);
-        for (int j = 0; i < lightCount; i++) {
-            std::string uniformName;
-            mathfu::vec4 attenVec;
-            if (BCLoginScreenHack) {
-                attenVec = mathfu::vec4(lights[j].attenuation_start, 1.0, lights[j].attenuation_end, lights.size());
-            } else {
-//            if ((lights[i].attenuation_end - lights[i].attenuation_start < 0.1)) continue;
-//            attenVec = mathfu::vec4(lights[i].attenuation_start, 1.0, lights[i].attenuation_end, lights.size());
-                attenVec = mathfu::vec4(lights[j].attenuation_start, lights[j].diffuse_intensity, lights[i].attenuation_end, lights.size());
-            }
-
-            meshblockPS.pc_lights[j].attenuation = attenVec;//;lights[i].diffuse_color);
-            meshblockPS.pc_lights[j].color = lights[j].diffuse_color;
-
-
-            mathfu::vec4 viewPos = viewModelMat * lights[j].position;
-            meshblockPS.pc_lights[j].position = viewPos;
-        }
-        meshblockPS.LightCount = lightCount;
-
+    if (!this->m_loaded) {
+        this->startLoading();
+        return;
     }
 
+    //1. Update model wide VS buffer
+    modelWideBlockVS &blockVS = modelVertexWideUniformBuffer->getObject<modelWideBlockVS>();
+    std::copy(&bonesMatrices[0], &bonesMatrices[0] + std::max(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM), &blockVS.uBoneMatrixes[0]);
+    modelVertexWideUniformBuffer->save();
+
+    //2. Update model wide PS buffer
+    static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
+    mathfu::vec4 localDiffuse = diffuseNon;
+    if (m_useLocalDiffuseColor) {
+        localDiffuse = m_localDiffuseColorV;
+    } else {
+        localDiffuse = m_api->getGlobalSunColor();
+    }
+
+    mathfu::vec4 ambientLight = getAmbientLight();
+
+    modelWideBlockPS &blockPS = modelFragmentWideUniformBuffer->getObject<modelWideBlockPS>();
+    blockPS.uAmbientLight = ambientLight;
+    blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
+    blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
+    blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
+
+    modelFragmentWideUniformBuffer->save();
+
+
+    M2Data * m2File = this->m_m2Geom->getM2Data();
+    M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
+
+    for (int i = 0; i < this->m_meshArray.size(); i++) {
+        if (M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], *this, m_materialArray[i], m2File, skinData)) {
+            renderedThisFrame.push_back(this->m_meshArray[i]);
+        }
+    }
 }
 
 void M2Object::initAnimationManager() {
@@ -1262,5 +1249,6 @@ void M2Object::createVertexBindings() {
     bufferBindings->save();
 
     //3. Create model wide uniform buffer
-    modelWideUniformBuffer = device->createUniformBuffer();
+    modelVertexWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockVS));
+    modelFragmentWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockPS));
 }

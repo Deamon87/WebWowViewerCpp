@@ -101,13 +101,15 @@ std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
     return m_shaderPermutCache[hash];
 }
 
-HGUniformBuffer GDevice::createUniformBuffer() {
+HGUniformBuffer GDevice::createUniformBuffer(size_t size) {
     std::shared_ptr<GUniformBuffer> h_uniformBuffer;
-    h_uniformBuffer.reset(new GUniformBuffer(*this, 0));
+    h_uniformBuffer.reset(new GUniformBuffer(*this, size));
 
     std::weak_ptr<GUniformBuffer> w_uniformBuffer = h_uniformBuffer;
 
     m_unfiormBufferCache.push_back(w_uniformBuffer);
+
+    return h_uniformBuffer;
 }
 
 void GDevice::drawMeshes(std::vector<GMesh *> &meshes) {
@@ -135,7 +137,7 @@ HGVertexBufferBindings GDevice::createVertexBufferBindings() {
     return h_vertexBufferBindings;
 }
 
-HGMesh GDevice::createMesh(gMeshTemplate meshTemplate) {
+HGMesh GDevice::createMesh(gMeshTemplate &meshTemplate) {
     std::shared_ptr<GMesh> h_mesh;
     h_mesh.reset(new GMesh(*this, meshTemplate));
 

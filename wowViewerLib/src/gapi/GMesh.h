@@ -11,44 +11,50 @@
 
 class gMeshTemplate {
 public:
-    gMeshTemplate(HGVertexBufferBindings &bindings, HGShaderPermutation &shader) : bindings(bindings), shader(shader) {}
-    HGVertexBufferBindings &bindings;
-    HGShaderPermutation &shader;
+    gMeshTemplate(HGVertexBufferBindings bindings, HGShaderPermutation shader) : bindings(bindings), shader(shader) {}
+    HGVertexBufferBindings bindings;
+    HGShaderPermutation shader;
     bool depthWrite;
     bool depthCulling;
     bool backFaceCulling;
-    int blendMode;
+    EGxBlendEnum blendMode;
 
     int start;
     int end;
     int element;
     int textureCount;
-    HGTexture texture[4];
-    HGUniformBuffer buffers[3];
+    HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
+    HGUniformBuffer vertexBuffers[3] = {nullptr,nullptr,nullptr};
+    HGUniformBuffer fragmentBuffers[3] = {nullptr,nullptr,nullptr};
 };
 
 class GMesh {
     friend class GDevice;
 
     explicit GMesh(GDevice &device,
-                   gMeshTemplate meshTemplate
+                   const gMeshTemplate &meshTemplate
     );
 public:
     ~GMesh();
-    HGUniformBuffer getUniformBuffer(int slot) {
-        return m_uniformBuffer[slot];
+    HGUniformBuffer getVertexUniformBuffer(int slot) {
+        return m_vertexUniformBuffer[slot];
     }
+    HGUniformBuffer getFragmentUniformBuffer(int slot) {
+        return m_fragmentUniformBuffer[slot];
+    }
+    EGxBlendEnum getGxBlendMode() { return m_blendMode; }
 private:
-    HGVertexBufferBindings &m_bindings;
-    HGShaderPermutation &m_shader;
+    HGVertexBufferBindings m_bindings;
+    HGShaderPermutation m_shader;
 
-    HGUniformBuffer m_uniformBuffer[3] = {nullptr, nullptr, nullptr};
+    HGUniformBuffer m_vertexUniformBuffer[3] = {nullptr, nullptr, nullptr};
+    HGUniformBuffer m_fragmentUniformBuffer[3] = {nullptr, nullptr, nullptr};
     HGTexture m_texture[4];
 
     bool m_depthWrite;
     bool m_depthCulling;
     bool m_backFaceCulling;
-    int m_blendMode;
+    EGxBlendEnum m_blendMode;
 
     int m_start;
     int m_end;

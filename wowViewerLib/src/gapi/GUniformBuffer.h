@@ -19,7 +19,7 @@ public:
 
     template <typename T>
     T& getObject() {
-        assert(sizeof(T) != m_size);
+        assert(sizeof(T) == m_size);
         return *(T *)pContent;
     }
     void save();

@@ -19,16 +19,9 @@ void M2Scene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, m
 void M2Scene::draw() {
     if (!m_drawModel) return;
 
-    /*
-    this->m_api->activateM2Shader();
-    m_m2Object->draw(false);
-    m_m2Object->draw(true);
-    this->m_api->deactivateM2Shader();
+    std::vector<HGMesh> renderedThisFrame;
 
-    this->m_api->activateM2ParticleShader();
-    m_m2Object->drawParticles();
-    this->m_api->deactivateM2ParticleShader();
-     */
+    m_m2Object->fillBuffersAndArray(renderedThisFrame);
 }
 
 void M2Scene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {

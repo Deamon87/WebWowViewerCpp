@@ -5,7 +5,7 @@
 #include "GMesh.h"
 
 GMesh::GMesh(GDevice &device,
-             gMeshTemplate meshTemplate
+             const gMeshTemplate &meshTemplate
 ) : m_device(device), m_bindings(meshTemplate.bindings), m_shader(meshTemplate.shader) {
 
     m_depthWrite = meshTemplate.depthWrite;
@@ -22,9 +22,13 @@ GMesh::GMesh(GDevice &device,
     m_texture[2] = meshTemplate.texture[2];
     m_texture[3] = meshTemplate.texture[3];
 
-    m_uniformBuffer[0] = meshTemplate.buffers[0];
-    m_uniformBuffer[1] = meshTemplate.buffers[1];
-    m_uniformBuffer[2] = meshTemplate.buffers[2];
+    m_vertexUniformBuffer[0] = meshTemplate.vertexBuffers[0];
+    m_vertexUniformBuffer[1] = meshTemplate.vertexBuffers[1];
+    m_vertexUniformBuffer[2] = meshTemplate.vertexBuffers[2];
+
+    m_fragmentUniformBuffer[0] = meshTemplate.fragmentBuffers[0];
+    m_fragmentUniformBuffer[1] = meshTemplate.fragmentBuffers[1];
+    m_fragmentUniformBuffer[2] = meshTemplate.fragmentBuffers[2];
 
 }
 GMesh::~GMesh() {

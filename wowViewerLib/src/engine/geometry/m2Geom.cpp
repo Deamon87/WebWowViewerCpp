@@ -554,4 +554,6 @@ HGVertexBuffer M2Geom::getVBO(GDevice &device) {
             m_m2Data->vertices.getElement(0),
             m_m2Data->vertices.size*sizeof(M2Vertex));
     }
+
+    return vertexVbo;
 }
