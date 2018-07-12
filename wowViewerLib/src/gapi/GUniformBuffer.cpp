@@ -45,10 +45,10 @@ void GUniformBuffer::uploadData(void * data, int length) {
 void GUniformBuffer::save() {
     if (memcmp(pPreviousContent, pContent, m_size) != 0) {
         //1. Copy new to prev
-        //memcpy(pPreviousContent, pContent, m_size);
+        memcpy(pPreviousContent, pContent, m_size);
         m_needsUpdate = true;
 
 //        2. Update UBO
-//        this->uploadData(pPreviousContent, 0);
+        this->uploadData(pPreviousContent, 0);
     }
 }

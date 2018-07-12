@@ -16,5 +16,6 @@ void GM2ShaderPermutation::compileShader() {
     glUniform1i(this->getUnf("uTexture"), 0);
     glUniform1i(this->getUnf("uTexture2"), 1);
     glUniform1i(this->getUnf("uTexture3"), 2);
+    glUniform1i(this->getUnf("uTexture4"), 3);
     glUseProgram(0);
 }

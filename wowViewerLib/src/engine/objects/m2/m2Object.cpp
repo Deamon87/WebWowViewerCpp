@@ -1042,7 +1042,11 @@ void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
 
     //1. Update model wide VS buffer
     modelWideBlockVS &blockVS = modelVertexWideUniformBuffer->getObject<modelWideBlockVS>();
-    std::copy(&bonesMatrices[0], &bonesMatrices[0] + std::max(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM), &blockVS.uBoneMatrixes[0]);
+    int interCount = std::min(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM);
+    for (int i = 0; i < interCount; i++) {
+        blockVS.uBoneMatrixes[i] = bonesMatrices[i];
+    }
+//    std::copy(&bonesMatrices[0], &bonesMatrices[0] + std::max(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM), &blockVS.uBoneMatrixes[0]);
     modelVertexWideUniformBuffer->save();
 
     //2. Update model wide PS buffer

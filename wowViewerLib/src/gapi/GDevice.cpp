@@ -96,6 +96,8 @@ std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
         sharedPtr = std::make_shared<GShaderPermutation>(
             GShaderPermutation(shaderName, *this));
     }
+
+    sharedPtr->compileShader();
     m_shaderPermutCache[hash] = sharedPtr;
 
     return m_shaderPermutCache[hash];

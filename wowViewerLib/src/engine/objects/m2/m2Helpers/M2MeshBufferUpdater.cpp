@@ -11,7 +11,6 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGMesh &hmesh, M2Object &m2Object, 
     mathfu::vec3 uGlobalFogColor = m2Object.m_api->getGlobalFogColor().xyz();
     mathfu::vec3 uFogColor = getFogColor(hmesh->getGxBlendMode(), uGlobalFogColor);
 
-
     mathfu::vec4 meshColor = m2Object.getCombinedColor(m2SkinProfile, materialData, m2Object.subMeshColors);
     float transparency = m2Object.getTransparency(m2SkinProfile, materialData, m2Object.transparencies);
     float finalTransparency = meshColor.w;
@@ -31,7 +30,7 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGMesh &hmesh, M2Object &m2Object, 
 
     //Calculate necessary data
     //2. Update individual VS buffer
-    meshWideBlockVS &meshblockVS = hmesh->getVertexUniformBuffer(2)->getObject<meshWideBlockVS>();
+    auto &meshblockVS = hmesh->getVertexUniformBuffer(2)->getObject<meshWideBlockVS>();
     meshblockVS.Color_Transparency = mathfu::vec4_packed(mathfu::vec4(meshColor.x, meshColor.y, meshColor.z, finalTransparency));
     meshblockVS.VertexShader = materialData.vertexShader;
     meshblockVS.IsAffectedByLight = (renderFlag->flags & 0x1);
@@ -41,7 +40,7 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGMesh &hmesh, M2Object &m2Object, 
     hmesh->getVertexUniformBuffer(2)->save();
 
     //3. Update individual PS buffer
-    meshWideBlockPS &meshblockPS = hmesh->getFragmentUniformBuffer(2)->getObject<meshWideBlockPS>();
+    auto &meshblockPS = hmesh->getFragmentUniformBuffer(2)->getObject<meshWideBlockPS>();
     meshblockPS.PixelShader = materialData.pixelShader;
     meshblockPS.IsAffectedByLight = materialData.pixelShader;
     meshblockPS.UnFogged = (renderFlag->flags & 0x2);

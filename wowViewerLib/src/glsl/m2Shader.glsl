@@ -24,20 +24,20 @@ attribute vec2 aTexCoord;
 attribute vec2 aTexCoord2;
 
 //Whole scene
-layout(std140, binding = 0) uniform sceneWideBlockVSPS {
+layout(std140) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };
 
 // Whole model
-layout(std140, binding = 1) uniform modelWideBlockVS {
+layout(std140) uniform modelWideBlockVS {
     mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 };
 
 //Individual meshes
-layout(std140, binding = 2) uniform meshWideBlockVS {
-    ivec4 VertexShader_IsAffectedByLight;
-    vec4 Color_Transparency;
+layout(std140) uniform meshWideBlockVS {
+    ivec4 vertexShader_IsAffectedByLight;
+    vec4 color_Transparency;
     mat4 uTextMat[2];
 };
 
@@ -87,9 +87,7 @@ void main() {
 #else
     placementMat = uPlacementMat;
 #endif
-
-    vec4 meshColor = uColor;
-    vec4 lDiffuseColor = vec4(meshColor.rgb, uTransparency);
+    vec4 lDiffuseColor = color_Transparency;
 
     mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
@@ -105,83 +103,85 @@ void main() {
     vTexCoord2 = vec2(0.0);
     vTexCoord3 = vec2(0.0);
 
+    int uVertexShader = vertexShader_IsAffectedByLight.x;
+
     if ( uVertexShader == 0 ) {//Diffuse_T1
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 1 ) {//Diffuse_Env
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
         vTexCoord = envCoord;
     } else if ( uVertexShader == 2 ) {//Diffuse_T1_T2
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat2 * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord2 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 3 ) {//Diffuse_T1_Env
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
         vTexCoord2 = envCoord;
     } else if ( uVertexShader == 4 ) {//Diffuse_Env_T1
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
         vTexCoord = envCoord;
-        vTexCoord2 = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord2 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 5 ) {//Diffuse_Env_Env
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
         vTexCoord = envCoord;
         vTexCoord2 = envCoord;
     } else if ( uVertexShader == 6 ) {//Diffuse_T1_Env_T1
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000) ).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000) ).xy;
         vTexCoord2 = envCoord;
-        vTexCoord3 = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord3 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 7 ) {//Diffuse_T1_T1
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord2 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 8 ) {//Diffuse_T1_T1_T1
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord3 = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord2 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord3 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 9 ) {//Diffuse_EdgeFade_T1
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a * edgeScanVal);
-        vTexCoord = ((uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy).xy;
+        vTexCoord = ((uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy).xy;
     } else if ( uVertexShader == 10 ) {//Diffuse_T2
 
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat2 * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 11 ) {//Diffuse_T1_Env_T2
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
         vTexCoord2 = envCoord;
-        vTexCoord3 = (uTextMat2 * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
+        vTexCoord3 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 12 ) {//Diffuse_EdgeFade_T1_T2
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a * edgeScanVal);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat2 * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord2 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 13 ) {//Diffuse_EdgeFade_Env
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a * edgeScanVal);
         vTexCoord = envCoord;
     } else if ( uVertexShader == 14 ) {//Diffuse_T1_T2_T1
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat2 * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
-        vTexCoord3 = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord2 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
+        vTexCoord3 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 15 ) {//Diffuse_T1_T2_T3
         vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat2 * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord2 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
         vTexCoord3 = vTexCoord3;
     } else if ( uVertexShader == 16 ) {//Color_T1_T2_T3
         vec4 in_col0 = vec4(1.0, 1.0, 1.0, 1.0);
         vDiffuseColor = vec4((in_col0.rgb * 0.500000).r, (in_col0.rgb * 0.500000).g, (in_col0.rgb * 0.500000).b, in_col0.a);
-        vTexCoord = (uTextMat2 * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
         vTexCoord2 = vec2(0.000000, 0.000000);
         vTexCoord3 = vTexCoord3;
     } else if ( uVertexShader == 17 ) {//BW_Diffuse_T1
         vDiffuseColor = vec4(combinedColor.rgb * 0.500000, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
     } else if ( uVertexShader == 18 ) {//BW_Diffuse_T1_T2
         vDiffuseColor = vec4(combinedColor.rgb * 0.500000, combinedColor.a);
-        vTexCoord = (uTextMat1 * vec4(aTexCoord, 0.000000, 1.000000)).xy;
+        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
     }
 
 #ifndef drawBuffersIsSupported
@@ -215,18 +215,18 @@ varying vec3 vPosition;
 
 varying vec4 vDiffuseColor;
 
-sampler2D uTexture;
-sampler2D uTexture2;
-sampler2D uTexture3;
-sampler2D uTexture4;
+uniform sampler2D uTexture;
+uniform sampler2D uTexture2;
+uniform sampler2D uTexture3;
+uniform sampler2D uTexture4;
 
-layout(std140, binding = 0) uniform sceneWideBlockVSPS {
+layout(std140) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };
 
 //Whole model
-layout(std140, binding = 1) uniform modelWideBlockPS {
+layout(std140) uniform modelWideBlockPS {
     vec4 uViewUp;
     vec4 uSunDirAndFogStart;
     vec4 uSunColorAndFogEnd;
@@ -234,7 +234,7 @@ layout(std140, binding = 1) uniform modelWideBlockPS {
 };
 
 //Individual meshes
-layout(std140, binding = 2) uniform meshWideBlockPS {
+layout(std140) uniform meshWideBlockPS {
     ivec4 PixelShader_UnFogged_IsAffectedByLight_LightCount;
     vec4 uFogColorAndAlphaTest;
     LocalLight pc_lights[4];
