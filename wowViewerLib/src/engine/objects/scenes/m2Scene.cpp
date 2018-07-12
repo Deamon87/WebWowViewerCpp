@@ -22,6 +22,11 @@ void M2Scene::draw() {
     std::vector<HGMesh> renderedThisFrame;
 
     m_m2Object->fillBuffersAndArray(renderedThisFrame);
+    m_api->getDevice()->drawMeshes(renderedThisFrame);
+
+//    if (renderedThisFrame.size()>0) {
+//        exit(0);
+//    }
 }
 
 void M2Scene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {

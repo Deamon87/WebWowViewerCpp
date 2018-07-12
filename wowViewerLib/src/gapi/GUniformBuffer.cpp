@@ -27,15 +27,21 @@ void GUniformBuffer::createBuffer() {
 void GUniformBuffer::destroyBuffer() {
     glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
 }
-void GUniformBuffer::bind() { //Should be called only by GDevice
-    glBindBuffer(GL_UNIFORM_BUFFER, *(GLuint *) this->pIdentifierBuffer);
+void GUniformBuffer::bind(int bindingPoint) { //Should be called only by GDevice
+    if (bindingPoint > 0) {
+        glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer);
+    } else {
+        glBindBuffer(GL_UNIFORM_BUFFER, *(GLuint *) this->pIdentifierBuffer);
+    }
 }
 void GUniformBuffer::unbind() {
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
+
+
 void GUniformBuffer::uploadData(void * data, int length) {
-    m_device.bindUniformBuffer(this, 0);
+    m_device.bindVertexUniformBuffer(this, 0);
 
     glBufferData(GL_UNIFORM_BUFFER, length, data, GL_STATIC_DRAW);
 
@@ -49,6 +55,6 @@ void GUniformBuffer::save() {
         m_needsUpdate = true;
 
 //        2. Update UBO
-        this->uploadData(pPreviousContent, 0);
+        this->uploadData(pPreviousContent, m_size);
     }
 }

@@ -278,7 +278,6 @@ void GShaderPermutation::compileShader() {
     //Get Uniforms
     m_programBuffer = program;
 
-
     //Get uniforms data
     GLint count;
     glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &count);
@@ -295,7 +294,7 @@ void GShaderPermutation::compileShader() {
         GLint location = glGetUniformLocation(program, name);
 
         this->setUnf(std::string(name), location);
-//        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
+        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
 //    if (!shaderName.compare("m2Shader")) {
 //        std::cout << fragmentShaderString << std::endl << std::flush;
@@ -305,7 +304,7 @@ void GShaderPermutation::compileShader() {
     GLint numUniformBlocks;
     glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &numUniformBlocks);
 
-// get information about each uniform block
+    // get information about each uniform block
     for(int uniformBlock=0; uniformBlock < numUniformBlocks; uniformBlock++) {
         // get size of name of the uniform block
         GLint nameLength;
@@ -351,8 +350,11 @@ void GShaderPermutation::compileShader() {
                                       GL_UNIFORM_NAME_LENGTH, &uniformNameLength);
                 // get name of uniform variable
                 GLchar *uniformName = new GLchar[uniformNameLength];
+                GLsizei uniform_length;
+                GLint uniform_size;
+                GLenum uniform_type;
                 glGetActiveUniform(program, *tUniformIndex, uniformNameLength,
-                                   nullptr, nullptr, nullptr, uniformName);
+                                   &uniform_length, &uniform_size, &uniform_type, uniformName);
 
                 // get offset of uniform variable related to start of uniform block
                 glGetActiveUniformsiv(program, 1, tUniformIndex,
@@ -389,9 +391,24 @@ void GShaderPermutation::compileShader() {
 
         delete uniformsIndices;
     }
+
+    m_uboVertexBindPoints[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
+    m_uboVertexBindPoints[1] = glGetUniformBlockIndex(program, "modelWideBlockVS");
+    m_uboVertexBindPoints[2] = glGetUniformBlockIndex(program, "meshWideBlockVS");
+
+    m_uboFragmentBindPoints[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
+    m_uboFragmentBindPoints[1] = glGetUniformBlockIndex(program, "modelWideBlockPS");
+    m_uboFragmentBindPoints[2] = glGetUniformBlockIndex(program, "meshWideBlockPS");
 }
 
 void GShaderPermutation::setUnf(const std::string &name, GLuint index)  {
     const char * cstr = name.c_str();
     m_uniformMap[CalculateFNV(cstr)] = index;
+}
+
+void GShaderPermutation::bindProgram() {
+    glUseProgram(m_programBuffer);
+}
+void GShaderPermutation::unbindProgram() {
+    glUseProgram(0);
 }

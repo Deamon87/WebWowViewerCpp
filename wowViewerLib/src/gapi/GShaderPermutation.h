@@ -13,9 +13,6 @@
 
 class GShaderPermutation {
     friend class GDevice;
-
-
-
 protected:
     explicit GShaderPermutation(std::string &shaderName, GDevice & device);
     virtual void compileShader();
@@ -23,12 +20,20 @@ protected:
         return m_uniformMap.at(name.Hash());
     }
 
+    GLuint getUBOUnf(const HashedString name) const {
+        return m_uniformMap.at(name.Hash());
+    }
+
+    void bindProgram();
+    void unbindProgram();
+
     unsigned int m_programBuffer = 0;
 private:
     GDevice &m_device;
 private:
     std::unordered_map<size_t, unsigned int> m_uniformMap;
-    std::unordered_map<size_t, unsigned int> m_uboBindPoints;
+    unsigned int m_uboVertexBindPoints[3];
+    unsigned int m_uboFragmentBindPoints[3];
     std::string m_shaderName;
 
 

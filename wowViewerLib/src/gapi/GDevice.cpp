@@ -49,17 +49,37 @@ void GDevice::bindVertexBuffer(GVertexBuffer *buffer)  {
     }
 }
 
-void GDevice::bindUniformBuffer(GUniformBuffer *buffer, int slot)  {
+void GDevice::bindVertexUniformBuffer(GUniformBuffer *buffer, int slot)  {
     if (buffer == nullptr) {
-        if (m_uniformBuffer[slot] != nullptr) {
-            m_uniformBuffer[slot]->unbind();
-            m_uniformBuffer[slot] = nullptr;
+        if (m_vertexUniformBuffer[slot] != nullptr) {
+            m_vertexUniformBuffer[slot]->unbind();
+            m_vertexUniformBuffer[slot] = nullptr;
         }
-    }  else if (buffer != m_uniformBuffer[slot]) {
-        buffer->bind();
-        m_uniformBuffer[slot] = buffer;
+    }  else if (buffer != m_vertexUniformBuffer[slot]) {
+        buffer->bind(slot);
+        if (m_shaderPermutation != nullptr) {
+            glUniformBlockBinding(m_shaderPermutation->m_programBuffer, m_shaderPermutation->m_uboVertexBindPoints[slot], slot);
+        }
+
+        m_vertexUniformBuffer[slot] = buffer;
     }
 }
+void GDevice::bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot)  {
+    if (buffer == nullptr) {
+        if (m_fragmentUniformBuffer[slot] != nullptr) {
+            m_fragmentUniformBuffer[slot]->unbind();
+            m_fragmentUniformBuffer[slot] = nullptr;
+        }
+    }  else if (buffer != m_fragmentUniformBuffer[slot]) {
+        buffer->bind(3+slot);
+        if (m_shaderPermutation != nullptr) {
+            glUniformBlockBinding(m_shaderPermutation->m_programBuffer, m_shaderPermutation->m_uboFragmentBindPoints[slot], 3+slot);
+        }
+
+        m_fragmentUniformBuffer[slot] = buffer;
+    }
+}
+
 
 void GDevice::bindVertexBufferBindings(GVertexBufferBindings *buffer) {
     if (buffer == nullptr) {
@@ -114,8 +134,28 @@ HGUniformBuffer GDevice::createUniformBuffer(size_t size) {
     return h_uniformBuffer;
 }
 
-void GDevice::drawMeshes(std::vector<GMesh *> &meshes) {
+void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
+    for (auto &hmesh : meshes ) {
+        bindProgram(hmesh->m_shader.get());
+        bindVertexBufferBindings(hmesh->m_bindings.get());
 
+        bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[0].get(), 0);
+        bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[1].get(), 1);
+        bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[2].get(), 2);
+
+        bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[0].get(), 0);
+        bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[1].get(), 1);
+        bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[2].get(), 2);
+
+        for (int i = 0; i < hmesh->m_textureCount; i++) {
+            bindTexture(hmesh->m_texture[i].get(), i);
+        }
+
+//        exit(0);
+
+        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
+        return;
+    }
 }
 
 HGVertexBuffer GDevice::createVertexBuffer() {
@@ -151,7 +191,7 @@ void GDevice::bindTexture(GTexture *texture, int slot) {
         if (m_lastTexture[slot] != nullptr) {
             glActiveTexture(GL_TEXTURE0 + slot);
             m_lastTexture[slot]->unbind();
-            m_uniformBuffer[slot] = nullptr;
+            m_lastTexture[slot] = nullptr;
         }
     }  else if (texture != m_lastTexture[slot]) {
         glActiveTexture(GL_TEXTURE0 + slot);
@@ -161,5 +201,19 @@ void GDevice::bindTexture(GTexture *texture, int slot) {
 }
 
 HGTexture GDevice::createTexture(HBlpTexture &texture) {
-   GTexture gTexture = GTexture(*this, texture);
+    std::shared_ptr<GTexture> hgTexture = std::make_shared<GTexture>(GTexture(*this, texture));
+
+    return hgTexture;
+}
+
+void GDevice::bindProgram(GShaderPermutation *program) {
+    if (program == nullptr) {
+        if (m_shaderPermutation != nullptr) {
+            m_shaderPermutation->unbindProgram();
+            m_shaderPermutation = nullptr;
+        }
+    } else if (program != m_shaderPermutation) {
+        program->bindProgram();
+        m_shaderPermutation = program;
+    }
 }

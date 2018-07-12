@@ -50,19 +50,25 @@ public:
         m_lastTexture[2] = nullptr;
         m_lastTexture[3] = nullptr;
 
-        m_uniformBuffer[0] = nullptr;
-        m_uniformBuffer[1] = nullptr;
-        m_uniformBuffer[2] = nullptr;
+        m_vertexUniformBuffer[0] = nullptr;
+        m_vertexUniformBuffer[1] = nullptr;
+        m_vertexUniformBuffer[2] = nullptr;
+
+        m_fragmentUniformBuffer[0] = nullptr;
+        m_fragmentUniformBuffer[1] = nullptr;
+        m_fragmentUniformBuffer[2] = nullptr;
     }
 
+    void bindProgram(GShaderPermutation *program);
     void bindIndexBuffer(GIndexBuffer *buffer);
     void bindVertexBuffer(GVertexBuffer *buffer);
-    void bindUniformBuffer(GUniformBuffer *buffer, int slot);
+    void bindVertexUniformBuffer(GUniformBuffer *buffer, int slot);
+    void bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot);
     void bindVertexBufferBindings(GVertexBufferBindings *buffer);
 
     void bindTexture(GTexture *texture, int slot);
 
-    void drawMeshes(std::vector<GMesh *> &meshes);
+    void drawMeshes(std::vector<HGMesh> &meshes);
 public:
     std::shared_ptr<GShaderPermutation> getShader(std::string shaderName);
 
@@ -81,10 +87,12 @@ private:
     GIndexBuffer *m_lastBindIndexBuffer = nullptr;
     GVertexBuffer *m_lastBindVertexBuffer = nullptr;
     GVertexBufferBindings *m_vertexBufferBindings = nullptr;
+    GShaderPermutation * m_shaderPermutation = nullptr;
 
     GTexture *m_lastTexture[4] = {nullptr};
 
-    GUniformBuffer * m_uniformBuffer[3] = {nullptr};
+    GUniformBuffer * m_vertexUniformBuffer[3] = {nullptr};
+    GUniformBuffer * m_fragmentUniformBuffer[3] = {nullptr};
 
 private:
     //Caches

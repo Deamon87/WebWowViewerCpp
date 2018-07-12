@@ -27,7 +27,7 @@ public:
 private:
     void createBuffer();
     void destroyBuffer();
-    void bind(); //Should be called only by GDevice
+    void bind(int bindingPoint); //Should be called only by GDevice
     void unbind();
 
 public:

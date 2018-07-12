@@ -1009,11 +1009,12 @@ void M2Object::createMeshes() {
 
         auto meshIndex = material.meshIndex;
         auto mesh = skinData->submeshes[meshIndex];
-        meshTemplate.start= (mesh->indexStart + (mesh->Level << 16)) * 2;
+        meshTemplate.start= (mesh->indexStart + (mesh->Level << 16));
         meshTemplate.end = mesh->indexCount;
         meshTemplate.element = GL_TRIANGLES;
 
         HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
+        meshTemplate.textureCount = textMaterial->textureCount;
         for (int j = 0; j < material.textureCount; j++) {
             HBlpTexture blpTexture = this->getTexture(material.textures[0].m2TextureIndex);
             meshTemplate.texture[j] = m_api->getDevice()->createTexture(blpTexture);

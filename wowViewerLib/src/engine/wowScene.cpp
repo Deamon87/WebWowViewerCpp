@@ -1216,6 +1216,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     static const mathfu::vec3 upVector(0,0,1);
 
+    getDevice()->reset();
     glClearScreen();
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
