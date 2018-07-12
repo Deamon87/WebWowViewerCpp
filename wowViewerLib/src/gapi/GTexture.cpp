@@ -7,7 +7,7 @@
 #include "../engine/persistance/helper/ChunkFileReader.h"
 #include "../engine/texture/DxtDecompress.h"
 
-GTexture::GTexture(GDevice &device, HBlpTexture &texture) : m_device(device), m_texture(texture) {
+GTexture::GTexture(GDevice &device, HBlpTexture texture) : m_device(device), m_texture(texture) {
     pIdentifierBuffer = new GLuint;
     createBuffer();
 }
@@ -174,7 +174,10 @@ bool GTexture::getIsLoaded() {
         m_device.bindTexture(this, 0);
         this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
         m_device.bindTexture(nullptr, 0);
+
+        m_loaded = true;
     }
+    return m_loaded;
 }
 
 

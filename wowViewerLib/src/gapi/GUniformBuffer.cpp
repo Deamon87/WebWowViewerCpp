@@ -46,6 +46,7 @@ void GUniformBuffer::uploadData(void * data, int length) {
     glBufferData(GL_UNIFORM_BUFFER, length, data, GL_STATIC_DRAW);
 
     m_needsUpdate = false;
+    m_device.bindVertexUniformBuffer(nullptr, 0);
 }
 
 void GUniformBuffer::save() {

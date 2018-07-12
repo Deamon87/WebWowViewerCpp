@@ -41,6 +41,7 @@ public:
     virtual void drawCamera() = 0;
 
     virtual GDevice * getDevice()= 0;
+    virtual HGUniformBuffer getSceneWideUniformBuffer() = 0;
 
     virtual mathfu::mat4& getViewMat() = 0;
     virtual mathfu::vec4 getGlobalAmbientColor() = 0;

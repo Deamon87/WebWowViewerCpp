@@ -10,6 +10,7 @@
 #include "persistance/db2/DB2Light.h"
 #include "persistance/db2/DB2WmoAreaTable.h"
 #include "shader/ShaderDefinitions.h"
+#include "../gapi/UniformBufferStructures.h"
 #include <iostream>
 #include <cmath>
 
@@ -25,6 +26,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         adtObjectCache(requestProcessor),
         db2Cache(requestProcessor){
     m_gdevice = GDevice();
+    m_sceneWideUniformBuffer = m_gdevice.createUniformBuffer(sizeof(sceneWideBlockVSPS));
 
     this->m_config = config;
 
@@ -62,6 +64,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     this->initTextureCompVBO();
     this->initCaches();
     this->initCamera();
+
+
 
     //Init caches
 
@@ -193,7 +197,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
 
-//    m_firstCamera.setCameraPos(0, 0, 0);
+    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "creature/celestialdragonwyrm/celestialdragonwyrm.m2");
 
@@ -220,9 +224,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-   m_firstCamera.setCameraPos(0,  0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//   m_firstCamera.setCameraPos(0,  0, 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -254,8 +258,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_nightelf/ui_nightelf.m2", 0);
 
-//    currentScene = new M2Scene(this,
-//        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
+    currentScene = new M2Scene(this,
+        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 
 //    currentScene = new M2Scene(this,
 //        "character/bloodelf/female/bloodelffemale_hd.m2", 0);
@@ -1248,6 +1252,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     }
 
 
+
     mathfu::mat4 secondLookAtMat =
             mathfu::mat4::LookAt(
                     this->m_secondCamera.getCameraPosition(),
@@ -1261,6 +1266,13 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
                     nearPlane,
                     farPlane);
     m_perspectiveMatrix = perspectiveMatrix;
+
+    sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+    blockPSVS.uLookAtMat = m_lookAtMat4;
+    blockPSVS.uPMatrix = m_perspectiveMatrix;
+
+    m_sceneWideUniformBuffer->save();
+
 
     mathfu::mat4 perspectiveMatrixForCulling =
             mathfu::mat4::Perspective(

@@ -54,8 +54,8 @@ private:
     HSkinGeom m_skinGeom = nullptr;
 
     HGVertexBufferBindings bufferBindings = nullptr;
-    HGUniformBuffer modelVertexWideUniformBuffer = nullptr;
-    HGUniformBuffer modelFragmentWideUniformBuffer = nullptr;
+    HGUniformBuffer vertexModelWideUniformBuffer = nullptr;
+    HGUniformBuffer fragmentModelWideUniformBuffer = nullptr;
 
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;

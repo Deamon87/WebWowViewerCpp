@@ -42,9 +42,14 @@ void GVertexBufferBindings::save() {
     m_device.bindVertexBufferBindings(this);
     m_device.bindIndexBuffer(m_indexBuffer.get());
     for (GVertexBufferBinding &binding : m_bindings) {
-        m_device.bindVertexBuffer(binding.vertexBuffer.get());
         for (GBufferBinding &bufferBinding : binding.bindings) {
             glEnableVertexAttribArray(bufferBinding.position);
+        }
+    }
+    for (GVertexBufferBinding &binding : m_bindings) {
+        for (GBufferBinding &bufferBinding : binding.bindings) {
+            m_device.bindVertexBuffer(binding.vertexBuffer.get());
+
             glVertexAttribPointer(
                 bufferBinding.position,
                 bufferBinding.size,

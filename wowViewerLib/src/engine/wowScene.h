@@ -87,6 +87,10 @@ public:
         return &m_gdevice;
     }
 
+    virtual HGUniformBuffer getSceneWideUniformBuffer() override {
+        return m_sceneWideUniformBuffer;
+    }
+
     virtual Cache<AdtFile> *getAdtGeomCache() override {
         return &adtObjectCache;
     }
@@ -171,6 +175,7 @@ private:
 
     Config * m_config;
     GDevice m_gdevice;
+    HGUniformBuffer m_sceneWideUniformBuffer;
 
 
     mathfu::mat4 m_lookAtMat4;

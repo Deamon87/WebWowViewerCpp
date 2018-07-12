@@ -1009,7 +1009,7 @@ void M2Object::createMeshes() {
 
         auto meshIndex = material.meshIndex;
         auto mesh = skinData->submeshes[meshIndex];
-        meshTemplate.start= (mesh->indexStart + (mesh->Level << 16));
+        meshTemplate.start = (mesh->indexStart + (mesh->Level << 16)) * 2;
         meshTemplate.end = mesh->indexCount;
         meshTemplate.element = GL_TRIANGLES;
 
@@ -1019,12 +1019,12 @@ void M2Object::createMeshes() {
             HBlpTexture blpTexture = this->getTexture(material.textures[0].m2TextureIndex);
             meshTemplate.texture[j] = m_api->getDevice()->createTexture(blpTexture);
         }
-        meshTemplate.vertexBuffers[0] = m_api->getDevice()->createUniformBuffer(0);
-        meshTemplate.vertexBuffers[1] = modelVertexWideUniformBuffer;
+        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.vertexBuffers[1] = vertexModelWideUniformBuffer;
         meshTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshWideBlockVS));
 
-        meshTemplate.fragmentBuffers[0] = m_api->getDevice()->createUniformBuffer(0);
-        meshTemplate.fragmentBuffers[1] = modelFragmentWideUniformBuffer;
+        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.fragmentBuffers[1] = fragmentModelWideUniformBuffer;
         meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshWideBlockPS));
 
          //Make mesh
@@ -1042,13 +1042,13 @@ void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
     }
 
     //1. Update model wide VS buffer
-    modelWideBlockVS &blockVS = modelVertexWideUniformBuffer->getObject<modelWideBlockVS>();
+    modelWideBlockVS &blockVS = vertexModelWideUniformBuffer->getObject<modelWideBlockVS>();
     int interCount = std::min(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM);
     for (int i = 0; i < interCount; i++) {
         blockVS.uBoneMatrixes[i] = bonesMatrices[i];
     }
 //    std::copy(&bonesMatrices[0], &bonesMatrices[0] + std::max(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM), &blockVS.uBoneMatrixes[0]);
-    modelVertexWideUniformBuffer->save();
+    vertexModelWideUniformBuffer->save();
 
     //2. Update model wide PS buffer
     static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
@@ -1061,13 +1061,13 @@ void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
 
     mathfu::vec4 ambientLight = getAmbientLight();
 
-    modelWideBlockPS &blockPS = modelFragmentWideUniformBuffer->getObject<modelWideBlockPS>();
+    modelWideBlockPS &blockPS = fragmentModelWideUniformBuffer->getObject<modelWideBlockPS>();
     blockPS.uAmbientLight = ambientLight;
     blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
     blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
     blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
 
-    modelFragmentWideUniformBuffer->save();
+    fragmentModelWideUniformBuffer->save();
 
 
     M2Data * m2File = this->m_m2Geom->getM2Data();
@@ -1248,12 +1248,12 @@ void M2Object::createVertexBindings() {
 
     GVertexBufferBinding vertexBinding;
     vertexBinding.vertexBuffer = vboBuffer;
-    vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[5]);
+    vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[6]);
 
     bufferBindings->addVertexBufferBinding(vertexBinding);
     bufferBindings->save();
 
     //3. Create model wide uniform buffer
-    modelVertexWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockVS));
-    modelFragmentWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockPS));
+    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockVS));
+    fragmentModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockPS));
 }

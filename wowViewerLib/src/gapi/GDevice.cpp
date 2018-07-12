@@ -27,7 +27,7 @@ BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
 
 void GDevice::bindIndexBuffer(GIndexBuffer *buffer) {
     if (buffer == nullptr ) {
-        if (m_lastBindIndexBuffer == nullptr) {
+        if (m_lastBindIndexBuffer != nullptr) {
             m_lastBindIndexBuffer->unbind();
             m_lastBindIndexBuffer = nullptr;
         }
@@ -148,13 +148,13 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
         bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[2].get(), 2);
 
         for (int i = 0; i < hmesh->m_textureCount; i++) {
-            bindTexture(hmesh->m_texture[i].get(), i);
+            if (hmesh->m_texture[i] != nullptr && hmesh->m_texture[i]->getIsLoaded()) {
+                bindTexture(hmesh->m_texture[i].get(), i);
+            }
         }
 
-//        exit(0);
-
-        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
-        return;
+        glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start *2));
+//        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
     }
 }
 

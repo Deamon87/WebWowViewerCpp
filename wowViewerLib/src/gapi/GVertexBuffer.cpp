@@ -24,7 +24,7 @@ void GVertexBuffer::destroyBuffer() {
 void GVertexBuffer::uploadData(void * data, int length) {
     m_device.bindVertexBuffer(this);
 
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, length, data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, length, data, GL_STATIC_DRAW);
 }
 
 void GVertexBuffer::bind() {
