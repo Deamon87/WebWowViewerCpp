@@ -39,17 +39,19 @@ void GVertexBufferBindings::addVertexBufferBinding(GVertexBufferBinding binding)
 }
 
 void GVertexBufferBindings::save() {
-//    m_device.bindVertexBufferBindings(this);
-    m_device.bindIndexBuffer(m_indexBuffer.get());
+    m_device.bindVertexBufferBindings(this);
 //    for (GVertexBufferBinding &binding : m_bindings) {
 //        for (GBufferBinding &bufferBinding : binding.bindings) {
 //
 //        }
 //    }
+//    m_device.bindIndexBuffer(nullptr);
+//    m_device.bindVertexBuffer(nullptr);
     for (GVertexBufferBinding &binding : m_bindings) {
         m_device.bindVertexBuffer(binding.vertexBuffer.get());
 
         for (GBufferBinding &bufferBinding : binding.bindings) {
+            glEnableVertexAttribArray(bufferBinding.position);
             glVertexAttribPointer(
                 bufferBinding.position,
                 bufferBinding.size,
@@ -58,10 +60,10 @@ void GVertexBufferBindings::save() {
                 bufferBinding.stride,
                 (const void *) bufferBinding.offset
             );
-            glEnableVertexAttribArray(bufferBinding.position);
         }
     }
-//    m_device.bindVertexBufferBindings(nullptr);
+    m_device.bindIndexBuffer(m_indexBuffer.get());
+    m_device.bindVertexBufferBindings(nullptr);
 
 }
 

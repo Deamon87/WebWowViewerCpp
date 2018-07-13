@@ -2,6 +2,7 @@
 // Created by deamon on 05.06.18.
 //
 
+#include <iostream>
 #include "../engine/opengl/header.h"
 #include "GDevice.h"
 #include "../engine/algorithms/hashString.h"
@@ -58,7 +59,7 @@ void GDevice::bindVertexUniformBuffer(GUniformBuffer *buffer, int slot)  {
     }  else if (buffer != m_vertexUniformBuffer[slot]) {
         buffer->bind(slot);
         if (m_shaderPermutation != nullptr) {
-            glUniformBlockBinding(m_shaderPermutation->m_programBuffer, m_shaderPermutation->m_uboVertexBindPoints[slot], slot);
+            glUniformBlockBinding(m_shaderPermutation->m_programBuffer, m_shaderPermutation->m_uboVertexBlockIndex[slot], slot);
         }
 
         m_vertexUniformBuffer[slot] = buffer;
@@ -73,7 +74,7 @@ void GDevice::bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot)  {
     }  else if (buffer != m_fragmentUniformBuffer[slot]) {
         buffer->bind(3+slot);
         if (m_shaderPermutation != nullptr) {
-            glUniformBlockBinding(m_shaderPermutation->m_programBuffer, m_shaderPermutation->m_uboFragmentBindPoints[slot], 3+slot);
+            glUniformBlockBinding(m_shaderPermutation->m_programBuffer, m_shaderPermutation->m_uboFragmentBlockIndex[slot], 3+slot);
         }
 
         m_fragmentUniformBuffer[slot] = buffer;
@@ -85,22 +86,18 @@ void GDevice::bindVertexBufferBindings(GVertexBufferBindings *buffer) {
     if (buffer == nullptr) {
        if (m_vertexBufferBindings != nullptr) {
            m_vertexBufferBindings->unbind();
+           m_vertexBufferBindings = nullptr;
        }
         m_lastBindIndexBuffer = nullptr;
         m_lastBindVertexBuffer = nullptr;
     } else {
-//        bindIndexBuffer(nullptr);
-//        bindVertexBuffer(nullptr);
-//        m_lastBindIndexBuffer->unbind();
-//        m_lastBindVertexBuffer->unbind();
-//
-//
-//        if (buffer != m_vertexBufferBindings) {
-//            buffer->bind();
-//            m_vertexBufferBindings = buffer;
-//        }
-        buffer->save();
+        m_lastBindIndexBuffer = nullptr;
+        m_lastBindVertexBuffer = nullptr;
 
+        if (buffer != m_vertexBufferBindings) {
+            buffer->bind();
+            m_vertexBufferBindings = buffer;
+        }
     }
 }
 
@@ -156,7 +153,24 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
             }
         }
 
-        glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
+//        GLint current_vao;
+//        GLint current_array_buffer;
+//        GLint current_element_buffer;
+//        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &current_vao);
+//        glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &current_array_buffer);
+//        glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &current_element_buffer);
+//
+//        std::cout << "current_vao = " << current_vao << std::endl <<
+//            " current_array_buffer = " << current_array_buffer << std::endl <<
+//            " current_element_buffer = " << current_element_buffer << std::endl <<
+//            " hmesh->m_bindings->m_buffer = " << *(GLint *) hmesh->m_bindings->m_buffer << std::endl <<
+//            " hmesh->m_bindings->m_bindings[0].vertexBuffer->pIdentifierBuffer = "
+//                  << *(GLint *) hmesh->m_bindings->m_bindings[0].vertexBuffer->pIdentifierBuffer << std::endl <<
+//            " hmesh->m_bindings->m_indexBuffer->buffer  = "
+//                << *(GLint *) hmesh->m_bindings->m_indexBuffer->buffer << std::endl;
+//                ;
+
+       glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 //        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
     }
 }

@@ -29,11 +29,11 @@ void GUniformBuffer::destroyBuffer() {
     glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
 }
 void GUniformBuffer::bind(int bindingPoint) { //Should be called only by GDevice
-    if (bindingPoint > 0) {
+    //if (bindingPoint > 0) {
         glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer);
-    } else {
-        glBindBuffer(GL_UNIFORM_BUFFER, *(GLuint *) this->pIdentifierBuffer);
-    }
+    //} else {
+    //    glBindBuffer(GL_UNIFORM_BUFFER, *(GLuint *) this->pIdentifierBuffer);
+    //}
 }
 void GUniformBuffer::unbind() {
     glBindBuffer(GL_UNIFORM_BUFFER, 0);

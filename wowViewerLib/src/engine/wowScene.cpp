@@ -253,13 +253,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_worgen/ui_worgen.m2", 0);
 
 //    currentScene = new M2Scene(this,
-//        "\tinterface/glues/models/ui_pandaren/ui_pandaren.m2", 0);
+//        "interface/glues/models/ui_pandaren/ui_pandaren.m2", 0);
 //
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_nightelf/ui_nightelf.m2", 0);
 
-    currentScene = new M2Scene(this,
-        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
+//    currentScene = new M2Scene(this,
+//        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 
 //    currentScene = new M2Scene(this,
 //        "character/bloodelf/female/bloodelffemale_hd.m2", 0);
@@ -1189,9 +1189,9 @@ void glClearScreen() {
     glDepthFunc(GL_LESS);
 
     glDisable(GL_BLEND);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+//    glClearColor(0.0, 0.0, 0.0, 0.0);
 //    glClearColor(0.25, 0.06, 0.015, 0.0);
-//    glClearColor(0.117647, 0.207843, 0.392157, 1);
+    glClearColor(0.117647, 0.207843, 0.392157, 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -1215,7 +1215,7 @@ void WoWSceneImpl::drawCamera () {
 float globalratio = 1.2;
 void WoWSceneImpl::draw(animTime_t deltaTime) {
 #ifndef WITH_GLESv2
-    glBindVertexArray(vao);
+    //glBindVertexArray(vao);
 #endif
 
     static const mathfu::vec3 upVector(0,0,1);

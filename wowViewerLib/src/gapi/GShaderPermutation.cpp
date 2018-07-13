@@ -392,13 +392,13 @@ void GShaderPermutation::compileShader() {
         delete uniformsIndices;
     }
 
-    m_uboVertexBindPoints[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
-    m_uboVertexBindPoints[1] = glGetUniformBlockIndex(program, "modelWideBlockVS");
-    m_uboVertexBindPoints[2] = glGetUniformBlockIndex(program, "meshWideBlockVS");
+    m_uboVertexBlockIndex[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
+    m_uboVertexBlockIndex[1] = glGetUniformBlockIndex(program, "modelWideBlockVS");
+    m_uboVertexBlockIndex[2] = glGetUniformBlockIndex(program, "meshWideBlockVS");
 
-    m_uboFragmentBindPoints[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
-    m_uboFragmentBindPoints[1] = glGetUniformBlockIndex(program, "modelWideBlockPS");
-    m_uboFragmentBindPoints[2] = glGetUniformBlockIndex(program, "meshWideBlockPS");
+    m_uboFragmentBlockIndex[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
+    m_uboFragmentBlockIndex[1] = glGetUniformBlockIndex(program, "modelWideBlockPS");
+    m_uboFragmentBlockIndex[2] = glGetUniformBlockIndex(program, "meshWideBlockPS");
 }
 
 void GShaderPermutation::setUnf(const std::string &name, GLuint index)  {
