@@ -71,6 +71,7 @@ public:
 
     void bindTexture(GTexture *texture, int slot);
 
+
     void drawMeshes(std::vector<HGMesh> &meshes);
 public:
     std::shared_ptr<GShaderPermutation> getShader(std::string shaderName);

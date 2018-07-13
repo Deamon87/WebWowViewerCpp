@@ -277,5 +277,14 @@ void GDevice::bindProgram(GShaderPermutation *program) {
     } else if (program != m_shaderPermutation) {
         program->bindProgram();
         m_shaderPermutation = program;
+
+        glActiveTexture(GL_TEXTURE0 + 0);
+        glBindTexture(GL_TEXTURE_2D, 4);
+        glActiveTexture(GL_TEXTURE0 + 1);
+        glBindTexture(GL_TEXTURE_2D, 4);
+        glActiveTexture(GL_TEXTURE0 + 2);
+        glBindTexture(GL_TEXTURE_2D, 4);
+        glActiveTexture(GL_TEXTURE0 + 3);
+        glBindTexture(GL_TEXTURE_2D, 4);
     }
 }

@@ -44,7 +44,7 @@ void GTexture::bind() {
 }
 
 void GTexture::unbind() {
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D, 4);
 }
 
 void GTexture::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {

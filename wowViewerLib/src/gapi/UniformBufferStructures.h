@@ -9,7 +9,7 @@
 #include <mathfu/glsl_mappings.h>
 #include "../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 
-#define MAX_MATRIX_NUM 64
+#define MAX_MATRIX_NUM 220
 
 struct sceneWideBlockVSPS {
     mathfu::mat4 uLookAtMat;

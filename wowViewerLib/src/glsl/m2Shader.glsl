@@ -86,7 +86,7 @@ void main() {
 #else
     placementMat = uPlacementMat;
 #endif
-    vec4 lDiffuseColor = color_Transparency;
+    vec4 lDiffuseColor = vec4(1,1,1,1);
 
     mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
@@ -245,6 +245,7 @@ varying float fs_Depth;
 #endif
 
 vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
+    return matDiffuse;
     vec3 currColor;
     float mult = 1.0;
     vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
@@ -544,6 +545,7 @@ void main() {
     if(finalColor.a < uFogColorAndAlphaTest.w)
         discard;
 
+    /*
     int uUnFogged = PixelShader_UnFogged_IsAffectedByLight_LightCount.y;
     float uFogEnd = uSunColorAndFogEnd.z;
     if (uUnFogged == 0) {
@@ -564,7 +566,7 @@ void main() {
         float endFadeFog = clamp(((uFogEnd - distanceToCamera) / (0.699999988 * uFogEnd)), 0.0, 1.0);
         float fog_out = min(expFog, endFadeFog);
         finalColor.rgba = vec4(mix(fogColor.rgb, finalColor.rgb, vec3(fog_out)), finalColor.a);
-    }
+    }*/
 //    finalColor.rgb = finalColor.rgb;
 
 
