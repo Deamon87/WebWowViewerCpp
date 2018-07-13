@@ -19,6 +19,7 @@ struct sceneWideBlockVSPS {
 
 //M2 Vertex buffer formats
 struct modelWideBlockVS {
+    mathfu::mat4 uPlacementMat;
     mathfu::mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 };
 

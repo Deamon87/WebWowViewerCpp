@@ -31,6 +31,7 @@ layout(std140) uniform sceneWideBlockVSPS {
 
 // Whole model
 layout(std140) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
     mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 };
 
@@ -42,8 +43,6 @@ layout(std140) uniform meshWideBlockVS {
 };
 
 #ifndef INSTANCED
-uniform mat4 uPlacementMat;
-uniform vec4 uAmbientColor;
 #else
 attribute mat4 aPlacementMat;
 #endif
@@ -279,7 +278,7 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
 
     } else {
         currColor = vec3 (1.0, 1.0, 1.0) ;
-        accumLight = vec3(0,0,0);
+        accumLight = vec3(1.0,0,0);
         mult = 1.0;
     }
 
@@ -315,8 +314,8 @@ void main() {
     if ((PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1)) {
         vec3 vPos3 = vPosition.xyz;
         vec3 vNormal3 = normalize(vNormal.xyz);
-        int count = int(pc_lights[0].attenuation.w);
         vec3 lightColor = vec3(0.0);
+        int count = int(pc_lights[0].attenuation.w);
         int index = 0;
         for (;;)
         {
@@ -335,7 +334,6 @@ void main() {
             lightColor = (lightColor + vec3(attenuatedColor * attenuatedColor * diffuseTerm1 ));
             index++;
         }
-
         meshResColor.rgb = clamp(lightColor , 0.0, 1.0);
         accumLight = meshResColor.rgb;
         //finalColor.rgb =  finalColor.rgb * lightColor;

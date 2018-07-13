@@ -934,7 +934,6 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
     auto op_count = m2Batch->textureCount;
 
     auto renderFlagIndex = m2Batch->materialIndex;
-    //var isTransparent = (mdxObject.m2File.renderFlags[renderFlagIndex].blend >= 2);
     auto isTransparent = (m2File->materials[renderFlagIndex]->blending_mode >= 2) ||
                          ((m2File->materials[renderFlagIndex]->flags & 0x10) > 0);
 
@@ -1017,8 +1016,10 @@ void M2Object::createMeshes() {
         HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
         meshTemplate.textureCount = textMaterial->textureCount;
         for (int j = 0; j < material.textureCount; j++) {
-            HBlpTexture blpTexture = this->getTexture(material.textures[0].m2TextureIndex);
-            meshTemplate.texture[j] = m_api->getDevice()->createTexture(blpTexture);
+            HBlpTexture blpTexture = this->getTexture(material.textures[j].m2TextureIndex);
+            meshTemplate.texture[j] = m_api->getDevice()->createTexture(blpTexture,
+                material.textures[j].xWrapTex,
+                material.textures[j].yWrapTex);
         }
         meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
         meshTemplate.vertexBuffers[1] = vertexModelWideUniformBuffer;
@@ -1044,9 +1045,11 @@ void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
 
     //1. Update model wide VS buffer
     modelWideBlockVS &blockVS = vertexModelWideUniformBuffer->getObject<modelWideBlockVS>();
+    blockVS.uPlacementMat = m_placementMatrix;
     int interCount = std::min(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM);
     for (int i = 0; i < interCount; i++) {
         blockVS.uBoneMatrixes[i] = bonesMatrices[i];
+//        blockVS.uBoneMatrixes[i] = mathfu::mat4::Identity();
     }
 //    std::copy(&bonesMatrices[0], &bonesMatrices[0] + std::max(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM), &blockVS.uBoneMatrixes[0]);
     vertexModelWideUniformBuffer->save();
@@ -1063,7 +1066,7 @@ void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
     mathfu::vec4 ambientLight = getAmbientLight();
 
     modelWideBlockPS &blockPS = fragmentModelWideUniformBuffer->getObject<modelWideBlockPS>();
-    blockPS.uAmbientLight = ambientLight;
+    blockPS.uAmbientLight = mathfu::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
     blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
     blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
@@ -1159,14 +1162,14 @@ mathfu::vec4 M2Object::getAmbientLight() {
     }
 
     mathfu::vec4 ambientColor = m_api->getGlobalAmbientColor();
-    if (m_modelAsScene) {
-        mathfu::vec4 ambientColor(0,0,0,0);
+    /*if (m_modelAsScene) {
+        ambientColor(0,0,0,0);
         for (int i = 0; i < lights.size(); ++i) {
             if (lights[i].ambient_intensity > 0) {
                 ambientColor += lights[i].ambient_color; //* lights[i].ambient_intensity;
             }
         }
-    }
+    }*/
 
     return ambientColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
 };

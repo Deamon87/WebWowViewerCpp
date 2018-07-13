@@ -7,9 +7,12 @@
 #include "../engine/persistance/helper/ChunkFileReader.h"
 #include "../engine/texture/DxtDecompress.h"
 
-GTexture::GTexture(GDevice &device, HBlpTexture texture) : m_device(device), m_texture(texture) {
+GTexture::GTexture(GDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex) : m_device(device), m_texture(texture) {
     pIdentifierBuffer = new GLuint;
     createBuffer();
+
+    this->xWrapTex = xWrapTex;
+    this->yWrapTex = yWrapTex;
 }
 
 GTexture::~GTexture() {
@@ -27,6 +30,17 @@ void GTexture::destroyBuffer() {
 
 void GTexture::bind() {
     glBindTexture(GL_TEXTURE_2D, *(GLuint *)pIdentifierBuffer);
+
+    if (xWrapTex) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    }
+    if (yWrapTex) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
 }
 
 void GTexture::unbind() {

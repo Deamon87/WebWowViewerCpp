@@ -138,7 +138,7 @@ void GShaderPermutation::compileShader() {
         //Insert gl_FragColor for glsl 330
         fragmentShaderString = trimmed(fragmentShaderString.insert(
                 fragmentShaderString.find("void main(", fragmentShaderString.find("COMPILING_FS", 0)),
-                "\n layout(location = 0) out vec4 gl_FragColor; \n"));
+                "\n out vec4 gl_FragColor; \n"));
 
 
     } else {

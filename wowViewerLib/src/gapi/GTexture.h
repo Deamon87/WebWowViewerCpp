@@ -12,7 +12,7 @@
 
 class GTexture {
     friend class GDevice;
-    explicit GTexture(GDevice &device, HBlpTexture texture);
+    explicit GTexture(GDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GTexture();
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps);
@@ -28,6 +28,9 @@ private:
 
     GDevice &m_device;
     HBlpTexture m_texture;
+
+    bool xWrapTex;
+    bool yWrapTex;
 
     bool m_loaded = false;
 };

@@ -41,7 +41,7 @@ public:
         m_lastDepthWrite = -1;
         m_lastDepthCulling = -1;
         m_backFaceCulling = -1;
-        //m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
+        m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
         m_lastBindIndexBuffer = nullptr;
         m_lastBindVertexBuffer = nullptr;
         m_vertexBufferBindings = nullptr;
@@ -80,7 +80,7 @@ public:
     HGIndexBuffer createIndexBuffer();
     HGVertexBufferBindings createVertexBufferBindings();
 
-    HGTexture createTexture(HBlpTexture &texture);
+    HGTexture createTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex);
     HGMesh createMesh(gMeshTemplate &meshTemplate);
 private:
     int8_t m_lastDepthWrite = -1;

@@ -198,6 +198,22 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
             m_backFaceCulling = hmesh->m_backFaceCulling;
         }
 
+        if (m_lastBlendMode != hmesh->m_blendMode) {
+            BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
+            if (selectedBlendMode.blendModeEnable) {
+                glEnable(GL_BLEND);
+            } else {
+                glDisable(GL_BLEND);
+            }
+
+            glBlendFuncSeparate(
+                    selectedBlendMode.SrcColor,
+                    selectedBlendMode.DestColor,
+                    selectedBlendMode.SrcAlpha,
+                    selectedBlendMode.DestAlpha
+            );
+            m_lastBlendMode = hmesh->m_blendMode;
+        }
 
         glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 //        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
@@ -246,9 +262,9 @@ void GDevice::bindTexture(GTexture *texture, int slot) {
     }
 }
 
-HGTexture GDevice::createTexture(HBlpTexture &texture) {
+HGTexture GDevice::createTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
     std::shared_ptr<GTexture> hgTexture;
-    hgTexture.reset(new GTexture(*this, texture));
+    hgTexture.reset(new GTexture(*this, texture, xWrapTex, yWrapTex));
     return hgTexture;
 }
 
