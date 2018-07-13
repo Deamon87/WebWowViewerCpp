@@ -24,6 +24,7 @@ void GUniformBuffer::createBuffer() {
     glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
 }
 
+
 void GUniformBuffer::destroyBuffer() {
     glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
 }
@@ -56,6 +57,6 @@ void GUniformBuffer::save() {
         m_needsUpdate = true;
 
 //        2. Update UBO
-        this->uploadData(pPreviousContent, m_size);
+        this->uploadData(pContent, m_size);
     }
 }

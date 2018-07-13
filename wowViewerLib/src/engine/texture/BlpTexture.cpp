@@ -119,10 +119,10 @@ void BlpTexture::process(std::vector<unsigned char> &blpFile, std::string &fileN
 
         std::cout << pBlpFile->fileIdent;
     }
-    TextureFormat textureFormat = getTextureType(pBlpFile);
+    this->m_textureFormat = getTextureType(pBlpFile);
 
     /* Load texture by mipmaps */
-    parseMipmaps(pBlpFile, textureFormat, m_mipmaps);
+    parseMipmaps(pBlpFile, m_textureFormat, m_mipmaps);
 
 //    /* Load texture into GL memory */
 //    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);

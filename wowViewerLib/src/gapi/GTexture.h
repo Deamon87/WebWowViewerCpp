@@ -12,7 +12,7 @@
 
 class GTexture {
     friend class GDevice;
-    GTexture(GDevice &device, HBlpTexture texture);
+    explicit GTexture(GDevice &device, HBlpTexture texture);
 public:
     ~GTexture();
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps);

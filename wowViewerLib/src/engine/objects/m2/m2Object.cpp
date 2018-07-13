@@ -963,6 +963,7 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
     }
 
     materialData.texUnitTexIndex = materialIndex;
+    materialData.textureCount = op_count;
     for (int j = 0; j < op_count; j++) {
         auto m2TextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + j];
         M2Texture* m2TextureDefinition = m2File->textures[m2TextureIndex];

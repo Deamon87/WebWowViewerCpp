@@ -17,6 +17,7 @@ GMesh::GMesh(GDevice &device,
     m_end = meshTemplate.end;
     m_element = meshTemplate.element;
     m_textureCount = meshTemplate.textureCount;
+
     m_texture[0] = meshTemplate.texture[0];
     m_texture[1] = meshTemplate.texture[1];
     m_texture[2] = meshTemplate.texture[2];

@@ -57,6 +57,8 @@ public:
         m_fragmentUniformBuffer[0] = nullptr;
         m_fragmentUniformBuffer[1] = nullptr;
         m_fragmentUniformBuffer[2] = nullptr;
+
+        m_shaderPermutation = nullptr;
     }
 
     void bindProgram(GShaderPermutation *program);

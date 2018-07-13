@@ -89,13 +89,18 @@ void GDevice::bindVertexBufferBindings(GVertexBufferBindings *buffer) {
         m_lastBindIndexBuffer = nullptr;
         m_lastBindVertexBuffer = nullptr;
     } else {
-        bindIndexBuffer(nullptr);
-        bindVertexBuffer(nullptr);
+//        bindIndexBuffer(nullptr);
+//        bindVertexBuffer(nullptr);
+//        m_lastBindIndexBuffer->unbind();
+//        m_lastBindVertexBuffer->unbind();
+//
+//
+//        if (buffer != m_vertexBufferBindings) {
+//            buffer->bind();
+//            m_vertexBufferBindings = buffer;
+//        }
+        buffer->save();
 
-        if (buffer != m_vertexBufferBindings) {
-            buffer->bind();
-            m_vertexBufferBindings = buffer;
-        }
     }
 }
 
@@ -110,11 +115,9 @@ std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
 
     std::shared_ptr<GShaderPermutation> sharedPtr;
     if (shaderName == "m2Shader") {
-        sharedPtr = std::make_shared<GShaderPermutation>(
-            GM2ShaderPermutation(shaderName, *this));
+        sharedPtr.reset( new GM2ShaderPermutation(shaderName, *this));
     } else {
-        sharedPtr = std::make_shared<GShaderPermutation>(
-            GShaderPermutation(shaderName, *this));
+        sharedPtr.reset(new GShaderPermutation(shaderName, *this));
     }
 
     sharedPtr->compileShader();
@@ -153,7 +156,7 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
             }
         }
 
-        glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start *2));
+        glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 //        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
     }
 }
@@ -201,8 +204,8 @@ void GDevice::bindTexture(GTexture *texture, int slot) {
 }
 
 HGTexture GDevice::createTexture(HBlpTexture &texture) {
-    std::shared_ptr<GTexture> hgTexture = std::make_shared<GTexture>(GTexture(*this, texture));
-
+    std::shared_ptr<GTexture> hgTexture;
+    hgTexture.reset(new GTexture(*this, texture));
     return hgTexture;
 }
 
