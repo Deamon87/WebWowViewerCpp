@@ -38,8 +38,9 @@ typedef std::shared_ptr<GTexture> HGTexture;
 class GDevice {
 public:
     void reset() {
-        m_lastDepthWrite = false;
-        m_lastDepthCulling = false;
+        m_lastDepthWrite = -1;
+        m_lastDepthCulling = -1;
+        m_backFaceCulling = -1;
         //m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
         m_lastBindIndexBuffer = nullptr;
         m_lastBindVertexBuffer = nullptr;
@@ -82,9 +83,9 @@ public:
     HGTexture createTexture(HBlpTexture &texture);
     HGMesh createMesh(gMeshTemplate &meshTemplate);
 private:
-    bool m_lastDepthWrite = false;
-    bool m_lastDepthCulling = false;
-    bool m_backFaceCulling = false;
+    int8_t m_lastDepthWrite = -1;
+    int8_t m_lastDepthCulling = -1;
+    int8_t m_backFaceCulling = -1;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBuffer *m_lastBindIndexBuffer = nullptr;
     GVertexBuffer *m_lastBindVertexBuffer = nullptr;

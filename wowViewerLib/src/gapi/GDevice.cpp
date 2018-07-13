@@ -170,7 +170,36 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
 //                << *(GLint *) hmesh->m_bindings->m_indexBuffer->buffer << std::endl;
 //                ;
 
-       glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
+        if (m_lastDepthWrite != hmesh->m_depthWrite) {
+            if (hmesh->m_depthWrite > 0) {
+                glDepthMask(GL_TRUE);
+            } else {
+                glDepthMask(GL_FALSE);
+            }
+
+            m_lastDepthWrite = hmesh->m_depthWrite;
+        }
+        if (m_lastDepthCulling != hmesh->m_depthCulling) {
+            if (hmesh->m_depthCulling > 0) {
+                glEnable(GL_DEPTH_TEST);
+            } else {
+                glDisable(GL_DEPTH_TEST);
+            }
+
+            m_lastDepthCulling = hmesh->m_depthCulling;
+        }
+        if (m_backFaceCulling != hmesh->m_backFaceCulling) {
+            if (hmesh->m_backFaceCulling > 0) {
+                glDisable(GL_CULL_FACE);
+            } else {
+                glEnable(GL_CULL_FACE);
+            }
+
+            m_backFaceCulling = hmesh->m_backFaceCulling;
+        }
+
+
+        glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 //        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
     }
 }

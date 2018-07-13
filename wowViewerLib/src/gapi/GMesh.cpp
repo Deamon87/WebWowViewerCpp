@@ -8,9 +8,11 @@ GMesh::GMesh(GDevice &device,
              const gMeshTemplate &meshTemplate
 ) : m_device(device), m_bindings(meshTemplate.bindings), m_shader(meshTemplate.shader) {
 
-    m_depthWrite = meshTemplate.depthWrite;
-    m_depthCulling = meshTemplate.depthCulling;
-    m_backFaceCulling = meshTemplate.backFaceCulling;
+    m_depthWrite = (int8_t) (meshTemplate.depthWrite ? 1u : 0u);
+    m_depthCulling = (int8_t) (meshTemplate.depthCulling ? 1 : 0);
+    m_backFaceCulling = (int8_t) (meshTemplate.backFaceCulling ? 1 : 0);
+
+
     m_blendMode = meshTemplate.blendMode;
 
     m_start = meshTemplate.start;

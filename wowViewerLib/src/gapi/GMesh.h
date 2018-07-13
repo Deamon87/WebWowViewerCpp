@@ -51,9 +51,9 @@ private:
     HGUniformBuffer m_fragmentUniformBuffer[3] = {nullptr, nullptr, nullptr};
     HGTexture m_texture[4];
 
-    bool m_depthWrite;
-    bool m_depthCulling;
-    bool m_backFaceCulling;
+    int8_t m_depthWrite;
+    int8_t m_depthCulling;
+    int8_t m_backFaceCulling;
     EGxBlendEnum m_blendMode;
 
     int m_start;

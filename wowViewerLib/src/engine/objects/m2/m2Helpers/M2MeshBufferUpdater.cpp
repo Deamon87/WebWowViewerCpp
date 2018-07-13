@@ -85,12 +85,18 @@ void M2MeshBufferUpdater::fillTextureMatrices(const M2Object &m2Object, const M2
     int16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
     if (textureMatIndex >= 0 && textureMatIndex < m2Object.textAnimMatrices.size()) {
         uTextMat[0] = m2Object.textAnimMatrices[textureMatIndex];
+    } else {
+        uTextMat[0] = mathfu::mat4::Identity();
     }
     if (textureAnim+1 < m2Data->texture_transforms_lookup_table.size) {
         int textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
         if (textureMatIndex >= 0 && textureMatIndex < m2Object.textAnimMatrices.size()) {
             uTextMat[1] =m2Object.textAnimMatrices[textureMatIndex];
+        } else {
+            uTextMat[1] = mathfu::mat4::Identity();
         }
+    } else {
+        uTextMat[1] = mathfu::mat4::Identity();
     }
 };
 

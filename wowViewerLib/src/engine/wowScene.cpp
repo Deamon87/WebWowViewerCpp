@@ -184,9 +184,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //       "WORLD\\GENERIC\\HUMAN\\PASSIVE DOODADS\\BANNERS\\STORMWINDLIONBANNER.m2");
 //
-//    m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "world\\generic\\human\\passive doodads\\gryphonroost\\gryphonroost01.m2");
+    m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new M2Scene(this,
+        "world\\generic\\human\\passive doodads\\gryphonroost\\gryphonroost01.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
