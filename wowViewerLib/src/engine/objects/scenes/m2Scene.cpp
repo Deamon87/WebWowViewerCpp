@@ -3,6 +3,7 @@
 //
 
 #include "m2Scene.h"
+#include "../../../gapi/GM2Mesh.h"
 #include "../../algorithms/mathHelper.h"
 
 void M2Scene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
@@ -19,14 +20,38 @@ void M2Scene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, m
 void M2Scene::draw() {
     if (!m_drawModel) return;
 
-    std::vector<HGMesh> renderedThisFrame;
+    std::vector<HGM2Mesh> renderedThisFrame;
 
     m_m2Object->fillBuffersAndArray(renderedThisFrame);
-    m_api->getDevice()->drawMeshes(renderedThisFrame);
 
-//    if (renderedThisFrame.size()>0) {
-//        exit(0);
-//    }
+    std::sort(renderedThisFrame.begin(),
+              renderedThisFrame.end(),
+              [&](HGM2Mesh& a, HGM2Mesh& b) -> const bool {
+                  if (a->m_priorityPlane != b->m_priorityPlane) {
+                      return b->m_priorityPlane < a->m_priorityPlane;
+                  }
+
+                  if (a->m_sortDistance > b->m_sortDistance) {
+                      return false;
+                  }
+                  if (a->m_sortDistance < b->m_sortDistance) {
+                      return true;
+                  }
+
+                  if (a->m_m2Object > b->m_m2Object) {
+                      return false;
+                  }
+                  if (a->m_m2Object < b->m_m2Object) {
+                      return true;
+                  }
+
+                  return b->m_layer > a->m_layer;
+              }
+    );
+
+    m_api->getDevice()->drawM2Meshes(renderedThisFrame);
+
+
 }
 
 void M2Scene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {

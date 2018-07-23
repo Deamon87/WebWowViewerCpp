@@ -15,7 +15,7 @@
 
 class M2MeshBufferUpdater {
 public:
-    static bool updateBufferForMat(HGMesh &hmesh, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile);
+    static bool updateBufferForMat(HGM2Mesh &hmesh, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile);
 
     static void fillLights(const M2Object &m2Object, meshWideBlockPS &meshblockPS);
 
@@ -23,6 +23,9 @@ public:
                              M2SkinProfile *m2SkinProfile, mathfu::mat4 *uTextMat);
 
     static inline mathfu::vec3 &getFogColor(EGxBlendEnum blendMode, mathfu::vec3 &originalFogColor);
+
+    static void updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, M2MaterialInst &materialData,
+                               const M2Data * m2File, const M2SkinProfile *m2SkinProfile, mathfu::mat4 &modelViewMat);
 };
 
 

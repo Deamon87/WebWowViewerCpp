@@ -336,7 +336,7 @@ struct M2Data {
         uint32_t flag_tilt_y : 1;
         uint32_t : 1;
         uint32_t flag_has_blend_maps : 1;                   // add BlendMaps fields in header
-        uint32_t : 1;
+        uint32_t flag_sort_on_bones: 1;
         uint32_t flag_load_phys_data : 1;
         uint32_t : 1;
         uint32_t flag_unk_0x80 : 1;                         // with this flag unset, demon hunter tattoos stop glowing

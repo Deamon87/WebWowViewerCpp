@@ -3,7 +3,10 @@
 //
 
 #include "M2MeshBufferUpdater.h"
-bool M2MeshBufferUpdater::updateBufferForMat(HGMesh &hmesh, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
+#include "../../../../gapi/GM2Mesh.h"
+#include "../../../persistance/header/M2FileHeader.h"
+
+bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
     auto textMaterial = m2SkinProfile->batches[materialData.texUnitTexIndex];
     int renderFlagIndex = textMaterial->materialIndex;
     auto renderFlag = m2Data->materials[renderFlagIndex];
@@ -51,6 +54,46 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGMesh &hmesh, M2Object &m2Object, 
     hmesh->getFragmentUniformBuffer(2)->save();
 
     return true;
+}
+
+void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, M2MaterialInst &materialData,
+                                         const M2Data * m2File, const M2SkinProfile *m2SkinProfile, mathfu::mat4 &modelViewMat) {
+
+    M2Batch *textMaterial = m2SkinProfile->batches.getElement(materialData.texUnitTexIndex);
+    M2SkinSection *submesh = m2SkinProfile->submeshes.getElement(textMaterial->skinSectionIndex);
+
+    mathfu::vec4 centerBB = mathfu::vec4(mathfu::vec3(submesh->sortCenterPosition), 1.0);
+
+    const mathfu::mat4 &boneMat = m2Object.bonesMatrices[submesh->centerBoneIndex];
+    centerBB = modelViewMat * (boneMat * centerBB);
+
+    float value = centerBB.xyz().Length();
+
+    /*
+    if (textMaterial->flags & 3) {
+        mathfu::vec4 resultPoint;
+
+        if ( value > 0.00000023841858 ) {
+            resultPoint = centerBB * (1.0f / value);
+        } else {
+            resultPoint = centerBB;
+        }
+
+        mathfu::mat4 mat4 = modelViewMat * boneMat;
+        float dist = mat4.GetColumn(3).xyz().Length();
+        float sortDist = dist * submesh->sortRadius;
+
+        resultPoint *= sortDist;
+
+        if (textMaterial->flags & 1) {
+            value = (centerBB - resultPoint).xyz().Length();
+        } else {
+            value = (centerBB + resultPoint).xyz().Length();
+        }
+    }
+     */
+
+    hmesh->m_sortDistance = value;
 }
 
 void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, meshWideBlockPS &meshblockPS) {

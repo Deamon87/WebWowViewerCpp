@@ -32,7 +32,4 @@ private:
 
 };
 
-
-
-
 #endif //WEBWOWVIEWERCPP_GVERTEXBUFFER_H

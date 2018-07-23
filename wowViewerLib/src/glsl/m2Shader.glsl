@@ -86,7 +86,7 @@ void main() {
 #else
     placementMat = uPlacementMat;
 #endif
-    vec4 lDiffuseColor = vec4(1,1,1,1);
+    vec4 lDiffuseColor = color_Transparency;
 
     mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
@@ -245,7 +245,7 @@ varying float fs_Depth;
 #endif
 
 vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
-    return matDiffuse;
+//    return matDiffuse;
     vec3 currColor;
     float mult = 1.0;
     vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
@@ -298,13 +298,10 @@ void main() {
     vec2 texCoord2 = vTexCoord2.xy;
     vec2 texCoord3 = vTexCoord3.xy;
 
-
     /* Get color from texture */
     vec4 tex = texture2D(uTexture, texCoord).rgba;
     vec4 tex2 = texture2D(uTexture2, texCoord2).rgba;
     vec4 tex3 = texture2D(uTexture3, texCoord3).rgba;
-
-
 
     vec4 finalColor = vec4(0);
     vec4 meshResColor = vDiffuseColor;

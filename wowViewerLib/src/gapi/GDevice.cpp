@@ -8,6 +8,7 @@
 #include "../engine/algorithms/hashString.h"
 #include "shaders/GM2ShaderPermutation.h"
 #include "../engine/opengl/header.h"
+#include "GM2Mesh.h"
 
 BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
         /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
@@ -136,22 +137,42 @@ HGUniformBuffer GDevice::createUniformBuffer(size_t size) {
 
 void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
     for (auto &hmesh : meshes ) {
-        bindProgram(hmesh->m_shader.get());
-        bindVertexBufferBindings(hmesh->m_bindings.get());
+        this->drawMesh(hmesh);
+    }
+}
+void GDevice::drawM2Meshes(std::vector<HGM2Mesh> &meshes) {
+    //1. Draw opaque
+    int size_ = meshes.size();
+    for (int i = 0; i < size_; i++ ) {
+        if (meshes[i]->getIsTransparent()) continue;
+        HGMesh hgMesh = std::static_pointer_cast<GMesh>(meshes[i]);
+        this->drawMesh(hgMesh);
+    }
+    //2. Draw transparent
+    for (int i = size_-1; i >= 0; i-- ) {
+        if (!meshes[i]->getIsTransparent()) continue;
+        HGMesh hgMesh = std::static_pointer_cast<GMesh>(meshes[i]);
+        this->drawMesh(hgMesh);
+    }
+}
 
-        bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[0].get(), 0);
-        bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[1].get(), 1);
-        bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[2].get(), 2);
+void GDevice::drawMesh(HGMesh &hmesh) {
+    bindProgram(hmesh->m_shader.get());
+    bindVertexBufferBindings(hmesh->m_bindings.get());
 
-        bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[0].get(), 0);
-        bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[1].get(), 1);
-        bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[2].get(), 2);
+    bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[0].get(), 0);
+    bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[1].get(), 1);
+    bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[2].get(), 2);
 
-        for (int i = 0; i < hmesh->m_textureCount; i++) {
-            if (hmesh->m_texture[i] != nullptr && hmesh->m_texture[i]->getIsLoaded()) {
-                bindTexture(hmesh->m_texture[i].get(), i);
-            }
+    bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[0].get(), 0);
+    bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[1].get(), 1);
+    bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[2].get(), 2);
+
+    for (int i = 0; i < hmesh->m_textureCount; i++) {
+        if (hmesh->m_texture[i] != nullptr && hmesh->m_texture[i]->getIsLoaded()) {
+            bindTexture(hmesh->m_texture[i].get(), i);
         }
+    }
 
 //        GLint current_vao;
 //        GLint current_array_buffer;
@@ -170,54 +191,53 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
 //                << *(GLint *) hmesh->m_bindings->m_indexBuffer->buffer << std::endl;
 //                ;
 
-        if (m_lastDepthWrite != hmesh->m_depthWrite) {
-            if (hmesh->m_depthWrite > 0) {
-                glDepthMask(GL_TRUE);
-            } else {
-                glDepthMask(GL_FALSE);
-            }
-
-            m_lastDepthWrite = hmesh->m_depthWrite;
-        }
-        if (m_lastDepthCulling != hmesh->m_depthCulling) {
-            if (hmesh->m_depthCulling > 0) {
-                glEnable(GL_DEPTH_TEST);
-            } else {
-                glDisable(GL_DEPTH_TEST);
-            }
-
-            m_lastDepthCulling = hmesh->m_depthCulling;
-        }
-        if (m_backFaceCulling != hmesh->m_backFaceCulling) {
-            if (hmesh->m_backFaceCulling > 0) {
-                glDisable(GL_CULL_FACE);
-            } else {
-                glEnable(GL_CULL_FACE);
-            }
-
-            m_backFaceCulling = hmesh->m_backFaceCulling;
+    if (m_lastDepthWrite != hmesh->m_depthWrite) {
+        if (hmesh->m_depthWrite > 0) {
+            glDepthMask(GL_TRUE);
+        } else {
+            glDepthMask(GL_FALSE);
         }
 
-        if (m_lastBlendMode != hmesh->m_blendMode) {
-            BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
-            if (selectedBlendMode.blendModeEnable) {
-                glEnable(GL_BLEND);
-            } else {
-                glDisable(GL_BLEND);
-            }
-
-            glBlendFuncSeparate(
-                    selectedBlendMode.SrcColor,
-                    selectedBlendMode.DestColor,
-                    selectedBlendMode.SrcAlpha,
-                    selectedBlendMode.DestAlpha
-            );
-            m_lastBlendMode = hmesh->m_blendMode;
-        }
-
-        glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
-//        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
+        m_lastDepthWrite = hmesh->m_depthWrite;
     }
+    if (m_lastDepthCulling != hmesh->m_depthCulling) {
+        if (hmesh->m_depthCulling > 0) {
+            glEnable(GL_DEPTH_TEST);
+        } else {
+            glDisable(GL_DEPTH_TEST);
+        }
+
+        m_lastDepthCulling = hmesh->m_depthCulling;
+    }
+    if (m_backFaceCulling != hmesh->m_backFaceCulling) {
+        if (hmesh->m_backFaceCulling > 0) {
+            glDisable(GL_CULL_FACE);
+        } else {
+            glEnable(GL_CULL_FACE);
+        }
+
+        m_backFaceCulling = hmesh->m_backFaceCulling;
+    }
+
+    if (m_lastBlendMode != hmesh->m_blendMode) {
+        BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
+        if (selectedBlendMode.blendModeEnable) {
+            glEnable(GL_BLEND);
+        } else {
+            glDisable(GL_BLEND);
+        }
+
+        glBlendFuncSeparate(
+            selectedBlendMode.SrcColor,
+            selectedBlendMode.DestColor,
+            selectedBlendMode.SrcAlpha,
+            selectedBlendMode.DestAlpha
+        );
+        m_lastBlendMode = hmesh->m_blendMode;
+    }
+
+    glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
+//        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
 }
 
 HGVertexBuffer GDevice::createVertexBuffer() {
@@ -247,6 +267,14 @@ HGMesh GDevice::createMesh(gMeshTemplate &meshTemplate) {
 
     return h_mesh;
 }
+
+HGM2Mesh GDevice::createM2Mesh(gMeshTemplate &meshTemplate) {
+    std::shared_ptr<GM2Mesh> h_mesh;
+    h_mesh.reset(new GM2Mesh(*this, meshTemplate));
+
+    return h_mesh;
+}
+
 
 void GDevice::bindTexture(GTexture *texture, int slot) {
     if (texture == nullptr) {

@@ -102,7 +102,7 @@ struct M2Array {
         offset = (uint32_t)offset + (uint32_t)m2File;
 #endif
     }
-    T* getElement(int index) {
+    T* getElement(int index) const {
         if (index >= size) {
             return nullptr;
         }

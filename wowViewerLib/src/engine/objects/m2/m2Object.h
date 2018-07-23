@@ -88,7 +88,7 @@ private:
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
-    std::vector<HGMesh> m_meshArray;
+    std::vector<HGM2Mesh> m_meshArray;
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
 
@@ -127,6 +127,9 @@ public:
 
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
+    void setModelAsScene(bool value) {
+        m_modelAsScene = value;
+    };
 
     void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);
     void createPlacementMatrix(SMDoodadDef &def);
@@ -148,7 +151,7 @@ public:
 
     bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
     void createMeshes();
-    void fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame);
+    void fillBuffersAndArray(std::vector<HGM2Mesh> &renderedThisFrame);
 
     void setUseLocalLighting(bool value) { m_useLocalDiffuseColor = value; };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,

@@ -224,7 +224,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-   m_firstCamera.setCameraPos(0, 0, 0);
+//   m_firstCamera.setCameraPos(0, 0, 0);
     currentScene = new M2Scene(this,
         "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
@@ -1181,13 +1181,13 @@ GLuint WoWSceneImpl::getBlackPixelTexture(){
 
 void glClearScreen() {
 #ifndef WITH_GLESv2
-    glClearDepth(1.0);
+    glClearDepthf(1.0f);
 #else
     glClearDepthf(1.0f);
 #endif
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-
+    glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);
 //    glClearColor(0.25, 0.06, 0.015, 0.0);
@@ -1196,7 +1196,7 @@ void glClearScreen() {
 //    glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glDisable(GL_CULL_FACE);
-
+    glDepthMask(GL_FALSE);
     glDisable(GL_SCISSOR_TEST);
 }
 

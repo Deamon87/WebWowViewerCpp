@@ -28,12 +28,19 @@ public:
     HGUniformBuffer fragmentBuffers[3] = {nullptr,nullptr,nullptr};
 };
 
+enum class MeshType {
+    eGeneralMesh,
+    eM2Mesh
+};
+
 class GMesh {
     friend class GDevice;
 
+protected:
     explicit GMesh(GDevice &device,
                    const gMeshTemplate &meshTemplate
     );
+
 public:
     ~GMesh();
     HGUniformBuffer getVertexUniformBuffer(int slot) {
@@ -43,6 +50,9 @@ public:
         return m_fragmentUniformBuffer[slot];
     }
     EGxBlendEnum getGxBlendMode() { return m_blendMode; }
+    bool getIsTransparent() { return m_isTransparent; }
+protected:
+    MeshType m_meshType;
 private:
     HGVertexBufferBindings m_bindings;
     HGShaderPermutation m_shader;
@@ -55,6 +65,7 @@ private:
     int8_t m_depthCulling;
     int8_t m_backFaceCulling;
     EGxBlendEnum m_blendMode;
+    bool m_isTransparent;
 
     int m_start;
     int m_end;

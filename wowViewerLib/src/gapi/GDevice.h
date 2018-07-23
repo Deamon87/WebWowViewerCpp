@@ -13,6 +13,7 @@ class GUniformBuffer;
 class GTexture;
 class GShaderPermutation;
 class GMesh;
+class GM2Mesh;
 
 class gMeshTemplate;
 
@@ -22,6 +23,7 @@ typedef std::shared_ptr<GVertexBufferBindings> HGVertexBufferBindings;
 typedef std::shared_ptr<GUniformBuffer> HGUniformBuffer;
 typedef std::shared_ptr<GShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<GMesh> HGMesh;
+typedef std::shared_ptr<GM2Mesh> HGM2Mesh;
 typedef std::shared_ptr<GTexture> HGTexture;
 
 #include <unordered_set>
@@ -73,6 +75,7 @@ public:
 
 
     void drawMeshes(std::vector<HGMesh> &meshes);
+    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
     std::shared_ptr<GShaderPermutation> getShader(std::string shaderName);
 
@@ -83,6 +86,11 @@ public:
 
     HGTexture createTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex);
     HGMesh createMesh(gMeshTemplate &meshTemplate);
+    HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate);
+
+private:
+    void drawMesh(HGMesh &hmesh);
+
 private:
     int8_t m_lastDepthWrite = -1;
     int8_t m_lastDepthCulling = -1;

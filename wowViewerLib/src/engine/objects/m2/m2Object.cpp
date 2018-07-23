@@ -13,6 +13,7 @@
 #include "../../shader/ShaderDefinitions.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "m2Helpers/M2MeshBufferUpdater.h"
+#include "../../../gapi/GM2Mesh.h"
 
 //Legion shader stuff
 
@@ -558,47 +559,15 @@ void M2Object::startLoading() {
 void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
     if (!m_loaded) return;
 
-    /* 3. Resort m2 meshes against distance to screen */
-    M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
+    M2Data * m2File = this->m_m2Geom->getM2Data();
+    M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
     mathfu::mat4 modelViewMat = lookAtMat4 * this->m_placementMatrix;
-    mathfu::vec3 zeroVect(0,0,0);
 
-    /* 3.1 Transform aabb with current mat */
-
-    std::vector<float> sortDistArray(skinData->submeshes.size);
-    for (int i = 0; i < skinData->submeshes.size; i++) {
-        M2SkinSection *submesh = skinData->submeshes.getElement(i);
-        mathfu::vec3 centerBB = mathfu::vec3(submesh->sortCenterPosition);
-
-
-        mathfu::mat4 &boneMat = this->bonesMatrices[submesh->centerBoneIndex];
-        centerBB = modelViewMat * (boneMat * centerBB);
-
-        float value = centerBB.Length();
-
-        sortDistArray[i] = value;
+    for (int i = 0; i < this->m_meshArray.size(); i++) {
+        //Update info for sorting
+        M2MeshBufferUpdater::updateSortData(this->m_meshArray[i], *this, m_materialArray[i], m2File, skinData, modelViewMat);
     }
-
-    /*
-    std::sort(this->m_materialArray.begin(),
-              this->m_materialArray.end(),
-              [&](M2MaterialInst& a, M2MaterialInst& b) -> const bool {
-                  if (a.priorityPlane != b.priorityPlane) {
-                      return b.priorityPlane < a.priorityPlane;
-                  }
-
-                  if (sortDistArray[a.meshIndex] + 0.001 > sortDistArray[b.meshIndex]) {
-                      return false;
-                  }
-                  if (sortDistArray[a.meshIndex] + 0.001 < sortDistArray[b.meshIndex]) {
-                      return true;
-                  }
-
-                  return b.layer > a.layer;
-              }
-    );
-    */
 }
 
 void M2Object::debugDumpAnimationSequences() {
@@ -684,7 +653,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         item();
     }
     m_postLoadEvents.clear();
-
 
 //    /* 1. Calc local camera */
     mathfu::vec4 cameraInlocalPos = mathfu::vec4(cameraPos, 1);
@@ -1030,14 +998,17 @@ void M2Object::createMeshes() {
         meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshWideBlockPS));
 
          //Make mesh
-        HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
+        HGM2Mesh hmesh = m_api->getDevice()->createM2Mesh(meshTemplate);
+        hmesh->m_m2Object = this;
+        hmesh->m_layer = textMaterial->materialLayer;
+        hmesh->m_priorityPlane = textMaterial->priorityPlane;
 
         this->m_meshArray.push_back(hmesh);
         this->m_materialArray.push_back(material);
     }
 }
 
-void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
+void M2Object::fillBuffersAndArray(std::vector<HGM2Mesh> &renderedThisFrame) {
     if (!this->m_loaded) {
         this->startLoading();
         return;
@@ -1162,14 +1133,16 @@ mathfu::vec4 M2Object::getAmbientLight() {
     }
 
     mathfu::vec4 ambientColor = m_api->getGlobalAmbientColor();
-    /*if (m_modelAsScene) {
-        ambientColor(0,0,0,0);
+    if (m_modelAsScene) {
+        ambientColor = mathfu::vec4(0,0,0,0);
         for (int i = 0; i < lights.size(); ++i) {
             if (lights[i].ambient_intensity > 0) {
                 ambientColor += lights[i].ambient_color; //* lights[i].ambient_intensity;
             }
         }
-    }*/
+
+        return mathfu::vec4(ambientColor.z, ambientColor.y, ambientColor.x, 1.0) ;
+    }
 
     return ambientColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
 };
