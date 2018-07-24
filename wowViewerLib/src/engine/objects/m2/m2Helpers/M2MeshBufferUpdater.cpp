@@ -36,7 +36,7 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, M2Object &m2Object
     auto &meshblockVS = hmesh->getVertexUniformBuffer(2)->getObject<meshWideBlockVS>();
     meshblockVS.Color_Transparency = mathfu::vec4_packed(mathfu::vec4(meshColor.x, meshColor.y, meshColor.z, finalTransparency));
     meshblockVS.VertexShader = materialData.vertexShader;
-    meshblockVS.IsAffectedByLight = (renderFlag->flags & 0x1);
+    meshblockVS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
 
     fillTextureMatrices(m2Object, materialData, m2Data, m2SkinProfile, meshblockVS.uTextMat);
 
@@ -45,8 +45,8 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, M2Object &m2Object
     //3. Update individual PS buffer
     auto &meshblockPS = hmesh->getFragmentUniformBuffer(2)->getObject<meshWideBlockPS>();
     meshblockPS.PixelShader = materialData.pixelShader;
-    meshblockPS.IsAffectedByLight = materialData.pixelShader;
-    meshblockPS.UnFogged = (renderFlag->flags & 0x2);
+    meshblockPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
+    meshblockPS.UnFogged = ((renderFlag->flags & 0x2)  > 0) ? 1 : 0;
     meshblockPS.uFogColorAndAlphaTest = mathfu::vec4(uFogColor, uAlphaTest);
     //Lights
     fillLights(m2Object, meshblockPS);

@@ -22,31 +22,6 @@ public:
 
     M2Data * getM2Data(){ if (m_loaded) {return m_m2Data;} else {return nullptr;}};
 
-    void setupUniforms(
-            IWoWInnerApi *api,
-            mathfu::mat4 &placementMatrix,
-            std::vector<mathfu::mat4> &boneMatrices,
-            mathfu::vec4 &diffuseColor,
-            mathfu::vec4 &ambientColor,
-            bool drawTransparent,
-            std::vector<M2LightResult> &lights,
-            bool instanced);
-
-    void setupPlacementAttribute(GLuint placementVBO);
-
-    void drawMesh(
-            IWoWInnerApi *api,
-            M2MaterialInst &materialData,
-            M2SkinProfile &skinData,
-            mathfu::vec4 &meshColor,
-            float transparency,
-            mathfu::mat4 &textureMatrix1,
-            mathfu::mat4 &textureMatrix2,
-            int vertexShaderIndex,
-            int pixelShaderIndex,
-            mathfu::vec4 &originalFogColor,
-            int instanceCount);
-
     M2Data *m_m2Data;
     std::vector<uint32_t> skinFileDataIDs;
     std::vector<uint32_t> textureFileDataIDs;

@@ -1,39 +1,32 @@
 //
-// Created by deamon on 05.06.18.
+// Created by Deamon on 7/23/2018.
 //
 
-#ifndef WEBWOWVIEWERCPP_GTEXTURE_H
-#define WEBWOWVIEWERCPP_GTEXTURE_H
+#ifndef AWEBWOWVIEWERCPP_GTEXTURE_H
+#define AWEBWOWVIEWERCPP_GTEXTURE_H
 
-
-#include "../engine/wowCommonClasses.h"
-#include "../engine/texture/BlpTexture.h"
-#include "./GDevice.h"
 
 class GTexture {
     friend class GDevice;
-    explicit GTexture(GDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
+protected:
+    explicit GTexture(GDevice &device);
 public:
-    ~GTexture();
-    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps);
+    virtual ~GTexture();
 
-    bool getIsLoaded();
+    void loadData(int width, int height, void *data);
+    virtual bool getIsLoaded();
 private:
     void createBuffer();
     void destroyBuffer();
-    void bind(); //Should be called only by GDevice
+    virtual void bind(); //Should be called only by GDevice
     void unbind();
-private:
+protected:
     void * pIdentifierBuffer;
 
     GDevice &m_device;
-    HBlpTexture m_texture;
-
-    bool xWrapTex;
-    bool yWrapTex;
 
     bool m_loaded = false;
 };
 
 
-#endif //WEBWOWVIEWERCPP_GTEXTURE_H
+#endif //AWEBWOWVIEWERCPP_GTEXTURE_H

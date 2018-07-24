@@ -279,7 +279,7 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
 
     } else {
         currColor = vec3 (1.0, 1.0, 1.0) ;
-        accumLight = vec3(1.0,0,0);
+        accumLight = vec3(0,0,0);
         mult = 1.0;
     }
 

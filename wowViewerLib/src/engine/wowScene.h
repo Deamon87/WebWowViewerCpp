@@ -152,9 +152,6 @@ public:
     };
 
 private:
-    ShaderRuntimeData *compileShader (std::string shaderName, std::string vertShaderString, std::string fragmentShaderString,
-                                      std::string *vertExtraDefStrings = nullptr, std::string *fragExtraDefStrings = nullptr);
-    void createBlackPixelTexture();
     void initGlContext (/*canvas*/);
     void initArrayInstancedExt();
     void initAnisotropicExt ();

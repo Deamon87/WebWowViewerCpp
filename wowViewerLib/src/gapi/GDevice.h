@@ -10,6 +10,7 @@ class GVertexBuffer;
 class GVertexBufferBindings;
 class GIndexBuffer;
 class GUniformBuffer;
+class GBlpTexture;
 class GTexture;
 class GShaderPermutation;
 class GMesh;
@@ -24,6 +25,7 @@ typedef std::shared_ptr<GUniformBuffer> HGUniformBuffer;
 typedef std::shared_ptr<GShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<GMesh> HGMesh;
 typedef std::shared_ptr<GM2Mesh> HGM2Mesh;
+typedef std::shared_ptr<GBlpTexture> HGBlpTexture;
 typedef std::shared_ptr<GTexture> HGTexture;
 
 #include <unordered_set>
@@ -31,6 +33,7 @@ typedef std::shared_ptr<GTexture> HGTexture;
 #include "GVertexBufferBindings.h"
 #include "GIndexBuffer.h"
 #include "GVertexBuffer.h"
+#include "GBlpTexture.h"
 #include "GTexture.h"
 #include "GUniformBuffer.h"
 #include "GShaderPermutation.h"
@@ -39,6 +42,8 @@ typedef std::shared_ptr<GTexture> HGTexture;
 
 class GDevice {
 public:
+    GDevice();
+
     void reset() {
         m_lastDepthWrite = -1;
         m_lastDepthCulling = -1;
@@ -73,7 +78,6 @@ public:
 
     void bindTexture(GTexture *texture, int slot);
 
-
     void drawMeshes(std::vector<HGMesh> &meshes);
     void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
@@ -84,7 +88,8 @@ public:
     HGIndexBuffer createIndexBuffer();
     HGVertexBufferBindings createVertexBufferBindings();
 
-    HGTexture createTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex);
+    HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex);
+    HGTexture createTexture();
     HGMesh createMesh(gMeshTemplate &meshTemplate);
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate);
 
@@ -106,12 +111,12 @@ private:
     GUniformBuffer * m_vertexUniformBuffer[3] = {nullptr};
     GUniformBuffer * m_fragmentUniformBuffer[3] = {nullptr};
 
+    HGTexture m_blackPixelTexture;
+
 private:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
 };
-
-
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H

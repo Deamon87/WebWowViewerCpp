@@ -171,6 +171,8 @@ void GDevice::drawMesh(HGMesh &hmesh) {
     for (int i = 0; i < hmesh->m_textureCount; i++) {
         if (hmesh->m_texture[i] != nullptr && hmesh->m_texture[i]->getIsLoaded()) {
             bindTexture(hmesh->m_texture[i].get(), i);
+        } else {
+            bindTexture(m_blackPixelTexture.get(), i);
         }
     }
 
@@ -290,9 +292,15 @@ void GDevice::bindTexture(GTexture *texture, int slot) {
     }
 }
 
-HGTexture GDevice::createTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
+HGTexture GDevice::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
+    std::shared_ptr<GBlpTexture> hgTexture;
+    hgTexture.reset(new GBlpTexture(*this, texture, xWrapTex, yWrapTex));
+    return hgTexture;
+}
+
+HGTexture GDevice::createTexture() {
     std::shared_ptr<GTexture> hgTexture;
-    hgTexture.reset(new GTexture(*this, texture, xWrapTex, yWrapTex));
+    hgTexture.reset(new GTexture(*this));
     return hgTexture;
 }
 
@@ -305,14 +313,12 @@ void GDevice::bindProgram(GShaderPermutation *program) {
     } else if (program != m_shaderPermutation) {
         program->bindProgram();
         m_shaderPermutation = program;
-
-        glActiveTexture(GL_TEXTURE0 + 0);
-        glBindTexture(GL_TEXTURE_2D, 4);
-        glActiveTexture(GL_TEXTURE0 + 1);
-        glBindTexture(GL_TEXTURE_2D, 4);
-        glActiveTexture(GL_TEXTURE0 + 2);
-        glBindTexture(GL_TEXTURE_2D, 4);
-        glActiveTexture(GL_TEXTURE0 + 3);
-        glBindTexture(GL_TEXTURE_2D, 4);
     }
+}
+
+GDevice::GDevice() {
+    unsigned int ff = 0;
+    m_blackPixelTexture = createTexture();
+
+    m_blackPixelTexture->loadData(1,1,&ff);
 }

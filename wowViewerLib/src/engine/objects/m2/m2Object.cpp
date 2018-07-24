@@ -611,8 +611,6 @@ void M2Object::debugDumpAnimationSequences() {
 
 }
 
-
-
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
     if (!this->m_loaded) {
         if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded()) {
@@ -712,26 +710,6 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const s
     return result;
 }
 
-void M2Object::draw(bool drawTransparent) {
-    if (!this->m_loaded) {
-        this->startLoading();
-        return;
-    }
-
-    static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
-    mathfu::vec4 localDiffuse = diffuseNon;
-    if (m_useLocalDiffuseColor) {
-        localDiffuse = m_localDiffuseColorV;
-    } else {
-        localDiffuse = m_api->getGlobalSunColor();
-    }
-    mathfu::vec4 ambientLight = getAmbientLight();
-
-    this->m_m2Geom->setupUniforms(this->m_api, m_placementMatrix, bonesMatrices, localDiffuse, ambientLight, drawTransparent, lights, false);
-
-    this->drawMeshes(drawTransparent, -1);
-
-}
 void M2Object::drawDebugLight() {
 /*
     std::vector<float> points;
@@ -812,76 +790,6 @@ void M2Object::drawBB(mathfu::vec3 &color) {
     mathfu::mat4 defMat = mathfu::mat4::Identity();
     drawBBInternal(this->aabb, color, defMat);
 
-}
-
-void M2Object::drawMeshes(bool drawTransparent, int instanceCount) {
-    Config * config = m_api->getConfig();
-    int minBatch = config->getMinBatch();
-//    int maxBatch = std::min(config->getMaxBatch(), static_cast<const int &>(m_materialArray.size()));
-
-    /*
-    if (!drawTransparent) {
-        for (int i = minBatch; i < maxBatch; i++) {
-            auto &materialData = this->m_materialArray[i];
-//            this->drawMaterial(materialData, drawTransparent, instanceCount);
-        }
-    } else {
-        for (int i = (int) maxBatch - 1; i >= minBatch; i--) {
-            auto &materialData = this->m_materialArray[i];
-//            this->drawMaterial(materialData, drawTransparent, instanceCount);
-        }
-    }
-     */
-}
-
-void M2Object::drawMaterial(M2MaterialInst &materialData, bool drawTransparent, int instanceCount) {
-    if (!(materialData.isTransparent ^ !drawTransparent)) return;
-//    /*
-//    var meshIdsTobeRendered = window.meshestoBeRendered;
-//    if (meshIdsTobeRendered && !meshIdsTobeRendered[materialData.texUnit1TexIndex]) return;
-//    if (window.shownLayer != null && materialData.layer != window.shownLayer ) return;
-//      */
-//
-    mathfu::mat4 identMat = mathfu::mat4::Identity();
-
-    //mathfu::vec4 originalFogColor = this.sceneApi.getFogColor();
-    mathfu::vec4 originalFogColor = m_api->getGlobalFogColor();
-//
-//
-    /* Get right texture animation matrix */
-    mathfu::mat4 textureMatrix1 = identMat;
-    mathfu::mat4 textureMatrix2 = identMat;
-    auto skinData = this->m_skinGeom->getSkinData();
-    auto m2Data = this->m_m2Geom->getM2Data();
-
-    mathfu::vec4 meshColor = this->getCombinedColor(skinData, materialData, this->subMeshColors);
-    float transparency = this->getTransparency(skinData, materialData, this->transparencies);
-
-    float finalTransparency = meshColor.w;
-    auto textMaterial = skinData->batches[materialData.texUnitTexIndex];
-    if ( textMaterial->textureCount && !(textMaterial->flags & 0x40)) {
-        finalTransparency *= transparency;
-    }
-
-    //Don't draw meshes with 0 transp
-    if ((finalTransparency < 0.0001) ) return;
-
-    //TODO:: WTF IS THIS CODE?
-    auto textureAnim = skinData->batches[materialData.texUnitTexIndex]->textureTransformComboIndex;
-    int16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
-    if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
-        textureMatrix1 = this->textAnimMatrices[textureMatIndex];
-    }
-    if (textureAnim+1 < m2Data->texture_transforms_lookup_table.size) {
-        int textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
-        if (textureMatIndex >= 0 && textureMatIndex < this->textAnimMatrices.size()) {
-            textureMatrix2 = this-> textAnimMatrices[textureMatIndex];
-        }
-    }
-
-    int pixelShaderIndex = materialData.pixelShader;
-    int vertexShaderIndex = materialData.vertexShader;
-    this->m_m2Geom->drawMesh(m_api, materialData, *skinData , meshColor, transparency, textureMatrix1, textureMatrix2, vertexShaderIndex, pixelShaderIndex, originalFogColor, instanceCount);
 }
 
 bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
@@ -985,7 +893,7 @@ void M2Object::createMeshes() {
         meshTemplate.textureCount = textMaterial->textureCount;
         for (int j = 0; j < material.textureCount; j++) {
             HBlpTexture blpTexture = this->getTexture(material.textures[j].m2TextureIndex);
-            meshTemplate.texture[j] = m_api->getDevice()->createTexture(blpTexture,
+            meshTemplate.texture[j] = m_api->getDevice()->createBlpTexture(blpTexture,
                 material.textures[j].xWrapTex,
                 material.textures[j].yWrapTex);
         }
@@ -1020,7 +928,6 @@ void M2Object::fillBuffersAndArray(std::vector<HGM2Mesh> &renderedThisFrame) {
     int interCount = std::min(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM);
     for (int i = 0; i < interCount; i++) {
         blockVS.uBoneMatrixes[i] = bonesMatrices[i];
-//        blockVS.uBoneMatrixes[i] = mathfu::mat4::Identity();
     }
 //    std::copy(&bonesMatrices[0], &bonesMatrices[0] + std::max(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM), &blockVS.uBoneMatrixes[0]);
     vertexModelWideUniformBuffer->save();
@@ -1037,7 +944,7 @@ void M2Object::fillBuffersAndArray(std::vector<HGM2Mesh> &renderedThisFrame) {
     mathfu::vec4 ambientLight = getAmbientLight();
 
     modelWideBlockPS &blockPS = fragmentModelWideUniformBuffer->getObject<modelWideBlockPS>();
-    blockPS.uAmbientLight = mathfu::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    blockPS.uAmbientLight = ambientLight;
     blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
     blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
     blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
@@ -1141,7 +1048,7 @@ mathfu::vec4 M2Object::getAmbientLight() {
             }
         }
 
-        return mathfu::vec4(ambientColor.z, ambientColor.y, ambientColor.x, 1.0) ;
+        return mathfu::vec4(ambientColor.x, ambientColor.y, ambientColor.z, 1.0) ;
     }
 
     return ambientColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;

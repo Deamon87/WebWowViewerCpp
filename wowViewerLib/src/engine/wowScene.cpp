@@ -58,7 +58,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     this->initSceneApi();
     this->initSceneGraph();
-    this->createBlackPixelTexture();
 
     this->initBoxVBO();
     this->initTextureCompVBO();
@@ -225,8 +224,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -247,7 +246,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
-//        config->setBCLightHack(true);
+//    config->setBCLightHack(true);
 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_worgen/ui_worgen.m2", 0);
@@ -258,8 +257,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_nightelf/ui_nightelf.m2", 0);
 
-//    currentScene = new M2Scene(this,
-//        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
+    currentScene = new M2Scene(this,
+        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 
 //    currentScene = new M2Scene(this,
 //        "character/bloodelf/female/bloodelffemale_hd.m2", 0);
@@ -353,247 +352,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 #endif
 }
 
-ShaderRuntimeData * WoWSceneImpl::compileShader(std::string shaderName,
-        std::string vertShaderString,
-        std::string fragmentShaderString,
-        std::string *vertExtraDefStringsExtern, std::string *fragExtraDefStringsExtern) {
-
-    std::string vertExtraDefStrings = (vertExtraDefStringsExtern != nullptr) ? *vertExtraDefStringsExtern : "";
-    std::string fragExtraDefStrings = (fragExtraDefStringsExtern != nullptr) ? *fragExtraDefStringsExtern : "";
-    std::string geomExtraDefStrings = "";
-
-
-    if (fragExtraDefStringsExtern == nullptr) {
-        fragExtraDefStrings = "";
-    }
-
-
-    bool glsl330 = true;
-#ifdef __ANDROID_API__
-    glsl330 = false;
-#endif
-#ifdef __APPLE__
-#include "TargetConditionals.h"
-#if TARGET_IPHONE_SIMULATOR
-    glsl330 = false;
-#elif TARGET_OS_IPHONE
-    glsl330 = false;
-#elif TARGET_OS_MAC
-    glsl330 = true;
-#else
-#   error "Unknown Apple platform"
-#endif
-#endif
-    bool geomShaderExists = false;
-    if (glsl330) {
-        vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
-        vertExtraDefStrings += "#define varying out\n";
-        vertExtraDefStrings += "#define attribute in\n"
-                "#define precision\n"
-                "#define lowp\n"
-                "#define mediump\n"
-                "#define highp\n";
-
-        geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
-
-        geomExtraDefStrings = "#version 330\n";
-
-        fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
-        fragExtraDefStrings += "#define varying in\n"
-                "#define precision\n"
-                "#define lowp\n"
-                "#define mediump\n"
-                "#define highp\n";
-//        fragExtraDefStrings += "#define gl_FragColorDef out vec4 gl_FragColor\n";
-
-
-
-        //Insert gl_FragColor for glsl 330
-        fragmentShaderString = trimmed(fragmentShaderString.insert(
-                fragmentShaderString.find("void main(", fragmentShaderString.find("COMPILING_FS", 0)),
-                "\n out vec4 gl_FragColor; \n"));
-
-
-    } else {
-        vertExtraDefStrings += "#version 100\n";
-
-        fragExtraDefStrings += "#define gl_FragColorDef uniform vec4 notUsed\n";
-    }
-
-    if (m_enable) {
-        vertExtraDefStrings = vertExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n";
-        fragExtraDefStrings = fragExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n";
-    }
-
-
-    GLint maxVertexUniforms;
-    glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
-    int maxMatrixUniforms = (maxVertexUniforms / 4) - 9;
-
-    vertExtraDefStrings = vertExtraDefStrings + "#define MAX_MATRIX_NUM "+std::to_string(maxMatrixUniforms)+"\r\n"+"#define COMPILING_VS 1\r\n ";
-    geomExtraDefStrings = geomExtraDefStrings + "#define COMPILING_GS 1\r\n";
-    fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
-
-//    vertShaderString = trimmed(vertShaderString.insert(
-//        vertShaderString.find("\n",vertShaderString.find("#version", 0)+1)+1,
-//        vertExtraDefStrings));
-//
-//    fragmentShaderString = trimmed(fragmentShaderString.insert(
-//            fragmentShaderString.find("\n",fragmentShaderString.find("#version", 0)+1)+1,
-//            fragExtraDefStrings));
-
-    std::string geometryShaderString = vertShaderString;
-
-    vertShaderString = vertShaderString.insert(0, vertExtraDefStrings);
-    fragmentShaderString = fragmentShaderString.insert(0, fragExtraDefStrings);
-    geometryShaderString = geometryShaderString.insert(0, geomExtraDefStrings);
-
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    const GLchar *vertexShaderConst = (const GLchar *)vertShaderString.c_str();
-    glShaderSource(vertexShader, 1, &vertexShaderConst, 0);
-    glCompileShader(vertexShader);
-
-    GLint success = 0;
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (success != GL_TRUE) {
-        // Something went wrong during compilation; get the error
-        GLint maxLength = 0;
-        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &maxLength);
-
-        //The maxLength includes the NULL character
-        std::vector<GLchar> infoLog(maxLength);
-        glGetShaderInfoLog(vertexShader, maxLength, &maxLength, &infoLog[0]);
-        std::cout << "\ncould not compile vertex shader "<<shaderName<<":" << std::endl
-                  << vertexShaderConst << std::endl << std::endl
-                  << "error: "<<std::string(infoLog.begin(),infoLog.end())<< std::endl <<std::flush;
-
-        throw "" ;
-    }
-
-    /* 1.2 Compile fragment shader */
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    const GLchar *fragmentShaderConst = (const GLchar *) fragmentShaderString.c_str();
-    glShaderSource(fragmentShader, 1, &fragmentShaderConst, 0);
-    glCompileShader(fragmentShader);
-
-    // Check if it compiled
-    success = 0;
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        // Something went wrong during compilation; get the error
-        GLint maxLength = 0;
-        glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &maxLength);
-
-        //The maxLength includes the NULL character
-        std::vector<GLchar> infoLog(maxLength);
-        glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
-        std::cout << "\ncould not compile fragment shader "<<shaderName<<":" << std::endl
-            << fragmentShaderConst << std::endl << std::endl
-            << "error: "<<std::string(infoLog.begin(),infoLog.end())<< std::endl <<std::flush;
-
-        throw "" ;
-    }
-
-    GLuint geometryShader = 0;
-
-    if (geomShaderExists) {
-        /* 1.2.1 Compile geometry shader */
-        geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
-        const GLchar *geometryShaderConst = (const GLchar *) geometryShaderString.c_str();
-        glShaderSource(geometryShader, 1, &geometryShaderConst, 0);
-        glCompileShader(geometryShader);
-
-        // Check if it compiled
-        success = 0;
-        glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            // Something went wrong during compilation; get the error
-            GLint maxLength = 0;
-            glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
-
-            //The maxLength includes the NULL character
-            std::vector<GLchar> infoLog(maxLength);
-            glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
-            std::cout << "\ncould not compile fragment shader " << shaderName << ":" << std::endl
-                      << fragmentShaderConst << std::endl << std::endl
-                      << "error: " << std::string(infoLog.begin(), infoLog.end()) << std::endl << std::flush;
-
-            throw "";
-        }
-    }
-
-
-
-    /* 1.3 Link the program */
-    GLuint program = glCreateProgram();
-    glAttachShader(program, vertexShader);
-    glAttachShader(program, fragmentShader);
-    if (geomShaderExists)
-        glAttachShader(program, geometryShader);
-
-//    for (int i = 0; i < shaderDefinition1->attributesNum; i++) {
-//        glBindAttribLocation(program, shaderDefinition1->attributes[i].number, shaderDefinition1->attributes[i].variableName);
-//    }
-
-    // link the program.
-    glLinkProgram(program);
-
-    GLint status;
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if (!status) {
-        char logbuffer[1000];
-        int loglen;
-        glGetProgramInfoLog(program, sizeof(logbuffer), &loglen, logbuffer);
-        std::cout << "OpenGL Program Linker Error: " << logbuffer << std::endl << std::flush;
-        throw "could not compile shader:" ;
-    }
-
-    //Get Uniforms
-    ShaderRuntimeData *data = new ShaderRuntimeData();
-    data->setProgram(program);
-
-    GLint count;
-    glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &count);
-//    printf("Active Uniforms: %d\n", count);
-    for (GLint i = 0; i < count; i++)
-    {
-        const GLsizei bufSize = 32; // maximum name length
-        GLchar name[bufSize]; // variable name in GLSL
-        GLsizei length; // name length
-        GLint size; // size of the variable
-        GLenum type; // type of the variable (float, vec3 or mat4, etc)
-
-        glGetActiveUniform(program, (GLuint)i, bufSize, &length, &size, &type, name);
-        GLint location = glGetUniformLocation(program, name);
-
-        data->setUnf(std::string(name), location);
-//        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
-    }
-//    if (!shaderName.compare("m2Shader")) {
-//        std::cout << fragmentShaderString << std::endl << std::flush;
-//    }
-
-
-    return data;
-}
-
 void WoWSceneImpl::initGlContext() {
 
-}
-void WoWSceneImpl::createBlackPixelTexture() {
-    unsigned int ff = 0;
-    glGenTextures(1, &blackPixel);
-
-    glBindTexture(GL_TEXTURE_2D, blackPixel);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &ff);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
 }
 void WoWSceneImpl::initAnisotropicExt() {
 

@@ -99,10 +99,6 @@ private:
 
     void startLoading();
 
-    void drawMeshes(bool drawTransparent, int instanceCount);
-
-    void drawMaterial(M2MaterialInst &materialData, bool drawTransparent, int instanceCount);
-
     void initTextAnimMatrices();
     void initSubmeshColors();
     void initTransparencies();

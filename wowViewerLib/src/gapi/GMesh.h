@@ -5,9 +5,8 @@
 #ifndef WEBWOWVIEWERCPP_GMESH_H
 #define WEBWOWVIEWERCPP_GMESH_H
 
-
 #include "GVertexBufferBindings.h"
-#include "GTexture.h"
+#include "GBlpTexture.h"
 
 class gMeshTemplate {
 public:
