@@ -13,6 +13,7 @@
 #include "../../wowInnerApi.h"
 #include "../../algorithms/mathHelper.h"
 #include "generators/CParticleGenerator.h"
+#include "../../../gapi/GDevice.h"
 
 struct ParticleForces {
     mathfu::vec3 drift; // 0
@@ -49,7 +50,7 @@ public:
     CParticleGenerator * getGenerator(){
         return generator;
     }
-    void Render();
+    void collectMeshes(std::vector<HGMesh> &meshes);
 
     int flags = 2;
     bool emittingLastFrame = false;
@@ -133,8 +134,13 @@ private:
         mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
         float texStartX, float texStartY);
 
-    GLuint indexVBO;
-    GLuint bufferVBO;
+    HGIndexBuffer m_indexVBO;
+    HGVertexBuffer m_bufferVBO;
+
+    HGVertexBufferBindings m_bindings;
+    HGMesh m_mesh;
+
+    void createMesh();
 };
 
 

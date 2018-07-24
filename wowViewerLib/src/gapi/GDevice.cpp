@@ -9,6 +9,7 @@
 #include "shaders/GM2ShaderPermutation.h"
 #include "../engine/opengl/header.h"
 #include "GM2Mesh.h"
+#include "shaders/CM2ParticleShaderPermutation.h"
 
 BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
         /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
@@ -114,6 +115,8 @@ std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
     std::shared_ptr<GShaderPermutation> sharedPtr;
     if (shaderName == "m2Shader") {
         sharedPtr.reset( new GM2ShaderPermutation(shaderName, *this));
+    } else if (shaderName == "m2ParticleShader") {
+        sharedPtr.reset( new CM2ParticleShaderPermutation(shaderName, *this));
     } else {
         sharedPtr.reset(new GShaderPermutation(shaderName, *this));
     }
@@ -135,12 +138,12 @@ HGUniformBuffer GDevice::createUniformBuffer(size_t size) {
     return h_uniformBuffer;
 }
 
+//void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
+//    for (auto &hmesh : meshes ) {
+//        this->drawMesh(hmesh);
+//    }
+//}
 void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
-    for (auto &hmesh : meshes ) {
-        this->drawMesh(hmesh);
-    }
-}
-void GDevice::drawM2Meshes(std::vector<HGM2Mesh> &meshes) {
     //1. Draw opaque
     int size_ = meshes.size();
     for (int i = 0; i < size_; i++ ) {

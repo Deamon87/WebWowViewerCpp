@@ -11,6 +11,15 @@
 #include "generators/CPlaneGenerator.h"
 
 
+static GBufferBinding staticM2ParticleBindings[5] = {
+    {+m2ParticleShader::Attribute::aPosition, 3, GL_FLOAT, false, 13*4, 0 },
+    {+m2ParticleShader::Attribute::aColor, 4, GL_FLOAT, false, 13*4, 12},
+    {+m2ParticleShader::Attribute::aTexcoord0, 2, GL_FLOAT, false, 13*4, 28},
+    {+m2ParticleShader::Attribute::aTexcoord1, 2, GL_FLOAT, false, 13*4, 36},
+    {+m2ParticleShader::Attribute::aTexcoord2, 2, GL_FLOAT, false, 13*4, 44},
+};
+
+
 ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object) : m_seed(0), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
@@ -20,11 +29,8 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
         randTableInited = true;
     }
 
-    glGenBuffers(1, &indexVBO);
-    glGenBuffers(1, &bufferVBO);
-
-
     m_data = particle;
+    createMesh();
 
     switch (m_data->old.emitterType) {
         case 1:
@@ -82,6 +88,95 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
             this->particleType = 3;
         }
     }
+}
+
+struct meshParticleWideBlockPS {
+    float uAlphaTest;
+    float padding[3]; // according to std140
+    int uPixelShader;
+    float padding2[3];
+};
+
+void ParticleEmitter::createMesh() {
+    GDevice *device = m_api->getDevice();
+
+    //Create Buffers
+    m_indexVBO = device->createIndexBuffer();
+    m_bufferVBO = device->createVertexBuffer();
+
+    m_bindings = device->createVertexBufferBindings();
+    m_bindings->setIndexBuffer(m_indexVBO);
+
+    GVertexBufferBinding vertexBinding;
+    vertexBinding.vertexBuffer = m_bufferVBO;
+    vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2ParticleBindings[0], &staticM2ParticleBindings[5]);
+
+    m_bindings->addVertexBufferBinding(vertexBinding);
+    m_bindings->save();
+
+    //Get shader
+    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2ParticleShader");
+
+    //Create mesh
+    gMeshTemplate meshTemplate (m_bindings, shaderPermutation);
+
+    //TODO!!
+    meshTemplate.depthWrite = false;
+    meshTemplate.depthCulling = true;
+    meshTemplate.backFaceCulling = false;
+
+    uint8_t blendMode = m_data->old.blendingType;
+    if (blendMode == 4 )
+        blendMode = 3;
+
+    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+
+    meshTemplate.start = 0;
+    meshTemplate.end = 0;
+    meshTemplate.element = GL_TRIANGLES;
+
+    bool multitex = this->particleType >= 2;
+    HBlpTexture tex0 = nullptr;
+    if (multitex) {
+        tex0 = m2Object->getTexture(this->m_data->old.texture_0);
+    } else {
+        tex0 = m2Object->getTexture(this->m_data->old.texture);
+    }
+    meshTemplate.texture[0] =  m_api->getDevice()->createBlpTexture(tex0, true, true);
+    if (multitex) {
+        HBlpTexture tex1 = m2Object->getTexture(this->m_data->old.texture_1);
+        HBlpTexture tex2 = m2Object->getTexture(this->m_data->old.texture_2);
+
+        meshTemplate.texture[1] =  m_api->getDevice()->createBlpTexture(tex1, true, true);
+        meshTemplate.texture[2] =  m_api->getDevice()->createBlpTexture(tex2, true, true);
+    }
+
+    meshTemplate.textureCount = (multitex) ? 3 : 1;
+
+    meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.vertexBuffers[1] = nullptr;
+    meshTemplate.vertexBuffers[2] = nullptr;
+
+    meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.fragmentBuffers[1] = nullptr;
+    meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
+
+    meshParticleWideBlockPS blockPS;
+    blockPS.uAlphaTest = 0.0039215689f;
+    int uPixelShader = -1;
+    if (multitex) {
+        if (this->m_data->old.flags & 0x20000000) {
+            uPixelShader = 0;
+        }
+        if (this->m_data->old.flags & 0x40000000) {
+            uPixelShader = 1;
+        }
+    }
+    blockPS.uPixelShader = uPixelShader;
+
+    meshTemplate.fragmentBuffers[2]->uploadData(&blockPS, sizeof(blockPS));
+
+    m_mesh = m_api->getDevice()->createMesh(meshTemplate);
 }
 
 
@@ -664,117 +759,12 @@ ParticleEmitter::BuildQuad(
     szVertexBuf[index] = record;
 }
 
-void ParticleEmitter::Render() {
+void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes) {
     if (this->szVertexBuf.size() <= 1) return;
 
-    /*
-    auto particleShader = m_api->getM2ParticleShader();
-    auto textureCache = m_api->getTextureCache();
-    GLuint blackPixelText = m_api->getBlackPixelTexture();
+    m_indexVBO->uploadData(&this->szIndexBuff[0], this->szIndexBuff.size()*2);
+    m_bufferVBO->uploadData(&this->szVertexBuf[0], this->szVertexBuf.size() * sizeof(this->szVertexBuf[0]));
 
-
-    bool multitex = this->particleType >= 2;
-    HBlpTexture tex0 = nullptr;
-    if (multitex) {
-        tex0 = m2Object->getTexture(this->m_data->old.texture_0);
-    } else {
-        tex0 = m2Object->getTexture(this->m_data->old.texture);
-    }
-
-    if (tex0 == nullptr || !tex0->getIsLoaded()) {
-        return;
-    }
-    HBlpTexture tex1 = nullptr;
-    HBlpTexture tex2 = nullptr;
-
-    if (multitex) {
-        tex1 = m2Object->getTexture(this->m_data->old.texture_1);
-        tex2 = m2Object->getTexture(this->m_data->old.texture_2);
-    }
-
-    glActiveTexture(GL_TEXTURE0);
-    if (tex0->getIsLoaded()) {
-        glBindTexture(GL_TEXTURE_2D, tex0->getGlTexture());
-    } else {
-        glBindTexture(GL_TEXTURE_2D, blackPixelText);
-    }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    glActiveTexture(GL_TEXTURE1);
-    if (tex1!= nullptr && tex1->getIsLoaded()) {
-        glBindTexture(GL_TEXTURE_2D, tex1->getGlTexture());
-    } else {
-        glBindTexture(GL_TEXTURE_2D, blackPixelText);
-    }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glActiveTexture(GL_TEXTURE2);
-    if (tex2!= nullptr && tex2->getIsLoaded()) {
-        glBindTexture(GL_TEXTURE_2D, tex2->getGlTexture());
-    } else {
-        glBindTexture(GL_TEXTURE_2D, blackPixelText);
-    }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    int uPixelShader = -1;
-    if (multitex) {
-        if (this->m_data->old.flags & 0x20000000) {
-            uPixelShader = 0;
-        }
-        if (this->m_data->old.flags & 0x40000000) {
-            uPixelShader = 1;
-        }
-    }
-
-    glUniform1i(particleShader->getUnf("uPixelShader"), uPixelShader);
-
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->szIndexBuff.size()*2, &this->szIndexBuff[0], GL_STREAM_DRAW);
-
-    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-    glBufferData(GL_ARRAY_BUFFER, this->szVertexBuf.size() * sizeof(this->szVertexBuf[0]), &this->szVertexBuf[0], GL_STREAM_DRAW);
-
-    int nFloats = 13;
-    int stride = nFloats * 4;
-
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, stride, 0);
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aColor, 4, GL_FLOAT, GL_FALSE, stride, (void *)12);
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord0, 2, GL_FLOAT, GL_FALSE, stride, (void *)28);
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord1, 2, GL_FLOAT, GL_FALSE, stride, (void *)36);
-    glVertexAttribPointer(+m2ParticleShader::Attribute::aTexcoord2, 2, GL_FLOAT, GL_FALSE, stride, (void *)44);
-
-    uint8_t blendMode = m_data->old.blendingType;
-    if (blendMode == 4 )
-        blendMode = 3;
-
-//    if (blendMode >= (uint16_t)EGxBlendEnum::GxBlend_Alpha) {
-        glEnable(GL_BLEND);
-//    } else {
-//        glDisable(GL_BLEND);
-//    }
-
-    glUniform1f(particleShader->getUnf("uAlphaTest"), 0.0039215689f);
-
-    BlendModeDesc &selectedBlendMode = blendModes[blendMode];
-    glBlendFuncSeparate(
-            selectedBlendMode.SrcColor,
-            selectedBlendMode.DestColor,
-            selectedBlendMode.SrcAlpha,
-            selectedBlendMode.DestAlpha
-    );
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-    glDisable(GL_CULL_FACE);
-
-    glDrawElements(GL_TRIANGLES, this->szIndexBuff.size(), GL_UNSIGNED_SHORT, 0);
-    glDepthMask(GL_TRUE);
-    glEnable(GL_DEPTH_TEST);
-
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindBuffer( GL_ARRAY_BUFFER, 0);
-     */
+    m_mesh->setEnd(this->szIndexBuff.size());
+    meshes.push_back(m_mesh);
 }

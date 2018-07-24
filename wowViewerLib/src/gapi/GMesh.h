@@ -28,8 +28,8 @@ public:
 };
 
 enum class MeshType {
-    eGeneralMesh,
-    eM2Mesh
+    eGeneralMesh = 0,
+    eM2Mesh = 1,
 };
 
 class GMesh {
@@ -50,6 +50,11 @@ public:
     }
     EGxBlendEnum getGxBlendMode() { return m_blendMode; }
     bool getIsTransparent() { return m_isTransparent; }
+    MeshType getMeshType() {
+        return m_meshType;
+    }
+
+    void setEnd(int end) {m_end = end; };
 protected:
     MeshType m_meshType;
 private:

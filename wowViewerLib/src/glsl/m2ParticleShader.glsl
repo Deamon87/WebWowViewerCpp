@@ -1,10 +1,10 @@
 #ifdef COMPILING_VS
 precision highp float;
-attribute vec3 aPosition;
-attribute vec4 aColor;
-attribute vec2 aTexcoord0;
-attribute vec2 aTexcoord1;
-attribute vec2 aTexcoord2;
+layout(location = 0) in vec3 aPosition;
+layout(location = 1) in vec4 aColor;
+layout(location = 2) in vec2 aTexcoord0;
+layout(location = 3) in vec2 aTexcoord1;
+layout(location = 4) in vec2 aTexcoord2;
 
 
 varying vec4 vColor;
@@ -12,9 +12,11 @@ varying vec2 vTexcoord0;
 varying vec2 vTexcoord1;
 varying vec2 vTexcoord2;
 
-//Whole model
-uniform mat4 uPMatrix;
-uniform mat4 uViewMatrix;
+layout(std140) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
+
 void main() {
     vec4 aPositionVec4 = vec4(aPosition, 1);
 
@@ -22,7 +24,7 @@ void main() {
     vTexcoord0 = aTexcoord0;
     vTexcoord1 = aTexcoord1;
     vTexcoord2 = aTexcoord2;
-    gl_Position = uPMatrix * uViewMatrix * aPositionVec4;
+    gl_Position = uPMatrix * uLookAtMat * aPositionVec4;
 }
 #endif //COMPILING_VS
 
@@ -34,24 +36,28 @@ varying vec2 vTexcoord1;
 varying vec2 vTexcoord2;
 
 //Individual meshes
-uniform float uAlphaTest;
+layout(std140) uniform meshWideBlockPS {
+    vec4 uAlphaTestv;
+    ivec4 uPixelShaderv;
+};
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
-uniform int uPixelShader;
+
 void main() {
     vec4 tex = texture2D(uTexture, vTexcoord0).rgba;
     vec4 tex2 = texture2D(uTexture2, vTexcoord1).rgba;
     vec4 tex3 = texture2D(uTexture3, vTexcoord2).rgba;
 
+    float uAlphaTest = uAlphaTestv.x;
+
     if(tex.a < uAlphaTest)
         discard;
 
     vec4 finalColor = vec4((tex * vColor ).rgb, tex.a*vColor.a );
-
+    int uPixelShader = uPixelShaderv.x;
     if (uPixelShader == 0) {//particle_2colortex_3alphatex
-
         vec4 textureMod = tex*tex2;
         float texAlpha = (textureMod.w * tex3.w);
         float opacity = texAlpha*vColor.a;

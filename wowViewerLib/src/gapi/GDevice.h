@@ -79,7 +79,7 @@ public:
     void bindTexture(GTexture *texture, int slot);
 
     void drawMeshes(std::vector<HGMesh> &meshes);
-    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
+//    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
     std::shared_ptr<GShaderPermutation> getShader(std::string shaderName);
 

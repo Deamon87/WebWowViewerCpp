@@ -916,7 +916,7 @@ void M2Object::createMeshes() {
     }
 }
 
-void M2Object::fillBuffersAndArray(std::vector<HGM2Mesh> &renderedThisFrame) {
+void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
     if (!this->m_loaded) {
         this->startLoading();
         return;
@@ -1054,7 +1054,7 @@ mathfu::vec4 M2Object::getAmbientLight() {
     return ambientColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
 };
 
-void M2Object::drawParticles() {
+void M2Object::drawParticles(std::vector<HGMesh> &meshes) {
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
@@ -1064,7 +1064,7 @@ void M2Object::drawParticles() {
     for (int i = minParticle; i < maxParticle; i++) {
 //    for (int i = 0; i< particleEmitters.size(); i++) {
         if (particleEmitters[i]->isEnabled)
-        particleEmitters[i]->Render();
+        particleEmitters[i]->collectMeshes(meshes);
     }
 }
 
