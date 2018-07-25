@@ -174,7 +174,7 @@ void GBlpTexture::createGlTexture(TextureFormat textureFormat, const MipmapsVect
 }
 
 bool GBlpTexture::getIsLoaded() {
-    if (!m_loaded && m_texture->getIsLoaded()) {
+    if (!m_loaded && m_texture != nullptr && m_texture->getIsLoaded()) {
         m_device.bindTexture(this, 0);
         this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
         m_device.bindTexture(nullptr, 0);

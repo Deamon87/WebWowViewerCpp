@@ -30,7 +30,7 @@ layout(std140) uniform modelWideBlockVS {
 };
 
 layout(std140) uniform meshWideBlockVS {
-    int VertexShader_UseLitColor;
+    ivec4 VertexShader_UseLitColor;
 };
 
 varying vec2 vTexCoord;
@@ -65,7 +65,7 @@ void main() {
 
     vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
     vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
-
+    int uVertexShader = VertexShader_UseLitColor.x;
     if ( uVertexShader == -1 ) {
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2;
@@ -146,10 +146,10 @@ varying float fs_Depth;
 vec3 makeDiffTerm(vec3 matDiffuse) {
     vec3 currColor;
     vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (uUseLitColor == 1) {
+    if (UseLitColor_EnableAlpha_PixelShader.x == 1) {
         //vec3 viewUp = normalize(vec3(0, 0.9, 0.1));
         vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -(uSunDir.xyz));
+        float nDotL = dot(normalizedN, -(uSunDir_FogStart.xyz));
         float nDotUp = dot(normalizedN, uViewUp.xyz);
 
         vec3 precomputed = vColor2.rgb;
@@ -169,7 +169,7 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
         vec3 skyColor = (currColor * 1.10000002);
         vec3 groundColor = (currColor* 0.699999988);
         currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-        lDiffuse = (uSunColor * clamp(nDotL, 0.0, 1.0));
+        lDiffuse = (uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0));
     } else {
         currColor = vec3 (1.0, 1.0, 1.0) * uAmbientLight.rgb;
     }
@@ -186,12 +186,13 @@ void main() {
     vec4 tex2 = texture2D(uTexture2, vTexCoord2).rgba;
     vec4 tex3 = texture2D(uTexture3, vTexCoord3).rgba;
 
-    if (uEnableAlpha == 1) {
+    if (UseLitColor_EnableAlpha_PixelShader.y == 1) {
         if ((tex.a - 0.501960814) < 0.0) {
             discard;
         }
     }
 
+    int uPixelShader = UseLitColor_EnableAlpha_PixelShader.z;
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
     if ( uPixelShader == -1 ) {
         finalColor = vec4(makeDiffTerm(tex.rgb * vColor.rgb + tex2.rgb*vColor2.bgr), tex.a);
@@ -319,12 +320,12 @@ void main() {
 
     //finalColor.rgb *= 4.0;
 
-    if(finalColor.a < uAlphaTest)
+    if(finalColor.a < FogColor_AlphaTest.w)
         discard;
 
-    vec3 fogColor = uFogColor;
-    float fog_start = uFogStart;
-    float fog_end = uFogEnd;
+    vec3 fogColor = FogColor_AlphaTest.xyz;
+    float fog_start = uSunDir_FogStart.w;
+    float fog_end = uSunColor_uFogEnd.w;
     float fog_rate = 1.5;
     float fog_bias = 0.01;
 
