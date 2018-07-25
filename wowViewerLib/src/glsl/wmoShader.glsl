@@ -20,15 +20,18 @@ attribute vec2 aTexCoord3;
 attribute vec4 aColor;
 attribute vec4 aColor2;
 
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
-uniform int uVertexShader;
+layout(std140) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
 
-uniform lowp int uUseLitColor;
+layout(std140) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
+};
 
-uniform mat4 uPlacementMat;
-uniform vec4 uAmbientLight;
-uniform vec3 uViewUp;
+layout(std140) uniform meshWideBlockVS {
+    int VertexShader_UseLitColor;
+};
 
 varying vec2 vTexCoord;
 varying vec2 vTexCoord2;
@@ -109,8 +112,6 @@ void main() {
         vTexCoord2 = vPosition.xy * -0.239999995;
         vTexCoord3 = aTexCoord3; //not used
     }
-
-
 }
 #endif //COMPILING_VS
 
@@ -125,26 +126,18 @@ varying vec4 vColor;
 varying vec4 vColor2;
 varying vec3 vPosition;
 
-//uniform vec4  uGlobalLighting;
-uniform float uAlphaTest;
-uniform vec3 uViewUp;
-uniform vec3 uSunDir;
-uniform vec3 uSunColor;
-uniform vec4 uAmbientLight;
-uniform lowp int uUseLitColor;
+layout(std140) uniform meshWideBlockPS {
+    vec4 uViewUp;
+    vec4 uSunDir_FogStart;
+    vec4 uSunColor_uFogEnd;
+    vec4 uAmbientLight;
+    ivec4 UseLitColor_EnableAlpha_PixelShader;
+    vec4 FogColor_AlphaTest;
+};
+
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
-
-uniform int uEnableAlpha;
-
-uniform vec3 uFogColor;
-
-
-uniform float uFogStart;
-uniform float uFogEnd;
-
-uniform int uPixelShader;
 
 #ifdef drawBuffersIsSupported
 varying float fs_Depth;
@@ -329,7 +322,6 @@ void main() {
     if(finalColor.a < uAlphaTest)
         discard;
 
-
     vec3 fogColor = uFogColor;
     float fog_start = uFogStart;
     float fog_end = uFogEnd;
@@ -350,16 +342,6 @@ void main() {
 
     finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
 
-
-
-    //Apply global lighting
-/*
-    finalColor = vec4(
-        (finalColor.r + uGlobalLighting.r) ,
-        (finalColor.g + uGlobalLighting.g) ,
-        (finalColor.b + uGlobalLighting.b) ,
-        finalColor.a);
-  */
     finalColor.a = 1.0; //do I really need it now?
 
 //#ifndef drawBuffersIsSupported

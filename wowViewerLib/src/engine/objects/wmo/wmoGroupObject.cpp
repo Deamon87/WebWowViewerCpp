@@ -5,11 +5,290 @@
 #include "wmoGroupObject.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../shader/ShaderDefinitions.h"
+#include "../../../gapi/UniformBufferStructures.h"
 #include <algorithm>
+
+/*
+//0
+MapObjDiffuse {
+    VertexShader(MapObjDiffuse_T1);
+    PixelShader(MapObjDiffuse);
+}
+
+//1
+MapObjSpecular {
+    VertexShader(MapObjSpecular_T1);
+    PixelShader(MapObjSpecular);
+}
+
+//2
+MapObjMetal {
+    VertexShader(MapObjSpecular_T1);
+    PixelShader(MapObjMetal);
+}
+
+//3
+MapObjEnv {
+    VertexShader(MapObjDiffuse_T1_Refl);
+    PixelShader(MapObjEnv);
+}
+
+//4
+MapObjOpaque {
+    VertexShader(MapObjDiffuse_T1);
+    PixelShader(MapObjOpaque);
+}
+
+//5
+Effect(MapObjEnvMetal {
+    VertexShader(MapObjDiffuse_T1_Refl);
+    PixelShader(MapObjEnvMetal);
+}
+
+//6
+Effect(MapObjComposite) //aka MapObjTwoLayerDiffuse
+{
+    VertexShader(MapObjDiffuse_Comp);
+    PixelShader(MapObjComposite); //aka MapObjTwoLayerDiffuse
+}
+
+//7
+Effect(MapObjTwoLayerEnvMetal)
+{
+    VertexShader(MapObjDiffuse_Comp_Refl);
+    PixelShader(MapObjTwoLayerEnvMetal);
+}
+
+//8
+Effect(TwoLayerTerrain)
+{
+    VertexShader(MapObjDiffuse_Comp_Terrain);
+    PixelShader(MapObjTwoLayerTerrain);
+}
+
+//9
+Effect(MapObjDiffuseEmissive)
+{
+    VertexShader(MapObjDiffuse_Comp);
+    PixelShader(MapObjDiffuseEmissive);
+}
+
+//10
+Effect(waterWindow)
+{
+e    //unk
+}
+
+//11
+Effect(MapObjMaskedEnvMetal)
+{
+    VertexShader(MapObjDiffuse_T1_Env_T2);
+    PixelShader(MapObjMaskedEnvMetal);
+}
+
+//12
+Effect(MapObjEnvMetalEmissive)
+{
+    VertexShader(MapObjDiffuse_T1_Env_T2);
+    PixelShader(MapObjEnvMetalEmissive);
+}
+
+//13
+Effect(TwoLayerDiffuseOpaque)
+{
+    VertexShader(MapObjDiffuse_Comp);
+    PixelShader(MapObjTwoLayerDiffuseOpaque);
+}
+
+//14
+Effect(submarineWindow)
+{
+    //unk
+}
+
+//15
+Effect(TwoLayerDiffuseEmissive)
+{
+    VertexShader(MapObjDiffuse_Comp);
+    PixelShader(MapObjTwoLayerDiffuseEmissive);
+}
+
+//16
+Effect(MapObjDiffuseTerrain)
+{
+    VertexShader(MapObjDiffuse_T1);
+    PixelShader(MapObjDiffuse);
+}
+
+*/
+
+enum class WmoVertexShader : int {
+    None = -1,
+    MapObjDiffuse_T1 = 0,
+    MapObjDiffuse_T1_Refl = 1,
+    MapObjDiffuse_T1_Env_T2 = 2,
+    MapObjSpecular_T1 = 3,
+    MapObjDiffuse_Comp = 4,
+    MapObjDiffuse_Comp_Refl = 5,
+    MapObjDiffuse_Comp_Terrain = 6,
+    MapObjDiffuse_CompAlpha = 7,
+    MapObjParallax = 8,
+
+};
+
+enum class WmoPixelShader : int {
+    None = -1,
+    MapObjDiffuse = 0,
+    MapObjSpecular = 1,
+    MapObjMetal = 2,
+    MapObjEnv = 3,
+    MapObjOpaque = 4,
+    MapObjEnvMetal = 5,
+    MapObjTwoLayerDiffuse = 6, //MapObjComposite
+    MapObjTwoLayerEnvMetal = 7,
+    MapObjTwoLayerTerrain = 8,
+    MapObjDiffuseEmissive = 9,
+    MapObjMaskedEnvMetal = 10,
+    MapObjEnvMetalEmissive = 11,
+    MapObjTwoLayerDiffuseOpaque = 12,
+    MapObjTwoLayerDiffuseEmissive = 13,
+    MapObjAdditiveMaskedEnvMetal = 14,
+    MapObjTwoLayerDiffuseMod2x = 15,
+    MapObjTwoLayerDiffuseMod2xNA = 16,
+    MapObjTwoLayerDiffuseAlpha = 17,
+    MapObjLod = 18,
+    MapObjParallax = 19
+};
+
+inline constexpr const int operator+ (WmoPixelShader const val) { return static_cast<const int>(val); };
+inline constexpr const int operator+ (WmoVertexShader const val) { return static_cast<const int>(val); };
+
+const int MAX_WMO_SHADERS = 23;
+static const struct {
+    int vertexShader;
+    int pixelShader;
+} wmoMaterialShader[MAX_WMO_SHADERS] = {
+    //MapObjDiffuse = 0
+    {
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjDiffuse,
+    },
+    //MapObjSpecular = 1
+    {
+        +WmoVertexShader::MapObjSpecular_T1,
+        +WmoPixelShader::MapObjSpecular,
+    },
+    //MapObjMetal = 2
+    {
+        +WmoVertexShader::MapObjSpecular_T1,
+        +WmoPixelShader::MapObjMetal,
+    },
+    //MapObjEnv = 3
+    {
+        +WmoVertexShader::MapObjDiffuse_T1_Refl,
+        +WmoPixelShader::MapObjEnv,
+    },
+    //MapObjOpaque = 4
+    {
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjOpaque,
+    },
+    //MapObjEnvMetal = 5
+    {
+        +WmoVertexShader::MapObjDiffuse_T1_Refl,
+        +WmoPixelShader::MapObjEnvMetal,
+    },
+    //MapObjTwoLayerDiffuse = 6
+    {
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjTwoLayerDiffuse,
+    },
+    //MapObjTwoLayerEnvMetal = 7
+    {
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjTwoLayerEnvMetal,
+    },
+    //TwoLayerTerrain = 8
+    {
+        +WmoVertexShader::MapObjDiffuse_Comp_Terrain,
+        +WmoPixelShader::MapObjTwoLayerTerrain,
+    },
+    //MapObjDiffuseEmissive = 9
+    {
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjDiffuseEmissive,
+    },
+    //waterWindow = 10
+    {
+        +WmoVertexShader::None,
+        +WmoPixelShader::None,
+    },
+    //MapObjMaskedEnvMetal = 11
+    {
+        +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        +WmoPixelShader::MapObjMaskedEnvMetal,
+    },
+    //MapObjEnvMetalEmissive = 12
+    {
+        +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        +WmoPixelShader::MapObjEnvMetalEmissive,
+    },
+    //TwoLayerDiffuseOpaque = 13
+    {
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjTwoLayerDiffuseOpaque,
+    },
+    //submarineWindow = 14
+    {
+        +WmoVertexShader::None,
+        +WmoPixelShader::None,
+    },
+    //TwoLayerDiffuseEmissive = 15
+    {
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjTwoLayerDiffuseEmissive,
+    },
+    //MapObjDiffuseTerrain = 16
+    {
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjDiffuse,
+    },
+    //17
+    {
+        +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
+        +WmoPixelShader::MapObjAdditiveMaskedEnvMetal,
+    },
+    //18
+    {
+        +WmoVertexShader::MapObjDiffuse_CompAlpha,
+        +WmoPixelShader::MapObjTwoLayerDiffuseMod2x,
+    },
+    //19
+    {
+        +WmoVertexShader::MapObjDiffuse_Comp,
+        +WmoPixelShader::MapObjTwoLayerDiffuseMod2xNA,
+    },
+    //20
+    {
+        +WmoVertexShader::MapObjDiffuse_CompAlpha,
+        +WmoPixelShader::MapObjTwoLayerDiffuseAlpha,
+    },
+    //21
+    {
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjLod,
+    },
+    //22
+    {
+        +WmoVertexShader::MapObjParallax,
+        +WmoPixelShader::MapObjParallax,
+    }
+};
+
 
 void WmoGroupObject::update() {
     if (!this->m_loaded) {
-        if (m_geom != nullptr && m_geom->isLoaded()) {
+        if (m_geom != nullptr && m_geom->isLoaded() && m_wmoApi->isLoaded()) {
             this->postLoad();
             this->m_loaded = true;
             return;
@@ -23,14 +302,6 @@ void WmoGroupObject::update() {
         this->updateWorldGroupBBWithM2();
         m_recalcBoundries = false;
     }
-}
-
-void WmoGroupObject::draw(SMOMaterial *materials, std::function<HBlpTexture (int materialId, bool isSpec)> getTextureFunc) {
-    if (!this->m_loaded) return;
-    if (m_geom->batchesLen <= 0) return;
-
-    mathfu::vec4 ambColor = getAmbientColor();
-    m_geom->draw(m_api, materials, ambColor, getTextureFunc);
 }
 
 void WmoGroupObject::drawDebugLights() {
@@ -102,6 +373,123 @@ void WmoGroupObject::postLoad() {
     m_localGroupBorder = m_geom->mogp->boundingBox;
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
     this->loadDoodads();
+    this->createMeshes();
+}
+
+void WmoGroupObject::createMeshes() {
+    Config * config = m_api->getConfig();
+    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("wmoShader");
+
+    int minBatch = config->getMinBatch();
+    int maxBatch = std::min(config->getMaxBatch(), m_geom->batchesLen);
+
+    SMOMaterial * materials = m_wmoApi->getMaterials();
+
+    GDevice *device = m_api->getDevice();
+    HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
+
+    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(wmoModelWideBlockVS));
+
+    wmoModelWideBlockVS &blockVS = vertexModelWideUniformBuffer->getObject<wmoModelWideBlockVS>();
+    blockVS.uPlacementMat = *m_modelMatrix;
+    vertexModelWideUniformBuffer->save();
+
+    for (int j = minBatch; j < maxBatch; j++) {
+        SMOBatch &renderBatch = m_geom->batches[j];
+
+        gMeshTemplate meshTemplate(binding, shaderPermutation);
+
+        int texIndex;
+        if (renderBatch.flag_use_material_id_large) {
+            texIndex = renderBatch.postLegion.material_id_large;
+        } else {
+            texIndex = renderBatch.material_id;
+        }
+
+        const SMOMaterial &material = materials[texIndex];
+        assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
+        auto shaderId = material.shader;
+        if (shaderId >= MAX_WMO_SHADERS) {
+            shaderId = 0;
+        }
+        int pixelShader = wmoMaterialShader[shaderId].pixelShader;
+        int vertexShader = wmoMaterialShader[shaderId].vertexShader;
+
+        bool isAffectedByAmbient = (j >= 0 && j < (m_geom->mogp->transBatchCount)) ||
+                                   (j >= (m_geom->mogp->transBatchCount + m_geom->mogp->intBatchCount));
+
+        mathfu::vec4 ambientColor = this->getAmbientColor();
+        if (isAffectedByAmbient) {
+            ambientColor = m_api->getGlobalAmbientColor();
+        }
+
+        auto blendMode = material.blendMode;
+        float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
+        meshTemplate.meshType = MeshType::eWmoMesh;
+        meshTemplate.depthWrite = blendMode <= 1;
+        meshTemplate.depthCulling = true;
+        meshTemplate.backFaceCulling = (material.flags.F_UNCULLED <= 0);
+
+        meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+
+        meshTemplate.start = renderBatch.first_index * 2;
+        meshTemplate.end = renderBatch.num_indices;
+        meshTemplate.element = GL_TRIANGLES;
+
+        bool isSecondTextSpec = material.shader == 8;
+
+        HBlpTexture texture1 = m_wmoApi->getTexture(material.diffuseNameIndex, false);
+        HBlpTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, isSecondTextSpec);
+        HBlpTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
+
+        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(
+            texture1,
+            true,
+            true);
+
+        meshTemplate.texture[1] = m_api->getDevice()->createBlpTexture(
+            texture2,
+            true,
+            true);
+
+        meshTemplate.texture[2] = m_api->getDevice()->createBlpTexture(
+            texture3,
+            true,
+            true);
+
+        meshTemplate.textureCount = 3;
+
+        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.vertexBuffers[1] = vertexModelWideUniformBuffer;
+        meshTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(wmoMeshWideBlockVS));
+
+        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.fragmentBuffers[1] = nullptr;
+        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(wmoMeshWideBlockPS));
+
+
+        //Fill buffers
+        wmoMeshWideBlockVS &blockVS = meshTemplate.vertexBuffers[2] ->getObject<wmoMeshWideBlockVS>();
+        blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockVS.VertexShader= vertexShader;
+        meshTemplate.vertexBuffers[2] ->save();
+
+        wmoMeshWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<wmoMeshWideBlockPS>();
+        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
+        blockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
+        blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
+        blockPS.uAmbientLight = ambientColor;
+        blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
+        blockPS.PixelShader = pixelShader;
+        blockPS.FogColor_AlphaTest = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), alphaTest));
+
+        meshTemplate.fragmentBuffers[2]->save();
+
+        //Make mesh
+        HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
+        this->m_meshArray.push_back(hmesh);
+    }
 }
 
 void WmoGroupObject::loadDoodads() {
@@ -561,6 +949,13 @@ void WmoGroupObject::setModelFileName(std::string modelName) {
 void WmoGroupObject::setModelFileId(int fileId) {
     useFileId = true;
     m_modelFileId = fileId;
+}
+
+void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
+
+    for (int i = 0; i < this->m_meshArray.size(); i++) {
+        renderedThisFrame.push_back(this->m_meshArray[i]);
+    }
 }
 
 mathfu::vec4 WmoGroupObject::getAmbientColor() {

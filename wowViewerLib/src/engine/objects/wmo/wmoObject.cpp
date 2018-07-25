@@ -363,27 +363,22 @@ void WmoObject::update() {
     }
 }
 
-void WmoObject::draw(){
+void WmoObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame){
     if (!m_loaded) return;
-/*
-    auto wmoShader = m_api->getWmoShader();
-
-    glUniformMatrix4fv(wmoShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
 
     for (int i= 0; i < groupObjects.size(); i++) {
         if(drawGroupWMO[i]) {
            if (groupObjects[i] != nullptr && lodGroupLevelWMO[i] == 0) {
-               groupObjects[i]->draw(mainGeom->materials, m_getTextureFunc);
+               groupObjects[i]->collectMeshes(renderedThisFrame);
            } else if (groupObjectsLod1[i] != nullptr && lodGroupLevelWMO[i] == 1) {
-               groupObjectsLod1[i]->draw(mainGeom->materials, m_getTextureFunc);
+               groupObjectsLod1[i]->collectMeshes(renderedThisFrame);
            } else if (groupObjectsLod2[i] != nullptr && lodGroupLevelWMO[i] == 2) {
-               groupObjectsLod2[i]->draw(mainGeom->materials, m_getTextureFunc);
+               groupObjectsLod2[i]->collectMeshes(renderedThisFrame);
            } else if (groupObjects[i] != nullptr) {
-               groupObjects[i]->draw(mainGeom->materials, m_getTextureFunc);
+               groupObjects[i]->collectMeshes(renderedThisFrame);
            }
         }
     }
-    */
 }
 
 void WmoObject::drawDebugLights(){

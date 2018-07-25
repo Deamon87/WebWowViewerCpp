@@ -12,7 +12,7 @@ class WmoGroupObject;
 #include "../../persistance/header/wmoFileHeader.h"
 #include "wmoObject.h"
 #include "../iWmoApi.h"
-
+#include "../../../gapi/meshes/GMesh.h"
 
 class WmoGroupObject {
 public:
@@ -23,7 +23,6 @@ public:
         createWorldGroupBB(groupInfo.bounding_box, modelMatrix);
     }
     void drawDebugLights();
-    void draw(SMOMaterial *materials, std::function <HBlpTexture (int materialId, bool isSpec)> m_getTextureFunc);
     bool getIsLoaded() { return m_loaded; };
     CAaBox getWorldAABB() {
         return m_worldGroupBorder;
@@ -37,6 +36,8 @@ public:
     void setWmoApi(IWmoApi *api);
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
+
+    void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 
 
     bool getDontUseLocalLightingForM2() { return m_dontUseLocalLightingForM2; };
@@ -69,6 +70,9 @@ private:
     mathfu::mat4 *m_modelMatrix;
     int m_groupNumber;
 
+    HGUniformBuffer vertexModelWideUniformBuffer = nullptr;
+    std::vector<HGMesh> m_meshArray;
+
     SMOGroupInfo *m_main_groupInfo;
 
     std::vector <M2Object *> m_doodads = std::vector<M2Object *>(0);
@@ -87,6 +91,7 @@ private:
     bool checkDoodads(std::vector<M2Object*> &wmoM2Candidates);
 
     void postLoad();
+    void createMeshes();
 
     void loadDoodads();
 

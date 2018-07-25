@@ -5,14 +5,23 @@
 #ifndef WEBWOWVIEWERCPP_GMESH_H
 #define WEBWOWVIEWERCPP_GMESH_H
 
-#include "GVertexBufferBindings.h"
-#include "GBlpTexture.h"
+#include "../GVertexBufferBindings.h"
+#include "../GBlpTexture.h"
+enum class MeshType {
+    eGeneralMesh = 0,
+    eAdtMesh = 1,
+    eWmoMesh = 2,
+    eM2Mesh = 3,
+    eParticleMesh = 4,
+};
 
 class gMeshTemplate {
 public:
     gMeshTemplate(HGVertexBufferBindings bindings, HGShaderPermutation shader) : bindings(bindings), shader(shader) {}
     HGVertexBufferBindings bindings;
     HGShaderPermutation shader;
+    MeshType meshType = MeshType::eGeneralMesh;
+
     bool depthWrite;
     bool depthCulling;
     bool backFaceCulling;
@@ -27,10 +36,6 @@ public:
     HGUniformBuffer fragmentBuffers[3] = {nullptr,nullptr,nullptr};
 };
 
-enum class MeshType {
-    eGeneralMesh = 0,
-    eM2Mesh = 1,
-};
 
 class GMesh {
     friend class GDevice;

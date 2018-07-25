@@ -57,6 +57,28 @@ struct meshWideBlockPS {
     mathfu::vec4_packed uPcColor;
 };
 
-//M2 Pixel buffer format
+//WMO VertexBuffer format
+struct wmoModelWideBlockVS {
+    mathfu::mat4 uPlacementMat;
+};
+
+struct wmoMeshWideBlockVS {
+    int VertexShader;
+    int UseLitColor;
+    int padding[2];
+};
+
+struct wmoMeshWideBlockPS {
+    mathfu::vec4_packed uViewUp;
+    mathfu::vec4_packed uSunDir_FogStart;
+    mathfu::vec4_packed uSunColor_uFogEnd;
+    mathfu::vec4_packed uAmbientLight;
+    int UseLitColor;
+    int EnableAlpha;
+    int PixelShader;
+    int padding;
+    mathfu::vec4_packed FogColor_AlphaTest;
+};
+
 
 #endif //AWEBWOWVIEWERCPP_UNIFORMBUFFERSTRUCTURES_H

@@ -6,282 +6,6 @@
 #include "../persistance/header/wmoFileHeader.h"
 #include "../shader/ShaderDefinitions.h"
 #include <iostream>
-/*
-//0
-MapObjDiffuse {
-    VertexShader(MapObjDiffuse_T1);
-    PixelShader(MapObjDiffuse);
-}
-
-//1
-MapObjSpecular {
-    VertexShader(MapObjSpecular_T1);
-    PixelShader(MapObjSpecular);
-}
-
-//2
-MapObjMetal {
-    VertexShader(MapObjSpecular_T1);
-    PixelShader(MapObjMetal);
-}
-
-//3
-MapObjEnv {
-    VertexShader(MapObjDiffuse_T1_Refl);
-    PixelShader(MapObjEnv);
-}
-
-//4
-MapObjOpaque {
-    VertexShader(MapObjDiffuse_T1);
-    PixelShader(MapObjOpaque);
-}
-
-//5
-Effect(MapObjEnvMetal {
-    VertexShader(MapObjDiffuse_T1_Refl);
-    PixelShader(MapObjEnvMetal);
-}
-
-//6
-Effect(MapObjComposite) //aka MapObjTwoLayerDiffuse
-{
-    VertexShader(MapObjDiffuse_Comp);
-    PixelShader(MapObjComposite); //aka MapObjTwoLayerDiffuse
-}
-
-//7
-Effect(MapObjTwoLayerEnvMetal)
-{
-    VertexShader(MapObjDiffuse_Comp_Refl);
-    PixelShader(MapObjTwoLayerEnvMetal);
-}
-
-//8
-Effect(TwoLayerTerrain)
-{
-    VertexShader(MapObjDiffuse_Comp_Terrain);
-    PixelShader(MapObjTwoLayerTerrain);
-}
-
-//9
-Effect(MapObjDiffuseEmissive)
-{
-    VertexShader(MapObjDiffuse_Comp);
-    PixelShader(MapObjDiffuseEmissive);
-}
-
-//10
-Effect(waterWindow)
-{
-e    //unk
-}
-
-//11
-Effect(MapObjMaskedEnvMetal)
-{
-    VertexShader(MapObjDiffuse_T1_Env_T2);
-    PixelShader(MapObjMaskedEnvMetal);
-}
-
-//12
-Effect(MapObjEnvMetalEmissive)
-{
-    VertexShader(MapObjDiffuse_T1_Env_T2);
-    PixelShader(MapObjEnvMetalEmissive);
-}
-
-//13
-Effect(TwoLayerDiffuseOpaque)
-{
-    VertexShader(MapObjDiffuse_Comp);
-    PixelShader(MapObjTwoLayerDiffuseOpaque);
-}
-
-//14
-Effect(submarineWindow)
-{
-    //unk
-}
-
-//15
-Effect(TwoLayerDiffuseEmissive)
-{
-    VertexShader(MapObjDiffuse_Comp);
-    PixelShader(MapObjTwoLayerDiffuseEmissive);
-}
-
-//16
-Effect(MapObjDiffuseTerrain)
-{
-    VertexShader(MapObjDiffuse_T1);
-    PixelShader(MapObjDiffuse);
-}
-
-*/
-
-enum class WmoVertexShader : int {
-    None = -1,
-    MapObjDiffuse_T1 = 0,
-    MapObjDiffuse_T1_Refl = 1,
-    MapObjDiffuse_T1_Env_T2 = 2,
-    MapObjSpecular_T1 = 3,
-    MapObjDiffuse_Comp = 4,
-    MapObjDiffuse_Comp_Refl = 5,
-    MapObjDiffuse_Comp_Terrain = 6,
-    MapObjDiffuse_CompAlpha = 7,
-    MapObjParallax = 8,
-
-};
-
-enum class WmoPixelShader : int {
-    None = -1,
-    MapObjDiffuse = 0,
-    MapObjSpecular = 1,
-    MapObjMetal = 2,
-    MapObjEnv = 3,
-    MapObjOpaque = 4,
-    MapObjEnvMetal = 5,
-    MapObjTwoLayerDiffuse = 6, //MapObjComposite
-    MapObjTwoLayerEnvMetal = 7,
-    MapObjTwoLayerTerrain = 8,
-    MapObjDiffuseEmissive = 9,
-    MapObjMaskedEnvMetal = 10,
-    MapObjEnvMetalEmissive = 11,
-    MapObjTwoLayerDiffuseOpaque = 12,
-    MapObjTwoLayerDiffuseEmissive = 13,
-    MapObjAdditiveMaskedEnvMetal = 14,
-    MapObjTwoLayerDiffuseMod2x = 15,
-    MapObjTwoLayerDiffuseMod2xNA = 16,
-    MapObjTwoLayerDiffuseAlpha = 17,
-    MapObjLod = 18,
-    MapObjParallax = 19
-};
-
-inline constexpr const int operator+ (WmoPixelShader const val) { return static_cast<const int>(val); };
-inline constexpr const int operator+ (WmoVertexShader const val) { return static_cast<const int>(val); };
-
-const int MAX_WMO_SHADERS = 23;
-static const struct {
-    int vertexShader;
-    int pixelShader;
-} wmoMaterialShader[MAX_WMO_SHADERS] = {
-    //MapObjDiffuse = 0
-    {
-        +WmoVertexShader::MapObjDiffuse_T1,
-        +WmoPixelShader::MapObjDiffuse,
-    },
-    //MapObjSpecular = 1
-    {
-        +WmoVertexShader::MapObjSpecular_T1,
-        +WmoPixelShader::MapObjSpecular,
-    },
-    //MapObjMetal = 2
-    {
-        +WmoVertexShader::MapObjSpecular_T1,
-        +WmoPixelShader::MapObjMetal,
-    },
-    //MapObjEnv = 3
-    {
-        +WmoVertexShader::MapObjDiffuse_T1_Refl,
-        +WmoPixelShader::MapObjEnv,
-    },
-    //MapObjOpaque = 4
-    {
-        +WmoVertexShader::MapObjDiffuse_T1,
-        +WmoPixelShader::MapObjOpaque,
-    },
-    //MapObjEnvMetal = 5
-    {
-        +WmoVertexShader::MapObjDiffuse_T1_Refl,
-        +WmoPixelShader::MapObjEnvMetal,
-    },
-    //MapObjTwoLayerDiffuse = 6
-    {
-        +WmoVertexShader::MapObjDiffuse_Comp,
-        +WmoPixelShader::MapObjTwoLayerDiffuse,
-    },
-    //MapObjTwoLayerEnvMetal = 7
-    {
-        +WmoVertexShader::MapObjDiffuse_T1,
-        +WmoPixelShader::MapObjTwoLayerEnvMetal,
-    },
-    //TwoLayerTerrain = 8
-    {
-        +WmoVertexShader::MapObjDiffuse_Comp_Terrain,
-        +WmoPixelShader::MapObjTwoLayerTerrain,
-    },
-    //MapObjDiffuseEmissive = 9
-    {
-        +WmoVertexShader::MapObjDiffuse_Comp,
-        +WmoPixelShader::MapObjDiffuseEmissive,
-    },
-    //waterWindow = 10
-    {
-        +WmoVertexShader::None,
-        +WmoPixelShader::None,
-    },
-    //MapObjMaskedEnvMetal = 11
-    {
-        +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
-        +WmoPixelShader::MapObjMaskedEnvMetal,
-    },
-    //MapObjEnvMetalEmissive = 12
-    {
-        +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
-        +WmoPixelShader::MapObjEnvMetalEmissive,
-    },
-    //TwoLayerDiffuseOpaque = 13
-    {
-        +WmoVertexShader::MapObjDiffuse_Comp,
-        +WmoPixelShader::MapObjTwoLayerDiffuseOpaque,
-    },
-    //submarineWindow = 14
-    {
-        +WmoVertexShader::None,
-        +WmoPixelShader::None,
-    },
-    //TwoLayerDiffuseEmissive = 15
-    {
-        +WmoVertexShader::MapObjDiffuse_Comp,
-        +WmoPixelShader::MapObjTwoLayerDiffuseEmissive,
-    },
-    //MapObjDiffuseTerrain = 16
-    {
-        +WmoVertexShader::MapObjDiffuse_T1,
-        +WmoPixelShader::MapObjDiffuse,
-    },
-    //17
-    {
-        +WmoVertexShader::MapObjDiffuse_T1_Env_T2,
-        +WmoPixelShader::MapObjAdditiveMaskedEnvMetal,
-    },
-    //18
-    {
-        +WmoVertexShader::MapObjDiffuse_CompAlpha,
-        +WmoPixelShader::MapObjTwoLayerDiffuseMod2x,
-    },
-    //19
-    {
-        +WmoVertexShader::MapObjDiffuse_Comp,
-        +WmoPixelShader::MapObjTwoLayerDiffuseMod2xNA,
-    },
-    //20
-    {
-        +WmoVertexShader::MapObjDiffuse_CompAlpha,
-        +WmoPixelShader::MapObjTwoLayerDiffuseAlpha,
-    },
-    //21
-    {
-        +WmoVertexShader::MapObjDiffuse_T1,
-        +WmoPixelShader::MapObjLod,
-    },
-    //22
-    {
-        +WmoVertexShader::MapObjParallax,
-        +WmoPixelShader::MapObjParallax,
-    }
-};
 
 chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
     [](WmoGroupGeom& object, ChunkData& chunkData){},
@@ -474,8 +198,6 @@ void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile, std::string
     if (!mohd->flags.flag_attenuate_vertices_based_on_distance_to_portal) {
         this->m_attenuateFunc(*this);
     }
-    createVBO();
-    createIndexVBO();
 
     m_loaded = true;
 }
@@ -545,59 +267,106 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
             colorArray[i].b = (unsigned char) std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
 
             colorArray[i].a = (unsigned char) ((mogp->flags.EXTERIOR ) > 0 ? 0xFF : 0x00);
-
-
         }
     }
 }
 
 
-#define size_of_pvar(x) sizeof(std::remove_pointer<decltype(x)>::type)
-#define makePtr(x) (unsigned char *) x
-void WmoGroupGeom::createVBO() {
+HGVertexBuffer WmoGroupGeom::getVBO(GDevice &device) {
+    if (combinedVBO == nullptr) {
+        combinedVBO = device.createVertexBuffer();
 
-    int vboSizeInBytes =
-            size_of_pvar(verticles) * verticesLen+
-            size_of_pvar(normals) * normalsLen+
-            size_of_pvar(textCoords) * textureCoordsLen+
-            size_of_pvar(textCoords2) * textureCoordsLen2+
-            size_of_pvar(textCoords3) * textureCoordsLen3+
-            size_of_pvar(colorArray) * cvLen +
-            size_of_pvar(colorArray2) * cvLen2;
+        struct VboFormat {
+            C3Vector pos;
+            C3Vector normal;
+            C2Vector textCoordinate;
+            C2Vector textCoordinate2;
+            C2Vector textCoordinate3;
+            CImVector color;
+            CImVector color2;
+        };
 
-    std::vector<unsigned char> buffer (vboSizeInBytes);
+        static const C2Vector c2ones = C2Vector(mathfu::vec2(1.0, 1.0));
+        static const C3Vector c3zeros = C3Vector(mathfu::vec3(0, 0, 0));
 
-    unsigned char *nextOffset = &buffer[0];
-    nextOffset = std::copy(makePtr(verticles),  makePtr(&verticles[verticesLen]), nextOffset);
-    normalOffset = nextOffset-&buffer[0]; nextOffset = std::copy(makePtr(normals),    makePtr(&normals[normalsLen]), nextOffset);
-    textOffset = nextOffset-&buffer[0];   nextOffset = std::copy(makePtr(textCoords), makePtr(&textCoords[textureCoordsLen]), nextOffset);
-    if (textureCoordsLen2 > 0) {
-        textOffset2 = nextOffset - &buffer[0];
-        nextOffset = std::copy(makePtr(textCoords2), makePtr(&textCoords2[textureCoordsLen2]), nextOffset);
-    }
-    if (textureCoordsLen3 > 0) {
-        textOffset3 = nextOffset - &buffer[0];
-        nextOffset = std::copy(makePtr(textCoords3), makePtr(&textCoords3[textureCoordsLen3]), nextOffset);
-    }
-    if (cvLen > 0) {
-        colorOffset = nextOffset - &buffer[0];
-        nextOffset = std::copy(makePtr(colorArray), makePtr(&colorArray[cvLen]), nextOffset);
-    }
-    if (cvLen2 > 0) {
-        colorOffset2 = nextOffset - &buffer[0];
-        nextOffset = std::copy(makePtr(colorArray2), makePtr(&colorArray2[cvLen2]), nextOffset);
+        std::vector<VboFormat> buffer (verticesLen);
+        for (int i = 0; i < verticesLen; i++) {
+            VboFormat &format = buffer[i];
+            format.pos = verticles[i];
+            if (normalsLen > 0) {
+                format.normal = normals[i];
+            } else {
+                format.normal = c3zeros;
+            }
+            if (textureCoordsLen > 0) {
+                format.textCoordinate = textCoords[i];
+            } else {
+                format.textCoordinate = c2ones;
+            }
+            if (textureCoordsLen2 > 0) {
+                format.textCoordinate2 = textCoords2[i];
+            } else {
+                format.textCoordinate2 = c2ones;
+            }
+            if (textureCoordsLen3 > 0) {
+                format.textCoordinate3 = textCoords3[i];
+            } else {
+                format.textCoordinate3 = c2ones;
+            }
+            if (cvLen > 0) {
+                format.color = colorArray[i];
+            } else {
+                *(int *) &format.color = 0;
+            }
+            if (cvLen2 > 0) {
+                format.color2 = colorArray2[i];
+            } else {
+                *(int *) &format.color2 = 0x000000FF;
+            }
+        }
+
+        combinedVBO->uploadData(&buffer[0], (int)(buffer.size() * sizeof(VboFormat)));
     }
 
-    glGenBuffers(1, &combinedVBO);
-    glBindBuffer( GL_ARRAY_BUFFER, combinedVBO);
-    glBufferData( GL_ARRAY_BUFFER, vboSizeInBytes, &buffer[0], GL_STATIC_DRAW );
+    return combinedVBO;
 }
 
-void WmoGroupGeom::createIndexVBO() {
-    glGenBuffers(1, &indexVBO);
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glBufferData( GL_ELEMENT_ARRAY_BUFFER, indicesLen*2, indicies, GL_STATIC_DRAW );
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0);
+HGIndexBuffer WmoGroupGeom::getIBO(GDevice &device) {
+    if (indexVBO == nullptr) {
+        indexVBO = device.createIndexBuffer();
+        indexVBO->uploadData(
+            &indicies[0],
+            indicesLen * sizeof(uint16_t));
+    }
+
+    return indexVBO;
+}
+
+static GBufferBinding staticWMOBindings[7] = {
+    {+wmoShader::Attribute::aPosition, 3, GL_FLOAT, false, 56, 0 },
+    {+wmoShader::Attribute::aNormal, 3, GL_FLOAT, false, 56, 12},
+    {+wmoShader::Attribute::aTexCoord, 2, GL_FLOAT, false, 56, 24},
+    {+wmoShader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 56, 32},
+    {+wmoShader::Attribute::aTexCoord3, 2, GL_FLOAT, false, 56, 40},
+    {+wmoShader::Attribute::aColor, 4, GL_UNSIGNED_BYTE, true, 56, 48},
+    {+wmoShader::Attribute::aColor2, 4, GL_UNSIGNED_BYTE, true, 56, 52}
+};
+
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(GDevice &device) {
+    if (vertexBufferBindings == nullptr) {
+        vertexBufferBindings = device.createVertexBufferBindings();
+        vertexBufferBindings->setIndexBuffer(getIBO(device));
+
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = getVBO(device);
+
+        vertexBinding.bindings = std::vector<GBufferBinding>(&staticWMOBindings[0], &staticWMOBindings[6]);
+
+        vertexBufferBindings->addVertexBufferBinding(vertexBinding);
+        vertexBufferBindings->save();
+    }
+
+    return vertexBufferBindings;
 }
 
 void WmoGroupGeom::draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu::vec4 &ambColor, std::function <HBlpTexture (int materialId, bool isSpec)> getTextureFunc) {

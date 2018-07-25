@@ -26,12 +26,14 @@ public:
 
     void setMOHD(SMOHeader *mohd) {this->mohd = mohd; };
     void setAttenuateFunction(std::function<void (WmoGroupGeom& wmoGroupGeom)> attenuateFunc) {this->m_attenuateFunc = attenuateFunc; };
-    void createVBO();
     bool isLoaded() const { return m_loaded; };
     void createIndexVBO();
 
     void draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu::vec4 &ambColor, std::function <HBlpTexture (int materialId, bool isSpec)> getTextureFunc);
 
+    HGVertexBuffer getVBO(GDevice &device);
+    HGIndexBuffer getIBO(GDevice &device);
+    HGVertexBufferBindings getVertexBindings(GDevice &device);
 private:
     bool m_loaded = false;
 
@@ -104,10 +106,9 @@ public:
     MOLP *molp = nullptr;
     int molpCnt = 0;
 
-
-
-    GLuint combinedVBO;
-    GLuint indexVBO;
+    HGVertexBuffer combinedVBO;
+    HGIndexBuffer indexVBO;
+    HGVertexBufferBindings vertexBufferBindings;
 
 private:
     void fixColorVertexAlpha(SMOHeader *mohd);

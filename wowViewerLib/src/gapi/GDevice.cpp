@@ -8,7 +8,8 @@
 #include "../engine/algorithms/hashString.h"
 #include "shaders/GM2ShaderPermutation.h"
 #include "../engine/opengl/header.h"
-#include "GM2Mesh.h"
+#include "meshes/GM2Mesh.h"
+#include "meshes/GParticleMesh.h"
 #include "shaders/CM2ParticleShaderPermutation.h"
 
 BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -138,23 +139,8 @@ HGUniformBuffer GDevice::createUniformBuffer(size_t size) {
     return h_uniformBuffer;
 }
 
-//void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
-//    for (auto &hmesh : meshes ) {
-//        this->drawMesh(hmesh);
-//    }
-//}
 void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
-    //1. Draw opaque
-    int size_ = meshes.size();
-    for (int i = 0; i < size_; i++ ) {
-        if (meshes[i]->getIsTransparent()) continue;
-        HGMesh hgMesh = std::static_pointer_cast<GMesh>(meshes[i]);
-        this->drawMesh(hgMesh);
-    }
-    //2. Draw transparent
-    for (int i = size_-1; i >= 0; i-- ) {
-        if (!meshes[i]->getIsTransparent()) continue;
-        HGMesh hgMesh = std::static_pointer_cast<GMesh>(meshes[i]);
+    for (auto &hgMesh : meshes) {
         this->drawMesh(hgMesh);
     }
 }
@@ -226,10 +212,12 @@ void GDevice::drawMesh(HGMesh &hmesh) {
 
     if (m_lastBlendMode != hmesh->m_blendMode) {
         BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
-        if (selectedBlendMode.blendModeEnable) {
-            glEnable(GL_BLEND);
-        } else {
-            glDisable(GL_BLEND);
+        if (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable ) {
+            if (selectedBlendMode.blendModeEnable) {
+                glEnable(GL_BLEND);
+            } else {
+                glDisable(GL_BLEND);
+            }
         }
 
         glBlendFuncSeparate(
@@ -280,6 +268,12 @@ HGM2Mesh GDevice::createM2Mesh(gMeshTemplate &meshTemplate) {
     return h_mesh;
 }
 
+HGParticleMesh GDevice::createParticleMesh(gMeshTemplate &meshTemplate) {
+    std::shared_ptr<GParticleMesh> h_mesh;
+    h_mesh.reset(new GParticleMesh(*this, meshTemplate));
+
+    return h_mesh;
+}
 
 void GDevice::bindTexture(GTexture *texture, int slot) {
     if (texture == nullptr) {
@@ -325,3 +319,4 @@ GDevice::GDevice() {
 
     m_blackPixelTexture->loadData(1,1,&ff);
 }
+

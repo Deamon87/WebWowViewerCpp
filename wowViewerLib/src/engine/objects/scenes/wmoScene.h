@@ -51,7 +51,7 @@ public:
 
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
 
-    void drawM2s();
+    void drawM2s(std::vector<HGMesh> &renderedThisFrame);
 
     mathfu::vec4 getAmbientColor() override {
 //        if (m_wmoObject->isLoaded()) {

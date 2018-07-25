@@ -3,7 +3,7 @@
 //
 
 #include "m2Scene.h"
-#include "../../../gapi/GM2Mesh.h"
+#include "../../../gapi/meshes/GM2Mesh.h"
 #include "../../algorithms/mathHelper.h"
 
 void M2Scene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
@@ -21,7 +21,6 @@ void M2Scene::draw() {
     if (!m_drawModel) return;
 
     std::vector<HGMesh> renderedThisFrame;
-    std::vector<HGMesh> renderedThisFrame2;
 
     m_m2Object->fillBuffersAndArray(renderedThisFrame);
     m_m2Object->drawParticles(renderedThisFrame);
@@ -29,35 +28,42 @@ void M2Scene::draw() {
     std::sort(renderedThisFrame.begin(),
               renderedThisFrame.end(),
               [&](HGMesh& a, HGMesh& b) -> const bool {
+                  if (a->getIsTransparent() > b-> getIsTransparent()) {
+                      return false;
+                  }
+                  if (a->getIsTransparent() < b->getIsTransparent()) {
+                      return true;
+                  }
+
                   if (a->getMeshType() > b->getMeshType()) {
                       return false;
                   }
                   if (a->getMeshType() < b->getMeshType()) {
-                      return false;
+                      return true;
                   }
 
                   if (a->getMeshType() == MeshType::eM2Mesh) {
                       HGM2Mesh a1 = std::static_pointer_cast<GM2Mesh>(a);
                       HGM2Mesh b1 = std::static_pointer_cast<GM2Mesh>(b);
                       if (a1->m_priorityPlane != b1->m_priorityPlane) {
-                          return b1->m_priorityPlane < a1->m_priorityPlane;
+                          return b1->m_priorityPlane > a1->m_priorityPlane;
                       }
 
                       if (a1->m_sortDistance > b1->m_sortDistance) {
-                          return false;
+                          return true;
                       }
                       if (a1->m_sortDistance < b1->m_sortDistance) {
-                          return true;
+                          return false;
                       }
 
                       if (a1->m_m2Object > b1->m_m2Object) {
-                          return false;
-                      }
-                      if (a1->m_m2Object < b1->m_m2Object) {
                           return true;
                       }
+                      if (a1->m_m2Object < b1->m_m2Object) {
+                          return false;
+                      }
 
-                      return b1->m_layer > a1->m_layer;
+                      return b1->m_layer < a1->m_layer;
                   }
 
                   return a > b;

@@ -15,6 +15,7 @@ class GTexture;
 class GShaderPermutation;
 class GMesh;
 class GM2Mesh;
+class GParticleMesh;
 
 class gMeshTemplate;
 
@@ -25,6 +26,7 @@ typedef std::shared_ptr<GUniformBuffer> HGUniformBuffer;
 typedef std::shared_ptr<GShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<GMesh> HGMesh;
 typedef std::shared_ptr<GM2Mesh> HGM2Mesh;
+typedef std::shared_ptr<GParticleMesh> HGParticleMesh;
 typedef std::shared_ptr<GBlpTexture> HGBlpTexture;
 typedef std::shared_ptr<GTexture> HGTexture;
 
@@ -37,7 +39,7 @@ typedef std::shared_ptr<GTexture> HGTexture;
 #include "GTexture.h"
 #include "GUniformBuffer.h"
 #include "GShaderPermutation.h"
-#include "GMesh.h"
+#include "meshes/GMesh.h"
 
 
 class GDevice {
@@ -92,6 +94,7 @@ public:
     HGTexture createTexture();
     HGMesh createMesh(gMeshTemplate &meshTemplate);
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate);
+    HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate);
 
 private:
     void drawMesh(HGMesh &hmesh);

@@ -224,8 +224,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -257,8 +257,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_nightelf/ui_nightelf.m2", 0);
 
-    currentScene = new M2Scene(this,
-        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
+//    currentScene = new M2Scene(this,
+//        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 
 //    currentScene = new M2Scene(this,
 //        "character/bloodelf/female/bloodelffemale_hd.m2", 0);

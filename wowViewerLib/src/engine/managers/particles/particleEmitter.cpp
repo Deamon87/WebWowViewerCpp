@@ -3,6 +3,7 @@
 //
 
 #include "particleEmitter.h"
+#include "../../../gapi/meshes/GParticleMesh.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/animate.h"
 #include "../../shader/ShaderDefinitions.h"
@@ -97,6 +98,18 @@ struct meshParticleWideBlockPS {
     float padding2[3];
 };
 
+EGxBlendEnum M2BlendingModeToEGxBlendEnum1 [8] =
+    {
+        EGxBlendEnum::GxBlend_Opaque,
+        EGxBlendEnum::GxBlend_AlphaKey,
+        EGxBlendEnum::GxBlend_Alpha,
+        EGxBlendEnum::GxBlend_NoAlphaAdd,
+        EGxBlendEnum::GxBlend_Add,
+        EGxBlendEnum::GxBlend_Mod,
+        EGxBlendEnum::GxBlend_Mod2x,
+        EGxBlendEnum::GxBlend_BlendAdd
+    };
+
 void ParticleEmitter::createMesh() {
     GDevice *device = m_api->getDevice();
 
@@ -120,16 +133,18 @@ void ParticleEmitter::createMesh() {
     //Create mesh
     gMeshTemplate meshTemplate (m_bindings, shaderPermutation);
 
-    //TODO!!
-    meshTemplate.depthWrite = false;
+
+    uint8_t blendMode = m_data->old.blendingType;
+
+    meshTemplate.depthWrite = blendMode <= 1;
     meshTemplate.depthCulling = true;
     meshTemplate.backFaceCulling = false;
 
-    uint8_t blendMode = m_data->old.blendingType;
     if (blendMode == 4 )
         blendMode = 3;
 
-    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+//    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);//M2BlendingModeToEGxBlendEnum1[blendMode];
 
     meshTemplate.start = 0;
     meshTemplate.end = 0;
@@ -176,7 +191,7 @@ void ParticleEmitter::createMesh() {
 
     meshTemplate.fragmentBuffers[2]->uploadData(&blockPS, sizeof(blockPS));
 
-    m_mesh = m_api->getDevice()->createMesh(meshTemplate);
+    m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
 }
 
 

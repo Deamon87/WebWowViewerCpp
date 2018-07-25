@@ -17,11 +17,14 @@ class IWmoApi {
 public:
     virtual M2Object *getDoodad(int index) = 0;
     virtual SMOHeader *getWmoHeader() = 0;
+    virtual SMOMaterial *getMaterials() = 0;
+    virtual bool isLoaded() = 0;
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() = 0;
     virtual SMOLight *getLightArray() = 0;
 
     virtual std::vector<PortalInfo_t> &getPortalInfos() = 0;
 
+    virtual HBlpTexture getTexture(int textureId, bool isSpec) = 0;
     virtual void updateBB() = 0;
     virtual void postWmoGroupObjectLoad(int groupId, int lod) = 0;
 

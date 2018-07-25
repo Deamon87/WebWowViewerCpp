@@ -4,6 +4,7 @@
 
 #include "wmoScene.h"
 #include "../../algorithms/mathHelper.h"
+#include "../../../gapi/meshes/GM2Mesh.h"
 
 void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     m2RenderedThisFrame = std::vector<M2Object*>();
@@ -59,42 +60,15 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
 }
 
 void WmoScene::draw() {
-//    this.m2OpaqueRenderedThisFrame = {};
-//    this.m2TranspRenderedThisFrame = {};
-//    if (this.currentWMO && this.currentInteriorGroups != null && config.getUsePortalCulling()) {
-//        this.sceneApi.shaders.activateWMOShader();
-//        this.currentWMO.drawPortalBased(true);
-//        this.sceneApi.shaders.deactivateWMOShader();
-//
-//        if (this.currentWMO.exteriorPortals.length > 0) {
-//            this.drawExterior()
-//        }
-//        //6. Draw WMO portals
-//        if (config.getRenderPortals()) {
-//            this.sceneApi.shaders.activateDrawPortalShader();
-//            for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
-//                this.wmoRenderedThisFrame[i].drawPortals();
-//            }
-//        }
-//        this.drawM2s();
-//
-//        this.sceneApi.shaders.activateFrustumBoxShader();
-//        //Draw Wmo portal frustums
-//        if (this.sceneApi.getIsDebugCamera()) {
-//            this.sceneApi.drawCamera()
-//        }
-//    } else {
+    std::vector<HGMesh> renderedThisFrame;
+
+
+
     //2. Draw WMO
-    /*
-    this->m_api->activateWMOShader();
+
     for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
-//        if (config.getUsePortalCulling()) {
-//            this.wmoRenderedThisFrame[i].drawPortalBased(false)
-//        } else {
-        this->wmoRenderedThisFrameArr[i]->draw();
-//        }
+        this->wmoRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
     }
-    this->m_api->deactivateWMOShader();
 //
 //    this->m_api->activateDrawPointShader();
 //    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
@@ -102,6 +76,7 @@ void WmoScene::draw() {
 //    }
 //    this->m_api->deactivateDrawPointShader();
 
+    /*
     this->m_api->activateDrawPortalShader();
     for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
 //        if (config.getUsePortalCulling()) {
@@ -111,7 +86,7 @@ void WmoScene::draw() {
         this->wmoRenderedThisFrameArr[i]->drawTransformedAntiPortalPoints();
 //        }
     }
-
+    */
 
     //3. Draw background WDL
 
@@ -128,7 +103,7 @@ void WmoScene::draw() {
 //        }
 //    }
 
-    this->drawM2s();
+    this->drawM2s(renderedThisFrame);
 
     //6. Draw WMO portals
 //        if (config.getRenderPortals()) {
@@ -138,15 +113,63 @@ void WmoScene::draw() {
 //            }
 //        }
     //Draw Wmo portal frustums
+    /*
     this->m_api->activateFrustumBoxShader();
     if (this->m_api->getIsDebugCamera()) {
         this->m_api->drawCamera();
     }
      */
 //    }
+
+    std::sort(renderedThisFrame.begin(),
+              renderedThisFrame.end(),
+              [&](HGMesh& a, HGMesh& b) -> const bool {
+                  if (a->getIsTransparent() > b-> getIsTransparent()) {
+                      return false;
+                  }
+                  if (a->getIsTransparent() < b->getIsTransparent()) {
+                      return true;
+                  }
+
+                  if (a->getMeshType() > b->getMeshType()) {
+                      return false;
+                  }
+                  if (a->getMeshType() < b->getMeshType()) {
+                      return true;
+                  }
+
+                  if (a->getMeshType() == MeshType::eM2Mesh) {
+                      HGM2Mesh a1 = std::static_pointer_cast<GM2Mesh>(a);
+                      HGM2Mesh b1 = std::static_pointer_cast<GM2Mesh>(b);
+                      if (a1->m_priorityPlane != b1->m_priorityPlane) {
+                          return b1->m_priorityPlane > a1->m_priorityPlane;
+                      }
+
+                      if (a1->m_sortDistance > b1->m_sortDistance) {
+                          return true;
+                      }
+                      if (a1->m_sortDistance < b1->m_sortDistance) {
+                          return false;
+                      }
+
+                      if (a1->m_m2Object > b1->m_m2Object) {
+                          return true;
+                      }
+                      if (a1->m_m2Object < b1->m_m2Object) {
+                          return false;
+                      }
+
+                      return b1->m_layer < a1->m_layer;
+                  }
+
+                  return a > b;
+              }
+    );
+
+    m_api->getDevice()->drawMeshes(renderedThisFrame);
 }
 
-void WmoScene::drawM2s() {
+void WmoScene::drawM2s(std::vector<HGMesh> &renderedThisFrame) {
     //if (config.getRenderM2()) {
 //        bool lastWasDrawInstanced = false;
 //        this->m_api->activateM2Shader();
@@ -223,32 +246,17 @@ void WmoScene::drawM2s() {
 //            this->m_api->deactivateM2Shader();
 //        }
 
-    /*
-    this->m_api->activateM2Shader();
-    mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
+
     for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
 
         M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-        m2Object->draw(false);
+        m2Object->fillBuffersAndArray(renderedThisFrame);
+        m2Object->drawParticles(renderedThisFrame);
     }
-
-    for (int i = this->m2RenderedThisFrameArr.size() - 1; i >= 0; i--) {
-        M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-
-        m2Object->draw(true);
-    }
-    this->m_api->deactivateM2Shader();
-
-    this->m_api->activateM2ParticleShader();
-    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-
-        M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-        m2Object->drawParticles();
-    }
-    this->m_api->deactivateM2ParticleShader();
 
     //7. Draw BBs
     //7.1 Draw M2 BBs
+    /*
     if (this->m_api->getConfig()->getDrawM2BB()) {
         this->m_api->activateBoundingBoxShader();
 
@@ -258,8 +266,8 @@ void WmoScene::drawM2s() {
         }
         this->m_api->deactivateBoundingBoxShader();
     }
+    */
 
-     */
 //    this->m_api->activateDrawPointShader();
 //
 //    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
@@ -274,11 +282,7 @@ void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &
     for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
         M2Object *m2Object = this->m2RenderedThisFrameArr[i];
         m2Object->update(deltaTime, cameraVec3, lookAtMat);
-//            if (this.isM2Scene && m2Object.objectUpdate) {
-//                m2Object.objectUpdate(deltaTime, cameraVec4, lookAtMat);
-//            }
     }
-//    }
 
     for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
         this->wmoRenderedThisFrameArr[i]->update();

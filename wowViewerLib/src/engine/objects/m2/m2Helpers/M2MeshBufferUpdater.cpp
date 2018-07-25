@@ -3,7 +3,7 @@
 //
 
 #include "M2MeshBufferUpdater.h"
-#include "../../../../gapi/GM2Mesh.h"
+#include "../../../../gapi/meshes/GM2Mesh.h"
 #include "../../../persistance/header/M2FileHeader.h"
 
 bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {

@@ -13,7 +13,7 @@
 #include "../../shader/ShaderDefinitions.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "m2Helpers/M2MeshBufferUpdater.h"
-#include "../../../gapi/GM2Mesh.h"
+#include "../../../gapi/meshes/GM2Mesh.h"
 
 //Legion shader stuff
 

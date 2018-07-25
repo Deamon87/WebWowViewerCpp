@@ -22,13 +22,6 @@ struct ParticleForces {
     float drag; // 9
 };
 
-struct vectorMultiTex {
-    float pos[3];
-    float col[4];
-    float texcoord[3][2];
-};
-
-
 struct ParticleBuffStruct {
     C3Vector position; //0
     C4Vector color;    //12
@@ -138,7 +131,7 @@ private:
     HGVertexBuffer m_bufferVBO;
 
     HGVertexBufferBindings m_bindings;
-    HGMesh m_mesh;
+    HGParticleMesh m_mesh;
 
     void createMesh();
 };

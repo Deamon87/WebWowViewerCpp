@@ -84,7 +84,7 @@ private:
     friend void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom);
 public:
     M2Object *getDoodad(int index) override ;
-    HBlpTexture getTexture(int materialId, bool isSpec);
+    HBlpTexture getTexture(int materialId, bool isSpec) override;
     void setLoadingParam( SMMapObjDef &mapObjDef);
     void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
 
@@ -92,7 +92,7 @@ public:
     void setModelFileId(int fileId);
 
     void startLoading();
-    bool isLoaded(){ return m_loaded;}
+    bool isLoaded() override { return m_loaded;}
     bool hasPortals() {
         return mainGeom->header->nPortals != 0;
     }
@@ -110,6 +110,11 @@ public:
     virtual SMOHeader *getWmoHeader() override {
         return mainGeom->header;
     }
+
+    virtual SMOMaterial *getMaterials() override {
+        return mainGeom->materials;
+    }
+
     virtual SMOLight *getLightArray() override {
         return mainGeom->lights;
     }
@@ -117,7 +122,7 @@ public:
         return geometryPerPortal;
     };
 
-    void draw();
+    void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 
     void createGroupObjects();
 
