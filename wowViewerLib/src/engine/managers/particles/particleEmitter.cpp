@@ -208,6 +208,8 @@ void ParticleEmitter::resizeParticleBuffer() {
 void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &boneModelMat) {
     if (getGenerator() == nullptr) return;
 
+    if (this->particles.size() <= 0 && !isEnabled) return;
+
     this->resizeParticleBuffer();
 
 
@@ -284,6 +286,8 @@ void ParticleEmitter::Simulate(animTime_t delta) {
     }
 }
 void ParticleEmitter::EmitNewParticles(animTime_t delta) {
+    if (!isEnabled) return;
+
     float rate = this->generator->GetEmissionRate();
     if (6 == (this->flags & 6)) {
         int count = rate;
@@ -696,23 +700,6 @@ ParticleEmitter::BuildQuad(
         static const float tys[4] = {0, 1, 0, 1};
 
         mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
-
-//        for (int i = 0; i < 4; i++) {
-//            ParticleBuffStruct record;
-//            record.position = ( inverseLookAt * mathfu::vec4(
-//                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
-//                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
-//                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
-//                1.0
-//            )).xyz();
-//            record.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
-//
-//            record.textCoord0 =
-//                mathfu::vec2(txs[i] * this->texScaleX + texStartX,
-//                             tys[i] * this->texScaleY + texStartY);
-//
-//            buffer[i] = record;
-//        }
 
     static ParticleBuffStructQuad record;
     const C4Vector colorCombined = mathfu::vec4_packed(mathfu::vec4(color, alpha));

@@ -1,14 +1,18 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
-attribute float aHeight;
-attribute vec4 aColor;
-attribute vec4 aVertexLighting;
-attribute vec3 aNormal;
-attribute float aIndex;
+layout(location = 0) in float aHeight;
+layout(location = 1) in vec4 aColor;
+layout(location = 2) in vec4 aVertexLighting;
+layout(location = 3) in vec3 aNormal;
+layout(location = 4) in float aIndex;
 
-uniform vec3 uPos;
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
+layout(std140) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
+layout(std140) uniform meshWideBlockVS {
+    vec4 uPos;
+};
 
 varying vec2 vChunkCoords;
 varying vec3 vPosition;
@@ -60,30 +64,28 @@ varying vec4 vColor;
 varying vec3 vNormal;
 varying vec3 vVertexLighting;
 
-uniform int uNewFormula;
-
+uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayer0;
 uniform sampler2D uLayer1;
 uniform sampler2D uLayer2;
 uniform sampler2D uLayer3;
-uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayerHeight0;
 uniform sampler2D uLayerHeight1;
 uniform sampler2D uLayerHeight2;
 uniform sampler2D uLayerHeight3;
 
-uniform float uHeightScale[4];
-uniform float uHeightOffset[4];
+layout(std140) uniform modelWideBlockPS {
+    vec4 uViewUp;
+    vec4 uSunDir_FogStart;
+    vec4 uSunColor_uFogEnd;
+    vec4 uAmbientLight;
+    vec4 FogColor;
+};
 
-uniform vec3 uViewUp;
-uniform vec3 uSunDir;
-uniform vec3 uSunColor;
-uniform vec4 uAmbientLight;
-
-uniform vec3 uFogColor;
-
-uniform float uFogStart;
-uniform float uFogEnd;
+layout(std140) uniform meshWideBlockPS {
+    vec4 uHeightScale;
+    vec4 uHeightOffset;
+};
 
 vec3 makeDiffTerm(vec3 matDiffuse) {
   vec3 currColor;
@@ -91,7 +93,7 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
     vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
     if (true) {
         vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -(uSunDir.xyz));
+        float nDotL = dot(normalizedN, -(uSunDir_FogStart.xyz));
         float nDotUp = dot(normalizedN, uViewUp.xyz);
 
         vec4 AmbientLight = uAmbientLight;
@@ -112,7 +114,7 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
         vec3 skyColor = (currColor * 1.10000002);
         vec3 groundColor = (currColor* 0.699999988);
 
-        lDiffuse = (uSunColor * clamp(nDotL, 0.0, 1.0));
+        lDiffuse = (uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0));
         currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
     } else {
         currColor = vec3 (1.0, 1.0, 1.0) ;
@@ -140,10 +142,10 @@ void main() {
     vec4 tex2 = texture2D(uLayer1, vTexCoord).rgba;
     vec4 tex1 = texture2D(uLayer0, vTexCoord).rgba;
 
-    vec4 layer_pct = vec4 ( layer_weights.x * (texture2D(uLayerHeight0, alphaCoord).a * uHeightScale[0] + uHeightOffset[0])
-                         , layer_weights.y * (texture2D(uLayerHeight1, alphaCoord).a * uHeightScale[1] + uHeightOffset[1])
-                         , layer_weights.z * (texture2D(uLayerHeight2, alphaCoord).a * uHeightScale[2] + uHeightOffset[2])
-                         , layer_weights.w * (texture2D(uLayerHeight3, alphaCoord).a * uHeightScale[3] + uHeightOffset[3])
+    vec4 layer_pct = vec4 ( layer_weights.x * (texture2D(uLayerHeight0, alphaCoord).a * uHeightScale.x + uHeightOffset.x)
+                         , layer_weights.y * (texture2D(uLayerHeight1, alphaCoord).a * uHeightScale.y + uHeightOffset.y)
+                         , layer_weights.z * (texture2D(uLayerHeight2, alphaCoord).a * uHeightScale.z + uHeightOffset.z)
+                         , layer_weights.w * (texture2D(uLayerHeight3, alphaCoord).a * uHeightScale.w + uHeightOffset.w)
                          );
 
 
@@ -165,12 +167,13 @@ void main() {
 
     //Spec part
 //    float specBlend = tex1.a;
-    vec3 halfVec = -(normalize((uSunDir.xyz + normalize(vPosition))));
-    vec3 lSpecular = ((uSunColor * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
+    vec3 halfVec = -(normalize((uSunDir_FogStart.xyz + normalize(vPosition))));
+    vec3 lSpecular = ((uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
     vec3 specTerm = (vec3(specBlend) * lSpecular);
     finalColor.rgb += specTerm;
 
     // --- Fog start ---
+    /*
     vec3 fogColor = uFogColor;
     float fog_start = uFogStart;
     float fog_end = uFogEnd;
@@ -190,6 +193,7 @@ void main() {
     float endFadeFog = clamp(((fog_end - distanceToCamera) / (0.699999988 * fog_end)), 0.0, 1.0);
 
     finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
+    */
     // --- Fog end ---
 
     finalColor.a = 1.0;

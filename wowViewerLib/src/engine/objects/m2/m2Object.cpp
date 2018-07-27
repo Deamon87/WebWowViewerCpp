@@ -670,8 +670,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
     int maxBatch = particleEmitters.size();
     for (int i = minParticle; i < maxParticle; i++) {
-        if (particleEmitters[i]->isEnabled == 0) continue;
-
         auto *peRecord = m_m2Geom->m_m2Data->particle_emitters.getElement(i);
 
         mathfu::mat4 transformMat = m_placementMatrix * bonesMatrices[peRecord->old.bone] *
@@ -1063,7 +1061,6 @@ void M2Object::drawParticles(std::vector<HGMesh> &meshes) {
 
     for (int i = minParticle; i < maxParticle; i++) {
 //    for (int i = 0; i< particleEmitters.size(); i++) {
-        if (particleEmitters[i]->isEnabled)
         particleEmitters[i]->collectMeshes(meshes);
     }
 }

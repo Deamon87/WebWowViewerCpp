@@ -10,7 +10,8 @@
 #include "../engine/opengl/header.h"
 #include "meshes/GM2Mesh.h"
 #include "meshes/GParticleMesh.h"
-#include "shaders/CM2ParticleShaderPermutation.h"
+#include "shaders/GM2ParticleShaderPermutation.h"
+#include "shaders/GAdtShaderPermutation.h"
 
 BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
         /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
@@ -117,7 +118,9 @@ std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
     if (shaderName == "m2Shader") {
         sharedPtr.reset( new GM2ShaderPermutation(shaderName, *this));
     } else if (shaderName == "m2ParticleShader") {
-        sharedPtr.reset( new CM2ParticleShaderPermutation(shaderName, *this));
+        sharedPtr.reset( new GM2ParticleShaderPermutation(shaderName, *this));
+    } else if (shaderName == "adtShader") {
+        sharedPtr.reset( new GAdtShaderPermutation(shaderName, *this));
     } else {
         sharedPtr.reset(new GShaderPermutation(shaderName, *this));
     }

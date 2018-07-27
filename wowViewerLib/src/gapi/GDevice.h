@@ -109,7 +109,9 @@ private:
     GVertexBufferBindings *m_vertexBufferBindings = nullptr;
     GShaderPermutation * m_shaderPermutation = nullptr;
 
-    GTexture *m_lastTexture[4] = {nullptr};
+    GTexture *m_lastTexture[10] = {
+        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+        nullptr};
 
     GUniformBuffer * m_vertexUniformBuffer[3] = {nullptr};
     GUniformBuffer * m_fragmentUniformBuffer[3] = {nullptr};

@@ -7,11 +7,13 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../persistance/adtFile.h"
 #include "../../persistance/wdtFile.h"
+#include "../../../gapi/UniformBufferStructures.h"
 
 
 void AdtObject::loadingFinished() {
     createVBO();
-    loadAlphaTextures(256);
+    loadAlphaTextures();
+    createMeshes();
 //    createIndexVBO();
     m_loaded = true;
     calcBoundingBoxes();
@@ -141,8 +143,10 @@ void AdtObject::createVBO() {
 
     /* 1.1 help index */
     this->indexOffset = vboArray.size();
-    for (int i = 0; i < 9 * 9 + 8 * 8; i++) {
-        vboArray.push_back((float)i);
+    for (int i = 0; i <= m_adtFile->mcnkRead; i++) {
+        for (int j = 0; j < 9 * 9 + 8 * 8; j++) {
+            vboArray.push_back((float)j);
+        }
     }
 
     /* 1.2 Heights */
@@ -208,39 +212,61 @@ void AdtObject::createVBO() {
     }
 
     /* 1.3 Make combinedVbo */
-    glGenBuffers(1, &combinedVbo);
-    glBindBuffer(GL_ARRAY_BUFFER, this->combinedVbo);
-    glBufferData(GL_ARRAY_BUFFER, vboArray.size()*sizeof(float), &vboArray[0], GL_STATIC_DRAW);
+    GDevice *device = m_api->getDevice();
+    combinedVbo = device->createVertexBuffer();
+    combinedVbo->uploadData(&vboArray[0], vboArray.size()*sizeof(float));
 
     /* 2. Strips */
-    glGenBuffers(1, &stripVBO);
-    if (m_adtFile->strips.size() > 0) {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_adtFile->strips.size() * sizeof(int16_t), &m_adtFile->strips[0],
-                     GL_STATIC_DRAW);
-    }
+    stripVBO = device->createIndexBuffer();
+    stripVBO->uploadData(&m_adtFile->strips[0], m_adtFile->strips.size() * sizeof(int16_t));
+
+    adtVertexBindings = device->createVertexBufferBindings();
+    adtVertexBindings->setIndexBuffer(stripVBO);
+
+    GVertexBufferBinding vertexBinding;
+    vertexBinding.vertexBuffer = combinedVbo;
+
+    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, (this->indexOffset * 4)});
+    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aHeight, 1, GL_FLOAT, false, 4, ((this->heightOffset) * 4)});
+    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aColor, 4, GL_FLOAT, false, 16, ((this->colorOffset) * 4)});
+    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aNormal, 3, GL_FLOAT, false, 12, ((this->normalOffset) * 4)});
+    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aVertexLighting, 3, GL_FLOAT, false, 12, ((this->lightingOffset) * 4)});
+
+    adtVertexBindings->addVertexBufferBinding(vertexBinding);
+    adtVertexBindings->save();
 
     if (m_adtFileLod->getIsLoaded()) {
         //Generate MLLL buffers
-        glGenBuffers(1, &heightVboLod);
-        glBindBuffer(GL_ARRAY_BUFFER, this->heightVboLod);
-        glBufferData(GL_ARRAY_BUFFER, m_adtFileLod->floatDataBlob_len * sizeof(float),
-                     this->m_adtFileLod->floatDataBlob, GL_STATIC_DRAW);
+        //Index buffer for lod
+        std::vector<float> vboLod;
+
+        for (int i = 0; i < m_adtFileLod->floatDataBlob_len ; i++) {
+            vboLod.push_back(this->m_adtFileLod->floatDataBlob[i]);
+        }
+        int indexVBOLodOffset = vboLod.size();
+        for (int i = 0; i < (129 * 129 + 128 * 128); i++) {
+            vboLod.push_back((float) i);
+        }
+
+        heightVboLod = device->createVertexBuffer();
+        heightVboLod->uploadData(&vboLod[0], vboLod.size()*sizeof(float));
 
         /* 2. Index buffer */
-        glGenBuffers(1, &stripVBOLod);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBOLod);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_adtFileLod->mvli_len * sizeof(int16_t), m_adtFileLod->mvli_indicies,
-                     GL_STATIC_DRAW);
+        stripVBOLod = device->createIndexBuffer();
+        stripVBOLod->uploadData(m_adtFileLod->mvli_indicies,  m_adtFileLod->mvli_len * sizeof(int16_t));
 
-        //Index buffer for lod
-        std::vector<float> lodIndexes;
-        for (int i = 0; i < (129 * 129 + 128 * 128); i++) {
-            lodIndexes.push_back((float) i);
-        }
-        glGenBuffers(1, &indexVBOLod);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexVBOLod);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, lodIndexes.size() * sizeof(float), &lodIndexes[0], GL_STATIC_DRAW);
+
+        lodVertexBindings = device->createVertexBufferBindings();
+        lodVertexBindings->setIndexBuffer(stripVBOLod);
+
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = combinedVbo;
+
+        vertexBinding.bindings.push_back((GBufferBinding){+adtLodShader::Attribute::aHeight, 1, GL_FLOAT, false, 4, 0});
+        vertexBinding.bindings.push_back((GBufferBinding){+adtLodShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, indexVBOLodOffset* sizeof(float)});
+
+        lodVertexBindings->addVertexBufferBinding(vertexBinding);
+        lodVertexBindings->save();
     }
 }
 
@@ -275,9 +301,92 @@ void AdtObject::calcBoundingBoxes() {
     }
 }
 
-void AdtObject::loadAlphaTextures(int limit) {
-    if (this->alphaTexturesLoaded>=256) return;
+void AdtObject::createMeshes() {
+    GDevice *device = m_api->getDevice();
 
+    adtWideBlockPS = m_api->getDevice()->createUniformBuffer(sizeof(adtModelWideBlockPS));
+
+    adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
+    adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
+    adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
+    adtWideblockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
+    adtWideblockPS.uAmbientLight = m_api->getGlobalAmbientColor();
+    adtWideblockPS.FogColor = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), 0));
+
+    adtWideBlockPS->save();
+
+    for (int i = 0; i < 256; i++) {
+        //Cant be used only in Wotlk
+        //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
+        if (m_adtFileTex->mcnkStructs[i].mclyCnt <= 0) continue;
+        if (m_adtFileTex->mcnkStructs[i].mcly == nullptr) continue;
+
+        HGShaderPermutation hgShaderPermutation = device->getShader("adtShader");
+        gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
+
+        aTemplate.meshType = MeshType::eAdtMesh;
+        aTemplate.depthWrite = true;
+        aTemplate.depthCulling = true;
+        aTemplate.backFaceCulling = true;
+        aTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+
+        aTemplate.start = m_adtFile->stripOffsets[i] * 2;
+        aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
+        aTemplate.element = GL_TRIANGLE_STRIP;
+        aTemplate.textureCount = 9;
+
+        aTemplate.texture = std::vector<HGTexture>(9, nullptr);
+        aTemplate.texture[0] = alphaTextures[i];
+        for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+            HBlpTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+            HBlpTexture layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+//            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+            aTemplate.texture[1 + j] = device->createBlpTexture(layer_x, true, true);
+            aTemplate.texture[1 + j + 4] = device->createBlpTexture(layer_height, true, true);
+        }
+
+
+
+        aTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
+        aTemplate.vertexBuffers[1] = nullptr;
+        aTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(adtMeshWideBlockVS));
+
+        aTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
+        aTemplate.fragmentBuffers[1] = adtWideBlockPS;
+        aTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(adtMeshWideBlockPS));
+
+        adtMeshWideBlockPS &blockPS = aTemplate.fragmentBuffers[2]->getObject<adtMeshWideBlockPS>();
+
+        static const float heightScale [4] = {0.0, 0.0, 0.0, 0.0};
+        static const float heightOffset [4] = {1.0, 1.0, 1.0, 1.0};
+
+        for (int j = 0; j < 4; j++) {
+            blockPS.uHeightOffset[j] = heightOffset[j];
+            blockPS.uHeightScale[j] = heightScale[j];
+        }
+        if (m_adtFileTex->mtxp_len > 0) {
+            for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                blockPS.uHeightOffset[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightOffset;
+                blockPS.uHeightScale[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightScale;
+            }
+        }
+        aTemplate.fragmentBuffers[2]->save();
+
+        adtMeshWideBlockVS &blockVS = aTemplate.vertexBuffers[2]->getObject<adtMeshWideBlockVS>();
+        blockVS.uPos = mathfu::vec4(
+            m_adtFile->mapTile[i].position.x,
+            m_adtFile->mapTile[i].position.y,
+            m_adtFile->mapTile[i].position.z,
+            0
+        );
+        aTemplate.vertexBuffers[2]->save();
+
+        HGMesh hgMesh = device->createMesh(aTemplate);
+        adtMeshes.push_back(hgMesh);
+    }
+}
+
+void AdtObject::loadAlphaTextures() {
     //int chunkCount = m_adtFile->mcnkRead+1;
     int chunkCount = m_adtFileTex->mcnkRead+1;
     int maxAlphaTexPerChunk = 4;
@@ -287,140 +396,30 @@ void AdtObject::loadAlphaTextures(int limit) {
     int texHeight = alphaTexSize;
 
     int createdThisRun = 0;
-    for (int i = this->alphaTexturesLoaded; i < chunkCount; i++) {
-        GLuint alphaTexture;
-        glGenTextures(1, &alphaTexture);
+    for (int i = 0; i < chunkCount; i++) {
+        HGTexture alphaTexture = m_api->getDevice()->createTexture();
         std::vector<uint8_t> alphaTextureData = m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i);
 
-        glBindTexture(GL_TEXTURE_2D, alphaTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, &alphaTextureData[0]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        alphaTexture->loadData(texWidth, texHeight, &alphaTextureData[0]);
 
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
         alphaTextures.push_back(alphaTexture);
-
-        createdThisRun++;
-        if (createdThisRun >= limit) {
-            break;
-        }
     }
     this->alphaTexturesLoaded += createdThisRun;
 }
 
 
 
-void AdtObject::draw() {
-    /*
+void AdtObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
+
     if (!m_loaded) return;
-    GLuint blackPixelTexture = this->m_api->getBlackPixelTexture();
-    ShaderRuntimeData *adtShader = this->m_api->getAdtShader();
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->stripVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, this->combinedVbo);
-
-    glVertexAttribPointer(+adtShader::Attribute::aIndex, 1, GL_FLOAT, GL_FALSE, 0, (void *)(this->indexOffset * 4));
-
-//Draw
     for (int i = 0; i < 256; i++) {
         if (!drawChunk[i]) continue;
 
-        //Cant be used only in Wotlk
-        //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
-        if (m_adtFileTex->mcnkStructs[i].mclyCnt <= 0) continue;
-        if (m_adtFileTex->mcnkStructs[i].mcly == nullptr) continue;
-
-
-        glVertexAttribPointer(+adtShader::Attribute::aHeight, 1, GL_FLOAT, GL_FALSE, 0, (void *)((this->heightOffset + i * 145) * 4));
-        glVertexAttribPointer(+adtShader::Attribute::aColor, 4, GL_FLOAT, GL_FALSE, 0, (void *)((this->colorOffset + (i*4) * 145) * 4));
-        glVertexAttribPointer(+adtShader::Attribute::aNormal, 3, GL_FLOAT, GL_FALSE, 0, (void *)((this->normalOffset + (i*3) * 145) * 4));
-        glVertexAttribPointer(+adtShader::Attribute::aVertexLighting, 3, GL_FLOAT, GL_FALSE, 0, (void *)((this->lightingOffset+ (i*4) * 145) * 4));
-        glUniform3f(adtShader->getUnf("uPos"),
-                    m_adtFile->mapTile[i].position.x,
-                    m_adtFile->mapTile[i].position.y,
-                    m_adtFile->mapTile[i].position.z);
-
-
-//        BlpTexture &layer0 = getAdtTexture(m_adtFile->mcnkStructs[i].mcly[0].textureId);
-        BlpTexture &layer0 = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[0].textureId);
-        float heightScale [4] = {0.0, 0.0, 0.0, 0.0};
-        float heightOffset [4] = {1.0, 1.0, 1.0, 1.0};
-        if (m_adtFileTex->mtxp_len > 0) {
-            for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                heightOffset[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightOffset;
-                heightScale[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightScale;
-
-            }
-        }
-
-        glUniform1fv(adtShader->getUnf("uHeightOffset[0]"), 4, &heightOffset[0]);
-        glUniform1fv(adtShader->getUnf("uHeightScale[0]"), 4, &heightScale[0]);
-
-        if (layer0.getIsLoaded()) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, alphaTextures[i]);
-
-            glActiveTexture(GL_TEXTURE1);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glBindTexture(GL_TEXTURE_2D, layer0.getGlTexture());
-
-            glActiveTexture(GL_TEXTURE1 + 4);
-            BlpTexture &layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[0].textureId);
-            if (layer_height.getIsLoaded()) {
-                //gl.enable(gl.TEXTURE_2D);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glBindTexture(GL_TEXTURE_2D, layer_height.getGlTexture());
-            } else {
-                glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
-            }
-
-            //Bind layer textures
-            for (int j = 1; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                glActiveTexture(GL_TEXTURE1 + j);
-                BlpTexture &layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-                BlpTexture &layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-                BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-
-                if (layer_x.getIsLoaded()) {
-                    //gl.enable(gl.TEXTURE_2D);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                    glBindTexture(GL_TEXTURE_2D, layer_x.getGlTexture());
-                } else {
-                    glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
-                }
-
-                glActiveTexture(GL_TEXTURE1 + j+4);
-                if (layer_height.getIsLoaded()) {
-                    //gl.enable(gl.TEXTURE_2D);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                    glBindTexture(GL_TEXTURE_2D, layer_height.getGlTexture());
-                } else {
-                    glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
-                }
-            }
-            for (int j = m_adtFileTex->mcnkStructs[i].mclyCnt; j < 4; j++) {
-                glActiveTexture(GL_TEXTURE1 + j);
-                glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
-
-                glActiveTexture(GL_TEXTURE1 + j+4);
-                glBindTexture(GL_TEXTURE_2D, blackPixelTexture);
-            }
-
-            int stripLength = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
-            glDrawElements(GL_TRIANGLE_STRIP, stripLength, GL_UNSIGNED_SHORT, (void *)(m_adtFile->stripOffsets[i] * 2));
-        }
+        renderedThisFrame.push_back(adtMeshes[i]);
     }
-     */
 }
-void AdtObject::drawLod() {
+void AdtObject::collectMeshesLod(std::vector<HGMesh> &renderedThisFrame) {
    /*
     if (!m_loaded) return;
     if (lodCommands.size() <= 0) return;
@@ -466,23 +465,34 @@ void AdtObject::drawLod() {
     */
 }
 
-BlpTexture &AdtObject::getAdtTexture(int textureId) {
+void AdtObject::update() {
+    adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
+    adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
+    adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
+    adtWideblockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
+    adtWideblockPS.uAmbientLight = m_api->getGlobalAmbientColor();
+    adtWideblockPS.FogColor = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), 0));
+
+    adtWideBlockPS->save();
+}
+
+HBlpTexture AdtObject::getAdtTexture(int textureId) {
     auto item = m_requestedTextures.find(textureId);
     if (item != m_requestedTextures.end()) {
-        return *item->second;
+        return item->second;
     }
 
     std::string &materialTexture = m_adtFileTex->textureNames[textureId];
     HBlpTexture texture = m_api->getTextureCache()->get(materialTexture);
     m_requestedTextures[textureId] = texture;
 
-    return *texture;
+    return texture;
 }
 
-BlpTexture &AdtObject::getAdtHeightTexture(int textureId) {
+HBlpTexture AdtObject::getAdtHeightTexture(int textureId) {
     auto item = m_requestedTexturesHeight.find(textureId);
     if (item != m_requestedTexturesHeight.end()) {
-        return *item->second;
+        return item->second;
     }
 
     std::string &materialTexture = m_adtFileTex->textureNames[textureId];
@@ -492,13 +502,13 @@ BlpTexture &AdtObject::getAdtHeightTexture(int textureId) {
     HBlpTexture texture = m_api->getTextureCache()->get(matHeightText);
     m_requestedTexturesHeight[textureId] = texture;
 
-    return *texture;
+    return texture;
 }
 
-BlpTexture &AdtObject::getAdtSpecularTexture(int textureId) {
+HBlpTexture AdtObject::getAdtSpecularTexture(int textureId) {
     auto item = m_requestedTexturesSpec.find(textureId);
     if (item != m_requestedTexturesSpec.end()) {
-        return *item->second;
+        return item->second;
     }
 
     std::string &materialTexture = m_adtFileTex->textureNames[textureId];
@@ -508,7 +518,7 @@ BlpTexture &AdtObject::getAdtSpecularTexture(int textureId) {
     HBlpTexture texture = m_api->getTextureCache()->get(matHeightText);
     m_requestedTexturesSpec[textureId] = texture;
 
-    return *texture;
+    return texture;
 }
 
 bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,

@@ -2,11 +2,11 @@
 // Created by Deamon on 7/24/2018.
 //
 
-#include "CM2ParticleShaderPermutation.h"
-CM2ParticleShaderPermutation::CM2ParticleShaderPermutation(std::string &shaderName, GDevice &device) : GShaderPermutation(shaderName,
+#include "GM2ParticleShaderPermutation.h"
+GM2ParticleShaderPermutation::GM2ParticleShaderPermutation(std::string &shaderName, GDevice &device) : GShaderPermutation(shaderName,
                                                                                                           device) {}
 
-void CM2ParticleShaderPermutation::compileShader() {
+void GM2ParticleShaderPermutation::compileShader() {
     GShaderPermutation::compileShader();
 
     //Init newly created shader

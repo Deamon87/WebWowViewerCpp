@@ -131,7 +131,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-//    currentScene = new Map(this, 0, "Azeroth");
+   m_firstCamera.setCameraPos(0, 0, 200);
+    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -266,8 +267,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(1.78252912f,  33.4062042f, -126.937592f); //Room under dalaran
 //    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
-    currentScene = new WmoScene(this,
-        "world\\wmo\\brokenisles\\dalaran2.wmo");
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
@@ -298,11 +299,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/grimbatol/kz_grimbatol.wmo");
 //    currentScene = new WmoScene(this,
-//        "world/wmo/dungeon/grimbatol/kz_grimbatol_raid.wmo");
+//        "world/wmo/dungeon/grimbatol/kz_grimbatol_raid.wmo");//
+// currentScene = new WmoScene(this,
+//        "\tworld/wmo/dungeon/thunderkingraid/pa_thunderking_raid.wmo");
 
 
 //    currentScene = new WmoScene(this,
 //        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
+//    currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
 
 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
@@ -985,7 +990,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    float farPlane = 1000;
+    float farPlane = 300;
     float nearPlane = 1;
     float fov = toRadian(45.0);
     M2CameraResult cameraResult;

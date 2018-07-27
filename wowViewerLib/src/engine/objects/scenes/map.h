@@ -46,9 +46,6 @@ private:
     std::vector<M2Object*> m2RenderedThisFrameArr;
     std::vector<WmoObject*> wmoRenderedThisFrameArr;
 
-    std::unordered_set<M2Object *> m2OpaqueRenderedThisFrame;
-    std::unordered_set<M2Object *> m2TranspRenderedThisFrame;
-
     std::vector<M2InstancingObject*> m_instanceList;
     std::unordered_map<std::string, M2InstancingObject*> m_instanceMap;
 
@@ -89,8 +86,7 @@ private:
                        std::vector<M2Object*> &m2RenderedThisFrame,
                        std::vector<WmoObject*> &wmoRenderedThisFrame);
 
-    void drawExterior();
-    void drawM2s();
+    void drawExterior(std::vector<HGMesh> &renderedThisFrame);
 
     void addM2ObjectToInstanceManager(M2Object *m2Object);
 };

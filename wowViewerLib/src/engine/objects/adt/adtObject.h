@@ -30,8 +30,9 @@ public:
     }
 
 
-    void draw();
-    void drawLod();
+    void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
+    void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
+    void update();
 
     bool checkFrustumCulling(
             mathfu::vec4 &cameraPos,
@@ -52,7 +53,8 @@ private:
 
     void loadingFinished();
     void createVBO();
-    void loadAlphaTextures(int limit);
+    void createMeshes();
+    void loadAlphaTextures();
 
     IWoWInnerApi *m_api;
     IMapApi *m_mapApi;
@@ -82,17 +84,24 @@ private:
 
     std::vector<LodCommand> lodCommands;
 
-    GLuint combinedVbo = 0;
-    GLuint stripVBO = 0;
+    HGVertexBuffer combinedVbo ;
+    HGIndexBuffer stripVBO ;
+    HGVertexBufferBindings adtVertexBindings;
 
-    GLuint heightVboLod = 0;
-    GLuint stripVBOLod = 0;
-    GLuint indexVBOLod = 0;
+    HGVertexBuffer heightVboLod;
+    HGIndexBuffer stripVBOLod;
+
+    HGVertexBufferBindings lodVertexBindings;
+
+    HGUniformBuffer adtWideBlockPS;
 
 private:
-    std::vector<GLuint> alphaTextures;
+    std::vector<HGTexture> alphaTextures;
     HBlpTexture lodDiffuseTexture  = nullptr;
     HBlpTexture lodNormalTexture  = nullptr;
+
+    std::vector<HGMesh> adtMeshes;
+    std::vector<HGMesh> adtLodMeshes;
 
     std::vector<CAaBox> tileAabb;
     std::vector<int> globIndexX;
@@ -112,9 +121,9 @@ private:
         std::vector<WmoObject *> wmoObjects;
     } objectLods[2];
 
-    BlpTexture & getAdtTexture(int textureId);
-    BlpTexture & getAdtHeightTexture(int textureId);
-    BlpTexture & getAdtSpecularTexture(int textureId);
+    HBlpTexture getAdtTexture(int textureId);
+    HBlpTexture getAdtHeightTexture(int textureId);
+    HBlpTexture getAdtSpecularTexture(int textureId);
 
     void calcBoundingBoxes();
     void loadM2s();

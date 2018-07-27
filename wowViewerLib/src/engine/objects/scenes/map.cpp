@@ -11,6 +11,7 @@
 #include "../m2/m2Instancing/m2InstancingObject.h"
 #include "../../persistance/wdtFile.h"
 #include "../../persistance/db2/DB2WmoAreaTable.h"
+#include "../../../gapi/meshes/GM2Mesh.h"
 
 void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
     std::string fileIdent = m2Object->getModelIdent();
@@ -116,6 +117,10 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 
     for (auto &wmoObject : this->wmoRenderedThisFrameArr) {
         wmoObject->update();
+    }
+
+    for (auto &adtObject : this->adtRenderedThisFrameArr) {
+        adtObject->update();
     }
 
     //2. Calc distance every 100 ms
@@ -564,33 +569,9 @@ WmoObject *Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
 }
 
 void Map::draw() {
-    this->m2OpaqueRenderedThisFrame = {};
-    this->m2TranspRenderedThisFrame = {};
-//    if (this.currentWMO && this.currentInteriorGroups != null && config.getUsePortalCulling()) {
-//        this.sceneApi.shaders.activateWMOShader();
-//        this.currentWMO.drawPortalBased(true);
-//        this.sceneApi.shaders.deactivateWMOShader();
-//
-//        if (this.currentWMO.exteriorPortals.length > 0) {
-//            this.drawExterior()
-//        }
-//        //6. Draw WMO portals
-//        if (config.getRenderPortals()) {
-//            this.sceneApi.shaders.activateDrawPortalShader();
-//            for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
-//                this.wmoRenderedThisFrame[i].drawPortals();
-//            }
-//        }
-//        this.drawM2s();
-//
-//        this.sceneApi.shaders.activateFrustumBoxShader();
-//        //Draw Wmo portal frustums
-//        if (this.sceneApi.getIsDebugCamera()) {
-//            this.sceneApi.drawCamera()
-//        }
-//    } else {
-        this->drawExterior();
-        this->drawM2s();
+
+    std::vector<HGMesh> renderedThisFrame;
+    this->drawExterior(renderedThisFrame);
 
         //6. Draw WMO portals
 //        if (config.getRenderPortals()) {
@@ -607,55 +588,35 @@ void Map::draw() {
         }
          */
 //    }
+
+    m_api->getDevice()->drawMeshes(renderedThisFrame);
 }
 
-void Map::drawExterior() {
-/*
-//    if (config.getRenderAdt()) {
-        this->m_api->activateAdtShader();
-        for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
-            this->adtRenderedThisFrameArr[i]->draw();
-        }
-        this->m_api->deactivateAdtShader();
-//
-        this->m_api->activateAdtLodShader();
-        for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
-            this->adtRenderedThisFrameArr[i]->drawLod();
-        }
-        this->m_api->deactivateAdtLodShader();
-
-
-//    }
-
-
-    //2.0. Draw WMO bsp highlighted vertices
-//    if (config.getRenderBSP()) {
-//        this.sceneApi.shaders.activateDrawPortalShader();
-//        for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
-//            this.wmoRenderedThisFrame[i].drawBspVerticles();
-//        }
-//    }
+void Map::drawExterior(std::vector<HGMesh> &renderedThisFrame) {
+    for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
+        this->adtRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
+    }
+    for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
+        this->adtRenderedThisFrameArr[i]->collectMeshesLod(renderedThisFrame);
+    }
 
     //2. Draw WMO
-    this->m_api->activateWMOShader();
     for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
 //        if (config.getUsePortalCulling()) {
 //            this.wmoRenderedThisFrame[i].drawPortalBased(false)
 //        } else {
-            this->wmoRenderedThisFrameArr[i]->draw();
+            this->wmoRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
 //        }
     }
-    this->m_api->deactivateWMOShader();
 
-    this->m_api->activateDrawPortalShader();
-    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
+//    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
 //        if (config.getUsePortalCulling()) {
 //            this.wmoRenderedThisFrame[i].drawPortalBased(false)
 //        } else {
 //        this->wmoRenderedThisFrameArr[i]->drawTransformedPortalPoints();
 //        this->wmoRenderedThisFrameArr[i]->drawTransformedAntiPortalPoints();
 //        }
-    }
+//    }
 
 
     //3. Draw background WDL
@@ -665,6 +626,14 @@ void Map::drawExterior() {
 //        this.skyDom.draw();
 //    }
 
+    //Draw M2s
+
+    for (auto m2Object : this->m2RenderedThisFrameArr) {
+        m2Object->fillBuffersAndArray(renderedThisFrame);
+        m2Object->drawParticles(renderedThisFrame);
+    }
+
+
     //7.1 Draw WMO BBs
 //    this.sceneApi.shaders.activateBoundingBoxShader();
 //    if (config.getDrawWmoBB()) {
@@ -672,138 +641,52 @@ void Map::drawExterior() {
 //            this.wmoRenderedThisFrame[i].drawBB();
 //        }
 //    }
-*/
-}
 
-void Map::drawM2s() {
-    /*
-    mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
-    Config * config = this->m_api->getConfig();
 
-    if (config->getUseInstancing()) {
-        if (this->m_api->getConfig()->getRenderM2()) {
-            bool lastWasDrawInstanced = false;
-            this->m_api->activateM2Shader();
-            for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-                M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-                if (this->m2OpaqueRenderedThisFrame.find(m2Object) != this->m2OpaqueRenderedThisFrame.end()) continue;
-                std::string fileIdent = m2Object->getModelIdent();
+    //Sort...
+    std::sort(renderedThisFrame.begin(),
+              renderedThisFrame.end(),
+              [&](HGMesh& a, HGMesh& b) -> const bool {
+                  if (a->getIsTransparent() > b-> getIsTransparent()) {
+                      return false;
+                  }
+                  if (a->getIsTransparent() < b->getIsTransparent()) {
+                      return true;
+                  }
 
-                bool drawInstanced = false;
-                M2InstancingObject *instanceManager = nullptr;
-                auto it = this->m_instanceMap.find(fileIdent);
-                if (it != this->m_instanceMap.end()) {
-                    instanceManager = (*it).second;
-                    drawInstanced = instanceManager->getLastUpdatedNumber() > 1;
-                }
-                if (drawInstanced) {
-                    if (!lastWasDrawInstanced) {
-                        this->m_api->activateM2InstancingShader();
-                    }
+                  if (a->getMeshType() > b->getMeshType()) {
+                      return false;
+                  }
+                  if (a->getMeshType() < b->getMeshType()) {
+                      return true;
+                  }
 
-                    instanceManager->drawInstancedNonTransparentMeshes(this->m2OpaqueRenderedThisFrame);
-                    lastWasDrawInstanced = true;
-                } else {
-                    if (lastWasDrawInstanced) {
-                        this->m_api->deactivateM2InstancingShader();
-                        this->m_api->activateM2Shader();
-                    }
+                  if (a->getMeshType() == MeshType::eM2Mesh) {
+                      HGM2Mesh a1 = std::static_pointer_cast<GM2Mesh>(a);
+                      HGM2Mesh b1 = std::static_pointer_cast<GM2Mesh>(b);
+                      if (a1->m_priorityPlane != b1->m_priorityPlane) {
+                          return b1->m_priorityPlane > a1->m_priorityPlane;
+                      }
 
-                    this->m2OpaqueRenderedThisFrame.insert(m2Object);
-                    m2Object->draw(false);
-                    lastWasDrawInstanced = false;
-                }
-            }
-            if (lastWasDrawInstanced) {
-                this->m_api->deactivateM2InstancingShader();
-            } else {
-                this->m_api->deactivateM2Shader();
-            }
-        }
+                      if (a1->m_sortDistance > b1->m_sortDistance) {
+                          return true;
+                      }
+                      if (a1->m_sortDistance < b1->m_sortDistance) {
+                          return false;
+                      }
 
-        //6. Draw transparent meshes of m2
-        if (this->m_api->getConfig()->getRenderM2()) {
-            bool lastWasDrawInstanced = false;
-            this->m_api->activateM2Shader();
+                      if (a1->m_m2Object > b1->m_m2Object) {
+                          return true;
+                      }
+                      if (a1->m_m2Object < b1->m_m2Object) {
+                          return false;
+                      }
 
-            for (int i = static_cast<int>(this->m2RenderedThisFrameArr.size() - 1); i >= 0; i--) {
-                M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-                if (this->m2TranspRenderedThisFrame.find(m2Object)
-                    != this->m2TranspRenderedThisFrame.end())
-                    continue;
-                std::string fileIdent = m2Object->getModelIdent();
+                      return b1->m_layer < a1->m_layer;
+                  }
 
-                bool drawInstanced = false;
-                M2InstancingObject *instanceManager = nullptr;
-                auto it = this->m_instanceMap.find(fileIdent);
-                if (it != this->m_instanceMap.end()) {
-                    instanceManager = (*it).second;
-                    drawInstanced = instanceManager->getLastUpdatedNumber() > 1;
-                }
-                if (drawInstanced) {
-                    if (!lastWasDrawInstanced) {
-                        this->m_api->activateM2InstancingShader();
-                    }
-
-                    instanceManager->drawInstancedTransparentMeshes(this->m2TranspRenderedThisFrame);
-                    lastWasDrawInstanced = true;
-                } else {
-                    if (lastWasDrawInstanced) {
-                        this->m_api->deactivateM2InstancingShader();
-                        this->m_api->activateM2Shader();
-                    }
-
-                    this->m2TranspRenderedThisFrame.insert(m2Object);
-                    m2Object->draw(true);
-                    lastWasDrawInstanced = false;
-                }
-            }
-            if (lastWasDrawInstanced) {
-                this->m_api->deactivateM2InstancingShader();
-            } else {
-                this->m_api->deactivateM2Shader();
-            }
-        }
-    } else {
-        //Old implementation without instancing
-
-        this->m_api->activateM2Shader();
-        mathfu::vec4 diffuseNon(1.0, 1.0, 1.0, 1.0);
-        for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-
-            M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-            m2Object->draw(false);
-        }
-
-        for (int i = this->m2RenderedThisFrameArr.size()-1; i >= 0; i--) {
-            M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-
-            m2Object->draw(true);
-        }
-        this->m_api->deactivateM2Shader();
-
-        this->m_api->activateM2ParticleShader();
-        for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-
-            M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-            m2Object->drawParticles();
-        }
-        this->m_api->deactivateM2ParticleShader();
-    }
-
-    //7. Draw BBs
-    //7.1 Draw M2 BBs
-    if (this->m_api->getConfig()->getDrawM2BB()) {
-        this->m_api->activateBoundingBoxShader();
-
-        mathfu::vec3 bbColor(0.819607843, 0.058, 0.058);
-        for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-            this->m2RenderedThisFrameArr[i]->drawBB(bbColor);
-        }
-        this->m_api->deactivateBoundingBoxShader();
-
-    }
-    */
-//    }
+                  return a > b;
+              }
+    );
 }
 

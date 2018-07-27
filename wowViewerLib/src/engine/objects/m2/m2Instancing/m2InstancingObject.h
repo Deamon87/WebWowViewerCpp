@@ -90,7 +90,7 @@ public:
             }
 
             if (lastDrawn != nullptr) {
-                lastDrawn->drawInstanced(false, this->lastUpdatedNumber, this->placementVBO);
+//                lastDrawn->drawInstanced(false, this->lastUpdatedNumber, this->placementVBO);
             }
     }
     void drawInstancedTransparentMeshes(std::unordered_set<M2Object *> &transparentMap) {
@@ -102,7 +102,7 @@ public:
             lastDrawn = this->m_mdxObjectList[i];
         }
         if (lastDrawn != nullptr) {
-            lastDrawn->drawInstanced(true, this->lastUpdatedNumber, this->placementVBO);
+//            lastDrawn->drawInstanced(true, this->lastUpdatedNumber, this->placementVBO);
         }
     }
 

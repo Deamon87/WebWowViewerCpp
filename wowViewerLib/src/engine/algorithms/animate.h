@@ -254,6 +254,9 @@ R animateTrack(
     if (globalSequence >=0) {
         currTime = globalSequenceTimes[globalSequence];
         maxTime = global_loops[globalSequence]->timestamp;
+    }
+
+    if (animationBlock.timestamps.size <= animationIndex) {
         animationIndex = 0;
     }
 

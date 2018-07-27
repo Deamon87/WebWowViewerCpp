@@ -7,10 +7,10 @@
 
 #include "../GShaderPermutation.h"
 
-class CM2ParticleShaderPermutation : public GShaderPermutation{
+class GM2ParticleShaderPermutation : public GShaderPermutation{
     friend class GDevice;
 protected:
-    explicit CM2ParticleShaderPermutation(std::string &shaderName, GDevice &device);
+    explicit GM2ParticleShaderPermutation(std::string &shaderName, GDevice &device);
 
     virtual void compileShader() override;
 };

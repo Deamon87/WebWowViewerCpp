@@ -80,5 +80,25 @@ struct wmoMeshWideBlockPS {
     mathfu::vec4_packed FogColor_AlphaTest;
 };
 
+//ADT
+
+struct adtMeshWideBlockVS {
+    mathfu::vec4 uPos;
+};
+
+struct adtModelWideBlockPS {
+    mathfu::vec4_packed uViewUp;
+    mathfu::vec4_packed uSunDir_FogStart;
+    mathfu::vec4_packed uSunColor_uFogEnd;
+    mathfu::vec4_packed uAmbientLight;
+    mathfu::vec4_packed FogColor;
+};
+
+struct adtMeshWideBlockPS {
+    float uHeightScale[4];
+    float uHeightOffset[4];
+};
+
+
 
 #endif //AWEBWOWVIEWERCPP_UNIFORMBUFFERSTRUCTURES_H

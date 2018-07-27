@@ -156,7 +156,6 @@ public:
 
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
-    void draw(bool drawTransparent);
     void drawDebugLight();
 
 
@@ -166,7 +165,6 @@ public:
 
     void setDiffuseColor(CImVector& value);
 
-    void drawInstanced(bool drawTransparent, int instanceCount, GLuint placementVBO);
 
     HBlpTexture getTexture(int textureInd);
 

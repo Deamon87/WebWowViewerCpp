@@ -69,7 +69,6 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
 
     float value = centerBB.xyz().Length();
 
-    /*
     if (textMaterial->flags & 3) {
         mathfu::vec4 resultPoint;
 
@@ -91,7 +90,6 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
             value = (centerBB + resultPoint).xyz().Length();
         }
     }
-     */
 
     hmesh->m_sortDistance = value;
 }

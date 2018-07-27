@@ -485,6 +485,7 @@ void AdtFile::createTriangleStrip() {
     if (mcnkRead < 0) return;
 
     const int stripLenght = 9;
+    const int vertCountPerMCNK= 9 * 9 + 8 * 8;
     static uint8_t squareIndsStrip[stripLenght] = {17, 0, 9, 1, 18, 18, 9, 17, 17};
 
     for (int i = 0; i <= mcnkRead; i++) {
@@ -505,11 +506,11 @@ void AdtFile::createTriangleStrip() {
                     //There are 8 squares in width and 8 square in height.
                     //Each square is 4 triangles
                     if (!first) {
-                        strips.push_back(squareIndsStrip[0] + 17 * y + x);
+                        strips.push_back((i * vertCountPerMCNK) + squareIndsStrip[0] + 17 * y + x);
                     }
                     first = false;
                     for (int k = 0; k < stripLenght; k++) {
-                        strips.push_back(squareIndsStrip[k] + 17 * y + x);
+                        strips.push_back((i* vertCountPerMCNK) + squareIndsStrip[k] + 17 * y + x);
                     }
                 }
             }

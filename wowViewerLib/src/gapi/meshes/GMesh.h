@@ -31,7 +31,7 @@ public:
     int end;
     int element;
     int textureCount;
-    HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
+    std::vector<HGTexture> texture = std::vector<HGTexture>(4, nullptr);
     HGUniformBuffer vertexBuffers[3] = {nullptr,nullptr,nullptr};
     HGUniformBuffer fragmentBuffers[3] = {nullptr,nullptr,nullptr};
 };
@@ -68,7 +68,7 @@ private:
 
     HGUniformBuffer m_vertexUniformBuffer[3] = {nullptr, nullptr, nullptr};
     HGUniformBuffer m_fragmentUniformBuffer[3] = {nullptr, nullptr, nullptr};
-    HGTexture m_texture[4];
+    std::vector<HGTexture> m_texture;
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;
