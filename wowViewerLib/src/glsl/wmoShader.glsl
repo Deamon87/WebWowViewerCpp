@@ -46,20 +46,49 @@ varying vec3 vNormal;
 varying float fs_Depth;
 #endif
 
+vec2 posToTexCoord(vec3 cameraPoint, vec3 normal){
+//    vec3 normPos = -normalize(cameraPoint.xyz);
+    vec3 normPos = cameraPoint.xyz;
+    vec3 reflection = reflect(normPos, normal);
+    return (normalize(vec3(reflection.r, reflection.g, reflection.b + 1.0)).rg * 0.5) + vec2(0.5);
+
+//    vec3 normPos_495 = normPos;
+//    vec3 temp_500 = (normPos_495 - (normal * (2.0 * dot(normPos_495, normal))));
+//    vec3 temp_657 = vec3(temp_500.x, temp_500.y, (temp_500.z + 1.0));
+//
+//    return ((normalize(temp_657).xy * 0.5) + vec2(0.5));
+}
+
+//mat3 blizzTranspose(mat4 value) {
+//    return mat3(
+//        value[0].xyz,
+//        value[1].xyz,
+//        value[2].xyz
+//    );
+//};
+
 void main() {
     vec4 worldPoint = uPlacementMat * vec4(aPosition, 1);
 
     vec4 cameraPoint = uLookAtMat * worldPoint;
 
+
+    mat4 viewModelMat = uLookAtMat * uPlacementMat;
+    mat3 viewModelMatTransposed = mat3(
+                viewModelMat[0].xyz,
+                viewModelMat[1].xyz,
+                viewModelMat[2].xyz
+            );
+
 #ifndef drawBuffersIsSupported
     gl_Position = uPMatrix * cameraPoint;
     vPosition = cameraPoint.xyz;
-    vNormal = normalize((uLookAtMat * uPlacementMat * vec4(aNormal, 0)).xyz);
+    vNormal = normalize(viewModelMatTransposed * aNormal);
 #else
     gl_Position = uPMatrix * cameraPoint;
     fs_Depth = gl_Position.z / gl_Position.w;
 
-    vNormal = normalize((uLookAtMat * uPlacementMat * vec4(aNormal, 0)).xyz);
+    vNormal = normalize(viewModelMatTransposed * aNormal);
     vPosition = cameraPoint.xyz;
 #endif //drawBuffersIsSupported
 
@@ -81,11 +110,7 @@ void main() {
     } else if (uVertexShader == 2) { //MapObjDiffuse_T1_Env_T2
         vTexCoord = aTexCoord;
 
-        vec3 normPos = -(normalize(vPosition));
-        vec3 temp1 = (normPos - (vNormal * (2.0 * dot(normPos, vNormal))));
-        vec3 temp2 = vec3(temp1.x, temp1.y, (temp1.z + 1.0));
-
-        vTexCoord2 = ((normalize(temp2).xy * 0.5) + vec2(0.5));
+        vTexCoord2 = posToTexCoord(vPosition, vNormal);;
         vTexCoord3 = aTexCoord3;
     } else if (uVertexShader == 3) { //MapObjSpecular_T1
         vTexCoord = aTexCoord;

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <locale>
+#include <mutex>
 #include "wowInnerApi.h"
 
 #include "shader/ShaderRuntimeData.h"
@@ -32,6 +33,7 @@ class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
 public:
     WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
+
     void draw(animTime_t deltaTime) override;
     void setScreenSize(int canvWidth, int canvHeight) override;
 
@@ -224,6 +226,12 @@ private:
     Cache<DB2Base> db2Cache;
 
     iInnerSceneApi *currentScene;
+
+    animTime_t nextDeltaTime;
+    bool deltaTimeUpdate;
+    bool nextDataReady;
+    std::mutex m_lockNextMeshes;            // mutex for critical section
+
 
     void activateRenderFrameShader();
     void activateRenderDepthShader();

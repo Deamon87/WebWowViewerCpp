@@ -12,6 +12,7 @@
 #include "meshes/GParticleMesh.h"
 #include "shaders/GM2ParticleShaderPermutation.h"
 #include "shaders/GAdtShaderPermutation.h"
+#include "shaders/GWMOShaderPermutation.h"
 
 BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
         /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
@@ -119,6 +120,8 @@ std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
         sharedPtr.reset( new GM2ShaderPermutation(shaderName, *this));
     } else if (shaderName == "m2ParticleShader") {
         sharedPtr.reset( new GM2ParticleShaderPermutation(shaderName, *this));
+    } else if (shaderName == "wmoShader") {
+        sharedPtr.reset( new GWMOShaderPermutation(shaderName, *this));
     } else if (shaderName == "adtShader") {
         sharedPtr.reset( new GAdtShaderPermutation(shaderName, *this));
     } else {
@@ -205,9 +208,9 @@ void GDevice::drawMesh(HGMesh &hmesh) {
     }
     if (m_backFaceCulling != hmesh->m_backFaceCulling) {
         if (hmesh->m_backFaceCulling > 0) {
-            glDisable(GL_CULL_FACE);
-        } else {
             glEnable(GL_CULL_FACE);
+        } else {
+            glDisable(GL_CULL_FACE);
         }
 
         m_backFaceCulling = hmesh->m_backFaceCulling;

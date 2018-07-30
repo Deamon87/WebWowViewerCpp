@@ -11,6 +11,7 @@
 #include "persistance/db2/DB2WmoAreaTable.h"
 #include "shader/ShaderDefinitions.h"
 #include "../gapi/UniformBufferStructures.h"
+#include "objects/GlobalThreads.h"
 #include <iostream>
 #include <cmath>
 
@@ -131,8 +132,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-   m_firstCamera.setCameraPos(0, 0, 200);
-    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(0, 0, 200);
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -224,9 +225,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -260,6 +261,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new M2Scene(this,
 //        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
+//
+//   currentScene = new M2Scene(this,
+//        "WORLD\\EXPANSION02\\DOODADS\\GENERIC\\SCOURGE\\SC_EYEOFACHERUS_02.m2");
 
 //    currentScene = new M2Scene(this,
 //        "character/bloodelf/female/bloodelffemale_hd.m2", 0);
@@ -352,6 +356,20 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightDatam.db2"));
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
+/*
+    g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&](){
+        std::unique_lock<std::mutex> lockNextMeshes (m_lockNextMeshes,std::defer_lock);
+
+        while (true) {
+            if (!deltaTimeUpdate) {
+                std::this_thread::sleep_for(1ms);
+                continue;
+            }
+
+
+        }
+    }));
+    */
 #ifndef WITH_GLESv2
     glBindVertexArray(0);
 #endif
@@ -1224,7 +1242,7 @@ void WoWSceneImpl::SetDirection() {
     m_sunDir = m_sunDir.Normalized();
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    m_upVector = (this->m_lookAtMat4.Transpose() * upVector).xyz();
+    m_upVector = (this->m_lookAtMat4.Inverse() * upVector).xyz();
 }
 
  WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
