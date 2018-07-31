@@ -4,4 +4,4 @@
 
 #include "GlobalThreads.h"
 
-//GlobalThreads g_globalThreadsSingleton = GlobalThreads();
+GlobalThreads g_globalThreadsSingleton = GlobalThreads();

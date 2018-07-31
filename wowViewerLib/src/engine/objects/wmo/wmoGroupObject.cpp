@@ -452,7 +452,7 @@ void WmoGroupObject::createMeshes() {
         meshTemplate.meshType = MeshType::eWmoMesh;
         meshTemplate.depthWrite = blendMode <= 1;
         meshTemplate.depthCulling = true;
-        meshTemplate.backFaceCulling = (material.flags.F_UNCULLED <= 0);
+        meshTemplate.backFaceCulling = !(material.flags.F_UNCULLED);
 
         meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
 
