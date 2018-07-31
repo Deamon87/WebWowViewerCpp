@@ -14,6 +14,105 @@
 #include "objects/GlobalThreads.h"
 #include <iostream>
 #include <cmath>
+#include <thread>
+#include <chrono>
+
+void WoWSceneImpl::DoCulling() {
+    float farPlane = 3000;
+    float nearPlane = 1;
+    float fov = toRadian(45.0);
+
+    static const mathfu::vec3 upVector(0,0,1);
+
+    M2CameraResult cameraResult;
+    mathfu::mat4 lookAtMat4;
+    mathfu::vec4 cameraVec4;
+    if (!m_config->getUseSecondCamera()){
+        this->m_firstCamera.tick(deltaTime);
+    } else {
+        this->m_secondCamera.tick(deltaTime);
+    }
+
+    if ( currentScene->getCameraSettings(cameraResult)) {
+//        farPlane = cameraResult.far_clip * 100;
+        farPlane = 300;
+        nearPlane = cameraResult.near_clip;
+
+        fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
+
+        lookAtMat4 =
+                mathfu::mat4::LookAt(
+                        -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
+                        mathfu::vec3(0,0,0),
+                        upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
+        cameraVec4 = cameraResult.position;
+        m_nextFrameParams.m_lookAtMat4 = lookAtMat4;
+
+    } else {
+        cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
+        lookAtMat4 = this->m_firstCamera.getLookatMat();
+        m_nextFrameParams.m_lookAtMat4 = lookAtMat4;
+    }
+
+    mathfu::mat4 perspectiveMatrixForCulling =
+            mathfu::mat4::Perspective(
+                    fov,
+                    this->canvAspect,
+                    nearPlane,
+                    500);
+    //Camera for rendering
+    mathfu::mat4 perspectiveMatrixForCameraRender =
+            mathfu::mat4::Perspective(fov,
+                                      this->canvAspect,
+                                      nearPlane,
+                                      farPlane);
+    mathfu::mat4 viewCameraForRender =
+            perspectiveMatrixForCameraRender * lookAtMat4;
+
+
+    m_nextFrameParams.m_secondLookAtMat =
+            mathfu::mat4::LookAt(
+                    this->m_secondCamera.getCameraPosition(),
+                    this->m_secondCamera.getCameraLookAt(),
+                    upVector);
+
+    mathfu::mat4 perspectiveMatrix =
+            mathfu::mat4::Perspective(
+                    fov,
+                    this->canvAspect,
+                    nearPlane,
+                    farPlane);
+    m_nextFrameParams.m_perspectiveMatrix = perspectiveMatrix;
+
+    m_nextFrameParams.m_viewCameraForRender = viewCameraForRender;
+
+    mathfu::vec3 cameraVec3 = cameraVec4.xyz();
+
+    float ambient[4];
+    m_config->getAmbientColor(ambient);
+    m_nextFrameParams.m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]);
+
+    float sunColor[4];
+    m_config->getSunColor(sunColor);
+    m_nextFrameParams.m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
+
+    float fogColor[4];
+    m_config->getFogColor(fogColor);
+    m_nextFrameParams.m_fogColor = mathfu::vec4(fogColor);
+
+    if (m_nextFrameParams.uFogStart < 0) {
+        m_nextFrameParams.uFogStart = 3.0 * farPlane;
+    }
+    if (m_nextFrameParams.uFogEnd < 0) {
+        m_nextFrameParams.uFogEnd = 4.0 * farPlane;
+    }
+
+    this->SetDirection();
+
+    currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
+    currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
+
+}
 
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
         :
@@ -288,8 +387,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
- currentScene = new WmoScene(this,
-        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
@@ -300,9 +399,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\azeroth\\buildings\\stormwind\\stormwind2.WMO");
 
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "world\\wmo\\dungeon\\argusraid\\7du_argusraid_shivantemple.wmo");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world\\wmo\\dungeon\\argusraid\\7du_argusraid_shivantemple.wmo");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -316,9 +415,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-//    m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
+    m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
@@ -327,8 +426,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightDatam.db2"));
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
-/*
+
     g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&](){
+        using namespace std::chrono_literals;
         std::unique_lock<std::mutex> lockNextMeshes (m_lockNextMeshes,std::defer_lock);
 
         while (true) {
@@ -337,10 +437,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
                 continue;
             }
 
-
+            DoCulling();
         }
+
+
     }));
-    */
+
 #ifndef WITH_GLESv2
     glBindVertexArray(0);
 #endif
@@ -568,117 +670,21 @@ void WoWSceneImpl::drawCamera () {
     glEnable(GL_DEPTH_TEST);
     */
 }
-float globalratio = 1.2;
 void WoWSceneImpl::draw(animTime_t deltaTime) {
 #ifndef WITH_GLESv2
     //glBindVertexArray(vao);
 #endif
-
-    static const mathfu::vec3 upVector(0,0,1);
 
     getDevice()->reset();
     glClearScreen();
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    float farPlane = 3000;
-    float nearPlane = 1;
-    float fov = toRadian(45.0);
-    M2CameraResult cameraResult;
-    mathfu::mat4 lookAtMat4;
-    mathfu::vec4 cameraVec4;
-    if ( currentScene->getCameraSettings(cameraResult)) {
-//        farPlane = cameraResult.far_clip * 100;
-        farPlane = 300;
-        nearPlane = cameraResult.near_clip;
-        fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
-
-        lookAtMat4 =
-                mathfu::mat4::LookAt(
-                        -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
-                        mathfu::vec3(0,0,0),
-                        upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
-        cameraVec4 = cameraResult.position;
-        m_lookAtMat4 = lookAtMat4;
-
-    } else {
-        cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
-        lookAtMat4 = this->m_firstCamera.getLookatMat();
-        m_lookAtMat4 = lookAtMat4;
-    }
-
-
-
-    mathfu::mat4 secondLookAtMat =
-            mathfu::mat4::LookAt(
-                    this->m_secondCamera.getCameraPosition(),
-                    this->m_secondCamera.getCameraLookAt(),
-                    upVector);
-
-    mathfu::mat4 perspectiveMatrix =
-            mathfu::mat4::Perspective(
-                    fov,
-                    this->canvAspect,
-                    nearPlane,
-                    farPlane);
-    m_perspectiveMatrix = perspectiveMatrix;
-
     sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-    blockPSVS.uLookAtMat = m_lookAtMat4;
-    blockPSVS.uPMatrix = m_perspectiveMatrix;
+    blockPSVS.uLookAtMat = m_currentFrameParams.m_lookAtMat4;
+    blockPSVS.uPMatrix = m_currentFrameParams.m_perspectiveMatrix;
 
     m_sceneWideUniformBuffer->save();
-
-
-    mathfu::mat4 perspectiveMatrixForCulling =
-            mathfu::mat4::Perspective(
-                    fov,
-                    this->canvAspect,
-                    nearPlane,
-                    500);
-    //Camera for rendering
-    mathfu::mat4 perspectiveMatrixForCameraRender =
-            mathfu::mat4::Perspective(fov,
-                                      this->canvAspect,
-                                      nearPlane,
-                                      farPlane);
-    mathfu::mat4 viewCameraForRender =
-            perspectiveMatrixForCameraRender * lookAtMat4;
-
-
-
-    mathfu::vec3 *cameraVector;
-    float ambient[4];
-    m_config->getAmbientColor(ambient);
-    m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]);
-
-    float sunColor[4];
-    m_config->getSunColor(sunColor);
-    m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
-
-    float fogColor[4];
-    m_config->getFogColor(fogColor);
-    m_fogColor = mathfu::vec4(fogColor);
-
-//    float diagFov = 2.0944;
-//    float fov = diagFov / sqrt(1 + canvAspect*canvAspect);
-
-    //If use camera settings
-    //Figure out way to assign the object with camera
-    if (!m_config->getUseSecondCamera()){
-        this->m_firstCamera.tick(deltaTime);
-    } else {
-        this->m_secondCamera.tick(deltaTime);
-    }
-
-    if (this->uFogStart < 0) {
-        this->uFogStart = 3.0 * farPlane;
-    }
-    if (this->uFogEnd < 0) {
-        this->uFogEnd = 4.0 * farPlane;
-    }
-
-    this->SetDirection();
 
     this->adtObjectCache.processCacheQueue(10);
     this->wdtCache.processCacheQueue(10);
@@ -690,19 +696,12 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     this->textureCache.processCacheQueue(10);
     this->db2Cache.processCacheQueue(10);
 
-    mathfu::vec3 cameraVec3 = cameraVec4.xyz();
-    currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
-
-    currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
-//    this.worldObjectManager.update(deltaTime, cameraPos, lookAtMat4);
-
-
-    this->m_viewCameraForRender = viewCameraForRender;
+    mathfu::mat4 mainLookAtMat4 = m_currentFrameParams.m_lookAtMat4;
 
     if (this->m_config->getDoubleCameraDebug()) {
         //Draw static camera
         m_isDebugCamera = true;
-        this->m_lookAtMat4 = secondLookAtMat;
+        m_currentFrameParams.m_lookAtMat4 = m_currentFrameParams.m_secondLookAtMat;
         currentScene->draw();
         m_isDebugCamera = false;
 
@@ -745,7 +744,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         }
     } else {
         //Render real camera
-        this->m_lookAtMat4 = lookAtMat4;
+        m_currentFrameParams.m_lookAtMat4 = mainLookAtMat4;
         currentScene->draw();
 
         if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
@@ -810,12 +809,12 @@ void WoWSceneImpl::SetDirection() {
     float cosTheta = (float) cos(theta);
 
 //    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-    mathfu::vec4 sunDirWorld = mathfu::vec4(0.30822, 0.30822, 0.89999998, 0);
-    m_sunDir = -(m_lookAtMat4.Inverse().Transpose() * sunDirWorld).xyz();
+    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
+    m_sunDir = (m_lookAtMat4.Inverse().Transpose() * sunDirWorld).xyz();
     m_sunDir = m_sunDir.Normalized();
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    m_upVector = (this->m_lookAtMat4.Inverse() * upVector).xyz();
+    m_upVector = (this->m_lookAtMat4.Inverse().Transpose() * upVector).xyz();
 }
 
  WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){

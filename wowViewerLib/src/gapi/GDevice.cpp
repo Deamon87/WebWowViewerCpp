@@ -63,9 +63,6 @@ void GDevice::bindVertexUniformBuffer(GUniformBuffer *buffer, int slot)  {
         }
     }  else if (buffer != m_vertexUniformBuffer[slot]) {
         buffer->bind(slot);
-        if (m_shaderPermutation != nullptr) {
-            glUniformBlockBinding(m_shaderPermutation->m_programBuffer, m_shaderPermutation->m_uboVertexBlockIndex[slot], slot);
-        }
 
         m_vertexUniformBuffer[slot] = buffer;
     }
@@ -78,9 +75,6 @@ void GDevice::bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot)  {
         }
     }  else if (buffer != m_fragmentUniformBuffer[slot]) {
         buffer->bind(3+slot);
-        if (m_shaderPermutation != nullptr) {
-            glUniformBlockBinding(m_shaderPermutation->m_programBuffer, m_shaderPermutation->m_uboFragmentBlockIndex[slot], 3+slot);
-        }
 
         m_fragmentUniformBuffer[slot] = buffer;
     }
@@ -131,6 +125,14 @@ std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
     sharedPtr->compileShader();
     m_shaderPermutCache[hash] = sharedPtr;
 
+    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboVertexBlockIndex[0], 0);
+    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboVertexBlockIndex[1], 1);
+    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboVertexBlockIndex[2], 2);
+
+    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboFragmentBlockIndex[0], 3+0);
+    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboFragmentBlockIndex[1], 3+1);
+    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboFragmentBlockIndex[2], 3+2);
+
     return m_shaderPermutCache[hash];
 }
 
@@ -149,6 +151,26 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
     for (auto &hgMesh : meshes) {
         this->drawMesh(hgMesh);
     }
+}
+
+void GDevice::updateBuffers() {
+    std::vector<char> c;
+
+    //TODO: 1) Figure out how to collect all uniform buffers needed to render current meshes
+    //TODO: 2) Create uniform buffers in cycle that would actually hold the data
+    //Until then, this part will stay dead
+    int currentOffset = 0;
+    int currentSize = (m_unfiormBuffersForUpload.size() == 0) ? maxUniformBufferSize : 0;
+
+    for (auto &a : m_unfiormBufferCache) {
+        auto buffer = a.lock();
+        if (buffer) {
+            //buffer
+        }
+    }
+
+
+
 }
 
 void GDevice::drawMesh(HGMesh &hmesh) {
@@ -324,5 +346,7 @@ GDevice::GDevice() {
     m_blackPixelTexture = createTexture();
 
     m_blackPixelTexture->loadData(1,1,&ff);
+
+    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
 }
 

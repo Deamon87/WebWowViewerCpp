@@ -29,6 +29,23 @@
 #include "persistance/db2/DB2Light.h"
 #include "../gapi/GDevice.h"
 
+class WoWFrameParamHolder {
+public:
+    mathfu::mat4 m_lookAtMat4;
+    mathfu::mat4 m_secondLookAtMat;
+    mathfu::mat4 m_viewCameraForRender;
+    mathfu::mat4 m_perspectiveMatrix;
+
+    mathfu::vec3 m_upVector;
+    mathfu::vec3 m_sunDir;
+    mathfu::vec4 m_globalAmbientColor;
+    mathfu::vec4 m_globalSunColor;
+
+    float uFogStart = -1;
+    float uFogEnd = -1;
+    mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
+};
+
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
 public:
@@ -153,21 +170,10 @@ public:
     };
 
 private:
-    void initGlContext (/*canvas*/);
-    void initArrayInstancedExt();
-    void initAnisotropicExt ();
-    void initVertexArrayObjectExt ();
-    void initCompressedTextureS3tcExt();
-    void initDepthTextureExt ();
-    void initDeferredRendering ();
-    void initCaches();
-    void initDrawBuffers (int frameBuffer);
-    void initRenderBuffers ();
-    void initSceneGraph ();
-    void initSceneApi ();
-    void initCamera ();
+    void initGlContext ();
     void initBoxVBO ();
-    void initTextureCompVBO ();
+
+    void DoCulling();
 private:
     bool m_enable;
 
@@ -175,15 +181,8 @@ private:
     GDevice m_gdevice;
     HGUniformBuffer m_sceneWideUniformBuffer;
 
-
-    mathfu::mat4 m_lookAtMat4;
-    mathfu::mat4 m_viewCameraForRender;
-    mathfu::mat4 m_perspectiveMatrix;
-
-    mathfu::vec3 m_upVector;
-    mathfu::vec3 m_sunDir;
-    mathfu::vec4 m_globalAmbientColor;
-    mathfu::vec4 m_globalSunColor;
+    WoWFrameParamHolder m_nextFrameParams;
+    WoWFrameParamHolder m_currentFrameParams;
 
     FirstPersonCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;
@@ -196,9 +195,6 @@ private:
     int canvHeight;
     float canvAspect;
 
-    float uFogStart = -1;
-    float uFogEnd = -1;
-    mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
 
     bool m_isDebugCamera = false;
 

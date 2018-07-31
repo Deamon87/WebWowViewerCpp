@@ -30,7 +30,7 @@ private:
     void bind(int bindingPoint); //Should be called only by GDevice
     void unbind();
 
-public:
+private:
     void uploadData(void * data, int length);
 
 private:
@@ -38,9 +38,11 @@ private:
 
 private:
     size_t m_size;
+    size_t m_offset = 0;
     void * pIdentifierBuffer;
     void * pContent;
     void * pPreviousContent;
+    bool m_buffCreated = false;
 
     bool m_needsUpdate = false;
 };

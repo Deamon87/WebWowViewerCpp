@@ -80,6 +80,7 @@ public:
 
     void bindTexture(GTexture *texture, int slot);
 
+    void updateBuffers();
     void drawMeshes(std::vector<HGMesh> &meshes);
 //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
@@ -103,6 +104,7 @@ private:
     int8_t m_lastDepthWrite = -1;
     int8_t m_lastDepthCulling = -1;
     int8_t m_backFaceCulling = -1;
+    int maxUniformBufferSize = -1;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBuffer *m_lastBindIndexBuffer = nullptr;
     GVertexBuffer *m_lastBindVertexBuffer = nullptr;
@@ -122,6 +124,7 @@ private:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
+    std::vector<GUniformBuffer> m_unfiormBuffersForUpload;
 };
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H

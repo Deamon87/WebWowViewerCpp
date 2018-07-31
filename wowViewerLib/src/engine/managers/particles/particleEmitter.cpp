@@ -176,7 +176,7 @@ void ParticleEmitter::createMesh() {
     meshTemplate.fragmentBuffers[1] = nullptr;
     meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
 
-    meshParticleWideBlockPS blockPS;
+    meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
     blockPS.uAlphaTest = 0.0039215689f;
     int uPixelShader = -1;
     if (multitex) {
@@ -189,7 +189,7 @@ void ParticleEmitter::createMesh() {
     }
     blockPS.uPixelShader = uPixelShader;
 
-    meshTemplate.fragmentBuffers[2]->uploadData(&blockPS, sizeof(blockPS));
+    meshTemplate.fragmentBuffers[2]->save();
 
     m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
 }
