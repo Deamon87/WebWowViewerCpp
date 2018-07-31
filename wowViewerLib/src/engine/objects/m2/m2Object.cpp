@@ -1042,7 +1042,7 @@ mathfu::vec4 M2Object::getAmbientLight() {
         ambientColor = mathfu::vec4(0,0,0,0);
         for (int i = 0; i < lights.size(); ++i) {
             if (lights[i].ambient_intensity > 0) {
-                ambientColor += lights[i].ambient_color; //* lights[i].ambient_intensity;
+                ambientColor += lights[i].ambient_color * lights[i].ambient_intensity;
             }
         }
 

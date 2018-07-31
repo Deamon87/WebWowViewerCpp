@@ -52,7 +52,6 @@ public:
     virtual float getGlobalFogEnd() = 0;
     virtual mathfu::vec3 getViewUp() = 0;
 
-    virtual GLuint getBlackPixelTexture() = 0;
     virtual Config *getConfig() = 0;
 
     virtual DB2Light *getDB2Light() = 0;

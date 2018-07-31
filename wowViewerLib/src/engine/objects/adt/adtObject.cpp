@@ -345,8 +345,6 @@ void AdtObject::createMeshes() {
             aTemplate.texture[1 + j + 4] = device->createBlpTexture(layer_height, true, true);
         }
 
-
-
         aTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
         aTemplate.vertexBuffers[1] = nullptr;
         aTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(adtMeshWideBlockVS));
@@ -410,12 +408,11 @@ void AdtObject::loadAlphaTextures() {
 
 
 void AdtObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
-
     if (!m_loaded) return;
 
     for (int i = 0; i < 256; i++) {
         if (!drawChunk[i]) continue;
-
+        if (i >= adtMeshes.size()) return;
         renderedThisFrame.push_back(adtMeshes[i]);
     }
 }
@@ -533,11 +530,11 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                 std::vector<WmoObject *> &wmoCandidates) {
 
     const float dist = 533.0f*1.5;
-    static float perLodDist[5] = {9999999999.99f,
-                                  std::pow(dist, 2),        //32
-                                  std::pow(dist / (2), 2), //16
-                                  std::pow(dist / (4), 2), //8
-                                  std::pow(dist / (8), 2), //4
+    static const float perLodDist[5] = {9999999999.99f,
+                                  std::pow(dist, 2.0f),        //32
+                                  std::pow(dist / (2.0f), 2.0f), //16
+                                  std::pow(dist / (4.0f), 2.0f), //8
+                                  std::pow(dist / (8.0f), 2.0f), //4
 //                                  std::pow(dist / (16), 2) //2
                                   };
 

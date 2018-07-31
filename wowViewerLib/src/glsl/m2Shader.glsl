@@ -2,7 +2,7 @@
 //For drawbuffers in glsl of webgl you need to use GL_EXT_draw_buffers instead of WEBGL_draw_buffers
 
 #ifndef MAX_MATRIX_NUM
-#define MAX_MATRIX_NUM 64
+#define MAX_MATRIX_NUM 220
 #endif
 
 #ifdef ENABLE_DEFERRED
@@ -358,7 +358,9 @@ void main() {
     }
 
     float opacity;
+    float finalOpacity = 0.0;
     vec3 matDiffuse;
+    vec3 specular = vec3(0.0, 0.0, 0.0);
     vec3 visParams = vec3(1.0, 1.0, 1.0);
     vec4 genericParams[3];
     genericParams[0] = vec4( 1.0, 1.0, 1.0, 1.0 );
@@ -369,159 +371,155 @@ void main() {
 
     if ( uPixelShader == 0 ) {//Combiners_Opaque
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 1 ) {//Combiners_Mod
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
+
+
     } else if ( uPixelShader == 2 ) {//Combiners_Opaque_Mod
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
         opacity = tex2.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 3 ) {//Combiners_Opaque_Mod2x
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb * 2.000000;
         opacity = tex2.a * 2.000000 * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 4 ) {//Combiners_Opaque_Mod2xNA
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb * 2.000000;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 5 ) {//Combiners_Opaque_Opaque
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 6 ) {//Combiners_Mod_Mod
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
         opacity = tex.a * tex2.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 7 ) {//Combiners_Mod_Mod2x
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb * 2.000000;
         opacity = tex.a * tex2.a * 2.000000 * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 8 ) {//Combiners_Mod_Add
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = (tex.a + tex2.a) * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex2.rgb, opacity * visParams.r);
+        specular = tex2.rgb;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 9 ) {//Combiners_Mod_Mod2xNA
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb * 2.000000;
         opacity = tex.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 10 ) {//Combiners_Mod_AddNA
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex2.rgb, opacity * visParams.r);
+        specular = tex2.rgb;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 11 ) {//Combiners_Mod_Opaque
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
         opacity = tex.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 12 ) {//Combiners_Opaque_Mod2xNA_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a));
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 13 ) {//Combiners_Opaque_AddAlpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex2.rgb * tex2.a, vDiffuseColor.a * visParams.r);
+        specular = tex2.rgb * tex2.a;
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 14 ) {//Combiners_Opaque_AddAlpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex2.rgb * tex2.a * (1.000000 - tex.a), vDiffuseColor.a * visParams.r);
+        specular = tex2.rgb * tex2.a * (1.000000 - tex.a);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 15 ) {//Combiners_Opaque_Mod2xNA_Alpha_Add
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a));
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex3.rgb * tex3.a * genericParams[0].b, vDiffuseColor.a * visParams.r);
+        specular = tex3.rgb * tex3.a * genericParams[0].b;
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 16 ) {//Combiners_Mod_AddAlpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex2.rgb * tex2.a, opacity * visParams.r);
+        specular = tex2.rgb * tex2.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 17 ) {//Combiners_Mod_AddAlpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = (tex.a + tex2.a * (0.300000 * tex2.r + 0.590000 * tex2.g + 0.110000 * tex2.b)) * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex2.rgb * tex2.a * (1.000000 - tex.a), opacity * visParams.r);
+        specular = tex2.rgb * tex2.a * (1.000000 - tex.a);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 18 ) {//Combiners_Opaque_Alpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb, tex2.rgb, vec3(tex2.a)), tex.rgb, vec3(tex.a));
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 19 ) {//Combiners_Opaque_Mod2xNA_Alpha_3s
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a));
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 20 ) {//Combiners_Opaque_AddAlpha_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex2.rgb * tex2.a * genericParams[0].g, vDiffuseColor.a * visParams.r);
+        specular = tex2.rgb * tex2.a * genericParams[0].g;
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 21 ) {//Combiners_Mod_Add_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = (tex.a + tex2.a) * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex2.rgb * (1.000000 - tex.a), opacity * visParams.r);
+        specular = tex2.rgb * (1.000000 - tex.a);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 22 ) {//Combiners_Opaque_ModNA_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb, tex.rgb, vec3(tex.a));
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 23 ) {//Combiners_Mod_AddAlpha_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex2.rgb * tex2.a * genericParams[0].g, opacity * visParams.r);
+        specular = tex2.rgb * tex2.a * genericParams[0].g;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 24 ) {//Combiners_Opaque_Mod_Add_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex.rgb * tex.a * genericParams[0].r, vDiffuseColor.a * visParams.r);
+        specular = tex.rgb * tex.a * genericParams[0].r;
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 25 ) {//Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
         float glowOpacity = clamp((tex3.a * genericParams[0].z), 0.0, 1.0);
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a)) * (1.000000 - glowOpacity);
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + tex3.rgb * glowOpacity, vDiffuseColor.a * visParams.r);
+        specular = tex3.rgb * glowOpacity;
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 26 ) {//Combiners_Mod_Dual_Crossfade
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, texture2D(uTexture2,texCoord), vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), texture2D(uTexture3,texCoord), vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
         opacity = mix(mix(tex, texture2D(uTexture2,texCoord), vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), texture2D(uTexture3,texCoord), vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 27 ) {//Combiners_Opaque_Mod2xNA_Alpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a)), tex.rgb, vec3(tex.a));
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 28 ) {//Combiners_Mod_Masked_Dual_Crossfade
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, texture2D(uTexture2,texCoord), vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), texture2D(uTexture3,texCoord), vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
         opacity = mix(mix(tex, texture2D(uTexture2,texCoord), vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), texture2D(uTexture3,texCoord), vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * texture2D(uTexture4,texCoord2).a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 29 ) {//Combiners_Opaque_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 30 ) {//Guild
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a)), tex3.rgb * genericParams[2].rgb, vec3(tex3.a));
         opacity = tex.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 31 ) {//Guild_NoBorder
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a));
         opacity = tex.a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 32 ) {//Guild_Opaque
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a)), tex3.rgb * genericParams[2].rgb, vec3(tex3.a));
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), vDiffuseColor.a * visParams.r);
+        opacity = vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 33 ) {//Combiners_Mod_Depth
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a * visParams.r;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
+        finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 34 ) { //Illum
         finalColor = vec4(1.0,1.0,1.0, 1.0);
 
@@ -529,9 +527,7 @@ void main() {
     } else if ( uPixelShader == 35 ) {//Combiners_Mod_Mod_Mod_Const
         matDiffuse = vDiffuseColor.rgb * 2.000000 * (tex * tex2 * tex3 * genericParams[0]).rgb;
         opacity = (tex * tex2 * tex3 * genericParams[0]).a * vDiffuseColor.a;
-        
-        finalColor = vec4(makeDiffTerm(matDiffuse, accumLight), opacity * visParams.r);
-
+        finalOpacity = opacity * visParams.r;
     /*
         WOTLK DEPRECATED SHADERS!
     */
@@ -558,6 +554,8 @@ void main() {
     } else if (uPixelShader == -8) { // Combiners_Mod2x_Mod2x
         finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba * vec4(4.0);
     }
+
+    finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + specular, finalOpacity);
 
     if(finalColor.a < uFogColorAndAlphaTest.w)
         discard;

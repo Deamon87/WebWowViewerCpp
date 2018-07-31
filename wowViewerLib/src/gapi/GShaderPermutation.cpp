@@ -7,6 +7,7 @@
 #include "../engine/stringTrim.h"
 #include "../engine/algorithms/hashString.h"
 #include "../engine/shader/ShaderDefinitions.h"
+#include "UniformBufferStructures.h"
 
 std::string textFromUniformType(GLint type)
 {
@@ -155,7 +156,7 @@ void GShaderPermutation::compileShader() {
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
-    int maxMatrixUniforms = (maxVertexUniforms / 4) - 9;
+    int maxMatrixUniforms = MAX_MATRIX_NUM;//(maxVertexUniforms / 4) - 9;
 
     vertExtraDefStrings = vertExtraDefStrings + "#define MAX_MATRIX_NUM "+std::to_string(maxMatrixUniforms)+"\r\n"+"#define COMPILING_VS 1\r\n ";
     geomExtraDefStrings = geomExtraDefStrings + "#define COMPILING_GS 1\r\n";

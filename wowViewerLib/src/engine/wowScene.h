@@ -139,7 +139,6 @@ public:
     virtual mathfu::vec3 getViewUp() override { return m_upVector; };
 
 
-    virtual GLuint getBlackPixelTexture() override ;
     virtual Config *getConfig() override {
         return m_config;
     }
@@ -189,9 +188,6 @@ private:
     FirstPersonCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;
 
-    GLuint vbo_vertices;
-    GLuint ibo_elements;
-
     DB2Light *db2Light;
     DB2LightData *db2LightData;
     DB2WmoAreaTable *db2WmoAreaTable;
@@ -200,20 +196,11 @@ private:
     int canvHeight;
     float canvAspect;
 
-    GLuint vao;
-
     float uFogStart = -1;
     float uFogEnd = -1;
     mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
 
     bool m_isDebugCamera = false;
-
-    GLuint frameBuffer = -1;
-    GLuint frameBufferColorTexture = -1;
-    GLuint frameBufferDepthTexture = -1;
-    GLuint vertBuffer = 0;
-    GLuint blackPixel = 0;
-
 
     Cache<AdtFile> adtObjectCache;
     Cache<WdtFile> wdtCache;
@@ -236,21 +223,7 @@ private:
     void activateRenderFrameShader();
     void activateRenderDepthShader();
     void activateReadDepthBuffer();
-    void activateAdtShader();
-    void deactivateAdtShader();
-    void activateAdtLodShader();
-    void deactivateAdtLodShader();
-    void activateWMOShader();
-    void deactivateWMOShader();
     void deactivateTextureCompositionShader();
-    void activateM2ShaderAttribs() ;
-    void deactivateM2ShaderAttribs();
-    void activateM2Shader();
-    void activateM2ParticleShader();
-    void deactivateM2ParticleShader();
-    void deactivateM2Shader() ;
-    void activateM2InstancingShader();
-    void deactivateM2InstancingShader();
     void activateBoundingBoxShader();
     void deactivateBoundingBoxShader();
     void activateFrustumBoxShader();
@@ -271,8 +244,6 @@ private:
     bool getIsDebugCamera() override {
         return m_isDebugCamera;
     }
-
-
 
     void SetDirection();
 };
