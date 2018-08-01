@@ -28,9 +28,9 @@ void WoWSceneImpl::DoCulling() {
     mathfu::mat4 lookAtMat4;
     mathfu::vec4 cameraVec4;
     if (!m_config->getUseSecondCamera()){
-        this->m_firstCamera.tick(deltaTime);
+        this->m_firstCamera.tick(nextDeltaTime);
     } else {
-        this->m_secondCamera.tick(deltaTime);
+        this->m_secondCamera.tick(nextDeltaTime);
     }
 
     if ( currentScene->getCameraSettings(cameraResult)) {
@@ -107,10 +107,10 @@ void WoWSceneImpl::DoCulling() {
         m_nextFrameParams.uFogEnd = 4.0 * farPlane;
     }
 
-    this->SetDirection();
+    this->SetDirection(m_nextFrameParams);
 
     currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
-    currentScene->update(deltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
+    currentScene->update(nextDeltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
 
 }
 
@@ -127,6 +127,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         db2Cache(requestProcessor){
     m_gdevice = GDevice();
     m_sceneWideUniformBuffer = m_gdevice.createUniformBuffer(sizeof(sceneWideBlockVSPS));
+    m_sceneWideUniformBuffer->createBuffer();
 
     this->m_config = config;
 
@@ -310,11 +311,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
-//    mathfu::vec4 ambientColorOver = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
-//    currentScene->setAmbientColorOverride(ambientColorOver, true);
-//    config->setBCLightHack(true);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
+    mathfu::vec4 ambientColorOver = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+    currentScene->setAmbientColorOverride(ambientColorOver, true);
+    config->setBCLightHack(true);
 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
@@ -415,9 +416,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
@@ -426,7 +427,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightDatam.db2"));
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
-
+/*
     g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&](){
         using namespace std::chrono_literals;
         std::unique_lock<std::mutex> lockNextMeshes (m_lockNextMeshes,std::defer_lock);
@@ -439,13 +440,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
             DoCulling();
         }
+*/
 
-
-    }));
-
-#ifndef WITH_GLESv2
-    glBindVertexArray(0);
-#endif
+//    }));
 }
 
 void WoWSceneImpl::initGlContext() {
@@ -670,11 +667,17 @@ void WoWSceneImpl::drawCamera () {
     glEnable(GL_DEPTH_TEST);
     */
 }
-void WoWSceneImpl::draw(animTime_t deltaTime) {
-#ifndef WITH_GLESv2
-    //glBindVertexArray(vao);
-#endif
 
+void print_timediff(const char* prefix, const struct timespec& start, const
+struct timespec& end)
+{
+    double milliseconds = (end.tv_nsec - start.tv_nsec) / 1e6 + (end.tv_sec - start.tv_sec) * 1e3;
+    printf("%s: %lf milliseconds\n", prefix, milliseconds);
+}
+
+void WoWSceneImpl::draw(animTime_t deltaTime) {
+    struct timespec renderingAndUpdateStart, renderingAndUpdateEnd;
+//    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateStart);
     getDevice()->reset();
     glClearScreen();
 
@@ -695,6 +698,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     this->skinGeomCache.processCacheQueue(10);
     this->textureCache.processCacheQueue(10);
     this->db2Cache.processCacheQueue(10);
+
 
     mathfu::mat4 mainLookAtMat4 = m_currentFrameParams.m_lookAtMat4;
 
@@ -765,13 +769,22 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
            */
         }
     }
+//    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateEnd);
 
-#ifndef WITH_GLESv2
-    glBindVertexArray(0);
-#endif
+//    print_timediff("rendering", renderingAndUpdateStart, renderingAndUpdateEnd);
+
+    nextDeltaTime = deltaTime;
+
+    struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
+//    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateStart);
+    DoCulling();
+    m_currentFrameParams = m_nextFrameParams;
+//    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
+
+//    print_timediff("DoCulling", cullingAndUpdateStart, cullingAndUpdateEnd);
 }
 
-void WoWSceneImpl::SetDirection() {
+void WoWSceneImpl::SetDirection(WoWFrameParamHolder frameParamHolder) {
 
     // Phi Table
     static const float phiTable[4][2] = {
@@ -810,11 +823,11 @@ void WoWSceneImpl::SetDirection() {
 
 //    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
     mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
-    m_sunDir = (m_lookAtMat4.Inverse().Transpose() * sunDirWorld).xyz();
-    m_sunDir = m_sunDir.Normalized();
+    frameParamHolder.m_sunDir = (frameParamHolder.m_lookAtMat4.Inverse().Transpose() * sunDirWorld).xyz();
+    frameParamHolder.m_sunDir = frameParamHolder.m_sunDir.Normalized();
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    m_upVector = (this->m_lookAtMat4.Inverse().Transpose() * upVector).xyz();
+    frameParamHolder.m_upVector = (frameParamHolder.m_lookAtMat4.Inverse().Transpose() * upVector).xyz();
 }
 
  WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){

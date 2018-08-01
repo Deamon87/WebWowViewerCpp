@@ -61,10 +61,14 @@ void GDevice::bindVertexUniformBuffer(GUniformBuffer *buffer, int slot)  {
             m_vertexUniformBuffer[slot]->unbind();
             m_vertexUniformBuffer[slot] = nullptr;
         }
-    }  else if (buffer != m_vertexUniformBuffer[slot]) {
-        buffer->bind(slot);
+    }  else {
+        if (slot == -1) {
+            buffer->bind(slot);
+        } else if (buffer != m_vertexUniformBuffer[slot]) {
+            buffer->bind(slot);
 
-        m_vertexUniformBuffer[slot] = buffer;
+            m_vertexUniformBuffer[slot] = buffer;
+        }
     }
 }
 void GDevice::bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot)  {
@@ -148,27 +152,87 @@ HGUniformBuffer GDevice::createUniformBuffer(size_t size) {
 }
 
 void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
+    updateBuffers(meshes);
+
+
     for (auto &hgMesh : meshes) {
         this->drawMesh(hgMesh);
     }
 }
 
-void GDevice::updateBuffers() {
-    std::vector<char> c;
-
+void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
     //TODO: 1) Figure out how to collect all uniform buffers needed to render current meshes
     //TODO: 2) Create uniform buffers in cycle that would actually hold the data
-    //Until then, this part will stay dead
-    int currentOffset = 0;
-    int currentSize = (m_unfiormBuffersForUpload.size() == 0) ? maxUniformBufferSize : 0;
 
-    for (auto &a : m_unfiormBufferCache) {
-        auto buffer = a.lock();
-        if (buffer) {
-            //buffer
+    //1. Collect buffers
+    std::vector<HGUniformBuffer> buffers;
+    for (auto &mesh : meshes) {
+        for (int i = 0; i < 3; i++ ) {
+            HGUniformBuffer buffer = mesh->m_fragmentUniformBuffer[i];
+            if (buffer != nullptr)
+                buffers.push_back(buffer);
+        }
+        for (int i = 0; i < 3; i++ ) {
+            HGUniformBuffer buffer = mesh->m_vertexUniformBuffer[i];
+            if (buffer != nullptr)
+                buffers.push_back(buffer);
         }
     }
 
+    std::sort( buffers.begin(), buffers.end() );
+    buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
+
+    //2. Create buffers and update them
+    std::vector<char> c;
+
+    int currentSize = 0;
+    int buffersIndex = 0;
+
+    HGUniformBuffer bufferForUpload;
+    if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
+        bufferForUpload = createUniformBuffer(0);
+        bufferForUpload->createBuffer();
+        m_unfiormBuffersForUpload.push_back(bufferForUpload);
+    } else {
+        bufferForUpload = m_unfiormBuffersForUpload[buffersIndex];
+    }
+
+    for (auto buffer : buffers) {
+        if (buffer->m_buffCreated) continue;
+
+        if (currentSize + buffer->m_size > maxUniformBufferSize) {
+            bufferForUpload->uploadData(&c[0], currentSize);
+
+            buffersIndex++;
+            c.resize(0);
+            currentSize = 0;
+
+            if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
+                bufferForUpload = createUniformBuffer(0);
+                bufferForUpload->createBuffer();
+                m_unfiormBuffersForUpload.push_back(bufferForUpload);
+            } else {
+                bufferForUpload = m_unfiormBuffersForUpload[buffersIndex];
+            }
+        }
+
+        buffer->pIdentifierBuffer = bufferForUpload->pIdentifierBuffer;
+        buffer->m_offset = (size_t) currentSize;
+        c.insert(c.end(), (char*)buffer->pPreviousContent, ((char*)buffer->pPreviousContent)+buffer->m_size);
+        currentSize += buffer->m_size;
+
+        int bytesToAdd = uniformBufferOffsetAlign - (currentSize % uniformBufferOffsetAlign);
+        for (int j = 0; j < bytesToAdd; j++) {
+            c.push_back(0);
+        }
+        currentSize+=bytesToAdd;
+    }
+
+    bufferForUpload->uploadData(&c[0], currentSize);
+
+    buffersIndex++;
+    c.resize(0);
+    currentSize = 0;
 
 
 }
@@ -348,5 +412,6 @@ GDevice::GDevice() {
     m_blackPixelTexture->loadData(1,1,&ff);
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
 }
 

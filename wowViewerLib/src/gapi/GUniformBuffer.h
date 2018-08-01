@@ -23,9 +23,9 @@ public:
         return *(T *)pContent;
     }
     void save();
-
-private:
     void createBuffer();
+private:
+
     void destroyBuffer();
     void bind(int bindingPoint); //Should be called only by GDevice
     void unbind();
@@ -43,6 +43,8 @@ private:
     void * pContent;
     void * pPreviousContent;
     bool m_buffCreated = false;
+    bool m_dataUploaded = false;
+
 
     bool m_needsUpdate = false;
 };

@@ -10,11 +10,13 @@ GUniformBuffer::GUniformBuffer(GDevice &device, size_t size) : m_device(device){
     pIdentifierBuffer = new GLuint;
     pContent = new char[size];
     pPreviousContent = new char[size];
-    createBuffer();
+//    createBuffer();
 }
 
 GUniformBuffer::~GUniformBuffer() {
-    destroyBuffer();
+    if (m_buffCreated) {
+        destroyBuffer();
+    }
     delete (GLuint *)pIdentifierBuffer;
     delete (char *)pPreviousContent;
     delete (char *)pContent;
@@ -22,6 +24,8 @@ GUniformBuffer::~GUniformBuffer() {
 
 void GUniformBuffer::createBuffer() {
     glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    m_buffCreated = true;
+
 }
 
 
@@ -29,24 +33,31 @@ void GUniformBuffer::destroyBuffer() {
     glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
 }
 void GUniformBuffer::bind(int bindingPoint) { //Should be called only by GDevice
-     glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer);
+    if (m_buffCreated && bindingPoint == -1) {
+        glBindBuffer(GL_UNIFORM_BUFFER, *(GLuint *) this->pIdentifierBuffer);
+    } else if (m_buffCreated) {
+        glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer);
+    } else {
+        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer, m_offset, m_size);
+    }
 }
 void GUniformBuffer::unbind() {
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+//    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-
-
 void GUniformBuffer::uploadData(void * data, int length) {
-    m_device.bindVertexUniformBuffer(this, 0);
+    m_device.bindVertexUniformBuffer(this, -1);
 
-//    if (!m_buffCreated) {
+    if (!m_dataUploaded || length > m_size) {
         glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);
-//        m_buffCreated = true;
-//    } else {
-//        glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
-//    }
 
+        m_size = (size_t) length;
+    } else {
+        glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);
+        //glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
+    }
+
+    m_dataUploaded = true;
     m_needsUpdate = false;
 }
 
@@ -57,6 +68,8 @@ void GUniformBuffer::save() {
         m_needsUpdate = true;
 
 //        2. Update UBO
-        this->uploadData(pContent, m_size);
+        if (m_buffCreated) {
+            this->uploadData(pContent, m_size);
+        }
     }
 }

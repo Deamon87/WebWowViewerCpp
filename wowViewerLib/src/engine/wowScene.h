@@ -137,23 +137,23 @@ public:
     };
 
     virtual mathfu::mat4& getViewMat() override {
-        return m_lookAtMat4;
+        return m_nextFrameParams.m_lookAtMat4;
     }
     virtual mathfu::vec4 getGlobalAmbientColor() override {
-        return m_globalAmbientColor ;
+        return m_nextFrameParams.m_globalAmbientColor ;
     }
     virtual mathfu::vec3 getGlobalSunDir() override {
-        return m_sunDir;
+        return m_nextFrameParams.m_sunDir;
     };
     virtual mathfu::vec4 getGlobalSunColor() override {
-        return m_globalSunColor;
+        return m_nextFrameParams.m_globalSunColor;
     }
     virtual mathfu::vec4 getGlobalFogColor() override {
-        return m_fogColor;
+        return m_nextFrameParams.m_fogColor;
     }
-    virtual float getGlobalFogStart() override { return uFogStart; };
-    virtual float getGlobalFogEnd() override { return uFogEnd; };
-    virtual mathfu::vec3 getViewUp() override { return m_upVector; };
+    virtual float getGlobalFogStart() override { return m_nextFrameParams.uFogStart; };
+    virtual float getGlobalFogEnd() override { return m_nextFrameParams.uFogEnd; };
+    virtual mathfu::vec3 getViewUp() override { return m_nextFrameParams.m_upVector; };
 
 
     virtual Config *getConfig() override {
@@ -241,7 +241,7 @@ private:
         return m_isDebugCamera;
     }
 
-    void SetDirection();
+    void SetDirection(WoWFrameParamHolder frameParamHolder);
 };
 
 
