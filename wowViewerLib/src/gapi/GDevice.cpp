@@ -116,6 +116,7 @@ std::shared_ptr<GShaderPermutation> GDevice::getShader(std::string shaderName) {
     std::shared_ptr<GShaderPermutation> sharedPtr;
     if (shaderName == "m2Shader") {
         sharedPtr.reset( new GM2ShaderPermutation(shaderName, *this));
+        m_m2ShaderCreated = true;
     } else if (shaderName == "m2ParticleShader") {
         sharedPtr.reset( new GM2ParticleShaderPermutation(shaderName, *this));
     } else if (shaderName == "wmoShader") {
@@ -154,9 +155,12 @@ HGUniformBuffer GDevice::createUniformBuffer(size_t size) {
 void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
     updateBuffers(meshes);
 
+//    if (m_m2ShaderCreated) exit(0);
 
+    int j = 0;
     for (auto &hgMesh : meshes) {
         this->drawMesh(hgMesh);
+        j++;
     }
 }
 
@@ -218,7 +222,7 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
 
         buffer->pIdentifierBuffer = bufferForUpload->pIdentifierBuffer;
         buffer->m_offset = (size_t) currentSize;
-        c.insert(c.end(), (char*)buffer->pPreviousContent, ((char*)buffer->pPreviousContent)+buffer->m_size);
+        c.insert(c.end(), (char*)buffer->pContent, ((char*)buffer->pContent)+buffer->m_size);
         currentSize += buffer->m_size;
 
         int bytesToAdd = uniformBufferOffsetAlign - (currentSize % uniformBufferOffsetAlign);
@@ -234,6 +238,7 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
     c.resize(0);
     currentSize = 0;
 
+//    std::cout << "m_unfiormBuffersForUpload.size = " << m_unfiormBuffersForUpload.size() << std::endl;
 
 }
 
@@ -321,11 +326,14 @@ void GDevice::drawMesh(HGMesh &hmesh) {
         m_lastBlendMode = hmesh->m_blendMode;
     }
 
+//    if (hmesh->m_start == 231342) exit(0);
+
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
-//        glDrawElements(GL_TRIANGLES, 10, GL_UNSIGNED_SHORT, (const void *) 0);
+//        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, (const void *) 0);
 }
 
 HGVertexBuffer GDevice::createVertexBuffer() {
+    bindVertexBufferBindings(nullptr);
     std::shared_ptr<GVertexBuffer> h_vertexBuffer;
     h_vertexBuffer.reset(new GVertexBuffer(*this));
 
@@ -333,6 +341,7 @@ HGVertexBuffer GDevice::createVertexBuffer() {
 }
 
 HGIndexBuffer GDevice::createIndexBuffer() {
+    bindVertexBufferBindings(nullptr);
     std::shared_ptr<GIndexBuffer> h_indexBuffer;
     h_indexBuffer.reset(new GIndexBuffer(*this));
 

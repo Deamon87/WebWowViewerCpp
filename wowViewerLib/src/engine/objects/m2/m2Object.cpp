@@ -856,8 +856,6 @@ void M2Object::createMeshes() {
     this->m_meshArray.clear();
     this->m_materialArray.clear();
 
-    auto textureCache = m_api->getTextureCache();
-
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
     auto m_m2Data = m_m2Geom->getM2Data();
 

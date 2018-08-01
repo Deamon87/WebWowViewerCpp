@@ -62,10 +62,7 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
 void WmoScene::draw() {
     std::vector<HGMesh> renderedThisFrame;
 
-
-
     //2. Draw WMO
-
     for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
         this->wmoRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
     }
@@ -251,7 +248,7 @@ void WmoScene::drawM2s(std::vector<HGMesh> &renderedThisFrame) {
 
         M2Object *m2Object = this->m2RenderedThisFrameArr[i];
         m2Object->fillBuffersAndArray(renderedThisFrame);
-        m2Object->drawParticles(renderedThisFrame);
+//        m2Object->drawParticles(renderedThisFrame);
     }
 
     //7. Draw BBs

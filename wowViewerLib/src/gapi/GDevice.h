@@ -126,6 +126,8 @@ private:
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
     std::vector<HGUniformBuffer> m_unfiormBuffersForUpload;
+
+    bool m_m2ShaderCreated = false;
 };
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H

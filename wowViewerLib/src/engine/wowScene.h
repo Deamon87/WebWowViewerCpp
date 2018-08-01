@@ -218,12 +218,9 @@ private:
 
     void activateRenderFrameShader();
     void activateRenderDepthShader();
-    void activateReadDepthBuffer();
-    void deactivateTextureCompositionShader();
     void activateBoundingBoxShader();
     void deactivateBoundingBoxShader();
     void activateFrustumBoxShader();
-    void activateDrawLinesShader() ;
     void activateDrawPortalShader();
     void activateDrawPointShader();
     void deactivateDrawPointShader();
@@ -241,7 +238,7 @@ private:
         return m_isDebugCamera;
     }
 
-    void SetDirection(WoWFrameParamHolder frameParamHolder);
+    void SetDirection(WoWFrameParamHolder &frameParamHolder);
 };
 
 
