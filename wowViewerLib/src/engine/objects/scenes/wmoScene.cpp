@@ -248,7 +248,7 @@ void WmoScene::drawM2s(std::vector<HGMesh> &renderedThisFrame) {
 
         M2Object *m2Object = this->m2RenderedThisFrameArr[i];
         m2Object->fillBuffersAndArray(renderedThisFrame);
-//        m2Object->drawParticles(renderedThisFrame);
+        m2Object->drawParticles(renderedThisFrame);
     }
 
     //7. Draw BBs
