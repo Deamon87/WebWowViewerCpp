@@ -46,6 +46,10 @@ private:
     std::vector<M2Object*> m2RenderedThisFrameArr;
     std::vector<WmoObject*> wmoRenderedThisFrameArr;
 
+    std::vector<AdtObject*> currentFrameAdtRenderedThisFrameArr;
+    std::vector<M2Object*> currentFrameM2RenderedThisFrameArr;
+    std::vector<WmoObject*> currentFrameWmoRenderedThisFrameArr;
+
     std::vector<M2InstancingObject*> m_instanceList;
     std::unordered_map<std::string, M2InstancingObject*> m_instanceMap;
 
@@ -67,6 +71,9 @@ public:
     void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) override;
     void draw() override;
 
+
+    void doPostLoad() override;
+    void copyToCurrentFrame() override;
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
     mathfu::vec4 getAmbientColor() override {
         return m_api->getGlobalAmbientColor();

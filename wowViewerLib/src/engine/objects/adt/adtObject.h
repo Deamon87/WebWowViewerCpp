@@ -33,6 +33,7 @@ public:
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
     void update();
+    void doPostLoad();
 
     bool checkFrustumCulling(
             mathfu::vec4 &cameraPos,

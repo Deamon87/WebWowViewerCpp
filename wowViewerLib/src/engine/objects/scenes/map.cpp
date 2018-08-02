@@ -104,6 +104,28 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
 //    }
 }
 
+void Map::doPostLoad(){
+    if (m_api->getConfig()->getRenderM2()) {
+        for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
+            M2Object *m2Object = this->currentFrameM2RenderedThisFrameArr[i];
+            m2Object->doPostLoad();
+        }
+    }
+
+    for (auto &wmoObject : this->currentFrameWmoRenderedThisFrameArr) {
+        wmoObject->doPostLoad();
+    }
+
+    for (auto &adtObject : this->currentFrameAdtRenderedThisFrameArr) {
+        adtObject->doPostLoad();
+    }
+};
+void Map::copyToCurrentFrame(){
+    currentFrameM2RenderedThisFrameArr = m2RenderedThisFrameArr;
+    currentFrameWmoRenderedThisFrameArr = wmoRenderedThisFrameArr;
+    currentFrameAdtRenderedThisFrameArr = adtRenderedThisFrameArr;
+};
+
 void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
     if (!m_wdtfile->getIsLoaded()) return;
 
@@ -593,19 +615,19 @@ void Map::draw() {
 }
 
 void Map::drawExterior(std::vector<HGMesh> &renderedThisFrame) {
-    for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
-        this->adtRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
+    for (int i = 0; i < this->currentFrameAdtRenderedThisFrameArr.size(); i++) {
+        this->currentFrameAdtRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
     }
-    for (int i = 0; i < this->adtRenderedThisFrame.size(); i++) {
-        this->adtRenderedThisFrameArr[i]->collectMeshesLod(renderedThisFrame);
+    for (int i = 0; i < this->currentFrameAdtRenderedThisFrameArr.size(); i++) {
+        this->currentFrameAdtRenderedThisFrameArr[i]->collectMeshesLod(renderedThisFrame);
     }
 
     //2. Draw WMO
-    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
+    for (int i = 0; i < this->currentFrameWmoRenderedThisFrameArr.size(); i++) {
 //        if (config.getUsePortalCulling()) {
 //            this.wmoRenderedThisFrame[i].drawPortalBased(false)
 //        } else {
-            this->wmoRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
+            this->currentFrameWmoRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
 //        }
     }
 
@@ -628,7 +650,7 @@ void Map::drawExterior(std::vector<HGMesh> &renderedThisFrame) {
 
     //Draw M2s
 
-    for (auto m2Object : this->m2RenderedThisFrameArr) {
+    for (auto m2Object : this->currentFrameM2RenderedThisFrameArr) {
         m2Object->fillBuffersAndArray(renderedThisFrame);
         m2Object->drawParticles(renderedThisFrame);
     }

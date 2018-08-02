@@ -462,7 +462,20 @@ void AdtObject::collectMeshesLod(std::vector<HGMesh> &renderedThisFrame) {
     */
 }
 
+void AdtObject::doPostLoad() {
+    if (!m_loaded) {
+        if (m_adtFile->getIsLoaded() &&
+            m_adtFileObj->getIsLoaded() &&
+            m_adtFileObjLod->getIsLoaded() &&
+            (m_adtFileLod->getIsLoaded() || !m_wdtFile->mphd->flags.unk_0x0100) &&
+            m_adtFileTex->getIsLoaded()) {
+            this->loadingFinished();
+            m_loaded = true;
+        }
+    }
+}
 void AdtObject::update() {
+    if (!m_loaded) false;
     if (adtWideBlockPS == nullptr) return;
 
     adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
@@ -753,18 +766,7 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                                     std::vector<M2Object *> &m2ObjectsCandidates,
                                     std::vector<WmoObject *> &wmoCandidates) {
 
-    if (!this->m_loaded) {
-        if (m_adtFile->getIsLoaded() &&
-                m_adtFileObj->getIsLoaded() &&
-                m_adtFileObjLod->getIsLoaded() &&
-                (m_adtFileLod->getIsLoaded() || !m_wdtFile->mphd->flags.unk_0x0100) &&
-                m_adtFileTex->getIsLoaded()) {
-            this->loadingFinished();
-            m_loaded = true;
-        } else {
-            return false;
-        }
-    }
+    if (!this->m_loaded) return true;
     bool atLeastOneIsDrawn = false;
 
     mostDetailedLod = 5;
