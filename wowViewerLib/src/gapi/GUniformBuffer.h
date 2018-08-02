@@ -45,6 +45,7 @@ private:
     bool m_buffCreated = false;
     bool m_dataUploaded = false;
 
+    int m_creationIndex = 0;
 
     bool m_needsUpdate = false;
 };

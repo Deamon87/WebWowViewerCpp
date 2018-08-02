@@ -27,6 +27,9 @@ void WoWSceneImpl::DoCulling() {
     M2CameraResult cameraResult;
     mathfu::mat4 lookAtMat4;
     mathfu::vec4 cameraVec4;
+
+    m_firstCamera.setMovementSpeed(m_config->getMovementSpeed());
+
     if (!m_config->getUseSecondCamera()){
         this->m_firstCamera.tick(nextDeltaTime);
     } else {
@@ -131,6 +134,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
     this->m_config = config;
 
+    renderLockNextMeshes = std::unique_lock<std::mutex>(m_lockNextMeshes,std::defer_lock);
+
     this->canvWidth = canvWidth;
     this->canvHeight = canvHeight;
     this->canvAspect = (float)canvWidth / (float)canvHeight;
@@ -174,7 +179,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
 //    currentScene = new Map(this, 603, "UlduarRaid");
-//Ghbdtn
+//
 //   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
 //    currentScene = new Map(this, 1803, "AzeriteBG1");
 //
@@ -204,8 +209,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-   m_firstCamera.setCameraPos(0, 0, 200);
-    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(0, 0, 200);
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -297,8 +302,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -424,25 +429,26 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
 
     db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
-    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightDatam.db2"));
+    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
-/*
+///*
     g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&](){
         using namespace std::chrono_literals;
-        std::unique_lock<std::mutex> lockNextMeshes (m_lockNextMeshes,std::defer_lock);
+        std::unique_lock<std::mutex> localLockNextMeshes (m_lockNextMeshes,std::defer_lock);
 
         while (true) {
             if (!deltaTimeUpdate) {
-                std::this_thread::sleep_for(1ms);
+                std::this_thread::sleep_for(500us);
                 continue;
             }
 
+            localLockNextMeshes.lock();
+            deltaTimeUpdate = false;
             DoCulling();
+            localLockNextMeshes.unlock();
         }
-*/
-
-//    }));
+    }));
 }
 
 void WoWSceneImpl::initGlContext() {
@@ -678,10 +684,20 @@ struct timespec& end)
 void WoWSceneImpl::draw(animTime_t deltaTime) {
     struct timespec renderingAndUpdateStart, renderingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateStart);
+
+    renderLockNextMeshes.lock();
+    m_currentFrameParams = m_nextFrameParams;
+    nextDeltaTime = deltaTime;
+    deltaTimeUpdate = true;
+
+    currentScene->copyToCurrentFrame();
+    renderLockNextMeshes.unlock();
+
     getDevice()->reset();
     glClearScreen();
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
+    currentScene->doPostLoad();
 
     sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
     blockPSVS.uLookAtMat = m_currentFrameParams.m_lookAtMat4;
@@ -759,7 +775,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         }
     }
 //    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateEnd);
-//
+
 //    print_timediff("rendering", renderingAndUpdateStart, renderingAndUpdateEnd);
 
     this->adtObjectCache.processCacheQueue(10);
@@ -773,14 +789,14 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     this->db2Cache.processCacheQueue(10);
 
 
-    nextDeltaTime = deltaTime;
+//    nextDeltaTime = deltaTime;
 
     struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateStart);
-    DoCulling();
-    m_currentFrameParams = m_nextFrameParams;
+//    DoCulling();
+//    m_currentFrameParams = m_nextFrameParams;
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
-
+//
 //    print_timediff("DoCulling", cullingAndUpdateStart, cullingAndUpdateEnd);
 }
 

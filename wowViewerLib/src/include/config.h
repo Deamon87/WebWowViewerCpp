@@ -26,13 +26,17 @@ private:
     bool drawDepthBuffer = false;
     int cameraM2 = -1; // this will be sceneNumber of object
 
-    int minBatch = 0;
-    int maxBatch = 9999;
+    int wmoMinBatch = 0;
+    int wmoMaxBatch = 9999;
+
+    int m2MinBatch = 0;
+    int m2MaxBatch = 9999;
 
     int minParticle = 0;
     int maxParticle = 9999;
 
     bool useWotlkLogic = false;
+    float movementSpeed = 1.0;
 
     float ambientColor[4];
     float sunColor[4];
@@ -122,18 +126,30 @@ public:
          return useWotlkLogic;
     };
 
+    void setWmoMinBatch(int value) {
+        wmoMinBatch = value;
+    }
+    int getWmoMinBatch() {
+        return wmoMinBatch;
+    }
+    void setWmoMaxBatch(int value) {
+        wmoMaxBatch = value;
+    }
+    int getWmoMaxBatch() {
+        return wmoMaxBatch;
+    }
 
-    void setMinBatch(int value) {
-        minBatch = value;
+    void setM2MinBatch(int value) {
+        m2MinBatch = value;
     }
-    int getMinBatch() {
-        return minBatch;
+    int getM2MinBatch() {
+        return m2MinBatch;
     }
-    void setMaxBatch(int value) {
-        maxBatch = value;
+    void setM2MaxBatch(int value) {
+        m2MaxBatch = value;
     }
-    int getMaxBatch() {
-        return maxBatch;
+    int getM2MaxBatch() {
+        return m2MaxBatch;
     }
 
     void setMinParticle(int value) {
@@ -147,6 +163,13 @@ public:
     }
     int getMaxParticle() {
         return maxParticle;
+    }
+
+    void setMovementSpeed(float value) {
+        movementSpeed = value;
+    }
+    float getMovementSpeed() {
+        return movementSpeed;
     }
 
     void setAmbientColor(float r, float g, float b, float a) {

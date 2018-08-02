@@ -260,12 +260,15 @@ struct my_nkc_app {
     struct nkc* nkcHandle;
 
     /* some user data */
-    float value;
+    float movementSpeed = 1.0;
     bool drawM2AABB = false;
     bool drawWMOAABB = false;
 
-    int minBatch = 0;
-    int maxBatch = 9999;
+    int wmoMinBatch = 0;
+    int wmoMaxBatch = 9999;
+
+    int m2MinBatch = 0;
+    int m2MaxBatch = 9999;
 
     int minParticle = 0;
     int maxParticle = 9999;
@@ -277,6 +280,7 @@ struct my_nkc_app {
     double lastFrame;
 
     struct nk_color ambientColor;
+    float ambientIntensity = 1.0;
     struct nk_color sunColor;
 };
 
@@ -418,6 +422,7 @@ void mainLoop(void* loopArg){
             std::string areaName = "AreaName: " + testConf->getAreaName();
             nk_label(ctx, areaName.c_str(), NK_TEXT_LEFT);
         }
+        nk_layout_row_end(ctx);
         /* fixed widget window ratio width */
         nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
         {
@@ -476,7 +481,7 @@ void mainLoop(void* loopArg){
             nk_layout_row_push(ctx, 50);
             nk_label(ctx, "Ambient intensity:", NK_TEXT_LEFT);
             nk_layout_row_push(ctx, 110);
-            if (nk_slider_float(ctx, 0, &(myapp->value), 1.0f, 0.1f)) {
+            if (nk_slider_float(ctx, 0, &(myapp->ambientIntensity), 1.0f, 0.1f)) {
                 stopInputs = true;
             }
         }
@@ -506,10 +511,14 @@ void mainLoop(void* loopArg){
         }
 
         //Debug batch stuff
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 3);
         {
+            nk_layout_row_push(ctx, 120);
+            nk_label(ctx, "Wmo batch limiter:", NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
+
             char buffer[10];
-            CopyAndNullTerminate(std::to_string(myapp->minBatch), buffer, 10);
+            CopyAndNullTerminate(std::to_string(myapp->wmoMinBatch), buffer, 10);
             nk_layout_row_push(ctx, 50);
             nk_flags event = nk_edit_string_zero_terminated(ctx,
                                                             NK_EDIT_BOX |
@@ -518,12 +527,12 @@ void mainLoop(void* loopArg){
                                                             nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
 
             try {
-                myapp->minBatch = std::stoi(buffer);
+                myapp->wmoMinBatch = std::stoi(buffer);
             } catch(...) {
-                myapp->minBatch = 0;
+                myapp->wmoMinBatch = 0;
             }
             nk_layout_row_push(ctx, 50);
-            CopyAndNullTerminate(std::to_string(myapp->maxBatch), buffer, 10);
+            CopyAndNullTerminate(std::to_string(myapp->wmoMaxBatch), buffer, 10);
             nk_edit_string_zero_terminated(ctx,
                                            NK_EDIT_BOX |
                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
@@ -531,20 +540,63 @@ void mainLoop(void* loopArg){
                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
 
             try {
-                myapp->maxBatch = std::stoi(buffer);
+                myapp->wmoMaxBatch = std::stoi(buffer);
             } catch(...) {
-                myapp->maxBatch = 9999;
+                myapp->wmoMaxBatch = 9999;
             }
 
-            testConf->setMinBatch(myapp->minBatch);
-            testConf->setMaxBatch(myapp->maxBatch);
+            testConf->setWmoMinBatch(myapp->wmoMinBatch);
+            testConf->setWmoMaxBatch(myapp->wmoMaxBatch);
         }
+        nk_layout_row_end(ctx);
 
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 3);
         {
+            nk_layout_row_push(ctx, 120);
+            nk_label(ctx, "M2 batch limiter:", NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
+
+            char buffer[10];
+            CopyAndNullTerminate(std::to_string(myapp->m2MinBatch), buffer, 10);
+            nk_layout_row_push(ctx, 50);
+            nk_flags event = nk_edit_string_zero_terminated(ctx,
+                                                            NK_EDIT_BOX |
+                                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
+                                                            buffer, sizeof(buffer),
+                                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
+
+            try {
+                myapp->m2MinBatch = std::stoi(buffer);
+            } catch(...) {
+                myapp->m2MinBatch = 0;
+            }
+            nk_layout_row_push(ctx, 50);
+            CopyAndNullTerminate(std::to_string(myapp->m2MaxBatch), buffer, 10);
+            nk_edit_string_zero_terminated(ctx,
+                                           NK_EDIT_BOX |
+                                           NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
+                                           buffer, sizeof(buffer),
+                                           nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
+
+            try {
+                myapp->m2MaxBatch = std::stoi(buffer);
+            } catch(...) {
+                myapp->m2MaxBatch = 9999;
+            }
+
+            testConf->setM2MinBatch(myapp->m2MinBatch);
+            testConf->setM2MaxBatch(myapp->m2MaxBatch);
+        }
+        nk_layout_row_end(ctx);
+
+        nk_layout_row_begin(ctx, NK_STATIC, 30, 3);
+        {
+            nk_layout_row_push(ctx, 120);
+            nk_label(ctx, "Particle limiter:", NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 50);
+
             char buffer[10];
             CopyAndNullTerminate(std::to_string(myapp->minParticle), buffer, 10);
-            nk_layout_row_push(ctx, 50);
             nk_flags event = nk_edit_string_zero_terminated(ctx,
                                                             NK_EDIT_BOX |
                                                             NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
@@ -556,7 +608,6 @@ void mainLoop(void* loopArg){
             } catch(...) {
                 myapp->minParticle = 0;
             }
-            nk_layout_row_push(ctx, 50);
             CopyAndNullTerminate(std::to_string(myapp->maxParticle), buffer, 10);
             nk_edit_string_zero_terminated(ctx,
                                            NK_EDIT_BOX |
@@ -573,14 +624,16 @@ void mainLoop(void* loopArg){
             testConf->setMinParticle(myapp->minParticle);
             testConf->setMaxParticle(myapp->maxParticle);
         }
+        nk_layout_row_end(ctx);
 //
         /* custom widget pixel width */
         nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
         {
-            nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "Volume:", NK_TEXT_LEFT);
+            nk_layout_row_push(ctx, 120);
+            nk_label(ctx, "Movement Speed:", NK_TEXT_LEFT);
             nk_layout_row_push(ctx, 110);
-            nk_slider_float(ctx, 0, &(myapp->value), 1.0f, 0.1f);
+            nk_slider_float(ctx, 0, &(myapp->movementSpeed), 20.0f, 0.1f);
+            testConf->setMovementSpeed(myapp->movementSpeed);
         }
         nk_layout_row_end(ctx);
 
@@ -621,8 +674,6 @@ int main(){
     struct my_nkc_app myapp;
     struct nkc nkcx; /* Allocate memory for Nuklear+ handle */
     myapp.nkcHandle = &nkcx;
-    /* init some user data */
-    myapp.value = 0.4;
 
 
 #ifdef _WIN32
@@ -650,8 +701,8 @@ int main(){
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
         //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
         //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-//        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
+        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
@@ -670,13 +721,12 @@ int main(){
         glfwSetWindowSizeCallback( myapp.nkcHandle->window, window_size_callback);
         glfwSetWindowSizeLimits( myapp.nkcHandle->window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
         glfwSetMouseButtonCallback( myapp.nkcHandle->window, mouse_button_callback);
-        glfwSwapInterval(0);
+//        glfwSwapInterval(0);
 
         nkc_set_main_loop(myapp.nkcHandle, mainLoop, (void*)&myapp );
     } else {
         printf("Can't init NKC\n");
     }
-    printf("Value after exit = %f\n", myapp.value);
     nkc_shutdown( myapp.nkcHandle );
     return 0;
 }

@@ -75,6 +75,13 @@ void M2Scene::draw() {
 
 }
 
+void M2Scene::doPostLoad() {
+    m_m2Object->doPostLoad();
+}
+void M2Scene::copyToCurrentFrame() {
+
+}
+
 void M2Scene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
     m_m2Object->update(deltaTime, cameraVec3, lookAtMat);
 }

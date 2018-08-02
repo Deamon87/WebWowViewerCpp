@@ -611,7 +611,7 @@ void M2Object::debugDumpAnimationSequences() {
 
 }
 
-void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
+void M2Object::doPostLoad(){
     if (!this->m_loaded) {
         if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded()) {
 
@@ -642,15 +642,19 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             this->m_loaded = true;
             this->m_loading = false;
 
+            for ( auto &item : m_postLoadEvents) {
+                item();
+            }
+            m_postLoadEvents.clear();
+
         } else {
             return;
         }
-    };
-
-    for ( auto &item : m_postLoadEvents) {
-        item();
     }
-    m_postLoadEvents.clear();
+}
+
+void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
+    if (!this->m_loaded)  return;
 
 //    /* 1. Calc local camera */
     mathfu::vec4 cameraInlocalPos = mathfu::vec4(cameraPos, 1);
@@ -951,7 +955,10 @@ void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
-    for (int i = 0; i < this->m_meshArray.size(); i++) {
+    int minBatch = m_api->getConfig()->getM2MinBatch();
+    int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());
+
+    for (int i = minBatch; i < maxBatch; i++) {
         if (M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], *this, m_materialArray[i], m2File, skinData)) {
             renderedThisFrame.push_back(this->m_meshArray[i]);
         }

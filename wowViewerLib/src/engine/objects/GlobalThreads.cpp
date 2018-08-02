@@ -3,6 +3,6 @@
 //
 
 #include "GlobalThreads.h"
-#ifdef DODEBUGTHREADS
+//#ifdef DODEBUGTHREADS
 GlobalThreads g_globalThreadsSingleton = GlobalThreads();
-#endif
+//#endif

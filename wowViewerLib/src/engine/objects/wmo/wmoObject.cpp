@@ -317,7 +317,7 @@ void WmoObject::createWorldPortals() {
     }
 }
 
-void WmoObject::update() {
+void WmoObject::doPostLoad() {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getIsLoaded()){
             m_loaded = true;
@@ -332,35 +332,60 @@ void WmoObject::update() {
         }
 
         return;
-    } else {
-        this->antiPortals = std::vector<PortalResults>(0);
-        for (int i= 0; i < groupObjects.size(); i++) {
-            if(groupObjects[i] != nullptr) {
-                if ((mainGeom->groups[i].flags.ANTIPORTAL) > 0) {
-                    //AntiPortal
-
-                    std::vector<mathfu::vec3> oclluded = CreateOccluders(groupObjects[i]->getWmoGroupGeom());
-					PortalResults result;
-					             
-					result.groupId = i;
-					result.portalIndex = -1;
-#ifndef CULLED_NO_PORTAL_DRAWING
-					result.portalVertices = oclluded;
-#endif
-					result.frustumPlanes = {};
-					result.level = 0;
-
-					this->antiPortals.push_back(result);
-                }
-                groupObjects[i]->update();
-            }
-        }
-        for (int i= 0; i < groupObjectsLod1.size(); i++) {
-            if(groupObjectsLod1[i] != nullptr) {
-                groupObjectsLod1[i]->update();
-            }
+    }
+    for (int i= 0; i < groupObjects.size(); i++) {
+        if(groupObjects[i] != nullptr) {
+            groupObjects[i]->doPostLoad();
         }
     }
+    for (int i= 0; i < groupObjectsLod1.size(); i++) {
+        if(groupObjectsLod1[i] != nullptr) {
+            groupObjectsLod1[i]->doPostLoad();
+        }
+    }
+    for (int i= 0; i < groupObjectsLod2.size(); i++) {
+        if(groupObjectsLod2[i] != nullptr) {
+            groupObjectsLod1[i]->doPostLoad();
+        }
+    }
+}
+
+void WmoObject::update() {
+    if (!m_loaded) return;
+
+    this->antiPortals = std::vector<PortalResults>(0);
+    for (int i= 0; i < groupObjects.size(); i++) {
+        if(groupObjects[i] != nullptr) {
+            if ((mainGeom->groups[i].flags.ANTIPORTAL) > 0) {
+                //AntiPortal
+
+                std::vector<mathfu::vec3> oclluded = CreateOccluders(groupObjects[i]->getWmoGroupGeom());
+                PortalResults result;
+
+                result.groupId = i;
+                result.portalIndex = -1;
+#ifndef CULLED_NO_PORTAL_DRAWING
+                result.portalVertices = oclluded;
+#endif
+                result.frustumPlanes = {};
+                result.level = 0;
+
+                this->antiPortals.push_back(result);
+            }
+            groupObjects[i]->update();
+        }
+    }
+    for (int i= 0; i < groupObjectsLod1.size(); i++) {
+        if(groupObjectsLod1[i] != nullptr) {
+            groupObjectsLod1[i]->update();
+        }
+    }
+    for (int i= 0; i < groupObjectsLod2.size(); i++) {
+        if(groupObjectsLod2[i] != nullptr) {
+            groupObjectsLod2[i]->update();
+        }
+    }
+
 }
 
 void WmoObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame){

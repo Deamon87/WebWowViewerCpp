@@ -29,6 +29,9 @@ private:
     std::vector<M2Object*> m2RenderedThisFrameArr;
     std::vector<WmoObject*> wmoRenderedThisFrameArr;
 
+    std::vector<M2Object*> currentFrameM2RenderedThisFrameArr;
+    std::vector<WmoObject*> currentFrameWmoRenderedThisFrameArr;
+
 public:
     WmoScene(IWoWInnerApi *api, std::string wmoModel) : m_api (api), m_wmoModel(wmoModel) {
         SMMapObjDef mapObjDef;
@@ -49,6 +52,8 @@ public:
 
     void draw() override;
 
+    void doPostLoad() override;
+    void copyToCurrentFrame() override;
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
 
     void drawM2s(std::vector<HGMesh> &renderedThisFrame);

@@ -214,7 +214,7 @@ private:
     bool deltaTimeUpdate;
     bool nextDataReady;
     std::mutex m_lockNextMeshes;            // mutex for critical section
-
+    std::unique_lock<std::mutex> renderLockNextMeshes;
 
     void activateRenderFrameShader();
     void activateRenderDepthShader();

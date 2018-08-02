@@ -8,7 +8,7 @@
 //Strictly debug class
 #include <thread>
 
-#ifdef DODEBUGTHREADS
+//#ifdef DODEBUGTHREADS
 class GlobalThreads {
 public:
     std::thread cullingAndUpdateThread;
@@ -16,6 +16,6 @@ public:
 };
 
 extern GlobalThreads g_globalThreadsSingleton;
-#endif
+//#endif
 
 #endif //AWEBWOWVIEWERCPP_GLOBALTHREADS_H

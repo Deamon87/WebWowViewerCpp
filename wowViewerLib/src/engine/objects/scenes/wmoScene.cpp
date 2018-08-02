@@ -63,8 +63,8 @@ void WmoScene::draw() {
     std::vector<HGMesh> renderedThisFrame;
 
     //2. Draw WMO
-    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
-        this->wmoRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
+    for (int i = 0; i < this->currentFrameWmoRenderedThisFrameArr.size(); i++) {
+        this->currentFrameWmoRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
     }
 //
 //    this->m_api->activateDrawPointShader();
@@ -244,9 +244,9 @@ void WmoScene::drawM2s(std::vector<HGMesh> &renderedThisFrame) {
 //        }
 
 
-    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
+    for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
 
-        M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+        M2Object *m2Object = this->currentFrameM2RenderedThisFrameArr[i];
         m2Object->fillBuffersAndArray(renderedThisFrame);
         m2Object->drawParticles(renderedThisFrame);
     }
@@ -274,6 +274,20 @@ void WmoScene::drawM2s(std::vector<HGMesh> &renderedThisFrame) {
 //    this->m_api->deactivateDrawPointShader();
 }
 
+void WmoScene::copyToCurrentFrame() {
+    currentFrameM2RenderedThisFrameArr = m2RenderedThisFrameArr;
+    currentFrameWmoRenderedThisFrameArr = wmoRenderedThisFrameArr;
+}
+void WmoScene::doPostLoad() {
+    for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
+        M2Object *m2Object = this->currentFrameM2RenderedThisFrameArr[i];
+        m2Object->doPostLoad();
+    }
+
+    for (int i = 0; i < this->currentFrameWmoRenderedThisFrameArr.size(); i++) {
+        this->currentFrameWmoRenderedThisFrameArr[i]->doPostLoad();
+    }
+}
 
 void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat)  {
     for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {

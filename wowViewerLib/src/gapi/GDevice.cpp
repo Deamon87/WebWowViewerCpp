@@ -145,6 +145,7 @@ HGUniformBuffer GDevice::createUniformBuffer(size_t size) {
     std::shared_ptr<GUniformBuffer> h_uniformBuffer;
     h_uniformBuffer.reset(new GUniformBuffer(*this, size));
 
+    h_uniformBuffer->m_creationIndex = uniformBuffersCreated++;
     std::weak_ptr<GUniformBuffer> w_uniformBuffer = h_uniformBuffer;
 
     m_unfiormBufferCache.push_back(w_uniformBuffer);
@@ -182,7 +183,9 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
         }
     }
 
-    std::sort( buffers.begin(), buffers.end() );
+    std::sort( buffers.begin(), buffers.end(), [](HGUniformBuffer &a,HGUniformBuffer &b) -> bool {
+        return a->m_creationIndex > b->m_creationIndex;
+    });
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
 
     //2. Create buffers and update them

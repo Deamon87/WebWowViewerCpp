@@ -37,6 +37,8 @@ public:
     void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) override;
     void draw() override;
 
+    void doPostLoad();
+    void copyToCurrentFrame();
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
     mathfu::vec4 getAmbientColor() override;
     void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override;

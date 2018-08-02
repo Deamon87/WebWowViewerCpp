@@ -463,6 +463,8 @@ void AdtObject::collectMeshesLod(std::vector<HGMesh> &renderedThisFrame) {
 }
 
 void AdtObject::update() {
+    if (adtWideBlockPS == nullptr) return;
+
     adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
     adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
     adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));

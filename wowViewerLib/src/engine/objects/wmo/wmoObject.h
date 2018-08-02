@@ -151,6 +151,7 @@ public:
         return false;
     }
 
+    void doPostLoad();
     void update();
 
     void createM2Array();

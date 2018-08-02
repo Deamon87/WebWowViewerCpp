@@ -154,6 +154,7 @@ public:
                                    const std::vector<mathfu::vec4> &frustumPlanes,
                                    const std::vector<mathfu::vec3> &frustumPoints);
 
+    void doPostLoad();
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
     void drawDebugLight();

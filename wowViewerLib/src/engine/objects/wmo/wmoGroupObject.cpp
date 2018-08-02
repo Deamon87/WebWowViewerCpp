@@ -286,25 +286,29 @@ static const struct {
 };
 
 
-void WmoGroupObject::update() {
+void WmoGroupObject::doPostLoad() {
     if (!this->m_loaded) {
         if (m_geom != nullptr && m_geom->isLoaded() && m_wmoApi->isLoaded()) {
             this->postLoad();
             this->m_loaded = true;
+            this->m_loading = false;
             return;
         }
 
         this->startLoading();
-        return;
     }
+}
+
+void WmoGroupObject::update() {
+    if (!this->m_loaded) return;
     
     if (m_recalcBoundries) {
         this->updateWorldGroupBBWithM2();
         m_recalcBoundries = false;
     }
 
-    int minBatch = m_api->getConfig()->getMinBatch();
-    int maxBatch = std::min(m_api->getConfig()->getMaxBatch(), m_geom->batchesLen);
+    int minBatch = m_api->getConfig()->getWmoMinBatch();
+    int maxBatch = std::min(m_api->getConfig()->getWmoMaxBatch(), m_geom->batchesLen);
 
     for (int j = minBatch; j < maxBatch; j++) {
         SMOBatch &renderBatch = m_geom->batches[j];
@@ -404,8 +408,8 @@ void WmoGroupObject::createMeshes() {
     Config * config = m_api->getConfig();
     HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("wmoShader");
 
-    int minBatch = config->getMinBatch();
-    int maxBatch = std::min(config->getMaxBatch(), m_geom->batchesLen);
+    int minBatch = config->getWmoMinBatch();
+    int maxBatch = std::min(config->getWmoMaxBatch(), m_geom->batchesLen);
 
     SMOMaterial * materials = m_wmoApi->getMaterials();
 

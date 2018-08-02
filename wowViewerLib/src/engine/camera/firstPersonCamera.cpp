@@ -72,11 +72,15 @@ mathfu::vec3 FirstPersonCamera::getCameraLookAt(){
     return lookAt;
 }
 
+void FirstPersonCamera::setMovementSpeed(float value) {
+    this->m_moveSpeed = value;
+};
+
 
 void FirstPersonCamera::tick (animTime_t timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
     mathfu::vec3 up = {0, 0, 1};
-    float moveSpeed = 1.0f / 10.0f;
+    float moveSpeed = m_moveSpeed * 1.0f / 30.0f;
     mathfu::vec3 camera = this->camera;
 
     double dTime = timeDelta;

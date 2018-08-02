@@ -30,6 +30,7 @@ private:
     float MDVerticalMinus = 0;
 
     float depthDiff = 0;
+    float m_moveSpeed = 1.0;
 
     bool staticCamera = false;
 
@@ -62,6 +63,7 @@ public:
     mathfu::mat4 &getLookatMat() {
         return lookAtMat;
     }
+    void setMovementSpeed(float value);
 
 public:
     //Implemented ICamera

@@ -138,7 +138,7 @@ void ParticleEmitter::createMesh() {
 
     meshTemplate.depthWrite = blendMode <= 1;
     meshTemplate.depthCulling = true;
-    meshTemplate.backFaceCulling = false;
+    meshTemplate.backFaceCulling = true;
 
     if (blendMode == 4 )
         blendMode = 3;

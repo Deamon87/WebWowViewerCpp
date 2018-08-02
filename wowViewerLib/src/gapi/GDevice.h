@@ -129,6 +129,7 @@ private:
     std::vector<char> aggregationBufferForUpload;
 
     bool m_m2ShaderCreated = false;
+    int uniformBuffersCreated = 0;
 };
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H
