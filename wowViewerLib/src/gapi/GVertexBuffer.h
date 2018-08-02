@@ -29,6 +29,8 @@ private:
 
 private:
     void * pIdentifierBuffer = nullptr;
+    size_t m_size;
+    bool m_dataUploaded = false;
 
 };
 

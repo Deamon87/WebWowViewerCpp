@@ -165,8 +165,7 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
-    //TODO: 1) Figure out how to collect all uniform buffers needed to render current meshes
-    //TODO: 2) Create uniform buffers in cycle that would actually hold the data
+    aggregationBufferForUpload.resize(0);
 
     //1. Collect buffers
     std::vector<HGUniformBuffer> buffers;
@@ -187,8 +186,6 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
 
     //2. Create buffers and update them
-    std::vector<char> c;
-
     int currentSize = 0;
     int buffersIndex = 0;
 
@@ -205,10 +202,10 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
         if (buffer->m_buffCreated) continue;
 
         if (currentSize + buffer->m_size > maxUniformBufferSize) {
-            bufferForUpload->uploadData(&c[0], currentSize);
+            bufferForUpload->uploadData(&aggregationBufferForUpload[0], currentSize);
 
             buffersIndex++;
-            c.resize(0);
+            aggregationBufferForUpload.resize(0);
             currentSize = 0;
 
             if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
@@ -222,20 +219,24 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
 
         buffer->pIdentifierBuffer = bufferForUpload->pIdentifierBuffer;
         buffer->m_offset = (size_t) currentSize;
-        c.insert(c.end(), (char*)buffer->pContent, ((char*)buffer->pContent)+buffer->m_size);
+        aggregationBufferForUpload.insert(
+            aggregationBufferForUpload.end(),
+            (char*)buffer->pContent,
+            ((char*)buffer->pContent)+buffer->m_size
+        );
         currentSize += buffer->m_size;
 
         int bytesToAdd = uniformBufferOffsetAlign - (currentSize % uniformBufferOffsetAlign);
         for (int j = 0; j < bytesToAdd; j++) {
-            c.push_back(0);
+            aggregationBufferForUpload.push_back(0);
         }
         currentSize+=bytesToAdd;
     }
 
-    bufferForUpload->uploadData(&c[0], currentSize);
+    bufferForUpload->uploadData(&aggregationBufferForUpload[0], currentSize);
 
     buffersIndex++;
-    c.resize(0);
+    aggregationBufferForUpload.resize(0);
     currentSize = 0;
 
 //    std::cout << "m_unfiormBuffersForUpload.size = " << m_unfiormBuffersForUpload.size() << std::endl;
@@ -422,5 +423,7 @@ GDevice::GDevice() {
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
+
+    aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize, 0);
 }
 

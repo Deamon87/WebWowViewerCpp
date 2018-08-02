@@ -650,8 +650,8 @@ int main(){
         //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
         //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
         //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
+//        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
         WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
@@ -670,7 +670,7 @@ int main(){
         glfwSetWindowSizeCallback( myapp.nkcHandle->window, window_size_callback);
         glfwSetWindowSizeLimits( myapp.nkcHandle->window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
         glfwSetMouseButtonCallback( myapp.nkcHandle->window, mouse_button_callback);
-//        glfwSwapInterval(0);
+        glfwSwapInterval(0);
 
         nkc_set_main_loop(myapp.nkcHandle, mainLoop, (void*)&myapp );
     } else {

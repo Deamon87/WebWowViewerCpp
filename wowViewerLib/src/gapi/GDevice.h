@@ -126,6 +126,7 @@ private:
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
     std::vector<HGUniformBuffer> m_unfiormBuffersForUpload;
+    std::vector<char> aggregationBufferForUpload;
 
     bool m_m2ShaderCreated = false;
 };

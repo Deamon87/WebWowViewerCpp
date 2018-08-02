@@ -327,7 +327,7 @@ void AdtObject::createMeshes() {
         aTemplate.meshType = MeshType::eAdtMesh;
         aTemplate.depthWrite = true;
         aTemplate.depthCulling = true;
-        aTemplate.backFaceCulling = true;
+        aTemplate.backFaceCulling = false;
         aTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
         aTemplate.start = m_adtFile->stripOffsets[i] * 2;

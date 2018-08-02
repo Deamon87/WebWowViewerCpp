@@ -53,8 +53,8 @@ void GUniformBuffer::uploadData(void * data, int length) {
 
         m_size = (size_t) length;
     } else {
-        glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);
-        //glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
+//        glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
     }
 
     m_dataUploaded = true;
