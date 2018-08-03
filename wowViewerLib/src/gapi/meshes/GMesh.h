@@ -47,15 +47,15 @@ protected:
 
 public:
     ~GMesh();
-    HGUniformBuffer getVertexUniformBuffer(int slot) {
+    inline HGUniformBuffer getVertexUniformBuffer(int slot) {
         return m_vertexUniformBuffer[slot];
     }
-    HGUniformBuffer getFragmentUniformBuffer(int slot) {
+    inline HGUniformBuffer getFragmentUniformBuffer(int slot) {
         return m_fragmentUniformBuffer[slot];
     }
-    EGxBlendEnum getGxBlendMode() { return m_blendMode; }
-    bool getIsTransparent() { return m_isTransparent; }
-    MeshType getMeshType() {
+    inline EGxBlendEnum getGxBlendMode() { return m_blendMode; }
+    inline bool getIsTransparent() { return m_isTransparent; }
+    inline MeshType getMeshType() {
         return m_meshType;
     }
 

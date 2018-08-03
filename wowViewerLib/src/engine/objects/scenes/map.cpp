@@ -668,47 +668,7 @@ void Map::drawExterior(std::vector<HGMesh> &renderedThisFrame) {
     //Sort...
     std::sort(renderedThisFrame.begin(),
               renderedThisFrame.end(),
-              [&](HGMesh& a, HGMesh& b) -> const bool {
-                  if (a->getIsTransparent() > b-> getIsTransparent()) {
-                      return false;
-                  }
-                  if (a->getIsTransparent() < b->getIsTransparent()) {
-                      return true;
-                  }
-
-                  if (a->getMeshType() > b->getMeshType()) {
-                      return false;
-                  }
-                  if (a->getMeshType() < b->getMeshType()) {
-                      return true;
-                  }
-
-                  if (a->getMeshType() == MeshType::eM2Mesh) {
-                      HGM2Mesh a1 = std::static_pointer_cast<GM2Mesh>(a);
-                      HGM2Mesh b1 = std::static_pointer_cast<GM2Mesh>(b);
-                      if (a1->m_priorityPlane != b1->m_priorityPlane) {
-                          return b1->m_priorityPlane > a1->m_priorityPlane;
-                      }
-
-                      if (a1->m_sortDistance > b1->m_sortDistance) {
-                          return true;
-                      }
-                      if (a1->m_sortDistance < b1->m_sortDistance) {
-                          return false;
-                      }
-
-                      if (a1->m_m2Object > b1->m_m2Object) {
-                          return true;
-                      }
-                      if (a1->m_m2Object < b1->m_m2Object) {
-                          return false;
-                      }
-
-                      return b1->m_layer < a1->m_layer;
-                  }
-
-                  return a > b;
-              }
+              GDevice::sortMeshes
     );
 }
 

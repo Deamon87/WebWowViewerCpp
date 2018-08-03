@@ -209,8 +209,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-   m_firstCamera.setCameraPos(0, 0, 200);
-    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(0, 0, 200);
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -390,9 +390,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
 
 
-//    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
-//    currentScene = new WmoScene(this,
-//        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
+    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
+    currentScene = new WmoScene(this,
+        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
 // currentScene = new WmoScene(this,
 //        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 

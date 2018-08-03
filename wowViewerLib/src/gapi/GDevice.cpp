@@ -430,3 +430,70 @@ GDevice::GDevice() {
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize, 0);
 }
 
+bool GDevice::sortMeshes(HGMesh &a, HGMesh &b) {
+    if (a->getIsTransparent() > b-> getIsTransparent()) {
+        return false;
+    }
+    if (a->getIsTransparent() < b->getIsTransparent()) {
+        return true;
+    }
+
+    if (a->getMeshType() > b->getMeshType()) {
+        return false;
+    }
+    if (a->getMeshType() < b->getMeshType()) {
+        return true;
+    }
+
+    if (a->getMeshType() == MeshType::eM2Mesh && a->getIsTransparent() && b->getIsTransparent()) {
+        HGM2Mesh a1 = std::static_pointer_cast<GM2Mesh>(a);
+        HGM2Mesh b1 = std::static_pointer_cast<GM2Mesh>(b);
+        if (a1->m_priorityPlane != b1->m_priorityPlane) {
+            return b1->m_priorityPlane > a1->m_priorityPlane;
+        }
+
+        if (a1->m_sortDistance > b1->m_sortDistance) {
+            return true;
+        }
+        if (a1->m_sortDistance < b1->m_sortDistance) {
+            return false;
+        }
+
+        if (a1->m_m2Object > b1->m_m2Object) {
+            return true;
+        }
+        if (a1->m_m2Object < b1->m_m2Object) {
+            return false;
+        }
+
+        if (b1->m_layer != a1->m_layer) {
+            return b1->m_layer < a1->m_layer;
+        }
+    }
+
+    if (a->m_bindings != b->m_bindings) {
+        return a->m_bindings > b->m_bindings;
+    }
+
+    if (a->getGxBlendMode() != b->getGxBlendMode()) {
+        return a->getGxBlendMode() < b->getGxBlendMode();
+    }
+
+    int minTextureCount = std::min(a->m_textureCount, b->m_textureCount);
+    for (int i = 0; i < minTextureCount; i++) {
+        if (a->m_texture[i] != b->m_texture[i]) {
+            return a->m_texture[i] > b->m_texture[i];
+        }
+    }
+
+    if (a->m_start != b->m_start) {
+        return a->m_start < b->m_start;
+    }
+    if (a->m_end != b->m_end) {
+        return a->m_end < b->m_end;
+    }
+
+
+    return a > b;
+}
+

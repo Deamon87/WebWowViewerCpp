@@ -97,6 +97,8 @@ public:
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate);
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate);
 
+    static bool sortMeshes(HGMesh& a, HGMesh& b);
+
 private:
     void drawMesh(HGMesh &hmesh);
 
