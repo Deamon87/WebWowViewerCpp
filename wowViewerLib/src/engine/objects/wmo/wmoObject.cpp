@@ -657,33 +657,8 @@ void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
     this->m_nameSet = mapObjDef.nameSet;
 }
 
-HBlpTexture WmoObject::getTexture(int textureId, bool isSpec) {
-    if (textureId < 0 || textureId >= mainGeom->textureNamesFieldLen) {
-        debuglog("Non valid textureindex for WMO")
-        return nullptr;
-    };
-
-    std::unordered_map<int, HBlpTexture> &textureCache = diffuseTextures;
-    if (isSpec) {
-        textureCache = specularTextures;
-    }
-
-    auto i = textureCache.find(textureId);
-    if (i != textureCache.end()) {
-        return i->second;
-    }
-
-    std::string materialTexture(&mainGeom->textureNamesField[textureId]);
-    if (materialTexture == "") return nullptr;
-
-    if (isSpec) {
-        materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
-    }
-
-    HBlpTexture texture = m_api->getTextureCache()->get(materialTexture);
-    textureCache[textureId] =  texture;
-
-    return texture;
+HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
+    return mainGeom->getTexture(m_api, textureId, isSpec);
 }
 
 void WmoObject::createBB(CAaBox bbox) {
@@ -1282,5 +1257,50 @@ std::function<void(WmoGroupGeom &wmoGroupGeom)> WmoObject::getAttenFunction() {
     return [&mainGeom](  WmoGroupGeom &wmoGroupGeom ) -> void {
         attenuateTransVerts(mainGeom, wmoGroupGeom);
     } ;
+}
+
+bool WmoObject::checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor) {
+    mathfu::vec3 cameraLocal = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1.0)).xyz();
+    for (int i = mainGeom->fogsLen-1; i >= 0; i--) {
+        SMOFog &fogRecord = mainGeom->fogs[i];
+        mathfu::vec3 fogPosVec = mathfu::vec3(fogRecord.pos);
+
+        float distanceToFog = (fogPosVec - cameraLocal).Length();
+        if ((distanceToFog < fogRecord.larger_radius) /*|| fogRecord.larger_radius == 0*/) {
+
+            fogColor.r = fogRecord.fog.color.r;
+            fogColor.g = fogRecord.fog.color.g;
+            fogColor.b = fogRecord.fog.color.b;
+//                this.sceneApi.setFogColor(fogRecord.fog_colorF);
+            //this.sceneApi.setFogStart(wmoFile.mfog.fog_end);
+//                this.sceneApi.setFogEnd(fogRecord.fog_end);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool WmoObject::hasPortals() {
+    return mainGeom->header->nPortals != 0;
+}
+
+SMOHeader *WmoObject::getWmoHeader() {
+    return mainGeom->header;
+}
+
+SMOLight *WmoObject::getLightArray() {
+    return mainGeom->lights;
+}
+
+SMOMaterial *WmoObject::getMaterials() {
+    return mainGeom->materials;
+}
+
+mathfu::vec3 WmoObject::getAmbientLight() {
+    return mathfu::vec3(
+            mainGeom->header->ambColor.r/255.0f,
+            mainGeom->header->ambColor.g/255.0f,
+            mainGeom->header->ambColor.b/255.0f);
 }
 

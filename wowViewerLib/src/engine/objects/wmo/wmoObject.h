@@ -7,6 +7,7 @@
 
 struct WmoGroupResult;
 class WmoGroupObject;
+class WmoGroupObject;
 #include <string>
 #include <unordered_set>
 #include "../../persistance/header/adtFileHeader.h"
@@ -40,7 +41,6 @@ class WmoObject : public IWmoApi {
 
 public:
     WmoObject(IWoWInnerApi *api) : m_api(api) {
-        m_getTextureFunc = std::bind(&WmoObject::getTexture, this, std::placeholders::_1, std::placeholders::_2);
     }
 private:
     IWoWInnerApi *m_api;
@@ -54,8 +54,6 @@ private:
     int m_doodadSet;
 
     std::vector<PortalInfo_t> geometryPerPortal;
-
-    std::function <HBlpTexture (int materialId, bool isSpec)> m_getTextureFunc;
 
     mathfu::mat4 m_placementMatrix;
     mathfu::mat4 m_placementInvertMatrix;
@@ -73,9 +71,6 @@ private:
     std::vector<int> lodGroupLevelWMO;
     std::vector<M2Object*> m_doodadsArray;
 
-    std::unordered_map<int, HBlpTexture> diffuseTextures;
-    std::unordered_map<int, HBlpTexture> specularTextures;
-
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
     void createBB(CAaBox bbox);
@@ -84,7 +79,7 @@ private:
     friend void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom);
 public:
     M2Object *getDoodad(int index) override ;
-    HBlpTexture getTexture(int materialId, bool isSpec) override;
+    HGTexture getTexture(int materialId, bool isSpec) override;
     void setLoadingParam( SMMapObjDef &mapObjDef);
     void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
 
@@ -93,31 +88,18 @@ public:
 
     void startLoading();
     bool isLoaded() override { return m_loaded;}
-    bool hasPortals() {
-        return mainGeom->header->nPortals != 0;
-    }
-    mathfu::vec3 getAmbientLight() {
-        return mathfu::vec3(
-            mainGeom->header->ambColor.r/255.0f,
-            mainGeom->header->ambColor.g/255.0f,
-            mainGeom->header->ambColor.b/255.0f);
-    }
+    bool hasPortals();
+    mathfu::vec3 getAmbientLight();
     int getNameSet() {
         return m_nameSet;
     }
 
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
-    virtual SMOHeader *getWmoHeader() override {
-        return mainGeom->header;
-    }
+    virtual SMOHeader *getWmoHeader() override;
 
-    virtual SMOMaterial *getMaterials() override {
-        return mainGeom->materials;
-    }
+    virtual SMOMaterial *getMaterials() override;
 
-    virtual SMOLight *getLightArray() override {
-        return mainGeom->lights;
-    }
+    virtual SMOLight *getLightArray() override;
     virtual std::vector<PortalInfo_t> &getPortalInfos() override {
         return geometryPerPortal;
     };
@@ -129,27 +111,7 @@ public:
 
     bool checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                              std::vector<mathfu::vec3> &frustumPoints, std::vector<M2Object *> &m2RenderedThisFrame);
-    bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor) {
-        mathfu::vec3 cameraLocal = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1.0)).xyz();
-        for (int i = mainGeom->fogsLen-1; i >= 0; i--) {
-            SMOFog &fogRecord = mainGeom->fogs[i];
-            mathfu::vec3 fogPosVec = mathfu::vec3(fogRecord.pos);
-
-            float distanceToFog = (fogPosVec - cameraLocal).Length();
-            if ((distanceToFog < fogRecord.larger_radius) /*|| fogRecord.larger_radius == 0*/) {
-
-                fogColor.r = fogRecord.fog.color.r;
-                fogColor.g = fogRecord.fog.color.g;
-                fogColor.b = fogRecord.fog.color.b;
-//                this.sceneApi.setFogColor(fogRecord.fog_colorF);
-                //this.sceneApi.setFogStart(wmoFile.mfog.fog_end);
-//                this.sceneApi.setFogEnd(fogRecord.fog_end);
-                return true;
-            }
-        }
-
-        return false;
-    }
+    bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor);
 
     void doPostLoad();
     void update();

@@ -844,12 +844,7 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
     for (int j = 0; j < op_count; j++) {
         auto m2TextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + j];
         M2Texture* m2TextureDefinition = m2File->textures[m2TextureIndex];
-
-        materialData.textures[j].m2TextureIndex = m2TextureIndex;
-        materialData.textures[j].xWrapTex = (m2TextureDefinition->flags & 1) > 0;
-        materialData.textures[j].yWrapTex = (m2TextureDefinition->flags & 2) > 0;
-
-        materialData.textures[j].texUnitTexture = getTexture(m2TextureIndex);
+        materialData.textures[j] = getTexture(j);
     }
 
     return true;
@@ -892,10 +887,7 @@ void M2Object::createMeshes() {
         HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
         meshTemplate.textureCount = textMaterial->textureCount;
         for (int j = 0; j < material.textureCount; j++) {
-            HBlpTexture blpTexture = this->getTexture(material.textures[j].m2TextureIndex);
-            meshTemplate.texture[j] = m_api->getDevice()->createBlpTexture(blpTexture,
-                material.textures[j].xWrapTex,
-                material.textures[j].yWrapTex);
+            meshTemplate.texture[j] = material.textures[j];
         }
         meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
         meshTemplate.vertexBuffers[1] = vertexModelWideUniformBuffer;
@@ -1070,9 +1062,7 @@ void M2Object::drawParticles(std::vector<HGMesh> &meshes) {
     }
 }
 
-inline HBlpTexture M2Object::getTexture(int textureInd) {
-    auto textureCache = m_api->getTextureCache();
-
+inline HGTexture M2Object::getTexture(int textureInd) {
     std::unordered_map<int, HBlpTexture> &loadedTextureCache = loadedTextures;
 
     M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures[textureInd];
@@ -1080,70 +1070,24 @@ inline HBlpTexture M2Object::getTexture(int textureInd) {
     if (textureDefinition == nullptr) {
         return nullptr;
     }
-
-
-
     if (textureDefinition->type == 0) {
-        auto i = loadedTextureCache.find(textureInd);
-        if (i != loadedTextureCache.end()) {
-            return i->second;
-        }
-
-        HBlpTexture texture;
-        if (textureDefinition->filename.size > 0) {
-            std::string fileName = textureDefinition->filename.toString();
-            texture = textureCache->get(fileName);
-        } else if (textureInd < m_m2Geom->textureFileDataIDs.size()) {
-            texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[textureInd]);
-        }
-
-        if (texture != nullptr) {
-            loadedTextureCache[textureInd] =  texture;
-        }
-
-        return texture;
+        return m_m2Geom->getHardCodedTexture(m_api, textureInd, textureDefinition);
 
     } else if (textureDefinition->type < this->m_replaceTextures.size()){
-        return this->m_replaceTextures[textureDefinition->type];
+        return m_api->getDevice()->createBlpTexture(
+                this->m_replaceTextures[textureDefinition->type],
+                (textureDefinition->flags & 1) > 0,
+                (textureDefinition->flags & 2) > 0
+        );
     }
     return nullptr;
 }
-//    /*
-//     {name: "pos",           type : "vector3f"},           0+12 = 12
-//     {name: "bonesWeight",   type : "uint8Array", len: 4}, 12+4 = 16
-//     {name: "bones",         type : "uint8Array", len: 4}, 16+4 = 20
-//     {name: "normal",        type : "vector3f"},           20+12 = 32
-//     {name: "textureX",      type : "float32"},            32+4 = 36
-//     {name: "textureY",      type : "float32"},            36+4 = 40
-//     {name : "textureX2",    type : "float32"},            40+4 = 44
-//     {name : "textureY2",    type : "float32"}             44+4 = 48
-//     */
-static GBufferBinding staticM2Bindings[6] = {
-    {+m2Shader::Attribute::aPosition, 3, GL_FLOAT, false, 48, 0 },
-    {+m2Shader::Attribute::boneWeights, 4, GL_UNSIGNED_BYTE, true, 48, 12},  // bonesWeight
-    {+m2Shader::Attribute::bones, 4, GL_UNSIGNED_BYTE, false, 48, 16},  // bones
-    {+m2Shader::Attribute::aNormal, 3, GL_FLOAT, false, 48, 20}, // normal
-    {+m2Shader::Attribute::aTexCoord, 2, GL_FLOAT, false, 48, 32}, // texcoord
-    {+m2Shader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 48, 40} // texcoord
-};
 
 void M2Object::createVertexBindings() {
     GDevice *device = m_api->getDevice();
 
-    //1. Get existing buffers
-    HGVertexBuffer vboBuffer = m_m2Geom->getVBO(*device);
-    HGIndexBuffer iboBuffer = m_skinGeom->getIBO(*device);
-
     //2. Create buffer binding and fill it
-    bufferBindings = device->createVertexBufferBindings();
-    bufferBindings->setIndexBuffer(iboBuffer);
-
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = vboBuffer;
-    vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[6]);
-
-    bufferBindings->addVertexBufferBinding(vertexBinding);
-    bufferBindings->save();
+    bufferBindings = m_m2Geom->getVAO(*device, m_skinGeom.get());
 
     //3. Create model wide uniform buffer
     vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockVS));

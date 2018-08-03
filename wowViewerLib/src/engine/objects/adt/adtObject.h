@@ -79,9 +79,9 @@ private:
     int mostDetailedLod = 0; // 0 = most detailed LOD, 5 = least detailed lod
     int leastDetiledLod = 0;
 
-    std::unordered_map<int, HBlpTexture> m_requestedTextures;
-    std::unordered_map<int, HBlpTexture> m_requestedTexturesHeight;
-    std::unordered_map<int, HBlpTexture> m_requestedTexturesSpec;
+    std::unordered_map<int, HGTexture> m_requestedTextures;
+    std::unordered_map<int, HGTexture> m_requestedTexturesHeight;
+    std::unordered_map<int, HGTexture> m_requestedTexturesSpec;
 
     std::vector<LodCommand> lodCommands;
 
@@ -122,9 +122,9 @@ private:
         std::vector<WmoObject *> wmoObjects;
     } objectLods[2];
 
-    HBlpTexture getAdtTexture(int textureId);
-    HBlpTexture getAdtHeightTexture(int textureId);
-    HBlpTexture getAdtSpecularTexture(int textureId);
+    HGTexture getAdtTexture(int textureId);
+    HGTexture getAdtHeightTexture(int textureId);
+    HGTexture getAdtSpecularTexture(int textureId);
 
     void calcBoundingBoxes();
     void loadM2s();

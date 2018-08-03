@@ -13,11 +13,11 @@ void GAdtShaderPermutation::compileShader() {
     //Init newly created shader
     glUseProgram(this->m_programBuffer);
 
-    glUniform1i(this->getUnf("uAlphaTexture"), 0);
-    glUniform1i(this->getUnf("uLayer0"), 1);
-    glUniform1i(this->getUnf("uLayer1"), 2);
-    glUniform1i(this->getUnf("uLayer2"), 3);
-    glUniform1i(this->getUnf("uLayer3"), 4);
+    glUniform1i(this->getUnf("uLayer0"), 0);
+    glUniform1i(this->getUnf("uLayer1"), 1);
+    glUniform1i(this->getUnf("uLayer2"), 2);
+    glUniform1i(this->getUnf("uLayer3"), 3);
+    glUniform1i(this->getUnf("uAlphaTexture"), 4);
     glUniform1i(this->getUnf("uLayerHeight0"), 5);
     glUniform1i(this->getUnf("uLayerHeight1"), 6);
     glUniform1i(this->getUnf("uLayerHeight2"), 7);

@@ -151,19 +151,19 @@ void ParticleEmitter::createMesh() {
     meshTemplate.element = GL_TRIANGLES;
 
     bool multitex = this->particleType >= 2;
-    HBlpTexture tex0 = nullptr;
+    HGTexture tex0 = nullptr;
     if (multitex) {
         tex0 = m2Object->getTexture(this->m_data->old.texture_0);
     } else {
         tex0 = m2Object->getTexture(this->m_data->old.texture);
     }
-    meshTemplate.texture[0] =  m_api->getDevice()->createBlpTexture(tex0, true, true);
+    meshTemplate.texture[0] =  tex0;
     if (multitex) {
-        HBlpTexture tex1 = m2Object->getTexture(this->m_data->old.texture_1);
-        HBlpTexture tex2 = m2Object->getTexture(this->m_data->old.texture_2);
+        HGTexture tex1 = m2Object->getTexture(this->m_data->old.texture_1);
+        HGTexture tex2 = m2Object->getTexture(this->m_data->old.texture_2);
 
-        meshTemplate.texture[1] =  m_api->getDevice()->createBlpTexture(tex1, true, true);
-        meshTemplate.texture[2] =  m_api->getDevice()->createBlpTexture(tex2, true, true);
+        meshTemplate.texture[1] =  tex1;
+        meshTemplate.texture[2] =  tex2;
     }
 
     meshTemplate.textureCount = (multitex) ? 3 : 1;

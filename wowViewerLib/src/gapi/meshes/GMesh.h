@@ -30,7 +30,7 @@ public:
     int start;
     int end;
     int element;
-    int textureCount;
+    unsigned int textureCount;
     std::vector<HGTexture> texture = std::vector<HGTexture>(4, nullptr);
     HGUniformBuffer vertexBuffers[3] = {nullptr,nullptr,nullptr};
     HGUniformBuffer fragmentBuffers[3] = {nullptr,nullptr,nullptr};

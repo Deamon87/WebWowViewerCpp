@@ -29,8 +29,6 @@ public:
     bool isLoaded() const { return m_loaded; };
     void createIndexVBO();
 
-    void draw(IWoWInnerApi *api, SMOMaterial const *materials, mathfu::vec4 &ambColor, std::function <HBlpTexture (int materialId, bool isSpec)> getTextureFunc);
-
     HGVertexBuffer getVBO(GDevice &device);
     HGIndexBuffer getIBO(GDevice &device);
     HGVertexBufferBindings getVertexBindings(GDevice &device);

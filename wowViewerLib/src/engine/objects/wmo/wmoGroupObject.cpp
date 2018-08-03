@@ -466,24 +466,13 @@ void WmoGroupObject::createMeshes() {
 
         bool isSecondTextSpec = material.shader == 8;
 
-        HBlpTexture texture1 = m_wmoApi->getTexture(material.diffuseNameIndex, false);
-        HBlpTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, isSecondTextSpec);
-        HBlpTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
+        HGTexture texture1 = m_wmoApi->getTexture(material.diffuseNameIndex, false);
+        HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, isSecondTextSpec);
+        HGTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
 
-        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(
-            texture1,
-            true,
-            true);
-
-        meshTemplate.texture[1] = m_api->getDevice()->createBlpTexture(
-            texture2,
-            true,
-            true);
-
-        meshTemplate.texture[2] = m_api->getDevice()->createBlpTexture(
-            texture3,
-            true,
-            true);
+        meshTemplate.texture[0] = texture1;
+        meshTemplate.texture[1] = texture2;
+        meshTemplate.texture[2] = texture3;
 
         meshTemplate.textureCount = 3;
 

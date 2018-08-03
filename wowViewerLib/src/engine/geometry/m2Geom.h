@@ -17,6 +17,8 @@ class M2Geom {
 public:
     void process(std::vector<unsigned char> &m2File, std::string &fileName);
     HGVertexBuffer getVBO(GDevice &device);
+    HGVertexBufferBindings getVAO(GDevice &device, SkinGeom *skinGeom);
+    HGTexture getHardCodedTexture(IWoWInnerApi* api, int textureInd, M2Texture* textureDefinition);
 
     bool isLoaded() { return m_loaded; };
 
@@ -30,6 +32,8 @@ private:
 
     bool m_loaded = false;
     HGVertexBuffer vertexVbo = HGVertexBuffer(nullptr);
+    std::unordered_map<SkinGeom *, HGVertexBufferBindings> vaoMap;
+    std::unordered_map<M2Texture*, HGTexture> loadedTextureCache;
 
     static chunkDef<M2Geom> m2FileTable;
 

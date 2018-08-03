@@ -156,7 +156,23 @@ HGUniformBuffer GDevice::createUniformBuffer(size_t size) {
 void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
     updateBuffers(meshes);
 
-//    if (m_m2ShaderCreated) exit(0);
+    //Collect meshes into batches and create new array for performace
+//    int meshesSize = meshes.size();
+//    for (int i = 0 ; i < meshesSize - 1; i++) {
+//        HGMesh &a = meshes[i];
+//        HGMesh &b = meshes[i+1];
+//
+//        if (a->getIsTransparent() || b->getIsTransparent()) continue;
+//
+//        if (
+//            a->m_bindings == b->m_bindings &&
+//            a->m_start == b->m_start &&
+//            a->m_end == b->m_end &&
+//
+//            a->m_textureCount == a->m_textureCount)
+//    }
+
+
 
     int j = 0;
     for (auto &hgMesh : meshes) {
@@ -484,6 +500,10 @@ bool GDevice::sortMeshes(HGMesh &a, HGMesh &b) {
         if (a->m_texture[i] != b->m_texture[i]) {
             return a->m_texture[i] > b->m_texture[i];
         }
+    }
+
+    if (a->m_textureCount != b->m_textureCount) {
+        return a->m_textureCount < b->m_textureCount;
     }
 
     if (a->m_start != b->m_start) {

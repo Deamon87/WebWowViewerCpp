@@ -30,10 +30,14 @@ layout(std140) uniform sceneWideBlockVSPS {
 };
 
 // Whole model
+#ifndef INSTANCED
 layout(std140) uniform modelWideBlockVS {
     mat4 uPlacementMat;
     mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 };
+#else
+attribute mat4 aPlacementMat;
+#endif
 
 //Individual meshes
 layout(std140) uniform meshWideBlockVS {
@@ -41,11 +45,6 @@ layout(std140) uniform meshWideBlockVS {
     vec4 color_Transparency;
     mat4 uTextMat[2];
 };
-
-#ifndef INSTANCED
-#else
-attribute mat4 aPlacementMat;
-#endif
 
 //Shader output
 varying vec2 vTexCoord;

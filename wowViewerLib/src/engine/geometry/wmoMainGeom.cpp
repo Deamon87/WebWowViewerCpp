@@ -3,6 +3,7 @@
 //
 
 #include "wmoMainGeom.h"
+#include "../wowInnerApi.h"
 #include <iostream>
 
 chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
@@ -166,4 +167,34 @@ void WmoMainGeom::process(std::vector<unsigned char> &wmoMainFile, std::string &
 
 bool WmoMainGeom::getIsLoaded() {
     return m_loaded;
+}
+
+HGTexture WmoMainGeom::getTexture(IWoWInnerApi *api, int textureId, bool isSpec) {
+    if (textureId < 0 || textureId >= this->textureNamesFieldLen) {
+        debuglog("Non valid textureindex for WMO")
+        return nullptr;
+    };
+
+    std::unordered_map<int, HGTexture> &textureCache = diffuseTextures;
+    if (isSpec) {
+        textureCache = specularTextures;
+    }
+
+    auto i = textureCache.find(textureId);
+    if (i != textureCache.end()) {
+        return i->second;
+    }
+
+    std::string materialTexture(&this->textureNamesField[textureId]);
+    if (materialTexture == "") return nullptr;
+
+    if (isSpec) {
+        materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
+    }
+
+    HBlpTexture texture = api->getTextureCache()->get(materialTexture);
+    HGTexture hgTexture = api->getDevice()->createBlpTexture(texture, true, true);
+    textureCache[textureId] =  hgTexture;
+
+    return hgTexture;
 }

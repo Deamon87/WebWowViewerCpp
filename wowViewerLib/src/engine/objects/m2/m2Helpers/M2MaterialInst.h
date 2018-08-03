@@ -9,6 +9,8 @@
 #include "../../../wowCommonClasses.h"
 #include "../../../persistance/header/blpFileHeader.h"
 #include "../../../texture/BlpTexture.h"
+#include "../../../../gapi/GDevice.h"
+//#include "../../../../gapi/GTexture.h"
 
 class M2MaterialInst {
 public:
@@ -19,12 +21,7 @@ public:
     int textureCount;
 
     int texUnitTexIndex = -1;
-    struct textureParams {
-        int m2TextureIndex = -1;
-        bool xWrapTex = false;
-        bool yWrapTex = false;
-        HBlpTexture texUnitTexture = nullptr;
-    } textures[4];
+    HGTexture textures[4];
 
     int layer = 0;
     int renderFlagIndex = -1;

@@ -53,6 +53,26 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
     }
 };
 
+
+//    /*
+//     {name: "pos",           type : "vector3f"},           0+12 = 12
+//     {name: "bonesWeight",   type : "uint8Array", len: 4}, 12+4 = 16
+//     {name: "bones",         type : "uint8Array", len: 4}, 16+4 = 20
+//     {name: "normal",        type : "vector3f"},           20+12 = 32
+//     {name: "textureX",      type : "float32"},            32+4 = 36
+//     {name: "textureY",      type : "float32"},            36+4 = 40
+//     {name : "textureX2",    type : "float32"},            40+4 = 44
+//     {name : "textureY2",    type : "float32"}             44+4 = 48
+//     */
+static GBufferBinding staticM2Bindings[6] = {
+        {+m2Shader::Attribute::aPosition, 3, GL_FLOAT, false, 48, 0 },
+        {+m2Shader::Attribute::boneWeights, 4, GL_UNSIGNED_BYTE, true, 48, 12},  // bonesWeight
+        {+m2Shader::Attribute::bones, 4, GL_UNSIGNED_BYTE, false, 48, 16},  // bones
+        {+m2Shader::Attribute::aNormal, 3, GL_FLOAT, false, 48, 20}, // normal
+        {+m2Shader::Attribute::aTexCoord, 2, GL_FLOAT, false, 48, 32}, // texcoord
+        {+m2Shader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 48, 40} // texcoord
+};
+
 void initM2Textures(M2Data *m2Header, void *m2File){
     int32_t texturesSize = m2Header->textures.size;
     for (int i = 0; i < texturesSize; i++) {
@@ -241,4 +261,54 @@ HGVertexBuffer M2Geom::getVBO(GDevice &device) {
     }
 
     return vertexVbo;
+}
+
+HGVertexBufferBindings M2Geom::getVAO(GDevice &device, SkinGeom *skinGeom) {
+    HGVertexBufferBindings bufferBindings = nullptr;
+    if (vaoMap.find(skinGeom) != vaoMap.end()) {
+        bufferBindings = vaoMap.at(skinGeom);
+    } else {
+        HGVertexBuffer vboBuffer = this->getVBO(device);
+        HGIndexBuffer iboBuffer = skinGeom->getIBO(device);
+
+        //2. Create buffer binding and fill it
+        bufferBindings = device.createVertexBufferBindings();
+        bufferBindings->setIndexBuffer(iboBuffer);
+
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = vboBuffer;
+        vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[6]);
+
+        bufferBindings->addVertexBufferBinding(vertexBinding);
+        bufferBindings->save();
+
+        vaoMap[skinGeom] = bufferBindings;
+    }
+
+    return bufferBindings;
+}
+
+HGTexture M2Geom::getHardCodedTexture(IWoWInnerApi * api, int textureInd, M2Texture* textureDefinition) {
+    auto i = loadedTextureCache.find(textureDefinition);
+    if (i != loadedTextureCache.end()) {
+        return i->second;
+    }
+
+    auto textureCache = api->getTextureCache();
+    HBlpTexture texture;
+    if (textureDefinition->filename.size > 0) {
+        std::string fileName = textureDefinition->filename.toString();
+        texture = textureCache->get(fileName);
+    } else if (textureInd < textureFileDataIDs.size()) {
+        texture = textureCache->getFileId(textureFileDataIDs[textureInd]);
+    }
+
+    HGTexture hgTexture = api->getDevice()->createBlpTexture(
+        texture,
+        (textureDefinition->flags & 1) > 0,
+        (textureDefinition->flags & 2) > 0
+    );
+
+    loadedTextureCache[textureDefinition] = hgTexture;
+    return hgTexture;
 }
