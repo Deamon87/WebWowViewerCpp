@@ -22,6 +22,7 @@ void GVertexBuffer::destroyBuffer() {
 }
 
 void GVertexBuffer::uploadData(void * data, int length) {
+    m_device.bindVertexBufferBindings(nullptr);
     m_device.bindVertexBuffer(this);
 
     if (!m_dataUploaded || length > m_size) {

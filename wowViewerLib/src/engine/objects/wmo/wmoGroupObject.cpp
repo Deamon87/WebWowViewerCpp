@@ -594,6 +594,7 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
                                        std::vector<mathfu::vec3> &points,
                                        std::vector<M2Object *> &wmoM2Candidates) {
     if (this == nullptr) return false;
+    if (!m_loaded) return false;
     CAaBox bbArray = this->m_worldGroupBorder;
 
     bool isInsideM2Volume = (

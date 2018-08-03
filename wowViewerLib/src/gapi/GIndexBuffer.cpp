@@ -22,6 +22,7 @@ void GIndexBuffer::destroyBuffer() {
 }
 
 void GIndexBuffer::uploadData(void * data, int length) {
+    m_device.bindVertexBufferBindings(nullptr);
     m_device.bindIndexBuffer(this);
 
     if (!m_dataUploaded || length > m_size) {
