@@ -288,27 +288,3 @@ HGVertexBufferBindings M2Geom::getVAO(GDevice &device, SkinGeom *skinGeom) {
     return bufferBindings;
 }
 
-HGTexture M2Geom::getHardCodedTexture(IWoWInnerApi * api, int textureInd, M2Texture* textureDefinition) {
-    auto i = loadedTextureCache.find(textureDefinition);
-    if (i != loadedTextureCache.end()) {
-        return i->second;
-    }
-
-    auto textureCache = api->getTextureCache();
-    HBlpTexture texture;
-    if (textureDefinition->filename.size > 0) {
-        std::string fileName = textureDefinition->filename.toString();
-        texture = textureCache->get(fileName);
-    } else if (textureInd < textureFileDataIDs.size()) {
-        texture = textureCache->getFileId(textureFileDataIDs[textureInd]);
-    }
-
-    HGTexture hgTexture = api->getDevice()->createBlpTexture(
-        texture,
-        (textureDefinition->flags & 1) > 0,
-        (textureDefinition->flags & 2) > 0
-    );
-
-    loadedTextureCache[textureDefinition] = hgTexture;
-    return hgTexture;
-}

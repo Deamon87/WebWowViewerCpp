@@ -1061,25 +1061,53 @@ void M2Object::drawParticles(std::vector<HGMesh> &meshes) {
     }
 }
 
-HGTexture M2Object::getTexture(int textureInd) {
-    std::unordered_map<int, HBlpTexture> &loadedTextureCache = loadedTextures;
-
+HBlpTexture M2Object::getBlpTextureData(int textureInd) {
     M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
     //TODO:! Example of exception: "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\BURNINGBOOKS\\BOOKSONFIRE.m2"
+    HBlpTexture blpData = nullptr;
     if (textureDefinition == nullptr) {
         return nullptr;
     }
     if (textureDefinition->type == 0) {
-        return m_m2Geom->getHardCodedTexture(m_api, textureInd, textureDefinition);
+        blpData = getHardCodedTexture(textureInd);
 
     } else if (textureDefinition->type < this->m_replaceTextures.size()){
-        return m_api->getDevice()->createBlpTexture(
-                this->m_replaceTextures[textureDefinition->type],
-                (textureDefinition->flags & 1) > 0,
-                (textureDefinition->flags & 2) > 0
-        );
+        blpData = this->m_replaceTextures[textureDefinition->type];
     }
-    return nullptr;
+
+    return blpData;
+}
+
+HGTexture M2Object::getTexture(int textureInd) {
+    std::unordered_map<int, HBlpTexture> &loadedTextureCache = loadedTextures;
+    M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
+
+    HBlpTexture blpData = getBlpTextureData(textureInd);
+
+    if (blpData == nullptr)
+        return nullptr;
+
+    HGTexture hgTexture = m_api->getDevice()->createBlpTexture(
+        blpData,
+        (textureDefinition->flags & 1) > 0,
+        (textureDefinition->flags & 2) > 0
+    );
+
+    return hgTexture;
+}
+
+HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
+    M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
+    auto textureCache = m_api->getTextureCache();
+    HBlpTexture texture;
+    if (textureDefinition->filename.size > 0) {
+        std::string fileName = textureDefinition->filename.toString();
+        texture = textureCache->get(fileName);
+    } else if (textureInd < m_m2Geom->textureFileDataIDs.size()) {
+        texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[textureInd]);
+    }
+
+    return texture;
 }
 
 void M2Object::createVertexBindings() {

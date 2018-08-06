@@ -103,6 +103,28 @@ private:
     void drawMesh(HGMesh &hmesh);
 
 private:
+    struct BlpCacheRecord {
+        HBlpTexture texture;
+        bool wrapX;
+        bool wrapY;
+
+        bool operator==(const BlpCacheRecord &other) const {
+          return
+              (texture == other.texture) &&
+              (wrapX == other.wrapX) &&
+              (wrapY == other.wrapY);
+
+        };
+    };
+    struct BlpCacheRecordHasher {
+        std::size_t operator()(const BlpCacheRecord& k) const {
+            using std::hash;
+            return hash<void*>{}(k.texture.get()) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
+        };
+    };
+    std::unordered_map<BlpCacheRecord, std::weak_ptr<GTexture>, BlpCacheRecordHasher> loadedTextureCache;
+
+
     int8_t m_lastDepthWrite = -1;
     int8_t m_lastDepthCulling = -1;
     int8_t m_backFaceCulling = -1;

@@ -156,7 +156,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
 //    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
 //    currentScene = new Map(this, 1220, "Troll Raid");
-//    currentScene = new Map(this, "BrokenShoreBattleshipFinale");
+//    currentScene = new Map(this, 0, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
 //    m_firstCamera.setCameraPos( -7134, 931, 27); // THE WOUND
@@ -304,8 +304,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -368,8 +368,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_castle.wmo");
 //    m_firstCamera.setCameraPos(-1161.35, -798.59, 835.05);
 //    currentScene = new Map(this, "grimbatolraid");
-
-
 
 //   currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\karazhanb\\7du_karazhanb_tower.wmo");
@@ -451,8 +449,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         }
     });
 
-    /*
 
+/*
     g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&](){
         using namespace std::chrono_literals;
         std::unique_lock<std::mutex> localLockNextMeshes (m_lockNextMeshes,std::defer_lock);
@@ -469,7 +467,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
             localLockNextMeshes.unlock();
         }
     }));
-    */
+*/
 }
 
 void WoWSceneImpl::initGlContext() {
@@ -806,7 +804,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateStart);
     DoCulling();
     m_currentFrameParams = m_nextFrameParams;
-//    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
+//    clock_gettimeZ(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
 //
 //    print_timediff("DoCulling", cullingAndUpdateStart, cullingAndUpdateEnd);
 }

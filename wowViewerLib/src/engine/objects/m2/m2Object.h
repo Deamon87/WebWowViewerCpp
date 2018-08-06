@@ -166,8 +166,9 @@ public:
 
     void setDiffuseColor(CImVector& value);
 
-
+    HBlpTexture getBlpTextureData(int textureInd);
     HGTexture getTexture(int textureInd);
+    HBlpTexture getHardCodedTexture(int textureInd);
 
     mathfu::vec4 getAmbientLight();
     void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {

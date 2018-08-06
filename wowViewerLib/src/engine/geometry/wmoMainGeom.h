@@ -9,13 +9,11 @@
 #include "../persistance/helper/ChunkFileReader.h"
 #include "../persistance/header/wmoFileHeader.h"
 #include "../../gapi/GDevice.h"
-#include "../wowInnerApi.h"
 
 class WmoMainGeom {
 public:
     void process(std::vector<unsigned char> &wmoMainFile, std::string &fileName);
     bool getIsLoaded();
-    HGTexture getTexture(IWoWInnerApi *api, int textureId, bool isSpec);
 private:
     static chunkDef<WmoMainGeom> wmoMainTable;
     bool m_loaded = false;
@@ -59,9 +57,6 @@ public:
     SMOFog *fogs;
     int fogsLen;
 
-private:
-    std::unordered_map<int, HGTexture> diffuseTextures;
-    std::unordered_map<int, HGTexture> specularTextures;
 };
 
 

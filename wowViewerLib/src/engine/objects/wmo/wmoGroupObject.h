@@ -45,8 +45,7 @@ public:
     void update();
     bool checkGroupFrustum(mathfu::vec4 &cameraVec4,
                            std::vector<mathfu::vec4> &frustumPlanes,
-                           std::vector<mathfu::vec3> &points,
-                           std::vector<M2Object*> &wmoM2Candidates);
+                           std::vector<mathfu::vec3> &points);
 
     mathfu::vec4 getAmbientColor();
 

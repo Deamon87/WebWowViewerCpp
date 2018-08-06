@@ -27,15 +27,29 @@ struct WmoGroupResult {
     int nodeId;
 };
 
-struct PortalResults {
-    int groupId;
-    int portalIndex;
-#ifndef CULLED_NO_PORTAL_DRAWING
-    std::vector<mathfu::vec3> portalVertices;
-#endif
-    std::vector<mathfu::vec4> frustumPlanes;
-    int level;
+class GeneralView {
+public:
+    bool viewCreated = false;
+    std::vector<WmoGroupObject *> drawnWmos;
+    std::vector<M2Object *> drawnM2s;
+    //Support several frustum planes because of how portal culling works
+    std::vector<std::vector<mathfu::vec3>> portalVertices;
+    std::vector<std::vector<mathfu::vec4>> frustumPlanes;
+    int level = -1;
+    int renderOrder = -1;
 };
+
+class InteriorView : public GeneralView {
+public:
+    int portalIndex;
+};
+
+class ExteriorView : public GeneralView {
+
+public:
+    std::vector<AdtObject *> drawnADTs;
+};
+
 
 class WmoObject : public IWmoApi {
 
@@ -70,6 +84,14 @@ private:
     std::vector<bool> drawGroupWMO;
     std::vector<int> lodGroupLevelWMO;
     std::vector<M2Object*> m_doodadsArray;
+
+    std::unordered_map<int, HGTexture> diffuseTextures;
+    std::unordered_map<int, HGTexture> specularTextures;
+
+    // Portal culling stuff begin
+    std::vector<bool> transverseVisitedPortals;
+    std::vector<int> collectedM2s;
+    // Portal culling stuff end
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
@@ -120,41 +142,49 @@ public:
     void updateBB() override ;
 
 public:
-    std::vector<PortalResults> interiorPortals;
-    std::vector<PortalResults> exteriorPortals;
-    std::vector<PortalResults> antiPortals;
-
-public:
     //Portal culling
-    bool startTraversingFromInteriorWMO (
-        std::vector<WmoGroupResult> &wmoGroupsResult,
-        mathfu::vec4 &cameraVec4,
-        mathfu::mat4 &viewPerspectiveMat,
-        std::vector<M2Object*> &m2RenderedThisFrame);
+//    bool startTraversingFromInteriorWMO (
+//        std::vector<WmoGroupResult> &wmoGroupsResult,
+//        mathfu::vec4 &cameraVec4,
+//        mathfu::mat4 &viewPerspectiveMat,
+//        std::vector<M2Object*> &m2RenderedThisFrame);
+//
+//    bool startTraversingFromExterior (
+//        mathfu::vec4 &cameraVec4,
+//        mathfu::mat4 &viewPerspectiveMat,
+//        std::vector<M2Object*> &m2RenderedThisFrame);
 
-    bool startTraversingFromExterior (
+    void resetTraversedWmoGroups();
+    void startTraversingWMOGroup(
         mathfu::vec4 &cameraVec4,
         mathfu::mat4 &viewPerspectiveMat,
-        std::vector<M2Object*> &m2RenderedThisFrame);
+        int groupId,
+        int globalLevel,
+        int &renderOrder,
+        bool traversingFromInterior,
+        std::vector<InteriorView> &interiorViews,
+        ExteriorView &exteriorView
+    );
 
     void checkGroupDoodads(
         int groupId,
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
-        int level,
         std::vector<M2Object*> &m2Candidates);
 
     void transverseGroupWMO (
         int groupId,
-        bool fromInterior,
+        bool traversingStartedFromInterior,
+        std::vector<InteriorView> &allInteriorViews, //GroupIndex as index
+        ExteriorView &exteriorView,
         mathfu::vec4 &cameraVec4,
         mathfu::vec4 &cameraLocal,
         mathfu::mat4 &inverseTransposeModelMat,
-        std::vector<bool> &transverseVisitedGroups,
         std::vector<bool> &transverseVisitedPortals,
         std::vector<mathfu::vec4> &localFrustumPlanes,
-        int level,
-        std::vector<M2Object*> &m2ObjectSet);
+        int globalLevel,
+        int localLevel
+    );
 
     bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
 

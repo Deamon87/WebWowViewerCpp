@@ -53,24 +53,24 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 
     if (!this->m_currentInteriorGroups.empty() && m_api->getConfig()->getUsePortalCulling()) {
-        if (this->m_currentWMO->startTraversingFromInteriorWMO(
-                this->m_currentInteriorGroups,
-                cameraPos,
-                projectionModelMat,
-                m2RenderedThisFrame)) {
-
-            wmoRenderedThisFrame.push_back(this->m_currentWMO);
-
-            if (!this->m_currentWMO->exteriorPortals.empty()) {
-                std::vector<std::vector<mathfu::vec4>> portalsToExt;
-                for (auto &a : this->m_currentWMO->exteriorPortals) {
-                    portalsToExt.push_back(a.frustumPlanes);
-                }
-
-                checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
-                              adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
-            }
-        }
+//        if (this->m_currentWMO->startTraversingFromInteriorWMO(
+//                this->m_currentInteriorGroups,
+//                cameraPos,
+//                projectionModelMat,
+//                m2RenderedThisFrame)) {
+//
+//            wmoRenderedThisFrame.push_back(this->m_currentWMO);
+//
+//            if (!this->m_currentWMO->exteriorPortals.empty()) {
+//                std::vector<std::vector<mathfu::vec4>> portalsToExt;
+//                for (auto &a : this->m_currentWMO->exteriorPortals) {
+//                    portalsToExt.push_back(a.frustumPlanes);
+//                }
+//
+//                checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
+//                              adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
+//            }
+//        }
     } else {
         checkExterior(cameraPos, frustumPlanes, frustumPoints, hullines, lookAtMat4, projectionModelMat,
                       adtRenderedThisFrame, m2RenderedThisFrame, wmoRenderedThisFrame);
@@ -458,7 +458,6 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         hullLines,
                         lookAtMat4, m2ObjectsCandidates, wmoCandidates);
                 if (result) {
-
                     adtRenderedThisFrame.push_back(adtObject);
                 }
             } else if (true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
@@ -494,9 +493,9 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
 
         if ( wmoCandidate->hasPortals() && m_api->getConfig()->getUsePortalCulling() ) {
-            if(wmoCandidate->startTraversingFromExterior(cameraPos, projectionModelMat, m2ObjectsCandidates)){
-                wmoRenderedThisFrame.push_back(wmoCandidate);
-            }
+//            if(wmoCandidate->startTraversingFromExterior(cameraPos, projectionModelMat, m2ObjectsCandidates)){
+//                wmoRenderedThisFrame.push_back(wmoCandidate);
+//            }
         } else {
             if (wmoCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints, m2ObjectsCandidates)) {
                 wmoRenderedThisFrame.push_back(wmoCandidate);

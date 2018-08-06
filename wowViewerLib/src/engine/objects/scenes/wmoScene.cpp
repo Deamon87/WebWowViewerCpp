@@ -20,6 +20,7 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
 
     wmoRenderedThisFrame.push_back(this->m_wmoObject);
 
+    /*
     if (!this->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded() && this->m_wmoObject->hasPortals() && m_api->getConfig()->getUsePortalCulling()) {
         if (this->m_currentWMO->startTraversingFromInteriorWMO(
                 this->m_currentInteriorGroups,
@@ -40,6 +41,7 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
             }
         }
     }
+    */
     std::sort( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() );
     m2RenderedThisFrame.erase( unique( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() ), m2RenderedThisFrame.end() );
 

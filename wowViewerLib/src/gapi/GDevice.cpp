@@ -411,8 +411,26 @@ void GDevice::bindTexture(GTexture *texture, int slot) {
 }
 
 HGTexture GDevice::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
+    BlpCacheRecord blpCacheRecord;
+    blpCacheRecord.texture = texture;
+    blpCacheRecord.wrapX = xWrapTex;
+    blpCacheRecord.wrapY = yWrapTex;
+
+    auto i = loadedTextureCache.find(blpCacheRecord);
+    if (i != loadedTextureCache.end()) {
+        if (!i->second.expired()) {
+            return i->second.lock();
+        } else {
+            loadedTextureCache.erase(i);
+        }
+    }
+
     std::shared_ptr<GBlpTexture> hgTexture;
     hgTexture.reset(new GBlpTexture(*this, texture, xWrapTex, yWrapTex));
+
+    std::weak_ptr<GTexture> weakPtr(hgTexture);
+    loadedTextureCache[blpCacheRecord] = weakPtr;
+
     return hgTexture;
 }
 

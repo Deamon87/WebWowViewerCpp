@@ -543,6 +543,16 @@ HGTexture AdtObject::getAdtSpecularTexture(int textureId) {
     return h_gblpTexture;
 }
 
+const float dist = 533.0f*1.5;
+static const float perLodDist[5] = {9999999999.99f,
+                                    std::pow(dist, 2.0f),        //32
+                                    std::pow(dist / (2.0f), 2.0f), //16
+                                    std::pow(dist / (4.0f), 2.0f), //8
+                                    std::pow(dist / (8.0f), 2.0f), //4
+//                                  std::pow(dist / (16), 2) //2
+};
+
+
 bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                 float x_offset, float y_offset, float cell_len,
                                 int curentLod, int lastFoundLod,
@@ -554,14 +564,7 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                 std::vector<M2Object *> &m2ObjectsCandidates,
                                 std::vector<WmoObject *> &wmoCandidates) {
 
-    const float dist = 533.0f*1.5;
-    static const float perLodDist[5] = {9999999999.99f,
-                                  std::pow(dist, 2.0f),        //32
-                                  std::pow(dist / (2.0f), 2.0f), //16
-                                  std::pow(dist / (4.0f), 2.0f), //8
-                                  std::pow(dist / (8.0f), 2.0f), //4
-//                                  std::pow(dist / (16), 2) //2
-                                  };
+
 
     bool drawLodBasedOnDist = false;
     const MLND *quadTreeNode = nullptr;
