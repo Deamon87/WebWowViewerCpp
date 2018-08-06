@@ -102,6 +102,10 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
             std::copy(data, data+blpFile->lengths[i], &mipmapStruct.texture[0]);
         }
 
+        if (textureFormat == TextureFormat::BGRA) {
+
+        }
+
         mipmaps.push_back(mipmapStruct);
 
         height = height / 2;

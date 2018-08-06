@@ -96,9 +96,10 @@ void GShaderPermutation::compileShader() {
     std::string fragExtraDefStrings = "";
     std::string geomExtraDefStrings = "";
 
-    bool glsl330 = true;
+
+    bool esVersion = false;
 #ifdef __ANDROID_API__
-    glsl330 = false;
+    esVersion = true;
 #endif
 #ifdef __APPLE__
     #include "TargetConditionals.h"
@@ -113,46 +114,35 @@ void GShaderPermutation::compileShader() {
 #endif
 #endif
     bool geomShaderExists = false;
-    if (glsl330) {
-        vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
-        vertExtraDefStrings += "#define varying out\n";
-        vertExtraDefStrings += "#define attribute in\n"
-                "#define precision\n"
-                "#define lowp\n"
-                "#define mediump\n"
-                "#define highp\n";
-
-        geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
-
-        geomExtraDefStrings = "#version 330\n";
-
-        fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
-        fragExtraDefStrings += "#define varying in\n"
-                "#define precision\n"
-                "#define lowp\n"
-                "#define mediump\n"
-                "#define highp\n";
-//        fragExtraDefStrings += "#define gl_FragColorDef out vec4 gl_FragColor\n";
-
-
-
-        //Insert gl_FragColor for glsl 330
-        fragmentShaderString = trimmed(fragmentShaderString.insert(
-                fragmentShaderString.find("void main(", fragmentShaderString.find("COMPILING_FS", 0)),
-                "\n out vec4 gl_FragColor; \n"));
-
-
+    if (esVersion) {
+        vertExtraDefStrings = "#version 300 es\n" + vertExtraDefStrings;
     } else {
-        vertExtraDefStrings += "#version 100\n";
-
-        fragExtraDefStrings += "#define gl_FragColorDef uniform vec4 notUsed\n";
+        vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
     }
 
-//    if (m_enable) {
-//        vertExtraDefStrings = vertExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n";
-//        fragExtraDefStrings = fragExtraDefStrings + "#define ENABLE_DEFERRED 1\r\n";
-//    }
+    if (!esVersion) {
+        vertExtraDefStrings +=
+            "#define precision\n"
+                "#define lowp\n"
+                "#define mediump\n"
+                "#define highp\n";
+    }
+    geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
+    geomExtraDefStrings = "#version 300 es\n";
 
+    if (esVersion) {
+        fragExtraDefStrings = "#version 300 es\n" + fragExtraDefStrings;
+    } else {
+        fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
+    }
+
+    if (!esVersion) {
+        fragExtraDefStrings +=
+            "#define precision\n"
+            "#define lowp\n"
+            "#define mediump\n"
+            "#define highp\n";
+    }
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
@@ -161,14 +151,6 @@ void GShaderPermutation::compileShader() {
     vertExtraDefStrings = vertExtraDefStrings + "#define MAX_MATRIX_NUM "+std::to_string(maxMatrixUniforms)+"\r\n"+"#define COMPILING_VS 1\r\n ";
     geomExtraDefStrings = geomExtraDefStrings + "#define COMPILING_GS 1\r\n";
     fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
-
-//    vertShaderString = trimmed(vertShaderString.insert(
-//        vertShaderString.find("\n",vertShaderString.find("#version", 0)+1)+1,
-//        vertExtraDefStrings));
-//
-//    fragmentShaderString = trimmed(fragmentShaderString.insert(
-//            fragmentShaderString.find("\n",fragmentShaderString.find("#version", 0)+1)+1,
-//            fragExtraDefStrings));
 
     std::string geometryShaderString = vertShaderString;
 
@@ -191,7 +173,7 @@ void GShaderPermutation::compileShader() {
         //The maxLength includes the NULL character
         std::vector<GLchar> infoLog(maxLength);
         glGetShaderInfoLog(vertexShader, maxLength, &maxLength, &infoLog[0]);
-        std::cout << "\ncould not compile vertex shader "<< m_shaderName<<":" << std::endl
+        std::cout << "\nWoW: could not compile vertex shader "<< m_shaderName<<":" << std::endl
                   << vertexShaderConst << std::endl << std::endl
                   << "error: "<<std::string(infoLog.begin(),infoLog.end())<< std::endl <<std::flush;
 
@@ -215,8 +197,8 @@ void GShaderPermutation::compileShader() {
         //The maxLength includes the NULL character
         std::vector<GLchar> infoLog(maxLength);
         glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
-        std::cout << "\ncould not compile fragment shader "<<m_shaderName<<":" << std::endl
-                  << fragmentShaderConst << std::endl << std::endl
+        std::cout << "\nWoW: could not compile fragment shader "<<m_shaderName<<":" << std::endl <<std::flush
+                  << fragmentShaderConst << std::flush << std::endl << std::endl
                   << "error: "<<std::string(infoLog.begin(),infoLog.end())<< std::endl <<std::flush;
 
         throw "" ;
@@ -224,6 +206,7 @@ void GShaderPermutation::compileShader() {
 
     GLuint geometryShader = 0;
 
+#ifndef WITH_GLESv2
     if (geomShaderExists) {
         /* 1.2.1 Compile geometry shader */
         geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
@@ -249,6 +232,7 @@ void GShaderPermutation::compileShader() {
             throw "";
         }
     }
+#endif
 
 
 
@@ -306,6 +290,7 @@ void GShaderPermutation::compileShader() {
     glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &numUniformBlocks);
 
     // get information about each uniform block
+    /*
     for(int uniformBlock=0; uniformBlock < numUniformBlocks; uniformBlock++) {
         // get size of name of the uniform block
         GLint nameLength;
@@ -333,6 +318,7 @@ void GShaderPermutation::compileShader() {
 
         // get indices of uniform variables in uniform block
         GLuint *uniformsIndices = new GLuint[numberOfUniformsInBlock];
+        /*
         glGetActiveUniformBlockiv(program, uniformBlock,
                                   GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, (GLint *)(uniformsIndices));
 
@@ -391,6 +377,11 @@ void GShaderPermutation::compileShader() {
         }
 
         delete uniformsIndices;
+    }
+     */
+
+    if (glGetUniformBlockIndex == nullptr) {
+        std::cout << "glGetUniformBlockIndex == null";
     }
 
     m_uboVertexBlockIndex[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");

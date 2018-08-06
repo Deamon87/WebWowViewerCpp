@@ -13,6 +13,7 @@ class GlobalThreads {
 public:
     std::thread cullingAndUpdateThread;
     std::thread renderThread;
+    std::thread loadingResourcesThread;
 };
 
 extern GlobalThreads g_globalThreadsSingleton;

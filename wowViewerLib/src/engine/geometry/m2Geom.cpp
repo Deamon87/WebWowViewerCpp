@@ -245,7 +245,7 @@ void M2Geom::process(std::vector<unsigned char> &m2File, std::string &fileName) 
     initM2Event(m2Header, m2FileP);
     initM2Light(m2Header, m2FileP);
     initM2Particle(m2Header, m2FileP);
-    initM2Camera(m2Header, m2FileP); //TODO: off for now
+    initM2Camera(m2Header, m2FileP);
 
     initM2Textures(m2Header, m2FileP);
 

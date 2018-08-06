@@ -160,13 +160,13 @@ void GBlpTexture::createGlTexture(TextureFormat textureFormat, const MipmapsVect
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     bool anisFilterExt = true;
+#ifndef WITH_GLESv2
     if (anisFilterExt) {
         float aniso = 0.0f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
     }
 
-#ifdef WITH_GLESv2
     glGenerateMipmap(GL_TEXTURE_2D);
 #endif
 

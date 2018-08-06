@@ -226,11 +226,16 @@ void AdtObject::createVBO() {
     GVertexBufferBinding vertexBinding;
     vertexBinding.vertexBuffer = combinedVbo;
 
-    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, (this->indexOffset * 4)});
-    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aHeight, 1, GL_FLOAT, false, 4, ((this->heightOffset) * 4)});
-    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aColor, 4, GL_FLOAT, false, 16, ((this->colorOffset) * 4)});
-    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aNormal, 3, GL_FLOAT, false, 12, ((this->normalOffset) * 4)});
-    vertexBinding.bindings.push_back((GBufferBinding){+adtShader::Attribute::aVertexLighting, 3, GL_FLOAT, false, 12, ((this->lightingOffset) * 4)});
+	GBufferBinding bufferBinding = {(uint32_t)adtShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, (this->indexOffset * 4)};
+    vertexBinding.bindings.push_back(bufferBinding);
+	bufferBinding = {(uint32_t)adtShader::Attribute::aHeight, 1, GL_FLOAT, false, 4, ((this->heightOffset) * 4)};
+	vertexBinding.bindings.push_back(bufferBinding);
+	bufferBinding = {(uint32_t)adtShader::Attribute::aColor, 4, GL_FLOAT, false, 16, ((this->colorOffset) * 4)};
+	vertexBinding.bindings.push_back(bufferBinding);
+	bufferBinding = { (uint32_t)adtShader::Attribute::aNormal, 3, GL_FLOAT, false, 12, ((this->normalOffset) * 4) };
+	vertexBinding.bindings.push_back(bufferBinding);
+	bufferBinding = { (uint32_t)adtShader::Attribute::aVertexLighting, 3, GL_FLOAT, false, 12, ((this->lightingOffset) * 4) };
+	vertexBinding.bindings.push_back(bufferBinding);
 
     adtVertexBindings->addVertexBufferBinding(vertexBinding);
     adtVertexBindings->save();
@@ -243,7 +248,7 @@ void AdtObject::createVBO() {
         for (int i = 0; i < m_adtFileLod->floatDataBlob_len ; i++) {
             vboLod.push_back(this->m_adtFileLod->floatDataBlob[i]);
         }
-        int indexVBOLodOffset = vboLod.size();
+        uint32_t indexVBOLodOffset = vboLod.size();
         for (int i = 0; i < (129 * 129 + 128 * 128); i++) {
             vboLod.push_back((float) i);
         }
@@ -262,8 +267,10 @@ void AdtObject::createVBO() {
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = combinedVbo;
 
-        vertexBinding.bindings.push_back((GBufferBinding){+adtLodShader::Attribute::aHeight, 1, GL_FLOAT, false, 4, 0});
-        vertexBinding.bindings.push_back((GBufferBinding){+adtLodShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, indexVBOLodOffset* sizeof(float)});
+		GBufferBinding bufferBinding = { +adtLodShader::Attribute::aHeight, 1, GL_FLOAT, false, 4, 0 };
+		vertexBinding.bindings.push_back(bufferBinding);
+		bufferBinding = { +adtLodShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, indexVBOLodOffset * sizeof(float) };
+        vertexBinding.bindings.push_back(bufferBinding);
 
         lodVertexBindings->addVertexBufferBinding(vertexBinding);
         lodVertexBindings->save();

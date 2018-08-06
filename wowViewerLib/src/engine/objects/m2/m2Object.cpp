@@ -1061,10 +1061,10 @@ void M2Object::drawParticles(std::vector<HGMesh> &meshes) {
     }
 }
 
-inline HGTexture M2Object::getTexture(int textureInd) {
+HGTexture M2Object::getTexture(int textureInd) {
     std::unordered_map<int, HBlpTexture> &loadedTextureCache = loadedTextures;
 
-    M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures[textureInd];
+    M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
     //TODO:! Example of exception: "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\BURNINGBOOKS\\BOOKSONFIRE.m2"
     if (textureDefinition == nullptr) {
         return nullptr;

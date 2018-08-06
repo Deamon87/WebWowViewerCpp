@@ -13,6 +13,7 @@
 #include <iostream>
 #include <iomanip>
 #include <memory>
+#include <mutex>
 #include "../../include/wowScene.h"
 #include "../stringTrim.h"
 
@@ -22,15 +23,21 @@ class Cache {
 private:
     IFileRequest *m_fileRequestProcessor;
 public:
-
+    std::mutex accessMutex;
+    std::unique_lock<std::mutex> processCacheLock;
+    std::unique_lock<std::mutex> provideFileLock;
     std::unordered_map<std::string, std::weak_ptr<T>> m_cache;
     std::unordered_map<std::string, std::vector<unsigned char>> m_objectsToBeProcessed;
 public:
 
     Cache(IFileRequest *fileRequestProcessor) : m_fileRequestProcessor(fileRequestProcessor){
+        processCacheLock = std::unique_lock<std::mutex>(accessMutex,std::defer_lock);
+        provideFileLock = std::unique_lock<std::mutex>(accessMutex,std::defer_lock);
     }
     void processCacheQueue(int limit) {
         int objectsProcessed = 0;
+
+        processCacheLock.lock();
         for (auto it = m_objectsToBeProcessed.cbegin(); it != m_objectsToBeProcessed.cend() /* not hoisted */; /* no increment */)
         {
             std::string fileName = it->first;
@@ -52,15 +59,18 @@ public:
                 break;
             }
         }
+        processCacheLock.unlock();
     }
     void provideFile(std::string fileName, std::vector<unsigned char> &file) {
         trim(fileName);
 
 //        std::cout << "filename:" << fileName << " hex: " << string_to_hex(fileName) << std::endl;
 //        std::cout << "first in storage:" << m_cache.begin()->first << " hex: " << string_to_hex(m_cache.begin()->first) << std::endl << std::flush;
+        provideFileLock.lock();
         if (m_cache.count(fileName) > 0) {
             m_objectsToBeProcessed[fileName] = file;
         }
+        provideFileLock.unlock();
     }
 
     /*

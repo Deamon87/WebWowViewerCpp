@@ -9,10 +9,10 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
-
+ 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize" )
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -D__OPTIMIZE__=1 -ftree-vectorize")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize" )
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize")
 
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
@@ -59,20 +59,28 @@ endif(NOT CMAKE_NDK_BUILD MATCHES 1)
 set(GLEW_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS} PARENT_SCOPE)
 include_directories(${GLEW_INCLUDE_DIRS})
 
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtLodShader.glsl ${CMAKE_BINARY_DIR}/glsl/adtLodShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtShader.glsl ${CMAKE_BINARY_DIR}/glsl/adtShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawBBShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawBBShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawDepthShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawDepthShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawFrustumShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawFrustumShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawLinesShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawLinesShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPoints.glsl ${CMAKE_BINARY_DIR}/glsl/drawPoints.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPortalShader.glsl ${CMAKE_BINARY_DIR}/glsl/drawPortalShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2ParticleShader.glsl ${CMAKE_BINARY_DIR}/glsl/m2ParticleShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2Shader.glsl ${CMAKE_BINARY_DIR}/glsl/m2Shader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/readDepthBufferShader.glsl ${CMAKE_BINARY_DIR}/glsl/readDepthBufferShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/renderFrameBufferShader.glsl ${CMAKE_BINARY_DIR}/glsl/renderFrameBufferShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/textureCompositionShader.glsl ${CMAKE_BINARY_DIR}/glsl/textureCompositionShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/wmoShader.glsl ${CMAKE_BINARY_DIR}/glsl/wmoShader.glsl COPYONLY)
+if (CMAKE_NDK_BUILD MATCHES 1)
+    set(GLSL_TARGET_FOLDER ${ANDROID_ASSETSFOLDER})
+else()
+    set(GLSL_TARGET_FOLDER ${CMAKE_BINARY_DIR})
+endif()
+
+message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
+
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtLodShader.glsl ${GLSL_TARGET_FOLDER}/glsl/adtLodShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtShader.glsl ${GLSL_TARGET_FOLDER}/glsl/adtShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawBBShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawBBShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawDepthShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawDepthShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawFrustumShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawFrustumShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawLinesShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawLinesShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPoints.glsl ${GLSL_TARGET_FOLDER}/glsl/drawPoints.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPortalShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawPortalShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2ParticleShader.glsl ${GLSL_TARGET_FOLDER}/glsl/m2ParticleShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2Shader.glsl ${GLSL_TARGET_FOLDER}/glsl/m2Shader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/readDepthBufferShader.glsl ${GLSL_TARGET_FOLDER}/glsl/readDepthBufferShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/renderFrameBufferShader.glsl ${GLSL_TARGET_FOLDER}/glsl/renderFrameBufferShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/textureCompositionShader.glsl ${GLSL_TARGET_FOLDER}/glsl/textureCompositionShader.glsl COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/glsl/wmoShader.glsl ${GLSL_TARGET_FOLDER}/glsl/wmoShader.glsl COPYONLY)
 
 #include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)
 include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
@@ -171,15 +179,3 @@ endif()
 
 target_include_directories(WoWViewerLib
         PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
-
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/include/wowScene.h
-              ${PROJECT_SOURCE_DIR}/src/include/config.h
-              ${PROJECT_SOURCE_DIR}/src/include/controllable.h
-        DESTINATION include)
-INSTALL(FILES ${glew_lib}
-        DESTINATION lib)
-
-INSTALL(TARGETS WoWViewerLib
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)

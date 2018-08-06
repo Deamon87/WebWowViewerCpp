@@ -7,7 +7,6 @@
 #include "GDevice.h"
 #include "../engine/algorithms/hashString.h"
 #include "shaders/GM2ShaderPermutation.h"
-#include "../engine/opengl/header.h"
 #include "meshes/GM2Mesh.h"
 #include "meshes/GParticleMesh.h"
 #include "shaders/GM2ParticleShaderPermutation.h"
@@ -252,8 +251,9 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
         currentSize+=bytesToAdd;
     }
 
-    bufferForUpload->uploadData(&aggregationBufferForUpload[0], currentSize);
-
+	if (aggregationBufferForUpload.size() > 0) {
+		bufferForUpload->uploadData(&aggregationBufferForUpload[0], currentSize);
+	}
     buffersIndex++;
     aggregationBufferForUpload.resize(0);
     currentSize = 0;
@@ -498,7 +498,7 @@ bool GDevice::sortMeshes(HGMesh &a, HGMesh &b) {
     int minTextureCount = std::min(a->m_textureCount, b->m_textureCount);
     for (int i = 0; i < minTextureCount; i++) {
         if (a->m_texture[i] != b->m_texture[i]) {
-            return a->m_texture[i] > b->m_texture[i];
+            return a->m_texture[i] < b->m_texture[i];
         }
     }
 

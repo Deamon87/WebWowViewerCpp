@@ -70,11 +70,11 @@ private:
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;
 
-    int indexOffset = 0;
-    int heightOffset = 0;
-    int normalOffset = 0;
-    int colorOffset = 0;
-    int lightingOffset = 0;
+    uint32_t indexOffset = 0;
+	uint32_t heightOffset = 0;
+	uint32_t normalOffset = 0;
+	uint32_t colorOffset = 0;
+	uint32_t lightingOffset = 0;
 
     int mostDetailedLod = 0; // 0 = most detailed LOD, 5 = least detailed lod
     int leastDetiledLod = 0;

@@ -18,10 +18,8 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 
-    if (!this->m_wmoObject->isLoaded()) {
-//        this->m_wmoObject->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints, m2RenderedThisFrame);
-        wmoRenderedThisFrame.push_back(this->m_wmoObject);
-    } else
+    wmoRenderedThisFrame.push_back(this->m_wmoObject);
+
     if (!this->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded() && this->m_wmoObject->hasPortals() && m_api->getConfig()->getUsePortalCulling()) {
         if (this->m_currentWMO->startTraversingFromInteriorWMO(
                 this->m_currentInteriorGroups,

@@ -6,21 +6,38 @@
 #define WEBWOWVIEWERCPP_LOG_H
 
 #include <streambuf>
-#ifdef __ANDROID__
-# include <android/api-level.h>
-#endif
 
 #ifdef __ANDROID_API__
 #include <android/log.h>
+#include <android/api-level.h>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+
+extern AAssetManager *g_assetMgr;
 
 class androidbuf : public std::streambuf {
 public:
-    enum { bufsize = 128 }; // ... or some other suitable buffer size
+    enum { bufsize = 1024 }; // ... or some other suitable buffer size
     androidbuf() { this->setp(buffer, buffer + bufsize - 1); }
 
 private:
+    void printBufferContent() {
+        if (this->pbase() != this->pptr()) {
+            char writebuf[bufsize+1];
+            memcpy(writebuf, this->pbase(), this->pptr() - this->pbase());
+            writebuf[this->pptr() - this->pbase()] = '\0';
+            std::string temp(writebuf, writebuf+(this->pptr() - this->pbase()));
+            temp = "WoWRenderLog: " + temp;
+            __android_log_write(ANDROID_LOG_INFO, "std", temp.c_str()) > 0;
+            this->setp(buffer, buffer + bufsize - 1);
+        }
+
+    };
+
     int overflow(int c)
     {
+        printBufferContent();
+        //print s
         if (c == traits_type::eof()) {
             *this->pptr() = traits_type::to_char_type(c);
             this->sbumpc();
@@ -32,11 +49,7 @@ private:
     {
         int rc = 0;
         if (this->pbase() != this->pptr()) {
-            char writebuf[bufsize+1];
-            memcpy(writebuf, this->pbase(), this->pptr() - this->pbase());
-            writebuf[this->pptr() - this->pbase()] = '\0';
-
-            rc = __android_log_write(ANDROID_LOG_INFO, "std", writebuf) > 0;
+            printBufferContent();
             this->setp(buffer, buffer + bufsize - 1);
         }
         return rc;
@@ -45,5 +58,7 @@ private:
     char buffer[bufsize];
 };
 #endif
+
+
 
 #endif //WEBWOWVIEWERCPP_LOG_H

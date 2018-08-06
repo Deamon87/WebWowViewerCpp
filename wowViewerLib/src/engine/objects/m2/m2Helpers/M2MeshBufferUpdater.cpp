@@ -99,7 +99,7 @@ void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, meshWideBlockPS &
     bool BCLoginScreenHack = m2Object.m_api->getConfig()->getBCLightHack();
     int lightCount = (int) std::min(m2Object.lights.size(), (size_t) 4);
     for (int j = 0; j < lightCount; j++) {
-        std::__cxx11::string uniformName;
+        std::string uniformName;
         mathfu::vec4 attenVec;
         if (BCLoginScreenHack) {
             attenVec = mathfu::vec4(m2Object.lights[j].attenuation_start, 1.0, m2Object.lights[j].attenuation_end, m2Object.lights.size());

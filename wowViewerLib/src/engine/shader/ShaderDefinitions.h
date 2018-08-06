@@ -6,7 +6,7 @@
 #include <fstream>
 
 template <typename T>
-inline constexpr const int operator+ (T const val) { return static_cast<const int>(val); };
+inline constexpr const uint32_t operator+ (T const val) { return static_cast<const uint32_t>(val); };
 
 struct adtLodShader {
     enum class Attribute {

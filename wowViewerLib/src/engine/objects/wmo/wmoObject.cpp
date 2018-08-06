@@ -333,7 +333,7 @@ void WmoObject::doPostLoad() {
 
         return;
     }
-    for (int i= 0; i < groupObjects.size(); i++) {
+    for (int i = 0; i < groupObjects.size(); i++) {
         if(groupObjects[i] != nullptr) {
             groupObjects[i]->doPostLoad();
         }

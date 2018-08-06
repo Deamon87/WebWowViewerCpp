@@ -7,10 +7,10 @@ layout(location = 3) in vec2 aTexcoord1;
 layout(location = 4) in vec2 aTexcoord2;
 
 
-varying vec4 vColor;
-varying vec2 vTexcoord0;
-varying vec2 vTexcoord1;
-varying vec2 vTexcoord2;
+out vec4 vColor;
+out vec2 vTexcoord0;
+out vec2 vTexcoord1;
+out vec2 vTexcoord2;
 
 layout(std140) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
@@ -30,10 +30,10 @@ void main() {
 
 #ifdef COMPILING_FS
 precision highp float;
-varying vec4 vColor;
-varying vec2 vTexcoord0;
-varying vec2 vTexcoord1;
-varying vec2 vTexcoord2;
+in vec4 vColor;
+in vec2 vTexcoord0;
+in vec2 vTexcoord1;
+in vec2 vTexcoord2;
 
 //Individual meshes
 layout(std140) uniform meshWideBlockPS {
@@ -45,10 +45,12 @@ uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
 
+out vec4 outputColor;
+
 void main() {
-    vec4 tex = texture2D(uTexture, vTexcoord0).rgba;
-    vec4 tex2 = texture2D(uTexture2, vTexcoord1).rgba;
-    vec4 tex3 = texture2D(uTexture3, vTexcoord2).rgba;
+    vec4 tex = texture(uTexture, vTexcoord0).rgba;
+    vec4 tex2 = texture(uTexture2, vTexcoord1).rgba;
+    vec4 tex3 = texture(uTexture3, vTexcoord2).rgba;
 
     float uAlphaTest = uAlphaTestv.x;
 
@@ -87,6 +89,6 @@ void main() {
     if(finalColor.a < uAlphaTest)
         discard;
 
-    gl_FragColor.rgba = finalColor ;
+    outputColor.rgba = finalColor ;
 }
 #endif //COMPILING_FS
