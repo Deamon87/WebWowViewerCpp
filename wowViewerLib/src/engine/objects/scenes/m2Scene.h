@@ -26,7 +26,7 @@ public:
         m2Object->setLoadParams(0, {},{});
         m2Object->setModelFileName(m_m2Model);
         m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
-        m2Object->setModelAsScene(true);
+        m2Object->setModelAsScene(cameraView != -1);
         m2Object->calcWorldPosition();
 
         m_m2Object = m2Object;

@@ -119,7 +119,7 @@ bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu
     if (result) {
         //1. Calculate visibility for groups
         for (int i = 0; i < this->groupObjects.size(); i++) {
-            drawGroupWMO[i] = this->groupObjects[i]->checkGroupFrustum(cameraPos, frustumPlanes, frustumPoints, m2Candidates);
+//            drawGroupWMO[i] = this->groupObjects[i]->checkGroupFrustum(cameraPos, frustumPlanes, frustumPoints, m2Candidates);
         }
 
         //2. Check all m2 candidates
