@@ -656,6 +656,14 @@ void M2Object::doPostLoad(){
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
     if (!this->m_loaded)  return;
 
+    static const mathfu::mat4 particleCoordinatesFix =
+        mathfu::mat4(
+            0,1,0,0,
+            -1,0,0,0,
+            0,0,1,0,
+            0,0,0,1
+        );
+
 //    /* 1. Calc local camera */
     mathfu::vec4 cameraInlocalPos = mathfu::vec4(cameraPos, 1);
     cameraInlocalPos = m_placementInvertMatrix * cameraInlocalPos;
@@ -673,20 +681,19 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
     int maxBatch = particleEmitters.size();
+
+    mathfu::mat4 viewMatInv = viewMat.Inverse();
+
     for (int i = minParticle; i < maxParticle; i++) {
         auto *peRecord = m_m2Geom->m_m2Data->particle_emitters.getElement(i);
 
-        mathfu::mat4 transformMat = m_placementMatrix * bonesMatrices[peRecord->old.bone];
-        if (peRecord->old.flags_per_number.hex_20000) {
-            transformMat *= mathfu::mat4::FromTranslationVector(mathfu::vec3(-peRecord->old.Position.x, peRecord->old.Position.y, -peRecord->old.Position.z));
-        } else {
+        mathfu::mat4 transformMat =
+            m_placementMatrix *
+            bonesMatrices[peRecord->old.bone];
             transformMat *= mathfu::mat4::FromTranslationVector(mathfu::vec3(peRecord->old.Position.x, peRecord->old.Position.y, peRecord->old.Position.z));
-        }
+            transformMat *= particleCoordinatesFix;
 
-        transformMat *= mathfu::quat::FromAngleAxis(M_PI_2, mathfu::vec3(0,0,1)).ToMatrix4();
-
-
-        particleEmitters[i]->Update(deltaTime * 0.001 , transformMat);
+        particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D());
         particleEmitters[i]->prepearBuffers(viewMat);
     }
 

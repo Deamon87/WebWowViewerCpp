@@ -38,7 +38,7 @@ class ParticleEmitter {
 public:
     ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object);
 
-    void Update(animTime_t delta, mathfu::mat4 &transform);
+    void Update(animTime_t delta, mathfu::mat4 &boneMatrix, mathfu::vec3 invMatTransl);
     void prepearBuffers(mathfu::mat4 &viewMatrix);
     CParticleGenerator * getGenerator(){
         return generator;
@@ -78,6 +78,7 @@ private:
     animTime_t burstTime = 0;
     mathfu::vec3 burstVec;//(0,0,0);
     float inheritedScale = 1;
+    mathfu::vec3 m_invMatTransl;
     float emission = 0;
 
 

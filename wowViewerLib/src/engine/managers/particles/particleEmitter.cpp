@@ -205,19 +205,21 @@ void ParticleEmitter::resizeParticleBuffer() {
 //    }
 }
 
-void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &boneModelMat) {
+void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &boneModelMat, mathfu::vec3 invMatTransl) {
     if (getGenerator() == nullptr) return;
 
     if (this->particles.size() <= 0 && !isEnabled) return;
 
     this->resizeParticleBuffer();
 
-
     mathfu::vec3 lastPos = -transform.TranslationVector3D();
     mathfu::vec3 currPos = -boneModelMat.TranslationVector3D();
     this->transform = boneModelMat;
 
     this->inheritedScale = this->transform.GetColumn(0).xyz().Length();
+    m_invMatTransl = invMatTransl;
+
+
     mathfu::vec3 dPos = lastPos - currPos;
     if ((this->m_data->old.flags & 0x4000) > 0) {
         float x = this->followMult * (dPos.Length() / delta) + this->followBase;
@@ -405,13 +407,12 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
         return;
     }
 
-    // Load textures at top so we can bail out early
-     if (this->m_data->old.flags & 0x10 ) {
+    if (this->m_data->old.flags & 0x200 ) {
         // apply the model transform
         this->particleToView = viewMatrix * this->transform;
     }
     else {
-        this->particleToView = viewMatrix;
+        this->particleToView = viewMatrix ;
     }
 
     this->viewMatrix = viewMatrix;

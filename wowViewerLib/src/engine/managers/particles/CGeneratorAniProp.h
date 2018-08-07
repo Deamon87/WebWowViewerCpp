@@ -18,7 +18,9 @@ public:
     float zSource;
     float emissionAreaX;
     float emissionAreaY;
+    //Latitude in 4.1.0
     float verticalRange;
+    //Longitude in 4.1.0
     float horizontalRange;
 };
 

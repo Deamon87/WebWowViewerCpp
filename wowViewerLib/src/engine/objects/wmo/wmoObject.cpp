@@ -811,7 +811,7 @@ void WmoObject::startTraversingWMOGroup(
     if (traversingFromInterior) {
         this->transverseGroupWMO(
             groupId,
-            false,
+            traversingFromInterior,
             createdInteriorViews,
             exteriorView,
             cameraVec4,
@@ -823,22 +823,22 @@ void WmoObject::startTraversingWMOGroup(
             0);
     } else {
         for (int i = 0; i< mainGeom->groupsLen; i++) {
-            if (mainGeom->groups[i].flags.INTERIOR) {
-                this->transverseGroupWMO(
-                    groupId,
-                    false,
-                    createdInteriorViews,
-                    exteriorView,
-                    cameraVec4,
-                    cameraLocal,
-                    inverseTransposeModelMat,
-                    transverseVisitedPortals,
-                    localFrustumPlanes,
-                    globalLevel,
-                    0);
-            } else if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
+            if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
                 if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanes, frustumPointsLocal)) {
                     exteriorView.drawnWmos.push_back(this->groupObjects[i]);
+
+                    this->transverseGroupWMO(
+                        groupId,
+                        false,
+                        createdInteriorViews,
+                        exteriorView,
+                        cameraVec4,
+                        cameraLocal,
+                        inverseTransposeModelMat,
+                        transverseVisitedPortals,
+                        localFrustumPlanes,
+                        globalLevel,
+                        0);
                 }
             }
         }
@@ -864,14 +864,17 @@ void WmoObject::startTraversingWMOGroup(
         return false;
     });
 
-    for (int i = 0; createdInteriorViews.size(); i++) {
-        createdInteriorViews[i].renderOrder = renderOrder++;
+    for (auto &createdInteriorView : createdInteriorViews) {
+        createdInteriorView.renderOrder = renderOrder++;
     }
 
     if (!exteriorView.viewCreated && exteriorView.level > 0) {
         exteriorView.viewCreated = true;
         exteriorView.renderOrder = renderOrder++;
     }
+
+    //Copy all internal views to whole array
+    std::copy(createdInteriorViews.begin(), createdInteriorViews.end(), std::back_inserter(interiorViews));
 
     //M2s will be collected later from separate function call
 }
@@ -1006,10 +1009,10 @@ void WmoObject::transverseGroupWMO(
             //Make sense to add only if whole traversing process started from interior
             if (!exteriorView.viewCreated) {
                 exteriorView.level = globalLevel + 1;
-            }
 
-            exteriorView.portalVertices.push_back(portalVerticesVec);
-            exteriorView.frustumPlanes.push_back(thisPortalPlanes);
+                exteriorView.portalVertices.push_back(portalVerticesVec);
+                exteriorView.frustumPlanes.push_back(thisPortalPlanes);
+            }
         }
     }
 }
