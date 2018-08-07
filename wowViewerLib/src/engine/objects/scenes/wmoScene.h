@@ -23,6 +23,16 @@ private:
     std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
 
+    ExteriorView exteriorView;
+    std::vector<InteriorView> interiorViews;
+
+    ExteriorView thisFrameExteriorView;
+    std::vector<InteriorView> thisFrameInteriorViews;
+
+
+
+    std::vector<GeneralView *> renderedViews;
+
     std::vector<M2Object*> m2RenderedThisFrame;
     std::vector<WmoObject*> wmoRenderedThisFrame;
 
@@ -73,6 +83,8 @@ public:
     void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {
 
     };
+
+    void cullExterior(mathfu::vec4 &cameraPos, mathfu::mat4 &projectionModelMat, int viewRenderOrder);
 };
 
 

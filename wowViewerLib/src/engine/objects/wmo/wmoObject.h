@@ -37,6 +37,8 @@ public:
     std::vector<std::vector<mathfu::vec4>> frustumPlanes;
     int level = -1;
     int renderOrder = -1;
+
+    virtual void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 };
 
 class InteriorView : public GeneralView {
@@ -45,9 +47,11 @@ public:
 };
 
 class ExteriorView : public GeneralView {
-
 public:
     std::vector<AdtObject *> drawnADTs;
+
+public:
+    void collectMeshes(std::vector<HGMesh> &renderedThisFrame) override;
 };
 
 
@@ -155,7 +159,7 @@ public:
 //        std::vector<M2Object*> &m2RenderedThisFrame);
 
     void resetTraversedWmoGroups();
-    void startTraversingWMOGroup(
+    bool startTraversingWMOGroup(
         mathfu::vec4 &cameraVec4,
         mathfu::mat4 &viewPerspectiveMat,
         int groupId,

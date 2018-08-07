@@ -205,6 +205,8 @@ void WmoGroupGeom::process(std::vector<unsigned char> &wmoGroupFile, std::string
 
 void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
     int begin_second_fixup = 0;
+    if (batches == nullptr) return;
+
     if (mogp->transBatchCount) {
         begin_second_fixup =
             *((uint16_t *) &batches[(uint16_t) mogp->transBatchCount] - 2) + 1;

@@ -275,8 +275,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //    Test scene 2: tree from shattrath
 //    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
+//    currentScene = new M2Scene(this,
+//        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -357,6 +357,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
 
+
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
@@ -388,8 +389,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new WmoScene(this,
 //        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
-//    currentScene = new WmoScene(this,
-//        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
+    currentScene = new WmoScene(this,
+        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
 
 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);

@@ -18,30 +18,35 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 
-    wmoRenderedThisFrame.push_back(this->m_wmoObject);
+    exteriorView = ExteriorView();
+    interiorViews = std::vector<InteriorView>();
+    int viewRenderOrder = 0;
 
-    /*
-    if (!this->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded() && this->m_wmoObject->hasPortals() && m_api->getConfig()->getUsePortalCulling()) {
-        if (this->m_currentWMO->startTraversingFromInteriorWMO(
-                this->m_currentInteriorGroups,
-                cameraPos,
-                projectionModelMat,
-                m2RenderedThisFrame)) {
+    this->m_wmoObject->resetTraversedWmoGroups();
+    if (!this->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
+        if (this->m_currentWMO->startTraversingWMOGroup(
+            cameraPos,
+            projectionModelMat,
+            this->m_currentInteriorGroups[0].groupIndex,
+            0,
+            viewRenderOrder,
+            true,
+            interiorViews,
+            exteriorView)) {
 
             wmoRenderedThisFrame.push_back(this->m_currentWMO);
         }
-    } else {
-        if ( this->m_wmoObject->isLoaded() && this->m_wmoObject->hasPortals() && m_api->getConfig()->getUsePortalCulling() ) {
-            if(this->m_wmoObject->startTraversingFromExterior(cameraPos, projectionModelMat, m2RenderedThisFrame)){
-                wmoRenderedThisFrame.push_back(this->m_wmoObject);
-            }
-        } else {
-            if (this->m_wmoObject->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints, m2RenderedThisFrame)) {
-                wmoRenderedThisFrame.push_back(this->m_wmoObject);
-            }
+
+        if (exteriorView.viewCreated) {
+            cullExterior(cameraPos, projectionModelMat, viewRenderOrder);
         }
+    } else {
+        //Cull exterior
+        exteriorView.viewCreated = true;
+        cullExterior(cameraPos, projectionModelMat, viewRenderOrder);
     }
-    */
+
+
     std::sort( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() );
     m2RenderedThisFrame.erase( unique( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() ), m2RenderedThisFrame.end() );
 
@@ -56,187 +61,73 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
 
     m2RenderedThisFrameArr.resize(j);
 
+    std::sort( wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end() );
+    wmoRenderedThisFrame.erase( unique( wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end() ), wmoRenderedThisFrame.end() );
+
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
+}
+
+void WmoScene::cullExterior(mathfu::vec4 &cameraPos, mathfu::mat4 &projectionModelMat, int viewRenderOrder) {
+    if (m_wmoObject->startTraversingWMOGroup(
+        cameraPos,
+        projectionModelMat,
+        -1,
+        0,
+        viewRenderOrder,
+        false,
+        interiorViews,
+        exteriorView)) {
+
+        wmoRenderedThisFrame.push_back(m_wmoObject);
+    }
 }
 
 void WmoScene::draw() {
     std::vector<HGMesh> renderedThisFrame;
 
-    //2. Draw WMO
-    for (int i = 0; i < this->currentFrameWmoRenderedThisFrameArr.size(); i++) {
-        this->currentFrameWmoRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
+    // Put everything into one array and sort
+    std::vector<GeneralView *> vector;
+    for (auto & interiorView : thisFrameInteriorViews) {
+        if (interiorView.viewCreated) {
+            vector.push_back(&interiorView);
+        }
     }
-//
-//    this->m_api->activateDrawPointShader();
-//    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
-//        this->wmoRenderedThisFrameArr[i]->drawDebugLights();
-//    }
-//    this->m_api->deactivateDrawPointShader();
-
-    /*
-    this->m_api->activateDrawPortalShader();
-    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
-//        if (config.getUsePortalCulling()) {
-//            this.wmoRenderedThisFrame[i].drawPortalBased(false)
-//        } else {
-        this->wmoRenderedThisFrameArr[i]->drawTransformedPortalPoints();
-        this->wmoRenderedThisFrameArr[i]->drawTransformedAntiPortalPoints();
-//        }
+    if (thisFrameExteriorView.viewCreated) {
+        vector.push_back(&thisFrameExteriorView);
     }
-    */
+    std::sort(vector.begin(), vector.end(), [](GeneralView *a, GeneralView *b) {
+        if (a->renderOrder != b->renderOrder) {
+            return a->renderOrder < b->renderOrder;
+        }
+        return false;
+    });
 
-    //3. Draw background WDL
 
-    //4. Draw skydom
-//    if (this.skyDom) {
-//        this.skyDom.draw();
-//    }
+    for (auto &view : vector) {
+        view->collectMeshes(renderedThisFrame);
 
-    //7.1 Draw WMO BBs
-//    this.sceneApi.shaders.activateBoundingBoxShader();
-//    if (config.getDrawWmoBB()) {
-//        for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
-//            this.wmoRenderedThisFrame[i].drawBB();
-//        }
-//    }
+        std::sort(renderedThisFrame.begin(),
+                  renderedThisFrame.end(),
+                  GDevice::sortMeshes
+        );
 
-    this->drawM2s(renderedThisFrame);
-
-    //6. Draw WMO portals
-//        if (config.getRenderPortals()) {
-//            this.sceneApi.shaders.activateDrawPortalShader();
-//            for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
-//                this.wmoRenderedThisFrame[i].drawPortals();
-//            }
-//        }
-    //Draw Wmo portal frustums
-    /*
-    this->m_api->activateFrustumBoxShader();
-    if (this->m_api->getIsDebugCamera()) {
-        this->m_api->drawCamera();
+        m_api->getDevice()->drawMeshes(renderedThisFrame);
     }
-     */
-//    }
-
-    std::sort(renderedThisFrame.begin(),
-              renderedThisFrame.end(),
-              GDevice::sortMeshes
-    );
-
-    m_api->getDevice()->drawMeshes(renderedThisFrame);
 }
 
 void WmoScene::drawM2s(std::vector<HGMesh> &renderedThisFrame) {
-    //if (config.getRenderM2()) {
-//        bool lastWasDrawInstanced = false;
-//        this->m_api->activateM2Shader();
-//        for (var i = 0; i < this.m2RenderedThisFrame.length; i++) {
-//            var m2Object = this.m2RenderedThisFrame[i];
-//            if (this.m2OpaqueRenderedThisFrame[m2Object.sceneNumber]) continue;
-//            var fileIdent = m2Object.getFileNameIdent();
-//
-//            var drawInstanced = false;
-//            if (this.instanceMap.has(fileIdent)) {
-//                var instanceManager = this.instanceMap.get(fileIdent);
-//                drawInstanced = instanceManager.mdxObjectList.length > 1;
-//            }
-//            if (drawInstanced) {
-//                if (!lastWasDrawInstanced) {
-//                    this.sceneApi.shaders.activateM2InstancingShader();
-//                }
-//
-//                instanceManager.drawInstancedNonTransparentMeshes(this.m2OpaqueRenderedThisFrame);
-//                lastWasDrawInstanced = true;
-//            } else {
-//                if (lastWasDrawInstanced) {
-//                    this.sceneApi.shaders.deactivateM2InstancingShader();
-//                    this.sceneApi.shaders.activateM2Shader();
-//                }
-//
-//                this.m2OpaqueRenderedThisFrame[m2Object.sceneNumber] = true;
-//                m2Object.drawNonTransparentMeshes();
-//                lastWasDrawInstanced = false;
-//            }
-//        }
-//        if (lastWasDrawInstanced) {
-//            this->m_api->deactivateM2InstancingShader();
-//        } else {
-//            this->m_api->deactivateM2Shader();
-//        }
-//   // }
-//
-//    //6. Draw transparent meshes of m2
-////    if (config.getRenderM2()) {
-//        var lastWasDrawInstanced = false;
-//        this.sceneApi.shaders.activateM2Shader();
-//        for (var i = this.m2RenderedThisFrame.length-1; i >= 0; i--) {
-//            var m2Object = this.m2RenderedThisFrame[i];
-//            if (this.m2TranspRenderedThisFrame[m2Object.sceneNumber]) continue;
-//            var fileIdent = m2Object.getFileNameIdent();
-//
-//            var drawInstanced = false;
-//            if (this.instanceMap.has(fileIdent)) {
-//                var instanceManager = this.instanceMap.get(fileIdent);
-//                drawInstanced = instanceManager.mdxObjectList.length > 1;
-//            }
-//            if (drawInstanced) {
-//                if (!lastWasDrawInstanced) {
-//                    this.sceneApi.shaders.activateM2InstancingShader();
-//                }
-//
-//                instanceManager.drawInstancedTransparentMeshes(this.m2TranspRenderedThisFrame);
-//                lastWasDrawInstanced = true;
-//            } else {
-//                if (lastWasDrawInstanced) {
-//                    this.sceneApi.shaders.deactivateM2InstancingShader();
-//                    this.sceneApi.shaders.activateM2Shader();
-//                }
-//
-//                this.m2TranspRenderedThisFrame[m2Object.sceneNumber] = true;
-//                m2Object.drawTransparentMeshes();
-//                lastWasDrawInstanced = false;
-//            }
-//        }
-//        if (lastWasDrawInstanced) {
-//            this->m_api->deactivateM2InstancingShader();
-//        } else {
-//            this->m_api->deactivateM2Shader();
-//        }
-
-
     for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
-
         M2Object *m2Object = this->currentFrameM2RenderedThisFrameArr[i];
         m2Object->fillBuffersAndArray(renderedThisFrame);
         m2Object->drawParticles(renderedThisFrame);
     }
-
-    //7. Draw BBs
-    //7.1 Draw M2 BBs
-    /*
-    if (this->m_api->getConfig()->getDrawM2BB()) {
-        this->m_api->activateBoundingBoxShader();
-
-        mathfu::vec3 bbColor(0.819607843, 0.058, 0.058);
-        for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-            this->m2RenderedThisFrameArr[i]->drawBB(bbColor);
-        }
-        this->m_api->deactivateBoundingBoxShader();
-    }
-    */
-
-//    this->m_api->activateDrawPointShader();
-//
-//    for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-//        this->m2RenderedThisFrameArr[i]->drawDebugLight();
-//    }
-//
-//    this->m_api->deactivateDrawPointShader();
 }
-
 void WmoScene::copyToCurrentFrame() {
     currentFrameM2RenderedThisFrameArr = m2RenderedThisFrameArr;
     currentFrameWmoRenderedThisFrameArr = wmoRenderedThisFrameArr;
+
+    thisFrameInteriorViews = interiorViews;
+    thisFrameExteriorView = exteriorView;
 }
 void WmoScene::doPostLoad() {
     for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
