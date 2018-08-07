@@ -795,16 +795,6 @@ bool WmoObject::startTraversingWMOGroup(
         frustumPointsLocal[3], frustumPointsLocal[0]
     ), 1.0);
 
-//    std::vector<mathfu::vec4> localFrustumPlanes;
-//    std::transform(frustumPlanes.begin(), frustumPlanes.end(),
-//                   std::back_inserter(localFrustumPlanes),
-//                   [&](mathfu::vec4 p) -> mathfu::vec4 {
-//                       mathfu::vec4 plane = transposeModelMat * p;
-//                       float normalLength = plane.xyz().Length();
-//                       return plane * (1.0f / normalLength);
-//                   }
-//    );
-
     if (traversingFromInterior) {
         InteriorView &interiorView = createdInteriorViews[groupId];
         WmoGroupObject *nextGroupObject = groupObjects[groupId];
@@ -813,6 +803,7 @@ bool WmoObject::startTraversingWMOGroup(
             interiorView.viewCreated = true;
             interiorView.drawnWmos.push_back(nextGroupObject);
             interiorView.portalIndex = -1;
+            interiorView.frustumPlanes.push_back(frustumPlanesExt);
         }
 
         if (globalLevel+1 >= interiorView.level) {
@@ -828,13 +819,24 @@ bool WmoObject::startTraversingWMOGroup(
             createdInteriorViews,
             exteriorView,
             cameraVec4,
-            headOfPyramidLocal,
+            cameraLocal,
             inverseTransposeModelMat,
             transverseVisitedPortals,
             frustumPlanes,
             globalLevel,
             0);
     } else {
+        if (!exteriorView.viewCreated) {
+            exteriorView.viewCreated = true;
+        }
+
+        if (globalLevel+1 >= exteriorView.level) {
+            exteriorView.level = globalLevel + 1;
+        } else {
+            assert("BVH is not working. Something is wrong!");
+        }
+
+
         for (int i = 0; i< mainGeom->groupsLen; i++) {
             if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
                 if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanesExt, frustumPointsExt)) {
@@ -846,7 +848,7 @@ bool WmoObject::startTraversingWMOGroup(
                         createdInteriorViews,
                         exteriorView,
                         cameraVec4,
-                        headOfPyramidLocal,
+                        cameraLocal,
                         inverseTransposeModelMat,
                         transverseVisitedPortals,
                         frustumPlanes,
@@ -917,16 +919,6 @@ void WmoObject::transverseGroupWMO(
         return;
     }
 
-    //Transform local planes into world planes to use with frustum culling of M2Objects
-    std::vector<mathfu::vec4> frustumPlanes;
-
-    std::transform(localFrustumPlanes.begin(), localFrustumPlanes.end(),
-        std::back_inserter(frustumPlanes),
-        [&](mathfu::vec4 p) -> mathfu::vec4 {
-            return inverseTransposeModelMat * p;
-        }
-    );
-
     //2. Loop through portals of current group
     int moprIndex = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprIndex;
     int numItems = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprCount;
@@ -940,8 +932,6 @@ void WmoObject::transverseGroupWMO(
 
         //Skip portals we already visited
         if (transverseVisitedPortals[relation->portal_index]) continue;
-        //if (!fromInterior && (mainGeom->groups[nextGroup].flags & 0x2000) == 0) continue;
-
 
         //Local coordinanes plane DOT local camera
         const mathfu::vec4 planeV4 = mathfu::vec4(plane.planeVector);
@@ -987,6 +977,16 @@ void WmoObject::transverseGroupWMO(
             thisPortalPlanes.push_back(n);
         }
 
+        //Transform local planes into world planes to use with frustum culling of M2Objects
+        std::vector<mathfu::vec4> worldSpaceFrustumPlanes;
+
+        std::transform(thisPortalPlanes.begin(), thisPortalPlanes.end(),
+                       std::back_inserter(worldSpaceFrustumPlanes),
+                       [&](mathfu::vec4 p) -> mathfu::vec4 {
+                           return inverseTransposeModelMat * p;
+                       }
+        );
+
         //5. Traverse next
         WmoGroupObject *nextGroupObject = groupObjects[nextGroup];
         SMOGroupInfo &nextGroupInfo = mainGeom->groups[nextGroup];
@@ -1000,7 +1000,7 @@ void WmoObject::transverseGroupWMO(
             }
 
             interiorView.portalVertices.push_back(portalVerticesVec);
-            interiorView.frustumPlanes.push_back(thisPortalPlanes);
+            interiorView.frustumPlanes.push_back(worldSpaceFrustumPlanes);
             if (globalLevel+1 >= interiorView.level) {
                 interiorView.level = globalLevel + 1;
             } else {
@@ -1010,7 +1010,7 @@ void WmoObject::transverseGroupWMO(
             transverseGroupWMO(
                 nextGroup,
                 traversingStartedFromInterior,
-                allInteriorViews, //GroupIndex as index
+                allInteriorViews,
                 exteriorView,
                 cameraVec4,
                 cameraLocal,
@@ -1028,7 +1028,7 @@ void WmoObject::transverseGroupWMO(
                 exteriorView.level = globalLevel + 1;
 
                 exteriorView.portalVertices.push_back(portalVerticesVec);
-                exteriorView.frustumPlanes.push_back(thisPortalPlanes);
+                exteriorView.frustumPlanes.push_back(worldSpaceFrustumPlanes);
             }
         }
     }
@@ -1274,6 +1274,7 @@ void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
     GeneralView::collectMeshes(renderedThisFrame);
 }
 
+
 void GeneralView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
     for (auto& wmoGroup : drawnWmos) {
         wmoGroup->collectMeshes(renderedThisFrame);
@@ -1281,5 +1282,27 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
     for (auto& m2 : drawnM2s) {
         m2->fillBuffersAndArray(renderedThisFrame);
         m2->drawParticles(renderedThisFrame);
+    }
+}
+
+void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
+    std::vector<M2Object *> candidates;
+    for (auto &wmoGroup : drawnWmos) {
+        auto doodads = wmoGroup->getDoodads();
+        std::copy(doodads->begin(), doodads->end(), std::back_inserter(candidates));
+    }
+
+    //Delete duplicates
+    std::sort( candidates.begin(), candidates.end() );
+    candidates.erase( unique( candidates.begin(), candidates.end() ), candidates.end() );
+
+    size_t j = 0;
+    for (auto &m2Candidate : candidates) {
+        for (auto &frustumPlane : frustumPlanes) {
+            if (m2Candidate->checkFrustumCulling(cameraPos, frustumPlane, {})) {
+                drawnM2s.push_back(m2Candidate);
+                break;
+            }
+        }
     }
 }

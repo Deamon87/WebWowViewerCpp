@@ -46,7 +46,21 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
         cullExterior(cameraPos, projectionModelMat, viewRenderOrder);
     }
 
+    //Fill M2 objects for views from WmoGroups
+    for (auto &view : interiorViews) {
+        view.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
+    }
+    exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
 
+    //Collect M2s for update
+    m2RenderedThisFrame.clear();
+    auto inserter = std::back_inserter(m2RenderedThisFrame);
+    for (auto &view : interiorViews) {
+        std::copy(view.drawnM2s.begin(), view.drawnM2s.end(), inserter);
+    }
+    std::copy(exteriorView.drawnM2s.begin(), exteriorView.drawnM2s.end(), inserter);
+
+    //Sort and delete duplicates
     std::sort( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() );
     m2RenderedThisFrame.erase( unique( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() ), m2RenderedThisFrame.end() );
 
@@ -63,6 +77,7 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
 
     std::sort( wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end() );
     wmoRenderedThisFrame.erase( unique( wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end() ), wmoRenderedThisFrame.end() );
+
 
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 }
@@ -102,8 +117,8 @@ void WmoScene::draw() {
         return false;
     });
 
-
     for (auto &view : vector) {
+        renderedThisFrame.resize(0);
         view->collectMeshes(renderedThisFrame);
 
         std::sort(renderedThisFrame.begin(),
@@ -158,59 +173,6 @@ void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &
 
         this->m_lastTimeDistanceCalc = this->m_currentTime;
     //}
-
-
-
-
-    //3. Sort m2 by distance every 100 ms
-    //if (this->m_currentTime + deltaTime - this->m_lastTimeSort > 100) {
-        std::sort(
-                this->m2RenderedThisFrameArr.begin(),
-                this->m2RenderedThisFrameArr.end(),
-                [] (M2Object *a, M2Object *b) -> bool const {
-                    return b->getCurrentDistance() - a->getCurrentDistance() > 0;
-                }
-        );
-
-        this->m_lastTimeSort = this->m_currentTime;
-    //}
-
-//    //4. Collect m2 into instances every 200 ms
-////        if (this.currentTime + deltaTime - this.lastInstanceCollect > 30) {
-//    var map = new Map();
-//    if (this.sceneApi.extensions.getInstancingExt()) {
-//        //Clear instance lists
-//        for (var j = 0; j < this.instanceList.length; j++) {
-//            this.instanceList[j].clearList();
-//        }
-//
-//        for (var j = 0; j < this.m2RenderedThisFrame.length; j++) {
-//            var m2Object = this.m2RenderedThisFrame[j];
-//
-//            if (!m2Object.m2Geom) continue;
-//            if (m2Object.getHasBillboarded() || !m2Object.getIsInstancable()) continue;
-//
-//            var fileIdent = m2Object.getFileNameIdent();
-//
-//            if (map.has(fileIdent)) {
-//                var m2ObjectInstanced = map.get(fileIdent);
-//                this.addM2ObjectToInstanceManager(m2Object);
-//                this.addM2ObjectToInstanceManager(m2ObjectInstanced);
-//            } else {
-//                map.set(fileIdent, m2Object);
-//            }
-//        }
-//    }
-
-
-//    //4.1 Update placement matrix buffers in Instance
-//    for (var j = 0; j < this.instanceList.length; j++) {
-//        var instanceManager = this.instanceList[j];
-//        instanceManager.updatePlacementVBO();
-//    }
-//
-//    this.lastInstanceCollect = this.currentTime;
-
 
     //6. Check what WMO instance we're in
     this->m_currentInteriorGroups = {};
