@@ -13,8 +13,6 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
-    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
-
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 
@@ -43,6 +41,7 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
     } else {
         //Cull exterior
         exteriorView.viewCreated = true;
+        exteriorView.frustumPlanes.push_back(frustumPlanes);
         cullExterior(cameraPos, projectionModelMat, viewRenderOrder);
     }
 

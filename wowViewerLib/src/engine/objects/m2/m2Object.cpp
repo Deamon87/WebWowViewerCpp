@@ -1041,7 +1041,6 @@ M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {
 }
 mathfu::vec4 M2Object::getAmbientLight() {
     if (m_setAmbientColor) {
-//            return m_ambientColorOverride;
         return mathfu::vec4(m_ambientColorOverride.x, m_ambientColorOverride.y, m_ambientColorOverride.z, m_ambientColorOverride.w);
     }
 

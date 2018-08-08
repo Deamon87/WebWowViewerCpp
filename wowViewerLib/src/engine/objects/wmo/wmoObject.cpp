@@ -783,7 +783,6 @@ bool WmoObject::startTraversingWMOGroup(
 
     //For exterior cull
     std::vector<mathfu::vec4> frustumPlanesExt = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
-    MathHelper::fixNearPlane(frustumPlanesExt, cameraVec4);
     std::vector<mathfu::vec3> frustumPointsExt = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
     //For interior cull
@@ -1299,10 +1298,24 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
     size_t j = 0;
     for (auto &m2Candidate : candidates) {
         for (auto &frustumPlane : frustumPlanes) {
+            if (m2Candidate == nullptr)            continue;
             if (m2Candidate->checkFrustumCulling(cameraPos, frustumPlane, {})) {
+                setM2Lights(m2Candidate);
                 drawnM2s.push_back(m2Candidate);
                 break;
             }
         }
+    }
+}
+
+void InteriorView::setM2Lights(M2Object *m2Object) {
+    if (!drawnWmos[0]->getIsLoaded()) return;
+
+    if (drawnWmos[0]->getDontUseLocalLightingForM2()) {
+        m2Object->setUseLocalLighting(false);
+    } else {
+        mathfu::vec4 ambientColor = drawnWmos[0]->getAmbientColor();
+        m2Object->setUseLocalLighting(true);
+        m2Object->setAmbientColorOverride(ambientColor, true);
     }
 }

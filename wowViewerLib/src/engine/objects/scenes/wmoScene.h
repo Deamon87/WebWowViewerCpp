@@ -47,6 +47,7 @@ public:
         SMMapObjDef mapObjDef;
         mapObjDef.position = C3Vector(mathfu::vec3(17064.6621f, 0, 17066.6738f));
         mapObjDef.rotation = C3Vector(mathfu::vec3(0,0,0));
+        mapObjDef.unk = 1024;
         mapObjDef.extents.min = C3Vector(mathfu::vec3(-9999,-9999,-9999));
         mapObjDef.extents.max = C3Vector(mathfu::vec3(9999,9999,9999));
         mapObjDef.doodadSet = 0;
