@@ -130,6 +130,136 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
 //    }
 }
 
+void Map::checkExterior(mathfu::vec4 &cameraPos,
+                        std::vector<mathfu::vec3> &frustumPoints,
+                        std::vector<mathfu::vec3> &hullLines,
+                        mathfu::mat4 &lookAtMat4,
+                        mathfu::mat4 &projectionModelMat,
+                        int viewRenderOrder
+) {
+
+    std::vector<M2Object *> m2ObjectsCandidates;
+    std::vector<WmoObject *> wmoCandidates;
+
+//    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
+//    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
+
+    //Get visible area that should be checked
+    float minx = 99999, maxx = -99999;
+    float miny = 99999, maxy = -99999;
+
+    for (int i = 0; i < frustumPoints.size(); i++) {
+        mathfu::vec3 &frustumPoint = frustumPoints[i];
+
+        minx = std::min(frustumPoint.x, minx);
+        maxx = std::max(frustumPoint.x, maxx);
+        miny = std::min(frustumPoint.y, miny);
+        maxy = std::max(frustumPoint.y, maxy);
+    }
+    int adt_x_min = worldCoordinateToAdtIndex(maxy);
+    int adt_x_max = worldCoordinateToAdtIndex(miny);
+
+    int adt_y_min = worldCoordinateToAdtIndex(maxx);
+    int adt_y_max = worldCoordinateToAdtIndex(minx);
+
+    int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
+    int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
+
+//    //FOR DEBUG
+//    adt_x_min = worldCoordinateToAdtIndex(cameraPos.y) - 2;
+//    adt_x_max = adt_x_min + 4;
+//    adt_y_min = worldCoordinateToAdtIndex(cameraPos.x) - 2;
+//    adt_y_max = adt_y_min + 4;
+
+//    for (int i = 0; i < 64; i++)
+//        for (int j = 0; j < 64; j++) {
+//            if (this->m_wdtfile->mapTileTable->mainInfo[i][j].Flag_AllWater) {
+//                std::cout << AdtIndexToWorldCoordinate(j) <<" "<<  AdtIndexToWorldCoordinate(i) << std::endl;
+//            }
+//        }
+
+//    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
+
+    m_wdlObject->checkFrustumCulling(
+        cameraPos, exteriorView.frustumPlanes[0],
+        frustumPoints,
+        hullLines,
+        lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+
+    for (int i = adt_x_min; i <= adt_x_max; i++) {
+        for (int j = adt_y_min; j <= adt_y_max; j++) {
+            if ((i < 0) || (i > 64)) continue;
+            if ((j < 0) || (j > 64)) continue;
+
+            AdtObject *adtObject = this->mapTiles[i][j];
+            if (adtObject != nullptr) {
+
+                bool result = adtObject->checkFrustumCulling(
+                    cameraPos,
+                    adt_global_x,
+                    adt_global_y,
+                    exteriorView.frustumPlanes[0], //TODO:!
+                    frustumPoints,
+                    hullLines,
+                    lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+                if (result) {
+                    exteriorView.drawnADTs.push_back(adtObject);
+                    adtRenderedThisFrame.push_back(adtObject);
+                }
+            } else if (true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
+                std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
+                adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+
+                adtObject->setMapApi(this);
+                this->mapTiles[i][j] = adtObject;
+            }
+        }
+    }
+
+    //Sort and delete duplicates
+    std::sort( wmoCandidates.begin(), wmoCandidates.end() );
+    wmoCandidates.erase( unique( wmoCandidates.begin(), wmoCandidates.end() ), wmoCandidates.end() );
+
+    //Frustum cull
+    for (auto it = wmoCandidates.begin(); it != wmoCandidates.end(); ++it) {
+        WmoObject *wmoCandidate = *it;
+
+        if (!wmoCandidate->isLoaded()) {
+            wmoRenderedThisFrame.push_back(wmoCandidate);
+            continue;
+        }
+        wmoCandidate->resetTraversedWmoGroups();
+        if (wmoCandidate->startTraversingWMOGroup(
+            cameraPos,
+            projectionModelMat,
+            -1,
+            0,
+            viewRenderOrder,
+            false,
+            interiorViews,
+            exteriorView)) {
+
+            wmoRenderedThisFrame.push_back(wmoCandidate);
+        }
+    }
+
+    //Sort and delete duplicates
+    std::sort( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() );
+    m2ObjectsCandidates.erase( unique( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() ), m2ObjectsCandidates.end() );
+
+    //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
+    for (auto &m2ObjectCandidate : m2ObjectsCandidates) {
+        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
+            cameraPos,
+            exteriorView.frustumPlanes[0], //TODO:!
+            frustumPoints);
+
+        if (frustumResult) {
+            exteriorView.drawnM2s.push_back(m2ObjectCandidate);
+            m2RenderedThisFrame.push_back(m2ObjectCandidate);
+        }
+    }
+}
 void Map::doPostLoad(){
     if (m_api->getConfig()->getRenderM2()) {
         for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
@@ -146,6 +276,7 @@ void Map::doPostLoad(){
         adtObject->doPostLoad();
     }
 };
+
 void Map::copyToCurrentFrame(){
     currentFrameM2RenderedThisFrameArr = m2RenderedThisFrameArr;
     currentFrameWmoRenderedThisFrameArr = wmoRenderedThisFrameArr;
@@ -154,6 +285,7 @@ void Map::copyToCurrentFrame(){
     thisFrameInteriorViews = interiorViews;
     thisFrameExteriorView = exteriorView;
 };
+
 
 void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
     if (!m_wdtfile->getIsLoaded()) return;
@@ -213,7 +345,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
             frustumPlanes,
             frustumPoints,
             lookAtMat,
-            0,
+            5,
             potentialM2,
             potentialWmo,
             0,
@@ -370,140 +502,6 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
         this->m_lastTimeLightCheck = this->m_currentTime;
     }
     this->m_currentTime += deltaTime;
-}
-
-
-void Map::checkExterior(mathfu::vec4 &cameraPos,
-                        std::vector<mathfu::vec3> &frustumPoints,
-                        std::vector<mathfu::vec3> &hullLines,
-                        mathfu::mat4 &lookAtMat4,
-                        mathfu::mat4 &projectionModelMat,
-                        int viewRenderOrder
-) {
-
-    std::vector<M2Object *> m2ObjectsCandidates;
-    std::vector<WmoObject *> wmoCandidates;
-
-//    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
-//    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
-
-    //Get visible area that should be checked
-    float minx = 99999, maxx = -99999;
-    float miny = 99999, maxy = -99999;
-
-    for (int i = 0; i < frustumPoints.size(); i++) {
-        mathfu::vec3 &frustumPoint = frustumPoints[i];
-
-        minx = std::min(frustumPoint.x, minx);
-        maxx = std::max(frustumPoint.x, maxx);
-        miny = std::min(frustumPoint.y, miny);
-        maxy = std::max(frustumPoint.y, maxy);
-    }
-    int adt_x_min = worldCoordinateToAdtIndex(maxy);
-    int adt_x_max = worldCoordinateToAdtIndex(miny);
-
-    int adt_y_min = worldCoordinateToAdtIndex(maxx);
-    int adt_y_max = worldCoordinateToAdtIndex(minx);
-
-    int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
-    int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
-
-//    //FOR DEBUG
-//    adt_x_min = worldCoordinateToAdtIndex(cameraPos.y) - 2;
-//    adt_x_max = adt_x_min + 4;
-//    adt_y_min = worldCoordinateToAdtIndex(cameraPos.x) - 2;
-//    adt_y_max = adt_y_min + 4;
-
-//    for (int i = 0; i < 64; i++)
-//        for (int j = 0; j < 64; j++) {
-//            if (this->m_wdtfile->mapTileTable->mainInfo[i][j].Flag_AllWater) {
-//                std::cout << AdtIndexToWorldCoordinate(j) <<" "<<  AdtIndexToWorldCoordinate(i) << std::endl;
-//            }
-//        }
-
-//    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
-
-    m_wdlObject->checkFrustumCulling(
-            cameraPos, exteriorView.frustumPlanes[0],
-            frustumPoints,
-            hullLines,
-            lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-
-    for (int i = adt_x_min; i <= adt_x_max; i++) {
-        for (int j = adt_y_min; j <= adt_y_max; j++) {
-            if ((i < 0) || (i > 64)) continue;
-            if ((j < 0) || (j > 64)) continue;
-
-            AdtObject *adtObject = this->mapTiles[i][j];
-            if (adtObject != nullptr) {
-
-                bool result = adtObject->checkFrustumCulling(
-                        cameraPos,
-                        adt_global_x,
-                        adt_global_y,
-                        exteriorView.frustumPlanes[0], //TODO:!
-                        frustumPoints,
-                        hullLines,
-                        lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-                if (result) {
-                    exteriorView.drawnADTs.push_back(adtObject);
-                    adtRenderedThisFrame.push_back(adtObject);
-                }
-            } else if (true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
-                std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-                adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
-
-                adtObject->setMapApi(this);
-                this->mapTiles[i][j] = adtObject;
-            }
-        }
-    }
-
-    //Sort and delete duplicates
-    std::sort( wmoCandidates.begin(), wmoCandidates.end() );
-    wmoCandidates.erase( unique( wmoCandidates.begin(), wmoCandidates.end() ), wmoCandidates.end() );
-
-    //Frustum cull
-    for (auto it = wmoCandidates.begin(); it != wmoCandidates.end(); ++it) {
-        WmoObject *wmoCandidate = *it;
-
-        if (!wmoCandidate->isLoaded()) {
-            wmoRenderedThisFrame.push_back(wmoCandidate);
-            continue;
-        }
-        wmoCandidate->resetTraversedWmoGroups();
-        if (wmoCandidate->startTraversingWMOGroup(
-            cameraPos,
-            projectionModelMat,
-            -1,
-            0,
-            viewRenderOrder,
-            false,
-            interiorViews,
-            exteriorView)) {
-
-            wmoRenderedThisFrame.push_back(wmoCandidate);
-        }
-    }
-
-
-    //Sort and delete duplicates
-    std::sort( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() );
-    m2ObjectsCandidates.erase( unique( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() ), m2ObjectsCandidates.end() );
-
-    //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
-    for (auto it = m2ObjectsCandidates.begin(); it != m2ObjectsCandidates.end(); ++it) {
-        M2Object *m2ObjectCandidate  = *it;
-        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
-            cameraPos,
-            exteriorView.frustumPlanes[0], //TODO:!
-            frustumPoints);
-
-        if (frustumResult) {
-            exteriorView.drawnM2s.push_back(m2ObjectCandidate);
-            m2RenderedThisFrame.push_back(m2ObjectCandidate);
-        }
-    }
 }
 
 M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {

@@ -209,8 +209,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-   m_firstCamera.setCameraPos(0, 0, 200);
-    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(0, 0, 200);
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -359,8 +359,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 
 //   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
+    currentScene = new WmoScene(this,
+        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -807,7 +807,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateStart);
     DoCulling();
     m_currentFrameParams = m_nextFrameParams;
-//    clock_gettimeZ(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
+//    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
 //
 //    print_timediff("DoCulling", cullingAndUpdateStart, cullingAndUpdateEnd);
 }

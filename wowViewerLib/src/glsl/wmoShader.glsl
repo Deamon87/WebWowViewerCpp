@@ -38,7 +38,7 @@ varying vec2 vTexCoord2;
 varying vec2 vTexCoord3;
 varying vec4 vColor;
 varying vec4 vColor2;
-varying vec3 vPosition;
+varying vec4 vPosition;
 varying vec3 vNormal;
 
 #ifdef drawBuffersIsSupported
@@ -82,14 +82,14 @@ void main() {
 
 #ifndef drawBuffersIsSupported
     gl_Position = uPMatrix * cameraPoint;
-    vPosition = cameraPoint.xyz;
+    vPosition = vec4(cameraPoint.xyz, aColor.w);
     vNormal = normalize(viewModelMatTransposed * aNormal);
 #else
     gl_Position = uPMatrix * cameraPoint;
     fs_Depth = gl_Position.z / gl_Position.w;
 
     vNormal = normalize(viewModelMatTransposed * aNormal);
-    vPosition = cameraPoint.xyz;
+    vPosition = vec4(cameraPoint.xyz, aColor.w);
 #endif //drawBuffersIsSupported
 
     vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
@@ -110,7 +110,7 @@ void main() {
     } else if (uVertexShader == 2) { //MapObjDiffuse_T1_Env_T2
         vTexCoord = aTexCoord;
 
-        vTexCoord2 = posToTexCoord(vPosition, vNormal);;
+        vTexCoord2 = posToTexCoord(vPosition.xyz, vNormal);;
         vTexCoord3 = aTexCoord3;
     } else if (uVertexShader == 3) { //MapObjSpecular_T1
         vTexCoord = aTexCoord;
@@ -149,13 +149,14 @@ varying vec2 vTexCoord2;
 varying vec2 vTexCoord3;
 varying vec4 vColor;
 varying vec4 vColor2;
-varying vec3 vPosition;
+varying vec4 vPosition;
 
 layout(std140) uniform meshWideBlockPS {
     vec4 uViewUp;
     vec4 uSunDir_FogStart;
     vec4 uSunColor_uFogEnd;
     vec4 uAmbientLight;
+    vec4 uAmbientLight2AndIsBatchA;
     ivec4 UseLitColor_EnableAlpha_PixelShader;
     vec4 FogColor_AlphaTest;
 };
@@ -178,9 +179,15 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
         float nDotUp = dot(normalizedN, uViewUp.xyz);
 
         vec3 precomputed = vColor2.rgb;
-        vec3 adjAmbient = (uAmbientLight.rgb + precomputed);
-        vec3 adjHorizAmbient = (uAmbientLight.rgb + precomputed);
-        vec3 adjGroundAmbient = (uAmbientLight.rgb + precomputed);
+
+        vec3 ambientColor = uAmbientLight.rgb;
+        if (uAmbientLight2AndIsBatchA.w > 0.0) {
+            ambientColor = mix(uAmbientLight.rgb, uAmbientLight2AndIsBatchA.rgb, vec3(vPosition.w));
+        }
+
+        vec3 adjAmbient = (ambientColor.rgb + precomputed);
+        vec3 adjHorizAmbient = (ambientColor.rgb + precomputed);
+        vec3 adjGroundAmbient = (ambientColor.rgb + precomputed);
 
         if ((nDotUp >= 0.0))
         {

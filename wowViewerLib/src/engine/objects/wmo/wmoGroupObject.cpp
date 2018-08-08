@@ -309,17 +309,20 @@ void WmoGroupObject::update() {
 
     int minBatch = m_api->getConfig()->getWmoMinBatch();
     int maxBatch = std::min(m_api->getConfig()->getWmoMaxBatch(), m_geom->batchesLen);
+    MOGP *mogp = m_geom->mogp;
 
     for (int j = minBatch; j < maxBatch; j++) {
         SMOBatch &renderBatch = m_geom->batches[j];
-        mathfu::vec4 ambientColor = this->getAmbientColor();
+        mathfu::vec4 ambientColor;
+        bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
+        bool isBatchC = (j >= (mogp->transBatchCount+mogp->intBatchCount));
 
-        bool isAffectedByAmbient = (j >= 0 && j < (m_geom->mogp->transBatchCount)) ||
-                                   (j >= (m_geom->mogp->transBatchCount + m_geom->mogp->intBatchCount));
-
-        if (isAffectedByAmbient) {
+        if (isBatchC) {
             ambientColor = m_api->getGlobalAmbientColor();
+        } else {
+            ambientColor = this->getAmbientColor();
         }
+
         HGUniformBuffer buffer = this->m_meshArray[j]->getFragmentUniformBuffer(2);
 
         wmoMeshWideBlockPS &blockPS = buffer->getObject<wmoMeshWideBlockPS>();
@@ -327,6 +330,11 @@ void WmoGroupObject::update() {
         blockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
         blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
         blockPS.uAmbientLight = ambientColor;
+        if (isBatchA) {
+            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);
+        } else {
+            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0,0,0,0);
+        }
         blockPS.FogColor_AlphaTest = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), blockPS.FogColor_AlphaTest.w));
         buffer->save();
     }
@@ -422,6 +430,8 @@ void WmoGroupObject::createMeshes() {
     blockVS.uPlacementMat = *m_modelMatrix;
     vertexModelWideUniformBuffer->save();
 
+    MOGP *mogp = m_geom->mogp;
+
     for (int j = minBatch; j < maxBatch; j++) {
         SMOBatch &renderBatch = m_geom->batches[j];
 
@@ -443,12 +453,14 @@ void WmoGroupObject::createMeshes() {
         int pixelShader = wmoMaterialShader[shaderId].pixelShader;
         int vertexShader = wmoMaterialShader[shaderId].vertexShader;
 
-        bool isAffectedByAmbient = (j >= 0 && j < (m_geom->mogp->transBatchCount)) ||
-                                   (j >= (m_geom->mogp->transBatchCount + m_geom->mogp->intBatchCount));
+        bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
+        bool isBatchC = (j >= (mogp->transBatchCount+mogp->intBatchCount));
 
-        mathfu::vec4 ambientColor = this->getAmbientColor();
-        if (isAffectedByAmbient) {
+        mathfu::vec4 ambientColor;
+        if (isBatchC) {
             ambientColor = m_api->getGlobalAmbientColor();
+        } else {
+            ambientColor = this->getAmbientColor();
         }
 
         auto blendMode = material.blendMode;
@@ -496,6 +508,12 @@ void WmoGroupObject::createMeshes() {
         blockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
         blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
         blockPS.uAmbientLight = ambientColor;
+        if (isBatchA) {
+            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);
+        } else {
+            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0,0,0,0);
+        }
+
         blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
         blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
         blockPS.PixelShader = pixelShader;

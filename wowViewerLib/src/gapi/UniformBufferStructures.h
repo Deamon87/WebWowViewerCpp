@@ -73,6 +73,7 @@ struct wmoMeshWideBlockPS {
     mathfu::vec4_packed uSunDir_FogStart;
     mathfu::vec4_packed uSunColor_uFogEnd;
     mathfu::vec4_packed uAmbientLight;
+    mathfu::vec4_packed uAmbientLight2AndIsBatchA;
     int UseLitColor;
     int EnableAlpha;
     int PixelShader;
