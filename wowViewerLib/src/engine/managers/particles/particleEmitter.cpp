@@ -407,7 +407,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
         return;
     }
 
-    if (this->m_data->old.flags & 0x200 ) {
+    if (this->m_data->old.flags & 0x10 ) {
         // apply the model transform
         this->particleToView = viewMatrix * this->transform;
     }
@@ -762,12 +762,13 @@ ParticleEmitter::BuildQuad(
     szVertexBuf[index] = record;
 }
 
-void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes) {
+void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
     if (this->szVertexBuf.size() <= 1) return;
 
     m_indexVBO->uploadData(&this->szIndexBuff[0], this->szIndexBuff.size()*2);
     m_bufferVBO->uploadData(&this->szVertexBuf[0], this->szVertexBuf.size() * sizeof(this->szVertexBuf[0]));
 
     m_mesh->setEnd(this->szIndexBuff.size());
+    m_mesh->setRenderOrder(renderOrder);
     meshes.push_back(m_mesh);
 }

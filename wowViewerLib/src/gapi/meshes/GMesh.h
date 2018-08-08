@@ -58,6 +58,9 @@ public:
     inline MeshType getMeshType() {
         return m_meshType;
     }
+    void setRenderOrder(int renderOrder) {
+        m_renderOrder = renderOrder;
+    };
 
     void setEnd(int end) {m_end = end; };
 protected:
@@ -76,6 +79,8 @@ private:
     EGxBlendEnum m_blendMode;
     bool m_isTransparent;
 
+
+    int m_renderOrder = 0;
     int m_start;
     int m_end;
     int m_element;

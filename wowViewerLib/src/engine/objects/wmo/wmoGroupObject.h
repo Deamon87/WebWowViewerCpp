@@ -37,7 +37,7 @@ public:
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
 
-    void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
+    void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
 
 
     bool getDontUseLocalLightingForM2() { return m_dontUseLocalLightingForM2; };

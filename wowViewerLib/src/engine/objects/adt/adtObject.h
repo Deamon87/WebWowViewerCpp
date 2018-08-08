@@ -30,7 +30,7 @@ public:
     }
 
 
-    void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
+    void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
     void update();
     void doPostLoad();

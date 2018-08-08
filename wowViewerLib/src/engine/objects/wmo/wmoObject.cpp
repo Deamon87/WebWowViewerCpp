@@ -374,19 +374,19 @@ void WmoObject::update() {
 void WmoObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame){
     if (!m_loaded) return;
 
-    for (int i= 0; i < groupObjects.size(); i++) {
-        if(drawGroupWMO[i]) {
-           if (groupObjects[i] != nullptr && lodGroupLevelWMO[i] == 0) {
-               groupObjects[i]->collectMeshes(renderedThisFrame);
-           } else if (groupObjectsLod1[i] != nullptr && lodGroupLevelWMO[i] == 1) {
-               groupObjectsLod1[i]->collectMeshes(renderedThisFrame);
-           } else if (groupObjectsLod2[i] != nullptr && lodGroupLevelWMO[i] == 2) {
-               groupObjectsLod2[i]->collectMeshes(renderedThisFrame);
-           } else if (groupObjects[i] != nullptr) {
-               groupObjects[i]->collectMeshes(renderedThisFrame);
-           }
-        }
-    }
+//    for (int i= 0; i < groupObjects.size(); i++) {
+//        if(drawGroupWMO[i]) {
+//           if (groupObjects[i] != nullptr && lodGroupLevelWMO[i] == 0) {
+//               groupObjects[i]->collectMeshes(renderedThisFrame);
+//           } else if (groupObjectsLod1[i] != nullptr && lodGroupLevelWMO[i] == 1) {
+//               groupObjectsLod1[i]->collectMeshes(renderedThisFrame);
+//           } else if (groupObjectsLod2[i] != nullptr && lodGroupLevelWMO[i] == 2) {
+//               groupObjectsLod2[i]->collectMeshes(renderedThisFrame);
+//           } else if (groupObjects[i] != nullptr) {
+//               groupObjects[i]->collectMeshes(renderedThisFrame);
+//           }
+//        }
+//    }
 }
 
 void WmoObject::drawDebugLights(){
@@ -1267,7 +1267,7 @@ mathfu::vec3 WmoObject::getAmbientLight() {
 
 void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
     for (auto &adt : drawnADTs) {
-        adt->collectMeshes(renderedThisFrame);
+        adt->collectMeshes(renderedThisFrame, renderOrder);
     }
 
     GeneralView::collectMeshes(renderedThisFrame);
@@ -1276,12 +1276,12 @@ void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
 
 void GeneralView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
     for (auto& wmoGroup : drawnWmos) {
-        wmoGroup->collectMeshes(renderedThisFrame);
+        wmoGroup->collectMeshes(renderedThisFrame, renderOrder);
     }
-    for (auto& m2 : drawnM2s) {
-        m2->fillBuffersAndArray(renderedThisFrame);
-        m2->drawParticles(renderedThisFrame);
-    }
+//    for (auto& m2 : drawnM2s) {
+//        m2->collectMeshes(renderedThisFrame, renderOrder);
+//        m2->drawParticles(renderedThisFrame , renderOrder);
+//    }
 }
 
 void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
@@ -1297,6 +1297,7 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
 
     size_t j = 0;
     for (auto &m2Candidate : candidates) {
+        if (m2Candidate == nullptr) continue; //?
         for (auto &frustumPlane : frustumPlanes) {
             if (m2Candidate == nullptr)            continue;
             if (m2Candidate->checkFrustumCulling(cameraPos, frustumPlane, {})) {

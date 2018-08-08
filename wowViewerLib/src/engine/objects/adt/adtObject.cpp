@@ -414,12 +414,13 @@ void AdtObject::loadAlphaTextures() {
 
 
 
-void AdtObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
+void AdtObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
     if (!m_loaded) return;
 
     for (int i = 0; i < 256; i++) {
         if (!drawChunk[i]) continue;
         if (i >= adtMeshes.size()) return;
+        adtMeshes[i]->setRenderOrder(renderOrder);
         renderedThisFrame.push_back(adtMeshes[i]);
     }
 }

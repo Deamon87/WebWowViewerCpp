@@ -472,6 +472,14 @@ bool GDevice::sortMeshes(HGMesh &a, HGMesh &b) {
         return true;
     }
 
+    if (a->m_renderOrder != b->m_renderOrder ) {
+        if (!a->getIsTransparent()) {
+            return a->m_renderOrder < b->m_renderOrder;
+        } else {
+            return a->m_renderOrder > b->m_renderOrder;
+        }
+    }
+
     if (a->getMeshType() > b->getMeshType()) {
         return false;
     }

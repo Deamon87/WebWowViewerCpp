@@ -680,7 +680,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     );
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
-    int maxBatch = particleEmitters.size();
 
     mathfu::mat4 viewMatInv = viewMat.Inverse();
 
@@ -690,8 +689,9 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         mathfu::mat4 transformMat =
             m_placementMatrix *
             bonesMatrices[peRecord->old.bone];
-            transformMat *= mathfu::mat4::FromTranslationVector(mathfu::vec3(peRecord->old.Position.x, peRecord->old.Position.y, peRecord->old.Position.z));
-            transformMat *= particleCoordinatesFix;
+        transformMat *= mathfu::mat4::FromTranslationVector(
+            mathfu::vec3(peRecord->old.Position.x, peRecord->old.Position.y, peRecord->old.Position.z));
+        transformMat *= particleCoordinatesFix;
 
         particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D());
         particleEmitters[i]->prepearBuffers(viewMat);
@@ -919,7 +919,7 @@ void M2Object::createMeshes() {
     }
 }
 
-void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
+void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
     if (!this->m_loaded) {
         this->startLoading();
         return;
@@ -963,6 +963,7 @@ void M2Object::fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame) {
 
     for (int i = minBatch; i < maxBatch; i++) {
         if (M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], *this, m_materialArray[i], m2File, skinData)) {
+            this->m_meshArray[i]->setRenderOrder(renderOrder);
             renderedThisFrame.push_back(this->m_meshArray[i]);
         }
     }
@@ -1059,7 +1060,7 @@ mathfu::vec4 M2Object::getAmbientLight() {
     return ambientColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
 };
 
-void M2Object::drawParticles(std::vector<HGMesh> &meshes) {
+void M2Object::drawParticles(std::vector<HGMesh> &meshes, int renderOrder) {
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
@@ -1068,7 +1069,7 @@ void M2Object::drawParticles(std::vector<HGMesh> &meshes) {
 
     for (int i = minParticle; i < maxParticle; i++) {
 //    for (int i = 0; i< particleEmitters.size(); i++) {
-        particleEmitters[i]->collectMeshes(meshes);
+        particleEmitters[i]->collectMeshes(meshes, renderOrder);
     }
 }
 

@@ -964,9 +964,9 @@ void WmoGroupObject::setModelFileId(int fileId) {
     m_modelFileId = fileId;
 }
 
-void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
-
+void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
     for (int i = 0; i < this->m_meshArray.size(); i++) {
+        this->m_meshArray[i]->setRenderOrder(renderOrder);
         renderedThisFrame.push_back(this->m_meshArray[i]);
     }
 }

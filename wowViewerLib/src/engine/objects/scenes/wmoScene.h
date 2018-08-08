@@ -19,6 +19,7 @@ private:
     float m_currentTime = 0;
     float m_lastTimeSort = 0;
     float m_lastTimeDistanceCalc = 0;
+    int m_viewRenderOrder = 0;
 
     std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
@@ -67,7 +68,6 @@ public:
     void copyToCurrentFrame() override;
     void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
 
-    void drawM2s(std::vector<HGMesh> &renderedThisFrame);
 
     mathfu::vec4 getAmbientColor() override {
 //        if (m_wmoObject->isLoaded()) {

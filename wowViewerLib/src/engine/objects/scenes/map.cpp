@@ -614,60 +614,6 @@ void Map::draw() {
 }
 
 void Map::drawExterior(std::vector<HGMesh> &renderedThisFrame) {
-    for (int i = 0; i < this->currentFrameAdtRenderedThisFrameArr.size(); i++) {
-        this->currentFrameAdtRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
-    }
-    for (int i = 0; i < this->currentFrameAdtRenderedThisFrameArr.size(); i++) {
-        this->currentFrameAdtRenderedThisFrameArr[i]->collectMeshesLod(renderedThisFrame);
-    }
 
-    //2. Draw WMO
-    for (int i = 0; i < this->currentFrameWmoRenderedThisFrameArr.size(); i++) {
-//        if (config.getUsePortalCulling()) {
-//            this.wmoRenderedThisFrame[i].drawPortalBased(false)
-//        } else {
-            this->currentFrameWmoRenderedThisFrameArr[i]->collectMeshes(renderedThisFrame);
-//        }
-    }
-
-//    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
-//        if (config.getUsePortalCulling()) {
-//            this.wmoRenderedThisFrame[i].drawPortalBased(false)
-//        } else {
-//        this->wmoRenderedThisFrameArr[i]->drawTransformedPortalPoints();
-//        this->wmoRenderedThisFrameArr[i]->drawTransformedAntiPortalPoints();
-//        }
-//    }
-
-
-    //3. Draw background WDL
-
-    //4. Draw skydom
-//    if (this.skyDom) {
-//        this.skyDom.draw();
-//    }
-
-    //Draw M2s
-
-    for (auto m2Object : this->currentFrameM2RenderedThisFrameArr) {
-        m2Object->fillBuffersAndArray(renderedThisFrame);
-        m2Object->drawParticles(renderedThisFrame);
-    }
-
-
-    //7.1 Draw WMO BBs
-//    this.sceneApi.shaders.activateBoundingBoxShader();
-//    if (config.getDrawWmoBB()) {
-//        for (var i = 0; i < this.wmoRenderedThisFrame.length; i++) {
-//            this.wmoRenderedThisFrame[i].drawBB();
-//        }
-//    }
-
-
-    //Sort...
-    std::sort(renderedThisFrame.begin(),
-              renderedThisFrame.end(),
-              GDevice::sortMeshes
-    );
 }
 

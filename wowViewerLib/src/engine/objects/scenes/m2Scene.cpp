@@ -22,8 +22,8 @@ void M2Scene::draw() {
 
     std::vector<HGMesh> renderedThisFrame;
 
-    m_m2Object->fillBuffersAndArray(renderedThisFrame);
-    m_m2Object->drawParticles(renderedThisFrame);
+    m_m2Object->collectMeshes(renderedThisFrame, 0);
+    m_m2Object->drawParticles(renderedThisFrame, 0);
 
     std::sort(renderedThisFrame.begin(),
         renderedThisFrame.end(),

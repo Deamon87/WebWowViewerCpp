@@ -43,7 +43,7 @@ public:
     CParticleGenerator * getGenerator(){
         return generator;
     }
-    void collectMeshes(std::vector<HGMesh> &meshes);
+    void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
 
     int flags = 2;
     bool emittingLastFrame = false;

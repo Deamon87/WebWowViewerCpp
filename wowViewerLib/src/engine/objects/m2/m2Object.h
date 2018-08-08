@@ -147,7 +147,7 @@ public:
 
     bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
     void createMeshes();
-    void fillBuffersAndArray(std::vector<HGMesh> &renderedThisFrame);
+    void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
 
     void setUseLocalLighting(bool value) { m_useLocalDiffuseColor = value; };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
@@ -176,7 +176,7 @@ public:
         m_ambientColorOverride = ambientColor;
     }
 
-    void drawParticles(std::vector<HGMesh> &meshes);
+    void drawParticles(std::vector<HGMesh> &meshes, int renderOrder);
 
     void createVertexBindings();
 };
