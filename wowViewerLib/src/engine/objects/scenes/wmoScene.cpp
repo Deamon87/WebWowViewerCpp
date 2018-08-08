@@ -63,21 +63,10 @@ void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, 
     std::sort( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() );
     m2RenderedThisFrame.erase( unique( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() ), m2RenderedThisFrame.end() );
 
-    m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.size());
-
-    size_t j = 0;
-    for (size_t i = 0; i < m2RenderedThisFrame.size(); i++ ) {
-        if (m2RenderedThisFrame[i]->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints)) {
-            m2RenderedThisFrameArr[j++] = m2RenderedThisFrame[i];
-        }
-    }
-
-    m2RenderedThisFrameArr.resize(j);
+    m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.begin(), m2RenderedThisFrame.end());
 
     std::sort( wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end() );
     wmoRenderedThisFrame.erase( unique( wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end() ), wmoRenderedThisFrame.end() );
-
-
     wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
 }
 

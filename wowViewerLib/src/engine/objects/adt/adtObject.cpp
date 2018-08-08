@@ -585,7 +585,7 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                                          16.0f * cell_len, 16.0f * cell_len
         );
 
-        checkReferences(camera, frustumPlanes, frustumPoints, hullLines,
+        checkReferences(camera, frustumPlanes, frustumPoints,
                         lookAtMat4, 5,
                         m2ObjectsCandidates, wmoCandidates,
                         16.1f * x_offset, 16.1f * y_offset,
@@ -640,7 +640,7 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
 
             lodCommands.push_back(command);
 
-            checkReferences(camera, frustumPlanes, frustumPoints, hullLines,
+            checkReferences(camera, frustumPlanes, frustumPoints,
                             lookAtMat4, curentLod,
                             m2ObjectsCandidates, wmoCandidates,
                             16.0f * x_offset, 16.0f * y_offset,
@@ -700,7 +700,6 @@ bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
 bool AdtObject::checkReferences(mathfu::vec4 &cameraPos,
                           std::vector<mathfu::vec4> &frustumPlanes,
                           std::vector<mathfu::vec3> &frustumPoints,
-                          std::vector<mathfu::vec3> &hullLines,
                           mathfu::mat4 &lookAtMat4,
                           int lodLevel,
                           std::vector<M2Object *> &m2ObjectsCandidates,
@@ -805,7 +804,7 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
         checkNonLodChunkCulling(cameraPos,
                                 frustumPlanes, frustumPoints, hullLines,
                                 0, 0, 16, 16);
-        checkReferences(cameraPos, frustumPlanes, frustumPoints, hullLines,
+        checkReferences(cameraPos, frustumPlanes, frustumPoints,
                         lookAtMat4, 5,
                         m2ObjectsCandidates, wmoCandidates,
                         0, 0,

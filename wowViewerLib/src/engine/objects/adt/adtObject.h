@@ -46,6 +46,13 @@ public:
             std::vector<M2Object*> &m2ObjectsCandidates,
             std::vector<WmoObject*> &wmoCandidates);
 
+    bool
+    checkReferences(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
+                    mathfu::mat4 &lookAtMat4,
+                    int lodLevel,
+                    std::vector<M2Object *> &m2ObjectsCandidates, std::vector<WmoObject *> &wmoCandidates,
+                    int x, int y, int x_len, int y_len);
+
 private:
     struct LodCommand {
         int index;
@@ -96,6 +103,8 @@ private:
 
     HGUniformBuffer adtWideBlockPS;
 
+
+
 private:
     std::vector<HGTexture> alphaTextures;
     HBlpTexture lodDiffuseTexture  = nullptr;
@@ -133,14 +142,6 @@ private:
     bool checkNonLodChunkCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                                  std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines, int x,
                                  int y, int x_len, int y_len);
-
-    bool
-    checkReferences(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-              std::vector<mathfu::vec3> &hullLines,
-              mathfu::mat4 &lookAtMat4,
-              int lodLevel,
-              std::vector<M2Object *> &m2ObjectsCandidates, std::vector<WmoObject *> &wmoCandidates,
-              int x, int y, int x_len, int y_len);
 
     bool
     iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len,

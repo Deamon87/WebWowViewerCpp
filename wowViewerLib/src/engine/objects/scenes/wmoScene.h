@@ -30,10 +30,6 @@ private:
     ExteriorView thisFrameExteriorView;
     std::vector<InteriorView> thisFrameInteriorViews;
 
-
-
-    std::vector<GeneralView *> renderedViews;
-
     std::vector<M2Object*> m2RenderedThisFrame;
     std::vector<WmoObject*> wmoRenderedThisFrame;
 

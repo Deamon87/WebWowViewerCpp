@@ -35,6 +35,13 @@ private:
     HWdtFile m_wdtfile;
     WdlObject * m_wdlObject;
 
+    int m_viewRenderOrder = 0;
+    ExteriorView exteriorView;
+    std::vector<InteriorView> interiorViews;
+
+    ExteriorView thisFrameExteriorView;
+    std::vector<InteriorView> thisFrameInteriorViews;
+
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;
 
@@ -84,14 +91,11 @@ public:
     void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
-                       std::vector<mathfu::vec4> &frustumPlanes,
                        std::vector<mathfu::vec3> &frustumPoints,
                        std::vector<mathfu::vec3> &hullLines,
                        mathfu::mat4 &lookAtMat4,
                        mathfu::mat4 &projectionModelMat,
-                       std::vector<AdtObject*> &adtRenderedThisFrame,
-                       std::vector<M2Object*> &m2RenderedThisFrame,
-                       std::vector<WmoObject*> &wmoRenderedThisFrame);
+                       int viewRenderOrder);
 
     void drawExterior(std::vector<HGMesh> &renderedThisFrame);
 
