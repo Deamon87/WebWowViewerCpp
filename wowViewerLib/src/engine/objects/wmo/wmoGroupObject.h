@@ -34,6 +34,7 @@ public:
     const std::vector <M2Object *> *getDoodads() const { return &m_doodads; };
 
     void setWmoApi(IWmoApi *api);
+    IWmoApi *getWmoApi() { return m_wmoApi; };
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
 
@@ -48,6 +49,7 @@ public:
                            std::vector<mathfu::vec3> &points);
 
     mathfu::vec4 getAmbientColor();
+    void assignInteriorParams(M2Object * m2Object);
 
     bool checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                             mathfu::vec4 &cameraLocal,
@@ -95,13 +97,17 @@ private:
 
     void loadDoodads();
 
-    bool checkIfInsidePortals(mathfu::vec3 point, SMOPortal *portalInfos, SMOPortalRef *portalRels);
+    bool checkIfInsidePortals(mathfu::vec3 point, const SMOPortal *portalInfos, const SMOPortalRef *portalRels);
 
 
     static void queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList);
 
     bool getTopAndBottomTriangleFromBsp(mathfu::vec4 &cameraLocal, SMOPortal *portalInfos,
                                         SMOPortalRef *portalRels, std::vector<int> &bspLeafList, M2Range &result);
+
+    void getBottomVertexesFromBspResult(const SMOPortal *portalInfos, const SMOPortalRef *portalRels,
+                                        const std::vector<int> &bspLeafList, mathfu::vec4 &cameraLocal, float &topZ,
+                                        float &bottomZ, mathfu::vec4 &colorUnderneath, bool checkPortals = true);
 };
 
 

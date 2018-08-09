@@ -623,8 +623,8 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
 }
 
 bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
-                                          SMOPortal *portalInfos,
-                                          SMOPortalRef *portalRels) {
+                                          const SMOPortal *portalInfos,
+                                          const SMOPortalRef *portalRels) {
     int moprIndex = this->m_geom->mogp->moprIndex;
     int numItems = this->m_geom->mogp->moprCount;
 
@@ -632,8 +632,8 @@ bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
 
     bool insidePortals = true;
     for (int j = moprIndex; j < moprIndex + numItems; j++) {
-        SMOPortalRef *relation = &portalRels[j];
-        SMOPortal *portalInfo = &portalInfos[relation->portal_index];
+        const SMOPortalRef *relation = &portalRels[j];
+        const SMOPortal *portalInfo = &portalInfos[relation->portal_index];
 
         int nextGroup = relation->group_index;
         C4Plane plane = portalInfo->plane;
@@ -697,75 +697,11 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
         std::vector<int> &bspLeafList,
         M2Range &result) {
 
-    t_BSP_NODE *nodes = this->m_geom->bsp_nodes;
-    float topZ = -999999;
-    float bottomZ = 999999;
-    float minPositiveDistanceToCamera = 99999;
+    float topZ;
+    float bottomZ;
+    mathfu::vec4 tempColor;
+    getBottomVertexesFromBspResult(portalInfos, portalRels, bspLeafList, cameraLocal, topZ, bottomZ, tempColor);
 
-    //1. Loop through bsp results
-    for (int i = 0; i < bspLeafList.size(); i++) {
-        t_BSP_NODE *node = &nodes[bspLeafList[i]];
-
-        for (int j = node->firstFace; j < node->firstFace + node->numFaces; j++) {
-            int vertexInd1 = this->m_geom->indicies[3 * this->m_geom->bpsIndicies[j] + 0];
-            int vertexInd2 = this->m_geom->indicies[3 * this->m_geom->bpsIndicies[j] + 1];
-            int vertexInd3 = this->m_geom->indicies[3 * this->m_geom->bpsIndicies[j] + 2];
-
-            mathfu::vec3 vert1 = mathfu::vec3(this->m_geom->verticles[vertexInd1]);
-            mathfu::vec3 vert2 = mathfu::vec3(this->m_geom->verticles[vertexInd2]);
-            mathfu::vec3 vert3 = mathfu::vec3(this->m_geom->verticles[vertexInd3]);
-
-            //1. Get if camera position inside vertex
-            float minX = std::min(std::min(vert1[0], vert2[0]), vert3[0]);
-            float minY = std::min(std::min(vert1[1], vert2[1]), vert3[1]);
-            float minZ = std::min(std::min(vert1[2], vert2[2]), vert3[2]);
-
-            float maxX = std::max(std::max(vert1[0], vert2[0]), vert3[0]);
-            float maxY = std::max(std::max(vert1[1], vert2[1]), vert3[1]);
-            float maxZ = std::max(std::max(vert1[2], vert2[2]), vert3[2]);
-
-            bool testPassed = (
-                    (cameraLocal[0] > minX && cameraLocal[0] < maxX) &&
-                    (cameraLocal[1] > minY && cameraLocal[1] < maxY)
-            );
-            if (!testPassed) continue;
-
-            mathfu::vec4 plane = MathHelper::createPlaneFromEyeAndVertexes(vert1, vert2, vert3);
-            //var z = MathHelper.calcZ(vert1,vert2,vert3,cameraLocal[0],cameraLocal[1]);
-            if ((plane[2] < 0.0001) && (plane[2] > -0.0001)) continue;
-
-            float z = (-plane[3] - cameraLocal[0] * plane[0] - cameraLocal[1] * plane[1]) / plane[2];
-
-            //2. Get if vertex top or bottom
-            mathfu::vec3 normal1 = mathfu::vec3(this->m_geom->normals[vertexInd1]);
-            mathfu::vec3 normal2 = mathfu::vec3(this->m_geom->normals[vertexInd2]);
-            mathfu::vec3 normal3 = mathfu::vec3(this->m_geom->normals[vertexInd3]);
-
-            mathfu::vec3 suggestedPoint = mathfu::vec3(cameraLocal[0], cameraLocal[1], z);
-            mathfu::vec3 bary = MathHelper::getBarycentric(
-                    suggestedPoint,
-                    vert1,
-                    vert2,
-                    vert3
-            );
-
-            if ((bary[0] < 0) || (bary[1] < 0) || (bary[2] < 0)) continue;
-            if (!WmoGroupObject::checkIfInsidePortals(suggestedPoint, portalInfos,
-                                                      portalRels))
-                continue;
-
-            float normal_avg = bary[0] * normal1[2] + bary[1] * normal2[2] + bary[2] * normal3[2];
-            if (normal_avg > 0) {
-                //Bottom
-                float distanceToCamera = cameraLocal[2] - z;
-                if ((distanceToCamera > 0) && (distanceToCamera < minPositiveDistanceToCamera))
-                    bottomZ = z;
-            } else {
-                //Top
-                topZ = std::max(z, topZ);
-            }
-        }
-    }
     //2. Try to get top and bottom from portal planes
     MOGP *groupInfo = this->m_geom->mogp;
     int moprIndex = groupInfo->moprIndex;
@@ -829,6 +765,93 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
     result = {bottomZ, topZ};
 
     return true;
+}
+
+void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos, const SMOPortalRef *portalRels,
+                                                    const std::vector<int> &bspLeafList, mathfu::vec4 &cameraLocal,
+                                                    float &topZ, float &bottomZ,
+                                                    mathfu::vec4 &colorUnderneath,
+                                                    bool checkPortals) {
+    topZ= -999999;
+    bottomZ= 999999;
+    t_BSP_NODE *nodes = m_geom->bsp_nodes;
+    float minPositiveDistanceToCamera = 99999;
+
+    //1. Loop through bsp results
+    for (int i = 0; i < bspLeafList.size(); i++) {
+        t_BSP_NODE *node = &nodes[bspLeafList[i]];
+
+        for (int j = node->firstFace; j < node->firstFace + node->numFaces; j++) {
+            int vertexInd1 = m_geom->indicies[3 * m_geom->bpsIndicies[j] + 0];
+            int vertexInd2 = m_geom->indicies[3 * m_geom->bpsIndicies[j] + 1];
+            int vertexInd3 = m_geom->indicies[3 * m_geom->bpsIndicies[j] + 2];
+
+            mathfu::vec3 vert1 = mathfu::vec3(m_geom->verticles[vertexInd1]);
+            mathfu::vec3 vert2 = mathfu::vec3(m_geom->verticles[vertexInd2]);
+            mathfu::vec3 vert3 = mathfu::vec3(m_geom->verticles[vertexInd3]);
+
+            //1. Get if camera position inside vertex
+            float minX = std::min(std::min(vert1[0], vert2[0]), vert3[0]);
+            float minY = std::min(std::min(vert1[1], vert2[1]), vert3[1]);
+            float minZ = std::min(std::min(vert1[2], vert2[2]), vert3[2]);
+
+            float maxX = std::max(std::max(vert1[0], vert2[0]), vert3[0]);
+            float maxY = std::max(std::max(vert1[1], vert2[1]), vert3[1]);
+            float maxZ = std::max(std::max(vert1[2], vert2[2]), vert3[2]);
+
+            bool testPassed = (
+                    (cameraLocal[0] > minX && cameraLocal[0] < maxX) &&
+                    (cameraLocal[1] > minY && cameraLocal[1] < maxY)
+            );
+            if (!testPassed) continue;
+
+            mathfu::vec4 plane = MathHelper::createPlaneFromEyeAndVertexes(vert1, vert2, vert3);
+            if ((plane[2] < 0.0001) && (plane[2] > -0.0001)) continue;
+
+            float z = (-plane[3] - cameraLocal[0] * plane[0] - cameraLocal[1] * plane[1]) / plane[2];
+
+            //2. Get if vertex top or bottom
+            mathfu::vec3 normal1 = mathfu::vec3(m_geom->normals[vertexInd1]);
+            mathfu::vec3 normal2 = mathfu::vec3(m_geom->normals[vertexInd2]);
+            mathfu::vec3 normal3 = mathfu::vec3(m_geom->normals[vertexInd3]);
+
+            mathfu::vec3 suggestedPoint = mathfu::vec3(cameraLocal[0], cameraLocal[1], z);
+            mathfu::vec3 bary = MathHelper::getBarycentric(
+                    suggestedPoint,
+                    vert1,
+                    vert2,
+                    vert3
+            );
+
+            if ((bary[0] < 0) || (bary[1] < 0) || (bary[2] < 0)) continue;
+            if (checkPortals) {
+                if (!this->checkIfInsidePortals(suggestedPoint, portalInfos, portalRels))
+                    continue;
+            }
+
+            float normal_avg = bary[0] * normal1[2] + bary[1] * normal2[2] + bary[2] * normal3[2];
+            if (normal_avg > 0) {
+                //Bottom
+                float distanceToCamera = cameraLocal[2] - z;
+                if ((distanceToCamera > 0) && (distanceToCamera < minPositiveDistanceToCamera)) {
+                    bottomZ = z;
+                    if (m_geom->colorArray != nullptr) {
+                        CImVector *colorArr = m_geom->colorArray;
+                        colorUnderneath = mathfu::vec4(
+                            bary[0] * colorArr[vertexInd1].r + bary[1] * colorArr[vertexInd1].r + bary[2] * colorArr[vertexInd1].r,
+                            bary[0] * colorArr[vertexInd1].g + bary[1] * colorArr[vertexInd1].g + bary[2] * colorArr[vertexInd1].g,
+                            bary[0] * colorArr[vertexInd1].b + bary[1] * colorArr[vertexInd1].b + bary[2] * colorArr[vertexInd1].b,
+                            0
+                        ) * (1 / 255.0f);
+                    }
+                }
+
+            } else {
+                //Top
+                topZ = std::max(z, topZ);
+            }
+        }
+    }
 }
 
 bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
@@ -1013,4 +1036,50 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
     } else {
         return m_api->getGlobalAmbientColor();
     }
+}
+
+void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
+    mathfu::vec4 ambientColor = getAmbientColor();
+//    ambientColor = mathfu::vec4(ambientColor.z, ambientColor.y, ambientColor.x, ambientColor.w);
+
+
+    /*
+    if (m_geom->colorArray != nullptr) {
+        int nodeId = 0;
+        t_BSP_NODE *nodes = this->m_geom->bsp_nodes;
+        MOGP *groupInfo = this->m_geom->mogp;
+        std::vector<int> bspLeafList;
+
+        float epsilon = 1;
+        mathfu::vec4 cameraLocal = mathfu::vec4(m2Object->getLocalPosition(), 0);
+        mathfu::vec3 cameraBBMin(cameraLocal[0] - epsilon, cameraLocal[1] - epsilon, groupInfo->boundingBox.min.z);
+        mathfu::vec3 cameraBBMax(cameraLocal[0] + epsilon, cameraLocal[1] + epsilon, groupInfo->boundingBox.max.z);
+
+        CAaBox cameraBB;
+        cameraBB.max = cameraBBMax;
+        cameraBB.min = cameraBBMin;
+
+        float topZ;
+        float bottomZ;
+
+        mathfu::vec4 mocvColor (0,0,0,0);
+        WmoGroupObject::queryBspTree(cameraBB, nodeId, nodes, bspLeafList);
+        WmoGroupObject::getBottomVertexesFromBspResult(
+            nullptr, nullptr, bspLeafList, cameraLocal, topZ, bottomZ, mocvColor, false);
+
+        if (bottomZ < 99999) {
+            mocvColor = mathfu::vec4(mocvColor.z, mocvColor.y, mocvColor.x, 0);
+            ambientColor += mocvColor;
+        }
+    } */
+
+    m2Object->setUseLocalLighting(true);
+    m2Object->setAmbientColorOverride(ambientColor, true);
+
+
+    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
+    mathfu::mat4 transformMatrix = m_api->getViewMat() * (m2Object->getModelMatrix());
+    interiorSunDir = transformMatrix.Transpose() * interiorSunDir;
+
+    m2Object->setSunDirOverride(interiorSunDir, true);
 }

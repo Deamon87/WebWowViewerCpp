@@ -359,8 +359,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 
 //   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
+//    currentScene = new WmoScene(this,
+//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
 //
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,

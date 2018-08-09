@@ -705,6 +705,8 @@ bool AdtObject::checkReferences(mathfu::vec4 &cameraPos,
                           std::vector<M2Object *> &m2ObjectsCandidates,
                           std::vector<WmoObject *> &wmoCandidates,
                           int x, int y, int x_len, int y_len) {
+    if (!m_loaded) return false;
+
     for (int k = x; k < x+x_len; k++) {
         for (int l = y; l < y + y_len; l++) {
             int i = this->m_adtFile->mcnkMap[k][l];

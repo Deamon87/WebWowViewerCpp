@@ -1315,8 +1315,6 @@ void InteriorView::setM2Lights(M2Object *m2Object) {
     if (drawnWmos[0]->getDontUseLocalLightingForM2()) {
         m2Object->setUseLocalLighting(false);
     } else {
-        mathfu::vec4 ambientColor = drawnWmos[0]->getAmbientColor();
-        m2Object->setUseLocalLighting(true);
-        m2Object->setAmbientColorOverride(ambientColor, true);
+        drawnWmos[0]->assignInteriorParams(m2Object);
     }
 }

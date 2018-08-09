@@ -43,6 +43,7 @@ private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
     mathfu::mat4 m_placementInvertMatrix;
     mathfu::vec3 m_worldPosition;
+    mathfu::vec3 m_localPosition;
 
     float m_currentDistance = 0;
 
@@ -59,6 +60,9 @@ private:
 
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
+
+    mathfu::vec4 m_sunDirOverride;
+    bool m_setSunDir = false;
     bool m_modelAsScene = false;
 
 
@@ -137,8 +141,12 @@ public:
     }
     void calcDistance(mathfu::vec3 cameraPos);
     float getCurrentDistance();
+    mathfu::vec3 getLocalPosition() {
+        return m_localPosition;
+    };
     float getHeight();
     bool getGetIsLoaded() { return m_loaded; };
+    mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
     bool getHasBillboarded() {
         return m_hasBillboards;
     }
@@ -176,9 +184,16 @@ public:
         m_ambientColorOverride = ambientColor;
     }
 
+    void setSunDirOverride(mathfu::vec4 &sunDir, bool override) {
+        m_setSunDir = override;
+        m_sunDirOverride = sunDir;
+    }
+
     void drawParticles(std::vector<HGMesh> &meshes, int renderOrder);
 
     void createVertexBindings();
+
+    mathfu::vec3 getSunDir();
 };
 
 

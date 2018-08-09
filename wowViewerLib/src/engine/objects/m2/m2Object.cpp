@@ -437,6 +437,7 @@ void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacem
 
     mathfu::mat4 invertPlacementMatrix = placementMatrix.Inverse();
 
+    m_localPosition = mathfu::vec3(def.position);
     m_placementMatrix = placementMatrix;
     m_placementInvertMatrix = invertPlacementMatrix;
 }
@@ -464,6 +465,7 @@ void M2Object::createPlacementMatrix(SMDoodadDef &def) {
 
     mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
 
+    m_localPosition = mathfu::vec3(def.position);
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
 }
@@ -949,7 +951,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
     modelWideBlockPS &blockPS = fragmentModelWideUniformBuffer->getObject<modelWideBlockPS>();
     blockPS.uAmbientLight = ambientLight;
     blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
-    blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
+    blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(getSunDir(), m_api->getGlobalFogStart()));
     blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
 
     fragmentModelWideUniformBuffer->save();
@@ -1059,6 +1061,14 @@ mathfu::vec4 M2Object::getAmbientLight() {
 
     return ambientColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
 };
+
+mathfu::vec3 M2Object::getSunDir() {
+    if (m_setSunDir) {
+        return mathfu::vec3(m_sunDirOverride.x, m_sunDirOverride.y, m_sunDirOverride.z);
+    }
+
+    return m_api->getGlobalSunDir();
+}
 
 void M2Object::drawParticles(std::vector<HGMesh> &meshes, int renderOrder) {
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
