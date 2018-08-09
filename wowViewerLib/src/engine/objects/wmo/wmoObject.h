@@ -118,7 +118,6 @@ public:
     void startLoading();
     bool isLoaded() override { return m_loaded;}
     bool hasPortals();
-    mathfu::vec3 getAmbientLight();
     int getNameSet() {
         return m_nameSet;
     }
@@ -138,8 +137,6 @@ public:
     void createGroupObjects();
 
 
-    bool checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
-                             std::vector<mathfu::vec3> &frustumPoints, std::vector<M2Object *> &m2RenderedThisFrame);
     bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor);
 
     void doPostLoad();

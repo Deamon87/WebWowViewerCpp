@@ -96,45 +96,6 @@ M2Object *WmoObject::getDoodad(int index) {
 
     return m2Object;
 }
-
-bool WmoObject::checkFrustumCulling (mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                                     std::vector<M2Object*> &m2Candidates) {
-    if (!m_loaded) return true;
-
-    bool result = false;
-    CAaBox &aabb = this->m_bbox;
-
-    //1. Check if camera position is inside Bounding Box
-    if (
-        cameraPos[0] > aabb.min.z && cameraPos[0] < aabb.max.x &&
-        cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y &&
-        cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
-        ) result = true;
-
-    //2. Check aabb is inside camera frustum
-    if (!result)
-        result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
-
-    std::set<M2Object*> wmoM2Candidates;
-    if (result) {
-        //1. Calculate visibility for groups
-        for (int i = 0; i < this->groupObjects.size(); i++) {
-//            drawGroupWMO[i] = this->groupObjects[i]->checkGroupFrustum(cameraPos, frustumPlanes, frustumPoints, m2Candidates);
-        }
-
-        //2. Check all m2 candidates
-        for (auto it = wmoM2Candidates.begin(); it != wmoM2Candidates.end(); ++it) {
-            M2Object *m2ObjectCandidate  = *it;
-            bool frustumResult = m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints);
-            if (frustumResult) {
-                m2Candidates.push_back(m2ObjectCandidate);
-            }
-        }
-    }
-
-    return result;
-}
-
 void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
     mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
 
@@ -312,8 +273,6 @@ void WmoObject::createWorldPortals() {
         CAaBox &aaBoxCopyTo = geometryPerPortal[j].aaBox;
 
         aaBoxCopyTo = CAaBox(C3Vector(min), C3Vector(max));;
-        //.min = aaBox.min;
-//        aaBoxCopyTo.max = aaBox.max;
     }
 }
 
@@ -718,8 +677,6 @@ void WmoObject::createM2Array() {
 
 void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
     //1. Create portal verticles from geometry
-
-
 }
 
 void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
@@ -1258,13 +1215,6 @@ SMOMaterial *WmoObject::getMaterials() {
     return mainGeom->materials;
 }
 
-mathfu::vec3 WmoObject::getAmbientLight() {
-    return mathfu::vec3(
-            mainGeom->header->ambColor.r/255.0f,
-            mainGeom->header->ambColor.g/255.0f,
-            mainGeom->header->ambColor.b/255.0f);
-}
-
 void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
     for (auto &adt : drawnADTs) {
         adt->collectMeshes(renderedThisFrame, renderOrder);
@@ -1294,6 +1244,7 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
     //Delete duplicates
     std::sort( candidates.begin(), candidates.end() );
     candidates.erase( unique( candidates.begin(), candidates.end() ), candidates.end() );
+
 
     size_t j = 0;
     for (auto &m2Candidate : candidates) {

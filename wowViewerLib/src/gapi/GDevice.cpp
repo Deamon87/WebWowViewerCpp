@@ -462,6 +462,63 @@ GDevice::GDevice() {
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
 
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize, 0);
+
+    //From https://en.wikibooks.org/wiki/OpenGL_Programming/Bounding_box
+    static const float vertices[] = {
+        -1, -1, -1, //0
+        1, -1, -1,  //1
+        1, -1, 1,   //2
+        -1, -1, 1,  //3
+        -1, 1, 1,   //4
+        1, 1, 1,    //5
+        1, 1, -1,   //6
+        -1, 1, -1  //7
+    };
+    static const uint16_t elements[] = {
+        0, 1, 1, 2, 2, 3, 3, 0,
+        4, 5, 5, 6, 6, 7, 7, 4,
+        7, 6, 6, 1, 1, 0, 0, 7,
+        3, 2, 2, 5, 5, 4, 4, 3,
+        6, 5, 5, 2, 2, 1, 1, 6,
+        0, 3, 3, 4, 4, 7, 7, 0
+    };
+
+    static const uint16_t vertexElements[] = {
+        0, 1, 2, 0, 2, 3, // back
+        2, 3, 4, 2, 4, 5, // top
+        0, 1, 6, 0, 6, 7, // bottom
+        0, 3, 4, 0, 4, 7, // left
+        1, 2, 5, 1, 5, 6, // right
+        4, 5, 6, 4, 6, 7  // front
+    };
+
+
+    HGVertexBuffer vertexBuffer =  this->createVertexBuffer();
+    vertexBuffer->uploadData((void *) &vertices[0], sizeof(vertices));
+
+    HGIndexBuffer lineIndexBuffer = this->createIndexBuffer();
+    lineIndexBuffer->uploadData((void *) &elements[0], sizeof(elements));
+
+    HGIndexBuffer vertexIndexBuffer = this->createIndexBuffer();
+    lineIndexBuffer->uploadData((void *) &vertexElements[0], sizeof(vertexElements));
+
+    GBufferBinding bufferBinding = {0, 3, GL_FLOAT, false, 0, 0 };
+
+    GVertexBufferBinding binding={};
+    binding.bindings.push_back(bufferBinding);
+    binding.vertexBuffer = vertexBuffer;
+
+    HGVertexBufferBindings lineBBBindings = this->createVertexBufferBindings();
+
+    lineBBBindings->setIndexBuffer(lineIndexBuffer);
+    lineBBBindings->addVertexBufferBinding(binding);
+    lineBBBindings->save();
+
+    HGVertexBufferBindings vertexBBBindings = this->createVertexBufferBindings();
+
+    vertexBBBindings->setIndexBuffer(vertexIndexBuffer);
+    vertexBBBindings->addVertexBufferBinding(binding);
+    vertexBBBindings->save();
 }
 
 bool GDevice::sortMeshes(HGMesh &a, HGMesh &b) {

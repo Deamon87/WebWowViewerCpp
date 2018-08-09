@@ -1,13 +1,21 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
-attribute vec3 aPosition;
+layout(position = 0) in vec3 aPosition;
 
-uniform vec3 uBBScale;
-uniform vec3 uBBCenter;
+layout(std140) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
 
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
-uniform mat4 uPlacementMat;
+// Whole model
+#ifndef INSTANCED
+layout(std140) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
+
+    vec4 uBBScale;
+    vec4 uBBCenter;
+    vec4 uColor;
+};
 
 void main() {
     vec4 worldPoint = vec4(
@@ -23,7 +31,13 @@ void main() {
 #ifdef COMPILING_FS
 precision highp float;
 
-uniform vec3 uColor;
+layout(std140) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
+
+    vec4 uBBScale;
+    vec4 uBBCenter;
+    vec4 uColor;
+};
 
 void main() {
     vec4 finalColor = vec4(uColor, 1.0);

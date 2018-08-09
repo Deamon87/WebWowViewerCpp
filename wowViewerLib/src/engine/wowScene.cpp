@@ -424,9 +424,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-//    m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
+    m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
@@ -475,44 +475,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 void WoWSceneImpl::initGlContext() {
 
-}
-
-void WoWSceneImpl::initBoxVBO() {
-    //From https://en.wikibooks.org/wiki/OpenGL_Programming/Bounding_box
-    static const float vertices[] = {
-        -1, -1, -1, //0
-        1, -1, -1,  //1
-        1, -1, 1,   //2
-        -1, -1, 1,  //3
-        -1, 1, 1,   //4
-        1, 1, 1,    //5
-        1, 1, -1,   //6
-        -1, 1, -1  //7
-    };
-
-    GLuint vbo_vertices;
-    glGenBuffers(1, &vbo_vertices);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_vertices);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, GL_ZERO);
-
-    static const uint16_t elements[] = {
-            0, 1, 1, 2, 2, 3, 3, 0,
-            4, 5, 5, 6, 6, 7, 7, 4,
-            7, 6, 6, 1, 1, 0, 0, 7,
-            3, 2, 2, 5, 5, 4, 4, 3,
-            6, 5, 5, 2, 2, 1, 1, 6,
-            0, 3, 3, 4, 4, 7, 7, 0
-    };
-
-    GLuint ibo_elements;
-    glGenBuffers(1, &ibo_elements);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo_elements);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
-
-//    this->vbo_vertices = vbo_vertices;
-//    this->ibo_elements = ibo_elements;
 }
 
 void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
