@@ -221,7 +221,7 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
             colorArray[i].a = (unsigned char) ((mogp->flags.EXTERIOR > 0) ? 0xFF : 0x00);
         }
     } else {
-        if (!mohd->flags.flag_skip_base_color) {
+        if (mohd->flags.flag_skip_base_color) {
             v35 = 0;
             v36 = 0;
             v37 = 0;

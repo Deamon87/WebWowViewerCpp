@@ -1040,8 +1040,6 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
 
 void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
     mathfu::vec4 ambientColor = getAmbientColor();
-//    ambientColor = mathfu::vec4(ambientColor.z, ambientColor.y, ambientColor.x, ambientColor.w);
-
 
     /*
     if (m_geom->colorArray != nullptr) {
@@ -1079,7 +1077,7 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
 
     mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
     mathfu::mat4 transformMatrix = m_api->getViewMat() * (m2Object->getModelMatrix());
-    interiorSunDir = transformMatrix.Transpose() * interiorSunDir;
+    interiorSunDir = transformMatrix.Transpose().Inverse() * interiorSunDir;
 
     m2Object->setSunDirOverride(interiorSunDir, true);
 }

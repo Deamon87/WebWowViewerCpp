@@ -526,6 +526,155 @@ float M2Object::getTransparency(
 
     return transparency;
 }
+typedef struct {
+    double h;       // angle in degrees
+    double s;       // a fraction between 0 and 1
+    double v;       // a fraction between 0 and 1
+} hsv;
+
+hsv rgb2hsv(mathfu::vec3 in)
+{
+    hsv         out;
+    double      min, max, delta;
+
+    min = in.x < in.y ? in.x : in.y;
+    min = min  < in.z ? min  : in.z;
+
+    max = in.x > in.y ? in.x : in.y;
+    max = max  > in.z ? max  : in.z;
+
+    out.v = max;                                // v
+    delta = max - min;
+    if (delta < 0.00001)
+    {
+        out.s = 0;
+        out.h = 0; // undefined, maybe nan?
+        return out;
+    }
+    if( max > 0.0 ) { // NOTE: if Max is == 0, this divide would cause a crash
+        out.s = (delta / max);                  // s
+    } else {
+        // if max is 0, then r = g = b = 0
+        // s = 0, h is undefined
+        out.s = 0.0;
+        out.h = NAN;                            // its now undefined
+        return out;
+    }
+    if( in.x >= max )                           // > is bogus, just keeps compilor happy
+        out.h = ( in.y - in.z ) / delta;        // between yellow & magenta
+    else
+    if( in.y >= max )
+        out.h = 2.0 + ( in.z - in.x ) / delta;  // between cyan & yellow
+    else
+        out.h = 4.0 + ( in.x - in.y ) / delta;  // between magenta & cyan
+
+    out.h *= 60.0;                              // degrees
+
+    if( out.h < 0.0 )
+        out.h += 360.0;
+
+    return out;
+}
+
+
+mathfu::vec3 hsv2rgb(hsv in)
+{
+    double      hh, p, q, t, ff;
+    long        i;
+    mathfu::vec3    out;
+
+    if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
+        out.x = in.v;
+        out.y = in.v;
+        out.z = in.v;
+        return out;
+    }
+    hh = in.h;
+    if(hh >= 360.0) hh = 0.0;
+    hh /= 60.0;
+    i = (long)hh;
+    ff = hh - i;
+    p = in.v * (1.0 - in.s);
+    q = in.v * (1.0 - (in.s * ff));
+    t = in.v * (1.0 - (in.s * (1.0 - ff)));
+
+    switch(i) {
+        case 0:
+            out.x = in.v;
+            out.y = t;
+            out.z = p;
+            break;
+        case 1:
+            out.x = q;
+            out.y = in.v;
+            out.z = p;
+            break;
+        case 2:
+            out.x = p;
+            out.y = in.v;
+            out.z = t;
+            break;
+
+        case 3:
+            out.x = p;
+            out.y = q;
+            out.z = in.v;
+            break;
+        case 4:
+            out.x = t;
+            out.y = p;
+            out.z = in.v;
+            break;
+        case 5:
+        default:
+            out.x = in.v;
+            out.y = p;
+            out.z = q;
+            break;
+    }
+    return out;
+}
+
+uint8_t miniLogic(const CImVector *a2) {
+    uint8_t a2_red = a2->r;
+    uint8_t a2_green = a2->g;
+    uint8_t max_1 = a2_red;
+    if ( a2_red <= a2_green )
+        max_1 = a2_green;
+    uint8_t calc_res = a2->b;
+    uint8_t max_2;
+    bool v11;
+    if ( max_1 <= (unsigned __int8)a2->b )
+    {
+        v11 = (signed int)(unsigned __int8)a2->b <= 0;
+        goto LABEL_13;
+    }
+    if ( a2_red <= a2_green )
+    {
+        v11 = (signed int)a2_green <= 0;
+        LABEL_13:
+        if ( !v11 )
+            goto LABEL_6;
+        LABEL_14:
+        calc_res = 1;
+        goto LABEL_15;
+    }
+    if ( (signed int)a2_red <= 0 )
+        goto LABEL_14;
+    LABEL_6:
+    max_2 = a2_red;
+    if ( a2_red <= a2_green )
+        max_2 = a2_green;
+    if ( max_2 > (unsigned __int8)a2->b )
+    {
+        calc_res = a2->r;
+        if ( a2_green >= a2_red )
+            calc_res = a2->g;
+    }
+
+    LABEL_15:
+        return calc_res;
+}
 
 void M2Object::setDiffuseColor(CImVector& value) {
     this->m_localDiffuseColor = value;
@@ -535,6 +684,28 @@ void M2Object::setDiffuseColor(CImVector& value) {
             value.g / 255.0f,
             value.b / 255.0f,
             value.a / 255.0f);
+
+    uint8_t result = miniLogic(&value);
+//    if (result > 0x70) {
+//        hsv hsv1 = rgb2hsv(m_localDiffuseColorV.xyz());
+//        hsv1.v = (((float)0x70) / ((float)result)) * hsv1.v;
+//        this->m_localDiffuseColorV = mathfu::vec4(hsv2rgb(hsv1), 0);
+//    }
+
+    int a6 = 0x60;
+    if ( result > a6 )
+    {
+        float v14 = (float)((float)a6 * 255.0) / (float)result;
+        uint8_t green = (unsigned __int8)m_localDiffuseColor.g;
+        uint32_t newImColor = ((unsigned __int16)(((uint16_t)green * (signed int)v14 + 255) & 0xFF00) | ((unsigned __int8)((unsigned __int16)((signed int)v14 * (unsigned __int8)m_localDiffuseColor.r + 255) >> 8) << 16) | *(uint16_t *)&m_localDiffuseColor & 0xFF000000 | ((unsigned __int16)((signed int)v14 * (unsigned __int8)m_localDiffuseColor.b + 255) >> 8));
+        m_localDiffuseColor = *(CImVector *)&newImColor;
+
+        this->m_localDiffuseColorV = mathfu::vec4(
+            value.r / 255.0f,
+            value.g / 255.0f,
+            value.b / 255.0f,
+            value.a / 255.0f);
+    }
 }
 void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<HBlpTexture> replaceTextures) {
     this->m_skinNum = skinNum;
@@ -938,6 +1109,8 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
     vertexModelWideUniformBuffer->save();
 
     //2. Update model wide PS buffer
+    mathfu::vec4 ambientLight = getAmbientLight();
+
     static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
     mathfu::vec4 localDiffuse = diffuseNon;
     if (m_useLocalDiffuseColor) {
@@ -946,7 +1119,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
         localDiffuse = m_api->getGlobalSunColor();
     }
 
-    mathfu::vec4 ambientLight = getAmbientLight();
+
 
     modelWideBlockPS &blockPS = fragmentModelWideUniformBuffer->getObject<modelWideBlockPS>();
     blockPS.uAmbientLight = ambientLight;
