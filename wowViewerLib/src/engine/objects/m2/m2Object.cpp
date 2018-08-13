@@ -636,44 +636,24 @@ mathfu::vec3 hsv2rgb(hsv in)
 }
 
 uint8_t miniLogic(const CImVector *a2) {
-    uint8_t a2_red = a2->r;
-    uint8_t a2_green = a2->g;
-    uint8_t max_1 = a2_red;
-    if ( a2_red <= a2_green )
-        max_1 = a2_green;
-    uint8_t calc_res = a2->b;
-    uint8_t max_2;
-    bool v11;
-    if ( max_1 <= (unsigned __int8)a2->b )
+
+    uint8_t v7 = a2->r;
+    uint8_t v8 = a2->g;
+    if ( v8 <= a2->b )
     {
-        v11 = (signed int)(unsigned __int8)a2->b <= 0;
-        goto LABEL_13;
+        v8 = a2->b;
     }
-    if ( a2_red <= a2_green )
+    if ( v8 <= v7 )
     {
-        v11 = (signed int)a2_green <= 0;
-        LABEL_13:
-        if ( !v11 )
-            goto LABEL_6;
-        LABEL_14:
-        calc_res = 1;
-        goto LABEL_15;
+        v8 = v7;
     }
-    if ( (signed int)a2_red <= 0 )
-        goto LABEL_14;
-    LABEL_6:
-    max_2 = a2_red;
-    if ( a2_red <= a2_green )
-        max_2 = a2_green;
-    if ( max_2 > (unsigned __int8)a2->b )
+    uint8_t v10 = 1;
+    if ( v8 )
     {
-        calc_res = a2->r;
-        if ( a2_green >= a2_red )
-            calc_res = a2->g;
+        v10 = v8;
     }
 
-    LABEL_15:
-        return calc_res;
+    return v10;
 }
 
 void M2Object::setDiffuseColor(CImVector& value) {
@@ -686,25 +666,26 @@ void M2Object::setDiffuseColor(CImVector& value) {
             value.a / 255.0f);
 
     uint8_t result = miniLogic(&value);
-//    if (result > 0x70) {
-//        hsv hsv1 = rgb2hsv(m_localDiffuseColorV.xyz());
-//        hsv1.v = (((float)0x70) / ((float)result)) * hsv1.v;
-//        this->m_localDiffuseColorV = mathfu::vec4(hsv2rgb(hsv1), 0);
-//    }
+    if (result < 0xA8) {
+        hsv hsv1 = rgb2hsv(m_localDiffuseColorV.xyz());
+        hsv1.v = (((float)0xA8) / ((float)result)) * hsv1.v;
+        this->m_localDiffuseColorV = mathfu::vec4(hsv2rgb(hsv1), 0);
+    }
 
     int a6 = 0x60;
+    m_ambientAddColor = m_localDiffuseColorV;
     if ( result > a6 )
     {
         float v14 = (float)((float)a6 * 255.0) / (float)result;
         uint8_t green = (unsigned __int8)m_localDiffuseColor.g;
         uint32_t newImColor = ((unsigned __int16)(((uint16_t)green * (signed int)v14 + 255) & 0xFF00) | ((unsigned __int8)((unsigned __int16)((signed int)v14 * (unsigned __int8)m_localDiffuseColor.r + 255) >> 8) << 16) | *(uint16_t *)&m_localDiffuseColor & 0xFF000000 | ((unsigned __int16)((signed int)v14 * (unsigned __int8)m_localDiffuseColor.b + 255) >> 8));
-        m_localDiffuseColor = *(CImVector *)&newImColor;
+        CImVector newValue = *(CImVector *)&newImColor;
 
-        this->m_localDiffuseColorV = mathfu::vec4(
-            value.r / 255.0f,
-            value.g / 255.0f,
-            value.b / 255.0f,
-            value.a / 255.0f);
+        this->m_ambientAddColor = mathfu::vec4(
+            newValue.r / 255.0f,
+            newValue.g / 255.0f,
+            newValue.b / 255.0f,
+            newValue.a / 255.0f);
     }
 }
 void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<HBlpTexture> replaceTextures) {
@@ -1217,7 +1198,9 @@ M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {
 }
 mathfu::vec4 M2Object::getAmbientLight() {
     if (m_setAmbientColor) {
-        return mathfu::vec4(m_ambientColorOverride.x, m_ambientColorOverride.y, m_ambientColorOverride.z, m_ambientColorOverride.w);
+        return mathfu::vec4(m_ambientColorOverride.x, m_ambientColorOverride.y, m_ambientColorOverride.z, m_ambientColorOverride.w)
+            + m_ambientAddColor
+            ;
     }
 
     mathfu::vec4 ambientColor = m_api->getGlobalAmbientColor();
@@ -1232,7 +1215,7 @@ mathfu::vec4 M2Object::getAmbientLight() {
         return mathfu::vec4(ambientColor.x, ambientColor.y, ambientColor.z, 1.0) ;
     }
 
-    return ambientColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
+    return ambientColor+ m_ambientAddColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
 };
 
 mathfu::vec3 M2Object::getSunDir() {

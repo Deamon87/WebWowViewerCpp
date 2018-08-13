@@ -1076,8 +1076,8 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
 
 
     mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
-    mathfu::mat4 transformMatrix = m_api->getViewMat() * (m2Object->getModelMatrix());
+    mathfu::mat4 transformMatrix = m_api->getViewMat() ;
     interiorSunDir = transformMatrix.Transpose().Inverse() * interiorSunDir;
-
+    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
     m2Object->setSunDirOverride(interiorSunDir, true);
 }
