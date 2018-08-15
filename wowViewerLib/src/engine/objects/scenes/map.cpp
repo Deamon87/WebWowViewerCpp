@@ -1,7 +1,7 @@
 //
 // Created by Deamon on 7/16/2017.
 //
-#include <parallel/algorithm>
+#include <algorithm>
 #include <iostream>
 #include <set>
 #include <cmath>
@@ -252,11 +252,11 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     for (auto &m2ObjectCandidate : m2ObjectsCandidates) {
-//        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
-//            cameraPos,
-//            exteriorView.frustumPlanes[0], //TODO:!
-//            frustumPoints);
-        bool frustumResult = true;
+        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
+            cameraPos,
+            exteriorView.frustumPlanes[0], //TODO:!
+            frustumPoints);
+//        bool frustumResult = false;
         if (frustumResult) {
             exteriorView.drawnM2s.push_back(m2ObjectCandidate);
             m2RenderedThisFrame.push_back(m2ObjectCandidate);

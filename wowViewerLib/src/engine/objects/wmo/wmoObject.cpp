@@ -6,9 +6,7 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../shader/ShaderDefinitions.h"
 #include "../../persistance/header/commonFileStructs.h"
-#include <parallel/algorithm>
-#include <experimental/numeric>
-
+#include <algorithm>
 
 std::vector<mathfu::vec3> CreateOccluders(const HWmoGroupGeom groupGeom)
 {

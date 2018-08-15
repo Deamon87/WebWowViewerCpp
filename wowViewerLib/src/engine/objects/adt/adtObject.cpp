@@ -417,9 +417,9 @@ void AdtObject::loadAlphaTextures() {
 void AdtObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
     if (!m_loaded) return;
 
-    for (int i = 0; i < 256; i++) {
+    size_t meshCount = adtMeshes.size();
+    for (int i = 0; i < meshCount; i++) {
         if (!drawChunk[i]) continue;
-        if (i >= adtMeshes.size()) return;
         adtMeshes[i]->setRenderOrder(renderOrder);
         renderedThisFrame.push_back(adtMeshes[i]);
     }
@@ -548,7 +548,7 @@ const float dist = 533.0f/16;
 static const float perLodDist[5] = {9999999999.99f,
                                     std::pow(dist*60, 2.0f),        //32
                                     std::pow(dist*40, 2.0f), //16
-                                    std::pow(dist*20 , 2.0f), //8
+                                    std::pow(dist*20, 2.0f), //8
                                     std::pow(dist*10, 2.0f), //4
 //                                  std::pow(dist / (16), 2) //2
 };
@@ -605,9 +605,6 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
         mathfu::vec2 point = camera.xy();
         float dist = MathHelper::distanceFromAABBToPoint2DSquared(aabb2D, point);
 
-//        mathfu::vec2 center =
-//                pos.xy() -  (533.3333f * mathfu::vec2(x_offset + (cell_len/2.0f), y_offset + (cell_len/2.0f))) ;
-//        float dist = (camera.xy() - center).LengthSquared();
         while (dist < perLodDist[foundLod] && foundLod < 5) foundLod++;
     }
 
@@ -793,7 +790,8 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     lodCommands.clear();
 
     //For new ADT with _lod.adt
-    if (m_wdtFile->mphd->flags.unk_0x0100) {
+    if (false) {
+//    if (m_wdtFile->mphd->flags.unk_0x0100) {
         mathfu::vec3 adtPos = mathfu::vec3(m_adtFile->mapTile[m_adtFile->mcnkMap[0][0]].position);
         atLeastOneIsDrawn |= iterateQuadTree(cameraPos, adtPos,
                                              0, 0, 1.0,
@@ -803,7 +801,7 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                                              wmoCandidates);
     } else {
         //For old ADT without _lod.adt
-        checkNonLodChunkCulling(cameraPos,
+        atLeastOneIsDrawn |= checkNonLodChunkCulling(cameraPos,
                                 frustumPlanes, frustumPoints, hullLines,
                                 0, 0, 16, 16);
         checkReferences(cameraPos, frustumPlanes, frustumPoints,
