@@ -1073,6 +1073,9 @@ void M2Object::createBoundingBoxMesh() {
     bbBlockVS->save();
 
     boundingBoxMesh = m_api->getDevice()->createMesh(meshTemplate);
+
+    occlusionQuery = m_api->getDevice()->createQuery(boundingBoxMesh);
+
 }
 
 void M2Object::createMeshes() {
@@ -1159,8 +1162,6 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
         localDiffuse = m_api->getGlobalSunColor();
     }
 
-
-
     modelWideBlockPS &blockPS = fragmentModelWideUniformBuffer->getObject<modelWideBlockPS>();
     blockPS.uAmbientLight = ambientLight;
     blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
@@ -1168,7 +1169,6 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
     blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
 
     fragmentModelWideUniformBuffer->save();
-
 
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();

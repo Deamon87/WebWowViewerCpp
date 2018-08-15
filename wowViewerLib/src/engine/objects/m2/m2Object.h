@@ -62,6 +62,7 @@ private:
     HGUniformBuffer fragmentModelWideUniformBuffer = nullptr;
 
     HGMesh boundingBoxMesh = nullptr;
+    HGOcclusionQuery occlusionQuery = nullptr;
 
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;

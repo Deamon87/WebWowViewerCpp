@@ -80,6 +80,7 @@ private:
     bool m_isTransparent;
 
 
+    int m_colorMask = 0;
     int m_renderOrder = 0;
     int m_start;
     int m_end;

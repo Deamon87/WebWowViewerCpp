@@ -600,3 +600,10 @@ bool GDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
     return a > b;
 }
 
+HGOcclusionQuery GDevice::createQuery(HGMesh boundingBoxMesh) {
+    std::shared_ptr<GOcclusionQuery> hgOcclusionQuery;
+    hgOcclusionQuery.reset(new GOcclusionQuery(*this, boundingBoxMesh));
+
+    return hgOcclusionQuery;
+}
+

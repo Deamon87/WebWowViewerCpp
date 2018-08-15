@@ -16,6 +16,7 @@ class GShaderPermutation;
 class GMesh;
 class GM2Mesh;
 class GParticleMesh;
+class GOcclusionQuery;
 
 class gMeshTemplate;
 
@@ -29,6 +30,7 @@ typedef std::shared_ptr<GM2Mesh> HGM2Mesh;
 typedef std::shared_ptr<GParticleMesh> HGParticleMesh;
 typedef std::shared_ptr<GBlpTexture> HGBlpTexture;
 typedef std::shared_ptr<GTexture> HGTexture;
+typedef std::shared_ptr<GOcclusionQuery> HGOcclusionQuery;
 
 #include <unordered_set>
 #include <list>
@@ -39,6 +41,7 @@ typedef std::shared_ptr<GTexture> HGTexture;
 #include "GTexture.h"
 #include "GUniformBuffer.h"
 #include "GShaderPermutation.h"
+#include "GOcclusionQuery.h"
 #include "meshes/GMesh.h"
 
 
@@ -96,6 +99,8 @@ public:
     HGMesh createMesh(gMeshTemplate &meshTemplate);
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate);
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate);
+
+    HGOcclusionQuery createQuery(HGMesh boundingBoxMesh);
 
     static bool sortMeshes(const HGMesh& a, const HGMesh& b);
     HGVertexBufferBindings getBBVertexBinding() {
