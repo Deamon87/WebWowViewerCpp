@@ -126,7 +126,7 @@ std::vector<FoundLightRecord> DB2Light::findRecord(int mapId, mathfu::vec3 &pos)
 
     //From lowest to highest
     std::sort(result.begin(), result.end(),
-       [] (FoundLightRecord &a, FoundLightRecord &b) -> bool const {
+       [] (const FoundLightRecord &a, const FoundLightRecord &b) -> bool const {
             return a.blendAlpha - b.blendAlpha < 0;
     });
 

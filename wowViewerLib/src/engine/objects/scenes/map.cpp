@@ -1,7 +1,7 @@
 //
 // Created by Deamon on 7/16/2017.
 //
-
+#include <parallel/algorithm>
 #include <iostream>
 #include <set>
 #include <cmath>
@@ -99,6 +99,9 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
         view.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
     }
     exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
+    for (auto &adt : exteriorView.drawnADTs) {
+        adt->collectMeshes(exteriorView.drawnChunks, exteriorView.renderOrder);
+    }
 
     //Collect M2s for update
     m2RenderedThisFrame.clear();
@@ -249,11 +252,11 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     for (auto &m2ObjectCandidate : m2ObjectsCandidates) {
-        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
-            cameraPos,
-            exteriorView.frustumPlanes[0], //TODO:!
-            frustumPoints);
-
+//        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
+//            cameraPos,
+//            exteriorView.frustumPlanes[0], //TODO:!
+//            frustumPoints);
+        bool frustumResult = true;
         if (frustumResult) {
             exteriorView.drawnM2s.push_back(m2ObjectCandidate);
             m2RenderedThisFrame.push_back(m2ObjectCandidate);
@@ -261,12 +264,12 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     }
 }
 void Map::doPostLoad(){
-    if (m_api->getConfig()->getRenderM2()) {
+//    if (m_api->getConfig()->getRenderM2()) {
         for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
             M2Object *m2Object = this->currentFrameM2RenderedThisFrameArr[i];
             m2Object->doPostLoad();
         }
-    }
+//    }
 
     for (auto &wmoObject : this->currentFrameWmoRenderedThisFrameArr) {
         wmoObject->doPostLoad();
@@ -291,12 +294,11 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     if (!m_wdtfile->getIsLoaded()) return;
 
     Config* config = this->m_api->getConfig();
-    if (config->getRenderM2()) {
-        for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
-            M2Object *m2Object = this->m2RenderedThisFrameArr[i];
+//    if (config->getRenderM2()) {
+        std::for_each(m2RenderedThisFrameArr.begin(), m2RenderedThisFrameArr.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
             m2Object->update(deltaTime, cameraVec3, lookAtMat);
-        }
-    }
+        });
+//    }
 
     for (auto &wmoObject : this->wmoRenderedThisFrameArr) {
         wmoObject->update();
@@ -307,9 +309,9 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     }
 
     //2. Calc distance every 100 ms
-    for (auto &m2Object : this->m2RenderedThisFrameArr) {
+    std::for_each(m2RenderedThisFrameArr.begin(), m2RenderedThisFrameArr.end(), [&cameraVec3](M2Object *m2Object) {
         m2Object->calcDistance(cameraVec3);
-    }
+    });
 
     //6. Check what WMO instance we're in
     this->m_currentInteriorGroups = {};

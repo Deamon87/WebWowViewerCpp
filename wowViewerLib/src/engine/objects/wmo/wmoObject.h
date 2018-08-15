@@ -52,6 +52,7 @@ public:
 class ExteriorView : public GeneralView {
 public:
     std::vector<AdtObject *> drawnADTs;
+    std::vector<HGMesh> drawnChunks;
 
 public:
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame) override;

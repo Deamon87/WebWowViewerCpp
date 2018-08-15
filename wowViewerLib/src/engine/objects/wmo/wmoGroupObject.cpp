@@ -160,8 +160,9 @@ enum class WmoPixelShader : int {
     MapObjParallax = 19
 };
 
-inline constexpr const int operator+ (WmoPixelShader const val) { return static_cast<const int>(val); };
-inline constexpr const int operator+ (WmoVertexShader const val) { return static_cast<const int>(val); };
+inline constexpr const int operator+(WmoPixelShader const val) { return static_cast<const int>(val); };
+
+inline constexpr const int operator+(WmoVertexShader const val) { return static_cast<const int>(val); };
 
 const int MAX_WMO_SHADERS = 23;
 static const struct {
@@ -301,7 +302,7 @@ void WmoGroupObject::doPostLoad() {
 
 void WmoGroupObject::update() {
     if (!this->m_loaded) return;
-    
+
     if (m_recalcBoundries) {
         this->updateWorldGroupBBWithM2();
         m_recalcBoundries = false;
@@ -315,7 +316,7 @@ void WmoGroupObject::update() {
         SMOBatch &renderBatch = m_geom->batches[j];
         mathfu::vec4 ambientColor;
         bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
-        bool isBatchC = (j >= (mogp->transBatchCount+mogp->intBatchCount));
+        bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));
 
         if (isBatchC) {
             ambientColor = m_api->getGlobalAmbientColor();
@@ -327,15 +328,18 @@ void WmoGroupObject::update() {
 
         wmoMeshWideBlockPS &blockPS = buffer->getObject<wmoMeshWideBlockPS>();
         blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-        blockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-        blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
+        blockPS.uSunDir_FogStart = mathfu::vec4_packed(
+            mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
+        blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(
+            mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
         blockPS.uAmbientLight = ambientColor;
         if (isBatchA) {
             blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);
         } else {
-            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0,0,0,0);
+            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0, 0, 0, 0);
         }
-        blockPS.FogColor_AlphaTest = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), blockPS.FogColor_AlphaTest.w));
+        blockPS.FogColor_AlphaTest = mathfu::vec4_packed(
+            mathfu::vec4(m_api->getGlobalFogColor().xyz(), blockPS.FogColor_AlphaTest.w));
         buffer->save();
     }
 }
@@ -405,7 +409,8 @@ void WmoGroupObject::startLoading() {
 
 void WmoGroupObject::postLoad() {
 
-    this->m_dontUseLocalLightingForM2 = ((m_geom->mogp->flags.EXTERIOR_LIT) > 0) || ((m_geom->mogp->flags.EXTERIOR) > 0);
+    this->m_dontUseLocalLightingForM2 =
+        ((m_geom->mogp->flags.EXTERIOR_LIT) > 0) || ((m_geom->mogp->flags.EXTERIOR) > 0);
     m_localGroupBorder = m_geom->mogp->boundingBox;
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
     this->loadDoodads();
@@ -413,13 +418,13 @@ void WmoGroupObject::postLoad() {
 }
 
 void WmoGroupObject::createMeshes() {
-    Config * config = m_api->getConfig();
+    Config *config = m_api->getConfig();
     HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("wmoShader");
 
     int minBatch = config->getWmoMinBatch();
     int maxBatch = std::min(config->getWmoMaxBatch(), m_geom->batchesLen);
 
-    SMOMaterial * materials = m_wmoApi->getMaterials();
+    SMOMaterial *materials = m_wmoApi->getMaterials();
 
     GDevice *device = m_api->getDevice();
     HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
@@ -454,7 +459,7 @@ void WmoGroupObject::createMeshes() {
         int vertexShader = wmoMaterialShader[shaderId].vertexShader;
 
         bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
-        bool isBatchC = (j >= (mogp->transBatchCount+mogp->intBatchCount));
+        bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));
 
         mathfu::vec4 ambientColor;
         if (isBatchC) {
@@ -498,20 +503,22 @@ void WmoGroupObject::createMeshes() {
 
 
         //Fill buffers
-        wmoMeshWideBlockVS &blockVS = meshTemplate.vertexBuffers[2] ->getObject<wmoMeshWideBlockVS>();
+        wmoMeshWideBlockVS &blockVS = meshTemplate.vertexBuffers[2]->getObject<wmoMeshWideBlockVS>();
         blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
-        blockVS.VertexShader= vertexShader;
-        meshTemplate.vertexBuffers[2] ->save();
+        blockVS.VertexShader = vertexShader;
+        meshTemplate.vertexBuffers[2]->save();
 
         wmoMeshWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<wmoMeshWideBlockPS>();
         blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-        blockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-        blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
+        blockPS.uSunDir_FogStart = mathfu::vec4_packed(
+            mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
+        blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(
+            mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
         blockPS.uAmbientLight = ambientColor;
         if (isBatchA) {
             blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);
         } else {
-            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0,0,0,0);
+            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0, 0, 0, 0);
         }
 
         blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
@@ -576,19 +583,19 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 //    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
 //
     for (int j = 0; j < this->m_doodads.size(); j++) {
-        M2Object* m2Object = this->m_doodads[j];
+        M2Object *m2Object = this->m_doodads[j];
         if (m2Object == nullptr || !m2Object->getGetIsLoaded()) continue; //corrupted :(
 
-        CAaBox m2AAbb = m2Object->getAABB(); 
-        
-        //2. Update the world group BB
-        groupAABB.min = mathfu::vec3_packed(mathfu::vec3(std::min(m2AAbb.min.x,groupAABB.min.x),
-                                            std::min(m2AAbb.min.y,groupAABB.min.y),
-                                            std::min(m2AAbb.min.z,groupAABB.min.z)));
+        CAaBox m2AAbb = m2Object->getAABB();
 
-        groupAABB.max = mathfu::vec3_packed(mathfu::vec3(std::max(m2AAbb.max.x,groupAABB.max.x),
-                                        std::max(m2AAbb.max.y,groupAABB.max.y),
-                                        std::max(m2AAbb.max.z,groupAABB.max.z)));
+        //2. Update the world group BB
+        groupAABB.min = mathfu::vec3_packed(mathfu::vec3(std::min(m2AAbb.min.x, groupAABB.min.x),
+                                                         std::min(m2AAbb.min.y, groupAABB.min.y),
+                                                         std::min(m2AAbb.min.z, groupAABB.min.z)));
+
+        groupAABB.max = mathfu::vec3_packed(mathfu::vec3(std::max(m2AAbb.max.x, groupAABB.max.x),
+                                                         std::max(m2AAbb.max.y, groupAABB.max.y),
+                                                         std::max(m2AAbb.max.z, groupAABB.max.z)));
     }
 
 //    std::cout << "Called WmoGroupObject::updateWorldGroupBBWithM2 " << std::endl;
@@ -604,18 +611,18 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
     CAaBox bbArray = this->m_worldGroupBorder;
 
     bool isInsideM2Volume = (
-            cameraPos[0] > bbArray.min.z && cameraPos[0] < bbArray.max.x &&
-            cameraPos[1] > bbArray.min.y && cameraPos[1] < bbArray.max.y &&
-            cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
+        cameraPos[0] > bbArray.min.z && cameraPos[0] < bbArray.max.x &&
+        cameraPos[1] > bbArray.min.y && cameraPos[1] < bbArray.max.y &&
+        cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
     );
 
     bool drawDoodads = isInsideM2Volume || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
 
     bbArray = this->m_volumeWorldGroupBorder;
     bool isInsideGroup = (
-            cameraPos[0] > bbArray.min.z && cameraPos[0] < bbArray.max.x &&
-            cameraPos[1] > bbArray.min.y && cameraPos[1] < bbArray.max.y &&
-            cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
+        cameraPos[0] > bbArray.min.z && cameraPos[0] < bbArray.max.x &&
+        cameraPos[1] > bbArray.min.y && cameraPos[1] < bbArray.max.y &&
+        cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
     );
 
     bool drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
@@ -691,11 +698,11 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, s
 }
 
 bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
-        mathfu::vec4 &cameraLocal,
-        SMOPortal *portalInfos,
-        SMOPortalRef *portalRels,
-        std::vector<int> &bspLeafList,
-        M2Range &result) {
+    mathfu::vec4 &cameraLocal,
+    SMOPortal *portalInfos,
+    SMOPortalRef *portalRels,
+    std::vector<int> &bspLeafList,
+    M2Range &result) {
 
     float topZ;
     float bottomZ;
@@ -742,10 +749,10 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
 
             mathfu::vec3 pointToCheck = mathfu::vec3(cameraLocal[0], cameraLocal[1], z);
             mathfu::vec3 bary = MathHelper::getBarycentric(
-                    pointToCheck,
-                    point1,
-                    point2,
-                    point3
+                pointToCheck,
+                point1,
+                point2,
+                point3
             );
             if ((bary[0] < 0) || (bary[1] < 0) || (bary[2] < 0)) continue;
             if (z > cameraLocal[2]) {
@@ -772,8 +779,8 @@ void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos
                                                     float &topZ, float &bottomZ,
                                                     mathfu::vec4 &colorUnderneath,
                                                     bool checkPortals) {
-    topZ= -999999;
-    bottomZ= 999999;
+    topZ = -999999;
+    bottomZ = 999999;
     t_BSP_NODE *nodes = m_geom->bsp_nodes;
     float minPositiveDistanceToCamera = 99999;
 
@@ -800,8 +807,8 @@ void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos
             float maxZ = std::max(std::max(vert1[2], vert2[2]), vert3[2]);
 
             bool testPassed = (
-                    (cameraLocal[0] > minX && cameraLocal[0] < maxX) &&
-                    (cameraLocal[1] > minY && cameraLocal[1] < maxY)
+                (cameraLocal[0] > minX && cameraLocal[0] < maxX) &&
+                (cameraLocal[1] > minY && cameraLocal[1] < maxY)
             );
             if (!testPassed) continue;
 
@@ -817,10 +824,10 @@ void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos
 
             mathfu::vec3 suggestedPoint = mathfu::vec3(cameraLocal[0], cameraLocal[1], z);
             mathfu::vec3 bary = MathHelper::getBarycentric(
-                    suggestedPoint,
-                    vert1,
-                    vert2,
-                    vert3
+                suggestedPoint,
+                vert1,
+                vert2,
+                vert3
             );
 
             if ((bary[0] < 0) || (bary[1] < 0) || (bary[2] < 0)) continue;
@@ -838,9 +845,12 @@ void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos
                     if (m_geom->colorArray != nullptr) {
                         CImVector *colorArr = m_geom->colorArray;
                         colorUnderneath = mathfu::vec4(
-                            bary[0] * colorArr[vertexInd1].r + bary[1] * colorArr[vertexInd1].r + bary[2] * colorArr[vertexInd1].r,
-                            bary[0] * colorArr[vertexInd1].g + bary[1] * colorArr[vertexInd1].g + bary[2] * colorArr[vertexInd1].g,
-                            bary[0] * colorArr[vertexInd1].b + bary[1] * colorArr[vertexInd1].b + bary[2] * colorArr[vertexInd1].b,
+                            bary[0] * colorArr[vertexInd1].r + bary[1] * colorArr[vertexInd1].r +
+                            bary[2] * colorArr[vertexInd1].r,
+                            bary[0] * colorArr[vertexInd1].g + bary[1] * colorArr[vertexInd1].g +
+                            bary[2] * colorArr[vertexInd1].g,
+                            bary[0] * colorArr[vertexInd1].b + bary[1] * colorArr[vertexInd1].b +
+                            bary[2] * colorArr[vertexInd1].b,
                             0
                         ) * (1 / 255.0f);
                     }
@@ -869,9 +879,9 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 
     //2. Check if inside volume AABB
     bool isInsideAABB = (
-            cameraVec4.x > bbArray.min.x && cameraVec4.x < bbArray.max.x &&
-            cameraVec4.y > bbArray.min.y && cameraVec4.y < bbArray.max.y &&
-            cameraVec4.z > bbArray.min.z && cameraVec4.z < bbArray.max.z
+        cameraVec4.x > bbArray.min.x && cameraVec4.x < bbArray.max.x &&
+        cameraVec4.y > bbArray.min.y && cameraVec4.y < bbArray.max.y &&
+        cameraVec4.z > bbArray.min.z && cameraVec4.z < bbArray.max.z
     );
 
     if (!isInsideAABB) return false;
@@ -885,15 +895,15 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
         topBottom.min = m_main_groupInfo->bounding_box.min.z;
 
 
-		WmoGroupResult result;
-		
-		result.topBottom = topBottom;
-		result.groupIndex = m_groupNumber;
-		result.WMOGroupID = -1;
-		result.bspLeafList = {};
-		result.nodeId = -1;
-		
-		candidateGroups.push_back(result);
+        WmoGroupResult result;
+
+        result.topBottom = topBottom;
+        result.groupIndex = m_groupNumber;
+        result.WMOGroupID = -1;
+        result.bspLeafList = {};
+        result.nodeId = -1;
+
+        candidateGroups.push_back(result);
 
         return true;
     }
@@ -928,7 +938,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
     if (nodes != nullptr) {
         WmoGroupObject::queryBspTree(cameraBB, nodeId, nodes, bspLeafList);
         bool result = WmoGroupObject::getTopAndBottomTriangleFromBsp(
-                cameraLocal, portalInfos, portalRels, bspLeafList, topBottom);
+            cameraLocal, portalInfos, portalRels, bspLeafList, topBottom);
         if (!result) return false;
         if (topBottom.min > 99999) return false;
 
@@ -956,12 +966,12 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
             }
         }
 
-		WmoGroupResult candidate;
-		candidate.topBottom = topBottom;
-		candidate.groupIndex = m_groupNumber;
-		candidate.WMOGroupID = groupInfo->wmoGroupID;
-		candidate.bspLeafList = bspLeafList;
-		candidate.nodeId = nodeId;
+        WmoGroupResult candidate;
+        candidate.topBottom = topBottom;
+        candidate.groupIndex = m_groupNumber;
+        candidate.WMOGroupID = groupInfo->wmoGroupID;
+        candidate.bspLeafList = bspLeafList;
+        candidate.nodeId = nodeId;
 
         candidateGroups.push_back(candidate);
 
@@ -1032,7 +1042,7 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
             );
         }
 
-        return ambColor ;
+        return ambColor;
     } else {
         return m_api->getGlobalAmbientColor();
     }
@@ -1076,7 +1086,7 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
 
 
     mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
-    mathfu::mat4 transformMatrix = m_api->getViewMat() ;
+    mathfu::mat4 transformMatrix = m_api->getViewMat();
     interiorSunDir = transformMatrix.Transpose().Inverse() * interiorSunDir;
     interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
     m2Object->setSunDirOverride(interiorSunDir, true);

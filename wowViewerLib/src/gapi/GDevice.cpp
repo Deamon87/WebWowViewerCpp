@@ -198,7 +198,7 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
         }
     }
 
-    std::sort( buffers.begin(), buffers.end(), [](HGUniformBuffer &a,HGUniformBuffer &b) -> bool {
+    std::sort( buffers.begin(), buffers.end(), [](const HGUniformBuffer &a, const HGUniformBuffer &b) -> bool {
         return a->m_creationIndex > b->m_creationIndex;
     });
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
@@ -461,8 +461,6 @@ GDevice::GDevice() {
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
 
-    aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize, 0);
-
     //From https://en.wikibooks.org/wiki/OpenGL_Programming/Bounding_box
     static const float vertices[] = {
         -1, -1, -1, //0
@@ -521,7 +519,7 @@ GDevice::GDevice() {
     vertexBBBindings->save();
 }
 
-bool GDevice::sortMeshes(HGMesh &a, HGMesh &b) {
+bool GDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
     if (a->getIsTransparent() > b-> getIsTransparent()) {
         return false;
     }

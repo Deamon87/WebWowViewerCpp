@@ -6,6 +6,9 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../shader/ShaderDefinitions.h"
 #include "../../persistance/header/commonFileStructs.h"
+#include <parallel/algorithm>
+#include <experimental/numeric>
+
 
 std::vector<mathfu::vec3> CreateOccluders(const HWmoGroupGeom groupGeom)
 {
@@ -816,7 +819,7 @@ bool WmoObject::startTraversingWMOGroup(
     }
 
     //Process results
-    std::sort(createdInteriorViews.begin(), createdInteriorViews.end(), [](InteriorView &a, InteriorView &b) -> bool {
+    std::sort(createdInteriorViews.begin(), createdInteriorViews.end(), [](const InteriorView &a, const InteriorView &b) -> bool {
         if (a.viewCreated != b.viewCreated) {
             return a.viewCreated > b.viewCreated;
         }
@@ -828,7 +831,7 @@ bool WmoObject::startTraversingWMOGroup(
             break;
         }
     }
-    std::sort(createdInteriorViews.begin(), createdInteriorViews.end(), [](InteriorView &a, InteriorView &b) -> bool {
+    std::sort(createdInteriorViews.begin(), createdInteriorViews.end(), [](const InteriorView &a, const InteriorView &b) -> bool {
         if (a.level != b.level) {
             return a.level < b.level;
         }
@@ -1216,9 +1219,8 @@ SMOMaterial *WmoObject::getMaterials() {
 }
 
 void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
-    for (auto &adt : drawnADTs) {
-        adt->collectMeshes(renderedThisFrame, renderOrder);
-    }
+    auto inserter = std::back_inserter(renderedThisFrame);
+    std::copy(drawnChunks.begin(), drawnChunks.end(), inserter);
 
     GeneralView::collectMeshes(renderedThisFrame);
 }
@@ -1245,17 +1247,28 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
     std::sort( candidates.begin(), candidates.end() );
     candidates.erase( unique( candidates.begin(), candidates.end() ), candidates.end() );
 
+//    std::vector<bool> candidateResults = std::vector<bool>(candidates.size(), false);
 
-    size_t j = 0;
-    for (auto &m2Candidate : candidates) {
-        if (m2Candidate == nullptr) continue; //?
-        for (auto &frustumPlane : frustumPlanes) {
-            if (m2Candidate == nullptr)            continue;
-            if (m2Candidate->checkFrustumCulling(cameraPos, frustumPlane, {})) {
-                setM2Lights(m2Candidate);
-                drawnM2s.push_back(m2Candidate);
-                break;
+    std::for_each(
+        candidates.begin(),
+        candidates.end(),
+        [this, &cameraPos](M2Object * m2Candidate) {  // copies are safer, and the resulting code will be as quick.
+            if (m2Candidate == nullptr) return;
+            for (auto &frustumPlane : this->frustumPlanes) {
+                if (m2Candidate->checkFrustumCulling(cameraPos, frustumPlane, {})) {
+                    setM2Lights(m2Candidate);
+
+                    break;
+                }
             }
+        });
+
+//    drawnM2s = std::vector<M2Object *>();
+    drawnM2s.reserve(drawnM2s.size() + candidates.size());
+    for (auto &m2Candidate : candidates) {
+        if (m2Candidate == nullptr) continue;
+        if (m2Candidate->m_cullResult) {
+            drawnM2s.push_back(m2Candidate);
         }
     }
 }

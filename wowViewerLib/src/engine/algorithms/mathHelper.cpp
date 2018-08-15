@@ -270,23 +270,27 @@ mathfu::vec3 MathHelper::getIntersection( mathfu::vec3 &tail1, mathfu::vec3 &hea
 
 bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAaBox &box, const std::vector<mathfu::vec3> &points) {
     // check box outside/inside of frustum
-    mathfu::vec4 boxMin = mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0);
-    mathfu::vec4 boxMax = mathfu::vec4(box.max.x, box.max.y, box.max.z, 1.0);
+//    mathfu::vec4 boxMin = mathfu::vec4(mathfu::vec3(box.min), 1.0);
+//    mathfu::vec4 boxMax = mathfu::vec4(mathfu::vec3(box.max), 1.0);
+
+    mathfu::vec4 checkedCorners[8] = {
+        mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0),
+        mathfu::vec4(box.max.x, box.min.y, box.min.z, 1.0),
+        mathfu::vec4(box.min.x, box.max.y, box.min.z, 1.0),
+        mathfu::vec4(box.max.x, box.max.y, box.min.z, 1.0),
+        mathfu::vec4(box.min.x, box.min.y, box.max.z, 1.0),
+        mathfu::vec4(box.max.x, box.min.y, box.max.z, 1.0),
+        mathfu::vec4(box.min.x, box.max.y, box.max.z, 1.0),
+        mathfu::vec4(box.max.x, box.max.y, box.max.z, 1.0)
+    };
 
     int num_planes = planes.size();
     for (int i = 0; i < num_planes; i++) {
         int out = 0;
 
-
-
-        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.min.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.max.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.max.y, box.min.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.min.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.min.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.min.x, box.max.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
-        out += ((mathfu::vec4::DotProduct(planes[i], mathfu::vec4(box.max.x, box.max.y, box.max.z, 1.0)) < 0.0 ) ? 1 : 0);
+        for (int j = 0; j < 8; j++) {
+            out += ((mathfu::vec4::DotProduct(planes[i], checkedCorners[j]) < 0.0) ? 1 : 0);
+        }
 
         if (out == 8) return false;
     }
@@ -432,7 +436,7 @@ void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortal
     center *= 1.0f / (float)thisPortalVertices.size();
 
     std::sort(thisPortalVertices.begin(), thisPortalVertices.end(),
-        [&](mathfu::vec3 &a, mathfu::vec3 &b) -> bool {
+        [&](const mathfu::vec3 &a, const mathfu::vec3 &b) -> bool {
             mathfu::vec3 ac = a - center;
 
             mathfu::vec3 bc = b - center;
@@ -480,10 +484,12 @@ float MathHelper::distanceFromAABBToPoint2DSquared(const mathfu::vec2 aabb[2], m
     float dx = MathHelper::distance_aux(p.x, aabb[0].x, aabb[1].x);
     float dy = MathHelper::distance_aux(p.y, aabb[0].y, aabb[1].y);
 
-    if (MathHelper::isPointInsideAABB(aabb, p))
-        return std::min(dx, dy);    // or 0 in case of distance from the area
-    else
+    if (MathHelper::isPointInsideAABB(aabb, p)) {
+        float dist = std::min(dx, dy);
+        return dist*dist;    // or 0 in case of distance from the area
+    } else {
         return dx * dx + dy * dy;
+    }
 }
 
 mathfu::vec3 MathHelper::getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &c) {

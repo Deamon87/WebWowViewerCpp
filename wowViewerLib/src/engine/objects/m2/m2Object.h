@@ -26,10 +26,13 @@ public:
 
     friend class M2InstancingObject;
     friend class M2MeshBufferUpdater;
+    bool m_cullResult = false;
 private:
     void createAABB();
     bool m_loading = false;
     bool m_loaded = false;
+
+
 
     void load(std::string modelName, SMODoodadDef &doodadDef, mathfu::mat4 &wmoPlacementMat){
         createPlacementMatrix(doodadDef, wmoPlacementMat);

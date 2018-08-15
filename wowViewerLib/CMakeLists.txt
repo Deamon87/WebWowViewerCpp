@@ -168,6 +168,7 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
     set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 endif()
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
+#target_link_libraries(WoWViewerLib gomp)
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
     target_compile_features(WoWViewerLib PRIVATE cxx_std_17)

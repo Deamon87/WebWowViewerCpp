@@ -37,3 +37,9 @@
 [submodule "wowViewerLib/3rdparty/RTree"]
 	path = wowViewerLib/3rdparty/RTree
 	url = https://github.com/nushoin/RTree
+[submodule "wowViewerLib/ecst"]
+	path = wowViewerLib/ecst
+	url = https://github.com/SuperV1234/ecst
+[submodule "wowViewerLib/extlibs/vrm_cmake"]
+	path = wowViewerLib/extlibs/vrm_cmake
+	url = https://github.com/SuperV1234/vrm_cmake.git

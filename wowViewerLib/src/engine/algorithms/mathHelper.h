@@ -9,6 +9,7 @@
 #include "../persistance/header/commonFileStructs.h"
 #include "mathfu/glsl_mappings.h"
 #include <vector>
+#include <thread>
 
 #define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
 const float ROUNDING_ERROR_f32 = 0.001f;

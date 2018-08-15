@@ -148,7 +148,7 @@ void GShaderPermutation::compileShader() {
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
     int maxMatrixUniforms = MAX_MATRIX_NUM;//(maxVertexUniforms / 4) - 9;
 
-    vertExtraDefStrings = vertExtraDefStrings + "#define MAX_MATRIX_NUM "+std::to_string(maxMatrixUniforms)+"\r\n"+"#define COMPILING_VS 1\r\n ";
+    vertExtraDefStrings = vertExtraDefStrings + "#define COMPILING_VS 1\r\n ";
     geomExtraDefStrings = geomExtraDefStrings + "#define COMPILING_GS 1\r\n";
     fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
 

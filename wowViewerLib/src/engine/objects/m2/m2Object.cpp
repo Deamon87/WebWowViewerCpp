@@ -3,7 +3,6 @@
 //
 
 #include <locale>
-#include <regex>
 #include <iomanip>
 #include "m2Object.h"
 #include "../../algorithms/mathHelper.h"
@@ -860,7 +859,9 @@ bool M2Object::getIsInstancable() {
     return !(this->m_animationManager->getIsFirstCalc()|| this->m_animationManager->getIsAnimated());
 }
 const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const std::vector<mathfu::vec4> &frustumPlanes, const std::vector<mathfu::vec3> &frustumPoints) {
+    m_cullResult = false;
     if (!m_loaded) {
+        m_cullResult = true;
         return true;
     }
 
@@ -871,10 +872,14 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const s
         cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
         cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y &&
         cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
-    ) return true;
+    ) {
+        m_cullResult = true;
+        return true;
+    }
 
     //2. Check aabb is inside camera frustum
     bool result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+    m_cullResult = result;
     return result;
 }
 
@@ -1080,13 +1085,10 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
     }
 
     //1. Update model wide VS buffer
-    modelWideBlockVS &blockVS = vertexModelWideUniformBuffer->getObject<modelWideBlockVS>();
+    auto &blockVS = vertexModelWideUniformBuffer->getObject<modelWideBlockVS>();
     blockVS.uPlacementMat = m_placementMatrix;
-    int interCount = std::min(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM);
-    for (int i = 0; i < interCount; i++) {
-        blockVS.uBoneMatrixes[i] = bonesMatrices[i];
-    }
-//    std::copy(&bonesMatrices[0], &bonesMatrices[0] + std::max(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM), &blockVS.uBoneMatrixes[0]);
+    int interCount = (int) std::min(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM);
+    std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
     vertexModelWideUniformBuffer->save();
 
     //2. Update model wide PS buffer
@@ -1235,7 +1237,7 @@ void M2Object::drawParticles(std::vector<HGMesh> &meshes, int renderOrder) {
 
     for (int i = minParticle; i < maxParticle; i++) {
 //    for (int i = 0; i< particleEmitters.size(); i++) {
-        particleEmitters[i]->collectMeshes(meshes, renderOrder);
+//        particleEmitters[i]->collectMeshes(meshes, renderOrder);
     }
 }
 
