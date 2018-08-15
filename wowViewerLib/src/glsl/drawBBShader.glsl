@@ -1,6 +1,6 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
-layout(position = 0) in vec3 aPosition;
+layout(location = 0) in vec3 aPosition;
 
 layout(std140) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
@@ -8,7 +8,6 @@ layout(std140) uniform sceneWideBlockVSPS {
 };
 
 // Whole model
-#ifndef INSTANCED
 layout(std140) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 
@@ -39,11 +38,13 @@ layout(std140) uniform modelWideBlockVS {
     vec4 uColor;
 };
 
+out vec4 outColor;
+
 void main() {
-    vec4 finalColor = vec4(uColor, 1.0);
+    vec4 finalColor = vec4(uColor.rgb, 1.0);
 
     finalColor.a = 1.0; //do I really need it now?
-    gl_FragColor = finalColor;
+    outColor = finalColor;
 }
 
 #endif //COMPILING_FS

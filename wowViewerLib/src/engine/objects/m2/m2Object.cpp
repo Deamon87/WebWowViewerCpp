@@ -676,8 +676,8 @@ void M2Object::setDiffuseColor(CImVector& value) {
     if ( result > a6 )
     {
         float v14 = (float)((float)a6 * 255.0) / (float)result;
-        uint8_t green = (unsigned __int8)m_localDiffuseColor.g;
-        uint32_t newImColor = ((unsigned __int16)(((uint16_t)green * (signed int)v14 + 255) & 0xFF00) | ((unsigned __int8)((unsigned __int16)((signed int)v14 * (unsigned __int8)m_localDiffuseColor.r + 255) >> 8) << 16) | *(uint16_t *)&m_localDiffuseColor & 0xFF000000 | ((unsigned __int16)((signed int)v14 * (unsigned __int8)m_localDiffuseColor.b + 255) >> 8));
+        uint8_t green = (uint8_t)m_localDiffuseColor.g;
+        uint32_t newImColor = ((uint16_t)(((uint16_t)green * (signed int)v14 + 255) & 0xFF00) | ((uint8_t)((uint16_t)((signed int)v14 * (uint8_t)m_localDiffuseColor.r + 255) >> 8) << 16) | *(uint16_t *)&m_localDiffuseColor & 0xFF000000 | ((uint16_t)((signed int)v14 * (uint8_t)m_localDiffuseColor.b + 255) >> 8));
         CImVector newValue = *(CImVector *)&newImColor;
 
         this->m_ambientAddColor = mathfu::vec4(
@@ -1020,6 +1020,61 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
     return true;
 }
 
+void M2Object::createBoundingBoxMesh() {
+    //Create bounding box mesh
+    HGShaderPermutation boundingBoxshaderPermutation = m_api->getDevice()->getShader("drawBBShader");
+
+    gMeshTemplate meshTemplate(m_api->getDevice()->getBBLinearBinding(), boundingBoxshaderPermutation);
+
+    meshTemplate.depthWrite = false;
+    meshTemplate.depthCulling = true;
+    meshTemplate.backFaceCulling = false;
+
+    meshTemplate.start = 0;
+    meshTemplate.end = 48;
+
+    meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Alpha;
+
+    meshTemplate.element = GL_LINES;
+    meshTemplate.textureCount = 0;
+
+    HGUniformBuffer bbBlockVS = m_api->getDevice()->createUniformBuffer(sizeof(bbModelWideBlockVS));
+
+    meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.vertexBuffers[1] = bbBlockVS;
+    meshTemplate.vertexBuffers[2] = nullptr;
+
+    meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.fragmentBuffers[1] = nullptr;
+    meshTemplate.fragmentBuffers[2] = nullptr;
+
+    M2Data *m2Data = m_m2Geom->getM2Data();
+    CAaBox &aaBox = m2Data->bounding_box;
+
+
+    mathfu::vec3 center = mathfu::vec3(
+        (aaBox.min.x + aaBox.max.x) / 2,
+        (aaBox.min.y + aaBox.max.y) / 2,
+        (aaBox.min.z + aaBox.max.z) / 2
+    );
+
+    mathfu::vec3 scale = mathfu::vec3(
+        aaBox.max.x - center[0],
+        aaBox.max.y - center[1],
+        aaBox.max.z - center[2]
+    );
+
+    bbModelWideBlockVS &blockVS = bbBlockVS->getObject<bbModelWideBlockVS>();
+    blockVS.uPlacementMat = m_placementMatrix;
+    blockVS.uBBScale = mathfu::vec4_packed(mathfu::vec4(scale, 0.0));
+    blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
+    blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.7f, 0.7f, 0.7f, 0.7f));
+
+    bbBlockVS->save();
+
+    boundingBoxMesh = m_api->getDevice()->createMesh(meshTemplate);
+}
+
 void M2Object::createMeshes() {
     /* 1. Free previous subMeshArray */
     this->m_meshArray.clear();
@@ -1076,6 +1131,8 @@ void M2Object::createMeshes() {
         this->m_meshArray.push_back(hmesh);
         this->m_materialArray.push_back(material);
     }
+
+    createBoundingBoxMesh();
 }
 
 void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
@@ -1125,6 +1182,8 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
             renderedThisFrame.push_back(this->m_meshArray[i]);
         }
     }
+
+    renderedThisFrame.push_back(boundingBoxMesh);
 }
 
 void M2Object::initAnimationManager() {

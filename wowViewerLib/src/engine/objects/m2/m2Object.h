@@ -61,6 +61,8 @@ private:
     HGUniformBuffer vertexModelWideUniformBuffer = nullptr;
     HGUniformBuffer fragmentModelWideUniformBuffer = nullptr;
 
+    HGMesh boundingBoxMesh = nullptr;
+
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
 
@@ -117,6 +119,9 @@ private:
     void sortMaterials(mathfu::Matrix<float, 4, 4> &lookAtMat4);
     bool checkIfHasBillboarded();
 
+    void createMeshes();
+    void createBoundingBoxMesh();
+
     mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, M2MaterialInst &materialData,  std::vector<mathfu::vec4> subMeshColors);
     float getTransparency(M2SkinProfile *skinData,M2MaterialInst &materialData, std::vector<float> &transparencies);
 public:
@@ -159,7 +164,6 @@ public:
     std::string getModelIdent() { return m_modelIdent; };
 
     bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
-    void createMeshes();
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
 
     void setUseLocalLighting(bool value) { m_useLocalDiffuseColor = value; };

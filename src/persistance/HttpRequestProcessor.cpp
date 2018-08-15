@@ -64,22 +64,22 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
 
         return;
     }
-
-    HttpFile * httpFile = new HttpFile(fullUrl.c_str());
-    httpFile->setCallback(
-            [=](std::vector<unsigned char> * fileContent) -> void {
-                std::string newFileName = fileName;
-                provideResult(newFileName, *fileContent);
-
-                //Write to cache
-                size_t hash = std::hash<std::string>{}(newFileName);
-                std::string outputFileName = "./cache/" + int_to_hex(hash);
-                std::ofstream output_file(outputFileName, std::ios::out | std::ios::binary);
-                std::ostream_iterator<unsigned char> output_iterator(output_file);
-                std::copy(fileContent->begin(), fileContent->end(), output_iterator);
-
-                delete httpFile;
-            }
-    );
-    httpFile->startDownloading();
+//
+//    HttpFile * httpFile = new HttpFile(fullUrl.c_str());
+//    httpFile->setCallback(
+//            [=](std::vector<unsigned char> * fileContent) -> void {
+//                std::string newFileName = fileName;
+//                provideResult(newFileName, *fileContent);
+//
+//                //Write to cache
+//                size_t hash = std::hash<std::string>{}(newFileName);
+//                std::string outputFileName = "./cache/" + int_to_hex(hash);
+//                std::ofstream output_file(outputFileName, std::ios::out | std::ios::binary);
+//                std::ostream_iterator<unsigned char> output_iterator(output_file);
+//                std::copy(fileContent->begin(), fileContent->end(), output_iterator);
+//
+//                delete httpFile;
+//            }
+//    );
+//    httpFile->startDownloading();
 }

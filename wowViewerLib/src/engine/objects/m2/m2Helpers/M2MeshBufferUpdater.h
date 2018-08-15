@@ -28,5 +28,4 @@ public:
                                const M2Data * m2File, const M2SkinProfile *m2SkinProfile, mathfu::mat4 &modelViewMat);
 };
 
-
 #endif //AWEBWOWVIEWERCPP_M2MESHBUFFERUPDATER_H

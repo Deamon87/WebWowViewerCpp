@@ -98,6 +98,13 @@ public:
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate);
 
     static bool sortMeshes(const HGMesh& a, const HGMesh& b);
+    HGVertexBufferBindings getBBVertexBinding() {
+        return m_vertexBBBindings;
+    }
+
+    HGVertexBufferBindings getBBLinearBinding() {
+        return m_lineBBBindings;
+    }
 
 private:
     void drawMesh(HGMesh &hmesh);
@@ -135,6 +142,9 @@ private:
     GVertexBuffer *m_lastBindVertexBuffer = nullptr;
     GVertexBufferBindings *m_vertexBufferBindings = nullptr;
     GShaderPermutation * m_shaderPermutation = nullptr;
+
+    HGVertexBufferBindings m_vertexBBBindings;
+    HGVertexBufferBindings m_lineBBBindings;
 
     GTexture *m_lastTexture[10] = {
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,

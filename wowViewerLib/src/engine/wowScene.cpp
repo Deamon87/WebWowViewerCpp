@@ -173,8 +173,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //     .go 668 5243 1938 760
     // .go 668 0 0 0
 
-//    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
-//    currentScene = new Map(this, 603, "UlduarRaid");
+    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
+    currentScene = new Map(this, 603, "UlduarRaid");
 //
 //   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
 //    currentScene = new Map(this, 1803, "AzeriteBG1");
@@ -205,11 +205,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-//   m_firstCamera.setCameraPos(0, 0, 200);
-//    currentScene = new Map(this, 0, "Azeroth");
+   m_firstCamera.setCameraPos(0, 0, 200);
+    currentScene = new Map(this, 0, "Azeroth");
 //
-    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
-    currentScene = new Map(this, 1642, "Zandalar");
+//    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
+//    currentScene = new Map(this, 1642, "Zandalar");
 //
 //
 //    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman

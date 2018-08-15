@@ -1051,7 +1051,7 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
 void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
     mathfu::vec4 ambientColor = getAmbientColor();
 
-    /*
+
     if (m_geom->colorArray != nullptr) {
         int nodeId = 0;
         t_BSP_NODE *nodes = this->m_geom->bsp_nodes;
@@ -1079,7 +1079,7 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
             mocvColor = mathfu::vec4(mocvColor.z, mocvColor.y, mocvColor.x, 0);
             ambientColor += mocvColor;
         }
-    } */
+    }
 
     m2Object->setUseLocalLighting(true);
     m2Object->setAmbientColorOverride(ambientColor, true);

@@ -506,17 +506,17 @@ GDevice::GDevice() {
     binding.bindings.push_back(bufferBinding);
     binding.vertexBuffer = vertexBuffer;
 
-    HGVertexBufferBindings lineBBBindings = this->createVertexBufferBindings();
+    m_lineBBBindings = this->createVertexBufferBindings();
 
-    lineBBBindings->setIndexBuffer(lineIndexBuffer);
-    lineBBBindings->addVertexBufferBinding(binding);
-    lineBBBindings->save();
+    m_lineBBBindings->setIndexBuffer(lineIndexBuffer);
+    m_lineBBBindings->addVertexBufferBinding(binding);
+    m_lineBBBindings->save();
 
-    HGVertexBufferBindings vertexBBBindings = this->createVertexBufferBindings();
+    m_vertexBBBindings = this->createVertexBufferBindings();
 
-    vertexBBBindings->setIndexBuffer(vertexIndexBuffer);
-    vertexBBBindings->addVertexBufferBinding(binding);
-    vertexBBBindings->save();
+    m_vertexBBBindings->setIndexBuffer(vertexIndexBuffer);
+    m_vertexBBBindings->addVertexBufferBinding(binding);
+    m_vertexBBBindings->save();
 }
 
 bool GDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {

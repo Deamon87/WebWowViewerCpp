@@ -101,5 +101,13 @@ struct adtMeshWideBlockPS {
 };
 
 
+struct bbModelWideBlockVS {
+    mathfu::mat4 uPlacementMat;
+
+    mathfu::vec4_packed uBBScale;
+    mathfu::vec4_packed uBBCenter;
+    mathfu::vec4_packed uColor;
+};
+
 
 #endif //AWEBWOWVIEWERCPP_UNIFORMBUFFERSTRUCTURES_H
