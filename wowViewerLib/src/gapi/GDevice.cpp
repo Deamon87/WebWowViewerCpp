@@ -498,7 +498,7 @@ GDevice::GDevice() {
     lineIndexBuffer->uploadData((void *) &elements[0], sizeof(elements));
 
     HGIndexBuffer vertexIndexBuffer = this->createIndexBuffer();
-    lineIndexBuffer->uploadData((void *) &vertexElements[0], sizeof(vertexElements));
+    vertexIndexBuffer->uploadData((void *) &vertexElements[0], sizeof(vertexElements));
 
     GBufferBinding bufferBinding = {0, 3, GL_FLOAT, false, 0, 0 };
 
@@ -506,17 +506,19 @@ GDevice::GDevice() {
     binding.bindings.push_back(bufferBinding);
     binding.vertexBuffer = vertexBuffer;
 
+    m_vertexBBBindings = this->createVertexBufferBindings();
+
+    m_vertexBBBindings->setIndexBuffer(vertexIndexBuffer);
+    m_vertexBBBindings->addVertexBufferBinding(binding);
+    m_vertexBBBindings->save();
+
     m_lineBBBindings = this->createVertexBufferBindings();
 
     m_lineBBBindings->setIndexBuffer(lineIndexBuffer);
     m_lineBBBindings->addVertexBufferBinding(binding);
     m_lineBBBindings->save();
 
-    m_vertexBBBindings = this->createVertexBufferBindings();
 
-    m_vertexBBBindings->setIndexBuffer(vertexIndexBuffer);
-    m_vertexBBBindings->addVertexBufferBinding(binding);
-    m_vertexBBBindings->save();
 }
 
 bool GDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {

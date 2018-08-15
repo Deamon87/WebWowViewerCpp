@@ -41,9 +41,7 @@ layout(std140) uniform modelWideBlockVS {
 out vec4 outColor;
 
 void main() {
-    vec4 finalColor = vec4(uColor.rgb, 1.0);
-
-    finalColor.a = 1.0; //do I really need it now?
+    vec4 finalColor = uColor;
     outColor = finalColor;
 }
 

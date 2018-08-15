@@ -1024,18 +1024,18 @@ void M2Object::createBoundingBoxMesh() {
     //Create bounding box mesh
     HGShaderPermutation boundingBoxshaderPermutation = m_api->getDevice()->getShader("drawBBShader");
 
-    gMeshTemplate meshTemplate(m_api->getDevice()->getBBLinearBinding(), boundingBoxshaderPermutation);
+    gMeshTemplate meshTemplate(m_api->getDevice()->getBBVertexBinding(), boundingBoxshaderPermutation);
 
     meshTemplate.depthWrite = false;
     meshTemplate.depthCulling = true;
     meshTemplate.backFaceCulling = false;
 
     meshTemplate.start = 0;
-    meshTemplate.end = 48;
+    meshTemplate.end = 36;
 
     meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Alpha;
 
-    meshTemplate.element = GL_LINES;
+    meshTemplate.element = GL_TRIANGLES;
     meshTemplate.textureCount = 0;
 
     HGUniformBuffer bbBlockVS = m_api->getDevice()->createUniformBuffer(sizeof(bbModelWideBlockVS));
@@ -1068,7 +1068,7 @@ void M2Object::createBoundingBoxMesh() {
     blockVS.uPlacementMat = m_placementMatrix;
     blockVS.uBBScale = mathfu::vec4_packed(mathfu::vec4(scale, 0.0));
     blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
-    blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.7f, 0.7f, 0.7f, 0.7f));
+    blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
 
     bbBlockVS->save();
 
