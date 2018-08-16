@@ -982,8 +982,8 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 }
 
 
-bool WmoGroupObject::checkDoodads(std::vector<M2Object *> &wmoM2Candidates) {
-    if (!m_loaded) return false;
+void WmoGroupObject::checkDoodads(std::vector<M2Object *> &wmoM2Candidates) {
+    if (!m_loaded) return;
 
     mathfu::vec4 ambientColor = getAmbientColor();
 

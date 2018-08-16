@@ -12,6 +12,7 @@ GMesh::GMesh(GDevice &device,
     m_depthCulling = (int8_t) (meshTemplate.depthCulling ? 1 : 0);
     m_backFaceCulling = (int8_t) (meshTemplate.backFaceCulling ? 1 : 0);
 
+    m_colorMask = meshTemplate.colorMask;
 
     m_blendMode = meshTemplate.blendMode;
     m_isTransparent = m_blendMode > EGxBlendEnum::GxBlend_AlphaKey || !m_depthWrite ;

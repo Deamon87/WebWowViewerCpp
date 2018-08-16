@@ -17,6 +17,7 @@ public:
     int m_priorityPlane;
     int m_layer;
     M2Object *m_m2Object = nullptr;
+    HGOcclusionQuery m_query = nullptr;
 
 };
 #endif //AWEBWOWVIEWERCPP_GM2MESH_H

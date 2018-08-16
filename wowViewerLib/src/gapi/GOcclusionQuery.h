@@ -5,43 +5,32 @@
 #ifndef AWEBWOWVIEWERCPP_GOCCLUSIONQUERY_H
 #define AWEBWOWVIEWERCPP_GOCCLUSIONQUERY_H
 
+#include "meshes/GMesh.h"
 
-#include "../engine/opengl/header.h"
-#include "GDevice.h"
-
-class GOcclusionQuery {
+class GOcclusionQuery : public GMesh {
     friend class GDevice;
 public:
-    GOcclusionQuery(GDevice &device, HGMesh &oclludee) : m_device(device), oclludee(oclludee){
-        createQuery();
-    }
+    ~GOcclusionQuery() override;
+protected:
+    GOcclusionQuery(GDevice &device, HGMesh &oclludee);
 
-    ~GOcclusionQuery() {
-        deleteQuery();
-    }
-private:
-    void createQuery() {
-        glGenQueries(1, &m_queryIdent);
-    };
-    void deleteQuery() {
-        glDeleteQueries(1, &m_queryIdent);
-    };
-
-    void beginQuery() {
-        glBeginQuery(GL_SAMPLES_PASSED, m_queryIdent);
-    }
-    void endQuery() {
-        glEndQuery(GL_SAMPLES_PASSED);
-    }
-    int getResult() {
-        int ns;
-        glGetQueryObjectiv(m_queryIdent, GL_QUERY_RESULT, &ns);
-    }
 
 private:
 
-    GDevice &m_device;
-    HGMesh &oclludee;
+
+    void createQuery();;
+    void deleteQuery();;
+
+    void beginQuery();
+    void endQuery();
+
+    void beginConditionalRendering();
+    void endConditionalRendering();
+
+
+    int getResult();
+
+private:
     GLuint m_queryIdent;
 };
 

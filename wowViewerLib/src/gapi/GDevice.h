@@ -15,8 +15,9 @@ class GTexture;
 class GShaderPermutation;
 class GMesh;
 class GM2Mesh;
-class GParticleMesh;
 class GOcclusionQuery;
+class GParticleMesh;
+
 
 class gMeshTemplate;
 
@@ -27,10 +28,11 @@ typedef std::shared_ptr<GUniformBuffer> HGUniformBuffer;
 typedef std::shared_ptr<GShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<GMesh> HGMesh;
 typedef std::shared_ptr<GM2Mesh> HGM2Mesh;
+typedef std::shared_ptr<GOcclusionQuery> HGOcclusionQuery;
 typedef std::shared_ptr<GParticleMesh> HGParticleMesh;
 typedef std::shared_ptr<GBlpTexture> HGBlpTexture;
 typedef std::shared_ptr<GTexture> HGTexture;
-typedef std::shared_ptr<GOcclusionQuery> HGOcclusionQuery;
+
 
 #include <unordered_set>
 #include <list>
@@ -41,7 +43,6 @@ typedef std::shared_ptr<GOcclusionQuery> HGOcclusionQuery;
 #include "GTexture.h"
 #include "GUniformBuffer.h"
 #include "GShaderPermutation.h"
-#include "GOcclusionQuery.h"
 #include "meshes/GMesh.h"
 
 
@@ -137,6 +138,7 @@ private:
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTexture>, BlpCacheRecordHasher> loadedTextureCache;
 
 
+    uint8_t m_lastColorMask = 0xFF;
     int8_t m_lastDepthWrite = -1;
     int8_t m_lastDepthCulling = -1;
     int8_t m_backFaceCulling = -1;
@@ -170,5 +172,7 @@ private:
     bool m_m2ShaderCreated = false;
     int uniformBuffersCreated = 0;
 };
+
+
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H

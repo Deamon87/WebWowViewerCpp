@@ -90,7 +90,7 @@ private:
     void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
 
     void updateWorldGroupBBWithM2();
-    bool checkDoodads(std::vector<M2Object*> &wmoM2Candidates);
+    void checkDoodads(std::vector<M2Object*> &wmoM2Candidates);
 
     void postLoad();
     void createMeshes();

@@ -168,4 +168,6 @@ mathfu::vec3 &M2MeshBufferUpdater::getFogColor(EGxBlendEnum blendMode, mathfu::v
             debuglog("Unknown blending mode in M2 file")
             break;
     }
+
+    return originalFogColor;
 }

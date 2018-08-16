@@ -301,6 +301,8 @@ R animateTrack(
         return convertHelper<T, R>(*values->getElement(0));
 //        return defaultValue;
     }
+
+    return defaultValue;
 }
 
 template<typename T, typename R>

@@ -117,6 +117,7 @@ struct M2Array {
     }
     inline std::string toString(){
         static_assert(true, "This conversion to string is not defined");
+        return "";
     }
 };
 template<>

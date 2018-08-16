@@ -11,8 +11,9 @@ enum class MeshType {
     eGeneralMesh = 0,
     eAdtMesh = 1,
     eWmoMesh = 2,
-    eM2Mesh = 3,
-    eParticleMesh = 4,
+    eOccludingQuery = 3,
+    eM2Mesh = 4,
+    eParticleMesh = 5,
 };
 
 class gMeshTemplate {
@@ -26,6 +27,8 @@ public:
     bool depthCulling;
     bool backFaceCulling;
     EGxBlendEnum blendMode;
+
+    uint8_t colorMask = 0xFF;
 
     int start;
     int end;
@@ -46,7 +49,7 @@ protected:
     );
 
 public:
-    ~GMesh();
+    virtual ~GMesh();
     inline HGUniformBuffer getVertexUniformBuffer(int slot) {
         return m_vertexUniformBuffer[slot];
     }
@@ -80,7 +83,7 @@ private:
     bool m_isTransparent;
 
 
-    int m_colorMask = 0;
+    uint8_t m_colorMask = 0;
     int m_renderOrder = 0;
     int m_start;
     int m_end;

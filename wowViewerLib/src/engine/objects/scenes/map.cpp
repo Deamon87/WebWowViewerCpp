@@ -255,8 +255,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
             cameraPos,
             exteriorView.frustumPlanes[0], //TODO:!
-            frustumPoints);
-//        bool frustumResult = false;
+            frustumPoints) ;
+//        bool frustumResult = true;
         if (frustumResult) {
             exteriorView.drawnM2s.push_back(m2ObjectCandidate);
             m2RenderedThisFrame.push_back(m2ObjectCandidate);
@@ -267,6 +267,7 @@ void Map::doPostLoad(){
 //    if (m_api->getConfig()->getRenderM2()) {
         for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
             M2Object *m2Object = this->currentFrameM2RenderedThisFrameArr[i];
+            if (m2Object == nullptr) continue;
             m2Object->doPostLoad();
         }
 //    }
@@ -296,6 +297,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
     Config* config = this->m_api->getConfig();
 //    if (config->getRenderM2()) {
         std::for_each(m2RenderedThisFrameArr.begin(), m2RenderedThisFrameArr.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
+            if (m2Object == nullptr) return;
             m2Object->update(deltaTime, cameraVec3, lookAtMat);
         });
 //    }
@@ -310,6 +312,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 
     //2. Calc distance every 100 ms
     std::for_each(m2RenderedThisFrameArr.begin(), m2RenderedThisFrameArr.end(), [&cameraVec3](M2Object *m2Object) {
+        if (m2Object == nullptr) return;
         m2Object->calcDistance(cameraVec3);
     });
 
@@ -592,6 +595,7 @@ void Map::draw() {
     m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
 
     for (auto &m2Object : m2ObjectsRendered) {
+        if (m2Object == nullptr) continue;
         m2Object->collectMeshes(renderedThisFrame, m_viewRenderOrder);
         m2Object->drawParticles(renderedThisFrame, m_viewRenderOrder);
     }

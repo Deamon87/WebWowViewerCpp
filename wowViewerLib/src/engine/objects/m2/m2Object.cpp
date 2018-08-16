@@ -13,6 +13,7 @@
 #include "../../../gapi/UniformBufferStructures.h"
 #include "m2Helpers/M2MeshBufferUpdater.h"
 #include "../../../gapi/meshes/GM2Mesh.h"
+#include "../../../gapi/GOcclusionQuery.h"
 
 //Legion shader stuff
 
@@ -1029,11 +1030,11 @@ void M2Object::createBoundingBoxMesh() {
     meshTemplate.depthWrite = false;
     meshTemplate.depthCulling = true;
     meshTemplate.backFaceCulling = false;
-
+    meshTemplate.colorMask = 0;
     meshTemplate.start = 0;
     meshTemplate.end = 36;
 
-    meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Alpha;
+    meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Opaque;
 
     meshTemplate.element = GL_TRIANGLES;
     meshTemplate.textureCount = 0;
@@ -1083,6 +1084,8 @@ void M2Object::createMeshes() {
     this->m_meshArray.clear();
     this->m_materialArray.clear();
 
+    createBoundingBoxMesh();
+
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
     auto m_m2Data = m_m2Geom->getM2Data();
 
@@ -1130,12 +1133,13 @@ void M2Object::createMeshes() {
         hmesh->m_m2Object = this;
         hmesh->m_layer = textMaterial->materialLayer;
         hmesh->m_priorityPlane = textMaterial->priorityPlane;
+        hmesh->m_query = occlusionQuery;
 
         this->m_meshArray.push_back(hmesh);
         this->m_materialArray.push_back(material);
     }
 
-    createBoundingBoxMesh();
+
 }
 
 void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
@@ -1183,7 +1187,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
         }
     }
 
-    renderedThisFrame.push_back(boundingBoxMesh);
+    renderedThisFrame.push_back(occlusionQuery);
 }
 
 void M2Object::initAnimationManager() {
@@ -1276,7 +1280,7 @@ mathfu::vec4 M2Object::getAmbientLight() {
         return mathfu::vec4(ambientColor.x, ambientColor.y, ambientColor.z, 1.0) ;
     }
 
-    return ambientColor+ m_ambientAddColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
+    return ambientColor + m_ambientAddColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
 };
 
 mathfu::vec3 M2Object::getSunDir() {

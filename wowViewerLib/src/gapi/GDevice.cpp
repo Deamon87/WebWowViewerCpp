@@ -8,6 +8,7 @@
 #include "../engine/algorithms/hashString.h"
 #include "shaders/GM2ShaderPermutation.h"
 #include "meshes/GM2Mesh.h"
+#include "GOcclusionQuery.h"
 #include "meshes/GParticleMesh.h"
 #include "shaders/GM2ParticleShaderPermutation.h"
 #include "shaders/GAdtShaderPermutation.h"
@@ -263,6 +264,15 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
 }
 
 void GDevice::drawMesh(HGMesh &hmesh) {
+    GOcclusionQuery * gOcclusionQuery = nullptr;
+    GM2Mesh * gm2Mesh = nullptr;
+    if (hmesh->m_meshType == MeshType::eOccludingQuery) {
+        gOcclusionQuery = (GOcclusionQuery *)(hmesh.get());
+    }
+    if (hmesh->m_meshType == MeshType::eM2Mesh) {
+        gm2Mesh = (GM2Mesh *)(hmesh.get());
+    }
+
     bindProgram(hmesh->m_shader.get());
     bindVertexBufferBindings(hmesh->m_bindings.get());
 
@@ -327,6 +337,17 @@ void GDevice::drawMesh(HGMesh &hmesh) {
         m_backFaceCulling = hmesh->m_backFaceCulling;
     }
 
+    if (m_lastColorMask != hmesh->m_colorMask) {
+        glColorMask(
+            (hmesh->m_colorMask & 0x1) > 0 ? GL_TRUE : GL_FALSE,
+            (hmesh->m_colorMask & 0x2) > 0 ? GL_TRUE : GL_FALSE,
+            (hmesh->m_colorMask & 0x4) > 0 ? GL_TRUE : GL_FALSE,
+            (hmesh->m_colorMask & 0x8) > 0 ? GL_TRUE : GL_FALSE
+        );
+
+        m_lastColorMask = hmesh->m_colorMask;
+    }
+
     if (m_lastBlendMode != hmesh->m_blendMode) {
         BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
         if (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable ) {
@@ -346,10 +367,22 @@ void GDevice::drawMesh(HGMesh &hmesh) {
         m_lastBlendMode = hmesh->m_blendMode;
     }
 
-//    if (hmesh->m_start == 231342) exit(0);
+    if (gOcclusionQuery != nullptr) {
+        gOcclusionQuery->beginQuery();
+    }
+    if (gm2Mesh != nullptr) {
+        gm2Mesh->m_query->beginConditionalRendering();
+    }
 
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
-//        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, (const void *) 0);
+
+    if (gm2Mesh != nullptr) {
+        gm2Mesh->m_query->endConditionalRendering();
+    }
+
+    if (gOcclusionQuery != nullptr) {
+        gOcclusionQuery->endQuery();
+    }
 }
 
 HGVertexBuffer GDevice::createVertexBuffer() {
