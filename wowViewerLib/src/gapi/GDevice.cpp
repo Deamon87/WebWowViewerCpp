@@ -337,6 +337,16 @@ void GDevice::drawMesh(HGMesh &hmesh) {
         m_backFaceCulling = hmesh->m_backFaceCulling;
     }
 
+    if (m_triCCW != hmesh->m_triCCW) {
+        if (hmesh->m_triCCW) {
+            glFrontFace(GL_CCW);
+        } else {
+            glFrontFace(GL_CW);
+        }
+
+        m_triCCW = hmesh->m_triCCW;
+    }
+
     if (m_lastColorMask != hmesh->m_colorMask) {
         glColorMask(
             (hmesh->m_colorMask & 0x1) > 0 ? GL_TRUE : GL_FALSE,
