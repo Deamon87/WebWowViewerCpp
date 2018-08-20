@@ -431,30 +431,31 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
-//    g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
-//        using namespace std::chrono_literals;
-//
-//        while (true) {
-//            std::this_thread::sleep_for(1ms);
-//            this->adtObjectCache.processCacheQueue(1000);
-//            this->wdtCache.processCacheQueue(1000);
-//            this->wdlCache.processCacheQueue(1000);
-//            this->wmoGeomCache.processCacheQueue(1000);
-//            this->wmoMainCache.processCacheQueue(100);
-//            this->m2GeomCache.processCacheQueue(1000);
-//            this->skinGeomCache.processCacheQueue(1000);
-//            this->textureCache.processCacheQueue(1000);
-//            this->db2Cache.processCacheQueue(1000);
-//        }
-//    });
+
+    g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
+        using namespace std::chrono_literals;
+
+        while (!this->m_isTerminating) {
+            std::this_thread::sleep_for(1ms);
+            this->adtObjectCache.processCacheQueue(1000);
+            this->wdtCache.processCacheQueue(1000);
+            this->wdlCache.processCacheQueue(1000);
+            this->wmoGeomCache.processCacheQueue(1000);
+            this->wmoMainCache.processCacheQueue(100);
+            this->m2GeomCache.processCacheQueue(1000);
+            this->skinGeomCache.processCacheQueue(1000);
+            this->textureCache.processCacheQueue(1000);
+            this->db2Cache.processCacheQueue(1000);
+        }
+    });
 
 
-/*
+
     g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&](){
         using namespace std::chrono_literals;
         std::unique_lock<std::mutex> localLockNextMeshes (m_lockNextMeshes,std::defer_lock);
 
-        while (true) {
+        while (!this->m_isTerminating) {
             if (!deltaTimeUpdate) {
                 std::this_thread::sleep_for(500us);
                 continue;
@@ -466,7 +467,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
             localLockNextMeshes.unlock();
         }
     }));
-*/
+
 }
 
 void WoWSceneImpl::initGlContext() {
@@ -670,6 +671,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     nextDeltaTime = deltaTime;
     deltaTimeUpdate = true;
 
+    /*
     this->adtObjectCache.processCacheQueue(10);
     this->wdtCache.processCacheQueue(10);
     this->wdlCache.processCacheQueue(10);
@@ -679,7 +681,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     this->skinGeomCache.processCacheQueue(10);
     this->textureCache.processCacheQueue(10);
     this->db2Cache.processCacheQueue(10);
-
+*/
     currentScene->copyToCurrentFrame();
     renderLockNextMeshes.unlock();
 
@@ -773,7 +775,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateStart);
-    DoCulling();
+//    DoCulling();
 //    m_currentFrameParams = m_nextFrameParams;
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
 //
@@ -826,7 +828,18 @@ void WoWSceneImpl::SetDirection(WoWFrameParamHolder &frameParamHolder) {
     frameParamHolder.m_upVector = (frameParamHolder.m_lookAtMat4.Inverse().Transpose() * upVector).xyz();
 }
 
- WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
+WoWSceneImpl::~WoWSceneImpl() {
+    m_isTerminating = true;
+    if (g_globalThreadsSingleton.cullingAndUpdateThread.joinable()) {
+        g_globalThreadsSingleton.cullingAndUpdateThread.join();
+    }
+
+    if (g_globalThreadsSingleton.loadingResourcesThread.joinable()) {
+        g_globalThreadsSingleton.loadingResourcesThread.join();
+    }
+}
+
+WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
 #ifdef _WIN32
     glewExperimental = true; // Needed in core profile
 	if (glewInit() != GLEW_OK) {

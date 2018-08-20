@@ -728,5 +728,8 @@ int main(){
         printf("Can't init NKC\n");
     }
     nkc_shutdown( myapp.nkcHandle );
+
+    delete myapp.scene;
+
     return 0;
 }

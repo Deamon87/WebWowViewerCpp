@@ -27,6 +27,7 @@ public:
 class WoWScene : public IFileRequester {
 
 public:
+    virtual ~WoWScene(){};
     virtual void draw(animTime_t deltaTime) = 0;
     virtual void setScreenSize(int canvWidth, int canvHeight) = 0;
     virtual void switchCameras() = 0;

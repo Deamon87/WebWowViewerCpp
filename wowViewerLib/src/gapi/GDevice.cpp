@@ -1,7 +1,6 @@
 //
 // Created by deamon on 05.06.18.
 //
-
 #include <iostream>
 #include "../engine/opengl/header.h"
 #include "GDevice.h"

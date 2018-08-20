@@ -50,6 +50,7 @@ class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
 public:
     WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
+    ~WoWSceneImpl() override;
 
     void draw(animTime_t deltaTime) override;
     void setScreenSize(int canvWidth, int canvHeight) override;
@@ -177,6 +178,7 @@ private:
 private:
     bool m_enable;
 
+    bool m_isTerminating = false;
     Config * m_config;
     GDevice m_gdevice;
     HGUniformBuffer m_sceneWideUniformBuffer;
