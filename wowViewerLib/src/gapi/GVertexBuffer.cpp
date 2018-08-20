@@ -32,6 +32,7 @@ void GVertexBuffer::uploadData(void * data, int length) {
         glBufferSubData(GL_ARRAY_BUFFER, 0, length, data);
     }
 
+    m_device.bindVertexBuffer(nullptr);
     m_dataUploaded = true;
 }
 

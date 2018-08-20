@@ -431,25 +431,26 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
-//    g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
-//        using namespace std::chrono_literals;
-//
-//        while (true) {
-//            std::this_thread::sleep_for(1ms);
-//            this->adtObjectCache.processCacheQueue(1000);
-//            this->wdtCache.processCacheQueue(1000);
-//            this->wdlCache.processCacheQueue(1000);
-//            this->wmoGeomCache.processCacheQueue(1000);
-//            this->wmoMainCache.processCacheQueue(100);
-//            this->m2GeomCache.processCacheQueue(1000);
-//            this->skinGeomCache.processCacheQueue(1000);
-//            this->textureCache.processCacheQueue(1000);
-//            this->db2Cache.processCacheQueue(1000);
-//        }
-//    });
+    /*
+    g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
+        using namespace std::chrono_literals;
+
+        while (true) {
+            std::this_thread::sleep_for(1ms);
+            this->adtObjectCache.processCacheQueue(1000);
+            this->wdtCache.processCacheQueue(1000);
+            this->wdlCache.processCacheQueue(1000);
+            this->wmoGeomCache.processCacheQueue(1000);
+            this->wmoMainCache.processCacheQueue(100);
+            this->m2GeomCache.processCacheQueue(1000);
+            this->skinGeomCache.processCacheQueue(1000);
+            this->textureCache.processCacheQueue(1000);
+            this->db2Cache.processCacheQueue(1000);
+        }
+    });*/
 
 
-/*
+
     g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&](){
         using namespace std::chrono_literals;
         std::unique_lock<std::mutex> localLockNextMeshes (m_lockNextMeshes,std::defer_lock);
@@ -466,7 +467,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
             localLockNextMeshes.unlock();
         }
     }));
-*/
+
 }
 
 void WoWSceneImpl::initGlContext() {
@@ -773,11 +774,19 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateStart);
-    DoCulling();
+//    DoCulling();
 //    m_currentFrameParams = m_nextFrameParams;
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
 //
 //    print_timediff("DoCulling", cullingAndUpdateStart, cullingAndUpdateEnd);
+}
+mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {
+
+    return mathfu::mat3(
+        value.GetColumn(0).x,value.GetColumn(1).x,value.GetColumn(2).x,
+        value.GetColumn(0).y,value.GetColumn(1).y,value.GetColumn(2).y,
+        value.GetColumn(0).z,value.GetColumn(1).z,value.GetColumn(2).z
+    );
 }
 
 void WoWSceneImpl::SetDirection(WoWFrameParamHolder &frameParamHolder) {
@@ -817,13 +826,16 @@ void WoWSceneImpl::SetDirection(WoWFrameParamHolder &frameParamHolder) {
     float sinTheta = (float) sin(theta);
     float cosTheta = (float) cos(theta);
 
-//    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
-    frameParamHolder.m_sunDir = (frameParamHolder.m_lookAtMat4.Inverse().Transpose() * sunDirWorld).xyz();
-    frameParamHolder.m_sunDir = frameParamHolder.m_sunDir.Normalized();
+    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(frameParamHolder.m_lookAtMat4);
+
+    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
+//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
+    frameParamHolder.m_sunDir = (lookAtRotation * sunDirWorld.xyz());
+//    frameParamHolder.m_sunDir = frameParamHolder.m_sunDir.Normalized();
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    frameParamHolder.m_upVector = (frameParamHolder.m_lookAtMat4.Inverse().Transpose() * upVector).xyz();
+//    frameParamHolder.m_upVector = (frameParamHolder.m_lookAtMat4.Transpose() * upVector).xyz();
+    frameParamHolder.m_upVector = (lookAtRotation * upVector.xyz());;
 }
 
  WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){

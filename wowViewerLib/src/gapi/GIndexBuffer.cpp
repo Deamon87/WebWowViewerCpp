@@ -32,6 +32,7 @@ void GIndexBuffer::uploadData(void * data, int length) {
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, length, data);
     }
 
+    m_device.bindIndexBuffer(nullptr);
     m_dataUploaded = true;
 }
 

@@ -1133,7 +1133,7 @@ void M2Object::createMeshes() {
         hmesh->m_m2Object = this;
         hmesh->m_layer = textMaterial->materialLayer;
         hmesh->m_priorityPlane = textMaterial->priorityPlane;
-        hmesh->m_query = occlusionQuery;
+//        hmesh->m_query = occlusionQuery;
 
         this->m_meshArray.push_back(hmesh);
         this->m_materialArray.push_back(material);
@@ -1187,7 +1187,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
         }
     }
 
-    renderedThisFrame.push_back(occlusionQuery);
+//    renderedThisFrame.push_back(occlusionQuery);
 }
 
 void M2Object::initAnimationManager() {
@@ -1300,7 +1300,7 @@ void M2Object::drawParticles(std::vector<HGMesh> &meshes, int renderOrder) {
 
     for (int i = minParticle; i < maxParticle; i++) {
 //    for (int i = 0; i< particleEmitters.size(); i++) {
-//        particleEmitters[i]->collectMeshes(meshes, renderOrder);
+        particleEmitters[i]->collectMeshes(meshes, renderOrder);
     }
 }
 
