@@ -23,6 +23,7 @@ public:
     HGShaderPermutation shader;
     MeshType meshType = MeshType::eGeneralMesh;
 
+    int8_t triCCW = 1; //counter-clockwise
     bool depthWrite;
     bool depthCulling;
     bool backFaceCulling;
@@ -79,6 +80,7 @@ private:
     int8_t m_depthWrite;
     int8_t m_depthCulling;
     int8_t m_backFaceCulling;
+    int8_t m_triCCW = 1;
     EGxBlendEnum m_blendMode;
     bool m_isTransparent;
 

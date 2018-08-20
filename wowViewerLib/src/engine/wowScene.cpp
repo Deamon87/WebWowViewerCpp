@@ -205,8 +205,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-//   m_firstCamera.setCameraPos(0, 0, 200);
-//    currentScene = new Map(this, 0, "Azeroth");
+   m_firstCamera.setCameraPos(0, 0, 200);
+    currentScene = new Map(this, 0, "Azeroth");
 //
     m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
     currentScene = new Map(this, 1642, "Zandalar");
@@ -781,6 +781,14 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //
 //    print_timediff("DoCulling", cullingAndUpdateStart, cullingAndUpdateEnd);
 }
+mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {
+
+    return mathfu::mat3(
+        value.GetColumn(0).x,value.GetColumn(1).x,value.GetColumn(2).x,
+        value.GetColumn(0).y,value.GetColumn(1).y,value.GetColumn(2).y,
+        value.GetColumn(0).z,value.GetColumn(1).z,value.GetColumn(2).z
+    );
+}
 
 void WoWSceneImpl::SetDirection(WoWFrameParamHolder &frameParamHolder) {
 
@@ -819,13 +827,16 @@ void WoWSceneImpl::SetDirection(WoWFrameParamHolder &frameParamHolder) {
     float sinTheta = (float) sin(theta);
     float cosTheta = (float) cos(theta);
 
-//    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
-    frameParamHolder.m_sunDir = (frameParamHolder.m_lookAtMat4.Inverse().Transpose() * sunDirWorld).xyz();
-    frameParamHolder.m_sunDir = frameParamHolder.m_sunDir.Normalized();
+    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(frameParamHolder.m_lookAtMat4);
+
+    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
+//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
+    frameParamHolder.m_sunDir = (lookAtRotation * sunDirWorld.xyz());
+//    frameParamHolder.m_sunDir = frameParamHolder.m_sunDir.Normalized();
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    frameParamHolder.m_upVector = (frameParamHolder.m_lookAtMat4.Inverse().Transpose() * upVector).xyz();
+//    frameParamHolder.m_upVector = (frameParamHolder.m_lookAtMat4.Transpose() * upVector).xyz();
+    frameParamHolder.m_upVector = (lookAtRotation * upVector.xyz());;
 }
 
 WoWSceneImpl::~WoWSceneImpl() {

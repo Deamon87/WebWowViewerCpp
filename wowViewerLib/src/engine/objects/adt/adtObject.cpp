@@ -332,9 +332,10 @@ void AdtObject::createMeshes() {
         gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
 
         aTemplate.meshType = MeshType::eAdtMesh;
-        aTemplate.depthWrite = true;
-        aTemplate.depthCulling = true;
-        aTemplate.backFaceCulling = false;
+        aTemplate.triCCW = 0;
+        aTemplate.depthWrite = 1;
+        aTemplate.depthCulling = 1;
+        aTemplate.backFaceCulling = 1;
         aTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
         aTemplate.start = m_adtFile->stripOffsets[i] * 2;

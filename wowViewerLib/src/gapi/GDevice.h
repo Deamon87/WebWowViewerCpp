@@ -51,6 +51,7 @@ public:
     GDevice();
 
     void reset() {
+        m_triCCW = -1;
         m_lastDepthWrite = -1;
         m_lastDepthCulling = -1;
         m_backFaceCulling = -1;
@@ -142,6 +143,7 @@ private:
     int8_t m_lastDepthWrite = -1;
     int8_t m_lastDepthCulling = -1;
     int8_t m_backFaceCulling = -1;
+    int8_t m_triCCW = -1;
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;

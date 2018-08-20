@@ -90,13 +90,13 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
         }
     }
 }
-
+PACK(
 struct meshParticleWideBlockPS {
     float uAlphaTest;
     float padding[3]; // according to std140
     int uPixelShader;
     float padding2[3];
-};
+});
 
 EGxBlendEnum M2BlendingModeToEGxBlendEnum1 [8] =
     {
@@ -661,9 +661,7 @@ ParticleEmitter::BuildQuadT3(
     for (int i = 0; i < 4; i++) {
 
         record.particle[i].position = ( inverseLookAt * mathfu::vec4(
-                m0.x * vxs[i] + m1.x * vys[i] + viewPos.x,
-                m0.y * vxs[i] + m1.y * vys[i] + viewPos.y,
-                m0.z * vxs[i] + m1.z * vys[i] + viewPos.z,
+                m0 * vxs[i] + m1 * vys[i] + viewPos,
                 1.0
         )).xyz();
         record.particle[i].color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
@@ -683,9 +681,7 @@ ParticleEmitter::BuildQuadT3(
 
     }
 
-    long index = szVertexBuf.size();
-    szVertexBuf.resize(szVertexBuf.size() + 1);
-    szVertexBuf[index] = record;
+    szVertexBuf.push_back(record);
 }
 
 void
@@ -706,9 +702,7 @@ ParticleEmitter::BuildQuad(
     const C4Vector colorCombined = mathfu::vec4_packed(mathfu::vec4(color, alpha));
     //Unroll 1
     record.particle[0].position = ( inverseLookAt * mathfu::vec4(
-                m0.x * vxs[0] + m1.x * vys[0] + viewPos.x,
-                m0.y * vxs[0] + m1.y * vys[0] + viewPos.y,
-                m0.z * vxs[0] + m1.z * vys[0] + viewPos.z,
+                m0 * vxs[0] + m1 * vys[0] + viewPos,
                 1.0
             )).xyz();
     record.particle[0].color = colorCombined;
@@ -721,9 +715,7 @@ ParticleEmitter::BuildQuad(
 
     //Unroll 2
     record.particle[1].position = ( inverseLookAt * mathfu::vec4(
-            m0.x * vxs[1] + m1.x * vys[1] + viewPos.x,
-            m0.y * vxs[1] + m1.y * vys[1] + viewPos.y,
-            m0.z * vxs[1] + m1.z * vys[1] + viewPos.z,
+            m0 * vxs[1] + m1 * vys[1] + viewPos,
             1.0
     )).xyz();
     record.particle[1].color = colorCombined;
@@ -733,9 +725,7 @@ ParticleEmitter::BuildQuad(
 
     //Unroll 3
     record.particle[2].position = ( inverseLookAt * mathfu::vec4(
-            m0.x * vxs[2] + m1.x * vys[2] + viewPos.x,
-            m0.y * vxs[2] + m1.y * vys[2] + viewPos.y,
-            m0.z * vxs[2] + m1.z * vys[2] + viewPos.z,
+            m0 * vxs[2] + m1 * vys[2] + viewPos,
             1.0
     )).xyz();
     record.particle[2].color = colorCombined;
@@ -746,9 +736,7 @@ ParticleEmitter::BuildQuad(
 
     //Unroll 4
     record.particle[3].position = ( inverseLookAt * mathfu::vec4(
-            m0.x * vxs[3] + m1.x * vys[3] + viewPos.x,
-            m0.y * vxs[3] + m1.y * vys[3] + viewPos.y,
-            m0.z * vxs[3] + m1.z * vys[3] + viewPos.z,
+            m0 * vxs[3] + m1 * vys[3] + viewPos,
             1.0
     )).xyz();
     record.particle[3].color = colorCombined;
@@ -757,16 +745,14 @@ ParticleEmitter::BuildQuad(
                          tys[3] * this->texScaleY + texStartY);
 
 
-    long index = szVertexBuf.size();
-    szVertexBuf.resize(szVertexBuf.size() + 1);
-    szVertexBuf[index] = record;
+    szVertexBuf.push_back(record);
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
     if (this->szVertexBuf.size() <= 1) return;
 
-    m_indexVBO->uploadData(&this->szIndexBuff[0], this->szIndexBuff.size()*2);
-    m_bufferVBO->uploadData(&this->szVertexBuf[0], this->szVertexBuf.size() * sizeof(this->szVertexBuf[0]));
+    m_indexVBO->uploadData(this->szIndexBuff.data(), (int) (this->szIndexBuff.size() * sizeof(uint16_t)));
+    m_bufferVBO->uploadData(this->szVertexBuf.data(), (int) (this->szVertexBuf.size() * sizeof(ParticleBuffStructQuad)));
 
     m_mesh->setEnd(this->szIndexBuff.size());
     m_mesh->setRenderOrder(renderOrder);

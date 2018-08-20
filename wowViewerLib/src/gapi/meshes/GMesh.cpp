@@ -11,6 +11,7 @@ GMesh::GMesh(GDevice &device,
     m_depthWrite = (int8_t) (meshTemplate.depthWrite ? 1u : 0u);
     m_depthCulling = (int8_t) (meshTemplate.depthCulling ? 1 : 0);
     m_backFaceCulling = (int8_t) (meshTemplate.backFaceCulling ? 1 : 0);
+    m_triCCW = meshTemplate.triCCW;
 
     m_colorMask = meshTemplate.colorMask;
 

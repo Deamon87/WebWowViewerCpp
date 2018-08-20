@@ -219,7 +219,7 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
     for (auto buffer : buffers) {
         if (buffer->m_buffCreated) continue;
 
-        if (currentSize + buffer->m_size > maxUniformBufferSize) {
+        if ((currentSize + buffer->m_size) > maxUniformBufferSize) {
             bufferForUpload->uploadData(&aggregationBufferForUpload[0], currentSize);
 
             buffersIndex++;
@@ -336,6 +336,16 @@ void GDevice::drawMesh(HGMesh &hmesh) {
         m_backFaceCulling = hmesh->m_backFaceCulling;
     }
 
+    if (m_triCCW != hmesh->m_triCCW) {
+        if (hmesh->m_triCCW) {
+            glFrontFace(GL_CCW);
+        } else {
+            glFrontFace(GL_CW);
+        }
+
+        m_triCCW = hmesh->m_triCCW;
+    }
+
     if (m_lastColorMask != hmesh->m_colorMask) {
         glColorMask(
             (hmesh->m_colorMask & 0x1) > 0 ? GL_TRUE : GL_FALSE,
@@ -369,13 +379,13 @@ void GDevice::drawMesh(HGMesh &hmesh) {
     if (gOcclusionQuery != nullptr) {
         gOcclusionQuery->beginQuery();
     }
-    if (gm2Mesh != nullptr) {
+    if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
         gm2Mesh->m_query->beginConditionalRendering();
     }
 
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 
-    if (gm2Mesh != nullptr) {
+    if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
         gm2Mesh->m_query->endConditionalRendering();
     }
 
