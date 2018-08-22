@@ -57,7 +57,7 @@ void WoWSceneImpl::DoCulling() {
         m_nextFrameParams.m_lookAtMat4 = lookAtMat4;
     }
 
-    mathfu::mat4 perspectiveMatrixForCulling =
+    m_nextFrameParams.m_perspectiveMatrixForCulling =
             mathfu::mat4::Perspective(
                     fov,
                     this->canvAspect,
@@ -89,7 +89,7 @@ void WoWSceneImpl::DoCulling() {
 
     m_nextFrameParams.m_viewCameraForRender = viewCameraForRender;
 
-    mathfu::vec3 cameraVec3 = cameraVec4.xyz();
+    m_nextFrameParams.m_cameraVec3 = cameraVec4.xyz();
 
     float ambient[4];
     m_config->getAmbientColor(ambient);
@@ -112,8 +112,8 @@ void WoWSceneImpl::DoCulling() {
 
     this->SetDirection(m_nextFrameParams);
 
-    currentScene->checkCulling(perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
-    currentScene->update(nextDeltaTime, cameraVec3, perspectiveMatrixForCulling, lookAtMat4);
+    currentScene->checkCulling(m_nextFrameParams.m_perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
+    currentScene->update(nextDeltaTime, m_nextFrameParams.m_cameraVec3, m_nextFrameParams.m_perspectiveMatrixForCulling, m_nextFrameParams.m_lookAtMat4);
 
 }
 
@@ -128,7 +128,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         textureCache(requestProcessor),
         adtObjectCache(requestProcessor),
         db2Cache(requestProcessor){
-    m_gdevice = GDevice();
+//    m_gdevice = GDevice();
     m_sceneWideUniformBuffer = m_gdevice.createUniformBuffer(sizeof(sceneWideBlockVSPS));
     m_sceneWideUniformBuffer->createBuffer();
 
@@ -205,8 +205,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-   m_firstCamera.setCameraPos(0, 0, 200);
-    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(0, 0, 200);
+//    currentScene = new Map(this, 0, "Azeroth");
 //
     m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
     currentScene = new Map(this, 1642, "Zandalar");
@@ -257,7 +257,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
-//       "WORLD\\GENERIC\\HUMAN\\PASSIVE DOODADS\\BANNERS\\STORMWINDLIONBANNER.m2");
+//       "WORLD\\GENERIC\\PASSIVEDOODADS\\SHIPS\\SHIPANIMATION\\TRANSPORTSHIP_SAILS.m2");
 //
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -411,6 +411,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/brokenisles/valsharah/7vs_nightmare_worldtree.wmo");
+
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "WORLD\\WMO\\TRANSPORTS\\TRANSPORT_SHIP\\TRANSPORTSHIP.WMO");
 //
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -627,7 +631,7 @@ void glClearScreen() {
 #else
     glClearDepthf(1.0f);
 #endif
-    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
@@ -665,25 +669,6 @@ struct timespec& end)
 void WoWSceneImpl::draw(animTime_t deltaTime) {
     struct timespec renderingAndUpdateStart, renderingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateStart);
-
-    renderLockNextMeshes.lock();
-    m_currentFrameParams = m_nextFrameParams;
-    nextDeltaTime = deltaTime;
-    deltaTimeUpdate = true;
-
-    /*
-    this->adtObjectCache.processCacheQueue(10);
-    this->wdtCache.processCacheQueue(10);
-    this->wdlCache.processCacheQueue(10);
-    this->wmoGeomCache.processCacheQueue(10);
-    this->wmoMainCache.processCacheQueue(10);
-    this->m2GeomCache.processCacheQueue(10);
-    this->skinGeomCache.processCacheQueue(10);
-    this->textureCache.processCacheQueue(10);
-    this->db2Cache.processCacheQueue(10);
-*/
-    currentScene->copyToCurrentFrame();
-    renderLockNextMeshes.unlock();
 
     getDevice()->reset();
     glClearScreen();
@@ -780,6 +765,17 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
 //
 //    print_timediff("DoCulling", cullingAndUpdateStart, cullingAndUpdateEnd);
+    renderLockNextMeshes.lock();
+    m_currentFrameParams = m_nextFrameParams;
+
+    nextDeltaTime = deltaTime;
+    deltaTimeUpdate = true;
+    currentScene->copyToCurrentFrame();
+    m_gdevice.toogleEvenFrame();
+    renderLockNextMeshes.unlock();
+
+    glFlush();
+
 }
 mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {
 

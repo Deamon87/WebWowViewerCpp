@@ -87,6 +87,13 @@ public:
 
     void updateBuffers(std::vector<HGMesh> &meshes);
     void drawMeshes(std::vector<HGMesh> &meshes);
+
+    bool getIsEvenFrame() {
+        return m_isEvenFrame;
+    };
+    void toogleEvenFrame() {
+        m_isEvenFrame =  !m_isEvenFrame;
+    }
 //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
     std::shared_ptr<GShaderPermutation> getShader(std::string shaderName);
@@ -138,6 +145,7 @@ private:
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTexture>, BlpCacheRecordHasher> loadedTextureCache;
 
+    bool m_isEvenFrame = false;
 
     uint8_t m_lastColorMask = 0xFF;
     int8_t m_lastDepthWrite = -1;
@@ -168,12 +176,18 @@ private:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
-    std::vector<HGUniformBuffer> m_unfiormBuffersForUpload;
+    struct FrameUniformBuffers {
+        std::vector<HGUniformBuffer> m_unfiormBuffersForUpload;
+    };
+    FrameUniformBuffers m_firstUBOFrame;
+    FrameUniformBuffers m_secondUBOFrame;
+
     std::vector<char> aggregationBufferForUpload;
 
     bool m_m2ShaderCreated = false;
     int uniformBuffersCreated = 0;
 };
+
 
 
 

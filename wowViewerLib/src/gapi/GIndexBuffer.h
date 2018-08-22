@@ -29,6 +29,8 @@ private:
 
 private:
     void * buffer = nullptr;
+
+    bool m_buffCreated = true;
     size_t m_size;
     bool m_dataUploaded = false;
 };

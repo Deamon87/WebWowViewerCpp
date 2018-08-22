@@ -30,6 +30,7 @@ private:
 private:
     void * pIdentifierBuffer = nullptr;
     size_t m_size;
+    bool m_buffCreated = false;
     bool m_dataUploaded = false;
 
 };

@@ -31,7 +31,9 @@
 
 class WoWFrameParamHolder {
 public:
+    mathfu::vec3 m_cameraVec3;
     mathfu::mat4 m_lookAtMat4;
+    mathfu::mat4 m_perspectiveMatrixForCulling;
     mathfu::mat4 m_secondLookAtMat;
     mathfu::mat4 m_viewCameraForRender;
     mathfu::mat4 m_perspectiveMatrix;

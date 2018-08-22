@@ -85,8 +85,8 @@ private:
 
     int m_skinNum = 0;
     CImVector m_localDiffuseColor = {0, 0, 0, 0};
-    mathfu::vec4 m_ambientAddColor = {0, 0, 0, 0};
-    mathfu::vec4 m_sunAddColor = {0, 0, 0, 0};
+    mathfu::vec4 m_ambientAddColor = mathfu::vec4(0, 0, 0, 0);
+    mathfu::vec4 m_sunAddColor = mathfu::vec4(0, 0, 0, 0);
     mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
     bool m_useLocalDiffuseColor = false;
     std::vector<uint8_t> m_meshIds;

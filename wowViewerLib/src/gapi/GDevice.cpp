@@ -63,6 +63,7 @@ void GDevice::bindVertexUniformBuffer(GUniformBuffer *buffer, int slot)  {
     }  else {
         if (slot == -1) {
             buffer->bind(slot);
+            m_vertexUniformBuffer[0] = nullptr;
         } else if (buffer != m_vertexUniformBuffer[slot]) {
             buffer->bind(slot);
 
@@ -181,20 +182,27 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
-    aggregationBufferForUpload.resize(0);
+//    if (aggregationBufferForUpload.size() != maxUniformBufferSize) {
+        aggregationBufferForUpload.resize(maxUniformBufferSize);
+//    }
 
     //1. Collect buffers
     std::vector<HGUniformBuffer> buffers;
-    for (auto &mesh : meshes) {
+    int renderIndex = 0;
+    for (const auto &mesh : meshes) {
         for (int i = 0; i < 3; i++ ) {
             HGUniformBuffer buffer = mesh->m_fragmentUniformBuffer[i];
-            if (buffer != nullptr)
+            if (buffer != nullptr) {
                 buffers.push_back(buffer);
+                buffer->m_creationIndex = renderIndex++;
+            }
         }
         for (int i = 0; i < 3; i++ ) {
             HGUniformBuffer buffer = mesh->m_vertexUniformBuffer[i];
-            if (buffer != nullptr)
+            if (buffer != nullptr) {
                 buffers.push_back(buffer);
+                buffer->m_creationIndex = renderIndex++;
+            }
         }
     }
 
@@ -207,47 +215,55 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
     int currentSize = 0;
     int buffersIndex = 0;
 
-    HGUniformBuffer bufferForUpload;
-    if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
-        bufferForUpload = createUniformBuffer(0);
-        bufferForUpload->createBuffer();
-        m_unfiormBuffersForUpload.push_back(bufferForUpload);
-    } else {
-        bufferForUpload = m_unfiormBuffersForUpload[buffersIndex];
+    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_firstUBOFrame.m_unfiormBuffersForUpload;
+    if (getIsEvenFrame()) {
+        m_unfiormBuffersForUpload = &m_secondUBOFrame.m_unfiormBuffersForUpload;
     }
 
-    for (auto buffer : buffers) {
+    HGUniformBuffer bufferForUpload;
+    if (buffersIndex >= m_unfiormBuffersForUpload->size()) {
+        bufferForUpload = createUniformBuffer(0);
+        bufferForUpload->createBuffer();
+        m_unfiormBuffersForUpload->push_back(bufferForUpload);
+    } else {
+        bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
+    }
+
+    for (const auto &buffer : buffers) {
         if (buffer->m_buffCreated) continue;
 
         if ((currentSize + buffer->m_size) > maxUniformBufferSize) {
             bufferForUpload->uploadData(&aggregationBufferForUpload[0], currentSize);
 
             buffersIndex++;
-            aggregationBufferForUpload.resize(0);
             currentSize = 0;
 
-            if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
+            if (buffersIndex >= m_unfiormBuffersForUpload->size()) {
                 bufferForUpload = createUniformBuffer(0);
                 bufferForUpload->createBuffer();
-                m_unfiormBuffersForUpload.push_back(bufferForUpload);
+                m_unfiormBuffersForUpload->push_back(bufferForUpload);
             } else {
-                bufferForUpload = m_unfiormBuffersForUpload[buffersIndex];
+                bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
             }
         }
 
         buffer->pIdentifierBuffer = bufferForUpload->pIdentifierBuffer;
         buffer->m_offset = (size_t) currentSize;
-        aggregationBufferForUpload.insert(
-            aggregationBufferForUpload.end(),
-            (char*)buffer->pContent,
-            ((char*)buffer->pContent)+buffer->m_size
-        );
+        void * dataPtr = buffer->getPointerForUpload();
+        std::copy((char*)dataPtr,
+                  ((char*)dataPtr)+buffer->m_size,
+                  &aggregationBufferForUpload[currentSize]);
+//        aggregationBufferForUpload.insert(
+//            aggregationBufferForUpload.end(),
+//            (char*)buffer->pContent,
+//            ((char*)buffer->pContent)+buffer->m_size
+//        );
         currentSize += buffer->m_size;
 
         int bytesToAdd = uniformBufferOffsetAlign - (currentSize % uniformBufferOffsetAlign);
-        for (int j = 0; j < bytesToAdd; j++) {
-            aggregationBufferForUpload.push_back(0);
-        }
+//        for (int j = 0; j < bytesToAdd; j++) {
+//            aggregationBufferForUpload.push_back(0);
+//        }
         currentSize+=bytesToAdd;
     }
 
@@ -255,7 +271,6 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
 		bufferForUpload->uploadData(&aggregationBufferForUpload[0], currentSize);
 	}
     buffersIndex++;
-    aggregationBufferForUpload.resize(0);
     currentSize = 0;
 
 //    std::cout << "m_unfiormBuffersForUpload.size = " << m_unfiormBuffersForUpload.size() << std::endl;
@@ -560,7 +575,7 @@ GDevice::GDevice() {
     m_lineBBBindings->addVertexBufferBinding(binding);
     m_lineBBBindings->save();
 
-
+    aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize);
 }
 
 bool GDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {

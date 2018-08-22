@@ -2,7 +2,7 @@
 //For drawbuffers in glsl of webgl you need to use GL_EXT_draw_buffers instead of WEBGL_draw_buffers
 
 #ifndef MAX_MATRIX_NUM
-#define MAX_MATRIX_NUM 120
+#define MAX_MATRIX_NUM 220
 #endif
 
 #ifdef ENABLE_DEFERRED

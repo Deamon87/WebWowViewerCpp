@@ -665,6 +665,7 @@ void M2Object::setDiffuseColor(CImVector& value) {
             value.b / 255.0f,
             value.a / 255.0f);
 
+    /*
     uint8_t result = miniLogic(&value);
     if (result < 0xA8) {
         hsv hsv1 = rgb2hsv(m_localDiffuseColorV.xyz());
@@ -687,6 +688,7 @@ void M2Object::setDiffuseColor(CImVector& value) {
             newValue.b / 255.0f,
             newValue.a / 255.0f);
     }
+     */
 }
 void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<HBlpTexture> replaceTextures) {
     this->m_skinNum = skinNum;
@@ -1071,7 +1073,7 @@ void M2Object::createBoundingBoxMesh() {
     blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
     blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
 
-    bbBlockVS->save();
+    bbBlockVS->save(true);
 
     boundingBoxMesh = m_api->getDevice()->createMesh(meshTemplate);
 
@@ -1133,6 +1135,7 @@ void M2Object::createMeshes() {
         hmesh->m_m2Object = this;
         hmesh->m_layer = textMaterial->materialLayer;
         hmesh->m_priorityPlane = textMaterial->priorityPlane;
+        hmesh->m_query = nullptr;
 //        hmesh->m_query = occlusionQuery;
 
         this->m_meshArray.push_back(hmesh);
@@ -1292,6 +1295,7 @@ mathfu::vec3 M2Object::getSunDir() {
 }
 
 void M2Object::drawParticles(std::vector<HGMesh> &meshes, int renderOrder) {
+//    return;
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());

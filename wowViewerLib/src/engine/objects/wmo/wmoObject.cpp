@@ -796,7 +796,7 @@ bool WmoObject::startTraversingWMOGroup(
 
         for (int i = 0; i< mainGeom->groupsLen; i++) {
             if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
-                if (this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanesExt, frustumPointsExt)) {
+                if (this->groupObjects[i] != nullptr && this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanesExt, frustumPointsExt)) {
                     exteriorView.drawnWmos.push_back(this->groupObjects[i]);
 
                     this->transverseGroupWMO(
@@ -871,7 +871,7 @@ void WmoObject::transverseGroupWMO(
 
     if (localLevel > 8) return;
 
-    if (!groupObjects[groupId]->getIsLoaded()) {
+    if (groupObjects[groupId] == nullptr || !groupObjects[groupId]->getIsLoaded()) {
         //The group has not been loaded yet
         return;
     }

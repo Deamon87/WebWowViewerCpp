@@ -163,11 +163,11 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/androidLogSupport.h src/engine/persistance/db2/base/DB2Base.cpp src/engine/persistance/db2/base/DB2Base.h src/engine/persistance/db2/DB2Light.cpp src/engine/persistance/db2/DB2Light.h src/engine/persistance/db2/DB2LightData.cpp src/engine/persistance/db2/DB2LightData.h src/engine/persistance/db2/DB2LightParams.cpp src/engine/persistance/db2/DB2LightParams.h src/engine/persistance/db2/DB2WmoAreaTable.cpp src/engine/persistance/db2/DB2WmoAreaTable.h src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h src/engine/persistance/header/texFileHeader.h src/gapi/GBlpTexture.cpp src/gapi/GBlpTexture.h src/gapi/GVertexBuffer.cpp src/gapi/GVertexBuffer.h src/gapi/GIndexBuffer.cpp src/gapi/GIndexBuffer.h src/gapi/GRenderTarget.cpp src/gapi/GRenderTarget.h src/gapi/GDevice.cpp src/gapi/GDevice.h src/gapi/meshes/GMesh.cpp src/gapi/meshes/GMesh.h src/gapi/GVertexBufferBindings.cpp src/gapi/GVertexBufferBindings.h src/engine/wowCommonClasses.h src/engine/shader/ShaderDefinitions.cpp src/gapi/GUniformBuffer.cpp src/gapi/GUniformBuffer.h src/gapi/GShaderPermutation.cpp src/gapi/GShaderPermutation.h src/gapi/shaders/GM2ShaderPermutation.cpp src/gapi/shaders/GM2ShaderPermutation.h src/gapi/UniformBufferStructures.h src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.h src/gapi/meshes/GM2Mesh.cpp src/gapi/meshes/GM2Mesh.h src/gapi/GTexture.cpp src/gapi/GTexture.h src/gapi/shaders/GM2ParticleShaderPermutation.cpp src/gapi/shaders/GM2ParticleShaderPermutation.h src/gapi/meshes/GParticleMesh.cpp src/gapi/meshes/GParticleMesh.h src/gapi/shaders/GWMOShaderPermutation.cpp src/gapi/shaders/GWMOShaderPermutation.h src/gapi/shaders/GAdtShaderPermutation.cpp src/gapi/shaders/GAdtShaderPermutation.h src/engine/objects/GlobalThreads.cpp src/engine/objects/GlobalThreads.h src/gapi/GOcclusionQuery.cpp src/gapi/GOcclusionQuery.h)
 
 #add_dependencies(WoWViewerLib mathfu)
-add_library(WoWViewerLib ${SOURCE_FILES})
+add_library(WoWViewerLib STATIC ${SOURCE_FILES})
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
     set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 endif()
-target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
+target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES} opengl32)
 #target_link_libraries(WoWViewerLib gomp) //never use it. It makes uniform buffers screwed up for some reason
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)

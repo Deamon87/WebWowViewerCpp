@@ -15,6 +15,7 @@ GVertexBuffer::~GVertexBuffer() {
 
 void GVertexBuffer::createBuffer() {
     glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    m_buffCreated = true;
 }
 
 void GVertexBuffer::destroyBuffer() {
@@ -25,11 +26,17 @@ void GVertexBuffer::uploadData(void * data, int length) {
     m_device.bindVertexBufferBindings(nullptr);
     m_device.bindVertexBuffer(this);
 
+    assert(m_buffCreated);
+
     if (!m_dataUploaded || length > m_size) {
         glBufferData(GL_ARRAY_BUFFER, length, data, GL_STATIC_DRAW);
         m_size = (size_t) length;
     } else {
+        glBufferData(GL_ARRAY_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);
         glBufferSubData(GL_ARRAY_BUFFER, 0, length, data);
+//        void * mapped = glMapBufferRange(GL_ARRAY_BUFFER, 0, length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+//        memcpy(mapped, data, length);
+//        glUnmapBuffer(GL_ARRAY_BUFFER);
     }
 
     m_device.bindVertexBuffer(nullptr);

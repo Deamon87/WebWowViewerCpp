@@ -189,7 +189,7 @@ void ParticleEmitter::createMesh() {
     }
     blockPS.uPixelShader = uPixelShader;
 
-    meshTemplate.fragmentBuffers[2]->save();
+    meshTemplate.fragmentBuffers[2]->save(true);
 
     m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
 }

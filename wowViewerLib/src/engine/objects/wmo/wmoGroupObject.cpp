@@ -433,7 +433,7 @@ void WmoGroupObject::createMeshes() {
 
     wmoModelWideBlockVS &blockVS = vertexModelWideUniformBuffer->getObject<wmoModelWideBlockVS>();
     blockVS.uPlacementMat = *m_modelMatrix;
-    vertexModelWideUniformBuffer->save();
+    vertexModelWideUniformBuffer->save(true);
 
     MOGP *mogp = m_geom->mogp;
 
@@ -506,7 +506,7 @@ void WmoGroupObject::createMeshes() {
         wmoMeshWideBlockVS &blockVS = meshTemplate.vertexBuffers[2]->getObject<wmoMeshWideBlockVS>();
         blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
         blockVS.VertexShader = vertexShader;
-        meshTemplate.vertexBuffers[2]->save();
+        meshTemplate.vertexBuffers[2]->save(true);
 
         wmoMeshWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<wmoMeshWideBlockPS>();
         blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
@@ -526,7 +526,7 @@ void WmoGroupObject::createMeshes() {
         blockPS.PixelShader = pixelShader;
         blockPS.FogColor_AlphaTest = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), alphaTest));
 
-        meshTemplate.fragmentBuffers[2]->save();
+        meshTemplate.fragmentBuffers[2]->save(true);
 
         //Make mesh
         HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
@@ -606,7 +606,6 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
                                        std::vector<mathfu::vec4> &frustumPlanes,
                                        std::vector<mathfu::vec3> &points) {
-    if (this == nullptr) return false;
     if (!m_loaded) return true;
     CAaBox bbArray = this->m_worldGroupBorder;
 

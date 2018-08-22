@@ -320,7 +320,7 @@ void AdtObject::createMeshes() {
     adtWideblockPS.uAmbientLight = m_api->getGlobalAmbientColor();
     adtWideblockPS.FogColor = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), 0));
 
-    adtWideBlockPS->save();
+    adtWideBlockPS->save(true);
 
     for (int i = 0; i < 256; i++) {
         //Cant be used only in Wotlk
@@ -376,7 +376,7 @@ void AdtObject::createMeshes() {
                 blockPS.uHeightScale[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightScale;
             }
         }
-        aTemplate.fragmentBuffers[2]->save();
+        aTemplate.fragmentBuffers[2]->save(true);
 
         adtMeshWideBlockVS &blockVS = aTemplate.vertexBuffers[2]->getObject<adtMeshWideBlockVS>();
         blockVS.uPos = mathfu::vec4(
@@ -385,7 +385,7 @@ void AdtObject::createMeshes() {
             m_adtFile->mapTile[i].position.z,
             0
         );
-        aTemplate.vertexBuffers[2]->save();
+        aTemplate.vertexBuffers[2]->save(true);
 
         HGMesh hgMesh = device->createMesh(aTemplate);
         adtMeshes.push_back(hgMesh);

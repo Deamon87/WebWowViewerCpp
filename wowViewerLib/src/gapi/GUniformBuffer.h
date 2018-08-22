@@ -17,12 +17,15 @@ public:
     explicit GUniformBuffer(GDevice &device, size_t size);
     ~GUniformBuffer();
 
-    template <typename T>
-    T& getObject() {
+    template<typename T>
+    T &getObject() {
         assert(sizeof(T) == m_size);
-        return *(T *)pContent;
+        return *(T *) getPointerForModification();
     }
-    void save();
+    void *getPointerForModification();
+    void *getPointerForUpload();
+
+    void save(bool initialSave = false);
     void createBuffer();
 private:
 
@@ -40,8 +43,9 @@ private:
     size_t m_size;
     size_t m_offset = 0;
     void * pIdentifierBuffer;
-    void * pContent;
-    void * pPreviousContent;
+
+    void * pFrameOneContent;
+    void * pFrameTwoContent;
     bool m_buffCreated = false;
     bool m_dataUploaded = false;
 

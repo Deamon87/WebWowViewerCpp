@@ -8,8 +8,8 @@
 GUniformBuffer::GUniformBuffer(GDevice &device, size_t size) : m_device(device){
     m_size = size;
     pIdentifierBuffer = new GLuint;
-    pContent = new char[size];
-    pPreviousContent = new char[size];
+    pFrameOneContent = new char[size];
+    pFrameTwoContent = new char[size];
 //    createBuffer();
 }
 
@@ -18,8 +18,8 @@ GUniformBuffer::~GUniformBuffer() {
         destroyBuffer();
     }
     delete (GLuint *)pIdentifierBuffer;
-    delete (char *)pPreviousContent;
-    delete (char *)pContent;
+    delete (char *)pFrameOneContent;
+    delete (char *)pFrameTwoContent;
 }
 
 void GUniformBuffer::createBuffer() {
@@ -48,6 +48,8 @@ void GUniformBuffer::unbind() {
 void GUniformBuffer::uploadData(void * data, int length) {
     m_device.bindVertexUniformBuffer(this, -1);
 
+    assert(m_buffCreated);
+
     if (!m_dataUploaded || length > m_size) {
         glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);
 
@@ -55,21 +57,46 @@ void GUniformBuffer::uploadData(void * data, int length) {
     } else {
         glBufferData(GL_UNIFORM_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
+
+//        void * mapped = glMapBufferRange(GL_UNIFORM_BUFFER, 0, length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+//        memcpy(mapped, data, length);
+//        glUnmapBuffer(GL_UNIFORM_BUFFER);
+
     }
 
     m_dataUploaded = true;
     m_needsUpdate = false;
 }
 
-void GUniformBuffer::save() {
+void GUniformBuffer::save(bool initialSave) {
 //    if (memcmp(pPreviousContent, pContent, m_size) != 0) {
         //1. Copy new to prev
-//        memcpy(pPreviousContent, pContent, m_size);
+        if (initialSave) {
+            memcpy(getPointerForUpload(), getPointerForModification(), m_size);
+        }
         m_needsUpdate = true;
 
 //        2. Update UBO
+        void * data = getPointerForModification();
         if (m_buffCreated) {
-            this->uploadData(pContent, m_size);
+            this->uploadData(data, m_size);
         }
 //    }
 }
+
+void *GUniformBuffer::getPointerForUpload() {
+//    if (!m_device.getIsEvenFrame()) {
+//        return pFrameTwoContent;
+//    } else {
+        return pFrameOneContent;
+//    }
+}
+
+void *GUniformBuffer::getPointerForModification() {
+//    if (m_device.getIsEvenFrame()) {
+//        return pFrameTwoContent;
+//    } else {
+        return pFrameOneContent;
+//    }
+}
+
