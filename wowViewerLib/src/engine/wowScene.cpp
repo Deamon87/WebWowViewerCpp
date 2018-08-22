@@ -674,7 +674,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     glClearScreen();
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
-    currentScene->doPostLoad();
 
     sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
     blockPSVS.uLookAtMat = m_currentFrameParams.m_lookAtMat4;
@@ -757,6 +756,8 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
 
 //    nextDeltaTime = deltaTime;
+
+    currentScene->doPostLoad(); //Do post load after rendering is done!
 
     struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateStart);
