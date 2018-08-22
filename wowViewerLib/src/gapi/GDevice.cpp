@@ -88,8 +88,9 @@ void GDevice::bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot)  {
 void GDevice::bindVertexBufferBindings(GVertexBufferBindings *buffer) {
     if (buffer == nullptr) {
        if (m_vertexBufferBindings != nullptr) {
-           m_vertexBufferBindings->unbind();
-           m_vertexBufferBindings = nullptr;
+//           m_vertexBufferBindings->unbind();
+           m_defaultVao->bind();
+           m_vertexBufferBindings = m_defaultVao.get();
        }
         m_lastBindIndexBuffer = nullptr;
         m_lastBindVertexBuffer = nullptr;
@@ -182,9 +183,7 @@ void GDevice::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
-//    if (aggregationBufferForUpload.size() != maxUniformBufferSize) {
-        aggregationBufferForUpload.resize(maxUniformBufferSize);
-//    }
+    aggregationBufferForUpload.resize(maxUniformBufferSize);
 
     //1. Collect buffers
     std::vector<HGUniformBuffer> buffers;
@@ -515,6 +514,8 @@ GDevice::GDevice() {
 
     m_blackPixelTexture->loadData(1,1,&ff);
 
+    m_defaultVao = this->createVertexBufferBindings();
+
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
 
@@ -574,6 +575,9 @@ GDevice::GDevice() {
     m_lineBBBindings->setIndexBuffer(lineIndexBuffer);
     m_lineBBBindings->addVertexBufferBinding(binding);
     m_lineBBBindings->save();
+
+
+//    m_defaultVao->save();
 
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize);
 }

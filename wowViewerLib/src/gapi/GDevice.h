@@ -162,6 +162,7 @@ private:
 
     HGVertexBufferBindings m_vertexBBBindings;
     HGVertexBufferBindings m_lineBBBindings;
+    HGVertexBufferBindings m_defaultVao;
 
     GTexture *m_lastTexture[10] = {
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,

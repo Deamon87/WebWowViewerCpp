@@ -1364,6 +1364,7 @@ void M2Object::createVertexBindings() {
     bufferBindings = m_m2Geom->getVAO(*device, m_skinGeom.get());
 
     //3. Create model wide uniform buffer
-    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockVS));
+    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(mathfu::mat4) * (m_m2Geom->m_m2Data->bones.size + 1));
+//    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockVS));
     fragmentModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockPS));
 }

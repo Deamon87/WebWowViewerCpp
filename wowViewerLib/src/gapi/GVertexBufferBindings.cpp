@@ -62,6 +62,7 @@ void GVertexBufferBindings::save() {
             );
         }
     }
+
     m_device.bindIndexBuffer(m_indexBuffer.get());
     m_device.bindVertexBufferBindings(nullptr);
 
