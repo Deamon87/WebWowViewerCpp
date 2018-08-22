@@ -129,6 +129,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         adtObjectCache(requestProcessor),
         db2Cache(requestProcessor){
 //    m_gdevice = GDevice();
+
+//    std::ofstream *out = new std::ofstream("log_output.txt");
+//    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
+//    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
+
     m_sceneWideUniformBuffer = m_gdevice.createUniformBuffer(sizeof(sceneWideBlockVSPS));
     m_sceneWideUniformBuffer->createBuffer();
 

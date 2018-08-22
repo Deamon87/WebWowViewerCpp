@@ -693,6 +693,7 @@ int main(){
 
     testConf = new Config();
 
+//    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
 
     if( nkc_init( myapp.nkcHandle, "WowViewer", 640, 480, NKC_WIN_NORMAL) ){

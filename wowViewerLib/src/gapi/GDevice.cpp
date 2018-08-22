@@ -30,6 +30,16 @@ BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
         /*GxBlend_BlendAdd*/         {true,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA}
 };
 
+void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                  const GLchar *message, const void *userParam)
+{
+    // Print, log, whatever based on the enums and message
+
+    if (message != nullptr) {
+        std::cout << std::string(message, message+length) << std::endl;
+    }
+}
+
 void GDevice::bindIndexBuffer(GIndexBuffer *buffer) {
     if (buffer == nullptr ) {
         if (m_lastBindIndexBuffer != nullptr) {
@@ -580,6 +590,13 @@ GDevice::GDevice() {
 //    m_defaultVao->save();
 
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize);
+
+//    glEnable(GL_DEBUG_OUTPUT);
+//    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+//    glDebugMessageCallback(debugMessage, NULL);
+//
+//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+
 }
 
 bool GDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {

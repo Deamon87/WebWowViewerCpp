@@ -51,11 +51,11 @@ void GUniformBuffer::uploadData(void * data, int length) {
     assert(m_buffCreated);
 
     if (!m_dataUploaded || length > m_size) {
-        glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, length, data, GL_STREAM_DRAW);
 
         m_size = (size_t) length;
     } else {
-        glBufferData(GL_UNIFORM_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, length, nullptr, GL_STREAM_DRAW);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
 
 //        void * mapped = glMapBufferRange(GL_UNIFORM_BUFFER, 0, length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
