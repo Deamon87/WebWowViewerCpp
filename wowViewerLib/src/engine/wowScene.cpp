@@ -209,8 +209,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
 //    currentScene = new Map(this, 0, "Azeroth");
 //
-//   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-   m_firstCamera.setCameraPos(0, 0, 200);
+   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
+//   m_firstCamera.setCameraPos(0, 0, 200);
     currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar

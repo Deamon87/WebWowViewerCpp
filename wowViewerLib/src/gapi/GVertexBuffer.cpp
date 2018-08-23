@@ -26,10 +26,13 @@ void GVertexBuffer::uploadData(void * data, int length) {
     m_device.bindVertexBufferBindings(nullptr);
     m_device.bindVertexBuffer(this);
 
+    if (length <= 0) return;
+    if (data == nullptr) return;
+
     assert(m_buffCreated);
 
     if (!m_dataUploaded || length > m_size) {
-        glBufferData(GL_ARRAY_BUFFER, length, data, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);
         m_size = (size_t) length;
     } else {
         glBufferData(GL_ARRAY_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);

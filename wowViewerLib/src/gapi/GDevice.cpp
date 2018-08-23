@@ -30,14 +30,32 @@ BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
         /*GxBlend_BlendAdd*/         {true,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA}
 };
 
-void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                  const GLchar *message, const void *userParam)
-{
-    // Print, log, whatever based on the enums and message
+//std::string source_to_string(KHR_debug::Source source) {
+//    if(source == KHR_debug::Source::API) {
+//        return "GL_DEBUG_SOURCE_API";
+//    } else if(source == KHR_debug::Source::WINDOW_SYSTEM) {
+//        return "GL_DEBUG_SOURCE_WINDOW_SYSTEM";
+//    } else if(source == KHR_debug::Source::SHADER_COMPILER) {
+//        return "GL_DEBUG_SOURCE_SHADER_COMPILER";
+//    } else if(source == KHR_debug::Source::THIRD_PARTY) {
+//        return "GL_DEBUG_SOURCE_THIRD_PARTY";
+//    } else if(source == KHR_debug::Source::APPLICATION) {
+//        return "GL_DEBUG_SOURCE_APPLICATION";
+//    } else if(source == KHR_debug::Source::OTHER) {
+//        return "GL_DEBUG_SOURCE_OTHER";
+//    } else {
+//        return "INVALID_SOURCE_ENUM";
+//    }
+//}
 
-    if (message != nullptr) {
-        std::cout << std::string(message, message+length) << std::endl;
-    }
+__stdcall void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*userParam*/) {
+    fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+            source,
+            type,
+            id,
+            severity,
+            std::string(message, message+length).c_str());
+    fflush(stdout);
 }
 
 void GDevice::bindIndexBuffer(GIndexBuffer *buffer) {
@@ -287,6 +305,9 @@ void GDevice::updateBuffers(std::vector<HGMesh> &meshes) {
 }
 
 void GDevice::drawMesh(HGMesh &hmesh) {
+
+    if (hmesh->m_end <= 0) return;
+
     GOcclusionQuery * gOcclusionQuery = nullptr;
     GM2Mesh * gm2Mesh = nullptr;
     if (hmesh->m_meshType == MeshType::eOccludingQuery) {
@@ -593,9 +614,10 @@ GDevice::GDevice() {
 
 //    glEnable(GL_DEBUG_OUTPUT);
 //    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-//    glDebugMessageCallback(debugMessage, NULL);
+//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
+//    glDebugMessageCallback(debug_func, NULL);
 //
-//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+
 
 }
 

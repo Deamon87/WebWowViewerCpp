@@ -806,6 +806,16 @@ void M2Object::doPostLoad(){
         } else {
             return;
         }
+    } else {
+
+        int minParticle = m_api->getConfig()->getMinParticle();
+        int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
+//    int maxBatch = particleEmitters.size();
+
+
+        for (int i = minParticle; i < maxParticle; i++) {
+            particleEmitters[i]->updateBuffers();
+        }
     }
 }
 

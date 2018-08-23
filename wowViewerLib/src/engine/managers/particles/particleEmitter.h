@@ -46,6 +46,7 @@ public:
         return generator;
     }
     void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
+    void updateBuffers() const;
 
     int flags = 2;
     bool emittingLastFrame = false;
@@ -137,6 +138,8 @@ private:
     HGParticleMesh m_mesh;
 
     void createMesh();
+
+
 };
 
 
