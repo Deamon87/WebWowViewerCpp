@@ -5,6 +5,7 @@
 #include "m2Scene.h"
 #include "../../../gapi/meshes/GM2Mesh.h"
 #include "../../algorithms/mathHelper.h"
+#include "IDevice.h"
 
 void M2Scene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;

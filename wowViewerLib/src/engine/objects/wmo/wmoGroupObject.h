@@ -12,7 +12,7 @@ class WmoGroupObject;
 #include "../../persistance/header/wmoFileHeader.h"
 #include "wmoObject.h"
 #include "../iWmoApi.h"
-#include "../../../gapi/meshes/GMesh.h"
+#include "../../../gapi/interface/meshes/IMesh.h"
 
 class WmoGroupObject {
 public:

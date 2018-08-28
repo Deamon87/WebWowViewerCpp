@@ -4,9 +4,9 @@
 
 #include <iostream>
 #include "GShaderPermutation.h"
-#include "../engine/stringTrim.h"
-#include "../engine/algorithms/hashString.h"
-#include "../engine/shader/ShaderDefinitions.h"
+#include "../../engine/stringTrim.h"
+#include "../../engine/algorithms/hashString.h"
+#include "../../engine/shader/ShaderDefinitions.h"
 #include "UniformBufferStructures.h"
 
 std::string textFromUniformType(GLint type)

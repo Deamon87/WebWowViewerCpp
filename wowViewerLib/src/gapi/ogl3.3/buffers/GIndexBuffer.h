@@ -6,9 +6,10 @@
 #define WEBWOWVIEWERCPP_GINDEXBUFFER_H
 
 class GDevice;
-#include "GDevice.h"
+#include "../GDevice.h"
+#include "../../interface/buffers/IIndexBuffer.h"
 
-class GIndexBuffer {
+class GIndexBuffer : public IIndexBuffer{
     friend class GDevice;
 
     explicit GIndexBuffer(GDevice &device);

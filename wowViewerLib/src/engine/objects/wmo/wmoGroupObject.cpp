@@ -5,7 +5,8 @@
 #include "wmoGroupObject.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../shader/ShaderDefinitions.h"
-#include "../../../gapi/UniformBufferStructures.h"
+#include "../../../gapi/ogl3.3/UniformBufferStructures.h"
+#include "IDevice.h"
 #include <algorithm>
 
 /*

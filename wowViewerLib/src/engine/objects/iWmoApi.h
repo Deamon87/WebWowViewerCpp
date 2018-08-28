@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_IWMOAPI_H
 
 #include "m2/m2Object.h"
-#include "../../gapi/GDevice.h"
+#include "../../gapi/ogl3.3/GDevice.h"
 
 struct PortalInfo_t {
     std::vector<mathfu::vec3> sortedVericles;

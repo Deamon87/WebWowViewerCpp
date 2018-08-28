@@ -1,0 +1,8 @@
+//
+// Created by Deamon on 8/27/2018.
+//
+
+#ifndef AWEBWOWVIEWERCPP_ITEXTURE_H
+#define AWEBWOWVIEWERCPP_ITEXTURE_H
+
+#endif //AWEBWOWVIEWERCPP_ITEXTURE_H

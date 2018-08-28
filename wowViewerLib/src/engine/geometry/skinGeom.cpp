@@ -4,6 +4,7 @@
 
 #include "skinGeom.h"
 #include "../persistance/header/M2FileHeader.h"
+#include "../../gapi/interface/IDevice.h"
 
 void SkinGeom::process(std::vector<unsigned char> &skinFile, std::string &fileName) {
     this->m2Skin = skinFile;

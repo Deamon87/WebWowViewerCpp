@@ -10,6 +10,7 @@
 #include "generators/CParticleGenerator.h"
 #include "generators/CSphereGenerator.h"
 #include "generators/CPlaneGenerator.h"
+#include "IDevice.h"
 
 
 static GBufferBinding staticM2ParticleBindings[5] = {

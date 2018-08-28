@@ -4,9 +4,10 @@
 
 #include "GDevice.h"
 #include "GBlpTexture.h"
-#include "../engine/opengl/header.h"
-#include "../engine/persistance/helper/ChunkFileReader.h"
-#include "../engine/texture/DxtDecompress.h"
+#include "../../engine/opengl/header.h"
+#include "../../engine/persistance/helper/ChunkFileReader.h"
+#include "../../engine/texture/DxtDecompress.h"
+#include "../interface/IDevice.h"
 
 GBlpTexture::GBlpTexture(GDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
     : GTexture(device), m_texture(texture) {

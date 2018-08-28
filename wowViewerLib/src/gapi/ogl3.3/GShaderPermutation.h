@@ -8,8 +8,8 @@
 #include <string>
 #include <unordered_map>
 #include "GDevice.h"
-#include "../engine/opengl/header.h"
-#include "../engine/algorithms/hashString.h"
+#include "../../engine/opengl/header.h"
+#include "../../engine/algorithms/hashString.h"
 
 class GShaderPermutation {
     friend class GDevice;

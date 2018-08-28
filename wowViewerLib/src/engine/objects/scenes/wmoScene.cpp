@@ -5,6 +5,7 @@
 #include "wmoScene.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../../gapi/meshes/GM2Mesh.h"
+#include "IDevice.h"
 
 void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     m2RenderedThisFrame = std::vector<M2Object*>();

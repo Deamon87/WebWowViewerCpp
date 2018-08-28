@@ -2,8 +2,9 @@
 // Created by deamon on 05.06.18.
 //
 
-#include "../engine/opengl/header.h"
+#include "../../engine/opengl/header.h"
 #include "GVertexBufferBindings.h"
+#include "../interface/IDevice.h"
 
 GVertexBufferBindings::GVertexBufferBindings(GDevice &m_device) : m_device(m_device) {
     m_buffer = new GLuint;

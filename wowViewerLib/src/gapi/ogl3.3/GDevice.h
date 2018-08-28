@@ -37,88 +37,57 @@ typedef std::shared_ptr<GTexture> HGTexture;
 #include <unordered_set>
 #include <list>
 #include "GVertexBufferBindings.h"
-#include "GIndexBuffer.h"
-#include "GVertexBuffer.h"
-#include "GBlpTexture.h"
-#include "GTexture.h"
-#include "GUniformBuffer.h"
+#include "buffers/GIndexBuffer.h"
+#include "buffers/GVertexBuffer.h"
+#include "textures/GBlpTexture.h"
+#include "textures/GTexture.h"
+#include "buffers/GUniformBuffer.h"
 #include "GShaderPermutation.h"
 #include "meshes/GMesh.h"
+#include "../interface/IDevice.h"
 
 
-class GDevice {
+class GDeviceGL33 : public IDevice {
 public:
-    GDevice();
+    GDeviceGL33();
 
-    void reset() {
-        m_triCCW = -1;
-        m_lastDepthWrite = -1;
-        m_lastDepthCulling = -1;
-        m_backFaceCulling = -1;
-        m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
-        m_lastBindIndexBuffer = nullptr;
-        m_lastBindVertexBuffer = nullptr;
-        m_vertexBufferBindings = nullptr;
+    void reset() override;
 
-        m_lastTexture[0] = nullptr;
-        m_lastTexture[1] = nullptr;
-        m_lastTexture[2] = nullptr;
-        m_lastTexture[3] = nullptr;
+    bool getIsEvenFrame() override;
 
-        m_vertexUniformBuffer[0] = nullptr;
-        m_vertexUniformBuffer[1] = nullptr;
-        m_vertexUniformBuffer[2] = nullptr;
+    void toogleEvenFrame() override;
 
-        m_fragmentUniformBuffer[0] = nullptr;
-        m_fragmentUniformBuffer[1] = nullptr;
-        m_fragmentUniformBuffer[2] = nullptr;
+    void bindProgram(GShaderPermutation *program) override;
 
-        m_shaderPermutation = nullptr;
-    }
+    void bindVertexBuffer(GVertexBuffer *buffer) override;
+    void bindVertexUniformBuffer(GUniformBuffer *buffer, int slot) override;
+    void bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot) override;
+    void bindVertexBufferBindings(GVertexBufferBindings *buffer) override;
 
-    void bindProgram(GShaderPermutation *program);
-    void bindIndexBuffer(GIndexBuffer *buffer);
-    void bindVertexBuffer(GVertexBuffer *buffer);
-    void bindVertexUniformBuffer(GUniformBuffer *buffer, int slot);
-    void bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot);
-    void bindVertexBufferBindings(GVertexBufferBindings *buffer);
+    void bindTexture(GTexture *texture, int slot) override;
 
-    void bindTexture(GTexture *texture, int slot);
-
-    void updateBuffers(std::vector<HGMesh> &meshes);
-    void drawMeshes(std::vector<HGMesh> &meshes);
-
-    bool getIsEvenFrame() {
-        return m_isEvenFrame;
-    };
-    void toogleEvenFrame() {
-        m_isEvenFrame =  !m_isEvenFrame;
-    }
-//    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
+    void updateBuffers(std::vector<HGMesh> &meshes) override;
+    void drawMeshes(std::vector<HGMesh> &meshes) override;
+    //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
-    std::shared_ptr<GShaderPermutation> getShader(std::string shaderName);
+    std::shared_ptr<GShaderPermutation> getShader(std::string shaderName) override;
 
-    HGUniformBuffer createUniformBuffer(size_t size);
-    HGVertexBuffer createVertexBuffer();
-    HGIndexBuffer createIndexBuffer();
-    HGVertexBufferBindings createVertexBufferBindings();
+    HGUniformBuffer createUniformBuffer(size_t size) override;
+    HGVertexBuffer createVertexBuffer() override;
+    HGIndexBuffer createIndexBuffer() override;
+    HGVertexBufferBindings createVertexBufferBindings() override;
 
-    HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex);
-    HGTexture createTexture();
-    HGMesh createMesh(gMeshTemplate &meshTemplate);
-    HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate);
-    HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate);
+    HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
+    HGTexture createTexture() override;
+    HGMesh createMesh(gMeshTemplate &meshTemplate) override;
+    HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) override;
+    HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) override;
 
-    HGOcclusionQuery createQuery(HGMesh boundingBoxMesh);
+    HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
-    static bool sortMeshes(const HGMesh& a, const HGMesh& b);
-    HGVertexBufferBindings getBBVertexBinding() {
-        return m_vertexBBBindings;
-    }
-
-    HGVertexBufferBindings getBBLinearBinding() {
-        return m_lineBBBindings;
-    }
+    static bool sortMeshes(const HGMesh& a, const HGMesh& b) override;
+    HGVertexBufferBindings getBBVertexBinding() override;
+    HGVertexBufferBindings getBBLinearBinding() override;
 
 private:
     void drawMesh(HGMesh &hmesh);

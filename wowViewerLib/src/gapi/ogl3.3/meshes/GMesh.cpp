@@ -38,4 +38,26 @@ GMesh::~GMesh() {
 
 }
 
+HGUniformBuffer GMesh::getVertexUniformBuffer(int slot) {
+    return m_vertexUniformBuffer[slot];
+}
+
+HGUniformBuffer GMesh::getFragmentUniformBuffer(int slot) {
+    return m_fragmentUniformBuffer[slot];
+}
+
+EGxBlendEnum GMesh::getGxBlendMode() { return m_blendMode; }
+
+bool GMesh::getIsTransparent() { return m_isTransparent; }
+
+MeshType GMesh::getMeshType() {
+    return m_meshType;
+}
+
+void GMesh::setRenderOrder(int renderOrder) {
+    m_renderOrder = renderOrder;
+}
+
+void GMesh::setEnd(int end) {m_end = end; }
+
 

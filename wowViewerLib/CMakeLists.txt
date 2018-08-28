@@ -160,7 +160,66 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/managers/particles/generators/CPlaneGenerator.h
         src/engine/texture/DxtDecompress.cpp
         src/engine/texture/DxtDecompress.h
-        src/engine/androidLogSupport.h src/engine/persistance/db2/base/DB2Base.cpp src/engine/persistance/db2/base/DB2Base.h src/engine/persistance/db2/DB2Light.cpp src/engine/persistance/db2/DB2Light.h src/engine/persistance/db2/DB2LightData.cpp src/engine/persistance/db2/DB2LightData.h src/engine/persistance/db2/DB2LightParams.cpp src/engine/persistance/db2/DB2LightParams.h src/engine/persistance/db2/DB2WmoAreaTable.cpp src/engine/persistance/db2/DB2WmoAreaTable.h src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h src/engine/persistance/header/texFileHeader.h src/gapi/GBlpTexture.cpp src/gapi/GBlpTexture.h src/gapi/GVertexBuffer.cpp src/gapi/GVertexBuffer.h src/gapi/GIndexBuffer.cpp src/gapi/GIndexBuffer.h src/gapi/GRenderTarget.cpp src/gapi/GRenderTarget.h src/gapi/GDevice.cpp src/gapi/GDevice.h src/gapi/meshes/GMesh.cpp src/gapi/meshes/GMesh.h src/gapi/GVertexBufferBindings.cpp src/gapi/GVertexBufferBindings.h src/engine/wowCommonClasses.h src/engine/shader/ShaderDefinitions.cpp src/gapi/GUniformBuffer.cpp src/gapi/GUniformBuffer.h src/gapi/GShaderPermutation.cpp src/gapi/GShaderPermutation.h src/gapi/shaders/GM2ShaderPermutation.cpp src/gapi/shaders/GM2ShaderPermutation.h src/gapi/UniformBufferStructures.h src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.h src/gapi/meshes/GM2Mesh.cpp src/gapi/meshes/GM2Mesh.h src/gapi/GTexture.cpp src/gapi/GTexture.h src/gapi/shaders/GM2ParticleShaderPermutation.cpp src/gapi/shaders/GM2ParticleShaderPermutation.h src/gapi/meshes/GParticleMesh.cpp src/gapi/meshes/GParticleMesh.h src/gapi/shaders/GWMOShaderPermutation.cpp src/gapi/shaders/GWMOShaderPermutation.h src/gapi/shaders/GAdtShaderPermutation.cpp src/gapi/shaders/GAdtShaderPermutation.h src/engine/objects/GlobalThreads.cpp src/engine/objects/GlobalThreads.h src/gapi/GOcclusionQuery.cpp src/gapi/GOcclusionQuery.h)
+        src/engine/androidLogSupport.h
+        src/engine/persistance/db2/base/DB2Base.cpp
+        src/engine/persistance/db2/base/DB2Base.h
+        src/engine/persistance/db2/DB2Light.cpp
+        src/engine/persistance/db2/DB2Light.h
+        src/engine/persistance/db2/DB2LightData.cpp
+        src/engine/persistance/db2/DB2LightData.h
+        src/engine/persistance/db2/DB2LightParams.cpp
+        src/engine/persistance/db2/DB2LightParams.h
+        src/engine/persistance/db2/DB2WmoAreaTable.cpp
+        src/engine/persistance/db2/DB2WmoAreaTable.h
+        src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h
+        src/engine/persistance/header/texFileHeader.h src/gapi/ogl3.3/GBlpTexture.cpp
+        src/gapi/ogl3.3/GBlpTexture.h
+        src/gapi/ogl3.3/buffers/GVertexBuffer.cpp
+        src/gapi/ogl3.3/buffers/GVertexBuffer.h
+        src/gapi/ogl3.3/buffers/GIndexBuffer.cpp
+        src/gapi/ogl3.3/buffers/GIndexBuffer.h
+        src/gapi/ogl3.3/buffers/GUniformBuffer.cpp
+        src/gapi/ogl3.3/buffers/GUniformBuffer.h
+        src/gapi/ogl3.3/GRenderTarget.cpp
+        src/gapi/ogl3.3/GRenderTarget.h
+        src/gapi/ogl3.3/GDevice.cpp
+        src/gapi/ogl3.3/GDevice.h
+        src/gapi/ogl3.3/meshes/GMesh.cpp
+        src/gapi/ogl3.3/meshes/GMesh.h
+        src/gapi/ogl3.3/GVertexBufferBindings.cpp
+        src/gapi/ogl3.3/GVertexBufferBindings.h
+        src/engine/wowCommonClasses.h
+        src/engine/shader/ShaderDefinitions.cpp
+        src/gapi/ogl3.3/GShaderPermutation.cpp
+        src/gapi/ogl3.3/GShaderPermutation.h
+        src/gapi/ogl3.3/shaders/GM2ShaderPermutation.cpp
+        src/gapi/ogl3.3/shaders/GM2ShaderPermutation.h src/gapi/ogl3.3/UniformBufferStructures.h
+        src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp
+        src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.h src/gapi/ogl3.3/meshes/GM2Mesh.cpp
+        src/gapi/ogl3.3/meshes/GM2Mesh.h src/gapi/ogl3.3/GTexture.cpp src/gapi/ogl3.3/GTexture.h
+        src/gapi/ogl3.3/shaders/GM2ParticleShaderPermutation.cpp
+        src/gapi/ogl3.3/shaders/GM2ParticleShaderPermutation.h
+        src/gapi/ogl3.3/meshes/GParticleMesh.cpp
+        src/gapi/ogl3.3/meshes/GParticleMesh.h
+        src/gapi/ogl3.3/shaders/GWMOShaderPermutation.cpp
+        src/gapi/ogl3.3/shaders/GWMOShaderPermutation.h
+        src/gapi/ogl3.3/shaders/GAdtShaderPermutation.cpp
+        src/gapi/ogl3.3/shaders/GAdtShaderPermutation.h
+        src/gapi/ogl3.3/GOcclusionQuery.cpp
+        src/gapi/ogl3.3/GOcclusionQuery.h
+        src/engine/objects/GlobalThreads.cpp
+        src/engine/objects/GlobalThreads.h
+        src/gapi/interface/textures/IBlpTexture.h
+        src/gapi/interface/textures/ITexture.h
+        src/gapi/interface/buffers/IIndexBuffer.h
+        src/gapi/interface/buffers/IUniformBuffer.h
+        src/gapi/interface/buffers/IVertexBuffer.h
+        src/gapi/interface/IOcclusionQuery.h
+        src/gapi/interface/IShaderPermutation.h
+        src/gapi/interface/IVertexBufferBindings.h
+        src/gapi/interface/meshes/IM2Mesh.h
+        src/gapi/interface/meshes/IMesh.h
+        src/gapi/interface/meshes/IParticleMesh.h)
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib STATIC ${SOURCE_FILES})

@@ -7,7 +7,7 @@
 
 #include <vector>
 #include "../persistance/header/M2FileHeader.h"
-#include "../../gapi/GDevice.h"
+#include "../../gapi/ogl3.3/GDevice.h"
 #include "../persistance/helper/ChunkFileReader.h"
 
 

@@ -6,7 +6,7 @@
 #define AWEBWOWVIEWERCPP_GM2MESH_H
 
 #include "GMesh.h"
-#include "../../engine/objects/m2/m2Object.h"
+#include "../../../engine/objects/m2/m2Object.h"
 
 class GM2Mesh : public GMesh {
     friend class GDevice;

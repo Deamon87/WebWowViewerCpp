@@ -8,9 +8,10 @@
 
 #include <cstdio>
 #include <cassert>
-#include "GDevice.h"
+#include "../GDevice.h"
+#include "../../interface/buffers/IUniformBuffer.h"
 
-class GUniformBuffer {
+class GUniformBuffer : public IUniformBuffer {
 public:
     friend class GDevice;
 

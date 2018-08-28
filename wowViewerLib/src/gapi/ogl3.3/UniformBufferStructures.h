@@ -7,7 +7,7 @@
 
 //Uniform buffer structures
 #include <mathfu/glsl_mappings.h>
-#include "../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
+#include "mathfu/glsl_mappings.h"
 
 #define MAX_MATRIX_NUM 220
 

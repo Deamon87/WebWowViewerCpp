@@ -6,10 +6,11 @@
 #define WEBWOWVIEWERCPP_GVERTEXBUFFER_H
 
 class GDevice;
-#include "GDevice.h"
+#include "../GDevice.h"
+#include "../../interface/buffers/IVertexBuffer.h"
 #include <memory>
 
-class GVertexBuffer {
+class GVertexBuffer : public IVertexBuffer {
     friend class GDevice;
 
     explicit GVertexBuffer(GDevice &device);

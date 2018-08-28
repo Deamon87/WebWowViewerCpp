@@ -27,7 +27,7 @@
 #include "persistance/wdlFile.h"
 #include "persistance/db2/base/DB2Base.h"
 #include "persistance/db2/DB2Light.h"
-#include "../gapi/GDevice.h"
+#include "../gapi/ogl3.3/GDevice.h"
 
 class WoWFrameParamHolder {
 public:
@@ -105,7 +105,7 @@ public:
         }
     }
 public:
-    virtual GDevice * getDevice() override {
+    virtual IDevice * getDevice() override {
         return &m_gdevice;
     }
 
@@ -182,7 +182,7 @@ private:
 
     bool m_isTerminating = false;
     Config * m_config;
-    GDevice m_gdevice;
+    IDevice m_gdevice;
     HGUniformBuffer m_sceneWideUniformBuffer;
 
     WoWFrameParamHolder m_nextFrameParams;

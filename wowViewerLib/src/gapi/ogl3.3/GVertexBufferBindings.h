@@ -12,7 +12,7 @@ class GVertexBufferBindings;
 
 #include <vector>
 #include <cstdint>
-#include "GVertexBuffer.h"
+#include "buffers/GVertexBuffer.h"
 
 #include "GDevice.h"
 

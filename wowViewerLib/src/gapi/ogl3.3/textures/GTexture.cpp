@@ -3,7 +3,8 @@
 //
 #include "GDevice.h"
 #include "GTexture.h"
-#include "../engine/opengl/header.h"
+#include "../../engine/opengl/header.h"
+#include "../interface/IDevice.h"
 
 GTexture::GTexture(GDevice &device) : m_device(device) {
     pIdentifierBuffer = new GLuint;

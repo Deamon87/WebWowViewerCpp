@@ -7,7 +7,8 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../persistance/adtFile.h"
 #include "../../persistance/wdtFile.h"
-#include "../../../gapi/UniformBufferStructures.h"
+#include "../../../gapi/ogl3.3/UniformBufferStructures.h"
+#include "IDevice.h"
 
 
 void AdtObject::loadingFinished() {

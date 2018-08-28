@@ -24,7 +24,7 @@ class ParticleEmitter;
 #include "persistance/db2/DB2Light.h"
 #include "persistance/db2/DB2LightData.h"
 #include "persistance/db2/DB2WmoAreaTable.h"
-#include "../gapi/GDevice.h"
+#include "../gapi/ogl3.3/GDevice.h"
 
 class IWoWInnerApi {
 public:
@@ -40,7 +40,7 @@ public:
     virtual bool getIsDebugCamera() = 0;
     virtual void drawCamera() = 0;
 
-    virtual GDevice * getDevice()= 0;
+    virtual IDevice * getDevice()= 0;
     virtual HGUniformBuffer getSceneWideUniformBuffer() = 0;
 
     virtual mathfu::mat4& getViewMat() = 0;

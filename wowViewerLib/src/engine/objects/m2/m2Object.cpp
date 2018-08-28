@@ -10,10 +10,11 @@
 #include "mathfu/matrix.h"
 #include "../../persistance/header/M2FileHeader.h"
 #include "../../shader/ShaderDefinitions.h"
-#include "../../../gapi/UniformBufferStructures.h"
+#include "../../../gapi/ogl3.3/UniformBufferStructures.h"
 #include "m2Helpers/M2MeshBufferUpdater.h"
-#include "../../../gapi/meshes/GM2Mesh.h"
-#include "../../../gapi/GOcclusionQuery.h"
+#include "../../../gapi/interface/meshes/IM2Mesh.h"
+#include "../../../gapi/interface/IOcclusionQuery.h"
+#include "../../../gapi/interface/IDevice.h"
 
 //Legion shader stuff
 

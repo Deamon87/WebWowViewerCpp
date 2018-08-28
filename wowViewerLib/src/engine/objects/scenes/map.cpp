@@ -12,6 +12,7 @@
 #include "../../persistance/wdtFile.h"
 #include "../../persistance/db2/DB2WmoAreaTable.h"
 #include "../../../gapi/meshes/GM2Mesh.h"
+#include "IDevice.h"
 
 
 inline int worldCoordinateToAdtIndex(float x) {

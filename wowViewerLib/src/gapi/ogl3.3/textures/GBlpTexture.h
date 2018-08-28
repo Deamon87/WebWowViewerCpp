@@ -5,8 +5,8 @@
 #ifndef WEBWOWVIEWERCPP_GBLPTEXTURE_H
 #define WEBWOWVIEWERCPP_GBLPTEXTURE_H
 
-#include "../engine/wowCommonClasses.h"
-#include "../engine/texture/BlpTexture.h"
+#include "../../../engine/wowCommonClasses.h"
+#include "../../../engine/texture/BlpTexture.h"
 #include "GTexture.h"
 
 class GBlpTexture : public GTexture {

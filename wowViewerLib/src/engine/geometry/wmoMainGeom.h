@@ -8,7 +8,7 @@
 #include <vector>
 #include "../persistance/helper/ChunkFileReader.h"
 #include "../persistance/header/wmoFileHeader.h"
-#include "../../gapi/GDevice.h"
+#include "../../gapi/ogl3.3/GDevice.h"
 
 class WmoMainGeom {
 public:

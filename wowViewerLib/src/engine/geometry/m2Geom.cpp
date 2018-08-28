@@ -6,6 +6,7 @@
 #include "skinGeom.h"
 #include "../shader/ShaderDefinitions.h"
 #include "../opengl/header.h"
+#include "../../gapi/interface/IDevice.h"
 
 chunkDef<M2Geom> M2Geom::m2FileTable = {
     [](M2Geom& file, ChunkData& chunkData){},

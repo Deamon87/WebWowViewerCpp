@@ -5,6 +5,7 @@
 #include "wmoGroupGeom.h"
 #include "../persistance/header/wmoFileHeader.h"
 #include "../shader/ShaderDefinitions.h"
+#include "IDevice.h"
 #include <iostream>
 
 chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {

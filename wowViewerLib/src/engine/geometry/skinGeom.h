@@ -9,7 +9,7 @@
 #include "../opengl/header.h"
 #include "../persistance/header/skinFileHeader.h"
 #include "../persistance/header/M2FileHeader.h"
-#include "../../gapi/GIndexBuffer.h"
+#include "../../gapi/interface/buffers/IIndexBuffer.h"
 
 class SkinGeom {
 public:
