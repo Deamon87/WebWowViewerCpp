@@ -5,7 +5,7 @@
 #include "wmoGroupGeom.h"
 #include "../persistance/header/wmoFileHeader.h"
 #include "../shader/ShaderDefinitions.h"
-#include "IDevice.h"
+#include "../../gapi/interface/IDevice.h"
 #include <iostream>
 
 chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
@@ -275,7 +275,7 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
 }
 
 
-HGVertexBuffer WmoGroupGeom::getVBO(GDevice &device) {
+HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
     if (combinedVBO == nullptr) {
         combinedVBO = device.createVertexBuffer();
 
@@ -334,7 +334,7 @@ HGVertexBuffer WmoGroupGeom::getVBO(GDevice &device) {
     return combinedVBO;
 }
 
-HGIndexBuffer WmoGroupGeom::getIBO(GDevice &device) {
+HGIndexBuffer WmoGroupGeom::getIBO(IDevice &device) {
     if (indexVBO == nullptr) {
         indexVBO = device.createIndexBuffer();
         indexVBO->uploadData(
@@ -355,7 +355,7 @@ static GBufferBinding staticWMOBindings[7] = {
     {+wmoShader::Attribute::aColor2, 4, GL_UNSIGNED_BYTE, true, 56, 52}
 };
 
-HGVertexBufferBindings WmoGroupGeom::getVertexBindings(GDevice &device) {
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(IDevice &device) {
     if (vertexBufferBindings == nullptr) {
         vertexBufferBindings = device.createVertexBufferBindings();
         vertexBufferBindings->setIndexBuffer(getIBO(device));

@@ -5,16 +5,18 @@
 #ifndef AWEBWOWVIEWERCPP_GTEXTURE_H
 #define AWEBWOWVIEWERCPP_GTEXTURE_H
 
+#include "../GDevice.h"
+#include "../../interface/textures/ITexture.h"
 
-class GTexture {
+class GTexture : public virtual ITexture {
     friend class GDevice;
 protected:
-    explicit GTexture(GDevice &device);
+    explicit GTexture(IDevice &device);
 public:
-    virtual ~GTexture();
+    ~GTexture() override;
 
-    void loadData(int width, int height, void *data);
-    virtual bool getIsLoaded();
+    void loadData(int width, int height, void *data) override;
+    bool getIsLoaded() override;
 private:
     void createBuffer();
     void destroyBuffer();
@@ -23,7 +25,7 @@ private:
 protected:
     void * pIdentifierBuffer;
 
-    GDevice &m_device;
+    IDevice &m_device;
 
     bool m_loaded = false;
 };

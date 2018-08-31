@@ -1,11 +1,11 @@
 //
 // Created by deamon on 05.06.18.
 //
-#include "../../engine/opengl/header.h"
+#include "../../../engine/opengl/header.h"
 #include "GIndexBuffer.h"
-#include "../interface/IDevice.h"
+#include "../GDevice.h"
 
-GIndexBuffer::GIndexBuffer(GDevice &device) : m_device(device) {
+GIndexBuffer::GIndexBuffer(IDevice &device) : m_device(device) {
     buffer = new GLuint;
     createBuffer();
 }

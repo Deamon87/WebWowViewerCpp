@@ -7,7 +7,7 @@
 
 
 #include <mathfu/glsl_mappings.h>
-#include "../../../../gapi/ogl3.3/UniformBufferStructures.h"
+#include "./../../../../gapi/UniformBufferStructures.h"
 #include "M2MaterialInst.h"
 #include "../../../persistance/header/skinFileHeader.h"
 #include "../../../persistance/header/M2FileHeader.h"

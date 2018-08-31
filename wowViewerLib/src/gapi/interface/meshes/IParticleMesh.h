@@ -7,7 +7,7 @@
 
 #include "IMesh.h"
 
-class IParticleMesh : public IMesh {
+class IParticleMesh : public virtual IMesh {
 
 };
 #endif //AWEBWOWVIEWERCPP_IPARTICLEMESH_H

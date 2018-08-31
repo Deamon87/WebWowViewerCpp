@@ -2,14 +2,13 @@
 // Created by deamon on 05.06.18.
 //
 
-#include "GDevice.h"
+#include "../GDevice.h"
 #include "GBlpTexture.h"
-#include "../../engine/opengl/header.h"
-#include "../../engine/persistance/helper/ChunkFileReader.h"
-#include "../../engine/texture/DxtDecompress.h"
-#include "../interface/IDevice.h"
+#include "../../../engine/opengl/header.h"
+#include "../../../engine/persistance/helper/ChunkFileReader.h"
+#include "../../../engine/texture/DxtDecompress.h"
 
-GBlpTexture::GBlpTexture(GDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
+GBlpTexture::GBlpTexture(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
     : GTexture(device), m_texture(texture) {
     this->xWrapTex = xWrapTex;
     this->yWrapTex = yWrapTex;

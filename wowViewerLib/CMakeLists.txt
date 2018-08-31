@@ -172,8 +172,9 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/db2/DB2WmoAreaTable.cpp
         src/engine/persistance/db2/DB2WmoAreaTable.h
         src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h
-        src/engine/persistance/header/texFileHeader.h src/gapi/ogl3.3/GBlpTexture.cpp
-        src/gapi/ogl3.3/GBlpTexture.h
+        src/engine/persistance/header/texFileHeader.h
+        src/gapi/ogl3.3/textures/GBlpTexture.cpp
+        src/gapi/ogl3.3/textures/GBlpTexture.h
         src/gapi/ogl3.3/buffers/GVertexBuffer.cpp
         src/gapi/ogl3.3/buffers/GVertexBuffer.h
         src/gapi/ogl3.3/buffers/GIndexBuffer.cpp
@@ -184,8 +185,8 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/ogl3.3/GRenderTarget.h
         src/gapi/ogl3.3/GDevice.cpp
         src/gapi/ogl3.3/GDevice.h
-        src/gapi/ogl3.3/meshes/GMesh.cpp
-        src/gapi/ogl3.3/meshes/GMesh.h
+        src/gapi/ogl3.3/meshes/GMeshGL33.cpp
+        src/gapi/ogl3.3/meshes/GMeshGL33.h
         src/gapi/ogl3.3/GVertexBufferBindings.cpp
         src/gapi/ogl3.3/GVertexBufferBindings.h
         src/engine/wowCommonClasses.h
@@ -193,10 +194,10 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/ogl3.3/GShaderPermutation.cpp
         src/gapi/ogl3.3/GShaderPermutation.h
         src/gapi/ogl3.3/shaders/GM2ShaderPermutation.cpp
-        src/gapi/ogl3.3/shaders/GM2ShaderPermutation.h src/gapi/ogl3.3/UniformBufferStructures.h
+        src/gapi/ogl3.3/shaders/GM2ShaderPermutation.h src/gapi/UniformBufferStructures.h
         src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp
-        src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.h src/gapi/ogl3.3/meshes/GM2Mesh.cpp
-        src/gapi/ogl3.3/meshes/GM2Mesh.h src/gapi/ogl3.3/GTexture.cpp src/gapi/ogl3.3/GTexture.h
+        src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.h src/gapi/ogl3.3/meshes/GM2MeshGL33.cpp
+        src/gapi/ogl3.3/meshes/GM2MeshGL33.h src/gapi/ogl3.3/textures/GTexture.cpp src/gapi/ogl3.3/textures/GTexture.h
         src/gapi/ogl3.3/shaders/GM2ParticleShaderPermutation.cpp
         src/gapi/ogl3.3/shaders/GM2ParticleShaderPermutation.h
         src/gapi/ogl3.3/meshes/GParticleMesh.cpp
@@ -205,8 +206,8 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/ogl3.3/shaders/GWMOShaderPermutation.h
         src/gapi/ogl3.3/shaders/GAdtShaderPermutation.cpp
         src/gapi/ogl3.3/shaders/GAdtShaderPermutation.h
-        src/gapi/ogl3.3/GOcclusionQuery.cpp
-        src/gapi/ogl3.3/GOcclusionQuery.h
+        src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
+        src/gapi/ogl3.3/GOcclusionQueryGL33.h
         src/engine/objects/GlobalThreads.cpp
         src/engine/objects/GlobalThreads.h
         src/gapi/interface/textures/IBlpTexture.h

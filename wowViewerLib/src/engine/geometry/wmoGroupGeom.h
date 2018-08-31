@@ -29,9 +29,9 @@ public:
     bool isLoaded() const { return m_loaded; };
     void createIndexVBO();
 
-    HGVertexBuffer getVBO(GDevice &device);
-    HGIndexBuffer getIBO(GDevice &device);
-    HGVertexBufferBindings getVertexBindings(GDevice &device);
+    HGVertexBuffer getVBO(IDevice &device);
+    HGIndexBuffer getIBO(IDevice &device);
+    HGVertexBufferBindings getVertexBindings(IDevice &device);
 private:
     bool m_loaded = false;
 

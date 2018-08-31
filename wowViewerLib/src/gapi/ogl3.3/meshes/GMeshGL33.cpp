@@ -2,9 +2,9 @@
 // Created by deamon on 05.06.18.
 //
 
-#include "GMesh.h"
+#include "GMeshGL33.h"
 
-GMesh::GMesh(GDevice &device,
+GMeshGL33::GMeshGL33(IDevice &device,
              const gMeshTemplate &meshTemplate
 ) : m_device(device), m_bindings(meshTemplate.bindings), m_shader(meshTemplate.shader), m_meshType(meshTemplate.meshType) {
 
@@ -34,30 +34,30 @@ GMesh::GMesh(GDevice &device,
     m_fragmentUniformBuffer[2] = meshTemplate.fragmentBuffers[2];
 
 }
-GMesh::~GMesh() {
+GMeshGL33::~GMeshGL33() {
 
 }
 
-HGUniformBuffer GMesh::getVertexUniformBuffer(int slot) {
+HGUniformBuffer GMeshGL33::getVertexUniformBuffer(int slot) {
     return m_vertexUniformBuffer[slot];
 }
 
-HGUniformBuffer GMesh::getFragmentUniformBuffer(int slot) {
+HGUniformBuffer GMeshGL33::getFragmentUniformBuffer(int slot) {
     return m_fragmentUniformBuffer[slot];
 }
 
-EGxBlendEnum GMesh::getGxBlendMode() { return m_blendMode; }
+EGxBlendEnum GMeshGL33::getGxBlendMode() { return m_blendMode; }
 
-bool GMesh::getIsTransparent() { return m_isTransparent; }
+bool GMeshGL33::getIsTransparent() { return m_isTransparent; }
 
-MeshType GMesh::getMeshType() {
+MeshType GMeshGL33::getMeshType() {
     return m_meshType;
 }
 
-void GMesh::setRenderOrder(int renderOrder) {
+void GMeshGL33::setRenderOrder(int renderOrder) {
     m_renderOrder = renderOrder;
 }
 
-void GMesh::setEnd(int end) {m_end = end; }
+void GMeshGL33::setEnd(int end) {m_end = end; }
 
 

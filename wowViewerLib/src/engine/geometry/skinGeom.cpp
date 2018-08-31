@@ -21,7 +21,7 @@ void SkinGeom::process(std::vector<unsigned char> &skinFile, std::string &fileNa
 
     m_loaded = true;
 }
-HGIndexBuffer SkinGeom::getIBO(GDevice &device) {
+HGIndexBuffer SkinGeom::getIBO(IDevice &device) {
     if (indexVbo == nullptr) {
         int indiciesLength = this->m_skinData->indices.size;
 

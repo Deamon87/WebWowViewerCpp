@@ -3,7 +3,7 @@
 //
 
 #include "M2MeshBufferUpdater.h"
-#include "../../../../gapi/meshes/GM2Mesh.h"
+#include "../../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../persistance/header/M2FileHeader.h"
 
 bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
@@ -91,7 +91,7 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
         }
     }
 
-    hmesh->m_sortDistance = value;
+    hmesh->setSortDistance(value);
 }
 
 void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, meshWideBlockPS &meshblockPS) {

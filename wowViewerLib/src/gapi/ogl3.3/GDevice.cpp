@@ -6,8 +6,8 @@
 #include "GDevice.h"
 #include "../../engine/algorithms/hashString.h"
 #include "shaders/GM2ShaderPermutation.h"
-#include "meshes/GM2Mesh.h"
-#include "GOcclusionQuery.h"
+#include "meshes/GM2MeshGL33.h"
+#include "GOcclusionQueryGL33.h"
 #include "meshes/GParticleMesh.h"
 #include "shaders/GM2ParticleShaderPermutation.h"
 #include "shaders/GAdtShaderPermutation.h"
@@ -58,7 +58,7 @@ __stdcall void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity
     fflush(stdout);
 }
 
-void GDeviceGL33::bindIndexBuffer(GIndexBuffer *buffer) {
+void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {
     if (buffer == nullptr ) {
         if (m_lastBindIndexBuffer != nullptr) {
             m_lastBindIndexBuffer->unbind();
@@ -66,11 +66,11 @@ void GDeviceGL33::bindIndexBuffer(GIndexBuffer *buffer) {
         }
     } else if (buffer != m_lastBindIndexBuffer) {
         buffer->bind();
-        m_lastBindIndexBuffer = buffer;
+        m_lastBindIndexBuffer = dynamic_cast<GIndexBuffer *>(buffer);
     }
 }
 
-void GDeviceGL33::bindVertexBuffer(GVertexBuffer *buffer)  {
+void GDeviceGL33::bindVertexBuffer(IVertexBuffer *buffer)  {
     if (buffer == nullptr) {
         if (m_lastBindVertexBuffer != nullptr) {
             m_lastBindVertexBuffer->unbind();
@@ -82,7 +82,7 @@ void GDeviceGL33::bindVertexBuffer(GVertexBuffer *buffer)  {
     }
 }
 
-void GDeviceGL33::bindVertexUniformBuffer(GUniformBuffer *buffer, int slot)  {
+void GDeviceGL33::bindVertexUniformBuffer(IUniformBuffer *buffer, int slot)  {
     if (buffer == nullptr) {
         if (m_vertexUniformBuffer[slot] != nullptr) {
             m_vertexUniformBuffer[slot]->unbind();
@@ -99,7 +99,7 @@ void GDeviceGL33::bindVertexUniformBuffer(GUniformBuffer *buffer, int slot)  {
         }
     }
 }
-void GDeviceGL33::bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot)  {
+void GDeviceGL33::bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot)  {
     if (buffer == nullptr) {
         if (m_fragmentUniformBuffer[slot] != nullptr) {
             m_fragmentUniformBuffer[slot]->unbind();
@@ -113,12 +113,14 @@ void GDeviceGL33::bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot)  {
 }
 
 
-void GDeviceGL33::bindVertexBufferBindings(GVertexBufferBindings *buffer) {
+void GDeviceGL33::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
+    buffer =
+
     if (buffer == nullptr) {
        if (m_vertexBufferBindings != nullptr) {
 //           m_vertexBufferBindings->unbind();
            m_defaultVao->bind();
-           m_vertexBufferBindings = m_defaultVao.get();
+           m_vertexBufferBindings = (GVertexBufferBindings *)(m_defaultVao.get());
        }
         m_lastBindIndexBuffer = nullptr;
         m_lastBindVertexBuffer = nullptr;
@@ -128,7 +130,7 @@ void GDeviceGL33::bindVertexBufferBindings(GVertexBufferBindings *buffer) {
 
         if (buffer != m_vertexBufferBindings) {
             buffer->bind();
-            m_vertexBufferBindings = buffer;
+            m_vertexBufferBindings = (GVertexBufferBindings *) buffer;
         }
     }
 }
@@ -304,17 +306,16 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &meshes) {
 
 }
 
-void GDeviceGL33::drawMesh(HGMesh &hmesh) {
-
+void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
     if (hmesh->m_end <= 0) return;
 
-    GOcclusionQuery * gOcclusionQuery = nullptr;
-    GM2Mesh * gm2Mesh = nullptr;
+    GOcclusionQueryGL33 * gOcclusionQuery = nullptr;
+    GM2MeshGL33 * gm2Mesh = nullptr;
     if (hmesh->m_meshType == MeshType::eOccludingQuery) {
-        gOcclusionQuery = (GOcclusionQuery *)(hmesh.get());
+        gOcclusionQuery = (GOcclusionQueryGL33 *)(hmesh.get());
     }
     if (hmesh->m_meshType == MeshType::eM2Mesh) {
-        gm2Mesh = (GM2Mesh *)(hmesh.get());
+        gm2Mesh = (GM2MeshGL33 *)(hmesh.get());
     }
 
     bindProgram(hmesh->m_shader.get());
@@ -463,15 +464,15 @@ HGVertexBufferBindings GDeviceGL33::createVertexBufferBindings() {
 }
 
 HGMesh GDeviceGL33::createMesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GMesh> h_mesh;
-    h_mesh.reset(new GMesh(*this, meshTemplate));
+    std::shared_ptr<GMeshGL33> h_mesh;
+    h_mesh.reset(new GMeshGL33(*this, meshTemplate));
 
     return h_mesh;
 }
 
 HGM2Mesh GDeviceGL33::createM2Mesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GM2Mesh> h_mesh;
-    h_mesh.reset(new GM2Mesh(*this, meshTemplate));
+    std::shared_ptr<GM2MeshGL33> h_mesh;
+    h_mesh.reset(new GM2MeshGL33(*this, meshTemplate));
 
     return h_mesh;
 }
@@ -483,7 +484,7 @@ HGParticleMesh GDeviceGL33::createParticleMesh(gMeshTemplate &meshTemplate) {
     return h_mesh;
 }
 
-void GDeviceGL33::bindTexture(GTexture *texture, int slot) {
+void GDeviceGL33::bindTexture(ITexture *texture, int slot) {
     if (texture == nullptr) {
         if (m_lastTexture[slot] != nullptr) {
             glActiveTexture(GL_TEXTURE0 + slot);
@@ -527,7 +528,7 @@ HGTexture GDeviceGL33::createTexture() {
     return hgTexture;
 }
 
-void GDeviceGL33::bindProgram(GShaderPermutation *program) {
+void GDeviceGL33::bindProgram(IShaderPermutation *program) {
     if (program == nullptr) {
         if (m_shaderPermutation != nullptr) {
             m_shaderPermutation->unbindProgram();
@@ -621,88 +622,9 @@ GDeviceGL33::GDeviceGL33() {
 
 }
 
-bool GDeviceGL33::sortMeshes(const HGMesh &a, const HGMesh &b) {
-    if (a->getIsTransparent() > b-> getIsTransparent()) {
-        return false;
-    }
-    if (a->getIsTransparent() < b->getIsTransparent()) {
-        return true;
-    }
-
-    if (a->m_renderOrder != b->m_renderOrder ) {
-        if (!a->getIsTransparent()) {
-            return a->m_renderOrder < b->m_renderOrder;
-        } else {
-            return a->m_renderOrder > b->m_renderOrder;
-        }
-    }
-
-    if (a->getMeshType() > b->getMeshType()) {
-        return false;
-    }
-    if (a->getMeshType() < b->getMeshType()) {
-        return true;
-    }
-
-    if (a->getMeshType() == MeshType::eM2Mesh && a->getIsTransparent() && b->getIsTransparent()) {
-        HGM2Mesh a1 = std::static_pointer_cast<GM2Mesh>(a);
-        HGM2Mesh b1 = std::static_pointer_cast<GM2Mesh>(b);
-        if (a1->m_priorityPlane != b1->m_priorityPlane) {
-            return b1->m_priorityPlane > a1->m_priorityPlane;
-        }
-
-        if (a1->m_sortDistance > b1->m_sortDistance) {
-            return true;
-        }
-        if (a1->m_sortDistance < b1->m_sortDistance) {
-            return false;
-        }
-
-        if (a1->m_m2Object > b1->m_m2Object) {
-            return true;
-        }
-        if (a1->m_m2Object < b1->m_m2Object) {
-            return false;
-        }
-
-        if (b1->m_layer != a1->m_layer) {
-            return b1->m_layer < a1->m_layer;
-        }
-    }
-
-    if (a->m_bindings != b->m_bindings) {
-        return a->m_bindings > b->m_bindings;
-    }
-
-    if (a->getGxBlendMode() != b->getGxBlendMode()) {
-        return a->getGxBlendMode() < b->getGxBlendMode();
-    }
-
-    int minTextureCount = std::min(a->m_textureCount, b->m_textureCount);
-    for (int i = 0; i < minTextureCount; i++) {
-        if (a->m_texture[i] != b->m_texture[i]) {
-            return a->m_texture[i] < b->m_texture[i];
-        }
-    }
-
-    if (a->m_textureCount != b->m_textureCount) {
-        return a->m_textureCount < b->m_textureCount;
-    }
-
-    if (a->m_start != b->m_start) {
-        return a->m_start < b->m_start;
-    }
-    if (a->m_end != b->m_end) {
-        return a->m_end < b->m_end;
-    }
-
-
-    return a > b;
-}
-
 HGOcclusionQuery GDeviceGL33::createQuery(HGMesh boundingBoxMesh) {
-    std::shared_ptr<GOcclusionQuery> hgOcclusionQuery;
-    hgOcclusionQuery.reset(new GOcclusionQuery(*this, boundingBoxMesh));
+    std::shared_ptr<GOcclusionQueryGL33> hgOcclusionQuery;
+    hgOcclusionQuery.reset(new GOcclusionQueryGL33(*this, boundingBoxMesh));
 
     return hgOcclusionQuery;
 }

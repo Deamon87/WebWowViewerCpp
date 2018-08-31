@@ -5,8 +5,40 @@
 #ifndef AWEBWOWVIEWERCPP_IDEVICE_H
 #define AWEBWOWVIEWERCPP_IDEVICE_H
 
-#include "IVertexBufferBindings.h"
+class IVertexBuffer;
+class IVertexBufferBindings;
+class IIndexBuffer;
+class IUniformBuffer;
+class IBlpTexture;
+class ITexture;
+class IShaderPermutation;
+class IMesh;
+class IM2Mesh;
+class IOcclusionQuery;
+class IParticleMesh;
+#include <memory>
+
+typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;
+typedef std::shared_ptr<IIndexBuffer> HGIndexBuffer;
+typedef std::shared_ptr<IVertexBufferBindings> HGVertexBufferBindings;
+typedef std::shared_ptr<IUniformBuffer> HGUniformBuffer;
+typedef std::shared_ptr<IShaderPermutation> HGShaderPermutation;
+typedef std::shared_ptr<IMesh> HGMesh;
+typedef std::shared_ptr<IM2Mesh> HGM2Mesh;
+typedef std::shared_ptr<IOcclusionQuery> HGOcclusionQuery;
+typedef std::shared_ptr<IParticleMesh> HGParticleMesh;
+typedef std::shared_ptr<IBlpTexture> HGBlpTexture;
+typedef std::shared_ptr<ITexture> HGTexture;
+
 #include "meshes/IMesh.h"
+#include "meshes/IM2Mesh.h"
+#include "IOcclusionQuery.h"
+#include "buffers/IIndexBuffer.h"
+#include "buffers/IVertexBuffer.h"
+#include "IVertexBufferBindings.h"
+#include "buffers/IUniformBuffer.h"
+#include "textures/ITexture.h"
+#include "../../engine/wowCommonClasses.h"
 
 class IDevice {
     public:
@@ -15,19 +47,20 @@ class IDevice {
 
         virtual void toogleEvenFrame() = 0;
 
-        virtual void bindProgram(GShaderPermutation *program) = 0;
+        virtual void bindProgram(IShaderPermutation *program) = 0;
 
-        virtual void bindVertexBuffer(GVertexBuffer *buffer) = 0;
-        virtual void bindVertexUniformBuffer(GUniformBuffer *buffer, int slot) = 0;
-        virtual void bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot) = 0;
-        virtual void bindVertexBufferBindings(GVertexBufferBindings *buffer) = 0;
+        virtual void bindIndexBuffer(IIndexBuffer *buffer) = 0;
+        virtual void bindVertexBuffer(IVertexBuffer *buffer) = 0;
+        virtual void bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) = 0;
+        virtual void bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) = 0;
+        virtual void bindVertexBufferBindings(IVertexBufferBindings *buffer) = 0;
 
-        virtual void bindTexture(GTexture *texture, int slot) = 0;
+        virtual void bindTexture(ITexture *texture, int slot) = 0;
 
         virtual void updateBuffers(std::vector<HGMesh> &meshes)= 0 ;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
     public:
-        std::shared_ptr<GShaderPermutation> getShader(std::string shaderName) = 0;
+        virtual HGShaderPermutation getShader(std::string shaderName) = 0;
 
         virtual HGUniformBuffer createUniformBuffer(size_t size) = 0;
         virtual HGVertexBuffer createVertexBuffer() = 0;
@@ -42,7 +75,7 @@ class IDevice {
 
         virtual HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) = 0;
 
-        virtual static bool sortMeshes(const HGMesh& a, const HGMesh& b) = 0;
+        static bool sortMeshes(const HGMesh& a, const HGMesh& b);
         virtual HGVertexBufferBindings getBBVertexBinding() = 0;
         virtual HGVertexBufferBindings getBBLinearBinding() = 0;
 };

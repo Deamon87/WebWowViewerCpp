@@ -4,8 +4,8 @@
 
 #include "wmoScene.h"
 #include "../../algorithms/mathHelper.h"
-#include "../../../gapi/meshes/GM2Mesh.h"
-#include "IDevice.h"
+#include "../../../gapi/interface/meshes/IM2Mesh.h"
+#include "../../../gapi/interface/IDevice.h"
 
 void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     m2RenderedThisFrame = std::vector<M2Object*>();
@@ -118,7 +118,7 @@ void WmoScene::draw() {
 
     std::sort(renderedThisFrame.begin(),
               renderedThisFrame.end(),
-              GDevice::sortMeshes
+              IDevice::sortMeshes
     );
     m_api->getDevice()->drawMeshes(renderedThisFrame);
 }

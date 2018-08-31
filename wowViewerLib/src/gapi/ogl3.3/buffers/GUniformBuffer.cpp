@@ -2,11 +2,10 @@
 // Created by Deamon on 6/30/2018.
 //
 #include <memory.h>
-#include "../../engine/opengl/header.h"
+#include "../../../engine/opengl/header.h"
 #include "GUniformBuffer.h"
-#include "../interface/IDevice.h"
 
-GUniformBuffer::GUniformBuffer(GDevice &device, size_t size) : m_device(device){
+GUniformBuffer::GUniformBuffer(IDevice &device, size_t size) : m_device(device){
     m_size = size;
     pIdentifierBuffer = new GLuint;
     pFrameOneContent = new char[size];

@@ -6,7 +6,7 @@
 #include "GVertexBufferBindings.h"
 #include "../interface/IDevice.h"
 
-GVertexBufferBindings::GVertexBufferBindings(GDevice &m_device) : m_device(m_device) {
+GVertexBufferBindings::GVertexBufferBindings(IDevice &m_device) : m_device(m_device) {
     m_buffer = new GLuint;
     createBuffer();
 }

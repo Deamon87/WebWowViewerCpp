@@ -5,7 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_GVERTEXBUFFERBINDINGS_H
 #define WEBWOWVIEWERCPP_GVERTEXBUFFERBINDINGS_H
 
-class GDevice;
 class GVertexBuffer;
 class GIndexBuffer;
 class GVertexBufferBindings;
@@ -13,27 +12,11 @@ class GVertexBufferBindings;
 #include <vector>
 #include <cstdint>
 #include "buffers/GVertexBuffer.h"
-
+#include "../interface/IVertexBufferBindings.h"
+#include "../interface/IDevice.h"
 #include "GDevice.h"
 
-struct GBufferBinding{
-    uint32_t position;
-    uint32_t size;
-    uint32_t type;
-    bool normalized;
-    uint32_t stride;
-    uint32_t offset;
-};
-
-struct GVertexBufferBinding {
-    HGVertexBuffer vertexBuffer;
-    std::vector<GBufferBinding> bindings;
-};
-
-
-
-
-class GVertexBufferBindings {
+class GVertexBufferBindings : public virtual IVertexBufferBindings {
     friend class GDevice;
 private:
     std::vector<GVertexBufferBinding> m_bindings;
@@ -41,13 +24,13 @@ private:
 
 
 private:
-    GDevice &m_device;
+    IDevice &m_device;
 private:
     void * m_buffer;
 
 public:
-    GVertexBufferBindings(GDevice &m_device);
-    ~GVertexBufferBindings();
+    explicit GVertexBufferBindings(IDevice &m_device);
+    ~GVertexBufferBindings() override;
 
 private:
     void createBuffer();
@@ -55,10 +38,10 @@ private:
     void bind(); //Should be called only by GDevice
     void unbind();
 public:
-    void save();
+    void save() override;
 
-    void setIndexBuffer(HGIndexBuffer indexBuffer);
-    void addVertexBufferBinding(GVertexBufferBinding binding);
+    void setIndexBuffer(HGIndexBuffer indexBuffer) override;
+    void addVertexBufferBinding(GVertexBufferBinding binding) override;
 
 };
 

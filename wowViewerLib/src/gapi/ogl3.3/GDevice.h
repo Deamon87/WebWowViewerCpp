@@ -4,7 +4,7 @@
 
 #ifndef WEBWOWVIEWERCPP_GDEVICE_H
 #define WEBWOWVIEWERCPP_GDEVICE_H
-#include <memory>
+
 
 class GVertexBuffer;
 class GVertexBufferBindings;
@@ -13,37 +13,24 @@ class GUniformBuffer;
 class GBlpTexture;
 class GTexture;
 class GShaderPermutation;
-class GMesh;
-class GM2Mesh;
-class GOcclusionQuery;
+class GMeshGL33;
+class GM2MeshGL33;
+class GOcclusionQueryGL33;
 class GParticleMesh;
 
 
 class gMeshTemplate;
-
-typedef std::shared_ptr<GVertexBuffer> HGVertexBuffer;
-typedef std::shared_ptr<GIndexBuffer> HGIndexBuffer;
-typedef std::shared_ptr<GVertexBufferBindings> HGVertexBufferBindings;
-typedef std::shared_ptr<GUniformBuffer> HGUniformBuffer;
-typedef std::shared_ptr<GShaderPermutation> HGShaderPermutation;
-typedef std::shared_ptr<GMesh> HGMesh;
-typedef std::shared_ptr<GM2Mesh> HGM2Mesh;
-typedef std::shared_ptr<GOcclusionQuery> HGOcclusionQuery;
-typedef std::shared_ptr<GParticleMesh> HGParticleMesh;
-typedef std::shared_ptr<GBlpTexture> HGBlpTexture;
-typedef std::shared_ptr<GTexture> HGTexture;
-
 
 #include <unordered_set>
 #include <list>
 #include "GVertexBufferBindings.h"
 #include "buffers/GIndexBuffer.h"
 #include "buffers/GVertexBuffer.h"
-#include "textures/GBlpTexture.h"
 #include "textures/GTexture.h"
+#include "textures/GBlpTexture.h"
 #include "buffers/GUniformBuffer.h"
 #include "GShaderPermutation.h"
-#include "meshes/GMesh.h"
+#include "meshes/GMeshGL33.h"
 #include "../interface/IDevice.h"
 
 
@@ -57,20 +44,21 @@ public:
 
     void toogleEvenFrame() override;
 
-    void bindProgram(GShaderPermutation *program) override;
+    void bindProgram(IShaderPermutation *program) override;
 
-    void bindVertexBuffer(GVertexBuffer *buffer) override;
-    void bindVertexUniformBuffer(GUniformBuffer *buffer, int slot) override;
-    void bindFragmentUniformBuffer(GUniformBuffer *buffer, int slot) override;
-    void bindVertexBufferBindings(GVertexBufferBindings *buffer) override;
+    void bindIndexBuffer(IIndexBuffer *buffer) override;
+    void bindVertexBuffer(IVertexBuffer *buffer) override;
+    void bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) override;
+    void bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) override;
+    void bindVertexBufferBindings(IVertexBufferBindings *buffer) override;
 
-    void bindTexture(GTexture *texture, int slot) override;
+    void bindTexture(ITexture *texture, int slot) override;
 
     void updateBuffers(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
-    std::shared_ptr<GShaderPermutation> getShader(std::string shaderName) override;
+    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName) override;
 
     HGUniformBuffer createUniformBuffer(size_t size) override;
     HGVertexBuffer createVertexBuffer() override;
@@ -85,7 +73,6 @@ public:
 
     HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
-    static bool sortMeshes(const HGMesh& a, const HGMesh& b) override;
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
 

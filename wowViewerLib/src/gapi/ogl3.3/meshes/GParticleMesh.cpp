@@ -4,6 +4,6 @@
 
 #include "GParticleMesh.h"
 
-GParticleMesh::GParticleMesh(GDevice &device, const gMeshTemplate &meshTemplate) : GMesh(device, meshTemplate){
+GParticleMesh::GParticleMesh(GDevice &device, const gMeshTemplate &meshTemplate) : GMeshGL33(device, meshTemplate){
     m_meshType = MeshType::eParticleMesh;
 }

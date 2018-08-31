@@ -1,12 +1,12 @@
 //
 // Created by Deamon on 7/23/2018.
 //
-#include "GDevice.h"
+#include "../GDevice.h"
 #include "GTexture.h"
-#include "../../engine/opengl/header.h"
-#include "../interface/IDevice.h"
+#include "../../../engine/opengl/header.h"
+#include "../../interface/IDevice.h"
 
-GTexture::GTexture(GDevice &device) : m_device(device) {
+GTexture::GTexture(IDevice &device) : m_device(device) {
     pIdentifierBuffer = new GLuint;
     createBuffer();
 }

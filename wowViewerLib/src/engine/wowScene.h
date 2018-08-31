@@ -106,7 +106,7 @@ public:
     }
 public:
     virtual IDevice * getDevice() override {
-        return &m_gdevice;
+        return m_gdevice.get();
     }
 
     virtual HGUniformBuffer getSceneWideUniformBuffer() override {
@@ -182,7 +182,7 @@ private:
 
     bool m_isTerminating = false;
     Config * m_config;
-    IDevice m_gdevice;
+    std::unique_ptr<IDevice> m_gdevice;
     HGUniformBuffer m_sceneWideUniformBuffer;
 
     WoWFrameParamHolder m_nextFrameParams;

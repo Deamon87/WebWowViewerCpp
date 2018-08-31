@@ -7,15 +7,15 @@
 
 #include <vector>
 #include "../persistance/header/M2FileHeader.h"
-#include "../../gapi/ogl3.3/GDevice.h"
+#include "../../gapi/interface/IDevice.h"
 #include "../persistance/helper/ChunkFileReader.h"
 
 
 class M2Geom {
 public:
     void process(std::vector<unsigned char> &m2File, std::string &fileName);
-    HGVertexBuffer getVBO(GDevice &device);
-    HGVertexBufferBindings getVAO(GDevice &device, SkinGeom *skinGeom);
+    HGVertexBuffer getVBO(IDevice &device);
+    HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
 
     bool isLoaded() { return m_loaded; };
 

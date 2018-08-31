@@ -9,24 +9,24 @@
 #include "../textures/GBlpTexture.h"
 #include "../../interface/meshes/IMesh.h"
 
-class GMesh : public IMesh {
+class GMeshGL33 : public virtual IMesh {
     friend class GDevice;
 
 protected:
-    explicit GMesh(GDevice &device,
+    explicit GMeshGL33(IDevice &device,
                    const gMeshTemplate &meshTemplate
     );
 
 public:
-    virtual ~GMesh();
-    inline HGUniformBuffer getVertexUniformBuffer(int slot);
-    inline HGUniformBuffer getFragmentUniformBuffer(int slot);
-    inline EGxBlendEnum getGxBlendMode();
-    inline bool getIsTransparent();
-    inline MeshType getMeshType();
-    void setRenderOrder(int renderOrder);;
+    ~GMeshGL33() override;
+    HGUniformBuffer getVertexUniformBuffer(int slot) override;
+    HGUniformBuffer getFragmentUniformBuffer(int slot) override;
+    EGxBlendEnum getGxBlendMode() override;
+    bool getIsTransparent() override;
+    MeshType getMeshType()  override;
+    void setRenderOrder(int renderOrder) override;
 
-    void setEnd(int end);;
+    void setEnd(int end) override;
 protected:
     MeshType m_meshType;
 private:

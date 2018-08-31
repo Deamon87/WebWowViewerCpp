@@ -10,11 +10,12 @@
 #include "mathfu/matrix.h"
 #include "../../persistance/header/M2FileHeader.h"
 #include "../../shader/ShaderDefinitions.h"
-#include "../../../gapi/ogl3.3/UniformBufferStructures.h"
+#include "../../../gapi/UniformBufferStructures.h"
 #include "m2Helpers/M2MeshBufferUpdater.h"
-#include "../../../gapi/interface/meshes/IM2Mesh.h"
+
 #include "../../../gapi/interface/IOcclusionQuery.h"
 #include "../../../gapi/interface/IDevice.h"
+#include "../../../gapi/interface/meshes/IM2Mesh.h"
 
 //Legion shader stuff
 
@@ -1143,10 +1144,10 @@ void M2Object::createMeshes() {
 
          //Make mesh
         HGM2Mesh hmesh = m_api->getDevice()->createM2Mesh(meshTemplate);
-        hmesh->m_m2Object = this;
-        hmesh->m_layer = textMaterial->materialLayer;
-        hmesh->m_priorityPlane = textMaterial->priorityPlane;
-        hmesh->m_query = nullptr;
+        hmesh->setM2Object(this);
+        hmesh->setLayer(textMaterial->materialLayer);
+        hmesh->setPriorityPlane(textMaterial->priorityPlane);
+        hmesh->setQuery(nullptr);
 //        hmesh->m_query = occlusionQuery;
 
         this->m_meshArray.push_back(hmesh);
@@ -1369,7 +1370,7 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
 }
 
 void M2Object::createVertexBindings() {
-    GDevice *device = m_api->getDevice();
+    IDevice *device = m_api->getDevice();
 
     //2. Create buffer binding and fill it
     bufferBindings = m_m2Geom->getVAO(*device, m_skinGeom.get());

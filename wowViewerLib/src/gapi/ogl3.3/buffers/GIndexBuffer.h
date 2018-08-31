@@ -8,13 +8,14 @@
 class GDevice;
 #include "../GDevice.h"
 #include "../../interface/buffers/IIndexBuffer.h"
+#include "../../interface/IDevice.h"
 
-class GIndexBuffer : public IIndexBuffer{
+class GIndexBuffer : public virtual IIndexBuffer{
     friend class GDevice;
 
-    explicit GIndexBuffer(GDevice &device);
+    explicit GIndexBuffer(IDevice &device);
 public:
-    ~GIndexBuffer();
+    ~GIndexBuffer() override;
 
 private:
     void createBuffer();
@@ -23,10 +24,10 @@ private:
     void unbind();
 
 public:
-    void uploadData(void *, int length);
+    void uploadData(void *, int length) override;
 
 private:
-    GDevice &m_device;
+    IDevice &m_device;
 
 private:
     void * buffer = nullptr;

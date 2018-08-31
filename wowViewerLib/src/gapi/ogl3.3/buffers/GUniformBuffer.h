@@ -15,16 +15,11 @@ class GUniformBuffer : public IUniformBuffer {
 public:
     friend class GDevice;
 
-    explicit GUniformBuffer(GDevice &device, size_t size);
-    ~GUniformBuffer();
+    explicit GUniformBuffer(IDevice &device, size_t size);
+    ~GUniformBuffer() override;
 
-    template<typename T>
-    T &getObject() {
-//        assert(sizeof(T) == m_size);
-        return *(T *) getPointerForModification();
-    }
-    void *getPointerForModification();
-    void *getPointerForUpload();
+    void *getPointerForModification() override;
+    void *getPointerForUpload() override;
 
     void save(bool initialSave = false);
     void createBuffer();
@@ -38,7 +33,7 @@ private:
     void uploadData(void * data, int length);
 
 private:
-    GDevice &m_device;
+    IDevice &m_device;
 
 private:
     size_t m_size;

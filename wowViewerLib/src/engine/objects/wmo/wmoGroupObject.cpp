@@ -5,8 +5,8 @@
 #include "wmoGroupObject.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../shader/ShaderDefinitions.h"
-#include "../../../gapi/ogl3.3/UniformBufferStructures.h"
-#include "IDevice.h"
+#include "../../../gapi/interface/IDevice.h"
+#include "../../../gapi/UniformBufferStructures.h"
 #include <algorithm>
 
 /*
@@ -427,7 +427,7 @@ void WmoGroupObject::createMeshes() {
 
     SMOMaterial *materials = m_wmoApi->getMaterials();
 
-    GDevice *device = m_api->getDevice();
+    IDevice *device = m_api->getDevice();
     HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
 
     vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(wmoModelWideBlockVS));

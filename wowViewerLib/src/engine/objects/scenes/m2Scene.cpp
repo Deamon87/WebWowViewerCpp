@@ -3,9 +3,9 @@
 //
 
 #include "m2Scene.h"
-#include "../../../gapi/meshes/GM2Mesh.h"
 #include "../../algorithms/mathHelper.h"
-#include "IDevice.h"
+#include "../../../gapi/interface/meshes/IM2Mesh.h"
+#include "../../../gapi/interface/IDevice.h"
 
 void M2Scene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
@@ -28,7 +28,7 @@ void M2Scene::draw() {
 
     std::sort(renderedThisFrame.begin(),
         renderedThisFrame.end(),
-        GDevice::sortMeshes
+        IDevice::sortMeshes
     );
 
     m_api->getDevice()->drawMeshes(renderedThisFrame);

@@ -7,8 +7,8 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../persistance/adtFile.h"
 #include "../../persistance/wdtFile.h"
-#include "../../../gapi/ogl3.3/UniformBufferStructures.h"
-#include "IDevice.h"
+#include "../../../gapi/interface/IDevice.h"
+#include "../../../gapi/UniformBufferStructures.h"
 
 
 void AdtObject::loadingFinished() {
@@ -213,7 +213,7 @@ void AdtObject::createVBO() {
     }
 
     /* 1.3 Make combinedVbo */
-    GDevice *device = m_api->getDevice();
+    IDevice *device = m_api->getDevice();
     combinedVbo = device->createVertexBuffer();
     combinedVbo->uploadData(&vboArray[0], vboArray.size()*sizeof(float));
 
@@ -310,7 +310,7 @@ void AdtObject::calcBoundingBoxes() {
 }
 
 void AdtObject::createMeshes() {
-    GDevice *device = m_api->getDevice();
+    IDevice *device = m_api->getDevice();
 
     adtWideBlockPS = m_api->getDevice()->createUniformBuffer(sizeof(adtModelWideBlockPS));
 

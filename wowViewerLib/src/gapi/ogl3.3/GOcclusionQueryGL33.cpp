@@ -2,44 +2,44 @@
 // Created by deamon on 09.08.18.
 //
 
-#include "GOcclusionQuery.h"
+#include "GOcclusionQueryGL33.h"
 
 
-GOcclusionQuery::GOcclusionQuery(GDevice &device, HGMesh &oclludee) : GMesh(*oclludee){
+GOcclusionQueryGL33::GOcclusionQueryGL33(GDevice &device, HGMesh &oclludee) : GMesh(*oclludee){
     createQuery();
 
     m_meshType = MeshType::eOccludingQuery;
 }
 
-GOcclusionQuery::~GOcclusionQuery() {
+GOcclusionQueryGL33::~GOcclusionQueryGL33() {
     deleteQuery();
 }
 
-void GOcclusionQuery::createQuery() {
+void GOcclusionQueryGL33::createQuery() {
     glGenQueries(1, &m_queryIdent);
 }
 
-void GOcclusionQuery::deleteQuery() {
+void GOcclusionQueryGL33::deleteQuery() {
     glDeleteQueries(1, &m_queryIdent);
 }
 
-void GOcclusionQuery::beginQuery() {
+void GOcclusionQueryGL33::beginQuery() {
     glBeginQuery(GL_SAMPLES_PASSED, m_queryIdent);
 }
 
-void GOcclusionQuery::endQuery() {
+void GOcclusionQueryGL33::endQuery() {
     glEndQuery(GL_SAMPLES_PASSED);
 }
 
-void GOcclusionQuery::beginConditionalRendering() {
+void GOcclusionQueryGL33::beginConditionalRendering() {
     glBeginConditionalRender(m_queryIdent, GL_QUERY_NO_WAIT);
 }
 
-void GOcclusionQuery::endConditionalRendering() {
+void GOcclusionQueryGL33::endConditionalRendering() {
     glEndConditionalRender();
 }
 
-int GOcclusionQuery::getResult() {
+int GOcclusionQueryGL33::getResult() {
     int ns;
     glGetQueryObjectiv(m_queryIdent, GL_QUERY_RESULT, &ns);
     return ns;

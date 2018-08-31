@@ -5,13 +5,13 @@
 #ifndef WEBWOWVIEWERCPP_GBLPTEXTURE_H
 #define WEBWOWVIEWERCPP_GBLPTEXTURE_H
 
-#include "../../../engine/wowCommonClasses.h"
-#include "../../../engine/texture/BlpTexture.h"
+#include "../../../gapi/interface/textures/IBlpTexture.h"
 #include "GTexture.h"
+#include "../GDevice.h"
 
-class GBlpTexture : public GTexture {
+class GBlpTexture : public GTexture, public virtual IBlpTexture {
     friend class GDevice;
-    explicit GBlpTexture(GDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
+    explicit GBlpTexture(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GBlpTexture() override;
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps);

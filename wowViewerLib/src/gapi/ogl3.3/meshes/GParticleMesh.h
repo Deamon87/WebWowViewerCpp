@@ -4,10 +4,10 @@
 
 #ifndef AWEBWOWVIEWERCPP_GPARTICLEMESH_H
 #define AWEBWOWVIEWERCPP_GPARTICLEMESH_H
-#include "GMesh.h"
+#include "GMeshGL33.h"
 #include "../../interface/meshes/IParticleMesh.h"
 
-class GParticleMesh : public GMesh, public IParticleMesh {
+class GParticleMesh : public GMeshGL33, public virtual IParticleMesh {
     friend class GDevice;
 protected:
     GParticleMesh(GDevice &device, const gMeshTemplate &meshTemplate);

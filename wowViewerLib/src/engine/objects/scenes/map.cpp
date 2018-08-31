@@ -11,8 +11,8 @@
 #include "../m2/m2Instancing/m2InstancingObject.h"
 #include "../../persistance/wdtFile.h"
 #include "../../persistance/db2/DB2WmoAreaTable.h"
-#include "../../../gapi/meshes/GM2Mesh.h"
-#include "IDevice.h"
+#include "../../../gapi/interface/meshes/IM2Mesh.h"
+#include "../../../gapi/interface/IDevice.h"
 
 
 inline int worldCoordinateToAdtIndex(float x) {
@@ -603,7 +603,7 @@ void Map::draw() {
 
     std::sort(renderedThisFrame.begin(),
               renderedThisFrame.end(),
-              GDevice::sortMeshes
+              IDevice::sortMeshes
     );
     m_api->getDevice()->drawMeshes(renderedThisFrame);
 }

@@ -1,11 +1,13 @@
 //
 // Created by deamon on 05.06.18.
 //
-#include "../../engine/opengl/header.h"
-#include "GVertexBuffer.h"
-#include "../interface/IDevice.h"
 
-GVertexBuffer::GVertexBuffer(GDevice &device)  : m_device(device) {
+#include "../GDevice.h"
+#include "../../../engine/opengl/header.h"
+
+
+
+GVertexBuffer::GVertexBuffer(IDevice &device)  : m_device(device) {
     pIdentifierBuffer = new GLuint;
     createBuffer();
 }

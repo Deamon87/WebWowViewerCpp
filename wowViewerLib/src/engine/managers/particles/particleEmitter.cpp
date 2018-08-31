@@ -3,14 +3,14 @@
 //
 
 #include "particleEmitter.h"
-#include "../../../gapi/meshes/GParticleMesh.h"
+#include "../../../gapi/interface/meshes/IParticleMesh.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/animate.h"
 #include "../../shader/ShaderDefinitions.h"
 #include "generators/CParticleGenerator.h"
 #include "generators/CSphereGenerator.h"
 #include "generators/CPlaneGenerator.h"
-#include "IDevice.h"
+#include "../../../gapi/interface/IDevice.h"
 
 
 static GBufferBinding staticM2ParticleBindings[5] = {
@@ -112,7 +112,7 @@ EGxBlendEnum M2BlendingModeToEGxBlendEnum1 [8] =
     };
 
 void ParticleEmitter::createMesh() {
-    GDevice *device = m_api->getDevice();
+    IDevice *device = m_api->getDevice();
 
     //Create Buffers
     m_indexVBO = device->createIndexBuffer();

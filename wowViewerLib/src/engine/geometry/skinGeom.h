@@ -9,12 +9,12 @@
 #include "../opengl/header.h"
 #include "../persistance/header/skinFileHeader.h"
 #include "../persistance/header/M2FileHeader.h"
-#include "../../gapi/interface/buffers/IIndexBuffer.h"
+#include "../../gapi/interface/IDevice.h"
 
 class SkinGeom {
 public:
     void process(std::vector<unsigned char> &skinFile, std::string &fileName);
-    HGIndexBuffer getIBO(GDevice &device);
+    HGIndexBuffer getIBO(IDevice &device);
 
     bool isLoaded() { return m_loaded; };
     M2SkinProfile * getSkinData(){ if (m_loaded) {return m_skinData;} else {return nullptr;}};

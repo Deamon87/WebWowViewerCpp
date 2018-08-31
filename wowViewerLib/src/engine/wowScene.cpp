@@ -10,7 +10,7 @@
 #include "persistance/db2/DB2Light.h"
 #include "persistance/db2/DB2WmoAreaTable.h"
 #include "shader/ShaderDefinitions.h"
-#include "../gapi/ogl3.3/UniformBufferStructures.h"
+#include "./../gapi/UniformBufferStructures.h"
 #include "objects/GlobalThreads.h"
 #include "../gapi/interface/IDevice.h"
 #include <iostream>
@@ -135,7 +135,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
 //    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
 
-    m_sceneWideUniformBuffer = m_gdevice.createUniformBuffer(sizeof(sceneWideBlockVSPS));
+    m_sceneWideUniformBuffer = m_gdevice->createUniformBuffer(sizeof(sceneWideBlockVSPS));
     m_sceneWideUniformBuffer->createBuffer();
 
     this->m_config = config;
@@ -778,10 +778,8 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     nextDeltaTime = deltaTime;
     deltaTimeUpdate = true;
     currentScene->copyToCurrentFrame();
-    m_gdevice.toogleEvenFrame();
+    m_gdevice->toogleEvenFrame();
     renderLockNextMeshes.unlock();
-
-    glFlush();
 
 }
 mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {

@@ -5,17 +5,16 @@
 #ifndef WEBWOWVIEWERCPP_GVERTEXBUFFER_H
 #define WEBWOWVIEWERCPP_GVERTEXBUFFER_H
 
-class GDevice;
-#include "../GDevice.h"
+#include "../../interface/IDevice.h"
 #include "../../interface/buffers/IVertexBuffer.h"
 #include <memory>
 
-class GVertexBuffer : public IVertexBuffer {
+class GVertexBuffer : public virtual IVertexBuffer {
     friend class GDevice;
 
-    explicit GVertexBuffer(GDevice &device);
+    explicit GVertexBuffer(IDevice &device);
 public:
-    ~GVertexBuffer();
+    ~GVertexBuffer() override;
 private:
     void createBuffer();
     void destroyBuffer();
@@ -23,10 +22,10 @@ private:
     void unbind();
 
 public:
-    void uploadData(void *, int length);
+    void uploadData(void *, int length) override;
 
 private:
-    GDevice &m_device;
+    IDevice &m_device;
 
 private:
     void * pIdentifierBuffer = nullptr;

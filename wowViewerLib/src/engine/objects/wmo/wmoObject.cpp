@@ -6,7 +6,7 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../shader/ShaderDefinitions.h"
 #include "../../persistance/header/commonFileStructs.h"
-#include "IDevice.h"
+#include "./../../../gapi/interface/IDevice.h"
 #include <algorithm>
 
 std::vector<mathfu::vec3> CreateOccluders(const HWmoGroupGeom groupGeom)

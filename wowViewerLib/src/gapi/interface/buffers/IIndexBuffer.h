@@ -5,6 +5,7 @@
 #ifndef AWEBWOWVIEWERCPP_IINDEXBUFFER_H
 #define AWEBWOWVIEWERCPP_IINDEXBUFFER_H
 class IIndexBuffer {
+public:
     virtual ~IIndexBuffer();
     virtual void uploadData(void *, int length) = 0;
 

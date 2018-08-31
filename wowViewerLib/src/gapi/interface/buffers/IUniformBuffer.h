@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_IUNIFORMBUFFER_H
 
 class IUniformBuffer {
+public:
     virtual ~IUniformBuffer() = 0;
 
     template<typename T>
