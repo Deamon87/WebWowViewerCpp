@@ -228,6 +228,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(1825.32, 376.095, 70.0652); //LordaeronScenario
 //    currentScene = new Map(this, 1, "LordaeronScenario");
 //
+   m_firstCamera.setCameraPos( 2652, 1083, 200) ; //LordaeronScenario
+    currentScene = new Map(this, 1, "legionshiphorizontalstormheim");
+//
 //    m_firstCamera.setCameraPos(3062, 495, 200 ); //Valhalla
 //    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt
 //    currentScene = new Map(this, 1477, "Valhallas");

@@ -21,8 +21,8 @@ public:
     void *getPointerForModification() override;
     void *getPointerForUpload() override;
 
-    void save(bool initialSave = false);
-    void createBuffer();
+    void save(bool initialSave = false) override;
+    void createBuffer() override;
 private:
 
     void destroyBuffer();

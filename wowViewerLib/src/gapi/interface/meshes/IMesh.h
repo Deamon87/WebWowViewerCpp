@@ -82,5 +82,12 @@ public:
     virtual void setRenderOrder(int renderOrder) = 0;
 
     virtual void setEnd(int end)  = 0;
+public:
+    virtual void setM2Object(void * m2Object) = 0;
+    virtual void setLayer(int layer)  = 0;
+    virtual void setPriorityPlane(int priorityPlane) = 0;
+    virtual void setQuery(const HGOcclusionQuery &query) = 0;
+    virtual void setSortDistance(float distance) = 0;
+
 };
 #endif //AWEBWOWVIEWERCPP_IMESH_H

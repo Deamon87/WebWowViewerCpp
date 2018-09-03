@@ -9,8 +9,8 @@
 #include "GTexture.h"
 #include "../GDevice.h"
 
-class GBlpTexture : public GTexture, public virtual IBlpTexture {
-    friend class GDeviceGLL33;
+class GBlpTexture : public GTexture {
+    friend class GDeviceGL33;
     explicit GBlpTexture(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GBlpTexture() override;

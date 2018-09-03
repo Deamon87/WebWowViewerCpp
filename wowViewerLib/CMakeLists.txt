@@ -210,6 +210,8 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/ogl3.3/GOcclusionQueryGL33.h
         src/engine/objects/GlobalThreads.cpp
         src/engine/objects/GlobalThreads.h
+        src/gapi/interface/IDevice.h
+        src/gapi/interface/IDevice.cpp
         src/gapi/interface/textures/IBlpTexture.h
         src/gapi/interface/textures/ITexture.h
         src/gapi/interface/buffers/IIndexBuffer.h

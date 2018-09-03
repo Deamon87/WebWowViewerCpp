@@ -5,6 +5,7 @@
 #ifndef WEBWOWVIEWERCPP_GDEVICE_H
 #define WEBWOWVIEWERCPP_GDEVICE_H
 
+#include <memory>
 
 class GVertexBuffer;
 class GVertexBufferBindings;
@@ -21,6 +22,9 @@ class GParticleMesh;
 
 class gMeshTemplate;
 
+typedef std::shared_ptr<GUniformBuffer> HGLUniformBuffer;
+typedef std::shared_ptr<GMeshGL33> HGLMesh;
+
 #include <unordered_set>
 #include <list>
 #include "GVertexBufferBindings.h"
@@ -32,6 +36,7 @@ class gMeshTemplate;
 #include "GShaderPermutation.h"
 #include "meshes/GMeshGL33.h"
 #include "../interface/IDevice.h"
+
 
 
 class GDeviceGL33 : public IDevice {

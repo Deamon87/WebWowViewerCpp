@@ -5,9 +5,9 @@
 #ifndef AWEBWOWVIEWERCPP_ISHADERPERMUTATION_H
 #define AWEBWOWVIEWERCPP_ISHADERPERMUTATION_H
 
-class ISharedPremutation {
+class IShaderPermutation {
 public:
-    virtual ~ISharedPremutation() = 0;
+    virtual ~IShaderPermutation() = 0;
     virtual void compileShader() = 0;
 };
 

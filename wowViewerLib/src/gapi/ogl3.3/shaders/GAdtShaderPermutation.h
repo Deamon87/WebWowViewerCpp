@@ -12,7 +12,7 @@ class GAdtShaderPermutation : public GShaderPermutation{
 protected:
     explicit GAdtShaderPermutation(std::string &shaderName, IDevice *device);
 
-    virtual void compileShader() override;
+    void compileShader() override;
 
 };
 

@@ -7,8 +7,8 @@
 #include "GMeshGL33.h"
 #include "../../interface/meshes/IParticleMesh.h"
 
-class GParticleMesh : public GMeshGL33, public virtual IParticleMesh {
-    friend class GDeviceGLL33;
+class GParticleMesh : public GMeshGL33 {
+    friend class GDeviceGL33;
 protected:
     GParticleMesh(IDevice &device, const gMeshTemplate &meshTemplate);
 };

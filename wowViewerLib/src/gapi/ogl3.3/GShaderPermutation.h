@@ -14,7 +14,7 @@ class GDeviceGL33;
 #include "../../engine/algorithms/hashString.h"
 #include "../interface/IShaderPermutation.h"
 
-class GShaderPermutation : public ISharedPremutation {
+class GShaderPermutation : public IShaderPermutation {
     friend class GDeviceGL33;
 
 public:
@@ -23,7 +23,7 @@ public:
 protected:
     explicit GShaderPermutation(std::string &shaderName, IDevice *device);
 
-    virtual void compileShader();
+    void compileShader() override;
     GLuint getUnf(const HashedString name) const {
         return m_uniformMap.at(name.Hash());
     }

@@ -9,10 +9,13 @@
 
 class GM2ShaderPermutation : public GShaderPermutation{
     friend class GDeviceGL33;
+public:
+    ~GM2ShaderPermutation() override {};
+
 protected:
     explicit GM2ShaderPermutation(std::string &shaderName, IDevice *device);
 
-    virtual void compileShader() override;
+    void compileShader() override;
 
 };
 

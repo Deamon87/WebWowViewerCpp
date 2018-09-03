@@ -8,9 +8,10 @@
 #include "../GVertexBufferBindings.h"
 #include "../textures/GBlpTexture.h"
 #include "../../interface/meshes/IMesh.h"
+#include "../GDevice.h"
 
 class GMeshGL33 : public IMesh {
-    friend class GDeviceGLL33;
+    friend class GDeviceGL33;
 protected:
     explicit GMeshGL33(IDevice &device,
                    const gMeshTemplate &meshTemplate
@@ -26,6 +27,13 @@ public:
     void setRenderOrder(int renderOrder) override;
 
     void setEnd(int end) override;
+public:
+    void setM2Object(void * m2Object) override { throw "Not Implemented";};
+    void setLayer(int layer) override { throw "Not Implemented";};
+    void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
+    void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
+    void setSortDistance(float distance) override { throw "Not Implemented";};
+
 protected:
     MeshType m_meshType;
 private:

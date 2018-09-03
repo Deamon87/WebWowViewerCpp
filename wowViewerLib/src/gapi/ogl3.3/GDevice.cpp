@@ -13,6 +13,8 @@
 #include "shaders/GAdtShaderPermutation.h"
 #include "shaders/GWMOShaderPermutation.h"
 
+
+
 BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
         /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
         /*GxBlend_AlphaKey*/         {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
@@ -48,7 +50,7 @@ BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
 //    }
 //}
 
-__stdcall void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*userParam*/) {
+void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*userParam*/) {
     fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
             source,
             type,
@@ -151,18 +153,21 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
     }
 
     std::shared_ptr<IShaderPermutation> sharedPtr;
+    IShaderPermutation *iPremutation = nullptr;
     if (shaderName == "m2Shader") {
-        sharedPtr.reset( (IShaderPermutation *) new GM2ShaderPermutation(shaderName, this));
+        iPremutation = new GM2ShaderPermutation(shaderName, this);
         m_m2ShaderCreated = true;
     } else if (shaderName == "m2ParticleShader") {
-        sharedPtr.reset( (IShaderPermutation *) new GM2ParticleShaderPermutation(shaderName, this));
+        iPremutation = new GM2ParticleShaderPermutation(shaderName, this);
     } else if (shaderName == "wmoShader") {
-        sharedPtr.reset( (IShaderPermutation *) new GWMOShaderPermutation(shaderName, this));
+        iPremutation = new GWMOShaderPermutation(shaderName, this);
     } else if (shaderName == "adtShader") {
-        sharedPtr.reset( (IShaderPermutation *) new GAdtShaderPermutation(shaderName, this));
+        iPremutation = new GAdtShaderPermutation(shaderName, this);
     } else {
-        sharedPtr.reset((IShaderPermutation *) new GShaderPermutation(shaderName, this));
+        iPremutation = new GShaderPermutation(shaderName, this);
     }
+
+    sharedPtr.reset(iPremutation);
 
     GShaderPermutation * gShaderPermutation = (GShaderPermutation *)sharedPtr.get();
 
@@ -211,8 +216,6 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 //            a->m_textureCount == a->m_textureCount)
 //    }
 
-
-
     int j = 0;
     for (auto &hgMesh : meshes) {
         this->drawMesh(hgMesh);
@@ -220,22 +223,24 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
     }
 }
 
-void GDeviceGL33::updateBuffers(std::vector<HGMesh> &meshes) {
+void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
+    std::vector<HGLMesh> &meshes = (std::vector<HGLMesh> &) iMeshes;
+
     //1. Collect buffers
-    std::vector<HGUniformBuffer> buffers;
+    std::vector<GUniformBuffer *> buffers;
     int renderIndex = 0;
     for (const auto &mesh : meshes) {
         for (int i = 0; i < 3; i++ ) {
-            HGUniformBuffer buffer = mesh->m_fragmentUniformBuffer[i];
+            GUniformBuffer *buffer = (GUniformBuffer *) mesh->m_fragmentUniformBuffer[i].get();
             if (buffer != nullptr) {
                 buffers.push_back(buffer);
                 buffer->m_creationIndex = renderIndex++;
             }
         }
         for (int i = 0; i < 3; i++ ) {
-            HGUniformBuffer buffer = mesh->m_vertexUniformBuffer[i];
+            GUniformBuffer * buffer = (GUniformBuffer *)mesh->m_vertexUniformBuffer[i].get();
             if (buffer != nullptr) {
                 buffers.push_back(buffer);
                 buffer->m_creationIndex = renderIndex++;
@@ -243,7 +248,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &meshes) {
         }
     }
 
-    std::sort( buffers.begin(), buffers.end(), [](const HGUniformBuffer &a, const HGUniformBuffer &b) -> bool {
+    std::sort( buffers.begin(), buffers.end(), [](const GUniformBuffer *a, const GUniformBuffer * b) -> bool {
         return a->m_creationIndex > b->m_creationIndex;
     });
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
@@ -270,7 +275,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &meshes) {
         if (buffer->m_buffCreated) continue;
 
         if ((currentSize + buffer->m_size) > maxUniformBufferSize) {
-            bufferForUpload->uploadData(&aggregationBufferForUpload[0], currentSize);
+            ((GUniformBuffer *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], currentSize);
 
             buffersIndex++;
             currentSize = 0;
@@ -284,7 +289,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &meshes) {
             }
         }
 
-        buffer->pIdentifierBuffer = bufferForUpload->pIdentifierBuffer;
+        buffer->pIdentifierBuffer = ((GUniformBuffer *) bufferForUpload.get())->pIdentifierBuffer;
         buffer->m_offset = (size_t) currentSize;
         void * dataPtr = buffer->getPointerForUpload();
         std::copy((char*)dataPtr,
@@ -305,7 +310,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &meshes) {
     }
 
 	if (aggregationBufferForUpload.size() > 0) {
-		bufferForUpload->uploadData(&aggregationBufferForUpload[0], currentSize);
+        ((GUniformBuffer *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], currentSize);
 	}
     buffersIndex++;
     currentSize = 0;
@@ -315,15 +320,16 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &meshes) {
 }
 
 void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
+    GMeshGL33 * hmesh = (GMeshGL33 *) hIMesh.get();
     if (hmesh->m_end <= 0) return;
 
     GOcclusionQueryGL33 * gOcclusionQuery = nullptr;
     GM2MeshGL33 * gm2Mesh = nullptr;
     if (hmesh->m_meshType == MeshType::eOccludingQuery) {
-        gOcclusionQuery = (GOcclusionQueryGL33 *)(hmesh.get());
+        gOcclusionQuery = (GOcclusionQueryGL33 *)(hmesh);
     }
     if (hmesh->m_meshType == MeshType::eM2Mesh) {
-        gm2Mesh = (GM2MeshGL33 *)(hmesh.get());
+        gm2Mesh = (GM2MeshGL33 *)(hmesh);
     }
 
     bindProgram(hmesh->m_shader.get());
@@ -434,13 +440,13 @@ void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
         gOcclusionQuery->beginQuery();
     }
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
-        gm2Mesh->m_query->beginConditionalRendering();
+        ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
-        gm2Mesh->m_query->endConditionalRendering();
+        ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->endConditionalRendering();
     }
 
     if (gOcclusionQuery != nullptr) {
@@ -492,7 +498,8 @@ HGParticleMesh GDeviceGL33::createParticleMesh(gMeshTemplate &meshTemplate) {
     return h_mesh;
 }
 
-void GDeviceGL33::bindTexture(ITexture *texture, int slot) {
+void GDeviceGL33::bindTexture(ITexture *iTexture, int slot) {
+    GTexture * texture = (GTexture *) iTexture;
     if (texture == nullptr) {
         if (m_lastTexture[slot] != nullptr) {
             glActiveTexture(GL_TEXTURE0 + slot);
@@ -536,7 +543,9 @@ HGTexture GDeviceGL33::createTexture() {
     return hgTexture;
 }
 
-void GDeviceGL33::bindProgram(IShaderPermutation *program) {
+void GDeviceGL33::bindProgram(IShaderPermutation *iProgram) {
+    GShaderPermutation *program = (GShaderPermutation *)iProgram;
+
     if (program == nullptr) {
         if (m_shaderPermutation != nullptr) {
             m_shaderPermutation->unbindProgram();

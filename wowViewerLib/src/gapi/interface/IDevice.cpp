@@ -5,8 +5,6 @@
 #include <iostream>
 #include "IDevice.h"
 
-
-
 bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
     if (a->getIsTransparent() > b-> getIsTransparent()) {
         return false;

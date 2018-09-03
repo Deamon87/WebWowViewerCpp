@@ -24,9 +24,9 @@ typedef std::shared_ptr<IVertexBufferBindings> HGVertexBufferBindings;
 typedef std::shared_ptr<IUniformBuffer> HGUniformBuffer;
 typedef std::shared_ptr<IShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<IMesh> HGMesh;
-typedef std::shared_ptr<IM2Mesh> HGM2Mesh;
-typedef std::shared_ptr<IOcclusionQuery> HGOcclusionQuery;
-typedef std::shared_ptr<IParticleMesh> HGParticleMesh;
+typedef std::shared_ptr<IMesh> HGM2Mesh;
+typedef std::shared_ptr<IMesh> HGParticleMesh;
+typedef std::shared_ptr<IMesh> HGOcclusionQuery;
 typedef std::shared_ptr<IBlpTexture> HGBlpTexture;
 typedef std::shared_ptr<ITexture> HGTexture;
 

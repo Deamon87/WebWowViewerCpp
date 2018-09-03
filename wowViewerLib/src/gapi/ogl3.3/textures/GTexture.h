@@ -8,8 +8,8 @@
 #include "../GDevice.h"
 #include "../../interface/textures/ITexture.h"
 
-class GTexture : public virtual ITexture {
-    friend class GDeviceGLL33;
+class GTexture : public ITexture {
+    friend class GDeviceGL33;
 protected:
     explicit GTexture(IDevice &device);
 public:
@@ -17,6 +17,9 @@ public:
 
     void loadData(int width, int height, void *data) override;
     bool getIsLoaded() override;
+    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
+        throw "Not Implemented in this class";
+    }
 private:
     void createBuffer();
     void destroyBuffer();

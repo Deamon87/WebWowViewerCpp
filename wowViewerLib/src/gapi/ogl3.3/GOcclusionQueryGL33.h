@@ -7,8 +7,8 @@
 
 #include "meshes/GMeshGL33.h"
 
-class GOcclusionQueryGL33 : public GMeshGL33, public virtual IOcclusionQuery {
-    friend class GDeviceGLL33;
+class GOcclusionQueryGL33 : public GMeshGL33 {
+    friend class GDeviceGL33;
 public:
     ~GOcclusionQueryGL33() override;
 protected:

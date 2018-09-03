@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_M2GEOM_H
 
 #include <vector>
+#include <unordered_map>
 #include "../persistance/header/M2FileHeader.h"
 #include "../../gapi/interface/IDevice.h"
 #include "../persistance/helper/ChunkFileReader.h"

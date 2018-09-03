@@ -8,7 +8,7 @@
 #include "GMeshGL33.h"
 #include "../../../engine/objects/m2/m2Object.h"
 
-class GM2MeshGL33 : public GMeshGL33, public virtual IM2Mesh {
+class GM2MeshGL33 : public GMeshGL33 {
     friend class GDeviceGL33;
 protected:
     GM2MeshGL33(IDevice &device, const gMeshTemplate &meshTemplate);
