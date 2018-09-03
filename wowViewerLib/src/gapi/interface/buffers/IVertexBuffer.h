@@ -6,7 +6,7 @@
 #define AWEBWOWVIEWERCPP_IVERTEXBUFFER_H
 class IVertexBuffer {
 public:
-    virtual ~IVertexBuffer() = 0;
+    virtual ~IVertexBuffer() {};
     virtual void uploadData(void *, int length) = 0;
 };
 #endif //AWEBWOWVIEWERCPP_IVERTEXBUFFER_H

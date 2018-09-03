@@ -2,6 +2,7 @@
 // Created by deamon on 05.06.18.
 //
 #include <iostream>
+#include <algorithm>
 #include "../../engine/opengl/header.h"
 #include "GDevice.h"
 #include "../../engine/algorithms/hashString.h"

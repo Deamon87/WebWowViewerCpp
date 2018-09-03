@@ -7,7 +7,7 @@
 
 class IUniformBuffer {
 public:
-    virtual ~IUniformBuffer() = 0;
+    virtual ~IUniformBuffer() {};
 
     template<typename T>
     T &getObject() {

@@ -43,6 +43,8 @@ typedef std::shared_ptr<ITexture> HGTexture;
 
 class IDevice {
     public:
+        virtual ~IDevice() {};
+
         virtual void reset() = 0;
         virtual bool getIsEvenFrame() = 0;
 

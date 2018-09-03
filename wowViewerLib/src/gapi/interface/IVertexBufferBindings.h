@@ -23,7 +23,7 @@ struct GVertexBufferBinding {
 
 class IVertexBufferBindings {
 public:
-    virtual ~IVertexBufferBindings() = 0;
+    virtual ~IVertexBufferBindings() {};
 public:
     virtual void save() = 0;
 

@@ -70,10 +70,26 @@ public:
 };
 
 
-
 class IMesh {
+    friend class IDevice;
+
+protected:
+    int m_renderOrder = 0;
+
+    float m_sortDistance = 0;
+    int m_priorityPlane;
+    int m_layer;
+    void *m_m2Object = nullptr;
+
+    HGVertexBufferBindings m_bindings;
+    int m_start;
+    int m_end;
+
+    std::vector<HGTexture> m_texture;
+    int m_textureCount;
+
 public:
-    virtual ~IMesh() = 0;
+    virtual ~IMesh(){};
     virtual HGUniformBuffer getVertexUniformBuffer(int slot) = 0;
     virtual HGUniformBuffer getFragmentUniformBuffer(int slot) = 0;
     virtual EGxBlendEnum getGxBlendMode() = 0;

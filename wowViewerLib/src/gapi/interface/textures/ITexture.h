@@ -9,7 +9,7 @@
 
 class ITexture {
 public:
-    virtual ~ITexture() = 0;
+    virtual ~ITexture() {};
 
     virtual void loadData(int width, int height, void *data) = 0;
     virtual bool getIsLoaded() = 0;

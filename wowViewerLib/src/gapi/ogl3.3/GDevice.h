@@ -42,6 +42,7 @@ typedef std::shared_ptr<GMeshGL33> HGLMesh;
 class GDeviceGL33 : public IDevice {
 public:
     GDeviceGL33();
+    ~GDeviceGL33() override {};
 
     void reset() override;
 

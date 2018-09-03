@@ -129,7 +129,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         textureCache(requestProcessor),
         adtObjectCache(requestProcessor),
         db2Cache(requestProcessor){
-//    m_gdevice = GDevice();
+    m_gdevice.reset(new GDeviceGL33());
 
 //    std::ofstream *out = new std::ofstream("log_output.txt");
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf

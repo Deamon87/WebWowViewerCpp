@@ -7,7 +7,7 @@
 
 class IShaderPermutation {
 public:
-    virtual ~IShaderPermutation() = 0;
+    virtual ~IShaderPermutation() {};
     virtual void compileShader() = 0;
 };
 

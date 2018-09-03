@@ -173,7 +173,28 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/db2/DB2WmoAreaTable.h
         src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h
         src/engine/persistance/header/texFileHeader.h
-        src/gapi/ogl3.3/textures/GBlpTexture.cpp
+        src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp
+        src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.h
+        src/engine/wowCommonClasses.h
+        src/engine/shader/ShaderDefinitions.cpp
+        src/engine/objects/GlobalThreads.cpp
+        src/engine/objects/GlobalThreads.h
+
+        src/gapi/interface/IDevice.h
+        src/gapi/interface/IDevice.cpp
+        src/gapi/interface/textures/IBlpTexture.h
+        src/gapi/interface/textures/ITexture.h
+        src/gapi/interface/buffers/IIndexBuffer.h
+        src/gapi/interface/buffers/IUniformBuffer.h
+        src/gapi/interface/buffers/IVertexBuffer.h
+        src/gapi/interface/IOcclusionQuery.h
+        src/gapi/interface/IShaderPermutation.h
+        src/gapi/interface/IVertexBufferBindings.h
+        src/gapi/interface/meshes/IM2Mesh.h
+        src/gapi/interface/meshes/IMesh.h
+        src/gapi/interface/meshes/IParticleMesh.h)
+
+set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTexture.cpp
         src/gapi/ogl3.3/textures/GBlpTexture.h
         src/gapi/ogl3.3/buffers/GVertexBuffer.cpp
         src/gapi/ogl3.3/buffers/GVertexBuffer.h
@@ -189,14 +210,11 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/ogl3.3/meshes/GMeshGL33.h
         src/gapi/ogl3.3/GVertexBufferBindings.cpp
         src/gapi/ogl3.3/GVertexBufferBindings.h
-        src/engine/wowCommonClasses.h
-        src/engine/shader/ShaderDefinitions.cpp
         src/gapi/ogl3.3/GShaderPermutation.cpp
         src/gapi/ogl3.3/GShaderPermutation.h
         src/gapi/ogl3.3/shaders/GM2ShaderPermutation.cpp
         src/gapi/ogl3.3/shaders/GM2ShaderPermutation.h src/gapi/UniformBufferStructures.h
-        src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp
-        src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.h src/gapi/ogl3.3/meshes/GM2MeshGL33.cpp
+        src/gapi/ogl3.3/meshes/GM2MeshGL33.cpp
         src/gapi/ogl3.3/meshes/GM2MeshGL33.h src/gapi/ogl3.3/textures/GTexture.cpp src/gapi/ogl3.3/textures/GTexture.h
         src/gapi/ogl3.3/shaders/GM2ParticleShaderPermutation.cpp
         src/gapi/ogl3.3/shaders/GM2ParticleShaderPermutation.h
@@ -207,25 +225,10 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/ogl3.3/shaders/GAdtShaderPermutation.cpp
         src/gapi/ogl3.3/shaders/GAdtShaderPermutation.h
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
-        src/gapi/ogl3.3/GOcclusionQueryGL33.h
-        src/engine/objects/GlobalThreads.cpp
-        src/engine/objects/GlobalThreads.h
-        src/gapi/interface/IDevice.h
-        src/gapi/interface/IDevice.cpp
-        src/gapi/interface/textures/IBlpTexture.h
-        src/gapi/interface/textures/ITexture.h
-        src/gapi/interface/buffers/IIndexBuffer.h
-        src/gapi/interface/buffers/IUniformBuffer.h
-        src/gapi/interface/buffers/IVertexBuffer.h
-        src/gapi/interface/IOcclusionQuery.h
-        src/gapi/interface/IShaderPermutation.h
-        src/gapi/interface/IVertexBufferBindings.h
-        src/gapi/interface/meshes/IM2Mesh.h
-        src/gapi/interface/meshes/IMesh.h
-        src/gapi/interface/meshes/IParticleMesh.h)
+        src/gapi/ogl3.3/GOcclusionQueryGL33.h)
 
 #add_dependencies(WoWViewerLib mathfu)
-add_library(WoWViewerLib STATIC ${SOURCE_FILES})
+add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION})
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
     set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 endif()

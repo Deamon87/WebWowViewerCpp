@@ -6,7 +6,9 @@
 
 GMeshGL33::GMeshGL33(IDevice &device,
              const gMeshTemplate &meshTemplate
-) : m_device(device), m_bindings(meshTemplate.bindings), m_shader(meshTemplate.shader), m_meshType(meshTemplate.meshType) {
+) : m_device(device), m_shader(meshTemplate.shader), m_meshType(meshTemplate.meshType) {
+
+    m_bindings = meshTemplate.bindings;
 
     m_depthWrite = (int8_t) (meshTemplate.depthWrite ? 1u : 0u);
     m_depthCulling = (int8_t) (meshTemplate.depthCulling ? 1 : 0);

@@ -37,12 +37,11 @@ public:
 protected:
     MeshType m_meshType;
 private:
-    HGVertexBufferBindings m_bindings;
+
     HGShaderPermutation m_shader;
 
     HGUniformBuffer m_vertexUniformBuffer[3] = {nullptr, nullptr, nullptr};
     HGUniformBuffer m_fragmentUniformBuffer[3] = {nullptr, nullptr, nullptr};
-    std::vector<HGTexture> m_texture;
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;
@@ -53,12 +52,10 @@ private:
 
 
     uint8_t m_colorMask = 0;
-    int m_renderOrder = 0;
-    int m_start;
-    int m_end;
+
     int m_element;
 
-    int m_textureCount;
+
 
 private:
     IDevice &m_device;

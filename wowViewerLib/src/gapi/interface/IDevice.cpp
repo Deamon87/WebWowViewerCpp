@@ -29,8 +29,8 @@ bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
     }
 
     if (a->getMeshType() == MeshType::eM2Mesh && a->getIsTransparent() && b->getIsTransparent()) {
-        HGM2Mesh a1 = std::static_pointer_cast<GM2Mesh>(a);
-        HGM2Mesh b1 = std::static_pointer_cast<GM2Mesh>(b);
+        HGM2Mesh a1 = std::static_pointer_cast<IMesh>(a);
+        HGM2Mesh b1 = std::static_pointer_cast<IMesh>(b);
         if (a1->m_priorityPlane != b1->m_priorityPlane) {
             return b1->m_priorityPlane > a1->m_priorityPlane;
         }

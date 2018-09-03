@@ -9,7 +9,7 @@ GM2MeshGL33::GM2MeshGL33(IDevice &device, const gMeshTemplate &meshTemplate) : G
 }
 
 void GM2MeshGL33::setM2Object(void *m2Object) {
-    m_m2Object = (M2Object *)(m2Object);
+    m_m2Object = (m2Object);
 }
 
 void GM2MeshGL33::setLayer(int layer) {
