@@ -4,7 +4,7 @@
 
 #include "GAdtShaderPermutation.h"
 
-GAdtShaderPermutation::GAdtShaderPermutation(std::string &shaderName, GDevice &device) : GShaderPermutation(shaderName,
+GAdtShaderPermutation::GAdtShaderPermutation(std::string &shaderName, IDevice *device) : GShaderPermutation(shaderName,
                                                                                                             device) {}
 
 void GAdtShaderPermutation::compileShader() {

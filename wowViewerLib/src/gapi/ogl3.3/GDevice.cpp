@@ -59,30 +59,35 @@ __stdcall void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity
 }
 
 void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {
-    if (buffer == nullptr ) {
+    GIndexBuffer * gBuffer = (GIndexBuffer *) buffer;
+    if (gBuffer == nullptr ) {
         if (m_lastBindIndexBuffer != nullptr) {
-            m_lastBindIndexBuffer->unbind();
+            ((GIndexBuffer * )m_lastBindIndexBuffer)->unbind();
             m_lastBindIndexBuffer = nullptr;
         }
-    } else if (buffer != m_lastBindIndexBuffer) {
-        buffer->bind();
-        m_lastBindIndexBuffer = dynamic_cast<GIndexBuffer *>(buffer);
+    } else if (gBuffer != m_lastBindIndexBuffer) {
+        gBuffer->bind();
+        m_lastBindIndexBuffer = gBuffer;
     }
 }
 
 void GDeviceGL33::bindVertexBuffer(IVertexBuffer *buffer)  {
+    GVertexBuffer *gbuffer = (GVertexBuffer *) buffer;
+
     if (buffer == nullptr) {
         if (m_lastBindVertexBuffer != nullptr) {
             m_lastBindVertexBuffer->unbind();
             m_lastBindVertexBuffer = nullptr;
         }
     }  else if (buffer != m_lastBindVertexBuffer) {
-        buffer->bind();
-        m_lastBindVertexBuffer = buffer;
+        gbuffer->bind();
+        m_lastBindVertexBuffer = gbuffer;
     }
 }
 
 void GDeviceGL33::bindVertexUniformBuffer(IUniformBuffer *buffer, int slot)  {
+    GUniformBuffer *gbuffer = (GUniformBuffer *) buffer;
+
     if (buffer == nullptr) {
         if (m_vertexUniformBuffer[slot] != nullptr) {
             m_vertexUniformBuffer[slot]->unbind();
@@ -90,36 +95,37 @@ void GDeviceGL33::bindVertexUniformBuffer(IUniformBuffer *buffer, int slot)  {
         }
     }  else {
         if (slot == -1) {
-            buffer->bind(slot);
+            gbuffer->bind(slot);
             m_vertexUniformBuffer[0] = nullptr;
         } else if (buffer != m_vertexUniformBuffer[slot]) {
-            buffer->bind(slot);
+            gbuffer->bind(slot);
 
-            m_vertexUniformBuffer[slot] = buffer;
+            m_vertexUniformBuffer[slot] = gbuffer;
         }
     }
 }
 void GDeviceGL33::bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot)  {
+    GUniformBuffer *gbuffer = (GUniformBuffer *) buffer;
     if (buffer == nullptr) {
         if (m_fragmentUniformBuffer[slot] != nullptr) {
-            m_fragmentUniformBuffer[slot]->unbind();
+            ((GUniformBuffer *)m_fragmentUniformBuffer[slot])->unbind();
             m_fragmentUniformBuffer[slot] = nullptr;
         }
-    }  else if (buffer != m_fragmentUniformBuffer[slot]) {
-        buffer->bind(3+slot);
+    }  else if (gbuffer != m_fragmentUniformBuffer[slot]) {
+        gbuffer->bind(3+slot);
 
-        m_fragmentUniformBuffer[slot] = buffer;
+        m_fragmentUniformBuffer[slot] = gbuffer;
     }
 }
 
 
 void GDeviceGL33::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
-    buffer =
+    GVertexBufferBindings *gbuffer = ((GVertexBufferBindings *) buffer);
 
     if (buffer == nullptr) {
        if (m_vertexBufferBindings != nullptr) {
 //           m_vertexBufferBindings->unbind();
-           m_defaultVao->bind();
+           ( (GVertexBufferBindings *)m_defaultVao.get())->bind();
            m_vertexBufferBindings = (GVertexBufferBindings *)(m_defaultVao.get());
        }
         m_lastBindIndexBuffer = nullptr;
@@ -128,14 +134,14 @@ void GDeviceGL33::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
         m_lastBindIndexBuffer = nullptr;
         m_lastBindVertexBuffer = nullptr;
 
-        if (buffer != m_vertexBufferBindings) {
-            buffer->bind();
+        if (gbuffer != m_vertexBufferBindings) {
+            gbuffer->bind();
             m_vertexBufferBindings = (GVertexBufferBindings *) buffer;
         }
     }
 }
 
-std::shared_ptr<GShaderPermutation> GDeviceGL33::getShader(std::string shaderName) {
+std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderName) {
     const char * cstr = shaderName.c_str();
     size_t hash = CalculateFNV(cstr);
     if (m_shaderPermutCache.count(hash) > 0) {
@@ -144,30 +150,32 @@ std::shared_ptr<GShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
         return ptr;
     }
 
-    std::shared_ptr<GShaderPermutation> sharedPtr;
+    std::shared_ptr<IShaderPermutation> sharedPtr;
     if (shaderName == "m2Shader") {
-        sharedPtr.reset( new GM2ShaderPermutation(shaderName, *this));
+        sharedPtr.reset( (IShaderPermutation *) new GM2ShaderPermutation(shaderName, this));
         m_m2ShaderCreated = true;
     } else if (shaderName == "m2ParticleShader") {
-        sharedPtr.reset( new GM2ParticleShaderPermutation(shaderName, *this));
+        sharedPtr.reset( (IShaderPermutation *) new GM2ParticleShaderPermutation(shaderName, this));
     } else if (shaderName == "wmoShader") {
-        sharedPtr.reset( new GWMOShaderPermutation(shaderName, *this));
+        sharedPtr.reset( (IShaderPermutation *) new GWMOShaderPermutation(shaderName, this));
     } else if (shaderName == "adtShader") {
-        sharedPtr.reset( new GAdtShaderPermutation(shaderName, *this));
+        sharedPtr.reset( (IShaderPermutation *) new GAdtShaderPermutation(shaderName, this));
     } else {
-        sharedPtr.reset(new GShaderPermutation(shaderName, *this));
+        sharedPtr.reset((IShaderPermutation *) new GShaderPermutation(shaderName, this));
     }
 
-    sharedPtr->compileShader();
+    GShaderPermutation * gShaderPermutation = (GShaderPermutation *)sharedPtr.get();
+
+    gShaderPermutation->compileShader();
     m_shaderPermutCache[hash] = sharedPtr;
 
-    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboVertexBlockIndex[0], 0);
-    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboVertexBlockIndex[1], 1);
-    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboVertexBlockIndex[2], 2);
+    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[0], 0);
+    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[1], 1);
+    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[2], 2);
 
-    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboFragmentBlockIndex[0], 3+0);
-    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboFragmentBlockIndex[1], 3+1);
-    glUniformBlockBinding(sharedPtr->m_programBuffer, sharedPtr->m_uboFragmentBlockIndex[2], 3+2);
+    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[0], 3+0);
+    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[1], 3+1);
+    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[2], 3+2);
 
     return m_shaderPermutCache[hash];
 }

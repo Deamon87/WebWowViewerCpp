@@ -9,7 +9,7 @@
 #include "../../interface/textures/ITexture.h"
 
 class GTexture : public virtual ITexture {
-    friend class GDevice;
+    friend class GDeviceGLL33;
 protected:
     explicit GTexture(IDevice &device);
 public:

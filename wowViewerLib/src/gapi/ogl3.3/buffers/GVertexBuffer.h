@@ -7,10 +7,11 @@
 
 #include "../../interface/IDevice.h"
 #include "../../interface/buffers/IVertexBuffer.h"
+#include "../GDevice.h"
 #include <memory>
 
-class GVertexBuffer : public virtual IVertexBuffer {
-    friend class GDevice;
+class GVertexBuffer : public IVertexBuffer {
+    friend class GDeviceGL33;
 
     explicit GVertexBuffer(IDevice &device);
 public:

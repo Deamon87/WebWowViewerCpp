@@ -5,13 +5,13 @@
 #ifndef WEBWOWVIEWERCPP_GINDEXBUFFER_H
 #define WEBWOWVIEWERCPP_GINDEXBUFFER_H
 
-class GDevice;
-#include "../GDevice.h"
 #include "../../interface/buffers/IIndexBuffer.h"
 #include "../../interface/IDevice.h"
+#include "../GDevice.h"
 
-class GIndexBuffer : public virtual IIndexBuffer{
-    friend class GDevice;
+
+class GIndexBuffer : public IIndexBuffer{
+    friend class GDeviceGL33;
 
     explicit GIndexBuffer(IDevice &device);
 public:

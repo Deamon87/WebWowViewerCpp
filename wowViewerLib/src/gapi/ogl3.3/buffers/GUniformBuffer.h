@@ -13,7 +13,7 @@
 
 class GUniformBuffer : public IUniformBuffer {
 public:
-    friend class GDevice;
+    friend class GDeviceGL33;
 
     explicit GUniformBuffer(IDevice &device, size_t size);
     ~GUniformBuffer() override;

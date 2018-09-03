@@ -33,6 +33,7 @@ typedef std::shared_ptr<ITexture> HGTexture;
 #include "meshes/IMesh.h"
 #include "meshes/IM2Mesh.h"
 #include "IOcclusionQuery.h"
+#include "IShaderPermutation.h"
 #include "buffers/IIndexBuffer.h"
 #include "buffers/IVertexBuffer.h"
 #include "IVertexBufferBindings.h"

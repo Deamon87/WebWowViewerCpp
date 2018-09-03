@@ -8,9 +8,9 @@
 #include "../GShaderPermutation.h"
 
 class GWMOShaderPermutation : public GShaderPermutation{
-    friend class GDevice;
+    friend class GDeviceGL33;
 protected:
-    explicit GWMOShaderPermutation(std::string &shaderName, GDevice &device);
+    explicit GWMOShaderPermutation(std::string &shaderName, IDevice *device);
 
     virtual void compileShader() override;
 

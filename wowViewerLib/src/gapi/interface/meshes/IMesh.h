@@ -5,6 +5,7 @@
 #ifndef AWEBWOWVIEWERCPP_IMESH_H
 #define AWEBWOWVIEWERCPP_IMESH_H
 
+#include <vector>
 #include "../IDevice.h"
 
 enum class MeshType {

@@ -5,7 +5,7 @@
 #include "GOcclusionQueryGL33.h"
 
 
-GOcclusionQueryGL33::GOcclusionQueryGL33(GDevice &device, HGMesh &oclludee) : GMesh(*oclludee){
+GOcclusionQueryGL33::GOcclusionQueryGL33(IDevice &device, HGMesh &oclludee) : GMeshGL33(*(GMeshGL33 *)(oclludee.get())){
     createQuery();
 
     m_meshType = MeshType::eOccludingQuery;

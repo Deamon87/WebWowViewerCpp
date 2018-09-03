@@ -83,7 +83,7 @@ GLuint sizeFromUniformType(GLint type)
     return s;
 }
 
-GShaderPermutation::GShaderPermutation(std::string &shaderName, GDevice & device) : m_device(device), m_shaderName(shaderName){
+GShaderPermutation::GShaderPermutation(std::string &shaderName, IDevice * device) : m_device(device), m_shaderName(shaderName){
 
 }
 

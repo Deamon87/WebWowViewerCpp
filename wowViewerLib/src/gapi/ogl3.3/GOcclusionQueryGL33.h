@@ -8,11 +8,11 @@
 #include "meshes/GMeshGL33.h"
 
 class GOcclusionQueryGL33 : public GMeshGL33, public virtual IOcclusionQuery {
-    friend class GDevice;
+    friend class GDeviceGLL33;
 public:
     ~GOcclusionQueryGL33() override;
 protected:
-    GOcclusionQueryGL33(GDevice &device, HGMesh &oclludee);
+    GOcclusionQueryGL33(IDevice &device, HGMesh &oclludee);
 
 
 private:

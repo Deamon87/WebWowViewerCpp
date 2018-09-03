@@ -3,7 +3,7 @@
 //
 
 #include "GM2ParticleShaderPermutation.h"
-GM2ParticleShaderPermutation::GM2ParticleShaderPermutation(std::string &shaderName, GDevice &device) : GShaderPermutation(shaderName,
+GM2ParticleShaderPermutation::GM2ParticleShaderPermutation(std::string &shaderName, IDevice *device) : GShaderPermutation(shaderName,
                                                                                                           device) {}
 
 void GM2ParticleShaderPermutation::compileShader() {

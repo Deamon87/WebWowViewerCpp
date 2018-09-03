@@ -5,16 +5,24 @@
 #ifndef AWEBWOWVIEWERCPP_GSHADERPERMUTATION_H
 #define AWEBWOWVIEWERCPP_GSHADERPERMUTATION_H
 
+class GDeviceGL33;
+
 #include <string>
 #include <unordered_map>
 #include "GDevice.h"
 #include "../../engine/opengl/header.h"
 #include "../../engine/algorithms/hashString.h"
+#include "../interface/IShaderPermutation.h"
 
-class GShaderPermutation {
-    friend class GDevice;
+class GShaderPermutation : public ISharedPremutation {
+    friend class GDeviceGL33;
+
+public:
+    ~GShaderPermutation() override {};
+
 protected:
-    explicit GShaderPermutation(std::string &shaderName, GDevice & device);
+    explicit GShaderPermutation(std::string &shaderName, IDevice *device);
+
     virtual void compileShader();
     GLuint getUnf(const HashedString name) const {
         return m_uniformMap.at(name.Hash());
@@ -29,7 +37,7 @@ protected:
 
     unsigned int m_programBuffer = 0;
 private:
-    GDevice &m_device;
+    IDevice *m_device;
 private:
     std::unordered_map<size_t, unsigned int> m_uniformMap;
     unsigned int m_uboVertexBlockIndex[3];

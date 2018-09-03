@@ -16,8 +16,8 @@ class GVertexBufferBindings;
 #include "../interface/IDevice.h"
 #include "GDevice.h"
 
-class GVertexBufferBindings : public virtual IVertexBufferBindings {
-    friend class GDevice;
+class GVertexBufferBindings : public IVertexBufferBindings {
+    friend class GDeviceGL33;
 private:
     std::vector<GVertexBufferBinding> m_bindings;
     HGIndexBuffer m_indexBuffer = HGIndexBuffer(nullptr);

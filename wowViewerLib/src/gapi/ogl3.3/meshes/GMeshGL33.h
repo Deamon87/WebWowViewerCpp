@@ -9,9 +9,8 @@
 #include "../textures/GBlpTexture.h"
 #include "../../interface/meshes/IMesh.h"
 
-class GMeshGL33 : public virtual IMesh {
-    friend class GDevice;
-
+class GMeshGL33 : public IMesh {
+    friend class GDeviceGLL33;
 protected:
     explicit GMeshGL33(IDevice &device,
                    const gMeshTemplate &meshTemplate
@@ -54,7 +53,7 @@ private:
     int m_textureCount;
 
 private:
-    GDevice &m_device;
+    IDevice &m_device;
 };
 
 

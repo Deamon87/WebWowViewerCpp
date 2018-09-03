@@ -5,7 +5,7 @@
 #include "GWMOShaderPermutation.h"
 
 
-GWMOShaderPermutation::GWMOShaderPermutation(std::string &shaderName, GDevice &device) : GShaderPermutation(shaderName,
+GWMOShaderPermutation::GWMOShaderPermutation(std::string &shaderName, IDevice *device) : GShaderPermutation(shaderName,
                                                                                                                           device) {}
 
 void GWMOShaderPermutation::compileShader() {

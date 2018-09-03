@@ -4,7 +4,7 @@
 
 #include "GM2ShaderPermutation.h"
 
-GM2ShaderPermutation::GM2ShaderPermutation(std::string &shaderName, GDevice &device) : GShaderPermutation(shaderName,
+GM2ShaderPermutation::GM2ShaderPermutation(std::string &shaderName, IDevice *device) : GShaderPermutation(shaderName,
                                                                                                           device) {}
 
 void GM2ShaderPermutation::compileShader() {
