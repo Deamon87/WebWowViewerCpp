@@ -85,7 +85,7 @@ public:
 private:
     void drawMesh(HGMesh &hmesh);
 
-private:
+protected:
     struct BlpCacheRecord {
         HBlpTexture texture;
         bool wrapX;
@@ -135,7 +135,7 @@ private:
 
     HGTexture m_blackPixelTexture;
 
-private:
+protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;

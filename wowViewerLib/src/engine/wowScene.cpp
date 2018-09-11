@@ -1,4 +1,3 @@
-#include "opengl/header.h"
 #include "wowScene.h"
 #include "shader/ShaderRuntimeData.h"
 #include "algorithms/mathHelper.h"
@@ -12,7 +11,7 @@
 #include "shader/ShaderDefinitions.h"
 #include "./../gapi/UniformBufferStructures.h"
 #include "objects/GlobalThreads.h"
-#include "../gapi/interface/IDevice.h"
+#include "../gapi/IDeviceFactory.h"
 #include <iostream>
 #include <cmath>
 #include <thread>
@@ -129,7 +128,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         textureCache(requestProcessor),
         adtObjectCache(requestProcessor),
         db2Cache(requestProcessor){
-    m_gdevice.reset(new GDeviceGL33());
+//    m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
+    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
 
 //    std::ofstream *out = new std::ofstream("log_output.txt");
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
@@ -156,8 +156,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
-    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-    currentScene = new Map(this, 1220, "Troll Raid");
+//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+//    currentScene = new Map(this, 1220, "Troll Raid");
 //    currentScene = new Map(this, 0, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -228,8 +228,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(1825.32, 376.095, 70.0652); //LordaeronScenario
 //    currentScene = new Map(this, 1, "LordaeronScenario");
 //
-   m_firstCamera.setCameraPos( 2652, 1083, 200) ; //LordaeronScenario
-    currentScene = new Map(this, 1, "legionshiphorizontalstormheim");
+//   m_firstCamera.setCameraPos( 2652, 1083, 200) ; //LordaeronScenario
+//    currentScene = new Map(this, 1, "legionshiphorizontalstormheim");
+   m_firstCamera.setCameraPos( -9169.86, 1604.42, 26.84) ; //LordaeronScenario
+    currentScene = new Map(this, 1, "ahnqirajtemple");
 //
 //    m_firstCamera.setCameraPos(3062, 495, 200 ); //Valhalla
 //    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt

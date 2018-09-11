@@ -116,8 +116,10 @@ void GShaderPermutation::compileShader() {
     bool geomShaderExists = false;
     if (esVersion) {
         vertExtraDefStrings = "#version 300 es\n" + vertExtraDefStrings;
+        geomExtraDefStrings = "#version 300 es\n" + geomExtraDefStrings;
     } else {
         vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
+        geomExtraDefStrings = "#version 330\n" + geomExtraDefStrings;
     }
 
     if (!esVersion) {
@@ -128,7 +130,6 @@ void GShaderPermutation::compileShader() {
                 "#define highp\n";
     }
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
-    geomExtraDefStrings = "#version 300 es\n";
 
     if (esVersion) {
         fragExtraDefStrings = "#version 300 es\n" + fragExtraDefStrings;

@@ -192,7 +192,8 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/interface/IVertexBufferBindings.h
         src/gapi/interface/meshes/IM2Mesh.h
         src/gapi/interface/meshes/IMesh.h
-        src/gapi/interface/meshes/IParticleMesh.h)
+        src/gapi/IDeviceFactory.cpp src/gapi/IDeviceFactory.h
+        src/gapi/interface/meshes/IParticleMesh.h )
 
 set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTexture.cpp
         src/gapi/ogl3.3/textures/GBlpTexture.h
@@ -227,8 +228,16 @@ set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTexture.cpp
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
         src/gapi/ogl3.3/GOcclusionQueryGL33.h)
 
+set(OPENGL4x_IMPLEMENTATION src/gapi/ogl4.x/GDeviceGL4x.cpp
+        src/gapi/ogl4.x/buffers/GUniformBufferGL4x.cpp
+        src/gapi/ogl4.x/GOcclusionQueryGL33.cpp
+        src/gapi/ogl4.x/meshes/GParticleMesh4x.cpp
+        src/gapi/ogl4.x/meshes/GM2MeshGL4x.cpp
+        src/gapi/ogl4.x/meshes/GMeshGL4x.cpp
+)
+
 #add_dependencies(WoWViewerLib mathfu)
-add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION})
+add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION})
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
     set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 endif()

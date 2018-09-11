@@ -16,6 +16,7 @@ class IMesh;
 class IM2Mesh;
 class IOcclusionQuery;
 class IParticleMesh;
+class gMeshTemplate;
 #include <memory>
 
 typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;

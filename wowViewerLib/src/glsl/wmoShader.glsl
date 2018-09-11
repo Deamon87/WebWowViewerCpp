@@ -12,13 +12,13 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
 precision highp float;
-attribute vec3 aPosition;
-attribute vec3 aNormal;
-attribute vec2 aTexCoord;
-attribute vec2 aTexCoord2;
-attribute vec2 aTexCoord3;
-attribute vec4 aColor;
-attribute vec4 aColor2;
+in vec3 aPosition;
+in vec3 aNormal;
+in vec2 aTexCoord;
+in vec2 aTexCoord2;
+in vec2 aTexCoord3;
+in vec4 aColor;
+in vec4 aColor2;
 
 layout(std140) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
@@ -33,13 +33,15 @@ layout(std140) uniform meshWideBlockVS {
     ivec4 VertexShader_UseLitColor;
 };
 
-varying vec2 vTexCoord;
-varying vec2 vTexCoord2;
-varying vec2 vTexCoord3;
-varying vec4 vColor;
-varying vec4 vColor2;
-varying vec4 vPosition;
-varying vec3 vNormal;
+out VertexData {
+vec2 vTexCoord;
+vec2 vTexCoord2;
+vec2 vTexCoord3;
+vec4 vColor;
+vec4 vColor2;
+vec4 vPosition;
+vec3 vNormal;
+} vs_out;
 
 #ifdef drawBuffersIsSupported
 //vec3 vNormal;
@@ -68,6 +70,15 @@ vec2 posToTexCoord(vec3 cameraPoint, vec3 normal){
 //};
 
 void main() {
+    vec2 vTexCoord;
+    vec2 vTexCoord2;
+    vec2 vTexCoord3;
+    vec4 vColor;
+    vec4 vColor2;
+    vec4 vPosition;
+    vec3 vNormal;
+
+
     vec4 worldPoint = uPlacementMat * vec4(aPosition, 1);
 
     vec4 cameraPoint = uLookAtMat * worldPoint;
@@ -137,19 +148,79 @@ void main() {
         vTexCoord2 = vPosition.xy * -0.239999995;
         vTexCoord3 = aTexCoord3; //not used
     }
+
+
+    vs_out.vTexCoord = vTexCoord;
+    vs_out.vTexCoord2 = vTexCoord2;
+    vs_out.vTexCoord3 = vTexCoord3;
+    vs_out.vColor = vColor;
+    vs_out.vColor2 = vColor2;
+    vs_out.vPosition = vPosition;
+    vs_out.vNormal = vNormal;
 }
 #endif //COMPILING_VS
+
+#ifdef COMPILING_GS
+layout (triangles) in;
+layout (triangle_strip, max_vertices=3) out;
+
+in VertexData {
+vec2 vTexCoord;
+vec2 vTexCoord2;
+vec2 vTexCoord3;
+vec4 vColor;
+vec4 vColor2;
+vec4 vPosition;
+vec3 vNormal;
+} VertexIn[];
+
+out vec2 vTexCoord;
+out vec2 vTexCoord2;
+out vec2 vTexCoord3;
+out vec4 vColor;
+out vec4 vColor2;
+out vec4 vPosition;
+out vec3 vNormal;
+out vec3 vBaryCentric;
+
+ void main()
+{
+  for(int i = 0; i < gl_in.length(); i++)
+  {
+     // copy attributes
+    gl_Position = gl_in[i].gl_Position;
+    vTexCoord = VertexIn[i].vTexCoord;
+    vTexCoord2 = VertexIn[i].vTexCoord2;
+    vTexCoord3 = VertexIn[i].vTexCoord3;
+    vColor = VertexIn[i].vColor;
+    vColor2 = VertexIn[i].vColor2;
+    vPosition = VertexIn[i].vPosition;
+    vNormal = VertexIn[i].vNormal;
+    vBaryCentric = vec3(
+//    0, 0, 0
+        ((i & 3) == 0) ? 1.0f : 0,
+        ((i & 3) == 1) ? 1.0f : 0,
+        ((i & 3) == 2) ? 1.0f : 0
+    );
+
+    // done with the vertex
+    EmitVertex();
+  }
+  EndPrimitive();
+}
+#endif
 
 #ifdef COMPILING_FS
 
 precision highp float;
-varying vec3 vNormal;
-varying vec2 vTexCoord;
-varying vec2 vTexCoord2;
-varying vec2 vTexCoord3;
-varying vec4 vColor;
-varying vec4 vColor2;
-varying vec4 vPosition;
+in vec2 vTexCoord;
+in vec2 vTexCoord2;
+in vec2 vTexCoord3;
+in vec4 vColor;
+in vec4 vColor2;
+in vec4 vPosition;
+in vec3 vNormal;
+in vec3 vBaryCentric;
 
 layout(std140) uniform meshWideBlockPS {
     vec4 uViewUp;
@@ -164,6 +235,8 @@ layout(std140) uniform meshWideBlockPS {
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
+
+out vec4 outputColor;
 
 #ifdef drawBuffersIsSupported
 varying float fs_Depth;
@@ -214,6 +287,8 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
 }
 
 void main() {
+
+
     vec4 tex = texture2D(uTexture, vTexCoord).rgba ;
     vec4 tex2 = texture2D(uTexture2, vTexCoord2).rgba;
     vec4 tex3 = texture2D(uTexture3, vTexCoord3).rgba;
@@ -377,9 +452,16 @@ void main() {
 
     finalColor.a = 1.0; //do I really need it now?
 
+
+
+
 //#ifndef drawBuffersIsSupported
     //Forward rendering without lights
-    gl_FragColor = finalColor;
+    outputColor = finalColor;
+    if(!any(lessThan(vBaryCentric, vec3(0.02)))){
+        discard;
+    }
+
 //#else
     //Deferred rendering
     //gl_FragColor = finalColor;
