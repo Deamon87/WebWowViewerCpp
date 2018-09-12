@@ -4,6 +4,7 @@
 #include <memory.h>
 #include "../../../engine/opengl/header.h"
 #include "GUniformBufferGL4x.h"
+#include "../../interface/IDevice.h"
 
 GUniformBufferGL4x::GUniformBufferGL4x(IDevice &device, size_t size) : m_device(device){
     m_size = size;

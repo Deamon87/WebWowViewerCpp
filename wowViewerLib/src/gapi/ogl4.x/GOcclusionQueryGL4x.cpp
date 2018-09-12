@@ -2,7 +2,7 @@
 // Created by deamon on 09.08.18.
 //
 
-#include "GOcclusionQueryGL33.h"
+#include "GOcclusionQueryGL4x.h"
 
 
 GOcclusionQueryGL4x::GOcclusionQueryGL4x(IDevice &device, HGMesh &oclludee) : GMeshGL4x(*(GMeshGL4x *)(oclludee.get())){

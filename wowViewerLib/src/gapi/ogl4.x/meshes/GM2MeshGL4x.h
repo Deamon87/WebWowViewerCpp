@@ -2,8 +2,8 @@
 // Created by Deamon on 7/22/2018.
 //
 
-#ifndef AWEBWOWVIEWERCPP_GM2MESH_GL4x_H
-#define AWEBWOWVIEWERCPP_GM2MESH_GL4x_H
+#ifndef AWEBWOWVIEWERCPP_GM2MESH_4X_H
+#define AWEBWOWVIEWERCPP_GM2MESH_4X_H
 
 #include "GMeshGL4x.h"
 
@@ -23,4 +23,4 @@ private:
     HGOcclusionQuery m_query = nullptr;
 
 };
-#endif //AWEBWOWVIEWERCPP_GM2MESH_GL4x_H
+#endif //AWEBWOWVIEWERCPP_GM2MESH_4X_H

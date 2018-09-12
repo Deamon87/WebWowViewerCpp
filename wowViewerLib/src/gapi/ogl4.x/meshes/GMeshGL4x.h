@@ -2,14 +2,15 @@
 // Created by deamon on 05.06.18.
 //
 
-#ifndef WEBWOWVIEWERCPP_GMESH_GL4x_H
-#define WEBWOWVIEWERCPP_GMESH_GL4x_H
+#ifndef WEBWOWVIEWERCPP_GMESH_4X_H
+#define WEBWOWVIEWERCPP_GMESH_4X_H
 
+#include "../GVertexBufferBindingsGL4x.h"
+#include "../textures/GBlpTextureGL4x.h"
 #include "../../interface/meshes/IMesh.h"
-#include "../../interface/IDevice.h"
+#include "../GDeviceGL4x.h"
 
 class GMeshGL4x : public IMesh {
-protected:
     friend class GDeviceGL4x;
 protected:
     explicit GMeshGL4x(IDevice &device,
@@ -61,4 +62,4 @@ private:
 };
 
 
-#endif //WEBWOWVIEWERCPP_GMESH_GL4x_H
+#endif //WEBWOWVIEWERCPP_GMESH_4X_H

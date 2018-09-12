@@ -1,0 +1,14 @@
+//
+// Created by deamon on 05.06.18.
+//
+
+#ifndef WEBWOWVIEWERCPP_GRENDERTARGET_4X_H
+#define WEBWOWVIEWERCPP_GRENDERTARGET_4X_H
+
+
+class GRenderTargetGL4x {
+
+};
+
+
+#endif //WEBWOWVIEWERCPP_GRENDERTARGET_4X_H

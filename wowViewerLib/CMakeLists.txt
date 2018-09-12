@@ -231,13 +231,42 @@ set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
         src/gapi/ogl3.3/GOcclusionQueryGL33.h)
 
-#set(OPENGL4x_IMPLEMENTATION src/gapi/ogl4.x/GDeviceGL4x.cpp
-#        src/gapi/ogl4.x/buffers/GUniformBufferGL4x.cpp
-#        src/gapi/ogl4.x/GOcclusionQueryGL33.cpp
-#        src/gapi/ogl4.x/meshes/GParticleMesh4x.cpp
-#        src/gapi/ogl4.x/meshes/GM2MeshGL4x.cpp
-#        src/gapi/ogl4.x/meshes/GMeshGL4x.cpp
-#)
+set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
+        src/gapi/ogl4.x/textures/GBlpTextureGL4x.h
+        src/gapi/ogl4.x/buffers/GVertexBufferGL4x.cpp
+        src/gapi/ogl4.x/buffers/GVertexBufferGL4x.h
+        src/gapi/ogl4.x/buffers/GIndexBufferGL4x.cpp
+        src/gapi/ogl4.x/buffers/GIndexBufferGL4x.h
+        src/gapi/ogl4.x/buffers/GUniformBufferGL4x.cpp
+        src/gapi/ogl4.x/buffers/GUniformBufferGL4x.h
+        src/gapi/ogl4.x/GRenderTargetGL4x.cpp
+        src/gapi/ogl4.x/GRenderTargetGL4x.h
+        src/gapi/ogl4.x/GDeviceGL4x.cpp
+        src/gapi/ogl4.x/GDeviceGL4x.h
+        src/gapi/ogl4.x/meshes/GMeshGL4x.cpp
+        src/gapi/ogl4.x/meshes/GMeshGL4x.h
+        src/gapi/ogl4.x/GVertexBufferBindingsGL4x.cpp
+        src/gapi/ogl4.x/GVertexBufferBindingsGL4x.h
+        src/gapi/ogl4.x/GShaderPermutationGL4x.cpp
+        src/gapi/ogl4.x/GShaderPermutationGL4x.h
+        src/gapi/ogl4.x/shaders/GM2ShaderPermutationGL4x.cpp
+        src/gapi/ogl4.x/shaders/GM2ShaderPermutationGL4x.h
+        src/gapi/UniformBufferStructures.h
+        src/gapi/ogl4.x/meshes/GM2MeshGL4x.cpp
+        src/gapi/ogl4.x/meshes/GM2MeshGL4x.h
+        src/gapi/ogl4.x/textures/GTextureGL4x.cpp
+        src/gapi/ogl4.x/textures/GTextureGL4x.h
+        src/gapi/ogl4.x/shaders/GM2ParticleShaderPermutationGL4x.cpp
+        src/gapi/ogl4.x/shaders/GM2ParticleShaderPermutationGL4x.h
+        src/gapi/ogl4.x/meshes/GParticleMeshGL4x.cpp
+        src/gapi/ogl4.x/meshes/GParticleMeshGL4x.h
+        src/gapi/ogl4.x/shaders/GWMOShaderPermutationGL4x.cpp
+        src/gapi/ogl4.x/shaders/GWMOShaderPermutationGL4x.h
+        src/gapi/ogl4.x/shaders/GAdtShaderPermutationGL4x.cpp
+        src/gapi/ogl4.x/shaders/GAdtShaderPermutationGL4x.h
+        src/gapi/ogl4.x/GOcclusionQueryGL4x.cpp
+        src/gapi/ogl4.x/GOcclusionQueryGL4x.h)
+
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION})
