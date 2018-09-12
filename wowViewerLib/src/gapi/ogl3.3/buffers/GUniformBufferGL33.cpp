@@ -3,9 +3,10 @@
 //
 #include <memory.h>
 #include "../../../engine/opengl/header.h"
-#include "GUniformBuffer.h"
+#include "GUniformBufferGL33.h"
+#include "../../interface/IDevice.h"
 
-GUniformBuffer::GUniformBuffer(IDevice &device, size_t size) : m_device(device){
+GUniformBufferGL33::GUniformBufferGL33(IDevice &device, size_t size) : m_device(device){
     m_size = size;
     pIdentifierBuffer = new GLuint;
     pFrameOneContent = new char[size];
@@ -13,7 +14,7 @@ GUniformBuffer::GUniformBuffer(IDevice &device, size_t size) : m_device(device){
 //    createBuffer();
 }
 
-GUniformBuffer::~GUniformBuffer() {
+GUniformBufferGL33::~GUniformBufferGL33() {
     if (m_buffCreated) {
         destroyBuffer();
     }
@@ -22,17 +23,17 @@ GUniformBuffer::~GUniformBuffer() {
     delete (char *)pFrameTwoContent;
 }
 
-void GUniformBuffer::createBuffer() {
+void GUniformBufferGL33::createBuffer() {
     glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
     m_buffCreated = true;
 
 }
 
 
-void GUniformBuffer::destroyBuffer() {
+void GUniformBufferGL33::destroyBuffer() {
     glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
 }
-void GUniformBuffer::bind(int bindingPoint) { //Should be called only by GDevice
+void GUniformBufferGL33::bind(int bindingPoint) { //Should be called only by GDevice
     if (m_buffCreated && bindingPoint == -1) {
         glBindBuffer(GL_UNIFORM_BUFFER, *(GLuint *) this->pIdentifierBuffer);
     } else if (m_buffCreated) {
@@ -41,11 +42,11 @@ void GUniformBuffer::bind(int bindingPoint) { //Should be called only by GDevice
         glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer, m_offset, m_size);
     }
 }
-void GUniformBuffer::unbind() {
+void GUniformBufferGL33::unbind() {
 //    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void GUniformBuffer::uploadData(void * data, int length) {
+void GUniformBufferGL33::uploadData(void * data, int length) {
     m_device.bindVertexUniformBuffer(this, -1);
 
     assert(m_buffCreated);
@@ -68,7 +69,7 @@ void GUniformBuffer::uploadData(void * data, int length) {
     m_needsUpdate = false;
 }
 
-void GUniformBuffer::save(bool initialSave) {
+void GUniformBufferGL33::save(bool initialSave) {
 //    if (memcmp(pPreviousContent, pContent, m_size) != 0) {
         //1. Copy new to prev
         if (initialSave) {
@@ -84,7 +85,7 @@ void GUniformBuffer::save(bool initialSave) {
 //    }
 }
 
-void *GUniformBuffer::getPointerForUpload() {
+void *GUniformBufferGL33::getPointerForUpload() {
 //    if (!m_device.getIsEvenFrame()) {
 //        return pFrameTwoContent;
 //    } else {
@@ -92,7 +93,7 @@ void *GUniformBuffer::getPointerForUpload() {
 //    }
 }
 
-void *GUniformBuffer::getPointerForModification() {
+void *GUniformBufferGL33::getPointerForModification() {
 //    if (m_device.getIsEvenFrame()) {
 //        return pFrameTwoContent;
 //    } else {

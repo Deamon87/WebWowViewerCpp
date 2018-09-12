@@ -247,3 +247,7 @@ void GDeviceGL4x::drawMesh(HGMesh &hIMesh) {
         gOcclusionQuery->endQuery();
     }
 }
+
+HGMesh GDeviceGL4x::createMesh(gMeshTemplate &meshTemplate) {
+
+}

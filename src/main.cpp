@@ -427,7 +427,7 @@ void mainLoop(void* loopArg){
         nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
         {
             nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "Draw M2 AABB:", NK_TEXT_LEFT);
+            nk_label(ctx, "Draw M2:", NK_TEXT_LEFT);
         }
         nk_layout_row_end(ctx);
         nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
@@ -439,7 +439,7 @@ void mainLoop(void* loopArg){
         nk_layout_row_end(ctx);
 
         nk_layout_row_push(ctx, 50);
-        nk_label(ctx, "Draw WMO AABB:", NK_TEXT_LEFT);
+        nk_label(ctx, "Draw WMO:", NK_TEXT_LEFT);
         nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
         {
             nk_layout_row_push(ctx, 50);
@@ -449,8 +449,8 @@ void mainLoop(void* loopArg){
         nk_layout_row_end(ctx);
 
 
-        testConf->setDrawM2BB(myapp->drawM2AABB);
-        testConf->setDrawWmoBB(myapp->drawWMOAABB);
+        testConf->setRenderM2(myapp->drawM2AABB);
+        testConf->setRenderWMO(myapp->drawWMOAABB);
 
 
         nk_layout_row_push(ctx, 50);

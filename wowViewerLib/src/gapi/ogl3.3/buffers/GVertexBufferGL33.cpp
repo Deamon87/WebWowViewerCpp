@@ -2,30 +2,30 @@
 // Created by deamon on 05.06.18.
 //
 
-#include "../GDevice.h"
+#include "../GDeviceGL33.h"
 #include "../../../engine/opengl/header.h"
 
 
 
-GVertexBuffer::GVertexBuffer(IDevice &device)  : m_device(device) {
+GVertexBufferGL33::GVertexBufferGL33(IDevice &device)  : m_device(device) {
     pIdentifierBuffer = new GLuint;
     createBuffer();
 }
-GVertexBuffer::~GVertexBuffer() {
+GVertexBufferGL33::~GVertexBufferGL33() {
     destroyBuffer();
     delete (GLuint *)pIdentifierBuffer;
 }
 
-void GVertexBuffer::createBuffer() {
+void GVertexBufferGL33::createBuffer() {
     glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
     m_buffCreated = true;
 }
 
-void GVertexBuffer::destroyBuffer() {
+void GVertexBufferGL33::destroyBuffer() {
     glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
 }
 
-void GVertexBuffer::uploadData(void * data, int length) {
+void GVertexBufferGL33::uploadData(void * data, int length) {
     m_device.bindVertexBufferBindings(nullptr);
     m_device.bindVertexBuffer(this);
 
@@ -49,10 +49,10 @@ void GVertexBuffer::uploadData(void * data, int length) {
     m_dataUploaded = true;
 }
 
-void GVertexBuffer::bind() {
+void GVertexBufferGL33::bind() {
     glBindBuffer(GL_ARRAY_BUFFER, *(GLuint *) this->pIdentifierBuffer);
 }
 
-void GVertexBuffer::unbind() {
+void GVertexBufferGL33::unbind() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }

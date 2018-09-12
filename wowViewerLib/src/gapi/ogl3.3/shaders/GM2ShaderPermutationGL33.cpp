@@ -2,13 +2,13 @@
 // Created by Deamon on 7/8/2018.
 //
 
-#include "GM2ShaderPermutation.h"
+#include "GM2ShaderPermutationGL33.h"
 
-GM2ShaderPermutation::GM2ShaderPermutation(std::string &shaderName, IDevice *device) : GShaderPermutation(shaderName,
+GM2ShaderPermutationGL33::GM2ShaderPermutationGL33(std::string &shaderName, IDevice *device) : GShaderPermutationGL33(shaderName,
                                                                                                           device) {}
 
-void GM2ShaderPermutation::compileShader() {
-    GShaderPermutation::compileShader();
+void GM2ShaderPermutationGL33::compileShader() {
+    GShaderPermutationGL33::compileShader();
 
     //Init newly created shader
     glUseProgram(this->m_programBuffer);

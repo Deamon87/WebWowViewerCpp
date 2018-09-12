@@ -6,7 +6,7 @@
 #define WEBWOWVIEWERCPP_GRENDERTARGET_H
 
 
-class GRenderTarget {
+class GRenderTargetGL33 {
 
 };
 

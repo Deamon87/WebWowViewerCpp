@@ -5,12 +5,12 @@
 #ifndef AWEBWOWVIEWERCPP_CM2PARTICLESHADERPERMUTATION_H
 #define AWEBWOWVIEWERCPP_CM2PARTICLESHADERPERMUTATION_H
 
-#include "../GShaderPermutation.h"
+#include "../GShaderPermutationGL33.h"
 
-class GM2ParticleShaderPermutation : public GShaderPermutation {
+class GM2ParticleShaderPermutationGL33 : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GM2ParticleShaderPermutation(std::string &shaderName, IDevice *device);
+    explicit GM2ParticleShaderPermutationGL33(std::string &shaderName, IDevice *device);
 
     virtual void compileShader() override;
 };

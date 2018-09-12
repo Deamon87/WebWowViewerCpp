@@ -1221,7 +1221,7 @@ void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
     auto inserter = std::back_inserter(renderedThisFrame);
     std::copy(drawnChunks.begin(), drawnChunks.end(), inserter);
 
-    GeneralView::collectMeshes(renderedThisFrame);
+    //GeneralView::collectMeshes(renderedThisFrame);
 }
 
 

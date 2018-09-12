@@ -584,8 +584,10 @@ void Map::draw() {
         vector.push_back(&thisFrameExteriorView);
     }
 
-    for (auto &view : vector) {
-        view->collectMeshes(renderedThisFrame);
+    if (m_api->getConfig()->getRenderWMO()) {
+        for (auto &view : vector) {
+            view->collectMeshes(renderedThisFrame);
+        }
     }
 
     std::vector<M2Object *> m2ObjectsRendered;
@@ -595,10 +597,12 @@ void Map::draw() {
     std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
     m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
 
-    for (auto &m2Object : m2ObjectsRendered) {
-        if (m2Object == nullptr) continue;
-        m2Object->collectMeshes(renderedThisFrame, m_viewRenderOrder);
-        m2Object->drawParticles(renderedThisFrame, m_viewRenderOrder);
+    if (m_api->getConfig()->getRenderM2()) {
+        for (auto &m2Object : m2ObjectsRendered) {
+            if (m2Object == nullptr) continue;
+            m2Object->collectMeshes(renderedThisFrame, m_viewRenderOrder);
+            m2Object->drawParticles(renderedThisFrame, m_viewRenderOrder);
+        }
     }
 
     std::sort(renderedThisFrame.begin(),

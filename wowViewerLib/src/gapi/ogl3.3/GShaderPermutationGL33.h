@@ -9,19 +9,19 @@ class GDeviceGL33;
 
 #include <string>
 #include <unordered_map>
-#include "GDevice.h"
+#include "GDeviceGL33.h"
 #include "../../engine/opengl/header.h"
 #include "../../engine/algorithms/hashString.h"
 #include "../interface/IShaderPermutation.h"
 
-class GShaderPermutation : public IShaderPermutation {
+class GShaderPermutationGL33 : public IShaderPermutation {
     friend class GDeviceGL33;
 
 public:
-    ~GShaderPermutation() override {};
+    ~GShaderPermutationGL33() override {};
 
 protected:
-    explicit GShaderPermutation(std::string &shaderName, IDevice *device);
+    explicit GShaderPermutationGL33(std::string &shaderName, IDevice *device);
 
     void compileShader() override;
     GLuint getUnf(const HashedString name) const {

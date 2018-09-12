@@ -8,15 +8,15 @@
 
 #include <cstdio>
 #include <cassert>
-#include "../GDevice.h"
+#include "../GDeviceGL33.h"
 #include "../../interface/buffers/IUniformBuffer.h"
 
-class GUniformBuffer : public IUniformBuffer {
+class GUniformBufferGL33 : public IUniformBuffer {
 public:
     friend class GDeviceGL33;
 
-    explicit GUniformBuffer(IDevice &device, size_t size);
-    ~GUniformBuffer() override;
+    explicit GUniformBufferGL33(IDevice &device, size_t size);
+    ~GUniformBufferGL33() override;
 
     void *getPointerForModification() override;
     void *getPointerForUpload() override;

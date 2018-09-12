@@ -27,7 +27,7 @@
 #include "persistance/wdlFile.h"
 #include "persistance/db2/base/DB2Base.h"
 #include "persistance/db2/DB2Light.h"
-#include "../gapi/ogl3.3/GDevice.h"
+#include "../gapi/interface/IDevice.h"
 
 class WoWFrameParamHolder {
 public:

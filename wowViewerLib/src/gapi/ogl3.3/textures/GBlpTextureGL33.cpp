@@ -2,31 +2,31 @@
 // Created by deamon on 05.06.18.
 //
 
-#include "../GDevice.h"
-#include "GBlpTexture.h"
+#include "../GDeviceGL33.h"
+#include "GBlpTextureGL33.h"
 #include "../../../engine/opengl/header.h"
 #include "../../../engine/persistance/helper/ChunkFileReader.h"
 #include "../../../engine/texture/DxtDecompress.h"
 
-GBlpTexture::GBlpTexture(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
-    : GTexture(device), m_texture(texture) {
+GBlpTextureGL33::GBlpTextureGL33(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
+    : GTextureGL33(device), m_texture(texture) {
     this->xWrapTex = xWrapTex;
     this->yWrapTex = yWrapTex;
 }
 
-GBlpTexture::~GBlpTexture() {
+GBlpTextureGL33::~GBlpTextureGL33() {
 
 }
 
-void GBlpTexture::bind() {
+void GBlpTextureGL33::bind() {
     glBindTexture(GL_TEXTURE_2D, *(GLuint *) pIdentifierBuffer);
 }
 
-void GBlpTexture::unbind() {
+void GBlpTextureGL33::unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void GBlpTexture::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
     GLuint textureGPUFormat = 0;
 //     if (ext) {
     switch (textureFormat) {
@@ -170,7 +170,7 @@ void GBlpTexture::createGlTexture(TextureFormat textureFormat, const MipmapsVect
 
 }
 
-bool GBlpTexture::getIsLoaded() {
+bool GBlpTextureGL33::getIsLoaded() {
     if (!m_loaded && m_texture != nullptr && m_texture->getIsLoaded()) {
         m_device.bindTexture(this, 0);
         this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());

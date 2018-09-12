@@ -13,7 +13,7 @@
 #include "../../wowInnerApi.h"
 #include "../../algorithms/mathHelper.h"
 #include "generators/CParticleGenerator.h"
-#include "../../../gapi/ogl3.3/GDevice.h"
+#include "../../../gapi/interface/IDevice.h"
 
 struct ParticleForces {
     mathfu::vec3 drift; // 0

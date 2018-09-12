@@ -2,27 +2,27 @@
 // Created by deamon on 05.06.18.
 //
 #include "../../../engine/opengl/header.h"
-#include "GIndexBuffer.h"
-#include "../GDevice.h"
+#include "GIndexBufferGL33.h"
+#include "../GDeviceGL33.h"
 
-GIndexBuffer::GIndexBuffer(IDevice &device) : m_device(device) {
+GIndexBufferGL33::GIndexBufferGL33(IDevice &device) : m_device(device) {
     buffer = new GLuint;
     createBuffer();
 }
-GIndexBuffer::~GIndexBuffer(){
+GIndexBufferGL33::~GIndexBufferGL33(){
     destroyBuffer();
     delete (GLuint *)buffer;
 }
 
-void GIndexBuffer::createBuffer() {
+void GIndexBufferGL33::createBuffer() {
     glGenBuffers(1, (GLuint *) this->buffer);
 }
 
-void GIndexBuffer::destroyBuffer() {
+void GIndexBufferGL33::destroyBuffer() {
     glDeleteBuffers(1, (const GLuint *) this->buffer);
 }
 
-void GIndexBuffer::uploadData(void * data, int length) {
+void GIndexBufferGL33::uploadData(void * data, int length) {
     m_device.bindVertexBufferBindings(nullptr);
     m_device.bindIndexBuffer(this);
 
@@ -46,10 +46,10 @@ void GIndexBuffer::uploadData(void * data, int length) {
     m_dataUploaded = true;
 }
 
-void GIndexBuffer::bind() {
+void GIndexBufferGL33::bind() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *(GLuint*) this->buffer);
 }
 
-void GIndexBuffer::unbind() {
+void GIndexBufferGL33::unbind() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

@@ -9,7 +9,7 @@
 #include "../../../wowCommonClasses.h"
 #include "../../../persistance/header/blpFileHeader.h"
 #include "../../../texture/BlpTexture.h"
-#include "../../../../gapi/ogl3.3/GDevice.h"
+#include "../../../../gapi/interface/IDevice.h"
 //#include "../../../../gapi/GTexture.h"
 
 class M2MaterialInst {

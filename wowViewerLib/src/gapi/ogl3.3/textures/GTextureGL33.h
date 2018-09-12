@@ -5,15 +5,15 @@
 #ifndef AWEBWOWVIEWERCPP_GTEXTURE_H
 #define AWEBWOWVIEWERCPP_GTEXTURE_H
 
-#include "../GDevice.h"
+#include "../GDeviceGL33.h"
 #include "../../interface/textures/ITexture.h"
 
-class GTexture : public ITexture {
+class GTextureGL33 : public ITexture {
     friend class GDeviceGL33;
 protected:
-    explicit GTexture(IDevice &device);
+    explicit GTextureGL33(IDevice &device);
 public:
-    ~GTexture() override;
+    ~GTextureGL33() override;
 
     void loadData(int width, int height, void *data) override;
     bool getIsLoaded() override;

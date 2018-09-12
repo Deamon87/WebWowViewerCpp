@@ -5,12 +5,12 @@
 #ifndef AWEBWOWVIEWERCPP_GWMOSHADERPERMUTATION_H
 #define AWEBWOWVIEWERCPP_GWMOSHADERPERMUTATION_H
 
-#include "../GShaderPermutation.h"
+#include "../GShaderPermutationGL33.h"
 
-class GWMOShaderPermutation : public GShaderPermutation{
+class GWMOShaderPermutationGL33 : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GWMOShaderPermutation(std::string &shaderName, IDevice *device);
+    explicit GWMOShaderPermutationGL33(std::string &shaderName, IDevice *device);
 
     virtual void compileShader() override;
 

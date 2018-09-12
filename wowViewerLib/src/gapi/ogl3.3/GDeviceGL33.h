@@ -7,33 +7,33 @@
 
 #include <memory>
 
-class GVertexBuffer;
-class GVertexBufferBindings;
-class GIndexBuffer;
-class GUniformBuffer;
-class GBlpTexture;
-class GTexture;
-class GShaderPermutation;
+class GVertexBufferGL33;
+class GVertexBufferBindingsGL33;
+class GIndexBufferGL33;
+class GUniformBufferGL33;
+class GBlpTextureGL33;
+class GTextureGL33;
+class GShaderPermutationGL33;
 class GMeshGL33;
 class GM2MeshGL33;
 class GOcclusionQueryGL33;
-class GParticleMesh;
+class GParticleMeshGL33;
 
 
 class gMeshTemplate;
 
-typedef std::shared_ptr<GUniformBuffer> HGLUniformBuffer;
+typedef std::shared_ptr<GUniformBufferGL33> HGLUniformBuffer;
 typedef std::shared_ptr<GMeshGL33> HGLMesh;
 
 #include <unordered_set>
 #include <list>
-#include "GVertexBufferBindings.h"
-#include "buffers/GIndexBuffer.h"
-#include "buffers/GVertexBuffer.h"
-#include "textures/GTexture.h"
-#include "textures/GBlpTexture.h"
-#include "buffers/GUniformBuffer.h"
-#include "GShaderPermutation.h"
+#include "GVertexBufferBindingsGL33.h"
+#include "buffers/GIndexBufferGL33.h"
+#include "buffers/GVertexBufferGL33.h"
+#include "textures/GTextureGL33.h"
+#include "textures/GBlpTextureGL33.h"
+#include "buffers/GUniformBufferGL33.h"
+#include "GShaderPermutationGL33.h"
 #include "meshes/GMeshGL33.h"
 #include "../interface/IDevice.h"
 
@@ -105,7 +105,7 @@ protected:
             return hash<void*>{}(k.texture.get()) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
         };
     };
-    std::unordered_map<BlpCacheRecord, std::weak_ptr<GTexture>, BlpCacheRecordHasher> loadedTextureCache;
+    std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL33>, BlpCacheRecordHasher> loadedTextureCache;
 
     bool m_isEvenFrame = false;
 
@@ -117,28 +117,28 @@ protected:
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
-    GIndexBuffer *m_lastBindIndexBuffer = nullptr;
-    GVertexBuffer *m_lastBindVertexBuffer = nullptr;
-    GVertexBufferBindings *m_vertexBufferBindings = nullptr;
-    GShaderPermutation * m_shaderPermutation = nullptr;
+    GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
+    GVertexBufferGL33 *m_lastBindVertexBuffer = nullptr;
+    GVertexBufferBindingsGL33 *m_vertexBufferBindings = nullptr;
+    GShaderPermutationGL33 * m_shaderPermutation = nullptr;
 
     HGVertexBufferBindings m_vertexBBBindings;
     HGVertexBufferBindings m_lineBBBindings;
     HGVertexBufferBindings m_defaultVao;
 
-    GTexture *m_lastTexture[10] = {
+    GTextureGL33 *m_lastTexture[10] = {
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
         nullptr};
 
-    GUniformBuffer * m_vertexUniformBuffer[3] = {nullptr};
-    GUniformBuffer * m_fragmentUniformBuffer[3] = {nullptr};
+    GUniformBufferGL33 * m_vertexUniformBuffer[3] = {nullptr};
+    GUniformBufferGL33 * m_fragmentUniformBuffer[3] = {nullptr};
 
     HGTexture m_blackPixelTexture;
 
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
-    std::list<std::weak_ptr<GUniformBuffer>> m_unfiormBufferCache;
+    std::list<std::weak_ptr<GUniformBufferGL33>> m_unfiormBufferCache;
     struct FrameUniformBuffers {
         std::vector<HGUniformBuffer> m_unfiormBuffersForUpload;
     };

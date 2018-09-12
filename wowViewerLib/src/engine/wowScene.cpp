@@ -211,8 +211,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-//   m_firstCamera.setCameraPos(0, 0, 200);
-//    currentScene = new Map(this, 0, "Azeroth");
+   m_firstCamera.setCameraPos(0, 0, 200);
+    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -230,8 +230,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //   m_firstCamera.setCameraPos( 2652, 1083, 200) ; //LordaeronScenario
 //    currentScene = new Map(this, 1, "legionshiphorizontalstormheim");
-   m_firstCamera.setCameraPos( -9169.86, 1604.42, 26.84) ; //LordaeronScenario
-    currentScene = new Map(this, 1, "ahnqirajtemple");
+//   m_firstCamera.setCameraPos( -9169.86, 1604.42, 26.84) ; //LordaeronScenario
+//    currentScene = new Map(this, 1, "ahnqirajtemple");
 //
 //    m_firstCamera.setCameraPos(3062, 495, 200 ); //Valhalla
 //    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt
@@ -247,7 +247,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, "ScenarioAlcazIsland");
 
 //    m_firstCamera.setCameraPos( 0,  0, 470); // Panda ria
-//    currentScene = new Map(this, "HawaiiMainLand");
+//    currentScene = new Map(this, 0, "HawaiiMainLand");
 
 //    m_firstCamera.setCameraPos(-12886, -165, 200); // Pandaria
 //    currentScene = new Map(this, "Azeroth");

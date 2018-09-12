@@ -11,7 +11,8 @@ class Config {
 
 private:
     bool renderAdt = true;
-    bool renderMd2 = true;
+    bool renderWMO = true;
+    bool renderM2 = true;
     bool renderBSP = false;
     bool renderPortals = false;
     bool usePortalCulling = true;
@@ -45,14 +46,22 @@ private:
 
     std::string areaName;
 public:
+    bool getRenderWMO () {
+        return renderWMO;
+    }
+
+    void setRenderWMO(bool value) {
+        renderWMO = value;
+    }
+
     bool getRenderM2 () {
-        return renderMd2;
+        return renderM2;
     }
     bool getUseInstancing () {
         return useInstancing;
     }
     void setRenderM2 (bool value) {
-        renderMd2 = value;
+        renderM2 = value;
     }
     bool getRenderAdt() {
         return renderAdt;

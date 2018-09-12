@@ -3,11 +3,12 @@
 //
 
 #include <iostream>
-#include "GShaderPermutation.h"
+#include "GShaderPermutationGL33.h"
 #include "../../engine/stringTrim.h"
 #include "../../engine/algorithms/hashString.h"
 #include "../../engine/shader/ShaderDefinitions.h"
 #include "../../gapi/UniformBufferStructures.h"
+#include "../interface/IDevice.h"
 
 std::string textFromUniformType(GLint type)
 {
@@ -83,11 +84,11 @@ GLuint sizeFromUniformType(GLint type)
     return s;
 }
 
-GShaderPermutation::GShaderPermutation(std::string &shaderName, IDevice * device) : m_device(device), m_shaderName(shaderName){
+GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, IDevice * device) : m_device(device), m_shaderName(shaderName){
 
 }
 
-void GShaderPermutation::compileShader() {
+void GShaderPermutationGL33::compileShader() {
 
     std::string vertShaderString = loadShader(m_shaderName);
     std::string fragmentShaderString = vertShaderString;
@@ -394,14 +395,14 @@ void GShaderPermutation::compileShader() {
     m_uboFragmentBlockIndex[2] = glGetUniformBlockIndex(program, "meshWideBlockPS");
 }
 
-void GShaderPermutation::setUnf(const std::string &name, GLuint index)  {
+void GShaderPermutationGL33::setUnf(const std::string &name, GLuint index)  {
     const char * cstr = name.c_str();
     m_uniformMap[CalculateFNV(cstr)] = index;
 }
 
-void GShaderPermutation::bindProgram() {
+void GShaderPermutationGL33::bindProgram() {
     glUseProgram(m_programBuffer);
 }
-void GShaderPermutation::unbindProgram() {
+void GShaderPermutationGL33::unbindProgram() {
     glUseProgram(0);
 }

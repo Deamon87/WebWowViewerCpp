@@ -24,7 +24,7 @@ class ParticleEmitter;
 #include "persistance/db2/DB2Light.h"
 #include "persistance/db2/DB2LightData.h"
 #include "persistance/db2/DB2WmoAreaTable.h"
-#include "../gapi/ogl3.3/GDevice.h"
+#include "../gapi/interface/IDevice.h"
 
 class IWoWInnerApi {
 public:

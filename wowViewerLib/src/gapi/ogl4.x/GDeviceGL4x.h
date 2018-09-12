@@ -9,6 +9,7 @@ class GUniformBufferGL4x;
 class GMeshGL4x;
 
 
+#include <memory>
 #include "buffers/GUniformBufferGL4x.h"
 #include "meshes/GMeshGL4x.h"
 #include "meshes/GParticleMesh4x.h"
@@ -27,6 +28,8 @@ public:
     void updateBuffers(std::vector<HGMesh> &iMeshes);
     void drawMesh(HGMesh &hIMesh);
 
+    HGMesh createMesh(gMeshTemplate &meshTemplate) override;
+    HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) override;
 };
 
 

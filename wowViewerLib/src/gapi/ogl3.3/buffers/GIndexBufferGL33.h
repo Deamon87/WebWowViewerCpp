@@ -7,15 +7,15 @@
 
 #include "../../interface/buffers/IIndexBuffer.h"
 #include "../../interface/IDevice.h"
-#include "../GDevice.h"
+#include "../GDeviceGL33.h"
 
 
-class GIndexBuffer : public IIndexBuffer{
+class GIndexBufferGL33 : public IIndexBuffer{
     friend class GDeviceGL33;
 
-    explicit GIndexBuffer(IDevice &device);
+    explicit GIndexBufferGL33(IDevice &device);
 public:
-    ~GIndexBuffer() override;
+    ~GIndexBufferGL33() override;
 
 private:
     void createBuffer();

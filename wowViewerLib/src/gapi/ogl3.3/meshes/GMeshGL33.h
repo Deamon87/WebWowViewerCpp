@@ -5,10 +5,10 @@
 #ifndef WEBWOWVIEWERCPP_GMESH_H
 #define WEBWOWVIEWERCPP_GMESH_H
 
-#include "../GVertexBufferBindings.h"
-#include "../textures/GBlpTexture.h"
+#include "../GVertexBufferBindingsGL33.h"
+#include "../textures/GBlpTextureGL33.h"
 #include "../../interface/meshes/IMesh.h"
-#include "../GDevice.h"
+#include "../GDeviceGL33.h"
 
 class GMeshGL33 : public IMesh {
     friend class GDeviceGL33;

@@ -5,18 +5,18 @@
 #ifndef WEBWOWVIEWERCPP_GVERTEXBUFFERBINDINGS_H
 #define WEBWOWVIEWERCPP_GVERTEXBUFFERBINDINGS_H
 
-class GVertexBuffer;
-class GIndexBuffer;
-class GVertexBufferBindings;
+class GVertexBufferGL33;
+class GIndexBufferGL33;
+class GVertexBufferBindingsGL33;
 
 #include <vector>
 #include <cstdint>
-#include "buffers/GVertexBuffer.h"
+#include "buffers/GVertexBufferGL33.h"
 #include "../interface/IVertexBufferBindings.h"
 #include "../interface/IDevice.h"
-#include "GDevice.h"
+#include "GDeviceGL33.h"
 
-class GVertexBufferBindings : public IVertexBufferBindings {
+class GVertexBufferBindingsGL33 : public IVertexBufferBindings {
     friend class GDeviceGL33;
 private:
     std::vector<GVertexBufferBinding> m_bindings;
@@ -29,8 +29,8 @@ private:
     void * m_buffer;
 
 public:
-    explicit GVertexBufferBindings(IDevice &m_device);
-    ~GVertexBufferBindings() override;
+    explicit GVertexBufferBindingsGL33(IDevice &m_device);
+    ~GVertexBufferBindingsGL33() override;
 
 private:
     void createBuffer();

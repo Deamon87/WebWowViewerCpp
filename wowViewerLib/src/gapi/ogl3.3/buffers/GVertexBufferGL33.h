@@ -7,15 +7,15 @@
 
 #include "../../interface/IDevice.h"
 #include "../../interface/buffers/IVertexBuffer.h"
-#include "../GDevice.h"
+#include "../GDeviceGL33.h"
 #include <memory>
 
-class GVertexBuffer : public IVertexBuffer {
+class GVertexBufferGL33 : public IVertexBuffer {
     friend class GDeviceGL33;
 
-    explicit GVertexBuffer(IDevice &device);
+    explicit GVertexBufferGL33(IDevice &device);
 public:
-    ~GVertexBuffer() override;
+    ~GVertexBufferGL33() override;
 private:
     void createBuffer();
     void destroyBuffer();

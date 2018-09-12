@@ -3,43 +3,43 @@
 //
 
 #include "../../engine/opengl/header.h"
-#include "GVertexBufferBindings.h"
+#include "GVertexBufferBindingsGL33.h"
 #include "../interface/IDevice.h"
 
-GVertexBufferBindings::GVertexBufferBindings(IDevice &m_device) : m_device(m_device) {
+GVertexBufferBindingsGL33::GVertexBufferBindingsGL33(IDevice &m_device) : m_device(m_device) {
     m_buffer = new GLuint;
     createBuffer();
 }
 
-GVertexBufferBindings::~GVertexBufferBindings() {
+GVertexBufferBindingsGL33::~GVertexBufferBindingsGL33() {
     destroyBuffer();
 }
 
-void GVertexBufferBindings::createBuffer() {
+void GVertexBufferBindingsGL33::createBuffer() {
     glGenVertexArrays(1, (GLuint *)this->m_buffer);
 }
 
-void GVertexBufferBindings::destroyBuffer() {
+void GVertexBufferBindingsGL33::destroyBuffer() {
     glDeleteVertexArrays(1, (GLuint *)this->m_buffer);
 }
 
-void GVertexBufferBindings::bind() {
+void GVertexBufferBindingsGL33::bind() {
     glBindVertexArray(*(GLuint *)this->m_buffer);
 }
 
-void GVertexBufferBindings::unbind() {
+void GVertexBufferBindingsGL33::unbind() {
     glBindVertexArray(0);
 }
 
-void GVertexBufferBindings::setIndexBuffer(HGIndexBuffer indexBuffer) {
+void GVertexBufferBindingsGL33::setIndexBuffer(HGIndexBuffer indexBuffer) {
     m_indexBuffer = indexBuffer;
 }
 
-void GVertexBufferBindings::addVertexBufferBinding(GVertexBufferBinding binding) {
+void GVertexBufferBindingsGL33::addVertexBufferBinding(GVertexBufferBinding binding) {
     m_bindings.push_back(binding);
 }
 
-void GVertexBufferBindings::save() {
+void GVertexBufferBindingsGL33::save() {
     m_device.bindVertexBufferBindings(this);
 //    for (GVertexBufferBinding &binding : m_bindings) {
 //        for (GBufferBinding &bufferBinding : binding.bindings) {

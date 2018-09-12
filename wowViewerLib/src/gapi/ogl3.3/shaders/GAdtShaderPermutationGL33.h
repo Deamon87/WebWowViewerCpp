@@ -5,12 +5,12 @@
 #ifndef AWEBWOWVIEWERCPP_GADTSHADERPERMUTATION_H
 #define AWEBWOWVIEWERCPP_GADTSHADERPERMUTATION_H
 
-#include "../GShaderPermutation.h"
+#include "../GShaderPermutationGL33.h"
 
-class GAdtShaderPermutation : public GShaderPermutation{
+class GAdtShaderPermutationGL33 : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GAdtShaderPermutation(std::string &shaderName, IDevice *device);
+    explicit GAdtShaderPermutationGL33(std::string &shaderName, IDevice *device);
 
     void compileShader() override;
 
