@@ -63,6 +63,8 @@ public:
 public:
     std::shared_ptr<IShaderPermutation> getShader(std::string shaderName) override;
 
+    HGPUFence createFence() override;
+
     HGUniformBuffer createUniformBuffer(size_t size) override;
     HGVertexBuffer createVertexBuffer() override;
     HGIndexBuffer createIndexBuffer() override;
@@ -131,6 +133,7 @@ protected:
     GUniformBufferGL4x * m_fragmentUniformBuffer[3] = {nullptr};
 
     HGTexture m_blackPixelTexture;
+    HGPUFence m_uniformUploadFence;
 
 protected:
     //Caches

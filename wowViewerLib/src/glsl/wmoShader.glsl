@@ -458,9 +458,9 @@ void main() {
 //#ifndef drawBuffersIsSupported
     //Forward rendering without lights
     outputColor = finalColor;
-    if(!any(lessThan(vBaryCentric, vec3(0.02)))){
-        discard;
-    }
+//    if(!any(lessThan(vBaryCentric, vec3(0.02)))){
+//        discard;
+//    }
 
 //#else
     //Deferred rendering

@@ -13,6 +13,7 @@
 #include "shaders/GM2ParticleShaderPermutationGL4x.h"
 #include "shaders/GAdtShaderPermutationGL4x.h"
 #include "shaders/GWMOShaderPermutationGL4x.h"
+#include "syncronization/GPUFenceGL44.h"
 
 typedef std::shared_ptr<GUniformBufferGL4x> HGLUniformBuffer;
 typedef std::shared_ptr<GMeshGL4x> HGLMesh;
@@ -207,6 +208,8 @@ void GDeviceGL4x::drawMeshes(std::vector<HGMesh> &meshes) {
         this->drawMesh(hgMesh);
         j++;
     }
+
+    m_uniformUploadFence->setGpuFence();
 }
 
 void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
@@ -250,13 +253,15 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
 
     HGUniformBuffer bufferForUpload;
     if (buffersIndex >= m_unfiormBuffersForUpload->size()) {
-        bufferForUpload = createUniformBuffer(0);
+        bufferForUpload = createUniformBuffer(maxUniformBufferSize);
         bufferForUpload->createBuffer();
         m_unfiormBuffersForUpload->push_back(bufferForUpload);
     } else {
         bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
     }
 
+
+    m_uniformUploadFence->wait();
     for (const auto &buffer : buffers) {
         if (buffer->m_buffCreated) continue;
 
@@ -267,7 +272,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
             currentSize = 0;
 
             if (buffersIndex >= m_unfiormBuffersForUpload->size()) {
-                bufferForUpload = createUniformBuffer(0);
+                bufferForUpload = createUniformBuffer(maxUniformBufferSize);
                 bufferForUpload->createBuffer();
                 m_unfiormBuffersForUpload->push_back(bufferForUpload);
             } else {
@@ -622,7 +627,7 @@ GDeviceGL4x::GDeviceGL4x() {
 //    glDebugMessageCallback(debug_func, NULL);
 //
 
-
+    m_uniformUploadFence = createFence();
 }
 
 HGOcclusionQuery GDeviceGL4x::createQuery(HGMesh boundingBoxMesh) {
@@ -672,5 +677,12 @@ HGVertexBufferBindings GDeviceGL4x::getBBLinearBinding() {
 
 HGVertexBufferBindings GDeviceGL4x::getBBVertexBinding() {
     return m_vertexBBBindings;
+}
+
+HGPUFence GDeviceGL4x::createFence() {
+    HGPUFence hGPUFence;
+    hGPUFence.reset(new GPUFenceGL44());
+
+    return hGPUFence;
 }
 

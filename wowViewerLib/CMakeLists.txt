@@ -193,7 +193,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/interface/meshes/IM2Mesh.h
         src/gapi/interface/meshes/IMesh.h
         src/gapi/IDeviceFactory.cpp src/gapi/IDeviceFactory.h
-        src/gapi/interface/meshes/IParticleMesh.h )
+        src/gapi/interface/meshes/IParticleMesh.h src/gapi/interface/syncronization/IGPUFence.h)
 
 set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h
@@ -265,7 +265,7 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/shaders/GAdtShaderPermutationGL4x.cpp
         src/gapi/ogl4.x/shaders/GAdtShaderPermutationGL4x.h
         src/gapi/ogl4.x/GOcclusionQueryGL4x.cpp
-        src/gapi/ogl4.x/GOcclusionQueryGL4x.h)
+        src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h)
 
 
 #add_dependencies(WoWViewerLib mathfu)

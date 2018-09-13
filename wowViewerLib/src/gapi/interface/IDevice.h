@@ -16,8 +16,10 @@ class IMesh;
 class IM2Mesh;
 class IOcclusionQuery;
 class IParticleMesh;
+class IGPUFence;
 class gMeshTemplate;
 #include <memory>
+#include "syncronization/IGPUFence.h"
 
 typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;
 typedef std::shared_ptr<IIndexBuffer> HGIndexBuffer;
@@ -30,6 +32,7 @@ typedef std::shared_ptr<IMesh> HGParticleMesh;
 typedef std::shared_ptr<IMesh> HGOcclusionQuery;
 typedef std::shared_ptr<IBlpTexture> HGBlpTexture;
 typedef std::shared_ptr<ITexture> HGTexture;
+typedef std::shared_ptr<IGPUFence> HGPUFence;
 
 #include "meshes/IMesh.h"
 #include "meshes/IM2Mesh.h"
@@ -65,6 +68,8 @@ class IDevice {
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
     public:
         virtual HGShaderPermutation getShader(std::string shaderName) = 0;
+
+        virtual HGPUFence createFence() = 0;
 
         virtual HGUniformBuffer createUniformBuffer(size_t size) = 0;
         virtual HGVertexBuffer createVertexBuffer() = 0;
