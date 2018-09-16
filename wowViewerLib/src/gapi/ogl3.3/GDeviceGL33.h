@@ -46,9 +46,9 @@ public:
 
     void reset() override;
 
-    bool getIsEvenFrame() override;
+    int getFrameNumber() override;
 
-    void toogleEvenFrame() override;
+    void increaseFrameNumber() override;
 
     void bindProgram(IShaderPermutation *program) override;
 
@@ -76,11 +76,13 @@ public:
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) override;
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) override;
+    HGPUFence createFence() override;
 
     HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
+
 
 private:
     void drawMesh(HGMesh &hmesh);
@@ -107,7 +109,7 @@ protected:
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL33>, BlpCacheRecordHasher> loadedTextureCache;
 
-    bool m_isEvenFrame = false;
+    int m_frameNumber = 0;
 
     uint8_t m_lastColorMask = 0xFF;
     int8_t m_lastDepthWrite = -1;

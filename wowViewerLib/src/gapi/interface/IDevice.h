@@ -50,9 +50,9 @@ class IDevice {
         virtual ~IDevice() {};
 
         virtual void reset() = 0;
-        virtual bool getIsEvenFrame() = 0;
+        virtual int getFrameNumber() = 0;
 
-        virtual void toogleEvenFrame() = 0;
+        virtual void increaseFrameNumber() = 0;
 
         virtual void bindProgram(IShaderPermutation *program) = 0;
 

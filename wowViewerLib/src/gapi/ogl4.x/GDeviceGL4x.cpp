@@ -203,13 +203,39 @@ void GDeviceGL4x::drawMeshes(std::vector<HGMesh> &meshes) {
 //            a->m_textureCount == a->m_textureCount)
 //    }
 
+
+
+    //FillIndirectBuffer
+    int frameNum = m_frameNumber % 3;
+    DrawElementsIndirectCommand * pointerToWrite =
+        &((DrawElementsIndirectCommand *) m_indirectBufferPointer)[20000*frameNum];
+
+    int commandsWritten = 0;
+    for (auto &hgMesh : meshes) {
+        GMeshGL4x * hmesh = (GMeshGL4x *) hgMesh.get();
+        DrawElementsIndirectCommand * command = &pointerToWrite[commandsWritten];
+        command->firstIndex = hmesh->m_start>>1;
+        command->count = hmesh->m_end;
+
+        command->baseInstance = 0;
+        command->baseVertex = 0;
+
+        command->primCount = 1;
+
+        hmesh->m_indirectPointer = (void *)((20000*frameNum + commandsWritten) * sizeof(DrawElementsIndirectCommand));
+        commandsWritten++;
+    }
+    glMemoryBarrier(GL_UNIFORM_BARRIER_BIT);
+    glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
+
     int j = 0;
     for (auto &hgMesh : meshes) {
         this->drawMesh(hgMesh);
         j++;
+        if (j > commandsWritten) break;
     }
 
-    m_uniformUploadFence->setGpuFence();
+//    m_uniformUploadFence->setGpuFence();
 }
 
 void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
@@ -246,10 +272,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
     int currentSize = 0;
     int buffersIndex = 0;
 
-    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_firstUBOFrame.m_unfiormBuffersForUpload;
-    if (getIsEvenFrame()) {
-        m_unfiormBuffersForUpload = &m_secondUBOFrame.m_unfiormBuffersForUpload;
-    }
+    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[getFrameNumber() & 3].m_uniformBuffersForUpload;
 
     HGUniformBuffer bufferForUpload;
     if (buffersIndex >= m_unfiormBuffersForUpload->size()) {
@@ -261,7 +284,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
     }
 
 
-    m_uniformUploadFence->wait();
+//    m_uniformUploadFence->wait();
     for (const auto &buffer : buffers) {
         if (buffer->m_buffCreated) continue;
 
@@ -293,11 +316,12 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
 //        );
         currentSize += buffer->m_size;
 
-        int bytesToAdd = uniformBufferOffsetAlign - (currentSize % uniformBufferOffsetAlign);
-//        for (int j = 0; j < bytesToAdd; j++) {
-//            aggregationBufferForUpload.push_back(0);
-//        }
-        currentSize+=bytesToAdd;
+        int offsetDiff = currentSize % uniformBufferOffsetAlign;
+        if (offsetDiff != 0) {
+            int bytesToAdd = uniformBufferOffsetAlign - (currentSize % uniformBufferOffsetAlign);
+
+            currentSize += bytesToAdd;
+        }
     }
 
 	if (aggregationBufferForUpload.size() > 0) {
@@ -434,7 +458,8 @@ void GDeviceGL4x::drawMesh(HGMesh &hIMesh) {
         ((GOcclusionQueryGL4x *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
-    glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
+    glDrawElementsIndirect(hmesh->m_element, GL_UNSIGNED_SHORT, hmesh->m_indirectPointer);
+//    glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
         ((GOcclusionQueryGL4x *)gm2Mesh->m_query.get())->endConditionalRendering();
@@ -628,6 +653,24 @@ GDeviceGL4x::GDeviceGL4x() {
 //
 
     m_uniformUploadFence = createFence();
+
+    //Create indirectBuffer pointer
+    GLuint indirectBuffer;
+
+    int indirectBufferSize = sizeof(DrawElementsIndirectCommand) * 20000 * 3;
+    GLbitfield flags = GL_MAP_WRITE_BIT           |
+                       GL_MAP_PERSISTENT_BIT |
+                       GL_MAP_COHERENT_BIT;
+    glGenBuffers(1, &indirectBuffer);
+    glBindBuffer( GL_DRAW_INDIRECT_BUFFER, indirectBuffer );
+    glBufferStorage( GL_DRAW_INDIRECT_BUFFER, indirectBufferSize, nullptr, flags );
+
+
+    m_indirectBufferPointer = glMapBufferRange(
+        GL_DRAW_INDIRECT_BUFFER,
+        0,
+        indirectBufferSize,
+        flags );
 }
 
 HGOcclusionQuery GDeviceGL4x::createQuery(HGMesh boundingBoxMesh) {
@@ -663,12 +706,12 @@ void GDeviceGL4x::reset() {
     m_shaderPermutation = nullptr;
 }
 
-bool GDeviceGL4x::getIsEvenFrame() {
-    return m_isEvenFrame;
+int GDeviceGL4x::getFrameNumber() {
+    return m_frameNumber;
 }
 
-void GDeviceGL4x::toogleEvenFrame() {
-    m_isEvenFrame =  !m_isEvenFrame;
+void GDeviceGL4x::increaseFrameNumber() {
+    m_frameNumber++;
 }
 
 HGVertexBufferBindings GDeviceGL4x::getBBLinearBinding() {

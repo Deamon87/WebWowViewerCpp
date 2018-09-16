@@ -259,7 +259,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
     int buffersIndex = 0;
 
     std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_firstUBOFrame.m_unfiormBuffersForUpload;
-    if (getIsEvenFrame()) {
+    if (getFrameNumber() & 1) {
         m_unfiormBuffersForUpload = &m_secondUBOFrame.m_unfiormBuffersForUpload;
     }
 
@@ -673,12 +673,12 @@ void GDeviceGL33::reset() {
     m_shaderPermutation = nullptr;
 }
 
-bool GDeviceGL33::getIsEvenFrame() {
-    return m_isEvenFrame;
+int GDeviceGL33::getFrameNumber() {
+    return m_frameNumber;
 }
 
-void GDeviceGL33::toogleEvenFrame() {
-    m_isEvenFrame =  !m_isEvenFrame;
+void GDeviceGL33::increaseFrameNumber() {
+    m_frameNumber++;
 }
 
 HGVertexBufferBindings GDeviceGL33::getBBLinearBinding() {
@@ -687,5 +687,9 @@ HGVertexBufferBindings GDeviceGL33::getBBLinearBinding() {
 
 HGVertexBufferBindings GDeviceGL33::getBBVertexBinding() {
     return m_vertexBBBindings;
+}
+
+HGPUFence GDeviceGL33::createFence() {
+    return nullptr;
 }
 

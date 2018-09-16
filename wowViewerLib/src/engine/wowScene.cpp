@@ -783,7 +783,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     nextDeltaTime = deltaTime;
     deltaTimeUpdate = true;
     currentScene->copyToCurrentFrame();
-    m_gdevice->toogleEvenFrame();
+    m_gdevice->increaseFrameNumber();
     renderLockNextMeshes.unlock();
 
 }

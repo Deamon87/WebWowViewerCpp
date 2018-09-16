@@ -55,7 +55,7 @@ private:
 
     int m_element;
 
-
+    void *m_indirectPointer = nullptr;
 
 private:
     IDevice &m_device;

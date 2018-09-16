@@ -43,9 +43,9 @@ public:
 
     void reset() override;
 
-    bool getIsEvenFrame() override;
+    int getFrameNumber() override;
 
-    void toogleEvenFrame() override;
+    void increaseFrameNumber() override;
 
     void bindProgram(IShaderPermutation *program) override;
 
@@ -106,7 +106,7 @@ protected:
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL4x>, BlpCacheRecordHasher> loadedTextureCache;
 
-    bool m_isEvenFrame = false;
+    int m_frameNumber = 0;
 
     uint8_t m_lastColorMask = 0xFF;
     int8_t m_lastDepthWrite = -1;
@@ -140,10 +140,22 @@ protected:
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBufferGL4x>> m_unfiormBufferCache;
     struct FrameUniformBuffers {
-        std::vector<HGUniformBuffer> m_unfiormBuffersForUpload;
+        std::vector<HGUniformBuffer> m_uniformBuffersForUpload;
     };
-    FrameUniformBuffers m_firstUBOFrame;
-    FrameUniformBuffers m_secondUBOFrame;
+
+    struct DrawElementsIndirectCommand
+    {
+        GLuint  count;
+        GLuint primCount;
+        GLuint firstIndex;
+        GLuint baseVertex;
+        GLuint baseInstance;
+    };
+
+    FrameUniformBuffers m_UBOFrames[4];
+
+    void * m_indirectBufferPointer;
+
 
     std::vector<char> aggregationBufferForUpload;
 
