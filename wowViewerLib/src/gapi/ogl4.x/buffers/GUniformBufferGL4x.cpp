@@ -33,7 +33,6 @@ void GUniformBufferGL4x::createBuffer() {
     m_device.bindVertexUniformBuffer(this, -1);
     glBufferStorage( GL_UNIFORM_BUFFER, m_size, 0, flags );
 
-
     m_perisistentPointer = glMapBufferRange(
         GL_UNIFORM_BUFFER,
         0,

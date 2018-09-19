@@ -136,7 +136,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
 
     m_sceneWideUniformBuffer = m_gdevice->createUniformBuffer(sizeof(sceneWideBlockVSPS));
-    m_sceneWideUniformBuffer->createBuffer();
+//    m_sceneWideUniformBuffer->createBuffer();
 
     this->m_config = config;
 
@@ -211,8 +211,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-   m_firstCamera.setCameraPos(0, 0, 200);
-    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(0, 0, 200);
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -312,9 +312,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //

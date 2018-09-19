@@ -63,6 +63,8 @@ void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const Mipmaps
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
+    glTexStorage2D(GL_TEXTURE_2D, mipmaps.size(), textureGPUFormat, mipmaps[0].width, mipmaps[0].height);
+
     bool generateMipMaps = false;
     switch (textureFormat) {
         case TextureFormat::S3TC_RGB_DXT1:
@@ -77,10 +79,12 @@ void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const Mipmaps
                     glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
                                  GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {
-                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width,
-                                           mipmaps[k].height, 0,
-                                           (GLsizei) mipmaps[k].texture.size(),
-                                           &mipmaps[k].texture[0]);
+                    glCompressedTexSubImage2D(GL_TEXTURE_2D, k, 0, 0,
+                                              mipmaps[k].width,
+                                              mipmaps[k].height,
+                                              textureGPUFormat,
+                                              (GLsizei) mipmaps[k].texture.size(),
+                                              &mipmaps[k].texture[0]);
                 }
             }
             if (useDXT1Decoding)
@@ -101,8 +105,10 @@ void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const Mipmaps
                     glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
                                  GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {
-                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width,
-                                           mipmaps[k].height, 0,
+                    glCompressedTexSubImage2D(GL_TEXTURE_2D, k, 0, 0,
+                                           mipmaps[k].width,
+                                           mipmaps[k].height,
+                                           textureGPUFormat,
                                            (GLsizei) mipmaps[k].texture.size(),
                                            &mipmaps[k].texture[0]);
                 }
@@ -123,8 +129,10 @@ void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const Mipmaps
                     glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
                                  GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {
-                    glCompressedTexImage2D(GL_TEXTURE_2D, k, textureGPUFormat, mipmaps[k].width,
-                                           mipmaps[k].height, 0,
+                    glCompressedTexSubImage2D(GL_TEXTURE_2D, k, 0, 0,
+                                              mipmaps[k].width,
+                                              mipmaps[k].height,
+                                              textureGPUFormat,
                                            (GLsizei) mipmaps[k].texture.size(),
                                            &mipmaps[k].texture[0]);
                 }
@@ -136,13 +144,13 @@ void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const Mipmaps
 
         case TextureFormat::BGRA:
             for( int k = 0; k < mipmaps.size(); k++) {
-                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+                glTexSubImage2D(GL_TEXTURE_2D, k, 0,0, mipmaps[k].width, mipmaps[k].height, GL_RGBA, GL_UNSIGNED_BYTE,
                              &mipmaps[k].texture[0]);
             }
             break;
     }
 #ifndef WITH_GLESv2
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) mipmaps.size()-1);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) mipmaps.size()-1);
 #endif
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
