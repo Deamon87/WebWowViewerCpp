@@ -16,6 +16,7 @@ GIndexBufferGL4x::~GIndexBufferGL4x(){
 
 void GIndexBufferGL4x::createBuffer() {
     glGenBuffers(1, (GLuint *) this->buffer);
+    m_buffCreated = true;
 }
 
 void GIndexBufferGL4x::destroyBuffer() {
@@ -23,18 +24,25 @@ void GIndexBufferGL4x::destroyBuffer() {
 }
 
 void GIndexBufferGL4x::uploadData(void * data, int length) {
-    m_device.bindVertexBufferBindings(nullptr);
-    m_device.bindIndexBuffer(this);
-
     if (length <= 0) return;
     if (data == nullptr) return;
 
     assert(m_buffCreated);
 
-    if (!m_dataUploaded || length > m_size) {
+    if (!m_dataUploaded) {
+        m_device.bindVertexBufferBindings(nullptr);
+        m_device.bindIndexBuffer(this);
+//        glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, length, data, 0);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);
         m_size = (size_t) length;
     } else {
+//        if (m_isImmutable) {
+//            destroyBuffer();
+//            createBuffer();
+//            m_isImmutable = false;
+//        }
+        m_device.bindVertexBufferBindings(nullptr);
+        m_device.bindIndexBuffer(this);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, length, data);
 //        void * mapped = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);

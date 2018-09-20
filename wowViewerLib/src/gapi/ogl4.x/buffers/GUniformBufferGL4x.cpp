@@ -27,11 +27,13 @@ void GUniformBufferGL4x::createBuffer() {
     GLbitfield flags = GL_MAP_WRITE_BIT           |
                        GL_MAP_PERSISTENT_BIT |
                        GL_MAP_COHERENT_BIT;
+
+    GLbitfield createFlags = flags | GL_DYNAMIC_STORAGE_BIT;
     glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
     m_buffCreated = true;
 
     m_device.bindVertexUniformBuffer(this, -1);
-    glBufferStorage( GL_UNIFORM_BUFFER, m_size, 0, flags );
+    glBufferStorage( GL_UNIFORM_BUFFER, m_size, 0, createFlags );
 
     m_perisistentPointer = glMapBufferRange(
         GL_UNIFORM_BUFFER,

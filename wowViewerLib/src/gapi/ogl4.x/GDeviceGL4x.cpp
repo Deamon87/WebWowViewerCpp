@@ -661,9 +661,10 @@ GDeviceGL4x::GDeviceGL4x() {
     GLbitfield flags = GL_MAP_WRITE_BIT           |
                        GL_MAP_PERSISTENT_BIT |
                        GL_MAP_COHERENT_BIT;
+    GLbitfield createFlags = flags | GL_DYNAMIC_STORAGE_BIT;
     glGenBuffers(1, &indirectBuffer);
     glBindBuffer( GL_DRAW_INDIRECT_BUFFER, indirectBuffer );
-    glBufferStorage( GL_DRAW_INDIRECT_BUFFER, indirectBufferSize, nullptr, flags );
+    glBufferStorage( GL_DRAW_INDIRECT_BUFFER, indirectBufferSize, nullptr, createFlags );
 
 
     m_indirectBufferPointer = glMapBufferRange(
