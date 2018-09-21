@@ -121,7 +121,7 @@ void WoWSceneImpl::DoCulling() {
 
 
 
-    //Uplaod buffers if supported
+    //Upload buffers if supported
     if (device->getIsAsynBuffUploadSupported()) {
         int updateObjFrame = (device->getFrameNumber() + 1) % 4;
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
