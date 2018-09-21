@@ -36,6 +36,7 @@ void M2Scene::draw(WoWFrameData *frameData) {
         IDevice::sortMeshes
     );
 
+    m_api->getDevice()->updateBuffers(renderedThisFrame);
     m_api->getDevice()->drawMeshes(renderedThisFrame);
 
 

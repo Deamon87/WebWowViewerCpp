@@ -17,6 +17,14 @@ protected:
                    const gMeshTemplate &meshTemplate
     );
 
+private:
+    void setInDirectPointer (void * ptr) {
+        m_indirectPointer[(m_device.getFrameNumber() + 1) & 1] = ptr;
+    }
+    void * getIndirectPointer() {
+        return m_indirectPointer[m_device.getFrameNumber()  & 1];
+    }
+
 public:
     ~GMeshGL4x() override;
     HGUniformBuffer getVertexUniformBuffer(int slot) override;
@@ -55,7 +63,7 @@ private:
 
     int m_element;
 
-    void *m_indirectPointer = nullptr;
+    void *m_indirectPointer[2] = {nullptr};
 
 private:
     IDevice &m_device;

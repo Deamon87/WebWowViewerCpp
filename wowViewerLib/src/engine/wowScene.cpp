@@ -119,6 +119,15 @@ void WoWSceneImpl::DoCulling() {
     currentScene->checkCulling(frameParam);
     currentScene->update(frameParam);
 
+
+
+    //Uplaod buffers if supported
+    if (device->getIsAsynBuffUploadSupported()) {
+        int updateObjFrame = (device->getFrameNumber() + 1) % 4;
+        WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+        currentScene->collectMeshes(objFrameParam);
+        device->updateBuffers(objFrameParam->renderedThisFrame);
+    }
 }
 
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
@@ -576,6 +585,12 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     device->reset();
     int currentFrame = device->getFrameNumber() % 4;
     WoWFrameData *frameParam = &m_FrameParams[currentFrame];
+
+    if (!device->getIsAsynBuffUploadSupported()) {
+        currentScene->collectMeshes(frameParam);
+        device->updateBuffers(frameParam->renderedThisFrame);
+    }
+
     glClearScreen();
 
     glViewport(0,0,this->canvWidth, this->canvHeight);

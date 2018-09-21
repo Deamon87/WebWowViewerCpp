@@ -5,15 +5,14 @@
 #ifndef WEBWOWVIEWERCPP_IINNERSCENEAPI_H
 #define WEBWOWVIEWERCPP_IINNERSCENEAPI_H
 
-
 #include "mathfu/glsl_mappings.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "wowFrameData.h"
 
-
 class iInnerSceneApi {
 public:
     virtual void checkCulling(WoWFrameData *frameData) = 0;
+    virtual void collectMeshes(WoWFrameData *frameData) = 0;
     virtual void draw(WoWFrameData *frameData) = 0;
 
     virtual void doPostLoad(WoWFrameData *frameData) = 0;

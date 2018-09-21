@@ -185,8 +185,6 @@ HGUniformBuffer GDeviceGL4x::createUniformBuffer(size_t size) {
 }
 
 void GDeviceGL4x::drawMeshes(std::vector<HGMesh> &meshes) {
-    updateBuffers(meshes);
-
     //Collect meshes into batches and create new array for performace
 //    int meshesSize = meshes.size();
 //    for (int i = 0 ; i < meshesSize - 1; i++) {
@@ -203,34 +201,10 @@ void GDeviceGL4x::drawMeshes(std::vector<HGMesh> &meshes) {
 //            a->m_textureCount == a->m_textureCount)
 //    }
 
-
-
-    //FillIndirectBuffer
-    int frameNum = m_frameNumber % 3;
-    DrawElementsIndirectCommand * pointerToWrite =
-        &((DrawElementsIndirectCommand *) m_indirectBufferPointer)[20000*frameNum];
-
-    int commandsWritten = 0;
-    for (auto &hgMesh : meshes) {
-        GMeshGL4x * hmesh = (GMeshGL4x *) hgMesh.get();
-        DrawElementsIndirectCommand * command = &pointerToWrite[commandsWritten];
-        command->firstIndex = hmesh->m_start>>1;
-        command->count = hmesh->m_end;
-
-        command->baseInstance = 0;
-        command->baseVertex = 0;
-
-        command->primCount = 1;
-
-        hmesh->m_indirectPointer = (void *)((20000*frameNum + commandsWritten) * sizeof(DrawElementsIndirectCommand));
-        commandsWritten++;
-    }
-
     int j = 0;
     for (auto &hgMesh : meshes) {
         this->drawMesh(hgMesh);
         j++;
-        if (j > commandsWritten) break;
     }
 
 //    m_uniformUploadFence->setGpuFence();
@@ -270,19 +244,9 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
     int currentSize = 0;
     int buffersIndex = 0;
 
-    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[getFrameNumber() & 3].m_uniformBuffersForUpload;
+    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[(getFrameNumber() + 1) & 3].m_uniformBuffersForUpload;
+    HGUniformBuffer bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
 
-    HGUniformBuffer bufferForUpload;
-    if (buffersIndex >= m_unfiormBuffersForUpload->size()) {
-        bufferForUpload = createUniformBuffer(maxUniformBufferSize);
-        bufferForUpload->createBuffer();
-        m_unfiormBuffersForUpload->push_back(bufferForUpload);
-    } else {
-        bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
-    }
-
-
-//    m_uniformUploadFence->wait();
     for (const auto &buffer : buffers) {
         if (buffer->m_buffCreated) continue;
 
@@ -293,9 +257,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
             currentSize = 0;
 
             if (buffersIndex >= m_unfiormBuffersForUpload->size()) {
-                bufferForUpload = createUniformBuffer(maxUniformBufferSize);
-                bufferForUpload->createBuffer();
-                m_unfiormBuffersForUpload->push_back(bufferForUpload);
+                assert("ALLLLERRRT");
             } else {
                 bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
             }
@@ -325,11 +287,28 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
 	if (aggregationBufferForUpload.size() > 0) {
         ((GUniformBufferGL4x *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], currentSize);
 	}
-    buffersIndex++;
-    currentSize = 0;
 
-//    std::cout << "m_unfiormBuffersForUpload.size = " << m_unfiormBuffersForUpload.size() << std::endl;
 
+    //FillIndirectBuffer
+    int frameNum = m_frameNumber % 3;
+    DrawElementsIndirectCommand * pointerToWrite =
+        &((DrawElementsIndirectCommand *) m_indirectBufferPointer)[20000*frameNum];
+
+    int commandsWritten = 0;
+    for (auto &hgMesh : meshes) {
+        GMeshGL4x * hmesh = (GMeshGL4x *) hgMesh.get();
+        DrawElementsIndirectCommand * command = &pointerToWrite[commandsWritten];
+        command->firstIndex = hmesh->m_start>>1;
+        command->count = hmesh->m_end;
+
+        command->baseInstance = 0;
+        command->baseVertex = 0;
+
+        command->primCount = 1;
+
+        hmesh->setInDirectPointer((void *)((20000*frameNum + commandsWritten) * sizeof(DrawElementsIndirectCommand)));
+        commandsWritten++;
+    }
 }
 
 void GDeviceGL4x::drawMesh(HGMesh &hIMesh) {
@@ -456,7 +435,7 @@ void GDeviceGL4x::drawMesh(HGMesh &hIMesh) {
         ((GOcclusionQueryGL4x *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
-    glDrawElementsIndirect(hmesh->m_element, GL_UNSIGNED_SHORT, hmesh->m_indirectPointer);
+    glDrawElementsIndirect(hmesh->m_element, GL_UNSIGNED_SHORT, hmesh->getIndirectPointer());
 //    glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
@@ -670,6 +649,18 @@ GDeviceGL4x::GDeviceGL4x() {
         0,
         indirectBufferSize,
         flags );
+
+
+    for (int i = 0; i < 4; i++) {
+        std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[i].m_uniformBuffersForUpload;
+
+        for (int j = 0; j < 100; j++) {
+            HGUniformBuffer bufferForUpload;
+            bufferForUpload = createUniformBuffer(maxUniformBufferSize);
+            bufferForUpload->createBuffer();
+            m_unfiormBuffersForUpload->push_back(bufferForUpload);
+        }
+    }
 }
 
 HGOcclusionQuery GDeviceGL4x::createQuery(HGMesh boundingBoxMesh) {

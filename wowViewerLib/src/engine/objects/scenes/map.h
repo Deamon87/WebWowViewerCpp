@@ -60,6 +60,8 @@ public:
     };
 
     void checkCulling(WoWFrameData *frameData) override;
+
+    void collectMeshes(WoWFrameData *frameData) override;
     void draw(WoWFrameData *frameData) override;
 
 
@@ -81,10 +83,6 @@ private:
                        mathfu::mat4 &projectionModelMat,
                        int viewRenderOrder,
                        WoWFrameData *frameData);
-
-    void drawExterior(std::vector<HGMesh> &renderedThisFrame);
-
-    void addM2ObjectToInstanceManager(M2Object *m2Object);
 };
 
 

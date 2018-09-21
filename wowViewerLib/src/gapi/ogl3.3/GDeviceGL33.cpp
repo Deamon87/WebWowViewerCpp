@@ -199,8 +199,6 @@ HGUniformBuffer GDeviceGL33::createUniformBuffer(size_t size) {
 }
 
 void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
-    updateBuffers(meshes);
-
     //Collect meshes into batches and create new array for performace
 //    int meshesSize = meshes.size();
 //    for (int i = 0 ; i < meshesSize - 1; i++) {

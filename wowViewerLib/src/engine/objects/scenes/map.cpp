@@ -28,21 +28,6 @@ float AdtIndexToWorldCoordinate(int x) {
     return (32 - x) * 533.33333;
 }
 
-void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
-    std::string fileIdent = m2Object->getModelIdent();
-    M2InstancingObject* instanceManager = this->m_instanceMap[fileIdent];
-
-    //1. Create Instance manager for this type of file if it was not created yet
-    if (instanceManager == nullptr) {
-        instanceManager = new M2InstancingObject(this->m_api);
-        this->m_instanceMap[fileIdent] = instanceManager;
-        this->m_instanceList.push_back(instanceManager);
-    }
-
-    //2. Add object to instance
-    instanceManager->addMDXObject(m2Object);
-}
-
 void Map::checkCulling(WoWFrameData *frameData) {
     if (!m_wdtfile->getIsLoaded()) return;
 
@@ -571,8 +556,8 @@ WmoObject *Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
     return wmoObject;
 }
 
-void Map::draw(WoWFrameData *frameData) {
-    std::vector<HGMesh> renderedThisFrame;
+void Map::collectMeshes(WoWFrameData *frameData) {
+    frameData->renderedThisFrame = std::vector<HGMesh>();
 
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;
@@ -587,7 +572,7 @@ void Map::draw(WoWFrameData *frameData) {
 
     if (m_api->getConfig()->getRenderWMO()) {
         for (auto &view : vector) {
-            view->collectMeshes(renderedThisFrame);
+            view->collectMeshes(frameData->renderedThisFrame);
         }
     }
 
@@ -601,19 +586,17 @@ void Map::draw(WoWFrameData *frameData) {
     if (m_api->getConfig()->getRenderM2()) {
         for (auto &m2Object : m2ObjectsRendered) {
             if (m2Object == nullptr) continue;
-            m2Object->collectMeshes(renderedThisFrame, m_viewRenderOrder);
-            m2Object->drawParticles(renderedThisFrame, m_viewRenderOrder);
+            m2Object->collectMeshes(frameData->renderedThisFrame, m_viewRenderOrder);
+            m2Object->drawParticles(frameData->renderedThisFrame, m_viewRenderOrder);
         }
     }
 
-    std::sort(renderedThisFrame.begin(),
-              renderedThisFrame.end(),
+    std::sort(frameData->renderedThisFrame.begin(),
+              frameData->renderedThisFrame.end(),
               IDevice::sortMeshes
     );
-    m_api->getDevice()->drawMeshes(renderedThisFrame);
+};
+
+void Map::draw(WoWFrameData *frameData) {
+    m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
 }
-
-void Map::drawExterior(std::vector<HGMesh> &renderedThisFrame) {
-
-}
-

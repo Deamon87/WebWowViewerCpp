@@ -124,6 +124,8 @@ void WmoScene::draw(WoWFrameData *frameData) {
               renderedThisFrame.end(),
               IDevice::sortMeshes
     );
+
+    m_api->getDevice()->updateBuffers(renderedThisFrame);
     m_api->getDevice()->drawMeshes(renderedThisFrame);
 }
 
