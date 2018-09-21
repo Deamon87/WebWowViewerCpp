@@ -234,6 +234,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //   m_firstCamera.setCameraPos( 2652, 1083, 200) ; //LordaeronScenario
 //    currentScene = new Map(this, 1, "legionshiphorizontalstormheim");
+
 //   m_firstCamera.setCameraPos( -9169.86, 1604.42, 26.84) ; //LordaeronScenario
 //    currentScene = new Map(this, 1, "ahnqirajtemple");
 //

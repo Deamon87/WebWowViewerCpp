@@ -34,6 +34,7 @@ private:
     bool m_buffCreated = false;
     bool m_dataUploaded = false;
 
+    bool m_isImmutable = true;
 };
 
 #endif //WEBWOWVIEWERCPP_GVERTEXBUFFER_4X_H
