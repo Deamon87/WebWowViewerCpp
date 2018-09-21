@@ -24,6 +24,10 @@ void WoWSceneImpl::DoCulling() {
 
     static const mathfu::vec3 upVector(0,0,1);
 
+    IDevice *device = getDevice();
+    int currentFrame = (device->getFrameNumber() + 3) % 4;
+    WoWFrameData *frameParam = &m_FrameParams[currentFrame];
+
     M2CameraResult cameraResult;
     mathfu::mat4 lookAtMat4;
     mathfu::vec4 cameraVec4;
@@ -31,9 +35,9 @@ void WoWSceneImpl::DoCulling() {
     m_firstCamera.setMovementSpeed(m_config->getMovementSpeed());
 
     if (!m_config->getUseSecondCamera()){
-        this->m_firstCamera.tick(nextDeltaTime);
+        this->m_firstCamera.tick(frameParam->deltaTime);
     } else {
-        this->m_secondCamera.tick(nextDeltaTime);
+        this->m_secondCamera.tick(frameParam->deltaTime);
     }
 
     if ( currentScene->getCameraSettings(cameraResult)) {
@@ -49,15 +53,15 @@ void WoWSceneImpl::DoCulling() {
                         mathfu::vec3(0,0,0),
                         upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
         cameraVec4 = cameraResult.position;
-        m_nextFrameParams.m_lookAtMat4 = lookAtMat4;
+        frameParam->m_lookAtMat4 = lookAtMat4;
 
     } else {
         cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
         lookAtMat4 = this->m_firstCamera.getLookatMat();
-        m_nextFrameParams.m_lookAtMat4 = lookAtMat4;
+        frameParam->m_lookAtMat4 = lookAtMat4;
     }
 
-    m_nextFrameParams.m_perspectiveMatrixForCulling =
+    frameParam->m_perspectiveMatrixForCulling =
             mathfu::mat4::Perspective(
                     fov,
                     this->canvAspect,
@@ -73,7 +77,7 @@ void WoWSceneImpl::DoCulling() {
             perspectiveMatrixForCameraRender * lookAtMat4;
 
 
-    m_nextFrameParams.m_secondLookAtMat =
+    frameParam->m_secondLookAtMat =
             mathfu::mat4::LookAt(
                     this->m_secondCamera.getCameraPosition(),
                     this->m_secondCamera.getCameraLookAt(),
@@ -85,35 +89,35 @@ void WoWSceneImpl::DoCulling() {
                     this->canvAspect,
                     nearPlane,
                     farPlane);
-    m_nextFrameParams.m_perspectiveMatrix = perspectiveMatrix;
+    frameParam->m_perspectiveMatrix = perspectiveMatrix;
 
-    m_nextFrameParams.m_viewCameraForRender = viewCameraForRender;
+    frameParam->m_viewCameraForRender = viewCameraForRender;
 
-    m_nextFrameParams.m_cameraVec3 = cameraVec4.xyz();
+    frameParam->m_cameraVec3 = cameraVec4.xyz();
 
     float ambient[4];
     m_config->getAmbientColor(ambient);
-    m_nextFrameParams.m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]);
+    frameParam->m_globalAmbientColor = mathfu::vec4(ambient[0],ambient[1],ambient[2],ambient[3]);
 
     float sunColor[4];
     m_config->getSunColor(sunColor);
-    m_nextFrameParams.m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
+    frameParam->m_globalSunColor = mathfu::vec4(sunColor[0],sunColor[1],sunColor[2],sunColor[3]);
 
     float fogColor[4];
     m_config->getFogColor(fogColor);
-    m_nextFrameParams.m_fogColor = mathfu::vec4(fogColor);
+    frameParam->m_fogColor = mathfu::vec4(fogColor);
 
-    if (m_nextFrameParams.uFogStart < 0) {
-        m_nextFrameParams.uFogStart = 3.0 * farPlane;
+    if (frameParam->uFogStart < 0) {
+        frameParam->uFogStart = 3.0 * farPlane;
     }
-    if (m_nextFrameParams.uFogEnd < 0) {
-        m_nextFrameParams.uFogEnd = 4.0 * farPlane;
+    if (frameParam->uFogEnd < 0) {
+        frameParam->uFogEnd = 4.0 * farPlane;
     }
 
-    this->SetDirection(m_nextFrameParams);
+    this->SetDirection(*frameParam);
 
-    currentScene->checkCulling(m_nextFrameParams.m_perspectiveMatrixForCulling, lookAtMat4, cameraVec4);
-    currentScene->update(nextDeltaTime, m_nextFrameParams.m_cameraVec3, m_nextFrameParams.m_perspectiveMatrixForCulling, m_nextFrameParams.m_lookAtMat4);
+    currentScene->checkCulling(frameParam);
+    currentScene->update(frameParam);
 
 }
 
@@ -211,8 +215,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-//   m_firstCamera.setCameraPos(0, 0, 200);
-//    currentScene = new Map(this, 0, "Azeroth");
+   m_firstCamera.setCameraPos(0, 0, 200);
+    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -312,9 +316,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -485,10 +489,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 }
 
-void WoWSceneImpl::initGlContext() {
-
-}
-
 void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
     this->canvWidth = canvWidth;
     this->canvHeight = canvHeight;
@@ -496,63 +496,6 @@ void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
 }
 
 /* Shaders stuff */
-
-void WoWSceneImpl::activateRenderFrameShader () {
-//    glUseProgram(this->renderFrameShader->getProgram());
-//    glActiveTexture(GL_TEXTURE0);
-//
-//    //glDisableVertexAttribArray(1);
-//
-//    float uResolution[2] = {(float)this->canvWidth, (float)this->canvHeight };
-//    glUniform2fv(this->renderFrameShader->getUnf("uResolution"), 2, uResolution);
-//
-//    glUniform1i(this->renderFrameShader->getUnf("u_sampler"), 0);
-//    if (this->renderFrameShader->hasUnf("u_depth")) {
-//        glUniform1i(this->renderFrameShader->getUnf("u_depth"), 1);
-//    }
-}
-/*
-void WoWSceneImpl::activateTextureCompositionShader(GLuint texture) {
-    glUseProgram(this->textureCompositionShader->getProgram());
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-    if (this.textureCompVars.depthTexture) {
-        GL_framebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this.textureCompVars.depthTexture, 0);
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, this.textureCompVars.textureCoords);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.textureCompVars.elements);
-
-
-    glVertexAttribPointer(this.currentShaderProgram.shaderAttributes.aTextCoord, 2, GL_FLOAT, false, 0, 0);  // position
-
-    glActiveTexture(GL_TEXTURE0);
-    glUniform1i(this.currentShaderProgram.shaderUniforms.uTexture, 0);
-
-    glDepthMask(true);
-    glDisable(GL_CULL_FACE);
-
-    glClearColor(0,0,1,1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(false);
-    glViewport(0,0,1024,1024);
-
-}*/
-void WoWSceneImpl::activateRenderDepthShader () {
-//    glUseProgram(this->drawDepthBuffer->getProgram());
-//    glActiveTexture(GL_TEXTURE0);
-}
-
-void WoWSceneImpl::activateDrawPortalShader () {
- /*
-    glUseProgram(drawPortalShader->getProgram());
-
-    glUniformMatrix4fv(drawPortalShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(drawPortalShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
- */
-}
-
 
 void WoWSceneImpl::drawTexturedQuad(GLuint texture,
                                     float x,
@@ -581,60 +524,7 @@ void WoWSceneImpl::drawTexturedQuad(GLuint texture,
     glEnable(GL_DEPTH_TEST);
     */
 }
-
-
-void WoWSceneImpl::activateBoundingBoxShader() {
-    /*
-    glUseProgram(this->bbShader->getProgram());
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
-
-    //gl.enableVertexAttribArray(this.currentShaderProgram.shaderAttributes.aPosition);
-    glVertexAttribPointer(+drawBBShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, nullptr);  // position
-
-    glUniformMatrix4fv(this->bbShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(this->bbShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
-    */
-}
-void WoWSceneImpl::deactivateBoundingBoxShader() {
-
-}
-
-void WoWSceneImpl::activateFrustumBoxShader() {
-    /*
-    glUseProgram(this->drawFrustumShader->getProgram());
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_elements);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
-
-    glEnableVertexAttribArray(+drawFrustumShader::Attribute::aPosition);
-    glVertexAttribPointer(+drawFrustumShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, nullptr);  // position
-
-    glUniformMatrix4fv(this->drawFrustumShader->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(this->drawFrustumShader->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
-    */
-
-}
-
-void WoWSceneImpl::activateDrawPointShader() {
-    /*
-    glUseProgram(drawPoints->getProgram());
-
-    glEnableVertexAttribArray(+drawPoints::Attribute::aPosition);
-
-    glUniformMatrix4fv(drawPoints->getUnf("uLookAtMat"), 1, GL_FALSE, &this->m_lookAtMat4[0]);
-    glUniformMatrix4fv(drawPoints->getUnf("uPMatrix"), 1, GL_FALSE, &this->m_perspectiveMatrix[0]);
-     */
-
-}
-void WoWSceneImpl::deactivateDrawPointShader() {
-
-}
-
 /****************/
-
-
 
 void glClearScreen() {
 #ifndef WITH_GLESv2
@@ -681,24 +571,27 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     struct timespec renderingAndUpdateStart, renderingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateStart);
 
-    getDevice()->reset();
+    IDevice *device = getDevice();
+    device->reset();
+    int currentFrame = device->getFrameNumber() % 4;
+    WoWFrameData *frameParam = &m_FrameParams[currentFrame];
     glClearScreen();
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
     sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-    blockPSVS.uLookAtMat = m_currentFrameParams.m_lookAtMat4;
-    blockPSVS.uPMatrix = m_currentFrameParams.m_perspectiveMatrix;
+    blockPSVS.uLookAtMat = frameParam->m_lookAtMat4;
+    blockPSVS.uPMatrix = frameParam->m_perspectiveMatrix;
 
     m_sceneWideUniformBuffer->save();
 
-    mathfu::mat4 mainLookAtMat4 = m_currentFrameParams.m_lookAtMat4;
+    mathfu::mat4 mainLookAtMat4 = frameParam->m_lookAtMat4;
 
     if (this->m_config->getDoubleCameraDebug()) {
         //Draw static camera
         m_isDebugCamera = true;
-        m_currentFrameParams.m_lookAtMat4 = m_currentFrameParams.m_secondLookAtMat;
-        currentScene->draw();
+        frameParam->m_lookAtMat4 = frameParam->m_secondLookAtMat;
+        currentScene->draw(frameParam);
         m_isDebugCamera = false;
 
         if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
@@ -740,8 +633,8 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         }
     } else {
         //Render real camera
-        m_currentFrameParams.m_lookAtMat4 = mainLookAtMat4;
-        currentScene->draw();
+        frameParam->m_lookAtMat4 = mainLookAtMat4;
+        currentScene->draw(frameParam);
 
         if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
             //Draw real camera into square at bottom of screen
@@ -768,22 +661,15 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
 //    nextDeltaTime = deltaTime;
 
-    currentScene->doPostLoad(); //Do post load after rendering is done!
+    currentScene->doPostLoad(frameParam); //Do post load after rendering is done!
 
     struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
-//    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateStart);
-//    DoCulling();
-//    m_currentFrameParams = m_nextFrameParams;
-//    clock_gettime(CLOCK_MONOTONIC, &cullingAndUpdateEnd);
-//
-//    print_timediff("DoCulling", cullingAndUpdateStart, cullingAndUpdateEnd);
     renderLockNextMeshes.lock();
-    m_currentFrameParams = m_nextFrameParams;
 
-    nextDeltaTime = deltaTime;
+    frameParam->deltaTime = deltaTime;
     deltaTimeUpdate = true;
-    currentScene->copyToCurrentFrame();
     m_gdevice->increaseFrameNumber();
+
     renderLockNextMeshes.unlock();
 
 }
@@ -796,7 +682,7 @@ mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {
     );
 }
 
-void WoWSceneImpl::SetDirection(WoWFrameParamHolder &frameParamHolder) {
+void WoWSceneImpl::SetDirection(WoWFrameData &frameParamHolder) {
 
     // Phi Table
     static const float phiTable[4][2] = {

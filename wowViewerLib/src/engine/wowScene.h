@@ -28,25 +28,7 @@
 #include "persistance/db2/base/DB2Base.h"
 #include "persistance/db2/DB2Light.h"
 #include "../gapi/interface/IDevice.h"
-
-class WoWFrameParamHolder {
-public:
-    mathfu::vec3 m_cameraVec3;
-    mathfu::mat4 m_lookAtMat4;
-    mathfu::mat4 m_perspectiveMatrixForCulling;
-    mathfu::mat4 m_secondLookAtMat;
-    mathfu::mat4 m_viewCameraForRender;
-    mathfu::mat4 m_perspectiveMatrix;
-
-    mathfu::vec3 m_upVector;
-    mathfu::vec3 m_sunDir;
-    mathfu::vec4 m_globalAmbientColor;
-    mathfu::vec4 m_globalSunColor;
-
-    float uFogStart = -1;
-    float uFogEnd = -1;
-    mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
-};
+#include "objects/wowFrameData.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -140,24 +122,25 @@ public:
     };
 
     virtual mathfu::mat4& getViewMat() override {
-        return m_nextFrameParams.m_lookAtMat4;
+        return m_FrameParams[updateFrameIndex].m_lookAtMat4;
     }
     virtual mathfu::vec4 getGlobalAmbientColor() override {
-        return m_nextFrameParams.m_globalAmbientColor ;
+        return m_FrameParams[updateFrameIndex].m_globalAmbientColor ;
     }
     virtual mathfu::vec3 getGlobalSunDir() override {
-        return m_nextFrameParams.m_sunDir;
+        return m_FrameParams[updateFrameIndex].m_sunDir;
     };
     virtual mathfu::vec4 getGlobalSunColor() override {
-        return m_nextFrameParams.m_globalSunColor;
+        return m_FrameParams[updateFrameIndex].m_globalSunColor;
     }
     virtual mathfu::vec4 getGlobalFogColor() override {
-        return m_nextFrameParams.m_fogColor;
+        return m_FrameParams[updateFrameIndex].m_fogColor;
     }
-    virtual float getGlobalFogStart() override { return m_nextFrameParams.uFogStart; };
-    virtual float getGlobalFogEnd() override { return m_nextFrameParams.uFogEnd; };
-    virtual mathfu::vec3 getViewUp() override { return m_nextFrameParams.m_upVector; };
+    virtual float getGlobalFogStart() override { return m_FrameParams[updateFrameIndex].uFogStart; };
+    virtual float getGlobalFogEnd() override { return m_FrameParams[updateFrameIndex].uFogEnd; };
+    virtual mathfu::vec3 getViewUp() override { return m_FrameParams[updateFrameIndex].m_upVector; };
 
+    int updateFrameIndex = 0;
 
     virtual Config *getConfig() override {
         return m_config;
@@ -173,9 +156,6 @@ public:
     };
 
 private:
-    void initGlContext ();
-    void initBoxVBO ();
-
     void DoCulling();
 private:
     bool m_enable;
@@ -185,8 +165,7 @@ private:
     std::unique_ptr<IDevice> m_gdevice;
     HGUniformBuffer m_sceneWideUniformBuffer;
 
-    WoWFrameParamHolder m_nextFrameParams;
-    WoWFrameParamHolder m_currentFrameParams;
+    WoWFrameData m_FrameParams[4];
 
     FirstPersonCamera m_firstCamera;
     FirstPersonCamera m_secondCamera;
@@ -214,25 +193,10 @@ private:
 
     iInnerSceneApi *currentScene;
 
-    animTime_t nextDeltaTime;
     bool deltaTimeUpdate;
     bool nextDataReady;
     std::mutex m_lockNextMeshes;            // mutex for critical section
     std::unique_lock<std::mutex> renderLockNextMeshes;
-
-    void activateRenderFrameShader();
-    void activateRenderDepthShader();
-    void activateBoundingBoxShader();
-    void deactivateBoundingBoxShader();
-    void activateFrustumBoxShader();
-    void activateDrawPortalShader();
-    void activateDrawPointShader();
-    void deactivateDrawPointShader();
-
-    void activateTextureCompositionShader(GLuint texture);
-
-
-    void initVertBuffer();
 
     void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
                           bool drawDepth);
@@ -242,7 +206,7 @@ private:
         return m_isDebugCamera;
     }
 
-    void SetDirection(WoWFrameParamHolder &frameParamHolder);
+    void SetDirection(WoWFrameData &frameParamHolder);
 };
 
 

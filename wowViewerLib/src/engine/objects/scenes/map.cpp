@@ -13,6 +13,7 @@
 #include "../../persistance/db2/DB2WmoAreaTable.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
+#include "../wowFrameData.h"
 
 
 inline int worldCoordinateToAdtIndex(float x) {
@@ -42,20 +43,24 @@ void Map::addM2ObjectToInstanceManager(M2Object * m2Object) {
     instanceManager->addMDXObject(m2Object);
 }
 
-void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
+void Map::checkCulling(WoWFrameData *frameData) {
     if (!m_wdtfile->getIsLoaded()) return;
 
-    size_t adtRenderedThisFramePrev = adtRenderedThisFrame.size();
-    adtRenderedThisFrame = std::vector<AdtObject*>();
-    adtRenderedThisFrame.reserve(adtRenderedThisFramePrev);
+    mathfu::vec4 cameraPos = mathfu::vec4(frameData->m_cameraVec3, 1.0);
+    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
+    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
 
-    size_t m2RenderedThisFramePrev = m2RenderedThisFrame.size();
-    m2RenderedThisFrame = std::vector<M2Object*>();
-    m2RenderedThisFrame.reserve(m2RenderedThisFramePrev);
+    size_t adtRenderedThisFramePrev = frameData->adtArray.size();
+    frameData->adtArray = std::vector<AdtObject*>();
+    frameData->adtArray.reserve(adtRenderedThisFramePrev);
 
-    size_t wmoRenderedThisFramePrev = wmoRenderedThisFrame.size();
-    wmoRenderedThisFrame = std::vector<WmoObject*>();
-    wmoRenderedThisFrame.reserve(wmoRenderedThisFramePrev);
+    size_t m2RenderedThisFramePrev = frameData->m2Array.size();
+    frameData->m2Array = std::vector<M2Object*>();
+    frameData->m2Array.reserve(m2RenderedThisFramePrev);
+
+    size_t wmoRenderedThisFramePrev = frameData->wmoArray.size();
+    frameData->wmoArray = std::vector<WmoObject*>();
+    frameData->wmoArray.reserve(wmoRenderedThisFramePrev);
 
 
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
@@ -66,8 +71,8 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 
-    exteriorView = ExteriorView();
-    interiorViews = std::vector<InteriorView>();
+    frameData->exteriorView = ExteriorView();
+    frameData->interiorViews = std::vector<InteriorView>();
     m_viewRenderOrder = 0;
 
     if (!this->m_currentInteriorGroups.empty() && m_currentWMO != nullptr && this->m_currentWMO->isLoaded()) {
@@ -79,49 +84,49 @@ void Map::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathf
             0,
             m_viewRenderOrder,
             true,
-            interiorViews,
-            exteriorView)) {
+            frameData->interiorViews,
+            frameData->exteriorView)) {
 
-            wmoRenderedThisFrame.push_back(this->m_currentWMO);
+            frameData->wmoArray.push_back(this->m_currentWMO);
         }
 
-        if (exteriorView.viewCreated) {
-            checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, projectionModelMat, m_viewRenderOrder);
+        if (frameData->exteriorView.viewCreated) {
+            checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, projectionModelMat, m_viewRenderOrder, frameData);
         }
     } else {
         //Cull exterior
-        exteriorView.viewCreated = true;
-        exteriorView.frustumPlanes.push_back(frustumPlanes);
-        checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, projectionModelMat, m_viewRenderOrder);
+        frameData->exteriorView.viewCreated = true;
+        frameData->exteriorView.frustumPlanes.push_back(frustumPlanes);
+        checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, projectionModelMat, m_viewRenderOrder, frameData);
     }
 
     //Fill M2 objects for views from WmoGroups
-    for (auto &view : interiorViews) {
+    for (auto &view : frameData->interiorViews) {
         view.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
     }
-    exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
-    for (auto &adt : exteriorView.drawnADTs) {
-        adt->collectMeshes(exteriorView.drawnChunks, exteriorView.renderOrder);
+    frameData->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
+    for (auto &adt : frameData->exteriorView.drawnADTs) {
+        adt->collectMeshes(frameData->exteriorView.drawnChunks, frameData->exteriorView.renderOrder);
     }
 
     //Collect M2s for update
-    m2RenderedThisFrame.clear();
-    auto inserter = std::back_inserter(m2RenderedThisFrame);
-    for (auto &view : interiorViews) {
+    frameData->m2Array.clear();
+    auto inserter = std::back_inserter(frameData->m2Array);
+    for (auto &view : frameData->interiorViews) {
         std::copy(view.drawnM2s.begin(), view.drawnM2s.end(), inserter);
     }
-    std::copy(exteriorView.drawnM2s.begin(), exteriorView.drawnM2s.end(), inserter);
+    std::copy(frameData->exteriorView.drawnM2s.begin(), frameData->exteriorView.drawnM2s.end(), inserter);
 
     //Sort and delete duplicates
-    std::sort( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() );
-    m2RenderedThisFrame.erase( unique( m2RenderedThisFrame.begin(), m2RenderedThisFrame.end() ), m2RenderedThisFrame.end() );
-    m2RenderedThisFrameArr = std::vector<M2Object*>(m2RenderedThisFrame.begin(), m2RenderedThisFrame.end());
+    std::sort( frameData->m2Array.begin(), frameData->m2Array.end() );
+    frameData->m2Array.erase( unique( frameData->m2Array.begin(), frameData->m2Array.end() ), frameData->m2Array.end() );
+    frameData->m2Array = std::vector<M2Object*>(frameData->m2Array.begin(), frameData->m2Array.end());
 
-    std::sort( wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end() );
-    wmoRenderedThisFrame.erase( unique( wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end() ), wmoRenderedThisFrame.end() );
-    wmoRenderedThisFrameArr = std::vector<WmoObject*>(wmoRenderedThisFrame.begin(), wmoRenderedThisFrame.end());
+    std::sort( frameData->wmoArray.begin(), frameData->wmoArray.end() );
+    frameData->wmoArray.erase( unique( frameData->wmoArray.begin(), frameData->wmoArray.end() ), frameData->wmoArray.end() );
+    frameData->wmoArray = std::vector<WmoObject*>(frameData->wmoArray.begin(), frameData->wmoArray.end());
 
-    adtRenderedThisFrameArr = std::vector<AdtObject*>(adtRenderedThisFrame.begin(), adtRenderedThisFrame.end());
+    frameData->adtArray = std::vector<AdtObject*>(frameData->adtArray.begin(), frameData->adtArray.end());
 
 //    //Limit M2 count based on distance/m2 height
 //    for (auto it = this->m2RenderedThisFrameArr.begin();
@@ -139,7 +144,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::vector<mathfu::vec3> &hullLines,
                         mathfu::mat4 &lookAtMat4,
                         mathfu::mat4 &projectionModelMat,
-                        int viewRenderOrder
+                        int viewRenderOrder,
+                        WoWFrameData *frameData
 ) {
 
     std::vector<M2Object *> m2ObjectsCandidates;
@@ -185,7 +191,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 //    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
 
     m_wdlObject->checkFrustumCulling(
-        cameraPos, exteriorView.frustumPlanes[0],
+        cameraPos, frameData->exteriorView.frustumPlanes[0],
         frustumPoints,
         hullLines,
         lookAtMat4, m2ObjectsCandidates, wmoCandidates);
@@ -202,13 +208,13 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                     cameraPos,
                     adt_global_x,
                     adt_global_y,
-                    exteriorView.frustumPlanes[0], //TODO:!
+                    frameData->exteriorView.frustumPlanes[0], //TODO:!
                     frustumPoints,
                     hullLines,
                     lookAtMat4, m2ObjectsCandidates, wmoCandidates);
                 if (result) {
-                    exteriorView.drawnADTs.push_back(adtObject);
-                    adtRenderedThisFrame.push_back(adtObject);
+                    frameData->exteriorView.drawnADTs.push_back(adtObject);
+                    frameData->adtArray.push_back(adtObject);
                 }
             } else if (true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
                 std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
@@ -229,7 +235,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         WmoObject *wmoCandidate = *it;
 
         if (!wmoCandidate->isLoaded()) {
-            wmoRenderedThisFrame.push_back(wmoCandidate);
+            frameData->wmoArray.push_back(wmoCandidate);
             continue;
         }
         wmoCandidate->resetTraversedWmoGroups();
@@ -240,10 +246,10 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             0,
             viewRenderOrder,
             false,
-            interiorViews,
-            exteriorView)) {
+            frameData->interiorViews,
+            frameData->exteriorView)) {
 
-            wmoRenderedThisFrame.push_back(wmoCandidate);
+            frameData->wmoArray.push_back(wmoCandidate);
         }
     }
 
@@ -255,64 +261,59 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     for (auto &m2ObjectCandidate : m2ObjectsCandidates) {
         bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
             cameraPos,
-            exteriorView.frustumPlanes[0], //TODO:!
+            frameData->exteriorView.frustumPlanes[0], //TODO:!
             frustumPoints) ;
 //        bool frustumResult = true;
         if (frustumResult) {
-            exteriorView.drawnM2s.push_back(m2ObjectCandidate);
-            m2RenderedThisFrame.push_back(m2ObjectCandidate);
+            frameData->exteriorView.drawnM2s.push_back(m2ObjectCandidate);
+            frameData->m2Array.push_back(m2ObjectCandidate);
         }
     }
 }
-void Map::doPostLoad(){
+void Map::doPostLoad(WoWFrameData *frameData){
 //    if (m_api->getConfig()->getRenderM2()) {
-        for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
-            M2Object *m2Object = this->currentFrameM2RenderedThisFrameArr[i];
+        for (int i = 0; i < frameData->m2Array.size(); i++) {
+            M2Object *m2Object = frameData->m2Array[i];
             if (m2Object == nullptr) continue;
             m2Object->doPostLoad();
         }
 //    }
 
-    for (auto &wmoObject : this->currentFrameWmoRenderedThisFrameArr) {
+    for (auto &wmoObject : frameData->wmoArray) {
         wmoObject->doPostLoad();
     }
 
-    for (auto &adtObject : this->currentFrameAdtRenderedThisFrameArr) {
+    for (auto &adtObject : frameData->adtArray) {
         adtObject->doPostLoad();
     }
 };
 
-void Map::copyToCurrentFrame(){
-    currentFrameM2RenderedThisFrameArr = m2RenderedThisFrameArr;
-    currentFrameWmoRenderedThisFrameArr = wmoRenderedThisFrameArr;
-    currentFrameAdtRenderedThisFrameArr = adtRenderedThisFrameArr;
-
-    thisFrameInteriorViews = interiorViews;
-    thisFrameExteriorView = exteriorView;
-};
-
-
-void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
+void Map::update(WoWFrameData *frameData) {
     if (!m_wdtfile->getIsLoaded()) return;
+
+    mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
+    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
+    mathfu::mat4 &lookAtMat = frameData->m_lookAtMat4;
+    animTime_t deltaTime = frameData->deltaTime;
 
     Config* config = this->m_api->getConfig();
 //    if (config->getRenderM2()) {
-        std::for_each(m2RenderedThisFrameArr.begin(), m2RenderedThisFrameArr.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
+        std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
             if (m2Object == nullptr) return;
             m2Object->update(deltaTime, cameraVec3, lookAtMat);
         });
 //    }
 
-    for (auto &wmoObject : this->wmoRenderedThisFrameArr) {
+    for (auto &wmoObject : frameData->wmoArray) {
         wmoObject->update();
     }
 
-    for (auto &adtObject : this->adtRenderedThisFrameArr) {
+    for (auto &adtObject : frameData->adtArray) {
         adtObject->update();
     }
 
     //2. Calc distance every 100 ms
-    std::for_each(m2RenderedThisFrameArr.begin(), m2RenderedThisFrameArr.end(), [&cameraVec3](M2Object *m2Object) {
+    std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [&cameraVec3](M2Object *m2Object) {
         if (m2Object == nullptr) return;
         m2Object->calcDistance(cameraVec3);
     });
@@ -429,7 +430,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 //
     //8. Check fog color every 2 seconds
     bool fogRecordWasFound = false;
-    if (this->m_currentTime + deltaTime - this->m_lastTimeLightCheck > 30) {
+    if (this->m_currentTime + frameData->deltaTime - this->m_lastTimeLightCheck > 30) {
         mathfu::vec3 ambientColor = mathfu::vec3(0.0,0.0,0.0);
         mathfu::vec3 directColor = mathfu::vec3(0.0,0.0,0.0);
         mathfu::vec3 endFogColor = mathfu::vec3(0.0,0.0,0.0);
@@ -507,7 +508,7 @@ void Map::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frust
 
         this->m_lastTimeLightCheck = this->m_currentTime;
     }
-    this->m_currentTime += deltaTime;
+    this->m_currentTime += frameData->deltaTime;
 }
 
 M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
@@ -570,18 +571,18 @@ WmoObject *Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
     return wmoObject;
 }
 
-void Map::draw() {
+void Map::draw(WoWFrameData *frameData) {
     std::vector<HGMesh> renderedThisFrame;
 
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;
-    for (auto & interiorView : thisFrameInteriorViews) {
+    for (auto & interiorView : frameData->interiorViews) {
         if (interiorView.viewCreated) {
             vector.push_back(&interiorView);
         }
     }
-    if (thisFrameExteriorView.viewCreated) {
-        vector.push_back(&thisFrameExteriorView);
+    if (frameData->exteriorView.viewCreated) {
+        vector.push_back(&frameData->exteriorView);
     }
 
     if (m_api->getConfig()->getRenderWMO()) {

@@ -8,11 +8,12 @@
 #include "m2/m2Object.h"
 #include "../../gapi/interface/IDevice.h"
 
+#include "../engineClassList.h"
+
 struct PortalInfo_t {
     std::vector<mathfu::vec3> sortedVericles;
     CAaBox aaBox;
 };
-
 
 class IWmoApi {
 public:

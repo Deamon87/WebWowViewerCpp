@@ -56,13 +56,12 @@ public:
         m_wmoObject = wmoObject;
     };
 
-    void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) override;
+    void checkCulling(WoWFrameData *frameData) override;
 
-    void draw() override;
+    void draw(WoWFrameData *frameData) override;
 
-    void doPostLoad() override;
-    void copyToCurrentFrame() override;
-    void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
+    void doPostLoad(WoWFrameData *frameData) override;
+    void update(WoWFrameData *frameData) override;
 
 
     mathfu::vec4 getAmbientColor() override {

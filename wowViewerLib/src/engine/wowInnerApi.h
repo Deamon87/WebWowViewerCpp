@@ -5,13 +5,12 @@
 #ifndef WOWVIEWERLIB_WOWINNERAPI_H
 #define WOWVIEWERLIB_WOWINNERAPI_H
 
+#include "engineClassList.h"
+
 #include "./wowCommonClasses.h"
+#include "objects/wmo/wmoObject.h"
+
 //Functional classes
-class AnimationManager;
-class M2SkinProfile;
-
-class ParticleEmitter;
-
 
 
 #include "opengl/header.h"

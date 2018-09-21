@@ -7,7 +7,12 @@
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
 
-void M2Scene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
+void M2Scene::checkCulling(WoWFrameData *frameData) {
+    mathfu::vec4 cameraPos = mathfu::vec4(frameData->m_cameraVec3, 1.0);
+    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
+    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
+
+
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
@@ -18,7 +23,7 @@ void M2Scene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, m
     m_drawModel = m_m2Object->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints);
 }
 
-void M2Scene::draw() {
+void M2Scene::draw(WoWFrameData *frameData) {
     if (!m_drawModel) return;
 
     std::vector<HGMesh> renderedThisFrame;
@@ -36,15 +41,12 @@ void M2Scene::draw() {
 
 }
 
-void M2Scene::doPostLoad() {
+void M2Scene::doPostLoad(WoWFrameData *frameData) {
     m_m2Object->doPostLoad();
 }
-void M2Scene::copyToCurrentFrame() {
 
-}
-
-void M2Scene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) {
-    m_m2Object->update(deltaTime, cameraVec3, lookAtMat);
+void M2Scene::update(WoWFrameData *frameData) {
+    m_m2Object->update(frameData->deltaTime, frameData->m_cameraVec3, frameData->m_lookAtMat4);
 }
 
 mathfu::vec4 M2Scene::getAmbientColor() {

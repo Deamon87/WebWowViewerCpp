@@ -7,9 +7,10 @@
 
 struct WmoGroupResult;
 class WmoGroupObject;
-class WmoGroupObject;
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
+#include <memory>
 #include "../../persistance/header/adtFileHeader.h"
 #include "mathfu/glsl_mappings.h"
 #include "wmoGroupObject.h"

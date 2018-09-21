@@ -225,8 +225,6 @@ void GDeviceGL4x::drawMeshes(std::vector<HGMesh> &meshes) {
         hmesh->m_indirectPointer = (void *)((20000*frameNum + commandsWritten) * sizeof(DrawElementsIndirectCommand));
         commandsWritten++;
     }
-    glMemoryBarrier(GL_UNIFORM_BARRIER_BIT);
-    glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
 
     int j = 0;
     for (auto &hgMesh : meshes) {
@@ -659,8 +657,7 @@ GDeviceGL4x::GDeviceGL4x() {
 
     int indirectBufferSize = sizeof(DrawElementsIndirectCommand) * 20000 * 3;
     GLbitfield flags = GL_MAP_WRITE_BIT           |
-                       GL_MAP_PERSISTENT_BIT |
-                       GL_MAP_COHERENT_BIT;
+                       GL_MAP_PERSISTENT_BIT;
     glGenBuffers(1, &indirectBuffer);
     glBindBuffer( GL_DRAW_INDIRECT_BUFFER, indirectBuffer );
     glBufferStorage( GL_DRAW_INDIRECT_BUFFER, indirectBufferSize, nullptr, flags );

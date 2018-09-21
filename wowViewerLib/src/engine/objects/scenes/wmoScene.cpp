@@ -7,11 +7,15 @@
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
 
-void WmoScene::checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
+void WmoScene::checkCulling(WoWFrameData *frameData) {
     m2RenderedThisFrame = std::vector<M2Object*>();
     wmoRenderedThisFrame = std::vector<WmoObject*>();
 
-    mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
+    mathfu::vec4 cameraPos = mathfu::vec4(frameData->m_cameraVec3, 1.0);
+    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
+    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
+
+    mathfu::mat4 projectionModelMat = frustumMat * lookAtMat4;
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
@@ -86,7 +90,7 @@ void WmoScene::cullExterior(mathfu::vec4 &cameraPos, mathfu::mat4 &projectionMod
     }
 }
 
-void WmoScene::draw() {
+void WmoScene::draw(WoWFrameData *frameData) {
     std::vector<HGMesh> renderedThisFrame;
 
     // Put everything into one array and sort
@@ -123,14 +127,7 @@ void WmoScene::draw() {
     m_api->getDevice()->drawMeshes(renderedThisFrame);
 }
 
-void WmoScene::copyToCurrentFrame() {
-    currentFrameM2RenderedThisFrameArr = m2RenderedThisFrameArr;
-    currentFrameWmoRenderedThisFrameArr = wmoRenderedThisFrameArr;
-
-    thisFrameInteriorViews = interiorViews;
-    thisFrameExteriorView = exteriorView;
-}
-void WmoScene::doPostLoad() {
+void WmoScene::doPostLoad(WoWFrameData *frameData) {
     for (int i = 0; i < this->currentFrameM2RenderedThisFrameArr.size(); i++) {
         M2Object *m2Object = this->currentFrameM2RenderedThisFrameArr[i];
         m2Object->doPostLoad();
@@ -141,10 +138,14 @@ void WmoScene::doPostLoad() {
     }
 }
 
-void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat)  {
+void WmoScene::update(WoWFrameData *frameData)  {
+    mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
+    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrix;
+    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
+
     for (int i = 0; i < this->m2RenderedThisFrameArr.size(); i++) {
         M2Object *m2Object = this->m2RenderedThisFrameArr[i];
-        m2Object->update(deltaTime, cameraVec3, lookAtMat);
+        m2Object->update(frameData->deltaTime, cameraVec3, lookAtMat4);
     }
 
     for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
@@ -169,7 +170,7 @@ void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &
     int currentWmoGroup = -1;
 
     //Get center of near plane
-    mathfu::mat4 viewPerspectiveMat = frustumMat*lookAtMat;
+    mathfu::mat4 viewPerspectiveMat = frustumMat*lookAtMat4;
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
 
     mathfu::vec3 nearPlaneCenter(0,0,0);
@@ -199,5 +200,5 @@ void WmoScene::update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &
 //    }
 
 
-    this->m_currentTime += deltaTime;
+    this->m_currentTime += frameData->deltaTime;
 }

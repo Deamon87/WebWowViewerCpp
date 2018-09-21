@@ -15,6 +15,7 @@
 #include "../objectCache.h"
 #include "../m2/m2Instancing/m2InstancingObject.h"
 #include "../wdl/wdlObject.h"
+#include "../wowFrameData.h"
 
 class Map : public IMapApi, public iInnerSceneApi {
 private:
@@ -36,26 +37,9 @@ private:
     WdlObject * m_wdlObject;
 
     int m_viewRenderOrder = 0;
-    ExteriorView exteriorView;
-    std::vector<InteriorView> interiorViews;
-
-    ExteriorView thisFrameExteriorView;
-    std::vector<InteriorView> thisFrameInteriorViews;
 
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;
-
-    std::vector<AdtObject*> adtRenderedThisFrame;
-    std::vector<M2Object*> m2RenderedThisFrame;
-    std::vector<WmoObject*> wmoRenderedThisFrame;
-
-    std::vector<AdtObject*> adtRenderedThisFrameArr;
-    std::vector<M2Object*> m2RenderedThisFrameArr;
-    std::vector<WmoObject*> wmoRenderedThisFrameArr;
-
-    std::vector<AdtObject*> currentFrameAdtRenderedThisFrameArr;
-    std::vector<M2Object*> currentFrameM2RenderedThisFrameArr;
-    std::vector<WmoObject*> currentFrameWmoRenderedThisFrameArr;
 
     std::vector<M2InstancingObject*> m_instanceList;
     std::unordered_map<std::string, M2InstancingObject*> m_instanceMap;
@@ -75,13 +59,13 @@ public:
         m_wdlObject->setMapApi(this);
     };
 
-    void checkCulling(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) override;
-    void draw() override;
+    void checkCulling(WoWFrameData *frameData) override;
+    void draw(WoWFrameData *frameData) override;
 
 
-    void doPostLoad() override;
-    void copyToCurrentFrame() override;
-    void update(double deltaTime, mathfu::vec3 &cameraVec3, mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat) override;
+    void doPostLoad(WoWFrameData *frameData) override;
+
+    void update(WoWFrameData *frameData) override;
     mathfu::vec4 getAmbientColor() override {
         return m_api->getGlobalAmbientColor();
     };
@@ -95,7 +79,8 @@ private:
                        std::vector<mathfu::vec3> &hullLines,
                        mathfu::mat4 &lookAtMat4,
                        mathfu::mat4 &projectionModelMat,
-                       int viewRenderOrder);
+                       int viewRenderOrder,
+                       WoWFrameData *frameData);
 
     void drawExterior(std::vector<HGMesh> &renderedThisFrame);
 
