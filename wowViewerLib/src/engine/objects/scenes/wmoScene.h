@@ -23,22 +23,6 @@ private:
 
     std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
-
-    ExteriorView exteriorView;
-    std::vector<InteriorView> interiorViews;
-
-    ExteriorView thisFrameExteriorView;
-    std::vector<InteriorView> thisFrameInteriorViews;
-
-    std::vector<M2Object*> m2RenderedThisFrame;
-    std::vector<WmoObject*> wmoRenderedThisFrame;
-
-    std::vector<M2Object*> m2RenderedThisFrameArr;
-    std::vector<WmoObject*> wmoRenderedThisFrameArr;
-
-    std::vector<M2Object*> currentFrameM2RenderedThisFrameArr;
-    std::vector<WmoObject*> currentFrameWmoRenderedThisFrameArr;
-
 public:
     WmoScene(IWoWInnerApi *api, std::string wmoModel) : m_api (api), m_wmoModel(wmoModel) {
         SMMapObjDef mapObjDef;
@@ -57,7 +41,7 @@ public:
     };
 
     void checkCulling(WoWFrameData *frameData) override;
-
+    void collectMeshes(WoWFrameData*) override ;
     void draw(WoWFrameData *frameData) override;
 
     void doPostLoad(WoWFrameData *frameData) override;
@@ -80,7 +64,7 @@ public:
 
     };
 
-    void cullExterior(mathfu::vec4 &cameraPos, mathfu::mat4 &projectionModelMat, int viewRenderOrder);
+    void cullExterior(WoWFrameData *frameData, int viewRenderOrder);
 };
 
 
