@@ -36,7 +36,7 @@ public:
 
     void checkCulling(WoWFrameData *frameData) override;
     void draw(WoWFrameData *frameData) override;
-
+    void collectMeshes(WoWFrameData*);
     void doPostLoad(WoWFrameData *frameData);
     void update(WoWFrameData *frameData) override;
     mathfu::vec4 getAmbientColor() override;

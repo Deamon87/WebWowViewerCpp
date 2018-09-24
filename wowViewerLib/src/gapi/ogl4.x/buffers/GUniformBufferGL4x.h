@@ -18,8 +18,10 @@ public:
     explicit GUniformBufferGL4x(IDevice &device, size_t size);
     ~GUniformBufferGL4x() override;
 
-    void setIdentifierBuffer(void * ptr) {
-        pIdentifierBuffer[(m_device.getFrameNumber() + 1) & 1] = ptr;
+    void setIdentifierBuffer(void * ptr, uint32_t offset) {
+        uint8_t frameIndex = (m_device.getFrameNumber() + 1) & 1;
+        pIdentifierBuffer[frameIndex] = ptr;
+        m_offset[frameIndex] = offset;
     }
     void * getIdentifierBuffer() {
         if (m_buffCreated) {
@@ -56,7 +58,7 @@ private:
 
 private:
     size_t m_size;
-    size_t m_offset = 0;
+    size_t m_offset[2] = {0, 0};
     void * pIdentifierBuffer[2];
 
     void * pFrameOneContent;

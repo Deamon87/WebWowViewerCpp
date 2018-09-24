@@ -263,8 +263,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
 
-        buffer->setIdentifierBuffer(((GUniformBufferGL4x *) bufferForUpload.get())->getIdentifierBuffer());
-        buffer->m_offset = (size_t) currentSize;
+        buffer->setIdentifierBuffer(((GUniformBufferGL4x *) bufferForUpload.get())->getIdentifierBuffer(), currentSize);
         void * dataPtr = buffer->getPointerForUpload();
         std::copy((char*)dataPtr,
                   ((char*)dataPtr)+buffer->m_size,
@@ -298,7 +297,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
     for (auto &hgMesh : meshes) {
         GMeshGL4x * hmesh = (GMeshGL4x *) hgMesh.get();
         DrawElementsIndirectCommand * command = &pointerToWrite[commandsWritten];
-        command->firstIndex = hmesh->m_start >> 1;
+        command->firstIndex = hmesh->m_start >>1;
         command->count = hmesh->m_end;
 
         command->baseInstance = 0;

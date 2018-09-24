@@ -26,20 +26,7 @@ void M2Scene::checkCulling(WoWFrameData *frameData) {
 void M2Scene::draw(WoWFrameData *frameData) {
     if (!m_drawModel) return;
 
-    std::vector<HGMesh> renderedThisFrame;
-
-    m_m2Object->collectMeshes(renderedThisFrame, 0);
-    m_m2Object->drawParticles(renderedThisFrame, 0);
-
-    std::sort(renderedThisFrame.begin(),
-        renderedThisFrame.end(),
-        IDevice::sortMeshes
-    );
-
-    m_api->getDevice()->updateBuffers(renderedThisFrame);
-    m_api->getDevice()->drawMeshes(renderedThisFrame);
-
-
+    m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
 }
 
 void M2Scene::doPostLoad(WoWFrameData *frameData) {
@@ -71,4 +58,17 @@ void M2Scene::setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override)
     m_ambientColorOverride = ambientColor;
 
     m_m2Object->setAmbientColorOverride(ambientColor, override);
+}
+
+void M2Scene::collectMeshes(WoWFrameData * frameData) {
+    frameData->renderedThisFrame = std::vector<HGMesh>();
+
+    m_m2Object->collectMeshes(frameData->renderedThisFrame, 0);
+    m_m2Object->drawParticles(frameData->renderedThisFrame, 0);
+
+    std::sort(frameData->renderedThisFrame.begin(),
+              frameData->renderedThisFrame.end(),
+              IDevice::sortMeshes
+    );
+
 }

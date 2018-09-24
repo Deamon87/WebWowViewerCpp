@@ -47,7 +47,7 @@ public:
 
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
-        return true;
+        return false;
     }
 
     void bindProgram(IShaderPermutation *program) override;

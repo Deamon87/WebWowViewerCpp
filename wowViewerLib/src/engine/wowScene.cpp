@@ -224,8 +224,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-   m_firstCamera.setCameraPos(0, 0, 200);
-    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(0, 0, 200);
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -327,8 +327,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -587,8 +587,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     WoWFrameData *frameParam = &m_FrameParams[currentFrame];
 
     if (!device->getIsAsynBuffUploadSupported()) {
-        currentScene->collectMeshes(frameParam);
-        device->updateBuffers(frameParam->renderedThisFrame);
+        int updateObjFrame = (device->getFrameNumber() + 1) % 4;
+        WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+        currentScene->collectMeshes(objFrameParam);
+        device->updateBuffers(objFrameParam->renderedThisFrame);
     }
 
     glClearScreen();
