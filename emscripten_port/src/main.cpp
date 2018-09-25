@@ -12,7 +12,7 @@ void createWebJsScene(int canvWidth, int canvHeight) {
     const char *urlFileId = "http://178.165.92.24:40001/get_file_id/";
 
     HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-    processor->setThreaded(true);
+//    processor->setThreaded(true);
 
     testConf = new Config();
 

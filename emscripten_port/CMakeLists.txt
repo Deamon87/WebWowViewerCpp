@@ -30,7 +30,7 @@ set(SOURCE_FILES src/main.cpp
         src/HttpRequestProcessor.cpp
         )
 
-add_executable(AWoWWebViewerJs ${SOURCE_FILES})
+add_library(AWoWWebViewerJs ${SOURCE_FILES})
 
 add_dependencies(AWoWWebViewerJs WoWViewerLib)
 target_link_libraries(AWoWWebViewerJs WoWViewerLib)

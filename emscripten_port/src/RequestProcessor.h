@@ -31,7 +31,7 @@ private:
         std::vector<unsigned char> buffer;
     };
 
-    std::thread *loaderThread;
+//    std::thread *loaderThread;
 
     std::list<std::string> m_requestQueue;
     std::list<resultStruct> m_resultQueue;
@@ -43,11 +43,11 @@ public:
 
     void setThreaded(bool value) {
         m_threaded = value;
-        if (value) {
-            loaderThread = new std::thread(([&](){
-                this->processRequests(true);
-            }));
-        }
+//        if (value) {
+//            loaderThread = new std::thread(([&](){
+//                this->processRequests(true);
+//            }));
+//        }
     }
 
 protected:

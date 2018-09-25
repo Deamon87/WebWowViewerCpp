@@ -6,7 +6,11 @@
     <script src="project.js"></script>
 </head>
 <body>
-    <script>console.log("test")</script>
+    <script>
+        GL.makeContextCurrent(GL.createContext(document.getElementById("wowcanvas"), {}));
+
+        Module._createWebJsScene(640, 640);
+    </script>
 <canvas id="wowcanvas"></canvas>
 </body>
 </html>
