@@ -95,7 +95,7 @@ struct M2Array {
     int32_t offset; // pointer to T, relative to begin of m2 data block (i.e. MD21 chunk content or begin of file)
 
     void initM2Array(void * m2File) {
-        static_assert(std::is_pod<M2Array<T>>::value, "M2Array<> is not POD");
+        static_assert(std::is_pod<M2Array<T> >::value, "M2Array<> is not POD");
 #ifdef ENVIRONMENT64
         offset = (uint32_t) (((uint64_t)m2File)+(uint64_t)offset - (uint64_t)this);
 #else
@@ -127,8 +127,8 @@ inline std::string M2Array<char>::toString() {
 }
 
 template <typename T>
-void initM2M2Array(M2Array<M2Array<T>> &array2D, void *m2File){
-    static_assert(std::is_pod<M2Array<M2Array<T>>>::value, "M2Array<M2Array<T>> array2D is not POD");
+void initM2M2Array(M2Array<M2Array<T> > &array2D, void *m2File){
+    static_assert(std::is_pod<M2Array<M2Array<T> > >::value, "M2Array<M2Array<T>> array2D is not POD");
     array2D.initM2Array(m2File);
     int count = array2D.size;
     for (int i = 0; i < count; i++){
@@ -140,7 +140,7 @@ void initM2M2Array(M2Array<M2Array<T>> &array2D, void *m2File){
 struct M2TrackBase {
     uint16_t interpolation_type;
     uint16_t global_sequence;
-    M2Array<M2Array<uint32_t>> timestamps;
+    M2Array<M2Array<uint32_t> > timestamps;
     void initTrackBase(void * m2File) {
         initM2M2Array(timestamps, m2File);
     }
@@ -161,8 +161,8 @@ struct M2Track
 {
     uint16_t interpolation_type;
     int16_t global_sequence;
-    M2Array<M2Array<uint32_t>> timestamps;
-    M2Array<M2Array<T>> values;
+    M2Array<M2Array<uint32_t> > timestamps;
+    M2Array<M2Array<T> > values;
     void initTrack(void * m2File){
         initM2M2Array(timestamps, m2File);
         initM2M2Array(values, m2File);

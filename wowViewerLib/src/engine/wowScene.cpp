@@ -141,8 +141,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         textureCache(requestProcessor),
         adtObjectCache(requestProcessor),
         db2Cache(requestProcessor){
-//    m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
-    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
+    m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
+//    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
 
 //    std::ofstream *out = new std::ofstream("log_output.txt");
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
@@ -169,8 +169,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
-//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-//    currentScene = new Map(this, 1220, "Troll Raid");
+    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+    currentScene = new Map(this, 1220, "Troll Raid");
 //    currentScene = new Map(this, 0, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -224,8 +224,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-   m_firstCamera.setCameraPos(0, 0, 200);
-    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(0, 0, 200);
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -762,16 +762,16 @@ WoWSceneImpl::~WoWSceneImpl() {
     }
 }
 
-WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
+WoWScene *createWoWScene(Config *config, IFileRequest *requestProcessor, int canvWidth, int canvHeight) {
 #ifdef _WIN32
     glewExperimental = true; // Needed in core profile
-	if (glewInit() != GLEW_OK) {
-		fprintf(stderr, "Failed to initialize GLEW\n");
-		return nullptr;
-	}
+    if (glewInit() != GLEW_OK) {
+        fprintf(stderr, "Failed to initialize GLEW\n");
+        return nullptr;
+    }
 #endif
 #ifdef __ANDROID_API__
-     std::cout.rdbuf(new androidbuf());
+    std::cout.rdbuf(new androidbuf());
 #endif
 
     return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);

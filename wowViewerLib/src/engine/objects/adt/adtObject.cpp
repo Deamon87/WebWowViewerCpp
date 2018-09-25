@@ -485,7 +485,7 @@ void AdtObject::doPostLoad() {
     }
 }
 void AdtObject::update() {
-    if (!m_loaded) false;
+    if (!m_loaded) return;
     if (adtWideBlockPS == nullptr) return;
 
     adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();

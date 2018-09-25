@@ -1,0 +1,2 @@
+ emconfigure cmake -DCMAKE_BUILD_TYPE=Release . && emmake make
+ emcc libWoWWebViewerJs.a ./A/libWoWViewerLib.a -emit-symbol-map -js-opts=0 -g4 -s WASM=0 -s USE_WEBGL2=1 -s FULL_ES3=1 -s "EXPORTED_FUNCTIONS=['_createWebJsScene', '_gameloop', '_createWoWScene']" -o project.js

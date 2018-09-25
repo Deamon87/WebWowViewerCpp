@@ -750,6 +750,7 @@ ParticleEmitter::BuildQuad(
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
+    return;
     if (this->szVertexBuf.size() <= 1) return;
 
     m_mesh->setRenderOrder(renderOrder);
@@ -757,6 +758,7 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 }
 
 void ParticleEmitter::updateBuffers() const {
+    return;
     m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
     m_bufferVBO->uploadData((void *) szVertexBuf.data(), (int) (szVertexBuf.size() * sizeof(ParticleBuffStructQuad)));
 

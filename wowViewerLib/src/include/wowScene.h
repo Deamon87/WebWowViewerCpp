@@ -35,6 +35,7 @@ public:
     virtual IControllable* getCurrentCamera() = 0;
 };
 
-extern WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
+
+extern "C" { WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight); };
 
 #endif //WOWMAPVIEWERREVIVED_WOWSCENE_H_H

@@ -628,10 +628,10 @@ GDeviceGL4x::GDeviceGL4x() {
 
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize);
 
-    glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_TRUE);
-    glDebugMessageCallback(GDeviceGL4xNS::debug_func, NULL);
+//    glEnable(GL_DEBUG_OUTPUT);
+//    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_TRUE);
+//    glDebugMessageCallback(GDeviceGL4xNS::debug_func, NULL);
 //
 
     m_uniformUploadFence = createFence();

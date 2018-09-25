@@ -35,8 +35,8 @@ void GVertexBufferGL4x::uploadData(void * data, int length) {
         m_device.bindVertexBufferBindings(nullptr);
         m_device.bindVertexBuffer(this);
 
-//        glBufferStorage(GL_ARRAY_BUFFER, length, data, 0);
-        glBufferData(GL_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);
+        glBufferStorage(GL_ARRAY_BUFFER, length, data, 0);
+//        glBufferData(GL_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);
         m_size = (size_t) length;
     } else {
 //        if (m_isImmutable) {

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(WoWViewerLib)
 
+include(CheckCXXCompilerFlag)
+
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
 if (BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
@@ -35,7 +37,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu)
 
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
+message(${CMAKE_SYSTEM_NAME})
+if (NOT CMAKE_NDK_BUILD MATCHES 1 AND (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten"))
     include_directories(${PROJECT_SOURCE_DIR}/3rdparty/glew_win/include)
     if (WIN32)
         MESSAGE(IT IS WINDOWS!!!!)
@@ -54,10 +57,12 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
         endif()
     endif(WIN32)
 else()
-endif(NOT CMAKE_NDK_BUILD MATCHES 1)
+endif(NOT CMAKE_NDK_BUILD MATCHES 1 AND (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten"))
 
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
 set(GLEW_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS} PARENT_SCOPE)
 include_directories(${GLEW_INCLUDE_DIRS})
+endif()
 
 if (CMAKE_NDK_BUILD MATCHES 1)
     set(GLSL_TARGET_FOLDER ${ANDROID_ASSETSFOLDER})
@@ -270,14 +275,28 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
 
 #add_dependencies(WoWViewerLib mathfu)
 add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION})
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
+if(HAVE_FLAG_STD_CXX17)
+    # Have -std=c++17, use it
+    message(INFO "HAVE_FLAG_STD_CXX17 is supported")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17" )
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17" )
+else()
+    check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
+    if(HAVE_FLAG_STD_CXX1Z)
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
+    else()
+        message(ERROR "No supported flags")
+    endif()
 endif()
+
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 #target_link_libraries(WoWViewerLib gomp) //never use it. It makes uniform buffers screwed up for some reason
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
-    target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
     mathfu_configure_flags(WoWViewerLib ON)
 else()
     mathfu_configure_flags(WoWViewerLib ON)
