@@ -24,6 +24,7 @@ class gMeshTemplate;
 
 #include <unordered_set>
 #include <list>
+#include <unordered_map>
 #include "GVertexBufferBindingsGL4x.h"
 #include "buffers/GIndexBufferGL4x.h"
 #include "buffers/GVertexBufferGL4x.h"
@@ -47,7 +48,7 @@ public:
 
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
-        return false;
+        return true;
     }
 
     void bindProgram(IShaderPermutation *program) override;

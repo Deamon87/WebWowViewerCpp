@@ -48,6 +48,7 @@ void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const Mipmaps
             break;
 
         case TextureFormat::BGRA:
+            textureGPUFormat = GL_RGBA8;
             break;
 
         default:

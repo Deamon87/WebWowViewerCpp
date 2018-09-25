@@ -5,6 +5,7 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <assert.h>
 #include "../opengl/header.h"
 
 #include "BlpTexture.h"
@@ -24,6 +25,10 @@ TextureFormat getTextureType(BlpFile *blpFile) {
         case 1:
             textureFormat = TextureFormat::S3TC_RGBA_DXT3;
             break;
+        case 2:
+            textureFormat = TextureFormat::BGRA;
+            break;
+
         case 3:
             textureFormat = TextureFormat::BGRA;
             break;
@@ -126,6 +131,7 @@ void BlpTexture::process(std::vector<unsigned char> &blpFile, std::string &fileN
     this->m_textureFormat = getTextureType(pBlpFile);
 
     /* Load texture by mipmaps */
+    assert(this->m_textureFormat != TextureFormat::None);
     parseMipmaps(pBlpFile, m_textureFormat, m_mipmaps);
 
 //    /* Load texture into GL memory */

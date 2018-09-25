@@ -36,17 +36,21 @@ typedef std::shared_ptr<GMeshGL4x> HGLMesh;
 //        return "INVALID_SOURCE_ENUM";
 //    }
 //}
+namespace GDeviceGL4xNS {
+    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+                    const void * /*userParam*/) {
+        assert(severity != 37190);
 
-//void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*userParam*/) {
-//    fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-//            source,
-//            type,
-//            id,
-//            severity,
-//            std::string(message, message+length).c_str());
-//    fflush(stdout);
-//}
 
+        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+                source,
+                type,
+                id,
+                severity,
+                std::string(message, message + length).c_str());
+        fflush(stdout);
+    }
+}
 void GDeviceGL4x::bindIndexBuffer(IIndexBuffer *buffer) {
     GIndexBufferGL4x * gBuffer = (GIndexBufferGL4x *) buffer;
     if (gBuffer == nullptr ) {
@@ -161,13 +165,17 @@ std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderNam
     gShaderPermutation->compileShader();
     m_shaderPermutCache[hash] = sharedPtr;
 
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[0], 0);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[1], 1);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[2], 2);
 
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[0], 3+0);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[1], 3+1);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[2], 3+2);
+    for (int i = 0; i < 3; i++) {
+        if (gShaderPermutation->m_uboVertexBlockIndex[i] > -1) {
+            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[i], i);
+        }
+        if (gShaderPermutation->m_uboFragmentBlockIndex[i] > -1) {
+            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[i], 3 + i);
+        }
+    }
+
+
 
     return m_shaderPermutCache[hash];
 }
@@ -620,10 +628,10 @@ GDeviceGL4x::GDeviceGL4x() {
 
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize);
 
-//    glEnable(GL_DEBUG_OUTPUT);
-//    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
-//    glDebugMessageCallback(debug_func, NULL);
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_TRUE);
+    glDebugMessageCallback(GDeviceGL4xNS::debug_func, NULL);
 //
 
     m_uniformUploadFence = createFence();
