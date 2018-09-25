@@ -235,9 +235,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
         }
     }
 
-    std::sort( buffers.begin(), buffers.end(), [](const GUniformBufferGL4x *a, const GUniformBufferGL4x * b) -> bool {
-        return a->m_creationIndex > b->m_creationIndex;
-    });
+    std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
 
     //2. Create buffers and update them

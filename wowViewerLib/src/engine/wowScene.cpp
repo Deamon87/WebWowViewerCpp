@@ -224,8 +224,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-//   m_firstCamera.setCameraPos(0, 0, 200);
-//    currentScene = new Map(this, 0, "Azeroth");
+   m_firstCamera.setCameraPos(0, 0, 200);
+    currentScene = new Map(this, 0, "Azeroth");
 //
 //    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "Zandalar");
@@ -374,8 +374,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\brokenisles\\dalaran2.wmo");
-    currentScene = new WmoScene(this,
-        "world/wmo/kultiras/nightelf/8ne_nightelf_inn01.wmo");
+//    currentScene = new WmoScene(this,
+//        "world/wmo/kultiras/nightelf/8ne_nightelf_inn01.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
