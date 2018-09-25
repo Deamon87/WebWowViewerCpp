@@ -37,7 +37,6 @@ public:
     virtual Cache<WdlFile>* getWdlFileCache() = 0;
 
     virtual bool getIsDebugCamera() = 0;
-    virtual void drawCamera() = 0;
 
     virtual IDevice * getDevice()= 0;
     virtual HGUniformBuffer getSceneWideUniformBuffer() = 0;

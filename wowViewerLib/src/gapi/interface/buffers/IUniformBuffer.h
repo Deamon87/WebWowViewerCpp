@@ -11,9 +11,11 @@ public:
 
     template<typename T>
     T &getObject() {
-//        assert(sizeof(T) == m_size);
+//        assert((sizeof(T) < this->getSize()));
         return *(T *) getPointerForModification();
     }
+
+//    virtual int getSize() = 0;
     virtual void *getPointerForModification() = 0;
     virtual void *getPointerForUpload() = 0;
 

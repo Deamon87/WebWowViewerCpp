@@ -185,6 +185,7 @@ HGUniformBuffer GDeviceGL4x::createUniformBuffer(size_t size) {
 }
 
 void GDeviceGL4x::drawMeshes(std::vector<HGMesh> &meshes) {
+//    m_uniformUploadFence->wait();
     //Collect meshes into batches and create new array for performace
 //    int meshesSize = meshes.size();
 //    for (int i = 0 ; i < meshesSize - 1; i++) {

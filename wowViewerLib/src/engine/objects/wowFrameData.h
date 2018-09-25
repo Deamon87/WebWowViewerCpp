@@ -39,13 +39,13 @@ public:
     std::vector<WmoObject*> wmoArray;
 
     //Occlusion culling params
-    std::vector<HGOcclusionQuery> renderedThisFrame;
+    std::vector<HGOcclusionQuery> occlusionMeshes;
 
     //Occlusion culling results
     int *occlusionResults;
 
     //Rendering params
-    std::vector<HGMesh> meshes;
+    std::vector<HGMesh> renderedThisFrame;
 };
 
 #endif //AWEBWOWVIEWERCPP_WOWFRAMEDATA_H

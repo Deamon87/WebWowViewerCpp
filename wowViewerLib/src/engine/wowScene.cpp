@@ -117,14 +117,13 @@ void WoWSceneImpl::DoCulling() {
     this->SetDirection(*frameParam);
 
     currentScene->checkCulling(frameParam);
-    currentScene->update(frameParam);
-
-
 
     //Upload buffers if supported
     if (device->getIsAsynBuffUploadSupported()) {
+
         int updateObjFrame = (device->getFrameNumber() + 1) % 4;
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+        currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
         device->updateBuffers(objFrameParam->renderedThisFrame);
     }
@@ -169,8 +168,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
-//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-//    currentScene = new Map(this, 1220, "Troll Raid");
+    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+    currentScene = new Map(this, 1220, "Troll Raid");
 //    currentScene = new Map(this, 0, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -374,8 +373,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\brokenisles\\dalaran2.wmo");
-    currentScene = new WmoScene(this,
-        "world/wmo/kultiras/nightelf/8ne_nightelf_inn01.wmo");
+//    currentScene = new WmoScene(this,
+//        "world/wmo/kultiras/nightelf/8ne_nightelf_inn01.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
@@ -559,19 +558,6 @@ void glClearScreen() {
     glDisable(GL_SCISSOR_TEST);
 }
 
-void WoWSceneImpl::drawCamera () {
-    /*
-    glDisable(GL_DEPTH_TEST);
-
-    mathfu::mat4 invViewFrustum = this->m_viewCameraForRender.Inverse();
-
-    glUniformMatrix4fv(drawFrustumShader->getUnf("uInverseViewProjection"), 1, GL_FALSE, &invViewFrustum[0]);
-
-    glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
-    glEnable(GL_DEPTH_TEST);
-    */
-}
-
 void print_timediff(const char* prefix, const struct timespec& start, const
 struct timespec& end)
 {
@@ -591,6 +577,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     if (!device->getIsAsynBuffUploadSupported()) {
         int updateObjFrame = (device->getFrameNumber() + 1) % 4;
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+        currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
         device->updateBuffers(objFrameParam->renderedThisFrame);
     }
@@ -689,8 +676,11 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     frameParam->deltaTime = deltaTime;
     deltaTimeUpdate = true;
     m_gdevice->increaseFrameNumber();
+//    glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 
+//    glFlush();
     renderLockNextMeshes.unlock();
+
 
 }
 mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {

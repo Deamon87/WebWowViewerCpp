@@ -201,7 +201,6 @@ private:
     void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
                           bool drawDepth);
 
-    void drawCamera() override ;
     bool getIsDebugCamera() override {
         return m_isDebugCamera;
     }

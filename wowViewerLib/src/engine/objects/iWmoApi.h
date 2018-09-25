@@ -9,6 +9,7 @@
 #include "../../gapi/interface/IDevice.h"
 
 #include "../engineClassList.h"
+#include <functional>
 
 struct PortalInfo_t {
     std::vector<mathfu::vec3> sortedVericles;
