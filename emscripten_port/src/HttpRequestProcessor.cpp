@@ -1,7 +1,7 @@
 //
 // Created by deamon on 24.10.17.
 //
-
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -38,19 +38,33 @@ void HttpRequestProcessor::requestFile(const char *fileName) {
     this->addRequest(fileName_s);
 }
 
+
+std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
+
 void HttpRequestProcessor::processFileRequest(std::string &fileName) {
+    std::string escapedFileName = ReplaceAll( fileName, " ", "%20");
+
     std::string fullUrl;
-    if (fileName.find("File") == 0) {
+    if (escapedFileName.find("File") == 0) {
         std::stringstream ss;
-        std::string fileDataIdHex = fileName.substr(4, fileName.find(".")-4);
+        std::string fileDataIdHex = escapedFileName.substr(4, escapedFileName.find(".")-4);
         uint32_t fileDataId;
         ss << std::hex << fileDataIdHex;
         ss >> fileDataId;
 
         fullUrl = m_urlBaseFileId + std::to_string(fileDataId);
     } else {
-        fullUrl = m_urlBase + fileName;
+        fullUrl = m_urlBase + escapedFileName;
     }
+
+//    fullUrl = urlEncode(fullUrl);
 
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
@@ -58,7 +72,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
     attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
     attr.onsuccess = downloadSucceeded;
     attr.onerror = downloadFailed;
-    emscripten_fetch(&attr, "myfile.dat");
+    emscripten_fetch(&attr, fullUrl.c_str());
 
 //    //
 //    HttpFile * httpFile = new HttpFile(fullUrl.c_str());

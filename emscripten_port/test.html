@@ -7,9 +7,36 @@
 </head>
 <body>
     <script>
-        GL.makeContextCurrent(GL.createContext(document.getElementById("wowcanvas"), {}));
 
-        Module._createWebJsScene(640, 640);
+
+        window.createscene = function () {
+
+            var context  = GL.createContext(document.getElementById("wowcanvas"), {});
+            GL.makeContextCurrent(context);
+            Module._createWebJsScene(640, 640);
+
+
+
+            var lastTimeStamp = new Date().getTime();
+
+            var renderfunc = function(){
+                GL.makeContextCurrent(context);
+                var currentTimeStamp = new Date().getTime();
+                var timeDelta = 0;
+                if (lastTimeStamp !== undefined) {
+                    timeDelta = currentTimeStamp - lastTimeStamp;
+                }
+                lastTimeStamp = currentTimeStamp;
+
+
+                Module._gameloop(timeDelta);
+                //scope.$digest();
+
+                window.requestAnimationFrame(renderfunc);
+            };
+
+            window.requestAnimationFrame(renderfunc);
+        }
     </script>
 <canvas id="wowcanvas"></canvas>
 </body>

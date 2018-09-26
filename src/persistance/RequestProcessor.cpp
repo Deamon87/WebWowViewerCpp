@@ -1,5 +1,6 @@
 #include <mutex>
 #include <vector>
+#include <iostream>
 #include "RequestProcessor.h"
 
 std::mutex requestMtx;           // mutex for critical section
@@ -10,6 +11,7 @@ std::mutex resultMtx;            // mutex for critical section
 //3. Add result to ResultFIFO
 //4. Get ready results from FIFO
 void RequestProcessor::addRequest (std::string &fileName) {
+    std::cout << fileName;
     std::unique_lock<std::mutex> lck (requestMtx,std::defer_lock);
     // critical section (exclusive access to std::cout signaled by locking lck):
     lck.lock();

@@ -629,6 +629,8 @@ GDeviceGL33::GDeviceGL33() {
 
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize);
 
+    std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
+
 //    glEnable(GL_DEBUG_OUTPUT);
 //    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 //    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);

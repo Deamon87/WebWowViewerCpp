@@ -1,6 +1,8 @@
 #include "../../wowViewerLib/src/include/wowScene.h"
 #include "RequestProcessor.h"
 #include "HttpRequestProcessor.h"
+#include <iostream>
+#include <emscripten/threading.h>
 
 WoWScene *scene;
 RequestProcessor *processor;
@@ -11,12 +13,18 @@ void createWebJsScene(int canvWidth, int canvHeight) {
     const char *url = "http://178.165.92.24:40001/get/";
     const char *urlFileId = "http://178.165.92.24:40001/get_file_id/";
 
-    HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-//    processor->setThreaded(true);
+    if (emscripten_has_threading_support()) {
+        std::cout << "Has support";
+    } else {
+        std::cout << "Has no support";
+    }
+
+    processor = new HttpRequestProcessor(url, urlFileId);
+    processor->setThreaded(false);
 
     testConf = new Config();
 
-    WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
+    scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
 }
 }
 
