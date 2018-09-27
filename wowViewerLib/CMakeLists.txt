@@ -87,7 +87,6 @@ configure_file(${PROJECT_SOURCE_DIR}/src/glsl/renderFrameBufferShader.glsl ${GLS
 configure_file(${PROJECT_SOURCE_DIR}/src/glsl/textureCompositionShader.glsl ${GLSL_TARGET_FOLDER}/glsl/textureCompositionShader.glsl COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/src/glsl/wmoShader.glsl ${GLSL_TARGET_FOLDER}/glsl/wmoShader.glsl COPYONLY)
 
-#include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)
 include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
 
 set(SOURCE_FILES src/engine/wowScene.cpp
@@ -285,7 +284,7 @@ else()
     check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
     if(HAVE_FLAG_STD_CXX1Z)
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
-        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -stdEMSCRIPTEN=c++1z" )
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
     else()
@@ -293,15 +292,20 @@ else()
     endif()
 endif()
 
+if (NOT EMSCRIPTEN)
+    target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
+    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+endif()
+
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 #target_link_libraries(WoWViewerLib gomp) //never use it. It makes uniform buffers screwed up for some reason
 
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-    mathfu_configure_flags(WoWViewerLib ON)
+if (EMSCRIPTEN)
+    mathfu_configure_flags(WoWViewerLib FALSE)
 else()
-    mathfu_configure_flags(WoWViewerLib ON)
-#    target_include_directories(WoWViewerLib PRIVATE "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include" "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include")
+    mathfu_configure_flags(WoWViewerLib FALSE)
 endif()
+
 
 target_include_directories(WoWViewerLib
         PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)

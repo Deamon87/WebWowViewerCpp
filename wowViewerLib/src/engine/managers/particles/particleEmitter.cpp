@@ -237,7 +237,7 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &boneModelMat, mathf
             if (this->particles.size() == 0) {
                 animTime_t frameAmount = frameTime / this->burstTime;
                 this->burstTime = 0;
-                this->burstVec = dPos * frameAmount * this->m_data->old.BurstMultiplier;
+                this->burstVec = dPos * mathfu::vec3(frameAmount * this->m_data->old.BurstMultiplier);
             }
             else {
                 this->burstVec = mathfu::vec3(0, 0, 0);
@@ -338,15 +338,15 @@ void ParticleEmitter::CreateParticle(animTime_t delta) {
 void ParticleEmitter:: CalculateForces(ParticleForces &forces, animTime_t delta) {
     if (false && (this->m_data->old.flags & 0x80000000)) {
         forces.drift = mathfu::vec3(0.707, 0.707, 0);
-        forces.drift = forces.drift * delta;
+        forces.drift = forces.drift * mathfu::vec3(delta);
     }
     else {
-        forces.drift = mathfu::vec3(this->m_data->old.WindVector) * delta;
+        forces.drift = mathfu::vec3(this->m_data->old.WindVector) * mathfu::vec3(delta);
     }
 
     auto g = this->generator->GetGravity();
-    forces.velocity = g * delta;
-    forces.position = g * delta * delta * 0.5f;
+    forces.velocity = g * mathfu::vec3(delta);
+    forces.position = g * mathfu::vec3(delta * delta * 0.5f);
     forces.drag = this->m_data->old.drag * delta;
 }
 
@@ -368,7 +368,7 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
         p.position = p.position + this->deltaPosition;
     }
 
-    mathfu::vec3 r0 = p.velocity * delta; // v*dt
+    mathfu::vec3 r0 = p.velocity * mathfu::vec3(delta); // v*dt
 
     p.velocity = p.velocity + forces.velocity;
     p.velocity = p.velocity *  (1.0f - forces.drag);

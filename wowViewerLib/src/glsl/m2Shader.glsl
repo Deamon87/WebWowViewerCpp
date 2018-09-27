@@ -219,6 +219,9 @@ void main() {
 
 #ifdef COMPILING_FS
 //precision mediump float;
+
+precision highp float;
+
 struct LocalLight
 {
     vec4 color;
@@ -226,8 +229,6 @@ struct LocalLight
     vec4 attenuation;
 };
 
-
-precision highp float;
 
 in vec3 vNormal;
 in vec2 vTexCoord;
@@ -327,6 +328,10 @@ void main() {
     vec4 tex = texture(uTexture, texCoord).rgba;
     vec4 tex2 = texture(uTexture2, texCoord2).rgba;
     vec4 tex3 = texture(uTexture3, texCoord3).rgba;
+
+    vec4 tex2WithTextCoord1 = texture(uTexture2,texCoord);
+    vec4 tex3WithTextCoord1 = texture(uTexture3,texCoord);
+    vec4 tex4WithTextCoord2 = texture(uTexture4,texCoord2);
 
     vec4 finalColor = vec4(0);
     vec4 meshResColor = vDiffuseColor;
@@ -493,17 +498,17 @@ void main() {
         specular = tex3.rgb * glowOpacity;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
-    } else if ( uPixelShader == 26 ) {//Combiners_Mod_Dual_Crossfade
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, texture(uTexture2,texCoord), vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), texture(uTexture3,texCoord), vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
-        opacity = mix(mix(tex, texture(uTexture2,texCoord), vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), texture(uTexture3,texCoord), vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * vDiffuseColor.a;
+    /*} else if ( uPixelShader == 26 ) {//Combiners_Mod_Dual_Crossfade
+        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
+        opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 27 ) {//Combiners_Opaque_Mod2xNA_Alpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a)), tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 28 ) {//Combiners_Mod_Masked_Dual_Crossfade
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, texture(uTexture2,texCoord), vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), texture(uTexture3,texCoord), vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
-        opacity = mix(mix(tex, texture(uTexture2,texCoord), vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), texture(uTexture3,texCoord), vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * texture(uTexture4,texCoord2).a * vDiffuseColor.a;
+        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
+        opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * tex4WithTextCoord2.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 29 ) {//Combiners_Opaque_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
@@ -536,6 +541,7 @@ void main() {
     /*
         WOTLK DEPRECATED SHADERS!
     */
+    /*
     } else if (uPixelShader == -1) { // Combiners_Decal
         finalColor.rgb = (meshResColor.rgb - tex.rgb) * meshResColor.a + tex.rgb;
         finalColor.a = meshResColor.a;
@@ -558,6 +564,7 @@ void main() {
         finalColor.a = (tex.a + meshResColor.a) * tex2.a;
     } else if (uPixelShader == -8) { // Combiners_Mod2x_Mod2x
         finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba * vec4(4.0);
+        */
     }
 
     finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + specular, finalOpacity);

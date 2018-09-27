@@ -1,6 +1,7 @@
 #include <mutex>
 #include <vector>
 #include "RequestProcessor.h"
+#include <iostream>
 
 std::mutex requestMtx;           // mutex for critical section
 std::mutex resultMtx;            // mutex for critical section
@@ -56,6 +57,7 @@ void RequestProcessor::processRequests (bool calledFromThread) {
 void RequestProcessor::provideResult(std::string &fileName, std::vector<unsigned char> &content) {
     std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
 
+    std::cout << "Called provideResult with fileName = " << fileName << " content length = " << content.size() << std::endl;
 
     resultStruct resultStructObj;
     resultStructObj.buffer = content;
@@ -67,15 +69,15 @@ void RequestProcessor::provideResult(std::string &fileName, std::vector<unsigned
 }
 
 void RequestProcessor::processResults(int limit) {
-    std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
+    //std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
 
     for (int i = 0; i < limit; i++) {
         if (m_resultQueue.empty()) break;
 
-        if (m_threaded) lck.lock();
+//        if (m_threaded) lck.lock();
         resultStruct resultStructObj = m_resultQueue.front();
         m_resultQueue.pop_front();
-        if (m_threaded) lck.unlock();
+//        if (m_threaded) lck.unlock();
 
         m_fileRequester->provideFile(
                 resultStructObj.fileName.c_str(),

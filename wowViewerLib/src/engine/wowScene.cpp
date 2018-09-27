@@ -17,6 +17,18 @@
 #include <thread>
 #include <chrono>
 
+void WoWSceneImpl::processCaches(int limit) {
+    this->adtObjectCache.processCacheQueue(limit);
+    this->wdtCache.processCacheQueue(limit);
+    this->wdlCache.processCacheQueue(limit);
+    this->wmoGeomCache.processCacheQueue(limit);
+    this->wmoMainCache.processCacheQueue(limit);
+    this->m2GeomCache.processCacheQueue(limit);
+    this->skinGeomCache.processCacheQueue(limit);
+    this->textureCache.processCacheQueue(limit);
+    this->db2Cache.processCacheQueue(limit);
+}
+
 void WoWSceneImpl::DoCulling() {
     float farPlane = 3000;
     float nearPlane = 1;
@@ -144,6 +156,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
 //    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
 
+#ifdef __EMSCRIPTEN__
+    m_supportThreads = false;
+#endif
+
 //    std::ofstream *out = new std::ofstream("log_output.txt");
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
 //    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
@@ -169,8 +185,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
-    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-    currentScene = new Map(this, 1220, "Troll Raid");
+//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+//    currentScene = new Map(this, 1220, "Troll Raid");
 //    currentScene = new Map(this, 0, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -327,8 +343,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -463,42 +479,36 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
 
-    g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
-        using namespace std::chrono_literals;
 
-        while (!this->m_isTerminating) {
-            std::this_thread::sleep_for(1ms);
-            this->adtObjectCache.processCacheQueue(1000);
-            this->wdtCache.processCacheQueue(1000);
-            this->wdlCache.processCacheQueue(1000);
-            this->wmoGeomCache.processCacheQueue(1000);
-            this->wmoMainCache.processCacheQueue(100);
-            this->m2GeomCache.processCacheQueue(1000);
-            this->skinGeomCache.processCacheQueue(1000);
-            this->textureCache.processCacheQueue(1000);
-            this->db2Cache.processCacheQueue(1000);
-        }
-    });
+    if (m_supportThreads) {
+        g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
+            using namespace std::chrono_literals;
 
+            while (!this->m_isTerminating) {
+                std::this_thread::sleep_for(1ms);
 
-
-    g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&](){
-        using namespace std::chrono_literals;
-        std::unique_lock<std::mutex> localLockNextMeshes (m_lockNextMeshes,std::defer_lock);
-
-        while (!this->m_isTerminating) {
-            if (!deltaTimeUpdate) {
-                std::this_thread::sleep_for(500us);
-                continue;
+                processCaches(1000);
             }
+        });
 
-            localLockNextMeshes.lock();
-            deltaTimeUpdate = false;
-            DoCulling();
-            localLockNextMeshes.unlock();
-        }
-    }));
 
+        g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&]() {
+            using namespace std::chrono_literals;
+            std::unique_lock<std::mutex> localLockNextMeshes(m_lockNextMeshes, std::defer_lock);
+
+            while (!this->m_isTerminating) {
+                if (!deltaTimeUpdate) {
+                    std::this_thread::sleep_for(500us);
+                    continue;
+                }
+
+                localLockNextMeshes.lock();
+                deltaTimeUpdate = false;
+                DoCulling();
+                localLockNextMeshes.unlock();
+            }
+        }));
+    }
 }
 
 void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
@@ -587,6 +597,11 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     device->reset();
     int currentFrame = device->getFrameNumber() % 4;
     WoWFrameData *frameParam = &m_FrameParams[currentFrame];
+
+    if (!m_supportThreads) {
+        processCaches(10);
+        DoCulling();
+    }
 
     if (!device->getIsAsynBuffUploadSupported()) {
         int updateObjFrame = (device->getFrameNumber() + 1) % 4;

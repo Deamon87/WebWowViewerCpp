@@ -10,12 +10,22 @@
 #include "HttpRequestProcessor.h"
 #include <emscripten/fetch.h>
 
+struct UserDataForRequest {
+    std::string fileName;
+    HttpRequestProcessor *processor;
+};
+
 void downloadSucceeded(emscripten_fetch_t *fetch) {
     printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
 
-
+    std::vector<unsigned char> fileContent(&fetch->data[0], &fetch->data[fetch->numBytes]);
+    UserDataForRequest * userDataForRequest = (UserDataForRequest *)fetch->userData;
+    userDataForRequest->processor->provideResult(userDataForRequest->fileName, fileContent);
     // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
+    delete userDataForRequest;
     emscripten_fetch_close(fetch); // Free data associated with the fetch.
+
+
 }
 
 void downloadFailed(emscripten_fetch_t *fetch) {
@@ -66,12 +76,17 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
 
 //    fullUrl = urlEncode(fullUrl);
 
+    UserDataForRequest * userDataForRequest = new UserDataForRequest();
+    userDataForRequest->fileName = fileName;
+    userDataForRequest->processor = this;
+
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
     strcpy(attr.requestMethod, "GET");
     attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
     attr.onsuccess = downloadSucceeded;
     attr.onerror = downloadFailed;
+    attr.userData = userDataForRequest;
     emscripten_fetch(&attr, fullUrl.c_str());
 
 //    //

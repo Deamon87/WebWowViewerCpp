@@ -25,6 +25,7 @@ void createWebJsScene(int canvWidth, int canvHeight) {
     testConf = new Config();
 
     scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
+    processor->setFileRequester(scene);
 }
 }
 

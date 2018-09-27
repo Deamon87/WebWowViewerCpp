@@ -206,7 +206,11 @@ private:
         return m_isDebugCamera;
     }
 
+    bool m_supportThreads = true;
+
     void SetDirection(WoWFrameData &frameParamHolder);
+
+    void processCaches(int limit);
 };
 
 

@@ -13,7 +13,7 @@
 
             var context  = GL.createContext(document.getElementById("wowcanvas"), {});
             GL.makeContextCurrent(context);
-            Module._createWebJsScene(640, 640);
+            Module._createWebJsScene(1024, 1024);
 
 
 
@@ -29,7 +29,7 @@
                 lastTimeStamp = currentTimeStamp;
 
 
-                Module._gameloop(timeDelta);
+                Module._gameloop(timeDelta / 1000.0);
                 //scope.$digest();
 
                 window.requestAnimationFrame(renderfunc);
@@ -38,6 +38,6 @@
             window.requestAnimationFrame(renderfunc);
         }
     </script>
-<canvas id="wowcanvas"></canvas>
+<canvas id="wowcanvas" height="1024" width="1024"></canvas>
 </body>
 </html>

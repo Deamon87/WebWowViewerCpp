@@ -114,6 +114,9 @@ void GShaderPermutationGL33::compileShader() {
 #   error "Unknown Apple platform"
 #endif
 #endif
+#ifdef __EMSCRIPTEN__
+    esVersion = true;
+#endif
     bool geomShaderExists = false;
     if (esVersion) {
         vertExtraDefStrings = "#version 300 es\n" + vertExtraDefStrings;

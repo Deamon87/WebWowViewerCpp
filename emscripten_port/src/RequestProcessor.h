@@ -50,7 +50,7 @@ public:
         }
     }
 
-protected:
+public:
     void addRequest (std::string &fileName);
 
     void provideResult(std::string &fileName, std::vector<unsigned char> &content);

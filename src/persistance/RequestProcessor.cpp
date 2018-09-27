@@ -59,7 +59,8 @@ void RequestProcessor::provideResult(std::string &fileName, std::vector<unsigned
     std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
 
 
-    resultStruct resultStructObj;
+
+              resultStruct resultStructObj;
     resultStructObj.buffer = content;
     resultStructObj.fileName = fileName;
 
