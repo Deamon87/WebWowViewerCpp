@@ -135,6 +135,10 @@ void GShaderPermutationGL33::compileShader() {
     }
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
 
+#ifdef __EMSCRIPTEN__
+    geomShaderExists = false;
+#endif
+
     if (esVersion) {
         fragExtraDefStrings = "#version 300 es\n" + fragExtraDefStrings;
     } else {

@@ -61,6 +61,12 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
     bool useDXT3Decoding = false;
     bool useDXT5Decoding = false;
 
+#ifdef __EMSCRIPTEN__
+    useDXT1Decoding = true;
+    useDXT3Decoding = true;
+    useDXT5Decoding = true;
+#endif
+
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
     bool generateMipMaps = false;
@@ -163,8 +169,9 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
     }
-
+#ifndef __EMSCRIPTEN__
     glGenerateMipmap(GL_TEXTURE_2D);
+#endif
 #endif
 
 

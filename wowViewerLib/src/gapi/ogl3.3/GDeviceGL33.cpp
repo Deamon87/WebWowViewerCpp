@@ -175,13 +175,15 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
     gShaderPermutation->compileShader();
     m_shaderPermutCache[hash] = sharedPtr;
 
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[0], 0);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[1], 1);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[2], 2);
+    for (int i = 0; i < 3; i++) {
+        if (gShaderPermutation->m_uboVertexBlockIndex[i] > -1) {
+            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[i], i);
+        }
+        if (gShaderPermutation->m_uboFragmentBlockIndex[i] > -1) {
+            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[i], 3 + i);
+        }
+    }
 
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[0], 3+0);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[1], 3+1);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[2], 3+2);
 
     return m_shaderPermutCache[hash];
 }

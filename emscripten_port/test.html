@@ -10,17 +10,13 @@
 
 
         window.createscene = function () {
+            Module["canvas"] = document.getElementById("wowcanvas");
 
-            var context  = GL.createContext(document.getElementById("wowcanvas"), {});
-            GL.makeContextCurrent(context);
-            Module._createWebJsScene(1024, 1024);
-
-
+            Module._createWebJsScene(640, 640);
 
             var lastTimeStamp = new Date().getTime();
 
             var renderfunc = function(){
-                GL.makeContextCurrent(context);
                 var currentTimeStamp = new Date().getTime();
                 var timeDelta = 0;
                 if (lastTimeStamp !== undefined) {
@@ -38,6 +34,6 @@
             window.requestAnimationFrame(renderfunc);
         }
     </script>
-<canvas id="wowcanvas" height="1024" width="1024"></canvas>
+<canvas id="wowcanvas" height="640" width="640"></canvas>
 </body>
 </html>

@@ -33,15 +33,13 @@ layout(std140) uniform meshWideBlockVS {
     ivec4 VertexShader_UseLitColor;
 };
 
-out VertexData {
-vec2 vTexCoord;
-vec2 vTexCoord2;
-vec2 vTexCoord3;
-vec4 vColor;
-vec4 vColor2;
-vec4 vPosition;
-vec3 vNormal;
-} vs_out;
+out vec2 vTexCoord;
+out vec2 vTexCoord2;
+out vec2 vTexCoord3;
+out vec4 vColor;
+out vec4 vColor2;
+out vec4 vPosition;
+out vec3 vNormal;
 
 #ifdef drawBuffersIsSupported
 //vec3 vNormal;
@@ -70,15 +68,6 @@ vec2 posToTexCoord(vec3 cameraPoint, vec3 normal){
 //};
 
 void main() {
-    vec2 vTexCoord;
-    vec2 vTexCoord2;
-    vec2 vTexCoord3;
-    vec4 vColor;
-    vec4 vColor2;
-    vec4 vPosition;
-    vec3 vNormal;
-
-
     vec4 worldPoint = uPlacementMat * vec4(aPosition, 1);
 
     vec4 cameraPoint = uLookAtMat * worldPoint;
@@ -149,14 +138,14 @@ void main() {
         vTexCoord3 = aTexCoord3; //not used
     }
 
-
-    vs_out.vTexCoord = vTexCoord;
-    vs_out.vTexCoord2 = vTexCoord2;
-    vs_out.vTexCoord3 = vTexCoord3;
-    vs_out.vColor = vColor;
-    vs_out.vColor2 = vColor2;
-    vs_out.vPosition = vPosition;
-    vs_out.vNormal = vNormal;
+//
+//    vs_out.vTexCoord = vTexCoord;
+//    vs_out.vTexCoord2 = vTexCoord2;
+//    vs_out.vTexCoord3 = vTexCoord3;
+//    vs_out.vColor = vColor;
+//    vs_out.vColor2 = vColor2;
+//    vs_out.vPosition = vPosition;
+//    vs_out.vNormal = vNormal;
 }
 #endif //COMPILING_VS
 
@@ -220,7 +209,6 @@ in vec4 vColor;
 in vec4 vColor2;
 in vec4 vPosition;
 in vec3 vNormal;
-in vec3 vBaryCentric;
 
 layout(std140) uniform meshWideBlockPS {
     vec4 uViewUp;
@@ -289,9 +277,9 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
 void main() {
 
 
-    vec4 tex = texture2D(uTexture, vTexCoord).rgba ;
-    vec4 tex2 = texture2D(uTexture2, vTexCoord2).rgba;
-    vec4 tex3 = texture2D(uTexture3, vTexCoord3).rgba;
+    vec4 tex = texture(uTexture, vTexCoord).rgba ;
+    vec4 tex2 = texture(uTexture2, vTexCoord2).rgba;
+    vec4 tex3 = texture(uTexture3, vTexCoord3).rgba;
 
     if (UseLitColor_EnableAlpha_PixelShader.y == 1) {
         if ((tex.a - 0.501960814) < 0.0) {
