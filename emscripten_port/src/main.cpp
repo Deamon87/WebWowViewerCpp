@@ -132,64 +132,65 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 }
 
 extern "C" {
-void createWebJsScene(int canvWidth, int canvHeight) {
-    const char *url = "http://178.165.92.24:40001/get/";
-    const char *urlFileId = "http://178.165.92.24:40001/get_file_id/";
+    void createWebJsScene(int canvWidth, int canvHeight) {
+        const char *url = "http://178.165.92.24:40001/get/";
+        const char *urlFileId = "http://178.165.92.24:40001/get_file_id/";
 
-    if (!glfwInit()) {
-        fputs("Failed to initialize GLFW", stderr);
-        return;
+        if (!glfwInit()) {
+            fputs("Failed to initialize GLFW", stderr);
+            return;
+        }
+
+    //    if (emscripten_has_threading_support()) {
+    //        std::cout << "Has support";
+    //    } else {
+    //        std::cout << "Has no support";
+    //    }
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+            glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+
+        window = glfwCreateWindow(640, 480, "My Title", NULL, NULL);
+
+        if (!window) {
+            fputs("Failed to create GLFW window", stderr);
+            glfwTerminate();
+            return;
+        }
+
+        glfwMakeContextCurrent(window);
+
+        processor = new HttpRequestProcessor(url, urlFileId);
+        processor->setThreaded(false);
+
+        testConf = new Config();
+        testConf->setSunColor(0.0,0.0,0.0,0.0);
+        testConf->setAmbientColor(1.0,1.0,1.0,1.0);
+
+        scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
+        processor->setFileRequester(scene);
+
+        glfwSetWindowUserPointer(window, scene);
+        glfwSetKeyCallback(window, onKey);
+        glfwSetCursorPosCallback(window, cursor_position_callback);
+        glfwSetWindowSizeCallback(window, window_size_callback);
+        glfwSetMouseButtonCallback(window, mouse_button_callback);
     }
-
-//    if (emscripten_has_threading_support()) {
-//        std::cout << "Has support";
-//    } else {
-//        std::cout << "Has no support";
-//    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-
-    window = glfwCreateWindow(640, 480, "My Title", NULL, NULL);
-
-    if (!window) {
-        fputs("Failed to create GLFW window", stderr);
-        glfwTerminate();
-        return;
-    }
-
-    glfwMakeContextCurrent(window);
-
-    processor = new HttpRequestProcessor(url, urlFileId);
-    processor->setThreaded(false);
-
-    testConf = new Config();
-    testConf->setSunColor(1.0,1.0,1.0,1.0);
-    testConf->setAmbientColor(255.0,255.0,255.0,.0);
-
-    scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
-    processor->setFileRequester(scene);
-
-    glfwSetWindowUserPointer(window, scene);
-    glfwSetKeyCallback(window, onKey);
-    glfwSetCursorPosCallback(window, cursor_position_callback);
-    glfwSetWindowSizeCallback(window, window_size_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-}
 }
 
 
 extern "C" {
-void gameloop(double deltaTime) {
-    processor->processRequests(false);
-    processor->processResults(10);
+    void gameloop(double deltaTime) {
+        processor->processRequests(false);
+        processor->processResults(10);
 
-    if (windowSizeChanged) {
-        scene->setScreenSize(canvWidth, canvHeight);
-        windowSizeChanged = false;
+        if (windowSizeChanged) {
+            scene->setScreenSize(canvWidth, canvHeight);
+            windowSizeChanged = false;
+        }
+
+        scene->draw((deltaTime * 1000));
     }
-
-    scene->draw((deltaTime * 1000));
-}
 }
 
 int main() {

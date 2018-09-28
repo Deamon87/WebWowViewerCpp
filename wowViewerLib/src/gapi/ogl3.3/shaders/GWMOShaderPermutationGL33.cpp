@@ -14,8 +14,15 @@ void GWMOShaderPermutationGL33::compileShader() {
     //Init newly created shader
     glUseProgram(this->m_programBuffer);
 
-    glUniform1i(this->getUnf("uTexture"), 0);
-    glUniform1i(this->getUnf("uTexture2"), 1);
-    glUniform1i(this->getUnf("uTexture3"), 2);
+    if (hasUnf("uTexture")) {
+        glUniform1i(this->getUnf("uTexture"), 0);
+    }
+    if (hasUnf("uTexture2")) {
+        glUniform1i(this->getUnf("uTexture2"), 1);
+    }
+    if (hasUnf("uTexture3")) {
+        glUniform1i(this->getUnf("uTexture3"), 2);
+    }
+
     glUseProgram(0);
 }

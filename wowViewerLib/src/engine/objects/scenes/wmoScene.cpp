@@ -25,8 +25,8 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     frameData->interiorViews = std::vector<InteriorView>();
     m_viewRenderOrder = 0;
 
-    this->m_wmoObject->resetTraversedWmoGroups();
     if (!this->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
+        this->m_wmoObject->resetTraversedWmoGroups();
         if (this->m_currentWMO->startTraversingWMOGroup(
             cameraPos,
             projectionModelMat,
@@ -77,6 +77,8 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
 
 void WmoScene::cullExterior(WoWFrameData *frameData, int viewRenderOrder) {
     mathfu::vec4 cameraVec4 = mathfu::vec4(frameData->m_cameraVec3, 1.0);
+
+    this->m_wmoObject->resetTraversedWmoGroups();
     if (m_wmoObject->startTraversingWMOGroup(
         cameraVec4,
         frameData->m_perspectiveMatrixForCulling,
@@ -92,52 +94,23 @@ void WmoScene::cullExterior(WoWFrameData *frameData, int viewRenderOrder) {
 }
 
 void WmoScene::draw(WoWFrameData *frameData) {
-    std::vector<HGMesh> renderedThisFrame;
-
-    // Put everything into one array and sort
-    std::vector<GeneralView *> vector;
-    for (auto & interiorView : frameData->interiorViews) {
-        if (interiorView.viewCreated) {
-            vector.push_back(&interiorView);
-        }
-    }
-    if (frameData->exteriorView.viewCreated) {
-        vector.push_back(&frameData->exteriorView);
-    }
-
-    for (auto &view : vector) {
-        view->collectMeshes(renderedThisFrame);
-    }
-
-    std::vector<M2Object *> m2ObjectsRendered;
-    for (auto &view : vector) {
-        std::copy(view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
-    }
-    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
-    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
-
-    for (auto &m2Object : m2ObjectsRendered) {
-        m2Object->collectMeshes(renderedThisFrame, m_viewRenderOrder);
-        m2Object->drawParticles(renderedThisFrame, m_viewRenderOrder);
-    }
-
-    std::sort(renderedThisFrame.begin(),
-              renderedThisFrame.end(),
-              IDevice::sortMeshes
-    );
-
-    m_api->getDevice()->updateBuffers(renderedThisFrame);
-    m_api->getDevice()->drawMeshes(renderedThisFrame);
+    m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
 }
 
 void WmoScene::doPostLoad(WoWFrameData *frameData) {
     for (int i = 0; i < frameData->m2Array.size(); i++) {
         M2Object *m2Object = frameData->m2Array[i];
+        if (m2Object == nullptr) continue;
         m2Object->doPostLoad();
     }
+//    }
 
-    for (int i = 0; i < frameData->wmoArray.size(); i++) {
-        frameData->wmoArray[i]->doPostLoad();
+    for (auto &wmoObject : frameData->wmoArray) {
+        wmoObject->doPostLoad();
+    }
+
+    for (auto &adtObject : frameData->adtArray) {
+        adtObject->doPostLoad();
     }
 }
 
@@ -151,8 +124,8 @@ void WmoScene::update(WoWFrameData *frameData)  {
         m2Object->update(frameData->deltaTime, cameraVec3, lookAtMat4);
     }
 
-    for (int i = 0; i < frameData->wmoArray.size(); i++) {
-        frameData->wmoArray[i]->update();
+    for (auto &wmoObject : frameData->wmoArray) {
+        wmoObject->update();
     }
 
     //2. Calc distance every 100 ms
@@ -206,6 +179,40 @@ void WmoScene::update(WoWFrameData *frameData)  {
     this->m_currentTime += frameData->deltaTime;
 }
 
-void WmoScene::collectMeshes(WoWFrameData *) {
+void WmoScene::collectMeshes(WoWFrameData * frameData) {
+    frameData->renderedThisFrame = std::vector<HGMesh>();
+
+    // Put everything into one array and sort
+    std::vector<GeneralView *> vector;
+    for (auto & interiorView : frameData->interiorViews) {
+        if (interiorView.viewCreated) {
+            vector.push_back(&interiorView);
+        }
+    }
+    if (frameData->exteriorView.viewCreated) {
+        vector.push_back(&frameData->exteriorView);
+    }
+
+    for (auto &view : vector) {
+        view->collectMeshes(frameData->renderedThisFrame);
+    }
+
+    std::vector<M2Object *> m2ObjectsRendered;
+    for (auto &view : vector) {
+        std::copy(view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
+    }
+    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
+    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
+
+    for (auto &m2Object : m2ObjectsRendered) {
+        if (m2Object == nullptr) continue;
+        m2Object->collectMeshes(frameData->renderedThisFrame, m_viewRenderOrder);
+        m2Object->drawParticles(frameData->renderedThisFrame, m_viewRenderOrder);
+    }
+
+    std::sort(frameData->renderedThisFrame.begin(),
+              frameData->renderedThisFrame.end(),
+              IDevice::sortMeshes
+    );
 
 }

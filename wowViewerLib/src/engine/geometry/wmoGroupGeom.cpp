@@ -319,16 +319,22 @@ HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
             if (cvLen > 0) {
                 format.color = colorArray[i];
             } else {
-                *(int *) &format.color = 0;
+                format.color.r = 0;
+                format.color.g = 0;
+                format.color.b = 0;
+                format.color.a = 0;
             }
             if (cvLen2 > 0) {
                 format.color2 = colorArray2[i];
             } else {
-                *(int *) &format.color2 = 0x000000FF;
+                format.color2.r = 0;
+                format.color2.g = 0;
+                format.color2.b = 0;
+                format.color2.a = 0xFF;
             }
         }
 
-        combinedVBO->uploadData(&buffer[0], (int)(buffer.size() * sizeof(VboFormat)));
+        combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(VboFormat)));
     }
 
     return combinedVBO;

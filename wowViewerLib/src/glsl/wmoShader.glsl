@@ -12,13 +12,13 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
 precision highp float;
-in vec3 aPosition;
-in vec3 aNormal;
-in vec2 aTexCoord;
-in vec2 aTexCoord2;
-in vec2 aTexCoord3;
-in vec4 aColor;
-in vec4 aColor2;
+layout (location = 0) in vec3 aPosition;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aTexCoord;
+layout (location = 3) in vec2 aTexCoord2;
+layout (location = 4) in vec2 aTexCoord3;
+layout (location = 5) in vec4 aColor;
+layout (location = 6) in vec4 aColor2;
 
 layout(std140) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
@@ -40,11 +40,6 @@ out vec4 vColor;
 out vec4 vColor2;
 out vec4 vPosition;
 out vec3 vNormal;
-
-#ifdef drawBuffersIsSupported
-//vec3 vNormal;
-varying float fs_Depth;
-#endif
 
 vec2 posToTexCoord(vec3 cameraPoint, vec3 normal){
 //    vec3 normPos = -normalize(cameraPoint.xyz);
@@ -149,56 +144,6 @@ void main() {
 }
 #endif //COMPILING_VS
 
-#ifdef COMPILING_GS
-layout (triangles) in;
-layout (triangle_strip, max_vertices=3) out;
-
-in VertexData {
-vec2 vTexCoord;
-vec2 vTexCoord2;
-vec2 vTexCoord3;
-vec4 vColor;
-vec4 vColor2;
-vec4 vPosition;
-vec3 vNormal;
-} VertexIn[];
-
-out vec2 vTexCoord;
-out vec2 vTexCoord2;
-out vec2 vTexCoord3;
-out vec4 vColor;
-out vec4 vColor2;
-out vec4 vPosition;
-out vec3 vNormal;
-out vec3 vBaryCentric;
-
- void main()
-{
-  for(int i = 0; i < gl_in.length(); i++)
-  {
-     // copy attributes
-    gl_Position = gl_in[i].gl_Position;
-    vTexCoord = VertexIn[i].vTexCoord;
-    vTexCoord2 = VertexIn[i].vTexCoord2;
-    vTexCoord3 = VertexIn[i].vTexCoord3;
-    vColor = VertexIn[i].vColor;
-    vColor2 = VertexIn[i].vColor2;
-    vPosition = VertexIn[i].vPosition;
-    vNormal = VertexIn[i].vNormal;
-    vBaryCentric = vec3(
-//    0, 0, 0
-        ((i & 3) == 0) ? 1.0f : 0,
-        ((i & 3) == 1) ? 1.0f : 0,
-        ((i & 3) == 2) ? 1.0f : 0
-    );
-
-    // done with the vertex
-    EmitVertex();
-  }
-  EndPrimitive();
-}
-#endif
-
 #ifdef COMPILING_FS
 
 precision highp float;
@@ -224,11 +169,7 @@ uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
 
-out vec4 outputColor;
-
-#ifdef drawBuffersIsSupported
-varying float fs_Depth;
-#endif
+layout (location = 0) out vec4 outputColor;
 
 vec3 makeDiffTerm(vec3 matDiffuse) {
     vec3 currColor;

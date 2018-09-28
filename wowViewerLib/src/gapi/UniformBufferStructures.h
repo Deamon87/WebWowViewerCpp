@@ -68,7 +68,9 @@ struct wmoMeshWideBlockVS {
     int padding[2];
 };
 
+
 struct wmoMeshWideBlockPS {
+//    PACK({struct
     mathfu::vec4_packed uViewUp;
     mathfu::vec4_packed uSunDir_FogStart;
     mathfu::vec4_packed uSunColor_uFogEnd;
@@ -79,6 +81,7 @@ struct wmoMeshWideBlockPS {
     int PixelShader;
     int padding;
     mathfu::vec4_packed FogColor_AlphaTest;
+//    )}
 };
 
 //ADT
