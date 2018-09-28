@@ -155,6 +155,9 @@ public:
         return db2WmoAreaTable;
     };
 
+    void setScene(int sceneType, std::string fileName, int cameraNum) override;
+    void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) override;
+
 private:
     void DoCulling();
 private:
@@ -191,7 +194,7 @@ private:
     Cache<BlpTexture> textureCache;
     Cache<DB2Base> db2Cache;
 
-    iInnerSceneApi *currentScene;
+    iInnerSceneApi *currentScene = nullptr;
 
     bool deltaTimeUpdate;
     bool nextDataReady;

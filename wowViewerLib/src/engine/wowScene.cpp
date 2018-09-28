@@ -142,6 +142,32 @@ void WoWSceneImpl::DoCulling() {
     }
 }
 
+void WoWSceneImpl::setScene(int sceneType, std::string name, int cameraNum) {
+    if (currentScene != nullptr) {
+        delete currentScene;
+        currentScene = nullptr;
+    }
+
+    if (sceneType == 0) {
+        currentScene = new M2Scene(this, name , cameraNum);
+    } else if (sceneType == 1) {
+        currentScene = new WmoScene(this, name);
+    }
+}
+
+void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) {
+    if (currentScene != nullptr) {
+        delete currentScene;
+        currentScene = nullptr;
+    }
+
+    if (sceneType == 0) {
+        currentScene = new M2Scene(this, fileDataId , cameraNum);
+    } else if (sceneType == 1) {
+        currentScene = new WmoScene(this, fileDataId);
+    }
+}
+
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
         :
         wmoMainCache(requestProcessor),
@@ -467,16 +493,16 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
 
-    db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
-    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
-    db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
+    db2Light = nullptr; //new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
+    db2LightData = nullptr; //new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
+    db2WmoAreaTable = nullptr; //new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
 
 
@@ -592,6 +618,8 @@ struct timespec& end)
 void WoWSceneImpl::draw(animTime_t deltaTime) {
     struct timespec renderingAndUpdateStart, renderingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateStart);
+
+    if (currentScene == nullptr) return;
 
     IDevice *device = getDevice();
     device->reset();

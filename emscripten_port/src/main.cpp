@@ -54,9 +54,11 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         glfwGetCursorPos(window, &xpos, &ypos);
         m_x = xpos;
         m_y = ypos;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         mleft_pressed = 0;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 }
 
@@ -132,10 +134,7 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 }
 
 extern "C" {
-    void createWebJsScene(int canvWidth, int canvHeight) {
-        const char *url = "http://178.165.92.24:40001/get/";
-        const char *urlFileId = "http://178.165.92.24:40001/get_file_id/";
-
+    void createWebJsScene(int canvWidth, int canvHeight, char *url, char *urlFileId) {
         if (!glfwInit()) {
             fputs("Failed to initialize GLFW", stderr);
             return;
@@ -178,6 +177,14 @@ extern "C" {
     }
 }
 
+extern "C" {
+    void setScene(int sceneType, char *name, int cameraNum) {
+        scene->setScene(sceneType, std::string(name), cameraNum);
+    }
+    void setSceneFileDataId(int sceneType, int fileDataId, int cameraNum) {
+        scene->setSceneWithFileDataId(sceneType, fileDataId, cameraNum);
+    }
+}
 
 extern "C" {
     void gameloop(double deltaTime) {
@@ -192,6 +199,8 @@ extern "C" {
         scene->draw((deltaTime * 1000));
     }
 }
+
+
 
 int main() {
 

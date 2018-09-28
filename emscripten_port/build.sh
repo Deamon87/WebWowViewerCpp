@@ -1,2 +1,2 @@
  emconfigure cmake -DCMAKE_BUILD_TYPE=Release . && emmake make -s USE_PTHREADS=1  -s DEMANGLE_SUPPORT=1
- emcc libAWoWWebViewerJs.a ./A/libWoWViewerLib.a -emit-symbol-map -s USE_GLFW=3 --preload-file glsl -O3 -s TOTAL_MEMORY=67108864 -s FETCH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s "EXPORTED_FUNCTIONS=['_createWebJsScene', '_gameloop', '_createWoWScene']" -o project.js
+ emcc libAWoWWebViewerJs.a ./A/libWoWViewerLib.a -emit-symbol-map -s USE_GLFW=3 --preload-file glsl -O3 -s TOTAL_MEMORY=67108864 -s FETCH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s "EXPORTED_FUNCTIONS=['_createWebJsScene', '_gameloop', '_createWoWScene', '_setScene', '_setSceneFileDataId']" -o project.js
