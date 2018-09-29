@@ -184,17 +184,17 @@ extern "C" {
     void setSceneFileDataId(int sceneType, int fileDataId, int cameraNum) {
         scene->setSceneWithFileDataId(sceneType, fileDataId, cameraNum);
     }
+    void setSceneSize(int width, int height) {
+        canvWidth = width;
+        canvHeight = height;
+        scene->setScreenSize(canvWidth, canvHeight);
+    }
 }
 
 extern "C" {
     void gameloop(double deltaTime) {
         processor->processRequests(false);
         processor->processResults(10);
-
-        if (windowSizeChanged) {
-            scene->setScreenSize(canvWidth, canvHeight);
-            windowSizeChanged = false;
-        }
 
         scene->draw((deltaTime * 1000));
     }

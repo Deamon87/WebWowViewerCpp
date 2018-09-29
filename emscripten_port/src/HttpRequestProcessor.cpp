@@ -42,6 +42,14 @@ std::string int_to_hex( T i )
            << std::hex << i;
     return stream.str();
 }
+std::string char_to_escape( char i )
+{
+    std::stringstream stream;
+    stream << "%"
+           << std::setfill ('0') << std::setw(2)
+           << std::hex << (int)i;
+    return stream.str();
+}
 
 void HttpRequestProcessor::requestFile(const char *fileName) {
     std::string fileName_s(fileName);
@@ -59,7 +67,13 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 }
 
 void HttpRequestProcessor::processFileRequest(std::string &fileName) {
-    std::string escapedFileName = ReplaceAll( fileName, " ", "%20");
+    const std::string charsToEscape = " !*'();:@&=+$,/?#[]";
+
+    std::string escapedFileName = fileName;
+    for (int i = 0; i < charsToEscape.size(); i++) {
+        char c = charsToEscape[i];
+        escapedFileName = ReplaceAll(escapedFileName, std::string(1, c), char_to_escape(c));
+    }
 
     std::string fullUrl;
     if (escapedFileName.find("File") == 0) {
