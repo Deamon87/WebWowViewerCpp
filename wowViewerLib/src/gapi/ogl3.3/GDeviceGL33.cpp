@@ -144,11 +144,10 @@ void GDeviceGL33::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
     }
 }
 
-std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderName) {
+std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderName, void *permutationDescriptor) {
     const char * cstr = shaderName.c_str();
     size_t hash = CalculateFNV(cstr);
     if (m_shaderPermutCache.count(hash) > 0) {
-
         HGShaderPermutation ptr = m_shaderPermutCache.at(hash);
         return ptr;
     }
@@ -156,24 +155,46 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
     std::shared_ptr<IShaderPermutation> sharedPtr;
     IShaderPermutation *iPremutation = nullptr;
     if (shaderName == "m2Shader") {
-        iPremutation = new GM2ShaderPermutationGL33(shaderName, this);
-        m_m2ShaderCreated = true;
+        M2ShaderCacheRecord *cacheRecord = (M2ShaderCacheRecord * )permutationDescriptor;
+        if (cacheRecord != nullptr) {
+
+
+            auto i = m2ShaderCache.find(*cacheRecord);
+            if (i != m2ShaderCache.end()) {
+                if (!i->second.expired()) {
+                    return i->second.lock();
+                } else {
+                    m2ShaderCache.erase(i);
+                }
+            }
+        }
+
+        iPremutation = new GM2ShaderPermutationGL33(shaderName, this, *cacheRecord);
+        sharedPtr.reset(iPremutation);
+
+        std::weak_ptr<IShaderPermutation> weakPtr(sharedPtr);
+        m2ShaderCache[*cacheRecord] = weakPtr;
     } else if (shaderName == "m2ParticleShader") {
         iPremutation = new GM2ParticleShaderPermutationGL33(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "wmoShader") {
         iPremutation = new GWMOShaderPermutationGL33(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "adtShader") {
         iPremutation = new GAdtShaderPermutationGL33(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     } else {
         iPremutation = new GShaderPermutationGL33(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     }
-
-    sharedPtr.reset(iPremutation);
 
     GShaderPermutationGL33 * gShaderPermutation = (GShaderPermutationGL33 *)sharedPtr.get();
 
-    gShaderPermutation->compileShader();
-    m_shaderPermutCache[hash] = sharedPtr;
+    gShaderPermutation->compileShader("", "");
 
     for (int i = 0; i < 3; i++) {
         if (gShaderPermutation->m_uboVertexBlockIndex[i] > -1) {
@@ -185,7 +206,7 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
     }
 
 
-    return m_shaderPermutCache[hash];
+    return sharedPtr;
 }
 
 HGUniformBuffer GDeviceGL33::createUniformBuffer(size_t size) {

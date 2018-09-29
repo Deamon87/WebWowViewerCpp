@@ -88,14 +88,15 @@ GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, IDevice 
 
 }
 
-void GShaderPermutationGL33::compileShader() {
+void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
     std::string vertShaderString = loadShader(m_shaderName);
     std::string fragmentShaderString = vertShaderString;
 
-    std::string vertExtraDefStrings = "";
-    std::string fragExtraDefStrings = "";
+    std::string vertExtraDefStrings = vertExtraDef;
+    std::string fragExtraDefStrings = fragExtraDef;
     std::string geomExtraDefStrings = "";
+
 
 
     bool esVersion = false;
@@ -129,10 +130,13 @@ void GShaderPermutationGL33::compileShader() {
     if (!esVersion) {
         vertExtraDefStrings +=
             "#define precision\n"
-                "#define lowp\n"
-                "#define mediump\n"
-                "#define highp\n";
-    }
+            "#define lowp\n"
+            "#define mediump\n"
+            "#define highp\n"
+            "#define FLOATDEC\n";
+    } else {
+        vertExtraDefStrings += "#define FLOATDEC float;\n";
+    };
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
 
 #ifdef __EMSCRIPTEN__
@@ -150,8 +154,11 @@ void GShaderPermutationGL33::compileShader() {
             "#define precision\n"
             "#define lowp\n"
             "#define mediump\n"
-            "#define highp\n";
-    }
+            "#define highp\n"
+            "#define FLOATDEC\n";
+    } else {
+        fragExtraDefStrings += "#define FLOATDEC float;\n";
+    };
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);

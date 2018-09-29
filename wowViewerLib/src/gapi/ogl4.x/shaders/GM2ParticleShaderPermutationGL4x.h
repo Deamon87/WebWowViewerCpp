@@ -12,7 +12,7 @@ class GM2ParticleShaderPermutationGL4x : public GShaderPermutationGL4x {
 protected:
     explicit GM2ParticleShaderPermutationGL4x(std::string &shaderName, IDevice *device);
 
-    virtual void compileShader() override;
+    virtual void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
 };
 
 

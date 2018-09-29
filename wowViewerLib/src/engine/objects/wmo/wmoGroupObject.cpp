@@ -420,7 +420,7 @@ void WmoGroupObject::postLoad() {
 
 void WmoGroupObject::createMeshes() {
     Config *config = m_api->getConfig();
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("wmoShader");
+    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("wmoShader",nullptr);
 
     int minBatch = config->getWmoMinBatch();
     int maxBatch = std::min(config->getWmoMaxBatch(), m_geom->batchesLen);

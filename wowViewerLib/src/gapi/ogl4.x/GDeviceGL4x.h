@@ -65,7 +65,7 @@ public:
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
-    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName) override;
+    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void * permutationParam) override;
 
     HGPUFence createFence() override;
 

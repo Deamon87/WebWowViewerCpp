@@ -45,6 +45,26 @@ typedef std::shared_ptr<IGPUFence> HGPUFence;
 #include "textures/ITexture.h"
 #include "../../engine/wowCommonClasses.h"
 
+struct M2ShaderCacheRecord {
+    int vertexShader;
+    int pixelShader;
+    bool unlit;
+    bool alphaTestOn;
+    bool unFogged;
+    bool unShadowed;
+
+
+    bool operator==(const M2ShaderCacheRecord &other) const {
+        return
+            (vertexShader == other.vertexShader) &&
+            (pixelShader == other.pixelShader) &&
+            (alphaTestOn == other.alphaTestOn) &&
+            (unlit == other.unlit) &&
+            (unFogged == other.unFogged) &&
+            (unShadowed == other.unShadowed);
+    };
+};
+
 class IDevice {
     public:
         virtual ~IDevice() {};
@@ -68,7 +88,7 @@ class IDevice {
         virtual void updateBuffers(std::vector<HGMesh> &meshes)= 0 ;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
     public:
-        virtual HGShaderPermutation getShader(std::string shaderName) = 0;
+        virtual HGShaderPermutation getShader(std::string shaderName, void *permutationDescriptor) = 0;
 
         virtual HGPUFence createFence() = 0;
 

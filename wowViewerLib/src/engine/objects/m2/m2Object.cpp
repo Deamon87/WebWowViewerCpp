@@ -1037,7 +1037,7 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
 
 void M2Object::createBoundingBoxMesh() {
     //Create bounding box mesh
-    HGShaderPermutation boundingBoxshaderPermutation = m_api->getDevice()->getShader("drawBBShader");
+    HGShaderPermutation boundingBoxshaderPermutation = m_api->getDevice()->getShader("drawBBShader", nullptr);
 
     gMeshTemplate meshTemplate(m_api->getDevice()->getBBVertexBinding(), boundingBoxshaderPermutation);
 
@@ -1103,7 +1103,7 @@ void M2Object::createMeshes() {
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
     auto m_m2Data = m_m2Geom->getM2Data();
 
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2Shader");
+
 
     /* 2. Fill the materialArray */
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
@@ -1111,6 +1111,15 @@ void M2Object::createMeshes() {
         M2MaterialInst material;
 
         prepearMatrial(material, i);
+        M2ShaderCacheRecord cacheRecord;
+        cacheRecord.vertexShader = material.vertexShader;
+        cacheRecord.pixelShader  = material.pixelShader;
+        cacheRecord.unlit = true;
+        cacheRecord.alphaTestOn = true;
+        cacheRecord.unFogged = true;
+        cacheRecord.unShadowed = true;
+
+        HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2Shader", &cacheRecord);
         gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
 
         auto textMaterial = skinData->batches[material.texUnitTexIndex];

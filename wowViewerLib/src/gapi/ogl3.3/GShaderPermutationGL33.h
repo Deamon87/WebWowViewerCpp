@@ -23,7 +23,7 @@ public:
 protected:
     explicit GShaderPermutationGL33(std::string &shaderName, IDevice *device);
 
-    void compileShader() override;
+    void compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) override;
     bool hasUnf(const HashedString name) {
         return m_uniformMap.find(name.Hash()) != m_uniformMap.end();
     }

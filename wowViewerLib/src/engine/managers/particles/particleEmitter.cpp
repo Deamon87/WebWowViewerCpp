@@ -129,7 +129,7 @@ void ParticleEmitter::createMesh() {
     m_bindings->save();
 
     //Get shader
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2ParticleShader");
+    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2ParticleShader", nullptr);
 
     //Create mesh
     gMeshTemplate meshTemplate (m_bindings, shaderPermutation);

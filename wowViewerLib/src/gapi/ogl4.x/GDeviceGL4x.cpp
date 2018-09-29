@@ -134,7 +134,7 @@ void GDeviceGL4x::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
     }
 }
 
-std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderName) {
+std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderName, void *permutationParam) {
     const char * cstr = shaderName.c_str();
     size_t hash = CalculateFNV(cstr);
     if (m_shaderPermutCache.count(hash) > 0) {
@@ -162,7 +162,7 @@ std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderNam
 
     GShaderPermutationGL4x * gShaderPermutation = (GShaderPermutationGL4x *)sharedPtr.get();
 
-    gShaderPermutation->compileShader();
+    gShaderPermutation->compileShader("", "");
     m_shaderPermutCache[hash] = sharedPtr;
 
 

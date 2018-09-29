@@ -8,8 +8,8 @@
 GWMOShaderPermutationGL33::GWMOShaderPermutationGL33(std::string &shaderName, IDevice *device) : GShaderPermutationGL33(shaderName,
                                                                                                                           device) {}
 
-void GWMOShaderPermutationGL33::compileShader() {
-    GShaderPermutationGL33::compileShader();
+void GWMOShaderPermutationGL33::compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) {
+    GShaderPermutationGL33::compileShader("","");
 
     //Init newly created shader
     glUseProgram(this->m_programBuffer);

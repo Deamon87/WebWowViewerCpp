@@ -5,6 +5,7 @@
 #ifndef WOWVIEWERLIB_IWMOAPI_H
 #define WOWVIEWERLIB_IWMOAPI_H
 
+#include <functional>
 #include "m2/m2Object.h"
 #include "../../gapi/interface/IDevice.h"
 

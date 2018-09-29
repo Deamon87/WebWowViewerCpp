@@ -329,7 +329,7 @@ void AdtObject::createMeshes() {
         if (m_adtFileTex->mcnkStructs[i].mclyCnt <= 0) continue;
         if (m_adtFileTex->mcnkStructs[i].mcly == nullptr) continue;
 
-        HGShaderPermutation hgShaderPermutation = device->getShader("adtShader");
+        HGShaderPermutation hgShaderPermutation = device->getShader("adtShader", nullptr);
         gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
 
         aTemplate.meshType = MeshType::eAdtMesh;

@@ -67,7 +67,7 @@ public:
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
-    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName) override;
+    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void *permutationDescriptor) override;
 
     HGUniformBuffer createUniformBuffer(size_t size) override;
     HGVertexBuffer createVertexBuffer() override;
@@ -140,6 +140,19 @@ protected:
 
     HGTexture m_blackPixelTexture;
 
+public:
+    struct M2ShaderCacheRecordHasher {
+        std::size_t operator()(const M2ShaderCacheRecord& k) const {
+            using std::hash;
+            return hash<int>{}(k.vertexShader) ^ (hash<int>{}(k.pixelShader)) ^
+                   (hash<bool>{}(k.unlit)) ^
+                   (hash<bool>{}(k.alphaTestOn) << 8) ^
+                   (hash<bool>{}(k.unFogged) << 16) ^
+                   (hash<bool>{}(k.unShadowed) << 24);
+        };
+    };
+    std::unordered_map<M2ShaderCacheRecord, std::weak_ptr<IShaderPermutation>, M2ShaderCacheRecordHasher> m2ShaderCache;
+
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
@@ -152,7 +165,6 @@ protected:
 
     std::vector<char> aggregationBufferForUpload;
 
-    bool m_m2ShaderCreated = false;
     int uniformBuffersCreated = 0;
 };
 
