@@ -186,7 +186,7 @@ Module['FS_createPath']('/', 'glsl', true, true);
   }
 
  }
- loadPackage({"files": [{"start": 0, "audio": 0, "end": 4855, "filename": "/glsl/adtLodShader.glsl"}, {"start": 4855, "audio": 0, "end": 11892, "filename": "/glsl/adtShader.glsl"}, {"start": 11892, "audio": 0, "end": 12827, "filename": "/glsl/drawBBShader.glsl"}, {"start": 12827, "audio": 0, "end": 14049, "filename": "/glsl/drawDepthShader.glsl"}, {"start": 14049, "audio": 0, "end": 14681, "filename": "/glsl/drawFrustumShader.glsl"}, {"start": 14681, "audio": 0, "end": 15158, "filename": "/glsl/drawLinesShader.glsl"}, {"start": 15158, "audio": 0, "end": 15642, "filename": "/glsl/drawPoints.glsl"}, {"start": 15642, "audio": 0, "end": 16191, "filename": "/glsl/drawPortalShader.glsl"}, {"start": 16191, "audio": 0, "end": 18822, "filename": "/glsl/m2ParticleShader.glsl"}, {"start": 18822, "audio": 0, "end": 46913, "filename": "/glsl/m2Shader.glsl"}, {"start": 46913, "audio": 0, "end": 47566, "filename": "/glsl/readDepthBufferShader.glsl"}, {"start": 47566, "audio": 0, "end": 50851, "filename": "/glsl/renderFrameBufferShader.glsl"}, {"start": 50851, "audio": 0, "end": 51614, "filename": "/glsl/textureCompositionShader.glsl"}, {"start": 51614, "audio": 0, "end": 65904, "filename": "/glsl/wmoShader.glsl"}], "remote_package_size": 65904, "package_uuid": "67612668-a2ca-4883-9ab4-3ab4b91ff703"});
+ loadPackage({"files": [{"start": 0, "audio": 0, "end": 4855, "filename": "/glsl/adtLodShader.glsl"}, {"start": 4855, "audio": 0, "end": 11892, "filename": "/glsl/adtShader.glsl"}, {"start": 11892, "audio": 0, "end": 12827, "filename": "/glsl/drawBBShader.glsl"}, {"start": 12827, "audio": 0, "end": 14049, "filename": "/glsl/drawDepthShader.glsl"}, {"start": 14049, "audio": 0, "end": 14681, "filename": "/glsl/drawFrustumShader.glsl"}, {"start": 14681, "audio": 0, "end": 15158, "filename": "/glsl/drawLinesShader.glsl"}, {"start": 15158, "audio": 0, "end": 15642, "filename": "/glsl/drawPoints.glsl"}, {"start": 15642, "audio": 0, "end": 16191, "filename": "/glsl/drawPortalShader.glsl"}, {"start": 16191, "audio": 0, "end": 18822, "filename": "/glsl/m2ParticleShader.glsl"}, {"start": 18822, "audio": 0, "end": 46913, "filename": "/glsl/m2Shader.glsl"}, {"start": 46913, "audio": 0, "end": 47566, "filename": "/glsl/readDepthBufferShader.glsl"}, {"start": 47566, "audio": 0, "end": 50851, "filename": "/glsl/renderFrameBufferShader.glsl"}, {"start": 50851, "audio": 0, "end": 51614, "filename": "/glsl/textureCompositionShader.glsl"}, {"start": 51614, "audio": 0, "end": 65904, "filename": "/glsl/wmoShader.glsl"}], "remote_package_size": 65904, "package_uuid": "8abb21c1-b8c9-4e8e-ac00-929961bad4bd"});
 
 })();
 
@@ -1996,7 +1996,7 @@ function _emscripten_asm_const_ii(code, a0) {
 
 STATIC_BASE = GLOBAL_BASE;
 
-STATICTOP = STATIC_BASE + 52384;
+STATICTOP = STATIC_BASE + 52352;
 /* global initializers */  __ATINIT__.push({ func: function() { __GLOBAL__I_000101() } }, { func: function() { __GLOBAL__sub_I_RequestProcessor_cpp() } }, { func: function() { __GLOBAL__sub_I_m2Geom_cpp() } }, { func: function() { __GLOBAL__sub_I_m2Object_cpp() } }, { func: function() { __GLOBAL__sub_I_wmoGroupGeom_cpp() } }, { func: function() { __GLOBAL__sub_I_wmoMainGeom_cpp() } }, { func: function() { __GLOBAL__sub_I_adtFile_cpp() } }, { func: function() { __GLOBAL__sub_I_wdtFile_cpp() } }, { func: function() { __GLOBAL__sub_I_wdlFile_cpp() } }, { func: function() { __GLOBAL__sub_I_GlobalThreads_cpp() } }, { func: function() { __GLOBAL__sub_I_iostream_cpp() } });
 
 
@@ -2005,7 +2005,7 @@ STATICTOP = STATIC_BASE + 52384;
 
 
 
-var STATIC_BUMP = 52384;
+var STATIC_BUMP = 52352;
 Module["STATIC_BASE"] = STATIC_BASE;
 Module["STATIC_BUMP"] = STATIC_BUMP;
 

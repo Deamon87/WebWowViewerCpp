@@ -452,10 +452,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "\tworld/wmo/dungeon/thunderkingraid/pa_thunderking_raid.wmo");
 
 
-    currentScene = new WmoScene(this,
-        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
+//    currentScene = new WmoScene(this,
+//        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
+//
+   currentScene = new WmoScene(this,
+                               2198682);
 
 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);

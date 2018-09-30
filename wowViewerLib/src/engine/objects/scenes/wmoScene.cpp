@@ -78,10 +78,15 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
 void WmoScene::cullExterior(WoWFrameData *frameData, int viewRenderOrder) {
     mathfu::vec4 cameraVec4 = mathfu::vec4(frameData->m_cameraVec3, 1.0);
 
+    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
+    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
+
+    mathfu::mat4 projectionModelMat = frustumMat * lookAtMat4;
+
     this->m_wmoObject->resetTraversedWmoGroups();
     if (m_wmoObject->startTraversingWMOGroup(
         cameraVec4,
-        frameData->m_perspectiveMatrixForCulling,
+        projectionModelMat,
         -1,
         0,
         viewRenderOrder,
