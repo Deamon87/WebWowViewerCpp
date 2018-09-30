@@ -59,6 +59,7 @@ public:
     virtual DB2LightData *getDB2LightData() = 0;
     virtual DB2WmoAreaTable *getDB2WmoAreaTable() = 0;
 
+    virtual void setCameraPosition(float x, float y, float z) = 0;
 };
 
 #include "geometry/m2Geom.h"

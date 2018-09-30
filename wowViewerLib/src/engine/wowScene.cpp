@@ -30,7 +30,7 @@ void WoWSceneImpl::processCaches(int limit) {
 }
 
 void WoWSceneImpl::DoCulling() {
-    float farPlane = 3000;
+    float farPlane = 5000;
     float nearPlane = 1;
     float fov = toRadian(45.0);
 
@@ -160,6 +160,8 @@ void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cam
         delete currentScene;
         currentScene = nullptr;
     }
+
+    m_firstCamera.setCameraPos(0,0,0);
 
     if (sceneType == 0) {
         currentScene = new M2Scene(this, fileDataId , cameraNum);
@@ -457,8 +459,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
 //
-   currentScene = new WmoScene(this,
-                               2198682);
+//   currentScene = new WmoScene(this,
+//                               2198682);
 
 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);

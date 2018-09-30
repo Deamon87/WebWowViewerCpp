@@ -154,6 +154,12 @@ public:
     virtual DB2WmoAreaTable *getDB2WmoAreaTable() override {
         return db2WmoAreaTable;
     };
+    void setScenePos(float x, float y, float z) override {
+        m_firstCamera.setCameraPos(x,y,z);
+    };
+    void setCameraPosition(float x, float y, float z) override {
+        m_firstCamera.setCameraPos(x,y,z);
+    }
 
     void setScene(int sceneType, std::string fileName, int cameraNum) override;
     void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) override;

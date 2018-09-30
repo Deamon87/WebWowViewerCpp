@@ -30,7 +30,12 @@ void M2Scene::draw(WoWFrameData *frameData) {
 }
 
 void M2Scene::doPostLoad(WoWFrameData *frameData) {
-    m_m2Object->doPostLoad();
+    if (m_m2Object->doPostLoad()) {
+        auto max = m_m2Object->getAABB().max;
+        auto min = m_m2Object->getAABB().min;
+        m_api->setCameraPosition((min.x)/2.0f, (min.y+max.y)/2.0f, 0);
+
+    }
 }
 
 void M2Scene::update(WoWFrameData *frameData) {

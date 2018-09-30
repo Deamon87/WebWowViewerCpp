@@ -722,7 +722,7 @@ int main(){
         glfwSetWindowSizeCallback( myapp.nkcHandle->window, window_size_callback);
         glfwSetWindowSizeLimits( myapp.nkcHandle->window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
         glfwSetMouseButtonCallback( myapp.nkcHandle->window, mouse_button_callback);
-        glfwSwapInterval(0);
+//        glfwSwapInterval(0);
 
         nkc_set_main_loop(myapp.nkcHandle, mainLoop, (void*)&myapp );
     } else {

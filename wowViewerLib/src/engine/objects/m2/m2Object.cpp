@@ -769,7 +769,8 @@ void M2Object::debugDumpAnimationSequences() {
 
 }
 
-void M2Object::doPostLoad(){
+//Returns true when it finished loading
+bool M2Object::doPostLoad(){
     if (!this->m_loaded) {
         if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded()) {
 
@@ -779,7 +780,7 @@ void M2Object::doPostLoad(){
                     m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
                 }
 
-                return;
+                return false;
             }
 
             m_skinGeom->fixData(m_m2Geom->getM2Data());
@@ -805,8 +806,10 @@ void M2Object::doPostLoad(){
             }
             m_postLoadEvents.clear();
 
+            return true;
+
         } else {
-            return;
+            return false;
         }
     } else {
 
@@ -819,6 +822,8 @@ void M2Object::doPostLoad(){
             particleEmitters[i]->updateBuffers();
         }
     }
+
+    return false;
 }
 
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {

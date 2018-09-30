@@ -119,6 +119,9 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
             case 'K':
                 testConf->setRenderPortals(!testConf->getRenderPortals());
                 break;
+
+            case 'O':
+                scene->setScenePos(0,0,0);
             default:
                 break;
         }
@@ -189,6 +192,7 @@ extern "C" {
         canvHeight = height;
         scene->setScreenSize(canvWidth, canvHeight);
     }
+
 }
 
 extern "C" {
