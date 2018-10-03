@@ -8,6 +8,7 @@
 #include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
 #include <vector>
+#include <algorithm>
 
 int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key);
 
@@ -92,7 +93,7 @@ inline fixed16 convertHelper<double, fixed16>(double &a ) {
 
 template<>
 inline uint32_t convertHelper<animTime_t, uint32_t>(animTime_t &a ) {
-    return (uint32_t)a;
+    return (uint32_t) fmod(a, INT_MAX);
 };
 
 template<>
@@ -276,13 +277,16 @@ R animateTrack(
     M2Array<uint32_t > *times = animationBlock.timestamps[animationIndex];
     M2Array<T> *values = animationBlock.values[animationIndex];
 
-    currTime = fmod(currTime , maxTime);
-
+    uint16_t interpolType = animationBlock.interpolation_type;
     M2Array<uint32_t> *timeStamp = animationBlock.timestamps[animationIndex];
 
-    timeIndex = findTimeIndex(currTime, timeStamp->getElement(0), timeStamp->size);
-    uint16_t interpolType = animationBlock.interpolation_type;
+    if (maxTime != 0) {
+        currTime = fmod(currTime, maxTime);
 
+        timeIndex = findTimeIndex(currTime, timeStamp->getElement(0), timeStamp->size);
+    } else {
+        timeIndex = 0;
+    }
     if (timeIndex == times->size-1) {
         return convertHelper<T, R>(*values->getElement(timeIndex));
     } else if (timeIndex >= 0) {

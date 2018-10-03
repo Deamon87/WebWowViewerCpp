@@ -14,7 +14,7 @@
 
             var url = "http://178.165.92.24:40001/get/";
             var urlFileId = "http://178.165.92.24:40001/get_file_id/";
-            var name = "World/wmo/Dungeon/AZ_Subway/Subway.wmo";
+            // var name = "world/wmo/brokenisles/dalaran2.wmo";
 
             var ptrUrl  = allocate(intArrayFromString(url), 'i8', ALLOC_NORMAL);
             var ptrUrlFileDataId  = allocate(intArrayFromString(urlFileId), 'i8', ALLOC_NORMAL);
@@ -29,7 +29,7 @@
             //
             Module._setScene(1, ptrName, -1);
 
-            //Module._setSceneFileDataId(1, 1231231, -1); //same, but with fileDataId as second param
+            Module._setSceneFileDataId(1, 113992, -1); //same, but with fileDataId as second param
 
             _free(ptrUrl);
             _free(ptrUrlFileDataId);

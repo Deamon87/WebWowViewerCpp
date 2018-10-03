@@ -57,15 +57,11 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
 //    }
 
     /* S3TC is not supported on mobile platforms */
-    bool useDXT1Decoding = false;
-    bool useDXT3Decoding = false;
-    bool useDXT5Decoding = false;
+    bool useDXT1Decoding = !m_device.getIsCompressedTexturesSupported();
+    bool useDXT3Decoding = !m_device.getIsCompressedTexturesSupported();
+    bool useDXT5Decoding = !m_device.getIsCompressedTexturesSupported();
 
-#ifdef __EMSCRIPTEN__
-    useDXT1Decoding = true;
-    useDXT3Decoding = true;
-    useDXT5Decoding = true;
-#endif
+
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 

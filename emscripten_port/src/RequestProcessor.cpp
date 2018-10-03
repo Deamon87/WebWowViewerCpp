@@ -46,6 +46,10 @@ void RequestProcessor::processRequests (bool calledFromThread) {
         while (!m_requestQueue.empty()) {
             std::string &fileName = m_requestQueue.front();
 
+            if (currentlyProcessing >= 5) break;
+
+            currentlyProcessing++;
+
             this->processFileRequest(fileName);
 
             m_requestQueue.pop_front();
@@ -57,7 +61,7 @@ void RequestProcessor::processRequests (bool calledFromThread) {
 void RequestProcessor::provideResult(std::string &fileName, std::vector<unsigned char> &content) {
     std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
 
-    std::cout << "Called provideResult with fileName = " << fileName << " content length = " << content.size() << std::endl;
+//    std::cout << "Called provideResult with fileName = " << fileName << " content length = " << content.size() << std::endl;
 
     resultStruct resultStructObj;
     resultStructObj.buffer = content;

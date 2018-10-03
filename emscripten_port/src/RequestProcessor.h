@@ -37,6 +37,7 @@ private:
     std::list<resultStruct> m_resultQueue;
 
     bool m_threaded = false;
+
 public:
     void processResults(int limit);
     void processRequests(bool calledFromThread);
@@ -49,7 +50,7 @@ public:
             }));
         }
     }
-
+    int currentlyProcessing = 0;
 public:
     void addRequest (std::string &fileName);
 

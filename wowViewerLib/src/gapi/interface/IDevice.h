@@ -87,6 +87,8 @@ class IDevice {
 
         virtual void updateBuffers(std::vector<HGMesh> &meshes)= 0 ;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
+
+        virtual bool getIsCompressedTexturesSupported();
     public:
         virtual HGShaderPermutation getShader(std::string shaderName, void *permutationDescriptor) = 0;
 

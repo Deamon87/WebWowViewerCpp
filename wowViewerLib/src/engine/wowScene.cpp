@@ -38,6 +38,7 @@ void WoWSceneImpl::DoCulling() {
 
     IDevice *device = getDevice();
     int currentFrame = (device->getFrameNumber() + 3) % 4;
+    updateFrameIndex = currentFrame;
     WoWFrameData *frameParam = &m_FrameParams[currentFrame];
 
     M2CameraResult cameraResult;
@@ -160,8 +161,6 @@ void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cam
         delete currentScene;
         currentScene = nullptr;
     }
-
-    m_firstCamera.setCameraPos(0,0,0);
 
     if (sceneType == 0) {
         currentScene = new M2Scene(this, fileDataId , cameraNum);
@@ -461,13 +460,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //
 //   currentScene = new WmoScene(this,
 //                               2198682);
+//   currentScene = new WmoScene(this,
+//                               1716442);
 
 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
-// currentScene = new WmoScene(this,
-//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+ currentScene = new WmoScene(this,
+        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
@@ -638,7 +639,15 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     if (!device->getIsAsynBuffUploadSupported()) {
         int updateObjFrame = (device->getFrameNumber() + 1) % 4;
+
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+
+        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+        blockPSVS.uLookAtMat = frameParam->m_lookAtMat4;
+        blockPSVS.uPMatrix = frameParam->m_perspectiveMatrix;
+
+        m_sceneWideUniformBuffer->save();
+        updateFrameIndex = updateObjFrame;
         currentScene->collectMeshes(objFrameParam);
         device->updateBuffers(objFrameParam->renderedThisFrame);
     }
@@ -647,11 +656,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
 
-    sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-    blockPSVS.uLookAtMat = frameParam->m_lookAtMat4;
-    blockPSVS.uPMatrix = frameParam->m_perspectiveMatrix;
 
-    m_sceneWideUniformBuffer->save();
 
     mathfu::mat4 mainLookAtMat4 = frameParam->m_lookAtMat4;
 
@@ -737,6 +742,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     frameParam->deltaTime = deltaTime;
     deltaTimeUpdate = true;
     m_gdevice->increaseFrameNumber();
+
 
     renderLockNextMeshes.unlock();
 

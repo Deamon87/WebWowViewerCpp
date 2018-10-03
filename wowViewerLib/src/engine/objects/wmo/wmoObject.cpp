@@ -187,11 +187,21 @@ void WmoObject::createGroupObjects(){
 
         if (useFileId) {
             groupObjects[i]->setModelFileId(mainGeom->gfids[0][i]);
-            if (groupObjectsLod1[i] != nullptr)
-                groupObjectsLod1[i]->setModelFileId(mainGeom->gfids[1][i]);
+            if (mainGeom->gfids.size() > 1) {
+                if (mainGeom->gfids[1][i] == 0) {
+                    delete groupObjectsLod1[i];
+                    groupObjectsLod1[i] = nullptr;
+                } else if (groupObjectsLod1[i] != nullptr)
+                    groupObjectsLod1[i]->setModelFileId(mainGeom->gfids[1][i]);
+            }
 
-            if (groupObjectsLod2[i] != nullptr)
-                groupObjectsLod2[i]->setModelFileId(mainGeom->gfids[2][i]);
+            if (mainGeom->gfids.size() > 2) {
+                if (mainGeom->gfids[2][i] == 0) {
+                    delete groupObjectsLod2[i];
+                    groupObjectsLod2[i] = nullptr;
+                } else if (groupObjectsLod2[i] != nullptr)
+                    groupObjectsLod2[i]->setModelFileId(mainGeom->gfids[2][i]);
+            }
         } else {
             std::string numStr = std::to_string(i);
             for (int j = numStr.size(); j < 3; j++) numStr = '0' + numStr;

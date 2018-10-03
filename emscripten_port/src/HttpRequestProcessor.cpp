@@ -16,11 +16,13 @@ struct UserDataForRequest {
 };
 
 void downloadSucceeded(emscripten_fetch_t *fetch) {
-    printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
+//    printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
 
     std::vector<unsigned char> fileContent(&fetch->data[0], &fetch->data[fetch->numBytes]);
     UserDataForRequest * userDataForRequest = (UserDataForRequest *)fetch->userData;
     userDataForRequest->processor->provideResult(userDataForRequest->fileName, fileContent);
+    userDataForRequest->processor->currentlyProcessing--;
+
     // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
     delete userDataForRequest;
     emscripten_fetch_close(fetch); // Free data associated with the fetch.
@@ -30,7 +32,11 @@ void downloadSucceeded(emscripten_fetch_t *fetch) {
 
 void downloadFailed(emscripten_fetch_t *fetch) {
     printf("Downloading %s failed, HTTP failure status code: %d.\n", fetch->url, fetch->status);
+    UserDataForRequest * userDataForRequest = (UserDataForRequest *)fetch->userData;
+    userDataForRequest->processor->currentlyProcessing--;
+
     emscripten_fetch_close(fetch); // Also free data on failure.
+
 }
 
 template< typename T >
@@ -82,6 +88,10 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
         uint32_t fileDataId;
         ss << std::hex << fileDataIdHex;
         ss >> fileDataId;
+
+        if (fileDataId == 0) {
+            return;
+        }
 
         fullUrl = m_urlBaseFileId + std::to_string(fileDataId);
     } else {

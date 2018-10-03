@@ -21,9 +21,6 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, M2Object &m2Object
         finalTransparency *= transparency;
     }
 
-    //Don't draw meshes with 0 transp
-    if ((finalTransparency < 0.0001) ) return false;
-
     float uAlphaTest;
     if (hmesh->getGxBlendMode() == EGxBlendEnum::GxBlend_AlphaKey) {
         uAlphaTest = 128.0f/255.0f * finalTransparency;

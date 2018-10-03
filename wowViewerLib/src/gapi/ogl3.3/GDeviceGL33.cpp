@@ -128,9 +128,10 @@ void GDeviceGL33::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
     if (buffer == nullptr) {
        if (m_vertexBufferBindings != nullptr) {
 //           m_vertexBufferBindings->unbind();
-           ( (GVertexBufferBindingsGL33 *)m_defaultVao.get())->bind();
-           m_vertexBufferBindings = (GVertexBufferBindingsGL33 *)(m_defaultVao.get());
        }
+        ( (GVertexBufferBindingsGL33 *)m_defaultVao.get())->bind();
+        m_vertexBufferBindings = (GVertexBufferBindingsGL33 *)(m_defaultVao.get());
+
         m_lastBindIndexBuffer = nullptr;
         m_lastBindVertexBuffer = nullptr;
     } else {
@@ -523,10 +524,11 @@ HGParticleMesh GDeviceGL33::createParticleMesh(gMeshTemplate &meshTemplate) {
 void GDeviceGL33::bindTexture(ITexture *iTexture, int slot) {
     GTextureGL33 * texture = (GTextureGL33 *) iTexture;
     if (texture == nullptr) {
-        if (m_lastTexture[slot] != nullptr) {
+        auto blackPixel = ((GTextureGL33 *) m_blackPixelTexture.get());
+        if (m_lastTexture[slot] != nullptr && m_lastTexture[slot] != blackPixel) {
             glActiveTexture(GL_TEXTURE0 + slot);
-            m_lastTexture[slot]->unbind();
-            m_lastTexture[slot] = nullptr;
+            blackPixel->bind();
+            m_lastTexture[slot] = blackPixel;
         }
     }  else if (texture != m_lastTexture[slot]) {
         glActiveTexture(GL_TEXTURE0 + slot);

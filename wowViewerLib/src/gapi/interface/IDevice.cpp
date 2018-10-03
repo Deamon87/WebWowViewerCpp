@@ -84,3 +84,24 @@ bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
 
     return a > b;
 }
+
+int compressedTexturesSupported = -1;
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5.h>
+#endif
+
+bool IDevice::getIsCompressedTexturesSupported() {
+#ifdef __EMSCRIPTEN__
+    if (compressedTexturesSupported == -1){
+        if (emscripten_webgl_enable_extension(emscripten_webgl_get_current_context(), "WEBGL_compressed_texture_s3tc") == EM_TRUE) {
+            compressedTexturesSupported = 1;
+        } else {
+            compressedTexturesSupported = 0;
+        }
+    }
+      return compressedTexturesSupported == 1;
+
+#else
+    return true;
+#endif
+}

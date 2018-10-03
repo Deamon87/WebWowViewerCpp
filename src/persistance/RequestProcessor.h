@@ -37,6 +37,8 @@ private:
     std::list<resultStruct> m_resultQueue;
 
     bool m_threaded = false;
+
+    int currentlyProcessing = 0;
 public:
     void processResults(int limit);
     void processRequests(bool calledFromThread);
