@@ -38,7 +38,6 @@ void WoWSceneImpl::DoCulling() {
 
     IDevice *device = getDevice();
     int currentFrame = (device->getFrameNumber() + 3) % 4;
-    updateFrameIndex = currentFrame;
     WoWFrameData *frameParam = &m_FrameParams[currentFrame];
 
     M2CameraResult cameraResult;
@@ -130,16 +129,18 @@ void WoWSceneImpl::DoCulling() {
     this->SetDirection(*frameParam);
 
     currentScene->checkCulling(frameParam);
-    currentScene->update(frameParam);
-
-
 
     //Upload buffers if supported
     if (device->getIsAsynBuffUploadSupported()) {
         int updateObjFrame = (device->getFrameNumber() + 1) % 4;
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
-        currentScene->collectMeshes(objFrameParam);
+
+        updateFrameIndex = updateObjFrame;
+
+        currentScene->update(objFrameParam);
         device->updateBuffers(objFrameParam->renderedThisFrame);
+
+        currentScene->collectMeshes(objFrameParam);
     }
 }
 
@@ -409,8 +410,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   currentScene = new M2Scene(this,
 //        "WORLD\\EXPANSION02\\DOODADS\\GENERIC\\SCOURGE\\SC_EYEOFACHERUS_02.m2");
 
-//    currentScene = new M2Scene(this,
-//        "character/bloodelf/female/bloodelffemale_hd.m2", 0);
+//    currentScene = new M2Scene(this, 2200968, 0);
 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(1.78252912f,  33.4062042f, -126.937592f); //Room under dalaran
@@ -641,13 +641,16 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         int updateObjFrame = (device->getFrameNumber() + 1) % 4;
 
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+        updateFrameIndex = updateObjFrame;
 
         sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-        blockPSVS.uLookAtMat = frameParam->m_lookAtMat4;
-        blockPSVS.uPMatrix = frameParam->m_perspectiveMatrix;
+        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
+        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
 
         m_sceneWideUniformBuffer->save();
-        updateFrameIndex = updateObjFrame;
+
+
+        currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
         device->updateBuffers(objFrameParam->renderedThisFrame);
     }
@@ -655,9 +658,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     glClearScreen();
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
-
-
-
     mathfu::mat4 mainLookAtMat4 = frameParam->m_lookAtMat4;
 
     if (this->m_config->getDoubleCameraDebug()) {

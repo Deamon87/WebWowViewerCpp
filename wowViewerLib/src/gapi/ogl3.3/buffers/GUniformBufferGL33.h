@@ -18,6 +18,19 @@ public:
     explicit GUniformBufferGL33(IDevice &device, size_t size);
     ~GUniformBufferGL33() override;
 
+    void setIdentifierBuffer(void * ptr, uint32_t offset) {
+        uint8_t frameIndex = (m_device.getFrameNumber() + 1) & 1;
+        pIdentifierBuffer[frameIndex] = ptr;
+        m_offset[frameIndex] = offset;
+    }
+    void * getIdentifierBuffer() {
+        if (m_buffCreated) {
+            return pIdentifierBuffer[0];
+        }
+
+        return pIdentifierBuffer[m_device.getFrameNumber() & 1];
+    }
+
     void *getPointerForModification() override;
     void *getPointerForUpload() override;
 
@@ -37,8 +50,8 @@ private:
 
 private:
     size_t m_size;
-    size_t m_offset = 0;
-    void * pIdentifierBuffer;
+    size_t m_offset[2] = {0, 0};
+    void * pIdentifierBuffer[2];
 
     void * pFrameOneContent;
     void * pFrameTwoContent;

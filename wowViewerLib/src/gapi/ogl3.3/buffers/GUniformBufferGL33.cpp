@@ -8,7 +8,8 @@
 
 GUniformBufferGL33::GUniformBufferGL33(IDevice &device, size_t size) : m_device(device){
     m_size = size;
-    pIdentifierBuffer = new GLuint;
+    pIdentifierBuffer[0] = new GLuint;
+    pIdentifierBuffer[1] = nullptr;
     pFrameOneContent = new char[size];
     pFrameTwoContent = new char[size];
 //    createBuffer();
@@ -18,28 +19,28 @@ GUniformBufferGL33::~GUniformBufferGL33() {
     if (m_buffCreated) {
         destroyBuffer();
     }
-    delete (GLuint *)pIdentifierBuffer;
+    delete (GLuint *)pIdentifierBuffer[0];
     delete (char *)pFrameOneContent;
     delete (char *)pFrameTwoContent;
 }
 
 void GUniformBufferGL33::createBuffer() {
-    glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    glGenBuffers(1, (GLuint *)this->pIdentifierBuffer[0]);
     m_buffCreated = true;
 
 }
 
 
 void GUniformBufferGL33::destroyBuffer() {
-    glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer[0]);
 }
 void GUniformBufferGL33::bind(int bindingPoint) { //Should be called only by GDevice
     if (m_buffCreated && bindingPoint == -1) {
-        glBindBuffer(GL_UNIFORM_BUFFER, *(GLuint *) this->pIdentifierBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, *(GLuint *) this->pIdentifierBuffer[0]);
     } else if (m_buffCreated) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer);
+        glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer[0]);
     } else {
-        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer, m_offset, m_size);
+        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) getIdentifierBuffer(), m_offset[m_device.getFrameNumber() & 1], m_size);
     }
 }
 void GUniformBufferGL33::unbind() {

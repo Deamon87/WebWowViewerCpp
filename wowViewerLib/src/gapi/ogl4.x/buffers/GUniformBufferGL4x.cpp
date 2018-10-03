@@ -45,7 +45,7 @@ void GUniformBufferGL4x::createBuffer() {
 
 
 void GUniformBufferGL4x::destroyBuffer() {
-    glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer[0]);
 }
 void GUniformBufferGL4x::bind(int bindingPoint) { //Should be called only by GDevice
     if (m_buffCreated && bindingPoint == -1) {

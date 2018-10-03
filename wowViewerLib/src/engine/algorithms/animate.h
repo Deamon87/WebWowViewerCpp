@@ -93,7 +93,7 @@ inline fixed16 convertHelper<double, fixed16>(double &a ) {
 
 template<>
 inline uint32_t convertHelper<animTime_t, uint32_t>(animTime_t &a ) {
-    return (uint32_t) fmod(a, INT_MAX);
+    return (uint32_t) a;
 };
 
 template<>
