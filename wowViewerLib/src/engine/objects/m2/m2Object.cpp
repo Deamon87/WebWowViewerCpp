@@ -1152,6 +1152,10 @@ void M2Object::createMeshes() {
         M2MaterialInst material;
 
         prepearMatrial(material, i);
+        auto textMaterial = skinData->batches[material.texUnitTexIndex];
+        auto meshIndex = material.meshIndex;
+        auto mesh = skinData->submeshes[meshIndex];
+
         M2ShaderCacheRecord cacheRecord;
         cacheRecord.vertexShader = material.vertexShader;
         cacheRecord.pixelShader  = material.pixelShader;
@@ -1159,11 +1163,12 @@ void M2Object::createMeshes() {
         cacheRecord.alphaTestOn = true;
         cacheRecord.unFogged = true;
         cacheRecord.unShadowed = true;
+        cacheRecord.boneInfluences = mesh->boneInfluences;
 
         HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2Shader", &cacheRecord);
         gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
 
-        auto textMaterial = skinData->batches[material.texUnitTexIndex];
+
         int renderFlagIndex = textMaterial->materialIndex;
         auto renderFlag = m_m2Data->materials[renderFlagIndex];
 
@@ -1173,8 +1178,6 @@ void M2Object::createMeshes() {
 
         meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
 
-        auto meshIndex = material.meshIndex;
-        auto mesh = skinData->submeshes[meshIndex];
         meshTemplate.start = (mesh->indexStart + (mesh->Level << 16)) * 2;
         meshTemplate.end = mesh->indexCount;
         meshTemplate.element = GL_TRIANGLES;

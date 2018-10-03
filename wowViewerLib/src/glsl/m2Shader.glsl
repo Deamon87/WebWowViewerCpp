@@ -16,12 +16,12 @@
 #ifdef COMPILING_VS
 precision highp FLOATDEC
 /* vertex shader code */
-in vec3 aPosition;
-in vec3 aNormal;
-in vec4 bones;
-in vec4 boneWeights;
-in vec2 aTexCoord;
-in vec2 aTexCoord2;
+layout(location=0) in vec3 aPosition;
+layout(location=1) in vec3 aNormal;
+layout(location=2) in vec4 bones;
+layout(location=3) in vec4 boneWeights;
+layout(location=4) in vec2 aTexCoord;
+layout(location=5) in vec2 aTexCoord2;
 
 //Whole scene
 layout(std140) uniform sceneWideBlockVSPS {
@@ -88,12 +88,25 @@ void main() {
     vec4 modelPoint = vec4(0,0,0,0);
 
     vec4 aPositionVec4 = vec4(aPosition, 1);
-    mat4 boneTransformMat = mat4(0.0);
+    mat4 boneTransformMat = mat4(1.0);
 
-    boneTransformMat += (boneWeights.x ) * uBoneMatrixes[int(bones.x)];
-    boneTransformMat += (boneWeights.y ) * uBoneMatrixes[int(bones.y)];
-    boneTransformMat += (boneWeights.z ) * uBoneMatrixes[int(bones.z)];
-    boneTransformMat += (boneWeights.w ) * uBoneMatrixes[int(bones.w)];
+#if BONEINFLUENCES>0
+    boneTransformMat = mat4(0.0);
+    const float inttofloat = (1.0/255.0);
+    boneTransformMat += (boneWeights.x * inttofloat) * uBoneMatrixes[int(bones.x)];
+#endif
+#if BONEINFLUENCES>1
+    boneTransformMat += (boneWeights.y * inttofloat) * uBoneMatrixes[int(bones.y)];
+#endif
+#if BONEINFLUENCES>2
+    boneTransformMat += (boneWeights.z * inttofloat) * uBoneMatrixes[int(bones.z)];
+#endif
+#if BONEINFLUENCES>3
+    boneTransformMat += (boneWeights.w * inttofloat) * uBoneMatrixes[int(bones.w)];
+#endif
+
+
+
 
     mat4 placementMat;
 #ifdef INSTANCED
@@ -250,13 +263,11 @@ struct LocalLight
     vec4 attenuation;
 };
 
-
 in vec3 vNormal;
 in vec2 vTexCoord;
 in vec2 vTexCoord2;
 in vec2 vTexCoord3;
 in vec3 vPosition;
-
 in vec4 vDiffuseColor;
 
 uniform sampler2D uTexture;

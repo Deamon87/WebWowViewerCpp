@@ -52,6 +52,7 @@ struct M2ShaderCacheRecord {
     bool alphaTestOn;
     bool unFogged;
     bool unShadowed;
+    int boneInfluences;
 
 
     bool operator==(const M2ShaderCacheRecord &other) const {
@@ -61,7 +62,8 @@ struct M2ShaderCacheRecord {
             (alphaTestOn == other.alphaTestOn) &&
             (unlit == other.unlit) &&
             (unFogged == other.unFogged) &&
-            (unShadowed == other.unShadowed);
+            (unShadowed == other.unShadowed) &&
+            (boneInfluences == other.boneInfluences);
     };
 };
 

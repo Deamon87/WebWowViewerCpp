@@ -14,12 +14,14 @@ void GM2ShaderPermutationGL33::compileShader(const std::string &vertExtraDef, co
 
     vertexExtraDefines += "#define VERTEXSHADER " + std::to_string(permutation.vertexShader)+"\n";
     vertexExtraDefines += "#define UNLIT " + std::to_string(permutation.unlit)+"\n";
+    vertexExtraDefines += "#define BONEINFLUENCES " + std::to_string(permutation.boneInfluences)+"\n";
 
     fragmentExtraDefines += "#define FRAGMENTSHADER " + std::to_string(permutation.pixelShader)+"\n";
     fragmentExtraDefines += "#define UNLIT " + std::to_string(permutation.unlit ? 1 : 0)+"\n";
     fragmentExtraDefines += "#define ALPHATEST_ENABLED " + std::to_string(permutation.alphaTestOn ? 1 : 0)+"\n";
     fragmentExtraDefines += "#define UNFOGGED " + std::to_string(permutation.unFogged ? 1 : 0)+"\n";
     fragmentExtraDefines += "#define UNSHADOWED " + std::to_string(permutation.unShadowed ? 1 : 0)+"\n";
+
 
 
     GShaderPermutationGL33::compileShader(vertexExtraDefines, fragmentExtraDefines);

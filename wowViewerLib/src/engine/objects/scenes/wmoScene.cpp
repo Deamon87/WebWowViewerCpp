@@ -27,7 +27,7 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
 
     if (!this->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
         this->m_wmoObject->resetTraversedWmoGroups();
-        if (this->m_currentWMO->startTraversingWMOGroup(
+        if (this->m_wmoObject->startTraversingWMOGroup(
             cameraPos,
             projectionModelMat,
             this->m_currentInteriorGroups[0].groupIndex,
@@ -37,7 +37,7 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
             frameData->interiorViews,
             frameData->exteriorView)) {
 
-            frameData->wmoArray.push_back(this->m_currentWMO);
+            frameData->wmoArray.push_back(this->m_wmoObject);
         }
 
         if (frameData->exteriorView.viewCreated) {

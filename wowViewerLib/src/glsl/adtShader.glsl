@@ -22,11 +22,11 @@ mat3 blizzTranspose(mat4 value) {
     );
 }
 
-varying vec2 vChunkCoords;
-varying vec3 vPosition;
-varying vec4 vColor;
-varying vec3 vNormal;
-varying vec3 vVertexLighting;
+out vec2 vChunkCoords;
+out vec3 vPosition;
+out vec4 vColor;
+out vec3 vNormal;
+out vec3 vVertexLighting;
 
 const float UNITSIZE_X =  (1600.0 / 3.0) / 16.0 / 8.0;
 const float UNITSIZE_Y =  (1600.0 / 3.0) / 16.0 / 8.0;
@@ -66,11 +66,11 @@ void main() {
 #ifdef COMPILING_FS
 precision highp float;
 
-varying vec2 vChunkCoords;
-varying vec3 vPosition;
-varying vec4 vColor;
-varying vec3 vNormal;
-varying vec3 vVertexLighting;
+in vec2 vChunkCoords;
+in vec3 vPosition;
+in vec4 vColor;
+in vec3 vNormal;
+in vec3 vVertexLighting;
 
 uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayer0;
