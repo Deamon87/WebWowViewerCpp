@@ -84,13 +84,26 @@ M2Object *WmoObject::getDoodad(int index) {
 
 
     SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
-    assert(doodadDef->name_offset < this->mainGeom->doodadNamesFieldLen);
-    std::string fileName(&this->mainGeom->doodadNamesField[doodadDef->name_offset]);
+
+    bool fileIdMode = false;
+    int doodadfileDataId = 0;
+    std::string fileName;
+    if (this->mainGeom->doodadFileDataIds == nullptr && this->mainGeom->doodadFileDataIdsLen == 0) {
+        assert(doodadDef->name_offset < this->mainGeom->doodadNamesFieldLen);
+        fileName = std::string (&this->mainGeom->doodadNamesField[doodadDef->name_offset]);
+    } else {
+        doodadfileDataId = this->mainGeom->doodadFileDataIds[doodadDef->name_offset];
+        fileIdMode = true;
+    }
 
     M2Object *m2Object = new M2Object(m_api);
     m2Object->setDiffuseColor(doodadDef->color);
     m2Object->setLoadParams(0, {},{});
-    m2Object->setModelFileName(fileName);
+    if (fileIdMode) {
+        m2Object->setModelFileId(doodadfileDataId);
+    } else {
+        m2Object->setModelFileName(fileName);
+    }
     m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
 
@@ -612,7 +625,7 @@ void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
 }
 
 HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
-    if (textureId < 0 || textureId >= mainGeom->textureNamesFieldLen) {
+    if (textureId < 0 || (mainGeom->textureNamesField != nullptr && textureId >= mainGeom->textureNamesFieldLen)) {
         debuglog("Non valid textureindex for WMO")
         return nullptr;
     };
@@ -626,17 +639,22 @@ HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
     if (i != textureCache.end()) {
         return i->second;
     }
+    HBlpTexture texture;
+    if (mainGeom->textureNamesField != nullptr) {
+        std::string materialTexture(&mainGeom->textureNamesField[textureId]);
+        if (materialTexture == "") return nullptr;
 
-    std::string materialTexture(&mainGeom->textureNamesField[textureId]);
-    if (materialTexture == "") return nullptr;
+        if (isSpec) {
+            materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
+        }
 
-    if (isSpec) {
-        materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
+        texture = m_api->getTextureCache()->get(materialTexture);
+    } else {
+        texture = m_api->getTextureCache()->getFileId(textureId);
     }
 
-    HBlpTexture texture = m_api->getTextureCache()->get(materialTexture);
     HGTexture hgTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
-    textureCache[textureId] =  hgTexture;
+    textureCache[textureId] = hgTexture;
 
     return hgTexture;
 }

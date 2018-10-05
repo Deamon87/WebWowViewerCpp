@@ -79,7 +79,8 @@ void HttpFile::startDownloading() {
 //        curl_easy_cleanup(curl);
 //    }
 
-    std::string escaped_url = url_encode(m_httpUrl);
+//    std::string escaped_url = url_encode(m_httpUrl);
+    std::string escaped_url = m_httpUrl;
     auto r = cpr::Get(cpr::Url{escaped_url});
     if (r.status_code == 200) {
         if (this->m_fileBuffer != nullptr) delete(this->m_fileBuffer);

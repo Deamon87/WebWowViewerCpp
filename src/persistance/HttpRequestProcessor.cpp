@@ -23,8 +23,34 @@ void HttpRequestProcessor::requestFile(const char *fileName) {
     std::string fileName_s(fileName);
     this->addRequest(fileName_s);
 }
+std::string char_to_escape( char i )
+{
+    std::stringstream stream;
+    stream << "%"
+           << std::setfill ('0') << std::setw(2)
+           << std::hex << (int)i;
+    return stream.str();
+}
+
+std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
 
 void HttpRequestProcessor::processFileRequest(std::string &fileName) {
+    const std::string charsToEscape = " !*'();:@&=+$,/?#[]";
+
+    std::string escapedFileName = fileName;
+    for (int i = 0; i < charsToEscape.size(); i++) {
+        char c = charsToEscape[i];
+        escapedFileName = ReplaceAll(escapedFileName, std::string(1, c), char_to_escape(c));
+    }
+
+
     std::string fullUrl;
     if (fileName.find("File") == 0) {
         std::stringstream ss;
@@ -35,7 +61,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
 
         fullUrl = m_urlBaseFileId + std::to_string(fileDataId);
     } else {
-        fullUrl = m_urlBase + fileName;
+        fullUrl = m_urlBase + escapedFileName;
     }
 
     size_t hash = std::hash<std::string>{}(fileName);

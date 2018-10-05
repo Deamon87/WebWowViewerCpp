@@ -39,11 +39,14 @@ public:
     SMOMaterial *materials;
     int materialsLen;
 
-    char *textureNamesField;
-    int textureNamesFieldLen;
+    char *textureNamesField = nullptr;
+    int textureNamesFieldLen = 0;
 
     char *doodadNamesField;
     int doodadNamesFieldLen;
+
+    int *doodadFileDataIds = nullptr;
+    int doodadFileDataIdsLen = 0;
 
     SMODoodadSet *doodadSets;
     int doodadSetsLen;

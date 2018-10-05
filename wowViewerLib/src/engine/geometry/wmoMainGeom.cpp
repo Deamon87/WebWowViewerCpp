@@ -54,6 +54,15 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                     }
                 },
                 {
+                    'MODI', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MODI");
+                            object.doodadFileDataIdsLen = chunkData.chunkLen / sizeof(int);
+                            chunkData.readValues(object.doodadFileDataIds, object.doodadFileDataIdsLen);
+                        }
+                    }
+                },
+                {
                     'MLIQ', {
                         [](WmoMainGeom &object, ChunkData &chunkData) {
                             debuglog("Entered MLIQ");
