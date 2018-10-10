@@ -76,9 +76,6 @@ void GUniformBufferGL33::uploadData(void * data, int length) {
 void GUniformBufferGL33::save(bool initialSave) {
 //    if (memcmp(pPreviousContent, pContent, m_size) != 0) {
         //1. Copy new to prev
-        if (initialSave) {
-            memcpy(getPointerForUpload(), getPointerForModification(), m_size);
-        }
         m_needsUpdate = true;
 
 //        2. Update UBO

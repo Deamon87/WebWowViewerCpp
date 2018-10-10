@@ -420,7 +420,6 @@ void WmoGroupObject::postLoad() {
 
 void WmoGroupObject::createMeshes() {
     Config *config = m_api->getConfig();
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("wmoShader",nullptr);
 
     int minBatch = config->getWmoMinBatch();
     int maxBatch = std::min(config->getWmoMaxBatch(), m_geom->batchesLen);
@@ -441,8 +440,6 @@ void WmoGroupObject::createMeshes() {
     for (int j = minBatch; j < maxBatch; j++) {
         SMOBatch &renderBatch = m_geom->batches[j];
 
-        gMeshTemplate meshTemplate(binding, shaderPermutation);
-
         int texIndex;
         if (renderBatch.flag_use_material_id_large) {
             texIndex = renderBatch.postLegion.material_id_large;
@@ -458,6 +455,18 @@ void WmoGroupObject::createMeshes() {
         }
         int pixelShader = wmoMaterialShader[shaderId].pixelShader;
         int vertexShader = wmoMaterialShader[shaderId].vertexShader;
+
+        WMOShaderCacheRecord cacheRecord{};
+        cacheRecord.vertexShader = vertexShader;
+        cacheRecord.pixelShader  = pixelShader;
+        cacheRecord.unlit = true;
+        cacheRecord.alphaTestOn = true;
+        cacheRecord.unFogged = true;
+        cacheRecord.unShadowed = true;
+
+        HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("wmoShader", &cacheRecord);
+
+        gMeshTemplate meshTemplate(binding, shaderPermutation);
 
         bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
         bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));

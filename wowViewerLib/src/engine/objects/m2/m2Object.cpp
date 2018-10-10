@@ -705,9 +705,6 @@ void M2Object::startLoading() {
         Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
         if (!useFileId) {
             m_m2Geom = m2GeomCache->get(m_modelName);
-
-            Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
-            m_skinGeom = skinGeomCache->get(m_skinName);
         } else {
             m_m2Geom = m2GeomCache->getFileId(m_modelFileId);
         }
@@ -771,59 +768,50 @@ void M2Object::debugDumpAnimationSequences() {
 
 //Returns true when it finished loading
 bool M2Object::doPostLoad(){
-    if (!this->m_loaded) {
-        if ((m_m2Geom != nullptr) && m_m2Geom->isLoaded()) {
+    //0. If loading procedures were already done - exit
+    if (this->m_loaded) return false;
 
-            if ((m_skinGeom == nullptr) || !m_skinGeom->isLoaded()) {
-                if (useFileId) {
-                    Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
-                    m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
-                }
+    //1. Check if .m2 files is loaded
+    if (m_m2Geom == nullptr) return false;
+    if (!m_m2Geom->isLoaded()) return false;
 
-                return false;
-            }
-
-            m_skinGeom->fixData(m_m2Geom->getM2Data());
-
-            this->createVertexBindings();
-
-            this->createAABB();
-            this->createMeshes();
-            this->initAnimationManager();
-            this->initBoneAnimMatrices();
-            this->initTextAnimMatrices();
-            this->initSubmeshColors();
-            this->initTransparencies();
-            this->initLights();
-            this->initParticleEmitters();
-            m_hasBillboards = checkIfHasBillboarded();
-
-            this->m_loaded = true;
-            this->m_loading = false;
-
-            for ( auto &item : m_postLoadEvents) {
-                item();
-            }
-            m_postLoadEvents.clear();
-
-            return true;
-
+    //2. Check if .skin file is loaded
+    if (m_skinGeom == nullptr) {
+        Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
+        if (useFileId) {
+            m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
         } else {
-            return false;
+            m_skinGeom = skinGeomCache->get(m_skinName);
         }
-    } else {
-
-        int minParticle = m_api->getConfig()->getMinParticle();
-        int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
-//    int maxBatch = particleEmitters.size();
-
-
-        for (int i = minParticle; i < maxParticle; i++) {
-            particleEmitters[i]->updateBuffers();
-        }
+        return false;
     }
+    if (!m_skinGeom->isLoaded()) return false;
 
-    return false;
+    //3. Do post load procedures
+    m_skinGeom->fixData(m_m2Geom->getM2Data());
+
+    this->createVertexBindings();
+
+    this->createAABB();
+    this->createMeshes();
+    this->initAnimationManager();
+    this->initBoneAnimMatrices();
+    this->initTextAnimMatrices();
+    this->initSubmeshColors();
+    this->initTransparencies();
+    this->initLights();
+    this->initParticleEmitters();
+    m_hasBillboards = checkIfHasBillboarded();
+
+    this->m_loaded = true;
+    this->m_loading = false;
+
+    for ( auto &item : m_postLoadEvents) {
+        item();
+    }
+    m_postLoadEvents.clear();
+
+    return true;
 }
 
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
@@ -887,7 +875,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());
 
     for (int i = minBatch; i < maxBatch; i++) {
-        M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], *this, m_materialArray[i], m2File, skinData);
+        M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], viewMat, *this, m_materialArray[i], m2File, skinData);
     }
 
     mathfu::mat4 viewMatInv = viewMat.Inverse();
@@ -904,6 +892,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
         particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D());
         particleEmitters[i]->prepearBuffers(viewMat);
+        particleEmitters[i]->updateBuffers();
     }
 
     this->sortMaterials(viewMat);
@@ -1156,15 +1145,18 @@ void M2Object::createMeshes() {
         auto meshIndex = material.meshIndex;
         auto mesh = skinData->submeshes[meshIndex];
 
-        M2ShaderCacheRecord cacheRecord;
+        M2ShaderCacheRecord cacheRecord{};
         cacheRecord.vertexShader = material.vertexShader;
         cacheRecord.pixelShader  = material.pixelShader;
         cacheRecord.unlit = true;
         cacheRecord.alphaTestOn = true;
         cacheRecord.unFogged = true;
         cacheRecord.unShadowed = true;
-        cacheRecord.boneInfluences = mesh->boneInfluences;
-
+        if (mesh->boneInfluences > 0) {
+            cacheRecord.boneInfluences = mesh->boneInfluences;
+        } else {
+            cacheRecord.boneInfluences = mesh->boneCount > 0 ? 1 : 0;
+        }
         HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2Shader", &cacheRecord);
         gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
 

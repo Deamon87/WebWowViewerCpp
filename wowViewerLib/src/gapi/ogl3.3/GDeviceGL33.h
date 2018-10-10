@@ -153,6 +153,17 @@ public:
     };
     std::unordered_map<M2ShaderCacheRecord, std::weak_ptr<IShaderPermutation>, M2ShaderCacheRecordHasher> m2ShaderCache;
 
+    struct WMOShaderCacheRecordHasher {
+        std::size_t operator()(const WMOShaderCacheRecord& k) const {
+            using std::hash;
+            return hash<int>{}(k.vertexShader) ^ (hash<int>{}(k.pixelShader)) ^
+                   (hash<bool>{}(k.unlit)) ^
+                   (hash<bool>{}(k.alphaTestOn) << 8) ^
+                   (hash<bool>{}(k.unFogged) << 16) ^
+                   (hash<bool>{}(k.unShadowed) << 24);
+        };
+    };
+    std::unordered_map<WMOShaderCacheRecord, std::weak_ptr<IShaderPermutation>, WMOShaderCacheRecordHasher> wmoShaderCache;
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;

@@ -25,7 +25,7 @@ HGIndexBuffer SkinGeom::getIBO(IDevice &device) {
     if (indexVbo == nullptr) {
         int indiciesLength = this->m_skinData->indices.size;
 
-        std::vector<uint16_t> indicies(indiciesLength);
+        uint16_t *indicies = new uint16_t[indiciesLength];
 
         for (int i = 0; i < indiciesLength; i++) {
             indicies[i] = *this->m_skinData->vertices.getElement(*this->m_skinData->indices.getElement(i));
@@ -35,6 +35,8 @@ HGIndexBuffer SkinGeom::getIBO(IDevice &device) {
         indexVbo->uploadData(
             &indicies[0],
             indiciesLength * sizeof(uint16_t));
+
+        delete[] indicies;
     }
 
     return indexVbo;

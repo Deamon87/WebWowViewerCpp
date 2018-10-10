@@ -67,6 +67,25 @@ struct M2ShaderCacheRecord {
     };
 };
 
+struct WMOShaderCacheRecord {
+    int vertexShader;
+    int pixelShader;
+    bool unlit;
+    bool alphaTestOn;
+    bool unFogged;
+    bool unShadowed;
+
+    bool operator==(const WMOShaderCacheRecord &other) const {
+        return
+            (vertexShader == other.vertexShader) &&
+            (pixelShader == other.pixelShader) &&
+            (alphaTestOn == other.alphaTestOn) &&
+            (unlit == other.unlit) &&
+            (unFogged == other.unFogged) &&
+            (unShadowed == other.unShadowed);
+    };
+};
+
 class IDevice {
     public:
         virtual ~IDevice() {};

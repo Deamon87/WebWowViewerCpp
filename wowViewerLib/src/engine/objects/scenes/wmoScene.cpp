@@ -25,12 +25,12 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     frameData->interiorViews = std::vector<InteriorView>();
     m_viewRenderOrder = 0;
 
-    if (!this->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
+    if (!frameData->currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
         this->m_wmoObject->resetTraversedWmoGroups();
         if (this->m_wmoObject->startTraversingWMOGroup(
             cameraPos,
             projectionModelMat,
-            this->m_currentInteriorGroups[0].groupIndex,
+            frameData->currentInteriorGroups[0].groupIndex,
             0,
             m_viewRenderOrder,
             true,
@@ -147,7 +147,7 @@ void WmoScene::update(WoWFrameData *frameData)  {
     //}
 
     //6. Check what WMO instance we're in
-    this->m_currentInteriorGroups = {};
+    frameData->currentInteriorGroups = {};
     this->m_currentWMO = nullptr;
 
     int bspNodeId = -1;
@@ -174,7 +174,7 @@ void WmoScene::update(WoWFrameData *frameData)  {
             this->m_currentWMO = checkingWmoObj;
             currentWmoGroup = groupResult.groupIndex;
             if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
-                this->m_currentInteriorGroups.push_back(groupResult);
+                frameData->currentInteriorGroups.push_back(groupResult);
                 interiorGroupNum = groupResult.groupIndex;
             } else {
             }

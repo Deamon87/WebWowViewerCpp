@@ -180,9 +180,25 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "wmoShader") {
-        iPremutation = new GWMOShaderPermutationGL33(shaderName, this);
+        WMOShaderCacheRecord *cacheRecord = (WMOShaderCacheRecord * )permutationDescriptor;
+        if (cacheRecord != nullptr) {
+
+
+            auto i = wmoShaderCache.find(*cacheRecord);
+            if (i != wmoShaderCache.end()) {
+                if (!i->second.expired()) {
+                    return i->second.lock();
+                } else {
+                    wmoShaderCache.erase(i);
+                }
+            }
+        }
+
+        iPremutation = new GWMOShaderPermutationGL33(shaderName, this, *cacheRecord);
         sharedPtr.reset(iPremutation);
-        m_shaderPermutCache[hash] = sharedPtr;
+
+        std::weak_ptr<IShaderPermutation> weakPtr(sharedPtr);
+        wmoShaderCache[*cacheRecord] = weakPtr;
     } else if (shaderName == "adtShader") {
         iPremutation = new GAdtShaderPermutationGL33(shaderName, this);
         sharedPtr.reset(iPremutation);

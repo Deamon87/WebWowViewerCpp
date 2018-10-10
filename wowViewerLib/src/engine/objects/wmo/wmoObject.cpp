@@ -940,7 +940,9 @@ void WmoObject::transverseGroupWMO(
 
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
 
-        if (!visible) continue;
+        const float dotepsilon = pow(1.5f, 2);
+
+        if (!visible && (fabs(dotResult) > dotepsilon) ) continue;
 
         transverseVisitedPortals[relation->portal_index] = true;
 
@@ -948,19 +950,27 @@ void WmoObject::transverseGroupWMO(
 
         //3. Construct frustum planes for this portal
         std::vector<mathfu::vec4> thisPortalPlanes;
-        bool flip = (relation->side > 0);
+        thisPortalPlanes.reserve(lastFrustumPlanesLen);
 
-        int portalCnt = portalVerticesVec.size();
-        for (int i = 0; i < portalCnt; ++i) {
-            int i2 = (i + 1) % portalCnt;
+        if (fabs(dotResult) > dotepsilon) {
+            bool flip = (relation->side > 0);
 
-            mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(cameraLocal.xyz(), portalVerticesVec[i], portalVerticesVec[i2]);
+            int portalCnt = portalVerticesVec.size();
+            for (int i = 0; i < portalCnt; ++i) {
+                int i2 = (i + 1) % portalCnt;
 
-            if (flip) {
-                n *= -1.0f;
+                mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(cameraLocal.xyz(), portalVerticesVec[i],
+                                                                           portalVerticesVec[i2]);
+
+                if (flip) {
+                    n *= -1.0f;
+                }
+
+                thisPortalPlanes.push_back(n);
             }
-
-            thisPortalPlanes.push_back(n);
+        } else {
+            // If camera is too close - just use usual frustums
+            thisPortalPlanes = localFrustumPlanes;
         }
 
         //Transform local planes into world planes to use with frustum culling of M2Objects

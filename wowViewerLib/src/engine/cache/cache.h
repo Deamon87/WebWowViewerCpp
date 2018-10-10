@@ -18,6 +18,24 @@
 #include "../stringTrim.h"
 
 
+enum class CacheHolderType {
+    CACHE_M2,
+    CACHE_WMO,
+    CACHE_ADT,
+    CACHE_WDT,
+    CACHE_BLP,
+};
+
+enum class CacheSubType {
+    SUBTYPE_M2,
+    SUBTYPE_ANIM,
+    SUBTYPE_BONE,
+    SUBTYPE_SKEL,
+    SUBTYPE_WMO,
+    SUBTYPE_ADT,
+    SUBTYPE_BLP,
+};
+
 template <typename T>
 class Cache {
 private:
@@ -29,7 +47,6 @@ public:
     std::unordered_map<std::string, std::weak_ptr<T>> m_cache;
     std::unordered_map<std::string, std::vector<unsigned char>> m_objectsToBeProcessed;
 public:
-
     Cache(IFileRequest *fileRequestProcessor) : m_fileRequestProcessor(fileRequestProcessor){
         processCacheLock = std::unique_lock<std::mutex>(accessMutex,std::defer_lock);
         provideFileLock = std::unique_lock<std::mutex>(accessMutex,std::defer_lock);
@@ -80,6 +97,8 @@ public:
         fileName = trimmed(fileName);
         std::transform(fileName.begin(), fileName.end(),fileName.begin(), ::toupper);
         std::replace(fileName.begin(), fileName.end(), '\\', '/');
+
+        
 
         auto it = m_cache.find(fileName);
         if(it != m_cache.end() ) {

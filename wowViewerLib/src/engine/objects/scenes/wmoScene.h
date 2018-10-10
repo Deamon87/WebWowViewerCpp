@@ -21,7 +21,6 @@ private:
     float m_lastTimeDistanceCalc = 0;
     int m_viewRenderOrder = 0;
 
-    std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
 public:
     WmoScene(IWoWInnerApi *api, std::string wmoModel) : m_api (api), m_wmoModel(wmoModel) {

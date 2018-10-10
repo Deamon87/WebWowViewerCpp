@@ -468,138 +468,138 @@ void main() {
         specular = tex2.rgb;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==11 //Combiners_Mod_Opaque
+    #if(FRAGMENTSHADER==11) //Combiners_Mod_Opaque
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
         opacity = tex.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==12 //Combiners_Opaque_Mod2xNA_Alpha
+    #if(FRAGMENTSHADER==12) //Combiners_Opaque_Mod2xNA_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==13 //Combiners_Opaque_AddAlpha
+    #if(FRAGMENTSHADER==13) //Combiners_Opaque_AddAlpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         specular = tex2.rgb * tex2.a;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==14 //Combiners_Opaque_AddAlpha_Alpha
+    #if(FRAGMENTSHADER==14) //Combiners_Opaque_AddAlpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         specular = tex2.rgb * tex2.a * (1.000000 - tex.a);
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==15 //Combiners_Opaque_Mod2xNA_Alpha_Add
+    #if(FRAGMENTSHADER==15) //Combiners_Opaque_Mod2xNA_Alpha_Add
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a));
         specular = tex3.rgb * tex3.a * genericParams[0].b;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==16 //Combiners_Mod_AddAlpha
+    #if(FRAGMENTSHADER==16) //Combiners_Mod_AddAlpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a;
         specular = tex2.rgb * tex2.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==17 //Combiners_Mod_AddAlpha_Alpha
+    #if(FRAGMENTSHADER==17) //Combiners_Mod_AddAlpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = (tex.a + tex2.a * (0.300000 * tex2.r + 0.590000 * tex2.g + 0.110000 * tex2.b)) * vDiffuseColor.a;
         specular = tex2.rgb * tex2.a * (1.000000 - tex.a);
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==18 //Combiners_Opaque_Alpha_Alpha
+    #if(FRAGMENTSHADER==18) //Combiners_Opaque_Alpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb, tex2.rgb, vec3(tex2.a)), tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==19 //Combiners_Opaque_Mod2xNA_Alpha_3s
+    #if(FRAGMENTSHADER==19) //Combiners_Opaque_Mod2xNA_Alpha_3s
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==20 //Combiners_Opaque_AddAlpha_Wgt
+    #if(FRAGMENTSHADER==20) //Combiners_Opaque_AddAlpha_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         specular = tex2.rgb * tex2.a * genericParams[0].g;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==21 //Combiners_Mod_Add_Alpha
+    #if(FRAGMENTSHADER==21) //Combiners_Mod_Add_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = (tex.a + tex2.a) * vDiffuseColor.a;
         specular = tex2.rgb * (1.000000 - tex.a);
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==22 //Combiners_Opaque_ModNA_Alpha
+    #if(FRAGMENTSHADER==22) //Combiners_Opaque_ModNA_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb, tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==23 //Combiners_Mod_AddAlpha_Wgt
+    #if(FRAGMENTSHADER==23) //Combiners_Mod_AddAlpha_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a;
         specular = tex2.rgb * tex2.a * genericParams[0].g;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==24 //Combiners_Opaque_Mod_Add_Wgt
+    #if(FRAGMENTSHADER==24) //Combiners_Opaque_Mod_Add_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
         specular = tex.rgb * tex.a * genericParams[0].r;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==25 //Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
+    #if(FRAGMENTSHADER==25) //Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
         float glowOpacity = clamp((tex3.a * genericParams[0].z), 0.0, 1.0);
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a)) * (1.000000 - glowOpacity);
         specular = tex3.rgb * glowOpacity;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==26 //Combiners_Mod_Dual_Crossfade
+    #if(FRAGMENTSHADER==26) //Combiners_Mod_Dual_Crossfade
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
         opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==27 //Combiners_Opaque_Mod2xNA_Alpha_Alpha
+    #if(FRAGMENTSHADER==27) //Combiners_Opaque_Mod2xNA_Alpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a)), tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==28 //Combiners_Mod_Masked_Dual_Crossfade
+    #if(FRAGMENTSHADER==28) //Combiners_Mod_Masked_Dual_Crossfade
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
         opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * tex4WithTextCoord2.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==29 //Combiners_Opaque_Alpha
+    #if(FRAGMENTSHADER==29) //Combiners_Opaque_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==30 //Guild
+    #if(FRAGMENTSHADER==30) //Guild
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a)), tex3.rgb * genericParams[2].rgb, vec3(tex3.a));
         opacity = tex.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==31 //Guild_NoBorder
+    #if(FRAGMENTSHADER==31) //Guild_NoBorder
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a));
         opacity = tex.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==32 //Guild_Opaque
+    #if(FRAGMENTSHADER==32) //Guild_Opaque
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a)), tex3.rgb * genericParams[2].rgb, vec3(tex3.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==33 //Combiners_Mod_Depth
+    #if(FRAGMENTSHADER==33) //Combiners_Mod_Depth
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a * visParams.r;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==34  //Illum
+    #if(FRAGMENTSHADER==34)  //Illum
         finalColor = vec4(1.0,1.0,1.0, 1.0);
 
         //Unusued
     #endif
-    #if FRAGMENTSHADER==35 //Combiners_Mod_Mod_Mod_Const
+    #if(FRAGMENTSHADER==35) //Combiners_Mod_Mod_Mod_Const
         matDiffuse = vDiffuseColor.rgb * 2.000000 * (tex * tex2 * tex3 * genericParams[0]).rgb;
         opacity = (tex * tex2 * tex3 * genericParams[0]).a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
@@ -607,34 +607,34 @@ void main() {
         /*
             WOTLK DEPRECATED SHADERS!
         */
-    #if FRAGMENTSHADER==-1 // Combiners_Decal
+    #if(FRAGMENTSHADER==-1) // Combiners_Decal
         finalColor.rgb = (meshResColor.rgb - tex.rgb) * meshResColor.a + tex.rgb;
         finalColor.a = meshResColor.a;
     #endif
-    #if FRAGMENTSHADER==-2 // Combiners_Add
+    #if(FRAGMENTSHADER==-2) // Combiners_Add
         finalColor.rgba = tex.rgba + meshResColor.rgba;
     #endif
-    #if FRAGMENTSHADER==-3 // Combiners_Mod2x
+    #if(FRAGMENTSHADER==-3) // Combiners_Mod2x
         finalColor.rgb = tex.rgb * meshResColor.rgb * vec3(2.0);
         finalColor.a = tex.a * meshResColor.a * 2.0;
     #endif
-    #if FRAGMENTSHADER==-4 // Combiners_Fade
+    #if(FRAGMENTSHADER==-4) // Combiners_Fade
         finalColor.rgb = (tex.rgb - meshResColor.rgb) * meshResColor.a + meshResColor.rgb;
         finalColor.a = meshResColor.a;
     #endif
-    #if FRAGMENTSHADER==-5 // Combiners_Opaque_Add
+    #if(FRAGMENTSHADER==-5) // Combiners_Opaque_Add
         finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
         finalColor.a = meshResColor.a + tex.a;
     #endif
-    #if FRAGMENTSHADER==-6 // Combiners_Opaque_AddNA
+    #if(FRAGMENTSHADER==-6) // Combiners_Opaque_AddNA
         finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
         finalColor.a = meshResColor.a;
     #endif
-    #if FRAGMENTSHADER==-7 // Combiners_Add_Mod
+    #if(FRAGMENTSHADER==-7) // Combiners_Add_Mod
         finalColor.rgb = (tex.rgb + meshResColor.rgb) * tex2.a;
         finalColor.a = (tex.a + meshResColor.a) * tex2.a;
     #endif
-    #if FRAGMENTSHADER==-8 // Combiners_Mod2x_Mod2x
+    #if(FRAGMENTSHADER==-8) // Combiners_Mod2x_Mod2x
         finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba * vec4(4.0);
     #endif
 
