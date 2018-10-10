@@ -138,9 +138,8 @@ void WoWSceneImpl::DoCulling() {
         updateFrameIndex = updateObjFrame;
 
         currentScene->update(objFrameParam);
-        device->updateBuffers(objFrameParam->renderedThisFrame);
-
         currentScene->collectMeshes(objFrameParam);
+        device->updateBuffers(objFrameParam->renderedThisFrame);
     }
 }
 
@@ -427,7 +426,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
-//
+
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //    "World\\wmo\\BrokenIsles\\Suramar\\7SR_SuramarCity_Single_B_Core_C.wmo");
@@ -456,19 +455,20 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
 //    currentScene = new WmoScene(this,
-//        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
+//                                "world/wmo/azeroth/buildings/stranglethorn_bootybay/bootybay.wmo"); //bootybay
+//                                2324175);
 //
+   currentScene = new WmoScene(this,
+                               2198682);
 //   currentScene = new WmoScene(this,
-//                               2198682);
-//   currentScene = new WmoScene(this,
-//                               1716442);
+//                               "world/wmo/kultiras/nightelf/8ne_nightelf_dockbroken01.wmo");
 
 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
- currentScene = new WmoScene(this,
-        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");

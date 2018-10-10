@@ -410,8 +410,8 @@ void WmoGroupObject::startLoading() {
 
 void WmoGroupObject::postLoad() {
 
-    this->m_dontUseLocalLightingForM2 =
-        ((m_geom->mogp->flags.EXTERIOR_LIT) > 0) || ((m_geom->mogp->flags.EXTERIOR) > 0);
+    this->m_useLocalLightingForM2 =
+        ((m_geom->mogp->flags.INTERIOR) > 0) && ((m_geom->mogp->flags.EXTERIOR_LIT) == 0);
     m_localGroupBorder = m_geom->mogp->boundingBox;
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
     this->loadDoodads();
@@ -990,7 +990,7 @@ void WmoGroupObject::checkDoodads(std::vector<M2Object *> &wmoM2Candidates) {
 
     for (int i = 0; i < this->m_doodads.size(); i++) {
         if (this->m_doodads[i] != nullptr) {
-            if (this->m_dontUseLocalLightingForM2) {
+            if (this->getDontUseLocalLightingForM2()) {
                 this->m_doodads[i]->setUseLocalLighting(false);
             } else {
                 this->m_doodads[i]->setUseLocalLighting(true);
@@ -1051,6 +1051,7 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
 void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
     mathfu::vec4 ambientColor = getAmbientColor();
 
+    if (!m2Object->setUseLocalLighting(true)) return;
 
     if (m_geom->colorArray != nullptr) {
         int nodeId = 0;
@@ -1081,7 +1082,7 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
         }
     }
 
-    m2Object->setUseLocalLighting(true);
+
     m2Object->setAmbientColorOverride(ambientColor, true);
 
 

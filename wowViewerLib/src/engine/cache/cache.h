@@ -52,7 +52,7 @@ public:
                 sharedPtr->process(fileContent, fileName);
             }
 
-            m_objectsToBeProcessed.erase(it++);    // or "it = m.erase(it)" since C++11
+            it = m_objectsToBeProcessed.erase(it);    // or "it = m.erase(it)" since C++11
 
             objectsProcessed++;
             if (objectsProcessed > limit) {

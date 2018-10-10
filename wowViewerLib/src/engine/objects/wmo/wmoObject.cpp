@@ -1300,6 +1300,10 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
     }
 }
 
+void GeneralView::setM2Lights(M2Object *m2Object) {
+    m2Object->setUseLocalLighting(false);
+}
+
 void InteriorView::setM2Lights(M2Object *m2Object) {
     if (!drawnWmos[0]->getIsLoaded()) return;
 

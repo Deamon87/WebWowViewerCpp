@@ -88,7 +88,7 @@ private:
     mathfu::vec4 m_ambientAddColor = mathfu::vec4(0, 0, 0, 0);
     mathfu::vec4 m_sunAddColor = mathfu::vec4(0, 0, 0, 0);
     mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
-    bool m_useLocalDiffuseColor = false;
+    int m_useLocalDiffuseColor = -1;
     std::vector<uint8_t> m_meshIds;
     std::vector<HBlpTexture> m_replaceTextures;
     std::vector<mathfu::mat4> bonesMatrices;
@@ -167,7 +167,15 @@ public:
     bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
 
-    void setUseLocalLighting(bool value) { m_useLocalDiffuseColor = value; };
+    bool setUseLocalLighting(bool value) {
+        if (m_useLocalDiffuseColor == -1) {
+            m_useLocalDiffuseColor = value ? 1 : 0;
+        }
+        m_useLocalDiffuseColor = ( m_useLocalDiffuseColor == 0 ? m_useLocalDiffuseColor : (value ? 1 : 0) );
+
+        return m_useLocalDiffuseColor == 1;
+    };
+    bool getUseLocalLighting() { return m_useLocalDiffuseColor == 1; };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
                                    const std::vector<mathfu::vec4> &frustumPlanes,
                                    const std::vector<mathfu::vec3> &frustumPoints);

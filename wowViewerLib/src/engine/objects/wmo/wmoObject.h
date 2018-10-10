@@ -40,7 +40,7 @@ public:
     int renderOrder = -1;
 
     virtual void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
-    virtual void setM2Lights(M2Object * m2Object){};
+    virtual void setM2Lights(M2Object * m2Object);;
     void addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
 };
 

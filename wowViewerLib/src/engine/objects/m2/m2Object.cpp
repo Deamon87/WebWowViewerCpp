@@ -866,7 +866,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
     static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
     mathfu::vec4 localDiffuse = diffuseNon;
-    if (m_useLocalDiffuseColor) {
+    if (m_useLocalDiffuseColor == 1) {
         localDiffuse = m_localDiffuseColorV;
     } else {
         localDiffuse = m_api->getGlobalSunColor();
@@ -1325,7 +1325,7 @@ mathfu::vec4 M2Object::getAmbientLight() {
 };
 
 mathfu::vec3 M2Object::getSunDir() {
-    if (m_setSunDir) {
+    if (m_setSunDir && getUseLocalLighting()) {
         return mathfu::vec3(m_sunDirOverride.x, m_sunDirOverride.y, m_sunDirOverride.z);
     }
 

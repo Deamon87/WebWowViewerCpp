@@ -41,7 +41,7 @@ public:
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
 
 
-    bool getDontUseLocalLightingForM2() { return m_dontUseLocalLightingForM2; };
+    bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
     void doPostLoad();
     void update();
     bool checkGroupFrustum(mathfu::vec4 &cameraVec4,
@@ -79,7 +79,7 @@ private:
 
     std::vector <M2Object *> m_doodads = std::vector<M2Object *>(0);
 
-    bool m_dontUseLocalLightingForM2 = false;
+    bool m_useLocalLightingForM2 = false;
 
     bool m_loading = false;
     bool m_loaded = false;
