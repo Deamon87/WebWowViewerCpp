@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 
 WoWScene *scene;
-RequestProcessor *processor;
+HttpRequestProcessor *processor;
 Config *testConf;
 
 int canvWidth = 640;
@@ -86,7 +86,9 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
             case 'E':
                 controllable->startMovingDown();
                 break;
-
+            case GLFW_KEY_LEFT_SHIFT:
+                testConf->setMovementSpeed(3.0);
+                break;
             default:
                 break;
         }
@@ -122,6 +124,10 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
             case 'O':
                 scene->setScenePos(0,0,0);
+                break;
+            case GLFW_KEY_LEFT_SHIFT:
+                testConf->setMovementSpeed(1.0);
+                break;
             default:
                 break;
         }
@@ -181,6 +187,9 @@ extern "C" {
 }
 
 extern "C" {
+    void setNewUrls(char *url, char *urlFileId) {
+        processor->setUrls(url, urlFileId);
+    }
     void setScene(int sceneType, char *name, int cameraNum) {
         scene->setScene(sceneType, std::string(name), cameraNum);
     }
