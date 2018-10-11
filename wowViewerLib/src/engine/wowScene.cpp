@@ -24,7 +24,6 @@ void WoWSceneImpl::processCaches(int limit) {
     this->wmoGeomCache.processCacheQueue(limit);
     this->wmoMainCache.processCacheQueue(limit);
     this->m2GeomCache.processCacheQueue(limit);
-    this->skinGeomCache.processCacheQueue(limit);
     this->textureCache.processCacheQueue(limit);
     this->db2Cache.processCacheQueue(limit);
 }
@@ -171,15 +170,14 @@ void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cam
 
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
         :
-        wmoMainCache(requestProcessor),
-        wdtCache(requestProcessor),
-        wdlCache(requestProcessor),
-        wmoGeomCache(requestProcessor),
-        m2GeomCache(requestProcessor),
-        skinGeomCache(requestProcessor),
-        textureCache(requestProcessor),
-        adtObjectCache(requestProcessor),
-        db2Cache(requestProcessor){
+        wmoMainCache(requestProcessor, CacheHolderType::CACHE_MAIN_WMO),
+        wdtCache(requestProcessor, CacheHolderType::CACHE_WDT),
+        wdlCache(requestProcessor, CacheHolderType::CACHE_WDL),
+        wmoGeomCache(requestProcessor, CacheHolderType::CACHE_WDL),
+        m2GeomCache(requestProcessor, CacheHolderType::CACHE_M2),
+        textureCache(requestProcessor, CacheHolderType::CACHE_BLP),
+        adtObjectCache(requestProcessor, CacheHolderType::CACHE_ADT),
+        db2Cache(requestProcessor, CacheHolderType::CACHE_DB2){
     m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
 //    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
 
@@ -458,8 +456,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //                                "world/wmo/azeroth/buildings/stranglethorn_bootybay/bootybay.wmo"); //bootybay
 //                                2324175);
 //
-   currentScene = new WmoScene(this,
-                               2198682);
+   currentScene = new M2Scene(this, "creature/lorthemar/lorthemar.m2");
 //   currentScene = new WmoScene(this,
 //                               "world/wmo/kultiras/nightelf/8ne_nightelf_dockbroken01.wmo");
 

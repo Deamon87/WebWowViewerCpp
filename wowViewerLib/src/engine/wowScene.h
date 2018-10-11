@@ -39,29 +39,44 @@ public:
     void draw(animTime_t deltaTime) override;
     void setScreenSize(int canvWidth, int canvHeight) override;
 
-    virtual void provideFile(const char* fileName, unsigned char* data, int fileLength) override {
-        std::vector<unsigned char> fileData;
-        fileData.assign(data, data+fileLength);
+    virtual void provideFile(CacheHolderType holderType, CacheSubType subType, const char* fileName, unsigned char* data, int fileLength) override {
         std::string s_fileName(fileName);
 
-        adtObjectCache.provideFile(s_fileName, fileData);
-        wmoGeomCache.provideFile(s_fileName, fileData);
-        wmoMainCache.provideFile(s_fileName, fileData);
-        m2GeomCache.provideFile(s_fileName, fileData);
-        skinGeomCache.provideFile(s_fileName, fileData);
-        textureCache.provideFile(s_fileName, fileData);
-        wdtCache.provideFile(s_fileName, fileData);
-        wdlCache.provideFile(s_fileName, fileData);
-        db2Cache.provideFile(s_fileName, fileData);
+        switch (holderType) {
+            case CacheHolderType::CACHE_M2:
+                m2GeomCache.provideFile(s_fileName, subType, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_MAIN_WMO:
+                wmoMainCache.provideFile(s_fileName, subType, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_GROUP_WMO:
+                wmoGeomCache.provideFile(s_fileName, subType, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_ADT:
+                adtObjectCache.provideFile(s_fileName, subType, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_WDT:
+                wdtCache.provideFile(s_fileName, subType, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_WDL:
+                wdlCache.provideFile(s_fileName, subType, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_BLP:
+                textureCache.provideFile(s_fileName, subType, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_DB2:
+                db2Cache.provideFile(s_fileName, subType, data, fileLength);
+                break;
+
+       }
     };
-    virtual void rejectFile(const char* fileName) override {
+    virtual void rejectFile(CacheHolderType holderType, CacheSubType subType, const char* fileName) override {
         std::string s_fileName(fileName);
 
         adtObjectCache.reject(s_fileName);
         wmoGeomCache.reject(s_fileName);
         wmoMainCache.reject(s_fileName);
         m2GeomCache.reject(s_fileName);
-        skinGeomCache.reject(s_fileName);
         textureCache.reject(s_fileName);
         wdtCache.reject(s_fileName);
         wdlCache.reject(s_fileName);
@@ -100,9 +115,6 @@ public:
     }
     virtual Cache<M2Geom> *getM2GeomCache() override {
         return &m2GeomCache;
-    };
-    virtual Cache<SkinGeom> *getSkinGeomCache() override {
-        return &skinGeomCache;
     };
     virtual Cache<BlpTexture> *getTextureCache() override {
         return &textureCache;
@@ -196,7 +208,6 @@ private:
     Cache<WmoGroupGeom> wmoGeomCache;
     Cache<WmoMainGeom> wmoMainCache;
     Cache<M2Geom> m2GeomCache;
-    Cache<SkinGeom> skinGeomCache;
     Cache<BlpTexture> textureCache;
     Cache<DB2Base> db2Cache;
 

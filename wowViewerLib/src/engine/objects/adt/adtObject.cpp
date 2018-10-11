@@ -505,7 +505,7 @@ HGTexture AdtObject::getAdtTexture(int textureId) {
     }
 
     std::string &materialTexture = m_adtFileTex->textureNames[textureId];
-    HBlpTexture texture = m_api->getTextureCache()->get(materialTexture);
+    HBlpTexture texture = m_api->getTextureCache()->get(materialTexture, CacheSubType::SUBTYPE_BLP);
     HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
     m_requestedTextures[textureId] = h_gblpTexture;
 
@@ -522,7 +522,7 @@ HGTexture AdtObject::getAdtHeightTexture(int textureId) {
 
     std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_h.blp";
 
-    HBlpTexture texture = m_api->getTextureCache()->get(matHeightText);
+    HBlpTexture texture = m_api->getTextureCache()->get(matHeightText, CacheSubType::SUBTYPE_BLP);
     HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
     m_requestedTexturesHeight[textureId] = h_gblpTexture;
 
@@ -539,7 +539,7 @@ HGTexture AdtObject::getAdtSpecularTexture(int textureId) {
 
     std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_s.blp";
 
-    HBlpTexture texture = m_api->getTextureCache()->get(matHeightText);
+    HBlpTexture texture = m_api->getTextureCache()->get(matHeightText, CacheSubType::SUBTYPE_BLP);
     HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
     m_requestedTexturesSpec[textureId] = h_gblpTexture;
 
@@ -826,16 +826,16 @@ AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::strin
 
     m_wdtFile = wdtFile;
 
-    m_adtFile = m_api->getAdtGeomCache()->get(adtFileTemplate+".adt");
+    m_adtFile = m_api->getAdtGeomCache()->get(adtFileTemplate+".adt", CacheSubType::SUBTYPE_ADT);
     m_adtFile->setIsMain(true);
-    m_adtFileTex = m_api->getAdtGeomCache()->get(adtFileTemplate+"_tex"+std::to_string(0)+".adt");
-    m_adtFileObj = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt");
-    m_adtFileObjLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(1)+".adt");
-    m_adtFileLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_lod.adt");
+    m_adtFileTex = m_api->getAdtGeomCache()->get(adtFileTemplate+"_tex"+std::to_string(0)+".adt", CacheSubType::SUBTYPE_ADT);
+    m_adtFileObj = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt", CacheSubType::SUBTYPE_ADT);
+    m_adtFileObjLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(1)+".adt", CacheSubType::SUBTYPE_ADT);
+    m_adtFileLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_lod.adt", CacheSubType::SUBTYPE_ADT);
 
     lodDiffuseTexture = m_api->getTextureCache()->get("world/maptextures/"+mapname+"/"
-        +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+".blp");
+        +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+".blp", CacheSubType::SUBTYPE_BLP);
     lodNormalTexture = m_api->getTextureCache()->get("world/maptextures/"+mapname+"/"
-        +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+"_n.blp");
+        +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+"_n.blp", CacheSubType::SUBTYPE_BLP);
 
 }

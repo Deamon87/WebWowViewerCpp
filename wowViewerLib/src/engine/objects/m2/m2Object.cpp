@@ -704,9 +704,9 @@ void M2Object::startLoading() {
 
         Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
         if (!useFileId) {
-            m_m2Geom = m2GeomCache->get(m_modelName);
+            m_m2Geom = m2GeomCache->get(m_modelName, CacheSubType::SUBTYPE_M2);
         } else {
-            m_m2Geom = m2GeomCache->getFileId(m_modelFileId);
+            m_m2Geom = m2GeomCache->getFileId(m_modelFileId, CacheSubType::SUBTYPE_M2);
         }
     }
 }
@@ -777,11 +777,11 @@ bool M2Object::doPostLoad(){
 
     //2. Check if .skin file is loaded
     if (m_skinGeom == nullptr) {
-        Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
+        Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
         if (useFileId) {
-            m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
+            m_skinGeom = m2GeomCache->getFileId(m_m2Geom->skinFileDataIDs[0], CacheSubType::SUBTYPE_SKIN);
         } else {
-            m_skinGeom = skinGeomCache->get(m_skinName);
+            m_skinGeom = m2GeomCache->get(m_skinName, CacheSubType::SUBTYPE_SKIN);
         }
         return false;
     }
@@ -1379,9 +1379,9 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
     HBlpTexture texture;
     if (textureDefinition->filename.size > 0) {
         std::string fileName = textureDefinition->filename.toString();
-        texture = textureCache->get(fileName);
+        texture = textureCache->get(fileName, CacheSubType::SUBTYPE_BLP);
     } else if (textureInd < m_m2Geom->textureFileDataIDs.size()) {
-        texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[textureInd]);
+        texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[textureInd], CacheSubType::SUBTYPE_BLP);
     }
 
     return texture;

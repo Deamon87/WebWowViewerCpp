@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_CACHE_H
 #include <string>
 #include <map>
+#include <list>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
@@ -14,30 +15,20 @@
 #include <iomanip>
 #include <memory>
 #include <mutex>
+#include <forward_list>
 #include "../../include/wowScene.h"
 #include "../stringTrim.h"
 
-
-enum class CacheHolderType {
-    CACHE_M2,
-    CACHE_WMO,
-    CACHE_ADT,
-    CACHE_WDT,
-    CACHE_BLP,
-};
-
-enum class CacheSubType {
-    SUBTYPE_M2,
-    SUBTYPE_ANIM,
-    SUBTYPE_BONE,
-    SUBTYPE_SKEL,
-    SUBTYPE_WMO,
-    SUBTYPE_ADT,
-    SUBTYPE_BLP,
+struct FileCacheRecord {
+    CacheSubType subType;
+    std::string fileName;
+    std::vector<unsigned char> fileContent;
 };
 
 template <typename T>
 class Cache {
+protected:
+    CacheHolderType holderType;
 private:
     IFileRequest *m_fileRequestProcessor;
 public:
@@ -45,9 +36,9 @@ public:
     std::unique_lock<std::mutex> processCacheLock;
     std::unique_lock<std::mutex> provideFileLock;
     std::unordered_map<std::string, std::weak_ptr<T>> m_cache;
-    std::unordered_map<std::string, std::vector<unsigned char>> m_objectsToBeProcessed;
+    std::forward_list<FileCacheRecord> m_objectsToBeProcessed;
 public:
-    Cache(IFileRequest *fileRequestProcessor) : m_fileRequestProcessor(fileRequestProcessor){
+    Cache(IFileRequest *fileRequestProcessor, CacheHolderType holderType) : m_fileRequestProcessor(fileRequestProcessor), holderType(holderType){
         processCacheLock = std::unique_lock<std::mutex>(accessMutex,std::defer_lock);
         provideFileLock = std::unique_lock<std::mutex>(accessMutex,std::defer_lock);
     }
@@ -55,21 +46,17 @@ public:
         int objectsProcessed = 0;
 
         processCacheLock.lock();
-        for (auto it = m_objectsToBeProcessed.cbegin(); it != m_objectsToBeProcessed.cend() /* not hoisted */; /* no increment */)
+        while (!m_objectsToBeProcessed.empty())
         {
-            std::string fileName = it->first;
-            std::vector<unsigned char> fileContent = it->second;
-            //ignore value
-            //Value v = iter->second;
-
-            std::weak_ptr<T> weakPtr = m_cache.at(fileName);
+            auto const it = m_objectsToBeProcessed.front();
+            std::weak_ptr<T> weakPtr = m_cache.at(it.fileName);
 
 //            std::cout << "Processing file " << fileName << std::endl << std::flush;
             if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
-                sharedPtr->process(fileContent, fileName);
+                sharedPtr->process(it.subType, it.fileContent, it.fileName);
             }
 
-            it = m_objectsToBeProcessed.erase(it);    // or "it = m.erase(it)" since C++11
+            m_objectsToBeProcessed.pop_front();
 
             objectsProcessed++;
             if (objectsProcessed > limit) {
@@ -78,14 +65,14 @@ public:
         }
         processCacheLock.unlock();
     }
-    void provideFile(std::string fileName, std::vector<unsigned char> &file) {
+    void provideFile(std::string &fileName, CacheSubType subType, uint8_t* fileContentPtr, int fileSize) {
         trim(fileName);
 
 //        std::cout << "filename:" << fileName << " hex: " << string_to_hex(fileName) << std::endl;
 //        std::cout << "first in storage:" << m_cache.begin()->first << " hex: " << string_to_hex(m_cache.begin()->first) << std::endl << std::flush;
         provideFileLock.lock();
         if (m_cache.count(fileName) > 0) {
-            m_objectsToBeProcessed[fileName] = file;
+            m_objectsToBeProcessed.push_front({subType, fileName, std::vector<unsigned char>(fileContentPtr, fileContentPtr+fileSize)});
         }
         provideFileLock.unlock();
     }
@@ -93,7 +80,7 @@ public:
     /*
      * Queue load functions
      */
-    std::shared_ptr<T> get (std::string fileName) {
+    std::shared_ptr<T> get (std::string fileName, CacheSubType subType) {
         fileName = trimmed(fileName);
         std::transform(fileName.begin(), fileName.end(),fileName.begin(), ::toupper);
         std::replace(fileName.begin(), fileName.end(), '\\', '/');
@@ -112,12 +99,12 @@ public:
         std::weak_ptr<T> weakPtr(sharedPtr);
         m_cache[fileName] = weakPtr;
 
-        m_fileRequestProcessor->requestFile(fileName.c_str());
+        m_fileRequestProcessor->requestFile(fileName.c_str(), this->holderType, subType);
 
         return sharedPtr;
     }
 
-    std::shared_ptr<T> getFileId (int id) {
+    std::shared_ptr<T> getFileId (int id, CacheSubType subType) {
         std::stringstream ss;
         ss << "File" << std::setfill('0') << std::setw(8) << std::hex << id <<".unk";
         std::string fileName = ss.str();
@@ -137,7 +124,7 @@ public:
         m_cache[fileName] = weakPtr;
 
 
-        m_fileRequestProcessor->requestFile(fileName.c_str());
+        m_fileRequestProcessor->requestFile(fileName.c_str(), this->holderType, subType);
 
         return sharedPtr;
     }

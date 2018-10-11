@@ -12,16 +12,40 @@ typedef double animTime_t;
 #include "config.h"
 #include "controllable.h"
 
+enum class CacheHolderType {
+    CACHE_M2,
+    CACHE_MAIN_WMO,
+    CACHE_GROUP_WMO,
+    CACHE_ADT,
+    CACHE_WDT,
+    CACHE_WDL,
+    CACHE_BLP,
+    CACHE_DB2,
+};
+
+enum class CacheSubType {
+    SUBTYPE_M2,
+    SUBTYPE_SKIN,
+    SUBTYPE_ANIM,
+    SUBTYPE_BONE,
+    SUBTYPE_SKEL,
+    SUBTYPE_WMO,
+    SUBTYPE_ADT,
+    SUBTYPE_WDT,
+    SUBTYPE_WDL,
+    SUBTYPE_BLP,
+};
+
 class IFileRequest {
 public:
-    virtual void requestFile(const char* fileName) = 0;
+    virtual void requestFile(const char* fileName, CacheHolderType holderType, CacheSubType subType) = 0;
 };
 
 class IFileRequester {
 public:
     virtual void setFileRequestProcessor(IFileRequest * requestProcessor) = 0;
-    virtual void provideFile(const char* fileName, unsigned char* data, int fileLength) = 0;
-    virtual void rejectFile(const char* fileName) = 0;
+    virtual void provideFile(CacheHolderType holderType, CacheSubType subType, const char* fileName, unsigned char* data, int fileLength) = 0;
+    virtual void rejectFile(CacheHolderType holderType, CacheSubType subType, const char* fileName) = 0;
 };
 
 class WoWScene : public IFileRequester {
