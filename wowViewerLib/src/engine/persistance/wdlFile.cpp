@@ -2,6 +2,7 @@
 // Created by deamon on 11.01.18.
 //
 #include "wdlFile.h"
+#include "../../include/wowScene.h"
 
 chunkDef<WdlFile> WdlFile::wdlFileTable = {
     [](WdlFile &file, ChunkData &chunkData) {},
@@ -31,7 +32,7 @@ chunkDef<WdlFile> WdlFile::wdlFileTable = {
     }
 };
 
-void WdlFile::process(std::vector<unsigned char> &wdlFile, std::string &fileName) {
+void WdlFile::process(const std::vector<unsigned char> &wdlFile, const std::string &fileName) {
     m_wdlFile = std::vector<uint8_t>(wdlFile);
     CChunkFileReader reader(m_wdlFile);
     reader.processFile(*this, &WdlFile::wdlFileTable);

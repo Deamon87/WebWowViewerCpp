@@ -704,9 +704,9 @@ void M2Object::startLoading() {
 
         Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
         if (!useFileId) {
-            m_m2Geom = m2GeomCache->get(m_modelName, CacheSubType::SUBTYPE_M2);
+            m_m2Geom = m2GeomCache->get(m_modelName);
         } else {
-            m_m2Geom = m2GeomCache->getFileId(m_modelFileId, CacheSubType::SUBTYPE_M2);
+            m_m2Geom = m2GeomCache->getFileId(m_modelFileId);
         }
     }
 }
@@ -775,13 +775,18 @@ bool M2Object::doPostLoad(){
     if (m_m2Geom == nullptr) return false;
     if (!m_m2Geom->isLoaded()) return false;
 
+
+
     //2. Check if .skin file is loaded
     if (m_skinGeom == nullptr) {
-        Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
+        std::string skinFileName = m_nameTemplate + "00.skin";
+
+        Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
         if (useFileId) {
-            m_skinGeom = m2GeomCache->getFileId(m_m2Geom->skinFileDataIDs[0], CacheSubType::SUBTYPE_SKIN);
+            assert(m_m2Geom->skinFileDataIDs.size() > 0);
+            m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
         } else {
-            m_skinGeom = m2GeomCache->get(m_skinName, CacheSubType::SUBTYPE_SKIN);
+            m_skinGeom = skinGeomCache->get(skinFileName);
         }
         return false;
     }
@@ -1133,8 +1138,6 @@ void M2Object::createMeshes() {
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
     auto m_m2Data = m_m2Geom->getM2Data();
 
-
-
     /* 2. Fill the materialArray */
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
     for (int i = 0; i < batches->size; i++) {
@@ -1159,7 +1162,6 @@ void M2Object::createMeshes() {
         }
         HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2Shader", &cacheRecord);
         gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
-
 
         int renderFlagIndex = textMaterial->materialIndex;
         auto renderFlag = m_m2Data->materials[renderFlagIndex];
@@ -1274,13 +1276,9 @@ void M2Object::setModelFileName(std::string modelName) {
     std::string delimiter = ".";
     std::string nameTemplate = modelName.substr(0, modelName.find_last_of(delimiter));
     std::string modelFileName = nameTemplate + ".m2";
-    std::string skinFileName = nameTemplate + "00.skin";
 
     this->m_modelName = modelFileName;
-    this->m_skinName = skinFileName;
-
-    this->m_modelIdent = modelFileName + " " +skinFileName;
-    std::transform(m_modelIdent.begin(), m_modelIdent.end(), m_modelIdent.begin(), ::tolower);
+    this->m_nameTemplate= nameTemplate;
 }
 
 void M2Object::setModelFileId(int fileId) {
@@ -1379,9 +1377,9 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
     HBlpTexture texture;
     if (textureDefinition->filename.size > 0) {
         std::string fileName = textureDefinition->filename.toString();
-        texture = textureCache->get(fileName, CacheSubType::SUBTYPE_BLP);
+        texture = textureCache->get(fileName);
     } else if (textureInd < m_m2Geom->textureFileDataIDs.size()) {
-        texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[textureInd], CacheSubType::SUBTYPE_BLP);
+        texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[textureInd]);
     }
 
     return texture;

@@ -31,6 +31,7 @@ public:
 
     virtual Cache<AdtFile>* getAdtGeomCache() = 0;
     virtual Cache<M2Geom>* getM2GeomCache() = 0;
+    virtual Cache<SkinGeom>* getSkinGeomCache() = 0;
     virtual Cache<BlpTexture>* getTextureCache() = 0;
     virtual Cache<WmoMainGeom>* getWmoMainCache() = 0;
     virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() = 0;

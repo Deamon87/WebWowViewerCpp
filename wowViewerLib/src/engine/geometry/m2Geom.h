@@ -14,7 +14,7 @@
 
 class M2Geom {
 public:
-    void process(std::vector<unsigned char> &m2File, std::string &fileName);
+    void process(const std::vector<unsigned char> &m2File, const std::string &fileName);
     HGVertexBuffer getVBO(IDevice &device);
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
 
@@ -25,6 +25,9 @@ public:
     M2Data *m_m2Data;
     std::vector<uint32_t> skinFileDataIDs;
     std::vector<uint32_t> textureFileDataIDs;
+
+    void setNameTemplate(std::string &templateStr);
+    SkinGeom *getSkin(int slot);
 private:
     std::vector<uint8_t> m2File;
 
@@ -34,7 +37,6 @@ private:
 
 
     static chunkDef<M2Geom> m2FileTable;
-
 };
 typedef std::shared_ptr<M2Geom> HM2Geom;
 

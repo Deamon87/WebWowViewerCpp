@@ -12,7 +12,7 @@
 
 class WmoMainGeom {
 public:
-    void process(std::vector<unsigned char> &wmoMainFile, std::string &fileName);
+    void process(const std::vector<unsigned char> &wmoMainFile, const std::string &fileName);
     bool getIsLoaded();
 private:
     static chunkDef<WmoMainGeom> wmoMainTable;

@@ -7,6 +7,7 @@
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
 #include "header/wdtFileHeader.h"
+#include "../../include/wowScene.h"
 
 struct mcnkStruct_t {
     MCVT *mcvt = nullptr;
@@ -33,7 +34,7 @@ public:
     AdtFile() {};
 
     std::vector<uint8_t> processTexture(const MPHDFlags &wdtObjFlags, int i);
-    void process(std::vector<unsigned char> &adtFile, std::string &fileName);
+    void process(const std::vector<unsigned char> &adtFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
     void setIsMain(bool isMain) { m_mainAdt = isMain; };
 public:

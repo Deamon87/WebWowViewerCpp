@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "MpqRequestProcessor.h"
 
-void MpqRequestProcessor::requestFile(const char *fileName) {
+void MpqRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType, CacheSubType subType) {
     std::string stringFile (fileName);
     std::replace( stringFile.begin(), stringFile.end(), '/', '\\');
 

@@ -20,7 +20,6 @@
 #include "../stringTrim.h"
 
 struct FileCacheRecord {
-    CacheSubType subType;
     std::string fileName;
     std::vector<unsigned char> fileContent;
 };
@@ -53,7 +52,7 @@ public:
 
 //            std::cout << "Processing file " << fileName << std::endl << std::flush;
             if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
-                sharedPtr->process(it.subType, it.fileContent, it.fileName);
+                sharedPtr->process(it.fileContent, it.fileName);
             }
 
             m_objectsToBeProcessed.pop_front();
@@ -65,14 +64,14 @@ public:
         }
         processCacheLock.unlock();
     }
-    void provideFile(std::string &fileName, CacheSubType subType, uint8_t* fileContentPtr, int fileSize) {
+    void provideFile(std::string &fileName, uint8_t* fileContentPtr, int fileSize) {
         trim(fileName);
 
 //        std::cout << "filename:" << fileName << " hex: " << string_to_hex(fileName) << std::endl;
 //        std::cout << "first in storage:" << m_cache.begin()->first << " hex: " << string_to_hex(m_cache.begin()->first) << std::endl << std::flush;
         provideFileLock.lock();
         if (m_cache.count(fileName) > 0) {
-            m_objectsToBeProcessed.push_front({subType, fileName, std::vector<unsigned char>(fileContentPtr, fileContentPtr+fileSize)});
+            m_objectsToBeProcessed.push_front({fileName, std::vector<unsigned char>(fileContentPtr, fileContentPtr+fileSize)});
         }
         provideFileLock.unlock();
     }
@@ -80,7 +79,7 @@ public:
     /*
      * Queue load functions
      */
-    std::shared_ptr<T> get (std::string fileName, CacheSubType subType) {
+    std::shared_ptr<T> get (std::string fileName) {
         fileName = trimmed(fileName);
         std::transform(fileName.begin(), fileName.end(),fileName.begin(), ::toupper);
         std::replace(fileName.begin(), fileName.end(), '\\', '/');
@@ -99,12 +98,12 @@ public:
         std::weak_ptr<T> weakPtr(sharedPtr);
         m_cache[fileName] = weakPtr;
 
-        m_fileRequestProcessor->requestFile(fileName.c_str(), this->holderType, subType);
+        m_fileRequestProcessor->requestFile(fileName.c_str(), this->holderType);
 
         return sharedPtr;
     }
 
-    std::shared_ptr<T> getFileId (int id, CacheSubType subType) {
+    std::shared_ptr<T> getFileId (int id) {
         std::stringstream ss;
         ss << "File" << std::setfill('0') << std::setw(8) << std::hex << id <<".unk";
         std::string fileName = ss.str();
@@ -124,7 +123,7 @@ public:
         m_cache[fileName] = weakPtr;
 
 
-        m_fileRequestProcessor->requestFile(fileName.c_str(), this->holderType, subType);
+        m_fileRequestProcessor->requestFile(fileName.c_str(), this->holderType);
 
         return sharedPtr;
     }

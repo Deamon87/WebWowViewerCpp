@@ -399,9 +399,9 @@ void WmoGroupObject::startLoading() {
         this->m_loading = true;
 
         if (useFileId) {
-            m_geom = m_api->getWmoGroupGeomCache()->getFileId(m_modelFileId, CacheSubType::SUBTYPE_WMO);
+            m_geom = m_api->getWmoGroupGeomCache()->getFileId(m_modelFileId);
         } else {
-            m_geom = m_api->getWmoGroupGeomCache()->get(m_fileName, CacheSubType::SUBTYPE_WMO);
+            m_geom = m_api->getWmoGroupGeomCache()->get(m_fileName);
         }
         m_geom->setMOHD(this->m_wmoApi->getWmoHeader());
         m_geom->setAttenuateFunction(this->m_wmoApi->getAttenFunction());

@@ -54,7 +54,7 @@ public:
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
-        m_wdtfile = api->getWdtFileCache()->get(wdtFileName, CacheSubType::SUBTYPE_WDL);
+        m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
         m_wdlObject = new WdlObject(api, wdlFileName);
         m_wdlObject->setMapApi(this);
     };

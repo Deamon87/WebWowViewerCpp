@@ -10,10 +10,11 @@
 #include "../persistance/header/skinFileHeader.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "../../gapi/interface/IDevice.h"
+#include "../../include/wowScene.h"
 
 class SkinGeom {
 public:
-    void process(std::vector<unsigned char> &skinFile, std::string &fileName);
+    void process(const std::vector<unsigned char> &skinFile, const std::string &fileName);
     HGIndexBuffer getIBO(IDevice &device);
 
     bool isLoaded() { return m_loaded; };

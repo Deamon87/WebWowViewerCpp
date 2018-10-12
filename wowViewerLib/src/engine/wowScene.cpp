@@ -23,6 +23,7 @@ void WoWSceneImpl::processCaches(int limit) {
     this->wdlCache.processCacheQueue(limit);
     this->wmoGeomCache.processCacheQueue(limit);
     this->wmoMainCache.processCacheQueue(limit);
+    this->skinGeomCache.processCacheQueue(limit);
     this->m2GeomCache.processCacheQueue(limit);
     this->textureCache.processCacheQueue(limit);
     this->db2Cache.processCacheQueue(limit);
@@ -171,10 +172,11 @@ void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cam
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
         :
         wmoMainCache(requestProcessor, CacheHolderType::CACHE_MAIN_WMO),
+        wmoGeomCache(requestProcessor, CacheHolderType::CACHE_GROUP_WMO),
         wdtCache(requestProcessor, CacheHolderType::CACHE_WDT),
         wdlCache(requestProcessor, CacheHolderType::CACHE_WDL),
-        wmoGeomCache(requestProcessor, CacheHolderType::CACHE_WDL),
         m2GeomCache(requestProcessor, CacheHolderType::CACHE_M2),
+        skinGeomCache(requestProcessor, CacheHolderType::CACHE_SKIN),
         textureCache(requestProcessor, CacheHolderType::CACHE_BLP),
         adtObjectCache(requestProcessor, CacheHolderType::CACHE_ADT),
         db2Cache(requestProcessor, CacheHolderType::CACHE_DB2){
@@ -452,11 +454,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new WmoScene(this,
 //        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
-//    currentScene = new WmoScene(this,
+    currentScene = new WmoScene(this,
 //                                "world/wmo/azeroth/buildings/stranglethorn_bootybay/bootybay.wmo"); //bootybay
-//                                2324175);
+                                2324175);
 //
-   currentScene = new M2Scene(this, "creature/lorthemar/lorthemar.m2");
+//   currentScene = new M2Scene(this, "creature/lorthemar/lorthemar.m2");
 //   currentScene = new WmoScene(this,
 //                               "world/wmo/kultiras/nightelf/8ne_nightelf_dockbroken01.wmo");
 
@@ -503,9 +505,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
 
-    db2Light = nullptr; //new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
-    db2LightData = nullptr; //new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
-    db2WmoAreaTable = nullptr; //new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
+    db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
+    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
+    db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
 
 

@@ -11,6 +11,7 @@
 #include "BlpTexture.h"
 #include "DxtDecompress.h"
 #include "../persistance/helper/ChunkFileReader.h"
+#include "../../include/wowScene.h"
 
 TextureFormat getTextureType(BlpFile *blpFile) {
     TextureFormat textureFormat = TextureFormat::None;
@@ -120,7 +121,7 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
     }
 }
 
-void BlpTexture::process(std::vector<unsigned char> &blpFile, std::string &fileName) {
+void BlpTexture::process(const std::vector<unsigned char> &blpFile, const std::string &fileName) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
     BlpFile *pBlpFile = (BlpFile *) &blpFile[0];

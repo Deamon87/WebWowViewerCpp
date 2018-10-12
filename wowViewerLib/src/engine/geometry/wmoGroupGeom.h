@@ -20,7 +20,7 @@ public:
 
     }
 
-    void process(std::vector<unsigned char> &wmoGroupFile, std::string &fileName);
+    void process(const std::vector<unsigned char> &wmoGroupFile, const std::string &fileName);
 
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 
