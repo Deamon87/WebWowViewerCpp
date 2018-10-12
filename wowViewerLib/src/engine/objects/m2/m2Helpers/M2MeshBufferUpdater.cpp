@@ -111,7 +111,7 @@ void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, meshWideBlockPS &
 
 
         mathfu::vec4 viewPos = viewModelMat * m2Object.lights[j].position;
-        meshblockPS.pc_lights[j].position = mathfu::vec4(-viewPos.x, -viewPos.y, viewPos.z, 1.0);
+        meshblockPS.pc_lights[j].position = viewPos;
     }
     meshblockPS.LightCount = lightCount;
 }

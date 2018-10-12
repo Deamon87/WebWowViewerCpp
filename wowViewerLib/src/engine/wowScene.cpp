@@ -454,11 +454,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //    currentScene = new WmoScene(this,
 //        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
-    currentScene = new WmoScene(this,
+//    currentScene = new WmoScene(this,
 //                                "world/wmo/azeroth/buildings/stranglethorn_bootybay/bootybay.wmo"); //bootybay
-                                2324175);
+//                                2324175);
 //
-//   currentScene = new M2Scene(this, "creature/lorthemar/lorthemar.m2");
+//   currentScene = new WmoScene(this,
+//                               2198682);
 //   currentScene = new WmoScene(this,
 //                               "world/wmo/kultiras/nightelf/8ne_nightelf_dockbroken01.wmo");
 
@@ -466,8 +467,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
-// currentScene = new WmoScene(this,
-//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+ currentScene = new WmoScene(this,
+        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
