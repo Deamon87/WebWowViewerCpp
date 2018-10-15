@@ -148,7 +148,14 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
         }
     }
+}
 
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
+    IControllable* controllable = scene->getCurrentCamera();
+
+    controllable->zoomInFromMouseScroll(-yoffset/2.0f);
 }
 
 double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string windowTitle = "NONE")
@@ -718,6 +725,7 @@ int main(){
 
         glfwSetWindowUserPointer(myapp.nkcHandle->window, scene);
         glfwSetKeyCallback(myapp.nkcHandle->window, onKey);
+        glfwSetScrollCallback(myapp.nkcHandle->window, scroll_callback);
         glfwSetCursorPosCallback( myapp.nkcHandle->window, cursor_position_callback);
         glfwSetWindowSizeCallback( myapp.nkcHandle->window, window_size_callback);
         glfwSetWindowSizeLimits( myapp.nkcHandle->window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);

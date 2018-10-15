@@ -47,7 +47,7 @@ void WoWSceneImpl::DoCulling() {
     m_firstCamera.setMovementSpeed(m_config->getMovementSpeed());
 
     if (!m_config->getUseSecondCamera()){
-        this->m_firstCamera.tick(frameParam->deltaTime);
+        this->m_planarCamera.tick(frameParam->deltaTime);
     } else {
         this->m_secondCamera.tick(frameParam->deltaTime);
     }
@@ -68,8 +68,8 @@ void WoWSceneImpl::DoCulling() {
         frameParam->m_lookAtMat4 = lookAtMat4;
 
     } else {
-        cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
-        lookAtMat4 = this->m_firstCamera.getLookatMat();
+        cameraVec4 = mathfu::vec4(m_planarCamera.getCameraPosition(), 1);
+        lookAtMat4 = this->m_planarCamera.getLookatMat();
         frameParam->m_lookAtMat4 = lookAtMat4;
     }
 
@@ -346,9 +346,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "creature/celestialdragonwyrm/celestialdragonwyrm.m2");
 
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "WORLD\\EXPANSION02\\DOODADS\\CRYSTALSONGFOREST\\BUBBLE\\CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new M2Scene(this,
+        "WORLD\\EXPANSION02\\DOODADS\\CRYSTALSONGFOREST\\BUBBLE\\CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -467,8 +467,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
- currentScene = new WmoScene(this,
-        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");

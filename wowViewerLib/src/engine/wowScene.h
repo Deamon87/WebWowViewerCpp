@@ -29,6 +29,7 @@
 #include "persistance/db2/DB2Light.h"
 #include "../gapi/interface/IDevice.h"
 #include "objects/wowFrameData.h"
+#include "camera/planarCamera.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -88,7 +89,7 @@ public:
     }
     void setFileRequestProcessor(IFileRequest*) override {} ;
 
-    IControllable* controllable = &m_firstCamera;
+    IControllable* controllable = &m_planarCamera;
 
     IControllable* getCurrentCamera() override {
         return this->controllable;
@@ -177,8 +178,11 @@ public:
         m_firstCamera.setCameraPos(x,y,z);
     };
     void setCameraPosition(float x, float y, float z) override {
-        m_firstCamera.setCameraPos(x,y,z);
+        m_planarCamera.setCameraPos(x,y,z);
     }
+    void setCameraOffset(float x, float y, float z) override {
+        m_planarCamera.setCameraOffset(x,y,z);
+    };
 
     void setScene(int sceneType, std::string fileName, int cameraNum) override;
     void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) override;
@@ -196,6 +200,7 @@ private:
     WoWFrameData m_FrameParams[4];
 
     FirstPersonCamera m_firstCamera;
+    PlanarCamera m_planarCamera;
     FirstPersonCamera m_secondCamera;
 
     DB2Light *db2Light;

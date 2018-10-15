@@ -154,6 +154,7 @@ public:
     mathfu::vec3 getLocalPosition() {
         return m_localPosition;
     };
+
     float getHeight();
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };

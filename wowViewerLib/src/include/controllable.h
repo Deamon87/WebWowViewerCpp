@@ -24,6 +24,9 @@ public:
     virtual void addHorizontalViewDir(float val) = 0;
     virtual void addVerticalViewDir(float val) = 0;
 
+    virtual void zoomInFromMouseScroll(float val) = 0;
+    virtual void zoomInFromTouch(float val) = 0;
+
     virtual void getCameraPosition(float *position) = 0;
 };
 #endif //WOWVIEWERLIB_CONTROLLABLE_H
