@@ -5,12 +5,12 @@
 #include <algorithm>
 #include "CascRequestProcessor.h"
 
-void CascRequestProcessor::requestFile(const char *fileName) {
+void CascRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType) {
     std::string fileName_s(fileName);
-    this->addRequest(fileName_s);
+    this->addRequest(fileName_s,holderType);
 }
 
-void CascRequestProcessor::processFileRequest(std::string &fileName) {
+void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType) {
     std::string fileNameFixed = fileName;
     std::replace( fileNameFixed.begin(), fileNameFixed.end(), '/', '\\');
 
@@ -39,7 +39,7 @@ void CascRequestProcessor::processFileRequest(std::string &fileName) {
     }
 
     if (fileOpened) {
-        this->provideResult(fileName, fileContent);
+        this->provideResult(fileName, fileContent, holderType);
     } else {
         std::cout << "Could not open file "<< fileName << std::endl << std::flush;
     }

@@ -4,12 +4,13 @@
 #include "header/wdtFileHeader.h"
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
+#include "../../include/wowScene.h"
 
 class WdtFile {
 public:
     WdtFile() {};
 
-    void process(std::vector<unsigned char> &wdtFile, std::string &fileName);
+    void process(const std::vector<unsigned char> &wdtFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     MPHD *mphd;

@@ -9,12 +9,13 @@
 #include <string>
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
+#include "../../include/wowScene.h"
 
 class WdlFile {
 public:
    WdlFile() {};
 
-    void process(std::vector<unsigned char> &wdlFile, std::string &fileName);
+    void process(const std::vector<unsigned char> &wdlFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     SMDoodadDef * doodadDefObj = nullptr;

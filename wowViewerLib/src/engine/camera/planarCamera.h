@@ -1,9 +1,11 @@
 //
-// Created by deamon on 18.05.17.
+// Created by Deamon on 10/15/2018.
 //
 
-#ifndef WOWMAPVIEWERREVIVED_FIRSTPERSONCAMERA_H
-#define WOWMAPVIEWERREVIVED_FIRSTPERSONCAMERA_H
+#ifndef AWEBWOWVIEWERCPP_PLANARCAMERA_H
+#define AWEBWOWVIEWERCPP_PLANARCAMERA_H
+
+
 
 #include <mathfu/vector.h>
 #include "mathfu/glsl_mappings.h"
@@ -11,16 +13,17 @@
 #include "../../include/wowScene.h"
 
 
-class FirstPersonCamera: public ICamera {
+class PlanarCamera: public ICamera {
 public:
-    FirstPersonCamera(){};
+    PlanarCamera(){};
 
 private:
     mathfu::vec3 camera = {0, 0, 0};
+    mathfu::vec3 cameraOffset = {0, 0, 0};
     mathfu::vec3 lookAt = {0, 0, 0};
     mathfu::mat4 lookAtMat = {};
 
-
+    float m_radius = 50;
     float MDDepthPlus = 0;
     float MDDepthMinus = 0;
     float MDHorizontalPlus = 0;
@@ -79,7 +82,7 @@ public:
 public:
     void tick(animTime_t timeDelta);
     void setCameraPos(float x, float y, float z);
+    void setCameraOffset(float x, float y, float z);
 };
 
-
-#endif //WOWMAPVIEWERREVIVED_FIRSTPERSONCAMERA_H
+#endif //AWEBWOWVIEWERCPP_PLANARCAMERA_H

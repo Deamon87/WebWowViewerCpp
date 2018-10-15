@@ -19,9 +19,9 @@ std::string int_to_hex( T i )
     return stream.str();
 }
 
-void HttpRequestProcessor::requestFile(const char *fileName) {
+void HttpRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType) {
     std::string fileName_s(fileName);
-    this->addRequest(fileName_s);
+    this->addRequest(fileName_s, holderType);
 }
 std::string char_to_escape( char i )
 {
@@ -41,7 +41,7 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
     return str;
 }
 
-void HttpRequestProcessor::processFileRequest(std::string &fileName) {
+void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType) {
     const std::string charsToEscape = " !*'();:@&=+$,/?#[]";
 
     std::string escapedFileName = fileName;
@@ -86,7 +86,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
                    std::istream_iterator<unsigned char>(cache_file),
                    std::istream_iterator<unsigned char>());
 
-        provideResult(fileName, vec);
+        provideResult(fileName, vec, holderType);
 
         return;
     }
@@ -95,7 +95,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
     httpFile->setCallback(
             [=](std::vector<unsigned char> * fileContent) -> void {
                 std::string newFileName = fileName;
-                provideResult(newFileName, *fileContent);
+                provideResult(newFileName, *fileContent, holderType);
 
                 //Write to cache
                 size_t hash = std::hash<std::string>{}(newFileName);

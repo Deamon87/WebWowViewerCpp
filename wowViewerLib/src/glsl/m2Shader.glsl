@@ -93,16 +93,16 @@ void main() {
 #if BONEINFLUENCES>0
     boneTransformMat = mat4(0.0);
     const float inttofloat = (1.0/255.0);
-    boneTransformMat += (boneWeights.x * inttofloat) * uBoneMatrixes[int(bones.x)];
+    boneTransformMat += (boneWeights.x ) * uBoneMatrixes[int(bones.x)];
 #endif
 #if BONEINFLUENCES>1
-    boneTransformMat += (boneWeights.y * inttofloat) * uBoneMatrixes[int(bones.y)];
+    boneTransformMat += (boneWeights.y ) * uBoneMatrixes[int(bones.y)];
 #endif
 #if BONEINFLUENCES>2
-    boneTransformMat += (boneWeights.z * inttofloat) * uBoneMatrixes[int(bones.z)];
+    boneTransformMat += (boneWeights.z ) * uBoneMatrixes[int(bones.z)];
 #endif
 #if BONEINFLUENCES>3
-    boneTransformMat += (boneWeights.w * inttofloat) * uBoneMatrixes[int(bones.w)];
+    boneTransformMat += (boneWeights.w ) * uBoneMatrixes[int(bones.w)];
 #endif
 
 

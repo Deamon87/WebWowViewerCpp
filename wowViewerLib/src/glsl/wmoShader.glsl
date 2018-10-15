@@ -91,7 +91,6 @@ void main() {
     #endif
     #if(VERTEXSHADER==2) //MapObjDiffuse_T1_Env_T2
         vTexCoord = aTexCoord;
-
         vTexCoord2 = posToTexCoord(vPosition.xyz, vNormal);;
         vTexCoord3 = aTexCoord3;
     #endif

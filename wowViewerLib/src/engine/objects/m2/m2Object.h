@@ -54,7 +54,7 @@ private:
 
     IWoWInnerApi *m_api;
 
-    HM2Geom m_m2Geom ;
+    HM2Geom m_m2Geom = nullptr;
     HSkinGeom m_skinGeom = nullptr;
 
     HGVertexBufferBindings bufferBindings = nullptr;
@@ -74,8 +74,7 @@ private:
 
     bool m_hasBillboards = false;
     std::string m_modelName;
-    std::string m_skinName;
-    std::string m_modelIdent;
+    std::string m_nameTemplate;
 
     bool useFileId = false;
     int m_modelFileId;
@@ -155,6 +154,7 @@ public:
     mathfu::vec3 getLocalPosition() {
         return m_localPosition;
     };
+
     float getHeight();
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
@@ -162,7 +162,7 @@ public:
         return m_hasBillboards;
     }
     bool getIsInstancable();
-    std::string getModelIdent() { return m_modelIdent; };
+
 
     bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);

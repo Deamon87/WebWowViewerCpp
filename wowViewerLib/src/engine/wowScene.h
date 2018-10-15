@@ -29,6 +29,7 @@
 #include "persistance/db2/DB2Light.h"
 #include "../gapi/interface/IDevice.h"
 #include "objects/wowFrameData.h"
+#include "camera/planarCamera.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -39,22 +40,41 @@ public:
     void draw(animTime_t deltaTime) override;
     void setScreenSize(int canvWidth, int canvHeight) override;
 
-    virtual void provideFile(const char* fileName, unsigned char* data, int fileLength) override {
-        std::vector<unsigned char> fileData;
-        fileData.assign(data, data+fileLength);
+    virtual void provideFile(CacheHolderType holderType, const char* fileName, unsigned char* data, int fileLength) override {
         std::string s_fileName(fileName);
 
-        adtObjectCache.provideFile(s_fileName, fileData);
-        wmoGeomCache.provideFile(s_fileName, fileData);
-        wmoMainCache.provideFile(s_fileName, fileData);
-        m2GeomCache.provideFile(s_fileName, fileData);
-        skinGeomCache.provideFile(s_fileName, fileData);
-        textureCache.provideFile(s_fileName, fileData);
-        wdtCache.provideFile(s_fileName, fileData);
-        wdlCache.provideFile(s_fileName, fileData);
-        db2Cache.provideFile(s_fileName, fileData);
+        switch (holderType) {
+            case CacheHolderType::CACHE_M2:
+                m2GeomCache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_SKIN:
+                skinGeomCache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_MAIN_WMO:
+                wmoMainCache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_GROUP_WMO:
+                wmoGeomCache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_ADT:
+                adtObjectCache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_WDT:
+                wdtCache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_WDL:
+                wdlCache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_BLP:
+                textureCache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_DB2:
+                db2Cache.provideFile(s_fileName, data, fileLength);
+                break;
+
+       }
     };
-    virtual void rejectFile(const char* fileName) override {
+    virtual void rejectFile(CacheHolderType holderType, const char* fileName) override {
         std::string s_fileName(fileName);
 
         adtObjectCache.reject(s_fileName);
@@ -69,7 +89,7 @@ public:
     }
     void setFileRequestProcessor(IFileRequest*) override {} ;
 
-    IControllable* controllable = &m_firstCamera;
+    IControllable* controllable = &m_planarCamera;
 
     IControllable* getCurrentCamera() override {
         return this->controllable;
@@ -101,7 +121,7 @@ public:
     virtual Cache<M2Geom> *getM2GeomCache() override {
         return &m2GeomCache;
     };
-    virtual Cache<SkinGeom> *getSkinGeomCache() override {
+    virtual Cache<SkinGeom>* getSkinGeomCache() override {
         return &skinGeomCache;
     };
     virtual Cache<BlpTexture> *getTextureCache() override {
@@ -158,8 +178,11 @@ public:
         m_firstCamera.setCameraPos(x,y,z);
     };
     void setCameraPosition(float x, float y, float z) override {
-        m_firstCamera.setCameraPos(x,y,z);
+        m_planarCamera.setCameraPos(x,y,z);
     }
+    void setCameraOffset(float x, float y, float z) override {
+        m_planarCamera.setCameraOffset(x,y,z);
+    };
 
     void setScene(int sceneType, std::string fileName, int cameraNum) override;
     void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) override;
@@ -177,6 +200,7 @@ private:
     WoWFrameData m_FrameParams[4];
 
     FirstPersonCamera m_firstCamera;
+    PlanarCamera m_planarCamera;
     FirstPersonCamera m_secondCamera;
 
     DB2Light *db2Light;

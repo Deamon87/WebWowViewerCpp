@@ -775,13 +775,18 @@ bool M2Object::doPostLoad(){
     if (m_m2Geom == nullptr) return false;
     if (!m_m2Geom->isLoaded()) return false;
 
+
+
     //2. Check if .skin file is loaded
     if (m_skinGeom == nullptr) {
+        std::string skinFileName = m_nameTemplate + "00.skin";
+
         Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
         if (useFileId) {
+            assert(m_m2Geom->skinFileDataIDs.size() > 0);
             m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
         } else {
-            m_skinGeom = skinGeomCache->get(m_skinName);
+            m_skinGeom = skinGeomCache->get(skinFileName);
         }
         return false;
     }
@@ -1133,8 +1138,6 @@ void M2Object::createMeshes() {
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
     auto m_m2Data = m_m2Geom->getM2Data();
 
-
-
     /* 2. Fill the materialArray */
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
     for (int i = 0; i < batches->size; i++) {
@@ -1159,7 +1162,6 @@ void M2Object::createMeshes() {
         }
         HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2Shader", &cacheRecord);
         gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
-
 
         int renderFlagIndex = textMaterial->materialIndex;
         auto renderFlag = m_m2Data->materials[renderFlagIndex];
@@ -1274,13 +1276,9 @@ void M2Object::setModelFileName(std::string modelName) {
     std::string delimiter = ".";
     std::string nameTemplate = modelName.substr(0, modelName.find_last_of(delimiter));
     std::string modelFileName = nameTemplate + ".m2";
-    std::string skinFileName = nameTemplate + "00.skin";
 
     this->m_modelName = modelFileName;
-    this->m_skinName = skinFileName;
-
-    this->m_modelIdent = modelFileName + " " +skinFileName;
-    std::transform(m_modelIdent.begin(), m_modelIdent.end(), m_modelIdent.begin(), ::tolower);
+    this->m_nameTemplate= nameTemplate;
 }
 
 void M2Object::setModelFileId(int fileId) {

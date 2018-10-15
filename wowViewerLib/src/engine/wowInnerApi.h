@@ -60,6 +60,7 @@ public:
     virtual DB2WmoAreaTable *getDB2WmoAreaTable() = 0;
 
     virtual void setCameraPosition(float x, float y, float z) = 0;
+    virtual void setCameraOffset(float x, float y, float z) = 0;
 };
 
 #include "geometry/m2Geom.h"

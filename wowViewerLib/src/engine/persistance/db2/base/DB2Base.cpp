@@ -6,8 +6,9 @@
 #include <algorithm>
 #include <iostream>
 #include "DB2Base.h"
+#include "../../../../include/wowScene.h"
 
-void DB2Base::process(std::vector<unsigned char> &db2File, std::string &fileName) {
+void DB2Base::process(const std::vector<unsigned char> &db2File, const std::string &fileName) {
     this->db2File = db2File;
     fileData = &this->db2File[0];
 

@@ -7,6 +7,7 @@
 #include "../shader/ShaderDefinitions.h"
 #include "../opengl/header.h"
 #include "../../gapi/interface/IDevice.h"
+#include "../../include/wowScene.h"
 
 chunkDef<M2Geom> M2Geom::m2FileTable = {
     [](M2Geom& file, ChunkData& chunkData){},
@@ -184,7 +185,7 @@ void initM2Camera(M2Data *m2Header, void *m2File) {
     }
 }
 
-void M2Geom::process(std::vector<unsigned char> &m2File, std::string &fileName) {
+void M2Geom::process(const std::vector<unsigned char> &m2File, const std::string &fileName) {
     this->m2File = m2File;
 
     if (
@@ -287,5 +288,9 @@ HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {
     }
 
     return bufferBindings;
+}
+
+SkinGeom *M2Geom::getSkin(int slot) {
+
 }
 

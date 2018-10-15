@@ -21,6 +21,11 @@ protected:
 
 public:
     void requestFile(const char* fileName) override;
+
+    void setUrls(const char *urlBase, const char *urlBaseFileId) {
+        m_urlBase = std::string(urlBase);
+        m_urlBaseFileId  = std::string(urlBaseFileId);
+    }
 };
 
 

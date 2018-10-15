@@ -7,6 +7,7 @@
 
 #include "../opengl/header.h"
 #include "../persistance/header/blpFileHeader.h"
+#include "../../include/wowScene.h"
 #include <vector>
 enum class TextureFormat {
     None,
@@ -29,7 +30,7 @@ typedef std::vector<mipmapStruct_t> MipmapsVector;
 
 class BlpTexture {
 public:
-    void process(std::vector<unsigned char> &blpFile, std::string &fileName);
+    void process(const std::vector<unsigned char> &blpFile, const std::string &fileName);
     bool getIsLoaded() { return m_isLoaded; };
     const MipmapsVector& getMipmapsVector() {
         return m_mipmaps;

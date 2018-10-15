@@ -23,8 +23,8 @@ void WoWSceneImpl::processCaches(int limit) {
     this->wdlCache.processCacheQueue(limit);
     this->wmoGeomCache.processCacheQueue(limit);
     this->wmoMainCache.processCacheQueue(limit);
-    this->m2GeomCache.processCacheQueue(limit);
     this->skinGeomCache.processCacheQueue(limit);
+    this->m2GeomCache.processCacheQueue(limit);
     this->textureCache.processCacheQueue(limit);
     this->db2Cache.processCacheQueue(limit);
 }
@@ -47,7 +47,7 @@ void WoWSceneImpl::DoCulling() {
     m_firstCamera.setMovementSpeed(m_config->getMovementSpeed());
 
     if (!m_config->getUseSecondCamera()){
-        this->m_firstCamera.tick(frameParam->deltaTime);
+        this->m_planarCamera.tick(frameParam->deltaTime);
     } else {
         this->m_secondCamera.tick(frameParam->deltaTime);
     }
@@ -68,8 +68,8 @@ void WoWSceneImpl::DoCulling() {
         frameParam->m_lookAtMat4 = lookAtMat4;
 
     } else {
-        cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
-        lookAtMat4 = this->m_firstCamera.getLookatMat();
+        cameraVec4 = mathfu::vec4(m_planarCamera.getCameraPosition(), 1);
+        lookAtMat4 = this->m_planarCamera.getLookatMat();
         frameParam->m_lookAtMat4 = lookAtMat4;
     }
 
@@ -171,15 +171,15 @@ void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cam
 
 WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
         :
-        wmoMainCache(requestProcessor),
-        wdtCache(requestProcessor),
-        wdlCache(requestProcessor),
-        wmoGeomCache(requestProcessor),
-        m2GeomCache(requestProcessor),
-        skinGeomCache(requestProcessor),
-        textureCache(requestProcessor),
-        adtObjectCache(requestProcessor),
-        db2Cache(requestProcessor){
+        wmoMainCache(requestProcessor, CacheHolderType::CACHE_MAIN_WMO),
+        wmoGeomCache(requestProcessor, CacheHolderType::CACHE_GROUP_WMO),
+        wdtCache(requestProcessor, CacheHolderType::CACHE_WDT),
+        wdlCache(requestProcessor, CacheHolderType::CACHE_WDL),
+        m2GeomCache(requestProcessor, CacheHolderType::CACHE_M2),
+        skinGeomCache(requestProcessor, CacheHolderType::CACHE_SKIN),
+        textureCache(requestProcessor, CacheHolderType::CACHE_BLP),
+        adtObjectCache(requestProcessor, CacheHolderType::CACHE_ADT),
+        db2Cache(requestProcessor, CacheHolderType::CACHE_DB2){
     m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
 //    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
 
@@ -346,9 +346,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new M2Scene(this,
 //        "creature/celestialdragonwyrm/celestialdragonwyrm.m2");
 
-//   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "WORLD\\EXPANSION02\\DOODADS\\CRYSTALSONGFOREST\\BUBBLE\\CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
+   m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new M2Scene(this,
+        "WORLD\\EXPANSION02\\DOODADS\\CRYSTALSONGFOREST\\BUBBLE\\CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -458,8 +458,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //                                "world/wmo/azeroth/buildings/stranglethorn_bootybay/bootybay.wmo"); //bootybay
 //                                2324175);
 //
-   currentScene = new WmoScene(this,
-                               2198682);
+//   currentScene = new WmoScene(this,
+//                               2198682);
 //   currentScene = new WmoScene(this,
 //                               "world/wmo/kultiras/nightelf/8ne_nightelf_dockbroken01.wmo");
 
@@ -506,9 +506,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
 
-    db2Light = nullptr; //new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
-    db2LightData = nullptr; //new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
-    db2WmoAreaTable = nullptr; //new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
+    db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
+    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
+    db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
 
 
