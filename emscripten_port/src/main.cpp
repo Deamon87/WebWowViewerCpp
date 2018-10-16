@@ -14,7 +14,7 @@ int canvHeight = 480;
 bool windowSizeChanged = false;
 
 int mleft_pressed = 0;
-int mright_pressed = 0
+int mright_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
 
@@ -32,7 +32,7 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
         m_x = xpos;
         m_y = ypos;
     } else if (mright_pressed == 1) {
-        controllable->addCameraViewOffset((xpos - m_x) / 8.0f, -(ypos - m_y) / 8.0f);
+        controllable->addCameraViewOffset((xpos - m_x) / 64.0f, -(ypos - m_y) / 64.0f);
 
         m_x = xpos;
         m_y = ypos;
@@ -66,6 +66,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         glfwGetCursorPos(window, &xpos, &ypos);
         m_x = xpos;
         m_y = ypos;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
     if (action == GLFW_RELEASE) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -73,6 +74,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
             mright_pressed = 0;
         }
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 }
 
@@ -153,7 +155,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
     IControllable* controllable = scene->getCurrentCamera();
 
-    controllable->zoomInFromMouseScroll(yoffset/60.0f);
+    controllable->zoomInFromMouseScroll(yoffset/240.0f);
 }
 
 

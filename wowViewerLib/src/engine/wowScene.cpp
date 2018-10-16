@@ -178,8 +178,14 @@ void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cam
     }
 
     if (sceneType == 0) {
+        m_usePlanarCamera = cameraNum == -1;
+        if (m_usePlanarCamera) {
+            controllable = &m_planarCamera;
+        }
         currentScene = new M2Scene(this, fileDataId , cameraNum);
     } else if (sceneType == 1) {
+        controllable = &m_firstCamera;
+        m_usePlanarCamera = false;
         currentScene = new WmoScene(this, fileDataId);
     }
 }
@@ -353,9 +359,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "creature/twilightascendantwater/twilightascendantwater.m2");
 //
 //    Test scene 2: tree from shattrath
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -364,8 +370,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "creature/lorthemar/lorthemar.m2");
-    m_usePlanarCamera = true;
-    controllable = &m_planarCamera;
+//    m_usePlanarCamera = true;
+//    controllable = &m_planarCamera;
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
