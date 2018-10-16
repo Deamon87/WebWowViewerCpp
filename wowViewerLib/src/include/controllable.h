@@ -26,6 +26,8 @@ public:
 
     virtual void zoomInFromMouseScroll(float val) = 0;
     virtual void zoomInFromTouch(float val) = 0;
+    virtual void addCameraViewOffset(float x, float y) = 0;
+
 
     virtual void getCameraPosition(float *position) = 0;
 };

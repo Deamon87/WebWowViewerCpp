@@ -51,8 +51,6 @@ void Map::checkCulling(WoWFrameData *frameData) {
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
-    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
-
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 

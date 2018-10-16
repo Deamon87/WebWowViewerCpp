@@ -9,6 +9,7 @@
 #include <thread>
 #include <list>
 #include <vector>
+#include <forward_list>
 
 class RequestProcessor : public IFileRequest {
 protected:
@@ -19,28 +20,35 @@ protected:
 protected:
     IFileRequester *m_fileRequester = nullptr;
 
-    virtual void processFileRequest(std::string &fileName) = 0;
+    virtual void processFileRequest(std::string &fileName, CacheHolderType holderType) = 0;
 public:
     void setFileRequester(IFileRequester *fileRequester) {
         m_fileRequester = fileRequester;
     }
 
 private:
-    struct resultStruct {
+    struct RequestStruct {
         std::string fileName;
+        CacheHolderType holderType;
+    };
+
+    struct ResultStruct {
+        std::string fileName;
+        CacheHolderType holderType;
         std::vector<unsigned char> buffer;
     };
 
     std::thread *loaderThread;
 
-    std::list<std::string> m_requestQueue;
-    std::list<resultStruct> m_resultQueue;
+    std::list<RequestStruct> m_requestQueue;
+    std::list<ResultStruct> m_resultQueue;
 
     bool m_threaded = false;
 
 public:
     void processResults(int limit);
     void processRequests(bool calledFromThread);
+    void provideResult(std::string &fileName, std::vector<unsigned char> &content, CacheHolderType holderType);
 
     void setThreaded(bool value) {
         m_threaded = value;
@@ -51,10 +59,9 @@ public:
         }
     }
     int currentlyProcessing = 0;
-public:
-    void addRequest (std::string &fileName);
+protected:
+    void addRequest (std::string &fileName, CacheHolderType holderType);
 
-    void provideResult(std::string &fileName, std::vector<unsigned char> &content);
 
 };
 

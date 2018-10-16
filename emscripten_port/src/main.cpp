@@ -14,6 +14,7 @@ int canvHeight = 480;
 bool windowSizeChanged = false;
 
 int mleft_pressed = 0;
+int mright_pressed = 0
 double m_x = 0.0;
 double m_y = 0.0;
 
@@ -25,12 +26,18 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
 //    if (!pointerIsLocked) {
     if (mleft_pressed == 1) {
-        controllable->addHorizontalViewDir((xpos - m_x) / 4.0);
-        controllable->addVerticalViewDir((ypos - m_y) / 4.0);
+        controllable->addHorizontalViewDir((xpos - m_x) / 4.0f);
+        controllable->addVerticalViewDir((ypos - m_y) / 4.0f);
+
+        m_x = xpos;
+        m_y = ypos;
+    } else if (mright_pressed == 1) {
+        controllable->addCameraViewOffset((xpos - m_x) / 8.0f, -(ypos - m_y) / 8.0f);
 
         m_x = xpos;
         m_y = ypos;
     }
+
 //    } else {
 //        var delta_x = event.movementX ||
 //                      event.mozMovementX          ||
@@ -48,17 +55,24 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        mleft_pressed = 1;
+    if (action == GLFW_PRESS) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            mleft_pressed = 1;
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            mright_pressed = 1;
+        }
+
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
         m_x = xpos;
         m_y = ypos;
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-        mleft_pressed = 0;
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    if (action == GLFW_RELEASE) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            mleft_pressed = 0;
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            mright_pressed = 0;
+        }
     }
 }
 
@@ -134,6 +148,14 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 
 }
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
+    IControllable* controllable = scene->getCurrentCamera();
+
+    controllable->zoomInFromMouseScroll(yoffset/60.0f);
+}
+
 
 void window_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -180,6 +202,7 @@ extern "C" {
 
         glfwSetWindowUserPointer(window, scene);
         glfwSetKeyCallback(window, onKey);
+        glfwSetScrollCallback(window, scroll_callback);
         glfwSetCursorPosCallback(window, cursor_position_callback);
         glfwSetWindowSizeCallback(window, window_size_callback);
         glfwSetMouseButtonCallback(window, mouse_button_callback);

@@ -178,3 +178,7 @@ void FirstPersonCamera::zoomInFromTouch(float val) {
 void FirstPersonCamera::zoomInFromMouseScroll(float val) {
 
 }
+
+void FirstPersonCamera::addCameraViewOffset(float x, float y) {
+
+}

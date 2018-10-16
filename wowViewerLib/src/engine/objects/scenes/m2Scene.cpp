@@ -16,7 +16,7 @@ void M2Scene::checkCulling(WoWFrameData *frameData) {
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
-    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
+//    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
 
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
 
@@ -34,10 +34,10 @@ void M2Scene::doPostLoad(WoWFrameData *frameData) {
         auto max = m_m2Object->getAABB().max;
         auto min = m_m2Object->getAABB().min;
         m_api->setCameraPosition(4.0f*min.x, (min.y+max.y)/2.0f, 0);
-        m_api->setCameraOffset(0,0,(max.z+min.z)/2.0f);
-
-
-
+        m_api->setCameraOffset(
+            min.x + ((max.x-min.x)/2.0f),
+            min.y + ((max.y-min.y)/2.0f),
+            min.z + ((max.z-min.z)/2.0f));
     }
 }
 

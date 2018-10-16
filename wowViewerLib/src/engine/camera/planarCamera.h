@@ -18,10 +18,13 @@ public:
     PlanarCamera(){};
 
 private:
+
     mathfu::vec3 camera = {0, 0, 0};
     mathfu::vec3 cameraOffset = {0, 0, 0};
     mathfu::vec3 lookAt = {0, 0, 0};
     mathfu::mat4 lookAtMat = {};
+
+    mathfu::vec2 cameraViewOffset = {0, 0};
 
     float m_radius = 50;
     float MDDepthPlus = 0;
@@ -59,6 +62,8 @@ public:
     void stopMovingUp() override;
     void startMovingDown() override;
     void stopMovingDown() override;
+
+    void addCameraViewOffset(float x, float y) override;
 
     void zoomInFromMouseScroll(float val) override;
     void zoomInFromTouch(float val) override;

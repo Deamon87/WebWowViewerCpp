@@ -17,10 +17,10 @@ private:
     std::string m_urlBase;
     std::string m_urlBaseFileId;
 protected:
-    void processFileRequest(std::string &fileName) override;
+    void processFileRequest(std::string &fileName, CacheHolderType holderType) override;
 
 public:
-    void requestFile(const char* fileName) override;
+    void requestFile(const char* fileName, CacheHolderType holderType) override;
 
     void setUrls(const char *urlBase, const char *urlBaseFileId) {
         m_urlBase = std::string(urlBase);

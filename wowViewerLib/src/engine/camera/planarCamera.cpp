@@ -3,6 +3,9 @@
 //
 
 #include "planarCamera.h"
+#include "../../../3rdparty/mathfu/include/mathfu/matrix.h"
+#include "../algorithms/mathHelper.h"
+#include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 
 
 void PlanarCamera::addForwardDiff(float val) {
@@ -81,46 +84,21 @@ void PlanarCamera::tick (animTime_t timeDelta) {
     } else if (av > 89.99999f) {
         av = 89.99999f;
     }
-    float polar = this->av * (float)(M_PI) / 180.0f;
-    float azimuth = -this->ah * (float)(M_PI) / 180.0f;
-
-    float cosPolar = cos(polar);
-
-    mathfu::vec3 cameraDirection = mathfu::vec3(
-        cosPolar * cos(azimuth),
-        cosPolar * sin(azimuth),
-        sin(polar)
-    );
-
-    mathfu::vec3 camera = cameraDirection * mathfu::vec3(m_radius);
-
-
-    /* Calc look at position */
-    mathfu::vec3 right_move = -mathfu::mat3::RotationZ((float) (-90.0f * M_PI / 180.0f)) * cameraDirection;
-    right_move[2] = 0;
-    right_move = mathfu::normalize(right_move);
-
-    mathfu::vec3 up = {0, 0, 1};
-    up = mathfu::normalize(mathfu::vec3::CrossProduct(right_move,-cameraDirection));
-
-    this->camera = camera;
-    this->lookAt = {0, 0, 0};
-
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
-    lookAtMat = mathfu::mat4(
-        right_move.x, up.x, cameraDirection.x, 0.0f,
-        right_move.y, up.y, cameraDirection.y, 0.0f,
-        right_move.z, up.z, cameraDirection.z, 0.0f,
-        0,0,0,1.0f //translation
-    );
+    mathfu::mat4 cameraRotationMat = mathfu::mat4::Identity();
+    cameraRotationMat *= MathHelper::RotationY(toRadian(-av));
+    cameraRotationMat *= MathHelper::RotationZ(toRadian(ah));
 
-    lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
     lookAtMat =
-        mathfu::mat4::FromTranslationVector(mathfu::vec3(cameraOffset.x, cameraOffset.z/2.0f, cameraOffset.y)) *
-        lookAtMat *
+        mathfu::mat4::FromTranslationVector(mathfu::vec3(cameraViewOffset.x,cameraViewOffset.y,0)) *
+        mathfu::mat4::FromTranslationVector(mathfu::vec3(0,0,-m_radius)) *
+        mathfu::LookAtHelper(mathfu::vec3(1,0,0),mathfu::vec3(0,0,0),mathfu::vec3(0,0,1), 1.0f) *
+        cameraRotationMat *
         mathfu::mat4::FromTranslationVector(mathfu::vec3(-cameraOffset.x, -cameraOffset.y, -cameraOffset.z)) ;
     //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
 
+    this->camera = (lookAtMat * mathfu::vec4(0,0,0,1)).xyz();
+    this->lookAt = (lookAtMat * mathfu::vec4(0,1,0,1)).xyz();
 }
 void PlanarCamera::setCameraPos (float x, float y, float z) {
     //Reset camera
@@ -132,6 +110,7 @@ void PlanarCamera::setCameraPos (float x, float y, float z) {
     this->av = polar / ((float)(M_PI) / 180.0f);
     this->ah = -azimuth/((float)(M_PI) / 180.0f);
 
+    cameraViewOffset = mathfu::vec2(0,0);
 
     this->lookAt[0] = 0;
     this->lookAt[1] = 0;
@@ -149,4 +128,8 @@ void PlanarCamera::zoomInFromTouch(float val) {
 
 void PlanarCamera::zoomInFromMouseScroll(float val) {
     m_radius += val;
+}
+
+void PlanarCamera::addCameraViewOffset(float x, float y) {
+    cameraViewOffset += mathfu::vec2(x, y);
 }

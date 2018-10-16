@@ -47,7 +47,11 @@ void WoWSceneImpl::DoCulling() {
     m_firstCamera.setMovementSpeed(m_config->getMovementSpeed());
 
     if (!m_config->getUseSecondCamera()){
-        this->m_planarCamera.tick(frameParam->deltaTime);
+        if (m_usePlanarCamera) {
+            this->m_planarCamera.tick(frameParam->deltaTime);
+        } else {
+            this->m_firstCamera.tick(frameParam->deltaTime);
+        }
     } else {
         this->m_secondCamera.tick(frameParam->deltaTime);
     }
@@ -68,8 +72,13 @@ void WoWSceneImpl::DoCulling() {
         frameParam->m_lookAtMat4 = lookAtMat4;
 
     } else {
-        cameraVec4 = mathfu::vec4(m_planarCamera.getCameraPosition(), 1);
-        lookAtMat4 = this->m_planarCamera.getLookatMat();
+        if (m_usePlanarCamera) {
+            cameraVec4 = mathfu::vec4(m_planarCamera.getCameraPosition(), 1);
+            lookAtMat4 = this->m_planarCamera.getLookatMat();
+        } else {
+            cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
+            lookAtMat4 = this->m_firstCamera.getLookatMat();
+        }
         frameParam->m_lookAtMat4 = lookAtMat4;
     }
 
@@ -150,8 +159,14 @@ void WoWSceneImpl::setScene(int sceneType, std::string name, int cameraNum) {
     }
 
     if (sceneType == 0) {
+        m_usePlanarCamera = cameraNum == -1;
+        if (m_usePlanarCamera) {
+            controllable = &m_planarCamera;
+        }
         currentScene = new M2Scene(this, name , cameraNum);
     } else if (sceneType == 1) {
+        controllable = &m_firstCamera;
+        m_usePlanarCamera = false;
         currentScene = new WmoScene(this, name);
     }
 }
@@ -338,17 +353,19 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "creature/twilightascendantwater/twilightascendantwater.m2");
 //
 //    Test scene 2: tree from shattrath
-//    m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
+    m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new M2Scene(this,
+        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "creature/celestialdragonwyrm/celestialdragonwyrm.m2");
 
-   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "WORLD\\EXPANSION02\\DOODADS\\CRYSTALSONGFOREST\\BUBBLE\\CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
+//   m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "creature/lorthemar/lorthemar.m2");
+    m_usePlanarCamera = true;
+    controllable = &m_planarCamera;
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,

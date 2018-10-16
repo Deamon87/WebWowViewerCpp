@@ -12,6 +12,7 @@
 
 struct UserDataForRequest {
     std::string fileName;
+    CacheHolderType holderType;
     HttpRequestProcessor *processor;
 };
 
@@ -20,7 +21,7 @@ void downloadSucceeded(emscripten_fetch_t *fetch) {
 
     std::vector<unsigned char> fileContent(&fetch->data[0], &fetch->data[fetch->numBytes]);
     UserDataForRequest * userDataForRequest = (UserDataForRequest *)fetch->userData;
-    userDataForRequest->processor->provideResult(userDataForRequest->fileName, fileContent);
+    userDataForRequest->processor->provideResult(userDataForRequest->fileName, fileContent, userDataForRequest->holderType);
     userDataForRequest->processor->currentlyProcessing--;
 
     // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
@@ -57,9 +58,9 @@ std::string char_to_escape( char i )
     return stream.str();
 }
 
-void HttpRequestProcessor::requestFile(const char *fileName) {
+void HttpRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType) {
     std::string fileName_s(fileName);
-    this->addRequest(fileName_s);
+    this->addRequest(fileName_s, holderType);
 }
 
 
@@ -72,7 +73,7 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
     return str;
 }
 
-void HttpRequestProcessor::processFileRequest(std::string &fileName) {
+void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType) {
     const std::string charsToEscape = " !*'();:@&=+$,/?#[]";
 
     std::string escapedFileName = fileName;
@@ -102,6 +103,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName) {
 
     UserDataForRequest * userDataForRequest = new UserDataForRequest();
     userDataForRequest->fileName = fileName;
+    userDataForRequest->holderType = holderType;
     userDataForRequest->processor = this;
 
     emscripten_fetch_attr_t attr;

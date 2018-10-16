@@ -60,6 +60,7 @@ public:
     void zoomInFromMouseScroll(float val) override;
     void zoomInFromTouch(float val) override;
 
+    void addCameraViewOffset(float x, float y) override;
     void getCameraPosition(float *position) override {
         position[0] = camera.x;
         position[1] = camera.y;

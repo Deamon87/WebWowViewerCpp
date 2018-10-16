@@ -1,7 +1,7 @@
 #include <mutex>
 #include <vector>
-#include "RequestProcessor.h"
 #include <iostream>
+#include "RequestProcessor.h"
 
 std::mutex requestMtx;           // mutex for critical section
 std::mutex resultMtx;            // mutex for critical section
@@ -10,12 +10,13 @@ std::mutex resultMtx;            // mutex for critical section
 //2. Get filename from FIFO
 //3. Add result to ResultFIFO
 //4. Get ready results from FIFO
-void RequestProcessor::addRequest (std::string &fileName) {
+void RequestProcessor::addRequest (std::string &fileName, CacheHolderType holderType) {
+//    std::cout << fileName;
     std::unique_lock<std::mutex> lck (requestMtx,std::defer_lock);
     // critical section (exclusive access to std::cout signaled by locking lck):
     lck.lock();
 
-    m_requestQueue.push_back(fileName);
+    m_requestQueue.push_front({fileName, holderType});
 
     lck.unlock();
 }
@@ -33,61 +34,63 @@ void RequestProcessor::processRequests (bool calledFromThread) {
             }
 
             lck.lock();
-            std::string &fileName = m_requestQueue.front();
+            auto it = m_requestQueue.begin();
             lck.unlock();
 
-            this->processFileRequest(fileName);
+            this->processFileRequest(it->fileName, it->holderType);
 
             lck.lock();
-            m_requestQueue.pop_front();
+            m_requestQueue.erase(it);
             lck.unlock();
         }
     } else if (!m_threaded) {
         while (!m_requestQueue.empty()) {
-            std::string &fileName = m_requestQueue.front();
+            auto it = m_requestQueue.begin();
 
             if (currentlyProcessing >= 5) break;
 
             currentlyProcessing++;
 
-            this->processFileRequest(fileName);
+            this->processFileRequest(it->fileName, it->holderType);
 
-            m_requestQueue.pop_front();
+            m_requestQueue.erase(it);
         }
     }
 
 }
 
-void RequestProcessor::provideResult(std::string &fileName, std::vector<unsigned char> &content) {
+void RequestProcessor::provideResult(std::string &fileName, std::vector<unsigned char> &content, CacheHolderType holderType) {
     std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
 
-//    std::cout << "Called provideResult with fileName = " << fileName << " content length = " << content.size() << std::endl;
-
-    resultStruct resultStructObj;
+    ResultStruct resultStructObj;
     resultStructObj.buffer = content;
     resultStructObj.fileName = fileName;
+    resultStructObj.holderType = holderType;
 
     if (m_threaded) lck.lock();
-    m_resultQueue.push_back(resultStructObj);
+    m_resultQueue.push_front(resultStructObj);
     if (m_threaded) lck.unlock();
 }
 
 void RequestProcessor::processResults(int limit) {
-    //std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
+//    std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
 
     for (int i = 0; i < limit; i++) {
         if (m_resultQueue.empty()) break;
 
 //        if (m_threaded) lck.lock();
-        resultStruct resultStructObj = m_resultQueue.front();
-        m_resultQueue.pop_front();
+        auto it = m_resultQueue.begin();
 //        if (m_threaded) lck.unlock();
 
         m_fileRequester->provideFile(
-                resultStructObj.fileName.c_str(),
-                &resultStructObj.buffer[0],
-                resultStructObj.buffer.size()
+            it->holderType,
+            it->fileName.c_str(),
+            &it->buffer[0],
+            it->buffer.size()
         );
-    }
 
+//        if (m_threaded) lck.lock();
+        m_resultQueue.erase(it);
+//        if (m_threaded) lck.unlock();
+    }
 }

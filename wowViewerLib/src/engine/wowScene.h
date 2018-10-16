@@ -89,7 +89,7 @@ public:
     }
     void setFileRequestProcessor(IFileRequest*) override {} ;
 
-    IControllable* controllable = &m_planarCamera;
+    IControllable* controllable = &m_firstCamera;
 
     IControllable* getCurrentCamera() override {
         return this->controllable;
@@ -198,6 +198,8 @@ private:
     HGUniformBuffer m_sceneWideUniformBuffer;
 
     WoWFrameData m_FrameParams[4];
+
+    bool m_usePlanarCamera = false;
 
     FirstPersonCamera m_firstCamera;
     PlanarCamera m_planarCamera;
