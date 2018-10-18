@@ -103,21 +103,22 @@ void WmoScene::draw(WoWFrameData *frameData) {
 }
 
 void WmoScene::doPostLoad(WoWFrameData *frameData) {
+    int processedThisFrame = 0;
+    int groupsProcessedThisFrame = 0;
+
     for (int i = 0; i < frameData->m2Array.size(); i++) {
         M2Object *m2Object = frameData->m2Array[i];
         if (m2Object == nullptr) continue;
-        m2Object->doPostLoad();
+        if (m2Object->doPostLoad()) processedThisFrame++;
+        if (processedThisFrame > 10) return;
     }
 //    }
 
     for (auto &wmoObject : frameData->wmoArray) {
         if (wmoObject == nullptr) continue;
-        wmoObject->doPostLoad();
-    }
+        if (wmoObject->doPostLoad(groupsProcessedThisFrame)) processedThisFrame++;
 
-    for (auto &adtObject : frameData->adtArray) {
-        if (adtObject == nullptr) continue;
-        adtObject->doPostLoad();
+        if (processedThisFrame > 10) return;
     }
 }
 

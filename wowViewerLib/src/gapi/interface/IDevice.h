@@ -106,7 +106,8 @@ class IDevice {
 
         virtual void bindTexture(ITexture *texture, int slot) = 0;
 
-        virtual void updateBuffers(std::vector<HGMesh> &meshes)= 0 ;
+        virtual void updateBuffers(std::vector<HGMesh> &meshes)= 0;
+        virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
 
         virtual bool getIsCompressedTexturesSupported();

@@ -19,7 +19,7 @@ GBlpTextureGL33::~GBlpTextureGL33() {
 }
 
 void GBlpTextureGL33::bind() {
-    glBindTexture(GL_TEXTURE_2D, *(GLuint *) pIdentifierBuffer);
+    glBindTexture(GL_TEXTURE_2D, textureIdentifier);
 }
 
 void GBlpTextureGL33::unbind() {
@@ -174,14 +174,20 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
 }
 
 bool GBlpTextureGL33::getIsLoaded() {
-    if (!m_loaded && m_texture != nullptr && m_texture->getIsLoaded()) {
-        m_device.bindTexture(this, 0);
-        this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
-        m_device.bindTexture(nullptr, 0);
-
-        m_loaded = true;
-    }
     return m_loaded;
+}
+
+bool GBlpTextureGL33::postLoad() {
+    if (m_loaded) return false;
+    if (m_texture == nullptr) return false;
+    if (!m_texture->getIsLoaded()) return false;
+
+    m_device.bindTexture(this, 0);
+    this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
+    m_device.bindTexture(nullptr, 0);
+
+    m_loaded = true;
+    return true;
 }
 
 

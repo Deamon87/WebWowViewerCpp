@@ -16,7 +16,8 @@ public:
     ~GBlpTextureGL4x() override;
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps);
 
-    virtual bool getIsLoaded() override;
+    bool getIsLoaded() override;
+    bool postLoad() override {return false;};
 private:
     void bind() override; //Should be called only by GDevice
     void unbind();

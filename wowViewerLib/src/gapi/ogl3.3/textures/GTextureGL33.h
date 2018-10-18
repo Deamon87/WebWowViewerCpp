@@ -20,13 +20,14 @@ public:
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
         throw "Not Implemented in this class";
     }
+    bool postLoad() override { return false;};
 private:
     void createBuffer();
     void destroyBuffer();
     virtual void bind(); //Should be called only by GDevice
     void unbind();
 protected:
-    void * pIdentifierBuffer;
+    GLuint textureIdentifier;
 
     IDevice &m_device;
 

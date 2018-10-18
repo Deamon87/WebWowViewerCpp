@@ -288,17 +288,20 @@ static const struct {
 };
 
 
-void WmoGroupObject::doPostLoad() {
-    if (!this->m_loaded) {
-        if (m_geom != nullptr && m_geom->isLoaded() && m_wmoApi->isLoaded()) {
-            this->postLoad();
-            this->m_loaded = true;
-            this->m_loading = false;
-            return;
-        }
+bool WmoGroupObject::doPostLoad() {
+    if (this->m_loaded) return false;
 
+    if (!this->m_loading) {
         this->startLoading();
+        return false;
     }
+
+    if ((m_geom == nullptr) || (!m_geom->isLoaded()) || (!m_wmoApi->isLoaded())) return false;
+
+    this->postLoad();
+    this->m_loaded = true;
+    this->m_loading = false;
+    return true;
 }
 
 void WmoGroupObject::update() {
@@ -1025,6 +1028,7 @@ void WmoGroupObject::setModelFileId(int fileId) {
 }
 
 void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
+    if (!m_loaded) return;
     for (int i = 0; i < this->m_meshArray.size(); i++) {
         this->m_meshArray[i]->setRenderOrder(renderOrder);
         renderedThisFrame.push_back(this->m_meshArray[i]);

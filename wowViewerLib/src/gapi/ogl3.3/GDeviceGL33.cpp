@@ -723,3 +723,27 @@ HGPUFence GDeviceGL33::createFence() {
     return nullptr;
 }
 
+void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
+    std::vector<HGTexture> textures;
+    textures.reserve(meshes.size() * 3);
+
+    int texturesLoaded = 0;
+
+    for (auto  hmesh : meshes) {
+        GMeshGL33 * mesh = (GMeshGL33 *) hmesh.get();
+        for (int i = 0; i < mesh->m_textureCount; i++) {
+            textures.push_back(mesh->m_texture[i]);
+
+        }
+    }
+
+    std::sort(textures.begin(), textures.end());
+    textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
+
+    for (auto texture : textures) {
+        if (texture.get() == nullptr) continue;
+        if (texture->postLoad()) texturesLoaded++;
+        if (texturesLoaded > 5) return;
+    }
+}
+

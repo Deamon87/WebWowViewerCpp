@@ -770,6 +770,10 @@ void M2Object::debugDumpAnimationSequences() {
 bool M2Object::doPostLoad(){
     //0. If loading procedures were already done - exit
     if (this->m_loaded) return false;
+    if (!this->m_loaded && !this->m_loading) {
+        this->startLoading();
+        return false;
+    }
 
     //1. Check if .m2 files is loaded
     if (m_m2Geom == nullptr) return false;
@@ -1205,10 +1209,7 @@ void M2Object::createMeshes() {
 }
 
 void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
-    if (!this->m_loaded) {
-        this->startLoading();
-        return;
-    }
+    if (!m_loaded) return;
 
     int minBatch = m_api->getConfig()->getM2MinBatch();
     int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());

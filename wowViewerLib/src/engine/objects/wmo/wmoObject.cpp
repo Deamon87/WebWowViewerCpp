@@ -192,11 +192,15 @@ void WmoObject::createGroupObjects(){
         if (mainGeom->gfids.size() > 1) {
             groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
             groupObjectsLod1[i]->setWmoApi(this);
+        } else {
+            groupObjectsLod1[i] = nullptr;
         }
         if (mainGeom->gfids.size() > 2) {
             groupObjectsLod2[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
             groupObjectsLod2[i]->setWmoApi(this);
-        }
+        } else {
+            groupObjectsLod2[i] = nullptr;
+        };
 
         if (useFileId) {
             groupObjects[i]->setModelFileId(mainGeom->gfids[0][i]);
@@ -301,37 +305,42 @@ void WmoObject::createWorldPortals() {
     }
 }
 
-void WmoObject::doPostLoad() {
+bool WmoObject::doPostLoad(int &groupsProcessedThisFrame) {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getIsLoaded()){
-            m_loaded = true;
-            m_loading = false;
-
             this->createGroupObjects();
             this->createWorldPortals();
             this->createBB(mainGeom->header->bounding_box);
             this->createM2Array();
+
+            m_loaded = true;
+            m_loading = false;
+            return true;
         } else {
             this->startLoading();
         }
 
-        return;
+        return false;
     }
-    for (int i = 0; i < groupObjects.size(); i++) {
-        if(groupObjects[i] != nullptr) {
-            groupObjects[i]->doPostLoad();
+
+    for (auto &groupObject : groupObjects) {
+        if (groupsProcessedThisFrame > 10) return false;
+        groupObject->doPostLoad();
+    }
+    for (auto &groupObjectLod : groupObjectsLod1) {
+        if (groupsProcessedThisFrame > 10) return false;
+        if (groupObjectLod != nullptr) {
+            if (groupObjectLod->doPostLoad()) groupsProcessedThisFrame++;;
         }
     }
-    for (int i= 0; i < groupObjectsLod1.size(); i++) {
-        if(groupObjectsLod1[i] != nullptr) {
-            groupObjectsLod1[i]->doPostLoad();
+    for (auto &groupObjectLod2 : groupObjectsLod2) {
+        if (groupsProcessedThisFrame > 10) return false;
+        if (groupObjectLod2 != nullptr) {
+            if (groupObjectLod2->doPostLoad()) groupsProcessedThisFrame++;;
         }
     }
-    for (int i= 0; i < groupObjectsLod2.size(); i++) {
-        if(groupObjectsLod2[i] != nullptr) {
-            groupObjectsLod1[i]->doPostLoad();
-        }
-    }
+
+    return false;
 }
 
 void WmoObject::update() {

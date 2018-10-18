@@ -370,8 +370,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "creature/lorthemar/lorthemar.m2");
-//    m_usePlanarCamera = true;
-//    controllable = &m_planarCamera;
+    m_usePlanarCamera = false;
+    controllable = &m_firstCamera;
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -475,8 +475,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "\tworld/wmo/dungeon/thunderkingraid/pa_thunderking_raid.wmo");
 
 
-//    currentScene = new WmoScene(this,
-//        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
+    currentScene = new WmoScene(this,
+        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
 //    currentScene = new WmoScene(this,
 //                                "world/wmo/azeroth/buildings/stranglethorn_bootybay/bootybay.wmo"); //bootybay
 //                                2324175);
@@ -758,7 +758,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    nextDeltaTime = deltaTime;
 
     currentScene->doPostLoad(frameParam); //Do post load after rendering is done!
-
+    device->uploadTextureForMeshes(frameParam->renderedThisFrame);
     struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
     renderLockNextMeshes.lock();
 

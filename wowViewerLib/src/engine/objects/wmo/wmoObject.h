@@ -141,7 +141,7 @@ public:
 
     bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor);
 
-    void doPostLoad();
+    bool doPostLoad(int &processedThisFrame);
     void update();
 
     void createM2Array();

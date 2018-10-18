@@ -254,6 +254,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     }
 }
 void Map::doPostLoad(WoWFrameData *frameData){
+    int processedThisFrame = 0;
+    int groupsProcessedThisFrame = 0;
 //    if (m_api->getConfig()->getRenderM2()) {
         for (int i = 0; i < frameData->m2Array.size(); i++) {
             M2Object *m2Object = frameData->m2Array[i];
@@ -263,7 +265,7 @@ void Map::doPostLoad(WoWFrameData *frameData){
 //    }
 
     for (auto &wmoObject : frameData->wmoArray) {
-        wmoObject->doPostLoad();
+        wmoObject->doPostLoad(groupsProcessedThisFrame);
     }
 
     for (auto &adtObject : frameData->adtArray) {

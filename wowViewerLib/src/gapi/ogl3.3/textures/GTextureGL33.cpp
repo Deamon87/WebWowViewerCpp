@@ -7,25 +7,23 @@
 #include "../../interface/IDevice.h"
 
 GTextureGL33::GTextureGL33(IDevice &device) : m_device(device) {
-    pIdentifierBuffer = new GLuint;
     createBuffer();
 }
 
 GTextureGL33::~GTextureGL33() {
     destroyBuffer();
-    delete (GLuint *) pIdentifierBuffer;
 }
 
 void GTextureGL33::createBuffer() {
-    glGenTextures(1, (GLuint *)pIdentifierBuffer);
+    glGenTextures(1, &textureIdentifier);
 }
 
 void GTextureGL33::destroyBuffer() {
-    glDeleteTextures(1, (GLuint *)pIdentifierBuffer);
+    glDeleteTextures(1, &textureIdentifier);
 }
 
 void GTextureGL33::bind() {
-    glBindTexture(GL_TEXTURE_2D, *(GLuint *)pIdentifierBuffer);
+    glBindTexture(GL_TEXTURE_2D, textureIdentifier);
 
 }
 
