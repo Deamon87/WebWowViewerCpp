@@ -214,6 +214,7 @@ extern "C" {
 extern "C" {
     void setNewUrls(char *url, char *urlFileId) {
         processor->setUrls(url, urlFileId);
+        scene->clearCache();
     }
     void setScene(int sceneType, char *name, int cameraNum) {
         scene->setScene(sceneType, std::string(name), cameraNum);

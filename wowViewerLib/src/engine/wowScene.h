@@ -183,12 +183,14 @@ public:
     void setCameraOffset(float x, float y, float z) override {
         m_planarCamera.setCameraOffset(x,y,z);
     };
+    void clearCache() override;
 
     void setScene(int sceneType, std::string fileName, int cameraNum) override;
     void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) override;
 
 private:
     void DoCulling();
+    void actuallDropCache();
 private:
     bool m_enable;
 
@@ -227,6 +229,9 @@ private:
     Cache<DB2Base> db2Cache;
 
     iInnerSceneApi *currentScene = nullptr;
+    iInnerSceneApi *newScene = nullptr;
+
+    bool needToDropCache = false;
 
     bool deltaTimeUpdate;
     bool nextDataReady;

@@ -27,7 +27,7 @@
 
 class IWoWInnerApi {
 public:
-    virtual ~IWoWInnerApi() {};
+    virtual ~IWoWInnerApi() = default;
 
     virtual Cache<AdtFile>* getAdtGeomCache() = 0;
     virtual Cache<M2Geom>* getM2GeomCache() = 0;

@@ -132,6 +132,10 @@ public:
         trim(fileName);
     }
 
+    void clear() {
+        m_cache.clear();
+        m_objectsToBeProcessed.clear();
+    }
 private:
     /*
     * Cache storage functions

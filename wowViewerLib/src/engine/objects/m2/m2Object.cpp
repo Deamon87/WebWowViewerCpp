@@ -1346,8 +1346,7 @@ HBlpTexture M2Object::getBlpTextureData(int textureInd) {
     }
     if (textureDefinition->type == 0) {
         blpData = getHardCodedTexture(textureInd);
-
-    } else if (textureDefinition->type < this->m_replaceTextures.size()){
+    } else if ( (textureDefinition->type < this->m_replaceTextures.size()) ){
         blpData = this->m_replaceTextures[textureDefinition->type];
     }
 
@@ -1380,7 +1379,12 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
         std::string fileName = textureDefinition->filename.toString();
         texture = textureCache->get(fileName);
     } else if (textureInd < m_m2Geom->textureFileDataIDs.size()) {
-        texture = textureCache->getFileId(m_m2Geom->textureFileDataIDs[textureInd]);
+        int textureFileDataId = m_m2Geom->textureFileDataIDs[textureInd];
+        if (textureFileDataId > 0) {
+            texture = textureCache->getFileId(textureFileDataId);
+        } else {
+            texture = nullptr;
+        }
     }
 
     return texture;

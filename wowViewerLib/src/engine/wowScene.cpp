@@ -97,7 +97,6 @@ void WoWSceneImpl::DoCulling() {
     mathfu::mat4 viewCameraForRender =
             perspectiveMatrixForCameraRender * lookAtMat4;
 
-
     frameParam->m_secondLookAtMat =
             mathfu::mat4::LookAt(
                     this->m_secondCamera.getCameraPosition(),
@@ -137,6 +136,7 @@ void WoWSceneImpl::DoCulling() {
 
     this->SetDirection(*frameParam);
 
+
     currentScene->checkCulling(frameParam);
 
     //Upload buffers if supported
@@ -153,40 +153,30 @@ void WoWSceneImpl::DoCulling() {
 }
 
 void WoWSceneImpl::setScene(int sceneType, std::string name, int cameraNum) {
-    if (currentScene != nullptr) {
-        delete currentScene;
-        currentScene = nullptr;
-    }
-
     if (sceneType == 0) {
         m_usePlanarCamera = cameraNum == -1;
         if (m_usePlanarCamera) {
             controllable = &m_planarCamera;
         }
-        currentScene = new M2Scene(this, name , cameraNum);
+        newScene = new M2Scene(this, name , cameraNum);
     } else if (sceneType == 1) {
         controllable = &m_firstCamera;
         m_usePlanarCamera = false;
-        currentScene = new WmoScene(this, name);
+        newScene = new WmoScene(this, name);
     }
 }
 
 void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) {
-    if (currentScene != nullptr) {
-        delete currentScene;
-        currentScene = nullptr;
-    }
-
     if (sceneType == 0) {
         m_usePlanarCamera = cameraNum == -1;
         if (m_usePlanarCamera) {
             controllable = &m_planarCamera;
         }
-        currentScene = new M2Scene(this, fileDataId , cameraNum);
+        newScene = new M2Scene(this, fileDataId , cameraNum);
     } else if (sceneType == 1) {
         controllable = &m_firstCamera;
         m_usePlanarCamera = false;
-        currentScene = new WmoScene(this, fileDataId);
+        newScene = new WmoScene(this, fileDataId);
     }
 }
 
@@ -207,6 +197,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
 #endif
+    m_supportThreads = false;
 
 //    std::ofstream *out = new std::ofstream("log_output.txt");
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
@@ -475,8 +466,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "\tworld/wmo/dungeon/thunderkingraid/pa_thunderking_raid.wmo");
 
 
-    currentScene = new WmoScene(this,
-        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
+//    currentScene = new WmoScene(this,
+//        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
 //    currentScene = new WmoScene(this,
 //                                "world/wmo/azeroth/buildings/stranglethorn_bootybay/bootybay.wmo"); //bootybay
 //                                2324175);
@@ -533,6 +524,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
     db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
 
+    setSceneWithFileDataId(1, 107857, -1);
 
 
     if (m_supportThreads) {
@@ -648,7 +640,20 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     struct timespec renderingAndUpdateStart, renderingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateStart);
 
+    //Replace the scene
+    if (newScene != nullptr) {
+        if (currentScene != nullptr) delete currentScene;
+        currentScene = newScene;
+        newScene = nullptr;
+    }
+
     if (currentScene == nullptr) return;
+
+    if (needToDropCache) {
+        this->actuallDropCache();
+        needToDropCache = false;
+    }
+
 
     IDevice *device = getDevice();
     device->reset();
@@ -852,4 +857,19 @@ WoWScene *createWoWScene(Config *config, IFileRequest *requestProcessor, int can
 #endif
 
     return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);
+}
+
+void WoWSceneImpl::clearCache() {
+    needToDropCache = true;
+}
+void WoWSceneImpl::actuallDropCache() {
+    this->adtObjectCache.clear();
+    this->wdtCache.clear();
+    this->wdlCache.clear();
+    this->wmoGeomCache.clear();
+    this->wmoMainCache.clear();
+    this->m2GeomCache.clear();
+    this->skinGeomCache.clear();
+    this->textureCache.clear();
+    this->db2Cache.clear();
 }

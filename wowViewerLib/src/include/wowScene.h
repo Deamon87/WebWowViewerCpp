@@ -42,10 +42,12 @@ public:
 class WoWScene : public IFileRequester {
 
 public:
-    virtual ~WoWScene(){};
+    virtual ~WoWScene() = default;
     virtual void draw(animTime_t deltaTime) = 0;
     virtual void setScreenSize(int canvWidth, int canvHeight) = 0;
     virtual void switchCameras() = 0;
+
+    virtual void clearCache() = 0;
 
     virtual void setScene(int sceneType, std::string fileName, int cameraNum) = 0;
     virtual void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) = 0;
