@@ -126,7 +126,6 @@ void BlpTexture::process(const std::vector<unsigned char> &blpFile, const std::s
     /* Determine texture format */
     BlpFile *pBlpFile = (BlpFile *) &blpFile[0];
     if (pBlpFile->fileIdent != '2PLB') {
-
         std::cout << pBlpFile->fileIdent;
     }
     this->m_textureFormat = getTextureType(pBlpFile);
@@ -138,5 +137,6 @@ void BlpTexture::process(const std::vector<unsigned char> &blpFile, const std::s
 //    /* Load texture into GL memory */
 //    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
     this->m_isLoaded = true;
+    this->m_textureName = fileName;
 }
 

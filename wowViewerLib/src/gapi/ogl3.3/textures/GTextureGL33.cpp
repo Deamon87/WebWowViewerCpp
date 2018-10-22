@@ -1,6 +1,7 @@
 //
 // Created by Deamon on 7/23/2018.
 //
+#include <iostream>
 #include "../GDeviceGL33.h"
 #include "GTextureGL33.h"
 #include "../../../engine/opengl/header.h"
@@ -35,6 +36,7 @@ bool GTextureGL33::getIsLoaded() {
     return true;
 }
 
+static int pureTexturesUploaded = 0;
 void GTextureGL33::loadData(int width, int height, void *data) {
 //    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
 

@@ -15,7 +15,7 @@ GBlpTextureGL33::GBlpTextureGL33(IDevice &device, HBlpTexture texture, bool xWra
 }
 
 GBlpTextureGL33::~GBlpTextureGL33() {
-
+    std::cout << "error!" << std::endl;
 }
 
 void GBlpTextureGL33::bind() {
@@ -26,6 +26,7 @@ void GBlpTextureGL33::unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+static int texturesUploaded = 0;
 void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
 //    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
 
@@ -63,7 +64,9 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
     bool useDXT3Decoding = !m_device.getIsCompressedTexturesSupported();
     bool useDXT5Decoding = !m_device.getIsCompressedTexturesSupported();
 
-
+//    useDXT1Decoding = true;
+//    useDXT3Decoding = true;
+//    useDXT5Decoding = true;
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 

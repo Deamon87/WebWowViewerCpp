@@ -522,7 +522,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2LightData = nullptr;
     db2WmoAreaTable = nullptr;
 
-    setSceneWithFileDataId(1, 107857, -1);
+    setSceneWithFileDataId(1, 1120838, -1);
 
 
     if (m_supportThreads) {
@@ -771,6 +771,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
 
     renderLockNextMeshes.unlock();
+    device->reset();
 
 }
 mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {

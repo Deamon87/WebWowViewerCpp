@@ -39,7 +39,7 @@ void GM2ShaderPermutationGL33::compileShader(const std::string &vertExtraDef, co
         glUniform1i(this->getUnf("uTexture3"), 2);
     }
     if (hasUnf("uTexture4")) {
-        glUniform1i(this->getUnf("uTexture4"), 2);
+        glUniform1i(this->getUnf("uTexture4"), 3);
     }
 
     glUseProgram(0);

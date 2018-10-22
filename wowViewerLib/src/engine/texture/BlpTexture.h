@@ -30,6 +30,7 @@ typedef std::vector<mipmapStruct_t> MipmapsVector;
 
 class BlpTexture {
 public:
+    std::string getTextureName() { return m_textureName; };
     void process(const std::vector<unsigned char> &blpFile, const std::string &fileName);
     bool getIsLoaded() { return m_isLoaded; };
     const MipmapsVector& getMipmapsVector() {
@@ -41,6 +42,7 @@ public:
     }
 private:
     bool m_isLoaded = false;
+    std::string m_textureName;
 
     MipmapsVector m_mipmaps;
     TextureFormat m_textureFormat;

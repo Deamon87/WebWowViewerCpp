@@ -2,6 +2,7 @@
 // Created by deamon on 05.06.18.
 //
 
+#include <iostream>
 #include "../../engine/opengl/header.h"
 #include "GVertexBufferBindingsGL33.h"
 #include "../interface/IDevice.h"
@@ -39,7 +40,10 @@ void GVertexBufferBindingsGL33::addVertexBufferBinding(GVertexBufferBinding bind
     m_bindings.push_back(binding);
 }
 
+static int VAO_updated = 0;
 void GVertexBufferBindingsGL33::save() {
+//    std::cout << "VAO_updated = " << VAO_updated++ << std::endl;
+
     m_device.bindVertexBufferBindings(this);
 //    for (GVertexBufferBinding &binding : m_bindings) {
 //        for (GBufferBinding &bufferBinding : binding.bindings) {
