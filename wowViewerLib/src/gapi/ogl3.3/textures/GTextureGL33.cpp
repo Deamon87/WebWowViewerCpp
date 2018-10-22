@@ -36,6 +36,8 @@ bool GTextureGL33::getIsLoaded() {
 }
 
 void GTextureGL33::loadData(int width, int height, void *data) {
+//    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
+
     m_device.bindTexture(this, 0);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);

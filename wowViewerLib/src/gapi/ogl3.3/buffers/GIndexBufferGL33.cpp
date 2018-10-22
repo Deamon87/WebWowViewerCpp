@@ -30,6 +30,9 @@ void GIndexBufferGL33::uploadData(void * data, int length) {
     if (data == nullptr) return;
 
     assert(m_buffCreated);
+    assert(length > 0 && length < (400*1024*1024));
+
+//    std::cout << "ibo_uploaded = " << ibo_uploaded++ << std::endl;
 
     if (!m_dataUploaded || length > m_size) {
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);

@@ -51,7 +51,7 @@ BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
 //    }
 //}
 
-void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*userParam*/) {
+void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
             source,
             type,
@@ -571,9 +571,18 @@ void GDeviceGL33::bindProgram(IShaderPermutation *iProgram) {
             m_shaderPermutation->unbindProgram();
             m_shaderPermutation = nullptr;
         }
+        m_vertexBufferBindings = nullptr;
     } else if (program != m_shaderPermutation) {
         program->bindProgram();
         m_shaderPermutation = program;
+
+//        m_vertexBufferBindings = nullptr;
+//        m_vertexUniformBuffer[0] = nullptr;
+//        m_vertexUniformBuffer[1] = nullptr;
+//        m_vertexUniformBuffer[2] = nullptr;
+//        m_fragmentUniformBuffer[0] = nullptr;
+//        m_fragmentUniformBuffer[1] = nullptr;
+//        m_fragmentUniformBuffer[2] = nullptr;
     }
 }
 
@@ -654,7 +663,7 @@ GDeviceGL33::GDeviceGL33() {
 
 //    glEnable(GL_DEBUG_OUTPUT);
 //    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
+//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
 //    glDebugMessageCallback(debug_func, NULL);
 //
 
@@ -703,9 +712,18 @@ void GDeviceGL33::reset() {
     m_shaderPermutation = nullptr;
 }
 
-int GDeviceGL33::getFrameNumber() {
-    return m_frameNumber;
+unsigned int GDeviceGL33::getUpdateFrameNumber() {
+    return (m_frameNumber + 1) & 3;
+//    return 0;
 }
+unsigned int GDeviceGL33::getCullingFrameNumber() {
+    return (m_frameNumber + 3) & 3;
+//    return 0;
+}
+unsigned int GDeviceGL33::getDrawFrameNumber() {
+    return 0;
+}
+
 
 void GDeviceGL33::increaseFrameNumber() {
     m_frameNumber++;

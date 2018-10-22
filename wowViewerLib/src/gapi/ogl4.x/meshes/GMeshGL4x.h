@@ -19,10 +19,10 @@ protected:
 
 private:
     void setInDirectPointer (void * ptr) {
-        m_indirectPointer[(m_device.getFrameNumber() + 1) & 1] = ptr;
+        m_indirectPointer[m_device.getUpdateFrameNumber()] = ptr;
     }
     void * getIndirectPointer() {
-        return m_indirectPointer[m_device.getFrameNumber()  & 1];
+        return m_indirectPointer[m_device.getDrawFrameNumber()];
     }
 
 public:

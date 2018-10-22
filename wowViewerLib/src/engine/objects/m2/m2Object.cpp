@@ -1139,6 +1139,9 @@ void M2Object::createMeshes() {
 
     createBoundingBoxMesh();
 
+    if (bufferBindings == nullptr)
+        return;
+
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
     auto m_m2Data = m_m2Geom->getM2Data();
 

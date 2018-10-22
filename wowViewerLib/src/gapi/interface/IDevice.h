@@ -91,7 +91,9 @@ class IDevice {
         virtual ~IDevice() {};
 
         virtual void reset() = 0;
-        virtual int getFrameNumber() = 0;
+        virtual unsigned int getUpdateFrameNumber() = 0;
+        virtual unsigned int getCullingFrameNumber() = 0;
+        virtual unsigned int getDrawFrameNumber() = 0;
         virtual bool getIsAsynBuffUploadSupported() = 0;
 
         virtual void increaseFrameNumber() = 0;

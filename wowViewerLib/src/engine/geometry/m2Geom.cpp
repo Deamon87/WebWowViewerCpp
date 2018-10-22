@@ -256,6 +256,10 @@ void M2Geom::process(const std::vector<unsigned char> &m2File, const std::string
 
 HGVertexBuffer M2Geom::getVBO(IDevice &device) {
     if (vertexVbo.get() == nullptr) {
+        if (m_m2Data->vertices.size == 0) {
+            return nullptr;
+        }
+
         vertexVbo = device.createVertexBuffer();
         vertexVbo->uploadData(
             m_m2Data->vertices.getElement(0),
@@ -271,6 +275,11 @@ HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {
         bufferBindings = vaoMap.at(skinGeom);
     } else {
         HGVertexBuffer vboBuffer = this->getVBO(device);
+        if (vboBuffer == nullptr) {
+            vaoMap[skinGeom] = nullptr;
+            return nullptr;
+        }
+
         HGIndexBuffer iboBuffer = skinGeom->getIBO(device);
 
         //2. Create buffer binding and fill it

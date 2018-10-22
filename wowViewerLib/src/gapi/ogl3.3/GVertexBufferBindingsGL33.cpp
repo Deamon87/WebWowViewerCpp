@@ -48,6 +48,7 @@ void GVertexBufferBindingsGL33::save() {
 //    }
 //    m_device.bindIndexBuffer(nullptr);
 //    m_device.bindVertexBuffer(nullptr);
+    m_device.bindIndexBuffer(m_indexBuffer.get());
     for (GVertexBufferBinding &binding : m_bindings) {
         m_device.bindVertexBuffer(binding.vertexBuffer.get());
 
@@ -64,7 +65,7 @@ void GVertexBufferBindingsGL33::save() {
         }
     }
 
-    m_device.bindIndexBuffer(m_indexBuffer.get());
+
     m_device.bindVertexBufferBindings(nullptr);
 
 }

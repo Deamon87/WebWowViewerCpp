@@ -250,7 +250,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
     int currentSize = 0;
     int buffersIndex = 0;
 
-    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[(getFrameNumber() + 1) & 3].m_uniformBuffersForUpload;
+    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[getUpdateFrameNumber()].m_uniformBuffersForUpload;
     HGUniformBuffer bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
 
     for (const auto &buffer : buffers) {
@@ -701,9 +701,16 @@ void GDeviceGL4x::reset() {
     m_shaderPermutation = nullptr;
 }
 
-int GDeviceGL4x::getFrameNumber() {
-    return m_frameNumber;
+unsigned int GDeviceGL4x::getUpdateFrameNumber() {
+    return (m_frameNumber + 1) & 3;
 }
+unsigned int GDeviceGL4x::getCullingFrameNumber() {
+    return (m_frameNumber + 3) & 3;
+}
+unsigned int GDeviceGL4x::getDrawFrameNumber() {
+    return (m_frameNumber) & 3;
+}
+
 
 void GDeviceGL4x::increaseFrameNumber() {
     m_frameNumber++;

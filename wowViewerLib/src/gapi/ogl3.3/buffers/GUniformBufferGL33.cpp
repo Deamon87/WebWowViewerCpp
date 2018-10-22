@@ -52,22 +52,10 @@ void GUniformBufferGL33::uploadData(void * data, int length) {
 
     assert(m_buffCreated);
 
-    if (!m_dataUploaded || length > m_size) {
-        glBufferData(GL_UNIFORM_BUFFER, length, data, GL_STREAM_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, length, nullptr, GL_STREAM_DRAW);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
 
-        m_size = (size_t) length;
-    } else {
-        glBufferData(GL_UNIFORM_BUFFER, length, nullptr, GL_STREAM_DRAW);
-        if (length > 0) {
-
-            glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
-        }
-
-//        void * mapped = glMapBufferRange(GL_UNIFORM_BUFFER, 0, length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-//        memcpy(mapped, data, length);
-//        glUnmapBuffer(GL_UNIFORM_BUFFER);
-
-    }
+    m_size = (size_t) length;
 
     m_dataUploaded = true;
     m_needsUpdate = false;

@@ -27,6 +27,8 @@ void GBlpTextureGL33::unbind() {
 }
 
 void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+//    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
+
     GLuint textureGPUFormat = 0;
 //     if (ext) {
     switch (textureFormat) {

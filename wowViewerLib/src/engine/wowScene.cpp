@@ -37,7 +37,7 @@ void WoWSceneImpl::DoCulling() {
     static const mathfu::vec3 upVector(0,0,1);
 
     IDevice *device = getDevice();
-    int currentFrame = (device->getFrameNumber() + 3) % 4;
+    int currentFrame = device->getCullingFrameNumber();
     WoWFrameData *frameParam = &m_FrameParams[currentFrame];
 
     M2CameraResult cameraResult;
@@ -141,7 +141,7 @@ void WoWSceneImpl::DoCulling() {
 
     //Upload buffers if supported
     if (device->getIsAsynBuffUploadSupported()) {
-        int updateObjFrame = (device->getFrameNumber() + 1) % 4;
+        int updateObjFrame = device->getUpdateFrameNumber();
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
 
         updateFrameIndex = updateObjFrame;
@@ -428,10 +428,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(1.78252912f,  33.4062042f, -126.937592f); //Room under dalaran
 //    m_firstCamera.setCameraPos(-32.1193314, 0.432947099, 9.5181284); //Room with transparent window
-//    currentScene = new WmoScene(this,
-//        "world\\wmo\\brokenisles\\dalaran2.wmo");
-//    currentScene = new WmoScene(this,
-//        "world/wmo/kultiras/nightelf/8ne_nightelf_inn01.wmo");
+    currentScene = new WmoScene(this,
+        "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
 
@@ -657,7 +655,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     IDevice *device = getDevice();
     device->reset();
-    int currentFrame = device->getFrameNumber() % 4;
+    int currentFrame = device->getDrawFrameNumber();
     WoWFrameData *frameParam = &m_FrameParams[currentFrame];
 
     if (!m_supportThreads) {
@@ -666,7 +664,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     }
 
     if (!device->getIsAsynBuffUploadSupported()) {
-        int updateObjFrame = (device->getFrameNumber() + 1) % 4;
+        int updateObjFrame = device->getUpdateFrameNumber();
 
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
         updateFrameIndex = updateObjFrame;

@@ -950,8 +950,10 @@ void WmoObject::transverseGroupWMO(
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
 
         const float dotepsilon = pow(1.5f, 2);
+        bool hackCondition = (fabs(dotResult) > dotepsilon);
+//        hackCondition = true;
 
-        if (!visible && (fabs(dotResult) > dotepsilon) ) continue;
+        if (!visible && hackCondition) continue;
 
         transverseVisitedPortals[relation->portal_index] = true;
 
@@ -961,7 +963,7 @@ void WmoObject::transverseGroupWMO(
         std::vector<mathfu::vec4> thisPortalPlanes;
         thisPortalPlanes.reserve(lastFrustumPlanesLen);
 
-        if (fabs(dotResult) > dotepsilon) {
+        if (hackCondition) {
             bool flip = (relation->side > 0);
 
             int portalCnt = portalVerticesVec.size();
