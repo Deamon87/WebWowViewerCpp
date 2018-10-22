@@ -721,7 +721,7 @@ unsigned int GDeviceGL33::getCullingFrameNumber() {
 //    return 0;
 }
 unsigned int GDeviceGL33::getDrawFrameNumber() {
-    return 0;
+    return m_frameNumber & 3;
 }
 
 
@@ -747,7 +747,7 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 
     int texturesLoaded = 0;
 
-    for (auto  hmesh : meshes) {
+    for (const auto &hmesh : meshes) {
         GMeshGL33 * mesh = (GMeshGL33 *) hmesh.get();
         for (int i = 0; i < mesh->m_textureCount; i++) {
             textures.push_back(mesh->m_texture[i]);
@@ -758,8 +758,8 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
     std::sort(textures.begin(), textures.end());
     textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
 
-    for (auto texture : textures) {
-        if (texture.get() == nullptr) continue;
+    for (const auto &texture : textures) {
+        if (texture == nullptr) continue;
         if (texture->postLoad()) texturesLoaded++;
         if (texturesLoaded > 5) return;
     }
