@@ -16,15 +16,6 @@ void FirstPersonCamera::addHorizontalViewDir(float val) {
 //    this->ah = ah + val;
 }
 void FirstPersonCamera::addVerticalViewDir(float val) {
-//    float av = this->av;
-//    av += val;
-//
-//    if (av < -89.99999f) {
-//        av = -89.99999f;
-//    } else if (av > 89.99999f) {
-//        av = 89.99999f;
-//    }
-//    this->av = av;
     delta_y += val;
 }
 
@@ -87,8 +78,10 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     av += (delta_y-av)*d;
     if (av < -89.99999f) {
         av = -89.99999f;
+        delta_y = av;
     } else if (av > 89.99999f) {
         av = 89.99999f;
+        delta_y = av;
     }
 
 

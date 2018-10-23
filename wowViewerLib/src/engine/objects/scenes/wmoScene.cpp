@@ -110,7 +110,7 @@ void WmoScene::doPostLoad(WoWFrameData *frameData) {
         M2Object *m2Object = frameData->m2Array[i];
         if (m2Object == nullptr) continue;
         if (m2Object->doPostLoad()) processedThisFrame++;
-        if (processedThisFrame > 10) return;
+        if (processedThisFrame > 3) return;
     }
 //    }
 
@@ -118,7 +118,7 @@ void WmoScene::doPostLoad(WoWFrameData *frameData) {
         if (wmoObject == nullptr) continue;
         if (wmoObject->doPostLoad(groupsProcessedThisFrame)) processedThisFrame++;
 
-        if (processedThisFrame > 10) return;
+        if (processedThisFrame > 3) return;
     }
 }
 

@@ -51,8 +51,11 @@ void GUniformBufferGL33::uploadData(void * data, int length) {
     assert(m_buffCreated);
     assert(length > 0 && length <= 65536);
 
-    glBufferData(GL_UNIFORM_BUFFER, length, nullptr, GL_STREAM_DRAW);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
+    if (!m_dataUploaded) {
+        glBufferData(GL_UNIFORM_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);
+    } else {
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
+    }
 
     m_size = (size_t) length;
 

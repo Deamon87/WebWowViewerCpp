@@ -324,17 +324,17 @@ bool WmoObject::doPostLoad(int &groupsProcessedThisFrame) {
     }
 
     for (auto &groupObject : groupObjects) {
-        if (groupsProcessedThisFrame > 10) return false;
+        if (groupsProcessedThisFrame > 3) return false;
         groupObject->doPostLoad();
     }
     for (auto &groupObjectLod : groupObjectsLod1) {
-        if (groupsProcessedThisFrame > 10) return false;
+        if (groupsProcessedThisFrame > 3) return false;
         if (groupObjectLod != nullptr) {
             if (groupObjectLod->doPostLoad()) groupsProcessedThisFrame++;;
         }
     }
     for (auto &groupObjectLod2 : groupObjectsLod2) {
-        if (groupsProcessedThisFrame > 10) return false;
+        if (groupsProcessedThisFrame > 3) return false;
         if (groupObjectLod2 != nullptr) {
             if (groupObjectLod2->doPostLoad()) groupsProcessedThisFrame++;;
         }

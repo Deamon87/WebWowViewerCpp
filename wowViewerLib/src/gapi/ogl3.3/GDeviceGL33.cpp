@@ -313,7 +313,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
         if (buffer->m_buffCreated) continue;
 
         if ((currentSize + buffer->m_size) > maxUniformBufferSize) {
-            ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], currentSize);
+            ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
 
             buffersIndex++;
             currentSize = 0;
@@ -348,7 +348,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
     }
 
     if (currentSize > 0) {
-        ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], currentSize);
+        ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
     }
 }
 
