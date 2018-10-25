@@ -58,8 +58,10 @@ endif()
 add_subdirectory(3rdparty/bzip)
  
 #CPR
+set(ENV{USE_SYSTEM_CURL} ON)
 set(ENV{BUILD_CPR_TESTS} OFF)
-set(ENV{CMAKE_USE_OPENSSL} OFF)
+set(ENV{CMAKE_USE_OPENSSL} ON)
+set(CMAKE_USE_OPENSSL ON)
 add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 

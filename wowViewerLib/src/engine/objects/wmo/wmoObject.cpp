@@ -790,6 +790,17 @@ bool WmoObject::startTraversingWMOGroup(
         frustumPointsLocal[3], frustumPointsLocal[0]
     ), 1.0);
 
+    //Add all ALAWAYSRENDER to Exterior
+    for (int i = 0; i< mainGeom->groupsLen; i++) {
+        if ((mainGeom->groups[i].flags.ALWAYSDRAW) > 0) { //exterior
+            if (!exteriorView.viewCreated) {
+                exteriorView.viewCreated = true;
+            }
+
+            exteriorView.drawnWmos.push_back(this->groupObjects[i]);
+        }
+    }
+
     if (traversingFromInterior) {
         InteriorView &interiorView = createdInteriorViews[groupId];
         WmoGroupObject *nextGroupObject = groupObjects[groupId];
@@ -951,8 +962,7 @@ void WmoObject::transverseGroupWMO(
 
         const float dotepsilon = pow(1.5f, 2);
         bool hackCondition = (fabs(dotResult) > dotepsilon);
-//        hackCondition = true;
-
+        hackCondition = true;
         if (!visible && hackCondition) continue;
 
         transverseVisitedPortals[relation->portal_index] = true;
@@ -997,7 +1007,7 @@ void WmoObject::transverseGroupWMO(
         //5. Traverse next
         WmoGroupObject *nextGroupObject = groupObjects[nextGroup];
         SMOGroupInfo &nextGroupInfo = mainGeom->groups[nextGroup];
-        if ((nextGroupInfo.flags.INTERIOR) > 0) {
+        if ((nextGroupInfo.flags.EXTERIOR) == 0) {
             InteriorView &interiorView = allInteriorViews[nextGroup];
             //5.1 The portal is into interior wmo group. So go on.
             if (!interiorView.viewCreated) {
@@ -1043,7 +1053,7 @@ void WmoObject::transverseGroupWMO(
 
 bool WmoObject::isGroupWmoInterior(int groupId) {
     SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
-    bool result = ((groupInfo->flags.INTERIOR) != 0);
+    bool result = ((groupInfo->flags.EXTERIOR) == 0);
     return result;
 }
 

@@ -149,11 +149,11 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         miny = std::min(frustumPoint.y, miny);
         maxy = std::max(frustumPoint.y, maxy);
     }
-    int adt_x_min = worldCoordinateToAdtIndex(maxy);
-    int adt_x_max = worldCoordinateToAdtIndex(miny);
+    int adt_x_min = std::max(worldCoordinateToAdtIndex(maxy), 0);
+    int adt_x_max = std::min(worldCoordinateToAdtIndex(miny), 63);
 
-    int adt_y_min = worldCoordinateToAdtIndex(maxx);
-    int adt_y_max = worldCoordinateToAdtIndex(minx);
+    int adt_y_min = std::max(worldCoordinateToAdtIndex(maxx), 0);
+    int adt_y_max = std::min(worldCoordinateToAdtIndex(minx), 63);
 
     int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
     int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
@@ -360,7 +360,7 @@ void Map::update(WoWFrameData *frameData) {
             } else {
             }
 
-            if (m_api->getDB2WmoAreaTable()->getIsLoaded()) {
+            if (m_api->getDB2WmoAreaTable() != nullptr && m_api->getDB2WmoAreaTable()->getIsLoaded()) {
                 DBWmoAreaTableRecord areaTableRecord;
                 if (m_api->getDB2WmoAreaTable()->findRecord(
                     this->m_currentWMO->getWmoHeader()->wmoID,
@@ -431,7 +431,7 @@ void Map::update(WoWFrameData *frameData) {
             }
         }
 
-        if (m_api->getDB2Light()->getIsLoaded() && m_api->getDB2LightData()->getIsLoaded()) {
+        if (m_api->getDB2Light() != nullptr && m_api->getDB2Light()->getIsLoaded() && m_api->getDB2LightData()->getIsLoaded()) {
             //Check areaRecord
 
             //Query Light Record

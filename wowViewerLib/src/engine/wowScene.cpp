@@ -30,7 +30,7 @@ void WoWSceneImpl::processCaches(int limit) {
 }
 
 void WoWSceneImpl::DoCulling() {
-    float farPlane = 5000;
+    float farPlane = 300;
     float nearPlane = 1;
     float fov = toRadian(45.0);
 
@@ -87,7 +87,7 @@ void WoWSceneImpl::DoCulling() {
                     fov,
                     this->canvAspect,
                     nearPlane,
-                    500);
+                    300);
     //Camera for rendering
     mathfu::mat4 perspectiveMatrixForCameraRender =
             mathfu::mat4::Perspective(fov,
@@ -250,8 +250,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
 //    currentScene = new Map(this, 603, "UlduarRaid");
 //
-//   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
-//    currentScene = new Map(this, 1803, "AzeriteBG1");
+//   m_firstCamera.setCameraPos(  -8192, -4819, 200); // Ulduar Raid
+//    currentScene = new Map(this, 1803, "Kalimdor");
 //
 //    m_firstCamera.setCameraPos(  2843, 847, 200); // Ulduar Raid
 //    currentScene = new Map(this, "Islands_7VR_Swamp_Prototype2");
@@ -282,8 +282,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 200);
 //    currentScene = new Map(this, 0, "Azeroth");
 //
-//    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
-//    currentScene = new Map(this, 1642, "Zandalar");
+//    m_firstCamera.setCameraPos(0, 0, 200); //Zaldalar
+//    currentScene = new Map(this, 1642, "test_01");
 //
 //
 //    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
@@ -306,7 +306,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt
 //    currentScene = new Map(this, 1477, "Valhallas");
 //
-//    m_firstCamera.setCameraPos(2902, 2525, 200); //Field of the Eternal Hunt
+//    m_firstCamera.setCameraPos(2902, 2525, 200db); //Field of the Eternal Hunt
 //    m_firstCamera.setCameraPos(3993, 2302, 1043); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "NagaDungeon");
 //    m_firstCamera.setCameraPos(829, -296, 200 ); //Field of the Eternal Hunt
@@ -321,8 +321,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-12886, -165, 200); // Pandaria
 //    currentScene = new Map(this, "Azeroth");
 //
-//   m_firstCamera.setCameraPos(0, 0, 0); // Pandaria
-//    currentScene = new Map(this, "Ulduar80");
+   m_firstCamera.setCameraPos(-12017, 3100, 200); // Pandaria
+    currentScene = new Map(this, 0, "Kalimdor");
 //
 //    m_firstCamera.setCameraPos( -8517, 1104, 200);
 //    currentScene = new Map(this, 0, "escapefromstockades");
@@ -431,7 +431,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,
-//        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
+//        "World\\wmo\\Dungeon\\test\\test.wmo");
 
 
 
@@ -522,7 +522,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2LightData = nullptr;
     db2WmoAreaTable = nullptr;
 
-    setSceneWithFileDataId(1, 1120838, -1);
+//    setSceneWithFileDataId(1, 1120838, -1);
+//    setSceneWithFileDataId(1, 1699872, -1);
+//    setScene(0, "world/goober/g_dragoneggprismatic01.m2", -1);
 
 
     if (m_supportThreads) {
