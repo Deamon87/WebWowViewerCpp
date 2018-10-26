@@ -342,17 +342,6 @@ void AdtObject::createMeshes() {
         aTemplate.start = m_adtFile->stripOffsets[i] * 2;
         aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
         aTemplate.element = GL_TRIANGLE_STRIP;
-        aTemplate.textureCount = 9;
-
-        aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
-        aTemplate.texture[4] = alphaTextures[i];
-        for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-            HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-            HGTexture layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-//            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-            aTemplate.texture[j] = layer_x;
-            aTemplate.texture[j + 5] = layer_height;
-        }
 
         aTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
         aTemplate.vertexBuffers[1] = nullptr;
@@ -373,10 +362,36 @@ void AdtObject::createMeshes() {
         }
         if (m_adtFileTex->mtxp_len > 0) {
             for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
+
                 blockPS.uHeightOffset[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightOffset;
                 blockPS.uHeightScale[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightScale;
+
+                HGTexture layer_height = nullptr;
+                if (textureParams.flags.do_not_load_specular_or_height_texture_but_use_cubemap == 0) {
+                    if (!feq(blockPS.uHeightOffset[j], 1.0f) && !feq(blockPS.uHeightScale[j], 0.0)) {
+                        layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+                    }
+                }
+
+                aTemplate.texture[j + 5] = layer_height;
             }
         }
+
+        aTemplate.textureCount = 9;
+
+        aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
+        aTemplate.texture[4] = alphaTextures[i];
+        for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+            HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+
+
+
+//            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+            aTemplate.texture[j] = layer_x;
+
+        }
+
         aTemplate.fragmentBuffers[2]->save(true);
 
         adtMeshWideBlockVS &blockVS = aTemplate.vertexBuffers[2]->getObject<adtMeshWideBlockVS>();
@@ -488,7 +503,7 @@ void AdtObject::update() {
     if (!m_loaded) return;
     if (adtWideBlockPS == nullptr) return;
 
-    adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
+    adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtMlWideBlockPS>();
     adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
     adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
     adtWideblockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
