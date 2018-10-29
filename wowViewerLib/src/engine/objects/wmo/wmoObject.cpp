@@ -903,6 +903,7 @@ bool WmoObject::startTraversingWMOGroup(
     //M2s will be collected later from separate function call
     return true;
 }
+static const float dotepsilon = pow(1.5f, 2.0f);
 
 void WmoObject::transverseGroupWMO(
     int groupId,
@@ -947,9 +948,8 @@ void WmoObject::transverseGroupWMO(
 
         //This condition checks if camera is very close to the portal. In this case the math doesnt work very properly
         //So I need to make this hack exactly for this case.z
-        const float dotepsilon = pow(1.5f, 2);
-        bool hackCondition = (fabs(dotResult) > dotepsilon);
 
+        bool hackCondition = (fabs(dotResult) > dotepsilon);
         if (!isInsidePortalThis && hackCondition) continue;
 
         //2.1 If portal has less than 4 vertices - skip it(invalid?)

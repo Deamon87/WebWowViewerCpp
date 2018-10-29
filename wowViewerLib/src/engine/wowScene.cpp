@@ -31,7 +31,9 @@ void WoWSceneImpl::processCaches(int limit) {
 }
 
 void WoWSceneImpl::DoCulling() {
-    float farPlane = 600;
+    if (currentScene == nullptr) return;
+
+    float farPlane = 5000;
     float nearPlane = 1;
     float fov = toRadian(45.0);
 
@@ -432,13 +434,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 // currentScene = new M2Scene(this,
 //        "world/lordaeron/alteracmountains/passivedoodads/dalaran/dalarandome.m2");
 
- currentScene = new M2Scene(this,
-        "WORLD/EXPANSION02/DOODADS/CRYSTALSONGFOREST/BUBBLE/CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
+// currentScene = new M2Scene(this,
+//        "WORLD/EXPANSION02/DOODADS/CRYSTALSONGFOREST/BUBBLE/CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
 
-    m_usePlanarCamera = true;
-    if (m_usePlanarCamera) {
-        controllable = &m_planarCamera;
-    }
+//    m_usePlanarCamera = true;
+//    if (m_usePlanarCamera) {
+//        controllable = &m_planarCamera;
+//    }
 
 //    currentScene = new M2Scene(this, 2200968, 0);
 
@@ -535,13 +537,16 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
 
+//   currentScene = new WmoScene(this,
+//        "world/wmo/zuldazar/forsaken/8fk_forsaken_shiplarge01.wmo");
+
     db2Light = nullptr;
     db2LightData = nullptr;
     db2WmoAreaTable = nullptr;
 
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
-//    setScene(0, "world/goober/g_dragoneggprismatic01.m2", -1);
+//    setScene(0, "creature/arthas/arthas.m2", -1);
 
 
     if (m_supportThreads) {
