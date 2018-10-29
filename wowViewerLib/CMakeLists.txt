@@ -138,6 +138,8 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/iInnerSceneApi.h
         src/engine/objects/scenes/m2Scene.cpp
         src/engine/objects/scenes/m2Scene.h
+        src/engine/objects/scenes/creatureScene.cpp
+        src/engine/objects/scenes/creatureScene.h
         src/engine/algorithms/PortalCullingAlgo.cpp
         src/engine/algorithms/PortalCullingAlgo.h
         src/engine/objects/scenes/wmoScene.cpp

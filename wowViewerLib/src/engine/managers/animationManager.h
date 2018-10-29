@@ -47,21 +47,26 @@ private:
 public:
     AnimationManager(M2Data* m2File);
     bool setAnimationId(int animationId, bool reset);
-    void update (animTime_t deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
-                 std::vector<mathfu::mat4> &textAnimMatrices,
-                 std::vector<mathfu::vec4> &subMeshColors,
-                 std::vector<float> &transparencies,
-                 std::vector<M2LightResult> &lights,
-                 std::vector<ParticleEmitter *> &particleEmitters
-            /*cameraDetails, particleEmitters*/);
+    void update (
+        animTime_t deltaTime,
+        mathfu::vec3 &cameraPosInLocal,
+        mathfu::vec3 &localUpVector,
+        mathfu::vec3 &localRightVector,
+        std::vector<mathfu::mat4> &bonesMatrices,
+        std::vector<mathfu::mat4> &textAnimMatrices,
+        std::vector<mathfu::vec4> &subMeshColors,
+        std::vector<float> &transparencies,
+        std::vector<M2LightResult> &lights,
+        std::vector<ParticleEmitter *> &particleEmitters
+        /*cameraDetails, particleEmitters*/);
 
-    void calcBones(std::vector<mathfu::mat4> &boneMatrices, int animation, animTime_t time, mathfu::vec3 &cameraPosInLocal);
+    void calcBones(std::vector<mathfu::mat4> &boneMatrices, int animation, animTime_t time, mathfu::vec3 &cameraPosInLocal, mathfu::vec3 &localUpVector, mathfu::vec3 &localRightVector);
 
     void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, animTime_t time,
-                        mathfu::vec3 cameraPosInLocal);
+                        mathfu::vec3 cameraPosInLocal, mathfu::vec3 &localUpVector, mathfu::vec3 &localRightVector);
 
     void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, animTime_t time,
-                        mathfu::vec3 cameraPosInLocal);
+                        mathfu::vec3 cameraPosInLocal, mathfu::vec3 &localUpVector, mathfu::vec3 &localRightVector);
 
     void calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors,
             int animationIndex,

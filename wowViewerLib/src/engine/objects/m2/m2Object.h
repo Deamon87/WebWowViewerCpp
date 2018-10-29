@@ -47,6 +47,8 @@ private:
     mathfu::mat4 m_placementInvertMatrix;
     mathfu::vec3 m_worldPosition;
     mathfu::vec3 m_localPosition;
+    mathfu::vec3 m_localUpVector;
+    mathfu::vec3 m_localRightVector;
 
     float m_currentDistance = 0;
 
@@ -145,6 +147,8 @@ public:
     void createPlacementMatrix(SMDoodadDef &def);
     void createPlacementMatrix(mathfu::vec3 pos, float f, mathfu::vec3 scaleVec,
                                mathfu::Matrix<float, 4, 4> *rotationMatrix);
+
+    void updatePlacementMatrixFromParentAttachment(M2Object *parent, int attachment, float scale);
 
     void calcWorldPosition(){
         m_worldPosition = (m_placementMatrix * mathfu::vec4(0,0,0,1)).xyz();

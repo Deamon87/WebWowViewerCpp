@@ -356,6 +356,10 @@ void AdtObject::createMeshes() {
         static const float heightScale [4] = {0.0, 0.0, 0.0, 0.0};
         static const float heightOffset [4] = {1.0, 1.0, 1.0, 1.0};
 
+        aTemplate.textureCount = 9;
+
+        aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
+
         for (int j = 0; j < 4; j++) {
             blockPS.uHeightOffset[j] = heightOffset[j];
             blockPS.uHeightScale[j] = heightScale[j];
@@ -378,9 +382,7 @@ void AdtObject::createMeshes() {
             }
         }
 
-        aTemplate.textureCount = 9;
 
-        aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
         aTemplate.texture[4] = alphaTextures[i];
         for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
             HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
@@ -503,7 +505,7 @@ void AdtObject::update() {
     if (!m_loaded) return;
     if (adtWideBlockPS == nullptr) return;
 
-    adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtMlWideBlockPS>();
+    adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
     adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
     adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
     adtWideblockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));

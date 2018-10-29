@@ -442,6 +442,8 @@ void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacem
     m_localPosition = mathfu::vec3(def.position);
     m_placementMatrix = placementMatrix;
     m_placementInvertMatrix = invertPlacementMatrix;
+
+    m_localUpVector = (invertPlacementMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
 }
 
 void M2Object::createPlacementMatrix(SMDoodadDef &def) {
@@ -470,6 +472,9 @@ void M2Object::createPlacementMatrix(SMDoodadDef &def) {
     m_localPosition = mathfu::vec3(def.position);
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+
+    m_localUpVector = (placementInvertMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
+    m_localRightVector = (placementInvertMatrix * mathfu::vec4(1,0,0,0)).xyz().Normalized();
 }
 
 void M2Object::createPlacementMatrix (mathfu::vec3 pos, float f, mathfu::vec3 scaleVec, mathfu::mat4 *rotationMatrix){
@@ -486,7 +491,40 @@ void M2Object::createPlacementMatrix (mathfu::vec3 pos, float f, mathfu::vec3 sc
     mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+
+    m_localUpVector = (placementInvertMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
+    m_localRightVector = (placementInvertMatrix * mathfu::vec4(1,0,0,0)).xyz().Normalized();
 }
+
+void M2Object::updatePlacementMatrixFromParentAttachment(M2Object *parent, int attachment, float scale) {
+    if (!parent->m_loaded) return;
+    auto &m2Geom = parent->m_m2Geom;
+    if (m2Geom->m_m2Data->attachment_lookup_table.size == 0) return;
+    if (m2Geom->m_m2Data->attachments.size == 0) return;
+
+    int attIndex = *m2Geom->m_m2Data->attachment_lookup_table[2];
+    M2Attachment *attachInfo = m2Geom->m_m2Data->attachments[attIndex];
+
+    if (attachInfo == nullptr) return;
+
+    int boneId = attachInfo->bone;
+    mathfu::mat4 &parentBoneTransMat = parent->bonesMatrices[boneId];
+
+
+    mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
+    placementMatrix = parent->m_placementMatrix *
+        parentBoneTransMat *
+        mathfu::mat4::FromTranslationVector(mathfu::vec3(attachInfo->position));
+
+    mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
+
+    m_placementInvertMatrix = placementInvertMatrix;
+    m_placementMatrix = placementMatrix;
+
+    m_localUpVector = (placementInvertMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
+    m_localRightVector = (placementInvertMatrix * mathfu::vec4(1,0,0,0)).xyz().Normalized();
+}
+
 
 void M2Object::calcDistance(mathfu::vec3 cameraPos) {
     m_currentDistance = (m_worldPosition-cameraPos).Length();
@@ -835,12 +873,15 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         );
 
 //    /* 1. Calc local camera */
-    mathfu::vec4 cameraInlocalPos = mathfu::vec4(cameraPos, 1);
-    cameraInlocalPos = m_placementInvertMatrix * cameraInlocalPos;
+    mathfu::vec3 cameraInlocalPos = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1)).xyz();
 //
 //    /* 2. Update animation values */
-    this->m_animationManager->update(deltaTime, cameraInlocalPos.xyz(),
-                                 this->bonesMatrices,
+    this->m_animationManager->update(
+        deltaTime,
+        cameraInlocalPos,
+        this->m_localUpVector,
+        this->m_localRightVector,
+        this->bonesMatrices,
         this->textAnimMatrices,
         this->subMeshColors,
         this->transparencies,

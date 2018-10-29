@@ -269,10 +269,7 @@ R animateTrack(
         return defaultValue;
     }
 
-
-
     int32_t timeIndex;
-
 
     M2Array<uint32_t > *times = animationBlock.timestamps[animationIndex];
     M2Array<T> *values = animationBlock.values[animationIndex];
@@ -281,7 +278,7 @@ R animateTrack(
     M2Array<uint32_t> *timeStamp = animationBlock.timestamps[animationIndex];
 
     if (maxTime != 0) {
-        currTime = fmod(currTime, maxTime);
+//        currTime = fmod(currTime, maxTime);
 
         timeIndex = findTimeIndex(currTime, timeStamp->getElement(0), timeStamp->size);
     } else {

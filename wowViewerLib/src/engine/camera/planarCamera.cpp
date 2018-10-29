@@ -97,7 +97,7 @@ void PlanarCamera::tick (animTime_t timeDelta) {
         mathfu::mat4::FromTranslationVector(mathfu::vec3(-cameraOffset.x, -cameraOffset.y, -cameraOffset.z)) ;
     //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
 
-    this->camera = (lookAtMat * mathfu::vec4(0,0,0,1)).xyz();
+    this->camera = (lookAtMat.Inverse() * mathfu::vec4(0,0,0,1)).xyz();
     this->lookAt = (lookAtMat * mathfu::vec4(0,1,0,1)).xyz();
 }
 void PlanarCamera::setCameraPos (float x, float y, float z) {

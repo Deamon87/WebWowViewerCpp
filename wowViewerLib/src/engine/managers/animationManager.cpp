@@ -208,7 +208,10 @@ void calcBoneBillboardMatrix(
                 M2CompBone *boneDefinition,
                 int parentBone,
                 mathfu::vec4 &pivotPoint,
-                mathfu::vec3 &cameraPosInLocal) {
+                mathfu::vec3 &cameraPosInLocal,
+                mathfu::vec3 &localUpVector,
+                mathfu::vec3 &localRightVector
+                ) {
 
     mathfu::vec3 modelForward;
     mathfu::vec3 modelUp;
@@ -226,16 +229,35 @@ void calcBoneBillboardMatrix(
 
     if ((boneDefinition->flags.cylindrical_billboard_lock_z) > 0) {
         //Cylindrical billboard
-        modelUp = mathfu::vec3(0, 0, 1);
+        if (mathfu::vec3::DotProduct(modelForward, localUpVector) > 0.01) {
+            modelUp = localUpVector;
+            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+            modelForward = mathfu::vec3::CrossProduct(modelRight, modelUp).Normalized();
 
-        modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
-        modelForward = mathfu::vec3::CrossProduct(modelRight, modelUp).Normalized();
+            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+        } else {
 
-        modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+        }
+    } else if ((boneDefinition->flags.spherical_billboard) > 0) {
+        float dotresult = mathfu::vec3::DotProduct(modelForward, localUpVector);
+//        dotresult = 1.0;
+        if (fabs(dotresult) <= 0.98) {
+            //Spherical billboard
+            modelUp = localUpVector;
+            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+            modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
+        } else {
+            modelRight = localRightVector;
+            modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
+            if (mathfu::vec3::DotProduct(modelUp, localUpVector) < 0) {
+                modelUp = -modelUp;
+            }
+
+
+            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+        }
     } else {
-        //Spherical billboard
-        modelRight = mathfu::vec3::CrossProduct(mathfu::vec3(0, 0, 1), modelForward).Normalized();
-        modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
+        std::cout << "This billboarding is not implemented";
     }
 
 
@@ -248,8 +270,15 @@ void calcBoneBillboardMatrix(
 }
 
 void
-AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, animTime_t time,
-                                 mathfu::vec3 cameraPosInLocal) {
+AnimationManager::calcBoneMatrix(
+    std::vector<mathfu::mat4> &boneMatrices,
+    int boneIndex,
+    int animationIndex,
+    animTime_t time,
+    mathfu::vec3 cameraPosInLocal,
+    mathfu::vec3 &localUpVector,
+    mathfu::vec3 &localRightVector
+    ) {
     if (this->bonesIsCalculated[boneIndex]) return;
 
     const M2Sequence* animationRecord = m_m2File->sequences[animationIndex];
@@ -261,7 +290,7 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int bo
     boneMatrices[boneIndex] = mathfu::mat4::Identity();
 
     if (parentBone >= 0) {
-        this->calcBoneMatrix(boneMatrices, parentBone, animationIndex, time, cameraPosInLocal);
+        this->calcBoneMatrix(boneMatrices, parentBone, animationIndex, time, cameraPosInLocal, localUpVector, localRightVector);
         boneMatrices[boneIndex] = boneMatrices[boneIndex] * boneMatrices[parentBone];
     }
 
@@ -287,7 +316,7 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int bo
         billboardMatrix = new mathfu::mat4();
 
         calcBoneBillboardMatrix(billboardMatrix, boneMatrices, boneDefinition, parentBone, pivotPoint,
-                                                       cameraPosInLocal);
+                                                       cameraPosInLocal, localUpVector, localRightVector);
         this->isAnimated = true;
     }
 
@@ -310,14 +339,20 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int bo
     this->bonesIsCalculated[boneIndex] = true;
 }
 
-void AnimationManager::calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex,
-                                      int animationIndex, animTime_t time, mathfu::vec3 cameraPosInLocal) {
+void AnimationManager::calcChildBones(
+    std::vector<mathfu::mat4> &boneMatrices,
+    int boneIndex,
+    int animationIndex,
+    animTime_t time,
+    mathfu::vec3 cameraPosInLocal,
+    mathfu::vec3 &localUpVector,
+    mathfu::vec3 &localRightVector) {
     std::vector<int> *childBones = &this->childBonesLookup[boneIndex];
     for (int i = 0; i < childBones->size(); i++) {
         int childBoneIndex = (*childBones)[i];
         this->bonesIsCalculated[childBoneIndex] = false;
-        this->calcBoneMatrix(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal);
-        this->calcChildBones(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal);
+        this->calcBoneMatrix(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal, localUpVector, localRightVector);
+        this->calcChildBones(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal, localUpVector, localRightVector);
     }
 }
 std::string dumpMatrix(mathfu::mat4 &mat4) {
@@ -327,13 +362,18 @@ std::string dumpMatrix(mathfu::mat4 &mat4) {
            std::to_string(mat4[8])+" "+std::to_string(mat4[9])+" "+std::to_string(mat4[10])+" "+std::to_string(mat4[11])+"\n"+
            std::to_string(mat4[12])+" "+std::to_string(mat4[13])+" "+std::to_string(mat4[14])+" "+std::to_string(mat4[15])+"\n";
 }
-void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int animation, animTime_t time, mathfu::vec3 &cameraPosInLocal) {
+void AnimationManager::calcBones (
+    std::vector<mathfu::mat4> &boneMatrices,
+    int animation, animTime_t time,
+    mathfu::vec3 &cameraPosInLocal,
+    mathfu::vec3 &localUpVector,
+    mathfu::vec3 &localRightVector) {
 
 
     if (this->firstCalc || this->isAnimated) {
         //Animate everything with standard animation
         for (int i = 0; i < m_m2File->bones.size; i++) {
-            this->calcBoneMatrix(boneMatrices, i, animation, time, cameraPosInLocal);
+            this->calcBoneMatrix(boneMatrices, i, animation, time, cameraPosInLocal, localUpVector, localRightVector);
 //            std::cout << "boneMatrices[" << std::to_string(i) << "] = " << dumpMatrix(boneMatrices[i]) << std::endl;
         }
 
@@ -360,8 +400,8 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
                     if (*m_m2File->key_bone_lookup[13 + j] > -1) { // BONE_LFINGER1 = 13
                         int boneId = *m_m2File->key_bone_lookup[13 + j];
                         this->bonesIsCalculated[boneId] = false;
-                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal);
-                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal);
+                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector);
+                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector);
                     }
                 }
             }
@@ -370,8 +410,8 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
                     if (*m_m2File->key_bone_lookup[8 + j] > -1) { // BONE_RFINGER1 = 8
                         int boneId = *m_m2File->key_bone_lookup[8 + j];
                         this->bonesIsCalculated[boneId] = false;
-                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal);
-                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal);
+                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector);
+                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector);
                     }
                 }
             }
@@ -383,12 +423,17 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
 
 static bool dump = false;
 
-void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
-                              std::vector<mathfu::mat4> &textAnimMatrices,
-                              std::vector<mathfu::vec4> &subMeshColors,
-                              std::vector<float> &transparencies,
-                              std::vector<M2LightResult> &lights,
-                              std::vector<ParticleEmitter *> &particleEmitters
+void AnimationManager::update(
+    animTime_t deltaTime,
+    mathfu::vec3 &cameraPosInLocal,
+    mathfu::vec3 &localUpVector,
+    mathfu::vec3 &localRightVector,
+    std::vector<mathfu::mat4> &bonesMatrices,
+    std::vector<mathfu::mat4> &textAnimMatrices,
+    std::vector<mathfu::vec4> &subMeshColors,
+    std::vector<float> &transparencies,
+    std::vector<M2LightResult> &lights,
+    std::vector<ParticleEmitter *> &particleEmitters
 
         /*cameraDetails, , particleEmitters*/) {
     if (m_m2File->sequences.size <= 0) return;
@@ -480,7 +525,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
     for (int i = 0; i < m_m2File->bones.size; i++) {
         this->bonesIsCalculated[i] = false;
     }
-    this->calcBones(bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime, cameraPosInLocal);
+    this->calcBones(bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime, cameraPosInLocal, localUpVector, localRightVector);
     if (blendAnimationIndex > -1) {
         for (int i = 0; i < m_m2File->bones.size; i++) {
             this->bonesIsCalculated[i] = false;
@@ -488,7 +533,7 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
 
         }
 
-        this->calcBones(this->blendMatrixArray, blendAnimationIndex, this->nextSubAnimationTime, cameraPosInLocal);
+        this->calcBones(this->blendMatrixArray, blendAnimationIndex, this->nextSubAnimationTime, cameraPosInLocal, localUpVector, localRightVector);
         blendMatrices(bonesMatrices, this->blendMatrixArray, m_m2File->bones.size, blendAlpha);
     }
 

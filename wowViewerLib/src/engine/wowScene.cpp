@@ -12,6 +12,7 @@
 #include "./../gapi/UniformBufferStructures.h"
 #include "objects/GlobalThreads.h"
 #include "../gapi/IDeviceFactory.h"
+#include "objects/scenes/creatureScene.h"
 #include <iostream>
 #include <cmath>
 #include <thread>
@@ -30,7 +31,7 @@ void WoWSceneImpl::processCaches(int limit) {
 }
 
 void WoWSceneImpl::DoCulling() {
-    float farPlane = 300;
+    float farPlane = 600;
     float nearPlane = 1;
     float fov = toRadian(45.0);
 
@@ -197,7 +198,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
 #endif
-    m_supportThreads = false;
+//    m_supportThreads = false;
 
 //    std::ofstream *out = new std::ofstream("log_output.txt");
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
@@ -276,11 +277,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 571, "Northrend");
 //
 //    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-//    currentScene = new Map(this, 0, "Azeroth");
+    m_firstCamera.setCameraPos(0, 0, 200); //Stormwind
+    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-//   m_firstCamera.setCameraPos(0, 0, 200);
-//    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(-921, 767, 200);
+//    currentScene = new Map(this, 0, "Zandalar");
 //
 //    m_firstCamera.setCameraPos(0, 0, 200); //Zaldalar
 //    currentScene = new Map(this, 1642, "test_01");
@@ -321,8 +323,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-12886, -165, 200); // Pandaria
 //    currentScene = new Map(this, "Azeroth");
 //
-   m_firstCamera.setCameraPos(-12017, 3100, 200); // Pandaria
-    currentScene = new Map(this, 0, "Kalimdor");
+//   m_firstCamera.setCameraPos(-12017, 3100, 200); // Pandaria
+//    currentScene = new Map(this, 0, "Kalimdor");
 //
 //    m_firstCamera.setCameraPos( -8517, 1104, 200);
 //    currentScene = new Map(this, 0, "escapefromstockades");
@@ -421,7 +423,16 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 //
 //   currentScene = new M2Scene(this,
+//        "creature/murloc/murloc.m2");
+//
+//
+// currentScene = new CreatureScene(this,
 //        "WORLD\\EXPANSION02\\DOODADS\\GENERIC\\SCOURGE\\SC_EYEOFACHERUS_02.m2");
+
+//    m_usePlanarCamera = true;
+//    if (m_usePlanarCamera) {
+//        controllable = &m_planarCamera;
+//    }
 
 //    currentScene = new M2Scene(this, 2200968, 0);
 

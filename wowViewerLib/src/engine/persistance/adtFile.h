@@ -26,7 +26,7 @@ struct mcnkStruct_t {
     int mcrw_object_refs_len = -1;
 
 
-    uint8_t *mcal;
+    uint8_t *mcal = nullptr;
 };
 
 class AdtFile {

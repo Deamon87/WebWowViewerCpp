@@ -396,7 +396,7 @@ std::vector<uint8_t> AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i
     if (layers == nullptr || alphaArray == nullptr) return currentLayer;
 
 //    for (int j = 0; j < mapTile[i].nLayers; j++ ) {
-    for (int j = 0; j < mcnkStructs[i].mclyCnt; j++ ) {
+    for (int j = 0; j <mcnkObj.mclyCnt; j++ ) {
         int alphaOffs = layers[j].offsetInMCAL;
         int offO = j;
         int readForThisLayer = 0;
