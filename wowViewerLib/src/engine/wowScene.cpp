@@ -12,7 +12,7 @@
 #include "./../gapi/UniformBufferStructures.h"
 #include "objects/GlobalThreads.h"
 #include "../gapi/IDeviceFactory.h"
-#include "objects/scenes/creatureScene.h"
+//#include "objects/scenes/creatureScene.h"
 #include <iostream>
 #include <cmath>
 #include <thread>
@@ -277,8 +277,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 571, "Northrend");
 //
 //    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-    m_firstCamera.setCameraPos(0, 0, 200); //Stormwind
-    currentScene = new Map(this, 0, "Azeroth");
+//    m_firstCamera.setCameraPos(0, 0, 200); //Stormwind
+//    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
 //   m_firstCamera.setCameraPos(-921, 767, 200);
@@ -426,13 +426,19 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "creature/murloc/murloc.m2");
 //
 //
-// currentScene = new CreatureScene(this,
+// currentScene = new M2Scene(this,
 //        "WORLD\\EXPANSION02\\DOODADS\\GENERIC\\SCOURGE\\SC_EYEOFACHERUS_02.m2");
 
-//    m_usePlanarCamera = true;
-//    if (m_usePlanarCamera) {
-//        controllable = &m_planarCamera;
-//    }
+// currentScene = new M2Scene(this,
+//        "world/lordaeron/alteracmountains/passivedoodads/dalaran/dalarandome.m2");
+
+ currentScene = new M2Scene(this,
+        "WORLD/EXPANSION02/DOODADS/CRYSTALSONGFOREST/BUBBLE/CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
+
+    m_usePlanarCamera = true;
+    if (m_usePlanarCamera) {
+        controllable = &m_planarCamera;
+    }
 
 //    currentScene = new M2Scene(this, 2200968, 0);
 

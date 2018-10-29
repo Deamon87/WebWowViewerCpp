@@ -90,12 +90,32 @@ GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, IDevice 
 
 void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
-    std::string vertShaderString = loadShader(m_shaderName);
+    std::string shaderFile =  m_device->loadShader(m_shaderName, false);
+    if (shaderFile.length() == 0) {
+        throw "shader is empty";
+    }
+
+    //Include system
+    static std::string includeStr = "#include ";
+    int position;
+    while ((position = shaderFile.find(includeStr.c_str())) > 0) {
+        int endPosition = shaderFile.find("\n", position + includeStr.length());
+
+        std::string shaderStart = shaderFile.substr(0, position);
+        std::string shaderEnd = shaderFile.substr(endPosition, shaderFile.length()- endPosition);
+
+        int shaderNameStart = position + includeStr.length();
+        std::string subShaderName = shaderFile.substr(shaderNameStart, endPosition-shaderNameStart);
+        shaderFile = shaderStart+m_device->loadShader(subShaderName, true)+shaderEnd;
+    }
+
+    std::string vertShaderString = shaderFile;
     std::string fragmentShaderString = vertShaderString;
 
     std::string vertExtraDefStrings = vertExtraDef;
     std::string fragExtraDefStrings = fragExtraDef;
     std::string geomExtraDefStrings = "";
+
 
 
 

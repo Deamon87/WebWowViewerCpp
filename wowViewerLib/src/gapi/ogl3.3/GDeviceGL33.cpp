@@ -3,6 +3,7 @@
 //
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 #include "../../engine/opengl/header.h"
 #include "GDeviceGL33.h"
 #include "../../engine/algorithms/hashString.h"
@@ -780,4 +781,67 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         if (texturesLoaded > 4) return;
     }
 }
+
+#ifdef __ANDROID_API__
+#include "../androidLogSupport.h"
+#endif
+
+std::string GDeviceGL33::loadShader(std::string fileName, bool common) {
+    std::string fullPath;
+    if (common) {
+        fullPath = "./glsl/common/" + fileName + ".glsl";
+    } else {
+        fullPath = "./glsl/glsl3.3/" + fileName + ".glsl";
+    }
+
+    auto i = shaderCache.find(fullPath);
+    if (i != shaderCache.end()) {
+        return i->second;
+    }
+
+
+
+#ifdef __ANDROID_API__
+        //TODO: pass this stuff here
+    AAssetManager *mgr = g_assetMgr;
+    if (g_assetMgr == nullptr) {
+        std::cout << "g_assetMgr == nullptr";
+    }
+    std::string filename = "glsl/" + shaderName + ".glsl";
+
+    std::cout << "AAssetManager_open" << std::endl;
+    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);
+    std::cout << "AAssetManager_opened" << std::endl;
+    if (asset == nullptr) {
+        std::cout << "asset == nullptr" << std::endl;
+    }
+
+    char buf[BUFSIZ];
+    std::vector<char> outBuf;
+
+    std::cout << "buffers created" << std::endl;
+    int nb_read = 0;
+    while ((nb_read = AAsset_read(asset, buf, BUFSIZ)) > 0) {
+        std::cout << "file read" << std::endl;
+        for (int i = 0; i < nb_read; i++) {
+            outBuf.push_back(buf[i]);
+        }
+    }
+        //std::copy(&buf[0], &buf[nb_read-1]+1, outPutIterator);
+    std::cout << "file fully read" << std::endl;
+    AAsset_close(asset);
+    std::cout << "asset closed" << std::endl;
+
+    return std::string(outBuf.begin(), outBuf.end());
+
+#else
+    std::ifstream t(fullPath);
+
+    std::string result = std::string((std::istreambuf_iterator<char>(t)),
+                           std::istreambuf_iterator<char>());
+    shaderCache[fullPath] = result;
+    return result;
+#endif
+}
+
 

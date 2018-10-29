@@ -134,6 +134,7 @@ class IDevice {
         static bool sortMeshes(const HGMesh& a, const HGMesh& b);
         virtual HGVertexBufferBindings getBBVertexBinding() = 0;
         virtual HGVertexBufferBindings getBBLinearBinding() = 0;
+        virtual std::string loadShader(std::string fileName, bool common) = 0;
 };
 
 

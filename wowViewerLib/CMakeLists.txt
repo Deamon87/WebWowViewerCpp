@@ -72,20 +72,25 @@ endif()
 
 message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
 
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtLodShader.glsl ${GLSL_TARGET_FOLDER}/glsl/adtLodShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtShader.glsl ${GLSL_TARGET_FOLDER}/glsl/adtShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawBBShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawBBShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawDepthShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawDepthShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawFrustumShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawFrustumShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawLinesShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawLinesShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPoints.glsl ${GLSL_TARGET_FOLDER}/glsl/drawPoints.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPortalShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawPortalShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2ParticleShader.glsl ${GLSL_TARGET_FOLDER}/glsl/m2ParticleShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2Shader.glsl ${GLSL_TARGET_FOLDER}/glsl/m2Shader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/readDepthBufferShader.glsl ${GLSL_TARGET_FOLDER}/glsl/readDepthBufferShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/renderFrameBufferShader.glsl ${GLSL_TARGET_FOLDER}/glsl/renderFrameBufferShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/textureCompositionShader.glsl ${GLSL_TARGET_FOLDER}/glsl/textureCompositionShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/wmoShader.glsl ${GLSL_TARGET_FOLDER}/glsl/wmoShader.glsl COPYONLY)
+macro(configure_files srcDir destDir)
+    message(STATUS "Configuring directory ${destDir}")
+    make_directory(${destDir})
+
+    file(GLOB templateFiles RELATIVE ${srcDir} ${srcDir}/*)
+    foreach(templateFile ${templateFiles})
+        set(srcTemplatePath ${srcDir}/${templateFile})
+        if(NOT IS_DIRECTORY ${srcTemplatePath})
+            message(STATUS "Configuring file ${templateFile}")
+            configure_file(
+                    ${srcTemplatePath}
+                    ${destDir}/${templateFile}
+                    COPYONLY)
+        endif(NOT IS_DIRECTORY ${srcTemplatePath})
+    endforeach(templateFile)
+endmacro(configure_files)
+
+configure_files(${PROJECT_SOURCE_DIR}/src/glsl/glsl3.3/ ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
+configure_files(${PROJECT_SOURCE_DIR}/src/glsl/common/ ${GLSL_TARGET_FOLDER}/glsl/common/)
 
 include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
 
@@ -138,8 +143,8 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/iInnerSceneApi.h
         src/engine/objects/scenes/m2Scene.cpp
         src/engine/objects/scenes/m2Scene.h
-        src/engine/objects/scenes/creatureScene.cpp
-        src/engine/objects/scenes/creatureScene.h
+#        src/engine/objects/scenes/creatureScene.cpp
+#        src/engine/objects/scenes/creatureScene.h
         src/engine/algorithms/PortalCullingAlgo.cpp
         src/engine/algorithms/PortalCullingAlgo.h
         src/engine/objects/scenes/wmoScene.cpp

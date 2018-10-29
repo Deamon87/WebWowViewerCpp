@@ -90,6 +90,7 @@ public:
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
 
+    std::string loadShader(std::string fileName, bool common) override;
 
 private:
     void drawMesh(HGMesh &hmesh);
@@ -179,6 +180,8 @@ protected:
     FrameUniformBuffers m_UBOFrames[4];
 
     std::vector<char> aggregationBufferForUpload;
+
+    std::unordered_map<std::string, std::string> shaderCache;
 
     int uniformBuffersCreated = 0;
 };
