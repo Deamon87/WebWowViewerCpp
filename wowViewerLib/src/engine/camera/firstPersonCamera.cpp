@@ -131,7 +131,6 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
         camera[2] = camera[2] + verticalDiff;
     }
 
-    this->camera = camera;
     this->lookAt = camera + dir;
 
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
@@ -141,11 +140,9 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
         right_move.z, up.z, -dir.z, 0.0f,
         0,0,0,1.0f //translation
     );
-
-
-
     lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
 
+    this->camera = (lookAtMat.Inverse() * mathfu::vec4(0,0,0,1.0)).xyz();
 
     //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
 

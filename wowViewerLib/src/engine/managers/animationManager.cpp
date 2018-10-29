@@ -229,33 +229,32 @@ void calcBoneBillboardMatrix(
 
     if ((boneDefinition->flags.cylindrical_billboard_lock_z) > 0) {
         //Cylindrical billboard
-        if (mathfu::vec3::DotProduct(modelForward, localUpVector) > 0.01) {
+//        if (mathfu::vec3::DotProduct(modelForward, localUpVector) > 0.01) {
             modelUp = localUpVector;
             modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
             modelForward = mathfu::vec3::CrossProduct(modelRight, modelUp).Normalized();
 
             modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
-        } else {
-
-        }
+//        } else {
+//
+//        }
     } else if ((boneDefinition->flags.spherical_billboard) > 0) {
-        float dotresult = mathfu::vec3::DotProduct(modelForward, localUpVector);
+//        float dotresult = mathfu::vec3::DotProduct(modelForward, localUpVector);
 //        dotresult = 1.0;
-        if (fabs(dotresult) <= 0.98) {
+//        if (fabs(dotresult) <= 0.98) {
             //Spherical billboard
             modelUp = localUpVector;
             modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
             modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
-        } else {
-            modelRight = localRightVector;
-            modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
-            if (mathfu::vec3::DotProduct(modelUp, localUpVector) < 0) {
-                modelUp = -modelUp;
-            }
-
-
-            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
-        }
+//        } else {
+//            modelRight = localRightVector;
+//            modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
+//            if (mathfu::vec3::DotProduct(modelUp, localUpVector) < 0) {
+//                modelUp = -modelUp;
+//            }
+//
+//            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+//        }
     } else {
         std::cout << "This billboarding is not implemented";
     }

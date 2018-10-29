@@ -12,6 +12,7 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     frameData->wmoArray = std::vector<WmoObject*>();
 
     mathfu::vec4 cameraPos = mathfu::vec4(frameData->m_cameraVec3, 1.0);
+    mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
     mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
     mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
 
@@ -24,6 +25,45 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     frameData->exteriorView = ExteriorView();
     frameData->interiorViews = std::vector<InteriorView>();
     m_viewRenderOrder = 0;
+
+    //6. Check what WMO instance we're in
+    frameData->currentInteriorGroups = {};
+    this->m_currentWMO = nullptr;
+
+    int bspNodeId = -1;
+    int interiorGroupNum = -1;
+    int currentWmoGroup = -1;
+
+
+//    mathfu::vec3 nearPlaneCenter(0,0,0);
+//    nearPlaneCenter += frustumPoints[0];
+//    nearPlaneCenter += frustumPoints[1];
+//    nearPlaneCenter += frustumPoints[6];
+//    nearPlaneCenter += frustumPoints[7];
+//    nearPlaneCenter *= 0.25f;
+
+//    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
+    WmoObject *checkingWmoObj = this->m_wmoObject;
+    WmoGroupResult groupResult;
+//        bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(nearPlaneCenter, 1), groupResult);
+    bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(cameraVec3, 1), groupResult);
+
+    if (result) {
+        this->m_currentWMO = checkingWmoObj;
+        currentWmoGroup = groupResult.groupIndex;
+        if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
+            frameData->currentInteriorGroups.push_back(groupResult);
+            interiorGroupNum = groupResult.groupIndex;
+        } else {
+//            std::cout << "not found! duh!";
+        }
+
+        bspNodeId = groupResult.nodeId;
+//            break;
+    } else {
+//        std::cout << "not found! duh!";
+    }
+//    }
 
     if (!frameData->currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
         this->m_wmoObject->resetTraversedWmoGroups();
@@ -147,46 +187,7 @@ void WmoScene::update(WoWFrameData *frameData)  {
         this->m_lastTimeDistanceCalc = this->m_currentTime;
     //}
 
-    //6. Check what WMO instance we're in
-    frameData->currentInteriorGroups = {};
-    this->m_currentWMO = nullptr;
-
-    int bspNodeId = -1;
-    int interiorGroupNum = -1;
-    int currentWmoGroup = -1;
-
-    //Get center of near plane
-    mathfu::mat4 viewPerspectiveMat = frustumMat*lookAtMat4;
-    std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(viewPerspectiveMat);
-
-    mathfu::vec3 nearPlaneCenter(0,0,0);
-    nearPlaneCenter += frustumPoints[0];
-    nearPlaneCenter += frustumPoints[1];
-    nearPlaneCenter += frustumPoints[6];
-    nearPlaneCenter += frustumPoints[7];
-    nearPlaneCenter *= 0.25f;
-
-//    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
-        WmoObject *checkingWmoObj = this->m_wmoObject;
-        WmoGroupResult groupResult;
-        bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(nearPlaneCenter, 1), groupResult);
-
-        if (result) {
-            this->m_currentWMO = checkingWmoObj;
-            currentWmoGroup = groupResult.groupIndex;
-            if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
-                frameData->currentInteriorGroups.push_back(groupResult);
-                interiorGroupNum = groupResult.groupIndex;
-            } else {
-            }
-
-            bspNodeId = groupResult.nodeId;
-//            break;
-        }
-//    }
-
-
-    this->m_currentTime += frameData->deltaTime;
+     this->m_currentTime += frameData->deltaTime;
 }
 
 void WmoScene::collectMeshes(WoWFrameData * frameData) {

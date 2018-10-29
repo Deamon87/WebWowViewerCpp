@@ -944,7 +944,13 @@ void WmoObject::transverseGroupWMO(
         float dotResult = mathfu::vec4::DotProduct(planeV4, cameraLocal);
         //dotResult = dotResult + relation.side * 0.01;
         bool isInsidePortalThis = (relation->side < 0) ? (dotResult <= 0) : (dotResult >= 0);
-        if (!isInsidePortalThis) continue;
+
+        //This condition checks if camera is very close to the portal. In this case the math doesnt work very properly
+        //So I need to make this hack exactly for this case.z
+        const float dotepsilon = pow(1.5f, 2);
+        bool hackCondition = (fabs(dotResult) > dotepsilon);
+
+        if (!isInsidePortalThis && hackCondition) continue;
 
         //2.1 If portal has less than 4 vertices - skip it(invalid?)
         if (portalInfo->index_count < 4) continue;
@@ -960,9 +966,7 @@ void WmoObject::transverseGroupWMO(
 
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
 
-        const float dotepsilon = pow(1.5f, 2);
-        bool hackCondition = (fabs(dotResult) > dotepsilon);
-        hackCondition = true;
+
         if (!visible && hackCondition) continue;
 
         transverseVisitedPortals[relation->portal_index] = true;
