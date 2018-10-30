@@ -47,6 +47,7 @@ void RequestProcessor::processRequests (bool calledFromThread) {
         while (!m_requestQueue.empty()) {
             auto it = m_requestQueue.begin();
 
+//            std::cout << "currentlyProcessing = " << currentlyProcessing << std::endl;
             if (currentlyProcessing >= 5) break;
 
             currentlyProcessing++;

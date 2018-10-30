@@ -91,6 +91,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         ss >> fileDataId;
 
         if (fileDataId == 0) {
+            currentlyProcessing--;
             return;
         }
 

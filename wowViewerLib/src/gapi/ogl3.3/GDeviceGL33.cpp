@@ -14,7 +14,7 @@
 #include "shaders/GM2ParticleShaderPermutationGL33.h"
 #include "shaders/GAdtShaderPermutationGL33.h"
 #include "shaders/GWMOShaderPermutationGL33.h"
-
+#include "../../engine/stringTrim.h"
 
 
 BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -788,11 +788,14 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 
 std::string GDeviceGL33::loadShader(std::string fileName, bool common) {
     std::string fullPath;
+    trim(fileName);
     if (common) {
         fullPath = "./glsl/common/" + fileName + ".glsl";
     } else {
         fullPath = "./glsl/glsl3.3/" + fileName + ".glsl";
     }
+
+//    std::cout << "fullPath = "<< fullPath << std::endl;
 
     auto i = shaderCache.find(fullPath);
     if (i != shaderCache.end()) {
