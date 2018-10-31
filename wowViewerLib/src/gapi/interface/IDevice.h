@@ -113,6 +113,8 @@ class IDevice {
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
 
         virtual bool getIsCompressedTexturesSupported();
+        virtual bool getIsAnisFiltrationSupported();
+        virtual float getAnisLevel() = 0;
     public:
         virtual HGShaderPermutation getShader(std::string shaderName, void *permutationDescriptor) = 0;
 

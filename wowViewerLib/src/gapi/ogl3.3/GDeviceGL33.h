@@ -56,6 +56,8 @@ public:
         return false;
     }
 
+    float getAnisLevel() override;
+
     void bindProgram(IShaderPermutation *program) override;
 
     void bindIndexBuffer(IIndexBuffer *buffer) override;
@@ -126,6 +128,7 @@ protected:
     int8_t m_triCCW = -1;
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
+    float m_anisotropicLevel = 0.0;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
     GVertexBufferGL33 *m_lastBindVertexBuffer = nullptr;
