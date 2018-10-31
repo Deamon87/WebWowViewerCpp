@@ -32,6 +32,26 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             }
         },
         {
+            'MDID',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MDID");
+                    file.mdid_len = chunkData.chunkLen / 4;
+                    chunkData.readValues(file.mdid, file.mdid_len);
+                }
+            }
+        },
+        {
+            'MHID',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MDID");
+                    file.mhid_len = chunkData.chunkLen / 4;
+                    chunkData.readValues(file.mhid, file.mhid_len);
+                }
+            }
+        },
+        {
             'MTEX',
             {
                 [](AdtFile& file, ChunkData& chunkData){

@@ -46,6 +46,12 @@ public:
 
     std::vector<std::string> textureNames;
 
+    uint32_t *mdid = nullptr;
+    int mdid_len = 0;
+
+    uint32_t *mhid = nullptr;
+    int mhid_len = 0;
+
     char *doodadNamesField;
     int doodadNamesFieldLen;
 

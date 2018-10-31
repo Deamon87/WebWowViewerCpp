@@ -36,7 +36,7 @@ void AdtObject::loadM2s() {
         SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
         if (doodadDef.flags.mddf_entry_is_filedata_id) {
             //2. Get model
-            int fileDataId = m_adtFileObj->mmid[doodadDef.nameId];
+            int fileDataId = doodadDef.nameId;
             objectLods[0].m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
         } else {
             std::string fileName = &m_adtFileObj->doodadNamesField[m_adtFileObj->mmid[doodadDef.nameId]];
@@ -78,11 +78,15 @@ void AdtObject::loadWmos() {
 
     for (int j = 0, i = offset; i < offset + length; i++, j++) {
         //1. Get filename
-        std::string fileName;
-
         auto &mapDef = m_adtFileObj->mapObjDef[i];
-        fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
-        objectLods[0].wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
+        if (!mapDef.flags.modf_entry_is_filedata_id) {
+            std::string fileName;
+            fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
+            objectLods[0].wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
+        } else {
+            uint32_t fileDataId = mapDef.nameId;
+            objectLods[0].wmoObjects[j] = m_mapApi->getWmoObject(fileDataId, mapDef);
+        }
 //        std::cout << "wmo filename = "<< fileName << std::endl;
     }
 
@@ -521,8 +525,15 @@ HGTexture AdtObject::getAdtTexture(int textureId) {
         return item->second;
     }
 
-    std::string &materialTexture = m_adtFileTex->textureNames[textureId];
-    HBlpTexture texture = m_api->getTextureCache()->get(materialTexture);
+    HBlpTexture texture;
+    if (m_adtFileTex->textureNames.size() != 0) {
+        std::string &materialTexture = m_adtFileTex->textureNames[textureId];
+        texture = m_api->getTextureCache()->get(materialTexture);
+    } else if (textureId < m_adtFileTex->mdid_len) {
+        uint32_t filedataId = m_adtFileTex->mdid[textureId];
+        texture = m_api->getTextureCache()->getFileId(filedataId);
+    }
+
     HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
     m_requestedTextures[textureId] = h_gblpTexture;
 
@@ -535,11 +546,17 @@ HGTexture AdtObject::getAdtHeightTexture(int textureId) {
         return item->second;
     }
 
-    std::string &materialTexture = m_adtFileTex->textureNames[textureId];
+    HBlpTexture texture;
+    if (m_adtFileTex->textureNames.size() != 0) {
+        std::string &materialTexture = m_adtFileTex->textureNames[textureId];
+        std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_h.blp";
 
-    std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_h.blp";
+        texture = m_api->getTextureCache()->get(matHeightText);
+    } else if (textureId < m_adtFileTex->mhid_len) {
+        uint32_t filedataId = m_adtFileTex->mhid[textureId];
+        texture = m_api->getTextureCache()->getFileId(filedataId);
+    }
 
-    HBlpTexture texture = m_api->getTextureCache()->get(matHeightText);
     HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
     m_requestedTexturesHeight[textureId] = h_gblpTexture;
 

@@ -47,6 +47,7 @@ private:
     M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef) override ;
     M2Object *getM2Object(int fileDataId, SMDoodadDef &doodadDef) override ;
     WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) override ;
+    WmoObject *getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) override ;
     WmoObject *getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) override ;
     WmoObject *getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
 public:

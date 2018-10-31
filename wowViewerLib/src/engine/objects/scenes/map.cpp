@@ -533,6 +533,16 @@ WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
     }
     return wmoObject;
 }
+WmoObject *Map::getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) {
+    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
+    if (wmoObject == nullptr) {
+        wmoObject = new WmoObject(m_api);
+        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject->setModelFileId(fileDataId);
+        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+    }
+    return wmoObject;
+}
 
 WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
     WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
