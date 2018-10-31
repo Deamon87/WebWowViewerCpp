@@ -611,6 +611,9 @@ GDeviceGL33::GDeviceGL33() {
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
+    if (getIsAnisFiltrationSupported()) {
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_anisotropicLevel);
+    }
 
     //From https://en.wikibooks.org/wiki/OpenGL_Programming/Bounding_box
     static const float vertices[] = {
@@ -845,6 +848,10 @@ std::string GDeviceGL33::loadShader(std::string fileName, bool common) {
     shaderCache[fullPath] = result;
     return result;
 #endif
+}
+
+float GDeviceGL33::getAnisLevel() {
+    return m_anisotropicLevel;
 }
 
 

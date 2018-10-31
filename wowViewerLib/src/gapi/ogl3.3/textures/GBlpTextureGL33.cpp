@@ -165,10 +165,8 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
     }
     bool anisFilterExt = true;
 #ifndef WITH_GLESv2
-    if (anisFilterExt) {
-        float aniso = 0.0f;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+    if (m_device.getIsAnisFiltrationSupported()) {
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_device.getAnisLevel());
     }
 #ifndef __EMSCRIPTEN__
     glGenerateMipmap(GL_TEXTURE_2D);
