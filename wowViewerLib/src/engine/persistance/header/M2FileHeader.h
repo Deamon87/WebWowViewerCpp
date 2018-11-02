@@ -352,7 +352,7 @@ struct M2Data {
 
     M2Array<M2Loop> global_loops;                        // Timestamps used in global looping animations.
     M2Array<M2Sequence> sequences;                       // Information about the animations in the model.
-    M2Array<uint16_t> sequence_lookups;                  // Mapping of sequence IDs to the entries in the Animation sequences block.
+    M2Array<int16_t> sequence_lookups;                  // Mapping of sequence IDs to the entries in the Animation sequences block.
     M2Array<M2CompBone> bones;                           // MAX_BONES = 0x100
     M2Array<int16_t> key_bone_lookup;                   // Lookup table for key skeletal bones.
     M2Array<M2Vertex> vertices;

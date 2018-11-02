@@ -27,11 +27,11 @@ public:
     void setMOHD(SMOHeader *mohd) {this->mohd = mohd; };
     void setAttenuateFunction(std::function<void (WmoGroupGeom& wmoGroupGeom)> attenuateFunc) {this->m_attenuateFunc = attenuateFunc; };
     bool isLoaded() const { return m_loaded; };
-    void createIndexVBO();
+    bool hasWater() const {return m_mliq != nullptr; };
 
-    HGVertexBuffer getVBO(IDevice &device);
-    HGIndexBuffer getIBO(IDevice &device);
+
     HGVertexBufferBindings getVertexBindings(IDevice &device);
+    HGVertexBufferBindings getWaterVertexBindings(IDevice &device);
 private:
     bool m_loaded = false;
 
@@ -43,6 +43,9 @@ private:
     int colorOffset2 = 0;
 
     std::function<void (WmoGroupGeom& wmoGroupGeom)> m_attenuateFunc;
+
+    HGVertexBuffer getVBO(IDevice &device);
+    HGIndexBuffer getIBO(IDevice &device);
 public:
     std::vector<uint8_t> m_wmoGroupFile;
 
@@ -104,9 +107,22 @@ public:
     MOLP *molp = nullptr;
     int molpCnt = 0;
 
+    MLIQ *m_mliq = nullptr;
+
+
+    SMOLVert * m_liquidVerticles = nullptr;
+    int m_liquidVerticles_len = -1;
+
+    SMOLTile * m_liquidTiles = nullptr;
+    int m_liquidTiles_len = -1;
+
     HGVertexBuffer combinedVBO;
     HGIndexBuffer indexVBO;
     HGVertexBufferBindings vertexBufferBindings;
+    HGVertexBufferBindings vertexWaterBufferBindings;
+
+    HGVertexBuffer waterVBO;
+    HGIndexBuffer waterIBO;
 
 private:
     void fixColorVertexAlpha(SMOHeader *mohd);

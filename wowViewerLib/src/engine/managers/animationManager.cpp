@@ -34,6 +34,28 @@ AnimationManager::AnimationManager(M2Data* m2File) {
     }
 }
 
+int AnimationManager::findAnimationIndex(uint32_t anim_id) {
+    if (m_m2File->sequence_lookups.size == 0)
+        return -1;
+
+    size_t i (anim_id % m_m2File->sequence_lookups.size);
+
+    for (size_t stride (1); true; ++stride)
+    {
+        if (*m_m2File->sequence_lookups[i] == -1)
+        {
+            return -1;
+        }
+        if (m_m2File->sequences[*m_m2File->sequence_lookups[i]]->id == anim_id)
+        {
+            return *m_m2File->sequence_lookups[i];
+        }
+
+        i = (i + stride * stride) % m_m2File->sequence_lookups.size;
+        // so original_i + 1, original_i + 1 + 4, original_i + 1 + 4 + 9, …
+    }
+}
+
 void AnimationManager::initBonesIsCalc() {
     bonesIsCalculated = std::vector<bool>((unsigned long) m_m2File->bones.size);
 
@@ -69,7 +91,10 @@ void AnimationManager::calculateBoneTree() {
 
 bool AnimationManager::setAnimationId(int animationId, bool reset) {
     int animationIndex = -1;
-    if ((m_m2File->sequence_lookups.size == 0) && (m_m2File->sequences.size > 0)) {
+
+    animationIndex = findAnimationIndex(animationId);
+
+    if ((animationIndex == -1) && (m_m2File->sequence_lookups.size == 0) && (m_m2File->sequences.size > 0)) {
         for (int i = 0; i < m_m2File->sequences.size; i++) {
             const M2Sequence* animationRecord = m_m2File->sequences[i];
             if (animationRecord->id == animationId) {
@@ -77,8 +102,6 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
                 break;
             }
         }
-    } else if (animationId < m_m2File->sequence_lookups.size) {
-        animationIndex = *m_m2File->sequence_lookups[animationId];
     }
     if ((animationIndex > - 1)&& (reset || (animationIndex != this->mainAnimationIndex) )) {
         //Reset animation
@@ -389,9 +412,7 @@ void AnimationManager::calcBones (
          */
 
         int closedHandAnimation = -1;
-        if (m_m2File->sequence_lookups.size > 15 && *m_m2File->sequence_lookups[15] > 0) { //ANIMATION_HANDSCLOSED = 15
-            closedHandAnimation = *m_m2File->sequence_lookups[15];
-        }
+        closedHandAnimation = findAnimationIndex(15); //ANIMATION_HANDSCLOSED = 15
 
         if (closedHandAnimation >= 0) {
             if (this->leftHandClosed && m_m2File->key_bone_lookup.size > (13+5)) {

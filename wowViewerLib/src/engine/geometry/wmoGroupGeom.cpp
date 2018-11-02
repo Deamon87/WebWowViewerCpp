@@ -37,6 +37,20 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         }
                     },
                     {
+                        'MLIQ', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MLIQ");
+                                chunkData.readValue(object.m_mliq);
+
+                                object.m_liquidVerticles_len = object.m_mliq->xverts*object.m_mliq->yverts;
+                                chunkData.readValues(object.m_liquidVerticles, object.m_liquidVerticles_len);
+
+                                object.m_liquidTiles_len = object.m_mliq->xtiles*object.m_mliq->ytiles;
+                                chunkData.readValues(object.m_liquidTiles, object.m_liquidTiles_len);
+                            },
+                        }
+                    },
+                    {
                         'MOVI', {
                             [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOVI");
@@ -376,4 +390,12 @@ HGVertexBufferBindings WmoGroupGeom::getVertexBindings(IDevice &device) {
     }
 
     return vertexBufferBindings;
+}
+
+HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
+    if (vertexWaterBufferBindings == nullptr) {
+
+    }
+
+    return vertexWaterBufferBindings;
 }

@@ -41,6 +41,8 @@ private:
     void initBlendMatrices();
     void initGlobalSequenceTimes();
 
+    int findAnimationIndex(uint32_t anim_id);
+
     void calculateBoneTree();
     void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, animTime_t time);
 
