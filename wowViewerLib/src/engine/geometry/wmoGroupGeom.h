@@ -120,6 +120,7 @@ public:
     HGIndexBuffer indexVBO;
     HGVertexBufferBindings vertexBufferBindings;
     HGVertexBufferBindings vertexWaterBufferBindings;
+    int waterIndexSize = 0;
 
     HGVertexBuffer waterVBO;
     HGIndexBuffer waterIBO;

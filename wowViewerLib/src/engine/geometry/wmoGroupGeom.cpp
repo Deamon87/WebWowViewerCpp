@@ -375,6 +375,13 @@ static GBufferBinding staticWMOBindings[7] = {
     {+wmoShader::Attribute::aColor2, 4, GL_UNSIGNED_BYTE, true, 56, 52}
 };
 
+static GBufferBinding staticWMOWaterBindings[3] = {
+    {+waterShader::Attribute::aDepth, 1, GL_FLOAT, false, 24, 0 },
+    {+waterShader::Attribute::aTexCoord, 2, GL_FLOAT, false, 24, 4},
+    {+waterShader::Attribute::aPosition, 3, GL_FLOAT, false, 24, 12},
+
+};
+
 HGVertexBufferBindings WmoGroupGeom::getVertexBindings(IDevice &device) {
     if (vertexBufferBindings == nullptr) {
         vertexBufferBindings = device.createVertexBufferBindings();
@@ -394,7 +401,105 @@ HGVertexBufferBindings WmoGroupGeom::getVertexBindings(IDevice &device) {
 
 HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
     if (vertexWaterBufferBindings == nullptr) {
+        if (this->m_mliq == nullptr) return nullptr;
 
+        const float UNITSIZE =  533.3433333f / 16.0f / 8.0f;
+
+        std::vector<mathfu::vec3> lVertices ((m_mliq->xtiles + 1)*(m_mliq->ytiles + 1));
+
+        for (int j = 0; j < m_mliq->ytiles + 1; j++)
+        {
+            for (int i = 0; i < m_mliq->xtiles + 1; ++i)
+            {
+                size_t p = j*(m_mliq->xtiles + 1) + i;
+                lVertices[p] = mathfu::vec3(
+                    m_mliq->basePos.x + (UNITSIZE * i),
+                    m_liquidVerticles[p].waterVert.height,
+                    m_mliq->basePos.z + (-1.0) *(UNITSIZE * j)
+                );
+            }
+        }
+
+        std::vector<float> vboBuffer;
+        std::vector<uint16_t> iboBuffer;
+        std::uint16_t index (0);
+
+        for (int j = 0; j < m_mliq->ytiles; j++)
+        {
+            for (int i = 0; i < m_mliq->xtiles; ++i) {
+
+                int tileIndex = j*m_mliq->xtiles + i;
+                assert(tileIndex < m_liquidTiles_len);
+                SMOLTile tile = m_liquidTiles[tileIndex];
+
+                if (!(tile.shared))
+                {
+                    // 15 seems to be "don't draw"
+                    size_t p = j*(m_mliq->xtiles + 1) + i;
+
+                    vboBuffer.push_back (m_liquidVerticles[p].waterVert.flow1 / 255.0f); //depth? //WTF?
+                    vboBuffer.push_back (i + 0.f);
+                    vboBuffer.push_back (j + 0.f);
+                    vboBuffer.push_back (lVertices[p].x);
+                    vboBuffer.push_back (lVertices[p].y);
+                    vboBuffer.push_back (lVertices[p].x);
+
+                    vboBuffer.push_back ((m_liquidVerticles[p + 1].waterVert.flow1) / 255.0f);
+                    vboBuffer.push_back (i + 1.f);
+                    vboBuffer.push_back (j + 0.f);
+                    vboBuffer.push_back (lVertices[p + 1].x);
+                    vboBuffer.push_back (lVertices[p + 1].y);
+                    vboBuffer.push_back (lVertices[p + 1].z);
+
+                    vboBuffer.push_back ((m_liquidVerticles[p + m_mliq->xtiles + 1 + 1].waterVert.flow1) / 255.0f);
+                    vboBuffer.push_back (i + 1.f);
+                    vboBuffer.push_back (j + 1.f);
+                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1 + 1].x);
+                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1 + 1].y);
+                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1 + 1].z);
+
+                    vboBuffer.push_back ((m_liquidVerticles[p + m_mliq->xtiles + 1].waterVert.flow1) / 255.0f);
+                    vboBuffer.push_back (i + 0.f);
+                    vboBuffer.push_back (j + 1.f);
+                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1].x);
+                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1].y);
+                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1].z);
+
+                    iboBuffer.push_back (index + 0);
+                    iboBuffer.push_back (index + 1);
+                    iboBuffer.push_back (index + 2);
+                    iboBuffer.push_back (index + 0);
+                    iboBuffer.push_back (index + 2);
+                    iboBuffer.push_back (index + 3);
+
+                    index += 4;
+                }
+            }
+        }
+
+        waterIBO = device.createIndexBuffer();
+        waterIBO->uploadData(
+            &iboBuffer[0],
+            iboBuffer.size() * sizeof(uint16_t));
+
+        waterVBO = device.createVertexBuffer();
+        waterVBO->uploadData(
+            &vboBuffer[0],
+            vboBuffer.size() * sizeof(float)
+        );
+
+        vertexWaterBufferBindings = device.createVertexBufferBindings();
+        vertexWaterBufferBindings->setIndexBuffer(waterIBO);
+
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = waterVBO;
+
+        vertexBinding.bindings = std::vector<GBufferBinding>(&staticWMOWaterBindings[0], &staticWMOWaterBindings[3]);
+
+        vertexWaterBufferBindings->addVertexBufferBinding(vertexBinding);
+        vertexWaterBufferBindings->save();
+
+        waterIndexSize = iboBuffer.size();
     }
 
     return vertexWaterBufferBindings;

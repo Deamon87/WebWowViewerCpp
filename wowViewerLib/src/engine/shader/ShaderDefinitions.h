@@ -108,6 +108,14 @@ struct wmoShader {
     };
 };
 
+struct waterShader {
+    enum class Attribute {
+        aDepth = 0,
+        aTexCoord = 1,
+        aPosition = 2,
+    };
+};
+
 std::string loadShader(std::string shaderName);
 
 #endif //WOWMAPVIEWERREVIVED_SHADERDEFINITIONS_H

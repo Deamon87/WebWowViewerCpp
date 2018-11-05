@@ -58,7 +58,7 @@ public:
     char *wmoNamesField;
     int wmoNamesFieldLen;
 
-    SMTextureParams *mtxp = 0;
+    SMTextureParams *mtxp = nullptr;
     int mtxp_len = 0;
 
     SMDoodadDef * doodadDef = nullptr;

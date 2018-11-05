@@ -151,4 +151,6 @@ bool DB2Base::readRecordByIndex(int index, int minFieldNum, int fieldsToRead,
             }
         }
     }
+
+    return false;
 }

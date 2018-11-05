@@ -274,7 +274,7 @@ void AdtObject::createVBO() {
 
 		GBufferBinding bufferBinding = { +adtLodShader::Attribute::aHeight, 1, GL_FLOAT, false, 4, 0 };
 		vertexBinding.bindings.push_back(bufferBinding);
-		bufferBinding = { +adtLodShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, indexVBOLodOffset * sizeof(float) };
+		bufferBinding = { +adtLodShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, static_cast<uint32_t>(indexVBOLodOffset * sizeof(float))};
         vertexBinding.bindings.push_back(bufferBinding);
 
         lodVertexBindings->addVertexBufferBinding(vertexBinding);
@@ -318,7 +318,7 @@ void AdtObject::createMeshes() {
 
     adtWideBlockPS = m_api->getDevice()->createUniformBuffer(sizeof(adtModelWideBlockPS));
 
-    adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
+    auto &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
     adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
     adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
     adtWideblockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
@@ -355,7 +355,7 @@ void AdtObject::createMeshes() {
         aTemplate.fragmentBuffers[1] = adtWideBlockPS;
         aTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(adtMeshWideBlockPS));
 
-        adtMeshWideBlockPS &blockPS = aTemplate.fragmentBuffers[2]->getObject<adtMeshWideBlockPS>();
+        auto &blockPS = aTemplate.fragmentBuffers[2]->getObject<adtMeshWideBlockPS>();
 
         static const float heightScale [4] = {0.0, 0.0, 0.0, 0.0};
         static const float heightOffset [4] = {1.0, 1.0, 1.0, 1.0};
@@ -400,7 +400,7 @@ void AdtObject::createMeshes() {
 
         aTemplate.fragmentBuffers[2]->save(true);
 
-        adtMeshWideBlockVS &blockVS = aTemplate.vertexBuffers[2]->getObject<adtMeshWideBlockVS>();
+        auto &blockVS = aTemplate.vertexBuffers[2]->getObject<adtMeshWideBlockVS>();
         blockVS.uPos = mathfu::vec4(
             m_adtFile->mapTile[i].position.x,
             m_adtFile->mapTile[i].position.y,

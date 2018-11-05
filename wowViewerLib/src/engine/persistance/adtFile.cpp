@@ -75,6 +75,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                     debuglog("Entered MTXP");
                     file.mtxp_len = chunkData.chunkLen / sizeof(SMTextureParams);
                     chunkData.readValues(file.mtxp, file.mtxp_len);
+//                    for (int i = 0; i < file.mtxp_len; i++) {
+//                        std::cout << "file.mtxp[" << i << "].padding = " << file.mtxp[i].padding << std::endl;
+//                    }
                 }
             }
         },

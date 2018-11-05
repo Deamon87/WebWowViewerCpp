@@ -74,6 +74,7 @@ private:
 
     HGUniformBuffer vertexModelWideUniformBuffer = nullptr;
     std::vector<HGMesh> m_meshArray;
+    std::vector<HGMesh> m_waterMeshArray;
 
     SMOGroupInfo *m_main_groupInfo;
 
@@ -94,6 +95,7 @@ private:
 
     void postLoad();
     void createMeshes();
+    void createWaterMeshes();
 
     void loadDoodads();
 

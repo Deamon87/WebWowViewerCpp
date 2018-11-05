@@ -420,6 +420,7 @@ void WmoGroupObject::postLoad() {
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
     this->loadDoodads();
     this->createMeshes();
+    this->createWaterMeshes();
 }
 
 void WmoGroupObject::createMeshes() {
@@ -546,6 +547,60 @@ void WmoGroupObject::createMeshes() {
         HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
         this->m_meshArray.push_back(hmesh);
     }
+}
+
+void WmoGroupObject::createWaterMeshes() {
+
+    IDevice *device = m_api->getDevice();
+    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(*device);
+    if (binding == nullptr)
+        return;
+
+    SMOMaterial *materials = m_wmoApi->getMaterials();
+    const SMOMaterial &material = materials[m_geom->m_mliq->materialId];
+    assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
+    auto shaderId = material.shader;
+    if (shaderId >= MAX_WMO_SHADERS) {
+        shaderId = 0;
+    }
+
+    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("waterShader", nullptr);
+
+    gMeshTemplate meshTemplate(binding, shaderPermutation);
+
+    auto blendMode = material.blendMode;
+    float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
+    meshTemplate.meshType = MeshType::eWmoMesh;
+    meshTemplate.depthWrite = blendMode <= 1;
+    meshTemplate.depthCulling = true;
+    meshTemplate.backFaceCulling = false;
+
+    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+
+    HGTexture texture1 = m_wmoApi->getTexture(material.diffuseNameIndex, false);
+    HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, false);
+    HGTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
+
+    meshTemplate.textureCount = 0;
+
+    meshTemplate.texture[0] = texture1;
+    meshTemplate.texture[1] = texture2;
+    meshTemplate.texture[2] = texture3;
+
+    meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.vertexBuffers[1] = vertexModelWideUniformBuffer;
+    meshTemplate.vertexBuffers[2] = nullptr;
+
+    meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.fragmentBuffers[1] = nullptr;
+    meshTemplate.fragmentBuffers[2] = nullptr;
+
+    meshTemplate.start = 0;
+    meshTemplate.end = m_geom->waterIndexSize;
+    meshTemplate.element = GL_TRIANGLES;
+
+    HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
+    m_waterMeshArray.push_back(hmesh);
 }
 
 void WmoGroupObject::loadDoodads() {
@@ -1030,9 +1085,14 @@ void WmoGroupObject::setModelFileId(int fileId) {
 
 void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
     if (!m_loaded) return;
-    for (int i = 0; i < this->m_meshArray.size(); i++) {
-        this->m_meshArray[i]->setRenderOrder(renderOrder);
-        renderedThisFrame.push_back(this->m_meshArray[i]);
+    for (auto &i : this->m_meshArray) {
+        i->setRenderOrder(renderOrder);
+        renderedThisFrame.push_back(i);
+    }
+
+    for (auto &i : this->m_waterMeshArray) {
+        i->setRenderOrder(renderOrder);
+        renderedThisFrame.push_back(i);
     }
 }
 

@@ -22,19 +22,17 @@ struct ParticleForces {
     float drag; // 9
 };
 
-PACK(
 struct ParticleBuffStruct {
     C3Vector position; //0
     C4Vector color;    //12
     C2Vector textCoord0; //28
     C2Vector textCoord1; //36
     C2Vector textCoord2; //44
-});
+};
 
-PACK(
 struct ParticleBuffStructQuad {
     ParticleBuffStruct particle[4];
-});
+};
 
 class ParticleEmitter {
 public:

@@ -268,6 +268,10 @@ void calcBoneBillboardMatrix(
             //Spherical billboard
             modelUp = localUpVector;
             modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+            if (mathfu::vec3::DotProduct(modelRight, localRightVector) < 0) {
+//                modelRight = -modelRight;
+            }
+
             modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
 //        } else {
 //            modelRight = localRightVector;
