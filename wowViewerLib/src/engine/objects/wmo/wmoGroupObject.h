@@ -86,6 +86,7 @@ private:
     bool m_loaded = false;
 
     bool m_recalcBoundries = false;
+    int liquid_type = -1;
 
     void startLoading();
     void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
@@ -96,6 +97,9 @@ private:
     void postLoad();
     void createMeshes();
     void createWaterMeshes();
+
+    int to_wmo_liquid (int x);
+    void setLiquidType();
 
     void loadDoodads();
 
@@ -111,6 +115,29 @@ private:
                                         const std::vector<int> &bspLeafList, mathfu::vec4 &cameraLocal, float &topZ,
                                         float &bottomZ, mathfu::vec4 &colorUnderneath, bool checkPortals = true);
 };
+enum liquid_basic_types
+{
+    liquid_basic_types_water = 0,
+    liquid_basic_types_ocean = 1,
+    liquid_basic_types_magma = 2,
+    liquid_basic_types_slime = 3,
 
+    liquid_basic_types_MASK = 3,
+};
+enum liquid_types
+{
+    // ...
+        LIQUID_WMO_Water = 13,
+    LIQUID_WMO_Ocean = 14,
+    LIQUID_Green_Lava = 15,
+    LIQUID_WMO_Magma = 19,
+    LIQUID_WMO_Slime = 20,
+
+    LIQUID_END_BASIC_LIQUIDS = 20,
+    LIQUID_FIRST_NONBASIC_LIQUID_TYPE = 21,
+
+    LIQUID_NAXX_SLIME = 21,
+    // ...
+};
 
 #endif //WEBWOWVIEWERCPP_WMOGROUPOBJECT_H

@@ -110,9 +110,9 @@ struct wmoShader {
 
 struct waterShader {
     enum class Attribute {
-        aDepth = 0,
-        aTexCoord = 1,
-        aPosition = 2,
+        aPosition = 0,
+//        aTexCoord = 1,
+//        aDepth = 2
     };
 };
 

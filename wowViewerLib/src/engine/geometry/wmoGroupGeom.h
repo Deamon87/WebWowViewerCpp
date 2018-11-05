@@ -44,6 +44,7 @@ private:
 
     std::function<void (WmoGroupGeom& wmoGroupGeom)> m_attenuateFunc;
 
+    int getLegacyWaterType(int a);
     HGVertexBuffer getVBO(IDevice &device);
     HGIndexBuffer getIBO(IDevice &device);
 public:
@@ -121,6 +122,8 @@ public:
     HGVertexBufferBindings vertexBufferBindings;
     HGVertexBufferBindings vertexWaterBufferBindings;
     int waterIndexSize = 0;
+
+    int liquidType = -1;
 
     HGVertexBuffer waterVBO;
     HGIndexBuffer waterIBO;

@@ -15,7 +15,9 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
             'MVER',
             {
                 [](WmoGroupGeom& object, ChunkData& chunkData){
+                    uint32_t  version;
                     debuglog("Entered MVER");
+                    chunkData.readValue(version);
                 }
             }
         },
@@ -42,7 +44,10 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                 debuglog("Entered MLIQ");
                                 chunkData.readValue(object.m_mliq);
 
-                                object.m_liquidVerticles_len = object.m_mliq->xverts*object.m_mliq->yverts;
+                                chunkData.currentOffset -=2;
+                                chunkData.bytesRead -=2;
+
+                                object.m_liquidVerticles_len = object.m_mliq->xverts * object.m_mliq->yverts;
                                 chunkData.readValues(object.m_liquidVerticles, object.m_liquidVerticles_len);
 
                                 object.m_liquidTiles_len = object.m_mliq->xtiles*object.m_mliq->ytiles;
@@ -375,10 +380,10 @@ static GBufferBinding staticWMOBindings[7] = {
     {+wmoShader::Attribute::aColor2, 4, GL_UNSIGNED_BYTE, true, 56, 52}
 };
 
-static GBufferBinding staticWMOWaterBindings[3] = {
-    {+waterShader::Attribute::aDepth, 1, GL_FLOAT, false, 24, 0 },
-    {+waterShader::Attribute::aTexCoord, 2, GL_FLOAT, false, 24, 4},
-    {+waterShader::Attribute::aPosition, 3, GL_FLOAT, false, 24, 12},
+static GBufferBinding staticWMOWaterBindings[1] = {
+    {+waterShader::Attribute::aPosition, 3, GL_FLOAT, false, 12, 0},
+//    {+waterShader::Attribute::aDepth, 1, GL_FLOAT, false, 24, 0 },
+//    {+waterShader::Attribute::aTexCoord, 2, GL_FLOAT, false, 24, 4},
 
 };
 
@@ -399,81 +404,90 @@ HGVertexBufferBindings WmoGroupGeom::getVertexBindings(IDevice &device) {
     return vertexBufferBindings;
 }
 
+int WmoGroupGeom::getLegacyWaterType(int a) {
+    a = a + 1;
+
+    if ( (a - 1) <= 0x13 )
+    {
+        int newwater = (a - 1) & 3;
+        if ( newwater == 1 ) {
+            a = 14;
+            return a;
+        }
+            
+        if ( newwater >= 1 )
+        {
+            if ( newwater == 2 )
+            {
+                a = 19;
+            }
+            else if ( newwater == 3 )
+            {
+                a = 20;
+            }
+            return a;
+        }
+        a = 13;
+    }
+    return a;
+}
+
 HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
     if (vertexWaterBufferBindings == nullptr) {
         if (this->m_mliq == nullptr) return nullptr;
 
         const float UNITSIZE =  533.3433333f / 16.0f / 8.0f;
 
-        std::vector<mathfu::vec3> lVertices ((m_mliq->xtiles + 1)*(m_mliq->ytiles + 1));
+        std::vector<mathfu::vec3_packed> lVertices;
+//        lVertices.reserve((m_mliq->xverts)*(m_mliq->yverts)*3);
 
-        for (int j = 0; j < m_mliq->ytiles + 1; j++)
+        mathfu::vec3 pos(m_mliq->basePos.x, m_mliq->basePos.y, m_mliq->basePos.z);
+
+        for (int j = 0; j < m_mliq->yverts; j++)
         {
-            for (int i = 0; i < m_mliq->xtiles + 1; ++i)
+            for (int i = 0; i < m_mliq->xverts; i++)
             {
-                size_t p = j*(m_mliq->xtiles + 1) + i;
-                lVertices[p] = mathfu::vec3(
-                    m_mliq->basePos.x + (UNITSIZE * i),
-                    m_liquidVerticles[p].waterVert.height,
-                    m_mliq->basePos.z + (-1.0) *(UNITSIZE * j)
-                );
+                int p = j*m_mliq->xverts + i;
+                lVertices.push_back(mathfu::vec3_packed(mathfu::vec3(
+                    pos.x + (UNITSIZE * i),
+                    pos.y + (UNITSIZE * j),
+                    m_liquidVerticles[p].waterVert.height
+                )));
             }
         }
 
         std::vector<float> vboBuffer;
         std::vector<uint16_t> iboBuffer;
-        std::uint16_t index (0);
 
         for (int j = 0; j < m_mliq->ytiles; j++)
         {
-            for (int i = 0; i < m_mliq->xtiles; ++i) {
-
+            for (int i = 0; i < m_mliq->xtiles; i++) {
                 int tileIndex = j*m_mliq->xtiles + i;
                 assert(tileIndex < m_liquidTiles_len);
                 SMOLTile tile = m_liquidTiles[tileIndex];
 
-                if (!(tile.shared))
-                {
-                    // 15 seems to be "don't draw"
-                    size_t p = j*(m_mliq->xtiles + 1) + i;
+                if ((tile.legacyLiquidType == 15)) continue;
 
-                    vboBuffer.push_back (m_liquidVerticles[p].waterVert.flow1 / 255.0f); //depth? //WTF?
-                    vboBuffer.push_back (i + 0.f);
-                    vboBuffer.push_back (j + 0.f);
-                    vboBuffer.push_back (lVertices[p].x);
-                    vboBuffer.push_back (lVertices[p].y);
-                    vboBuffer.push_back (lVertices[p].x);
+//                if (liquidType == -1) {
+//                    liquidType = getLegacyWaterType(tile.legacyLiquidType);
+//                }
 
-                    vboBuffer.push_back ((m_liquidVerticles[p + 1].waterVert.flow1) / 255.0f);
-                    vboBuffer.push_back (i + 1.f);
-                    vboBuffer.push_back (j + 0.f);
-                    vboBuffer.push_back (lVertices[p + 1].x);
-                    vboBuffer.push_back (lVertices[p + 1].y);
-                    vboBuffer.push_back (lVertices[p + 1].z);
 
-                    vboBuffer.push_back ((m_liquidVerticles[p + m_mliq->xtiles + 1 + 1].waterVert.flow1) / 255.0f);
-                    vboBuffer.push_back (i + 1.f);
-                    vboBuffer.push_back (j + 1.f);
-                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1 + 1].x);
-                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1 + 1].y);
-                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1 + 1].z);
+                int16_t vertindexes[4] = {
+                    j    *(m_mliq->xverts) + i,
+                    j    *(m_mliq->xverts) + i + 1,
+                    (j+1)*(m_mliq->xverts) + i + 1,
+                    (j+1)*(m_mliq->xverts) + i
+                };
 
-                    vboBuffer.push_back ((m_liquidVerticles[p + m_mliq->xtiles + 1].waterVert.flow1) / 255.0f);
-                    vboBuffer.push_back (i + 0.f);
-                    vboBuffer.push_back (j + 1.f);
-                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1].x);
-                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1].y);
-                    vboBuffer.push_back (lVertices[p + m_mliq->xtiles + 1].z);
+                iboBuffer.push_back (vertindexes[0]);
+                iboBuffer.push_back (vertindexes[1]);
+                iboBuffer.push_back (vertindexes[2]);
 
-                    iboBuffer.push_back (index + 0);
-                    iboBuffer.push_back (index + 1);
-                    iboBuffer.push_back (index + 2);
-                    iboBuffer.push_back (index + 0);
-                    iboBuffer.push_back (index + 2);
-                    iboBuffer.push_back (index + 3);
+                iboBuffer.push_back (vertindexes[0]);
+                iboBuffer.push_back (vertindexes[2]);
+                iboBuffer.push_back (vertindexes[3]);
 
-                    index += 4;
-                }
             }
         }
 
@@ -484,8 +498,8 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
 
         waterVBO = device.createVertexBuffer();
         waterVBO->uploadData(
-            &vboBuffer[0],
-            vboBuffer.size() * sizeof(float)
+            &lVertices[0],
+            lVertices.size() * sizeof(mathfu::vec3_packed)
         );
 
         vertexWaterBufferBindings = device.createVertexBufferBindings();
@@ -494,7 +508,7 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = waterVBO;
 
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticWMOWaterBindings[0], &staticWMOWaterBindings[3]);
+        vertexBinding.bindings = std::vector<GBufferBinding>(&staticWMOWaterBindings[0], &staticWMOWaterBindings[1]);
 
         vertexWaterBufferBindings->addVertexBufferBinding(vertexBinding);
         vertexWaterBufferBindings->save();

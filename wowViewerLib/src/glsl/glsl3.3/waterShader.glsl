@@ -1,7 +1,7 @@
 #ifdef COMPILING_VS
-layout(location=0) in float aDepth;
-layout(location=1) in vec2 aTexCoord;
-layout(location=2) in vec3 aPosition;
+layout(location=0) in vec3 aPosition;
+//layout(location=1) in float aDepth;
+//layout(location=2) in vec2 aTexCoord;
 
 
 layout(std140) uniform sceneWideBlockVSPS {
@@ -14,30 +14,23 @@ layout(std140) uniform modelWideBlockVS {
 };
 
 
-out vec2 vTexCoord;
+//out vec2 vTexCoord;
 out vec3 vPosition;
 
 void main() {
-    mat4 rotateMat = mat4(
-        0, 1, 0, 0,
-        0, 0, -1, 0,
-        1, 0, 0, 0,
-        0, 0, 0, 1
-    );
-
    vec4 aPositionVec4 = vec4(aPosition, 1);
-   mat4 cameraMatrix = uLookAtMat * uPlacementMat * rotateMat;
+   mat4 cameraMatrix = uLookAtMat * uPlacementMat ;
 
    vec4 cameraPoint = cameraMatrix * aPositionVec4;
 
    gl_Position = uPMatrix * cameraPoint;
-   vTexCoord = aTexCoord;
+//   vTexCoord = aTexCoord;
    vPosition = cameraPoint.xyz;
 }
 #endif
 
 #ifdef COMPILING_FS
-in vec2 vTexCoord;
+//in vec2 vTexCoord;
 in vec3 vPosition;
 
 uniform sampler2D uTexture;
@@ -49,8 +42,25 @@ layout(std140) uniform sceneWideBlockVSPS {
     mat4 uPMatrix;
 };
 
+//Individual meshes
+layout(std140) uniform meshWideBlockPS {
+    int waterType;
+};
+
 void main() {
-    outputColor = vec4(0.5, 0, 0, 0.5);
+    if (waterType == 13) { // LIQUID_WMO_Water
+        outputColor = vec4(0.0, 0, 0.3, 0.5);
+    } else if (waterType == 14) { //LIQUID_WMO_Ocean
+        outputColor = vec4(0, 0, 0.8, 0.8);
+    } else if (waterType == 19) { //LIQUID_WMO_Magma
+        outputColor = vec4(0.3, 0, 0, 0.5);
+    } else if (waterType == 20) { //LIQUID_WMO_Slime
+        outputColor = vec4(0.0, 0.5, 0, 0.5);
+    } else {
+        outputColor = vec4(0.5, 0.5, 0.5, 0.5);
+    }
+
+
 }
 
 #endif

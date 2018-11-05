@@ -549,6 +549,58 @@ void WmoGroupObject::createMeshes() {
     }
 }
 
+
+int WmoGroupObject::to_wmo_liquid (int x) {
+    liquid_basic_types const basic (static_cast<liquid_basic_types>(x & liquid_basic_types_MASK));
+    switch (basic)
+    {
+        case liquid_basic_types_water:
+            return (m_geom->mogp->flags.is_not_water_but_ocean) ? LIQUID_WMO_Ocean : LIQUID_WMO_Water;
+        case liquid_basic_types_ocean:
+            return LIQUID_WMO_Ocean;
+        case liquid_basic_types_magma:
+            return LIQUID_WMO_Magma;
+        case liquid_basic_types_slime:
+            return LIQUID_WMO_Slime;
+    }
+}
+
+void WmoGroupObject::setLiquidType() {
+
+    if ( getWmoApi()->getWmoHeader()->flags.flag_use_liquid_type_dbc_id)
+    {
+        if ( m_geom->mogp->liquidType < LIQUID_FIRST_NONBASIC_LIQUID_TYPE )
+        {
+            this->liquid_type = to_wmo_liquid (m_geom->mogp->liquidType - 1);
+        }
+        else
+        {
+            this->liquid_type = m_geom->mogp->liquidType;
+        }
+    }
+    else
+    {
+        if ( m_geom->mogp->liquidType == LIQUID_Green_Lava )
+        {
+            this->liquid_type = 0;
+        }
+        else
+        {
+            int const liquidType (m_geom->mogp->liquidType + 1);
+            int const tmp (m_geom->mogp->liquidType);
+            if ( m_geom->mogp->liquidType < LIQUID_END_BASIC_LIQUIDS )
+            {
+                this->liquid_type = to_wmo_liquid (m_geom->mogp->liquidType);
+            }
+            else
+            {
+                this->liquid_type = m_geom->mogp->liquidType + 1;
+            }
+            assert (!liquidType || !(m_geom->mogp->flags.LIQUIDSURFACE));
+        }
+    }
+}
+
 void WmoGroupObject::createWaterMeshes() {
 
     IDevice *device = m_api->getDevice();
@@ -556,6 +608,9 @@ void WmoGroupObject::createWaterMeshes() {
     if (binding == nullptr)
         return;
 
+    //Get Liquid with new method
+    setLiquidType();
+    //
     SMOMaterial *materials = m_wmoApi->getMaterials();
     const SMOMaterial &material = materials[m_geom->m_mliq->materialId];
     assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
@@ -571,11 +626,11 @@ void WmoGroupObject::createWaterMeshes() {
     auto blendMode = material.blendMode;
     float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
     meshTemplate.meshType = MeshType::eWmoMesh;
-    meshTemplate.depthWrite = blendMode <= 1;
+    meshTemplate.depthWrite = false;
     meshTemplate.depthCulling = true;
     meshTemplate.backFaceCulling = false;
 
-    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
     HGTexture texture1 = m_wmoApi->getTexture(material.diffuseNameIndex, false);
     HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, false);
@@ -593,11 +648,15 @@ void WmoGroupObject::createWaterMeshes() {
 
     meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
     meshTemplate.fragmentBuffers[1] = nullptr;
-    meshTemplate.fragmentBuffers[2] = nullptr;
+    meshTemplate.fragmentBuffers[2] = device->createUniformBuffer(16);
 
     meshTemplate.start = 0;
     meshTemplate.end = m_geom->waterIndexSize;
     meshTemplate.element = GL_TRIANGLES;
+
+    int &waterType = meshTemplate.fragmentBuffers[2]->getObject<int>();
+    waterType = liquid_type;
+    meshTemplate.fragmentBuffers[2]->save();
 
     HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
     m_waterMeshArray.push_back(hmesh);

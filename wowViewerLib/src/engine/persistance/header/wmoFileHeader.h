@@ -303,7 +303,7 @@ struct MOLP {
     unsigned int unk4;
     CArgb unk5;
 };
-
+PACK(
 struct MLIQ {
     uint32_t xverts;
     uint32_t yverts;
@@ -311,7 +311,7 @@ struct MLIQ {
     uint32_t ytiles;
     C3Vector basePos;
     uint16_t materialId;
-};
+});
 
 struct SMOLVert
 {
@@ -334,9 +334,12 @@ struct SMOLVert
 };
 struct SMOLTile
 {
-    uint8_t liquid : 6;
-    uint8_t fishable : 1;
-    uint8_t shared : 1;
+    uint8_t legacyLiquidType : 4;
+    uint8_t flag_16 : 1;
+    uint8_t flag_32 : 1;
+    uint8_t flag_64 : 1;
+    uint8_t flag_128 : 1;
+    ;
 };
 
 #endif //WOWVIEWERLIB_WMOFILEHEADER_H
