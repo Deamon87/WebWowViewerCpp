@@ -3,6 +3,7 @@
 #include "HttpRequestProcessor.h"
 #include <iostream>
 #include <emscripten/threading.h>
+#include <emscripten.h>
 #include <GLFW/glfw3.h>
 
 WoWScene *scene;
@@ -173,6 +174,8 @@ extern "C" {
             return;
         }
 
+        emscripten_run_script("Module['hammerJsAssignControl']()");
+
     //    if (emscripten_has_threading_support()) {
     //        std::cout << "Has support";
     //    } else {
@@ -227,6 +230,39 @@ extern "C" {
         canvHeight = height;
         scene->setScreenSize(canvWidth, canvHeight);
     }
+    void addHorizontalViewDir(float val) {
+        IControllable* controllable = scene->getCurrentCamera();
+        controllable->addHorizontalViewDir(val);
+    }
+    void addVerticalViewDir(float val ) {
+        IControllable* controllable = scene->getCurrentCamera();
+        controllable->addVerticalViewDir(val);
+    }
+    void zoomInFromMouseScroll(float val ) {
+        IControllable* controllable = scene->getCurrentCamera();
+        controllable->zoomInFromMouseScroll(val);
+    }
+    void addCameraViewOffset(float val1, float val2 ) {
+        IControllable* controllable = scene->getCurrentCamera();
+        controllable->addCameraViewOffset(val1, val2);
+    }
+    void startMovingForward() {
+        IControllable* controllable = scene->getCurrentCamera();
+        controllable->startMovingForward();
+    }
+    void startMovingBackwards() {
+        IControllable* controllable = scene->getCurrentCamera();
+        controllable->startMovingBackwards();
+    }
+    void stopMovingForward() {
+        IControllable* controllable = scene->getCurrentCamera();
+        controllable->stopMovingForward();
+    }
+    void stopMovingBackwards() {
+        IControllable* controllable = scene->getCurrentCamera();
+        controllable->stopMovingBackwards();
+    }
+
 
 }
 

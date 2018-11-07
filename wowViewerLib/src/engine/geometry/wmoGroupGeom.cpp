@@ -474,10 +474,10 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
 
 
                 int16_t vertindexes[4] = {
-                    j    *(m_mliq->xverts) + i,
-                    j    *(m_mliq->xverts) + i + 1,
-                    (j+1)*(m_mliq->xverts) + i + 1,
-                    (j+1)*(m_mliq->xverts) + i
+                    (int16_t) (j * (m_mliq->xverts) + i),
+                    (int16_t) (j * (m_mliq->xverts) + i + 1),
+                    (int16_t) ((j + 1) * (m_mliq->xverts) + i + 1),
+                    (int16_t) ((j + 1) * (m_mliq->xverts) + i)
                 };
 
                 iboBuffer.push_back (vertindexes[0]);

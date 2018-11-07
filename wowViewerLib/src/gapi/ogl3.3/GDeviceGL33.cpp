@@ -672,9 +672,6 @@ GDeviceGL33::GDeviceGL33() {
     m_lineBBBindings->addVertexBufferBinding(binding);
     m_lineBBBindings->save();
 
-
-//    m_defaultVao->save();
-
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize);
 
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
@@ -683,7 +680,6 @@ GDeviceGL33::GDeviceGL33() {
 //    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 //    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
 //    glDebugMessageCallback(debug_func, NULL);
-//
 }
 
 HGOcclusionQuery GDeviceGL33::createQuery(HGMesh boundingBoxMesh) {
@@ -743,7 +739,6 @@ unsigned int GDeviceGL33::getCullingFrameNumber() {
 unsigned int GDeviceGL33::getDrawFrameNumber() {
     return m_frameNumber & 3;
 }
-
 
 void GDeviceGL33::increaseFrameNumber() {
     m_frameNumber++;
@@ -805,8 +800,6 @@ std::string GDeviceGL33::loadShader(std::string fileName, bool common) {
         return i->second;
     }
 
-
-
 #ifdef __ANDROID_API__
         //TODO: pass this stuff here
     AAssetManager *mgr = g_assetMgr;
@@ -839,7 +832,6 @@ std::string GDeviceGL33::loadShader(std::string fileName, bool common) {
     std::cout << "asset closed" << std::endl;
 
     return std::string(outBuf.begin(), outBuf.end());
-
 #else
     std::ifstream t(fullPath);
 
