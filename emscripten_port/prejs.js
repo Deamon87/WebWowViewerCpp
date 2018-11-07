@@ -1,3 +1,10 @@
+// Module['locateFile'] = function (path, prefix) {
+//     console.log("path = "+path, path);
+//     if ((""+path).indexOf("?") <= 0) {
+//         return prefix+path+"?t="+new Date().getTime();
+//     }
+//     return prefix+path;
+// };
 Module['hammerJsAssignControl'] = function () {
     var element = Module['canvas'];
 
@@ -9,6 +16,7 @@ Module['hammerJsAssignControl'] = function () {
 
     var lastTouchStart = new Date();
     function touchStart(event) {
+        event.preventDefault();
         if (isPitchGoingOn) return;
         mleft_pressed = 1;
 
@@ -25,6 +33,7 @@ Module['hammerJsAssignControl'] = function () {
     }
 
     function touchMove(event) {
+        event.preventDefault();
         if (isPitchGoingOn) return;
         var x = event.touches[0].pageX; // Собираем данные
         var y = event.touches[0].pageY; // и еще
@@ -38,12 +47,14 @@ Module['hammerJsAssignControl'] = function () {
         }
     }
     function touchEnd(event) {
+        event.preventDefault();
         if (event.touches.length == 0) {
             mleft_pressed = 0;
             Module['_stopMovingForward']();
             Module['_stopMovingBackwards']();
             isCameraMoving = false;
         }
+        event.preventDefault();
         // console.log("(end) event.touches.length" + event.touches.length)
     }
 
@@ -88,5 +99,7 @@ Module['hammerJsAssignControl'] = function () {
 
 
         if (pinchScale < 0.01) pinchScale = 0.01;
+
+        ev.preventDefault();
     });
 }
