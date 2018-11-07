@@ -17,6 +17,7 @@ layout(std140) uniform modelWideBlockVS {
 //out vec2 vTexCoord;
 out vec3 vPosition;
 
+precision highp FLOATDEC
 void main() {
    vec4 aPositionVec4 = vec4(aPosition, 1);
    mat4 cameraMatrix = uLookAtMat * uPlacementMat ;
@@ -30,7 +31,8 @@ void main() {
 #endif
 
 #ifdef COMPILING_FS
-//in vec2 vTexCoord;
+precision highp FLOATDEC
+
 in vec3 vPosition;
 
 uniform sampler2D uTexture;

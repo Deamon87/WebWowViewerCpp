@@ -44,8 +44,11 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                 debuglog("Entered MLIQ");
                                 chunkData.readValue(object.m_mliq);
 
-                                chunkData.currentOffset -=2;
-                                chunkData.bytesRead -=2;
+                                if (sizeof(MLIQ) != 30) {
+                                    int subVal = 30 - sizeof(MLIQ);
+                                    chunkData.currentOffset -= subVal;
+                                    chunkData.bytesRead -= subVal;
+                                }
 
                                 object.m_liquidVerticles_len = object.m_mliq->xverts * object.m_mliq->yverts;
                                 chunkData.readValues(object.m_liquidVerticles, object.m_liquidVerticles_len);
