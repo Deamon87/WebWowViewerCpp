@@ -832,8 +832,20 @@ bool WmoObject::startTraversingWMOGroup(
             globalLevel,
             0);
     } else {
+        if (exteriorView.viewCreated) {
+            frustumPlanesExt = exteriorView.frustumPlanes[0];
+            frustumPlanes.clear();
+            std::transform(frustumPlanesExt.begin(), frustumPlanesExt.end(),
+                           std::back_inserter(frustumPlanes),
+                           [&](const mathfu::vec4 &p) -> mathfu::vec4 {
+                               return transposeModelMat * p;
+                           }
+            );
+        }
+
         if (!exteriorView.viewCreated) {
             exteriorView.viewCreated = true;
+            exteriorView.frustumPlanes.push_back(frustumPlanesExt);
         }
 
         if (globalLevel+1 >= exteriorView.level) {

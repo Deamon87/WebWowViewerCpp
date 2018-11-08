@@ -70,8 +70,8 @@ void GUniformBufferGL33::save(bool initialSave) {
         m_needsUpdate = true;
 
 //        2. Update UBO
-        void * data = getPointerForModification();
         if (m_buffCreated) {
+            void * data = getPointerForModification();
             this->uploadData(data, m_size);
         }
 //    }

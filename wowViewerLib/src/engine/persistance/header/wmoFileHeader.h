@@ -303,7 +303,7 @@ struct MOLP {
     unsigned int unk4;
     CArgb unk5;
 };
-PACK(
+#pragma pack(push, 1)
 struct MLIQ {
     uint32_t xverts;
     uint32_t yverts;
@@ -311,7 +311,8 @@ struct MLIQ {
     uint32_t ytiles;
     C3Vector basePos;
     uint16_t materialId;
-});
+};
+#pragma pack(pop)
 
 struct SMOLVert
 {

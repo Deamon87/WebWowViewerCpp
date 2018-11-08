@@ -29,7 +29,6 @@ Module['hammerJsAssignControl'] = function () {
             Module['_startMovingForward']();
         }
         lastTouchStart = newTime;
-        // console.log("(start) event.touches.length" + event.touches.length)
     }
 
     function touchMove(event) {

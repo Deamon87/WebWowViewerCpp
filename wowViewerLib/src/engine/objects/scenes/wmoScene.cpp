@@ -85,8 +85,6 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
         }
     } else {
         //Cull exterior
-        frameData->exteriorView.viewCreated = true;
-        frameData->exteriorView.frustumPlanes.push_back(frustumPlanes);
         cullExterior(frameData, m_viewRenderOrder);
     }
 
