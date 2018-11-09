@@ -22,42 +22,42 @@ public:
 
     SMOHeader *header;
 
-    SMOGroupInfo *groups;
+    PointerChecker<SMOGroupInfo> groups = (groupsLen);
     int groupsLen;
 
     std::vector<std::vector<uint32_t>> gfids;
 
-    C3Vector *portal_vertices;
+    PointerChecker<C3Vector> portal_vertices = (portal_verticesLen);
     int portal_verticesLen;
 
-    SMOPortal *portals;
+    PointerChecker<SMOPortal> portals = (portalsLen);
     int portalsLen;
 
-    SMOPortalRef *portalReferences;
+    PointerChecker<SMOPortalRef> portalReferences = (portalReferencesLen);
     int portalReferencesLen;
 
-    SMOMaterial *materials;
+    PointerChecker<SMOMaterial> materials = (materialsLen);
     int materialsLen;
 
-    char *textureNamesField = nullptr;
+    PointerChecker<char> textureNamesField = (textureNamesFieldLen);
     int textureNamesFieldLen = 0;
 
-    char *doodadNamesField;
+    PointerChecker<char> doodadNamesField = (doodadNamesFieldLen);
     int doodadNamesFieldLen;
 
-    int *doodadFileDataIds = nullptr;
+    PointerChecker<int> doodadFileDataIds = (doodadFileDataIdsLen);
     int doodadFileDataIdsLen = 0;
 
-    SMODoodadSet *doodadSets;
+    PointerChecker<SMODoodadSet> doodadSets = (doodadSetsLen);
     int doodadSetsLen;
 
-    SMODoodadDef *doodadDefs;
+    PointerChecker<SMODoodadDef> doodadDefs = (doodadDefsLen);
     int doodadDefsLen;
 
-    SMOLight * lights = nullptr;
+    PointerChecker<SMOLight> lights = (lightsLen);
     int lightsLen = 0;
 
-    SMOFog *fogs;
+    PointerChecker<SMOFog> fogs = (fogsLen);
     int fogsLen;
 
 };

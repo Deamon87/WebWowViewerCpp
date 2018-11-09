@@ -9,9 +9,10 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include "../header/commonFileStructs.h"
 
-//#define debuglog(x) std::cout<< x <<std::endl;
-#define debuglog(x)
+#define debuglog(x) std::cout<< x <<std::endl;
+//#define debuglog(x)
 
 class CChunkFileReader;
 typedef CChunkFileReader ChunkData;
@@ -112,11 +113,22 @@ private:
         ChunkData subChunk;
         while ((chunkLoadOffset < chunkEndOffset)) {
             subChunk = this->loadChunkAtOffset(chunkLoadOffset, -1);
-            if (subChunk.chunkIdent == 0) break;
+            int bytesReadBefore = subChunk.bytesRead;
 
             if (sectionHandlerProc->subChunks.count(subChunk.chunkIdent) > 0) {
                 chunkDef<T> *subchunkHandler = &sectionHandlerProc->subChunks[subChunk.chunkIdent];
                 this->processChunk(subchunkHandler, subChunk, resultObj);
+                int bytesReadAfter = subChunk.bytesRead;
+
+                char *indentPtr = (char *) &subChunk.chunkIdent;
+                char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
+                if (bytesReadAfter - bytesReadBefore > subChunk.chunkLen) {
+                    debuglog("Read out of bounds of chunk "<< indent <<" in "<< __PRETTY_FUNCTION__);
+                }
+                if (bytesReadAfter - bytesReadBefore < subChunk.chunkLen) {
+                    debuglog("Not all data was read from chunk "<< indent <<" in "<< __PRETTY_FUNCTION__);
+                }
+
             } else {
                 char *indentPtr = (char *) &subChunk.chunkIdent;
                 char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
@@ -143,6 +155,7 @@ private:
                 int chunkEndOffset = chunk.dataOffset + chunk.chunkLen;
 
                 loopOverSubChunks(sectionHandlerProc, chunkLoadOffset, chunkEndOffset, resultObj);
+                chunk.bytesRead += chunk.chunkLen - chunk.bytesRead;
             }
         }
     }
@@ -168,6 +181,14 @@ public:
         currentOffset += count*sizeof(T);
         bytesRead += count*sizeof(T);
     }
+
+    template<typename T> inline void readValues(PointerChecker<T> &value, int count) {
+        static_assert(!std::is_pointer<T>::value, "T is a pointer");
+        value = (T*)&(((unsigned char *)fileData)[currentOffset]);
+        currentOffset += count*sizeof(T);
+        bytesRead += count*sizeof(T);
+    }
+
 };
 
 

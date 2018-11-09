@@ -52,69 +52,69 @@ public:
 
     SMOHeader *mohd = nullptr;
 
-    MOGP *mogp;
+    MOGP *mogp = nullptr;
 
-    uint16_t *indicies = nullptr;
+    PointerChecker<uint16_t> indicies = PointerChecker<uint16_t>(indicesLen);
     int indicesLen = 0;
 
-    SMOPoly *mopy = nullptr;
+    PointerChecker<uint16_t> mopy = (mopyLen);
     int mopyLen = 0;
 
-    C3Vector *verticles = nullptr;
+    PointerChecker<C3Vector> verticles = (verticesLen);
     int verticesLen;
 
     C3Vector *normals = nullptr;
     int normalsLen = 0;
 
     int textureCoordsRead = 0;
-    C2Vector *textCoords = nullptr;
+    PointerChecker<C2Vector> textCoords = (textureCoordsLen);
     int textureCoordsLen = 0;
 
-    C2Vector *textCoords2 = nullptr;
+    PointerChecker<C2Vector> textCoords2 = (textureCoordsLen2);
     int textureCoordsLen2 = 0;
 
-    C2Vector *textCoords3 = nullptr;
+    PointerChecker<C2Vector> textCoords3 = (textureCoordsLen3);
     int textureCoordsLen3 = 0;
 
-    CImVector *colorArray = nullptr;
+    PointerChecker<CImVector> colorArray = (cvLen);
     int cvLen = 0;
 
-    CImVector *colorArray2 = nullptr;
+    PointerChecker<CImVector> colorArray2 = (cvLen2);
     int cvLen2 = 0;
     int mocvRead = 0;
 
-    uint16_t *doodadRefs = nullptr;
+    PointerChecker<uint16_t> doodadRefs = (doodadRefsLen);
     int doodadRefsLen = 0;
 
-    uint16_t * lightRefList = nullptr;
+    PointerChecker<uint16_t> lightRefList = (lightRefListLen);
     int lightRefListLen = 0;
 
-    SMOBatch *batches = nullptr;
+    PointerChecker<SMOBatch> batches = (batchesLen);
     int batchesLen = 0;
 
-    SMOBatch *prePassbatches = nullptr;
+    PointerChecker<SMOBatch> prePassbatches = (prePassBatchesLen);
     int prePassBatchesLen = 0;
 
 
-    t_BSP_NODE * bsp_nodes = nullptr;
+    PointerChecker<t_BSP_NODE> bsp_nodes = (nodesLen);
     int nodesLen = 0;
 
-    uint16_t *bpsIndicies = nullptr;
+
+    PointerChecker<uint16_t> bpsIndicies = (bpsIndiciesLen);
     int bpsIndiciesLen = 0;
 
     int use_replacement_for_header_color = 0;
     CArgb replacement_for_header_color = {};
 
-    MOLP *molp = nullptr;
+    PointerChecker<MOLP> molp = (molpCnt);
     int molpCnt = 0;
 
     MLIQ *m_mliq = nullptr;
 
-
-    SMOLVert * m_liquidVerticles = nullptr;
+    PointerChecker<SMOLVert> m_liquidVerticles = (m_liquidVerticles_len);
     int m_liquidVerticles_len = -1;
 
-    SMOLTile * m_liquidTiles = nullptr;
+    PointerChecker<SMOLTile> m_liquidTiles = (m_liquidTiles_len);
     int m_liquidTiles_len = -1;
 
     HGVertexBuffer combinedVBO;

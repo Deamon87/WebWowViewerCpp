@@ -99,7 +99,6 @@ private:
 
     // Portal culling stuff begin
     std::vector<bool> transverseVisitedPortals;
-    std::vector<int> collectedM2s;
     // Portal culling stuff end
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
@@ -127,9 +126,9 @@ public:
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
     virtual SMOHeader *getWmoHeader() override;
 
-    virtual SMOMaterial *getMaterials() override;
+    virtual PointerChecker<SMOMaterial> &getMaterials() override;
 
-    virtual SMOLight *getLightArray() override;
+    virtual PointerChecker<SMOLight> &getLightArray() override;
     virtual std::vector<PortalInfo_t> &getPortalInfos() override {
         return geometryPerPortal;
     };

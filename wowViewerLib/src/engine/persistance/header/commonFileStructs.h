@@ -39,6 +39,61 @@
 #endif
 
 
+template<class T>
+struct PointerChecker {
+private:
+#ifdef DEBUGPOINTER
+    int &maxLenPtr;
+#endif
+    T *elementOffset = nullptr;
+
+    PointerChecker() = default;
+//    T& operator=(int index) {
+//        assert(true);
+//    }
+public:
+#ifdef DEBUGPOINTER
+    PointerChecker(int &maxLen) : maxLenPtr(maxLen) {
+    }
+#else
+    PointerChecker(int &maxLen){
+    }
+#endif
+
+    inline T* operator=(T* other) {
+        this->elementOffset = other;
+        return other;
+    }
+    inline  T* operator->() {
+#ifdef DEBUGPOINTER
+        assert(elementOffset != nullptr);
+#endif
+        return this->elementOffset;
+    }
+
+    inline T& operator[](size_t index) {
+#ifdef DEBUGPOINTER
+        assert(index < maxLenPtr);
+#endif
+        return elementOffset[index];
+    }
+    inline T& operator[](size_t index) const {
+#ifdef DEBUGPOINTER
+        assert(index < maxLenPtr);
+#endif
+        return elementOffset[index];
+    }
+    inline bool operator==(T* other){
+        return elementOffset == other;
+    }
+    inline bool operator!=(T* other){
+        return elementOffset != other;
+    }
+};
+
+
+
+
 using fixed16 = int16_t;
 typedef mathfu::vec4_packed C4Vector;
 typedef mathfu::vec3_packed C3Vector;

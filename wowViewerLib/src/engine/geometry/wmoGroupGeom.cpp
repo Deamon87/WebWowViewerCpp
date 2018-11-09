@@ -227,8 +227,7 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
     if (batches == nullptr) return;
 
     if (mogp->transBatchCount) {
-        begin_second_fixup =
-            *((uint16_t *) &batches[(uint16_t) mogp->transBatchCount] - 2) + 1;
+        begin_second_fixup = batches[(uint16_t) mogp->transBatchCount-1].last_vertex + 1;
     }
 
     unsigned char v35;

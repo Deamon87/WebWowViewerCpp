@@ -53,9 +53,9 @@ public:
 
     bool checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                             mathfu::vec4 &cameraLocal,
-                            C3Vector *portalVerticles,
-                            SMOPortal *portalInfos,
-                            SMOPortalRef *portalRels,
+                            PointerChecker<C3Vector> &portalVerticles,
+                            PointerChecker<SMOPortal> &portalInfos,
+                            PointerChecker<SMOPortalRef> &portalRels,
                             std::vector<WmoGroupResult> &candidateGroups);
 private:
     IWoWInnerApi *m_api = nullptr;
@@ -103,17 +103,27 @@ private:
 
     void loadDoodads();
 
-    bool checkIfInsidePortals(mathfu::vec3 point, const SMOPortal *portalInfos, const SMOPortalRef *portalRels);
+    bool checkIfInsidePortals(
+        mathfu::vec3 point,
+        const PointerChecker<SMOPortal> &portalInfos,
+        const PointerChecker<SMOPortalRef> &portalRels
+    );
 
 
     static void queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList);
+    static void queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP_NODE> &nodes, std::vector<int> &bspLeafIdList);
 
-    bool getTopAndBottomTriangleFromBsp(mathfu::vec4 &cameraLocal, SMOPortal *portalInfos,
-                                        SMOPortalRef *portalRels, std::vector<int> &bspLeafList, M2Range &result);
+    bool getTopAndBottomTriangleFromBsp(
+        mathfu::vec4 &cameraLocal,
+        PointerChecker<SMOPortal> &portalInfos,
+        PointerChecker<SMOPortalRef> &portalRels,
+        std::vector<int> &bspLeafList, M2Range &result);
 
-    void getBottomVertexesFromBspResult(const SMOPortal *portalInfos, const SMOPortalRef *portalRels,
-                                        const std::vector<int> &bspLeafList, mathfu::vec4 &cameraLocal, float &topZ,
-                                        float &bottomZ, mathfu::vec4 &colorUnderneath, bool checkPortals = true);
+    void getBottomVertexesFromBspResult(
+        const PointerChecker<SMOPortal> &portalInfos,
+        const PointerChecker<SMOPortalRef> &portalRels,
+        const std::vector<int> &bspLeafList, mathfu::vec4 &cameraLocal, float &topZ,
+        float &bottomZ, mathfu::vec4 &colorUnderneath, bool checkPortals = true);
 };
 enum liquid_basic_types
 {

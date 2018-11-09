@@ -22,7 +22,7 @@ public:
 
     M2Data * getM2Data(){ if (m_loaded) {return m_m2Data;} else {return nullptr;}};
 
-    M2Data *m_m2Data;
+    M2Data *m_m2Data = nullptr;
     std::vector<uint32_t> skinFileDataIDs;
     std::vector<uint32_t> textureFileDataIDs;
 

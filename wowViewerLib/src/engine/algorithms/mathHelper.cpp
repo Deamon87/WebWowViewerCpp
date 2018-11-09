@@ -352,7 +352,7 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
     // check box outside/inside of frustum
     std::vector<mathfu::vec4> vec4Points(points.size());
 
-    const float epsilon = 0.001;
+    const float epsilon = 0;
 
     for (int j = 0; j < points.size(); j++) {
         vec4Points[j] = mathfu::vec4(points[j].x, points[j].y, points[j].z, 1.0);

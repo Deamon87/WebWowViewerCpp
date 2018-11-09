@@ -121,7 +121,9 @@ void WmoScene::cullExterior(WoWFrameData *frameData, int viewRenderOrder) {
 
     mathfu::mat4 projectionModelMat = frustumMat * lookAtMat4;
 
-    this->m_wmoObject->resetTraversedWmoGroups();
+    if (m_currentWMO != m_wmoObject || frameData->currentInteriorGroups.size() <= 0) {
+        this->m_wmoObject->resetTraversedWmoGroups();
+    }
     if (m_wmoObject->startTraversingWMOGroup(
         cameraVec4,
         projectionModelMat,

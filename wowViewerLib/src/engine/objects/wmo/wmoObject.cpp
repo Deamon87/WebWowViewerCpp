@@ -82,13 +82,15 @@ M2Object *WmoObject::getDoodad(int index) {
     M2Object *doodadObject = this->m_doodadsArray[doodadIndex];
     if (doodadObject != nullptr) return doodadObject;
 
-
     SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
 
     bool fileIdMode = false;
     int doodadfileDataId = 0;
     std::string fileName;
     if (this->mainGeom->doodadFileDataIds == nullptr && this->mainGeom->doodadFileDataIdsLen == 0) {
+        if (this->mainGeom->doodadNamesFieldLen <= 0) {
+            return nullptr;
+        }
         assert(doodadDef->name_offset < this->mainGeom->doodadNamesFieldLen);
         fileName = std::string (&this->mainGeom->doodadNamesField[doodadDef->name_offset]);
     } else {
@@ -202,7 +204,7 @@ void WmoObject::createGroupObjects(){
             groupObjectsLod2[i] = nullptr;
         };
 
-        if (useFileId) {
+        if (mainGeom->gfids.size() > 0) {
             groupObjects[i]->setModelFileId(mainGeom->gfids[0][i]);
             if (mainGeom->gfids.size() > 1) {
                 if (mainGeom->gfids[1][i] == 0) {
@@ -219,7 +221,7 @@ void WmoObject::createGroupObjects(){
                 } else if (groupObjectsLod2[i] != nullptr)
                     groupObjectsLod2[i]->setModelFileId(mainGeom->gfids[2][i]);
             }
-        } else {
+        } else if (!useFileId) {
             std::string numStr = std::to_string(i);
             for (int j = numStr.size(); j < 3; j++) numStr = '0' + numStr;
 
@@ -238,8 +240,8 @@ void WmoObject::createGroupObjects(){
 void WmoObject::createWorldPortals() {
 
     int portalCnt = mainGeom->portalsLen;
-    SMOPortal *portals = mainGeom->portals;
-    C3Vector *portalVerticles = mainGeom->portal_vertices;
+    auto &portals = mainGeom->portals;
+    auto &portalVerticles = mainGeom->portal_vertices;
 
     if (portalCnt <= 0) return;
     geometryPerPortal = std::vector<PortalInfo_t>(portalCnt);
@@ -751,9 +753,6 @@ void WmoObject::resetTraversedWmoGroups() {
     // 1. Create array of visibility with all false
     uint32_t portalCount = (uint32_t) std::max(0, this->mainGeom->portalsLen);
     transverseVisitedPortals = std::vector<bool>(portalCount, false);
-
-    uint32_t doodadsCount = (uint32_t) std::max(0, this->mainGeom->doodadDefsLen);
-    collectedM2s = std::vector<int>(doodadsCount, false);
 }
 
 bool WmoObject::startTraversingWMOGroup(
@@ -795,6 +794,7 @@ bool WmoObject::startTraversingWMOGroup(
         if ((mainGeom->groups[i].flags.ALWAYSDRAW) > 0) { //exterior
             if (!exteriorView.viewCreated) {
                 exteriorView.viewCreated = true;
+                exteriorView.frustumPlanes.push_back(frustumPlanesExt);
             }
 
             exteriorView.drawnWmos.push_back(this->groupObjects[i]);
@@ -903,8 +903,7 @@ bool WmoObject::startTraversingWMOGroup(
 
     bool result = createdInteriorViews.size() > 0;
 
-    if (!exteriorView.viewCreated && exteriorView.level > 0) {
-        exteriorView.viewCreated = true;
+    if (exteriorView.viewCreated) {
         exteriorView.renderOrder = renderOrder++;
         result = true;
     }
@@ -1058,6 +1057,7 @@ void WmoObject::transverseGroupWMO(
             //5.2 The portal is from interior into exterior wmo group.
             //Make sense to add only if whole traversing process started from interior
             if (!exteriorView.viewCreated) {
+                exteriorView.viewCreated = true;
                 exteriorView.level = globalLevel + 1;
 
                 exteriorView.portalVertices.push_back(portalVerticesVec);
@@ -1284,11 +1284,11 @@ SMOHeader *WmoObject::getWmoHeader() {
     return mainGeom->header;
 }
 
-SMOLight *WmoObject::getLightArray() {
+PointerChecker<SMOLight> &WmoObject::getLightArray() {
     return mainGeom->lights;
 }
 
-SMOMaterial *WmoObject::getMaterials() {
+PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
     return mainGeom->materials;
 }
 

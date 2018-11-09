@@ -430,7 +430,7 @@ void WmoGroupObject::createMeshes() {
     int minBatch = config->getWmoMinBatch();
     int maxBatch = std::min(config->getWmoMaxBatch(), m_geom->batchesLen);
 
-    SMOMaterial *materials = m_wmoApi->getMaterials();
+    PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
 
     IDevice *device = m_api->getDevice();
     HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
@@ -612,7 +612,7 @@ void WmoGroupObject::createWaterMeshes() {
     //Get Liquid with new method
     setLiquidType();
     //
-    SMOMaterial *materials = m_wmoApi->getMaterials();
+    auto &materials = m_wmoApi->getMaterials();
     const SMOMaterial &material = materials[m_geom->m_mliq->materialId];
     assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
     auto shaderId = material.shader;
@@ -758,8 +758,8 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
 }
 
 bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
-                                          const SMOPortal *portalInfos,
-                                          const SMOPortalRef *portalRels) {
+                                          const PointerChecker<SMOPortal> &portalInfos,
+                                          const PointerChecker<SMOPortalRef> &portalRels) {
     int moprIndex = this->m_geom->mogp->moprIndex;
     int numItems = this->m_geom->mogp->moprCount;
 
@@ -767,17 +767,17 @@ bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
 
     bool insidePortals = true;
     for (int j = moprIndex; j < moprIndex + numItems; j++) {
-        const SMOPortalRef *relation = &portalRels[j];
-        const SMOPortal *portalInfo = &portalInfos[relation->portal_index];
+        const SMOPortalRef &relation = portalRels[j];
+        const SMOPortal &portalInfo = portalInfos[relation.portal_index];
 
-        int nextGroup = relation->group_index;
-        C4Plane plane = portalInfo->plane;
+        int nextGroup = relation.group_index;
+        C4Plane plane = portalInfo.plane;
 
-        CAaBox &aaBox = portalGeoms[relation->portal_index].aaBox;
+        CAaBox &aaBox = portalGeoms[relation.portal_index].aaBox;
         float distanceToBB = MathHelper::distanceFromAABBToPoint(aaBox, point);
 
         float dotResult = mathfu::vec3::DotProduct(mathfu::vec4(plane.planeVector).xyz(), point) + plane.planeVector.w;
-        bool isInsidePortalThis = (relation->side < 0) ? (dotResult <= 0) : (dotResult >= 0);
+        bool isInsidePortalThis = (relation.side < 0) ? (dotResult <= 0) : (dotResult >= 0);
         if (!isInsidePortalThis && (abs(dotResult) < 0.01) && (abs(distanceToBB) < 0.01)) {
             insidePortals = false;
             break;
@@ -785,6 +785,44 @@ bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
     }
 
     return insidePortals;
+}
+
+void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP_NODE> &nodes, std::vector<int> &bspLeafIdList) {
+    if (nodeId == -1) return;
+
+    if ((nodes[nodeId].planeType & 0x4)) {
+        bspLeafIdList.push_back(nodeId);
+    } else if ((nodes[nodeId].planeType == 0)) {
+        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}, bbox, {});
+        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}, bbox, {});
+
+        if (leftSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
+        }
+        if (rightSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
+        }
+    } else if ((nodes[nodeId].planeType == 1)) {
+        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}, bbox, {});
+        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}, bbox, {});
+
+        if (leftSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
+        }
+        if (rightSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
+        }
+    } else if ((nodes[nodeId].planeType == 2)) {
+        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}, bbox, {});
+        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}, bbox, {});
+
+        if (leftSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
+        }
+        if (rightSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
+        }
+    }
 }
 
 void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList) {
@@ -827,8 +865,8 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, s
 
 bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
     mathfu::vec4 &cameraLocal,
-    SMOPortal *portalInfos,
-    SMOPortalRef *portalRels,
+    PointerChecker<SMOPortal> &portalInfos,
+    PointerChecker<SMOPortalRef> &portalRels,
     std::vector<int> &bspLeafList,
     M2Range &result) {
 
@@ -902,14 +940,17 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
     return true;
 }
 
-void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos, const SMOPortalRef *portalRels,
-                                                    const std::vector<int> &bspLeafList, mathfu::vec4 &cameraLocal,
-                                                    float &topZ, float &bottomZ,
-                                                    mathfu::vec4 &colorUnderneath,
-                                                    bool checkPortals) {
+void WmoGroupObject::getBottomVertexesFromBspResult(
+            const PointerChecker<SMOPortal> &portalInfos,
+            const PointerChecker<SMOPortalRef> &portalRels,
+            const std::vector<int> &bspLeafList, mathfu::vec4 &cameraLocal,
+            float &topZ, float &bottomZ,
+            mathfu::vec4 &colorUnderneath,
+            bool checkPortals) {
+
     topZ = -999999;
     bottomZ = 999999;
-    t_BSP_NODE *nodes = m_geom->bsp_nodes;
+    auto &nodes = m_geom->bsp_nodes;
     float minPositiveDistanceToCamera = 99999;
 
     //1. Loop through bsp results
@@ -971,7 +1012,7 @@ void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos
                 if ((distanceToCamera > 0) && (distanceToCamera < minPositiveDistanceToCamera)) {
                     bottomZ = z;
                     if (m_geom->colorArray != nullptr) {
-                        CImVector *colorArr = m_geom->colorArray;
+                        auto &colorArr = m_geom->colorArray;
                         colorUnderneath = mathfu::vec4(
                             bary[0] * colorArr[vertexInd1].r + bary[1] * colorArr[vertexInd1].r +
                             bary[2] * colorArr[vertexInd1].r,
@@ -994,9 +1035,9 @@ void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos
 
 bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                                         mathfu::vec4 &cameraLocal,
-                                        C3Vector *portalVerticles,
-                                        SMOPortal *portalInfos,
-                                        SMOPortalRef *portalRels,
+                                        PointerChecker<C3Vector> &portalVerticles,
+                                        PointerChecker<SMOPortal> &portalInfos,
+                                        PointerChecker<SMOPortalRef> &portalRels,
                                         std::vector<WmoGroupResult> &candidateGroups) {
 
     CAaBox &bbArray = this->m_volumeWorldGroupBorder;
@@ -1052,7 +1093,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
     mathfu::vec3 cameraBBMax(cameraLocal[0] + epsilon, cameraLocal[1] + epsilon, groupInfo->boundingBox.max.z);
 
     int nodeId = 0;
-    t_BSP_NODE *nodes = this->m_geom->bsp_nodes;
+    auto &nodes = this->m_geom->bsp_nodes;
     std::vector<int> bspLeafList;
 
     M2Range topBottom;
@@ -1189,7 +1230,7 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
 
     if (m_geom->colorArray != nullptr) {
         int nodeId = 0;
-        t_BSP_NODE *nodes = this->m_geom->bsp_nodes;
+        auto &nodes = this->m_geom->bsp_nodes;
         MOGP *groupInfo = this->m_geom->mogp;
         std::vector<int> bspLeafList;
 
@@ -1205,10 +1246,14 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
         float topZ;
         float bottomZ;
 
+        int initLen = -1;
+        PointerChecker<SMOPortalRef> temp = PointerChecker<SMOPortalRef>(initLen);
+        PointerChecker<SMOPortal> temp2 = initLen;
+
         mathfu::vec4 mocvColor (0,0,0,0);
         WmoGroupObject::queryBspTree(cameraBB, nodeId, nodes, bspLeafList);
         WmoGroupObject::getBottomVertexesFromBspResult(
-            nullptr, nullptr, bspLeafList, cameraLocal, topZ, bottomZ, mocvColor, false);
+            temp2, temp, bspLeafList, cameraLocal, topZ, bottomZ, mocvColor, false);
 
         if (bottomZ < 99999) {
             mocvColor = mathfu::vec4(mocvColor.z, mocvColor.y, mocvColor.x, 0);

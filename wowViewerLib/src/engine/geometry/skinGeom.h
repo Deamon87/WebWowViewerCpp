@@ -23,7 +23,7 @@ public:
     void fixData(M2Data *m2File);
 private:
     std::vector<uint8_t> m2Skin;
-    M2SkinProfile *m_skinData;
+    M2SkinProfile *m_skinData = nullptr;
 
     HGIndexBuffer indexVbo = HGIndexBuffer(nullptr);
     bool m_loaded = false;

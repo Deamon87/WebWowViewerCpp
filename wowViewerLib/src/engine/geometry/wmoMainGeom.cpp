@@ -13,6 +13,8 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                     'MVER', {
                         [](WmoMainGeom &object, ChunkData &chunkData) {
                             debuglog("Entered MVER");
+                            int version;
+                            chunkData.readValue(version);
                         }
                     }
                 },

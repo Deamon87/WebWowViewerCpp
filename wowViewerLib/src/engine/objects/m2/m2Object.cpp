@@ -821,13 +821,13 @@ bool M2Object::doPostLoad(){
 
     //2. Check if .skin file is loaded
     if (m_skinGeom == nullptr) {
-        std::string skinFileName = m_nameTemplate + "00.skin";
-
         Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
-        if (useFileId) {
+        if (m_m2Geom->skinFileDataIDs.size() > 0) {
             assert(m_m2Geom->skinFileDataIDs.size() > 0);
             m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
-        } else {
+        } else if (!useFileId){
+            assert(m_nameTemplate.size() > 0);
+            std::string skinFileName = m_nameTemplate + "00.skin";
             m_skinGeom = skinGeomCache->get(skinFileName);
         }
         return false;

@@ -76,7 +76,7 @@ private:
 
     bool m_hasBillboards = false;
     std::string m_modelName;
-    std::string m_nameTemplate;
+    std::string m_nameTemplate = "";
 
     bool useFileId = false;
     int m_modelFileId;
