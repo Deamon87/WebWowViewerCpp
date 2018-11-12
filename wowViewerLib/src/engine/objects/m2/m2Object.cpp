@@ -1316,6 +1316,13 @@ void M2Object::initParticleEmitters() {
         particleEmitters.push_back(emitter);
     }
 };
+void M2Object::setReplaceTextures(std::vector<HBlpTexture> &replaceTextures) {
+    m_replaceTextures = replaceTextures;
+
+    if (m_loaded) {
+        createMeshes(); // recreate meshes
+    }
+}
 void M2Object::setModelFileName(std::string modelName) {
 
     std::string delimiter = ".";

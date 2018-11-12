@@ -45,6 +45,7 @@ public:
 
     M2Object * getM2Object() { return m_m2Object; };
 
+    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
     void checkCulling(WoWFrameData *frameData) override;
     void draw(WoWFrameData *frameData) override;
     void collectMeshes(WoWFrameData*) override;

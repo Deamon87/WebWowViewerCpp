@@ -49,6 +49,7 @@ public:
 
     virtual void clearCache() = 0;
 
+    virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) = 0;
     virtual void setScene(int sceneType, std::string fileName, int cameraNum) = 0;
     virtual void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) = 0;
     virtual void setScenePos(float x, float y, float z) = 0;

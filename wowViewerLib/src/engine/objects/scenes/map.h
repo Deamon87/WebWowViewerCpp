@@ -60,6 +60,7 @@ public:
         m_wdlObject->setMapApi(this);
     };
 
+    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void checkCulling(WoWFrameData *frameData) override;
 
     void collectMeshes(WoWFrameData *frameData) override;

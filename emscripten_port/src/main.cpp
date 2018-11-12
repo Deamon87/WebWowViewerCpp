@@ -263,6 +263,14 @@ extern "C" {
         controllable->stopMovingBackwards();
     }
 
+    EMSCRIPTEN_KEEPALIVE
+    void setTextures(int *fileDataIdsBuff, int elementsCount) {
+        std::vector<int> textures(fileDataIdsBuff, fileDataIdsBuff+elementsCount);
+
+        std::cout << "called! elementsCount = " << elementsCount << std::endl;
+
+        scene->setReplaceTextureArray(textures);
+    }
 
 }
 

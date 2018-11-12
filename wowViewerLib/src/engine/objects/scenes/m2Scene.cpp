@@ -80,3 +80,26 @@ void M2Scene::collectMeshes(WoWFrameData * frameData) {
     );
 
 }
+
+void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
+    std::cout << "replaceTextureArray.size == " << replaceTextureArray.size() << std::endl;
+    std::cout << "m_m2Object == " << m_m2Object << std::endl;
+    if (m_m2Object == nullptr) return;
+
+    auto textureCache = m_api->getTextureCache();
+    std::vector<HBlpTexture> replaceTextures;
+    replaceTextures.reserve(replaceTextureArray.size());
+
+    for (int i = 0; i < replaceTextureArray.size(); i++) {
+        if (replaceTextureArray[i] == 0) {
+            replaceTextures.push_back(nullptr);
+        } else {
+            std::cout << "replaceTextureArray[i] == " << replaceTextureArray[i] << std::endl;
+            std::cout << "i == " << i << std::endl;
+            replaceTextures.push_back(textureCache->getFileId(replaceTextureArray[i]));
+        }
+    }
+
+    m_m2Object->setReplaceTextures(replaceTextures);
+
+}

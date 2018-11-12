@@ -169,6 +169,14 @@ void WoWSceneImpl::setScene(int sceneType, std::string name, int cameraNum) {
     }
 }
 
+void WoWSceneImpl::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
+    if (newScene != nullptr) {
+        newScene->setReplaceTextureArray(replaceTextureArray);
+    } else {
+        currentScene->setReplaceTextureArray(replaceTextureArray);
+    }
+}
+
 void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) {
     if (sceneType == 0) {
         m_usePlanarCamera = cameraNum == -1;
@@ -200,7 +208,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
 #endif
-//    m_supportThreads = false;
 
 //    std::ofstream *out = new std::ofstream("log_output.txt");
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
@@ -498,8 +505,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
- currentScene = new WmoScene(this,
-        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
@@ -508,7 +515,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\draenor\\tanaanjungle\\6tj_darkportal_antiportal.wmo");
 //
 //    currentScene = new WmoScene(this,
-//        "world\\wmo\\azeroth\\buildings\\stormwind\\stormwind2.WMO");
+//        "world\\wmo\\azeroth\\buildings\\stormwind\\stormwind.WMO");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,

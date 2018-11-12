@@ -11,8 +11,8 @@
 #include <iostream>
 #include "../header/commonFileStructs.h"
 
-#define debuglog(x) std::cout<< x <<std::endl;
-//#define debuglog(x)
+//#define debuglog(x) std::cout<< x <<std::endl;
+#define debuglog(x)
 
 class CChunkFileReader;
 typedef CChunkFileReader ChunkData;
@@ -176,8 +176,6 @@ public:
         bytesRead += sizeof(T);
     }
     template<typename T> inline void readValues(T* &value, int count) {
-        static_assert(!std::is_pointer<T>::value, "T is a pointer");
-        value = (T*)&(((unsigned char *)fileData)[currentOffset]);
         currentOffset += count*sizeof(T);
         bytesRead += count*sizeof(T);
     }

@@ -137,6 +137,7 @@ public:
     void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
                        std::vector<HBlpTexture> replaceTextures);
 
+    void setReplaceTextures(std::vector<HBlpTexture> &replaceTextures);
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
     void setModelAsScene(bool value) {

@@ -44,7 +44,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                 debuglog("Entered MLIQ");
                                 chunkData.readValue(object.m_mliq);
 
-                                static_assert(sizeof(MLIQ) == 30, "");
+                                static_assert(sizeof(MLIQ) == 30, "MLIQ structure has garbage align bytes");
 
                                 object.m_liquidVerticles_len = object.m_mliq->xverts * object.m_mliq->yverts;
                                 chunkData.readValues(object.m_liquidVerticles, object.m_liquidVerticles_len);

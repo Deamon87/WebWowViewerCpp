@@ -55,6 +55,8 @@ public:
         m_wmoObject = wmoObject;
     };
 
+    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
+
     void checkCulling(WoWFrameData *frameData) override;
     void collectMeshes(WoWFrameData*) override ;
     void draw(WoWFrameData *frameData) override;
