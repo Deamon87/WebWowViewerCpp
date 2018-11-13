@@ -109,22 +109,14 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                             [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOCV");
                                 if (object.mocvRead == 0 && object.mogp->flags.hasVertexColors) {
-                                    if (object.mogp->flags.hasVertexColors) {
-                                        object.cvLen = chunkData.chunkLen / 4;
-                                        chunkData.readValues(object.colorArray, object.cvLen);
-                                    } else {
-                                        object.mocvRead++;
-                                    }
+                                    object.cvLen = chunkData.chunkLen / 4;
+                                    chunkData.readValues(object.colorArray, object.cvLen);
+                               } else if (object.mogp->flags.CVERTS2 && object.mocvRead < 2) {
+                                    object.cvLen2 = chunkData.chunkLen / 4;
+                                    chunkData.readValues(object.colorArray2, object.cvLen2);
+                               } else {
+                                    std::cout << "Spotted incorrect MOCV cout" << std::endl;
                                 }
-
-                                if (object.mocvRead == 1) {
-                                    if (object.mogp->flags.CVERTS2) {
-                                        object.cvLen2 = chunkData.chunkLen / 4;
-                                        chunkData.readValues(object.colorArray2, object.cvLen2);
-                                    }
-                                }
-
-                                object.mocvRead++;
                             },
                         }
                     },
@@ -228,6 +220,7 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
 
     if (mogp->transBatchCount) {
         begin_second_fixup = batches[(uint16_t) mogp->transBatchCount-1].last_vertex + 1;
+
     }
 
     unsigned char v35;
@@ -296,6 +289,7 @@ HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
     if (combinedVBO == nullptr) {
         combinedVBO = device.createVertexBuffer();
 
+        PACK(
         struct VboFormat {
             C3Vector pos;
             C3Vector normal;
@@ -304,7 +298,7 @@ HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
             C2Vector textCoordinate3;
             CImVector color;
             CImVector color2;
-        };
+        });
 
         static const C2Vector c2ones = C2Vector(mathfu::vec2(1.0, 1.0));
         static const C3Vector c3zeros = C3Vector(mathfu::vec3(0, 0, 0));
@@ -333,22 +327,22 @@ HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
             } else {
                 format.textCoordinate3 = c2ones;
             }
-            if (cvLen > 0) {
-                format.color = colorArray[i];
-            } else {
+            //if (cvLen > 0) {
+                //format.color = colorArray[i];
+            //} else {
                 format.color.r = 0;
                 format.color.g = 0;
                 format.color.b = 0;
                 format.color.a = 0;
-            }
-            if (cvLen2 > 0) {
-                format.color2 = colorArray2[i];
-            } else {
+            //}
+            //if (cvLen2 > 0) {
+            //    format.color2 = colorArray2[i];
+            //} else {
                 format.color2.r = 0;
                 format.color2.g = 0;
                 format.color2.b = 0;
                 format.color2.a = 0xFF;
-            }
+            //}
         }
 
         combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(VboFormat)));

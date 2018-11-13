@@ -2,6 +2,7 @@
 #define WOWMAPVIEWERREVIVED_WOWSCENE_H_H
 
 #include <cstdint>
+#include <vector>
 #ifdef WITH_GLESv2
 typedef float animTime_t;
 #else

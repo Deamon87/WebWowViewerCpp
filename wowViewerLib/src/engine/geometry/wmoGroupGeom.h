@@ -63,7 +63,7 @@ public:
     PointerChecker<C3Vector> verticles = (verticesLen);
     int verticesLen;
 
-    C3Vector *normals = nullptr;
+    PointerChecker<C3Vector> normals = (normalsLen);
     int normalsLen = 0;
 
     int textureCoordsRead = 0;
@@ -76,10 +76,10 @@ public:
     PointerChecker<C2Vector> textCoords3 = (textureCoordsLen3);
     int textureCoordsLen3 = 0;
 
-    PointerChecker<CImVector> colorArray = (cvLen);
+    PointerChecker<CImVector> colorArray = cvLen;
     int cvLen = 0;
 
-    PointerChecker<CImVector> colorArray2 = (cvLen2);
+    PointerChecker<CImVector> colorArray2 = cvLen2;
     int cvLen2 = 0;
     int mocvRead = 0;
 
