@@ -111,9 +111,11 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                 if (object.mocvRead == 0 && object.mogp->flags.hasVertexColors) {
                                     object.cvLen = chunkData.chunkLen / 4;
                                     chunkData.readValues(object.colorArray, object.cvLen);
+                                    object.mocvRead++;
                                } else if (object.mogp->flags.CVERTS2 && object.mocvRead < 2) {
                                     object.cvLen2 = chunkData.chunkLen / 4;
                                     chunkData.readValues(object.colorArray2, object.cvLen2);
+                                    object.mocvRead++;
                                } else {
                                     std::cout << "Spotted incorrect MOCV cout" << std::endl;
                                 }
@@ -327,22 +329,22 @@ HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
             } else {
                 format.textCoordinate3 = c2ones;
             }
-            //if (cvLen > 0) {
-                //format.color = colorArray[i];
-            //} else {
+            if (cvLen > 0) {
+                format.color = colorArray[i];
+            } else {
                 format.color.r = 0;
                 format.color.g = 0;
                 format.color.b = 0;
                 format.color.a = 0;
-            //}
-            //if (cvLen2 > 0) {
-            //    format.color2 = colorArray2[i];
-            //} else {
+            }
+            if (cvLen2 > 0) {
+                format.color2 = colorArray2[i];
+            } else {
                 format.color2.r = 0;
                 format.color2.g = 0;
                 format.color2.b = 0;
                 format.color2.a = 0xFF;
-            //}
+            }
         }
 
         combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(VboFormat)));
