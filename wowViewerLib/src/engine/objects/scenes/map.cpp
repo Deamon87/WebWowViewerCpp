@@ -15,20 +15,9 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../wowFrameData.h"
 
-
-inline int worldCoordinateToAdtIndex(float x) {
-    return floor((32.0f - (x / 533.33333f)));
-}
-
-inline int worldCoordinateToGlobalAdtChunk(float x) {
-    return floor(( (32.0f*16.0f) - (x / (533.33333f / 16.0f)   )));
-}
-
-float AdtIndexToWorldCoordinate(int x) {
-    return (32 - x) * 533.33333;
-}
-
 void Map::checkCulling(WoWFrameData *frameData) {
+//    std::cout << "Map::checkCulling finished called" << std::endl;
+//    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
     if (!m_wdtfile->getIsLoaded()) return;
 
     mathfu::vec4 cameraPos = mathfu::vec4(frameData->m_cameraVec3, 1.0);
@@ -130,6 +119,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         int viewRenderOrder,
                         WoWFrameData *frameData
 ) {
+//    std::cout << "Map::checkExterior finished called" << std::endl;
 
     std::vector<M2Object *> m2ObjectsCandidates;
     std::vector<WmoObject *> wmoCandidates;
@@ -199,7 +189,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                     frameData->exteriorView.drawnADTs.push_back(adtObject);
                     frameData->adtArray.push_back(adtObject);
                 }
-            } else if (true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
+            } else if (!m_lockedMap && true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
                 std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
                 adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
 
@@ -580,11 +570,11 @@ void Map::collectMeshes(WoWFrameData *frameData) {
         vector.push_back(&frameData->exteriorView);
     }
 
-    if (m_api->getConfig()->getRenderWMO()) {
+//    if (m_api->getConfig()->getRenderWMO()) {
         for (auto &view : vector) {
             view->collectMeshes(frameData->renderedThisFrame);
         }
-    }
+//    }
 
     std::vector<M2Object *> m2ObjectsRendered;
     for (auto &view : vector) {
@@ -593,13 +583,13 @@ void Map::collectMeshes(WoWFrameData *frameData) {
     std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
     m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
 
-    if (m_api->getConfig()->getRenderM2()) {
+//    if (m_api->getConfig()->getRenderM2()) {
         for (auto &m2Object : m2ObjectsRendered) {
             if (m2Object == nullptr) continue;
             m2Object->collectMeshes(frameData->renderedThisFrame, m_viewRenderOrder);
             m2Object->drawParticles(frameData->renderedThisFrame, m_viewRenderOrder);
         }
-    }
+//    }
 
     std::sort(frameData->renderedThisFrame.begin(),
               frameData->renderedThisFrame.end(),

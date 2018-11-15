@@ -19,6 +19,18 @@ inline bool feq(const float a, const float b, const float tolerance = ROUNDING_E
 }
 
 
+inline int worldCoordinateToAdtIndex(float x) {
+    return floor((32.0f - (x / 533.33333f)));
+}
+
+inline int worldCoordinateToGlobalAdtChunk(float x) {
+    return floor(( (32.0f*16.0f) - (x / (533.33333f / 16.0f)   )));
+}
+
+inline float AdtIndexToWorldCoordinate(int x) {
+    return (32.0f - x) * 533.33333f;
+}
+
 class MathHelper {
 public:
 

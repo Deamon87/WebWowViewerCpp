@@ -12,6 +12,8 @@
 
 
 void AdtObject::loadingFinished() {
+    std::cout << "AdtObject::loadingFinished finished called";
+
     createVBO();
     loadAlphaTextures();
     createMeshes();
@@ -21,10 +23,6 @@ void AdtObject::loadingFinished() {
 
     loadM2s();
     loadWmos();
-}
-
-inline int worldCoordinateToGlobalAdtChunk(float x) {
-    return floor(( (32.0f*16.0f) - (x / (533.33333f / 16.0f)   )));
 }
 
 void AdtObject::loadM2s() {
@@ -263,7 +261,7 @@ void AdtObject::createVBO() {
 
         /* 2. Index buffer */
         stripVBOLod = device->createIndexBuffer();
-        stripVBOLod->uploadData(m_adtFileLod->mvli_indicies,  m_adtFileLod->mvli_len * sizeof(int16_t));
+        stripVBOLod->uploadData(&m_adtFileLod->mvli_indicies[0],  m_adtFileLod->mvli_len * sizeof(int16_t));
 
 
         lodVertexBindings = device->createVertexBufferBindings();
@@ -494,6 +492,7 @@ void AdtObject::collectMeshesLod(std::vector<HGMesh> &renderedThisFrame) {
 }
 
 void AdtObject::doPostLoad() {
+//    std::cout << "AdtObject::doPostLoad finished called" << std::endl;
     if (!m_loaded) {
         if (m_adtFile->getIsLoaded() &&
             m_adtFileObj->getIsLoaded() &&
@@ -506,6 +505,7 @@ void AdtObject::doPostLoad() {
     }
 }
 void AdtObject::update() {
+//    std::cout << "AdtObject::update finished called" << std::endl;
     if (!m_loaded) return;
     if (adtWideBlockPS == nullptr) return;
 
@@ -593,7 +593,7 @@ static const float perLodDist[5] = {9999999999.99f,
 bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                 float x_offset, float y_offset, float cell_len,
                                 int curentLod, int lastFoundLod,
-                                const MLND *quadTree, int quadTreeInd,
+                                const PointerChecker<MLND> &quadTree, int quadTreeInd,
                                 std::vector<mathfu::vec4> &frustumPlanes,
                                 std::vector<mathfu::vec3> &frustumPoints,
                                 std::vector<mathfu::vec3> &hullLines,

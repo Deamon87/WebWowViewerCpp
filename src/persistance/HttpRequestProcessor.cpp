@@ -42,6 +42,7 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 }
 
 void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType) {
+
     const std::string charsToEscape = " !*'();:@&=+$,/?#[]";
 
     std::string escapedFileName = fileName;
@@ -65,9 +66,9 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     }
 
     size_t hash = std::hash<std::string>{}(fileName);
-    std::string inputFileName = "./cache/" + int_to_hex(hash);
+    std::string inputFileName = "./../cache/" + int_to_hex(hash);
 
-    std::ifstream cache_file(inputFileName, std::ios::binary);
+    std::ifstream cache_file(inputFileName, std::ios::in |std::ios::binary);
     if (cache_file.good()) {
         cache_file.unsetf(std::ios::skipws);
 
@@ -99,7 +100,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
 
                 //Write to cache
                 size_t hash = std::hash<std::string>{}(newFileName);
-                std::string outputFileName = "./cache/" + int_to_hex(hash);
+                std::string outputFileName = "./../cache/" + int_to_hex(hash);
                 std::ofstream output_file(outputFileName, std::ios::out | std::ios::binary);
                 std::ostream_iterator<unsigned char> output_iterator(output_file);
                 std::copy(fileContent->begin(), fileContent->end(), output_iterator);
@@ -108,4 +109,5 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
             }
     );
     httpFile->startDownloading();
+
 }

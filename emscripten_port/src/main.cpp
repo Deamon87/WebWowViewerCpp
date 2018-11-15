@@ -201,6 +201,8 @@ extern "C" {
         testConf = new Config();
         testConf->setSunColor(0.0,0.0,0.0,0.0);
         testConf->setAmbientColor(1.0,1.0,1.0,1.0);
+        testConf->setRenderM2(true);
+        testConf->setRenderWMO(true);
 
         scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
         processor->setFileRequester(scene);
@@ -267,7 +269,7 @@ extern "C" {
     void setTextures(int *fileDataIdsBuff, int elementsCount) {
         std::vector<int> textures(fileDataIdsBuff, fileDataIdsBuff+elementsCount);
 
-        std::cout << "called! elementsCount = " << elementsCount << std::endl;
+//        std::cout << "called! elementsCount = " << elementsCount << std::endl;
 
         scene->setReplaceTextureArray(textures);
     }
@@ -280,6 +282,8 @@ extern "C" {
         processor->processResults(10);
 
         scene->draw((deltaTime * 1000));
+
+//        std::cout << "testConf->getRenderWMO() " << testConf->getRenderWMO() << std::endl;
     }
 }
 

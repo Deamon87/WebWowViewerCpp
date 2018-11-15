@@ -29,9 +29,9 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
                     int *ptr123 ;
                     chunkData.readValues(ptr123, chunkData.chunkLen/4);
 
-                    for (int i = 0; i < chunkData.chunkLen/4; i++) {
-                        std::cout << "i = " << ptr123[i] << std::endl;
-                    }
+//                    for (int i = 0; i < chunkData.chunkLen/4; i++) {
+//                        std::cout << "i = " << ptr123[i] << std::endl;
+//                    }
                 }
             },
         },

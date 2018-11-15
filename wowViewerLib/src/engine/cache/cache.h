@@ -50,10 +50,11 @@ public:
             auto const it = m_objectsToBeProcessed.front();
             std::weak_ptr<T> weakPtr = m_cache.at(it.fileName);
 
-//            std::cout << "Processing file " << fileName << std::endl << std::flush;
+//            std::cout << "Processing file " << it.fileName << std::endl << std::flush;
             if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
                 sharedPtr->process(it.fileContent, it.fileName);
             }
+//            std::cout << "Processed file " << it.fileName << std::endl << std::flush;
 
             m_objectsToBeProcessed.pop_front();
 
@@ -66,14 +67,17 @@ public:
     }
     void provideFile(std::string &fileName, uint8_t* fileContentPtr, int fileSize) {
         trim(fileName);
+//        std::cout << "called provideFile with fileName = " << fileName << std::endl;
+//        std::cout << "m_cache.size() == " << m_cache.size() << " " << __PRETTY_FUNCTION__ << std::endl;
 
 //        std::cout << "filename:" << fileName << " hex: " << string_to_hex(fileName) << std::endl;
 //        std::cout << "first in storage:" << m_cache.begin()->first << " hex: " << string_to_hex(m_cache.begin()->first) << std::endl << std::flush;
-        provideFileLock.lock();
-        if (m_cache.count(fileName) > 0) {
+//        provideFileLock.lock();
+        auto it = m_cache.find(fileName);
+        if (it != m_cache.end()) {
             m_objectsToBeProcessed.push_front({fileName, std::vector<unsigned char>(fileContentPtr, fileContentPtr+fileSize)});
         }
-        provideFileLock.unlock();
+//        provideFileLock.unlock();
     }
 
     /*
@@ -83,8 +87,6 @@ public:
         fileName = trimmed(fileName);
         std::transform(fileName.begin(), fileName.end(),fileName.begin(), ::toupper);
         std::replace(fileName.begin(), fileName.end(), '\\', '/');
-
-        
 
         auto it = m_cache.find(fileName);
         if(it != m_cache.end() ) {
@@ -97,6 +99,7 @@ public:
         std::shared_ptr<T> sharedPtr = std::make_shared<T>();
         std::weak_ptr<T> weakPtr(sharedPtr);
         m_cache[fileName] = weakPtr;
+//        std::cout << "m_cache.size() == " << m_cache.size() << " " << __PRETTY_FUNCTION__ << std::endl;
 
         m_fileRequestProcessor->requestFile(fileName.c_str(), this->holderType);
 

@@ -146,7 +146,7 @@ private:
     bool
     iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len,
                     int curentLod, int lastFoundLod,
-                    const MLND *quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
+                    const PointerChecker<MLND> &quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
                     mathfu::mat4 &lookAtMat4,
                     std::vector<M2Object *> &m2ObjectsCandidates,

@@ -412,8 +412,8 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
 
 std::vector<uint8_t> AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i) {
     mcnkStruct_t &mcnkObj = mcnkStructs[i];
-    uint8_t* alphaArray = mcnkObj.mcal;
-    SMLayer* layers = mcnkObj.mcly;
+    PointerChecker<uint8_t> &alphaArray = mcnkObj.mcal;
+    PointerChecker<SMLayer> &layers = mcnkObj.mcly;
 
     std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64, 0);
     if (layers == nullptr || alphaArray == nullptr) return currentLayer;
@@ -506,6 +506,9 @@ static bool isHoleHighRes(uint64_t hole, int i, int j) {
 
 void AdtFile::createTriangleStrip() {
     if (mcnkRead < 0) return;
+
+    strips = std::vector<int16_t>(0);
+    stripOffsets = std::vector<int> (0);
 
     const int stripLenght = 9;
     const int vertCountPerMCNK= 9 * 9 + 8 * 8;

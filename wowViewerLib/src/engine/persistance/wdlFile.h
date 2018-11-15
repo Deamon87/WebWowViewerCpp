@@ -19,10 +19,10 @@ public:
     bool getIsLoaded() { return m_loaded; };
 public:
     SMDoodadDef * doodadDefObj = nullptr;
-    int doodadDefObj_len = -1;
+    int doodadDefObj_len = 0;
 
     SMMapObjDefObj1 * mapObjDefObj = nullptr;
-    int mapObjDefObj_len = -1;
+    int mapObjDefObj_len = 0;
 
 
 private:

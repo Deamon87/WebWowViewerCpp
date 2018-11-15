@@ -113,6 +113,8 @@ private:
         ChunkData subChunk;
         while ((chunkLoadOffset < chunkEndOffset)) {
             subChunk = this->loadChunkAtOffset(chunkLoadOffset, -1);
+            if (subChunk.chunkIdent == 0) break;
+
             int bytesReadBefore = subChunk.bytesRead;
 
             if (sectionHandlerProc->subChunks.count(subChunk.chunkIdent) > 0) {

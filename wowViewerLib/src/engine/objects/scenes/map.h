@@ -29,6 +29,8 @@ private:
     float m_lastTimeDistanceCalc = 0;
     float m_lastTimeLightCheck = 0;
 
+    bool m_lockedMap = false;
+
     std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
 
@@ -58,6 +60,22 @@ public:
         m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
         m_wdlObject = new WdlObject(api, wdlFileName);
         m_wdlObject->setMapApi(this);
+    };
+
+    explicit Map(IWoWInnerApi *api, std::string adtFileName, int i, int j, std::string mapName) : m_mapId(0), m_api(api), mapName(mapName){
+        std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
+        std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
+
+        m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
+        m_wdlObject = new WdlObject(api, wdlFileName);
+        m_wdlObject->setMapApi(this);
+
+        m_lockedMap = true;
+        std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
+        AdtObject * adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+
+        adtObject->setMapApi(this);
+        this->mapTiles[i][j] = adtObject;
     };
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};

@@ -38,6 +38,7 @@
 #include <stdint.h>
 #endif
 
+#define DEBUGPOINTER 1
 
 template<class T>
 struct PointerChecker {
@@ -83,10 +84,10 @@ public:
 #endif
         return elementOffset[index];
     }
-    inline bool operator==(T* other){
+    inline bool operator==(T* other) const{
         return elementOffset == other;
     }
-    inline bool operator!=(T* other){
+    inline bool operator!=(T* other) const{
         return elementOffset != other;
     }
 };

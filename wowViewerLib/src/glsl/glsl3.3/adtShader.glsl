@@ -142,21 +142,21 @@ void main() {
     const float threshold = 1.5;
 
     vec2 alphaCoord = vec2(vChunkCoords.x/8.0, vChunkCoords.y/8.0 );
-    vec3 alphaBlend = texture2D( uAlphaTexture, alphaCoord).gba;
+    vec3 alphaBlend = texture( uAlphaTexture, alphaCoord).gba;
 
     vec2 tcLayer0 = vTexCoord;
     vec2 tcLayer1 = vTexCoord;
     vec2 tcLayer2 = vTexCoord;
     vec2 tcLayer3 = vTexCoord;
 
-    float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0, 1));
+    float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
     vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
     float weightedTexture_x = (minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * uHeightScale[0]) + uHeightOffset[0]));
     float weightedTexture_y = (weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * uHeightScale[1]) + uHeightOffset[1]));
     float weightedTexture_z = (weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * uHeightScale[2]) + uHeightOffset[2]));
     float weightedTexture_w = (weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * uHeightScale[3]) + uHeightOffset[3]));
     vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
-    vec4 weights_temp = (weights * (vec4(1.0) - clamp((vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights), 0, 1)));
+    vec4 weights_temp = (weights * (vec4(1.0) - clamp((vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights), 0.0, 1.0)));
     vec4 weightsNormalized = (weights_temp / vec4(dot(vec4(1.0), weights_temp)));
     
     

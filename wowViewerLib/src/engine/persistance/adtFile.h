@@ -14,19 +14,19 @@ struct mcnkStruct_t {
     MCLV *mclv = nullptr;
     MCCV *mccv = nullptr;
     SMNormal *mcnr = nullptr;
-    SMLayer *mcly = nullptr;
+    PointerChecker<SMLayer> mcly = mclyCnt;
     int mclyCnt = 0;
 
     struct {uint32_t *doodad_refs; uint32_t *object_refs; } mcrf;
 
-    uint32_t *mcrd_doodad_refs = nullptr;
-    int mcrd_doodad_refs_len = -1;
+    PointerChecker<uint32_t> mcrd_doodad_refs = mcrd_doodad_refs_len;
+    int mcrd_doodad_refs_len = 0;
 
-    uint32_t *mcrw_object_refs = nullptr;
-    int mcrw_object_refs_len = -1;
+    PointerChecker<uint32_t> mcrw_object_refs = mcrw_object_refs_len;
+    int mcrw_object_refs_len = 0;
 
 
-    uint8_t *mcal = nullptr;
+    PointerChecker<uint8_t> mcal = nullptr;
 };
 
 class AdtFile {
@@ -46,56 +46,57 @@ public:
 
     std::vector<std::string> textureNames;
 
-    uint32_t *mdid = nullptr;
+    PointerChecker<uint32_t> mdid = mdid_len;
     int mdid_len = 0;
 
-    uint32_t *mhid = nullptr;
+    PointerChecker<uint32_t> mhid = mhid_len;
     int mhid_len = 0;
 
-    char *doodadNamesField;
+    PointerChecker<char> doodadNamesField = doodadNamesFieldLen;
     int doodadNamesFieldLen;
 
-    char *wmoNamesField;
+    PointerChecker<char> wmoNamesField = wmoNamesFieldLen;
     int wmoNamesFieldLen;
 
-    SMTextureParams *mtxp = nullptr;
+    PointerChecker<SMTextureParams> mtxp = mtxp_len;
     int mtxp_len = 0;
 
-    SMDoodadDef * doodadDef = nullptr;
-    int doodadDef_len = -1;
+    PointerChecker<SMDoodadDef> doodadDef = doodadDef_len;
+    int doodadDef_len = 0;
 
-    SMMapObjDef * mapObjDef = nullptr;
-    int mapObjDef_len = -1;
+    PointerChecker<SMMapObjDef> mapObjDef = mapObjDef_len;
+    int mapObjDef_len = 0;
 
-    SMDoodadDef * doodadDefObj1 = nullptr;
-    int doodadDefObj1_len = -1;
+    PointerChecker<SMDoodadDef> doodadDefObj1 = doodadDefObj1_len;
+    int doodadDefObj1_len = 0;
 
-    SMMapObjDefObj1 * mapObjDefObj1 = nullptr;
-    int mapObjDefObj1_len = -1;
+    PointerChecker<SMMapObjDefObj1> mapObjDefObj1 = mapObjDefObj1_len;
+    int mapObjDefObj1_len = 0;
 
-    uint32_t *mldd = nullptr;
-    int mldd_len = -1;
+    PointerChecker<uint32_t> mldd = mldd_len;
+    int mldd_len = 0;
 
-    float *floatDataBlob;
-    int floatDataBlob_len = -1;
+    PointerChecker<float> floatDataBlob = floatDataBlob_len;
+    int floatDataBlob_len = 0;
 
-    uint16_t *mvli_indicies = nullptr;
-    int mvli_len = -1;
+    PointerChecker<uint16_t> mvli_indicies = mvli_len;
+    int mvli_len = 0;
 
-    uint16_t *mlsi_indicies = nullptr;
-    int mlsi_len = -1;
+    PointerChecker<uint16_t> mlsi_indicies = mlsi_len;
+    int mlsi_len = 0;
 
-    MLLL * mllls = nullptr;
-    int mlll_len = -1;
+    PointerChecker<MLLL> mllls = mlll_len;
+    int mlll_len = 0;
 
-    MLND * mlnds = nullptr;
-    int mlnd_len = -1;
+    PointerChecker<MLND> mlnds = mlnd_len;
+    int mlnd_len = 0;
 
     SMLodLevelPerObject * lod_levels_for_objects = nullptr;
 
-    uint32_t *mmid;
+    PointerChecker<uint32_t> mmid = mmid_length;
     int mmid_length;
-    uint32_t *mwid;
+
+    PointerChecker<uint32_t> mwid = mwid_length;
     int mwid_length;
 
     int mcnkRead = -1;

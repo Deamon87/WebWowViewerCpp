@@ -19,6 +19,8 @@
 #include <chrono>
 
 void WoWSceneImpl::processCaches(int limit) {
+//    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
+//    std::cout << "this->adtObjectCache.m_cache.size() = " << this->adtObjectCache.m_cache.size()<< std::endl;
     this->adtObjectCache.processCacheQueue(limit);
     this->wdtCache.processCacheQueue(limit);
     this->wdlCache.processCacheQueue(limit);
@@ -166,6 +168,33 @@ void WoWSceneImpl::setScene(int sceneType, std::string name, int cameraNum) {
         controllable = &m_firstCamera;
         m_usePlanarCamera = false;
         newScene = new WmoScene(this, name);
+    } else if (sceneType == 2) {
+        std::string &adtFileName = name;
+
+        size_t lastSlashPos = adtFileName.find_last_of("/");
+        size_t underscorePosFirst = adtFileName.find_last_of("_");
+        size_t underscorePosSecond = adtFileName.find_last_of("_", underscorePosFirst-1);
+        std::string mapName = adtFileName.substr(lastSlashPos+1, underscorePosSecond-lastSlashPos-1);
+
+        int i = std::stoi(adtFileName.substr(underscorePosSecond+1, underscorePosFirst-underscorePosSecond-1));
+        int j = std::stoi(adtFileName.substr(underscorePosFirst+1, adtFileName.size()-underscorePosFirst-5));
+
+        float adt_x_min = AdtIndexToWorldCoordinate(j);
+        float adt_x_max = AdtIndexToWorldCoordinate(j+1);
+
+        float adt_y_min = AdtIndexToWorldCoordinate(i);
+        float adt_y_max = AdtIndexToWorldCoordinate(i+1);
+
+        m_firstCamera.setCameraPos(
+            (adt_x_min+adt_x_max) / 2.0,
+            (adt_y_min+adt_y_max) / 2.0,
+            200
+        );
+
+        controllable = &m_firstCamera;
+        m_usePlanarCamera = false;
+
+        newScene = new Map(this, adtFileName, i, j, mapName);
     }
 }
 
@@ -330,7 +359,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 0, "HawaiiMainLand");
 
 //    m_firstCamera.setCameraPos(-12886, -165, 200); // Pandaria
-//    currentScene = new Map(this, "Azeroth");
+//    currentScene = new Map(this, "Azeroth");createTriangleStrip
 //
 //   m_firstCamera.setCameraPos(-12017, 3100, 200); // Pandaria
 //    currentScene = new Map(this, 0, "Kalimdor");
@@ -554,6 +583,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2LightData = nullptr;
     db2WmoAreaTable = nullptr;
 
+//    setScene(2, "world/maps/ahnqiraj/ahnqiraj_26_46.adt", -1);
+    setScene(2, "WORLD/MAPTEXTURES/MAELSTROMDEATHWINGFIGHT/MAELSTROMDEATHWINGFIGHT_32_32.adt", -1);
+//    setSceneWithFileDataId(1, 106679, -1);
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(0, "creature/arthas/arthas.m2", -1);
@@ -893,9 +925,12 @@ WoWScene *createWoWScene(Config *config, IFileRequest *requestProcessor, int can
 }
 
 void WoWSceneImpl::clearCache() {
-    needToDropCache = true;
+    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
+//    needToDropCache = true;
+    actuallDropCache();
 }
 void WoWSceneImpl::actuallDropCache() {
+    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
     this->adtObjectCache.clear();
     this->wdtCache.clear();
     this->wdlCache.clear();
