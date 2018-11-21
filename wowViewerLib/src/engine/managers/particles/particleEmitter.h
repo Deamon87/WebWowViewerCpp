@@ -129,11 +129,13 @@ private:
         mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
         float texStartX, float texStartY);
 
-    HGIndexBuffer m_indexVBO;
-    HGVertexBuffer m_bufferVBO;
+    struct {
+        HGIndexBuffer m_indexVBO;
+        HGVertexBuffer m_bufferVBO;
 
-    HGVertexBufferBindings m_bindings;
-    HGParticleMesh m_mesh;
+        HGVertexBufferBindings m_bindings;
+        HGParticleMesh m_mesh;
+    } frame[4];
 
     void createMesh();
 

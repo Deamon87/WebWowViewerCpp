@@ -15,7 +15,7 @@ GBlpTextureGL33::GBlpTextureGL33(IDevice &device, HBlpTexture texture, bool xWra
 }
 
 GBlpTextureGL33::~GBlpTextureGL33() {
-    std::cout << "error!" << std::endl;
+//    std::cout << "error!" << std::endl;
 }
 
 void GBlpTextureGL33::bind() {

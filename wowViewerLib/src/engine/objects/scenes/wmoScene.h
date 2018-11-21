@@ -64,6 +64,9 @@ public:
     void doPostLoad(WoWFrameData *frameData) override;
     void update(WoWFrameData *frameData) override;
 
+    void setAnimationId(int animationId) override {
+    };
+
 
     mathfu::vec4 getAmbientColor() override {
 //        if (m_wmoObject->isLoaded()) {

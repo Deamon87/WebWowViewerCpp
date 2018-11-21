@@ -73,7 +73,17 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
     }
     this->textureIndexMask = cols * rows - 1;
     this->textureStartIndex = 0;
-    this->textureColBits = 0;//_BitScanReverse(cols, 0);
+
+    int colsVal = cols;
+    int colBitsCount = -1;
+    do
+    {
+        ++colBitsCount;
+        colsVal >>= 1;
+    }
+    while ( colsVal );
+
+    this->textureColBits = colBitsCount;
     this->textureColMask = cols - 1;
     if (m_data->old.flags & 0x200000) {
         this->textureStartIndex = this->m_seed.uint32t() & this->textureIndexMask;
@@ -99,7 +109,7 @@ struct meshParticleWideBlockPS {
     float padding2[3];
 });
 
-EGxBlendEnum M2BlendingModeToEGxBlendEnum1 [8] =
+EGxBlendEnum PaticleBlendingModeToEGxBlendEnum1 [14] =
     {
         EGxBlendEnum::GxBlend_Opaque,
         EGxBlendEnum::GxBlend_AlphaKey,
@@ -111,88 +121,93 @@ EGxBlendEnum M2BlendingModeToEGxBlendEnum1 [8] =
         EGxBlendEnum::GxBlend_BlendAdd
     };
 
+
 void ParticleEmitter::createMesh() {
     IDevice *device = m_api->getDevice();
 
     //Create Buffers
-    m_indexVBO = device->createIndexBuffer();
-    m_bufferVBO = device->createVertexBuffer();
+    for (int i = 0; i < 4; i++) {
+        frame[i].m_indexVBO = device->createIndexBuffer();
+        frame[i].m_bufferVBO = device->createVertexBuffer();
 
-    m_bindings = device->createVertexBufferBindings();
-    m_bindings->setIndexBuffer(m_indexVBO);
+        frame[i].m_bindings = device->createVertexBufferBindings();
+        frame[i].m_bindings->setIndexBuffer(frame[i].m_indexVBO);
 
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = m_bufferVBO;
-    vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2ParticleBindings[0], &staticM2ParticleBindings[5]);
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = frame[i].m_bufferVBO;
+        vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2ParticleBindings[0],
+                                                             &staticM2ParticleBindings[5]);
 
-    m_bindings->addVertexBufferBinding(vertexBinding);
-    m_bindings->save();
-
-    //Get shader
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2ParticleShader", nullptr);
-
-    //Create mesh
-    gMeshTemplate meshTemplate (m_bindings, shaderPermutation);
+        frame[i].m_bindings->addVertexBufferBinding(vertexBinding);
+        frame[i].m_bindings->save();
 
 
-    uint8_t blendMode = m_data->old.blendingType;
+        //Get shader
+        HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2ParticleShader", nullptr);
 
-    meshTemplate.depthWrite = blendMode <= 1;
-    meshTemplate.depthCulling = true;
-    meshTemplate.backFaceCulling = true;
+        //Create mesh
+        gMeshTemplate meshTemplate(frame[i].m_bindings, shaderPermutation);
 
-    if (blendMode == 4 )
-        blendMode = 3;
+
+        uint8_t blendMode = m_data->old.blendingType;
+
+        meshTemplate.depthWrite = blendMode <= 1;
+        meshTemplate.depthCulling = true;
+        meshTemplate.backFaceCulling = true;
+
+        if (blendMode == 4)
+            blendMode = 3;
 
 //    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
-    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);//M2BlendingModeToEGxBlendEnum1[blendMode];
+        meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);//M2BlendingModeToEGxBlendEnum1[blendMode];
 
-    meshTemplate.start = 0;
-    meshTemplate.end = 0;
-    meshTemplate.element = GL_TRIANGLES;
+        meshTemplate.start = 0;
+        meshTemplate.end = 0;
+        meshTemplate.element = GL_TRIANGLES;
 
-    bool multitex = this->particleType >= 2;
-    HBlpTexture tex0 = nullptr;
-    if (multitex) {
-        tex0 = m2Object->getBlpTextureData(this->m_data->old.texture_0);
-    } else {
-        tex0 = m2Object->getBlpTextureData(this->m_data->old.texture);
-    }
-    meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(tex0, true, true);
-    if (multitex) {
-        HBlpTexture tex1 = m2Object->getBlpTextureData(this->m_data->old.texture_1);
-        HBlpTexture tex2 = m2Object->getBlpTextureData(this->m_data->old.texture_2);
-
-        meshTemplate.texture[1] = m_api->getDevice()->createBlpTexture(tex1, true, true);
-        meshTemplate.texture[2] = m_api->getDevice()->createBlpTexture(tex2, true, true);
-    }
-
-    meshTemplate.textureCount = (multitex) ? 3 : 1;
-
-    meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-    meshTemplate.vertexBuffers[1] = nullptr;
-    meshTemplate.vertexBuffers[2] = nullptr;
-
-    meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-    meshTemplate.fragmentBuffers[1] = nullptr;
-    meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
-
-    meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
-    blockPS.uAlphaTest = 0.0039215689f;
-    int uPixelShader = -1;
-    if (multitex) {
-        if (this->m_data->old.flags & 0x20000000) {
-            uPixelShader = 0;
+        bool multitex = this->particleType >= 2;
+        HBlpTexture tex0 = nullptr;
+        if (multitex) {
+            tex0 = m2Object->getBlpTextureData(this->m_data->old.texture_0);
+        } else {
+            tex0 = m2Object->getBlpTextureData(this->m_data->old.texture);
         }
-        if (this->m_data->old.flags & 0x40000000) {
-            uPixelShader = 1;
+        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(tex0, true, true);
+        if (multitex) {
+            HBlpTexture tex1 = m2Object->getBlpTextureData(this->m_data->old.texture_1);
+            HBlpTexture tex2 = m2Object->getBlpTextureData(this->m_data->old.texture_2);
+
+            meshTemplate.texture[1] = m_api->getDevice()->createBlpTexture(tex1, true, true);
+            meshTemplate.texture[2] = m_api->getDevice()->createBlpTexture(tex2, true, true);
         }
+
+        meshTemplate.textureCount = (multitex) ? 3 : 1;
+
+        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.vertexBuffers[1] = nullptr;
+        meshTemplate.vertexBuffers[2] = nullptr;
+
+        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.fragmentBuffers[1] = nullptr;
+        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
+
+        meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
+        blockPS.uAlphaTest = 0.0039215689f;
+        int uPixelShader = -1;
+        if (multitex) {
+            if (this->m_data->old.flags & 0x20000000) {
+                uPixelShader = 0;
+            }
+            if (this->m_data->old.flags & 0x40000000) {
+                uPixelShader = 1;
+            }
+        }
+        blockPS.uPixelShader = uPixelShader;
+
+        meshTemplate.fragmentBuffers[2]->save(true);
+
+        frame[i].m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
     }
-    blockPS.uPixelShader = uPixelShader;
-
-    meshTemplate.fragmentBuffers[2]->save(true);
-
-    m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
 }
 
 
@@ -753,15 +768,17 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
     return;
     if (this->szVertexBuf.size() <= 1) return;
 
-    m_mesh->setRenderOrder(renderOrder);
-    meshes.push_back(m_mesh);
+    HGParticleMesh mesh = frame[m_api->getDevice()->getUpdateFrameNumber()].m_mesh;
+    mesh->setRenderOrder(renderOrder);
+    meshes.push_back(mesh);
 }
 
 void ParticleEmitter::updateBuffers() const {
     return;
     if (szVertexBuf.size() == 0 ) return;
-    m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
-    m_bufferVBO->uploadData((void *) szVertexBuf.data(), (int) (szVertexBuf.size() * sizeof(ParticleBuffStructQuad)));
+    auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
+    currentFrame.m_bufferVBO->uploadData((void *) szVertexBuf.data(), (int) (szVertexBuf.size() * sizeof(ParticleBuffStructQuad)));
 
-    m_mesh->setEnd(szIndexBuff.size());
+    currentFrame.m_mesh->setEnd(szIndexBuff.size());
 }

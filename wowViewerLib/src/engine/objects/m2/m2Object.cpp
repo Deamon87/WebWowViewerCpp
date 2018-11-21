@@ -415,15 +415,29 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
 void M2Object::createAABB() {
     M2Data *m2Data = m_m2Geom->getM2Data();
 
-    C3Vector min = m2Data->bounding_box.min;
-    C3Vector max = m2Data->bounding_box.max;
-    mathfu::vec4 minVec = mathfu::vec4(min.x, min.y, min.z, 1);
-    mathfu::vec4 maxVec = mathfu::vec4(max.x, max.y, max.z, 1);
+    {
+        C3Vector min = m2Data->bounding_box.min;
+        C3Vector max = m2Data->bounding_box.max;
+        mathfu::vec4 minVec = mathfu::vec4(min.x, min.y, min.z, 1);
+        mathfu::vec4 maxVec = mathfu::vec4(max.x, max.y, max.z, 1);
 
-    CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, minVec, maxVec);
+        CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, minVec, maxVec);
 
-    //this.diameter = vec3.distance(worldAABB[0],worldAABB[1]);
-    this->aabb = worldAABB;
+        //this.diameter = vec3.distance(worldAABB[0],worldAABB[1]);
+        this->aabb = worldAABB;
+    }
+
+    {
+        C3Vector min = m2Data->collision_box.min;
+        C3Vector max = m2Data->collision_box.max;
+        mathfu::vec4 minVec = mathfu::vec4(min.x, min.y, min.z, 1);
+        mathfu::vec4 maxVec = mathfu::vec4(max.x, max.y, max.z, 1);
+
+        CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, minVec, maxVec);
+
+        //this.diameter = vec3.distance(worldAABB[0],worldAABB[1]);
+        this->colissionAabb = worldAABB;
+    }
 }
 
 void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat) {
@@ -849,6 +863,7 @@ bool M2Object::doPostLoad(){
     this->initLights();
     this->initParticleEmitters();
     m_hasBillboards = checkIfHasBillboarded();
+
 
     this->m_loaded = true;
     this->m_loading = false;
@@ -1333,9 +1348,17 @@ void M2Object::setModelFileName(std::string modelName) {
     this->m_nameTemplate= nameTemplate;
 }
 
+
+
 void M2Object::setModelFileId(int fileId) {
     useFileId = true;
     m_modelFileId = fileId;
+}
+
+void M2Object::setAnimationId(int animationId) {
+    if (!m_loaded) return;
+
+    m_animationManager->setAnimationId(animationId, false);
 }
 
 M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {

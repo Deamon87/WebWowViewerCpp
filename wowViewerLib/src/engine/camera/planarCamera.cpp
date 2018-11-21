@@ -81,9 +81,13 @@ void PlanarCamera::tick (animTime_t timeDelta) {
     av += (delta_y-av)*d;
     if (av < -89.99999f) {
         av = -89.99999f;
+        delta_y = av;
     } else if (av > 89.99999f) {
         av = 89.99999f;
+        delta_y = av;
     }
+
+
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
     mathfu::mat4 cameraRotationMat = mathfu::mat4::Identity();
     cameraRotationMat *= MathHelper::RotationY(toRadian(-av));

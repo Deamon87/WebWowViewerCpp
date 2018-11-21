@@ -50,6 +50,7 @@ public:
 
     virtual void clearCache() = 0;
 
+    virtual void setAnimationId(int animationId) = 0;
     virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) = 0;
     virtual void setScene(int sceneType, std::string fileName, int cameraNum) = 0;
     virtual void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) = 0;

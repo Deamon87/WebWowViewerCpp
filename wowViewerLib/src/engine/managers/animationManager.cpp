@@ -884,7 +884,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
     if (peRecords.size <= 0) return;
     static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
     static float defaultFloat = 1.0;
-    static unsigned char defaultChar = 1;
+    static unsigned char defaultChar = 0;
 
 //    check_offset<offsetof(M2Particle, old.geometry_model_filename), 24>();
 //    check_offset<offsetof(M2Particle, old.blendingType), 40>();

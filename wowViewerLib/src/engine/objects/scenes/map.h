@@ -83,6 +83,9 @@ public:
 
     void collectMeshes(WoWFrameData *frameData) override;
     void draw(WoWFrameData *frameData) override;
+    void setAnimationId(int animationId) override {
+
+    };
 
 
     void doPostLoad(WoWFrameData *frameData) override;

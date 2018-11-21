@@ -3,6 +3,7 @@
 //
 
 #include "CPlaneGenerator.h"
+#include "../../../algorithms/mathHelper.h"
 
 void CPlaneGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
 
@@ -45,4 +46,9 @@ void CPlaneGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
             p.velocity = r0 * velocity;
         }
     }
+
+//    mathfu::mat4 rotateMat = MathHelper::RotationY(toRadian(-90));
+
+//    p.position = rotateMat * p.position;
+//    p.velocity = rotateMat.Transpose() * p.velocity;
 }

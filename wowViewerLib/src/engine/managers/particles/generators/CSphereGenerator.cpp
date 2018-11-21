@@ -50,4 +50,10 @@ void CSphereGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     mathfu::vec3 velocityCandidate = r0 * velocity;
     p.velocity = velocityCandidate;
 
+
+//    mathfu::mat4 rotateMat = MathHelper::RotationY(toRadian(-90));
+//
+//    p.position = rotateMat * p.position;
+//    p.velocity = rotateMat.Transpose().Inverse() * p.velocity;
+
 }

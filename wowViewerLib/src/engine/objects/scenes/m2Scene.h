@@ -33,14 +33,18 @@ public:
     };
 
     M2Scene(IWoWInnerApi *api, int fileDataId, int cameraView = - 1) : m_api(api), m_cameraView(cameraView){
-            M2Object *m2Object = new M2Object(m_api);
-            m2Object->setLoadParams(0, {}, {});
-            m2Object->setModelFileId(fileDataId);
-            m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
-            m2Object->setModelAsScene(cameraView != -1);
-            m2Object->calcWorldPosition();
+        M2Object *m2Object = new M2Object(m_api);
+        m2Object->setLoadParams(0, {}, {});
+        m2Object->setModelFileId(fileDataId);
+        m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+        m2Object->setModelAsScene(cameraView != -1);
+        m2Object->calcWorldPosition();
 
-            m_m2Object = m2Object;
+        m_m2Object = m2Object;
+    };
+
+    void setAnimationId(int animationId) override {
+        m_m2Object->setAnimationId(animationId);
     };
 
     M2Object * getM2Object() { return m_m2Object; };

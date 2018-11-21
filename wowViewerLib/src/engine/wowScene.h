@@ -185,6 +185,7 @@ public:
     };
     void clearCache() override;
 
+    void setAnimationId(int animationId) override;
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
     void setScene(int sceneType, std::string fileName, int cameraNum) override;
     void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) override;

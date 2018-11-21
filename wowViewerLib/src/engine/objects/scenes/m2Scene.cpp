@@ -29,15 +29,29 @@ void M2Scene::draw(WoWFrameData *frameData) {
     m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
 }
 
+extern "C" {
+    extern void supplyPointer(int *availablePointer, int length);
+}
+
 void M2Scene::doPostLoad(WoWFrameData *frameData) {
     if (m_m2Object->doPostLoad()) {
-        auto max = m_m2Object->getAABB().max;
-        auto min = m_m2Object->getAABB().min;
+        CAaBox aabb = m_m2Object->getColissionAABB();
+        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 0.001 ) {
+            aabb = m_m2Object->getAABB();
+        }
+
+        auto max = aabb.max;
+        auto min = aabb.min;
         m_api->setCameraPosition(4.0f*min.x, (min.y+max.y)/2.0f, 0);
         m_api->setCameraOffset(
             min.x + ((max.x-min.x)/2.0f),
             min.y + ((max.y-min.y)/2.0f),
             min.z + ((max.z-min.z)/2.0f));
+
+        std::vector <int> availableAnimations;
+        m_m2Object->getAvailableAnimatinon(availableAnimations);
+
+        supplyPointer(&availableAnimations[0], availableAnimations.size());
     }
 }
 
@@ -101,5 +115,4 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
     }
 
     m_m2Object->setReplaceTextures(replaceTextures);
-
 }

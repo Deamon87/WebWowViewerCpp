@@ -266,6 +266,11 @@ extern "C" {
     }
 
     EMSCRIPTEN_KEEPALIVE
+    void setAnimationId(int animationId) {
+        scene->setAnimationId(animationId);
+    }
+
+    EMSCRIPTEN_KEEPALIVE
     void setTextures(int *fileDataIdsBuff, int elementsCount) {
         std::vector<int> textures(fileDataIdsBuff, fileDataIdsBuff+elementsCount);
 

@@ -408,11 +408,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
     }
 };
 
-
-
 std::vector<uint8_t> AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i) {
     mcnkStruct_t &mcnkObj = mcnkStructs[i];
-    PointerChecker<uint8_t> &alphaArray = mcnkObj.mcal;
+    uint8_t* alphaArray = mcnkObj.mcal;
     PointerChecker<SMLayer> &layers = mcnkObj.mcly;
 
     std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64, 0);

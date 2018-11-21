@@ -206,6 +206,14 @@ void WoWSceneImpl::setReplaceTextureArray(std::vector<int> &replaceTextureArray)
     }
 }
 
+void WoWSceneImpl::setAnimationId(int animationId) {
+    if (newScene != nullptr) {
+        newScene->setAnimationId(animationId);
+    } else {
+        currentScene->setAnimationId(animationId);
+    }
+}
+
 void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) {
     if (sceneType == 0) {
         m_usePlanarCamera = cameraNum == -1;
@@ -438,7 +446,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
-//    currentScene = new M2=Scene(this,
+//    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
 //    mathfu::vec4 ambientColorOver = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
 //    currentScene->setAmbientColorOverride(ambientColorOver, true);
@@ -562,6 +570,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
 //
+//  currentScene = new WmoScene(this,
+//        "world/wmo/brokenisles/brokenshore/7bs_tombofsargeras.wmo");
+//
+
+
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
@@ -584,7 +597,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     db2WmoAreaTable = nullptr;
 
 //    setScene(2, "world/maps/ahnqiraj/ahnqiraj_26_46.adt", -1);
-    setScene(2, "WORLD/MAPTEXTURES/MAELSTROMDEATHWINGFIGHT/MAELSTROMDEATHWINGFIGHT_32_32.adt", -1);
+//    setScene(2, "WORLD/MAPTEXTURES/MAELSTROMDEATHWINGFIGHT/MAELSTROMDEATHWINGFIGHT_32_32.adt", -1);
 //    setSceneWithFileDataId(1, 106679, -1);
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
