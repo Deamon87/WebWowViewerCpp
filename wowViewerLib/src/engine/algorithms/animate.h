@@ -55,12 +55,14 @@ inline float convertUint16ToFloat(unsigned short Short){
 }
 template<>
 inline mathfu::quat convertHelper<Quat16, mathfu::quat>(Quat16 &a ) {
-    return mathfu::quat(
+    mathfu::quat result = mathfu::quat(
         convertUint16ToFloat(a.w),
         convertUint16ToFloat(a.x),
         convertUint16ToFloat(a.y),
         convertUint16ToFloat(a.z)
     ).Normalized();
+
+    return result;
 };
 template<>
 inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(C4Quaternion &a ) {

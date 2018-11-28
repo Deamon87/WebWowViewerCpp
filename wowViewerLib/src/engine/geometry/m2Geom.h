@@ -8,15 +8,34 @@
 #include <vector>
 #include <unordered_map>
 #include "../persistance/header/M2FileHeader.h"
+#include "../persistance/animFile.h"
 #include "../../gapi/interface/IDevice.h"
 #include "../persistance/helper/ChunkFileReader.h"
+#include "../wowInnerApi.h"
 
 
 class M2Geom {
 public:
+    M2Geom(std::string fileName){
+        std::string delimiter = ".";
+        std::string nameTemplate = fileName.substr(0, fileName.find_last_of(delimiter));
+        std::string modelFileName = nameTemplate + ".m2";
+
+        this->m_modelName = modelFileName;
+        this->m_nameTemplate= nameTemplate;
+    };
+    M2Geom(int fileDataId){
+        useFileId = true;
+        m_modelFileId = fileDataId;
+    };
+
     void process(const std::vector<unsigned char> &m2File, const std::string &fileName);
     HGVertexBuffer getVBO(IDevice &device);
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
+
+    int findAnimationIndex(uint32_t anim_id);
+    void loadLowPriority(IWoWInnerApi *m_api, uint32_t animationId, uint32_t subAnimationId);
+
 
     bool isLoaded() { return m_loaded; };
 
@@ -25,11 +44,15 @@ public:
     M2Data *m_m2Data = nullptr;
     std::vector<uint32_t> skinFileDataIDs;
     std::vector<uint32_t> textureFileDataIDs;
-
-    void setNameTemplate(std::string &templateStr);
-    SkinGeom *getSkin(int slot);
+    std::vector<M2_AFID> animationFileDataIDs;
 private:
     std::vector<uint8_t> m2File;
+
+    std::string m_modelName;
+    std::string m_nameTemplate = "";
+
+    bool useFileId = false;
+    int m_modelFileId;
 
     bool m_loaded = false;
     HGVertexBuffer vertexVbo = HGVertexBuffer(nullptr);
@@ -37,6 +60,26 @@ private:
 
 
     static chunkDef<M2Geom> m2FileTable;
+
+    void initTracks(CM2SequenceLoad *cm2SequenceLoad);
+    struct AnimCacheRecord {
+        uint32_t animationId;
+        uint32_t variationId;
+
+        bool operator==(const AnimCacheRecord &other) const {
+            return
+                (animationId == other.animationId) &&
+                (variationId == other.variationId);
+        };
+    };
+    struct AnimCacheRecordHasher {
+        std::size_t operator()(const AnimCacheRecord& k) const {
+            using std::hash;
+            return hash<uint32_t >{}(k.animationId) ^ (hash<uint32_t>{}(k.variationId) << 8);
+        };
+    };
+
+    std::unordered_map<AnimCacheRecord, std::shared_ptr<AnimFile>, AnimCacheRecordHasher> loadedAnimationMap;
 };
 typedef std::shared_ptr<M2Geom> HM2Geom;
 

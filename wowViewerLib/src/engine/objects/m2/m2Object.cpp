@@ -440,6 +440,30 @@ void M2Object::createAABB() {
     }
 }
 
+
+CAaBox M2Object::getColissionAABB() {
+    CAaBox result;
+    if (m_m2Geom->m_m2Data->sequences.size > 0) {
+        int animationIndex = 0;
+        if (m_m2Geom->m_m2Data->sequence_lookups.size > 0) {
+            int index = *m_m2Geom->m_m2Data->sequence_lookups[0];
+            if (index > 0 && m_m2Geom->m_m2Data->sequences[index] == 0)
+                animationIndex = index;
+        }
+        result = m_m2Geom->m_m2Data->sequences[animationIndex]->bounds.extent;
+        C3Vector min = result.min;
+        C3Vector max = result.max;
+        mathfu::vec4 minVec = mathfu::vec4(min.x, min.y, min.z, 1);
+        mathfu::vec4 maxVec = mathfu::vec4(max.x, max.y, max.z, 1);
+
+        result = MathHelper::transformAABBWithMat4(m_placementMatrix, minVec, maxVec);
+    } else {
+        result = colissionAabb;
+    }
+
+    return result;
+}
+
 void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat) {
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
     placementMatrix = placementMatrix * wmoPlacementMat;
@@ -831,8 +855,6 @@ bool M2Object::doPostLoad(){
     if (m_m2Geom == nullptr) return false;
     if (!m_m2Geom->isLoaded()) return false;
 
-
-
     //2. Check if .skin file is loaded
     if (m_skinGeom == nullptr) {
         Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
@@ -953,7 +975,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             bonesMatrices[peRecord->old.bone];
         transformMat *= mathfu::mat4::FromTranslationVector(
             mathfu::vec3(peRecord->old.Position.x, peRecord->old.Position.y, peRecord->old.Position.z));
-        transformMat *= particleCoordinatesFix;
 
         particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D());
         particleEmitters[i]->prepearBuffers(viewMat);
@@ -1286,7 +1307,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
 }
 
 void M2Object::initAnimationManager() {
-    this->m_animationManager = new AnimationManager(m_m2Geom->getM2Data());
+    this->m_animationManager = new AnimationManager(m_api, m_m2Geom);
 }
 
 bool M2Object::checkIfHasBillboarded() {
@@ -1396,6 +1417,15 @@ mathfu::vec3 M2Object::getSunDir() {
 
     return m_api->getGlobalSunDir();
 }
+void M2Object::getAvailableAnimation(std::vector<int> &allAnimationList) {
+    allAnimationList.reserve(m_m2Geom->m_m2Data->sequences.size);
+    for (int i = 0; i < m_m2Geom->m_m2Data->sequences.size; i++) {
+        allAnimationList.push_back(m_m2Geom->m_m2Data->sequences[i]->id);
+    }
+    std::sort( allAnimationList.begin(), allAnimationList.end());
+    allAnimationList.erase( unique( allAnimationList.begin(), allAnimationList.end() ), allAnimationList.end());
+}
+
 
 void M2Object::drawParticles(std::vector<HGMesh> &meshes, int renderOrder) {
 //    return;

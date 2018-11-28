@@ -8,7 +8,8 @@
 
 class WdtFile {
 public:
-    WdtFile() {};
+    WdtFile(std::string fileName){};
+    WdtFile(int fileDataId){};
 
     void process(const std::vector<unsigned char> &wdtFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };

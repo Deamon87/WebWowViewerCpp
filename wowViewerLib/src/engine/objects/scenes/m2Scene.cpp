@@ -35,6 +35,7 @@ extern "C" {
 
 void M2Scene::doPostLoad(WoWFrameData *frameData) {
     if (m_m2Object->doPostLoad()) {
+
         CAaBox aabb = m_m2Object->getColissionAABB();
         if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 0.001 ) {
             aabb = m_m2Object->getAABB();
@@ -42,16 +43,25 @@ void M2Scene::doPostLoad(WoWFrameData *frameData) {
 
         auto max = aabb.max;
         auto min = aabb.min;
-        m_api->setCameraPosition(4.0f*min.x, (min.y+max.y)/2.0f, 0);
-        m_api->setCameraOffset(
-            min.x + ((max.x-min.x)/2.0f),
-            min.y + ((max.y-min.y)/2.0f),
-            min.z + ((max.z-min.z)/2.0f));
+
+        mathfu::vec3 modelCenter =  mathfu::vec3(
+            ((max.x+min.x)/2.0f),
+            ((max.y+min.y)/2.0f),
+            ((max.z+min.z)/2.0f)
+        );
+
+        if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
+            m_api->setCameraPosition((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+        } else {
+            m_api->setCameraPosition((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+        }
+        m_api->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
 
         std::vector <int> availableAnimations;
-        m_m2Object->getAvailableAnimatinon(availableAnimations);
-
+        m_m2Object->getAvailableAnimation(availableAnimations);
+#ifdef __EMSCRIPTEN__
         supplyPointer(&availableAnimations[0], availableAnimations.size());
+#endif
     }
 }
 
@@ -96,8 +106,8 @@ void M2Scene::collectMeshes(WoWFrameData * frameData) {
 }
 
 void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
-    std::cout << "replaceTextureArray.size == " << replaceTextureArray.size() << std::endl;
-    std::cout << "m_m2Object == " << m_m2Object << std::endl;
+    //std::cout << "replaceTextureArray.size == " << replaceTextureArray.size() << std::endl;
+    //std::cout << "m_m2Object == " << m_m2Object << std::endl;
     if (m_m2Object == nullptr) return;
 
     auto textureCache = m_api->getTextureCache();
@@ -108,8 +118,8 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
         if (replaceTextureArray[i] == 0) {
             replaceTextures.push_back(nullptr);
         } else {
-            std::cout << "replaceTextureArray[i] == " << replaceTextureArray[i] << std::endl;
-            std::cout << "i == " << i << std::endl;
+            //std::cout << "replaceTextureArray[i] == " << replaceTextureArray[i] << std::endl;
+            //std::cout << "i == " << i << std::endl;
             replaceTextures.push_back(textureCache->getFileId(replaceTextureArray[i]));
         }
     }

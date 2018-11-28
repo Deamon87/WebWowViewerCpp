@@ -12,8 +12,6 @@
 
 //Functional classes
 
-
-#include "opengl/header.h"
 #include "cache/cache.h"
 #include "shader/ShaderRuntimeData.h"
 #include "objects/adt/adtObject.h"
@@ -24,6 +22,7 @@
 #include "persistance/db2/DB2LightData.h"
 #include "persistance/db2/DB2WmoAreaTable.h"
 #include "../gapi/interface/IDevice.h"
+#include "persistance/animFile.h"
 
 class IWoWInnerApi {
 public:
@@ -32,6 +31,7 @@ public:
     virtual Cache<AdtFile>* getAdtGeomCache() = 0;
     virtual Cache<M2Geom>* getM2GeomCache() = 0;
     virtual Cache<SkinGeom>* getSkinGeomCache() = 0;
+    virtual Cache<AnimFile>* getAnimCache() = 0;
     virtual Cache<BlpTexture>* getTextureCache() = 0;
     virtual Cache<WmoMainGeom>* getWmoMainCache() = 0;
     virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() = 0;

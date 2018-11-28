@@ -10,21 +10,7 @@
 struct M2Loop {
     uint32_t timestamp;
 };
-struct M2Sequence {
-    uint16_t id;                   // Animation id in AnimationData.dbc
-    uint16_t variationIndex;       // Sub-animation id: Which number in a row of animations this one is.
 
-    uint32_t duration;             // The length (timestamps) of the animation. I believe this actually the length of the animation in milliseconds.
-    float movespeed;               // This is the speed the character moves with in this animation.
-    uint32_t flags;                // See below.
-    int16_t frequency;             // This is used to determine how often the animation is played. For all animations of the same type, this adds up to 0x7FFF (32767).
-    uint16_t _padding;
-    M2Range replay;                // May both be 0 to not repeat. Client will pick a random number of repetitions within bounds if given.
-    uint32_t blendtime;            // The client blends (lerp) animation states between animations where the end and start values differ. This specifies how long that blending takes. Values: 0, 50, 100, 150, 200, 250, 300, 350, 500.
-    M2Bounds bounds;
-    int16_t variationNext;         // id of the following animation of this AnimationID, points to an Index or is -1 if none.
-    uint16_t aliasNext;            // id in the list of animations. Used to find actual animation if this sequence is an alias (flags & 0x40)
-};
 
 struct M2CompBone                 // probably M2Bone  ≤ Vanilla
 {
@@ -408,6 +394,12 @@ struct M2CameraResult {
     float diagFov;
 };
 
+struct M2_AFID {
+    uint16_t anim_id;
+    uint16_t sub_anim_id;
+    uint32_t file_id;
+};
+
 template <typename ToCheck, std::size_t ExpectedSize, std::size_t RealSize = sizeof(ToCheck)>
 void check_size() {
     static_assert(ExpectedSize == RealSize, "Size is off!");
@@ -431,6 +423,7 @@ constexpr std::size_t offset_of()
 
 #define OFFSET_OF(m) offset_of<decltype(get_class_type(m)), \
                      decltype(get_member_type(m)), m>()
+
 
 
 

@@ -109,29 +109,32 @@ void PlanarCamera::setCameraPos (float x, float y, float z) {
 
     m_radius = sqrt(x*x + y*y + z*z);
     float polar = asin(z/m_radius);
-    float azimuth = M_PI_2 - atan(y/x);
+    float azimuth = (M_PI - atan(y/x));
 
     this->av = polar / ((float)(M_PI) / 180.0f);
-    this->ah = -azimuth/((float)(M_PI) / 180.0f);
+    this->ah = azimuth/((float)(M_PI) / 180.0f);
+
+    this->delta_x = this->ah;
+    this->delta_y = this->av;
+
 
     cameraViewOffset = mathfu::vec2(0,0);
 
     this->lookAt[0] = 0;
     this->lookAt[1] = 0;
     this->lookAt[2] = 0;
-
-    this->av = 0;
-    this->ah = 0;
 }
 void PlanarCamera::setCameraOffset(float x, float y, float z) {
     cameraOffset = mathfu::vec3(x,y,z);
 }
 void PlanarCamera::zoomInFromTouch(float val) {
     m_radius += val;
+    if (m_radius < 0) m_radius = 0;
 }
 
 void PlanarCamera::zoomInFromMouseScroll(float val) {
     m_radius += val;
+    if (m_radius < 0) m_radius = 0;
 }
 
 void PlanarCamera::addCameraViewOffset(float x, float y) {

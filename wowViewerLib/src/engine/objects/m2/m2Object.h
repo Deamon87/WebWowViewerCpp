@@ -134,7 +134,7 @@ public:
     }
 
     CAaBox getAABB() { return aabb; };
-    CAaBox getColissionAABB() { return colissionAabb; };
+    CAaBox getColissionAABB();;
 
     void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
                        std::vector<HBlpTexture> replaceTextures);
@@ -164,14 +164,7 @@ public:
     };
 
     float getHeight();
-    void getAvailableAnimatinon(std::vector<int> &allAnimationList) {
-        allAnimationList.reserve(m_m2Geom->m_m2Data->sequences.size);
-        for (int i = 0; i < m_m2Geom->m_m2Data->sequences.size; i++) {
-            allAnimationList.push_back(m_m2Geom->m_m2Data->sequences[i]->id);
-        }
-        std::sort( allAnimationList.begin(), allAnimationList.end());
-        allAnimationList.erase( unique( allAnimationList.begin(), allAnimationList.end() ), allAnimationList.end());
-    }
+    void getAvailableAnimation(std::vector<int> &allAnimationList);
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
     bool getHasBillboarded() {

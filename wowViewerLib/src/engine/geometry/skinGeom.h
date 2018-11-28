@@ -14,6 +14,9 @@
 
 class SkinGeom {
 public:
+    SkinGeom(std::string fileName){};
+    SkinGeom(int fileDataId){};
+
     void process(const std::vector<unsigned char> &skinFile, const std::string &fileName);
     HGIndexBuffer getIBO(IDevice &device);
 

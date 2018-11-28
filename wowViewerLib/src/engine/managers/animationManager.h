@@ -14,7 +14,10 @@
 
 class AnimationManager {
 private:
+    IWoWInnerApi *m_api;
+    HM2Geom m_m2Geom;
     M2Data *m_m2File;
+
     int mainAnimationId;
     int mainAnimationIndex;
 
@@ -28,6 +31,7 @@ private:
 
     bool firstCalc;
     bool isAnimated;
+    bool deferredLoadingStarted = false;
 
     int leftHandClosed = 0;
     int rightHandClosed = 0;
@@ -47,7 +51,7 @@ private:
     void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, animTime_t time);
 
 public:
-    AnimationManager(M2Data* m2File);
+    AnimationManager(IWoWInnerApi *api, HM2Geom m2File);
     bool setAnimationId(int animationId, bool reset);
     void update (
         animTime_t deltaTime,

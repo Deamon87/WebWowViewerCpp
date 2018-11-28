@@ -96,7 +96,7 @@ public:
             }
         }
 
-        std::shared_ptr<T> sharedPtr = std::make_shared<T>();
+        std::shared_ptr<T> sharedPtr = std::make_shared<T>(fileName);
         std::weak_ptr<T> weakPtr(sharedPtr);
         m_cache[fileName] = weakPtr;
 //        std::cout << "m_cache.size() == " << m_cache.size() << " " << __PRETTY_FUNCTION__ << std::endl;
@@ -121,7 +121,7 @@ public:
             }
         }
 
-        std::shared_ptr<T> sharedPtr = std::make_shared<T>();
+        std::shared_ptr<T> sharedPtr = std::make_shared<T>(id);
         std::weak_ptr<T> weakPtr(sharedPtr);
         m_cache[fileName] = weakPtr;
 

@@ -14,11 +14,8 @@
 
 class WmoGroupGeom {
 public:
-    WmoGroupGeom() : indicesLen(0), verticesLen(0),
-        normalsLen(0), textureCoordsLen(0), cvLen(0), doodadRefsLen(0),
-        batchesLen(0), nodesLen(0), bpsIndiciesLen(0) {
-
-    }
+    WmoGroupGeom(std::string fileName){};
+    WmoGroupGeom(int fileDataId){};
 
     void process(const std::vector<unsigned char> &wmoGroupFile, const std::string &fileName);
 

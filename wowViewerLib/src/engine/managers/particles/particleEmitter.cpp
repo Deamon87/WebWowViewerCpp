@@ -324,7 +324,11 @@ void ParticleEmitter::EmitNewParticles(animTime_t delta) {
 void ParticleEmitter::CreateParticle(animTime_t delta) {
     CParticle2 &p = this->BirthParticle();
 
+    mathfu::mat4 rotateMat = MathHelper::RotationY(toRadian(-90));
+
     this->generator->CreateParticle(p, delta);
+    p.velocity = (rotateMat.Inverse().Transpose() * mathfu::vec4(p.velocity, 0.0f)).xyz();
+
     if (!(this->m_data->old.flags & 0x10)) {
         p.position = (this->transform * mathfu::vec4(p.position, 1.0f)).xyz();
         p.velocity = (this->transform * mathfu::vec4(p.velocity, 0.0f)).xyz();
@@ -765,7 +769,7 @@ ParticleEmitter::BuildQuad(
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
-    return;
+//    return;
     if (this->szVertexBuf.size() <= 1) return;
 
     HGParticleMesh mesh = frame[m_api->getDevice()->getUpdateFrameNumber()].m_mesh;
@@ -774,7 +778,7 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 }
 
 void ParticleEmitter::updateBuffers() const {
-    return;
+//    return;
     if (szVertexBuf.size() == 0 ) return;
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
     currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));

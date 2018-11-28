@@ -13,7 +13,8 @@
 
 class WdlFile {
 public:
-   WdlFile() {};
+    WdlFile(std::string fileName){};
+    WdlFile(int fileDataId){};
 
     void process(const std::vector<unsigned char> &wdlFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };

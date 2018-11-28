@@ -9,8 +9,10 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "mathfu/glsl_mappings.h"
 
-AnimationManager::AnimationManager(M2Data* m2File) {
-    this->m_m2File = m2File;
+AnimationManager::AnimationManager(IWoWInnerApi *api, HM2Geom m2Geom) {
+    this->m_api = api;
+    this->m_m2Geom = m2Geom;
+    this->m_m2File = m2Geom->getM2Data();
 
     this->mainAnimationId = 0;
     this->mainAnimationIndex = 0;
@@ -29,7 +31,7 @@ AnimationManager::AnimationManager(M2Data* m2File) {
     this->initGlobalSequenceTimes();
     this->calculateBoneTree();
 
-    if (!this->setAnimationId(0, false)) { // try Stand(0) animation
+    if (!this->setAnimationId(70, false)) { // try Stand(0) animation
         this->setAnimationId(147, false); // otherwise try Closed(147) animation
     }
 }
@@ -117,6 +119,8 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
         this->nextSubAnimationActive = false;
 
         this->firstCalc = true;
+
+        deferredLoadingStarted = false;
     }
     return (animationIndex > -1);
 }
@@ -516,11 +520,14 @@ void AnimationManager::update(
     }
 
     int blendAnimationIndex = -1;
+    const M2Sequence* blendAnimationRecord = nullptr;
     if ((subAnimBlendTime > 0) && (currAnimLeft < subAnimBlendTime)) {
         this->firstCalc = true;
         this->nextSubAnimationTime = fmod((subAnimBlendTime - currAnimLeft) , (subAnimRecord->duration));
         blendAlpha = currAnimLeft / subAnimBlendTime;
         blendAnimationIndex = this->nextSubAnimationIndex;
+        if (blendAnimationIndex >= 0)
+            blendAnimationRecord = m_m2File->sequences[blendAnimationIndex];
     }
 
     if (this->currentAnimationTime >= currentAnimationRecord->duration) {
@@ -532,6 +539,7 @@ void AnimationManager::update(
 
             this->nextSubAnimationIndex = -1;
             this->nextSubAnimationActive = false;
+            deferredLoadingStarted = false;
         } else if (currentAnimationRecord->duration > 0) {
             this->currentAnimationTime = fmod(this->currentAnimationTime , currentAnimationRecord->duration);
         }
@@ -539,6 +547,21 @@ void AnimationManager::update(
 
 
     /* Update animated values */
+    if ((currentAnimationRecord->flags & 0x20) == 0) {
+
+        if (!deferredLoadingStarted) {
+            m_m2Geom->loadLowPriority(m_api, currentAnimationRecord->id, currentAnimationRecord->variationIndex);
+            deferredLoadingStarted = true;
+            return;
+        }
+    };
+    if ((blendAnimationRecord != nullptr) && ((blendAnimationRecord->flags & 0x20) == 0)) {
+        if (!deferredLoadingStarted) {
+            m_m2Geom->loadLowPriority(m_api, blendAnimationRecord->id, blendAnimationRecord->variationIndex);
+            deferredLoadingStarted = true;
+            return;
+        }
+    };
 
     this->calcAnimMatrixes(textAnimMatrices, this->currentAnimationIndex, this->currentAnimationTime);
     if (blendAnimationIndex > -1) {
@@ -884,7 +907,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
     if (peRecords.size <= 0) return;
     static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
     static float defaultFloat = 1.0;
-    static unsigned char defaultChar = 0;
+    static unsigned char defaultChar = 1;
 
 //    check_offset<offsetof(M2Particle, old.geometry_model_filename), 24>();
 //    check_offset<offsetof(M2Particle, old.blendingType), 40>();

@@ -12,7 +12,9 @@
 
 class TexFile {
 public:
-    TexFile() {};
+    TexFile(std::string fileName){};
+    TexFile(int fileDataId){};
+
     void process(const std::vector<unsigned char> &wdlFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:

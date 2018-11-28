@@ -27,6 +27,7 @@ void WoWSceneImpl::processCaches(int limit) {
     this->wmoGeomCache.processCacheQueue(limit);
     this->wmoMainCache.processCacheQueue(limit);
     this->skinGeomCache.processCacheQueue(limit);
+    this->animCache.processCacheQueue(limit);
     this->m2GeomCache.processCacheQueue(limit);
     this->textureCache.processCacheQueue(limit);
     this->db2Cache.processCacheQueue(limit);
@@ -36,7 +37,7 @@ void WoWSceneImpl::DoCulling() {
     if (currentScene == nullptr) return;
 
     float farPlane = 5000;
-    float nearPlane = 1;
+    float nearPlane = 1.0;
     float fov = toRadian(45.0);
 
     static const mathfu::vec3 upVector(0,0,1);
@@ -238,7 +239,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         skinGeomCache(requestProcessor, CacheHolderType::CACHE_SKIN),
         textureCache(requestProcessor, CacheHolderType::CACHE_BLP),
         adtObjectCache(requestProcessor, CacheHolderType::CACHE_ADT),
-        db2Cache(requestProcessor, CacheHolderType::CACHE_DB2){
+        db2Cache(requestProcessor, CacheHolderType::CACHE_DB2),
+        animCache(requestProcessor, CacheHolderType::CACHE_ANIM)
+{
     m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
 //    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
 
@@ -602,6 +605,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(0, "creature/arthas/arthas.m2", -1);
+    setSceneWithFileDataId(0, 122968, -1);
 
 
     if (m_supportThreads) {
@@ -951,6 +955,7 @@ void WoWSceneImpl::actuallDropCache() {
     this->wmoMainCache.clear();
     this->m2GeomCache.clear();
     this->skinGeomCache.clear();
+    this->animCache.clear();
     this->textureCache.clear();
     this->db2Cache.clear();
 }

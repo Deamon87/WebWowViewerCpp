@@ -31,7 +31,8 @@ struct mcnkStruct_t {
 
 class AdtFile {
 public:
-    AdtFile() {};
+    AdtFile(std::string fileName){};
+    AdtFile(int fileDataId){};
 
     std::vector<uint8_t> processTexture(const MPHDFlags &wdtObjFlags, int i);
     void process(const std::vector<unsigned char> &adtFile, const std::string &fileName);

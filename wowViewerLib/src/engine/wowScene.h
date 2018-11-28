@@ -30,6 +30,7 @@
 #include "../gapi/interface/IDevice.h"
 #include "objects/wowFrameData.h"
 #include "camera/planarCamera.h"
+#include "persistance/animFile.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -70,6 +71,9 @@ public:
                 break;
             case CacheHolderType::CACHE_DB2:
                 db2Cache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_ANIM:
+                animCache.provideFile(s_fileName, data, fileLength);
                 break;
 
        }
@@ -123,6 +127,9 @@ public:
     };
     virtual Cache<SkinGeom>* getSkinGeomCache() override {
         return &skinGeomCache;
+    };
+    virtual Cache<AnimFile>* getAnimCache() override {
+        return &animCache;
     };
     virtual Cache<BlpTexture> *getTextureCache() override {
         return &textureCache;
@@ -229,6 +236,7 @@ private:
     Cache<SkinGeom> skinGeomCache;
     Cache<BlpTexture> textureCache;
     Cache<DB2Base> db2Cache;
+    Cache<AnimFile> animCache;
 
     iInnerSceneApi *currentScene = nullptr;
     iInnerSceneApi *newScene = nullptr;

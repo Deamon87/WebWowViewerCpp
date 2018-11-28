@@ -39,8 +39,7 @@ void CPlaneGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
         );
     }
     else {
-        mathfu::vec3 r0 = mathfu::vec3(0, 0, zSource);
-        r0 = p.position - r0;
+        mathfu::vec3 r0 = p.position - mathfu::vec3(0, 0, zSource);
         if (r0.Length() > 0.0001) {
             r0 = r0.Normalized();
             p.velocity = r0 * velocity;
