@@ -24,33 +24,49 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
                 }
         },
         {
-                'DIFS',
-                {[](M2Geom &file, ChunkData &chunkData) {
-                        debuglog("Entered SFID");
-                        file.skinFileDataIDs =
-                                std::vector<uint32_t>(
-                                        file.m_m2Data->num_skin_profiles);
+            'DIFS',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered SFID");
+                    file.skinFileDataIDs =
+                            std::vector<uint32_t>(
+                                    file.m_m2Data->num_skin_profiles);
 
-                        for (int i = 0; i < file.skinFileDataIDs.size(); i++) {
-                            chunkData.readValue(file.skinFileDataIDs[i]);
-                        }
+                    for (int i = 0; i < file.skinFileDataIDs.size(); i++) {
+                        chunkData.readValue(file.skinFileDataIDs[i]);
                     }
                 }
+            }
         },
         {
-                'DIXT',
-                {
-                        [](M2Geom &file, ChunkData &chunkData) {
-                            debuglog("Entered DIXT");
-                            file.textureFileDataIDs =
-                                    std::vector<uint32_t>(
-                                            (unsigned long) (chunkData.chunkLen / 4));
+            'DIXT',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered DIXT");
+                    file.textureFileDataIDs =
+                            std::vector<uint32_t>(
+                                    (unsigned long) (chunkData.chunkLen / 4));
 
-                            for (int i = 0; i < file.textureFileDataIDs.size(); i++) {
-                                chunkData.readValue(file.textureFileDataIDs[i]);
-                            }
-                        }
+                    for (int i = 0; i < file.textureFileDataIDs.size(); i++) {
+                        chunkData.readValue(file.textureFileDataIDs[i]);
+                    }
                 }
+            }
+        },
+        {
+            'DIFA',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered AFID");
+                    file.animationFileDataIDs =
+                            std::vector<M2_AFID>(
+                                    (unsigned long) (chunkData.chunkLen / sizeof(M2_AFID)));
+
+                    for (int i = 0; i < file.animationFileDataIDs.size(); i++) {
+                        chunkData.readValue(file.animationFileDataIDs[i]);
+                    }
+                }
+            }
         }
     }
 };
@@ -75,75 +91,107 @@ static GBufferBinding staticM2Bindings[6] = {
         {+m2Shader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 48, 40} // texcoord
 };
 
-void initM2Textures(M2Data *m2Header, void *m2File){
+void initM2Textures(M2Data *m2Header){
     int32_t texturesSize = m2Header->textures.size;
     for (int i = 0; i < texturesSize; i++) {
         M2Texture *texture = m2Header->textures.getElement(i);
         texture->filename.initM2Array(m2Header);
     }
 }
-void initCompBones(M2Data *m2Header, void *m2File){
+void initCompBones(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad){
     int32_t bonesSize = m2Header->bones.size;
     for (int i = 0; i < bonesSize; i++) {
         M2CompBone *compBone = m2Header->bones.getElement(i);
-        compBone->translation.initTrack(m2Header);
-        compBone->rotation.initTrack(m2Header);
-        compBone->scaling.initTrack(m2Header);
+        compBone->translation.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        compBone->rotation.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        compBone->scaling.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
     }
 }
-void initM2Color(M2Data *m2Header, void *m2File) {
+void initM2Color(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
     int32_t m2ColorSize = m2Header->colors.size;
     for (int i = 0; i < m2ColorSize; i++) {
         M2Color * m2Color = m2Header->colors.getElement(i);
-        m2Color->alpha.initTrack(m2Header);
-        m2Color->color.initTrack(m2Header);
+        m2Color->alpha.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        m2Color->color.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
     }
 }
-void initM2TextureWeight(M2Data *m2Header, void *m2File) {
+void initM2TextureWeight(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
     int32_t textureWeightSize = m2Header->texture_weights.size;
     for (int i = 0; i < textureWeightSize; i++) {
         M2TextureWeight * textureWeight = m2Header->texture_weights.getElement(i);
-        textureWeight->weight.initTrack(m2Header);
+        textureWeight->weight.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
     }
 }
-void initM2TextureTransform(M2Data *m2Header, void *m2File) {
+void initM2TextureTransform(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
     int32_t textureTransformSize = m2Header->texture_transforms.size;
     for (int i = 0; i < textureTransformSize; i++) {
         M2TextureTransform * textureTransform = m2Header->texture_transforms.getElement(i);
-        textureTransform->translation.initTrack(m2Header);
-        textureTransform->rotation.initTrack(m2Header);
-        textureTransform->scaling.initTrack(m2Header);
+        textureTransform->translation.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        textureTransform->rotation.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        textureTransform->scaling.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
     }
 }
-void initM2Attachment(M2Data *m2Header, void *m2File) {
+void initM2Attachment(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
     int32_t attachmentCount = m2Header->attachments.size;
     for (int i = 0; i < attachmentCount; i++) {
         M2Attachment *attachment = m2Header->attachments.getElement(i);
-        attachment->animate_attached.initTrack(m2Header);
+        attachment->animate_attached.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
     }
 }
-void initM2Event(M2Data *m2Header, void *m2File) {
+void initM2Event(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
     int32_t eventCount = m2Header->events.size;
     for (int i = 0; i < eventCount; i++) {
         M2Event *event = m2Header->events.getElement(i);
-        event->enabled.initTrackBase(m2Header);
+        event->enabled.initTrackBase(m2Header, m2Header->sequences, cm2SequenceLoad);
     }
 }
-void initM2Light(M2Data *m2Header, void *m2File) {
+void initM2Light(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
     int32_t lightCount = m2Header->lights.size;
     for (int i = 0; i < lightCount; i++) {
         M2Light *light = m2Header->lights.getElement(i);
-        light->ambient_color.initTrack(m2Header);
-        light->ambient_intensity.initTrack(m2Header);
-        light->diffuse_color.initTrack(m2Header);
-        light->diffuse_intensity.initTrack(m2Header);
-        light->attenuation_start.initTrack(m2Header);
-        light->attenuation_end.initTrack(m2Header);
-        light->visibility.initTrack(m2Header);
+        light->ambient_color.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        light->ambient_intensity.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        light->diffuse_color.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        light->diffuse_intensity.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        light->attenuation_start.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        light->attenuation_end.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        light->visibility.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
     }
 }
 
-void initM2Particle(M2Data *m2Header, void *m2File) {
+void initM2Particle(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
+    assert(sizeof(M2Particle) == 492);
+    int32_t particleEmitterCount = m2Header->particle_emitters.size;
+    for (int i = 0; i < particleEmitterCount; i++) {
+        M2Particle *particleEmitter = m2Header->particle_emitters.getElement(i);
+
+        particleEmitter->old.emissionSpeed.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        particleEmitter->old.speedVariation.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        particleEmitter->old.verticalRange.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        particleEmitter->old.horizontalRange.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        particleEmitter->old.gravity.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        particleEmitter->old.lifespan.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        particleEmitter->old.emissionRate.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        particleEmitter->old.emissionAreaLength.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        particleEmitter->old.emissionAreaWidth.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        particleEmitter->old.zSource.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+
+        particleEmitter->old.enabledIn.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+    }
+}
+void initM2Camera(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
+    int32_t cameraCount = m2Header->cameras.size;
+    for (int i = 0; i < cameraCount; i++) {
+        M2Camera *camera = m2Header->cameras.getElement(i);
+        camera->positions.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        camera->target_position.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        camera->roll.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        camera->FoV.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+    }
+}
+
+
+void initM2ParticlePartTracks(M2Data *m2Header) {
     assert(sizeof(M2Particle) == 492);
     int32_t particleEmitterCount = m2Header->particle_emitters.size;
     for (int i = 0; i < particleEmitterCount; i++) {
@@ -152,16 +200,6 @@ void initM2Particle(M2Data *m2Header, void *m2File) {
         particleEmitter->old.geometry_model_filename.initM2Array(m2Header);
         particleEmitter->old.recursion_model_filename.initM2Array(m2Header);
 
-        particleEmitter->old.emissionSpeed.initTrack(m2Header);
-        particleEmitter->old.speedVariation.initTrack(m2Header);
-        particleEmitter->old.verticalRange.initTrack(m2Header);
-        particleEmitter->old.horizontalRange.initTrack(m2Header);
-        particleEmitter->old.gravity.initTrack(m2Header);
-        particleEmitter->old.lifespan.initTrack(m2Header);
-        particleEmitter->old.emissionRate.initTrack(m2Header);
-        particleEmitter->old.emissionAreaLength.initTrack(m2Header);
-        particleEmitter->old.emissionAreaWidth.initTrack(m2Header);
-        particleEmitter->old.zSource.initTrack(m2Header);
         particleEmitter->old.alphaTrack.initPartTrack(m2Header);
         particleEmitter->old.colorTrack.initPartTrack(m2Header);
         particleEmitter->old.scaleTrack.initPartTrack(m2Header);
@@ -169,19 +207,6 @@ void initM2Particle(M2Data *m2Header, void *m2File) {
         particleEmitter->old.tailCellTrack.initPartTrack(m2Header);
 
         particleEmitter->old.splinePoints.initM2Array(m2Header);
-
-        particleEmitter->old.enabledIn.initTrack(m2Header);
-    }
-}
-
-void initM2Camera(M2Data *m2Header, void *m2File) {
-    int32_t cameraCount = m2Header->cameras.size;
-    for (int i = 0; i < cameraCount; i++) {
-        M2Camera *camera = m2Header->cameras.getElement(i);
-        camera->positions.initTrack(m2Header);
-        camera->target_position.initTrack(m2Header);
-        camera->roll.initTrack(m2Header);
-        camera->FoV.initTrack(m2Header);
     }
 }
 
@@ -202,7 +227,6 @@ void M2Geom::process(const std::vector<unsigned char> &m2File, const std::string
         this->m_m2Data = m2Header;
     }
     M2Data *m2Header = this->m_m2Data;
-    void *m2FileP = &this->m2File[0];
 
     //Step 1: Init all m2Arrays
     m2Header->global_loops.initM2Array(m2Header);
@@ -235,23 +259,30 @@ void M2Geom::process(const std::vector<unsigned char> &m2File, const std::string
     m2Header->particle_emitters.initM2Array(m2Header);
 
     if (m2Header->global_flags.flag_has_blend_maps) {
-        m2Header->blend_map_overrides.initM2Array(m2FileP);
+        m2Header->blend_map_overrides.initM2Array(m2Header);
     }
+    initM2ParticlePartTracks(m2Header);
+    initM2Textures(m2Header);
+
+    initTracks(nullptr);
 
     //Step 2: init tracks
-    initCompBones(m2Header, m2FileP);
-    initM2Color(m2Header, m2FileP);
-    initM2TextureWeight(m2Header, m2FileP);
-    initM2TextureTransform(m2Header, m2FileP);
-    initM2Attachment(m2Header, m2FileP);
-    initM2Event(m2Header, m2FileP);
-    initM2Light(m2Header, m2FileP);
-    initM2Particle(m2Header, m2FileP);
-    initM2Camera(m2Header, m2FileP);
-
-    initM2Textures(m2Header, m2FileP);
-
     m_loaded = true;
+}
+
+void M2Geom::initTracks(CM2SequenceLoad * cm2SequenceLoad) {
+
+    M2Data *m2Header = this->m_m2Data;
+
+    initCompBones(m2Header, cm2SequenceLoad);
+    initM2Color(m2Header, cm2SequenceLoad);
+    initM2TextureWeight(m2Header, cm2SequenceLoad);
+    initM2TextureTransform(m2Header, cm2SequenceLoad);
+    initM2Attachment(m2Header, cm2SequenceLoad);
+    initM2Event(m2Header, cm2SequenceLoad);
+    initM2Light(m2Header, cm2SequenceLoad);
+    initM2Particle(m2Header, cm2SequenceLoad);
+    initM2Camera(m2Header, cm2SequenceLoad);
 }
 
 HGVertexBuffer M2Geom::getVBO(IDevice &device) {
@@ -299,7 +330,73 @@ HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {
     return bufferBindings;
 }
 
-SkinGeom *M2Geom::getSkin(int slot) {
+int M2Geom::findAnimationIndex(uint32_t anim_id) {
+    if (m_m2Data->sequence_lookups.size == 0)
+        return -1;
 
+    size_t i (anim_id % m_m2Data->sequence_lookups.size);
+
+    for (size_t stride (1); true; ++stride)
+    {
+        if (*m_m2Data->sequence_lookups[i] == -1)
+        {
+            return -1;
+        }
+        if (m_m2Data->sequences[*m_m2Data->sequence_lookups[i]]->id == anim_id)
+        {
+            return *m_m2Data->sequence_lookups[i];
+        }
+
+        i = (i + stride * stride) % m_m2Data->sequence_lookups.size;
+        // so original_i + 1, original_i + 1 + 4, original_i + 1 + 4 + 9, …
+    }
 }
 
+void M2Geom::loadLowPriority(IWoWInnerApi *m_api, uint32_t animationId, uint32_t variationId) {
+    int animationIndex = findAnimationIndex(animationId);
+    if (animationIndex < 0) return;
+
+    AnimCacheRecord animCacheRecord;
+    animCacheRecord.animationId = animationId;
+    animCacheRecord.variationId = variationId;
+    auto it = loadedAnimationMap.find(animCacheRecord);
+    if (it != loadedAnimationMap.end()) return;
+
+
+    while (m_m2Data->sequences[animationIndex]->variationIndex != variationId) {
+        animationIndex = m_m2Data->sequences[animationIndex]->variationNext;
+
+        if (animationIndex <= 0) return;
+    }
+
+    if ((m_m2Data->sequences[animationIndex]->flags & 0x20) > 0) return;
+
+    int animationFileDataId = 0;
+    if (animationFileDataIDs.size() > 0) {
+        for (const auto &record : animationFileDataIDs) {
+            if (record.anim_id == animationId && record.sub_anim_id == variationId) {
+                animationFileDataId = record.file_id;
+            }
+        }
+    }
+    std::shared_ptr<AnimFile> animFile = nullptr;
+    if (animationFileDataId != 0) {
+        animFile = m_api->getAnimCache()->getFileId(animationFileDataId);
+    } else if (!useFileId) {
+        char buffer[1024];
+        std::snprintf(buffer, 1024, "%s%04d-%02d.anim", m_nameTemplate.c_str(), animationId, variationId);
+
+        animFile = m_api->getAnimCache()->get(buffer);
+    }
+    if (animFile == nullptr) return;
+
+    animFile->setPostLoad([this, animationIndex, animFile]() -> void {
+        CM2SequenceLoad cm2SequenceLoad;
+        cm2SequenceLoad.animFileDataBlob = animFile->m_animFileDataBlob;
+        cm2SequenceLoad.animationIndex = animationIndex;
+
+        initTracks(&cm2SequenceLoad);
+        m_m2Data->sequences[animationIndex]->flags |= 0x20;
+    });
+    loadedAnimationMap[animCacheRecord] = animFile;
+}
