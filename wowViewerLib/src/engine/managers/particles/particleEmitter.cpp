@@ -769,7 +769,7 @@ ParticleEmitter::BuildQuad(
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
-//    return;
+    return;
     if (this->szVertexBuf.size() <= 1) return;
 
     HGParticleMesh mesh = frame[m_api->getDevice()->getUpdateFrameNumber()].m_mesh;
@@ -778,7 +778,7 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 }
 
 void ParticleEmitter::updateBuffers() const {
-//    return;
+    return;
     if (szVertexBuf.size() == 0 ) return;
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
     currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));

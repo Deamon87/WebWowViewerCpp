@@ -31,7 +31,7 @@ AnimationManager::AnimationManager(IWoWInnerApi *api, HM2Geom m2Geom) {
     this->initGlobalSequenceTimes();
     this->calculateBoneTree();
 
-    if (!this->setAnimationId(70, false)) { // try Stand(0) animation
+    if (!this->setAnimationId(0, false)) { // try Stand(0) animation
         this->setAnimationId(147, false); // otherwise try Closed(147) animation
     }
 }
@@ -105,6 +105,16 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
             }
         }
     }
+    if (animationIndex > -1) {
+        while (
+            ((m_m2File->sequences[animationIndex]->flags & 0x20) == 0) &&
+            ((m_m2File->sequences[animationIndex]->flags & 0x40) > 0)
+        ) {
+            animationIndex = m_m2File->sequences[animationIndex]->aliasNext;
+            if (animationIndex < 0) break;
+        }
+    }
+
     if ((animationIndex > - 1)&& (reset || (animationIndex != this->mainAnimationIndex) )) {
         //Reset animation
         this->mainAnimationId = animationId;
@@ -532,6 +542,16 @@ void AnimationManager::update(
 
     if (this->currentAnimationTime >= currentAnimationRecord->duration) {
         if (this->nextSubAnimationIndex > -1) {
+            if (this->nextSubAnimationIndex > -1) {
+                while (
+                    ((m_m2File->sequences[this->nextSubAnimationIndex]->flags & 0x20) == 0) &&
+                    ((m_m2File->sequences[this->nextSubAnimationIndex]->flags & 0x40) > 0)
+                    ) {
+                    this->nextSubAnimationIndex = m_m2File->sequences[this->nextSubAnimationIndex]->aliasNext;
+                    if (this->nextSubAnimationIndex < 0) break;
+                }
+            }
+
             this->currentAnimationIndex = this->nextSubAnimationIndex;
             this->currentAnimationTime = this->nextSubAnimationTime;
 
@@ -548,19 +568,18 @@ void AnimationManager::update(
 
     /* Update animated values */
     if ((currentAnimationRecord->flags & 0x20) == 0) {
-
         if (!deferredLoadingStarted) {
             m_m2Geom->loadLowPriority(m_api, currentAnimationRecord->id, currentAnimationRecord->variationIndex);
             deferredLoadingStarted = true;
-            return;
         }
+        return;
     };
     if ((blendAnimationRecord != nullptr) && ((blendAnimationRecord->flags & 0x20) == 0)) {
         if (!deferredLoadingStarted) {
             m_m2Geom->loadLowPriority(m_api, blendAnimationRecord->id, blendAnimationRecord->variationIndex);
             deferredLoadingStarted = true;
-            return;
         }
+        return;
     };
 
     this->calcAnimMatrixes(textAnimMatrices, this->currentAnimationIndex, this->currentAnimationTime);

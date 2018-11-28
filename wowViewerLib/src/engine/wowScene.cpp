@@ -605,7 +605,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(0, "creature/arthas/arthas.m2", -1);
-    setSceneWithFileDataId(0, 122968, -1);
+//    setSceneWithFileDataId(0, 122968, -1);
 
 
     if (m_supportThreads) {
