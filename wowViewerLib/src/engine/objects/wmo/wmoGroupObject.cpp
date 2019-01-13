@@ -564,6 +564,8 @@ int WmoGroupObject::to_wmo_liquid (int x) {
         case liquid_basic_types_slime:
             return LIQUID_WMO_Slime;
     }
+
+    return -1;
 }
 
 void WmoGroupObject::setLiquidType() {

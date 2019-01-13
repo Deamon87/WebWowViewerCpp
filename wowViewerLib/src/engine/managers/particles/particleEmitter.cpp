@@ -11,6 +11,7 @@
 #include "generators/CSphereGenerator.h"
 #include "generators/CPlaneGenerator.h"
 #include "../../../gapi/interface/IDevice.h"
+#include "../../persistance/header/M2FileHeader.h"
 
 
 static GBufferBinding staticM2ParticleBindings[5] = {
@@ -99,7 +100,11 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
         else {
             this->particleType = 3;
         }
+    } else {
+        this->particleType = 0;
     }
+
+
 }
 PACK(
 struct meshParticleWideBlockPS {
@@ -221,68 +226,132 @@ void ParticleEmitter::resizeParticleBuffer() {
 //    }
 }
 
-void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &boneModelMat, mathfu::vec3 invMatTransl) {
+const mathfu::mat4 strangeMat = {
+    1.0f, 0, 0, 0,
+    0, 1.0f, 0, 0,
+    0, 0, 1.0f, 0,
+    0, 0, -1.0f, 0.0
+};
+
+void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, mathfu::mat4 &translatedViewMat) {
+    if ((this->m_data->old.flags & 0x10)) {
+        s_particleToView = translatedViewMat * m_emitterModelMatrix ;
+    } else {
+       if (a1 != nullptr) {
+           s_particleToView = translatedViewMat * (*a1);
+       } else {
+           s_particleToView = translatedViewMat;
+       }
+    }
+
+    zUpVector = translatedViewMat.GetColumn(3);
+    if (this->m_data->old.flags & 0x1000) {
+        p_quadToView = mathfu::mat4::ToRotationMatrix(s_particleToView);
+
+        if (!(this->m_data->old.flags & 0x10) && abs(m_inheritedScale) > 0.000000f ) {
+            p_quadToView = p_quadToView * (1.0f / m_inheritedScale);
+        }
+
+        mathfu::vec3 v28(0,0,1.0);
+        p_quadToViewZVector = p_quadToView.GetColumn(2).xyz();
+        if (p_quadToViewZVector.LengthSquared() <= 0.00000023841858f) {
+            p_quadToViewZVector =  mathfu::vec3(0,0,1.0);
+        } else {
+            p_quadToViewZVector = p_quadToViewZVector.Normalized();
+        }
+    }
+}
+
+void ParticleEmitter::UpdateXform(const mathfu::mat4 &viewModelBoneMatrix, mathfu::vec3 &invMatTranslation, mathfu::mat4 *frameOfReference) {
+    m_invMatTranslationVector = invMatTranslation;
+
+    if (frameOfReference != nullptr && !(this->m_data->old.flags & 0x200)) {
+        m_emitterModelMatrix = frameOfReference->Inverse() * viewModelBoneMatrix;
+    } else {
+        m_emitterModelMatrix = viewModelBoneMatrix;
+    }
+
+    this->m_inheritedScale = viewModelBoneMatrix.GetColumn(0).xyz().Length();
+}
+void ParticleEmitter::InternalUpdate(animTime_t delta) {
+    delta = fmaxf(delta, 0.0f);
+    if (delta < 0.1) {
+        m_deltaPosition = m_deltaPosition1;
+    } else {
+
+        float temp0 = floorf(delta / 0.1f);
+        delta = (temp0 * -0.1f) + delta;
+
+        int numberOfStepUpdates = fminf(floorf(generator->getAniProp()->lifespan / 0.1f), temp0);
+
+        int temp3 = numberOfStepUpdates+1;
+        float divider = 1.0f;
+        if (temp3 < 0) {
+            divider = (float)((temp3 & 1) | (temp3 >> 1)) + (float)((temp3 & 1) | (temp3 >> 1));
+        } else {
+            divider = temp3;
+        }
+
+        m_deltaPosition = m_deltaPosition1 * (1.0f / divider);
+
+        for (int i = 0; i < numberOfStepUpdates; i++) {
+            this->StepUpdate(0.1f);
+        }
+    }
+
+    this->StepUpdate(delta);
+
+}
+void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
 
     if (this->particles.size() <= 0 && !isEnabled) return;
 
-    this->resizeParticleBuffer();
+    m_prevPosition = m_emitterModelMatrix.TranslationVector3D();
 
-    mathfu::vec3 lastPos = -transform.TranslationVector3D();
-    mathfu::vec3 currPos = -boneModelMat.TranslationVector3D();
-    this->transform = boneModelMat;
+    mathfu::vec3 viewMatVec = viewMatrix.GetColumn(3).xyz();
+    this->UpdateXform(transformMat, viewMatVec, frameOfReference);
 
-    this->inheritedScale = this->transform.GetColumn(0).xyz().Length();
-    m_invMatTransl = invMatTransl;
+    if (delta > 0) {
+        if (this->m_data->old.flags & 0x4000) {
+            m_deltaPosition1 = m_emitterModelMatrix.GetColumn(3).xyz() - m_prevPosition;
+            float x = this->followMult * (m_deltaPosition1.Length() / delta) + this->followBase;
+            if (x >= 0.0)
+                x = fmin(x, 1.0f);
 
+            this->m_deltaPosition =  m_deltaPosition1 * x;
+        }
 
-    mathfu::vec3 dPos = lastPos - currPos;
-    if ((this->m_data->old.flags & 0x4000) > 0) {
-        float x = this->followMult * (dPos.Length() / delta) + this->followBase;
-        if (x < 0)
-            x = 0;
-        if (x > 1)
-            x = 1;
-        this->deltaPosition =  dPos * x;
-    }
-    if (this->m_data->old.flags & 0x40) {
-        this->burstTime += delta;
-        animTime_t frameTime = 30.0 / 1000.0;
-        if (this->burstTime > frameTime) {
-            if (this->particles.size() == 0) {
-                animTime_t frameAmount = frameTime / this->burstTime;
+        if (this->m_data->old.flags & 0x40) {
+            this->burstTime += delta;
+            animTime_t frameTime = 30.0 / 1000.0;
+            if (this->burstTime > frameTime) {
                 this->burstTime = 0;
-                this->burstVec = dPos * mathfu::vec3(frameAmount * this->m_data->old.BurstMultiplier);
-            }
-            else {
-                this->burstVec = mathfu::vec3(0, 0, 0);
+
+                if (this->particles.size() == 0) {
+                    animTime_t frameAmount = frameTime / this->burstTime;
+                    mathfu::vec3 dPos = m_emitterModelMatrix.GetColumn(3).xyz() - m_prevPosition;
+
+                    this->burstVec = dPos * mathfu::vec3(frameAmount * this->m_data->old.BurstMultiplier);
+                }
+                else {
+                    this->burstVec = mathfu::vec3(0, 0, 0);
+                }
             }
         }
-    }
-    if (this->particles.size() > 0 && 0 == (this->flags & 16)) {
-        delta += 5.0;
-        this->flags |= 16;
-    }
-    if (delta > 0.1) {
-        animTime_t clamped = delta;
-        if (delta > 5.0f) {
-            clamped = 5.0f;
-        }
-        for (float i = 0; i < clamped; i += 0.05) {
-            animTime_t d = 0.05;
-            if (clamped - i < 0.05) {
-                d = clamped - i;
-            }
-            this->Simulate(d);
-        }
-    }
-    else {
-        this->Simulate(delta);
+        this->InternalUpdate(delta);
     }
 }
-
-void ParticleEmitter::Simulate(animTime_t delta) {
+//void ParticleEmitter::Sync() {
+//
+//}
+void ParticleEmitter::StepUpdate(animTime_t delta) {
     ParticleForces forces;
+
+    if (delta < 0.0) return;
+    if (m_data->old.flags_per_number.hex_8000 == 0) {
+        //this->Sync(); // basically does buffer resize. Thus is not needed
+    }
 
     this->CalculateForces(forces, delta);
     this->EmitNewParticles(delta);
@@ -324,14 +393,11 @@ void ParticleEmitter::EmitNewParticles(animTime_t delta) {
 void ParticleEmitter::CreateParticle(animTime_t delta) {
     CParticle2 &p = this->BirthParticle();
 
-    mathfu::mat4 rotateMat = MathHelper::RotationY(toRadian(-90));
-
     this->generator->CreateParticle(p, delta);
-    p.velocity = (rotateMat.Inverse().Transpose() * mathfu::vec4(p.velocity, 0.0f)).xyz();
 
     if (!(this->m_data->old.flags & 0x10)) {
-        p.position = (this->transform * mathfu::vec4(p.position, 1.0f)).xyz();
-        p.velocity = (this->transform * mathfu::vec4(p.velocity, 0.0f)).xyz();
+        p.position = (this->m_emitterModelMatrix * mathfu::vec4(p.position, 1.0f)).xyz();
+        p.velocity = (this->m_emitterModelMatrix * mathfu::vec4(p.velocity, 0.0f)).xyz();
         if (this->m_data->old.flags & 0x2000) {
             // Snap to ground; set z to 0:
             p.position.z = 0.0;
@@ -383,8 +449,9 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
     }
 
     p.velocity = p.velocity + forces.drift;
+    //MoveParticle
     if ((this->m_data->old.flags & 0x4000) && (2 * delta < p.age)) {
-        p.position = p.position + this->deltaPosition;
+        p.position = p.position + this->m_deltaPosition;
     }
 
     mathfu::vec3 r0 = p.velocity * mathfu::vec3(delta); // v*dt
@@ -398,12 +465,14 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
     if (this->m_data->old.emitterType == 2 && (this->m_data->old.flags & 0x80)) {
         mathfu::vec3 r1 = p.position;
         if (!(this->m_data->old.flags & 0x10)) {
-
-            this->transform.GetColumn(3) = mathfu::vec4(r1, 1.0);
-            r1 = p.position - r1;
-        }
-        if (mathfu::vec3::DotProduct(r1, r0) > 0) {
-            return false;
+            if (mathfu::vec3::DotProduct(r1, r0) > 0) {
+                return false;
+            }
+        } else {
+            r1 = p.position - this->m_emitterModelMatrix.GetColumn(3).xyz();
+            if (mathfu::vec3::DotProduct(r1, r0) > 0) {
+                return false;
+            }
         }
     }
 
@@ -427,16 +496,17 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
         return;
     }
 
-    if (this->m_data->old.flags & 0x10 ) {
-        // apply the model transform
-        this->particleToView = viewMatrix * this->transform;
-    }
-    else {
-        this->particleToView = viewMatrix ;
-    }
+    inverseViewMatrix = viewMatrix.Inverse();
 
-    this->viewMatrix = viewMatrix;
-    this->inverseViewMatrix = viewMatrix.Inverse();
+    mathfu::mat3 rotation = mathfu::mat3::ToRotationMatrix(viewMatrix);
+    mathfu::mat4 someMat = mathfu::mat4(
+        rotation[0],rotation[1],rotation[2], 0.0,
+        rotation[3],rotation[4],rotation[5], 0.0,
+        rotation[6],rotation[7],rotation[8], 0.0,
+        0, 0, 0, 1.0
+    );
+    this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
+
     // Mat34.Col(this.particleNormal, viewMatrix, 2);
     // Build vertices for each particle
 
@@ -449,12 +519,10 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     int vo = 0;
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = this->particles[i];
-        int rendered = this->RenderParticle(p, szVertexBuf);
-        if (rendered > 0) {
-//            for (int j = 0; j < rendered; j++) {
-                // 0 2
-                // 1 3
-                // 0, 1, 2; 3, 2, 1
+        ParticlePreRenderData particlePreRenderData;
+        if (this->CalculateParticlePreRenderData(p, particlePreRenderData)) {
+            if (m_data->old.flags & 0x20000) {
+                this->buildVertex1(p, particlePreRenderData);
                 szIndexBuff.push_back(vo + 0);
                 szIndexBuff.push_back(vo + 1);
                 szIndexBuff.push_back(vo + 2);
@@ -462,9 +530,285 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
                 szIndexBuff.push_back(vo + 2);
                 szIndexBuff.push_back(vo + 1);
                 vo += 4;
-//            }
+            }
+            if ( m_data->old.flags & 0x40000 ) {
+                this->buildVertex2(p, particlePreRenderData);
+                szIndexBuff.push_back(vo + 0);
+                szIndexBuff.push_back(vo + 1);
+                szIndexBuff.push_back(vo + 2);
+                szIndexBuff.push_back(vo + 3);
+                szIndexBuff.push_back(vo + 2);
+                szIndexBuff.push_back(vo + 1);
+                vo += 4;
+            }
         }
     }
+}
+
+int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
+    mathfu::vec2 texScaleVec(
+        (particlePreRenderData.m_ageDependentValues.timedHeadCell &
+            this->textureColMask) * this->texScaleX,
+        particlePreRenderData.m_ageDependentValues.timedHeadCell  >> this->textureColBits);
+
+    float baseSpin = 0;
+    float deltaSpin = 0;
+    //GetSpin
+    this->GetSpin(p, baseSpin, deltaSpin);
+
+    int v20 = 0;
+    mathfu::vec3 m0 (0,0,0);
+    mathfu::vec3 m1 (0,0,0);
+    bool force0x1000 = false;
+    bool dataFilled = false;
+    if (m_data->old.flags & 0x4) {
+        if (p.velocity.LengthSquared() > 0.00000023841858) {
+            v20 = 1;
+            if (!(m_data->old.flags & 0x1000)) {
+                mathfu::vec3 viewSpaceVel = (s_particleToView * mathfu::vec4(-p.velocity, 0.0)).xyz();
+
+                float v30 = 0.0;
+                float translatedVelLeng = viewSpaceVel.LengthSquared();
+                if (translatedVelLeng <= 0.00000023841858) {
+                    v30 = 0.0;
+                } else {
+                    v30 = 1.0f / sqrtf(translatedVelLeng);
+                }
+
+                mathfu::vec3 viewSpaceVelNorm = viewSpaceVel * v30;
+
+                m0 = mathfu::vec3(
+                //198
+                    viewSpaceVelNorm.x * particlePreRenderData.m_ageDependentValues.m_particleScale.x,
+                //200
+                    viewSpaceVelNorm.y * particlePreRenderData.m_ageDependentValues.m_particleScale.x,
+                //202
+                    viewSpaceVelNorm.z * particlePreRenderData.m_ageDependentValues.m_particleScale.x);
+
+                m1 = mathfu::vec3(
+                    //197
+                    viewSpaceVelNorm.y * particlePreRenderData.m_ageDependentValues.m_particleScale.y,
+                    //199
+                    -(viewSpaceVelNorm.x * particlePreRenderData.m_ageDependentValues.m_particleScale.y),
+                    //177
+                    0
+                );
+                dataFilled = true;
+                force0x1000 = false;
+            } else {
+                force0x1000 = true;
+            }
+        }
+    }
+    if (((m_data->old.flags & 0x1000) || force0x1000) && !dataFilled) {
+        mathfu::mat3 transformedQuadToViewMat = p_quadToView;
+        float v39 = particlePreRenderData.m_ageDependentValues.m_particleScale.x;
+        if (v20){
+            float v47 = 0.0;
+            mathfu::vec3 minusVel = (-p.velocity);
+            float translatedVelLeng = minusVel.LengthSquared();
+            if (translatedVelLeng <= 0.00000023841858) {
+                v47 = 0.0;
+            } else {
+                v47 = 1.0f / sqrtf(translatedVelLeng);
+            }
+
+            transformedQuadToViewMat = p_quadToView * mathfu::mat3(
+                minusVel.x * v47, minusVel.y * v47, 0,
+                -minusVel.y * v47, minusVel.x * v47, 0,
+                0, 0, 1);
+
+            if (v47 > 0.00000023841858) {
+                v39 = particlePreRenderData.m_ageDependentValues.m_particleScale.x *
+                    (1.0f / sqrtf(p.velocity.LengthSquared()) / v47);
+            }
+        }
+
+        if (particleType == 4) {
+
+        }
+
+        m0 = transformedQuadToViewMat.GetColumn(0) * v39;
+        m1 = transformedQuadToViewMat.GetColumn(1) * particlePreRenderData.m_ageDependentValues.m_particleScale.y;
+        deltaSpin = m1.x;
+        dataFilled = true;
+        if (!feq(this->m_data->old.Spin, 0) || !feq(this->m_data->old.spinVary, 0)) {
+            float theta = baseSpin + deltaSpin * p.age;
+            if ((this->m_data->old.flags & 0x200) && (p.seed & 1)) {
+                theta = -theta;
+            }
+
+            mathfu::vec3 zAxis = p_quadToViewZVector;
+            if (particleType == 4) {
+
+            }
+
+            mathfu::mat3 rotMat = mathfu::quat::FromAngleAxis(theta, zAxis).ToMatrix();
+
+            m0 = rotMat * m0;
+            m1 = rotMat * mathfu::vec3(deltaSpin, m1.y, m1.z);
+        }
+    }
+
+    if (!dataFilled) {
+        if (!feq(this->m_data->old.Spin, 0) || !feq(this->m_data->old.spinVary, 0)) {
+            float theta = baseSpin + deltaSpin * p.age;
+            if ((this->m_data->old.flags & 0x200) && (p.seed & 1)) {
+                theta = -theta;
+            }
+
+            float cosTheta = cosf(theta);
+            float sinTheta = sin(theta);
+
+            m0 = mathfu::vec3(
+                cosTheta * particlePreRenderData.m_ageDependentValues.m_particleScale.x,
+                sinTheta * particlePreRenderData.m_ageDependentValues.m_particleScale.x, 0);
+            m1 = mathfu::vec3(
+                -sinTheta * particlePreRenderData.m_ageDependentValues.m_particleScale.y,
+                cosTheta * particlePreRenderData.m_ageDependentValues.m_particleScale.y, 0);
+
+            if (this->m_data->old.flags & 0x8000000) {
+                particlePreRenderData.m_particleCenter += mathfu::vec3(m1.x, m1.y, 0);
+            }
+        } else {
+            m0 = mathfu::vec3(
+                particlePreRenderData.m_ageDependentValues.m_particleScale.x,
+                0,
+                0);
+            m1 = mathfu::vec3(
+                0,
+                particlePreRenderData.m_ageDependentValues.m_particleScale.y,
+                0);
+        }
+    }
+
+    this->BuildQuadT3(szVertexBuf, m0, m1,
+        particlePreRenderData.m_particleCenter,
+            particlePreRenderData.m_ageDependentValues.m_timedColor,
+            particlePreRenderData.m_ageDependentValues.m_alpha,
+            texScaleVec.x, texScaleVec.y,  p.texPos);
+
+
+
+    return 0;
+}
+
+int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
+    mathfu::vec2 texScaleVec(
+        (particlePreRenderData.m_ageDependentValues.timedHeadCell &
+         this->textureColMask) * this->texScaleX,
+        particlePreRenderData.m_ageDependentValues.timedHeadCell  >> this->textureColBits);
+
+
+    return 1;
+}
+
+void ParticleEmitter::GetSpin(CParticle2 &p, float &baseSpin, float &deltaSpin) const {
+
+    if (!feq(m_data->old.baseSpin, 0.0f) || !feq(m_data->old.spinVary, 0.0f)) {
+        CRndSeed rand(p.seed);
+
+        if (feq(m_data->old.baseSpinVary, 0.0f)) {
+            baseSpin = m_data->old.baseSpin;
+        } else {
+            baseSpin = m_data->old.baseSpin + rand.Uniform() * m_data->old.baseSpinVary;
+        }
+
+        if (feq(m_data->old.spinVary, 0.0f)) {
+            deltaSpin = m_data->old.Spin;
+        } else {
+            deltaSpin = m_data->old.Spin + rand.Uniform() * m_data->old.spinVary;
+        }
+    } else {
+        baseSpin = m_data->old.baseSpin;
+        deltaSpin = m_data->old.Spin;
+    }
+}
+
+
+int ParticleEmitter::CalculateParticlePreRenderData(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
+
+    float twinkle = this->m_data->old.TwinklePercent;
+    auto &twinkleRange = this->m_data->old.twinkleScale;
+
+    float twinkleMin = twinkleRange.min;
+    float twinkleVary = twinkleRange.max - twinkleMin;
+
+
+    int rndIdx = 0;
+    uint16_t seed = p.seed;
+    animTime_t age = p.age;
+    if (twinkle < 1 || !feq(twinkleVary,0)) {
+        rndIdx = 0x7f & ((int)(age * this->m_data->old.TwinkleSpeed) + seed);
+    }
+
+    if (twinkle < ParticleEmitter::RandTable[rndIdx]) {
+        return 0;
+    }
+
+    //fillTimedParticleData
+    fillTimedParticleData(p, particlePreRenderData, seed);
+
+    //Back
+    float weight = twinkleVary * ParticleEmitter::RandTable[rndIdx] + twinkleMin;
+    particlePreRenderData.m_ageDependentValues.m_particleScale *= weight;
+
+    if (!(this->m_data->old.flags & 0x20)) {
+        particlePreRenderData.m_ageDependentValues.m_particleScale *= this->m_inheritedScale;
+    }
+
+    particlePreRenderData.m_particleCenter = (s_particleToView * mathfu::vec4(p.position, 1.0)).xyz();
+    particlePreRenderData.invertDiagonalLen = 1.0;
+
+    return 1;
+}
+
+void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
+                                            ParticleEmitter::ParticlePreRenderData &particlePreRenderData,
+                                            uint16_t seed) {
+    float percentTime = p.age / getGenerator()->GetMaxLifeSpan();
+    CRndSeed rand(seed);
+    if (fminf(percentTime, 1.0f) <= 0.0f) {
+        percentTime = 0.0f;
+    } else if (percentTime >= 1.0f) {
+        percentTime = 1.0f;
+    };
+
+    mathfu::vec3 defaultColor(255.0f, 255.0f, 255.0f);
+    mathfu::vec2 defaultScale(1.0f, 1.0f);
+    float defaultAlpha = 1.0f;
+    uint16_t defaultCell = 1;
+
+    auto &ageDependentValues = particlePreRenderData.m_ageDependentValues;
+
+    ageDependentValues.m_timedColor = animatePartTrack<C3Vector, mathfu::vec3>(percentTime, &m_data->old.colorTrack, defaultColor) / 255.0f;
+    ageDependentValues.m_particleScale = animatePartTrack<C2Vector, mathfu::vec2>(percentTime, &m_data->old.scaleTrack, defaultScale);
+    ageDependentValues.m_alpha = animatePartTrack<fixed16, float>(percentTime, &m_data->old.alphaTrack, defaultAlpha);
+
+    defaultCell = (uint16_t)(((long)((textureIndexMask + 1) * rand.uint32t())) >> 32);
+    ageDependentValues.timedHeadCell = animatePartTrack<uint16_t, uint16_t>(
+        percentTime,
+        &m_data->old.headCellTrack,
+        defaultCell);
+    ageDependentValues.timedHeadCell = ageDependentValues.timedHeadCell & textureIndexMask;
+
+    defaultCell = 0;
+    ageDependentValues.timedTailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
+    ageDependentValues.timedTailCell = ageDependentValues.timedTailCell & textureIndexMask;
+
+
+    float scaleMultiplier = 1.0f;
+    if (m_data->old.flags & 0x80000) {
+        scaleMultiplier = fmaxf(1.0f + rand.Uniform() * m_data->old.scaleVary.y, 0.000099999997);
+        ageDependentValues.m_particleScale.x =
+            fmaxf(1.0f + rand.Uniform() * m_data->old.scaleVary.x, 0.000099999997) *
+            ageDependentValues.m_particleScale.x;
+    }
+    else {
+        scaleMultiplier = fmaxf(1.0f + rand.Uniform() * m_data->old.scaleVary.x, 0.000099999997);
+        ageDependentValues.m_particleScale.x = scaleMultiplier * ageDependentValues.m_particleScale.x;
+    }
+    ageDependentValues.m_particleScale.y = scaleMultiplier * ageDependentValues.m_particleScale.y;
 }
 
 int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<ParticleBuffStructQuad> &szVertexBuf) {
@@ -535,9 +879,9 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<ParticleBuffStruc
     float weight = twinkleVary * ParticleEmitter::RandTable[rndIdx] + twinkleMin;
     scale = scale * weight;
     if (this->m_data->old.flags & 0x20) {
-        scale = scale * this->inheritedScale;
+        scale = scale * this->m_inheritedScale;
     }
-    mathfu::vec3 viewPos = (this->particleToView * mathfu::vec4(pos, 1.0)).xyz();
+    mathfu::vec3 viewPos = (this->s_particleToView * mathfu::vec4(pos, 1.0)).xyz();
 
     if (this->m_data->old.flags & 0x20000) {
         // head cell
@@ -559,7 +903,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<ParticleBuffStruc
         }
         if ((this->m_data->old.flags & 4) && mathfu::vec3::DotProduct(vel,vel) > 0.0001) {
             // scale and rotation align to particle velocity
-            mathfu::vec3 viewVel = (this->particleToView * mathfu::vec4(vel, 0)).xyz();
+            mathfu::vec3 viewVel = (this->s_particleToView * mathfu::vec4(vel, 0)).xyz();
             mathfu::vec3 screenVel = viewVel;
             float screenVelMag = screenVel.Length();
             mathfu::vec2 screenVelNorm = screenVel.xy() * (1.0f / screenVelMag);
@@ -578,15 +922,15 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<ParticleBuffStruc
             if (this->m_data->old.flags & 0x10) {
                 // particleToView has the model transform in it, we need to
                 // scale that away
-                transformInvScale = 1.0f / this->inheritedScale;
+                transformInvScale = 1.0f / this->m_inheritedScale;
             }
-            mathfu::vec3 scaleViewX = this->particleToView.GetColumn(0).xyz();
-            mathfu::vec3 scaleViewY = this->particleToView.GetColumn(1).xyz();
+            mathfu::vec3 scaleViewX = this->s_particleToView.GetColumn(0).xyz();
+            mathfu::vec3 scaleViewY = this->s_particleToView.GetColumn(1).xyz();
             scaleViewX = scaleViewX * transformInvScale * scale.x;
             scaleViewY = scaleViewY * transformInvScale * scale.y;
             // 2. rotate the transformed scale vectors around the up vector
             if (!feq(theta, 0)) {
-                mathfu::vec3 viewUp = this->particleToView.GetColumn(2).xyz().Normalized();
+                mathfu::vec3 viewUp = this->s_particleToView.GetColumn(2).xyz().Normalized();
                 mathfu::quat quadRot = mathfu::quat::FromAngleAxis(theta,viewUp);
 
                 m0 = (quadRot.ToMatrix4() * mathfu::vec4(scaleViewX, 0)).xyz();
@@ -635,7 +979,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<ParticleBuffStruc
             trailTime = age;
         }
         mathfu::vec3 viewVel = vel * -1.0f;
-        viewVel = (this->particleToView * mathfu::vec4(viewVel, 0)).xyz() * trailTime;
+        viewVel = (this->s_particleToView * mathfu::vec4(viewVel, 0)).xyz() * trailTime;
         mathfu::vec3 screenVel = mathfu::vec3(viewVel.xy(), 0);
         if (mathfu::vec3::DotProduct(screenVel, screenVel) > 0.0001) {
             float invScreenVelMag = 1.0f / screenVel.Length();
@@ -676,7 +1020,8 @@ ParticleEmitter::BuildQuadT3(
     static const float tys[4] = {0, 1, 0, 1};
     ParticleBuffStructQuad record;
 
-    mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
+//    mathfu::mat4 inverseLookAt = mathfu::mat4::Identity();
+    mathfu::mat4 inverseLookAt = this->inverseViewMatrix;
 
     for (int i = 0; i < 4; i++) {
 
@@ -716,7 +1061,8 @@ ParticleEmitter::BuildQuad(
         static const float txs[4] = {0, 0, 1, 1};
         static const float tys[4] = {0, 1, 0, 1};
 
-        mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
+    mathfu::mat4 inverseLookAt = this->inverseViewMatrix;
+//    mathfu::mat4 inverseLookAt =  mathfu::mat4::Identity();
 
     static ParticleBuffStructQuad record;
     const C4Vector colorCombined = mathfu::vec4_packed(mathfu::vec4(color, alpha));
@@ -769,7 +1115,7 @@ ParticleEmitter::BuildQuad(
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
-    return;
+//    return;
     if (this->szVertexBuf.size() <= 1) return;
 
     HGParticleMesh mesh = frame[m_api->getDevice()->getUpdateFrameNumber()].m_mesh;
@@ -778,7 +1124,7 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 }
 
 void ParticleEmitter::updateBuffers() const {
-    return;
+//    return;
     if (szVertexBuf.size() == 0 ) return;
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
     currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
