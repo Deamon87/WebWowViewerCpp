@@ -48,6 +48,6 @@ void CPlaneGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
 
 //    mathfu::mat4 rotateMat = MathHelper::RotationY(toRadian(-90));
 
-//    p.position = rotateMat * p.position;
+//    p.position = mathfu::vec3(p.position.y, p.position.x, p.position.z);
 //    p.velocity = rotateMat.Transpose() * p.velocity;
 }

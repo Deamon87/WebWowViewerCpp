@@ -248,7 +248,7 @@ void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, mathfu::mat4 &tra
     if (this->m_data->old.flags & 0x1000) {
         p_quadToView = mathfu::mat4::ToRotationMatrix(s_particleToView);
 
-        if (!(this->m_data->old.flags & 0x10) && abs(m_inheritedScale) > 0.000000f ) {
+        if ((this->m_data->old.flags & 0x10) && (abs(m_inheritedScale) > 0.000000f) ) {
             p_quadToView = p_quadToView * (1.0f / m_inheritedScale);
         }
 
@@ -265,10 +265,10 @@ void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, mathfu::mat4 &tra
 void ParticleEmitter::UpdateXform(const mathfu::mat4 &viewModelBoneMatrix, mathfu::vec3 &invMatTranslation, mathfu::mat4 *frameOfReference) {
     m_invMatTranslationVector = invMatTranslation;
 
-    if (frameOfReference != nullptr && !(this->m_data->old.flags & 0x200)) {
-        m_emitterModelMatrix = frameOfReference->Inverse() * viewModelBoneMatrix;
-    } else {
+    if (frameOfReference == nullptr || (this->m_data->old.flags & 0x10)) {
         m_emitterModelMatrix = viewModelBoneMatrix;
+    } else {
+        m_emitterModelMatrix = frameOfReference->Inverse() * viewModelBoneMatrix;
     }
 
     this->m_inheritedScale = viewModelBoneMatrix.GetColumn(0).xyz().Length();
@@ -449,22 +449,24 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
     }
 
     p.velocity = p.velocity + forces.drift;
+
+
     //MoveParticle
     if ((this->m_data->old.flags & 0x4000) && (2 * delta < p.age)) {
         p.position = p.position + this->m_deltaPosition;
     }
 
-    mathfu::vec3 r0 = p.velocity * mathfu::vec3(delta); // v*dt
+    mathfu::vec3 r0 = p.velocity * mathfu::vec3(delta,delta,delta); // v*dt
 
     p.velocity = p.velocity + forces.velocity;
     p.velocity = p.velocity *  (1.0f - forces.drag);
 
-    p.position = p.position + r0;
-    p.position = p.position + forces.position;
+    p.position = p.position + r0 + forces.position;
+//    p.position = p.position + forces.position;
 
     if (this->m_data->old.emitterType == 2 && (this->m_data->old.flags & 0x80)) {
         mathfu::vec3 r1 = p.position;
-        if (!(this->m_data->old.flags & 0x10)) {
+        if ((this->m_data->old.flags & 0x10)) {
             if (mathfu::vec3::DotProduct(r1, r0) > 0) {
                 return false;
             }
@@ -547,9 +549,8 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
 
 int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
     mathfu::vec2 texScaleVec(
-        (particlePreRenderData.m_ageDependentValues.timedHeadCell &
-            this->textureColMask) * this->texScaleX,
-        particlePreRenderData.m_ageDependentValues.timedHeadCell  >> this->textureColBits);
+        (particlePreRenderData.m_ageDependentValues.timedHeadCell &this->textureColMask) * this->texScaleX,
+        (particlePreRenderData.m_ageDependentValues.timedHeadCell  >> this->textureColBits) * this->texScaleY);
 
     float baseSpin = 0;
     float deltaSpin = 0;
@@ -695,9 +696,45 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
 
 int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
     mathfu::vec2 texScaleVec(
-        (particlePreRenderData.m_ageDependentValues.timedHeadCell &
-         this->textureColMask) * this->texScaleX,
-        particlePreRenderData.m_ageDependentValues.timedHeadCell  >> this->textureColBits);
+        (particlePreRenderData.m_ageDependentValues.timedTailCell &  this->textureColMask) * this->texScaleX,
+        (particlePreRenderData.m_ageDependentValues.timedTailCell >> this->textureColBits) * this->texScaleY);
+
+    // tail cell
+    mathfu::vec3 m0 = mathfu::vec3(0, 0, 0);
+    mathfu::vec3 m1 = mathfu::vec3(0, 0, 0);
+    // as above, scale and rotation align to particle velocity
+    float trailTime = this->m_data->old.tailLength;
+    if ((this->m_data->old.flags & 0x400)) {
+        trailTime = fminf(p.age, trailTime);
+    }
+    mathfu::vec3 viewVel = p.velocity * -1.0f;
+    viewVel = (this->s_particleToView * mathfu::vec4(viewVel, 0)).xyz() * trailTime;
+    mathfu::vec3 screenVel = mathfu::vec3(viewVel.xy(), 0);
+
+    if (mathfu::vec3::DotProduct(screenVel, screenVel) > 0.0001) {
+        float invScreenVelMag = 1.0f / screenVel.Length();
+        particlePreRenderData.m_ageDependentValues.m_particleScale = particlePreRenderData.m_ageDependentValues.m_particleScale * invScreenVelMag;
+        screenVel = mathfu::vec3(mathfu::vec2::HadamardProduct(screenVel.xy(), particlePreRenderData.m_ageDependentValues.m_particleScale), 0);
+        m1 = mathfu::vec3(-screenVel.y, screenVel.x, 0);
+        m0 = viewVel * 0.5f;
+        particlePreRenderData.m_particleCenter += m0;
+    }
+    else {
+        m0 = mathfu::vec3(
+            particlePreRenderData.m_ageDependentValues.m_particleScale.x * 0.05f,
+            0,
+            0);
+        m1 = mathfu::vec3(
+            0,
+            particlePreRenderData.m_ageDependentValues.m_particleScale.y * 0.05f,
+            0);
+    }
+
+    this->BuildQuadT3(szVertexBuf, m0, m1,
+                      particlePreRenderData.m_particleCenter,
+                      particlePreRenderData.m_ageDependentValues.m_timedColor,
+                      particlePreRenderData.m_ageDependentValues.m_alpha,
+                      texScaleVec.x, texScaleVec.y,  p.texPos);
 
 
     return 1;
@@ -753,7 +790,7 @@ int ParticleEmitter::CalculateParticlePreRenderData(CParticle2 &p, ParticlePreRe
     float weight = twinkleVary * ParticleEmitter::RandTable[rndIdx] + twinkleMin;
     particlePreRenderData.m_ageDependentValues.m_particleScale *= weight;
 
-    if (!(this->m_data->old.flags & 0x20)) {
+    if ((this->m_data->old.flags & 0x20)) {
         particlePreRenderData.m_ageDependentValues.m_particleScale *= this->m_inheritedScale;
     }
 
@@ -785,7 +822,8 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
     ageDependentValues.m_particleScale = animatePartTrack<C2Vector, mathfu::vec2>(percentTime, &m_data->old.scaleTrack, defaultScale);
     ageDependentValues.m_alpha = animatePartTrack<fixed16, float>(percentTime, &m_data->old.alphaTrack, defaultAlpha);
 
-    defaultCell = (uint16_t)(((long)((textureIndexMask + 1) * rand.uint32t())) >> 32);
+    uint64_t defCellLong = (textureIndexMask + 1) * rand.uint32t();
+    defaultCell = static_cast<uint16_t>(defCellLong >> 32);
     ageDependentValues.timedHeadCell = animatePartTrack<uint16_t, uint16_t>(
         percentTime,
         &m_data->old.headCellTrack,

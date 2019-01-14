@@ -908,6 +908,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             0,0,1,0,
             0,0,0,1
         );
+//        MathHelper::RotationZ(M_PI);
+//        mathfu::mat4::FromScaleVector(mathfu::vec3(-1.0, 1, 1));
 
 //    /* 1. Calc local camera */
     mathfu::vec3 cameraInlocalPos = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1)).xyz();
@@ -972,11 +974,12 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
         mathfu::mat4 transformMat =
             //Inverted model view is not needed here, because blizzard include modelView mat into boneMatrices for some reason
-            m_placementMatrix *
+            (m_placementMatrix *
             bonesMatrices[peRecord->old.bone] *
             mathfu::mat4::FromTranslationVector(
-                mathfu::vec3(peRecord->old.Position.x, peRecord->old.Position.y, peRecord->old.Position.z)) *
-            particleCoordinatesFix; // <- actually is there in the client
+                mathfu::vec3(peRecord->old.Position.x, peRecord->old.Position.y, peRecord->old.Position.z))
+                );
+//            particleCoordinatesFix; // <- actually is there in the client
 
         particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D(), nullptr, viewMat);
         particleEmitters[i]->prepearBuffers(viewMat);

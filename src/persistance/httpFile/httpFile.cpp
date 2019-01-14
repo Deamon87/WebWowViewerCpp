@@ -80,6 +80,7 @@ void HttpFile::startDownloading() {
 //    }
 
 //    std::string escaped_url = url_encode(m_httpUrl);
+
     std::string escaped_url = m_httpUrl;
 
     auto r = cpr::Get(cpr::Url{escaped_url}, cpr::VerifySsl{false});
