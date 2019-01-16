@@ -915,11 +915,13 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     mathfu::vec3 cameraInlocalPos = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1)).xyz();
 //
 //    /* 2. Update animation values */
+    mathfu::mat4 modelViewMat = viewMat * m_placementMatrix;
     this->m_animationManager->update(
         deltaTime,
         cameraInlocalPos,
         this->m_localUpVector,
         this->m_localRightVector,
+        modelViewMat,
         this->bonesMatrices,
         this->textAnimMatrices,
         this->subMeshColors,
@@ -928,6 +930,11 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         this->lights,
         this->particleEmitters
     );
+    mathfu::mat4 invModelViewMat = modelViewMat.Inverse();
+    for (auto &bonesMatrice : bonesMatrices) {
+        bonesMatrice = invModelViewMat * bonesMatrice;
+    }
+
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
 
@@ -978,8 +985,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             bonesMatrices[peRecord->old.bone] *
             mathfu::mat4::FromTranslationVector(
                 mathfu::vec3(peRecord->old.Position.x, peRecord->old.Position.y, peRecord->old.Position.z))
-                );
-//            particleCoordinatesFix; // <- actually is there in the client
+                ) *
+            particleCoordinatesFix; // <- actually is there in the client
 
         particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D(), nullptr, viewMat);
         particleEmitters[i]->prepearBuffers(viewMat);

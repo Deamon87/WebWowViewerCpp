@@ -317,7 +317,8 @@ AnimationManager::calcBoneMatrix(
     animTime_t time,
     mathfu::vec3 cameraPosInLocal,
     mathfu::vec3 &localUpVector,
-    mathfu::vec3 &localRightVector
+    mathfu::vec3 &localRightVector,
+    mathfu::mat4 &modelViewMatrix
     ) {
     if (this->bonesIsCalculated[boneIndex]) return;
 
@@ -329,19 +330,75 @@ AnimationManager::calcBoneMatrix(
     /* 2. Prepare bone part of animation process */
     boneMatrices[boneIndex] = mathfu::mat4::Identity();
 
+
+    mathfu::mat4 parentBoneMat = modelViewMatrix;
     if (parentBone >= 0) {
-        this->calcBoneMatrix(boneMatrices, parentBone, animationIndex, time, cameraPosInLocal, localUpVector, localRightVector);
-        boneMatrices[boneIndex] = boneMatrices[boneIndex] * boneMatrices[parentBone];
+        this->calcBoneMatrix(boneMatrices, parentBone, animationIndex, time, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
+        parentBoneMat = boneMatrices[parentBone];
+        mathfu::mat4 modifiedMatrixUnder0x7 = parentBoneMat;
+
+        if (boneDefinition->flags.unk_0x1 || boneDefinition->flags.unk_0x2 || boneDefinition->flags.unk_0x4) {
+            if (boneDefinition->flags.unk_0x4 && boneDefinition->flags.unk_0x2) {
+                //6
+                modifiedMatrixUnder0x7.GetColumn(0) = modelViewMatrix.GetColumn(0);
+                modifiedMatrixUnder0x7.GetColumn(1) = modelViewMatrix.GetColumn(1);
+                modifiedMatrixUnder0x7.GetColumn(2) = modelViewMatrix.GetColumn(2);
+            } else if (boneDefinition->flags.unk_0x4) {
+                //4
+                float coeff = 1.0f;
+                coeff = modelViewMatrix.GetColumn(0).LengthSquared() ;
+                coeff = (coeff > 0.0000099999997) ? sqrtf(modifiedMatrixUnder0x7.GetColumn(0).LengthSquared() / coeff) : 1.0f;
+                modifiedMatrixUnder0x7.GetColumn(0) = modelViewMatrix.GetColumn(0) * coeff;
+
+                coeff = modelViewMatrix.GetColumn(1).LengthSquared() ;
+                coeff = (coeff > 0.0000099999997) ? sqrtf(modifiedMatrixUnder0x7.GetColumn(1).LengthSquared() / coeff) : 1.0f;
+                modifiedMatrixUnder0x7.GetColumn(1) = modelViewMatrix.GetColumn(1) * coeff;
+
+                coeff = modelViewMatrix.GetColumn(2).LengthSquared() ;
+                coeff = (coeff > 0.0000099999997) ? sqrtf(modifiedMatrixUnder0x7.GetColumn(2).LengthSquared() / coeff) : 1.0f;
+                modifiedMatrixUnder0x7.GetColumn(2) = modelViewMatrix.GetColumn(2) * coeff;
+            } else if (boneDefinition->flags.unk_0x2) {
+                float coeff = 1.0f;
+                coeff = modifiedMatrixUnder0x7.GetColumn(0).LengthSquared() ;
+                if ( coeff > 0.0000099999997) {
+                    modifiedMatrixUnder0x7.GetColumn(0) = modelViewMatrix.GetColumn(0) * (1.0f / sqrt(coeff));
+                }
+                coeff = modifiedMatrixUnder0x7.GetColumn(1).LengthSquared() ;
+                if ( coeff > 0.0000099999997) {
+                    modifiedMatrixUnder0x7.GetColumn(1) = modelViewMatrix.GetColumn(1) * (1.0f / sqrt(coeff));
+                }
+                coeff = modifiedMatrixUnder0x7.GetColumn(2).LengthSquared() ;
+                if ( coeff > 0.0000099999997) {
+                    modifiedMatrixUnder0x7.GetColumn(2) = modelViewMatrix.GetColumn(2) * (1.0f / sqrt(coeff));
+                }
+
+                modifiedMatrixUnder0x7.GetColumn(0) = modifiedMatrixUnder0x7.GetColumn(0) * modelViewMatrix.GetColumn(0).Length();
+                modifiedMatrixUnder0x7.GetColumn(1) = modifiedMatrixUnder0x7.GetColumn(1) * modelViewMatrix.GetColumn(1).Length();
+                modifiedMatrixUnder0x7.GetColumn(2) = modifiedMatrixUnder0x7.GetColumn(2) * modelViewMatrix.GetColumn(2).Length();
+            }
+            if (boneDefinition->flags.unk_0x1) {
+                modifiedMatrixUnder0x7.GetColumn(3) = modelViewMatrix.GetColumn(3);
+            } else {
+                mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
+                mathfu::vec4 pivotVec3 = pivotVec4; pivotVec3.w = 0.0;
+
+                modifiedMatrixUnder0x7.GetColumn(3) = (parentBoneMat * pivotVec4 ) - (modifiedMatrixUnder0x7 * pivotVec3);
+                modifiedMatrixUnder0x7.GetColumn(3).w = 1.0f;
+            }
+
+
+            parentBoneMat = modifiedMatrixUnder0x7;
+        }
     }
 
-    if ((boneDefinition->flags.transformed |
-        boneDefinition->flags.spherical_billboard |
-        boneDefinition->flags.cylindrical_billboard_lock_x |
-        boneDefinition->flags.cylindrical_billboard_lock_y |
-        boneDefinition->flags.cylindrical_billboard_lock_z) == 0) {
-        this->bonesIsCalculated[boneIndex] = true;
-        return;
-    }
+//    if ((boneDefinition->flags.transformed |
+//        boneDefinition->flags.spherical_billboard |
+//        boneDefinition->flags.cylindrical_billboard_lock_x |
+//        boneDefinition->flags.cylindrical_billboard_lock_y |
+//        boneDefinition->flags.cylindrical_billboard_lock_z) == 0) {
+//        this->bonesIsCalculated[boneIndex] = true;
+//        return;
+//    }
 
     C3Vector pP = boneDefinition->pivot;
     mathfu::vec4 pivotPoint = mathfu::vec4(pP.x, pP.y, pP.z, 0);
@@ -351,29 +408,139 @@ AnimationManager::calcBoneMatrix(
     /* 2.1 Calculate billboard matrix if needed */
     mathfu::mat4 *billboardMatrix = nullptr;
 
-    if ((boneDefinition->flags.spherical_billboard) | (boneDefinition->flags.cylindrical_billboard_lock_z) != 0) {
-        //From http://gamedev.stackexchange.com/questions/112270/calculating-rotation-matrix-for-an-object-relative-to-a-planets-surface-in-monog
-        billboardMatrix = new mathfu::mat4();
-
-        calcBoneBillboardMatrix(billboardMatrix, boneMatrices, boneDefinition, parentBone, pivotPoint,
-                                                       cameraPosInLocal, localUpVector, localRightVector);
-        this->isAnimated = true;
-    }
+//    if ((boneDefinition->flags.spherical_billboard) | (boneDefinition->flags.cylindrical_billboard_lock_z) != 0) {
+//        //From http://gamedev.stackexchange.com/questions/112270/calculating-rotation-matrix-for-an-object-relative-to-a-planets-surface-in-monog
+//        billboardMatrix = new mathfu::mat4();
+//
+//        calcBoneBillboardMatrix(billboardMatrix, boneMatrices, boneDefinition, parentBone, pivotPoint,
+//                                                       cameraPosInLocal, localUpVector, localRightVector);
+//        this->isAnimated = true;
+//    }
 
     /* 3. Calculate matrix */
-    calcAnimationTransform(boneMatrices[boneIndex],
-           billboardMatrix,
-           pivotPoint, negatePivotPoint,
-           this->globalSequenceTimes,
-           isAnimated,
-           boneDefinition->translation,
-           boneDefinition->rotation,
-           boneDefinition->scaling,
-           m_m2File,
-           animationIndex, time);
+    bool isAnimated = (boneDefinition->flags_raw & 0x280) > 0;
+    mathfu::mat4 animatedMatrix = mathfu::mat4::Identity();
+    if (isAnimated) {
+        calcAnimationTransform(animatedMatrix,
+                               billboardMatrix,
+                               pivotPoint, negatePivotPoint,
+                               this->globalSequenceTimes,
+                               isAnimated,
+                               boneDefinition->translation,
+                               boneDefinition->rotation,
+                               boneDefinition->scaling,
+                               m_m2File,
+                               animationIndex, time);
+        boneMatrices[boneIndex] = parentBoneMat * animatedMatrix;
+    } else {
+        boneMatrices[boneIndex] = parentBoneMat;
+    }
 
-    if (billboardMatrix != nullptr) {
-        delete billboardMatrix;
+//    if (billboardMatrix != nullptr) {
+//        delete billboardMatrix;
+//    }
+    int boneBillboardFlags = boneDefinition->flags_raw & 0x78;
+    if (boneBillboardFlags) {
+        mathfu::mat4 &currentBoneMat = boneMatrices[boneIndex];
+        mathfu::mat4 currentBoneMatCopy = currentBoneMat;
+        mathfu::vec3 scaleVector = mathfu::vec3(
+            currentBoneMat.GetColumn(0).Length(),
+            currentBoneMat.GetColumn(1).Length(),
+            currentBoneMat.GetColumn(2).Length()
+        );
+
+        if (boneBillboardFlags == 0x10) {
+            float xAxisLen = currentBoneMat.GetColumn(0).Length();
+            currentBoneMat.GetColumn(0) = currentBoneMat.GetColumn(0) * (1.0f /xAxisLen);
+
+            mathfu::vec4 newYAxis = mathfu::vec4(
+                currentBoneMat(1, 0),
+                -currentBoneMat(0, 0),
+                0.0f,
+                0
+            );
+            currentBoneMat.GetColumn(1) = newYAxis.Normalized();
+            currentBoneMat.GetColumn(2) = mathfu::vec4(
+                mathfu::CrossProductHelper(
+                    currentBoneMat.GetColumn(1).xyz(),
+                    currentBoneMat.GetColumn(0).xyz()
+                ),
+                0.0f
+            );
+        } else if ( boneBillboardFlags > 0x10 ) {
+            if ( boneBillboardFlags == 0x20 ) {
+                float yAxisLen = currentBoneMat.GetColumn(1).Length();
+                currentBoneMat.GetColumn(1) = currentBoneMat.GetColumn(1) * (1.0f /yAxisLen);
+
+                mathfu::vec4 newXAxis = mathfu::vec4(
+                    -currentBoneMat(1, 1),
+                    currentBoneMat(0, 1),
+                    0.0f,
+                    0
+                );
+                currentBoneMat.GetColumn(0) = newXAxis.Normalized();
+                currentBoneMat.GetColumn(2) = mathfu::vec4(
+                    mathfu::CrossProductHelper(
+                        currentBoneMat.GetColumn(1).xyz(),
+                        currentBoneMat.GetColumn(0).xyz()
+                    ),
+                    0.0f
+                );
+            } else if ( boneBillboardFlags == 0x40 ) {
+                currentBoneMat.GetColumn(2) = currentBoneMat.GetColumn(2).Normalized();
+                mathfu::vec4 newYAxis = mathfu::vec4(
+                    currentBoneMat(1, 2),
+                    -currentBoneMat(0, 2),
+                    0.0f,
+                    0
+                );
+                currentBoneMat.GetColumn(1) = newYAxis.Normalized();
+                currentBoneMat.GetColumn(0) = mathfu::vec4(
+                    mathfu::CrossProductHelper(
+                        currentBoneMat.GetColumn(2).xyz(),
+                        currentBoneMat.GetColumn(1).xyz()
+                    ),
+                    0.0f
+                );
+            }
+        } else if ( boneBillboardFlags == 0x8 ){
+            mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
+            mathfu::vec4 pivotVec3 = pivotVec4; pivotVec3.w = 0.0;
+            if (isAnimated) {
+                mathfu::vec4 &xAxis = animatedMatrix.GetColumn(0);
+                currentBoneMat.GetColumn(0) = mathfu::vec4(
+                    xAxis.y,
+                    xAxis.z,
+                    -xAxis.x,
+                    0
+                ).Normalized();
+
+                mathfu::vec4 &yAxis = animatedMatrix.GetColumn(1);
+                currentBoneMat.GetColumn(1) = mathfu::vec4(
+                    yAxis.y,
+                    yAxis.z,
+                    -yAxis.x,
+                    0
+                ).Normalized();
+
+                mathfu::vec4 &zAxis = animatedMatrix.GetColumn(2);
+                currentBoneMat.GetColumn(2) = mathfu::vec4(
+                    zAxis.y,
+                    zAxis.z,
+                    -zAxis.x,
+                    0
+                ).Normalized();
+
+            } else {
+                currentBoneMat.GetColumn(0) = mathfu::vec4(0, 0, -1, 0);
+                currentBoneMat.GetColumn(1) = mathfu::vec4(1.0, 0, 0, 0);
+                currentBoneMat.GetColumn(2) = mathfu::vec4(0, 1.0, 0, 0);
+            }
+
+            currentBoneMat *= mathfu::mat4::FromScaleVector(scaleVector);
+            currentBoneMat.GetColumn(3) = (currentBoneMatCopy * pivotVec4 ) - (currentBoneMat * pivotVec3);
+            currentBoneMat.GetColumn(3).w = 1.0;
+        }
     }
 
     this->bonesIsCalculated[boneIndex] = true;
@@ -386,13 +553,14 @@ void AnimationManager::calcChildBones(
     animTime_t time,
     mathfu::vec3 cameraPosInLocal,
     mathfu::vec3 &localUpVector,
-    mathfu::vec3 &localRightVector) {
+    mathfu::vec3 &localRightVector,
+    mathfu::mat4 &modelViewMatrix) {
     std::vector<int> *childBones = &this->childBonesLookup[boneIndex];
     for (int i = 0; i < childBones->size(); i++) {
         int childBoneIndex = (*childBones)[i];
         this->bonesIsCalculated[childBoneIndex] = false;
-        this->calcBoneMatrix(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal, localUpVector, localRightVector);
-        this->calcChildBones(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal, localUpVector, localRightVector);
+        this->calcBoneMatrix(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
+        this->calcChildBones(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
     }
 }
 std::string dumpMatrix(mathfu::mat4 &mat4) {
@@ -407,13 +575,14 @@ void AnimationManager::calcBones (
     int animation, animTime_t time,
     mathfu::vec3 &cameraPosInLocal,
     mathfu::vec3 &localUpVector,
-    mathfu::vec3 &localRightVector) {
+    mathfu::vec3 &localRightVector,
+    mathfu::mat4 &modelViewMatrix) {
 
 
     if (this->firstCalc || this->isAnimated) {
         //Animate everything with standard animation
         for (int i = 0; i < m_m2File->bones.size; i++) {
-            this->calcBoneMatrix(boneMatrices, i, animation, time, cameraPosInLocal, localUpVector, localRightVector);
+            this->calcBoneMatrix(boneMatrices, i, animation, time, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
 //            std::cout << "boneMatrices[" << std::to_string(i) << "] = " << dumpMatrix(boneMatrices[i]) << std::endl;
         }
 
@@ -438,8 +607,8 @@ void AnimationManager::calcBones (
                     if (*m_m2File->key_bone_lookup[13 + j] > -1) { // BONE_LFINGER1 = 13
                         int boneId = *m_m2File->key_bone_lookup[13 + j];
                         this->bonesIsCalculated[boneId] = false;
-                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector);
-                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector);
+                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
+                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
                     }
                 }
             }
@@ -448,8 +617,8 @@ void AnimationManager::calcBones (
                     if (*m_m2File->key_bone_lookup[8 + j] > -1) { // BONE_RFINGER1 = 8
                         int boneId = *m_m2File->key_bone_lookup[8 + j];
                         this->bonesIsCalculated[boneId] = false;
-                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector);
-                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector);
+                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
+                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
                     }
                 }
             }
@@ -466,6 +635,7 @@ void AnimationManager::update(
     mathfu::vec3 &cameraPosInLocal,
     mathfu::vec3 &localUpVector,
     mathfu::vec3 &localRightVector,
+    mathfu::mat4 &modelViewMatrix,
     std::vector<mathfu::mat4> &bonesMatrices,
     std::vector<mathfu::mat4> &textAnimMatrices,
     std::vector<mathfu::vec4> &subMeshColors,
@@ -591,7 +761,7 @@ void AnimationManager::update(
     for (int i = 0; i < m_m2File->bones.size; i++) {
         this->bonesIsCalculated[i] = false;
     }
-    this->calcBones(bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime, cameraPosInLocal, localUpVector, localRightVector);
+    this->calcBones(bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
     if (blendAnimationIndex > -1) {
         for (int i = 0; i < m_m2File->bones.size; i++) {
             this->bonesIsCalculated[i] = false;
@@ -599,7 +769,7 @@ void AnimationManager::update(
 
         }
 
-        this->calcBones(this->blendMatrixArray, blendAnimationIndex, this->nextSubAnimationTime, cameraPosInLocal, localUpVector, localRightVector);
+        this->calcBones(this->blendMatrixArray, blendAnimationIndex, this->nextSubAnimationTime, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
         blendMatrices(bonesMatrices, this->blendMatrixArray, m_m2File->bones.size, blendAlpha);
     }
 
