@@ -94,8 +94,8 @@ private:
     float emission = 0;
 
 
-    int32_t textureIndexMask;
-    int32_t textureStartIndex;
+    uint32_t textureIndexMask;
+    int32_t m_randomizedTextureIndexMask;
     int32_t textureColBits;
     int32_t textureColMask;
 

@@ -23,6 +23,66 @@ static GBufferBinding staticM2ParticleBindings[5] = {
 };
 
 
+enum class ParticleVertexShader : int {
+    None = -1,
+    Particle_Color_T2 = 0,
+    Particle_CDiffuse_T2 = 1,
+    Particle_Color_T4 = 2,
+    Particle_Color_T5 = 3
+};
+
+enum class ParticlePixelShader : int {
+    None = -1,
+    Particle_Mod = 0,
+    Particle_2ColorTex_3AlphaTex = 1,
+    Particle_3ColorTex_3AlphaTex = 2,
+    Particle_3ColorTex_3AlphaTex_UV = 3,
+    Refraction = 4,
+
+};
+
+inline constexpr const int operator+(ParticlePixelShader const val) { return static_cast<const int>(val); };
+
+inline constexpr const int operator+(ParticleVertexShader const val) { return static_cast<const int>(val); };
+
+const int MAX_PARTICLE_SHADERS = 6;
+static const struct {
+    int vertexShader;
+    int pixelShader;
+} particleMaterialShader[MAX_PARTICLE_SHADERS] = {
+    //Particle_Unlit_T1 = 0
+    {
+        +ParticleVertexShader::Particle_Color_T2,
+        +ParticlePixelShader::Particle_Mod,
+    },
+    //Particle_Lit_T1 = 1
+    {
+        +ParticleVertexShader::Particle_CDiffuse_T2,
+        +ParticlePixelShader::Particle_Mod,
+    },
+    //Particle_Unlit_2ColorTex_3AlphaTex = 2
+    {
+        +ParticleVertexShader::Particle_Color_T4,
+        +ParticlePixelShader::Particle_2ColorTex_3AlphaTex,
+    },
+    //Particle_Unlit_3ColorTex_3AlphaTex = 3
+    {
+        +ParticleVertexShader::Particle_Color_T4,
+        +ParticlePixelShader::Particle_3ColorTex_3AlphaTex,
+    },
+    //Particle_Unlit_3ColorTex_3AlphaTex_UV = 4
+    {
+        +ParticleVertexShader::Particle_Color_T5,
+        +ParticlePixelShader::Particle_3ColorTex_3AlphaTex_UV,
+    },
+    //Particle_Refraction = 5
+    {
+        +ParticleVertexShader::Particle_Color_T4,
+        +ParticlePixelShader::Refraction,
+    }
+};
+
+
 ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object) : m_seed(0), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
@@ -73,7 +133,7 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
         rows = 1;
     }
     this->textureIndexMask = cols * rows - 1;
-    this->textureStartIndex = 0;
+    this->m_randomizedTextureIndexMask = 0;
 
     int colsVal = cols;
     int colBitsCount = -1;
@@ -86,13 +146,16 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
 
     this->textureColBits = colBitsCount;
     this->textureColMask = cols - 1;
-    if (m_data->old.flags & 0x200000) {
-        this->textureStartIndex = this->m_seed.uint32t() & this->textureIndexMask;
+
+    //RandomizedParticles
+    this->m_randomizedTextureIndexMask = 0;
+    if ((m_data->old.flags & 0x8000) > 0) {
+        this->m_randomizedTextureIndexMask = static_cast<uint16_t>((((uint64_t)this->m_seed.uint32t() * (this->textureIndexMask + 1))) >> 32);
     }
     this->texScaleX = 1.0f / cols;
     this->texScaleY = 1.0f / rows;
 
-    if (m_data->old.flags & 0x10100000) {
+    if ((m_data->old.flags & 0x10100000) > 0) {
         const bool isMultitex = (0 != (1 & (m_data->old.flags >> 0x1c)));
         if (isMultitex) {
             this->particleType = 2;
@@ -198,15 +261,9 @@ void ParticleEmitter::createMesh() {
 
         meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
         blockPS.uAlphaTest = 0.0039215689f;
-        int uPixelShader = -1;
-        if (multitex) {
-            if (this->m_data->old.flags & 0x20000000) {
-                uPixelShader = 0;
-            }
-            if (this->m_data->old.flags & 0x40000000) {
-                uPixelShader = 1;
-            }
-        }
+
+        int uPixelShader = particleMaterialShader[this->particleType].pixelShader;
+
         blockPS.uPixelShader = uPixelShader;
 
         meshTemplate.fragmentBuffers[2]->save(true);
@@ -822,18 +879,26 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
     ageDependentValues.m_particleScale = animatePartTrack<C2Vector, mathfu::vec2>(percentTime, &m_data->old.scaleTrack, defaultScale);
     ageDependentValues.m_alpha = animatePartTrack<fixed16, float>(percentTime, &m_data->old.alphaTrack, defaultAlpha);
 
-    uint64_t defCellLong = (textureIndexMask + 1) * rand.uint32t();
-    defaultCell = static_cast<uint16_t>(defCellLong >> 32);
-    ageDependentValues.timedHeadCell = animatePartTrack<uint16_t, uint16_t>(
-        percentTime,
-        &m_data->old.headCellTrack,
-        defaultCell);
-    ageDependentValues.timedHeadCell = ageDependentValues.timedHeadCell & textureIndexMask;
+    uint64_t defCellLong = 0;
+    if (m_data->old.headCellTrack.timestamps.size > 0) {
+        defaultCell = 0;
+        ageDependentValues.timedHeadCell = animatePartTrack<uint16_t, uint16_t>(
+            percentTime,
+            &m_data->old.headCellTrack,
+            defaultCell);
+        ageDependentValues.timedHeadCell = textureIndexMask & (ageDependentValues.timedHeadCell + m_randomizedTextureIndexMask);
+    } else {
+        if ((m_data->old.flags & 0x10000)) {
+            uint64_t defCellLong = (textureIndexMask + 1) * rand.uint32t();
+            ageDependentValues.timedHeadCell = static_cast<uint16_t>(defCellLong >> 32);
+        } else {
+            ageDependentValues.timedHeadCell = 0;
+        }
+    }
 
     defaultCell = 0;
     ageDependentValues.timedTailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
-    ageDependentValues.timedTailCell = ageDependentValues.timedTailCell & textureIndexMask;
-
+    ageDependentValues.timedTailCell = (ageDependentValues.timedTailCell + m_randomizedTextureIndexMask) & textureIndexMask;
 
     float scaleMultiplier = 1.0f;
     if (m_data->old.flags & 0x80000) {
@@ -891,7 +956,7 @@ int ParticleEmitter::RenderParticle(CParticle2 &p, std::vector<ParticleBuffStruc
     if ((this->m_data->old.flags & 0x10000 && (m_data->old.headCellTrack.values.size == 0))) {
         headCell = (uint16_t) ((rand.uint32t() & this->textureIndexMask) & 0xFFFF);
     } else {
-        headCell = (uint16_t) (((headCell + this->textureStartIndex) & this->textureIndexMask) & 0xFFFF);
+//        headCell = (uint16_t) (((headCell + this->textureStartIndex) & this->textureIndexMask) & 0xFFFF);
     }
 
 

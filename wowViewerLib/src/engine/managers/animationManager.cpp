@@ -579,7 +579,7 @@ void AnimationManager::calcBones (
     mathfu::mat4 &modelViewMatrix) {
 
 
-    if (this->firstCalc || this->isAnimated) {
+    if (true) {
         //Animate everything with standard animation
         for (int i = 0; i < m_m2File->bones.size; i++) {
             this->calcBoneMatrix(boneMatrices, i, animation, time, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
@@ -772,6 +772,11 @@ void AnimationManager::update(
         this->calcBones(this->blendMatrixArray, blendAnimationIndex, this->nextSubAnimationTime, cameraPosInLocal, localUpVector, localRightVector, modelViewMatrix);
         blendMatrices(bonesMatrices, this->blendMatrixArray, m_m2File->bones.size, blendAlpha);
     }
+    mathfu::mat4 invModelViewMatrix = modelViewMatrix.Inverse();
+    for (int i = 0; i < m_m2File->bones.size; i++) {
+        bonesMatrices[i] = invModelViewMatrix * bonesMatrices[i];
+    }
+
 
     this->calcSubMeshColors(subMeshColors, this->currentAnimationIndex, this->currentAnimationTime, blendAnimationIndex,
                            this->nextSubAnimationTime, blendAlpha);
@@ -1217,7 +1222,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 animationTime,
                 animationRecord->duration,
                 animationIndex,
-                peRecord.old.emissionAreaLength,
+                peRecord.old.emissionAreaWidth,
                 this->m_m2File->global_loops,
                 this->globalSequenceTimes,
                 defaultFloat
@@ -1227,7 +1232,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 animationTime,
                 animationRecord->duration,
                 animationIndex,
-                peRecord.old.emissionAreaWidth,
+                peRecord.old.emissionAreaLength,
                 this->m_m2File->global_loops,
                 this->globalSequenceTimes,
                 defaultFloat

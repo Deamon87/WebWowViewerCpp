@@ -930,10 +930,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         this->lights,
         this->particleEmitters
     );
-    mathfu::mat4 invModelViewMat = modelViewMat.Inverse();
-    for (auto &bonesMatrice : bonesMatrices) {
-        bonesMatrice = invModelViewMat * bonesMatrice;
-    }
 
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
