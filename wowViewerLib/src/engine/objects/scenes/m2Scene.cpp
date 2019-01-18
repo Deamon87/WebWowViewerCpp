@@ -44,19 +44,24 @@ void M2Scene::doPostLoad(WoWFrameData *frameData) {
         auto max = aabb.max;
         auto min = aabb.min;
 
-        mathfu::vec3 modelCenter =  mathfu::vec3(
-            ((max.x+min.x)/2.0f),
-            ((max.y+min.y)/2.0f),
-            ((max.z+min.z)/2.0f)
-        );
+        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 20000) {
 
-        if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
-            m_api->setCameraPosition((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+            mathfu::vec3 modelCenter = mathfu::vec3(
+                ((max.x + min.x) / 2.0f),
+                ((max.y + min.y) / 2.0f),
+                ((max.z + min.z) / 2.0f)
+            );
+
+            if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
+                m_api->setCameraPosition((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+            } else {
+                m_api->setCameraPosition((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+            }
+            m_api->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
         } else {
-            m_api->setCameraPosition((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+            m_api->setCameraPosition(1.0,0,0);
+            m_api->setCameraOffset(0,0,0);
         }
-        m_api->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
-
         std::vector <int> availableAnimations;
         m_m2Object->getAvailableAnimation(availableAnimations);
 #ifdef __EMSCRIPTEN__

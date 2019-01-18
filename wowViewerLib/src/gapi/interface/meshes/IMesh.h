@@ -104,6 +104,7 @@ public:
     virtual void setPriorityPlane(int priorityPlane) = 0;
     virtual void setQuery(const HGOcclusionQuery &query) = 0;
     virtual void setSortDistance(float distance) = 0;
+    virtual float getSortDistance() = 0;
 
 };
 #endif //AWEBWOWVIEWERCPP_IMESH_H

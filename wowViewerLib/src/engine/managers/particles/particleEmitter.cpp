@@ -83,7 +83,7 @@ static const struct {
 };
 
 
-ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object) : m_seed(0), m_api(api), m2Object(m2Object) {
+ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object) : m_seed(rand()), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
         for (int i = 0; i < 128; i++) {
@@ -149,7 +149,8 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
     //RandomizedParticles
     this->m_randomizedTextureIndexMask = 0;
     if ((m_data->old.flags & 0x8000) > 0) {
-        this->m_randomizedTextureIndexMask = static_cast<uint16_t>((((uint64_t)this->m_seed.uint32t() * (this->textureIndexMask + 1))) >> 32);
+        uint64_t defCellLong = (textureIndexMask + 1) * (uint64_t)this->m_seed.uint32t();
+        this->m_randomizedTextureIndexMask = static_cast<uint16_t>(defCellLong>> 32);
     }
     this->texScaleX = 1.0f / cols;
     this->texScaleY = 1.0f / rows;
@@ -364,6 +365,7 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathf
     if (this->particles.size() <= 0 && !isEnabled) return;
 
     m_prevPosition = m_emitterModelMatrix.TranslationVector3D();
+    m_currentBonePos = (viewMatrix * mathfu::vec4(transformMat.GetColumn(3).xyz(), 1.0f)).z;
 
     mathfu::vec3 viewMatVec = viewMatrix.GetColumn(3).xyz();
     this->UpdateXform(transformMat, viewMatVec, frameOfReference);
@@ -888,7 +890,7 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
         ageDependentValues.timedHeadCell = textureIndexMask & (ageDependentValues.timedHeadCell + m_randomizedTextureIndexMask);
     } else {
         if ((m_data->old.flags & 0x10000)) {
-            uint64_t defCellLong = (textureIndexMask + 1) * rand.uint32t();
+            uint64_t defCellLong = (textureIndexMask + 1) * (uint64_t)rand.uint32t();
             ageDependentValues.timedHeadCell = static_cast<uint16_t>(defCellLong >> 32);
         } else {
             ageDependentValues.timedHeadCell = 0;
@@ -1233,4 +1235,6 @@ void ParticleEmitter::updateBuffers() const {
     currentFrame.m_bufferVBO->uploadData((void *) szVertexBuf.data(), (int) (szVertexBuf.size() * sizeof(ParticleBuffStructQuad)));
 
     currentFrame.m_mesh->setEnd(szIndexBuff.size());
+    currentFrame.m_mesh->setSortDistance(m_currentBonePos);
+
 }

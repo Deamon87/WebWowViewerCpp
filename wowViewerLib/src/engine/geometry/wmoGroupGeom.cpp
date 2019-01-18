@@ -389,7 +389,7 @@ HGVertexBufferBindings WmoGroupGeom::getVertexBindings(IDevice &device) {
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = getVBO(device);
 
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticWMOBindings[0], &staticWMOBindings[6]);
+        vertexBinding.bindings = std::vector<GBufferBinding>(&staticWMOBindings[0], &staticWMOBindings[7]);
 
         vertexBufferBindings->addVertexBufferBinding(vertexBinding);
         vertexBufferBindings->save();
@@ -462,9 +462,9 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
 
                 if ((tile.legacyLiquidType == 15)) continue;
 
-//                if (liquidType == -1) {
-//                    liquidType = getLegacyWaterType(tile.legacyLiquidType);
-//                }
+                if (liquidType == -1) {
+                    liquidType = getLegacyWaterType(tile.legacyLiquidType);
+                }
 
 
                 int16_t vertindexes[4] = {

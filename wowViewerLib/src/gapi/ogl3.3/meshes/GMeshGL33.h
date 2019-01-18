@@ -33,6 +33,7 @@ public:
     void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
     void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
     void setSortDistance(float distance) override { throw "Not Implemented";};
+    float getSortDistance() override { throw "Not Implemented";};
 
 protected:
     MeshType m_meshType;

@@ -703,7 +703,7 @@ void AnimationManager::update(
     const M2Sequence* blendAnimationRecord = nullptr;
     if ((subAnimBlendTime > 0) && (currAnimLeft < subAnimBlendTime)) {
         this->firstCalc = true;
-        this->nextSubAnimationTime = fmod((subAnimBlendTime - currAnimLeft) , (subAnimRecord->duration));
+        this->nextSubAnimationTime = fmod((subAnimBlendTime - currAnimLeft), (subAnimRecord->duration));
         blendAlpha = currAnimLeft / subAnimBlendTime;
         blendAnimationIndex = this->nextSubAnimationIndex;
         if (blendAnimationIndex >= 0)

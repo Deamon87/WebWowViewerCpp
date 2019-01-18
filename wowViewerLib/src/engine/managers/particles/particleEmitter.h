@@ -72,6 +72,7 @@ private:
     float m_inheritedScale = 1;
 
     mathfu::vec3 m_prevPosition;
+    float m_currentBonePos;
     mathfu::vec3 m_deltaPosition;
     mathfu::vec3 m_deltaPosition1;
 
