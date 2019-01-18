@@ -93,7 +93,6 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
     }
 
     m_data = particle;
-    createMesh();
 
     switch (m_data->old.emitterType) {
         case 1:
@@ -167,7 +166,7 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
         this->particleType = 0;
     }
 
-
+    createMesh();
 }
 PACK(
 struct meshParticleWideBlockPS {
