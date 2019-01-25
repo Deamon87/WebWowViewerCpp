@@ -56,7 +56,16 @@ bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
     }
 
     if (a->getMeshType() == MeshType::eParticleMesh) {
-        return (a->getSortDistance() - b->getSortDistance()) > 0.0f;
+        if (a->m_priorityPlane != b->m_priorityPlane) {
+            return b->m_priorityPlane > a->m_priorityPlane;
+        }
+
+        if (a->m_sortDistance > b->m_sortDistance) {
+            return true;
+        }
+        if (a->m_sortDistance < b->m_sortDistance) {
+            return false;
+        }
     }
 
     if (a->m_bindings != b->m_bindings) {

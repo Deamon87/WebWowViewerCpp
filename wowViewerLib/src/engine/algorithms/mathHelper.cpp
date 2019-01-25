@@ -8,10 +8,16 @@
 
 
 float MathHelper::fp69ToFloat(uint16_t x) {
-    const float divider = float(1 << 9);
-    float int_part = (x >> 9);
-    float float_part = (x & (1<<10) - 1) / divider;
-    return int_part + float_part;
+    float result = (((x & 0x1FF) * 0.001953125f) + (float)(x >> 9));
+    if ((x & 0x8000) != 0) {
+        result *= -1.0f;
+    }
+    return result;
+
+//    const float divider = float(1 << 9);
+//    float int_part = (x >> 9);
+//    float float_part = (x & (1<<10) - 1) / divider;
+//    return int_part + float_part;
 }
 
 mathfu::vec2 MathHelper::convertV69ToV2(vector_2fp_6_9 &fp69) {

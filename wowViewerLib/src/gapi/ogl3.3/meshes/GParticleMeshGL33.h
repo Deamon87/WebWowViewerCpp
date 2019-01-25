@@ -16,6 +16,9 @@ public:
         return m_sortDistance;
     }
     void setSortDistance(float val) override {m_sortDistance = val;}
+    void setPriorityPlane(int priorityPlane) override {
+        m_priorityPlane = priorityPlane;
+    }
 };
 
 

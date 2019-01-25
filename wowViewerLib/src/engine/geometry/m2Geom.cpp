@@ -54,6 +54,15 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
             }
         },
         {
+            '2PXE',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered 2PXE");
+                    chunkData.readValue(file.exp2Records);
+                }
+            }
+        },
+        {
             'DIFA',
             {
                 [](M2Geom &file, ChunkData &chunkData) {
@@ -90,6 +99,15 @@ static GBufferBinding staticM2Bindings[6] = {
         {+m2Shader::Attribute::aTexCoord, 2, GL_FLOAT, false, 48, 32}, // texcoord
         {+m2Shader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 48, 40} // texcoord
 };
+
+void initEXP2(M2Array<Exp2Record> *exp2Records) {
+    exp2Records->initM2Array(exp2Records);
+    for (int i = 0; i < exp2Records->size; i++) {
+        Exp2Record *exp2Record = exp2Records->getElement(i);
+        exp2Record->unk3.timestamps.initM2Array(&exp2Record->unk3.timestamps);
+        exp2Record->unk3.values.initM2Array(&exp2Record->unk3.values);
+    }
+}
 
 void initM2Textures(M2Data *m2Header){
     int32_t texturesSize = m2Header->textures.size;
@@ -263,6 +281,10 @@ void M2Geom::process(const std::vector<unsigned char> &m2File, const std::string
     }
     initM2ParticlePartTracks(m2Header);
     initM2Textures(m2Header);
+
+    if (exp2Records != nullptr) {
+        initEXP2(exp2Records);
+    }
 
     initTracks(nullptr);
 

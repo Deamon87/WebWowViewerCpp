@@ -403,6 +403,21 @@ struct M2_AFID {
     uint32_t file_id;
 };
 
+struct Exp2Record
+{
+    float zSource;
+    uint32_t unk1;
+    uint32_t unk2;
+    M2PartTrack<fixed16> unk3;
+};
+
+struct EXP2
+{
+    M2Array<Exp2Record> content;
+};
+
+
+
 template <typename ToCheck, std::size_t ExpectedSize, std::size_t RealSize = sizeof(ToCheck)>
 void check_size() {
     static_assert(ExpectedSize == RealSize, "Size is off!");

@@ -45,6 +45,7 @@ public:
     std::vector<uint32_t> skinFileDataIDs;
     std::vector<uint32_t> textureFileDataIDs;
     std::vector<M2_AFID> animationFileDataIDs;
+    M2Array<Exp2Record> *exp2Records = nullptr;
 private:
     std::vector<uint8_t> m2File;
 

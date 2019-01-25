@@ -146,9 +146,6 @@ private:
 
     void StepUpdate(animTime_t delta);
 
-    void resizeParticleBuffer();
-
-    int RenderParticle(CParticle2 &p, std::vector<ParticleBuffStructQuad> &szVertexBuf);
 
     void fillTimedParticleData(CParticle2 &p, ParticlePreRenderData &particlePreRenderData, uint16_t seed);
     int CalculateParticlePreRenderData(CParticle2 &p, ParticlePreRenderData &ParticlePreRenderData);
@@ -163,13 +160,6 @@ private:
             std::vector<ParticleBuffStructQuad> &szVertexBuf,
             mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
                 float texStartY, mathfu::vec2 *texPos);
-
-    void
-    BuildQuad(
-        std::vector<ParticleBuffStructQuad> &szVertexBuf,
-        mathfu::vec3 &m0, mathfu::vec3 &m1,
-        mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
-        float texStartX, float texStartY);
 
     struct {
         HGIndexBuffer m_indexVBO;

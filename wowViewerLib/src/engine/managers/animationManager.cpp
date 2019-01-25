@@ -489,8 +489,8 @@ AnimationManager::calcBoneMatrix(
             } else if ( boneBillboardFlags == 0x40 ) {
                 currentBoneMat.GetColumn(2) = currentBoneMat.GetColumn(2).Normalized();
                 mathfu::vec4 newYAxis = mathfu::vec4(
-                    currentBoneMat(1, 2),
-                    -currentBoneMat(0, 2),
+                    currentBoneMat.GetColumn(2).y,
+                    -currentBoneMat.GetColumn(2).x,
                     0.0f,
                     0
                 );
@@ -504,8 +504,6 @@ AnimationManager::calcBoneMatrix(
                 );
             }
         } else if ( boneBillboardFlags == 0x8 ){
-            mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
-            mathfu::vec4 pivotVec3 = pivotVec4; pivotVec3.w = 0.0;
             if (isAnimated) {
                 mathfu::vec4 &xAxis = animatedMatrix.GetColumn(0);
                 currentBoneMat.GetColumn(0) = mathfu::vec4(
@@ -536,11 +534,13 @@ AnimationManager::calcBoneMatrix(
                 currentBoneMat.GetColumn(1) = mathfu::vec4(1.0, 0, 0, 0);
                 currentBoneMat.GetColumn(2) = mathfu::vec4(0, 1.0, 0, 0);
             }
-
-            currentBoneMat *= mathfu::mat4::FromScaleVector(scaleVector);
-            currentBoneMat.GetColumn(3) = (currentBoneMatCopy * pivotVec4 ) - (currentBoneMat * pivotVec3);
-            currentBoneMat.GetColumn(3).w = 1.0;
         }
+        mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
+        mathfu::vec4 pivotVec3 = pivotVec4; pivotVec3.w = 0.0;
+
+        currentBoneMat *= mathfu::mat4::FromScaleVector(scaleVector);
+        currentBoneMat.GetColumn(3) = (currentBoneMatCopy * pivotVec4 ) - (currentBoneMat * pivotVec3);
+        currentBoneMat.GetColumn(3).w = 1.0;
     }
 
     this->bonesIsCalculated[boneIndex] = true;
@@ -1117,6 +1117,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
         if (particleEmitter->getGenerator() == nullptr) continue;
         CGeneratorAniProp *aniProp = particleEmitters[i]->getGenerator()->getAniProp();
 
+
         unsigned char enabledIn =
             animateTrack<unsigned char, unsigned char>(
                 animationTime,
@@ -1237,16 +1238,18 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
                 this->globalSequenceTimes,
                 defaultFloat
             );
-        aniProp->zSource =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.zSource,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
+        if (m_m2Geom.get()->exp2Records == nullptr) {
+            aniProp->zSource =
+                animateTrack<float, float>(
+                    animationTime,
+                    animationRecord->duration,
+                    animationIndex,
+                    peRecord.old.zSource,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+        }
 
         bool enabled = enabledIn != 0;
         bool emitterEnabled = enabled && 0 != (particleEmitter->flags & 2);
