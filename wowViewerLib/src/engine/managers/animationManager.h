@@ -10,7 +10,7 @@
 #include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "particles/particleEmitter.h"
-
+#include "../algorithms/animate.h"
 
 class AnimationManager {
 private:
@@ -19,15 +19,8 @@ private:
     M2Data *m_m2File;
 
     int mainAnimationId;
-    int mainAnimationIndex;
-
-    int currentAnimationIndex;
-    animTime_t currentAnimationTime;
-    int currentAnimationPlayedTimes;
-
-    int nextSubAnimationIndex;
-    animTime_t nextSubAnimationTime;
-    bool nextSubAnimationActive;
+    int mainAnimationIndex = -1;
+    FullAnimationInfo animationInfo;
 
     bool firstCalc;
     bool isAnimated;
@@ -45,10 +38,10 @@ private:
     void initBlendMatrices();
     void initGlobalSequenceTimes();
 
-    int findAnimationIndex(uint32_t anim_id);
+    const int findAnimationIndex(uint32_t anim_id) const;
 
     void calculateBoneTree();
-    void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, animTime_t time);
+    void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices);
 
 public:
     AnimationManager(IWoWInnerApi *api, HM2Geom m2File);
@@ -67,31 +60,15 @@ public:
         std::vector<ParticleEmitter *> &particleEmitters
         /*cameraDetails, particleEmitters*/);
 
-    void calcBones(std::vector<mathfu::mat4> &boneMatrices,
-        int animation, animTime_t time,
-        mathfu::vec3 &cameraPosInLocal,
-        mathfu::vec3 &localUpVector,
-        mathfu::vec3 &localRightVector,
-        mathfu::mat4 &modelViewMatrix);
+    void calcBones(std::vector<mathfu::mat4> &boneMatrices, mathfu::mat4 &modelViewMatrix);
 
-    void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, animTime_t time,
-                        mathfu::vec3 cameraPosInLocal, mathfu::vec3 &localUpVector, mathfu::vec3 &localRightVector,
-                        mathfu::mat4 &modelViewMatrix);
+    void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, mathfu::mat4 &modelViewMatrix);
 
-    void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, animTime_t time,
-                        mathfu::vec3 cameraPosInLocal, mathfu::vec3 &localUpVector, mathfu::vec3 &localRightVector,
-                        mathfu::mat4 &modelViewMatrix);
+    void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, mathfu::mat4 &modelViewMatrix);
 
-    void calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors,
-            int animationIndex,
-            animTime_t time,
-            int blendAnimationIndex,
-            animTime_t blendAnimationTime,
-            float blendAlpha);
+    void calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors);
 
-    void calcTransparencies(std::vector<float> &transparencies, int animationIndex, animTime_t time,
-                            int blendAnimationIndex,
-                            animTime_t blendAnimationTime, double blendAlpha);
+    void calcTransparencies(std::vector<float> &transparencies);
 
     bool getIsFirstCalc() {
         return firstCalc;
@@ -101,13 +78,9 @@ public:
     }
 
     void calcLights(std::vector<M2LightResult> &lights,
-                    std::vector<mathfu::mat4> &bonesMatrices,
-                    int animationIndex,
-                    animTime_t animationTime);
+                    std::vector<mathfu::mat4> &bonesMatrices);
     void calcParticleEmitters(std::vector<ParticleEmitter *> &particleEmitters,
-                    std::vector<mathfu::mat4> &bonesMatrices,
-                    int animationIndex,
-                    animTime_t animationTime);
+                    std::vector<mathfu::mat4> &bonesMatrices);
 
     void calcCamera(M2CameraResult &camera, int cameraId, mathfu::mat4 &placementMatrix);
 };
