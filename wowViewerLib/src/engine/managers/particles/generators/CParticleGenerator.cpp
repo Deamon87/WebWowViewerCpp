@@ -17,8 +17,8 @@ float CParticleGenerator::GetMaxLifeSpan() {
     return aniProp.lifespan + m_particleData->old.lifespanVary;
 }
 
-float CParticleGenerator::GetLifeSpan(float m) {
-    return aniProp.lifespan + m * m_particleData->old.lifespanVary;
+float CParticleGenerator::GetLifeSpan(int16_t state) {
+    return aniProp.lifespan + (state * 0.000030518509f) * m_particleData->old.lifespanVary;
 }
 
 float CParticleGenerator::CalcVelocity() {

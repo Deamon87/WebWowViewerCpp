@@ -503,7 +503,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
-//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
+//        "WORLD/WMO/NORTHREND/BUILDINGS/HUMAN/ND_HUMAN_INN/ND_HUMAN_INN.WMO");
 
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -582,9 +582,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
@@ -606,9 +606,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(0, "creature/arthas/arthas.m2", -1);
-//    setSceneWithFileDataId(0, 122968, -1);
+    setSceneWithFileDataId(0, 2445592, -1);
 
-
+`
     if (m_supportThreads) {
         g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
             using namespace std::chrono_literals;

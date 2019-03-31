@@ -897,7 +897,7 @@ bool M2Object::doPostLoad(){
 
     return true;
 }
-
+//deltaTime = miliseconds
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
     if (!this->m_loaded)  return;
 

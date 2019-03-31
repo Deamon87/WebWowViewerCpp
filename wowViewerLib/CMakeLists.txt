@@ -205,7 +205,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/interface/meshes/IM2Mesh.h
         src/gapi/interface/meshes/IMesh.h
         src/gapi/IDeviceFactory.cpp src/gapi/IDeviceFactory.h
-        src/gapi/interface/meshes/IParticleMesh.h src/gapi/interface/syncronization/IGPUFence.h src/engine/objects/wowFrameData.h src/engine/engineClassList.h src/engine/camera/planarCamera.cpp src/engine/camera/planarCamera.h)
+        src/gapi/interface/meshes/IParticleMesh.h src/gapi/interface/syncronization/IGPUFence.h src/engine/objects/wowFrameData.h src/engine/engineClassList.h src/engine/camera/planarCamera.cpp src/engine/camera/planarCamera.h src/engine/managers/CRibbonEmitter.cpp src/engine/managers/CRibbonEmitter.h)
 
 set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h

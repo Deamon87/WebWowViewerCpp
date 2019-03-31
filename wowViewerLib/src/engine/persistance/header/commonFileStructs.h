@@ -131,6 +131,13 @@ public:
     C3Vector min;
     C3Vector max;
 };
+struct CRect
+{
+    float miny;
+    float minx;
+    float maxy;
+    float maxx;
+};
 
 
 

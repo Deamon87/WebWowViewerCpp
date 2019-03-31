@@ -221,7 +221,7 @@ void ParticleEmitter::createMesh() {
 
         meshTemplate.depthWrite = blendMode <= 1;
         meshTemplate.depthCulling = true;
-        meshTemplate.backFaceCulling = true;
+        meshTemplate.backFaceCulling = false;
 
         if (blendMode == 4)
             blendMode = 3;
@@ -260,7 +260,11 @@ void ParticleEmitter::createMesh() {
         meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
 
         meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
-        blockPS.uAlphaTest = 0.0039215689f;
+        if (blendMode == 1) {
+            blockPS.uAlphaTest = 0.501960814f;
+        } else {
+            blockPS.uAlphaTest = -1.0f;
+        }
 
         int uPixelShader = particleMaterialShader[this->particleType].pixelShader;
 
@@ -410,8 +414,8 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
     while (i < this->particles.size()) {
         auto &p = this->particles[i];
         p.age = p.age + delta;
-        auto life = p.lifespan;
-        if (p.age > (this->generator->GetLifeSpan(life))) {
+
+        if (p.age > (fmaxf(this->generator->GetLifeSpan(p.seed), 0.001f))) {
             this->KillParticle(i);
             i--;
         } else {
@@ -427,19 +431,19 @@ void ParticleEmitter::EmitNewParticles(animTime_t delta) {
     if (!isEnabled) return;
 
     float rate = this->generator->GetEmissionRate();
-    if (6 == (this->flags & 6)) {
-        int count = rate;
-        for (int i = 0; i < count; i++) {
-            this->CreateParticle(0);
-        }
-    }
-    if (3 == (this->flags & 3)) {
+//    if (6 == (this->flags & 6)) {
+//        int count = rate;
+//        for (int i = 0; i < count; i++) {
+//            this->CreateParticle(0);
+//        }
+//    }
+//    if (3 == (this->flags & 3)) {
         this->emission += delta * rate;
         while (this->emission > 1) {
             this->CreateParticle(delta);
             this->emission -= 1;
         }
-    }
+//    }
 }
 void ParticleEmitter::CreateParticle(animTime_t delta) {
     CParticle2 &p = this->BirthParticle();

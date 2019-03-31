@@ -54,7 +54,7 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw)
 endif()
 
-#bz2
+#bz2renderFlag
 add_subdirectory(3rdparty/bzip)
  
 #CPR

@@ -93,6 +93,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         glfwGetCursorPos(window, &xpos, &ypos);
         m_x = xpos;
         m_y = ypos;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
     if (action == GLFW_RELEASE) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -100,6 +101,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
             mright_pressed = 0;
         }
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 }
 
@@ -326,7 +328,7 @@ void mainLoop(void* loopArg){
     }
 
     // Render scene
-    myapp->currentFrame = glfwGetTime();
+    myapp->currentFrame = glfwGetTime(); // seconds
     double deltaTime = myapp->currentFrame - myapp->lastFrame;
     myapp->lastFrame = myapp->currentFrame;
 
@@ -340,7 +342,7 @@ void mainLoop(void* loopArg){
         windowSizeChanged = false;
     }
 
-    myapp->scene->draw((deltaTime*1000));
+    myapp->scene->draw((deltaTime*1000.0f)); //miliseconds
 
     stopInputs = false;
     /* Nuklear GUI code */
@@ -710,8 +712,15 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-    const char * url = "http://178.165.92.24:40001/get/";
-    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
+    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=c7c85e75ac7aad0883a79d04bb8893bc&cdnconfig=8ab06c341b55dcdb81b81b03d7f226ff&filename=";
+    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=c7c85e75ac7aad0883a79d04bb8893bc&cdnconfig=8ab06c341b55dcdb81b81b03d7f226ff&filename=data&filedataid=";
+//1.13.0
+//    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=";
+//    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=data&filedataid=";
+
+//    const char * url = "http://178.165.92.24:40001/get/";
+//    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
+
 //    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
     const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
 //     const char *url = "http://localhost:8084/get/";
