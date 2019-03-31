@@ -535,19 +535,9 @@ LABEL_10:
     if ( !(v76 < 1.0) ) {
 
         v94 = this->m_startTime;
-        ooDenom = 1.0 / (float) (v76 - v94);
+        ooDenom = 1.0f / (float) (v76 - v94);
         v39 = floorf(v76 - 1.0f);
-        v40 = (__m128) LODWORD(v39);
-        v40.m128_f32[0] = fmaxf(v39, 0.0);
-        v41.m128_i32[0] = 0x4F000000;
-        v42 = _mm_cmple_ss(v41, v40);
-        v43.m128_i32[0] = 0x4F800000;
-        v79 = _mm_cvtsi128_si32(
-            _mm_or_si128(
-                _mm_add_epi32(
-                    _mm_cvttps_epi32(_mm_sub_ps(v40, _mm_and_ps((__m128) 0x4F000000u, v42))),
-                    _mm_slli_epi32((__m128i) v42, 0x1Fu)),
-                (__m128i) _mm_cmple_ss(v43, v40)));
+        v79 = ceil(fmaxf(v39, 0.0));
         bool_a = true;
     }
     if ( v79 == -1 || bool_a )
@@ -736,11 +726,8 @@ LABEL_10:
 signed int CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImVector diffuseColor, TSGrowableArray_CTexture *textures, TSGrowableArray *materials, TSGrowableArray_unsigned_int *replaces, CRect *a8, unsigned int rows, unsigned int cols)
 {
   float v11; // ST2C_4
-  __m128 v12; // xmm0
-  __m128 v13; // xmm2
-  __m128 v14; // xmm2
-  __m128 v15; // xmm3
-  unsigned int v16; // esi
+
+  unsigned int newEdgesCount; // esi
   unsigned int v17; // edi
   unsigned int v18; // ecx
   unsigned int v19; // eax
@@ -818,7 +805,7 @@ signed int CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec
   unsigned int *v92; // [esp+60h] [ebp-28h]
   unsigned int v93; // [esp+64h] [ebp-24h]
   unsigned int v94; // [esp+68h] [ebp-20h]
-  float v95; // [esp+6Ch] [ebp-1Ch]
+  float edgesPerSeca; // [esp+6Ch] [ebp-1Ch]
   float edgeLifetimea; // [esp+98h] [ebp+10h]
 
   assert(this->m_ribbonEmitterflags.m_initialized );
@@ -827,94 +814,20 @@ signed int CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec
   assert(materials.size() == textures.size() );
   assert(replaces.size() == textures.size() );
 
-  v95 = ceilf(edgesPerSec);
+  edgesPerSeca = ceilf(edgesPerSec);
   edgeLifetimea = fmaxf(0.25, edgeLifeSpanInSec);
-  v11 = ceilf(edgeLifetimea * v95);
-  v12 = (__m128)LODWORD(v11);
-  v12.m128_f32[0] = fmaxf((float)(v11 + 1.0) + 1.0, 0.0);
-  v13.m128_i32[0] = 0x4F000000;
-  v14 = _mm_cmple_ss(v13, v12);
-  v15.m128_i32[0] = 0x4F800000;
-  v16 = _mm_cvtsi128_si32(
-          _mm_or_si128(
-            _mm_add_epi32(
-              _mm_cvttps_epi32(_mm_sub_ps(v12, _mm_and_ps((__m128)0x4F000000u, v14))),
-              _mm_slli_epi32((__m128i)v14, 0x1Fu)),
-            (__m128i)_mm_cmple_ss(v15, v12)));
-  if ( v16 > this->m_edges.m_currentLength && v16 > this->m_edges.m_maxAllocLength )
-  {
-    i = this->m_edges.unk4;
-    if ( !i )
-    {
-      if ( v16 > 0x3F )
-      {
-        this->m_edges.unk4 = 64;
-        v57 = v16 & 0x3F;
-        i = 64;
-LABEL_76:
-        if ( v57 )
-        {
-          v58 = i + v16 - v57;
-          goto LABEL_78;
-        }
-LABEL_77:
-        v58 = v16;
-LABEL_78:
-        v86 = (char *)&this->m_edges;
-        v87 = this->m_edges.m_elementPointer;
-        this->m_edges.m_maxAllocLength = v58;
-        v59 = (*(int (__cdecl **)(TSGrowableArray_float *))(this->m_edges.vTable + 4))(&this->m_edges);
-        v60 = (*(int (__cdecl **)(TSGrowableArray_float *))this->m_edges.vTable)(&this->m_edges);
-        v61 = (float *)SMemReAlloc((char *)v87, 4 * v58, v60, v59, 16);
-        this->m_edges.m_elementPointer = v61;
-        if ( !v61 )
-        {
-          v62 = (*(int (__cdecl **)(char *))(this->m_edges.vTable + 4))(v86);
-          v63 = (*(int (__cdecl **)(char *))this->m_edges.vTable)(v86);
-          this->m_edges.m_elementPointer = (float *)SMemAlloc(4 * v58, v63, v62, 0);
-          if ( v87 )
-          {
-            v64 = this->m_edges.m_currentLength;
-            if ( v58 <= this->m_edges.m_currentLength )
-              v64 = v58;
-            if ( v64 )
-            {
-              v65 = 0;
-              do
-              {
-                v66 = &this->m_edges.m_elementPointer[v65];
-                if ( v66 )
-                  *v66 = v87[v65];
-                ++v65;
-              }
-              while ( v65 != v64 );
-            }
-            v84 = 0;
-            v83 = (*(int (__cdecl **)(char *))(this->m_edges.vTable + 4))(v86);
-            v82 = (*(int (__cdecl **)(char *))this->m_edges.vTable)(v86);
-            SMemFree((int)v87);
-          }
-        }
-        goto LABEL_13;
-      }
-      for ( i = v16; i & (i - 1); i &= i - 1 )
-        ;
-      if ( !i )
-        goto LABEL_77;
-    }
-    v57 = v16 % i;
-    goto LABEL_76;
-  }
-LABEL_13:
-  this->m_edges.m_currentLength = v16;
+  v11 = ceilf(edgeLifetimea * edgesPerSeca);
+
+  newEdgesCount = ceil(fmaxf((float)(v11 + 1.0) + 1.0, 0.0));
+  this->m_edges = std::vector<float>(newEdgesCount);
   this->m_readPos = 0;
   this->m_writePos = 0;
   this->m_startTime = 0.0;
   this->m_ribbonEmitterflags.m_posSet = 0;
-  v17 = 2 * v16;
-  v94 = 2 * v16;
-  v18 = this->m_gxVertices.m_currentLength;
-  if ( 2 * v16 <= v18 )
+  v17 = 2 * newEdgesCount;
+  v94 = 2 * newEdgesCount;
+  v18 = this->m_gxVertices.size();
+  if ( 2 * newEdgesCount <= v18 )
     goto LABEL_19;
   if ( v17 <= this->m_gxVertices.m_maxAllocLength )
     goto LABEL_15;
@@ -931,7 +844,7 @@ LABEL_13:
   }
   else
   {
-    for ( j = 2 * v16; j & (j - 1); j &= j - 1 )
+    for ( j = 2 * newEdgesCount; j & (j - 1); j &= j - 1 )
       ;
     if ( !j )
       goto LABEL_58;
@@ -943,7 +856,7 @@ LABEL_13:
     goto LABEL_59;
   }
 LABEL_58:
-  v50 = 2 * v16;
+  v50 = 2 * newEdgesCount;
 LABEL_59:
   v88 = (char *)&this->m_gxVertices;
   v89 = this->m_gxVertices.m_elementPointer;
@@ -1017,7 +930,7 @@ LABEL_15:
   }
 LABEL_19:
   this->m_gxVertices.m_currentLength = v94;
-  v21 = 4 * v16;
+  v21 = 4 * newEdgesCount;
   v93 = v21;
   if ( v21 <= this->m_gxIndices.m_currentLength || v21 <= this->m_gxIndices.m_maxAllocLength )
     goto LABEL_21;
@@ -1116,7 +1029,7 @@ LABEL_21:
   this->m_tmpDV = (float)(a8->maxy - a8->miny) / v27;
   v28->m_ooTmpDU = 1.0f / v28->m_tmpDU;
   v28->m_ooTmpDV = 1.0f / v28->m_tmpDV;
-  this->m_edgesPerSec = v95;
+  this->m_edgesPerSec = edgesPerSeca;
   this->m_edgeLifeSpan = edgeLifetimea;
   this->m_diffuseClr = **(CImVector **)&diffuseColor;
   v29 = (char *)&this->m_materials;
