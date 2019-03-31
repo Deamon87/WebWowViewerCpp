@@ -90,7 +90,7 @@ public:
     
     void DecRef();
     signed int Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImVector diffuseColor, CRect *a8, unsigned int rows, unsigned int cols); // idb
-    signed int Render(const mathfu::mat4 *a2);
+//    signed int Render(const mathfu::mat4 *a2);
     //CTexture **SetTexture(unsigned int a2, CTexture *a3);
     //int ReplaceTexture(unsigned int a2, CTexture *a3);
 
