@@ -68,6 +68,7 @@ class CRibbonEmitter {
     float m_above;
     float m_below;
     float m_gravity;
+    int m_priority;
 
 private:
     IWoWInnerApi *m_api;
@@ -78,6 +79,7 @@ private:
 
         HGVertexBufferBindings m_bindings;
         HGParticleMesh m_mesh;
+        bool isDead = false;
     } frame[4];
 
     void createMesh();
@@ -87,10 +89,11 @@ public:
     void SetDataEnabled(char a2);
     void SetUserEnabled(char a2);
     CRibbonEmitter *SetGravity(float a2);
-    bool IsDead();
+    bool IsDead() const;
     void SetBelow(float a2);
     void SetAbove(float a2);
     void SetAlpha(float a2);
+    void SetPriority(int a2) { m_priority = a2;};
     void InitInterpDeltas();
     int GetNumBatches();
     void SetPos(const mathfu::mat4 &modelViewMat, const mathfu::vec3 &a3, const mathfu::mat4 *frameOfReference);
@@ -110,7 +113,7 @@ public:
 
     void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
 
-    void updateBuffers() const;
+    void updateBuffers();
 
 };
 

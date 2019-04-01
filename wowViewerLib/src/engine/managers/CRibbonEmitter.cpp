@@ -169,7 +169,7 @@ CRibbonEmitter *__cdecl CRibbonEmitter::SetGravity(float a2)
 }
 
 //----- (00A19A80) --------------------------------------------------------
-bool CRibbonEmitter::IsDead()
+bool CRibbonEmitter::IsDead() const
 {
   return this->m_readPos == this->m_writePos;
 }
@@ -842,7 +842,6 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   char *v53; // eax
   unsigned int k; // ebx
   int v55; // ecx
-  unsigned int i; // ebx
   int v57; // ecx
   unsigned int v58; // edi
   int v59; // ebx
@@ -897,8 +896,8 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   this->m_startTime = 0.0;
   this->m_ribbonEmitterflags.m_posSet = 0;
   this->m_gxVertices = std::vector<CRibbonVertex>(2 * newEdgesCount);
-  for (int i = 0; i < this->m_gxVertices.size(); i++) {
-    v20 = &this->m_gxVertices[i];
+  for (auto &m_gxVertice : this->m_gxVertices) {
+    v20 = &m_gxVertice;
     v20->pos.x = 0.0;
     v20->pos.y = 0.0;
     v20->pos.z = 0.0;
@@ -1374,26 +1373,31 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
 
 
 void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
-//    return;
-  if (this->m_gxVertices.size() <= 1) return;
 
-  if (this->IsDead()) return;
+  auto &currFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+  if (currFrame.isDead) return;
 
-  HGParticleMesh mesh = frame[m_api->getDevice()->getUpdateFrameNumber()].m_mesh;
+  HGParticleMesh mesh = currFrame.m_mesh;
   mesh->setRenderOrder(renderOrder);
   meshes.push_back(mesh);
 }
 
-void CRibbonEmitter::updateBuffers() const {
+void CRibbonEmitter::updateBuffers() {
 //    return;
-  if (m_gxVertices.size() == 0 ) return;
+
   auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+  currentFrame.isDead = this->IsDead();
+  if (currentFrame.isDead) return;
+
   currentFrame.m_indexVBO->uploadData((void *) m_gxIndices.data(), (int) (m_gxIndices.size() * sizeof(uint16_t)));
   currentFrame.m_bufferVBO->uploadData((void *) m_gxVertices.data(), (int) (m_gxVertices.size() * sizeof(CRibbonVertex)));
 
-  currentFrame.m_mesh->setStart(m_readPos*4);
-  currentFrame.m_mesh->setEnd(m_writePos > m_readPos ? (m_writePos - m_readPos + 1) : m_gxIndices.size());
+  int indexCount = m_writePos > m_readPos ?
+      2 *(m_writePos - m_readPos) + 2:
+      2 *((int)m_edges.size() + m_writePos - m_readPos) + 2;
+  currentFrame.m_mesh->setStart(2 * m_readPos * sizeof(uint16_t));
+  currentFrame.m_mesh->setEnd(indexCount);
   currentFrame.m_mesh->setSortDistance(0);
-  currentFrame.m_mesh->setPriorityPlane(0);
+  currentFrame.m_mesh->setPriorityPlane(this->m_priority);
 
 }

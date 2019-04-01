@@ -1401,6 +1401,7 @@ void M2Object::initRibbonEmitters() {
         rect.maxx = 1.0;
         emitter->Initialize(m2Ribbon->edgesPerSecond, m2Ribbon->edgeLifetime, color, &rect, m2Ribbon->textureCols, m2Ribbon->textureRows);
         emitter->SetGravity(m2Ribbon->gravity);
+        emitter->SetPriority(m2Ribbon->priorityPlane);
         emitter->SetDataEnabled(0);
     }
 };
