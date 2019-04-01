@@ -78,14 +78,14 @@ private:
         HGVertexBuffer m_bufferVBO;
 
         HGVertexBufferBindings m_bindings;
-        HGParticleMesh m_mesh;
+        std::vector<HGParticleMesh> m_meshes = {};
         bool isDead = false;
     } frame[4];
 
-    void createMesh();
+    void createMesh(M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
 
 public:
-    CRibbonEmitter(IWoWInnerApi *m_api);
+    CRibbonEmitter(IWoWInnerApi *m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
     void SetDataEnabled(char a2);
     void SetUserEnabled(char a2);
     CRibbonEmitter *SetGravity(float a2);

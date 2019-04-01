@@ -217,6 +217,11 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
     GShaderPermutationGL33 * gShaderPermutation = (GShaderPermutationGL33 *)sharedPtr.get();
 
     gShaderPermutation->compileShader("", "");
+    if (shaderName == "ribbonShader") {
+        glUseProgram(gShaderPermutation->m_programBuffer);
+        glUniform1i(gShaderPermutation->getUnf("uTexture"), 0);
+        glUseProgram(0);
+    }
 
 //    glUseProgram(gShaderPermutation->m_programBuffer);
     for (int i = 0; i < 3; i++) {

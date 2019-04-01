@@ -11,9 +11,8 @@ static GBufferBinding staticRibbonBindings[3] = {
 };
 
 //----- (00A19710) --------------------------------------------------------
-CRibbonEmitter::CRibbonEmitter(IWoWInnerApi *api) : m_api(api)
+CRibbonEmitter::CRibbonEmitter(IWoWInnerApi *api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) : m_api(api)
 {
-  CRibbonEmitter *result; // eax
 
   this->m_refCount = 1;
   this->m_prevPos.x = 0.0;
@@ -73,7 +72,7 @@ CRibbonEmitter::CRibbonEmitter(IWoWInnerApi *api) : m_api(api)
   this->m_currPos.y = 0.0;
   this->m_currPos.z = 0.0;
 
-  createMesh();
+  createMesh(object, materials, textureIndicies);
 }
 PACK(
     struct meshParticleWideBlockPS {
@@ -83,61 +82,69 @@ PACK(
         float padding2[3];
     });
 
-void CRibbonEmitter::createMesh() {
+extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
+void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) {
   IDevice *device = m_api->getDevice();
 
   //Create Buffers
-  for (int i = 0; i < 4; i++) {
-    frame[i].m_indexVBO = device->createIndexBuffer();
-    frame[i].m_bufferVBO = device->createVertexBuffer();
+  for (int k = 0; k < 4; k++) {
+    frame[k].m_indexVBO = device->createIndexBuffer();
+    frame[k].m_bufferVBO = device->createVertexBuffer();
 
-    frame[i].m_bindings = device->createVertexBufferBindings();
-    frame[i].m_bindings->setIndexBuffer(frame[i].m_indexVBO);
+    frame[k].m_bindings = device->createVertexBufferBindings();
+    frame[k].m_bindings->setIndexBuffer(frame[k].m_indexVBO);
 
     GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = frame[i].m_bufferVBO;
+    vertexBinding.vertexBuffer = frame[k].m_bufferVBO;
     vertexBinding.bindings = std::vector<GBufferBinding>(&staticRibbonBindings[0],&staticRibbonBindings[3]);
 
-    frame[i].m_bindings->addVertexBufferBinding(vertexBinding);
-    frame[i].m_bindings->save();
+    frame[k].m_bindings->addVertexBufferBinding(vertexBinding);
+    frame[k].m_bindings->save();
 
 
     //Get shader
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("ribbonShader", nullptr);
+    for(int i = 0; i < materials.size(); i++) {
+        auto &material = materials[i];
+        auto &textureIndex = textureIndicies[i];
 
-    //Create mesh
-    gMeshTemplate meshTemplate(frame[i].m_bindings, shaderPermutation);
+        HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("ribbonShader", nullptr);
 
-    meshTemplate.depthWrite = true;
-    meshTemplate.depthCulling = true;
-    meshTemplate.backFaceCulling = false;
+        //Create mesh
+        gMeshTemplate meshTemplate(frame[k].m_bindings, shaderPermutation);
 
+        meshTemplate.depthWrite = !(material.flags & 0x10);
+        meshTemplate.depthCulling = !(material.flags & 0x8);
+        meshTemplate.backFaceCulling = !(material.flags & 0x4);
 
-//    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
-    meshTemplate.blendMode = static_cast<EGxBlendEnum>(2);
-
-    meshTemplate.start = 0;
-    meshTemplate.end = 0;
-    meshTemplate.element = GL_TRIANGLE_STRIP;
+        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[material.blending_mode];
 
 
-    meshTemplate.textureCount = 0;
+        meshTemplate.start = 0;
+        meshTemplate.end = 0;
+        meshTemplate.element = GL_TRIANGLE_STRIP;
 
-    meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-    meshTemplate.vertexBuffers[1] = nullptr;
-    meshTemplate.vertexBuffers[2] = nullptr;
 
-    meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-    meshTemplate.fragmentBuffers[1] = nullptr;
-    meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
+        meshTemplate.textureCount = 1;
+        meshTemplate.texture = std::vector<HGTexture>(1, nullptr);
+        HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
+        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(tex0, true, true);
 
-    meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
-    blockPS.uAlphaTest = -1.0f;
-    blockPS.uPixelShader = 0;
+        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.vertexBuffers[1] = nullptr;
+        meshTemplate.vertexBuffers[2] = nullptr;
 
-    meshTemplate.fragmentBuffers[2]->save(true);
+        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.fragmentBuffers[1] = nullptr;
+        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
 
-    frame[i].m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
+        meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
+        blockPS.uAlphaTest = -1.0f;
+        blockPS.uPixelShader = 0;
+
+        meshTemplate.fragmentBuffers[2]->save(true);
+
+        frame[k].m_meshes.push_back(m_api->getDevice()->createParticleMesh(meshTemplate));
+    }
   }
 }
 
@@ -152,7 +159,6 @@ void __cdecl CRibbonEmitter::SetDataEnabled(char a2)
 //----- (00A19A20) --------------------------------------------------------
 void CRibbonEmitter::SetUserEnabled(char a2)
 {
-  
   this->m_ribbonEmitterflags.m_userEnabled = 0;
   if ( !(this->m_ribbonEmitterflags.m_userEnabled) )
     this->m_ribbonEmitterflags.m_posSet = 0;
@@ -388,9 +394,9 @@ void CRibbonEmitter::ChangeFrameOfReference(const mathfu::mat4 *frameOfReference
 //----- (00A1A4E0) --------------------------------------------------------
 void CRibbonEmitter::SetColor(float a3, float a4, float a5)
 {
-    this->m_diffuseClr.r = a3;
-    this->m_diffuseClr.g = a4;
-    this->m_diffuseClr.b = a5;
+    this->m_diffuseClr.r = a5 * 255.0f;
+    this->m_diffuseClr.g = a4 * 255.0f;
+    this->m_diffuseClr.b = a3 * 255.0f;
 
 }
 // FCBEB0: using guessed type int dword_FCBEB0;
@@ -481,13 +487,9 @@ void CRibbonEmitter::Advance(int &pos, unsigned int amount) {
 //----- (00A1AD60) --------------------------------------------------------
 void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
 {
-  float v4; // xmm0_4
-  unsigned int v5; // esi
-  unsigned int v6; // eax
   int j; // eax
   unsigned int v9; // esi
   CRibbonVertex *v10; // esi
-  float v11; // xmm0_4
   float v12; // xmm0_4
   float v13; // xmm2_4
   float v14; // xmm4_4
@@ -502,27 +504,10 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
   float v23; // xmm0_4
   unsigned int v24; // edx
   int v25; // esi
-  int v26; // ebx
-  int v27; // eax
-  int v28; // eax
-  int v29; // ebx
-  int v30; // eax
-  int v31; // ebx
-  int v32; // eax
-  int v33; // ebx
-  int v34; // eax
-  int v35; // ebx
-  int v36; // eax
-  __int32 result; // eax
-  CImVector v38; // eax
-  float v39; // ST50_4
+ float v39; // ST50_4
 
   float i; // xmm0_4
   unsigned int v45; // esi
-  int v46; // ebx
-  int v47; // eax
-  int v48; // ebx
-  int v49; // eax
   float v50; // ST48_4
   CRibbonVertex *v51; // eax
   float v52; // ecx
@@ -530,25 +515,10 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
   CRibbonVertex *v54; // eax
   float v55; // ecx
   unsigned int v56; // esi
-  int v57; // ebx
-  int v58; // eax
-  int v59; // ebx
-  int v60; // eax
-  int v61; // ebx
-  int v62; // eax
-  int v63; // ebx
-  int v64; // eax
-  CImVector v65; // ebx
-  char *v66; // [esp+2Ch] [ebp-BCh]
-  char *v67; // [esp+30h] [ebp-B8h]
-  char *v68; // [esp+34h] [ebp-B4h]
-  char *v69; // [esp+38h] [ebp-B0h]
   unsigned int v70; // [esp+3Ch] [ebp-ACh]
   int v71; // [esp+40h] [ebp-A8h]
   int v72; // [esp+44h] [ebp-A4h]
   int v73; // [esp+4Ch] [ebp-9Ch]
-  float v74; // [esp+68h] [ebp-80h]
-  float v75; // [esp+6Ch] [ebp-7Ch]
   float v76; // [esp+70h] [ebp-78h]
   float v77; // [esp+74h] [ebp-74h]
   float ooDenom; // [esp+78h] [ebp-70h]
@@ -556,14 +526,12 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
   unsigned int v80; // [esp+84h] [ebp-64h]
   unsigned int v81; // [esp+84h] [ebp-64h]
   CRibbonVertex *v82; // [esp+88h] [ebp-60h]
-  unsigned int v83; // [esp+8Ch] [ebp-5Ch]
   unsigned int v84; // [esp+90h] [ebp-58h]
   unsigned int v85; // [esp+94h] [ebp-54h]
   unsigned int v86; // [esp+98h] [ebp-50h]
   unsigned int v87; // [esp+9Ch] [ebp-4Ch]
   unsigned int v88; // [esp+A0h] [ebp-48h]
   unsigned int v89; // [esp+A4h] [ebp-44h]
-  unsigned int v90; // [esp+A8h] [ebp-40h]
   unsigned int v91; // [esp+ACh] [ebp-3Ch]
   unsigned int v92; // [esp+B0h] [ebp-38h]
   unsigned int v93; // [esp+B4h] [ebp-34h]
@@ -574,7 +542,6 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
 
   if ( !(this->m_ribbonEmitterflags.m_singletonUpdated) )
   {
-    v4 = this->m_edgesPerSec;
     if ( this->m_edgesPerSec > 0.0 )
       deltaTime = (float)(1.0 / this->m_edgesPerSec) + 0.000099999997f;
   }
@@ -583,13 +550,11 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
     if ( this->m_edgeLifeSpan <= deltaTime )
     {
       deltaTime = this->m_edgeLifeSpan;
-      v5 = this->m_readPos;
     }
   }
   else
   {
     deltaTime = 0.0;
-    v5 = this->m_readPos;
   }
 
   for ( i = this->m_readPos; i != this->m_writePos; i = this->m_readPos )
@@ -620,12 +585,10 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
     }
     if ( v79 == -1 || bool_a )
     {
-      v69 = (char *)&this->m_gxVertices;
     }
     else
     {
       v77 = 1.0;
-      v69 = (char *)&this->m_gxVertices;
       for ( i = 1.0; ; i = v77 )
       {
         v73 = this->m_writePos;
@@ -685,8 +648,6 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
   this->m_maxWorldBound.y = -3.4028235e38f;
   this->m_maxWorldBound.x = -3.4028235e38f;
   v80 = this->m_readPos;
-  v68 = (char *)&this->m_gxVertices;
-  v67 = (char *)&this->m_edges;
   for ( j = this->m_readPos; j != this->m_writePos; v80 = j )
   {
     v25 = 2 * j;
@@ -699,9 +660,6 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
     assert( v9 < v93 );
 
     v10 = &this->m_gxVertices[2 * j + 1];
-    v11 = this->m_gravity;
-    v74 = this->m_gravity;
-    v90 = this->m_edges.size();
     assert(v80 < this->m_edges.size());
 
     v12 = (float)((float)((float)(this->m_gravity + this->m_gravity) * this->m_edges[v70]) * deltaTime)
@@ -767,7 +725,6 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
 
     this->m_edges[v70] = deltaTime + this->m_edges[v70];
     v22 = this->m_tmpDU;
-    v75 = this->m_tmpDU;
     v92 = this->m_edges.size();
     assert( v80 < v92 );
 
@@ -806,78 +763,13 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   float v11; // ST2C_4
 
   unsigned int newEdgesCount; // esi
-  unsigned int v17; // edi
-  unsigned int v18; // ecx
-  unsigned int v19; // eax
   CRibbonVertex *v20; // edx
-  unsigned int v21; // esi
-  unsigned int v22; // esi
-  unsigned int v23; // edi
-  int v24; // ebx
-  int v25; // eax
   float v26; // xmm1_4
   float v27; // xmm1_4
-  CRibbonEmitter *v28; // edi
-  char *v29; // esi
-  int v30; // edi
-  int v31; // ebx
-  int v32; // eax
-  int v34; // esi
-  int v36; // edx
-  char *v37; // edi
-  int v38; // esi
-  int v39; // ebx
-  int v40; // eax
-  int v41; // edx
-  unsigned int *v42; // ecx
-  CRibbonEmitter *v43; // ecx
+
   float v45; // xmm1_4
   float v46; // xmm0_4
-  signed int result; // eax
-  unsigned int j; // ebx
-  unsigned int v49; // ecx
-  unsigned int v50; // edi
-  int v51; // ebx
-  int v52; // eax
-  char *v53; // eax
-  unsigned int k; // ebx
-  int v55; // ecx
-  int v57; // ecx
-  unsigned int v58; // edi
-  int v59; // ebx
-  int v60; // eax
-  float *v61; // eax
-  int v62; // ebx
-  int v63; // eax
-  unsigned int v64; // ebx
-  int v65; // edx
-  float *v66; // ecx
-  char *v67; // edi
-  int v68; // ebx
-  int v69; // eax
-  char *v70; // eax
-  int v71; // ebx
-  int v72; // eax
-  unsigned int v73; // ebx
-  int v74; // edx
-  int v76; // ebx
-  int v77; // eax
-  unsigned int v78; // eax
-  int v79; // ebx
-  int v80; // ecx
-  CRibbonVertex *v81; // edx
-  int v82; // [esp+4h] [ebp-84h]
-  int v83; // [esp+8h] [ebp-80h]
-  int v84; // [esp+Ch] [ebp-7Ch]
-  char *v85; // [esp+38h] [ebp-50h]
-  char *v86; // [esp+40h] [ebp-48h]
-  float *v87; // [esp+44h] [ebp-44h]
-  char *v88; // [esp+4Ch] [ebp-3Ch]
-  CRibbonVertex *v89; // [esp+50h] [ebp-38h]
-  char *v90; // [esp+54h] [ebp-34h]
-  unsigned int *v92; // [esp+60h] [ebp-28h]
-  unsigned int v93; // [esp+64h] [ebp-24h]
-  unsigned int v94; // [esp+68h] [ebp-20h]
+
   float edgesPerSeca; // [esp+6Ch] [ebp-1Ch]
   float edgeLifetimea; // [esp+98h] [ebp+10h]
 
@@ -906,7 +798,6 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
     v20->texCoord.y = 0.0;
   }
 
-  v21 = 4 * newEdgesCount;
   this->m_gxIndices = std::vector<uint16_t>(4 * newEdgesCount);
   for(int i = 0; i < this->m_gxIndices.size(); i++) {
     this->m_gxIndices[i] = static_cast<unsigned short>(i % (2 * newEdgesCount));
@@ -946,440 +837,15 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   this->m_ribbonEmitterflags.m_initialized = 1;
 }
 
-//----- (00A1CD90) --------------------------------------------------------
-//signed int CRibbonEmitter::Render(const mathfu::mat4 *a2)
-//{
-//  CGxDevice *v2; // ebx
-//  int v3; // eax
-//  int v4; // eax
-//  _DWORD *v5; // edx
-//  _DWORD *v6; // eax
-//  int v7; // eax
-//  _QWORD *v8; // eax
-//  int v9; // ebx
-//  int v10; // esi
-//  unsigned int v11; // edx
-//  unsigned int v12; // eax
-//  int v13; // ebx
-//  int v14; // eax
-//  CGxDevice *v15; // esi
-//  unsigned int v16; // edi
-//  unsigned int i; // ebx
-//  int v18; // ecx
-//  int v19; // ebx
-//  int v20; // eax
-//  char *v21; // eax
-//  int v22; // eax
-//  int *v23; // edx
-//  unsigned int v24; // esi
-//  unsigned int v25; // esi
-//  unsigned int v26; // esi
-//  unsigned int v27; // esi
-//  CGxDevice *v28; // edi
-//  _DWORD *v29; // ebx
-//  unsigned int v30; // esi
-//  CGxDevice *v31; // edi
-//  _DWORD *v32; // ebx
-//  unsigned int v33; // esi
-//  CGxDevice *v34; // edi
-//  _DWORD *v35; // ebx
-//  unsigned int v36; // esi
-//  int v37; // eax
-//  int v38; // ebx
-//  CGxDevice *v39; // edx
-//  int v40; // eax
-//  int v42; // ebx
-//  int v43; // eax
-//  int v44; // ebx
-//  int v45; // eax
-//  int v46; // ebx
-//  int v47; // eax
-//  int v48; // ebx
-//  int v49; // eax
-//  int v50; // ebx
-//  int v51; // eax
-//  int v52; // ebx
-//  int v53; // eax
-//  int v54; // ebx
-//  int v55; // eax
-//  int v56; // esi
-//  int v57; // eax
-//  int v58; // esi
-//  int v59; // eax
-//  int v60; // esi
-//  int v61; // eax
-//  int v62; // ebx
-//  int v63; // eax
-//  unsigned int v64; // ebx
-//  int v65; // edx
-//  _DWORD *v66; // ecx
-//  int v67; // [esp+4h] [ebp-E4h]
-//  int v68; // [esp+8h] [ebp-E0h]
-//  int v69; // [esp+Ch] [ebp-DCh]
-//  char *v70; // [esp+2Ch] [ebp-BCh]
-//  char *v71; // [esp+30h] [ebp-B8h]
-//  unsigned __int8 v72; // [esp+36h] [ebp-B2h]
-//  unsigned __int8 v73; // [esp+37h] [ebp-B1h]
-//  int v74; // [esp+38h] [ebp-B0h]
-//  int v75; // [esp+3Ch] [ebp-ACh]
-//  unsigned int v76; // [esp+40h] [ebp-A8h]
-//  int v77; // [esp+44h] [ebp-A4h]
-//  char *v78; // [esp+48h] [ebp-A0h]
-//  int v79; // [esp+50h] [ebp-98h]
-//  unsigned int v80; // [esp+54h] [ebp-94h]
-//  unsigned int v81; // [esp+58h] [ebp-90h]
-//  unsigned int v82; // [esp+5Ch] [ebp-8Ch]
-//  mathfu::mat4 v83; // [esp+60h] [ebp-88h]
-//  int v84; // [esp+A0h] [ebp-48h]
-//  int v85; // [esp+A4h] [ebp-44h]
-//  int v86; // [esp+A8h] [ebp-40h]
-//  int v87; // [esp+ACh] [ebp-3Ch]
-//  int v88; // [esp+B0h] [ebp-38h]
-//  int v89; // [esp+B4h] [ebp-34h]
-//  int v90; // [esp+B8h] [ebp-30h]
-//  int v91; // [esp+BCh] [ebp-2Ch]
-//  int v92; // [esp+C0h] [ebp-28h]
-//  int v93; // [esp+C4h] [ebp-24h]
-//  int v94; // [esp+C8h] [ebp-20h]
-//  __int16 v95; // [esp+CCh] [ebp-1Ch]
-//  __int16 v96; // [esp+CEh] [ebp-1Ah]
-//
-//  if ( !(this->m_ribbonEmitterflags & m_initialized) )
-//    SErrDisplayError(
-//      -2062548992,
-//      (int)"/Users/patchman/buildserver/wow-b/work/WoW-code/branches/wow-patch-4_1_0-branch/WoW/Source/Mac/../../../Engin"
-//           "e/Source/Services/RibbonEmitter.cpp",
-//      576,
-//      "m_initialized",
-//      0,
-//      1,
-//      0);
-//  if ( !CRibbonEmitter::s_enableRibbonRendering || this->m_readPos == this->m_writePos )
-//    return 0;
-//  *(_QWORD *)&v83.m_elements[0][0] = 0x3F800000LL;
-//  *(_QWORD *)&v83.m_elements[0][2] = 0LL;
-//  *(_QWORD *)&v83.m_elements[1][0] = 0x3F80000000000000LL;
-//  *(_QWORD *)&v83.m_elements[1][2] = 0LL;
-//  *(_QWORD *)&v83.m_elements[2][0] = 0LL;
-//  *(_QWORD *)&v83.m_elements[2][2] = 0x3F800000LL;
-//  *(_QWORD *)&v83.m_elements[3][0] = 0LL;
-//  *(_QWORD *)&v83.m_elements[3][2] = 0x3F80000000000000LL;
-//  if ( a2 )
-//  {
-//    *(_QWORD *)&v83.m_elements[0][0] = *(_QWORD *)&a2->m_elements[0][0];
-//    *(_QWORD *)&v83.m_elements[0][2] = *(_QWORD *)&a2->m_elements[0][2];
-//    *(_QWORD *)&v83.m_elements[1][0] = *(_QWORD *)&a2->m_elements[1][0];
-//    *(_QWORD *)&v83.m_elements[1][2] = *(_QWORD *)&a2->m_elements[1][2];
-//    *(_QWORD *)&v83.m_elements[2][0] = *(_QWORD *)&a2->m_elements[2][0];
-//    *(_QWORD *)&v83.m_elements[2][2] = *(_QWORD *)&a2->m_elements[2][2];
-//    *(_QWORD *)&v83.m_elements[3][0] = *(_QWORD *)&a2->m_elements[3][0];
-//    *(_QWORD *)&v83.m_elements[3][2] = *(_QWORD *)&a2->m_elements[3][2];
-//  }
-//  v83.m_elements[3][0] = v83.m_elements[3][0] - this->m_pos.x;
-//  v83.m_elements[3][1] = v83.m_elements[3][1] - this->m_pos.y;
-//  v83.m_elements[3][2] = v83.m_elements[3][2] - this->m_pos.z;
-//  v2 = g_theGxDevicePtr;
-//  v3 = 3;
-//  if ( (unsigned int)(*(_DWORD *)&g_theGxDevicePtr->gap106C[2236] + 1) <= 3 )
-//    v3 = *(_DWORD *)&g_theGxDevicePtr->gap106C[2236] + 1;
-//  *(_DWORD *)&g_theGxDevicePtr->gap106C[2236] = v3;
-//  v4 = v3 << 6;
-//  v5 = (CGxDeviceVTable **)((char *)&v2->m_vTable + v4);
-//  v6 = (_DWORD *)((char *)v2 + v4 - 64);
-//  v5[1612] = v6[1612];
-//  v5[1613] = v6[1613];
-//  v5[1614] = v6[1614];
-//  v5[1615] = v6[1615];
-//  v5[1616] = v6[1616];
-//  v5[1617] = v6[1617];
-//  v5[1618] = v6[1618];
-//  v5[1619] = v6[1619];
-//  v5[1620] = v6[1620];
-//  v5[1621] = v6[1621];
-//  v5[1622] = v6[1622];
-//  v5[1623] = v6[1623];
-//  v5[1624] = v6[1624];
-//  v5[1625] = v6[1625];
-//  v5[1626] = v6[1626];
-//  v5[1627] = v6[1627];
-//  v7 = *(_DWORD *)&v2->gap106C[2236];
-//  *(_DWORD *)&v2->gap106C[4 * v7 + 2500] = *(_DWORD *)&v2->gap106C[4 * v7 + 2496];
-//  v2->gap106C[2240] = 1;
-//  *(_DWORD *)&v2->gap106C[4 * v7 + 2500] &= 0xFFFFFFFE;
-//  v8 = (_QWORD *)((char *)v2 + 64 * v7);
-//  v8[806] = *(_QWORD *)&v83.m_elements[0][0];
-//  v8[807] = *(_QWORD *)&v83.m_elements[0][2];
-//  v8[808] = *(_QWORD *)&v83.m_elements[1][0];
-//  v8[809] = *(_QWORD *)&v83.m_elements[1][2];
-//  v8[810] = *(_QWORD *)&v83.m_elements[2][0];
-//  v8[811] = *(_QWORD *)&v83.m_elements[2][2];
-//  v8[812] = *(_QWORD *)&v83.m_elements[3][0];
-//  v8[813] = *(_QWORD *)&v83.m_elements[3][2];
-//  v9 = CGxDevice::BufStream((int)g_theGxDevicePtr, 0, 24, this->m_gxVertices.m_currentLength);
-//  v10 = CGxDevice::BufStream((int)g_theGxDevicePtr, 1, 2, this->m_gxIndices.m_currentLength);
-//  GxBufData(v9, (int)this->m_gxVertices.m_elementPointer, 24 * this->m_gxVertices.m_currentLength, 0);
-//  ((void (__cdecl *)(CGxDevice *, int, signed int))g_theGxDevicePtr->m_vTable->PrimVertexPtr)(g_theGxDevicePtr, v9, 9);
-//  v11 = this->m_readPos;
-//  v12 = this->m_writePos;
-//  if ( v11 >= v12 )
-//    v12 += this->m_edges.m_currentLength;
-//  v13 = 2 * (v12 - v11) + 2;
-//  GxBufData(v10, this->m_gxIndices.m_elementPointer + 4 * v11, 2 * v13, 0);
-//  CGxDevice::PrimIndexPtr((int)g_theGxDevicePtr, v10);
-//  v14 = this->m_gxVertices.m_currentLength - 1;
-//  v92 = 4;
-//  v93 = 0;
-//  v94 = v13;
-//  v95 = 0;
-//  v96 = v14;
-//  v75 = this->m_materials.m_currentLength;
-//  if ( v75 )
-//  {
-//    v76 = 0;
-//    v71 = (char *)&this->m_materials;
-//    v70 = (char *)&this->m_textures;
-//    while ( 1 )
-//    {
-//      v15 = g_theGxDevicePtr;
-//      v16 = g_theGxDevicePtr->field_32 + 1;
-//      if ( v16 > g_theGxDevicePtr->field_28 )
-//        break;
-//LABEL_24:
-//      v22 = v15->field_32;
-//      v23 = (int *)(v15->field_36 + 4 * v22);
-//      v15->field_32 = v22 + 1;
-//      *v23 = v15->field_12;
-//      v24 = this->m_materials.m_currentLength;
-//      if ( v24 <= v76 )
-//      {
-//        v52 = (*(int (__cdecl **)(char *, int, int, int))(this->m_materials.vTable + 4))(v71, v67, v68, v69);
-//        v53 = (*(int (__cdecl **)(char *))this->m_materials.vTable)(v71);
-//        SErrDisplayErrorFmt(-2062548864, v53, v52, 1, 1, "index (0x%08X), array size (0x%08X)", v76, v24);
-//      }
-//      v79 = 8 * v76;
-//      if ( *(_BYTE *)(this->m_materials.m_elementPointer + 8 * v76) & 1 )
-//      {
-//        v84 = 0;
-//        v85 = 0;
-//        v86 = 0;
-//        v87 = 0;
-//        CShaderEffect::SetEmissive((int)&v84);
-//      }
-//      else
-//      {
-//        v88 = 1065353216;
-//        v89 = 1065353216;
-//        v90 = 1065353216;
-//        v91 = 0;
-//        CShaderEffect::SetEmissive((int)&v88);
-//      }
-//      if ( CRibbonEmitter::s_enableFog )
-//      {
-//        v25 = this->m_materials.m_currentLength;
-//        if ( v25 <= v76 )
-//        {
-//          v54 = (*(int (__cdecl **)(char *, int, int, int))(this->m_materials.vTable + 4))(v71, v67, v68, v69);
-//          v55 = (*(int (__cdecl **)(char *))this->m_materials.vTable)(v71);
-//          SErrDisplayErrorFmt(-2062548864, v55, v54, 1, 1, "index (0x%08X), array size (0x%08X)", v76, v25);
-//        }
-//        CShaderEffect::SetFogEnabled((CShaderEffect *)((*(_DWORD *)(this->m_materials.m_elementPointer + v79) >> 1) & 1));
-//      }
-//      v26 = this->m_materials.m_currentLength;
-//      if ( v26 <= v76 )
-//      {
-//        v44 = (*(int (__cdecl **)(char *, int, int, int))(this->m_materials.vTable + 4))(v71, v67, v68, v69);
-//        v45 = (*(int (__cdecl **)(char *))this->m_materials.vTable)(v71);
-//        SErrDisplayErrorFmt(-2062548864, v45, v44, 1, 1, "index (0x%08X), array size (0x%08X)", v76, v26);
-//      }
-//      CShaderEffect::SetLightingEnabled((CShaderEffect *)(*(_BYTE *)(this->m_materials.m_elementPointer + v79) & 1));
-//      v27 = this->m_materials.m_currentLength;
-//      if ( v27 <= v76 )
-//      {
-//        v42 = (*(int (__cdecl **)(char *, int, int, int))(this->m_materials.vTable + 4))(v71, v67, v68, v69);
-//        v43 = (*(int (__cdecl **)(char *))this->m_materials.vTable)(v71);
-//        SErrDisplayErrorFmt(-2062548864, v43, v42, 1, 1, "index (0x%08X), array size (0x%08X)", v76, v27);
-//      }
-//      v72 = (*(_DWORD *)(this->m_materials.m_elementPointer + v79) >> 2) & 1;
-//      v28 = g_theGxDevicePtr;
-//      if ( g_theGxDevicePtr->field_4024 )
-//      {
-//        v80 = g_theGxDevicePtr->field_10040;
-//        if ( v80 <= 0xF )
-//        {
-//          v58 = (*(int (__cdecl **)(int *, int, int, int))(g_theGxDevicePtr->field_10032 + 4))(
-//                  &g_theGxDevicePtr->field_10032,
-//                  v67,
-//                  v68,
-//                  v69);
-//          v59 = (*(int (__cdecl **)(int *))v28->field_10032)(&v28->field_10032);
-//          SErrDisplayErrorFmt(-2062548864, v59, v58, 1, 1, "index (0x%08X), array size (0x%08X)", 15, v80);
-//        }
-//        v29 = (_DWORD *)(v28->field_10044 + 360);
-//        if ( v72 != *v29 )
-//        {
-//          CGxDevice::IRsDirty(v28, GxRs_DepthWriteMask);
-//          *v29 = v72;
-//        }
-//      }
-//      v30 = this->m_materials.m_currentLength;
-//      if ( v30 <= v76 )
-//      {
-//        v48 = (*(int (__cdecl **)(char *, int, int, int))(this->m_materials.vTable + 4))(v71, v67, v68, v69);
-//        v49 = (*(int (__cdecl **)(char *))this->m_materials.vTable)(v71);
-//        SErrDisplayErrorFmt(-2062548864, v49, v48, 1, 1, "index (0x%08X), array size (0x%08X)", v76, v30);
-//      }
-//      v73 = (*(_DWORD *)(this->m_materials.m_elementPointer + v79) >> 3) & 1;
-//      v31 = g_theGxDevicePtr;
-//      if ( g_theGxDevicePtr->field_4024 )
-//      {
-//        v81 = g_theGxDevicePtr->field_10040;
-//        if ( v81 <= 0x11 )
-//        {
-//          v56 = (*(int (__cdecl **)(int *, int, int, int))(g_theGxDevicePtr->field_10032 + 4))(
-//                  &g_theGxDevicePtr->field_10032,
-//                  v67,
-//                  v68,
-//                  v69);
-//          v57 = (*(int (__cdecl **)(int *))v31->field_10032)(&v31->field_10032);
-//          SErrDisplayErrorFmt(-2062548864, v57, v56, 1, 1, "index (0x%08X), array size (0x%08X)", 17, v81);
-//        }
-//        v32 = (_DWORD *)(v31->field_10044 + 408);
-//        if ( v73 != *v32 )
-//        {
-//          CGxDevice::IRsDirty(v31, GxRs_BackFaceCullMode);
-//          *v32 = v73;
-//        }
-//      }
-//      v33 = this->m_materials.m_currentLength;
-//      if ( v33 <= v76 )
-//      {
-//        v46 = (*(int (__cdecl **)(char *, int, int, int))(this->m_materials.vTable + 4))(v71, v67, v68, v69);
-//        v47 = (*(int (__cdecl **)(char *))this->m_materials.vTable)(v71);
-//        SErrDisplayErrorFmt(-2062548864, v47, v46, 1, 1, "index (0x%08X), array size (0x%08X)", v76, v33);
-//      }
-//      v74 = *(_DWORD *)(this->m_materials.m_elementPointer + v79 + 4);
-//      v34 = g_theGxDevicePtr;
-//      if ( g_theGxDevicePtr->field_4024 )
-//      {
-//        v82 = g_theGxDevicePtr->field_10040;
-//        if ( v82 <= 6 )
-//        {
-//          v60 = (*(int (__cdecl **)(int *, int, int, int))(g_theGxDevicePtr->field_10032 + 4))(
-//                  &g_theGxDevicePtr->field_10032,
-//                  v67,
-//                  v68,
-//                  v69);
-//          v61 = (*(int (__cdecl **)(int *))v34->field_10032)(&v34->field_10032);
-//          SErrDisplayErrorFmt(-2062548864, v61, v60, 1, 1, "index (0x%08X), array size (0x%08X)", 6, v82);
-//        }
-//        v35 = (_DWORD *)(v34->field_10044 + 144);
-//        if ( v74 != *v35 )
-//        {
-//          CGxDevice::IRsDirty(v34, GxRs_BlendMode);
-//          *v35 = v74;
-//        }
-//      }
-//      CShaderEffect::SetAlphaRefDefault();
-//      v36 = this->m_textures.m_currentLength;
-//      if ( v36 <= v76 )
-//      {
-//        v50 = (*(int (__cdecl **)(char *, int, int, int))(this->m_textures.vTable + 4))(v70, v67, v68, v69);
-//        v51 = (*(int (__cdecl **)(char *))this->m_textures.vTable)(v70);
-//        SErrDisplayErrorFmt(-2062548864, v51, v50, 1, 1, "index (0x%08X), array size (0x%08X)", v76, v36);
-//      }
-//      v37 = TextureGetGxTex(this->m_textures.m_elementPointer[v76]);
-//      v38 = v37;
-//      if ( v37 )
-//      {
-//        CGxDevice::RsSet(g_theGxDevicePtr, GxRs_BackFaceCullMode|GxRs_MatSpecularExp, v37);
-//        GxTexSetWrap(v38, 0, 0);
-//        CShaderEffect::SetDefaultShaders(0, 0);
-//        CShaderEffect::UpdateWorldViewMatrix();
-//        if ( !v94 )
-//          SErrDisplayError(-2062548992, (int)"../../../Engine/Source/Gx/Gx.h", 2073, "batch.m_count > 0", 0, 1, 0);
-//        ((void (__cdecl *)(CGxDevice *, int *))g_theGxDevicePtr->m_vTable->Draw)(g_theGxDevicePtr, &v92);
-//      }
-//      CGxDevice::RsPop(g_theGxDevicePtr);
-//      if ( ++v76 == v75 )
-//        goto LABEL_62;
-//    }
-//    i = g_theGxDevicePtr->field_40;
-//    if ( !i )
-//    {
-//      if ( v16 > 0x3F )
-//      {
-//        g_theGxDevicePtr->field_40 = 64;
-//        v18 = v16 & 0x3F;
-//        i = 64;
-//LABEL_21:
-//        if ( v18 )
-//          v16 = i + v16 - v18;
-//        goto LABEL_23;
-//      }
-//      for ( i = g_theGxDevicePtr->field_32 + 1; i & (i - 1); i &= i - 1 )
-//        ;
-//      if ( !i )
-//      {
-//LABEL_23:
-//        v77 = (int)&v15->field_24;
-//        v78 = (char *)v15->field_36;
-//        v15->field_28 = v16;
-//        v19 = (*(int (__cdecl **)(int *, int, int, int))(v15->field_24 + 4))(&v15->field_24, v67, v68, v69);
-//        v20 = (*(int (__cdecl **)(int *))v15->field_24)(&v15->field_24);
-//        v21 = SMemReAlloc(v78, 4 * v16, v20, v19, 16);
-//        v15->field_36 = (int)v21;
-//        if ( !v21 )
-//        {
-//          v62 = (*(int (__cdecl **)(int))(v15->field_24 + 4))(v77);
-//          v63 = (*(int (__cdecl **)(int))v15->field_24)(v77);
-//          v15->field_36 = (int)SMemAlloc(4 * v16, v63, v62, 0);
-//          if ( v78 )
-//          {
-//            v64 = v15->field_32;
-//            if ( v16 <= v15->field_32 )
-//              v64 = v16;
-//            if ( v64 )
-//            {
-//              v65 = 0;
-//              do
-//              {
-//                v66 = (_DWORD *)(v15->field_36 + 4 * v65);
-//                if ( v66 )
-//                  *v66 = *(_DWORD *)&v78[4 * v65];
-//                ++v65;
-//              }
-//              while ( v65 != v64 );
-//            }
-//            v69 = 0;
-//            v68 = (*(int (__cdecl **)(int))(v15->field_24 + 4))(v77);
-//            v67 = (*(int (__cdecl **)(int))v15->field_24)(v77);
-//            SMemFree((int)v78);
-//          }
-//        }
-//        goto LABEL_24;
-//      }
-//    }
-//    v18 = v16 % i;
-//    goto LABEL_21;
-//  }
-//LABEL_62:
-//  v39 = g_theGxDevicePtr;
-//  v40 = *(_DWORD *)&g_theGxDevicePtr->gap106C[2236];
-//  if ( v40 )
-//    *(_DWORD *)&g_theGxDevicePtr->gap106C[2236] = v40 - 1;
-//  v39->gap106C[2240] = 1;
-//  return 1;
-//}
-
-
 void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
 
   auto &currFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
   if (currFrame.isDead) return;
 
-  HGParticleMesh mesh = currFrame.m_mesh;
-  mesh->setRenderOrder(renderOrder);
-  meshes.push_back(mesh);
+  for (auto mesh : currFrame.m_meshes) {
+    mesh->setRenderOrder(renderOrder);
+    meshes.push_back(mesh);
+  }
 }
 
 void CRibbonEmitter::updateBuffers() {
@@ -1395,9 +861,11 @@ void CRibbonEmitter::updateBuffers() {
   int indexCount = m_writePos > m_readPos ?
       2 *(m_writePos - m_readPos) + 2:
       2 *((int)m_edges.size() + m_writePos - m_readPos) + 2;
-  currentFrame.m_mesh->setStart(2 * m_readPos * sizeof(uint16_t));
-  currentFrame.m_mesh->setEnd(indexCount);
-  currentFrame.m_mesh->setSortDistance(0);
-  currentFrame.m_mesh->setPriorityPlane(this->m_priority);
+    for (auto mesh : currentFrame.m_meshes) {
+        mesh->setStart(2 * m_readPos * sizeof(uint16_t));
+        mesh->setEnd(indexCount);
+        mesh->setSortDistance(0);
+        mesh->setPriorityPlane(this->m_priority);
+    }
 
 }

@@ -1385,8 +1385,19 @@ void M2Object::initRibbonEmitters() {
     ribbonEmitters = std::vector<CRibbonEmitter *>();
 //    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->ribbon_emitters.size; i++) {
-        CRibbonEmitter *emitter = new CRibbonEmitter(m_api);
         M2Ribbon *m2Ribbon = m_m2Geom->getM2Data()->ribbon_emitters.getElement(i);
+
+        std::vector<M2Material> materials(m2Ribbon->materialIndices.size);
+        std::vector<int> textureIndicies(m2Ribbon->textureIndices.size);
+        for (size_t j = 0; j < materials.size(); j++) {
+            materials[j] = *m_m2Geom->getM2Data()->materials[*m2Ribbon->materialIndices[j]];
+        }
+
+        for (size_t j = 0; j < textureIndicies.size(); j++) {
+            textureIndicies[j] = *m2Ribbon->textureIndices[j];
+        }
+
+        CRibbonEmitter *emitter = new CRibbonEmitter(m_api, this, materials, textureIndicies);
         ribbonEmitters.push_back(emitter);
 
         CImVector color;
@@ -1399,6 +1410,9 @@ void M2Object::initRibbonEmitters() {
         rect.minx = 0.0;
         rect.maxy = 1.0;
         rect.maxx = 1.0;
+
+
+
         emitter->Initialize(m2Ribbon->edgesPerSecond, m2Ribbon->edgeLifetime, color, &rect, m2Ribbon->textureCols, m2Ribbon->textureRows);
         emitter->SetGravity(m2Ribbon->gravity);
         emitter->SetPriority(m2Ribbon->priorityPlane);
