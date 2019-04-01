@@ -28,7 +28,7 @@ class CRibbonEmitter {
     mathfu::vec3 m_pos;
     std::vector<CRibbonVertex> m_gxVertices;
     std::vector<uint16_t> m_gxIndices;
-    int m_ooLifeSpan;
+    float m_ooLifeSpan;
     float m_tmpDU;
     float m_tmpDV;
     float m_ooTmpDU;
@@ -79,20 +79,21 @@ public:
     void SetAlpha(float a2);
     void InitInterpDeltas();
     int GetNumBatches();
-    int32_t SetPos(const mathfu::mat4 &modelViewMat, const mathfu::vec3 &a3, const mathfu::mat4 *frameOfReference);
+    void SetPos(const mathfu::mat4 &modelViewMat, const mathfu::vec3 &a3, const mathfu::mat4 *frameOfReference);
     unsigned int GetNumPrimitives();
     void ChangeFrameOfReference(const mathfu::mat4 *frameOfReference);
     void SetColor(float a3, float a4, float a5);
     void SetTexSlot(unsigned int texSlot);
-    unsigned int InterpEdge(float age, float t, unsigned int advance); // idb
+    void InterpEdge(float age, float t, unsigned int advance); // idb
     void Update(float deltaTime, int suppressNewEdges);
 
-    
+    void Advance(int &pos, unsigned int amount);
     void DecRef();
-    signed int Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImVector diffuseColor, CRect *a8, unsigned int rows, unsigned int cols); // idb
+    void Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImVector diffuseColor, CRect *a8, unsigned int rows, unsigned int cols); // idb
 //    signed int Render(const mathfu::mat4 *a2);
     //CTexture **SetTexture(unsigned int a2, CTexture *a3);
     //int ReplaceTexture(unsigned int a2, CTexture *a3);
+
 
 };
 

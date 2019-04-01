@@ -150,10 +150,10 @@ struct M2Ribbon
     uint16_t textureCols;
     M2Track<uint16_t> texSlotTrack;
     M2Track<unsigned char> visibilityTrack;
-//#if ≥ Wrath                            // TODO: verify version
-//    int16_t priorityPlane;
-//    uint16_t padding;
-//#endif
+
+    int16_t priorityPlane;
+    uint16_t padding;
+
 };
 
 

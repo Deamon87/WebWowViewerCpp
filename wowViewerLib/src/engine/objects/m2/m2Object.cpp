@@ -884,6 +884,7 @@ bool M2Object::doPostLoad(){
     this->initTransparencies();
     this->initLights();
     this->initParticleEmitters();
+    this->initRibbonEmitters();
     m_hasBillboards = checkIfHasBillboarded();
 
 
@@ -908,8 +909,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             0,0,1,0,
             0,0,0,1
         );
-//        MathHelper::RotationZ(M_PI);
-//        mathfu::mat4::FromScaleVector(mathfu::vec3(-1.0, 1, 1));
 
 //    /* 1. Calc local camera */
     mathfu::vec3 cameraInlocalPos = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1)).xyz();
@@ -928,7 +927,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         this->transparencies,
         //this->cameras,
         this->lights,
-        this->particleEmitters
+        this->particleEmitters,
+        this->ribbonEmitters
     );
 
     int minParticle = m_api->getConfig()->getMinParticle();
@@ -988,8 +988,24 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         particleEmitters[i]->prepearBuffers(viewMat);
         particleEmitters[i]->updateBuffers();
     }
-
     this->sortMaterials(viewMat);
+
+    //Ribbon Emitters
+    for (int i = 0; i < m_m2Geom->m_m2Data->ribbon_emitters.size; i++) {
+        auto *ribbonRecord = m_m2Geom->m_m2Data->particle_emitters.getElement(i);
+
+        mathfu::mat4 transformMat =
+            //Inverted model view is not needed here, because blizzard include modelView mat into boneMatrices for some reason
+            (m_placementMatrix *
+             bonesMatrices[ribbonRecord->old.bone] *
+             mathfu::mat4::FromTranslationVector(
+                 mathfu::vec3(ribbonRecord->old.Position.x, ribbonRecord->old.Position.y, ribbonRecord->old.Position.z))
+            );
+
+        mathfu::vec3 nullPos(0,0,0);
+        ribbonEmitters[i]->SetPos(transformMat, nullPos, nullptr);
+        ribbonEmitters[i]->Update(deltaTime * 0.001f / 10.f, 0);
+    }
 }
 
 bool M2Object::getIsInstancable() {
@@ -1361,6 +1377,30 @@ void M2Object::initParticleEmitters() {
         if (m_m2Geom.get()->exp2Records != nullptr) {
             emitter->getGenerator()->getAniProp()->zSource = m_m2Geom.get()->exp2Records->getElement(i)->zSource;
         }
+    }
+};
+
+void M2Object::initRibbonEmitters() {
+    ribbonEmitters = std::vector<CRibbonEmitter *>();
+//    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
+    for (int i = 0; i < m_m2Geom->getM2Data()->ribbon_emitters.size; i++) {
+        CRibbonEmitter *emitter = new CRibbonEmitter();
+        M2Ribbon *m2Ribbon = m_m2Geom->getM2Data()->ribbon_emitters.getElement(i);
+        ribbonEmitters.push_back(emitter);
+
+        CImVector color;
+        color.r = 255;
+        color.g = 255;
+        color.b = 255;
+        color.a = 255;
+        CRect rect;
+        rect.miny = 0.0;
+        rect.minx = 0.0;
+        rect.maxy = 1.0;
+        rect.maxx = 1.0;
+        emitter->Initialize(m2Ribbon->edgesPerSecond, m2Ribbon->edgeLifetime, color, &rect, m2Ribbon->textureCols, m2Ribbon->textureRows);
+        emitter->SetGravity(m2Ribbon->gravity);
+        emitter->SetDataEnabled(0);
     }
 };
 void M2Object::setReplaceTextures(std::vector<HBlpTexture> &replaceTextures) {

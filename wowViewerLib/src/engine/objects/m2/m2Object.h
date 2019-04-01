@@ -19,6 +19,7 @@
 #include "../../persistance/header/skinFileHeader.h"
 
 #include "mathfu/internal/vector_4.h"
+#include "../../managers/CRibbonEmitter.h"
 
 class M2Object {
 public:
@@ -99,6 +100,7 @@ private:
     std::vector<float> transparencies;
     std::vector<M2LightResult> lights;
     std::vector<ParticleEmitter*> particleEmitters;
+    std::vector<CRibbonEmitter*> ribbonEmitters;
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
@@ -118,6 +120,7 @@ private:
     void initTransparencies();
     void initLights();
     void initParticleEmitters();
+    void initRibbonEmitters();
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &lookAtMat4);
     bool checkIfHasBillboarded();

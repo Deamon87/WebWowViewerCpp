@@ -197,6 +197,22 @@ void initM2Particle(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
         particleEmitter->old.enabledIn.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
     }
 }
+void initM2Ribbon(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
+    int32_t ribbonEmitterCount = m2Header->ribbon_emitters.size;
+    for (int i = 0; i < ribbonEmitterCount; i++) {
+        M2Ribbon *ribbonEmitter = m2Header->ribbon_emitters.getElement(i);
+
+        ribbonEmitter->textureIndices.initM2Array(m2Header);
+        ribbonEmitter->materialIndices.initM2Array(m2Header);
+
+        ribbonEmitter->colorTrack.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        ribbonEmitter->alphaTrack.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        ribbonEmitter->heightAboveTrack.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        ribbonEmitter->heightBelowTrack.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        ribbonEmitter->texSlotTrack.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+        ribbonEmitter->visibilityTrack.initTrack(m2Header, m2Header->sequences, cm2SequenceLoad);
+    }
+}
 void initM2Camera(M2Data *m2Header, CM2SequenceLoad *cm2SequenceLoad) {
     int32_t cameraCount = m2Header->cameras.size;
     for (int i = 0; i < cameraCount; i++) {
@@ -304,6 +320,7 @@ void M2Geom::initTracks(CM2SequenceLoad * cm2SequenceLoad) {
     initM2Event(m2Header, cm2SequenceLoad);
     initM2Light(m2Header, cm2SequenceLoad);
     initM2Particle(m2Header, cm2SequenceLoad);
+    initM2Ribbon(m2Header, cm2SequenceLoad);
     initM2Camera(m2Header, cm2SequenceLoad);
 }
 

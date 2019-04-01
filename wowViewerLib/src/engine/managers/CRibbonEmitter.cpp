@@ -1,3 +1,4 @@
+#include <iostream>
 #include "CRibbonEmitter.h"
 
 //----- (00A19710) --------------------------------------------------------
@@ -67,7 +68,7 @@ CRibbonEmitter::CRibbonEmitter()
 //----- (00A199E0) --------------------------------------------------------
 void __cdecl CRibbonEmitter::SetDataEnabled(char a2)
 {
-  this->m_ribbonEmitterflags.m_dataEnabled = 0;
+  this->m_ribbonEmitterflags.m_dataEnabled = a2;
   if ( !(this->m_ribbonEmitterflags.m_dataEnabled) )
     this->m_ribbonEmitterflags.m_posSet = 0;
 }
@@ -139,15 +140,16 @@ void __cdecl CRibbonEmitter::InitInterpDeltas()
 //----- (00A19ED0) --------------------------------------------------------
 int CRibbonEmitter::GetNumBatches()
 {
-  return this->m_materials.size();
+//  return this->m_materials.size();
+  return 0;
 }
 
 //----- (00A19EE0) --------------------------------------------------------
-int32_t CRibbonEmitter::SetPos(const mathfu::mat4 &modelViewMat, const mathfu::vec3 &a3, const mathfu::mat4 *frameOfReference)
+void CRibbonEmitter::SetPos(const mathfu::mat4 &modelViewMat, const mathfu::vec3 &a3, const mathfu::mat4 *frameOfReference)
 {
   mathfu::mat4 rhs; // [esp+50h] [ebp-58h]
 
-  if (this->m_ribbonEmitterflags.m_userEnabled && this->m_ribbonEmitterflags.m_dataEnabled) )
+  if (this->m_ribbonEmitterflags.m_userEnabled && this->m_ribbonEmitterflags.m_dataEnabled)
   {
     rhs = modelViewMat;
     mathfu::vec3 position = rhs.GetColumn(3).xyz() + a3;
@@ -310,8 +312,8 @@ void CRibbonEmitter::ChangeFrameOfReference(const mathfu::mat4 *frameOfReference
 //----- (00A1A4E0) --------------------------------------------------------
 void CRibbonEmitter::SetColor(float a3, float a4, float a5)
 {
-    this->m_diffuseClr.b = a3;
-    this->m_diffuseClr.b = a4;
+    this->m_diffuseClr.r = a3;
+    this->m_diffuseClr.g = a4;
     this->m_diffuseClr.b = a5;
 
 }
@@ -352,7 +354,7 @@ void CRibbonEmitter::SetTexSlot(unsigned int texSlot)
 }
 
 //----- (00A1A960) --------------------------------------------------------
-unsigned int __cdecl CRibbonEmitter::InterpEdge(float age, float t, unsigned int advance)
+void  CRibbonEmitter::InterpEdge(float age, float t, unsigned int advance)
 {
   unsigned int l_amount; // eax
 
@@ -385,6 +387,21 @@ unsigned int __cdecl CRibbonEmitter::InterpEdge(float age, float t, unsigned int
 
 }
 
+void CRibbonEmitter::Advance(int &pos, unsigned int amount) {
+    CRibbonEmitter *v3; // esi
+    unsigned int v4; // eax
+    unsigned int v5; // edx
+
+    v3 = this;
+    assert(amount < this->m_edges.size());
+
+    v4 = amount + pos;
+    pos = v4;
+    v5 = v3->m_edges.size();
+    if (v4 >= v5)
+        pos = v4 - v5;
+}
+
 //----- (00A1AD60) --------------------------------------------------------
 void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
 {
@@ -392,7 +409,6 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
   unsigned int v5; // esi
   unsigned int v6; // eax
   int j; // eax
-  CRibbonVertex *v8; // edx
   unsigned int v9; // esi
   CRibbonVertex *v10; // esi
   float v11; // xmm0_4
@@ -424,10 +440,7 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
   __int32 result; // eax
   CImVector v38; // eax
   float v39; // ST50_4
-  __m128 v40; // xmm0
-  __m128 v41; // xmm2
-  __m128 v42; // xmm2
-  __m128 v43; // xmm3
+
   float i; // xmm0_4
   unsigned int v45; // esi
   int v46; // ebx
@@ -503,25 +516,13 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
     v5 = this->m_readPos;
   }
 
-  v66 = (char *)&this->m_edges;
-LABEL_10:
-  while ( v5 != this->m_writePos )
+  for ( i = this->m_readPos; i != this->m_writePos; i = this->m_readPos )
   {
-    v83 = this->m_edges.size();
-    assert(v5 < v83 );
+      assert(i < this->m_edges.size() );
 
-    if ( (float)(deltaTime + this->m_edges[v5]) <= this->m_edgeLifeSpan )
-      break;
-
-    assert(this->m_edges.size());
-
-    v5 = this->m_readPos + 1;
-    this->m_readPos = v5;
-    v6 = this->m_edges.size();
-    if ( v5 < v6 )
-      goto LABEL_10;                            // continue
-    v5 -= v6;
-    this->m_readPos = v5;
+     if ( deltaTime + this->m_edges[i] <= this->m_edgeLifeSpan )
+        break;
+     this->Advance(this->m_readPos, 1u);
   }
   if ( !suppressNewEdges
     && (this->m_ribbonEmitterflags.m_userEnabled & this->m_ribbonEmitterflags.m_dataEnabled &  this->m_ribbonEmitterflags.m_posSet))
@@ -538,6 +539,7 @@ LABEL_10:
         ooDenom = 1.0f / (float) (v76 - v94);
         v39 = floorf(v76 - 1.0f);
         v79 = ceil(fmaxf(v39, 0.0));
+    } else {
         bool_a = true;
     }
     if ( v79 == -1 || bool_a )
@@ -559,13 +561,14 @@ LABEL_10:
         assert( v45 < v85 );
 
         this->m_gxVertices[v45].diffuseColor = v95;
+//    std::cout << __FUNCTION__ << " "<< __LINE__ << " this->m_readPos = " << this->m_readPos << " this->m_writePos = " << this->m_writePos << std::endl;
         this->InterpEdge(
           (float)((float)(i - v94) * ooDenom) * (-deltaTime) ,
           (float)(i - v94) * ooDenom,
           1u);
         if ( --v79 == -1 )
           break;
-        v77 = v77 + 1.0;
+        v77 = v77 + 1.0f;
         v94 = this->m_startTime;
       }
     }
@@ -584,7 +587,7 @@ LABEL_10:
     v87 = this->m_gxVertices.size();
     assert( v53 < v87 );
 
-    v54 = &this->m_gxVertices.[v53];
+    v54 = &this->m_gxVertices[v53];
     v55 = this->m_texSlotBox.minx;
     v54->texCoord.y = this->m_texSlotBox.maxy;
     v54->texCoord.x = v55;
@@ -614,13 +617,12 @@ LABEL_10:
     v93 = this->m_gxVertices.size();
     assert( 2 * j < v93 );
 
-    v8 = &this->m_gxVertices[0];
     v70 = v80;
-    v82 = (CRibbonVertex *)((char *)v8 + 8 * (v25 + 4 * v80));
+    v82 = &this->m_gxVertices[2 * j];
     v9 = v25 + 1;
     assert( v9 < v93 );
 
-    v10 = &v8[v9];
+    v10 = &this->m_gxVertices[2 * j + 1];
     v11 = this->m_gravity;
     v74 = this->m_gravity;
     v90 = this->m_edges.size();
@@ -693,7 +695,7 @@ LABEL_10:
     v92 = this->m_edges.size();
     assert( v80 < v92 );
 
-    v23 = (float)((float)(v22 * this->m_edges[v70]) * *(float *)&this->m_ooLifeSpan) + this->m_texSlotBox.minx;
+    v23 = (float)((float)(v22 * this->m_edges[v70]) * this->m_ooLifeSpan) + this->m_texSlotBox.minx;
     v82->texCoord.y = this->m_texSlotBox.miny;
     v82->texCoord.x = v23;
     v10->texCoord.y = this->m_texSlotBox.maxy;
@@ -723,7 +725,7 @@ LABEL_10:
 // 10131A0: using guessed type __int128 xmmword_10131A0;
 
 //----- (00A1C1A0) --------------------------------------------------------
-signed int CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImVector diffuseColor, TSGrowableArray_CTexture *textures, TSGrowableArray *materials, TSGrowableArray_unsigned_int *replaces, CRect *a8, unsigned int rows, unsigned int cols)
+void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImVector diffuseColor, CRect *a8, unsigned int rows, unsigned int cols)
 {
   float v11; // ST2C_4
 
@@ -744,9 +746,7 @@ signed int CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec
   int v30; // edi
   int v31; // ebx
   int v32; // eax
-  _DWORD *v33; // ecx
   int v34; // esi
-  _DWORD *v35; // ebx
   int v36; // edx
   char *v37; // edi
   int v38; // esi
@@ -785,7 +785,6 @@ signed int CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec
   int v72; // eax
   unsigned int v73; // ebx
   int v74; // edx
-  _WORD *v75; // ecx
   int v76; // ebx
   int v77; // eax
   unsigned int v78; // eax
@@ -801,223 +800,43 @@ signed int CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec
   char *v88; // [esp+4Ch] [ebp-3Ch]
   CRibbonVertex *v89; // [esp+50h] [ebp-38h]
   char *v90; // [esp+54h] [ebp-34h]
-  _DWORD *v91; // [esp+5Ch] [ebp-2Ch]
   unsigned int *v92; // [esp+60h] [ebp-28h]
   unsigned int v93; // [esp+64h] [ebp-24h]
   unsigned int v94; // [esp+68h] [ebp-20h]
   float edgesPerSeca; // [esp+6Ch] [ebp-1Ch]
   float edgeLifetimea; // [esp+98h] [ebp+10h]
 
-  assert(this->m_ribbonEmitterflags.m_initialized );
+  assert(this->m_ribbonEmitterflags.m_initialized == 0);
   assert(edgesPerSec >= 1.0f );
   assert(edgeLifeSpanInSec > 0.0 );
-  assert(materials.size() == textures.size() );
-  assert(replaces.size() == textures.size() );
 
   edgesPerSeca = ceilf(edgesPerSec);
   edgeLifetimea = fmaxf(0.25, edgeLifeSpanInSec);
   v11 = ceilf(edgeLifetimea * edgesPerSeca);
 
   newEdgesCount = ceil(fmaxf((float)(v11 + 1.0) + 1.0, 0.0));
-  this->m_edges = std::vector<float>(newEdgesCount);
+  this->m_edges = std::vector<float>(newEdgesCount, 0.0f);
   this->m_readPos = 0;
   this->m_writePos = 0;
   this->m_startTime = 0.0;
   this->m_ribbonEmitterflags.m_posSet = 0;
-  v17 = 2 * newEdgesCount;
-  v94 = 2 * newEdgesCount;
-  v18 = this->m_gxVertices.size();
-  if ( 2 * newEdgesCount <= v18 )
-    goto LABEL_19;
-  if ( v17 <= this->m_gxVertices.m_maxAllocLength )
-    goto LABEL_15;
-  j = this->m_gxVertices.unk4;
-  if ( j )
-  {
-    v49 = v17 % j;
+  this->m_gxVertices = std::vector<CRibbonVertex>(2 * newEdgesCount);
+  for (int i = 0; i < this->m_gxVertices.size(); i++) {
+    v20 = &this->m_gxVertices[i];
+    v20->pos.x = 0.0;
+    v20->pos.y = 0.0;
+    v20->pos.z = 0.0;
+    *(int *)&v20->diffuseColor = 0;
+    v20->texCoord.x = 0.0;
+    v20->texCoord.y = 0.0;
   }
-  else if ( v94 > 9 )
-  {
-    this->m_gxVertices.unk4 = 10;
-    v49 = v94 % 10;
-    j = 10;
-  }
-  else
-  {
-    for ( j = 2 * newEdgesCount; j & (j - 1); j &= j - 1 )
-      ;
-    if ( !j )
-      goto LABEL_58;
-    v49 = v94 % j;
-  }
-  if ( v49 )
-  {
-    v50 = j + v94 - v49;
-    goto LABEL_59;
-  }
-LABEL_58:
-  v50 = 2 * newEdgesCount;
-LABEL_59:
-  v88 = (char *)&this->m_gxVertices;
-  v89 = this->m_gxVertices.m_elementPointer;
-  this->m_gxVertices.m_maxAllocLength = v50;
-  v51 = (*(int (__cdecl **)(TSGrowableArray_CRibbonVertex *, int, int, int))(this->m_gxVertices.vTable + 4))(
-          &this->m_gxVertices,
-          v82,
-          v83,
-          v84);
-  v52 = (*(int (__cdecl **)(TSGrowableArray_CRibbonVertex *))this->m_gxVertices.vTable)(&this->m_gxVertices);
-  v53 = SMemReAlloc((char *)v89, 24 * v50, v52, v51, 16);
-  this->m_gxVertices.m_elementPointer = (CRibbonVertex *)v53;
-  if ( !v53 )
-  {
-    v76 = (*(int (__cdecl **)(char *))(this->m_gxVertices.vTable + 4))(v88);
-    v77 = (*(int (__cdecl **)(char *))this->m_gxVertices.vTable)(v88);
-    this->m_gxVertices.m_elementPointer = (CRibbonVertex *)SMemAlloc(24 * v50, v77, v76, 0);
-    if ( v89 )
-    {
-      v78 = this->m_gxVertices.m_currentLength;
-      if ( v50 <= v78 )
-        v78 = v50;
-      if ( v78 )
-      {
-        v79 = 0;
-        v80 = 0;
-        do
-        {
-          v81 = &this->m_gxVertices.m_elementPointer[v80];
-          if ( v81 )
-          {
-            v81->pos.x = v89[v80].pos.x;
-            v81->pos.y = v89[v80].pos.y;
-            v81->pos.z = v89[v80].pos.z;
-            v81->diffuseColor = v89[v80].diffuseColor;
-            v81->texCoord.x = v89[v80].texCoord.x;
-            v81->texCoord.y = v89[v80].texCoord.y;
-          }
-          ++v79;
-          ++v80;
-        }
-        while ( v79 != v78 );
-      }
-      v84 = 0;
-      v83 = (*(int (__cdecl **)(char *))(this->m_gxVertices.vTable + 4))(v88);
-      v82 = (*(int (__cdecl **)(char *))this->m_gxVertices.vTable)(v88);
-      SMemFree((int)v89);
-    }
-  }
-  v18 = this->m_gxVertices.m_currentLength;
-  if ( v94 > v18 )
-  {
-LABEL_15:
-    v19 = v18;
-    do
-    {
-      v20 = &this->m_gxVertices.m_elementPointer[v19];
-      if ( v20 )
-      {
-        v20->pos.x = 0.0;
-        v20->pos.y = 0.0;
-        v20->pos.z = 0.0;
-        v20->diffuseColor = 0;
-        v20->texCoord.x = 0.0;
-        v20->texCoord.y = 0.0;
-      }
-      ++v18;
-      ++v19;
-    }
-    while ( v94 > v18 );
-  }
-LABEL_19:
-  this->m_gxVertices.m_currentLength = v94;
+
   v21 = 4 * newEdgesCount;
-  v93 = v21;
-  if ( v21 <= this->m_gxIndices.m_currentLength || v21 <= this->m_gxIndices.m_maxAllocLength )
-    goto LABEL_21;
-  k = this->m_gxIndices.unk4;
-  if ( k )
-  {
-    v55 = v21 % k;
-    goto LABEL_96;
+  this->m_gxIndices = std::vector<uint16_t>(4 * newEdgesCount);
+  for(int i = 0; i < this->m_gxIndices.size(); i++) {
+    this->m_gxIndices[i] = static_cast<unsigned short>(i % (2 * newEdgesCount));
   }
-  if ( v21 > 0x7F )
-  {
-    this->m_gxIndices.unk4 = 128;
-    v55 = v21 & 0x7F;
-    k = 128;
-LABEL_96:
-    if ( v55 )
-      v21 = k + v21 - v55;
-    goto LABEL_98;
-  }
-  for ( k = v21; k & (k - 1); k &= k - 1 )
-    ;
-  if ( k )
-  {
-    v55 = v21 % k;
-    goto LABEL_96;
-  }
-LABEL_98:
-  v67 = (char *)&this->m_gxIndices;
-  v90 = (char *)this->m_gxIndices.m_elementPointer;
-  this->m_gxIndices.m_maxAllocLength = v21;
-  v68 = (*(int (__cdecl **)(TSGrowableArray *, int, int, int))(this->m_gxIndices.vTable + 4))(
-          &this->m_gxIndices,
-          v82,
-          v83,
-          v84);
-  v69 = (*(int (__cdecl **)(TSGrowableArray *))this->m_gxIndices.vTable)(&this->m_gxIndices);
-  v70 = SMemReAlloc(v90, 2 * v21, v69, v68, 16);
-  this->m_gxIndices.m_elementPointer = v70;
-  if ( !v70 )
-  {
-    v71 = (*(int (__cdecl **)(char *))(this->m_gxIndices.vTable + 4))(v67);
-    v72 = (*(int (__cdecl **)(char *))this->m_gxIndices.vTable)(v67);
-    this->m_gxIndices.m_elementPointer = SMemAlloc(2 * v21, v72, v71, 0);
-    if ( v90 )
-    {
-      v73 = this->m_gxIndices.m_currentLength;
-      if ( v21 <= v73 )
-        v73 = v21;
-      if ( v73 )
-      {
-        v74 = 0;
-        do
-        {
-          v75 = (_WORD *)(this->m_gxIndices.m_elementPointer + 2 * v74);
-          if ( v75 )
-            *v75 = *(_WORD *)&v90[2 * v74];
-          ++v74;
-        }
-        while ( v74 != v73 );
-      }
-      v84 = 0;
-      v83 = (*(int (__cdecl **)(char *))(this->m_gxIndices.vTable + 4))(v67);
-      v82 = (*(int (__cdecl **)(char *))this->m_gxIndices.vTable)(v67);
-      SMemFree((int)v90);
-    }
-  }
-LABEL_21:
-  this->m_gxIndices.m_currentLength = v93;
-  if ( v93 )
-  {
-    v22 = 0;
-    v85 = (char *)&this->m_gxIndices;
-    do
-    {
-      v23 = this->m_gxIndices.m_currentLength;
-      if ( v22 >= v23 )
-      {
-        v24 = (*(int (__cdecl **)(char *, int, int, int))(this->m_gxIndices.vTable + 4))(v85, v82, v83, v84);
-        v25 = (*(int (__cdecl **)(char *))this->m_gxIndices.vTable)(v85);
-        SErrDisplayErrorFmt(-2062548864, v25, v24, 1, 1, "index (0x%08X), array size (0x%08X)", v22, v23);
-      }
-      *(_WORD *)(this->m_gxIndices.m_elementPointer + 2 * v22) = v22 % v94;
-      ++v22;
-    }
-    while ( v22 != v93 );
-  }
-  *(float *)&this->m_ooLifeSpan = 1.0f / edgeLifetimea;
+  this->m_ooLifeSpan = 1.0f / edgeLifetimea;
   v26 = (float)(signed int)cols;
   if ( (cols & 0x80000000) != 0 )
     v26 = (float)((cols & 1) | (cols >> 1)) + (float)((cols & 1) | (cols >> 1));
@@ -1025,111 +844,31 @@ LABEL_21:
   v27 = (float)(signed int)rows;
   if ( (rows & 0x80000000) != 0 )
     v27 = (float)((rows & 1) | (rows >> 1)) + (float)((rows & 1) | (rows >> 1));
-  v28 = this;
+
   this->m_tmpDV = (float)(a8->maxy - a8->miny) / v27;
-  v28->m_ooTmpDU = 1.0f / v28->m_tmpDU;
-  v28->m_ooTmpDV = 1.0f / v28->m_tmpDV;
+  this->m_ooTmpDU = 1.0f / this->m_tmpDU;
+  this->m_ooTmpDV = 1.0f / this->m_tmpDV;
   this->m_edgesPerSec = edgesPerSeca;
   this->m_edgeLifeSpan = edgeLifetimea;
-  this->m_diffuseClr = **(CImVector **)&diffuseColor;
-  v29 = (char *)&this->m_materials;
-  if ( &this->m_materials != materials )
-  {
-    v91 = (_DWORD *)materials->m_elementPointer;
-    v30 = materials->m_currentLength;
-    if ( v30 != this->m_materials.m_currentLength )
-    {
-      this->m_materials.m_maxAllocLength = v30;
-      if ( !this->m_materials.m_elementPointer && !v30 )
-      {
-        this->m_materials.m_currentLength = 0;
-        goto LABEL_40;
-      }
-      v31 = (*(int (__cdecl **)(char *, int, int, int))(this->m_materials.vTable + 4))(v29, v82, v83, v84);
-      v32 = (*(int (__cdecl **)(char *))this->m_materials.vTable)(v29);
-      this->m_materials.m_elementPointer = SMemReAlloc((char *)this->m_materials.m_elementPointer, 8 * v30, v32, v31, 0);
-    }
-    if ( v30 )
-    {
-      v33 = v91;
-      v34 = 0;
-      do
-      {
-        v35 = (_DWORD *)(this->m_materials.m_elementPointer + 8 * v34);
-        if ( v35 )
-        {
-          v36 = v33[1];
-          *v35 = *v33;
-          v35[1] = v36;
-        }
-        ++v34;
-        v33 += 2;
-      }
-      while ( v34 != v30 );
-    }
-    this->m_materials.m_currentLength = v30;
-  }
-LABEL_40:
-  this->m_materials.unk4 = materials->unk4;
-  sub_A1BE90((int)textures, (int)&this->m_textures);
-  v37 = (char *)&this->m_replaces;
-  if ( &this->m_replaces != replaces )
-  {
-    v92 = replaces->m_elementPointer;
-    v38 = replaces->m_currentLength;
-    if ( v38 != this->m_replaces.m_currentLength )
-    {
-      this->m_replaces.m_maxAllocLength = v38;
-      if ( !this->m_replaces.m_elementPointer && !v38 )
-      {
-        this->m_replaces.m_currentLength = 0;
-        goto LABEL_50;
-      }
-      v39 = (*(int (__cdecl **)(char *, int, int, int))(this->m_replaces.vTable + 4))(v37, v82, v83, v84);
-      v40 = (*(int (__cdecl **)(char *))this->m_replaces.vTable)(v37);
-      this->m_replaces.m_elementPointer = (unsigned int *)SMemReAlloc(
-                                                            (char *)this->m_replaces.m_elementPointer,
-                                                            4 * v38,
-                                                            v40,
-                                                            v39,
-                                                            0);
-    }
-    if ( v38 )
-    {
-      v41 = 0;
-      do
-      {
-        v42 = &this->m_replaces.m_elementPointer[v41];
-        if ( v42 )
-          *v42 = v92[v41];
-        ++v41;
-      }
-      while ( v41 != v38 );
-    }
-    this->m_replaces.m_currentLength = v38;
-  }
-LABEL_50:
-  v43 = this;
-  this->m_replaces.unk4 = replaces->unk4;
+  this->m_diffuseClr = diffuseColor;
+
   this->m_texBox = *a8;
   this->m_rows = rows;
   this->m_cols = cols;
 
   this->m_texSlot = 0;
-  v45 = (float)(0.0 * v43->m_tmpDU) + v43->m_texBox.minx;
+  v45 = (float)(0.0 * this->m_tmpDU) + this->m_texBox.minx;
   this->m_texSlotBox.minx = v45;
-  v46 = (float)(0.0 * v43->m_tmpDV) + v43->m_texBox.miny;
+  v46 = (float)(0.0 * this->m_tmpDV) + this->m_texBox.miny;
   this->m_texSlotBox.miny = v46;
   this->m_texSlotBox.maxx = v45 + this->m_tmpDU;
   this->m_texSlotBox.maxy = v46 + this->m_tmpDV;
-  result = 0x41200000;
   this->m_above = 10.0;
   this->m_below = 10.0;
   this->m_gravity = 0.0;
   this->m_ribbonEmitterflags.m_userEnabled = 1;
-    this->m_ribbonEmitterflags.m_dataEnabled = 1;
-    this->m_ribbonEmitterflags.m_initialized = 1;
-  return result;
+  this->m_ribbonEmitterflags.m_dataEnabled = 1;
+  this->m_ribbonEmitterflags.m_initialized = 1;
 }
 
 //----- (00A1CD90) --------------------------------------------------------

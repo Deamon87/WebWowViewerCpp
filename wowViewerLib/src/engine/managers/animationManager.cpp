@@ -673,7 +673,8 @@ void AnimationManager::update(
     std::vector<mathfu::vec4> &subMeshColors,
     std::vector<float> &transparencies,
     std::vector<M2LightResult> &lights,
-    std::vector<ParticleEmitter *> &particleEmitters
+    std::vector<ParticleEmitter *> &particleEmitters,
+    std::vector<CRibbonEmitter *> &ribbonEmitters
 
         /*cameraDetails, , particleEmitters*/) {
     if (m_m2File->sequences.size <= 0) return;
@@ -800,6 +801,7 @@ void AnimationManager::update(
 //    this->calcCameras(cameraDetails, this->currentAnimationIndex, this->currentAnimationTime);
     this->calcLights(lights, bonesMatrices);
     this->calcParticleEmitters(particleEmitters, bonesMatrices);
+    this->calcRibbonEmitters(ribbonEmitters);
 }
 
 void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors) {
@@ -1179,4 +1181,82 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
 //        }
     }
 
+}
+
+void AnimationManager::calcRibbonEmitters(std::vector<CRibbonEmitter *> &ribbonEmitters){
+    auto &ribbonRecords = m_m2File->ribbon_emitters;
+    if (ribbonRecords.size <= 0) return;
+    static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
+    static mathfu::vec4 defaultVector4(1.0, 1.0, 1.0, 1.0);
+    static float defaultFloat = 1.0;
+    static unsigned char defaultChar = 1;
+    static unsigned short defaultInt = 0;
+
+    for (int i = 0; i < ribbonRecords.size; i++) {
+        auto *ribbonRecord = ribbonRecords.getElement(i);
+        auto &ribbonEmitter = ribbonEmitters[i];
+
+        mathfu::vec4 colorRGBA =
+            animateTrackWithBlend<C3Vector, mathfu::vec4>(
+                animationInfo,
+                ribbonRecord->colorTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultVector4
+            );
+        ribbonEmitter->SetColor(colorRGBA.x, colorRGBA.y, colorRGBA.z);
+
+        colorRGBA.w =
+            animateTrackWithBlend<fixed16, float>(
+                animationInfo,
+                ribbonRecord->alphaTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+
+        ribbonEmitter->SetAlpha(colorRGBA.w);
+
+        float above =
+            animateTrackWithBlend<float, float>(
+                animationInfo,
+                ribbonRecord->heightAboveTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        ribbonEmitter->SetAbove(above);
+
+        float below =
+            animateTrackWithBlend<float, float>(
+                animationInfo,
+                ribbonRecord->heightBelowTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        ribbonEmitter->SetBelow(below);
+
+        unsigned short texSlot =
+            animateTrackWithBlend<uint16_t, unsigned short>(
+            animationInfo,
+            ribbonRecord->texSlotTrack,
+            this->m_m2File->global_loops,
+            this->globalSequenceTimes,
+            defaultInt
+        );
+
+        ribbonEmitter->SetTexSlot(texSlot);
+
+        unsigned char dataEnabled =
+            animateTrackWithBlend<unsigned char, unsigned char>(
+                animationInfo,
+                ribbonRecord->visibilityTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultChar
+            );
+        ribbonEmitter->SetDataEnabled(dataEnabled);
+
+    }
 }

@@ -10,6 +10,7 @@
 #include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "particles/particleEmitter.h"
+#include "CRibbonEmitter.h"
 #include "../algorithms/animate.h"
 
 class AnimationManager {
@@ -57,7 +58,9 @@ public:
         std::vector<mathfu::vec4> &subMeshColors,
         std::vector<float> &transparencies,
         std::vector<M2LightResult> &lights,
-        std::vector<ParticleEmitter *> &particleEmitters
+        std::vector<ParticleEmitter *> &particleEmitters,
+        std::vector<CRibbonEmitter *> &ribbonEmitters
+
         /*cameraDetails, particleEmitters*/);
 
     void calcBones(std::vector<mathfu::mat4> &boneMatrices, mathfu::mat4 &modelViewMatrix);
@@ -81,6 +84,8 @@ public:
                     std::vector<mathfu::mat4> &bonesMatrices);
     void calcParticleEmitters(std::vector<ParticleEmitter *> &particleEmitters,
                     std::vector<mathfu::mat4> &bonesMatrices);
+
+    void calcRibbonEmitters(std::vector<CRibbonEmitter *> &ribbonEmitters);
 
     void calcCamera(M2CameraResult &camera, int cameraId, mathfu::mat4 &placementMatrix);
 };

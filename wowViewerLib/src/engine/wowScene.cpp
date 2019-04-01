@@ -606,9 +606,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(0, "creature/arthas/arthas.m2", -1);
-    setSceneWithFileDataId(0, 2445592, -1);
+    setSceneWithFileDataId(0, 125407, -1);
 
-`
+
     if (m_supportThreads) {
         g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
             using namespace std::chrono_literals;
