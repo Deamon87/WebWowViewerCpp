@@ -97,6 +97,7 @@ public:
     virtual MeshType getMeshType() = 0;
     virtual void setRenderOrder(int renderOrder) = 0;
 
+    virtual void setStart(int start)  = 0;
     virtual void setEnd(int end)  = 0;
 public:
     virtual void setM2Object(void * m2Object) = 0;

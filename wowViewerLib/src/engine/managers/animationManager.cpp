@@ -32,7 +32,7 @@ AnimationManager::AnimationManager(IWoWInnerApi *api, HM2Geom m2Geom) {
     this->initGlobalSequenceTimes();
     this->calculateBoneTree();
 
-    if (!this->setAnimationId(0, false)) { // try Stand(0) animation
+    if (!this->setAnimationId(69, false)) { // try Stand(0) animation
         this->setAnimationId(147, false); // otherwise try Closed(147) animation
     }
 }

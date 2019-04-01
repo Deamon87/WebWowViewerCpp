@@ -1,8 +1,17 @@
 #include <iostream>
 #include "CRibbonEmitter.h"
+#include "../../gapi/interface/IVertexBufferBindings.h"
+#include "../shader/ShaderDefinitions.h"
+
+static GBufferBinding staticRibbonBindings[3] = {
+    {+m2RibbonShader::Attribute::aPosition, 3, GL_FLOAT, false, 24, 0 }, // 0
+    {+m2RibbonShader::Attribute::aColor, 4, GL_UNSIGNED_BYTE, true, 24, 12}, // 12
+    {+m2RibbonShader::Attribute::aTexcoord0, 2, GL_FLOAT, false, 24, 16}, // 16
+    //24
+};
 
 //----- (00A19710) --------------------------------------------------------
-CRibbonEmitter::CRibbonEmitter()
+CRibbonEmitter::CRibbonEmitter(IWoWInnerApi *api) : m_api(api)
 {
   CRibbonEmitter *result; // eax
 
@@ -63,6 +72,73 @@ CRibbonEmitter::CRibbonEmitter()
   this->m_currPos.x = 0.0;
   this->m_currPos.y = 0.0;
   this->m_currPos.z = 0.0;
+
+  createMesh();
+}
+PACK(
+    struct meshParticleWideBlockPS {
+        float uAlphaTest;
+        float padding[3]; // according to std140
+        int uPixelShader;
+        float padding2[3];
+    });
+
+void CRibbonEmitter::createMesh() {
+  IDevice *device = m_api->getDevice();
+
+  //Create Buffers
+  for (int i = 0; i < 4; i++) {
+    frame[i].m_indexVBO = device->createIndexBuffer();
+    frame[i].m_bufferVBO = device->createVertexBuffer();
+
+    frame[i].m_bindings = device->createVertexBufferBindings();
+    frame[i].m_bindings->setIndexBuffer(frame[i].m_indexVBO);
+
+    GVertexBufferBinding vertexBinding;
+    vertexBinding.vertexBuffer = frame[i].m_bufferVBO;
+    vertexBinding.bindings = std::vector<GBufferBinding>(&staticRibbonBindings[0],&staticRibbonBindings[3]);
+
+    frame[i].m_bindings->addVertexBufferBinding(vertexBinding);
+    frame[i].m_bindings->save();
+
+
+    //Get shader
+    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("ribbonShader", nullptr);
+
+    //Create mesh
+    gMeshTemplate meshTemplate(frame[i].m_bindings, shaderPermutation);
+
+    meshTemplate.depthWrite = true;
+    meshTemplate.depthCulling = true;
+    meshTemplate.backFaceCulling = false;
+
+
+//    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+    meshTemplate.blendMode = static_cast<EGxBlendEnum>(2);
+
+    meshTemplate.start = 0;
+    meshTemplate.end = 0;
+    meshTemplate.element = GL_TRIANGLE_STRIP;
+
+
+    meshTemplate.textureCount = 0;
+
+    meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.vertexBuffers[1] = nullptr;
+    meshTemplate.vertexBuffers[2] = nullptr;
+
+    meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.fragmentBuffers[1] = nullptr;
+    meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
+
+    meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
+    blockPS.uAlphaTest = -1.0f;
+    blockPS.uPixelShader = 0;
+
+    meshTemplate.fragmentBuffers[2]->save(true);
+
+    frame[i].m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
+  }
 }
 
 //----- (00A199E0) --------------------------------------------------------
@@ -1297,3 +1373,27 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
 //}
 
 
+void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
+//    return;
+  if (this->m_gxVertices.size() <= 1) return;
+
+  if (this->IsDead()) return;
+
+  HGParticleMesh mesh = frame[m_api->getDevice()->getUpdateFrameNumber()].m_mesh;
+  mesh->setRenderOrder(renderOrder);
+  meshes.push_back(mesh);
+}
+
+void CRibbonEmitter::updateBuffers() const {
+//    return;
+  if (m_gxVertices.size() == 0 ) return;
+  auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+  currentFrame.m_indexVBO->uploadData((void *) m_gxIndices.data(), (int) (m_gxIndices.size() * sizeof(uint16_t)));
+  currentFrame.m_bufferVBO->uploadData((void *) m_gxVertices.data(), (int) (m_gxVertices.size() * sizeof(CRibbonVertex)));
+
+  currentFrame.m_mesh->setStart(m_readPos*4);
+  currentFrame.m_mesh->setEnd(m_writePos > m_readPos ? (m_writePos - m_readPos + 1) : m_gxIndices.size());
+  currentFrame.m_mesh->setSortDistance(0);
+  currentFrame.m_mesh->setPriorityPlane(0);
+
+}

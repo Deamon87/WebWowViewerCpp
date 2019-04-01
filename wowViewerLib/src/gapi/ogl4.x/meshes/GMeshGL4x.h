@@ -34,6 +34,7 @@ public:
     MeshType getMeshType()  override;
     void setRenderOrder(int renderOrder) override;
 
+    void setStart(int start) override { m_start = start;};
     void setEnd(int end) override;
 public:
     void setM2Object(void * m2Object) override { throw "Not Implemented";};

@@ -61,6 +61,7 @@ void GMeshGL33::setRenderOrder(int renderOrder) {
     m_renderOrder = renderOrder;
 }
 
+void GMeshGL33::setStart(int start) {m_start = start; }
 void GMeshGL33::setEnd(int end) {m_end = end; }
 
 

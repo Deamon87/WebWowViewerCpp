@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <vector>
 #include "../persistance/header/commonFileStructs.h"
+#include "../wowInnerApi.h"
 
 struct CRibbonVertex
 {
@@ -68,8 +69,21 @@ class CRibbonEmitter {
     float m_below;
     float m_gravity;
 
+private:
+    IWoWInnerApi *m_api;
+
+    struct {
+        HGIndexBuffer m_indexVBO;
+        HGVertexBuffer m_bufferVBO;
+
+        HGVertexBufferBindings m_bindings;
+        HGParticleMesh m_mesh;
+    } frame[4];
+
+    void createMesh();
+
 public:
-    CRibbonEmitter();
+    CRibbonEmitter(IWoWInnerApi *m_api);
     void SetDataEnabled(char a2);
     void SetUserEnabled(char a2);
     CRibbonEmitter *SetGravity(float a2);
@@ -94,6 +108,9 @@ public:
     //CTexture **SetTexture(unsigned int a2, CTexture *a3);
     //int ReplaceTexture(unsigned int a2, CTexture *a3);
 
+    void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
+
+    void updateBuffers() const;
 
 };
 

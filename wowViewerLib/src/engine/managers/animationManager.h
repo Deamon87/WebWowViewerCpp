@@ -5,6 +5,7 @@
 #ifndef WEBWOWVIEWERCPP_ANIMATIONMANAGER_H
 #define WEBWOWVIEWERCPP_ANIMATIONMANAGER_H
 
+class CRibbonEmitter;
 
 #include <vector>
 #include "../../include/wowScene.h"

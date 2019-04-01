@@ -992,19 +992,20 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
     //Ribbon Emitters
     for (int i = 0; i < m_m2Geom->m_m2Data->ribbon_emitters.size; i++) {
-        auto *ribbonRecord = m_m2Geom->m_m2Data->particle_emitters.getElement(i);
+        auto *ribbonRecord = m_m2Geom->m_m2Data->ribbon_emitters.getElement(i);
 
         mathfu::mat4 transformMat =
             //Inverted model view is not needed here, because blizzard include modelView mat into boneMatrices for some reason
             (m_placementMatrix *
-             bonesMatrices[ribbonRecord->old.bone] *
+             bonesMatrices[ribbonRecord->boneIndex] *
              mathfu::mat4::FromTranslationVector(
-                 mathfu::vec3(ribbonRecord->old.Position.x, ribbonRecord->old.Position.y, ribbonRecord->old.Position.z))
+                 mathfu::vec3(ribbonRecord->position.x, ribbonRecord->position.y, ribbonRecord->position.z))
             );
 
         mathfu::vec3 nullPos(0,0,0);
         ribbonEmitters[i]->SetPos(transformMat, nullPos, nullptr);
-        ribbonEmitters[i]->Update(deltaTime * 0.001f / 10.f, 0);
+        ribbonEmitters[i]->Update(deltaTime * 0.001f, 0);
+        ribbonEmitters[i]->updateBuffers();
     }
 }
 
@@ -1384,7 +1385,7 @@ void M2Object::initRibbonEmitters() {
     ribbonEmitters = std::vector<CRibbonEmitter *>();
 //    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->ribbon_emitters.size; i++) {
-        CRibbonEmitter *emitter = new CRibbonEmitter();
+        CRibbonEmitter *emitter = new CRibbonEmitter(m_api);
         M2Ribbon *m2Ribbon = m_m2Geom->getM2Data()->ribbon_emitters.getElement(i);
         ribbonEmitters.push_back(emitter);
 
@@ -1489,6 +1490,10 @@ void M2Object::drawParticles(std::vector<HGMesh> &meshes, int renderOrder) {
     for (int i = minParticle; i < maxParticle; i++) {
 //    for (int i = 0; i< particleEmitters.size(); i++) {
         particleEmitters[i]->collectMeshes(meshes, renderOrder);
+    }
+
+    for (int i = 0; i < ribbonEmitters.size(); i++) {
+        ribbonEmitters[i]->collectMeshes(meshes, renderOrder);
     }
 }
 
