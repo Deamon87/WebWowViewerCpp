@@ -360,7 +360,7 @@ void
 AnimationManager::calcBoneMatrix(
     std::vector<mathfu::mat4> &boneMatrices,
     int boneIndex,
-    mathfu::mat4 &modelViewMatrix
+    const mathfu::mat4 &modelViewMatrix
     ) {
     if (this->bonesIsCalculated[boneIndex]) return;
 
@@ -432,15 +432,6 @@ AnimationManager::calcBoneMatrix(
         }
     }
 
-//    if ((boneDefinition->flags.transformed |
-//        boneDefinition->flags.spherical_billboard |
-//        boneDefinition->flags.cylindrical_billboard_lock_x |
-//        boneDefinition->flags.cylindrical_billboard_lock_y |
-//        boneDefinition->flags.cylindrical_billboard_lock_z) == 0) {
-//        this->bonesIsCalculated[boneIndex] = true;
-//        return;
-//    }
-
     C3Vector pP = boneDefinition->pivot;
     mathfu::vec4 pivotPoint = mathfu::vec4(pP.x, pP.y, pP.z, 0);
     mathfu::vec4 negatePivotPoint = -mathfu::vec4(pP.x, pP.y, pP.z, 0);
@@ -448,15 +439,6 @@ AnimationManager::calcBoneMatrix(
 
     /* 2.1 Calculate billboard matrix if needed */
     mathfu::mat4 *billboardMatrix = nullptr;
-
-//    if ((boneDefinition->flags.spherical_billboard) | (boneDefinition->flags.cylindrical_billboard_lock_z) != 0) {
-//        //From http://gamedev.stackexchange.com/questions/112270/calculating-rotation-matrix-for-an-object-relative-to-a-planets-surface-in-monog
-//        billboardMatrix = new mathfu::mat4();
-//
-//        calcBoneBillboardMatrix(billboardMatrix, boneMatrices, boneDefinition, parentBone, pivotPoint,
-//                                                       cameraPosInLocal, localUpVector, localRightVector);
-//        this->isAnimated = true;
-//    }
 
     /* 3. Calculate matrix */
     bool isAnimated = (boneDefinition->flags_raw & 0x280) > 0;
@@ -579,7 +561,10 @@ AnimationManager::calcBoneMatrix(
         mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
         mathfu::vec4 pivotVec3 = pivotVec4; pivotVec3.w = 0.0;
 
-        currentBoneMat *= mathfu::mat4::FromScaleVector(scaleVector);
+        currentBoneMat.GetColumn(0) *= scaleVector.x;
+        currentBoneMat.GetColumn(1) *= scaleVector.y;
+        currentBoneMat.GetColumn(2) *= scaleVector.z;
+//        currentBoneMat *= mathfu::mat4::FromScaleVector(scaleVector);
         currentBoneMat.GetColumn(3) = (currentBoneMatCopy * pivotVec4 ) - (currentBoneMat * pivotVec3);
         currentBoneMat.GetColumn(3).w = 1.0;
     }
@@ -590,7 +575,7 @@ AnimationManager::calcBoneMatrix(
 void AnimationManager::calcChildBones(
     std::vector<mathfu::mat4> &boneMatrices,
     int boneIndex,
-    mathfu::mat4 &modelViewMatrix) {
+    const mathfu::mat4 &modelViewMatrix) {
     std::vector<int> *childBones = &this->childBonesLookup[boneIndex];
     for (int i = 0; i < childBones->size(); i++) {
         int childBoneIndex = (*childBones)[i];
@@ -608,7 +593,7 @@ std::string dumpMatrix(mathfu::mat4 &mat4) {
 }
 void AnimationManager::calcBones (
     std::vector<mathfu::mat4> &boneMatrices,
-    mathfu::mat4 &modelViewMatrix) {
+    const mathfu::mat4 &modelViewMatrix) {
 
 
     if (true) {
@@ -667,7 +652,7 @@ void AnimationManager::update(
     mathfu::vec3 &cameraPosInLocal,
     mathfu::vec3 &localUpVector,
     mathfu::vec3 &localRightVector,
-    mathfu::mat4 &modelViewMatrix,
+    const mathfu::mat4 &modelViewMatrix,
     std::vector<mathfu::mat4> &bonesMatrices,
     std::vector<mathfu::mat4> &textAnimMatrices,
     std::vector<mathfu::vec4> &subMeshColors,
@@ -1044,141 +1029,117 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
         if (particleEmitter->getGenerator() == nullptr) continue;
         CGeneratorAniProp *aniProp = particleEmitters[i]->getGenerator()->getAniProp();
 
-        unsigned char enabledIn =
-            animateTrackWithBlend<unsigned char, unsigned char>(
+        unsigned char enabledIn = 0;
+        if (peRecord.old.enabledIn.timestamps.size > 0) {
+            enabledIn = animateTrackWithBlend<unsigned char, unsigned char>(
                 animationInfo,
                 peRecord.old.enabledIn,
                 this->m_m2File->global_loops,
                 this->globalSequenceTimes,
                 defaultChar
             );
+        }
 
         particleEmitter->isEnabled = enabledIn;
 
-        aniProp->emissionSpeed =
-            animateTrackWithBlend<float, float>(
-                animationInfo,
-                peRecord.old.emissionSpeed,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->speedVariation =
-            animateTrackWithBlend<float, float>(
-                animationInfo,
-                peRecord.old.speedVariation,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->verticalRange =
-            animateTrackWithBlend<float, float>(
-                animationInfo,
-                peRecord.old.verticalRange,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->horizontalRange =
-            animateTrackWithBlend<float, float>(
-                animationInfo,
-                peRecord.old.horizontalRange,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        if (peRecord.old.flags & 0x800000) {
-            aniProp->gravity = animateTrackWithBlend<CompressedParticleGravity, mathfu::vec3>(
-                            animationInfo,
-                            peRecord.old.gravityCompr,
-                            this->m_m2File->global_loops,
-                            this->globalSequenceTimes,
-                            defaultVector
-                    );
-        } else {
-            aniProp->gravity = mathfu::vec3(
-                    0,
-                    0,
-                    -animateTrackWithBlend<float, float>(
-                            animationInfo,
-                            peRecord.old.gravity,
-                            this->m_m2File->global_loops,
-                            this->globalSequenceTimes,
-                            defaultFloat
-                    ));
-        }
-
-
-
-        aniProp->lifespan =
-            animateTrackWithBlend<float, float>(
-                animationInfo,
-                peRecord.old.lifespan,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->emissionRate =
-            animateTrackWithBlend<float, float>(
-                animationInfo,
-                peRecord.old.emissionRate,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->emissionAreaY =
-            animateTrackWithBlend<float, float>(
-                animationInfo,
-                peRecord.old.emissionAreaWidth,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->emissionAreaX =
-            animateTrackWithBlend<float, float>(
-                animationInfo,
-                peRecord.old.emissionAreaLength,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        if (m_m2Geom.get()->exp2Records == nullptr) {
-            aniProp->zSource =
+        if (enabledIn) {
+            aniProp->emissionSpeed =
                 animateTrackWithBlend<float, float>(
                     animationInfo,
-                    peRecord.old.zSource,
+                    peRecord.old.emissionSpeed,
                     this->m_m2File->global_loops,
                     this->globalSequenceTimes,
                     defaultFloat
                 );
-        }
+            aniProp->speedVariation =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.speedVariation,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->verticalRange =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.verticalRange,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->horizontalRange =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.horizontalRange,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            if (peRecord.old.flags & 0x800000) {
+                aniProp->gravity = animateTrackWithBlend<CompressedParticleGravity, mathfu::vec3>(
+                    animationInfo,
+                    peRecord.old.gravityCompr,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultVector
+                );
+            } else {
+                aniProp->gravity = mathfu::vec3(
+                    0,
+                    0,
+                    -animateTrackWithBlend<float, float>(
+                        animationInfo,
+                        peRecord.old.gravity,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultFloat
+                    ));
+            }
 
-        bool enabled = enabledIn != 0;
-        bool emitterEnabled = enabled && 0 != (particleEmitter->flags & 2);
-        bool shouldUpdate = enabled;
-//        if (peRecord.old.flags & 0x8000) {
-//            if (!enabled) {
-//                particleEmitter->emittingLastFrame = false;
-//            }
-//            else {
-//                if (aniProp->emissionRate > 0 && !particleEmitter->emittingLastFrame) {
-//                    particleEmitter->flags |= 4;
-//                    particleEmitter->emittingLastFrame = true;
-//                }
-//            }
-//        }
-//        else {
-//            if (emitterEnabled) {
-//                particleEmitter->flags |= 1;
-//            }
-//            else {
-//                particleEmitter->flags &= ~1;
-//            }
-//        }
-//
-//        if (!emitterEnabled) {
-//            aniProp->emissionRate = 0;
-//        }
+
+            aniProp->lifespan =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.lifespan,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->emissionRate =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.emissionRate,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->emissionAreaY =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.emissionAreaWidth,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->emissionAreaX =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.emissionAreaLength,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            if (m_m2Geom.get()->exp2Records == nullptr) {
+                aniProp->zSource =
+                    animateTrackWithBlend<float, float>(
+                        animationInfo,
+                        peRecord.old.zSource,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultFloat
+                    );
+            }
+        }
     }
 
 }

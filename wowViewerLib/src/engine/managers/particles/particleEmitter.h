@@ -44,9 +44,9 @@ public:
         return generator;
     }
     void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
-    void updateBuffers() const;
+    void updateBuffers();
 
-    int flags = 2;
+    int flags = 6;
     bool emittingLastFrame = false;
     bool isEnabled = false;
 
@@ -167,6 +167,7 @@ private:
 
         HGVertexBufferBindings m_bindings;
         HGParticleMesh m_mesh;
+        bool active = false;
     } frame[4];
 
     void createMesh();

@@ -53,7 +53,7 @@ public:
         mathfu::vec3 &cameraPosInLocal,
         mathfu::vec3 &localUpVector,
         mathfu::vec3 &localRightVector,
-        mathfu::mat4 &modelViewMatrix,
+        const mathfu::mat4 &modelViewMatrix,
         std::vector<mathfu::mat4> &bonesMatrices,
         std::vector<mathfu::mat4> &textAnimMatrices,
         std::vector<mathfu::vec4> &subMeshColors,
@@ -64,11 +64,11 @@ public:
 
         /*cameraDetails, particleEmitters*/);
 
-    void calcBones(std::vector<mathfu::mat4> &boneMatrices, mathfu::mat4 &modelViewMatrix);
+    void calcBones(std::vector<mathfu::mat4> &boneMatrices, const mathfu::mat4 &modelViewMatrix);
 
-    void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, mathfu::mat4 &modelViewMatrix);
+    void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
 
-    void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, mathfu::mat4 &modelViewMatrix);
+    void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
 
     void calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors);
 

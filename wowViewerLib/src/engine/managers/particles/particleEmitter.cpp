@@ -359,7 +359,7 @@ void ParticleEmitter::InternalUpdate(animTime_t delta) {
 void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
 
-    if (this->particles.size() <= 0 && !isEnabled) return;
+//    if (this->particles.size() <= 0 && !isEnabled) return;
 
     m_prevPosition = m_emitterModelMatrix.TranslationVector3D();
     m_currentBonePos = (viewMatrix * mathfu::vec4(transformMat.GetColumn(3).xyz(), 1.0f)).z;
@@ -431,19 +431,11 @@ void ParticleEmitter::EmitNewParticles(animTime_t delta) {
     if (!isEnabled) return;
 
     float rate = this->generator->GetEmissionRate();
-//    if (6 == (this->flags & 6)) {
-//        int count = rate;
-//        for (int i = 0; i < count; i++) {
-//            this->CreateParticle(0);
-//        }
-//    }
-//    if (3 == (this->flags & 3)) {
-        this->emission += delta * rate;
-        while (this->emission > 1) {
-            this->CreateParticle(delta);
-            this->emission -= 1;
-        }
-//    }
+    this->emission += delta * rate;
+    while (this->emission > 1) {
+        this->CreateParticle(delta);
+        this->emission -= 1;
+    }
 }
 void ParticleEmitter::CreateParticle(animTime_t delta) {
     CParticle2 &p = this->BirthParticle();
@@ -544,6 +536,9 @@ CParticle2& ParticleEmitter::BirthParticle() {
 }
 
 void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
+    szVertexBuf = std::vector<ParticleBuffStructQuad>(0);
+    szIndexBuff = std::vector<uint16_t>(0);
+
     if (particles.size() == 0 && this->generator != nullptr) {
         return;
     }
@@ -977,18 +972,22 @@ ParticleEmitter::BuildQuadT3(
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
-//    return;
-    if (this->szVertexBuf.size() <= 1) return;
+    auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+    if (!currentFrame.active)
+        return;
 
     HGParticleMesh mesh = frame[m_api->getDevice()->getUpdateFrameNumber()].m_mesh;
     mesh->setRenderOrder(renderOrder);
     meshes.push_back(mesh);
 }
 
-void ParticleEmitter::updateBuffers() const {
-//    return;
-    if (szVertexBuf.size() == 0 ) return;
+void ParticleEmitter::updateBuffers() {
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+    currentFrame.active = !szVertexBuf.empty();
+
+    if (!currentFrame.active)
+        return;
+
     currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
     currentFrame.m_bufferVBO->uploadData((void *) szVertexBuf.data(), (int) (szVertexBuf.size() * sizeof(ParticleBuffStructQuad)));
 
