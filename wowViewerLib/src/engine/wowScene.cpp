@@ -434,7 +434,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-   m_firstCamera.setCameraPos(0, 0, 0);
+//   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
@@ -606,7 +606,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(0, "creature/arthas/arthas.m2", -1);
-    setSceneWithFileDataId(0, 125407, -1);
+//    setSceneWithFileDataId(1, 108803, -1);
+    //setSceneWithFileDataId(0, 125407, -1); // phoneix
+    //setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
+    //setSceneWithFileDataId(0, 2394711, -1); //portal
 
 
     if (m_supportThreads) {
@@ -943,12 +946,12 @@ WoWScene *createWoWScene(Config *config, IFileRequest *requestProcessor, int can
 }
 
 void WoWSceneImpl::clearCache() {
-    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
+//    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
 //    needToDropCache = true;
     actuallDropCache();
 }
 void WoWSceneImpl::actuallDropCache() {
-    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
+//    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
     this->adtObjectCache.clear();
     this->wdtCache.clear();
     this->wdlCache.clear();

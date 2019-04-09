@@ -33,7 +33,7 @@ void GVertexBufferGL33::uploadData(void * data, int length) {
 
     assert(m_buffCreated);
     if (!(length > 0 && length < (400*1024*1024))) {
-//        std::cout << "hello!";
+        //std::cout << "hello!";
     }
     assert(length > 0 && length < (400*1024*1024));
 
