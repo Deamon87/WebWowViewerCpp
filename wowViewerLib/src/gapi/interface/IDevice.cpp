@@ -7,6 +7,8 @@
 
 
 bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
+
+
     if (a->getIsTransparent() > b-> getIsTransparent()) {
         return false;
     }
@@ -55,7 +57,7 @@ bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
         }
     }
 
-    if (a->getMeshType() == MeshType::eParticleMesh) {
+    if (a->getMeshType() == MeshType::eParticleMesh && b->getMeshType() == MeshType::eParticleMesh) {
         if (a->m_priorityPlane != b->m_priorityPlane) {
             return b->m_priorityPlane > a->m_priorityPlane;
         }

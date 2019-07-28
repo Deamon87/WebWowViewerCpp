@@ -80,8 +80,6 @@ private:
 
     std::vector<CParticle2> particles;
 
-    mathfu::vec3 deltaPosition;
-
     int particleType = 0;
     bool m_depthWrite = true;
 

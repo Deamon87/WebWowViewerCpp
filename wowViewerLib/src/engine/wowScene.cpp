@@ -609,7 +609,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    setSceneWithFileDataId(1, 108803, -1);
     //setSceneWithFileDataId(0, 125407, -1); // phoneix
     //setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
-    //setSceneWithFileDataId(0, 2394711, -1); //portal
+    //setSceneWithFileDataId(0, 125995, -1); //portal
+    setSceneWithFileDataId(0, 1814471, -1); //portal
 
 
     if (m_supportThreads) {

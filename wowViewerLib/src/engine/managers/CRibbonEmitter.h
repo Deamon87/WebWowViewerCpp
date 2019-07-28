@@ -114,7 +114,6 @@ public:
     void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
 
     void updateBuffers();
-
 };
 
 

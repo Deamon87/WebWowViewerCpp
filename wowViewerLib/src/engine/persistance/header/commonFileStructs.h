@@ -217,7 +217,7 @@ void initAnimationArray(M2Array<M2Array<T> > &array2D, void *m2File, M2Array<M2S
         array2D.initM2Array(m2File);
         int count = array2D.size;
         for (int i = 0; i < count; i++) {
-            if ((sequences.getElement(i)->flags & 0x20) == 0) continue;
+            if ((sequences.size > 0) && (sequences.getElement(i)->flags & 0x20) == 0) continue;
 
             M2Array<T> *array1D = array2D.getElement(i);
             array1D->initM2Array(m2File);

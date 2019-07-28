@@ -1,3 +1,30 @@
+vec2 posToTexCoord(vec3 cameraPoint, vec3 normal){
+//    vec3 normPos = -normalize(cameraPoint.xyz);
+//    vec3 normPos = cameraPoint.xyz;
+//    vec3 reflection = reflect(normPos, normal);
+//    return (normalize(vec3(reflection.r, reflection.g, reflection.b + 1.0)).rg * 0.5) + vec2(0.5);
+
+    vec3 normPos_495 = normalize(cameraPoint.xyz);
+    vec3 temp_500 = (normPos_495 - (normal * (2.0 * dot(normPos_495, normal))));
+    vec3 temp_657 = vec3(temp_500.x, temp_500.y, (temp_500.z + 1.0));
+
+    return ((normalize(temp_657).xy * 0.5) + vec2(0.5));
+}
+
+float edgeScan(vec3 position, vec3 normal){
+    float dotProductClamped = clamp(dot(-normalize(position),normal), 0.000000, 1.000000);
+    return clamp(2.700000 * dotProductClamped * dotProductClamped - 0.400000, 0.000000, 1.000000);
+}
+
+mat3 blizzTranspose(mat4 value) {
+    return mat3(
+        value[0].xyz,
+        value[1].xyz,
+        value[2].xyz
+    );
+}
+
+
 #ifdef COMPILING_VS
 /* vertex shader code */
 attribute float aHeight;
@@ -194,11 +221,11 @@ mat3 blizzTranspose(mat4 value) {
     );
 }
 
-varying vec2 vChunkCoords;
-varying vec3 vPosition;
-varying vec4 vColor;
-varying vec3 vNormal;
-varying vec3 vVertexLighting;
+out vec2 vChunkCoords;
+out vec3 vPosition;
+out vec4 vColor;
+out vec3 vNormal;
+out vec3 vVertexLighting;
 
 const float UNITSIZE_X =  (1600.0 / 3.0) / 16.0 / 8.0;
 const float UNITSIZE_Y =  (1600.0 / 3.0) / 16.0 / 8.0;
@@ -238,11 +265,11 @@ void main() {
 #ifdef COMPILING_FS
 precision highp float;
 
-varying vec2 vChunkCoords;
-varying vec3 vPosition;
-varying vec4 vColor;
-varying vec3 vNormal;
-varying vec3 vVertexLighting;
+in vec2 vChunkCoords;
+in vec3 vPosition;
+in vec4 vColor;
+in vec3 vNormal;
+in vec3 vVertexLighting;
 
 uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayer0;
@@ -314,40 +341,47 @@ void main() {
     const float threshold = 1.5;
 
     vec2 alphaCoord = vec2(vChunkCoords.x/8.0, vChunkCoords.y/8.0 );
-    vec3 alphaBlend = texture2D( uAlphaTexture, alphaCoord).gba;
+    vec3 alphaBlend = texture( uAlphaTexture, alphaCoord).gba;
 
     vec2 tcLayer0 = vTexCoord;
     vec2 tcLayer1 = vTexCoord;
     vec2 tcLayer2 = vTexCoord;
     vec2 tcLayer3 = vTexCoord;
-    float t906 = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0, 1));
-    vec4 weights_907 = vec4(t906, alphaBlend);
-    float t916 = (t906 * ((texture(uLayerHeight0, tcLayer0).w * uHeightScale[0]) + uHeightOffset[0]));
-    float t926 = (weights_907.y * ((texture(uLayerHeight1, tcLayer1).w * uHeightScale[1]) + uHeightOffset[1]));
-    float t936 = (weights_907.z * ((texture(uLayerHeight2, tcLayer2).w * uHeightScale[2]) + uHeightOffset[2]));
-    float t946 = (weights_907.w * ((texture(uLayerHeight3, tcLayer3).w * uHeightScale[3]) + uHeightOffset[3]));
-    vec4 weights_1222 = vec4(t916, t926, t936, t946);
-    vec4 weights_960 = (weights_1222 * (vec4(1.0) - clamp((vec4(max(max(t916, t926), max(t936, t946))) - weights_1222), 0, 1)));
-    vec4 weights_963 = (weights_960 / vec4(dot(vec4(1.0), weights_960)));
-    vec4 weightedLayer_966 = (texture(uLayer0, tcLayer0) * weights_963.x);
-    vec3 matDiffuse_978 = weightedLayer_966.xyz;
-    float specBlend_988 = weightedLayer_966.w;
-    vec4 weightedLayer_1000 = (texture(uLayer1, tcLayer1) * weights_963.y);
-    vec3 matDiffuse_1021 = (matDiffuse_978 + weightedLayer_1000.xyz);
-    float specBlend_1033 = (specBlend_988 + weightedLayer_1000.w);
-    vec4 weightedLayer_1045 = (texture(uLayer2, tcLayer1) * weights_963.z);
-    vec3 matDiffuse_1066 = (matDiffuse_1021 + weightedLayer_1045.xyz);
-    float specBlend_1078 = (specBlend_1033 + weightedLayer_1045.w);
-    vec4 weightedLayer_1090 = (texture(uLayer3, tcLayer1) * weights_963.w);
-    vec3 matDiffuse_1111 = (matDiffuse_1066 + weightedLayer_1090.xyz);
-    float specBlend_1123 = (specBlend_1078 + weightedLayer_1090.w);
-    vec4 final_1138 = vec4(matDiffuse_1111, specBlend_1123);
 
-    vec3 matDiffuse = final_1138.rgb * 2.0 * vColor.rgb;
+    float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
+    vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
+    float weightedTexture_x = (minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * uHeightScale[0]) + uHeightOffset[0]));
+    float weightedTexture_y = (weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * uHeightScale[1]) + uHeightOffset[1]));
+    float weightedTexture_z = (weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * uHeightScale[2]) + uHeightOffset[2]));
+    float weightedTexture_w = (weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * uHeightScale[3]) + uHeightOffset[3]));
+    vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
+    vec4 weights_temp = (weights * (vec4(1.0) - clamp((vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights), 0.0, 1.0)));
+    vec4 weightsNormalized = (weights_temp / vec4(dot(vec4(1.0), weights_temp)));
+    
+    
+    vec4 weightedLayer_0 = (texture(uLayer0, tcLayer0) * weightsNormalized.x);
+    vec3 matDiffuse_0 = weightedLayer_0.xyz;
+    float specBlend_0 = weightedLayer_0.w;
+
+    vec4 weightedLayer_1 = (texture(uLayer1, tcLayer1) * weightsNormalized.y);
+    vec3 matDiffuse_1 = (matDiffuse_0 + weightedLayer_1.xyz);
+    float specBlend_1 = (specBlend_0 + weightedLayer_1.w);
+
+    vec4 weightedLayer_2 = (texture(uLayer2, tcLayer1) * weightsNormalized.z);
+    vec3 matDiffuse_2 = (matDiffuse_1 + weightedLayer_2.xyz);
+    float specBlend_2 = (specBlend_1 + weightedLayer_2.w);
+
+    vec4 weightedLayer_3 = (texture(uLayer3, tcLayer1) * weightsNormalized.w);
+    vec3 matDiffuse_3 = (matDiffuse_2 + weightedLayer_3.xyz);
+    float specBlend_3 = (specBlend_2 + weightedLayer_3.w);
+
+    vec4 final = vec4(matDiffuse_3, specBlend_3);
+
+    vec3 matDiffuse = final.rgb * 2.0 * vColor.rgb;
     vec4 finalColor = vec4(makeDiffTerm(matDiffuse), 1.0);
 
     //Spec part
-    float specBlend = final_1138.a;
+    float specBlend = final.a;
     vec3 halfVec = -(normalize((uSunDir_FogStart.xyz + normalize(vPosition))));
     vec3 lSpecular = ((uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
     vec3 specTerm = (vec3(specBlend) * lSpecular);
@@ -660,31 +694,36 @@ void main() {
 
     vec4 finalColor = vec4((tex * vColor ).rgb, tex.a*vColor.a );
     int uPixelShader = uPixelShaderv.x;
-    if (uPixelShader == 0) {//particle_2colortex_3alphatex
+    if (uPixelShader == 0) { //particle_mod
+        vec3 matDiffuse = vColor.xyz * tex.rgb;
+
+        finalColor = vec4(matDiffuse.rgb, tex.a*vColor.a);
+    } else if (uPixelShader == 1) {//particle_2colortex_3alphatex
         vec4 textureMod = tex*tex2;
         float texAlpha = (textureMod.w * tex3.w);
         float opacity = texAlpha*vColor.a;
 
-        finalColor = vec4(textureMod.rgb, opacity);
-    } else if (uPixelShader == 1) { //particle_3colortex_3alphatex
+
+        vec3 matDiffuse = vColor.xyz * textureMod.rgb;
+        finalColor = vec4(matDiffuse.rgb, opacity);
+    } else if (uPixelShader == 2) { //particle_3colortex_3alphatex
         vec4 textureMod = tex*tex2*tex3;
         float texAlpha = (textureMod.w);
         float opacity = texAlpha*vColor.a;
 
-        finalColor = vec4(textureMod.rgb, opacity);
-    } else if (uPixelShader == 2) { //particle_3colortex_3alphatex_uv
+
+        vec3 matDiffuse = vColor.xyz * textureMod.rgb;
+        finalColor = vec4(matDiffuse.rgb, opacity);
+    } else if (uPixelShader == 3) { //Particle_3ColorTex_3AlphaTex_UV
         //TODO: incorrect implementation, because the original shader is too complicated
         vec4 textureMod = tex*tex2*tex3;
         float texAlpha = (textureMod.w);
         float opacity = texAlpha*vColor.a;
 
-        finalColor = vec4(textureMod.rgb, opacity);
-    } else if (uPixelShader == 3) { //particle_mod
-        vec4 textureMod = tex*tex2*tex3;
-        float texAlpha = (textureMod.w);
-        float opacity = texAlpha*vColor.a;
-
-        finalColor = vec4(textureMod.rgb, opacity);
+        vec3 matDiffuse = vColor.xyz * textureMod.rgb;
+        finalColor = vec4(matDiffuse.rgb, opacity);
+    } else if (uPixelShader == 4) { //Refraction
+        //TODO:!
     }
 
     if(finalColor.a < uAlphaTest)
@@ -710,12 +749,12 @@ void main() {
 #ifdef COMPILING_VS
 precision highp FLOATDEC
 /* vertex shader code */
-in vec3 aPosition;
-in vec3 aNormal;
-in vec4 bones;
-in vec4 boneWeights;
-in vec2 aTexCoord;
-in vec2 aTexCoord2;
+layout(location=0) in vec3 aPosition;
+layout(location=1) in vec3 aNormal;
+layout(location=2) in vec4 bones;
+layout(location=3) in vec4 boneWeights;
+layout(location=4) in vec2 aTexCoord;
+layout(location=5) in vec2 aTexCoord2;
 
 //Whole scene
 layout(std140) uniform sceneWideBlockVSPS {
@@ -752,42 +791,31 @@ out vec4 vDiffuseColor;
 in float fs_Depth;
 #endif
 
-vec2 posToTexCoord(vec3 cameraPoint, vec3 normal){
-//    vec3 normPos = -normalize(cameraPoint.xyz);
-    vec3 normPos = cameraPoint.xyz;
-    vec3 reflection = reflect(normPos, normal);
-    return (normalize(vec3(reflection.r, reflection.g, reflection.b + 1.0)).rg * 0.5) + vec2(0.5);
-
-//    vec3 normPos_495 = normPos;
-//    vec3 temp_500 = (normPos_495 - (normal * (2.0 * dot(normPos_495, normal))));
-//    vec3 temp_657 = vec3(temp_500.x, temp_500.y, (temp_500.z + 1.0));
-//
-//    return ((normalize(temp_657).xy * 0.5) + vec2(0.5));
-}
-
-float edgeScan(vec3 position, vec3 normal){
-    float dotProductClamped = clamp(dot(-normalize(position),normal), 0.000000, 1.000000);
-    return clamp(2.700000 * dotProductClamped * dotProductClamped - 0.400000, 0.000000, 1.000000);
-}
-
-mat3 blizzTranspose(mat4 value) {
-    return mat3(
-        value[0].xyz,
-        value[1].xyz,
-        value[2].xyz
-    );
-}
+#include commonFunctions
 
 void main() {
     vec4 modelPoint = vec4(0,0,0,0);
 
     vec4 aPositionVec4 = vec4(aPosition, 1);
-    mat4 boneTransformMat = mat4(0.0);
+    mat4 boneTransformMat = mat4(1.0);
 
+#if BONEINFLUENCES>0
+    boneTransformMat = mat4(0.0);
+    const float inttofloat = (1.0/255.0);
     boneTransformMat += (boneWeights.x ) * uBoneMatrixes[int(bones.x)];
+#endif
+#if BONEINFLUENCES>1
     boneTransformMat += (boneWeights.y ) * uBoneMatrixes[int(bones.y)];
+#endif
+#if BONEINFLUENCES>2
     boneTransformMat += (boneWeights.z ) * uBoneMatrixes[int(bones.z)];
+#endif
+#if BONEINFLUENCES>3
     boneTransformMat += (boneWeights.w ) * uBoneMatrixes[int(bones.w)];
+#endif
+
+
+
 
     mat4 placementMat;
 #ifdef INSTANCED
@@ -944,13 +972,11 @@ struct LocalLight
     vec4 attenuation;
 };
 
-
 in vec3 vNormal;
 in vec2 vTexCoord;
 in vec2 vTexCoord2;
 in vec2 vTexCoord3;
 in vec3 vPosition;
-
 in vec4 vDiffuseColor;
 
 uniform sampler2D uTexture;
@@ -1032,6 +1058,8 @@ vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
 //    return sqrt((matDiffuse*matDiffuse)*mult + currColor.rgb*(matDiffuse*matDiffuse)) ;
     return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
 }
+
+#include commonFunctions
 
 void main() {
     /* Animation support */
@@ -1151,138 +1179,138 @@ void main() {
         specular = tex2.rgb;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==11 //Combiners_Mod_Opaque
+    #if(FRAGMENTSHADER==11) //Combiners_Mod_Opaque
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
         opacity = tex.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==12 //Combiners_Opaque_Mod2xNA_Alpha
+    #if(FRAGMENTSHADER==12) //Combiners_Opaque_Mod2xNA_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==13 //Combiners_Opaque_AddAlpha
+    #if(FRAGMENTSHADER==13) //Combiners_Opaque_AddAlpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         specular = tex2.rgb * tex2.a;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==14 //Combiners_Opaque_AddAlpha_Alpha
+    #if(FRAGMENTSHADER==14) //Combiners_Opaque_AddAlpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         specular = tex2.rgb * tex2.a * (1.000000 - tex.a);
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==15 //Combiners_Opaque_Mod2xNA_Alpha_Add
+    #if(FRAGMENTSHADER==15) //Combiners_Opaque_Mod2xNA_Alpha_Add
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a));
         specular = tex3.rgb * tex3.a * genericParams[0].b;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==16 //Combiners_Mod_AddAlpha
+    #if(FRAGMENTSHADER==16) //Combiners_Mod_AddAlpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a;
         specular = tex2.rgb * tex2.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==17 //Combiners_Mod_AddAlpha_Alpha
+    #if(FRAGMENTSHADER==17) //Combiners_Mod_AddAlpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = (tex.a + tex2.a * (0.300000 * tex2.r + 0.590000 * tex2.g + 0.110000 * tex2.b)) * vDiffuseColor.a;
         specular = tex2.rgb * tex2.a * (1.000000 - tex.a);
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==18 //Combiners_Opaque_Alpha_Alpha
+    #if(FRAGMENTSHADER==18) //Combiners_Opaque_Alpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb, tex2.rgb, vec3(tex2.a)), tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==19 //Combiners_Opaque_Mod2xNA_Alpha_3s
+    #if(FRAGMENTSHADER==19) //Combiners_Opaque_Mod2xNA_Alpha_3s
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==20 //Combiners_Opaque_AddAlpha_Wgt
+    #if(FRAGMENTSHADER==20) //Combiners_Opaque_AddAlpha_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         specular = tex2.rgb * tex2.a * genericParams[0].g;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==21 //Combiners_Mod_Add_Alpha
+    #if(FRAGMENTSHADER==21) //Combiners_Mod_Add_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = (tex.a + tex2.a) * vDiffuseColor.a;
         specular = tex2.rgb * (1.000000 - tex.a);
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==22 //Combiners_Opaque_ModNA_Alpha
+    #if(FRAGMENTSHADER==22) //Combiners_Opaque_ModNA_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb, tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==23 //Combiners_Mod_AddAlpha_Wgt
+    #if(FRAGMENTSHADER==23) //Combiners_Mod_AddAlpha_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a;
         specular = tex2.rgb * tex2.a * genericParams[0].g;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==24 //Combiners_Opaque_Mod_Add_Wgt
+    #if(FRAGMENTSHADER==24) //Combiners_Opaque_Mod_Add_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
         specular = tex.rgb * tex.a * genericParams[0].r;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==25 //Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
+    #if(FRAGMENTSHADER==25) //Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
         float glowOpacity = clamp((tex3.a * genericParams[0].z), 0.0, 1.0);
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a)) * (1.000000 - glowOpacity);
         specular = tex3.rgb * glowOpacity;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==26 //Combiners_Mod_Dual_Crossfade
+    #if(FRAGMENTSHADER==26) //Combiners_Mod_Dual_Crossfade
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
         opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==27 //Combiners_Opaque_Mod2xNA_Alpha_Alpha
+    #if(FRAGMENTSHADER==27) //Combiners_Opaque_Mod2xNA_Alpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a)), tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==28 //Combiners_Mod_Masked_Dual_Crossfade
+    #if(FRAGMENTSHADER==28) //Combiners_Mod_Masked_Dual_Crossfade
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
         opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * tex4WithTextCoord2.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==29 //Combiners_Opaque_Alpha
+    #if(FRAGMENTSHADER==29) //Combiners_Opaque_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==30 //Guild
+    #if(FRAGMENTSHADER==30) //Guild
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a)), tex3.rgb * genericParams[2].rgb, vec3(tex3.a));
         opacity = tex.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==31 //Guild_NoBorder
+    #if(FRAGMENTSHADER==31) //Guild_NoBorder
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a));
         opacity = tex.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==32 //Guild_Opaque
+    #if(FRAGMENTSHADER==32) //Guild_Opaque
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a)), tex3.rgb * genericParams[2].rgb, vec3(tex3.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==33 //Combiners_Mod_Depth
+    #if(FRAGMENTSHADER==33) //Combiners_Mod_Depth
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a * visParams.r;
         finalOpacity = opacity * visParams.r;
     #endif
-    #if FRAGMENTSHADER==34  //Illum
+    #if(FRAGMENTSHADER==34)  //Illum
         finalColor = vec4(1.0,1.0,1.0, 1.0);
 
         //Unusued
     #endif
-    #if FRAGMENTSHADER==35 //Combiners_Mod_Mod_Mod_Const
+    #if(FRAGMENTSHADER==35) //Combiners_Mod_Mod_Mod_Const
         matDiffuse = vDiffuseColor.rgb * 2.000000 * (tex * tex2 * tex3 * genericParams[0]).rgb;
         opacity = (tex * tex2 * tex3 * genericParams[0]).a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
@@ -1290,34 +1318,34 @@ void main() {
         /*
             WOTLK DEPRECATED SHADERS!
         */
-    #if FRAGMENTSHADER==-1 // Combiners_Decal
+    #if(FRAGMENTSHADER==-1) // Combiners_Decal
         finalColor.rgb = (meshResColor.rgb - tex.rgb) * meshResColor.a + tex.rgb;
         finalColor.a = meshResColor.a;
     #endif
-    #if FRAGMENTSHADER==-2 // Combiners_Add
+    #if(FRAGMENTSHADER==-2) // Combiners_Add
         finalColor.rgba = tex.rgba + meshResColor.rgba;
     #endif
-    #if FRAGMENTSHADER==-3 // Combiners_Mod2x
+    #if(FRAGMENTSHADER==-3) // Combiners_Mod2x
         finalColor.rgb = tex.rgb * meshResColor.rgb * vec3(2.0);
         finalColor.a = tex.a * meshResColor.a * 2.0;
     #endif
-    #if FRAGMENTSHADER==-4 // Combiners_Fade
+    #if(FRAGMENTSHADER==-4) // Combiners_Fade
         finalColor.rgb = (tex.rgb - meshResColor.rgb) * meshResColor.a + meshResColor.rgb;
         finalColor.a = meshResColor.a;
     #endif
-    #if FRAGMENTSHADER==-5 // Combiners_Opaque_Add
+    #if(FRAGMENTSHADER==-5) // Combiners_Opaque_Add
         finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
         finalColor.a = meshResColor.a + tex.a;
     #endif
-    #if FRAGMENTSHADER==-6 // Combiners_Opaque_AddNA
+    #if(FRAGMENTSHADER==-6) // Combiners_Opaque_AddNA
         finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
         finalColor.a = meshResColor.a;
     #endif
-    #if FRAGMENTSHADER==-7 // Combiners_Add_Mod
+    #if(FRAGMENTSHADER==-7) // Combiners_Add_Mod
         finalColor.rgb = (tex.rgb + meshResColor.rgb) * tex2.a;
         finalColor.a = (tex.a + meshResColor.a) * tex2.a;
     #endif
-    #if FRAGMENTSHADER==-8 // Combiners_Mod2x_Mod2x
+    #if(FRAGMENTSHADER==-8) // Combiners_Mod2x_Mod2x
         finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba * vec4(4.0);
     #endif
 
@@ -1489,6 +1517,43 @@ void main() {
 }
 
 #endif //COMPILING_FS#ifdef COMPILING_VS
+precision highp float;
+layout(location = 0) in vec3 aPosition;
+layout(location = 1) in vec4 aColor;
+layout(location = 2) in vec2 aTexcoord0;
+
+layout(std140) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
+
+out vec4 vColor;
+out vec2 vTexcoord0;
+
+void main() {
+    vec4 aPositionVec4 = vec4(aPosition, 1);
+
+    vColor = aColor;
+    vTexcoord0 = aTexcoord0;
+    gl_Position = uPMatrix * uLookAtMat * aPositionVec4;
+}
+#endif //COMPILING_VS
+
+#ifdef COMPILING_FS
+precision highp float;
+in vec4 vColor;
+in vec2 vTexcoord0;
+
+uniform sampler2D uTexture;
+
+out vec4 outputColor;
+
+void main() {
+    vec4 tex = texture(uTexture, vTexcoord0).rgba;
+
+    outputColor = vec4((vColor.rgb*tex.rgb), vColor.a );
+}
+#endif //COMPILING_FS#ifdef COMPILING_VS
 uniform float x;
 uniform float y;
 uniform float width;
@@ -1520,16 +1585,75 @@ void main() {
     vec4 alpha = texture2D( uTexture, vTextCoords.xy );
     gl_FragColor = alpha;
 }
-#endif //COMPILING_FS//https://www.khronos.org/registry/webgl/extensions/WEBGL_draw_buffers/
-//For drawbuffers in glsl of webgl you need to use GL_EXT_draw_buffers instead of WEBGL_draw_buffers
+#endif //COMPILING_FS#ifdef COMPILING_VS
+layout(location=0) in vec3 aPosition;
+//layout(location=1) in float aDepth;
+//layout(location=2) in vec2 aTexCoord;
 
-#ifdef ENABLE_DEFERRED
-#ifdef GL_EXT_draw_buffers
-    #extension GL_EXT_draw_buffers: require
-    #extension OES_texture_float_linear : enable
-    #define drawBuffersIsSupported 1
+
+layout(std140) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
+
+layout(std140) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
+};
+
+
+//out vec2 vTexCoord;
+out vec3 vPosition;
+
+precision highp FLOATDEC
+void main() {
+   vec4 aPositionVec4 = vec4(aPosition, 1);
+   mat4 cameraMatrix = uLookAtMat * uPlacementMat ;
+
+   vec4 cameraPoint = cameraMatrix * aPositionVec4;
+
+   gl_Position = uPMatrix * cameraPoint;
+//   vTexCoord = aTexCoord;
+   vPosition = cameraPoint.xyz;
+}
 #endif
-#endif
+
+#ifdef COMPILING_FS
+precision highp FLOATDEC
+
+in vec3 vPosition;
+
+uniform sampler2D uTexture;
+
+out vec4 outputColor;
+
+layout(std140) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
+
+//Individual meshes
+layout(std140) uniform meshWideBlockPS {
+    int waterType;
+};
+
+void main() {
+    if (waterType == 13) { // LIQUID_WMO_Water
+        outputColor = vec4(0.0, 0, 0.3, 0.5);
+    } else if (waterType == 14) { //LIQUID_WMO_Ocean
+        outputColor = vec4(0, 0, 0.8, 0.8);
+    } else if (waterType == 19) { //LIQUID_WMO_Magma
+        outputColor = vec4(0.3, 0, 0, 0.5);
+    } else if (waterType == 20) { //LIQUID_WMO_Slime
+        outputColor = vec4(0.0, 0.5, 0, 0.5);
+    } else {
+        outputColor = vec4(0.5, 0.5, 0.5, 0.5);
+    }
+
+
+}
+
+#endif//https://www.khronos.org/registry/webgl/extensions/WEBGL_draw_buffers/
+//For drawbuffers in glsl of webgl you need to use GL_EXT_draw_buffers instead of WEBGL_draw_buffers
 
 #ifdef COMPILING_VS
 /* vertex shader code */
@@ -1563,26 +1687,7 @@ out vec4 vColor2;
 out vec4 vPosition;
 out vec3 vNormal;
 
-vec2 posToTexCoord(vec3 cameraPoint, vec3 normal){
-//    vec3 normPos = -normalize(cameraPoint.xyz);
-    vec3 normPos = cameraPoint.xyz;
-    vec3 reflection = reflect(normPos, normal);
-    return (normalize(vec3(reflection.r, reflection.g, reflection.b + 1.0)).rg * 0.5) + vec2(0.5);
-
-//    vec3 normPos_495 = normPos;
-//    vec3 temp_500 = (normPos_495 - (normal * (2.0 * dot(normPos_495, normal))));
-//    vec3 temp_657 = vec3(temp_500.x, temp_500.y, (temp_500.z + 1.0));
-//
-//    return ((normalize(temp_657).xy * 0.5) + vec2(0.5));
-}
-
-//mat3 blizzTranspose(mat4 value) {
-//    return mat3(
-//        value[0].xyz,
-//        value[1].xyz,
-//        value[2].xyz
-//    );
-//};
+#include commonFunctions
 
 void main() {
     vec4 worldPoint = uPlacementMat * vec4(aPosition, 1);
@@ -1597,63 +1702,63 @@ void main() {
                 viewModelMat[2].xyz
             );
 
-#ifndef drawBuffersIsSupported
     gl_Position = uPMatrix * cameraPoint;
     vPosition = vec4(cameraPoint.xyz, aColor.w);
     vNormal = normalize(viewModelMatTransposed * aNormal);
-#else
-    gl_Position = uPMatrix * cameraPoint;
-    fs_Depth = gl_Position.z / gl_Position.w;
-
-    vNormal = normalize(viewModelMatTransposed * aNormal);
-    vPosition = vec4(cameraPoint.xyz, aColor.w);
-#endif //drawBuffersIsSupported
 
     vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
     vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
     int uVertexShader = VertexShader_UseLitColor.x;
-    if ( uVertexShader == -1 ) {
+    #if(VERTEXSHADER==-1)
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2;
         vTexCoord3 = aTexCoord3;
-    } else if (uVertexShader == 0) { //MapObjDiffuse_T1
+    #endif
+    #if(VERTEXSHADER==0) //MapObjDiffuse_T1
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2; //not used
         vTexCoord3 = aTexCoord3; //not used
-    } else if (uVertexShader == 1) { //MapObjDiffuse_T1_Refl
+    #endif
+    #if(VERTEXSHADER==1) //MapObjDiffuse_T1_Refl
         vTexCoord = aTexCoord;
         vTexCoord2 = reflect(normalize(cameraPoint.xyz), vNormal).xy;
         vTexCoord3 = aTexCoord3; //not used
-    } else if (uVertexShader == 2) { //MapObjDiffuse_T1_Env_T2
+    #endif
+    #if(VERTEXSHADER==2) //MapObjDiffuse_T1_Env_T2
         vTexCoord = aTexCoord;
-
         vTexCoord2 = posToTexCoord(vPosition.xyz, vNormal);;
         vTexCoord3 = aTexCoord3;
-    } else if (uVertexShader == 3) { //MapObjSpecular_T1
+    #endif
+    #if(VERTEXSHADER==3) //MapObjSpecular_T1
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2; //not used
         vTexCoord3 = aTexCoord3; //not used
-    } else if (uVertexShader == 4) { //MapObjDiffuse_Comp
+    #endif
+    #if(VERTEXSHADER==4) //MapObjDiffuse_Comp
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2; //not used
         vTexCoord3 = aTexCoord3; //not used
-    } else if (uVertexShader == 5) { //MapObjDiffuse_Comp_Refl
+    #endif
+    #if(VERTEXSHADER==5) //MapObjDiffuse_Comp_Refl
         vTexCoord = aTexCoord;
         vTexCoord2 = aTexCoord2;
         vTexCoord3 = reflect(normalize(cameraPoint.xyz), vNormal).xy;
-    } else if (uVertexShader == 6) { //MapObjDiffuse_Comp_Terrain
+    #endif
+    #if(VERTEXSHADER==6) //MapObjDiffuse_Comp_Terrain
         vTexCoord = aTexCoord;
         vTexCoord2 = vPosition.xy * -0.239999995;
         vTexCoord3 = aTexCoord3; //not used
-    } else if (uVertexShader == 7) { //MapObjDiffuse_CompAlpha
+    #endif
+    #if(VERTEXSHADER==7) //MapObjDiffuse_CompAlpha
         vTexCoord = aTexCoord;
         vTexCoord2 = vPosition.xy * -0.239999995;
         vTexCoord3 = aTexCoord3; //not used
-    } else if (uVertexShader == 8) { //MapObjParallax
+    #endif
+    #if(VERTEXSHADER==8) //MapObjParallax
         vTexCoord = aTexCoord;
         vTexCoord2 = vPosition.xy * -0.239999995;
         vTexCoord3 = aTexCoord3; //not used
-    }
+    #endif
 
 //
 //    vs_out.vTexCoord = vTexCoord;
@@ -1738,8 +1843,6 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
 }
 
 void main() {
-
-
     vec4 tex = texture(uTexture, vTexCoord).rgba ;
     vec4 tex2 = texture(uTexture2, vTexCoord2).rgba;
     vec4 tex3 = texture(uTexture3, vTexCoord3).rgba;
@@ -1752,83 +1855,74 @@ void main() {
 
     int uPixelShader = UseLitColor_EnableAlpha_PixelShader.z;
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
-    if ( uPixelShader == -1 ) {
+    #if(FRAGMENTSHADER==-1)
         finalColor = vec4(makeDiffTerm(tex.rgb * vColor.rgb + tex2.rgb*vColor2.bgr), tex.a);
-    } else if (uPixelShader == 0) { //MapObjDiffuse
-
+    #endif
+    #if(FRAGMENTSHADER==0) //MapObjDiffuse
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
 
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-
-    } else if (uPixelShader == 1) { //MapObjSpecular
-
+    #endif
+    #if(FRAGMENTSHADER==1) //MapObjSpecular
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-
-    } else if (uPixelShader == 2) { //MapObjMetal
-
+    #endif
+    #if(FRAGMENTSHADER==2) //MapObjMetal
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-
-    } else if (uPixelShader == 3) { //MapObjEnv
-
+    #endif
+    #if(FRAGMENTSHADER==3) //MapObjEnv
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         vec3 env = tex2.rgb * tex.a;
 
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-
-    } else if (uPixelShader == 4) { //MapObjOpaque
-
+    #endif
+    #if(FRAGMENTSHADER==4) //MapObjOpaque
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-
-    } else if (uPixelShader == 5) { //MapObjEnvMetal
-
+    #endif
+    #if(FRAGMENTSHADER==5) //MapObjEnvMetal
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         vec3 env = (tex.rgb * tex.a) * tex2.rgb;
 
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-
-    } else if (uPixelShader == 6) { //MapObjTwoLayerDiffuse
-
+    #endif
+    #if(FRAGMENTSHADER==6) //MapObjTwoLayerDiffuse
         vec3 layer1 = tex.rgb;
         vec3 layer2 = mix(layer1, tex2.rgb, tex2.a);
         vec3 matDiffuse = (vColor.rgb * 2.0) * mix(layer2, layer1, vColor2.a);
 
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), 1.0);
-    } else if (uPixelShader == 7) { //MapObjTwoLayerEnvMetal
-
+    #endif
+    #if(FRAGMENTSHADER==7) //MapObjTwoLayerEnvMetal
         vec4 colorMix = mix(tex2, tex, vColor2.a);
         vec3 env = (colorMix.rgb * colorMix.a) * tex3.rgb;
         vec3 matDiffuse = colorMix.rgb * (2.0 * vColor.rgb);
 
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-
-    } else if (uPixelShader == 8) { //MapObjTwoLayerTerrain
-
+    #endif
+    #if(FRAGMENTSHADER==8) //MapObjTwoLayerTerrain
         vec3 layer1 = tex.rgb;
         vec3 layer2 = tex2.rgb;
 
         vec3 matDiffuse = ((vColor.rgb * 2.0) * mix(layer2, layer1, vColor2.a));
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-
-    } else if (uPixelShader == 9) { //MapObjDiffuseEmissive
-
+    #endif
+    #if(FRAGMENTSHADER==9) //MapObjDiffuseEmissive
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         vec3 env = tex2.rgb * tex2.a * vColor2.a;
 
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-
-    } else if (uPixelShader == 10) { //MapObjMaskedEnvMetal
-
+    #endif
+    #if(FRAGMENTSHADER==10) //MapObjMaskedEnvMetal
         float mixFactor = clamp((tex3.a * vColor2.a), 0.0, 1.0);
         vec3 matDiffuse =
             (vColor.rgb * 2.0) *
             mix(mix(((tex.rgb * tex2.rgb) * 2.0), tex3.rgb, mixFactor), tex.rgb, tex.a);
 
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-
-    } else if (uPixelShader == 11) { //MapObjEnvMetalEmissive
+    #endif
+    #if(FRAGMENTSHADER==11) //MapObjEnvMetalEmissive
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         vec3 env =
             (
@@ -1837,13 +1931,15 @@ void main() {
             );
 
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    } else if (uPixelShader == 12) { //MapObjTwoLayerDiffuseOpaque
+    #endif
+    #if(FRAGMENTSHADER==12) //MapObjTwoLayerDiffuseOpaque
         vec3 matDiffuse =
             (vColor.rgb * 2.0) *
             mix(tex2.rgb, tex.rgb, vColor2.a);
 
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    } else if (uPixelShader == 13) { //MapObjTwoLayerDiffuseEmissive
+    #endif
+    #if(FRAGMENTSHADER==13) //MapObjTwoLayerDiffuseEmissive
         vec3 t1diffuse = (tex2.rgb * (1.0 - tex2.a));
 
         vec3 matDiffuse =
@@ -1853,28 +1949,31 @@ void main() {
         //TODO: there is env missing here
         vec3 env = ((tex2.rgb * tex2.a) * (1.0 - vColor2.a));
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    } else if (uPixelShader == 13) { //MapObjTwoLayerDiffuseEmissive
+    #endif
+    #if(FRAGMENTSHADER==14) //MapObjAdditiveMaskedEnvMetal
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    } else if (uPixelShader == 14) { //MapObjAdditiveMaskedEnvMetal
+    #endif
+    #if(FRAGMENTSHADER==15) //MapObjTwoLayerDiffuseMod2x
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    } else if (uPixelShader == 15) { //MapObjTwoLayerDiffuseMod2x
+    #endif
+    #if(FRAGMENTSHADER==16) //MapObjTwoLayerDiffuseMod2xNA
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    } if (uPixelShader == 16) { //MapObjTwoLayerDiffuseMod2xNA
+    #endif
+    #if(FRAGMENTSHADER==17) //MapObjTwoLayerDiffuseAlpha
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    } if (uPixelShader == 17) { //MapObjTwoLayerDiffuseAlpha
+    #endif
+    #if(FRAGMENTSHADER==18) //MapObjLod
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    } if (uPixelShader == 18) { //MapObjLod
+    #endif
+    #if(FRAGMENTSHADER==19) //MapObjParallax
         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    } if (uPixelShader == 19) { //MapObjParallax
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    }
+    #endif
 
     //finalColor.rgb *= 4.0;
 
@@ -1903,24 +2002,7 @@ void main() {
 
     finalColor.a = 1.0; //do I really need it now?
 
-
-
-
-//#ifndef drawBuffersIsSupported
-    //Forward rendering without lights
     outputColor = finalColor;
-//    if(!any(lessThan(vBaryCentric, vec3(0.02)))){
-//        discard;
-//    }
-
-//#else
-    //Deferred rendering
-    //gl_FragColor = finalColor;
-//    gl_FragData[0] = vec4(vec3(fs_Depth), 1.0);
-//    gl_FragData[1] = vec4(vPosition.xyz,0);
-//    gl_FragData[2] = vec4(vNormal.xyz,0);
-//    gl_FragData[3] = finalColor;
-//#endif //drawBuffersIsSupported
 }
 
 #endif //COMPILING_FS

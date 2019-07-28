@@ -189,7 +189,7 @@ EGxBlendEnum PaticleBlendingModeToEGxBlendEnum1 [14] =
         EGxBlendEnum::GxBlend_BlendAdd
     };
 
-
+extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
 void ParticleEmitter::createMesh() {
     IDevice *device = m_api->getDevice();
 
@@ -226,8 +226,8 @@ void ParticleEmitter::createMesh() {
         if (blendMode == 4)
             blendMode = 3;
 
-//    meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
-        meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);//M2BlendingModeToEGxBlendEnum1[blendMode];
+    meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[blendMode];
+//        meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);//M2BlendingModeToEGxBlendEnum1[blendMode];
 
         meshTemplate.start = 0;
         meshTemplate.end = 0;
@@ -260,10 +260,12 @@ void ParticleEmitter::createMesh() {
         meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
 
         meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
-        if (blendMode == 1) {
+        if (blendMode == 0) {
+            blockPS.uAlphaTest = -1.0f;
+        } else if (blendMode == 1) {
             blockPS.uAlphaTest = 0.501960814f;
         } else {
-            blockPS.uAlphaTest = -1.0f;
+            blockPS.uAlphaTest = 0.0039215689f;
         }
 
         int uPixelShader = particleMaterialShader[this->particleType].pixelShader;
@@ -354,7 +356,6 @@ void ParticleEmitter::InternalUpdate(animTime_t delta) {
     }
 
     this->StepUpdate(delta);
-
 }
 void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
@@ -646,13 +647,7 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
 
                 mathfu::vec3 viewSpaceVelNorm = viewSpaceVel * v30;
 
-                m0 = mathfu::vec3(
-                //198
-                    viewSpaceVelNorm.x * particlePreRenderData.m_ageDependentValues.m_particleScale.x,
-                //200
-                    viewSpaceVelNorm.y * particlePreRenderData.m_ageDependentValues.m_particleScale.x,
-                //202
-                    viewSpaceVelNorm.z * particlePreRenderData.m_ageDependentValues.m_particleScale.x);
+                m0 = viewSpaceVelNorm *  particlePreRenderData.m_ageDependentValues.m_particleScale.x;
 
                 m1 = mathfu::vec3(
                     //197

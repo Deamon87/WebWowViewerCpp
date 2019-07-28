@@ -104,8 +104,8 @@ void initEXP2(M2Array<Exp2Record> *exp2Records) {
     exp2Records->initM2Array(exp2Records);
     for (int i = 0; i < exp2Records->size; i++) {
         Exp2Record *exp2Record = exp2Records->getElement(i);
-        exp2Record->unk3.timestamps.initM2Array(&exp2Record->unk3.timestamps);
-        exp2Record->unk3.values.initM2Array(&exp2Record->unk3.values);
+        exp2Record->unk3.timestamps.initM2Array(&exp2Record);
+        exp2Record->unk3.values.initM2Array(&exp2Record);
     }
 }
 
@@ -296,13 +296,13 @@ void M2Geom::process(const std::vector<unsigned char> &m2File, const std::string
         m2Header->blend_map_overrides.initM2Array(m2Header);
     }
     initM2ParticlePartTracks(m2Header);
-    initM2Textures(m2Header);
+    //initM2Textures(m2Header);
 
     if (exp2Records != nullptr) {
         initEXP2(exp2Records);
     }
 
-    initTracks(nullptr);
+    //initTracks(nullptr);
 
     //Step 2: init tracks
     m_loaded = true;

@@ -459,9 +459,7 @@ AnimationManager::calcBoneMatrix(
         boneMatrices[boneIndex] = parentBoneMat;
     }
 
-//    if (billboardMatrix != nullptr) {
-//        delete billboardMatrix;
-//    }
+
     int boneBillboardFlags = boneDefinition->flags_raw & 0x78;
     if (boneBillboardFlags) {
         mathfu::mat4 &currentBoneMat = boneMatrices[boneIndex];

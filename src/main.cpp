@@ -20,8 +20,12 @@
 #include <nuklear_cross.h>
 
 
-
+#ifdef __EMSCRIPTEN__
 #undef GLFW_INCLUDE_VULKAN
+#else
+#define GLFW_INCLUDE_VULKAN
+#endif
+
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
@@ -61,21 +65,6 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
             m_x = xpos;
             m_y = ypos;
         }
-
-
-//    } else {
-//        var delta_x = event.movementX ||
-//                      event.mozMovementX          ||
-//                      event.webkitMovementX       ||
-//                      0;
-//        var delta_y = event.movementY ||
-//                      event.mozMovementY      ||
-//                      event.webkitMovementY   ||
-//                      0;
-//
-//        camera.addHorizontalViewDir((delta_x) / 4.0);
-//        camera.addVerticalViewDir((delta_y) / 4.0);
-//    }
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -306,7 +295,7 @@ struct my_nkc_app {
     double currentFrame;
     double lastFrame;
 
-    struct nk_color ambientColor;
+    struct nk_color ambientColor = {255,255,255,255};
     float ambientIntensity = 1.0;
     struct nk_color sunColor;
 };
@@ -342,7 +331,7 @@ void mainLoop(void* loopArg){
         windowSizeChanged = false;
     }
 
-    myapp->scene->draw((deltaTime*1000.0f)); //miliseconds
+    myapp->scene->draw((deltaTime*(1000.0f))); //miliseconds
 
     stopInputs = false;
     /* Nuklear GUI code */
@@ -712,8 +701,8 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=c7c85e75ac7aad0883a79d04bb8893bc&cdnconfig=8ab06c341b55dcdb81b81b03d7f226ff&filename=";
-    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=c7c85e75ac7aad0883a79d04bb8893bc&cdnconfig=8ab06c341b55dcdb81b81b03d7f226ff&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
 //1.13.0
 //    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=";
 //    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=data&filedataid=";
