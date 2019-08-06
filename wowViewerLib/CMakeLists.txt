@@ -279,9 +279,32 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/GOcclusionQueryGL4x.cpp
         src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h)
 
+IF(WIN32)
+    IF (NOT Vulkan_FOUND)
+        find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS ${CMAKE_SOURCE_DIR}/libs/vulkan)
+        IF (Vulkan_LIBRARY)
+            set(Vulkan_FOUND ON)
+            MESSAGE("Using bundled Vulkan library version")
+        ENDIF()
+    ENDIF()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
+ELSE(WIN32)
+    IF (NOT Vulkan_FOUND)
+        find_library(Vulkan_LIBRARY NAMES vulkan HINTS "$ENV{VULKAN_SDK}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan" REQUIRED)
+        IF (Vulkan_LIBRARY)
+            set(Vulkan_FOUND ON)
+            MESSAGE("Using bundled Vulkan library version")
+        ENDIF()
+    ENDIF()
+    find_package(Threads REQUIRED)
+ENDIF()
+set(VULKAN_IMPLEMENTATION src/include/vulkancontext.h src/gapi/vulkan/GDeviceVulkan.cpp src/gapi/vulkan/GDeviceVulkan.h)
+include_directories(${Vulkan_INCLUDE_DIR})
 
-#add_dependencies(WoWViewerLib mathfu)
-add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} src/engine/persistance/animFile.cpp src/engine/persistance/animFile.h src/engine/persistance/m2File.cpp src/engine/persistance/m2File.h)
+
+
+
+add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION} src/engine/persistance/animFile.cpp src/engine/persistance/animFile.h src/engine/persistance/m2File.cpp src/engine/persistance/m2File.h)
 check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
 if(HAVE_FLAG_STD_CXX17)
     # Have -std=c++17, use it
@@ -305,7 +328,9 @@ if (NOT EMSCRIPTEN)
     set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 endif()
 
+
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
+target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY} ${Vulkan_LIBRARY})
 #target_link_libraries(WoWViewerLib gomp) //never use it. It makes uniform buffers screwed up for some reason
 
 if (EMSCRIPTEN)
@@ -317,3 +342,4 @@ endif()
 
 target_include_directories(WoWViewerLib
         PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
+target_include_directories(WoWViewerLib INTERFACE ${Vulkan_INCLUDE_DIR})

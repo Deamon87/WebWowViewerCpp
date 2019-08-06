@@ -39,15 +39,15 @@ else()
 endif()
 
 #ZLib library
-set(BUILD_SHARED_LIBS 1)
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
-set(BUILD_SHARED_LIBS )
-#Zlib
-#ExternalProject_Add("LibZip"
-#		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
-#		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR} -DEXTRA_LIBS=${extra_libraries}
-#		)
+set(ZLIB_LIBRARY ${CMAKE_SOURCE_DIR}/3rdparty/zlib)
+set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/zlib)
+
+#Library for zip
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libzip)
+set(BUILD_SHARED_LIBS OFF)
 include_directories("lib/libzip/include")
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
@@ -63,6 +63,7 @@ set(ENV{BUILD_CPR_TESTS} OFF)
 set(ENV{CMAKE_USE_OPENSSL} ON)
 set(ENV{CURL_DISABLE_LDAP OFF)
 set(CMAKE_USE_OPENSSL ON)
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 
@@ -91,11 +92,9 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 	set(CMAKE_SYSTEM_NAME "${CMAKE_SYSTEM_NAME_TEMPTEMP}")
 endif()
 
-#nuklear_cross
-include_directories(3rdparty/nuklear_cross)
-
 add_subdirectory(wowViewerLib)
 include_directories(${GLEW_INCLUDE_DIRS})
+
 
 set(SOURCE_FILES
 		src/persistance/httpFile/httpFile.cpp
@@ -168,7 +167,6 @@ else()
 
 endif()
 
-#add_dependencies(AWebWoWViewerCpp LibZip)
 add_dependencies(AWebWoWViewerCpp zip)
 add_dependencies(AWebWoWViewerCpp zlib)
 add_dependencies(AWebWoWViewerCpp WoWViewerLib)
@@ -209,5 +207,6 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	target_link_libraries(AWebWoWViewerCpp -lm)
 	target_link_libraries(AWebWoWViewerCpp -lwininet)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+
 
 INSTALL(TARGETS AWebWoWViewerCpp DESTINATION BIN)

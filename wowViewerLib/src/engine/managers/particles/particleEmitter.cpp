@@ -563,7 +563,6 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
 
     szVertexBuf = std::vector<ParticleBuffStructQuad>(0);
     szIndexBuff = std::vector<uint16_t>(0);
-    // TODO: z-sort
     int vo = 0;
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = this->particles[i];
