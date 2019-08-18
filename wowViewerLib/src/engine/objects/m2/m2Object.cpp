@@ -869,6 +869,14 @@ bool M2Object::doPostLoad(){
         return false;
     }
     if (!m_skinGeom->isLoaded()) return false;
+    if (m_m2Geom->m_skid > 0) {
+        if (m_skelGeom == nullptr) {
+            auto skelCache = m_api->getSkelCache();
+            m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
+            return false;
+        }
+        if (!m_skelGeom->getIsLoaded()) return false;
+    }
 
     //3. Do post load procedures
     m_skinGeom->fixData(m_m2Geom->getM2Data());

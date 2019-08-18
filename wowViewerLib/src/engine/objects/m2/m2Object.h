@@ -17,6 +17,7 @@
 #include "../../managers/animationManager.h"
 #include "mathfu/matrix.h"
 #include "../../persistance/header/skinFileHeader.h"
+#include "../../persistance/skelFile.h"
 
 #include "mathfu/internal/vector_4.h"
 #include "../../managers/CRibbonEmitter.h"
@@ -60,6 +61,7 @@ private:
 
     HM2Geom m_m2Geom = nullptr;
     HSkinGeom m_skinGeom = nullptr;
+    HSkelGeom m_skelGeom = nullptr;
 
     HGVertexBufferBindings bufferBindings = nullptr;
     HGUniformBuffer vertexModelWideUniformBuffer = nullptr;

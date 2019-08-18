@@ -63,6 +63,15 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
             }
         },
         {
+            'DIKS',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered DIKS");
+                    chunkData.readValue(file.m_skid);
+                }
+            }
+        },
+        {
             'DIFA',
             {
                 [](M2Geom &file, ChunkData &chunkData) {
@@ -296,13 +305,13 @@ void M2Geom::process(const std::vector<unsigned char> &m2File, const std::string
         m2Header->blend_map_overrides.initM2Array(m2Header);
     }
     initM2ParticlePartTracks(m2Header);
-    //initM2Textures(m2Header);
+    initM2Textures(m2Header);
 
     if (exp2Records != nullptr) {
         initEXP2(exp2Records);
     }
 
-    //initTracks(nullptr);
+    initTracks(nullptr);
 
     //Step 2: init tracks
     m_loaded = true;
