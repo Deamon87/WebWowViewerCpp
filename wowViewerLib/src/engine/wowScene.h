@@ -31,6 +31,7 @@
 #include "objects/wowFrameData.h"
 #include "camera/planarCamera.h"
 #include "persistance/animFile.h"
+#include "persistance/skelFile.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
@@ -74,6 +75,9 @@ public:
                 break;
             case CacheHolderType::CACHE_ANIM:
                 animCache.provideFile(s_fileName, data, fileLength);
+                break;
+            case CacheHolderType::CACHE_SKEL:
+                skelCache.provideFile(s_fileName, data, fileLength);
                 break;
 
        }
@@ -130,6 +134,9 @@ public:
     };
     virtual Cache<AnimFile>* getAnimCache() override {
         return &animCache;
+    };
+    virtual Cache<SkelFile>* getSkelCache() override {
+        return &skelCache;
     };
     virtual Cache<BlpTexture> *getTextureCache() override {
         return &textureCache;
@@ -237,6 +244,7 @@ private:
     Cache<BlpTexture> textureCache;
     Cache<DB2Base> db2Cache;
     Cache<AnimFile> animCache;
+    Cache<SkelFile> skelCache;
 
     iInnerSceneApi *currentScene = nullptr;
     iInnerSceneApi *newScene = nullptr;

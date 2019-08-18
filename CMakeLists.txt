@@ -39,30 +39,34 @@ else()
 endif()
 
 #ZLib library
-set(BUILD_SHARED_LIBS 1)
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
-set(BUILD_SHARED_LIBS )
+set(BUILD_SHARED_LIBS OFF)
 #Zlib
 #ExternalProject_Add("LibZip"
 #		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
 #		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR} -DEXTRA_LIBS=${extra_libraries}
 #		)
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libzip)
 include_directories("lib/libzip/include")
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
+	set(BUILD_SHARED_LIBS OFF)
 	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw)
 endif()
 
 #bz2renderFlag
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(3rdparty/bzip)
  
 #CPR
-set(ENV{USE_SYSTEM_CURL} ON)
+set(ENV{USE_SYSTEM_CURL} OFF)
 set(ENV{BUILD_CPR_TESTS} OFF)
 set(ENV{CMAKE_USE_OPENSSL} ON)
 set(ENV{CURL_DISABLE_LDAP OFF)
 set(CMAKE_USE_OPENSSL ON)
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 
@@ -84,6 +88,7 @@ endif()
 if (WIN32)
 	set(WITH_LIBTOMCRYPT true)
 endif()
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(3rdparty/casclib)
 set(CASC_BUILD_STATIC_LIB 1)
 if (CMAKE_NDK_BUILD MATCHES 1)

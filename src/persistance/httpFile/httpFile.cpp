@@ -82,8 +82,9 @@ void HttpFile::startDownloading() {
 //    std::string escaped_url = url_encode(m_httpUrl);
 
     std::string escaped_url = m_httpUrl;
+    auto verSSL = cpr::VerifySsl{false};
 
-    auto r = cpr::Get(cpr::Url{escaped_url}, cpr::VerifySsl{false});
+    auto r = cpr::Get(cpr::Url{escaped_url}, verSSL );
     if (r.status_code == 200) {
         if (this->m_fileBuffer != nullptr) delete(this->m_fileBuffer);
         this->m_fileBuffer = new std::vector<unsigned char>(r.text.begin(), r.text.end());

@@ -32,6 +32,7 @@ public:
     virtual Cache<M2Geom>* getM2GeomCache() = 0;
     virtual Cache<SkinGeom>* getSkinGeomCache() = 0;
     virtual Cache<AnimFile>* getAnimCache() = 0;
+    virtual Cache<SkelFile>* getSkelCache() = 0;
     virtual Cache<BlpTexture>* getTextureCache() = 0;
     virtual Cache<WmoMainGeom>* getWmoMainCache() = 0;
     virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() = 0;

@@ -186,7 +186,14 @@ struct M2Array {
 template<>
 inline std::string M2Array<char>::toString() {
     char * ptr = this->getElement(0);
-    return std::string(ptr, ptr+size);
+    std::string result;
+    try {
+        result = std::string(ptr, ptr+size);
+    } catch(...) {
+        result = "";
+    }
+
+    return result;
 }
 
 struct CM2SequenceLoad {

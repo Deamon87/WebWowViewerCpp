@@ -28,6 +28,7 @@ void WoWSceneImpl::processCaches(int limit) {
     this->wmoMainCache.processCacheQueue(limit);
     this->skinGeomCache.processCacheQueue(limit);
     this->animCache.processCacheQueue(limit);
+    this->skelCache.processCacheQueue(limit);
     this->m2GeomCache.processCacheQueue(limit);
     this->textureCache.processCacheQueue(limit);
     this->db2Cache.processCacheQueue(limit);
@@ -240,7 +241,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         textureCache(requestProcessor, CacheHolderType::CACHE_BLP),
         adtObjectCache(requestProcessor, CacheHolderType::CACHE_ADT),
         db2Cache(requestProcessor, CacheHolderType::CACHE_DB2),
-        animCache(requestProcessor, CacheHolderType::CACHE_ANIM)
+        animCache(requestProcessor, CacheHolderType::CACHE_ANIM),
+        skelCache(requestProcessor, CacheHolderType::CACHE_SKEL)
 {
     m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
 //    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
@@ -610,7 +612,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //setSceneWithFileDataId(0, 125407, -1); // phoneix
     //setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
     //setSceneWithFileDataId(0, 125995, -1); //portal
-    setSceneWithFileDataId(0, 1814471, -1); //portal
+
+//    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
+    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale
+//    setSceneWithFileDataId(0, 1269330, -1); //nightbornemale creature
 
 
     if (m_supportThreads) {

@@ -8,6 +8,7 @@
 
 //Persistance classes
 class AdtFile;
+class SkelFile;
 class WdtFile;
 class WdlFile;
 class M2Geom;
@@ -23,6 +24,7 @@ typedef std::shared_ptr<WdtFile> HWdtFile;
 typedef std::shared_ptr<WdlFile> HWdlFile;
 typedef std::shared_ptr<M2Geom> HM2Geom;
 typedef std::shared_ptr<SkinGeom> HSkinGeom;
+typedef std::shared_ptr<SkelFile> HSkelGeom;
 typedef std::shared_ptr<BlpTexture> HBlpTexture;
 typedef std::shared_ptr<WmoMainGeom> HWmoMainGeom;
 typedef std::shared_ptr<WmoGroupGeom> HWmoGroupGeom;

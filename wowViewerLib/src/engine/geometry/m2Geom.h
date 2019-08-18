@@ -46,6 +46,7 @@ public:
     std::vector<uint32_t> textureFileDataIDs;
     std::vector<M2_AFID> animationFileDataIDs;
     M2Array<Exp2Record> *exp2Records = nullptr;
+    int m_skid = -1;
 private:
     std::vector<uint8_t> m2File;
 
