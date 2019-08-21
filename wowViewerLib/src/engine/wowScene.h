@@ -36,7 +36,7 @@
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
 public:
-    WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
+    WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDevice * device, int canvWidth, int canvHeight);
     ~WoWSceneImpl() override;
 
     void draw(animTime_t deltaTime) override;

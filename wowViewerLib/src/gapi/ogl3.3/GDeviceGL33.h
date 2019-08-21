@@ -94,6 +94,8 @@ public:
 
     std::string loadShader(std::string fileName, bool common) override;
 
+    virtual void clearScreen() override;
+
 private:
     void drawMesh(HGMesh &hmesh);
 

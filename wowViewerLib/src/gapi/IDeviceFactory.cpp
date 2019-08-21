@@ -8,14 +8,15 @@
 #include "ogl4.x/GDeviceGL4x.h"
 #include "vulkan/GDeviceVulkan.h"
 
-IDevice *IDeviceFactory::createDevice(std::string gapiName) {
+IDevice *IDeviceFactory::createDevice(std::string gapiName, ExtensionsRequired * er) {
     if (gapiName == "ogl3") {
         return new GDeviceGL33();
     } else if (gapiName == "ogl4") {
 //        return new GDeviceGL4x();
     } else if (gapiName == "vulkan") {
-        return new GDeviceVLK();
+        return new GDeviceVLK(er);
     }
 
     return nullptr;
 }
+

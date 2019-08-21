@@ -32,6 +32,8 @@
 #include "persistance/MpqRequestProcessor.h"
 #include "persistance/HttpRequestProcessor.h"
 #include "../wowViewerLib/src/include/vulkancontext.h"
+#include "../wowViewerLib/src/gapi/interface/IDevice.h"
+#include "../wowViewerLib/src/gapi/IDeviceFactory.h"
 
 
 int mleft_pressed = 0;
@@ -365,40 +367,54 @@ int main(){
 //        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
         processor->setThreaded(true);
 
-        WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
-        processor->setFileRequester(scene);
-        testConf->setDrawM2BB(false);
-        //testConf->setUsePortalCulling(false);
 
-        myapp.scene = scene;
-        myapp.processor = processor;
-        myapp.currentFrame = glfwGetTime();
-        myapp.lastFrame = myapp.currentFrame;
+    glfwInit();
 
-        glfwInit();
+    //Get extensions for vulkan
 
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    ExtensionsRequired er;
+    er.extensions = glfwExtensions;
+    er.extensionCnt = glfwExtensionCount;
 
-        auto instance = createVulkanInstance();
-        auto window = glfwCreateWindow(800, 600, "Vulkan", nullptr, nullptr);
-        VkSurfaceKHR surface;
-        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
-        }
+    //Create device
+    IDevice * device = IDeviceFactory::createDevice("vulkan", &er);
 
-        glfwSetWindowUserPointer(window, scene);
-        glfwSetKeyCallback(window, onKey);
-        glfwSetScrollCallback(window, scroll_callback);
-        glfwSetCursorPosCallback( window, cursor_position_callback);
-        glfwSetWindowSizeCallback( window, window_size_callback);
-        glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
-        glfwSetMouseButtonCallback( window, mouse_button_callback);
+
+    WoWScene *scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
+    processor->setFileRequester(scene);
+    testConf->setDrawM2BB(false);
+    //testConf->setUsePortalCulling(false);
+
+    myapp.scene = scene;
+    myapp.processor = processor;
+    myapp.currentFrame = glfwGetTime();
+    myapp.lastFrame = myapp.currentFrame;
+
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+    auto window = glfwCreateWindow(800, 600, "Vulkan", nullptr, nullptr);
+    VkSurfaceKHR surface;
+    if (glfwCreateWindowSurface(device->getVkInstance(), window, nullptr, &surface) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create window surface!");
+    }
+
+    glfwSetWindowUserPointer(window, scene);
+    glfwSetKeyCallback(window, onKey);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetCursorPosCallback( window, cursor_position_callback);
+    glfwSetWindowSizeCallback( window, window_size_callback);
+    glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    glfwSetMouseButtonCallback( window, mouse_button_callback);
 //        glfwSwapInterval(0);
 
-        while (!glfwWindowShouldClose(window)) {
-            glfwPollEvents();
-        }
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+    }
 //        while (1) {
 //            mainLoop(&myapp);
 //        }

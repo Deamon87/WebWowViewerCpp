@@ -852,4 +852,26 @@ float GDeviceGL33::getAnisLevel() {
     return m_anisotropicLevel;
 }
 
+void GDeviceGL33::clearScreen() {
+#ifndef WITH_GLESv2
+    glClearDepthf(1.0f);
+#else
+    glClearDepthf(1.0f);
+#endif
+    glDisable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+//    glClearColor(0.0, 0.0, 0.0, 0.0);
+//    glClearColor(0.25, 0.06, 0.015, 0.0);
+    glClearColor(0.117647, 0.207843, 0.392157, 1);
+    //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
+//    glClearColor(0,0,0,1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    glDisable(GL_SCISSOR_TEST);
+
+}
+
 

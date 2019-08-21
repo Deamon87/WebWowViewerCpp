@@ -230,7 +230,7 @@ void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cam
     }
 }
 
-WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
+WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDevice * device, int canvWidth, int canvHeight)
         :
         wmoMainCache(requestProcessor, CacheHolderType::CACHE_MAIN_WMO),
         wmoGeomCache(requestProcessor, CacheHolderType::CACHE_GROUP_WMO),
@@ -244,7 +244,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
         animCache(requestProcessor, CacheHolderType::CACHE_ANIM),
         skelCache(requestProcessor, CacheHolderType::CACHE_SKEL)
 {
-    m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
+    m_gdevice.reset(device);
 //    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
 
 #ifdef __EMSCRIPTEN__
@@ -686,27 +686,6 @@ void WoWSceneImpl::drawTexturedQuad(GLuint texture,
 }
 /****************/
 
-void glClearScreen() {
-#ifndef WITH_GLESv2
-    glClearDepthf(1.0f);
-#else
-    glClearDepthf(1.0f);
-#endif
-    glDisable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-//    glClearColor(0.0, 0.0, 0.0, 0.0);
-//    glClearColor(0.25, 0.06, 0.015, 0.0);
-    glClearColor(0.117647, 0.207843, 0.392157, 1);
-    //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
-//    glClearColor(0,0,0,1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    glDisable(GL_CULL_FACE);
-    glDepthMask(GL_FALSE);
-    glDisable(GL_SCISSOR_TEST);
-}
-
 void WoWSceneImpl::drawCamera () {
     /*
     glDisable(GL_DEPTH_TEST);
@@ -768,13 +747,12 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
         m_sceneWideUniformBuffer->save();
 
-
         currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
         device->updateBuffers(objFrameParam->renderedThisFrame);
     }
 
-    glClearScreen();
+    device->clearScreen();
 
     glViewport(0,0,this->canvWidth, this->canvHeight);
     mathfu::mat4 mainLookAtMat4 = frameParam->m_lookAtMat4;
@@ -936,7 +914,7 @@ WoWSceneImpl::~WoWSceneImpl() {
     }
 }
 
-WoWScene *createWoWScene(Config *config, IFileRequest *requestProcessor, int canvWidth, int canvHeight) {
+WoWScene *createWoWScene(Config *config, IFileRequest *requestProcessor, IDevice *device, int canvWidth, int canvHeight) {
 #ifdef _WIN32
     glewExperimental = true; // Needed in core profile
     if (glewInit() != GLEW_OK) {
@@ -948,7 +926,7 @@ WoWScene *createWoWScene(Config *config, IFileRequest *requestProcessor, int can
     std::cout.rdbuf(new androidbuf());
 #endif
 
-    return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);
+    return new WoWSceneImpl(config, requestProcessor, device, canvWidth, canvHeight);
 }
 
 void WoWSceneImpl::clearCache() {

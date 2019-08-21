@@ -1,7 +1,9 @@
 #include <iostream>
+#include <cassert>
 #include "CRibbonEmitter.h"
 #include "../../gapi/interface/IVertexBufferBindings.h"
 #include "../shader/ShaderDefinitions.h"
+#include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 
 static GBufferBinding staticRibbonBindings[3] = {
     {+m2RibbonShader::Attribute::aPosition, 3, GL_FLOAT, false, 24, 0 }, // 0
@@ -149,7 +151,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
 }
 
 //----- (00A199E0) --------------------------------------------------------
-void __cdecl CRibbonEmitter::SetDataEnabled(char a2)
+void CRibbonEmitter::SetDataEnabled(char a2)
 {
   this->m_ribbonEmitterflags.m_dataEnabled = a2;
   if ( !(this->m_ribbonEmitterflags.m_dataEnabled) )
@@ -165,7 +167,7 @@ void CRibbonEmitter::SetUserEnabled(char a2)
 }
 
 //----- (00A19A60) --------------------------------------------------------
-CRibbonEmitter *__cdecl CRibbonEmitter::SetGravity(float a2)
+CRibbonEmitter * CRibbonEmitter::SetGravity(float a2)
 {
   CRibbonEmitter *result; // eax
 
@@ -202,7 +204,7 @@ void CRibbonEmitter::SetAlpha(float a2)
 
 
 //----- (00A19C50) --------------------------------------------------------
-void __cdecl CRibbonEmitter::InitInterpDeltas()
+void  CRibbonEmitter::InitInterpDeltas()
 {
   float diffLen = (this->m_prevPos - this->m_currPos).LengthSquared();
   assert(diffLen >= 0.0);
@@ -266,7 +268,7 @@ void CRibbonEmitter::SetPos(const mathfu::mat4 &modelViewMat, const mathfu::vec3
 }
 
 //----- (00A1A0D0) --------------------------------------------------------
-unsigned int __cdecl CRibbonEmitter::GetNumPrimitives()
+unsigned int  CRibbonEmitter::GetNumPrimitives()
 {
   unsigned int v1; // edx
   unsigned int v2; // eax

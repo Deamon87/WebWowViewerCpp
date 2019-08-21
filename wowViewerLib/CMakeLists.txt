@@ -330,7 +330,7 @@ endif()
 
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
-target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY} ${Vulkan_LIBRARY})
+target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
 #target_link_libraries(WoWViewerLib gomp) //never use it. It makes uniform buffers screwed up for some reason
 
 if (EMSCRIPTEN)

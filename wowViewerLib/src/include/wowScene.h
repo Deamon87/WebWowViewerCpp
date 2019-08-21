@@ -13,6 +13,7 @@ typedef double animTime_t;
 #include "config.h"
 #include "controllable.h"
 
+
 enum class CacheHolderType {
     CACHE_M2,
     CACHE_SKIN,
@@ -60,6 +61,8 @@ public:
 };
 
 
-extern "C" { WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight); };
+
+class IDevice;
+extern "C" { WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, IDevice * device, int canvWidth, int canvHeight); };
 
 #endif //WOWMAPVIEWERREVIVED_WOWSCENE_H_H

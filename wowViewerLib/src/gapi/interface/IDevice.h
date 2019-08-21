@@ -20,6 +20,7 @@ class IGPUFence;
 class gMeshTemplate;
 #include <memory>
 #include "syncronization/IGPUFence.h"
+#include "vulkan/vulkan_core.h"
 
 typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;
 typedef std::shared_ptr<IIndexBuffer> HGIndexBuffer;
@@ -86,6 +87,11 @@ struct WMOShaderCacheRecord {
     };
 };
 
+struct ExtensionsRequired {
+    const char ** extensions;
+    int extensionCnt;
+};
+
 class IDevice {
     public:
         virtual ~IDevice() {};
@@ -137,6 +143,13 @@ class IDevice {
         virtual HGVertexBufferBindings getBBVertexBinding() = 0;
         virtual HGVertexBufferBindings getBBLinearBinding() = 0;
         virtual std::string loadShader(std::string fileName, bool common) = 0;
+        virtual void clearScreen() = 0;
+
+        //TODO: ifdef for when app is compiled without vulkan support
+        virtual VkInstance getVkInstance() {
+            return nullptr;
+        };
+
 };
 
 

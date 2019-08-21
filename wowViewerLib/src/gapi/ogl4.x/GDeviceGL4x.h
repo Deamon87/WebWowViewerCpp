@@ -86,6 +86,7 @@ public:
 
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
+    virtual void clearScreen() override;
 
 private:
     void drawMesh(HGMesh &hmesh);

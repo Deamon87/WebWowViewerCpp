@@ -31,7 +31,7 @@ class gMeshTemplate;
 
 class GDeviceVLK : public IDevice {
 public:
-    GDeviceVLK();
+    explicit GDeviceVLK(ExtensionsRequired * er);
     ~GDeviceVLK() override = default;;
 
     void reset() override;
@@ -84,6 +84,10 @@ public:
 
     std::string loadShader(std::string fileName, bool common) override;
 
+    virtual void clearScreen();
+
+    virtual VkInstance getVkInstance() override;
+
 private:
     void drawMesh(HGMesh &hmesh);
 
@@ -108,6 +112,8 @@ protected:
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GDeviceVLK>, BlpCacheRecordHasher> loadedTextureCache;
+
+    VkInstance vkInstance;
 
     unsigned int m_frameNumber = 0;
 

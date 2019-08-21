@@ -66,7 +66,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     }
 
     size_t hash = std::hash<std::string>{}(fileName);
-    std::string inputFileName = "./../cache/" + int_to_hex(hash);
+    std::string inputFileName = "./cache/" + int_to_hex(hash);
 
     std::ifstream cache_file(inputFileName, std::ios::in |std::ios::binary);
     if (cache_file.good()) {
