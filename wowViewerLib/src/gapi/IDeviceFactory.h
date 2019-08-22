@@ -12,7 +12,7 @@
 
 class IDeviceFactory {
 public:
-    static IDevice *createDevice(std::string gapiName, ExtensionsRequired * er);
+    static IDevice *createDevice(std::string gapiName, void* data);
 
 };
 

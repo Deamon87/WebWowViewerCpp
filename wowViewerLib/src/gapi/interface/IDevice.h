@@ -19,6 +19,7 @@ class IParticleMesh;
 class IGPUFence;
 class gMeshTemplate;
 #include <memory>
+#include <functional>
 #include "syncronization/IGPUFence.h"
 #include "vulkan/vulkan_core.h"
 
@@ -87,8 +88,9 @@ struct WMOShaderCacheRecord {
     };
 };
 
-struct ExtensionsRequired {
-    const char ** extensions;
+struct vkCallInitCallback {
+    std::function<void(const char** &extensionNames, int &extensionCnt)> getRequiredExtensions;
+    std::function<VkSurfaceKHR(VkInstance vkInstance )> createSurface;
     int extensionCnt;
 };
 

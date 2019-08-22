@@ -358,29 +358,42 @@ int main(){
 
 
 
-        printf("Successfull init. Starting 'infinite' main loop...\n");
+    printf("Successfull init. Starting 'infinite' main loop...\n");
 
-        //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
-        //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
-        //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+    //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
+    //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
+    //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
+    HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
 //        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
-        processor->setThreaded(true);
+    processor->setThreaded(true);
 
 
     glfwInit();
 
-    //Get extensions for vulkan
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    ExtensionsRequired er;
-    er.extensions = glfwExtensions;
-    er.extensionCnt = glfwExtensionCount;
+    auto window = glfwCreateWindow(800, 600, "Vulkan", nullptr, nullptr);
+
+    vkCallInitCallback callback;
+    callback.createSurface = [&](VkInstance vkInstance) {
+        VkSurfaceKHR surface;
+
+        if (glfwCreateWindowSurface(vkInstance, window, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
+
+        return surface;
+    };
+    callback.getRequiredExtensions = [](const char** &extensionNames, int &extensionCnt) {
+        uint32_t count;
+        extensionNames = glfwGetRequiredInstanceExtensions(&count);
+        extensionCnt = count;
+    };
+
 
     //Create device
-    IDevice * device = IDeviceFactory::createDevice("vulkan", &er);
+    IDevice * device = IDeviceFactory::createDevice("vulkan", &callback);
 
 
     WoWScene *scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
@@ -393,15 +406,6 @@ int main(){
     myapp.currentFrame = glfwGetTime();
     myapp.lastFrame = myapp.currentFrame;
 
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-    auto window = glfwCreateWindow(800, 600, "Vulkan", nullptr, nullptr);
-    VkSurfaceKHR surface;
-    if (glfwCreateWindowSurface(device->getVkInstance(), window, nullptr, &surface) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface!");
-    }
 
     glfwSetWindowUserPointer(window, scene);
     glfwSetKeyCallback(window, onKey);

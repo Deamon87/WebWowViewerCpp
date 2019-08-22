@@ -30,8 +30,23 @@ class gMeshTemplate;
 #include "../interface/IDevice.h"
 
 class GDeviceVLK : public IDevice {
+    struct QueueFamilyIndices {
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
+
+        bool isComplete() {
+            return graphicsFamily.has_value() && presentFamily.has_value();
+        }
+    };
+
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
 public:
-    explicit GDeviceVLK(ExtensionsRequired * er);
+    explicit GDeviceVLK(vkCallInitCallback * callBacks);
     ~GDeviceVLK() override = default;;
 
     void reset() override;
@@ -91,6 +106,17 @@ public:
 private:
     void drawMesh(HGMesh &hmesh);
 
+    void pickPhysicalDevice();
+    void createLogicalDevice();
+    bool isDeviceSuitable(VkPhysicalDevice device);
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    void createSwapChain();
+    void createImageViews();
+    void createFramebuffers();
+    void createRenderPass();
+
+
 protected:
     struct BlpCacheRecord {
         HBlpTexture texture;
@@ -114,6 +140,25 @@ protected:
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GDeviceVLK>, BlpCacheRecordHasher> loadedTextureCache;
 
     VkInstance vkInstance;
+    VkSurfaceKHR vkSurface;
+    bool enableValidationLayers = false;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkDevice device;
+
+    VkQueue graphicsQueue;
+    VkQueue presentQueue;
+
+    VkSwapchainKHR swapChain;
+    std::vector<VkImage> swapChainImages;
+    VkFormat swapChainImageFormat;
+    VkExtent2D swapChainExtent;
+    std::vector<VkImageView> swapChainImageViews;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
+
+    VkRenderPass renderPass;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline graphicsPipeline;
+
 
     unsigned int m_frameNumber = 0;
 
