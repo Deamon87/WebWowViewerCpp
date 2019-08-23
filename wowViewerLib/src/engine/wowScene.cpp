@@ -741,20 +741,21 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
         updateFrameIndex = updateObjFrame;
 
-        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
-        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
+//        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+//        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
+//        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
 
-        m_sceneWideUniformBuffer->save();
+//        m_sceneWideUniformBuffer->save();
 
         currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
-        device->updateBuffers(objFrameParam->renderedThisFrame);
+//        device->updateBuffers(objFrameParam->renderedThisFrame);
     }
 
-    device->clearScreen();
+    device->setClearScreenColor(0.117647, 0.207843, 0.392157);
+    device->setViewPortDimensions(0,0,this->canvWidth, this->canvHeight);
+    device->beginFrame();
 
-    glViewport(0,0,this->canvWidth, this->canvHeight);
     mathfu::mat4 mainLookAtMat4 = frameParam->m_lookAtMat4;
 
     if (this->m_config->getDoubleCameraDebug()) {
@@ -830,6 +831,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
 
 //    nextDeltaTime = deltaTime;
+    device->commitFrame();
 
     currentScene->doPostLoad(frameParam); //Do post load after rendering is done!
     device->uploadTextureForMeshes(frameParam->renderedThisFrame);

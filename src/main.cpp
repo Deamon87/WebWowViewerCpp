@@ -418,10 +418,20 @@ int main(){
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        // Render scene
+        myapp.currentFrame = glfwGetTime(); // seconds
+        double deltaTime = myapp.currentFrame - myapp.lastFrame;
+        myapp.lastFrame = myapp.currentFrame;
+
+        double fps = calcFPS(nullptr, 2.0);
+
+        scene->draw(deltaTime);
     }
 //        while (1) {
 //            mainLoop(&myapp);
 //        }
+
 
 
     delete myapp.scene;

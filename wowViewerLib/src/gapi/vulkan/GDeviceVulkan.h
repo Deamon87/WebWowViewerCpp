@@ -100,8 +100,15 @@ public:
     std::string loadShader(std::string fileName, bool common) override;
 
     virtual void clearScreen();
+    virtual void beginFrame() override;
+    virtual void commitFrame() override;
+
+    virtual void setClearScreenColor(float r, float g, float b) override;
+    virtual void setViewPortDimensions(float x, float y, float width, float height) override;
 
     virtual VkInstance getVkInstance() override;
+    int currentFrameSemaphore = 0;
+    bool framebufferResized = false;
 
 private:
     void drawMesh(HGMesh &hmesh);
@@ -116,6 +123,9 @@ private:
     void createFramebuffers();
     void createRenderPass();
 
+    void createCommandPool();
+    void createCommandBuffers();
+    void createSyncObjects();
 
 protected:
     struct BlpCacheRecord {
@@ -158,6 +168,38 @@ protected:
     VkRenderPass renderPass;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
+
+    VkCommandPool commandPool;
+
+    VkImage depthImage;
+    VkDeviceMemory depthImageMemory;
+    VkImageView depthImageView;
+
+/*    VkImage textureImage;
+    VkDeviceMemory textureImageMemory;
+    VkImageView textureImageView;
+    VkSampler textureSampler;
+
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;*/
+
+    std::vector<VkBuffer> uniformBuffers;
+    std::vector<VkDeviceMemory> uniformBuffersMemory;
+
+    VkDescriptorPool descriptorPool;
+    std::vector<VkDescriptorSet> descriptorSets;
+
+    std::vector<VkCommandBuffer> commandBuffers;
+
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkFence> inFlightFences;
+
+    float clearColor[3] = {0,0,0};
 
 
     unsigned int m_frameNumber = 0;

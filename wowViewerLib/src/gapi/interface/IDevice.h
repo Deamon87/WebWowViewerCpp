@@ -146,6 +146,11 @@ class IDevice {
         virtual HGVertexBufferBindings getBBLinearBinding() = 0;
         virtual std::string loadShader(std::string fileName, bool common) = 0;
         virtual void clearScreen() = 0;
+        virtual void setClearScreenColor(float r, float g, float b) = 0;
+        virtual void setViewPortDimensions(float x, float y, float width, float height) = 0;
+
+        virtual void beginFrame() = 0;
+        virtual void commitFrame() = 0;
 
         //TODO: ifdef for when app is compiled without vulkan support
         virtual VkInstance getVkInstance() {

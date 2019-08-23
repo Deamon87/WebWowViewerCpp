@@ -10,7 +10,7 @@
 
 IDevice *IDeviceFactory::createDevice(std::string gapiName, void * data) {
     if (gapiName == "ogl3") {
-        return new GDeviceGL33();
+        //return new GDeviceGL33();
     } else if (gapiName == "ogl4") {
 //        return new GDeviceGL4x();
     } else if (gapiName == "vulkan") {
