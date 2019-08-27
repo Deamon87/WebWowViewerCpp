@@ -536,7 +536,7 @@ void GDeviceVLK::createLogicalDevice() {
     }
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+//    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
 bool GDeviceVLK::isDeviceSuitable(VkPhysicalDevice device) {
@@ -590,7 +590,7 @@ void GDeviceVLK::createCommandPool() {
     }
 }
 void GDeviceVLK::createCommandBuffers() {
-    commandBuffers.resize(swapChainFramebuffers.size());
+    commandBuffers.resize(4);
 
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -614,14 +614,14 @@ void GDeviceVLK::createCommandBuffers() {
         }
 
         std::array<VkClearValue, 2> clearValues = {};
-        clearValues[0].color = {0.0f, 1.0f, 0.0f, 1.0f};
+        clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
         clearValues[1].depthStencil = {1.0f, 0};
 
         VkRenderPassBeginInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.pNext = NULL;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChainFramebuffers[i];
+        renderPassInfo.framebuffer = swapChainFramebuffers[i % swapChainFramebuffers.size()];
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapChainExtent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -674,19 +674,19 @@ void GDeviceVLK::createSyncObjects() {
 
 
 unsigned int GDeviceVLK::getDrawFrameNumber() {
-    return 0;
+    return m_frameNumber & 3;
 }
 
 unsigned int GDeviceVLK::getUpdateFrameNumber() {
-    return 0;
+    return (m_frameNumber + 1) & 3;
 }
 
 unsigned int GDeviceVLK::getCullingFrameNumber() {
-    return 0;
+    return (m_frameNumber + 3) & 3;
 }
 
 void GDeviceVLK::increaseFrameNumber() {
-
+    m_frameNumber++;
 }
 
 float GDeviceVLK::getAnisLevel() {
@@ -722,7 +722,7 @@ void GDeviceVLK::bindTexture(ITexture *texture, int slot) {
 }
 
 void GDeviceVLK::updateBuffers(std::vector<HGMesh> &meshes) {
-
+    updateCommandBuffers();
 }
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
@@ -812,21 +812,13 @@ void GDeviceVLK::clearScreen() {
 void GDeviceVLK::beginFrame() {
 
 }
-void sleepcp(int milliseconds) // Cross-platform sleep function
-{
-    clock_t time_end;
-    time_end = clock() + milliseconds * CLOCKS_PER_SEC/1000;
-    while (clock() < time_end)
-    {
-    }
-}
+
 void GDeviceVLK::commitFrame() {
+    int currentDrawFrame = getDrawFrameNumber();
+
 
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[0], VK_NULL_HANDLE, &imageIndex);
-
-    vkWaitForFences(device, 1, &inFlightFences[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkResetFences(device, 1, &inFlightFences[imageIndex]);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         std::cout << "got VK_ERROR_OUT_OF_DATE_KHR" << std::endl << std::flush;
@@ -836,6 +828,14 @@ void GDeviceVLK::commitFrame() {
         std::cout << "error happened " << result << std::endl << std::flush;
 //        throw std::runtime_error("failed to acquire swap chain image!");
     }
+
+    if (imageIndex >= inFlightFences.size()) {
+        std::cout << "imageIndex >= inFlightFences.size()" << std::endl;
+    }
+
+    vkWaitForFences(device, 1, &inFlightFences[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(device, 1, &inFlightFences[imageIndex]);
+
 
 //    updateUniformBuffer(imageIndex);
 
@@ -852,7 +852,7 @@ void GDeviceVLK::commitFrame() {
     submitInfo.pWaitDstStageMask = &waitStages[0];
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+    submitInfo.pCommandBuffers = &commandBuffers[currentDrawFrame];
 
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderFinishedSemaphores[0];
@@ -872,7 +872,7 @@ void GDeviceVLK::commitFrame() {
     presentInfo.pImageIndices = &imageIndex;
 //    presentInfo.pResults = nullptr;
 
-    result = vkQueuePresentKHR(presentQueue, &presentInfo);
+    result = vkQueuePresentKHR(graphicsQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
@@ -881,10 +881,6 @@ void GDeviceVLK::commitFrame() {
         std::cout << "failed to present swap chain image!" << std::endl << std::flush;
 //        throw std::runtime_error("failed to present swap chain image!");
     }
-
-//    currentFrameSemaphore
-
-//    currentFrameSemaphore = (currentFrameSemaphore + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void GDeviceVLK::setClearScreenColor(float r, float g, float b) {
@@ -895,4 +891,53 @@ void GDeviceVLK::setClearScreenColor(float r, float g, float b) {
 
 void GDeviceVLK::setViewPortDimensions(float x, float y, float width, float height) {
 
+}
+
+void GDeviceVLK::updateCommandBuffers() {
+    int updateFrame = getUpdateFrameNumber();
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    beginInfo.pNext = NULL;
+    beginInfo.pInheritanceInfo = NULL;
+
+    if (vkBeginCommandBuffer(commandBuffers[updateFrame], &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording command buffer!");
+    }
+
+    std::array<VkClearValue, 2> clearValues = {};
+    clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
+    clearValues[1].depthStencil = {1.0f, 0};
+
+    VkRenderPassBeginInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.pNext = NULL;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = swapChainFramebuffers[updateFrame % swapChainFramebuffers.size()];
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = swapChainExtent;
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
+
+    vkCmdBeginRenderPass(commandBuffers[updateFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+
+//        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+//
+//        VkBuffer vertexBuffers[] = {vertexBuffer};
+//        VkDeviceSize offsets[] = {0};
+//        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+//
+//        vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+//
+//        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
+//
+//        vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+    vkCmdEndRenderPass(commandBuffers[updateFrame]);
+
+    if (vkEndCommandBuffer(commandBuffers[updateFrame]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
 }

@@ -58,7 +58,7 @@ public:
 
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
-        return false;
+        return true;
     }
 
     float getAnisLevel() override;
@@ -128,6 +128,8 @@ private:
     void createCommandBuffers();
     void createSyncObjects();
 
+    void updateCommandBuffers();
+
 protected:
     struct BlpCacheRecord {
         HBlpTexture texture;
@@ -154,12 +156,11 @@ protected:
 
     VkInstance vkInstance;
     VkSurfaceKHR vkSurface;
-    bool enableValidationLayers = true;
+    bool enableValidationLayers = false;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
 
     VkQueue graphicsQueue;
-    VkQueue presentQueue;
 
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
