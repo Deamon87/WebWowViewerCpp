@@ -722,6 +722,7 @@ void GDeviceVLK::bindTexture(ITexture *texture, int slot) {
 }
 
 void GDeviceVLK::updateBuffers(std::vector<HGMesh> &meshes) {
+
     updateCommandBuffers();
 }
 

@@ -427,7 +427,15 @@ try {
 
         double fps = calcFPS(nullptr, 2.0);
 
-        scene->draw(deltaTime);
+        processor->processRequests(false);
+        processor->processResults(10);
+
+        if (windowSizeChanged) {
+            scene->setScreenSize(canvWidth, canvHeight);
+            windowSizeChanged = false;
+        }
+
+        scene->draw((deltaTime*(1000.0f))); //miliseconds
     }
 } catch(const std::exception &e){
     std::cerr << e.what() << std::endl;
