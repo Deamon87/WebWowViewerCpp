@@ -5,7 +5,6 @@
 #ifndef WOWVIEWERLIB_BLPTEXTURE_H
 #define WOWVIEWERLIB_BLPTEXTURE_H
 
-#include "../opengl/header.h"
 #include "../persistance/header/blpFileHeader.h"
 #include "../../include/wowScene.h"
 #include <vector>

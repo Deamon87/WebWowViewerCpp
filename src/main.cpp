@@ -25,6 +25,7 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+
 #include "../wowViewerLib/src/include/wowScene.h"
 //#include "persistance/ZipRequestProcessor.h"
 #include "persistance/CascRequestProcessor.h"
@@ -32,6 +33,7 @@
 #include "persistance/MpqRequestProcessor.h"
 #include "persistance/HttpRequestProcessor.h"
 #include "../wowViewerLib/src/include/vulkancontext.h"
+
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
 
@@ -339,8 +341,8 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=081460ab8f317f8273068b29288f2af7&cdnconfig=a00c4591f68ddf55d8baa84db360a8d0&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=081460ab8f317f8273068b29288f2af7&cdnconfig=a00c4591f68ddf55d8baa84db360a8d0&filename=data&filedataid=";
 //1.13.0
 //    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=";
 //    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=data&filedataid=";
@@ -385,17 +387,15 @@ int main(){
 
         return surface;
     };
-    callback.getRequiredExtensions = [](const char** &extensionNames, int &extensionCnt) {
+    callback.getRequiredExtensions = [](char** &extensionNames, int &extensionCnt) {
         uint32_t count;
-        extensionNames = glfwGetRequiredInstanceExtensions(&count);
+        extensionNames = const_cast<char **>(glfwGetRequiredInstanceExtensions(&count));
         extensionCnt = count;
     };
 
 
     //Create device
     IDevice * device = IDeviceFactory::createDevice("vulkan", &callback);
-
-
     WoWScene *scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);
@@ -416,6 +416,7 @@ int main(){
     glfwSetMouseButtonCallback( window, mouse_button_callback);
 //        glfwSwapInterval(0);
 
+try {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -428,6 +429,14 @@ int main(){
 
         scene->draw(deltaTime);
     }
+} catch(const std::exception &e){
+    std::cerr << e.what() << std::endl;
+    throw;
+} catch(...) {
+    std::cout << "something happened" << std::endl;
+}
+
+std::cout << "program ended" << std::endl;
 //        while (1) {
 //            mainLoop(&myapp);
 //        }

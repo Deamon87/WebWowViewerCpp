@@ -21,7 +21,7 @@ class gMeshTemplate;
 #include <memory>
 #include <functional>
 #include "syncronization/IGPUFence.h"
-#include "vulkan/vulkan_core.h"
+#include <vulkan/vulkan_core.h>
 
 typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;
 typedef std::shared_ptr<IIndexBuffer> HGIndexBuffer;
@@ -89,7 +89,7 @@ struct WMOShaderCacheRecord {
 };
 
 struct vkCallInitCallback {
-    std::function<void(const char** &extensionNames, int &extensionCnt)> getRequiredExtensions;
+    std::function<void(char** &extensionNames, int &extensionCnt)> getRequiredExtensions;
     std::function<VkSurfaceKHR(VkInstance vkInstance )> createSurface;
     int extensionCnt;
 };

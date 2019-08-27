@@ -34,6 +34,8 @@ class gMeshTemplate;
 #include "GShaderPermutationGL4x.h"
 #include "meshes/GMeshGL4x.h"
 #include "../interface/IDevice.h"
+#include "../../engine/opengl/header.h"
+
 
 
 

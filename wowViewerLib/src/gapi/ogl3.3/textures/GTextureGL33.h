@@ -7,6 +7,7 @@
 
 #include "../GDeviceGL33.h"
 #include "../../interface/textures/ITexture.h"
+#include "../../../engine/opengl/header.h"
 
 class GTextureGL33 : public ITexture {
     friend class GDeviceGL33;

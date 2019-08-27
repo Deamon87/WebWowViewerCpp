@@ -107,12 +107,13 @@ public:
     virtual void setViewPortDimensions(float x, float y, float width, float height) override;
 
     virtual VkInstance getVkInstance() override;
-    int currentFrameSemaphore = 0;
+//    int currentFrameSemaphore = 0;
     bool framebufferResized = false;
 
 private:
     void drawMesh(HGMesh &hmesh);
 
+    void setupDebugMessenger();
     void pickPhysicalDevice();
     void createLogicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice device);
@@ -149,9 +150,11 @@ protected:
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GDeviceVLK>, BlpCacheRecordHasher> loadedTextureCache;
 
+    VkDebugUtilsMessengerEXT debugMessenger;
+
     VkInstance vkInstance;
     VkSurfaceKHR vkSurface;
-    bool enableValidationLayers = false;
+    bool enableValidationLayers = true;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
 

@@ -917,13 +917,6 @@ WoWSceneImpl::~WoWSceneImpl() {
 }
 
 WoWScene *createWoWScene(Config *config, IFileRequest *requestProcessor, IDevice *device, int canvWidth, int canvHeight) {
-#ifdef _WIN32
-    glewExperimental = true; // Needed in core profile
-    if (glewInit() != GLEW_OK) {
-        fprintf(stderr, "Failed to initialize GLEW\n");
-        return nullptr;
-    }
-#endif
 #ifdef __ANDROID_API__
     std::cout.rdbuf(new androidbuf());
 #endif
