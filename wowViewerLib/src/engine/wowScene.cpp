@@ -609,12 +609,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(0, "creature/arthas/arthas.m2", -1);
 //    setSceneWithFileDataId(1, 108803, -1);
-    //setSceneWithFileDataId(0, 125407, -1); // phoneix
+    setSceneWithFileDataId(0, 125407, -1); // phoneix
     //setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
     //setSceneWithFileDataId(0, 125995, -1); //portal
 
 //    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
-    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale
+//    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale
 //    setSceneWithFileDataId(0, 1269330, -1); //nightbornemale creature
 
 

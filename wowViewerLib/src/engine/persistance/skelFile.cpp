@@ -80,7 +80,7 @@ void SkelFile::process(const std::vector<unsigned char> &animFile, const std::st
 
     for (int i =0; i < this->m_sks1->sequences.size; i++) {
         if(this->m_sks1->sequences.getElement(i)->id == 804) {
-            debuglog("KU!")
+            //debuglog("KU!")
         }
     }
 
