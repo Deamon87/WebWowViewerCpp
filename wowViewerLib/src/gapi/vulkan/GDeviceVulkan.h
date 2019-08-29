@@ -26,6 +26,7 @@ class gMeshTemplate;
 
 #include <unordered_set>
 #include <list>
+#include "vk_mem_alloc.h"
 
 #include "../interface/IDevice.h"
 
@@ -33,6 +34,7 @@ class GDeviceVLK : public IDevice {
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
+        std::optional<uint32_t> transferFamily;
 
         bool isComplete() {
             return graphicsFamily.has_value() && presentFamily.has_value();
@@ -110,6 +112,14 @@ public:
 //    int currentFrameSemaphore = 0;
     bool framebufferResized = false;
 
+    VmaAllocator getVMAAllocator() {
+        return vmaAllocator;
+    }
+
+    VkCommandBuffer getUploadCommandBuffer() {
+        return uploadCommandBuffer;
+    }
+
 private:
     void drawMesh(HGMesh &hmesh);
 
@@ -161,6 +171,7 @@ protected:
     VkDevice device;
 
     VkQueue graphicsQueue;
+    VkQueue uploadQueue;
 
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
@@ -198,10 +209,14 @@ protected:
     std::vector<VkDescriptorSet> descriptorSets;
 
     std::vector<VkCommandBuffer> commandBuffers;
+    VkCommandBuffer uploadCommandBuffer;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
+    std::vector<VkSemaphore> uploadSemaphores;
+
+    VmaAllocator vmaAllocator;
 
     float clearColor[3] = {0,0,0};
 

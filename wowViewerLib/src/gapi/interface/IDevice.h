@@ -156,8 +156,26 @@ class IDevice {
         virtual VkInstance getVkInstance() {
             return nullptr;
         };
-
 };
+
+#include <cassert>
+
+#define _DEBUG
+#ifdef _DEBUG
+#define TEST(expr) do { \
+            if(!(expr)) { \
+                assert(0 && #expr); \
+            } \
+        } while(0)
+#else
+#define TEST(expr) do { \
+            if(!(expr)) { \
+                throw std::runtime_error("TEST FAILED: " #expr); \
+            } \
+        } while(0)
+#endif
+
+#define ERR_GUARD_VULKAN(expr) TEST((expr) >= 0)
 
 
 #endif //AWEBWOWVIEWERCPP_IDEVICE_H

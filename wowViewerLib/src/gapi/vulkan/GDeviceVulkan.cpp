@@ -11,6 +11,9 @@
 #include "GDeviceVulkan.h"
 #include "../../include/vulkancontext.h"
 
+#include "buffers/GVertexBufferVLK.h"
+#include "buffers/GIndexBufferVLK.h"
+
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
@@ -196,6 +199,16 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
 
     pickPhysicalDevice();
     createLogicalDevice();
+//---------------
+    //Init AMD's VMA
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice = physicalDevice;
+    allocatorInfo.device = device;
+
+
+    vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
+//---------------
+
     createSwapChain();
     createImageViews();
     createRenderPass();
@@ -536,6 +549,7 @@ void GDeviceVLK::createLogicalDevice() {
     }
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &uploadQueue);
 //    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
@@ -558,6 +572,10 @@ GDeviceVLK::QueueFamilyIndices GDeviceVLK::findQueueFamilies(VkPhysicalDevice de
     for (const auto& queueFamily : queueFamilies) {
         if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
+        }
+
+        if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+            indices.transferFamily = i;
         }
 
         VkBool32 presentSupport = false;
@@ -601,6 +619,11 @@ void GDeviceVLK::createCommandBuffers() {
     if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
+
+    if (vkAllocateCommandBuffers(device, &allocInfo, &uploadCommandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate upload command buffers!");
+    }
+
 
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo = {};
@@ -670,6 +693,17 @@ void GDeviceVLK::createSyncObjects() {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
+
+    VkFenceCreateInfo uploadFenceInfo = {};
+    uploadFenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    uploadFenceInfo.pNext = NULL;
+    uploadFenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    uploadSemaphores.resize(4);
+    for (size_t i = 0; i < 4; i++) {
+        vkCreateSemaphore(device, &semaphoreInfo, nullptr, &uploadSemaphores[i]);
+    }
+
 }
 
 
@@ -722,12 +756,37 @@ void GDeviceVLK::bindTexture(ITexture *texture, int slot) {
 }
 
 void GDeviceVLK::updateBuffers(std::vector<HGMesh> &meshes) {
-
     updateCommandBuffers();
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    beginInfo.pNext = NULL;
+    beginInfo.pInheritanceInfo = NULL;
+
+    if (vkBeginCommandBuffer(uploadCommandBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording uploadCommandBuffer command buffer!");
+    }
 }
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 
+    if (vkEndCommandBuffer(uploadCommandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record uploadCommandBuffer command buffer!");
+    }
+
+    int uploadFrame = getUpdateFrameNumber();
+
+
+    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &uploadCommandBuffer;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
+
+    if (vkQueueSubmit(uploadQueue, 1, &submitInfo, nullptr) != VK_SUCCESS) {
+        std::cout << "failed to submit draw command buffer!" << std::endl << std::flush;
+    }
 }
 
 void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {
@@ -743,11 +802,17 @@ HGUniformBuffer GDeviceVLK::createUniformBuffer(size_t size) {
 }
 
 HGVertexBuffer GDeviceVLK::createVertexBuffer() {
-    return HGVertexBuffer();
+    std::shared_ptr<GVertexBufferVLK> h_vertexBuffer;
+    h_vertexBuffer.reset(new GVertexBufferVLK(*this));
+
+    return h_vertexBuffer;
 }
 
 HGIndexBuffer GDeviceVLK::createIndexBuffer() {
-    return HGIndexBuffer();
+    std::shared_ptr<GIndexBufferVLK> h_indexBuffer;
+    h_indexBuffer.reset(new GIndexBufferVLK(*this));
+
+    return h_indexBuffer;
 }
 
 HGVertexBufferBindings GDeviceVLK::createVertexBufferBindings() {
@@ -837,7 +902,8 @@ void GDeviceVLK::commitFrame() {
     vkWaitForFences(device, 1, &inFlightFences[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &inFlightFences[imageIndex]);
 
-
+//    vkWaitForFences(device, 1, &uploadFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+//    vkResetFences(device, 1, &uploadFences[currentDrawFrame]);
 //    updateUniformBuffer(imageIndex);
 
 
@@ -846,9 +912,9 @@ void GDeviceVLK::commitFrame() {
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.pNext = NULL;
 
-    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[0]};
+    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[0], uploadSemaphores[currentDrawFrame]};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.waitSemaphoreCount = 2;
     submitInfo.pWaitSemaphores = &waitSemaphores[0];
     submitInfo.pWaitDstStageMask = &waitStages[0];
 

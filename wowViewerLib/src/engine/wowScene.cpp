@@ -156,6 +156,9 @@ void WoWSceneImpl::DoCulling() {
         currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
         device->updateBuffers(objFrameParam->renderedThisFrame);
+
+        currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
+        device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
     }
 }
 
@@ -750,6 +753,9 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
 //        device->updateBuffers(objFrameParam->renderedThisFrame);
+
+        currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
+        device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
     }
 
     device->setClearScreenColor(0.117647, 0.207843, 0.392157);
@@ -833,8 +839,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    nextDeltaTime = deltaTime;
     device->commitFrame();
 
-    currentScene->doPostLoad(frameParam); //Do post load after rendering is done!
-    device->uploadTextureForMeshes(frameParam->renderedThisFrame);
     struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
     renderLockNextMeshes.lock();
 

@@ -205,7 +205,16 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/interface/meshes/IM2Mesh.h
         src/gapi/interface/meshes/IMesh.h
         src/gapi/IDeviceFactory.cpp src/gapi/IDeviceFactory.h
-        src/gapi/interface/meshes/IParticleMesh.h src/gapi/interface/syncronization/IGPUFence.h src/engine/objects/wowFrameData.h src/engine/engineClassList.h src/engine/camera/planarCamera.cpp src/engine/camera/planarCamera.h src/engine/managers/CRibbonEmitter.cpp src/engine/managers/CRibbonEmitter.h src/engine/persistance/skelFile.cpp src/engine/persistance/skelFile.h)
+        src/gapi/interface/meshes/IParticleMesh.h
+        src/gapi/interface/syncronization/IGPUFence.h
+        src/engine/objects/wowFrameData.h
+        src/engine/engineClassList.h
+        src/engine/camera/planarCamera.cpp
+        src/engine/camera/planarCamera.h
+        src/engine/managers/CRibbonEmitter.cpp
+        src/engine/managers/CRibbonEmitter.h
+        src/engine/persistance/skelFile.cpp
+        src/engine/persistance/skelFile.h)
 
 set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h
@@ -298,7 +307,13 @@ ELSE(WIN32)
     ENDIF()
     find_package(Threads REQUIRED)
 ENDIF()
-set(VULKAN_IMPLEMENTATION src/include/vulkancontext.h src/gapi/vulkan/GDeviceVulkan.cpp src/gapi/vulkan/GDeviceVulkan.h)
+set(VULKAN_IMPLEMENTATION
+        src/include/vulkancontext.h
+        src/gapi/vulkan/GDeviceVulkan.cpp
+        src/gapi/vulkan/GDeviceVulkan.h
+        src/gapi/vulkan/vkAllocator.cpp
+        src/gapi/vulkan/buffers/GVertexBufferVLK.cpp
+        src/gapi/vulkan/buffers/GIndexBufferVLK.cpp)
 include_directories(${Vulkan_INCLUDE_DIR})
 
 
