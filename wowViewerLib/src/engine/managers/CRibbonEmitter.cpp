@@ -6,16 +6,15 @@
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 
 static GBufferBinding staticRibbonBindings[3] = {
-    {+m2RibbonShader::Attribute::aPosition, 3, GL_FLOAT, false, 24, 0 }, // 0
-    {+m2RibbonShader::Attribute::aColor, 4, GL_UNSIGNED_BYTE, true, 24, 12}, // 12
-    {+m2RibbonShader::Attribute::aTexcoord0, 2, GL_FLOAT, false, 24, 16}, // 16
+    {+m2RibbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 24, 0 }, // 0
+    {+m2RibbonShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 24, 12}, // 12
+    {+m2RibbonShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 24, 16}, // 16
     //24
 };
 
 //----- (00A19710) --------------------------------------------------------
 CRibbonEmitter::CRibbonEmitter(IWoWInnerApi *api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) : m_api(api)
 {
-
   this->m_refCount = 1;
   this->m_prevPos.x = 0.0;
   this->m_prevPos.y = 0.0;

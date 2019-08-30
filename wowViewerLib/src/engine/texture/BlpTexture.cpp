@@ -6,7 +6,6 @@
 #include <cmath>
 #include <iostream>
 #include <assert.h>
-#include "../opengl/header.h"
 
 #include "BlpTexture.h"
 #include "DxtDecompress.h"

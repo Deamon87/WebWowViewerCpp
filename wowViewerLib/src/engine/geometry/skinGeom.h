@@ -6,7 +6,6 @@
 #define WOWVIEWERLIB_SKINGEOM_H
 
 #include <vector>
-#include "../opengl/header.h"
 #include "../persistance/header/skinFileHeader.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "../../gapi/interface/IDevice.h"

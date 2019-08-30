@@ -1,5 +1,4 @@
 #include "wowScene.h"
-#include "shader/ShaderRuntimeData.h"
 #include "algorithms/mathHelper.h"
 #include "objects/scenes/m2Scene.h"
 #include "objects/scenes/wmoScene.h"
@@ -8,7 +7,6 @@
 #include "mathfu/glsl_mappings.h"
 #include "persistance/db2/DB2Light.h"
 #include "persistance/db2/DB2WmoAreaTable.h"
-#include "shader/ShaderDefinitions.h"
 #include "./../gapi/UniformBufferStructures.h"
 #include "objects/GlobalThreads.h"
 #include "../gapi/IDeviceFactory.h"

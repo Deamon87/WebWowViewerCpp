@@ -229,15 +229,15 @@ void AdtObject::createVBO() {
     GVertexBufferBinding vertexBinding;
     vertexBinding.vertexBuffer = combinedVbo;
 
-	GBufferBinding bufferBinding = {(uint32_t)adtShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, (this->indexOffset * 4)};
+	GBufferBinding bufferBinding = {(uint32_t)adtShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 4, (this->indexOffset * 4)};
     vertexBinding.bindings.push_back(bufferBinding);
-	bufferBinding = {(uint32_t)adtShader::Attribute::aHeight, 1, GL_FLOAT, false, 4, ((this->heightOffset) * 4)};
+	bufferBinding = {(uint32_t)adtShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 4, ((this->heightOffset) * 4)};
 	vertexBinding.bindings.push_back(bufferBinding);
-	bufferBinding = {(uint32_t)adtShader::Attribute::aColor, 4, GL_FLOAT, false, 16, ((this->colorOffset) * 4)};
+	bufferBinding = {(uint32_t)adtShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, 16, ((this->colorOffset) * 4)};
 	vertexBinding.bindings.push_back(bufferBinding);
-	bufferBinding = { (uint32_t)adtShader::Attribute::aNormal, 3, GL_FLOAT, false, 12, ((this->normalOffset) * 4) };
+	bufferBinding = { (uint32_t)adtShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 12, ((this->normalOffset) * 4) };
 	vertexBinding.bindings.push_back(bufferBinding);
-	bufferBinding = { (uint32_t)adtShader::Attribute::aVertexLighting, 3, GL_FLOAT, false, 12, ((this->lightingOffset) * 4) };
+	bufferBinding = { (uint32_t)adtShader::Attribute::aVertexLighting, 3, GBindingType::GFLOAT, false, 12, ((this->lightingOffset) * 4) };
 	vertexBinding.bindings.push_back(bufferBinding);
 
     adtVertexBindings->addVertexBufferBinding(vertexBinding);
@@ -270,9 +270,9 @@ void AdtObject::createVBO() {
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = combinedVbo;
 
-		GBufferBinding bufferBinding = { +adtLodShader::Attribute::aHeight, 1, GL_FLOAT, false, 4, 0 };
+		GBufferBinding bufferBinding = { +adtLodShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 4, 0 };
 		vertexBinding.bindings.push_back(bufferBinding);
-		bufferBinding = { +adtLodShader::Attribute::aIndex, 1, GL_FLOAT, false, 4, static_cast<uint32_t>(indexVBOLodOffset * sizeof(float))};
+		bufferBinding = { +adtLodShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 4, static_cast<uint32_t>(indexVBOLodOffset * sizeof(float))};
         vertexBinding.bindings.push_back(bufferBinding);
 
         lodVertexBindings->addVertexBufferBinding(vertexBinding);

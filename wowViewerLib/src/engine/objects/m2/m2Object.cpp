@@ -9,7 +9,6 @@
 #include "../../managers/animationManager.h"
 #include "mathfu/matrix.h"
 #include "../../persistance/header/M2FileHeader.h"
-#include "../../shader/ShaderDefinitions.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "m2Helpers/M2MeshBufferUpdater.h"
 

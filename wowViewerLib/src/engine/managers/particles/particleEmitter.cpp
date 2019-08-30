@@ -15,11 +15,11 @@
 
 
 static GBufferBinding staticM2ParticleBindings[5] = {
-    {+m2ParticleShader::Attribute::aPosition, 3, GL_FLOAT, false, 13*4, 0 },
-    {+m2ParticleShader::Attribute::aColor, 4, GL_FLOAT, false, 13*4, 12},
-    {+m2ParticleShader::Attribute::aTexcoord0, 2, GL_FLOAT, false, 13*4, 28},
-    {+m2ParticleShader::Attribute::aTexcoord1, 2, GL_FLOAT, false, 13*4, 36},
-    {+m2ParticleShader::Attribute::aTexcoord2, 2, GL_FLOAT, false, 13*4, 44},
+    {+m2ParticleShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 13*4, 0 },
+    {+m2ParticleShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, 13*4, 12},
+    {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 13*4, 28},
+    {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, 13*4, 36},
+    {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, 13*4, 44},
 };
 
 

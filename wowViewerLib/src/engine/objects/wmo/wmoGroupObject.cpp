@@ -4,7 +4,6 @@
 
 #include "wmoGroupObject.h"
 #include "../../algorithms/mathHelper.h"
-#include "../../shader/ShaderDefinitions.h"
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "../../persistance/header/wmoFileHeader.h"

@@ -7,6 +7,17 @@
 #include "GVertexBufferBindingsGL33.h"
 #include "../interface/IDevice.h"
 
+constexpr GLenum toOGLEnum(GBindingType bindingType) {
+    switch (bindingType) {
+        case GBindingType::GFLOAT :
+            return GL_FLOAT;
+        case GBindingType::GUNSIGNED_BYTE:
+            return GL_UNSIGNED_BYTE;
+        default:
+            throw std::runtime_error("unknown GBindingType");
+    }
+}
+
 GVertexBufferBindingsGL33::GVertexBufferBindingsGL33(IDevice &m_device) : m_device(m_device) {
     m_buffer = new GLuint;
     createBuffer();
@@ -61,7 +72,7 @@ void GVertexBufferBindingsGL33::save() {
             glVertexAttribPointer(
                 bufferBinding.position,
                 bufferBinding.size,
-                bufferBinding.type,
+                toOGLEnum(bufferBinding.type),
                 (GLboolean) (bufferBinding.normalized ? GL_TRUE : GL_FALSE),
                 bufferBinding.stride,
                 (const void *) bufferBinding.offset

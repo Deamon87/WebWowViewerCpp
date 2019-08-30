@@ -5,7 +5,6 @@
 #include "m2Geom.h"
 #include "skinGeom.h"
 #include "../shader/ShaderDefinitions.h"
-#include "../opengl/header.h"
 #include "../../gapi/interface/IDevice.h"
 #include "../../include/wowScene.h"
 
@@ -101,12 +100,12 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
 //     {name : "textureY2",    type : "float32"}             44+4 = 48
 //     */
 static GBufferBinding staticM2Bindings[6] = {
-        {+m2Shader::Attribute::aPosition, 3, GL_FLOAT, false, 48, 0 },
-        {+m2Shader::Attribute::boneWeights, 4, GL_UNSIGNED_BYTE, true, 48, 12},  // bonesWeight
-        {+m2Shader::Attribute::bones, 4, GL_UNSIGNED_BYTE, false, 48, 16},  // bones
-        {+m2Shader::Attribute::aNormal, 3, GL_FLOAT, false, 48, 20}, // normal
-        {+m2Shader::Attribute::aTexCoord, 2, GL_FLOAT, false, 48, 32}, // texcoord
-        {+m2Shader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 48, 40} // texcoord
+        {+m2Shader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 48, 0 },
+        {+m2Shader::Attribute::boneWeights, 4, GBindingType::GUNSIGNED_BYTE, true, 48, 12},  // bonesWeight
+        {+m2Shader::Attribute::bones, 4, GBindingType::GUNSIGNED_BYTE, false, 48, 16},  // bones
+        {+m2Shader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 48, 20}, // normal
+        {+m2Shader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 48, 32}, // texcoord
+        {+m2Shader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, 48, 40} // texcoord
 };
 
 void initEXP2(M2Array<Exp2Record> *exp2Records) {

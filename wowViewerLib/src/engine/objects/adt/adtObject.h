@@ -13,7 +13,6 @@ class M2Object;
 #include <set>
 
 #include "../../persistance/header/adtFileHeader.h"
-#include "../../opengl/header.h"
 #include "../../wowInnerApi.h"
 
 #include "../../persistance/adtFile.h"

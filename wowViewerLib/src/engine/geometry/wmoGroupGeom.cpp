@@ -365,19 +365,19 @@ HGIndexBuffer WmoGroupGeom::getIBO(IDevice &device) {
 }
 
 static GBufferBinding staticWMOBindings[7] = {
-    {+wmoShader::Attribute::aPosition, 3, GL_FLOAT, false, 56, 0 },
-    {+wmoShader::Attribute::aNormal, 3, GL_FLOAT, false, 56, 12},
-    {+wmoShader::Attribute::aTexCoord, 2, GL_FLOAT, false, 56, 24},
-    {+wmoShader::Attribute::aTexCoord2, 2, GL_FLOAT, false, 56, 32},
-    {+wmoShader::Attribute::aTexCoord3, 2, GL_FLOAT, false, 56, 40},
-    {+wmoShader::Attribute::aColor, 4, GL_UNSIGNED_BYTE, true, 56, 48},
-    {+wmoShader::Attribute::aColor2, 4, GL_UNSIGNED_BYTE, true, 56, 52}
+    {+wmoShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 56, 0 },
+    {+wmoShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 56, 12},
+    {+wmoShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 56, 24},
+    {+wmoShader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, 56, 32},
+    {+wmoShader::Attribute::aTexCoord3, 2, GBindingType::GFLOAT, false, 56, 40},
+    {+wmoShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 56, 48},
+    {+wmoShader::Attribute::aColor2, 4, GBindingType::GUNSIGNED_BYTE, true, 56, 52}
 };
 
 static GBufferBinding staticWMOWaterBindings[1] = {
-    {+waterShader::Attribute::aPosition, 3, GL_FLOAT, false, 12, 0},
-//    {+waterShader::Attribute::aDepth, 1, GL_FLOAT, false, 24, 0 },
-//    {+waterShader::Attribute::aTexCoord, 2, GL_FLOAT, false, 24, 4},
+    {+waterShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 12, 0},
+//    {+waterShader::Attribute::aDepth, 1, GBindingType::GFLOAT, false, 24, 0 },
+//    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 4},
 
 };
 

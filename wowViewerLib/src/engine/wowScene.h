@@ -10,7 +10,6 @@
 #include <future>
 #include "wowInnerApi.h"
 
-#include "shader/ShaderRuntimeData.h"
 #include "../include/wowScene.h"
 #include "../include/config.h"
 #include "mathfu/glsl_mappings.h"

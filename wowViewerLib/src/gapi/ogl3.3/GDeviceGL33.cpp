@@ -660,7 +660,7 @@ GDeviceGL33::GDeviceGL33() {
     HGIndexBuffer vertexIndexBuffer = this->createIndexBuffer();
     vertexIndexBuffer->uploadData((void *) &vertexElements[0], sizeof(vertexElements));
 
-    GBufferBinding bufferBinding = {0, 3, GL_FLOAT, false, 0, 0 };
+    GBufferBinding bufferBinding = {0, 3, GBindingType::GFLOAT, false, 0, 0 };
 
     GVertexBufferBinding binding={};
     binding.bindings.push_back(bufferBinding);
