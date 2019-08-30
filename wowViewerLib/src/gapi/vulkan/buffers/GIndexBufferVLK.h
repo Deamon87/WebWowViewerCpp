@@ -35,7 +35,7 @@ private:
     VmaAllocation stagingIndexBufferAlloc = VK_NULL_HANDLE;
 
 private:
-    size_t m_size;
+    size_t m_size = 0;
     bool m_buffCreated = false;
     bool m_dataUploaded = false;
 };

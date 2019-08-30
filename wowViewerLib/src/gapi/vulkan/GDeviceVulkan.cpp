@@ -11,8 +11,12 @@
 #include "GDeviceVulkan.h"
 #include "../../include/vulkancontext.h"
 
+#include "meshes/GM2MeshVLK.h"
+#include "meshes/GMeshVLK.h"
+#include "buffers/GUniformBufferVLK.h"
 #include "buffers/GVertexBufferVLK.h"
 #include "buffers/GIndexBufferVLK.h"
+#include "GVertexBufferBindingsVLK.h"
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -798,7 +802,10 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
 }
 
 HGUniformBuffer GDeviceVLK::createUniformBuffer(size_t size) {
-    return HGUniformBuffer();
+    std::shared_ptr<GUniformBufferVLK> h_uniformBuffer;
+    h_uniformBuffer.reset(new GUniformBufferVLK(*this, size));
+
+    return h_uniformBuffer;
 }
 
 HGVertexBuffer GDeviceVLK::createVertexBuffer() {
@@ -816,7 +823,10 @@ HGIndexBuffer GDeviceVLK::createIndexBuffer() {
 }
 
 HGVertexBufferBindings GDeviceVLK::createVertexBufferBindings() {
-    return HGVertexBufferBindings();
+    std::shared_ptr<GVertexBufferBindingsVLK> h_vertexBindings;
+    h_vertexBindings.reset(new GVertexBufferBindingsVLK(*this));
+
+    return h_vertexBindings;
 }
 
 HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
@@ -828,15 +838,24 @@ HGTexture GDeviceVLK::createTexture() {
 }
 
 HGMesh GDeviceVLK::createMesh(gMeshTemplate &meshTemplate) {
-    return HGMesh();
+    std::shared_ptr<GMeshVLK> h_mesh;
+    h_mesh.reset(new GMeshVLK(*this, meshTemplate));
+
+    return h_mesh;
 }
 
 HGM2Mesh GDeviceVLK::createM2Mesh(gMeshTemplate &meshTemplate) {
-    return HGM2Mesh();
+    std::shared_ptr<GM2MeshVLK> h_mesh;
+    h_mesh.reset(new GM2MeshVLK(*this, meshTemplate));
+
+    return h_mesh;
 }
 
 HGParticleMesh GDeviceVLK::createParticleMesh(gMeshTemplate &meshTemplate) {
-    return HGParticleMesh();
+    std::shared_ptr<GM2MeshVLK> h_mesh;
+    h_mesh.reset(new GM2MeshVLK(*this, meshTemplate));
+
+    return h_mesh;
 }
 
 HGPUFence GDeviceVLK::createFence() {

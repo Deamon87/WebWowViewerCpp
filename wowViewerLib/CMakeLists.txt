@@ -312,6 +312,10 @@ set(VULKAN_IMPLEMENTATION
         src/gapi/vulkan/GDeviceVulkan.cpp
         src/gapi/vulkan/GDeviceVulkan.h
         src/gapi/vulkan/vkAllocator.cpp
+        src/gapi/vulkan/GVertexBufferBindingsVLK.cpp
+        src/gapi/vulkan/meshes/GM2MeshVLK.cpp
+        src/gapi/vulkan/meshes/GMeshVLK.cpp
+        src/gapi/vulkan/buffers/GUniformBufferVLK.cpp
         src/gapi/vulkan/buffers/GVertexBufferVLK.cpp
         src/gapi/vulkan/buffers/GIndexBufferVLK.cpp)
 include_directories(${Vulkan_INCLUDE_DIR})
