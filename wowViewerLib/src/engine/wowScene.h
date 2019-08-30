@@ -7,6 +7,7 @@
 #include <cctype>
 #include <locale>
 #include <mutex>
+#include <future>
 #include "wowInnerApi.h"
 
 #include "shader/ShaderRuntimeData.h"
@@ -250,9 +251,9 @@ private:
     iInnerSceneApi *newScene = nullptr;
 
     bool needToDropCache = false;
+    std::promise<float> nextDeltaTime;
+    std::promise<bool> cullingFinished;
 
-    bool deltaTimeUpdate;
-    bool nextDataReady;
     std::mutex m_lockNextMeshes;            // mutex for critical section
     std::unique_lock<std::mutex> renderLockNextMeshes;
 

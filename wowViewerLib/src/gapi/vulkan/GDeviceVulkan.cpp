@@ -906,17 +906,33 @@ void GDeviceVLK::commitFrame() {
 //    vkResetFences(device, 1, &uploadFences[currentDrawFrame]);
 //    updateUniformBuffer(imageIndex);
 
-
-
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.pNext = NULL;
 
-    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[0], uploadSemaphores[currentDrawFrame]};
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.waitSemaphoreCount = 2;
-    submitInfo.pWaitSemaphores = &waitSemaphores[0];
-    submitInfo.pWaitDstStageMask = &waitStages[0];
+    VkSemaphore waitSemaphores[2];
+    VkPipelineStageFlags waitStages[2];
+    if (m_firstFrame) {
+        waitSemaphores[0] = imageAvailableSemaphores[0];
+        waitStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = &waitSemaphores[0];
+        submitInfo.pWaitDstStageMask = &waitStages[0];
+        m_firstFrame = false;
+    } else {
+        waitSemaphores[0] = imageAvailableSemaphores[0];
+        waitStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        waitSemaphores[1] = uploadSemaphores[currentDrawFrame];
+        waitStages[1] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+        submitInfo.waitSemaphoreCount = 2;
+        submitInfo.pWaitSemaphores = &waitSemaphores[0];
+        submitInfo.pWaitDstStageMask = &waitStages[0];
+    }
+
+
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffers[currentDrawFrame];

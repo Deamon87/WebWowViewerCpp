@@ -638,15 +638,19 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
             std::unique_lock<std::mutex> localLockNextMeshes(m_lockNextMeshes, std::defer_lock);
 
             while (!this->m_isTerminating) {
-                if (!deltaTimeUpdate) {
-                    std::this_thread::sleep_for(500us);
-                    continue;
-                }
+                auto future = nextDeltaTime.get_future();
+                future.wait();
+
+                int currentFrame = m_gdevice->getCullingFrameNumber();
+                WoWFrameData *frameParam = &m_FrameParams[currentFrame];
+                frameParam->deltaTime = future.get();
+                nextDeltaTime = std::promise<float>();
 
                 localLockNextMeshes.lock();
-                deltaTimeUpdate = false;
                 DoCulling();
                 localLockNextMeshes.unlock();
+
+                cullingFinished.set_value(true);
             }
         }));
     }
@@ -710,6 +714,14 @@ struct timespec& end)
 }
 
 void WoWSceneImpl::draw(animTime_t deltaTime) {
+    renderLockNextMeshes.lock();
+
+    nextDeltaTime.set_value(deltaTime);
+    m_gdevice->increaseFrameNumber();
+
+    renderLockNextMeshes.unlock();
+
+
     struct timespec renderingAndUpdateStart, renderingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateStart);
 
@@ -838,17 +850,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
 //    nextDeltaTime = deltaTime;
     device->commitFrame();
-
-    struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
-    renderLockNextMeshes.lock();
-
-    frameParam->deltaTime = deltaTime;
-    deltaTimeUpdate = true;
-    m_gdevice->increaseFrameNumber();
-
-
-    renderLockNextMeshes.unlock();
     device->reset();
+
+    cullingFinished.get_future().wait();
+    cullingFinished = std::promise<bool>();
 
 }
 mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {

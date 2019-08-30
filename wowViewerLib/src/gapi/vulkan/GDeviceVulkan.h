@@ -222,6 +222,7 @@ protected:
 
 
     unsigned int m_frameNumber = 0;
+    bool m_firstFrame = true;
 
     uint8_t m_lastColorMask = 0xFF;
     int8_t m_lastDepthWrite = -1;
