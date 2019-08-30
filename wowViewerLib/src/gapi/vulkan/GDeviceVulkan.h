@@ -109,6 +109,9 @@ public:
     virtual void setViewPortDimensions(float x, float y, float width, float height) override;
 
     virtual VkInstance getVkInstance() override;
+    virtual VkDevice getVkDevice() {
+        return device;
+    };
 //    int currentFrameSemaphore = 0;
     bool framebufferResized = false;
 
@@ -181,8 +184,7 @@ protected:
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
     VkRenderPass renderPass;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
+
 
     VkCommandPool commandPool;
 

@@ -57,9 +57,13 @@ private:
     int m_element;
 
 
+//Vulkan specific
+    VkPipelineLayout pipelineLayout;
+    VkPipeline graphicsPipeline;
+
 
 private:
-    IDevice &m_device;
+    GDeviceVLK &m_device;
 };
 
 
