@@ -90,8 +90,38 @@ macro(configure_files srcDir destDir)
     endforeach(templateFile)
 endmacro(configure_files)
 
+#Vulkan stuff
+message("GLSL_VALIDATOR_Test = ${GLSL_VALIDATOR_Test}")
+if(NOT GLSL_VALIDATOR_Test)
+    message(FATAL_ERROR "GLSL_VALIDATOR_Test is empty. Path to glslvalidator is not set")
+endif()
+
+macro(configure_filesVLK srcDir destDir)
+    message(STATUS "Configuring directory ${destDir}")
+    make_directory(${destDir})
+
+    file(GLOB templateFiles RELATIVE ${srcDir} ${srcDir}/*.frag ${srcDir}/*.vert)
+    foreach(templateFile ${templateFiles})
+        set(srcTemplatePath ${srcDir}/${templateFile})
+        if(NOT IS_DIRECTORY ${srcTemplatePath})
+            message(STATUS "Configuring file ${templateFile}")
+            get_filename_component(FILE_NAME ${srcTemplatePath} NAME)
+            set(SPIRV "${destDir}/${FILE_NAME}.spv")
+            add_custom_command(
+                    OUTPUT ${SPIRV}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
+                    COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV}
+                    DEPENDS ${srcTemplatePath})
+
+            list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+        endif(NOT IS_DIRECTORY ${srcTemplatePath})
+    endforeach(templateFile)
+endmacro(configure_filesVLK)
+#vulkan stuff end
+
 configure_files(${PROJECT_SOURCE_DIR}/src/glsl/glsl3.3/ ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
 configure_files(${PROJECT_SOURCE_DIR}/src/glsl/common/ ${GLSL_TARGET_FOLDER}/glsl/common/)
+configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv/)
 
 include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
 
@@ -313,6 +343,8 @@ set(VULKAN_IMPLEMENTATION
         src/gapi/vulkan/GDeviceVulkan.h
         src/gapi/vulkan/vkAllocator.cpp
         src/gapi/vulkan/GVertexBufferBindingsVLK.cpp
+        src/gapi/vulkan/shaders/GShaderPermutationVLK.cpp
+        src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
         src/gapi/vulkan/meshes/GM2MeshVLK.cpp
         src/gapi/vulkan/meshes/GMeshVLK.cpp
         src/gapi/vulkan/buffers/GUniformBufferVLK.cpp
@@ -358,6 +390,14 @@ else()
     mathfu_configure_flags(WoWViewerLib FALSE)
 endif()
 
+
+#Vulkan stuff
+add_custom_target(
+        Shaders
+        DEPENDS ${SPIRV_BINARY_FILES}
+)
+add_dependencies(WoWViewerLib Shaders)
+#Vulkan stuff end
 
 target_include_directories(WoWViewerLib
         PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)

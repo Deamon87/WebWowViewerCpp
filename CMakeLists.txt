@@ -61,7 +61,12 @@ set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(3rdparty/bzip)
  
 #CPR
+if (WIN32)
+set(ENV{USE_SYSTEM_CURL} OFF)
+else()
 set(ENV{USE_SYSTEM_CURL} ON)
+endif()
+
 set(ENV{BUILD_CPR_TESTS} OFF)
 set(ENV{CMAKE_USE_OPENSSL} ON)
 set(ENV{CURL_DISABLE_LDAP} ON)

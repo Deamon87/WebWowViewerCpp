@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "GMeshVLK.h"
+#include "../shaders/GShaderPermutationVLK.h"
 
 GMeshVLK::GMeshVLK(IDevice &device,
              const gMeshTemplate &meshTemplate
@@ -37,9 +38,34 @@ GMeshVLK::GMeshVLK(IDevice &device,
     m_fragmentUniformBuffer[2] = meshTemplate.fragmentBuffers[2];
 
 
+    GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(m_shader.get());
+    GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
+    auto &arrVLKFormat = bufferBindingsVlk->getVLKFormat();
+
+    std::vector<VkVertexInputBindingDescription> vertexBindingDescriptions;
+    std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions;
+    for (auto &formatVLK : arrVLKFormat) {
+        vertexBindingDescriptions.push_back(formatVLK.bindingDescription);
+        for (auto &attibuteDesc : formatVLK.attributeDescription) {
+            vertexAttributeDescriptions.push_back(attibuteDesc);
+        }
+    }
+
+    createPipeline(shaderVLK, vertexBindingDescriptions, vertexAttributeDescriptions);
+
+
+}
+
+void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
+                              const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
+                              const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
+    auto swapChainExtent = m_device.getCurrentExtent();
+    auto renderPass = m_device.getRenderPass();
+
+
     //Create Graphic pipeline for Vulkan
-    VkShaderModule vertShaderModule = m_shader->getVertexShaderModule();
-    VkShaderModule fragShaderModule = m_shader->getFragmentShaderModule();
+    VkShaderModule vertShaderModule = shaderVLK->getVertexModule();
+    VkShaderModule fragShaderModule = shaderVLK->getFragmentModule();
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -58,13 +84,11 @@ GMeshVLK::GMeshVLK(IDevice &device,
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    auto bindingDescription = Vertex::getBindingDescription();
-    auto attributeDescriptions = Vertex::getAttributeDescriptions();
 
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    vertexInputInfo.vertexBindingDescriptionCount = vertexBindingDescriptions.size();
+    vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributeDescriptions.size();
+    vertexInputInfo.pVertexBindingDescriptions = &vertexBindingDescriptions[0];
+    vertexInputInfo.pVertexAttributeDescriptions = &vertexAttributeDescriptions[0];
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -106,7 +130,8 @@ GMeshVLK::GMeshVLK(IDevice &device,
     multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment.blendEnable = VK_FALSE;
 
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
@@ -125,7 +150,7 @@ GMeshVLK::GMeshVLK(IDevice &device,
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(m_device.getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -144,12 +169,12 @@ GMeshVLK::GMeshVLK(IDevice &device,
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(m_device.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(m_device.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+                                  &graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
-
-
 }
+
 GMeshVLK::~GMeshVLK() {
 
 }

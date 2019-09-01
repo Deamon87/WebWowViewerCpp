@@ -101,7 +101,7 @@ public:
 
     std::string loadShader(std::string fileName, bool common) override;
 
-    virtual void clearScreen();
+    virtual void clearScreen() override;
     virtual void beginFrame() override;
     virtual void commitFrame() override;
 
@@ -112,6 +112,12 @@ public:
     virtual VkDevice getVkDevice() {
         return device;
     };
+    virtual VkExtent2D getCurrentExtent() {
+        return swapChainExtent;
+    };
+    virtual VkRenderPass getRenderPass() {
+        return renderPass;
+    };
 //    int currentFrameSemaphore = 0;
     bool framebufferResized = false;
 
@@ -120,7 +126,8 @@ public:
     }
 
     VkCommandBuffer getUploadCommandBuffer() {
-        return uploadCommandBuffer;
+        int uploadFrame = getUpdateFrameNumber();
+        return uploadCommandBuffers[uploadFrame];
     }
 
 private:
@@ -187,6 +194,7 @@ protected:
 
 
     VkCommandPool commandPool;
+    VkCommandPool uploadCommandPool;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -211,12 +219,13 @@ protected:
     std::vector<VkDescriptorSet> descriptorSets;
 
     std::vector<VkCommandBuffer> commandBuffers;
-    VkCommandBuffer uploadCommandBuffer;
+    std::vector<VkCommandBuffer> uploadCommandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkSemaphore> uploadSemaphores;
+    std::vector<VkFence> uploadFences;
 
     VmaAllocator vmaAllocator;
 

@@ -64,6 +64,10 @@ private:
 
 private:
     GDeviceVLK &m_device;
+
+    void createPipeline(GShaderPermutationVLK *shaderVLK,
+                        const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
+                        const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);
 };
 
 

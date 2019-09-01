@@ -14,7 +14,7 @@ class GBlpTextureGL33 : public GTextureGL33 {
     explicit GBlpTextureGL33(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GBlpTextureGL33() override;
-    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps);
+    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override;
 
     bool getIsLoaded() override;
     bool postLoad() override;

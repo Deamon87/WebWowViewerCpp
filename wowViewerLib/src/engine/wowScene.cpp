@@ -715,7 +715,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     renderLockNextMeshes.lock();
 
     nextDeltaTime.set_value(deltaTime);
-    m_gdevice->increaseFrameNumber();
 
     renderLockNextMeshes.unlock();
 
@@ -850,9 +849,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     device->commitFrame();
     device->reset();
 
+
     cullingFinished.get_future().wait();
     cullingFinished = std::promise<bool>();
-
+    device->increaseFrameNumber();
 }
 mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {
 

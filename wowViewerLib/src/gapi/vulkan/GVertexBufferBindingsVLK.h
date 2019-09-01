@@ -16,10 +16,17 @@ class GVertexBufferBindingsVLK;
 #include "../interface/IDevice.h"
 #include "GDeviceVulkan.h"
 
+
+struct vkBufferFormatHolder {
+    VkVertexInputBindingDescription bindingDescription;
+    std::vector<VkVertexInputAttributeDescription> attributeDescription;
+};
+
 class GVertexBufferBindingsVLK : public IVertexBufferBindings {
     friend class GDeviceVLK;
 private:
     std::vector<GVertexBufferBinding> m_bindings;
+    std::vector<vkBufferFormatHolder> m_BufferBindingsVLK;
     HGIndexBuffer m_indexBuffer = HGIndexBuffer(nullptr);
 
 
@@ -33,15 +40,13 @@ public:
     ~GVertexBufferBindingsVLK() override;
 
 private:
-    void createBuffer();
-    void destroyBuffer();
-    void bind(); //Should be called only by GDevice
-    void unbind();
+
 public:
     void save() override;
 
     void setIndexBuffer(HGIndexBuffer indexBuffer) override;
     void addVertexBufferBinding(GVertexBufferBinding binding) override;
+    std::vector<vkBufferFormatHolder> &getVLKFormat();
 
 };
 
