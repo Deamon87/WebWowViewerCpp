@@ -1,5 +1,7 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
 /* vertex shader code */
 precision highp float;
 layout (location = 0) in vec3 aPosition;
@@ -23,15 +25,15 @@ layout(std140) uniform meshWideBlockVS {
     ivec4 VertexShader_UseLitColor;
 };
 
-out vec2 vTexCoord;
-out vec2 vTexCoord2;
-out vec2 vTexCoord3;
-out vec4 vColor;
-out vec4 vColor2;
-out vec4 vPosition;
-out vec3 vNormal;
+layout(location=0) out vec2 vTexCoord;
+layout(location=1) out vec2 vTexCoord2;
+layout(location=2) out vec2 vTexCoord3;
+layout(location=3) out vec4 vColor;
+layout(location=4) out vec4 vColor2;
+layout(location=5) out vec4 vPosition;
+layout(location=6) out vec3 vNormal;
 
-#include commonFunctions
+#include "../common/commonFunctions.glsl"
 
 void main() {
     vec4 worldPoint = uPlacementMat * vec4(aPosition, 1);

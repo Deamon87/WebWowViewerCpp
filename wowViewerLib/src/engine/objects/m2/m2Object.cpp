@@ -1184,6 +1184,7 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
 }
 
 void M2Object::createBoundingBoxMesh() {
+    return;
     //Create bounding box mesh
     HGShaderPermutation boundingBoxshaderPermutation = m_api->getDevice()->getShader("drawBBShader", nullptr);
 
@@ -1198,7 +1199,7 @@ void M2Object::createBoundingBoxMesh() {
 
     meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Opaque;
 
-    meshTemplate.element = GL_TRIANGLES;
+    meshTemplate.element = DrawElementMode::TRIANGLES;
     meshTemplate.textureCount = 0;
 
     HGUniformBuffer bbBlockVS = m_api->getDevice()->createUniformBuffer(sizeof(bbModelWideBlockVS));
@@ -1290,7 +1291,7 @@ void M2Object::createMeshes() {
 
         meshTemplate.start = (mesh->indexStart + (mesh->Level << 16)) * 2;
         meshTemplate.end = mesh->indexCount;
-        meshTemplate.element = GL_TRIANGLES;
+        meshTemplate.element = DrawElementMode::TRIANGLES;
 
         HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
         meshTemplate.textureCount = textMaterial->textureCount;

@@ -343,7 +343,7 @@ void AdtObject::createMeshes() {
 
         aTemplate.start = m_adtFile->stripOffsets[i] * 2;
         aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
-        aTemplate.element = GL_TRIANGLE_STRIP;
+        aTemplate.element = DrawElementMode::TRIANGLE_STRIP;
 
         aTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
         aTemplate.vertexBuffers[1] = nullptr;

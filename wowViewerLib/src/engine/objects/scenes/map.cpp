@@ -8,7 +8,6 @@
 #include "map.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/grahamScan.h"
-#include "../m2/m2Instancing/m2InstancingObject.h"
 #include "../../persistance/wdtFile.h"
 #include "../../persistance/db2/DB2WmoAreaTable.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"

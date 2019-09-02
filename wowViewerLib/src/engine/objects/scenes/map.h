@@ -13,7 +13,6 @@
 #include "../iMapApi.h"
 #include "../iInnerSceneApi.h"
 #include "../objectCache.h"
-#include "../m2/m2Instancing/m2InstancingObject.h"
 #include "../wdl/wdlObject.h"
 #include "../wowFrameData.h"
 
@@ -42,9 +41,6 @@ private:
 
     ObjectCache<M2Object, int> m_m2MapObjects;
     ObjectCache<WmoObject, int> m_wmoMapObjects;
-
-    std::vector<M2InstancingObject*> m_instanceList;
-    std::unordered_map<std::string, M2InstancingObject*> m_instanceMap;
 
     M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef) override ;
     M2Object *getM2Object(int fileDataId, SMDoodadDef &doodadDef) override ;

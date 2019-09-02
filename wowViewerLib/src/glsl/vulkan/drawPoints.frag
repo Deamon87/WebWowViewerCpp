@@ -2,10 +2,14 @@
 
 precision highp float;
 
-varying vec4 vPos;
+layout(location = 0) in vec4 vPos;
 
-uniform vec3 uColor;
+layout(std140, binding=1) uniform modelWideBlockVS {
+    vec3 uColor;
+};
+
+layout(location = 0) out vec4 fragColor;
 
 void main() {
-    gl_FragColor = vec4(uColor.rgb, 1.0);
+    fragColor = vec4(uColor.rgb, 1.0);
 }

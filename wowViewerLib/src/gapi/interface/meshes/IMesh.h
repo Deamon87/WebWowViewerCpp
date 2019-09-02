@@ -43,6 +43,11 @@ struct BlendModeDesc {
     int DestAlpha;
 };
 
+enum class DrawElementMode {
+    TRIANGLES,
+    TRIANGLE_STRIP
+};
+
 extern BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX];
 
 class gMeshTemplate {
@@ -62,7 +67,7 @@ public:
 
     int start;
     int end;
-    int element;
+    DrawElementMode element;
     unsigned int textureCount;
     std::vector<HGTexture> texture = std::vector<HGTexture>(6, nullptr);
     HGUniformBuffer vertexBuffers[3] = {nullptr,nullptr,nullptr};

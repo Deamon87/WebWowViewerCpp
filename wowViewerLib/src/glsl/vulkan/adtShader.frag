@@ -2,11 +2,11 @@
 
 precision highp float;
 
-in vec2 vChunkCoords;
-in vec3 vPosition;
-in vec4 vColor;
-in vec3 vNormal;
-in vec3 vVertexLighting;
+layout(location = 0) in vec2 vChunkCoords;
+layout(location = 1) in vec3 vPosition;
+layout(location = 2) in vec4 vColor;
+layout(location = 3) in vec3 vNormal;
+layout(location = 4) in vec3 vVertexLighting;
 
 uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayer0;
@@ -31,7 +31,7 @@ layout(std140) uniform meshWideBlockPS {
     vec4 uHeightOffset;
 };
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 vec3 makeDiffTerm(vec3 matDiffuse) {
   vec3 currColor;

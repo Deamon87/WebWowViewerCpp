@@ -1,10 +1,10 @@
 #version 450
 
 precision highp float;
-in vec4 vColor;
-in vec2 vTexcoord0;
-in vec2 vTexcoord1;
-in vec2 vTexcoord2;
+layout(location = 0) in vec4 vColor;
+layout(location = 1) in vec2 vTexcoord0;
+layout(location = 2) in vec2 vTexcoord1;
+layout(location = 3) in vec2 vTexcoord2;
 
 //Individual meshes
 layout(std140) uniform meshWideBlockPS {
@@ -16,7 +16,7 @@ uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
 
-out vec4 outputColor;
+layout(location = 0) out vec4 outputColor;
 
 void main() {
     vec4 tex = texture(uTexture, vTexcoord0).rgba;

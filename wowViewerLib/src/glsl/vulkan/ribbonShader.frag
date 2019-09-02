@@ -1,12 +1,12 @@
 #version 450
 
 precision highp float;
-in vec4 vColor;
-in vec2 vTexcoord0;
+layout(location = 0) in vec4 vColor;
+layout(location = 1) in vec2 vTexcoord0;
 
 uniform sampler2D uTexture;
 
-out vec4 outputColor;
+layout(location = 0) out vec4 outputColor;
 
 void main() {
     vec4 tex = texture(uTexture, vTexcoord0).rgba;

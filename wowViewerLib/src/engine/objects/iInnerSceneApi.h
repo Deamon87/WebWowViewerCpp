@@ -11,6 +11,7 @@
 
 class iInnerSceneApi {
 public:
+    virtual ~iInnerSceneApi() = default;
     virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) = 0;
     virtual void setAnimationId(int animationId) = 0;
 

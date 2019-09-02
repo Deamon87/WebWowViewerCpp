@@ -1,14 +1,17 @@
 #version 450
 
 //Taken from http://media.tojicode.com/webgl-samples/depth-texture.html
-attribute vec2 position;
-attribute vec2 texture;
-varying vec2 texCoord;
+layout(location = 0) in vec2 position;
+layout(location = 1) in vec2 texture;
 
-uniform float uWidth;
-uniform float uHeight;
-uniform float uX;
-uniform float uY;
+layout(location = 0) out vec2 texCoord;
+
+layout(std140) uniform meshWideBlockPS {
+    float uWidth;
+    float uHeight;
+    float uX;
+    float uY;
+};
 
 
 void main(void) {

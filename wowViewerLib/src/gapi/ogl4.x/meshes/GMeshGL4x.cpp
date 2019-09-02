@@ -22,7 +22,16 @@ GMeshGL4x::GMeshGL4x(IDevice &device,
 
     m_start = meshTemplate.start;
     m_end = meshTemplate.end;
-    m_element = meshTemplate.element;
+    switch (meshTemplate.element) {
+        case DrawElementMode::TRIANGLES:
+            m_element = GL_TRIANGLES;
+            break;
+        case DrawElementMode::TRIANGLE_STRIP:
+            m_element = GL_TRIANGLE_STRIP;
+            break;
+        default:
+            throw new std::runtime_error("unknown DrawElementMode");
+    }
     m_textureCount = meshTemplate.textureCount;
 
     m_texture = meshTemplate.texture;

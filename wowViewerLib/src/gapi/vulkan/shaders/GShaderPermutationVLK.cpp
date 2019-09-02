@@ -10,7 +10,23 @@
 #include "../../UniformBufferStructures.h"
 #include "../../interface/IDevice.h"
 
+static std::vector<char> readFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
+
+    size_t fileSize = (size_t) file.tellg();
+    std::vector<char> buffer(fileSize);
+
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+
+    file.close();
+
+    return buffer;
+}
 
 VkShaderModule GShaderPermutationVLK::createShaderModule(const std::vector<char>& code) {
     VkShaderModuleCreateInfo createInfo = {};
@@ -32,6 +48,10 @@ GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderName, IDevice * 
 }
 
 void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
+    auto vertShaderCode = readFile("spirv/"+m_shaderName+".vert.spv");
+    auto fragShaderCode = readFile("spirv/"+m_shaderName+".frag.spv");
 
+    vertShaderModule = createShaderModule(vertShaderCode);
+    fragShaderModule = createShaderModule(fragShaderCode);
 }
 

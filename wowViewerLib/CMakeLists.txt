@@ -180,8 +180,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/algorithms/PortalCullingAlgo.h
         src/engine/objects/scenes/wmoScene.cpp
         src/engine/objects/scenes/wmoScene.h
-        src/engine/objects/objectCache.h src/engine/objects/m2/m2Instancing/m2InstancingObject.cpp
-        src/engine/objects/m2/m2Instancing/m2InstancingObject.h
+        src/engine/objects/objectCache.h
         src/engine/algorithms/hashString.h
         src/engine/persistance/header/wdtFileHeader.h
         src/engine/persistance/wdtFile.cpp

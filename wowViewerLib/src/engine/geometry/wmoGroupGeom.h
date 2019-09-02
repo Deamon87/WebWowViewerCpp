@@ -9,7 +9,6 @@
 #include <vector>
 #include "../persistance/header/wmoFileHeader.h"
 #include "../persistance/helper/ChunkFileReader.h"
-#include "../opengl/header.h"
 #include "../wowInnerApi.h"
 
 class WmoGroupGeom {

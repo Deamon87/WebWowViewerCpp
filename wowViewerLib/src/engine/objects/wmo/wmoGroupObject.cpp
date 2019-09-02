@@ -494,7 +494,7 @@ void WmoGroupObject::createMeshes() {
 
         meshTemplate.start = renderBatch.first_index * 2;
         meshTemplate.end = renderBatch.num_indices;
-        meshTemplate.element = GL_TRIANGLES;
+        meshTemplate.element = DrawElementMode::TRIANGLES;
 
         bool isSecondTextSpec = material.shader == 8;
 
@@ -654,7 +654,7 @@ void WmoGroupObject::createWaterMeshes() {
 
     meshTemplate.start = 0;
     meshTemplate.end = m_geom->waterIndexSize;
-    meshTemplate.element = GL_TRIANGLES;
+    meshTemplate.element = DrawElementMode::TRIANGLES;
 
     int &waterType = meshTemplate.fragmentBuffers[2]->getObject<int>();
     waterType = liquid_type;

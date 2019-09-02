@@ -42,6 +42,7 @@ public:
 
         m_m2Object = m2Object;
     };
+    ~M2Scene(){}
 
     void setAnimationId(int animationId) override {
         m_m2Object->setAnimationId(animationId);

@@ -2,13 +2,19 @@
 
 /* vertex shader code */
 
-attribute vec3 aPosition;
+layout(location = 0) in vec3 aPosition;
 
-varying vec4 vPos;
+layout(std140, binding=0) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
 
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
-uniform mat4 uPlacementMat;
+
+layout(std140, binding=1) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
+};
+
+layout(location = 0) out vec4 vPos;
 
 void main() {
     gl_Position = uPMatrix * uLookAtMat * uPlacementMat * vec4(aPosition.xyz, 1.0);

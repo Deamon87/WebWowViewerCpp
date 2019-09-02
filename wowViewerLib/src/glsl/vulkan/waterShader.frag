@@ -2,11 +2,11 @@
 
 precision highp float;
 
-in vec3 vPosition;
+layout(location=0) in vec3 vPosition;
 
 uniform sampler2D uTexture;
 
-out vec4 outputColor;
+layout(location=1) out vec4 outputColor;
 
 layout(std140) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;

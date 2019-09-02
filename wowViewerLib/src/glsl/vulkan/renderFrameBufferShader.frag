@@ -1,15 +1,19 @@
 #version 450
 
 precision highp float;
-varying vec2 v_texcoord;
+layout(location = 0) in vec2 v_texcoord;
+
+layout(std140, binding=2) uniform meshWideBlockPS {
+    float gauss_offsets[5];
+    float gauss_weights[5];
+
+    vec2 uResolution;
+};
+
 uniform sampler2D u_sampler;
 uniform sampler2D u_depth;
 
-uniform float gauss_offsets[5];
-uniform float gauss_weights[5];
-
-uniform vec2 uResolution;
-
+layout(location = 0) out vec4 outputColor;
 void main() {
    /*
     vec4 fragmentColor = texture2D(u_sampler, v_texcoord);
@@ -32,11 +36,11 @@ void main() {
     float FXAA_REDUCE_MUL = 1.0/8.0;
     float FXAA_REDUCE_MIN = 1.0/128.0;
 
-    vec3 rgbNW=texture2D(u_sampler,v_texcoord+(vec2(-1.0,-1.0)/uResolution)).xyz;
-    vec3 rgbNE=texture2D(u_sampler,v_texcoord+(vec2(1.0,-1.0)/uResolution)).xyz;
-    vec3 rgbSW=texture2D(u_sampler,v_texcoord+(vec2(-1.0,1.0)/uResolution)).xyz;
-    vec3 rgbSE=texture2D(u_sampler,v_texcoord+(vec2(1.0,1.0)/uResolution)).xyz;
-    vec3 rgbM=texture2D(u_sampler,v_texcoord).xyz;
+    vec3 rgbNW=texture(u_sampler,v_texcoord+(vec2(-1.0,-1.0)/uResolution)).xyz;
+    vec3 rgbNE=texture(u_sampler,v_texcoord+(vec2(1.0,-1.0)/uResolution)).xyz;
+    vec3 rgbSW=texture(u_sampler,v_texcoord+(vec2(-1.0,1.0)/uResolution)).xyz;
+    vec3 rgbSE=texture(u_sampler,v_texcoord+(vec2(1.0,1.0)/uResolution)).xyz;
+    vec3 rgbM=texture(u_sampler,v_texcoord).xyz;
 
     vec3 luma=vec3(0.299, 0.587, 0.114);
     float lumaNW = dot(rgbNW, luma);
@@ -63,16 +67,16 @@ void main() {
           dir * rcpDirMin)) / uResolution;
 
     vec3 rgbA = (1.0/2.0) * (
-        texture2D(u_sampler, v_texcoord.xy + dir * (1.0/3.0 - 0.5)).xyz +
-        texture2D(u_sampler, v_texcoord.xy + dir * (2.0/3.0 - 0.5)).xyz);
+        texture(u_sampler, v_texcoord.xy + dir * (1.0/3.0 - 0.5)).xyz +
+        texture(u_sampler, v_texcoord.xy + dir * (2.0/3.0 - 0.5)).xyz);
     vec3 rgbB = rgbA * (1.0/2.0) + (1.0/4.0) * (
-        texture2D(u_sampler, v_texcoord.xy + dir * (0.0/3.0 - 0.5)).xyz +
-        texture2D(u_sampler, v_texcoord.xy + dir * (3.0/3.0 - 0.5)).xyz);
+        texture(u_sampler, v_texcoord.xy + dir * (0.0/3.0 - 0.5)).xyz +
+        texture(u_sampler, v_texcoord.xy + dir * (3.0/3.0 - 0.5)).xyz);
     float lumaB = dot(rgbB, luma);
 
     if((lumaB < lumaMin) || (lumaB > lumaMax)){
-        gl_FragColor.xyz=rgbA;
+        outputColor.xyz=rgbA;
     }else{
-        gl_FragColor.xyz=rgbB;
+        outputColor.xyz=rgbB;
     }
 }

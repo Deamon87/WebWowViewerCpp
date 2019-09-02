@@ -256,8 +256,8 @@ private:
     std::mutex m_lockNextMeshes;            // mutex for critical section
     std::unique_lock<std::mutex> renderLockNextMeshes;
 
-    void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
-                          bool drawDepth);
+//    void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
+//                          bool drawDepth);
 
     void drawCamera() override ;
     bool getIsDebugCamera() override {

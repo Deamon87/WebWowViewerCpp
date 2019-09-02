@@ -8,10 +8,10 @@ layout(location = 3) in vec2 aTexcoord1;
 layout(location = 4) in vec2 aTexcoord2;
 
 
-out vec4 vColor;
-out vec2 vTexcoord0;
-out vec2 vTexcoord1;
-out vec2 vTexcoord2;
+layout(location = 0) out vec4 vColor;
+layout(location = 1) out vec2 vTexcoord0;
+layout(location = 2) out vec2 vTexcoord1;
+layout(location = 3) out vec2 vTexcoord2;
 
 layout(std140) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;

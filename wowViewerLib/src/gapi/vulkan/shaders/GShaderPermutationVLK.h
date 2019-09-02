@@ -13,13 +13,14 @@ class GDeviceGL33;
 #include "../../interface/IShaderPermutation.h"
 
 class GShaderPermutationVLK : public IShaderPermutation {
-    friend class GDeviceVulkan;
+    friend class GDeviceVLK;
 
 public:
     ~GShaderPermutationVLK() override {};
 
     VkShaderModule getVertexModule() {return vertShaderModule;}
     VkShaderModule getFragmentModule() {return fragShaderModule;}
+    std::string getShaderName() {return m_shaderName; }
 
 protected:
     explicit GShaderPermutationVLK(std::string &shaderName, IDevice *device);

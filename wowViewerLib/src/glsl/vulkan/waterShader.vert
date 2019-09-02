@@ -16,7 +16,7 @@ layout(std140) uniform modelWideBlockVS {
 
 
 //out vec2 vTexCoord;
-out vec3 vPosition;
+layout(location=0) out vec3 vPosition;
 
 void main() {
    vec4 aPositionVec4 = vec4(aPosition, 1);

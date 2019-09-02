@@ -92,7 +92,17 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+    switch (m_element) {
+        case DrawElementMode::TRIANGLES:
+            inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            break;
+        case DrawElementMode::TRIANGLE_STRIP:
+            inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+            break;
+        default:
+            throw new std::runtime_error("unknown DrawElementMode");
+    }
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
     VkViewport viewport = {};
@@ -150,6 +160,8 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
+    std::cout << "Pipeline layout for "+((GShaderPermutationVLK *)m_shader.get())->getShaderName() << std::endl;
+
     if (vkCreatePipelineLayout(m_device.getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
@@ -168,6 +180,8 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+
 
     if (vkCreateGraphicsPipelines(m_device.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
                                   &graphicsPipeline) != VK_SUCCESS) {

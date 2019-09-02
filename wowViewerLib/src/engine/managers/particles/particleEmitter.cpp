@@ -231,7 +231,7 @@ void ParticleEmitter::createMesh() {
 
         meshTemplate.start = 0;
         meshTemplate.end = 0;
-        meshTemplate.element = GL_TRIANGLES;
+        meshTemplate.element =  DrawElementMode::TRIANGLES;
 
         bool multitex = this->particleType >= 2;
         HBlpTexture tex0 = nullptr;

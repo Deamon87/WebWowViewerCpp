@@ -661,34 +661,34 @@ void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
 }
 
 /* Shaders stuff */
-
-void WoWSceneImpl::drawTexturedQuad(GLuint texture,
-                                    float x,
-                                    float y,
-                                    float width,
-                                    float height,
-                                    float canv_width,
-                                    float canv_height,
-                                    bool drawDepth) {
-    /*
-    glDisable(GL_DEPTH_TEST);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vertBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    glEnableVertexAttribArray(+drawDepthShader::Attribute::position);
-    glVertexAttribPointer(+drawDepthShader::Attribute::position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glUniform1f(this->drawDepthBuffer->getUnf("uWidth"), width/canv_width);
-    glUniform1f(this->drawDepthBuffer->getUnf("uHeight"), height/canv_height);
-    glUniform1f(this->drawDepthBuffer->getUnf("uX"), x/canv_width);
-    glUniform1f(this->drawDepthBuffer->getUnf("uY"), y/canv_height);
-    glUniform1i(this->drawDepthBuffer->getUnf("drawDepth"), (drawDepth) ? 1 : 0);
-
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glEnable(GL_DEPTH_TEST);
-    */
-}
+//
+//void WoWSceneImpl::drawTexturedQuad(GLuint texture,
+//                                    float x,
+//                                    float y,
+//                                    float width,
+//                                    float height,
+//                                    float canv_width,
+//                                    float canv_height,
+//                                    bool drawDepth) {
+//    /*
+//    glDisable(GL_DEPTH_TEST);
+//    glBindBuffer(GL_ARRAY_BUFFER, this->vertBuffer);
+//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+//
+//    glEnableVertexAttribArray(+drawDepthShader::Attribute::position);
+//    glVertexAttribPointer(+drawDepthShader::Attribute::position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+//
+//    glUniform1f(this->drawDepthBuffer->getUnf("uWidth"), width/canv_width);
+//    glUniform1f(this->drawDepthBuffer->getUnf("uHeight"), height/canv_height);
+//    glUniform1f(this->drawDepthBuffer->getUnf("uX"), x/canv_width);
+//    glUniform1f(this->drawDepthBuffer->getUnf("uY"), y/canv_height);
+//    glUniform1i(this->drawDepthBuffer->getUnf("drawDepth"), (drawDepth) ? 1 : 0);
+//
+//    glBindTexture(GL_TEXTURE_2D, texture);
+//    glDrawArrays(GL_TRIANGLES, 0, 6);
+//    glEnable(GL_DEPTH_TEST);
+//    */
+//}
 /****************/
 
 void WoWSceneImpl::drawCamera () {

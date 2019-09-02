@@ -3,10 +3,14 @@
 precision highp float;
 
 //Individual mesh
-uniform vec4 uColor;
+layout(std140, binding=1) uniform modelWideBlockVS {
+    uniform vec4 uColor;
+};
+
+layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec4 finalColor = uColor ;
 
-    gl_FragColor = finalColor;
+    fragColor = finalColor;
 }

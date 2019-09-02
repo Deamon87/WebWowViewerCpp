@@ -23,11 +23,11 @@ mat3 blizzTranspose(mat4 value) {
     );
 }
 
-out vec2 vChunkCoords;
-out vec3 vPosition;
-out vec4 vColor;
-out vec3 vNormal;
-out vec3 vVertexLighting;
+layout(location = 0) out vec2 vChunkCoords;
+layout(location = 1) out vec3 vPosition;
+layout(location = 2) out vec4 vColor;
+layout(location = 3) out vec3 vNormal;
+layout(location = 4) out vec3 vVertexLighting;
 
 const float UNITSIZE_X =  (1600.0 / 3.0) / 16.0 / 8.0;
 const float UNITSIZE_Y =  (1600.0 / 3.0) / 16.0 / 8.0;

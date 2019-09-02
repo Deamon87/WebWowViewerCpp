@@ -54,7 +54,7 @@ private:
 
     uint8_t m_colorMask = 0;
 
-    int m_element;
+    DrawElementMode m_element;
 
 
 //Vulkan specific

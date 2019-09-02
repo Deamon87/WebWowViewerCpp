@@ -10,8 +10,8 @@ layout(std140) uniform sceneWideBlockVSPS {
     mat4 uPMatrix;
 };
 
-out vec4 vColor;
-out vec2 vTexcoord0;
+layout(location = 0) out vec4 vColor;
+layout(location = 1) out vec2 vTexcoord0;
 
 void main() {
     vec4 aPositionVec4 = vec4(aPosition, 1);

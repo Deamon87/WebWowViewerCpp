@@ -1,13 +1,18 @@
 #version 450
 
 /* vertex shader code */
-attribute vec3 aPosition;
+layout(location = 0) in vec3 aPosition;
 
 //Whole scene
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
-//Whole model
-uniform mat4 uPlacementMat;
+layout(std140, binding=0) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
+
+layout(std140, binding=1) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
+};
+
 
 void main() {
     vec4 worldPoint = vec4(aPosition.xyz, 1);

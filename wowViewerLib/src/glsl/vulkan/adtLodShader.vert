@@ -1,14 +1,16 @@
 #version 450
 
-attribute float aHeight;
-attribute float aIndex;
+layout(location = 0) in float aHeight;
+layout(location = 1) in float aIndex;
 
-uniform vec3 uPos;
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
+layout(std140) uniform modelWideBlockVS {
+    vec3 uPos;
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
 
-varying vec2 vChunkCoords;
-varying vec3 vPosition;
+layout(location = 0) out vec2 vChunkCoords;
+layout(location = 1) out vec3 vPosition;
 
 const float UNITSIZE_X =  (1600.0 / 3.0) / 128.0;
 const float UNITSIZE_Y =  (1600.0 / 3.0) / 128.0;

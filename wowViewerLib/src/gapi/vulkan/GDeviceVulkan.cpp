@@ -683,6 +683,10 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         IShaderPermutation *iPremutation = new GM2ShaderPermutationVLK(shaderName, this, *cacheRecord);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
+    } else {
+        IShaderPermutation *iPremutation = new GShaderPermutationVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
     }
 
 

@@ -122,7 +122,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
 
         meshTemplate.start = 0;
         meshTemplate.end = 0;
-        meshTemplate.element = GL_TRIANGLE_STRIP;
+        meshTemplate.element = DrawElementMode::TRIANGLE_STRIP;
 
 
         meshTemplate.textureCount = 1;
