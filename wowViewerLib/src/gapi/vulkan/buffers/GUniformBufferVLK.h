@@ -23,6 +23,8 @@ public:
 
     void save(bool initialSave = false) override;
     void createBuffer() override;
+
+    void commitUpload();
 private:
 
     void destroyBuffer();
@@ -33,7 +35,7 @@ private:
     void uploadData(void * data, int length);
 
 private:
-    IDevice &m_device;
+    GDeviceVLK *m_device;
 
 private:
     size_t m_size;
@@ -46,6 +48,15 @@ private:
     int m_creationIndex = 0;
 
     bool m_needsUpdate = false;
+
+    VkBuffer g_buf[4];
+    VmaAllocation g_alloc[4];
+    VmaAllocationInfo g_allocInfo[4];
+
+
+    VkBuffer stagingUBOBuffer = VK_NULL_HANDLE;
+    VmaAllocation stagingUBOBufferAlloc = VK_NULL_HANDLE;
+    VmaAllocationInfo stagingUBOBufferAllocInfo = {};
 };
 
 

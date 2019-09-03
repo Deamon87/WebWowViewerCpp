@@ -226,6 +226,27 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
     uniformBufferOffsetAlign = deviceProperties.limits.minUniformBufferOffsetAlignment;
     maxUniformBufferSize = deviceProperties.limits.maxUniformBufferRange;
+
+
+    // Create pool
+    VkBufferCreateInfo exampleBufCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    exampleBufCreateInfo.size = 1024; // Whatever.
+    exampleBufCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // Change if needed.
+
+    VmaAllocationCreateInfo allocCreateInfo = {};
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; // Change if needed.
+
+    uint32_t memTypeIndex;
+    vmaFindMemoryTypeIndexForBufferInfo(vmaAllocator, &exampleBufCreateInfo, &allocCreateInfo, &memTypeIndex);
+
+    // Create a pool that can have at most 2 blocks, 128 MiB each.
+    VmaPoolCreateInfo poolCreateInfo = {};
+    poolCreateInfo.memoryTypeIndex = memTypeIndex;
+    poolCreateInfo.blockSize = 128ull * 1024 * 1024;
+    poolCreateInfo.maxBlockCount = 3;
+
+    vmaCreatePool(vmaAllocator, &poolCreateInfo, &uboVmaPool);
+
 }
 
 void GDeviceVLK::setupDebugMessenger() {
@@ -636,82 +657,19 @@ void GDeviceVLK::bindTexture(ITexture *texture, int slot) {
 void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
-    std::vector<HGMesh> &meshes = (std::vector<HGMesh> &) iMeshes;
-
-    //1. Collect buffers
-    std::vector<GUniformBufferVLK *> buffers;
-    int renderIndex = 0;
-    for (const auto &mesh : meshes) {
+    for (const auto &mesh : iMeshes) {
         for (int i = 0; i < 3; i++ ) {
             GUniformBufferVLK *buffer = (GUniformBufferVLK *) mesh->getFragmentUniformBuffer(i).get();
             if (buffer != nullptr) {
-                buffers.push_back(buffer);
-                buffer->m_creationIndex = renderIndex++;
+                buffer->commitUpload();
             }
         }
         for (int i = 0; i < 3; i++ ) {
             GUniformBufferVLK * buffer = (GUniformBufferVLK *)mesh->getVertexUniformBuffer(i).get();
             if (buffer != nullptr) {
-                buffers.push_back(buffer);
-                buffer->m_creationIndex = renderIndex++;
+                buffer->commitUpload();
             }
         }
-    }
-
-    std::sort( buffers.begin(), buffers.end());
-    buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
-
-    //2. Create buffers and update them
-    int currentSize = 0;
-    int buffersIndex = 0;
-
-    std::vector<HGUniformBuffer> &m_unfiormBuffersForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBuffersForUpload;
-    HGUniformBuffer bufferForUpload;
-    if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
-        bufferForUpload = createUniformBuffer(maxUniformBufferSize);
-        bufferForUpload->createBuffer();
-        m_unfiormBuffersForUpload.push_back(bufferForUpload);
-    } else {
-        bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
-    }
-
-    for (const auto &buffer : buffers) {
-        if (buffer->m_buffCreated) continue;
-
-        if ((currentSize + buffer->m_size) > maxUniformBufferSize) {
-            ((GUniformBufferVLK *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
-
-            buffersIndex++;
-            currentSize = 0;
-
-            if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
-                bufferForUpload = createUniformBuffer(maxUniformBufferSize);
-                bufferForUpload->createBuffer();
-                m_unfiormBuffersForUpload.push_back(bufferForUpload);
-            } else {
-                bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
-            }
-        }
-
-        //TODO:!!!!
-//        buffer->setIdentifierBuffer(((GUniformBufferVLK *) bufferForUpload.get())->getIdentifierBuffer(), currentSize);
-        void * dataPtr = buffer->getPointerForUpload();
-        std::copy((char*)dataPtr,
-                  ((char*)dataPtr)+buffer->m_size,
-                  &aggregationBufferForUpload[currentSize]);
-
-        currentSize += buffer->m_size;
-
-        int offsetDiff = currentSize % uniformBufferOffsetAlign;
-        if (offsetDiff != 0) {
-            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
-
-            currentSize += bytesToAdd;
-        }
-    }
-
-    if (currentSize > 0) {
-        ((GUniformBufferVLK *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
     }
 
     updateCommandBuffers();
@@ -738,9 +696,6 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
     if (vkEndCommandBuffer(uploadCommandBuffers[uploadFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to record uploadCommandBuffer command buffer!");
     }
-
-
-
 
     VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
     submitInfo.commandBufferCount = 1;
@@ -969,7 +924,7 @@ void GDeviceVLK::setViewPortDimensions(float x, float y, float width, float heig
 
 }
 
-void GDeviceVLK::updateCommandBuffers() {
+void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     int updateFrame = getUpdateFrameNumber();
 
     VkCommandBufferBeginInfo beginInfo = {};
@@ -1000,6 +955,8 @@ void GDeviceVLK::updateCommandBuffers() {
 
     vkCmdBeginRenderPass(commandBuffers[updateFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+
+    vkCmdBindDescriptorSets(commandBuffers[updateFrame])
 
 //        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 //

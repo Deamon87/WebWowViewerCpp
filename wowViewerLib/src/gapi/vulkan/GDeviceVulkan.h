@@ -125,6 +125,10 @@ public:
         return vmaAllocator;
     }
 
+    VmaPool getUBOPool() {
+        return uboVmaPool;
+    }
+
     VkCommandBuffer getUploadCommandBuffer() {
         int uploadFrame = getUpdateFrameNumber();
         return uploadCommandBuffers[uploadFrame];
@@ -148,7 +152,7 @@ private:
     void createCommandBuffers();
     void createSyncObjects();
 
-    void updateCommandBuffers();
+    void updateCommandBuffers(std::vector<HGMesh> &iMeshes);
 
 protected:
     struct BlpCacheRecord {
@@ -228,6 +232,8 @@ protected:
     std::vector<VkFence> uploadFences;
 
     VmaAllocator vmaAllocator;
+    VmaPool uboVmaPool;
+
 
     VkPhysicalDeviceProperties deviceProperties;
 

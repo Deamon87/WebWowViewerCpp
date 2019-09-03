@@ -60,6 +60,7 @@ private:
 //Vulkan specific
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
+    std::vector<VkDescriptorSet> descriptorSets;
 
 
 private:
