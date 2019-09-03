@@ -99,7 +99,7 @@ void *GUniformBufferVLK::getPointerForModification() {
 }
 
 void GUniformBufferVLK::commitUpload() {
-    if (m_buffCreated && m_dataUploaded) {
+    if (m_buffCreated && m_needsUpdate) {
         void * data = getPointerForModification();
         this->uploadData(data, m_size);
     }

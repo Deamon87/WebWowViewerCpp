@@ -24,8 +24,7 @@ const int HEIGHT = 600;
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation",
-    "VK_LAYER_LUNARG_assistant_layer",
-    "VK_LAYER_LUNARG_api_dump",
+    "VK_LAYER_LUNARG_assistant_layer"
 
 };
 const std::vector<const char*> deviceExtensions = {
@@ -360,6 +359,14 @@ void GDeviceVLK::createRenderPass() {
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
 
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.pNext = nullptr;
@@ -367,8 +374,8 @@ void GDeviceVLK::createRenderPass() {
     renderPassInfo.pAttachments = &colorAttachment;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 0;
-    renderPassInfo.pDependencies = nullptr;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
 
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
@@ -655,7 +662,25 @@ void GDeviceVLK::bindTexture(ITexture *texture, int slot) {
 }
 
 void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
-    aggregationBufferForUpload.resize(maxUniformBufferSize);
+//    aggregationBufferForUpload.resize(maxUniformBufferSize);
+
+    int uploadFrame = getUpdateFrameNumber();
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    beginInfo.pNext = NULL;
+    beginInfo.pInheritanceInfo = NULL;
+
+//    std::cout << "updateBuffers: updateFrame = " << uploadFrame << std::endl;
+
+    vkWaitForFences(device, 1, &uploadFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(device, 1, &uploadFences[uploadFrame]);
+
+    updateCommandBuffers(iMeshes);
+
+    if (vkBeginCommandBuffer(uploadCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording uploadCommandBuffer command buffer!");
+    }
 
     for (const auto &mesh : iMeshes) {
         for (int i = 0; i < 3; i++ ) {
@@ -670,24 +695,6 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
                 buffer->commitUpload();
             }
         }
-    }
-
-    updateCommandBuffers();
-
-    int uploadFrame = getUpdateFrameNumber();
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-    beginInfo.pNext = NULL;
-    beginInfo.pInheritanceInfo = NULL;
-
-//    std::cout << "updateBuffers: updateFrame = " << uploadFrame << std::endl;
-
-    vkWaitForFences(device, 1, &uploadFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkResetFences(device, 1, &uploadFences[uploadFrame]);
-
-    if (vkBeginCommandBuffer(uploadCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording uploadCommandBuffer command buffer!");
     }
 }
 
@@ -879,9 +886,6 @@ void GDeviceVLK::commitFrame() {
         submitInfo.pWaitSemaphores = &waitSemaphores[0];
         submitInfo.pWaitDstStageMask = &waitStages[0];
 
-
-
-
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffers[currentDrawFrame];
 
@@ -955,22 +959,23 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
 
     vkCmdBeginRenderPass(commandBuffers[updateFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+    for (auto &mesh: iMeshes) {
+        auto *meshVLK = ((GMeshVLK *)mesh.get());
+        auto *binding ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
 
-    vkCmdBindDescriptorSets(commandBuffers[updateFrame])
+        vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->graphicsPipeline);
 
-//        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-//
-//        VkBuffer vertexBuffers[] = {vertexBuffer};
-//        VkDeviceSize offsets[] = {0};
-//        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-//
-//        vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-//
-//        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
-//
-//        vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+        vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->pipelineLayout, 0, 1, &meshVLK->descriptorSets[updateFrame], 0, 0);
 
+        auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(commandBuffers[updateFrame], 0, 1, &vertexBuffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffers[updateFrame], ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+        vkCmdDrawIndexed(commandBuffers[updateFrame], meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
+    }
     vkCmdEndRenderPass(commandBuffers[updateFrame]);
+
 
     if (vkEndCommandBuffer(commandBuffers[updateFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");

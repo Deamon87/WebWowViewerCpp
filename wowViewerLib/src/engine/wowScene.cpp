@@ -155,6 +155,11 @@ void WoWSceneImpl::DoCulling() {
         currentScene->collectMeshes(objFrameParam);
         device->updateBuffers(objFrameParam->renderedThisFrame);
 
+        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
+        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
+        m_sceneWideUniformBuffer->save();
+
         currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
         device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
     }
@@ -753,11 +758,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
         updateFrameIndex = updateObjFrame;
 
-//        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-//        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
-//        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
-
-//        m_sceneWideUniformBuffer->save();
+        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
+        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
+        m_sceneWideUniformBuffer->save();
 
         currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);

@@ -62,6 +62,8 @@ private:
     VkPipeline graphicsPipeline;
     std::vector<VkDescriptorSet> descriptorSets;
 
+    VkDescriptorPool m_descriptorPool;
+
 
 private:
     GDeviceVLK &m_device;

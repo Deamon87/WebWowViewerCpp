@@ -14,6 +14,7 @@
 class GUniformBufferVLK : public IUniformBuffer {
 public:
     friend class GDeviceVLK;
+    friend class GMeshVLK;
 
     explicit GUniformBufferVLK(IDevice &device, size_t size);
     ~GUniformBufferVLK() override;
@@ -25,6 +26,11 @@ public:
     void createBuffer() override;
 
     void commitUpload();
+    VkBuffer getGPUBuffer() {
+        int updateFrame = m_device->getUpdateFrameNumber();
+        return g_buf[updateFrame];
+    }
+    size_t getSize() {return m_size;}
 private:
 
     void destroyBuffer();

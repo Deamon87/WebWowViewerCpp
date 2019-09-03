@@ -5,6 +5,7 @@
 #include <iostream>
 #include "GMeshVLK.h"
 #include "../shaders/GShaderPermutationVLK.h"
+#include "../buffers/GUniformBufferVLK.h"
 
 GMeshVLK::GMeshVLK(IDevice &device,
              const gMeshTemplate &meshTemplate
@@ -180,6 +181,7 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDepthStencilState  = nullptr;
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
@@ -192,17 +194,92 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
+
+    //Create descriptor pool
+    std::array<VkDescriptorPoolSize, 1> poolSizes = {};
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(5*4);
+//    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+//    poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolInfo.pPoolSizes = poolSizes.data();
+    poolInfo.maxSets = static_cast<uint32_t>(4);
+
+    if (vkCreateDescriptorPool(m_device.getVkDevice(), &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor pool!");
+    }
+
+
     //Create descriptor sets
+    std::vector<VkDescriptorSetLayout> descLAyouts(4, descLayout);
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorPool = m_descriptorPool;
     allocInfo.descriptorSetCount = static_cast<uint32_t>(4);
-    allocInfo.pSetLayouts = layouts.data();
+    allocInfo.pSetLayouts = &descLAyouts[0];
 
-    descriptorSets.resize(swapChainImages.size());
-    if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+    descriptorSets.resize(4);
+    if (vkAllocateDescriptorSets(m_device.getVkDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
+
+
+    for (int j = 0; j < 4; j++) {
+        std::vector<VkDescriptorBufferInfo> bufferInfos;
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        for (int i = 0; i < 3; i++ ) {
+            GUniformBufferVLK * buffer = (GUniformBufferVLK *) this->getVertexUniformBuffer(i).get();
+            if (buffer != nullptr) {
+                VkDescriptorBufferInfo bufferInfo = {};
+                bufferInfo.buffer = buffer->g_buf[j];
+                bufferInfo.offset = 0;
+                bufferInfo.range = buffer->getSize();
+                bufferInfos.push_back(bufferInfo);
+            }
+        }
+        for (int i = 1; i < 3; i++ ) {
+            GUniformBufferVLK *buffer = (GUniformBufferVLK *) this->getFragmentUniformBuffer(i).get();
+            if (buffer != nullptr) {
+                VkDescriptorBufferInfo bufferInfo = {};
+                bufferInfo.buffer = buffer->g_buf[j];
+                bufferInfo.offset = 0;
+                bufferInfo.range = buffer->getSize();
+                bufferInfos.push_back(bufferInfo);
+            }
+        }
+
+        int bufferInfoInd = 0;
+        for (int i = 0; i < 3; i++ ) {
+            VkWriteDescriptorSet writeDescriptor;
+            writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptor.dstSet = descriptorSets[j];
+            writeDescriptor.pNext = nullptr;
+            writeDescriptor.dstBinding = i;
+            writeDescriptor.dstArrayElement = 0;
+            writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptor.descriptorCount = 1;
+            writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];;
+            descriptorWrites.push_back(writeDescriptor);
+        }
+        for (int i = 0; i < 2; i++ ) {
+            VkWriteDescriptorSet writeDescriptor;
+            writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptor.dstSet = descriptorSets[j];
+            writeDescriptor.pNext = nullptr;
+            writeDescriptor.dstBinding = 3 + i;
+            writeDescriptor.dstArrayElement = 0;
+            writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptor.descriptorCount = 1;
+            writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];
+            descriptorWrites.push_back(writeDescriptor);
+        }
+        vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
+
+
 }
 
 GMeshVLK::~GMeshVLK() {

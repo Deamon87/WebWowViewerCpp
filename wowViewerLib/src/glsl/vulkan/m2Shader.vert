@@ -55,7 +55,7 @@ void main() {
 
     vec4 lDiffuseColor = color_Transparency;
 
-    mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
+    mat4 cameraMatrix = uLookAtMat * placementMat   ;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
     mat3 viewModelMatTransposed =
         blizzTranspose(uLookAtMat) *
