@@ -5,7 +5,7 @@ precision highp float;
 layout(location = 0) in vec2 vChunkCoords;
 layout(location = 1) in vec3 vPosition;
 
-layout(std140) uniform modelWideBlockPS {
+layout(std140, binding=0) uniform modelWideBlockPS {
     vec4 uViewUp;
     vec4 uSunDir_FogStart;
     vec4 uSunColor_uFogEnd;
@@ -15,8 +15,8 @@ layout(std140) uniform modelWideBlockPS {
     int uNewFormula;
 };
 
-uniform sampler2D uDiffuseTexture;
-uniform sampler2D uNormalTexture;
+layout(binding=4) uniform sampler2D uDiffuseTexture;
+layout(binding=5) uniform sampler2D uNormalTexture;
 
 layout(location = 0) out vec4 fragColor;
 

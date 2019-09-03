@@ -9,7 +9,7 @@ layout(location=4) in vec4 vColor2;
 layout(location=5) in vec4 vPosition;
 layout(location=6) in vec3 vNormal;
 
-layout(std140) uniform meshWideBlockPS {
+layout(std140, binding=2) uniform meshWideBlockPS {
     vec4 uViewUp;
     vec4 uSunDir_FogStart;
     vec4 uSunColor_uFogEnd;
@@ -19,9 +19,9 @@ layout(std140) uniform meshWideBlockPS {
     vec4 FogColor_AlphaTest;
 };
 
-uniform sampler2D uTexture;
-uniform sampler2D uTexture2;
-uniform sampler2D uTexture3;
+layout(binding=3) uniform sampler2D uTexture;
+layout(binding=4) uniform sampler2D uTexture2;
+layout(binding=5) uniform sampler2D uTexture3;
 
 layout (location = 0) out vec4 outputColor;
 

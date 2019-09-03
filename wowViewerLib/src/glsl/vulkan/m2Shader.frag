@@ -26,7 +26,7 @@ layout(std140, binding=0) uniform sceneWideBlockVSPS {
 };
 
 //Whole model
-layout(std140, binding=1) uniform modelWideBlockPS {
+layout(std140, binding=3) uniform modelWideBlockPS {
     vec4 uViewUp;
     vec4 uSunDirAndFogStart;
     vec4 uSunColorAndFogEnd;
@@ -34,17 +34,17 @@ layout(std140, binding=1) uniform modelWideBlockPS {
 };
 
 //Individual meshes
-layout(std140, binding=2) uniform meshWideBlockPS {
+layout(std140, binding=4) uniform meshWideBlockPS {
     ivec4 PixelShader_UnFogged_IsAffectedByLight_LightCount;
     vec4 uFogColorAndAlphaTest;
     LocalLight pc_lights[4];
     vec4 uPcColor;
 };
 
-layout(binding=3) uniform sampler2D uTexture;
-layout(binding=4) uniform sampler2D uTexture2;
-layout(binding=5) uniform sampler2D uTexture3;
-layout(binding=6) uniform sampler2D uTexture4;
+//layout(binding=5) uniform sampler2D uTexture;
+//layout(binding=6) uniform sampler2D uTexture2;
+//layout(binding=7) uniform sampler2D uTexture3;
+//layout(binding=8) uniform sampler2D uTexture4;
 
 
 vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
@@ -104,13 +104,13 @@ void main() {
     vec2 texCoord3 = vTexCoord3.xy;
 
     /* Get color from texture */
-    vec4 tex = texture(uTexture, texCoord).rgba;
-    vec4 tex2 = texture(uTexture2, texCoord2).rgba;
-    vec4 tex3 = texture(uTexture3, texCoord3).rgba;
-
-    vec4 tex2WithTextCoord1 = texture(uTexture2,texCoord);
-    vec4 tex3WithTextCoord1 = texture(uTexture3,texCoord);
-    vec4 tex4WithTextCoord2 = texture(uTexture4,texCoord2);
+//    vec4 tex = texture(uTexture, texCoord).rgba;
+//    vec4 tex2 = texture(uTexture2, texCoord2).rgba;
+//    vec4 tex3 = texture(uTexture3, texCoord3).rgba;
+//
+//    vec4 tex2WithTextCoord1 = texture(uTexture2,texCoord);
+//    vec4 tex3WithTextCoord1 = texture(uTexture3,texCoord);
+//    vec4 tex4WithTextCoord2 = texture(uTexture4,texCoord2);
 
     vec4 finalColor = vec4(0);
     vec4 meshResColor = vDiffuseColor;
@@ -159,7 +159,7 @@ void main() {
     int uPixelShader = PixelShader_UnFogged_IsAffectedByLight_LightCount.x;
 
 
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
+        matDiffuse = vDiffuseColor.rgb * 2.000000;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
 

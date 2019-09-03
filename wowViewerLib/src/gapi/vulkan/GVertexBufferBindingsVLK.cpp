@@ -78,7 +78,7 @@ void GVertexBufferBindingsVLK::addVertexBufferBinding(GVertexBufferBinding bindi
         }
 
         vkBufferFormatHolder bufferFormatHolder;
-        bufferFormatHolder.bindingDescription.binding = bindingIdx++;
+        bufferFormatHolder.bindingDescription.binding = bindingIdx;
         bufferFormatHolder.bindingDescription.stride = stride;
         bufferFormatHolder.bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
@@ -91,6 +91,7 @@ void GVertexBufferBindingsVLK::addVertexBufferBinding(GVertexBufferBinding bindi
 
             bufferFormatHolder.attributeDescription.push_back(attributeDescription);
         }
+        bindingIdx++;
 
         m_BufferBindingsVLK.push_back(bufferFormatHolder);
     }

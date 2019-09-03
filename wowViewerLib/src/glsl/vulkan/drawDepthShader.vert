@@ -6,7 +6,7 @@ layout(location = 1) in vec2 texture;
 
 layout(location = 0) out vec2 texCoord;
 
-layout(std140) uniform meshWideBlockPS {
+layout(std140, binding=2) uniform meshWideBlockPS {
     float uWidth;
     float uHeight;
     float uX;

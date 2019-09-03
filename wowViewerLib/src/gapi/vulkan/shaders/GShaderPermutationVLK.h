@@ -20,6 +20,7 @@ public:
 
     VkShaderModule getVertexModule() {return vertShaderModule;}
     VkShaderModule getFragmentModule() {return fragShaderModule;}
+    VkDescriptorSetLayout getDescriptorLayout() {return descriptorSetLayout;}
     std::string getShaderName() {return m_shaderName; }
 
 protected:
@@ -32,19 +33,16 @@ protected:
 
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
-private:
+
+    VkDescriptorSetLayout descriptorSetLayout;
+
     GDeviceVLK *m_device;
 
 
 private:
     std::unordered_map<size_t, unsigned int> m_uniformMap;
-    int m_uboVertexBlockIndex[3];
-    int m_uboFragmentBlockIndex[3];
     std::string m_shaderName;
-
-
-
-};
+    };
 
 
 #endif //AWEBWOWVIEWERCPP_GSHADERPERMUTATION_H

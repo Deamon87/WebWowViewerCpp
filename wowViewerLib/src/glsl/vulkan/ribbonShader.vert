@@ -5,7 +5,7 @@ layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec2 aTexcoord0;
 
-layout(std140) uniform sceneWideBlockVSPS {
+layout(std140, binding=0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };

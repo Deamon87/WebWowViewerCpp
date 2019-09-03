@@ -3,7 +3,7 @@
 layout(location = 0) in float aHeight;
 layout(location = 1) in float aIndex;
 
-layout(std140) uniform modelWideBlockVS {
+layout(std140, binding=0) uniform modelWideBlockVS {
     vec3 uPos;
     mat4 uLookAtMat;
     mat4 uPMatrix;

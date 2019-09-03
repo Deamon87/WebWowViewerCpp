@@ -10,8 +10,8 @@ layout(std140, binding=2) uniform meshWideBlockPS {
     vec2 uResolution;
 };
 
-uniform sampler2D u_sampler;
-uniform sampler2D u_depth;
+layout(binding=3) uniform sampler2D u_sampler;
+layout(binding=4) uniform sampler2D u_depth;
 
 layout(location = 0) out vec4 outputColor;
 void main() {

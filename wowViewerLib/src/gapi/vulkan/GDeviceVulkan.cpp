@@ -222,6 +222,10 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     createCommandPool();
     createCommandBuffers();
     createSyncObjects();
+
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    uniformBufferOffsetAlign = deviceProperties.limits.minUniformBufferOffsetAlignment;
+    maxUniformBufferSize = deviceProperties.limits.maxUniformBufferRange;
 }
 
 void GDeviceVLK::setupDebugMessenger() {
@@ -629,7 +633,87 @@ void GDeviceVLK::bindTexture(ITexture *texture, int slot) {
 
 }
 
-void GDeviceVLK::updateBuffers(std::vector<HGMesh> &meshes) {
+void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
+    aggregationBufferForUpload.resize(maxUniformBufferSize);
+
+    std::vector<HGMesh> &meshes = (std::vector<HGMesh> &) iMeshes;
+
+    //1. Collect buffers
+    std::vector<GUniformBufferVLK *> buffers;
+    int renderIndex = 0;
+    for (const auto &mesh : meshes) {
+        for (int i = 0; i < 3; i++ ) {
+            GUniformBufferVLK *buffer = (GUniformBufferVLK *) mesh->getFragmentUniformBuffer(i).get();
+            if (buffer != nullptr) {
+                buffers.push_back(buffer);
+                buffer->m_creationIndex = renderIndex++;
+            }
+        }
+        for (int i = 0; i < 3; i++ ) {
+            GUniformBufferVLK * buffer = (GUniformBufferVLK *)mesh->getVertexUniformBuffer(i).get();
+            if (buffer != nullptr) {
+                buffers.push_back(buffer);
+                buffer->m_creationIndex = renderIndex++;
+            }
+        }
+    }
+
+    std::sort( buffers.begin(), buffers.end());
+    buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
+
+    //2. Create buffers and update them
+    int currentSize = 0;
+    int buffersIndex = 0;
+
+    std::vector<HGUniformBuffer> &m_unfiormBuffersForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBuffersForUpload;
+    HGUniformBuffer bufferForUpload;
+    if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
+        bufferForUpload = createUniformBuffer(maxUniformBufferSize);
+        bufferForUpload->createBuffer();
+        m_unfiormBuffersForUpload.push_back(bufferForUpload);
+    } else {
+        bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
+    }
+
+    for (const auto &buffer : buffers) {
+        if (buffer->m_buffCreated) continue;
+
+        if ((currentSize + buffer->m_size) > maxUniformBufferSize) {
+            ((GUniformBufferVLK *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
+
+            buffersIndex++;
+            currentSize = 0;
+
+            if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
+                bufferForUpload = createUniformBuffer(maxUniformBufferSize);
+                bufferForUpload->createBuffer();
+                m_unfiormBuffersForUpload.push_back(bufferForUpload);
+            } else {
+                bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
+            }
+        }
+
+        //TODO:!!!!
+//        buffer->setIdentifierBuffer(((GUniformBufferVLK *) bufferForUpload.get())->getIdentifierBuffer(), currentSize);
+        void * dataPtr = buffer->getPointerForUpload();
+        std::copy((char*)dataPtr,
+                  ((char*)dataPtr)+buffer->m_size,
+                  &aggregationBufferForUpload[currentSize]);
+
+        currentSize += buffer->m_size;
+
+        int offsetDiff = currentSize % uniformBufferOffsetAlign;
+        if (offsetDiff != 0) {
+            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+            currentSize += bytesToAdd;
+        }
+    }
+
+    if (currentSize > 0) {
+        ((GUniformBufferVLK *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
+    }
+
     updateCommandBuffers();
 
     int uploadFrame = getUpdateFrameNumber();

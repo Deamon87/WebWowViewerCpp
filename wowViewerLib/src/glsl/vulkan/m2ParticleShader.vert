@@ -13,7 +13,7 @@ layout(location = 1) out vec2 vTexcoord0;
 layout(location = 2) out vec2 vTexcoord1;
 layout(location = 3) out vec2 vTexcoord2;
 
-layout(std140) uniform sceneWideBlockVSPS {
+layout(std140, binding=0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };

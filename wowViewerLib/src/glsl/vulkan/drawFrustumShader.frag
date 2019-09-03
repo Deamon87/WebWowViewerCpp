@@ -2,7 +2,7 @@
 
 precision highp float;
 
-layout(std140) uniform meshWideBlockPS {
+layout(std140, binding=2) uniform meshWideBlockPS {
     uniform vec3 uColor;
 };
 

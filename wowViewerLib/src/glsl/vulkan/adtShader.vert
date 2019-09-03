@@ -7,11 +7,11 @@ layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
 layout(location = 4) in float aIndex;
 
-layout(std140) uniform sceneWideBlockVSPS {
+layout(std140, binding=0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };
-layout(std140) uniform meshWideBlockVS {
+layout(std140, binding=2) uniform meshWideBlockVS {
     vec4 uPos;
 };
 

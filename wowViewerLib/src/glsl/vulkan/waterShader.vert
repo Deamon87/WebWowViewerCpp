@@ -5,12 +5,12 @@ layout(location=0) in vec3 aPosition;
 //layout(location=2) in vec2 aTexCoord;
 
 
-layout(std140) uniform sceneWideBlockVSPS {
+layout(std140, binding=0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };
 
-layout(std140) uniform modelWideBlockVS {
+layout(std140, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 };
 

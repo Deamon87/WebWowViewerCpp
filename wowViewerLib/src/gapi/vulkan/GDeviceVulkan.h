@@ -176,7 +176,7 @@ protected:
 
     VkInstance vkInstance;
     VkSurfaceKHR vkSurface;
-    bool enableValidationLayers = false;
+    bool enableValidationLayers = true ;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
 
@@ -228,6 +228,8 @@ protected:
     std::vector<VkFence> uploadFences;
 
     VmaAllocator vmaAllocator;
+
+    VkPhysicalDeviceProperties deviceProperties;
 
     float clearColor[3] = {0,0,0};
 

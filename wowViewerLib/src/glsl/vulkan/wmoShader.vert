@@ -12,16 +12,16 @@ layout (location = 4) in vec2 aTexCoord3;
 layout (location = 5) in vec4 aColor;
 layout (location = 6) in vec4 aColor2;
 
-layout(std140) uniform sceneWideBlockVSPS {
+layout(std140, binding=0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };
 
-layout(std140) uniform modelWideBlockVS {
+layout(std140, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 };
 
-layout(std140) uniform meshWideBlockVS {
+layout(std140, binding=2) uniform meshWideBlockVS {
     ivec4 VertexShader_UseLitColor;
 };
 

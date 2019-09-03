@@ -155,10 +155,14 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     colorBlending.blendConstants[2] = 0.0f;
     colorBlending.blendConstants[3] = 0.0f;
 
+    auto descLayout = shaderVLK->getDescriptorLayout();
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descLayout;
 
     std::cout << "Pipeline layout for "+((GShaderPermutationVLK *)m_shader.get())->getShaderName() << std::endl;
 

@@ -2,7 +2,7 @@
 
 precision highp float;
 
-layout(std140) uniform modelWideBlockVS {
+layout(std140, binding=0) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 
     vec4 uBBScale;

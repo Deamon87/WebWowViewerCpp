@@ -1,12 +1,12 @@
 #version 450
 
 precision highp float;
-uniform sampler2D diffuse;
+layout(binding=3) uniform sampler2D diffuse;
 
-layout(std140) uniform meshWideBlockPS {
-uniform int drawDepth;
-uniform float uFarPlane;
-uniform float uNearPlane;
+layout(std140, binding=2) uniform meshWideBlockPS {
+    int drawDepth;
+    float uFarPlane;
+    float uNearPlane;
 };
 
 layout(location = 0) in vec2 texCoord;

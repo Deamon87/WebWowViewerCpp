@@ -3,13 +3,13 @@
 /* vertex shader code */
 layout(location = 0) in vec3 aPosition;
 
-layout(std140) uniform sceneWideBlockVSPS {
+layout(std140, binding=0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };
 
 // Whole model
-layout(std140) uniform modelWideBlockVS {
+layout(std140, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 
     vec4 uBBScale;
