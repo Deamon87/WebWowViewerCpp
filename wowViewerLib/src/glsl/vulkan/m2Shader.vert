@@ -47,7 +47,13 @@ void main() {
     vec4 modelPoint = vec4(0,0,0,0);
 
     vec4 aPositionVec4 = vec4(aPosition, 1);
-    mat4 boneTransformMat = mat4(1.0);
+    mat4 boneTransformMat =  mat4(1.0);
+
+//
+//    boneTransformMat += (boneWeights.x ) * uBoneMatrixes[bones.x];
+//    boneTransformMat += (boneWeights.y ) * uBoneMatrixes[bones.y];
+//    boneTransformMat += (boneWeights.z ) * uBoneMatrixes[bones.z];
+//    boneTransformMat += (boneWeights.w ) * uBoneMatrixes[bones.w];
 
 
     mat4 placementMat;
@@ -55,7 +61,7 @@ void main() {
 
     vec4 lDiffuseColor = color_Transparency;
 
-    mat4 cameraMatrix = uLookAtMat * placementMat   ;
+    mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
     mat3 viewModelMatTransposed =
         blizzTranspose(uLookAtMat) *
@@ -83,6 +89,7 @@ void main() {
 
 
     gl_Position = uPMatrix * cameraPoint;
+    gl_Position.y *= -1;
     vNormal = normal;
     vPosition = cameraPoint.xyz;
 }

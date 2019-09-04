@@ -195,7 +195,7 @@ void main() {
 
 
     //Forward rendering without lights
-    outputColor = finalColor;
+    outputColor = vec4(vNormal, 1.0);
 
     //Deferred rendering
     //gl_FragColor = finalColor;
