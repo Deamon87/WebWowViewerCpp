@@ -198,6 +198,7 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     {
         // Calculate the FPS as the number of frames divided by the duration in seconds
         fps = frameCount / duration;
+        std::cout << "fps = " << fps << std::endl;
 
         // If the user specified a window title to append the FPS value to...
         if (windowTitle != "NONE")
@@ -426,7 +427,7 @@ try {
         myapp.lastFrame = myapp.currentFrame;
 
         double fps = calcFPS(nullptr, 2.0);
-//        std::cout << "fps = " << fps << std::endl;
+
 
         processor->processRequests(false);
         processor->processResults(10);

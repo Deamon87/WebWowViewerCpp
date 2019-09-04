@@ -1021,7 +1021,7 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
     check_size<M2ParticleOld, 476>();
     check_size<M2Particle, 492>();
 
-    for (int i = 0; i < peRecords.size; i++) {
+    for (int i = 0; i < particleEmitters.size(); i++) {
         auto &peRecord = *peRecords.getElement(i);
         auto &particleEmitter = particleEmitters[i];
         if (particleEmitter->getGenerator() == nullptr) continue;
@@ -1151,7 +1151,7 @@ void AnimationManager::calcRibbonEmitters(std::vector<CRibbonEmitter *> &ribbonE
     static unsigned char defaultChar = 1;
     static unsigned short defaultInt = 0;
 
-    for (int i = 0; i < ribbonRecords.size; i++) {
+    for (int i = 0; i < ribbonEmitters.size(); i++) {
         auto *ribbonRecord = ribbonRecords.getElement(i);
         auto &ribbonEmitter = ribbonEmitters[i];
 

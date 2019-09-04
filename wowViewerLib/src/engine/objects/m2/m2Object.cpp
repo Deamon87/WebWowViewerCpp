@@ -998,7 +998,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     this->sortMaterials(viewMat);
 
     //Ribbon Emitters
-    for (int i = 0; i < m_m2Geom->m_m2Data->ribbon_emitters.size; i++) {
+    for (int i = 0; i < ribbonEmitters.size(); i++) {
         auto *ribbonRecord = m_m2Geom->m_m2Data->ribbon_emitters.getElement(i);
 
         mathfu::mat4 transformMat =
@@ -1378,6 +1378,7 @@ void M2Object::initLights() {
     lights = std::vector<M2LightResult>(m_m2Geom->getM2Data()->lights.size);
 }
 void M2Object::initParticleEmitters() {
+    return;
     particleEmitters = std::vector<ParticleEmitter *>();
 //    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->particle_emitters.size; i++) {
@@ -1390,6 +1391,7 @@ void M2Object::initParticleEmitters() {
 };
 
 void M2Object::initRibbonEmitters() {
+    return;
     ribbonEmitters = std::vector<CRibbonEmitter *>();
 //    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->ribbon_emitters.size; i++) {

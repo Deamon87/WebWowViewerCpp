@@ -132,7 +132,7 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = m_triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE  ;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
@@ -155,6 +155,14 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     colorBlending.blendConstants[1] = 0.0f;
     colorBlending.blendConstants[2] = 0.0f;
     colorBlending.blendConstants[3] = 0.0f;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencil = {};
+    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = m_depthCulling ? VK_TRUE : VK_FALSE;
+    depthStencil.depthWriteEnable = m_depthWrite ? VK_TRUE : VK_FALSE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.stencilTestEnable = VK_FALSE;
 
     auto descLayout = shaderVLK->getDescriptorLayout();
 
@@ -181,13 +189,11 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.pDepthStencilState  = nullptr;
+    pipelineInfo.pDepthStencilState  = &depthStencil;
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-
 
     if (vkCreateGraphicsPipelines(m_device.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
                                   &graphicsPipeline) != VK_SUCCESS) {
@@ -228,8 +234,10 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
 
 
     for (int j = 0; j < 4; j++) {
-        std::vector<VkDescriptorBufferInfo> bufferInfos;
+        std::array<VkDescriptorBufferInfo, 5> bufferInfos;
         std::vector<VkWriteDescriptorSet> descriptorWrites;
+        int bufferInfoInd = 0;
+
         for (int i = 0; i < 3; i++ ) {
             GUniformBufferVLK * buffer = (GUniformBufferVLK *) this->getVertexUniformBuffer(i).get();
             if (buffer != nullptr) {
@@ -237,7 +245,19 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
                 bufferInfo.buffer = buffer->g_buf[j];
                 bufferInfo.offset = 0;
                 bufferInfo.range = buffer->getSize();
-                bufferInfos.push_back(bufferInfo);
+                bufferInfos[bufferInfoInd] = bufferInfo;
+
+                VkWriteDescriptorSet writeDescriptor;
+                writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writeDescriptor.dstSet = descriptorSets[j];
+                writeDescriptor.pNext = nullptr;
+                writeDescriptor.dstBinding = i;
+                writeDescriptor.dstArrayElement = 0;
+                writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                writeDescriptor.descriptorCount = 1;
+                writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];;
+                descriptorWrites.push_back(writeDescriptor);
+
             }
         }
         for (int i = 1; i < 3; i++ ) {
@@ -247,36 +267,22 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
                 bufferInfo.buffer = buffer->g_buf[j];
                 bufferInfo.offset = 0;
                 bufferInfo.range = buffer->getSize();
-                bufferInfos.push_back(bufferInfo);
+                bufferInfos[bufferInfoInd]= bufferInfo;
+
+                VkWriteDescriptorSet writeDescriptor;
+                writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writeDescriptor.dstSet = descriptorSets[j];
+                writeDescriptor.pNext = nullptr;
+                writeDescriptor.dstBinding = 2 + i;
+                writeDescriptor.dstArrayElement = 0;
+                writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                writeDescriptor.descriptorCount = 1;
+                writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];
+                descriptorWrites.push_back(writeDescriptor);
             }
         }
 
-        int bufferInfoInd = 0;
-        for (int i = 0; i < 3; i++ ) {
-            VkWriteDescriptorSet writeDescriptor;
-            writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptor.dstSet = descriptorSets[j];
-            writeDescriptor.pNext = nullptr;
-            writeDescriptor.dstBinding = i;
-            writeDescriptor.dstArrayElement = 0;
-            writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            writeDescriptor.descriptorCount = 1;
-            writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];;
-            descriptorWrites.push_back(writeDescriptor);
-        }
-        for (int i = 0; i < 2; i++ ) {
-            VkWriteDescriptorSet writeDescriptor;
-            writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptor.dstSet = descriptorSets[j];
-            writeDescriptor.pNext = nullptr;
-            writeDescriptor.dstBinding = 3 + i;
-            writeDescriptor.dstArrayElement = 0;
-            writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            writeDescriptor.descriptorCount = 1;
-            writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];
-            descriptorWrites.push_back(writeDescriptor);
-        }
-        vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
     }
 
 

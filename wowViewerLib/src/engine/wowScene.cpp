@@ -443,8 +443,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -613,11 +613,12 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(1, 324981, -1);
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
-    setScene(0, "creature/arthas/arthas.m2", -1);
+//    setScene(0, "creature/arthas/arthas.m2", -1);
 //    setSceneWithFileDataId(1, 108803, -1);
 //    setSceneWithFileDataId(0, 125407, -1); // phoneix
     //setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
     //setSceneWithFileDataId(0, 125995, -1); //portal
+//    setSceneWithFileDataId(0, 1612576, -1); //portal
 
 //    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
 //    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale
@@ -765,7 +766,8 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
         currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
-//        device->updateBuffers(objFrameParam->renderedThisFrame);
+
+        device->updateBuffers(objFrameParam->renderedThisFrame);
 
         currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
         device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);

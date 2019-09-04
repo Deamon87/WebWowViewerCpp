@@ -20,13 +20,13 @@ layout(location=5) in vec4 vDiffuseColor;
 
 layout(location=0) out vec4 outputColor;
 
-layout(std140, binding=0) uniform sceneWideBlockVSPS {
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
 };
 
 //Whole model
-layout(std140, binding=3) uniform modelWideBlockPS {
+layout(std140, set=0, binding=3) uniform modelWideBlockPS {
     vec4 uViewUp;
     vec4 uSunDirAndFogStart;
     vec4 uSunColorAndFogEnd;
@@ -34,7 +34,7 @@ layout(std140, binding=3) uniform modelWideBlockPS {
 };
 
 //Individual meshes
-layout(std140, binding=4) uniform meshWideBlockPS {
+layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     ivec4 PixelShader_UnFogged_IsAffectedByLight_LightCount;
     vec4 uFogColorAndAlphaTest;
     LocalLight pc_lights[4];

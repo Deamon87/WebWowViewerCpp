@@ -60,7 +60,7 @@ public:
 
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
-        return true;
+        return uploadQueue != graphicsQueue;
     }
 
     float getAnisLevel() override;
@@ -152,6 +152,15 @@ private:
     void createCommandBuffers();
     void createSyncObjects();
 
+    void createColorResources();
+    void createDepthResources();
+
+
+    VkFormat findDepthFormat();
+    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout);
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+
     void updateCommandBuffers(std::vector<HGMesh> &iMeshes);
 
 protected:
@@ -180,7 +189,7 @@ protected:
 
     VkInstance vkInstance;
     VkSurfaceKHR vkSurface;
-    bool enableValidationLayers = true ;
+    bool enableValidationLayers = false ;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
 
@@ -199,6 +208,10 @@ protected:
 
     VkCommandPool commandPool;
     VkCommandPool uploadCommandPool;
+
+    VkImage colorImage;
+    VkDeviceMemory colorImageMemory;
+    VkImageView colorImageView;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;

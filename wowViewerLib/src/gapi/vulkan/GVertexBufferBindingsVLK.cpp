@@ -87,7 +87,7 @@ void GVertexBufferBindingsVLK::addVertexBufferBinding(GVertexBufferBinding bindi
             attributeDescription.binding = bindingIdx;
             attributeDescription.location = gBinding.position;
             attributeDescription.format = gBindingToVkFormat(gBinding.type, gBinding.size, gBinding.normalized);
-            attributeDescription.offset = VK_VERTEX_INPUT_RATE_VERTEX;
+            attributeDescription.offset = gBinding.offset;
 
             bufferFormatHolder.attributeDescription.push_back(attributeDescription);
         }
