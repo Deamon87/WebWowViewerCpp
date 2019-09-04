@@ -43,7 +43,7 @@ int mright_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
 
-bool stopInputs = true;
+bool stopInputs = false;
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     if (stopInputs) return;
@@ -426,6 +426,7 @@ try {
         myapp.lastFrame = myapp.currentFrame;
 
         double fps = calcFPS(nullptr, 2.0);
+//        std::cout << "fps = " << fps << std::endl;
 
         processor->processRequests(false);
         processor->processResults(10);
