@@ -7,6 +7,33 @@
 #include "../shaders/GShaderPermutationVLK.h"
 #include "../buffers/GUniformBufferVLK.h"
 
+struct BlendModeDescVLK {
+    bool blendModeEnable;
+    VkBlendFactor SrcColor;
+    VkBlendFactor DestColor;
+    VkBlendFactor SrcAlpha;
+    VkBlendFactor DestAlpha;
+};
+
+BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
+    /*GxBlend_Opaque*/           {false,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO},
+    /*GxBlend_AlphaKey*/         {false,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO},
+    /*GxBlend_Alpha*/            {true,VK_BLEND_FACTOR_SRC_ALPHA,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA},
+    /*GxBlend_Add*/              {true,VK_BLEND_FACTOR_SRC_ALPHA,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_ONE},
+    /*GxBlend_Mod*/              {true,VK_BLEND_FACTOR_DST_COLOR,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_DST_ALPHA,VK_BLEND_FACTOR_ZERO},
+    /*GxBlend_Mod2x*/            {true,VK_BLEND_FACTOR_DST_COLOR,VK_BLEND_FACTOR_SRC_COLOR,VK_BLEND_FACTOR_DST_ALPHA,VK_BLEND_FACTOR_SRC_ALPHA},
+    /*GxBlend_ModAdd*/           {true,VK_BLEND_FACTOR_DST_COLOR,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_DST_ALPHA,VK_BLEND_FACTOR_ONE},
+    /*GxBlend_InvSrcAlphaAdd*/   {true,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,VK_BLEND_FACTOR_ONE},
+    /*GxBlend_InvSrcAlphaOpaque*/{true,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,VK_BLEND_FACTOR_ZERO},
+    /*GxBlend_SrcAlphaOpaque*/   {true,VK_BLEND_FACTOR_SRC_ALPHA,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_SRC_ALPHA,VK_BLEND_FACTOR_ZERO},
+    /*GxBlend_NoAlphaAdd*/       {true,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_ONE},
+    /*GxBlend_ConstantAlpha*/    {true,VK_BLEND_FACTOR_CONSTANT_ALPHA,VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,VK_BLEND_FACTOR_CONSTANT_ALPHA,VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA},
+    /*GxBlend_Screen*/           {true,VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO},
+    /*GxBlend_BlendAdd*/         {true,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA}
+};
+
+
+
 GMeshVLK::GMeshVLK(IDevice &device,
              const gMeshTemplate &meshTemplate
 ) : m_device(dynamic_cast<GDeviceVLK &>(device)), m_shader(meshTemplate.shader), m_meshType(meshTemplate.meshType) {
@@ -131,7 +158,7 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.cullMode = m_backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
     rasterizer.frontFace = m_triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE  ;
     rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -143,7 +170,13 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
     colorBlendAttachment.colorWriteMask =
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.blendEnable = blendModesVLK->blendModeEnable ? VK_TRUE : VK_FALSE;
+    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.srcColorBlendFactor = blendModesVLK[(char)m_blendMode].SrcColor;
+    colorBlendAttachment.dstColorBlendFactor = blendModesVLK[(char)m_blendMode].DestColor;
+    colorBlendAttachment.srcAlphaBlendFactor = blendModesVLK[(char)m_blendMode].SrcAlpha;
+    colorBlendAttachment.dstAlphaBlendFactor = blendModesVLK[(char)m_blendMode].DestAlpha;
 
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
