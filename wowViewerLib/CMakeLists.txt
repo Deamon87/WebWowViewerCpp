@@ -346,6 +346,8 @@ set(VULKAN_IMPLEMENTATION
         src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
         src/gapi/vulkan/meshes/GM2MeshVLK.cpp
         src/gapi/vulkan/meshes/GMeshVLK.cpp
+        src/gapi/vulkan/textures/GTextureVLK.cpp
+        src/gapi/vulkan/textures/GBlpTextureVLK.cpp
         src/gapi/vulkan/buffers/GUniformBufferVLK.cpp
         src/gapi/vulkan/buffers/GVertexBufferVLK.cpp
         src/gapi/vulkan/buffers/GIndexBufferVLK.cpp)

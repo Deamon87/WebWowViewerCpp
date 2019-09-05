@@ -29,6 +29,8 @@ class gMeshTemplate;
 #include "vk_mem_alloc.h"
 
 #include "../interface/IDevice.h"
+#include "textures/GBlpTextureVLK.h"
+
 
 class GDeviceVLK : public IDevice {
     struct QueueFamilyIndices {
@@ -189,7 +191,7 @@ protected:
 
     VkInstance vkInstance;
     VkSurfaceKHR vkSurface;
-    bool enableValidationLayers = false ;
+    bool enableValidationLayers = true ;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
 
