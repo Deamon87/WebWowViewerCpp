@@ -5,7 +5,7 @@
 #include "GTextureVLK.h"
 #include "../../interface/IDevice.h"
 
-GTextureVLK::GTextureVLK(IDevice &device) : m_device(device) {
+GTextureVLK::GTextureVLK(IDevice &device) : m_device(dynamic_cast<GDeviceVLK &>(device)) {
     createBuffer();
 }
 

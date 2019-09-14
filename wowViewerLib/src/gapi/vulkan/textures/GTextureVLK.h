@@ -27,7 +27,7 @@ private:
     virtual void bind(); //Should be called only by GDevice
     void unbind();
 protected:
-    IDevice &m_device;
+    GDeviceVLK &m_device;
 
     bool m_loaded = false;
 };
