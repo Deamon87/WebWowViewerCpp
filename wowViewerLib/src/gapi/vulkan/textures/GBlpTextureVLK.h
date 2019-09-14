@@ -2,10 +2,9 @@
 // Created by deamon on 05.06.18.
 //
 
-#ifndef WEBWOWVIEWERCPP_GBLPTEXTURE_H
-#define WEBWOWVIEWERCPP_GBLPTEXTURE_H
+#ifndef WEBWOWVIEWERCPP_GBLPTEXTUREVLK_H
+#define WEBWOWVIEWERCPP_GBLPTEXTUREVLK_H
 
-#include "../../../gapi/interface/textures/IBlpTexture.h"
 #include "GTextureVLK.h"
 #include "../GDeviceVulkan.h"
 
@@ -20,6 +19,7 @@ public:
     bool postLoad() override;
 
 
+
 private:
     void decompressAndUpload(TextureFormat textureFormat, const MipmapsVector &mipmaps);
 private:
@@ -32,4 +32,4 @@ private:
 };
 
 
-#endif //WEBWOWVIEWERCPP_GBLPTEXTURE_H
+#endif //WEBWOWVIEWERCPP_GBLPTEXTUREVLK_H

@@ -16,6 +16,7 @@
 #include "buffers/GUniformBufferVLK.h"
 #include "buffers/GVertexBufferVLK.h"
 #include "buffers/GIndexBufferVLK.h"
+#include "textures/GTextureVLK.h"
 #include "GVertexBufferBindingsVLK.h"
 #include "shaders/GM2ShaderPermutationVLK.h"
 
@@ -814,6 +815,12 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
         throw std::runtime_error("failed to begin recording uploadCommandBuffer command buffer!");
     }
 
+    if (!m_blackPixelTexture) {
+        m_blackPixelTexture = createTexture();
+        unsigned int ff = 0;
+        m_blackPixelTexture->loadData(1,1,&ff);
+    }
+
     for (const auto &mesh : iMeshes) {
         for (int i = 0; i < 3; i++ ) {
             GUniformBufferVLK *buffer = (GUniformBufferVLK *) mesh->getFragmentUniformBuffer(i).get();
@@ -831,6 +838,30 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
 }
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
+    std::vector<HGTexture> textures;
+    textures.reserve(meshes.size() * 3);
+
+    int texturesLoaded = 0;
+
+    for (const auto &hmesh : meshes) {
+        GMeshVLK * mesh = (GMeshVLK *) hmesh.get();
+        mesh->updateDescriptor();
+
+
+        for (int i = 0; i < mesh->m_textureCount; i++) {
+            textures.push_back(mesh->m_texture[i]);
+        }
+    }
+
+    std::sort(textures.begin(), textures.end());
+    textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
+
+    for (const auto &texture : textures) {
+        if (texture == nullptr) continue;
+        if (texture->postLoad()) texturesLoaded++;
+        if (texturesLoaded > 4) return;
+    }
+
     int uploadFrame = getUpdateFrameNumber();
     if (vkEndCommandBuffer(uploadCommandBuffers[uploadFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to record uploadCommandBuffer command buffer!");
@@ -905,7 +936,10 @@ HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool
 }
 
 HGTexture GDeviceVLK::createTexture() {
-    return HGTexture();
+    std::shared_ptr<GTextureVLK> h_texture;
+    h_texture.reset(new GTextureVLK(*this));
+
+    return h_texture;
 }
 
 HGMesh GDeviceVLK::createMesh(gMeshTemplate &meshTemplate) {

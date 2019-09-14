@@ -4,6 +4,7 @@
 
 #ifndef AWEBWOWVIEWERCPP_ITEXTURE_H
 #define AWEBWOWVIEWERCPP_ITEXTURE_H
+
 #include "../../../engine/wowCommonClasses.h"
 #include "../../../engine/texture/BlpTexture.h"
 

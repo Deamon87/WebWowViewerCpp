@@ -772,7 +772,6 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         GMeshGL33 * mesh = (GMeshGL33 *) hmesh.get();
         for (int i = 0; i < mesh->m_textureCount; i++) {
             textures.push_back(mesh->m_texture[i]);
-
         }
     }
 

@@ -41,10 +41,10 @@ layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     vec4 uPcColor;
 };
 
-//layout(binding=5) uniform sampler2D uTexture;
-//layout(binding=6) uniform sampler2D uTexture2;
-//layout(binding=7) uniform sampler2D uTexture3;
-//layout(binding=8) uniform sampler2D uTexture4;
+layout(binding=5) uniform sampler2D uTexture;
+layout(binding=6) uniform sampler2D uTexture2;
+layout(binding=7) uniform sampler2D uTexture3;
+layout(binding=8) uniform sampler2D uTexture4;
 
 
 vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
@@ -104,21 +104,21 @@ void main() {
     vec2 texCoord3 = vTexCoord3.xy;
 
     /* Get color from texture */
-//    vec4 tex = texture(uTexture, texCoord).rgba;
-//    vec4 tex2 = texture(uTexture2, texCoord2).rgba;
-//    vec4 tex3 = texture(uTexture3, texCoord3).rgba;
-//
-//    vec4 tex2WithTextCoord1 = texture(uTexture2,texCoord);
-//    vec4 tex3WithTextCoord1 = texture(uTexture3,texCoord);
-//    vec4 tex4WithTextCoord2 = texture(uTexture4,texCoord2);
+    vec4 tex = texture(uTexture, texCoord).rgba;
+    vec4 tex2 = texture(uTexture2, texCoord2).rgba;
+    vec4 tex3 = texture(uTexture3, texCoord3).rgba;
 
-    vec4 tex = vec4(1.0, 1.0, 1.0, 1.0);
-    vec4 tex2 = vec4(1.0, 1.0, 1.0, 1.0);
-    vec4 tex3 = vec4(1.0, 1.0, 1.0, 1.0);
+    vec4 tex2WithTextCoord1 = texture(uTexture2,texCoord);
+    vec4 tex3WithTextCoord1 = texture(uTexture3,texCoord);
+    vec4 tex4WithTextCoord2 = texture(uTexture4,texCoord2);
 
-    vec4 tex2WithTextCoord1 = vec4(1.0, 1.0, 1.0, 1.0);
-    vec4 tex3WithTextCoord1 = vec4(1.0, 1.0, 1.0, 1.0);
-    vec4 tex4WithTextCoord2 = vec4(1.0, 1.0, 1.0, 1.0);
+//    vec4 tex = vec4(1.0, 1.0, 1.0, 1.0);
+//    vec4 tex2 = vec4(1.0, 1.0, 1.0, 1.0);
+//    vec4 tex3 = vec4(1.0, 1.0, 1.0, 1.0);
+
+//    vec4 tex2WithTextCoord1 = vec4(1.0, 1.0, 1.0, 1.0);
+//    vec4 tex3WithTextCoord1 = vec4(1.0, 1.0, 1.0, 1.0);
+//    vec4 tex4WithTextCoord2 = vec4(1.0, 1.0, 1.0, 1.0);
 
     vec4 finalColor = vec4(0);
     vec4 meshResColor = vDiffuseColor;

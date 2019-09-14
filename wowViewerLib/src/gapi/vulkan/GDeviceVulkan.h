@@ -29,7 +29,6 @@ class gMeshTemplate;
 #include "vk_mem_alloc.h"
 
 #include "../interface/IDevice.h"
-#include "textures/GBlpTextureVLK.h"
 
 
 class GDeviceVLK : public IDevice {
@@ -63,6 +62,9 @@ public:
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
         return uploadQueue != graphicsQueue;
+    }
+    HGTexture getBlackPixelTexture() {
+        return m_blackPixelTexture;
     }
 
     float getAnisLevel() override;

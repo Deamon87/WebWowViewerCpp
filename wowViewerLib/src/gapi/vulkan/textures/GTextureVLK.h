@@ -2,16 +2,18 @@
 // Created by Deamon on 7/23/2018.
 //
 
-#ifndef AWEBWOWVIEWERCPP_GTEXTURE_H
-#define AWEBWOWVIEWERCPP_GTEXTURE_H
+#ifndef AWEBWOWVIEWERCPP_GTEXTUREVLK_H
+#define AWEBWOWVIEWERCPP_GTEXTUREVLK_H
 
+class GDeviceVLK;
 #include "../GDeviceVulkan.h"
 #include "../../interface/textures/ITexture.h"
 
 class GTextureVLK : public ITexture {
-    friend class GDeviceGL33;
+    friend class GDeviceVLK;
 protected:
     explicit GTextureVLK(IDevice &device);
+    void createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
 public:
     ~GTextureVLK() override;
 
@@ -21,6 +23,14 @@ public:
         throw "Not Implemented in this class";
     }
     bool postLoad() override { return false;};
+
+    struct Texture {
+        VkSampler sampler;
+        VkImage image;
+        VkImageLayout imageLayout;
+        VkDeviceMemory deviceMemory;
+        VkImageView view;
+    } texture;
 private:
     void createBuffer();
     void destroyBuffer();
@@ -29,8 +39,11 @@ private:
 protected:
     GDeviceVLK &m_device;
 
+
+
+
     bool m_loaded = false;
 };
 
 
-#endif //AWEBWOWVIEWERCPP_GTEXTURE_H
+#endif //AWEBWOWVIEWERCPP_GTEXTUREVLK_H
