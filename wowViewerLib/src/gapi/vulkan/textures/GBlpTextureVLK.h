@@ -15,11 +15,7 @@ public:
     ~GBlpTextureVLK() override;
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override;
 
-    bool getIsLoaded() override;
     bool postLoad() override;
-
-
-
 private:
     void decompressAndUpload(TextureFormat textureFormat, const MipmapsVector &mipmaps);
 private:
@@ -27,8 +23,6 @@ private:
 
     bool xWrapTex;
     bool yWrapTex;
-
-    bool m_loaded = false;
 };
 
 

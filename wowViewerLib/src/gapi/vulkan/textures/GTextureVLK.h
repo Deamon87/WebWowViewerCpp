@@ -22,7 +22,7 @@ public:
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
         throw "Not Implemented in this class";
     }
-    bool postLoad() override { return false;};
+    bool postLoad() override;;
 
     struct Texture {
         VkSampler sampler;
@@ -39,9 +39,7 @@ private:
 protected:
     GDeviceVLK &m_device;
 
-
-
-
+    bool m_uploaded = false;
     bool m_loaded = false;
 };
 

@@ -27,7 +27,7 @@ void GTextureVLK::unbind() {
 }
 
 bool GTextureVLK::getIsLoaded() {
-    return true;
+    return m_loaded;
 }
 
 static int pureTexturesUploaded = 0;
@@ -45,7 +45,6 @@ void GTextureVLK::loadData(int width, int height, void *data) {
     mipmapsVector.push_back(mipmap);
 
     createTexture(mipmapsVector, VK_FORMAT_R8G8B8A8_UNORM, unifiedBuffer);
-    m_loaded = true;
 }
 
 void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer) {// Copy data to an optimal tiled image
@@ -82,7 +81,14 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     std::vector<VkBufferImageCopy> bufferCopyRegions;
     uint32_t offset = 0;
 
+    int vulkanMipMapCount = 0;
     for (uint32_t i = 0; i < mipmaps.size(); i++) {
+        if (
+            (textureFormatGPU != VK_FORMAT_B8G8R8A8_SNORM) &&
+            (textureFormatGPU != VK_FORMAT_R8G8B8A8_UNORM) &&
+            ((mipmaps[i].width < 4) || (mipmaps[i].height < 4))
+        ) break;
+
         VkBufferImageCopy bufferCopyRegion;
         bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         bufferCopyRegion.imageSubresource.mipLevel = i;
@@ -99,6 +105,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
         bufferCopyRegions.push_back(bufferCopyRegion);
 
         offset += static_cast<uint32_t>(mipmaps[i].texture.size());
+        vulkanMipMapCount++;
     }
 
     // Create optimal tiled target image on the device
@@ -108,7 +115,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imageCreateInfo.format = textureFormatGPU;
-    imageCreateInfo.mipLevels = mipmaps.size();
+    imageCreateInfo.mipLevels = vulkanMipMapCount;
     imageCreateInfo.arrayLayers = 1;
     imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -141,7 +148,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     // Start at first mip level
     subresourceRange.baseMipLevel = 0;
     // We will transition on all mip levels
-    subresourceRange.levelCount = mipmaps.size();
+    subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
     // The 2D texture only has one layer
     subresourceRange.layerCount = 1;
 
@@ -154,6 +161,8 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     imageMemoryBarrier.image = texture.image;
+    imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
     // Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
     // Source pipeline stage is host write/read exection (VK_PIPELINE_STAGE_HOST_BIT)
@@ -193,7 +202,16 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     vkCmdPipelineBarrier(
         m_device.getUploadCommandBuffer(),
         VK_PIPELINE_STAGE_TRANSFER_BIT ,
-        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &imageMemoryBarrier);
+
+    vkCmdPipelineBarrier(
+        m_device.getTextureTransferCommandBuffer(),
+        VK_PIPELINE_STAGE_TRANSFER_BIT ,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         0,
         0, nullptr,
         0, nullptr,
@@ -202,22 +220,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     // Store current layout for later reuse
     texture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    //Add barrier to graphic queue
-    imageMemoryBarrier.srcAccessMask = 0 ;
-    imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageMemoryBarrier.srcQueueFamilyIndex = indicies.transferFamily.value();
-    imageMemoryBarrier.dstQueueFamilyIndex = indicies.graphicsFamily.value();
 
-    vkCmdPipelineBarrier(
-        m_device.getTextureTransferCommandBuffer(),
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &imageMemoryBarrier);
 
 
 
@@ -241,7 +244,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     sampler.compareOp = VK_COMPARE_OP_NEVER;
     sampler.minLod = 0.0f;
     // Set max level-of-detail to mip level count of the texture
-    sampler.maxLod = (float)mipmaps.size();
+    sampler.maxLod = (float)vulkanMipMapCount;
     // Enable anisotropic filtering
     // This feature is optional, so we must check if it's supported on the device
     if (/*m_device.getIsAnisFiltrationSupported()*/ false) {
@@ -272,10 +275,21 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     view.subresourceRange.layerCount = 1;
     // Linear tiling usually won't support mip maps
     // Only set mip map count if optimal tiling is used
-    view.subresourceRange.levelCount = mipmaps.size();
+    view.subresourceRange.levelCount = vulkanMipMapCount;
     // The view will be based on the texture's image
     view.image = texture.image;
     ERR_GUARD_VULKAN(vkCreateImageView(m_device.getVkDevice(), &view, nullptr, &texture.view));
+    m_uploaded = true;
+}
+
+bool GTextureVLK::postLoad() {
+    if (m_loaded) return false;
+
+    if (m_uploaded) {
+        m_loaded = true;
+    }
+
+    return false;
 
 }
 

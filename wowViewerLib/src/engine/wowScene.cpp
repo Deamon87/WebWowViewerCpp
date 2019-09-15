@@ -413,9 +413,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new M2Scene(this,
 //        "WORLD\\AZEROTH\\ELWYNN\\PASSIVEDOODADS\\WATERFALL\\ELWYNNTALLWATERFALL01.m2");
 
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "creature/celestialdragonwyrm/celestialdragonwyrm.m2");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new M2Scene(this,
+//        "creature/celestialdragonwyrm/celestialdragonwyrm.m2");
 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -457,11 +457,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //        "interface/glues/models/ui_mainmenu_pandaria/ui_mainmenu_pandaria.m2", 0);
 //   currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_cataclysm/ui_mainmenu_cataclysm.m2", 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
-//    mathfu::vec4 ambientColorOver = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
-//    currentScene->setAmbientColorOverride(ambientColorOver, true);
-//    config->setBCLightHack(true);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_burningcrusade/ui_mainmenu_burningcrusade.m2", 0);
+    mathfu::vec4 ambientColorOver = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+    currentScene->setAmbientColorOverride(ambientColorOver, true);
+    config->setBCLightHack(true);
 
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu/ui_mainmenu.m2", 0);
@@ -616,7 +616,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setScene(0, "creature/arthas/arthas.m2", -1);
 //    setSceneWithFileDataId(1, 108803, -1);
 //    setSceneWithFileDataId(0, 125407, -1); // phoneix
-    //setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
+//    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
     //setSceneWithFileDataId(0, 125995, -1); //portal
 //    setSceneWithFileDataId(0, 1612576, -1); //portal
 
@@ -644,6 +644,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
             while (!this->m_isTerminating) {
                 auto future = nextDeltaTime.get_future();
                 future.wait();
+
+//                std::cout << "update frame = " << getDevice()->getUpdateFrameNumber() << std::endl;
 
                 int currentFrame = m_gdevice->getCullingFrameNumber();
                 WoWFrameData *frameParam = &m_FrameParams[currentFrame];
@@ -724,6 +726,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     renderLockNextMeshes.unlock();
 
+//    std::cout << "draw frame = " << getDevice()->getDrawFrameNumber() << std::endl;
 
     struct timespec renderingAndUpdateStart, renderingAndUpdateEnd;
 //    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateStart);

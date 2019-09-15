@@ -70,19 +70,21 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
     createTexture(mipmaps, textureFormatGPU, unitedBuffer);
 }
 
-bool GBlpTextureVLK::getIsLoaded() {
-    return m_loaded;
-}
+//bool GBlpTextureVLK::getIsLoaded() {
+//    return m_loaded;
+//}
 
 bool GBlpTextureVLK::postLoad() {
     if (m_loaded) return false;
     if (m_texture == nullptr) return false;
     if (!m_texture->getIsLoaded()) return false;
 
-    this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
-
-    m_loaded = true;
-    return true;
+    if (m_uploaded) {
+        return GTextureVLK::postLoad();
+    } else {
+        this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
+        return false;
+    }
 }
 
 

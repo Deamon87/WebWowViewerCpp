@@ -716,6 +716,7 @@ void GDeviceVLK::createCommandBuffers() {
 void GDeviceVLK::createSyncObjects() {
     imageAvailableSemaphores.resize(commandBuffers.size());
     renderFinishedSemaphores.resize(commandBuffers.size());
+    textureTransferFinishedSemaphores.resize(commandBuffers.size());
 
 
     VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -729,7 +730,8 @@ void GDeviceVLK::createSyncObjects() {
 
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &textureTransferFinishedSemaphores[i]) != VK_SUCCESS) {
 
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
@@ -739,6 +741,12 @@ void GDeviceVLK::createSyncObjects() {
     for (size_t i = 0; i < 4; i++) {
         if (vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
+        }
+    }
+    inFlightTextureTransferFences.resize(4);
+    for (size_t i = 0; i < 4; i++) {
+        if (vkCreateFence(device, &fenceInfo, nullptr, &inFlightTextureTransferFences[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create synchronization objects for a textureUpdate!");
         }
     }
 
@@ -819,16 +827,16 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
 //    std::cout << "updateBuffers: updateFrame = " << uploadFrame << std::endl;
 
     vkWaitForFences(device, 1, &uploadFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkWaitForFences(device, 1, &inFlightFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &uploadFences[uploadFrame]);
 
-    updateCommandBuffers(iMeshes);
-
     if (vkBeginCommandBuffer(uploadCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording uploadCommandBuffer command buffer!");
+        std::cout << "failed to begin recording uploadCommandBuffer command buffer!" << std::endl;
     }
 
+//    vkWaitForFences(device, 1, &inFlightTextureTransferFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     if (vkBeginCommandBuffer(textureTransferCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording textureTransferCommandBuffers command buffer!");
+        std::cout << "failed to begin recording textureTransferCommandBuffers command buffer!"  << std::endl;
     }
 
     if (!m_blackPixelTexture) {
@@ -880,11 +888,13 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 
     int uploadFrame = getUpdateFrameNumber();
     if (vkEndCommandBuffer(uploadCommandBuffers[uploadFrame]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record uploadCommandBuffer command buffer!");
+        std::cout << "failed to record uploadCommandBuffer command buffer!" << std::endl;
     }
     if (vkEndCommandBuffer(textureTransferCommandBuffers[uploadFrame]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record uploadCommandBuffer command buffer!");
+        std::cout << "failed to record textureTransferCommandBuffers command buffer!" << std::endl;
     }
+
+    updateCommandBuffers(meshes);
 
     VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
     submitInfo.commandBufferCount = 1;
@@ -894,7 +904,7 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 
 
     if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
-        std::cout << "failed to submit draw command buffer!" << std::endl << std::flush;
+        std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
     }
 }
 
@@ -1050,12 +1060,37 @@ void GDeviceVLK::commitFrame() {
         std::cout << "imageIndex >= inFlightFences.size()" << std::endl;
     }
 
+//    vkWaitForFences(device, 1, &inFlightTextureTransferFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+//    vkResetFences(device, 1, &inFlightTextureTransferFences[currentDrawFrame]);
+//
+////    vkWaitForFences(device, 1, &uploadFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+//
+//    VkSubmitInfo textureTransferSubmitInfo = {};
+//    textureTransferSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+//    textureTransferSubmitInfo.pNext = NULL;
+//
+//    VkSemaphore waitSemaphoresVLK[1];
+//    VkPipelineStageFlags waitStagesVLK[1];
+//
+//    waitSemaphoresVLK[0] = uploadSemaphores[currentDrawFrame];
+//    waitStagesVLK[0] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+//
+//    textureTransferSubmitInfo.waitSemaphoreCount = 1;
+//    textureTransferSubmitInfo.pWaitSemaphores = &waitSemaphoresVLK[0];
+//    textureTransferSubmitInfo.pWaitDstStageMask = &waitStagesVLK[0];
+//
+//    textureTransferSubmitInfo.commandBufferCount = 1;
+//    textureTransferSubmitInfo.pCommandBuffers = &textureTransferCommandBuffers[currentDrawFrame];
+//
+//    textureTransferSubmitInfo.signalSemaphoreCount = 1;
+//    textureTransferSubmitInfo.pSignalSemaphores = &textureTransferFinishedSemaphores[currentDrawFrame];
+//
+//    if (vkQueueSubmit(graphicsQueue, 1, &textureTransferSubmitInfo, inFlightTextureTransferFences[currentDrawFrame]) != VK_SUCCESS) {
+//        std::cout << "failed to submit textureTransfer command buffer!" << std::endl << std::flush;
+//    }
+
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &inFlightFences[currentDrawFrame]);
-
-//    vkWaitForFences(device, 1, &uploadFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-//    vkResetFences(device, 1, &uploadFences[currentDrawFrame]);
-//    updateUniformBuffer(imageIndex);
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

@@ -255,7 +255,9 @@ protected:
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkSemaphore> textureTransferFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
+    std::vector<VkFence> inFlightTextureTransferFences;
     std::vector<VkSemaphore> uploadSemaphores;
     std::vector<VkFence> uploadFences;
 
