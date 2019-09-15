@@ -174,7 +174,7 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
     colorBlendAttachment.colorWriteMask =
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = blendModesVLK->blendModeEnable ? VK_TRUE : VK_FALSE;
+    colorBlendAttachment.blendEnable = blendModesVLK[(char)m_blendMode].blendModeEnable ? VK_TRUE : VK_FALSE;
     colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
     colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
     colorBlendAttachment.srcColorBlendFactor = blendModesVLK[(char)m_blendMode].SrcColor;
