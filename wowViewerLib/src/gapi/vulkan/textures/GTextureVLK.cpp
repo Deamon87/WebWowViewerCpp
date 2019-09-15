@@ -33,7 +33,7 @@ bool GTextureVLK::getIsLoaded() {
 static int pureTexturesUploaded = 0;
 void GTextureVLK::loadData(int width, int height, void *data) {
 //    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
-    std::vector<uint8_t > unifiedBuffer((uint8_t *)data, (uint8_t *)data + (width*height));
+    std::vector<uint8_t > unifiedBuffer((uint8_t *)data, (uint8_t *)data + (width*height*4));
 
 
     MipmapsVector mipmapsVector;
@@ -44,7 +44,7 @@ void GTextureVLK::loadData(int width, int height, void *data) {
 
     mipmapsVector.push_back(mipmap);
 
-    createTexture(mipmapsVector, VK_FORMAT_R8G8B8_UNORM, unifiedBuffer);
+    createTexture(mipmapsVector, VK_FORMAT_R8G8B8A8_UNORM, unifiedBuffer);
     m_loaded = true;
 }
 
@@ -92,6 +92,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
         bufferCopyRegion.imageExtent.height = static_cast<uint32_t>(mipmaps[i].height);
         bufferCopyRegion.imageExtent.depth = 1;
         bufferCopyRegion.bufferOffset = offset;
+        bufferCopyRegion.imageOffset = {0,0,0};
 
         bufferCopyRegions.push_back(bufferCopyRegion);
 
@@ -149,8 +150,8 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     imageMemoryBarrier.image = texture.image;
 
     // Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
-// Source pipeline stage is host write/read exection (VK_PIPELINE_STAGE_HOST_BIT)
-// Destination pipeline stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
+    // Source pipeline stage is host write/read exection (VK_PIPELINE_STAGE_HOST_BIT)
+    // Destination pipeline stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
     vkCmdPipelineBarrier(
         m_device.getUploadCommandBuffer(),
         VK_PIPELINE_STAGE_HOST_BIT,
@@ -170,18 +171,23 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
         bufferCopyRegions.data());
 
     // Once the data has been uploaded we transfer to the texture image to the shader read layout, so it can be sampled from
-    imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    auto indicies = m_device.getQueueFamilyIndices();
+    imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT ;
+    imageMemoryBarrier.dstAccessMask = 0;
     imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageMemoryBarrier.srcQueueFamilyIndex = indicies.transferFamily.value();
+    imageMemoryBarrier.dstQueueFamilyIndex = indicies.graphicsFamily.value();
+    ///SeparateUploadQueue reference: https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples "Upload data from the CPU to an image sampled in a fragment shader"
+
 
     // Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
 // Source pipeline stage stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
 // Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
     vkCmdPipelineBarrier(
         m_device.getUploadCommandBuffer(),
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT ,
+        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
         0,
         0, nullptr,
         0, nullptr,
@@ -189,6 +195,25 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
 
     // Store current layout for later reuse
     texture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    //Add barrier to graphic queue
+    imageMemoryBarrier.srcAccessMask = 0 ;
+    imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageMemoryBarrier.srcQueueFamilyIndex = indicies.transferFamily.value();
+    imageMemoryBarrier.dstQueueFamilyIndex = indicies.graphicsFamily.value();
+
+    vkCmdPipelineBarrier(
+        m_device.getTextureTransferCommandBuffer(),
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &imageMemoryBarrier);
+
+
 
     // Clean up staging resources
 //    vkFreeMemory(m_device.getVkDevice(), stagingMemory, nullptr);

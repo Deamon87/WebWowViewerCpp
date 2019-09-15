@@ -1294,6 +1294,7 @@ void M2Object::createMeshes() {
         meshTemplate.element = DrawElementMode::TRIANGLES;
 
         HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
+        meshTemplate.texture.resize(textMaterial->textureCount);
         meshTemplate.textureCount = textMaterial->textureCount;
         for (int j = 0; j < material.textureCount; j++) {
             meshTemplate.texture[j] = material.textures[j];

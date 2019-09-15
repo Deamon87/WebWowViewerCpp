@@ -16,6 +16,8 @@ struct BlendModeDescVLK {
     VkBlendFactor DestAlpha;
 };
 
+const uint8_t M2SHADER_MAX_TEXTURES = 4;
+
 BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
     /*GxBlend_Opaque*/           {false,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO},
     /*GxBlend_AlphaKey*/         {false,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO},
@@ -237,11 +239,11 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
 
 
     //Create descriptor pool
-    std::array<VkDescriptorPoolSize, 1> poolSizes = {};
+    std::array<VkDescriptorPoolSize, 2> poolSizes = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = static_cast<uint32_t>(5*4);
-//    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-//    poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(M2SHADER_MAX_TEXTURES * 4);
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -319,14 +321,13 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
         }
 
         //Bind Black pixel texture
-        std::vector<VkDescriptorImageInfo> imageInfos(m_texture.size());
-
-        int bindIndex = 0;
+        std::vector<VkDescriptorImageInfo> imageInfos(M2SHADER_MAX_TEXTURES);
 
         auto blackTexture = m_device.getBlackPixelTexture();
         GTextureVLK *blackTextureVlk = reinterpret_cast<GTextureVLK *>(blackTexture.get());
 
-        for (auto& texture : m_texture) {
+        int bindIndex = 0;
+        for (int i = 0; i < M2SHADER_MAX_TEXTURES; i++) {
             VkDescriptorImageInfo imageInfo = {};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = blackTextureVlk->texture.view;
@@ -366,8 +367,6 @@ void GMeshVLK::updateDescriptor() {
         std::vector<VkDescriptorImageInfo> imageInfos(m_texture.size());
 
         int bindIndex = 0;
-
-
         for (auto& texture : m_texture) {
             GTextureVLK *textureVlk = reinterpret_cast<GTextureVLK *>(texture.get());
 

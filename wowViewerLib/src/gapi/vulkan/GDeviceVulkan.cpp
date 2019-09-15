@@ -17,6 +17,7 @@
 #include "buffers/GVertexBufferVLK.h"
 #include "buffers/GIndexBufferVLK.h"
 #include "textures/GTextureVLK.h"
+#include "textures/GBlpTextureVLK.h"
 #include "GVertexBufferBindingsVLK.h"
 #include "shaders/GM2ShaderPermutationVLK.h"
 
@@ -287,7 +288,7 @@ void GDeviceVLK::createSwapChain() {
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    indices = findQueueFamilies(physicalDevice);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
     if (indices.graphicsFamily != indices.presentFamily) {
@@ -700,6 +701,17 @@ void GDeviceVLK::createCommandBuffers() {
     if (vkAllocateCommandBuffers(device, &allocInfoUpload, uploadCommandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate upload command buffers!");
     }
+
+    textureTransferCommandBuffers.resize(4);
+    VkCommandBufferAllocateInfo texttrAllocInfoUpload = {};
+    texttrAllocInfoUpload.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    texttrAllocInfoUpload.commandPool = commandPool;
+    texttrAllocInfoUpload.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    texttrAllocInfoUpload.commandBufferCount = (uint32_t) commandBuffers.size();
+
+    if (vkAllocateCommandBuffers(device, &texttrAllocInfoUpload, textureTransferCommandBuffers.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate upload command buffers!");
+    }
 }
 void GDeviceVLK::createSyncObjects() {
     imageAvailableSemaphores.resize(commandBuffers.size());
@@ -815,6 +827,10 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
         throw std::runtime_error("failed to begin recording uploadCommandBuffer command buffer!");
     }
 
+    if (vkBeginCommandBuffer(textureTransferCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording textureTransferCommandBuffers command buffer!");
+    }
+
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture();
         unsigned int ff = 0;
@@ -864,6 +880,9 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 
     int uploadFrame = getUpdateFrameNumber();
     if (vkEndCommandBuffer(uploadCommandBuffers[uploadFrame]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record uploadCommandBuffer command buffer!");
+    }
+    if (vkEndCommandBuffer(textureTransferCommandBuffers[uploadFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to record uploadCommandBuffer command buffer!");
     }
 
@@ -932,7 +951,10 @@ HGVertexBufferBindings GDeviceVLK::createVertexBufferBindings() {
 }
 
 HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
-    return HGTexture();
+    std::shared_ptr<GTextureVLK> h_texture;
+    h_texture.reset(new GBlpTextureVLK(*this, texture, xWrapTex, yWrapTex));
+
+    return h_texture;
 }
 
 HGTexture GDeviceVLK::createTexture() {
@@ -1052,8 +1074,10 @@ void GDeviceVLK::commitFrame() {
     submitInfo.pWaitSemaphores = &waitSemaphores[0];
     submitInfo.pWaitDstStageMask = &waitStages[0];
 
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[currentDrawFrame];
+    std::array<VkCommandBuffer, 2> grCommandBuffers = {textureTransferCommandBuffers[currentDrawFrame], commandBuffers[currentDrawFrame]};
+
+    submitInfo.commandBufferCount = 2;
+    submitInfo.pCommandBuffers = &grCommandBuffers[0];
 
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderFinishedSemaphores[0];
@@ -1128,6 +1152,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     for (auto &mesh: iMeshes) {
         auto *meshVLK = ((GMeshVLK *)mesh.get());
         auto *binding ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
+
 
         vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->graphicsPipeline);
 

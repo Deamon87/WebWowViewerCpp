@@ -137,6 +137,14 @@ public:
         int uploadFrame = getUpdateFrameNumber();
         return uploadCommandBuffers[uploadFrame];
     }
+    VkCommandBuffer getTextureTransferCommandBuffer() {
+        int uploadFrame = getUpdateFrameNumber();
+        return textureTransferCommandBuffers[uploadFrame];
+    }
+
+    QueueFamilyIndices getQueueFamilyIndices() {
+        return indices;
+    }
 
 private:
     void drawMesh(HGMesh &hmesh);
@@ -191,6 +199,8 @@ protected:
 
     VkDebugUtilsMessengerEXT debugMessenger;
 
+
+    QueueFamilyIndices indices;
     VkInstance vkInstance;
     VkSurfaceKHR vkSurface;
     bool enableValidationLayers = true ;
@@ -241,6 +251,7 @@ protected:
 
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkCommandBuffer> uploadCommandBuffers;
+    std::vector<VkCommandBuffer> textureTransferCommandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
