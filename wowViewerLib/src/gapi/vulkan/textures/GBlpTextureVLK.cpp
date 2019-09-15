@@ -57,6 +57,10 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
         return;
     }
 
+    if (mipmaps.size() > 15) {
+//        mipmaps = mipmaps.s
+    }
+
     //Create unitedBuffer
     std::vector<uint8_t> unitedBuffer;
     for (int i = 0; i < mipmaps.size(); i++) {

@@ -356,7 +356,7 @@ int main(){
 //     const char *url = "http://localhost:8084/get/";
 
     testConf = new Config();
-
+    testConf->setAmbientColor(1,1,1,1);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
 

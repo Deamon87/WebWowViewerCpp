@@ -57,7 +57,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     VkBuffer stagingBuffer;
 
     VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    createInfo.size = mipmaps[0].texture.size();
+    createInfo.size = unitedBuffer.size();
     createInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -91,6 +91,8 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
         bufferCopyRegion.imageExtent.width = static_cast<uint32_t>(mipmaps[i].width);
         bufferCopyRegion.imageExtent.height = static_cast<uint32_t>(mipmaps[i].height);
         bufferCopyRegion.imageExtent.depth = 1;
+        bufferCopyRegion.bufferRowLength = 0;
+        bufferCopyRegion.bufferImageHeight = 0;
         bufferCopyRegion.bufferOffset = offset;
         bufferCopyRegion.imageOffset = {0,0,0};
 
@@ -100,6 +102,8 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     }
 
     // Create optimal tiled target image on the device
+    auto indicies = m_device.getQueueFamilyIndices();
+
 ///3. Create Image on GPU side
     VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -113,7 +117,9 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageCreateInfo.extent = {static_cast<uint32_t>(mipmaps[0].width), static_cast<uint32_t>(mipmaps[0].height), 1};
     imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-//    ERR_GUARD_VULKAN(vkCreateImage(m_device.getVkDevice(), &imageCreateInfo, nullptr, &texture.image));
+//    imageCreateInfo.queueFamilyIndexCount = 2;
+//    std::array<uint32_t, 2> families = {indicies.graphicsFamily.value(), indicies.transferFamily.value()};
+//    imageCreateInfo.pQueueFamilyIndices = &families[0];
 
     VmaAllocationCreateInfo allocImageCreateInfo = {};
     allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -171,7 +177,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
         bufferCopyRegions.data());
 
     // Once the data has been uploaded we transfer to the texture image to the shader read layout, so it can be sampled from
-    auto indicies = m_device.getQueueFamilyIndices();
+
     imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT ;
     imageMemoryBarrier.dstAccessMask = 0;
     imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
