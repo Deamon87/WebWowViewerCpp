@@ -143,26 +143,6 @@ void WoWSceneImpl::DoCulling() {
 
 
     currentScene->checkCulling(frameParam);
-
-    //Upload buffers if supported
-    if (device->getIsAsynBuffUploadSupported()) {
-        int updateObjFrame = device->getUpdateFrameNumber();
-        WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
-
-        updateFrameIndex = updateObjFrame;
-
-        currentScene->update(objFrameParam);
-        currentScene->collectMeshes(objFrameParam);
-        device->updateBuffers(objFrameParam->renderedThisFrame);
-
-        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
-        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
-        m_sceneWideUniformBuffer->save();
-
-        currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
-        device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
-    }
 }
 
 void WoWSceneImpl::setScene(int sceneType, std::string name, int cameraNum) {
@@ -637,7 +617,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
         });
 
 
-        g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&]() {
+        g_globalThreadsSingleton.cullingThread = std::thread(([&]() {
             using namespace std::chrono_literals;
             std::unique_lock<std::mutex> localLockNextMeshes(m_lockNextMeshes, std::defer_lock);
 
@@ -659,6 +639,37 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
                 cullingFinished.set_value(true);
             }
         }));
+
+        if (device->getIsAsynBuffUploadSupported()) {
+            g_globalThreadsSingleton.updateThread = std::thread(([&]() {
+//                std::unique_lock<std::mutex> localLockNextMeshes(m_lockNextMeshes, std::defer_lock);
+                while (!this->m_isTerminating) {
+                    auto future = nextDeltaTimeForUpdate.get_future();
+                    future.wait();
+                    nextDeltaTimeForUpdate = std::promise<float>();
+
+                    IDevice *device = getDevice();
+                    int updateObjFrame = device->getUpdateFrameNumber();
+                    WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+
+                    updateFrameIndex = updateObjFrame;
+
+                    currentScene->update(objFrameParam);
+                    currentScene->collectMeshes(objFrameParam);
+                    device->updateBuffers(objFrameParam->renderedThisFrame);
+
+                    sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+                    blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
+                    blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
+                    m_sceneWideUniformBuffer->save();
+
+                    currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
+                    device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
+
+                    updateFinished.set_value(true);
+                }
+            }));
+        }
     }
 }
 
@@ -723,7 +734,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     renderLockNextMeshes.lock();
 
     nextDeltaTime.set_value(deltaTime);
-
+    nextDeltaTimeForUpdate.set_value(deltaTime);
     renderLockNextMeshes.unlock();
 
 //    std::cout << "draw frame = " << getDevice()->getDrawFrameNumber() << std::endl;
@@ -861,6 +872,13 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     cullingFinished.get_future().wait();
     cullingFinished = std::promise<bool>();
+
+    if (device->getIsAsynBuffUploadSupported()) {
+        updateFinished.get_future().wait();
+        updateFinished = std::promise<bool>();
+    }
+
+
     device->increaseFrameNumber();
 }
 mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {
@@ -923,8 +941,12 @@ void WoWSceneImpl::SetDirection(WoWFrameData &frameParamHolder) {
 
 WoWSceneImpl::~WoWSceneImpl() {
     m_isTerminating = true;
-    if (g_globalThreadsSingleton.cullingAndUpdateThread.joinable()) {
-        g_globalThreadsSingleton.cullingAndUpdateThread.join();
+    if (g_globalThreadsSingleton.cullingThread.joinable()) {
+        g_globalThreadsSingleton.cullingThread.join();
+    }
+
+    if (g_globalThreadsSingleton.updateThread.joinable()) {
+        g_globalThreadsSingleton.updateThread.join();
     }
 
     if (g_globalThreadsSingleton.loadingResourcesThread.joinable()) {
