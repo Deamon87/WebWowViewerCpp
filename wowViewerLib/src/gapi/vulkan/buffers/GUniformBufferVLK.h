@@ -53,7 +53,7 @@ private:
 
     int m_creationIndex = 0;
 
-    bool m_needsUpdate = false;
+    bool m_needsUpdate[4] = {false, false, false, false};
 
     VkBuffer g_buf[4];
     VmaAllocation g_alloc[4];

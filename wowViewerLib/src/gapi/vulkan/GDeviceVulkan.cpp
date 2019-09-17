@@ -154,7 +154,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-//    enableValidationLayers = false;
+    enableValidationLayers = false;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -1199,7 +1199,8 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             vkCmdBindVertexBuffers(commandBuffers[updateFrame], 0, 1, &vertexBuffer, offsets);
 //            lastVertexBuffer = vertexBuffer;
 //        }
-        vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->pipelineLayout, 0, 1, &meshVLK->descriptorSets[updateFrame], 0, 0);
+        vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+            meshVLK->pipelineLayout, 0, 1, &meshVLK->descriptorSets[updateFrame], 0, 0);
 
         vkCmdDrawIndexed(commandBuffers[updateFrame], meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }

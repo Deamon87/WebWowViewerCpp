@@ -48,7 +48,7 @@ void main() {
             );
 
     gl_Position = uPMatrix * cameraPoint;
-    gl_Position.y = -gl_Position.y;
+    gl_Position.y *= -1;
     vPosition = vec4(cameraPoint.xyz, aColor.w);
     vNormal = normalize(viewModelMatTransposed * aNormal);
 
