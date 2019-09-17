@@ -26,9 +26,9 @@ layout(std140, set=0, binding=4) uniform meshWideBlockPS {
 
 
 
-//layout(binding=5) uniform sampler2D uTexture;
-//layout(binding=6) uniform sampler2D uTexture2;
-//layout(binding=7) uniform sampler2D uTexture3;
+layout(binding=5) uniform sampler2D uTexture;
+layout(binding=6) uniform sampler2D uTexture2;
+layout(binding=7) uniform sampler2D uTexture3;
 
 layout (location = 0) out vec4 outputColor;
 
