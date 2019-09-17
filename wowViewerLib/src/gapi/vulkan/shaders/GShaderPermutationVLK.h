@@ -22,6 +22,8 @@ public:
     VkShaderModule getFragmentModule() {return fragShaderModule;}
     VkDescriptorSetLayout getDescriptorLayout() {return descriptorSetLayout;}
     std::string getShaderName() {return m_shaderName; }
+    virtual int getTextureBindingStart() = 0;
+    virtual int getTextureCount() = 0;
 
 protected:
     explicit GShaderPermutationVLK(std::string &shaderName, IDevice *device);

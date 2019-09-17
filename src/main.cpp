@@ -342,8 +342,9 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
+//8.2.5
     const char * url = "https://wow.tools/casc/file/fname?buildconfig=081460ab8f317f8273068b29288f2af7&cdnconfig=a00c4591f68ddf55d8baa84db360a8d0&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=081460ab8f317f8273068b29288f2af7&cdnconfig=a00c4591f68ddf55d8baa84db360a8d0&filename=data&filedataid=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=1c20a0b6492b1ddc16317c3ce859daee&cdnconfig=66a66c217d0c30cd50433908c201cc9f&filename=data&filedataid=";
 //1.13.0
 //    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=";
 //    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=data&filedataid=";
@@ -357,6 +358,7 @@ int main(){
 
     testConf = new Config();
     testConf->setAmbientColor(1,1,1,1);
+//    testConf->setSunColor(1,1,1,1);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
 

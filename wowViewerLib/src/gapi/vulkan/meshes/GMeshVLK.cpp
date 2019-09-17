@@ -16,8 +16,6 @@ struct BlendModeDescVLK {
     VkBlendFactor DestAlpha;
 };
 
-const uint8_t M2SHADER_MAX_TEXTURES = 4;
-
 BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
     /*GxBlend_Opaque*/           {false,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO},
     /*GxBlend_AlphaKey*/         {false,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO,VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO},
@@ -195,6 +193,8 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
 
     VkPipelineDepthStencilStateCreateInfo depthStencil = {};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.pNext = NULL;
+    depthStencil.flags = 0;
     depthStencil.depthTestEnable = m_depthCulling ? VK_TRUE : VK_FALSE;
     depthStencil.depthWriteEnable = m_depthWrite ? VK_TRUE : VK_FALSE;
     depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
@@ -243,11 +243,11 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = static_cast<uint32_t>(5*4);
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(M2SHADER_MAX_TEXTURES * 4);
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(shaderVLK->getTextureCount() * 4);
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolInfo.poolSizeCount = (shaderVLK->getTextureCount() != 0) ? static_cast<uint32_t>(poolSizes.size()) : 1;
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = static_cast<uint32_t>(4);
 
@@ -321,13 +321,13 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
         }
 
         //Bind Black pixel texture
-        std::vector<VkDescriptorImageInfo> imageInfos(M2SHADER_MAX_TEXTURES);
+        std::vector<VkDescriptorImageInfo> imageInfos(shaderVLK->getTextureCount());
 
         auto blackTexture = m_device.getBlackPixelTexture();
         GTextureVLK *blackTextureVlk = reinterpret_cast<GTextureVLK *>(blackTexture.get());
 
         int bindIndex = 0;
-        for (int i = 0; i < M2SHADER_MAX_TEXTURES; i++) {
+        for (int i = 0; i < shaderVLK->getTextureCount(); i++) {
             VkDescriptorImageInfo imageInfo = {};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = blackTextureVlk->texture.view;
@@ -338,7 +338,7 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
             writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeDescriptor.dstSet = descriptorSets[j];
             writeDescriptor.pNext = nullptr;
-            writeDescriptor.dstBinding = 5+bindIndex;
+            writeDescriptor.dstBinding = shaderVLK->getTextureBindingStart()+bindIndex;
             writeDescriptor.dstArrayElement = 0;
             writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             writeDescriptor.descriptorCount = 1;
@@ -355,10 +355,13 @@ void GMeshVLK::createPipeline(GShaderPermutationVLK *shaderVLK,
 void GMeshVLK::updateDescriptor() {
     bool allTexturesAreReady = true;
 
+    int textureBegin = ((GShaderPermutationVLK *)m_shader.get())->getTextureBindingStart();
+
     int updateFrame = m_device.getUpdateFrameNumber();
     if (descriptorSetsUpdated[updateFrame]) return;
 
     for (auto& texture : m_texture) {
+        if (texture == nullptr) continue;
         allTexturesAreReady &= texture->getIsLoaded();
     }
 
@@ -366,9 +369,12 @@ void GMeshVLK::updateDescriptor() {
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         std::vector<VkDescriptorImageInfo> imageInfos(m_texture.size());
 
+        if (((GShaderPermutationVLK *)m_shader.get())->getTextureCount() == 0) return;
+
         int bindIndex = 0;
         for (auto& texture : m_texture) {
             GTextureVLK *textureVlk = reinterpret_cast<GTextureVLK *>(texture.get());
+            if (textureVlk == nullptr) continue;
 
             VkDescriptorImageInfo imageInfo = {};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -380,7 +386,7 @@ void GMeshVLK::updateDescriptor() {
             writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeDescriptor.dstSet = descriptorSets[updateFrame];
             writeDescriptor.pNext = nullptr;
-            writeDescriptor.dstBinding = 5+bindIndex;
+            writeDescriptor.dstBinding = textureBegin+bindIndex;
             writeDescriptor.dstArrayElement = 0;
             writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             writeDescriptor.descriptorCount = 1;

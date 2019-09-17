@@ -344,6 +344,9 @@ set(VULKAN_IMPLEMENTATION
         src/gapi/vulkan/GVertexBufferBindingsVLK.cpp
         src/gapi/vulkan/shaders/GShaderPermutationVLK.cpp
         src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
+        src/gapi/vulkan/shaders/GM2ParticleShaderPermutationVLK.cpp
+        src/gapi/vulkan/shaders/GWMOWaterShaderVLK.cpp
+        src/gapi/vulkan/shaders/GWMOShaderPermutationVLK.cpp
         src/gapi/vulkan/meshes/GM2MeshVLK.cpp
         src/gapi/vulkan/meshes/GMeshVLK.cpp
         src/gapi/vulkan/textures/GTextureVLK.cpp

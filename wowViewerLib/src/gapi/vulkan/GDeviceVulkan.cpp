@@ -20,6 +20,10 @@
 #include "textures/GBlpTextureVLK.h"
 #include "GVertexBufferBindingsVLK.h"
 #include "shaders/GM2ShaderPermutationVLK.h"
+#include "shaders/GM2ParticleShaderPermutationVLK.h"
+#include "../../engine/algorithms/hashString.h"
+#include "shaders/GWMOShaderPermutationVLK.h"
+#include "shaders/GWMOWaterShaderVLK.h"
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -150,6 +154,8 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
+//    enableValidationLayers = false;
+
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
@@ -913,20 +919,35 @@ void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName, void *permutationDescriptor) {
+    const char * cstr = shaderName.c_str();
+    size_t hash = CalculateFNV(cstr);
+    if (m_shaderPermutCache.count(hash) > 0) {
+        HGShaderPermutation ptr = m_shaderPermutCache.at(hash);
+        return ptr;
+    }
+
     std::shared_ptr<IShaderPermutation> sharedPtr;
 
     if (shaderName == "m2Shader") {
-        M2ShaderCacheRecord *cacheRecord = (M2ShaderCacheRecord * )permutationDescriptor;
-
-        IShaderPermutation *iPremutation = new GM2ShaderPermutationVLK(shaderName, this, *cacheRecord);
+        IShaderPermutation *iPremutation = new GM2ShaderPermutationVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
-    } else {
-        IShaderPermutation *iPremutation = new GShaderPermutationVLK(shaderName, this);
+    } else if (shaderName == "m2ParticleShader") {
+        IShaderPermutation *iPremutation = new GM2ParticleShaderPermutationVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+    } else if (shaderName == "wmoShader"){
+        IShaderPermutation *iPremutation = new GWMOShaderPermutationVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+    } else if (shaderName == "waterShader"){
+        IShaderPermutation *iPremutation = new GWmoWaterShaderPermutationVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
     }
 
+
+    m_shaderPermutCache[hash] = sharedPtr;
 
 
     return sharedPtr;
@@ -1060,35 +1081,6 @@ void GDeviceVLK::commitFrame() {
         std::cout << "imageIndex >= inFlightFences.size()" << std::endl;
     }
 
-//    vkWaitForFences(device, 1, &inFlightTextureTransferFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-//    vkResetFences(device, 1, &inFlightTextureTransferFences[currentDrawFrame]);
-//
-////    vkWaitForFences(device, 1, &uploadFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-//
-//    VkSubmitInfo textureTransferSubmitInfo = {};
-//    textureTransferSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-//    textureTransferSubmitInfo.pNext = NULL;
-//
-//    VkSemaphore waitSemaphoresVLK[1];
-//    VkPipelineStageFlags waitStagesVLK[1];
-//
-//    waitSemaphoresVLK[0] = uploadSemaphores[currentDrawFrame];
-//    waitStagesVLK[0] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-//
-//    textureTransferSubmitInfo.waitSemaphoreCount = 1;
-//    textureTransferSubmitInfo.pWaitSemaphores = &waitSemaphoresVLK[0];
-//    textureTransferSubmitInfo.pWaitDstStageMask = &waitStagesVLK[0];
-//
-//    textureTransferSubmitInfo.commandBufferCount = 1;
-//    textureTransferSubmitInfo.pCommandBuffers = &textureTransferCommandBuffers[currentDrawFrame];
-//
-//    textureTransferSubmitInfo.signalSemaphoreCount = 1;
-//    textureTransferSubmitInfo.pSignalSemaphores = &textureTransferFinishedSemaphores[currentDrawFrame];
-//
-//    if (vkQueueSubmit(graphicsQueue, 1, &textureTransferSubmitInfo, inFlightTextureTransferFences[currentDrawFrame]) != VK_SUCCESS) {
-//        std::cout << "failed to submit textureTransfer command buffer!" << std::endl << std::flush;
-//    }
-
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &inFlightFences[currentDrawFrame]);
 
@@ -1184,6 +1176,9 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
 
     vkCmdBeginRenderPass(commandBuffers[updateFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+    VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
+    VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
+
     for (auto &mesh: iMeshes) {
         auto *meshVLK = ((GMeshVLK *)mesh.get());
         auto *binding ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
@@ -1192,9 +1187,18 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
         vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->graphicsPipeline);
 
         auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
+        auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
         VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffers[updateFrame], 0, 1, &vertexBuffer, offsets);
-        vkCmdBindIndexBuffer(commandBuffers[updateFrame], ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+//        if (lastIndexBuffer != indexBuffer) {
+            vkCmdBindIndexBuffer(commandBuffers[updateFrame], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+//            lastIndexBuffer = indexBuffer;
+//        }
+
+//        if (lastVertexBuffer != vertexBuffer) {
+            vkCmdBindVertexBuffers(commandBuffers[updateFrame], 0, 1, &vertexBuffer, offsets);
+//            lastVertexBuffer = vertexBuffer;
+//        }
         vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->pipelineLayout, 0, 1, &meshVLK->descriptorSets[updateFrame], 0, 0);
 
         vkCmdDrawIndexed(commandBuffers[updateFrame], meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);

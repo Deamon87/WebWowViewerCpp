@@ -53,5 +53,47 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
 
     vertShaderModule = createShaderModule(vertShaderCode);
     fragShaderModule = createShaderModule(fragShaderCode);
+
+    std::vector<VkDescriptorSetLayoutBinding> shaderLayoutBindings;
+    for (int i = 0; i < 3; i++) {
+        VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+        uboLayoutBinding.binding = i;
+        uboLayoutBinding.descriptorCount = 1;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.pImmutableSamplers = nullptr;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        shaderLayoutBindings.push_back(uboLayoutBinding);
+    }
+    for (int i = 3; i < 5; i++) {
+        VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+        uboLayoutBinding.binding = i;
+        uboLayoutBinding.descriptorCount = 1;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.pImmutableSamplers = nullptr;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        shaderLayoutBindings.push_back(uboLayoutBinding);
+    }
+
+    for (int i = 0; i < getTextureCount(); i++) {
+        VkDescriptorSetLayoutBinding imageLayoutBinding = {};
+        imageLayoutBinding.binding = getTextureBindingStart()+i;
+        imageLayoutBinding.descriptorCount = 1;
+        imageLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        imageLayoutBinding.pImmutableSamplers = nullptr;
+        imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        shaderLayoutBindings.push_back(imageLayoutBinding);
+    }
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = shaderLayoutBindings.size();
+    layoutInfo.pBindings = &shaderLayoutBindings[0];
+
+    if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
 }
 

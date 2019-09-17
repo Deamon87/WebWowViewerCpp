@@ -6,15 +6,10 @@ layout(location=0) in vec3 vPosition;
 
 layout(binding=3) uniform sampler2D uTexture;
 
-layout(location=1) out vec4 outputColor;
-
-layout(std140, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
+layout(location=0) out vec4 outputColor;
 
 //Individual meshes
-layout(std140, binding=2) uniform meshWideBlockPS {
+layout(std140, binding=4) uniform meshWideBlockPS {
     int waterType;
 };
 

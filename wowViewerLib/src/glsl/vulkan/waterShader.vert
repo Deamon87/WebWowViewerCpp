@@ -25,6 +25,7 @@ void main() {
    vec4 cameraPoint = cameraMatrix * aPositionVec4;
 
    gl_Position = uPMatrix * cameraPoint;
+   gl_Position.y = -gl_Position.y;
 //   vTexCoord = aTexCoord;
    vPosition = cameraPoint.xyz;
 }

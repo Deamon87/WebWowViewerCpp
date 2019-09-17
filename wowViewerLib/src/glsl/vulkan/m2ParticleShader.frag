@@ -7,14 +7,14 @@ layout(location = 2) in vec2 vTexcoord1;
 layout(location = 3) in vec2 vTexcoord2;
 
 //Individual meshes
-layout(std140, binding=1) uniform meshWideBlockPS {
+layout(std140, binding=4) uniform meshWideBlockPS {
     vec4 uAlphaTestv;
     ivec4 uPixelShaderv;
 };
 
-layout(binding=3) uniform sampler2D uTexture;
-layout(binding=4) uniform sampler2D uTexture2;
-layout(binding=5) uniform sampler2D uTexture3;
+layout(binding=5) uniform sampler2D uTexture;
+layout(binding=6) uniform sampler2D uTexture2;
+layout(binding=7) uniform sampler2D uTexture3;
 
 layout(location = 0) out vec4 outputColor;
 

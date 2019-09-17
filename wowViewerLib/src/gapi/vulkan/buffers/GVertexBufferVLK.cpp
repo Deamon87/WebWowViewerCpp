@@ -28,8 +28,9 @@ static int vbo_uploaded = 0;
 
 void GVertexBufferVLK::uploadData(void *data, int length) {
     if (!m_dataUploaded || length > m_size) {
-        //TODO: create
+        //TODO: free previous memory
 
+        //Create new buffer for VBO
         VkBufferCreateInfo vbInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
         vbInfo.size = length;
         vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -39,11 +40,10 @@ void GVertexBufferVLK::uploadData(void *data, int length) {
         ibAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
         ibAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-        VmaAllocationInfo stagingIndexBufferAllocInfo = {};
-        ERR_GUARD_VULKAN(vmaCreateBuffer(m_device.getVMAAllocator(), &vbInfo, &ibAllocCreateInfo, &stagingVertexBuffer,
-                                         &stagingVertexBufferAlloc, &stagingIndexBufferAllocInfo));
+        vmaCreateBuffer(m_device.getVMAAllocator(), &vbInfo, &ibAllocCreateInfo, &stagingVertexBuffer,
+                                         &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo);
 
-        memcpy(stagingIndexBufferAllocInfo.pMappedData, data, length);
+        memcpy(stagingVertexBufferAllocInfo.pMappedData, data, length);
 
         // No need to flush stagingVertexBuffer memory because CPU_ONLY memory is always HOST_COHERENT.
 
@@ -61,14 +61,14 @@ void GVertexBufferVLK::uploadData(void *data, int length) {
         vkCmdCopyBuffer(m_device.getUploadCommandBuffer(), stagingVertexBuffer, g_hVertexBuffer, 1, &vbCopyRegion);
 
         m_dataUploaded = true;
-
-        assert(length > 0 && length < (400 * 1024 * 1024));
-
-//    std::cout << "vbo_uploaded = " << vbo_uploaded++ << std::endl;
-
-
     } else {
-        //TODO:!!!!
+        memcpy(stagingVertexBufferAllocInfo.pMappedData, data, length);
+
+        VkBufferCopy vbCopyRegion = {};
+        vbCopyRegion.srcOffset = 0;
+        vbCopyRegion.dstOffset = 0;
+        vbCopyRegion.size = length;
+        vkCmdCopyBuffer(m_device.getUploadCommandBuffer(), stagingVertexBuffer, g_hVertexBuffer, 1, &vbCopyRegion);
     }
 
 

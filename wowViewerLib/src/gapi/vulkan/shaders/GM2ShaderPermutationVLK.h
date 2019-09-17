@@ -13,10 +13,14 @@ public:
     ~GM2ShaderPermutationVLK() override {};
 
 protected:
-    explicit GM2ShaderPermutationVLK(std::string &shaderName, IDevice *device, M2ShaderCacheRecord &permutation);
-
-    void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
-    M2ShaderCacheRecord &permutation;
+    explicit GM2ShaderPermutationVLK(std::string &shaderName, IDevice *device);
+public:
+    int getTextureBindingStart() override {
+        return 5;
+    };
+    int getTextureCount() override {
+        return 4;
+    };
 };
 
 

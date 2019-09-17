@@ -41,6 +41,8 @@ protected:
 
     bool m_uploaded = false;
     bool m_loaded = false;
+    bool m_wrapX = true;
+    bool m_wrapY = true;
 };
 
 
