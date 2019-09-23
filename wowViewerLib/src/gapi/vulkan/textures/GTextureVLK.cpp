@@ -2,6 +2,7 @@
 // Created by Deamon on 7/23/2018.
 //
 #include <iostream>
+#include <cstring>
 #include "GTextureVLK.h"
 #include "../../interface/IDevice.h"
 
