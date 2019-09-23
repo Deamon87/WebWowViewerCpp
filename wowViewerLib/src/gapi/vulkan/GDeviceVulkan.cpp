@@ -277,10 +277,14 @@ void GDeviceVLK::createSwapChain() {
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-        imageCount = swapChainSupport.capabilities.maxImageCount;
+    uint32_t imageCount = 4;
+    if (imageCount > swapChainSupport.capabilities.maxImageCount || (imageCount < swapChainSupport.capabilities.minImageCount)) {
+        std::cerr << "Your GPU doesnt support 4 images for swapchain, which is required by this application" << std::endl << std::flush;
+        throw new std::runtime_error("Boo!");
     }
+//    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+//        imageCount = swapChainSupport.capabilities.maxImageCount;
+//    }
 
     VkSwapchainCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -1066,7 +1070,7 @@ void GDeviceVLK::commitFrame() {
 
 
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[0], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentDrawFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         std::cout << "got VK_ERROR_OUT_OF_DATE_KHR" << std::endl << std::flush;
@@ -1091,7 +1095,7 @@ void GDeviceVLK::commitFrame() {
     VkSemaphore waitSemaphores[2];
     VkPipelineStageFlags waitStages[2];
 
-    waitSemaphores[0] = imageAvailableSemaphores[0];
+    waitSemaphores[0] = imageAvailableSemaphores[currentDrawFrame];
     waitStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
     waitSemaphores[1] = uploadSemaphores[currentDrawFrame];
@@ -1107,7 +1111,7 @@ void GDeviceVLK::commitFrame() {
     submitInfo.pCommandBuffers = &grCommandBuffers[0];
 
     submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &renderFinishedSemaphores[0];
+    submitInfo.pSignalSemaphores = &renderFinishedSemaphores[currentDrawFrame];
 
     if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentDrawFrame]) != VK_SUCCESS) {
         std::cout << "failed to submit draw command buffer!" << std::endl << std::flush;
@@ -1117,7 +1121,7 @@ void GDeviceVLK::commitFrame() {
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.pNext = NULL;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &renderFinishedSemaphores[0];
+    presentInfo.pWaitSemaphores = &renderFinishedSemaphores[currentDrawFrame];
 
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &swapChain;
@@ -1168,7 +1172,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.pNext = NULL;
     renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = swapChainFramebuffers[updateFrame % swapChainFramebuffers.size()];
+    renderPassInfo.framebuffer = swapChainFramebuffers[updateFrame];
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = swapChainExtent;
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -1190,15 +1194,15 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
         auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
         VkDeviceSize offsets[] = {0};
 
-//        if (lastIndexBuffer != indexBuffer) {
+        if (lastIndexBuffer != indexBuffer) {
             vkCmdBindIndexBuffer(commandBuffers[updateFrame], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-//            lastIndexBuffer = indexBuffer;
-//        }
+            lastIndexBuffer = indexBuffer;
+        }
 
-//        if (lastVertexBuffer != vertexBuffer) {
+        if (lastVertexBuffer != vertexBuffer) {
             vkCmdBindVertexBuffers(commandBuffers[updateFrame], 0, 1, &vertexBuffer, offsets);
-//            lastVertexBuffer = vertexBuffer;
-//        }
+            lastVertexBuffer = vertexBuffer;
+        }
         vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
             meshVLK->pipelineLayout, 0, 1, &meshVLK->descriptorSets[updateFrame], 0, 0);
 
