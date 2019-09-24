@@ -67,7 +67,7 @@ void GUniformBufferVLK::uploadData(void * data, int length) {
 
     int updateIndex = m_device->getUpdateFrameNumber();
 
-    memcpy(stagingUBOBufferAllocInfo.pMappedData, data, length);
+//    memcpy(stagingUBOBufferAllocInfo.pMappedData, data, length);
 
     VkBufferCopy vbCopyRegion = {};
     vbCopyRegion.srcOffset = 0;
@@ -76,13 +76,18 @@ void GUniformBufferVLK::uploadData(void * data, int length) {
     vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), stagingUBOBuffer, g_buf[updateIndex], 1, &vbCopyRegion);
 
     m_dataUploaded = true;
-    m_needsUpdate = false;
+    m_needsUpdate[updateIndex] = false;
 }
 
 void GUniformBufferVLK::save(bool initialSave) {
 ////    if (memcmp(pPreviousContent, pContent, m_size) != 0) {
 //        //1. Copy new to prev
-        m_needsUpdate = true;
+    memcpy(stagingUBOBufferAllocInfo.pMappedData, getPointerForModification(), m_size);
+
+        m_needsUpdate[0] = true;
+        m_needsUpdate[1] = true;
+        m_needsUpdate[2] = true;
+        m_needsUpdate[3] = true;
 //
 //        2. Update UBO
 
@@ -99,7 +104,8 @@ void *GUniformBufferVLK::getPointerForModification() {
 }
 
 void GUniformBufferVLK::commitUpload() {
-    if (m_buffCreated && m_needsUpdate) {
+    int updateIndex = m_device->getUpdateFrameNumber();
+    if (m_buffCreated && m_needsUpdate[updateIndex]) {
         void * data = getPointerForModification();
         this->uploadData(data, m_size);
     }

@@ -248,7 +248,7 @@ void ParticleEmitter::createMesh() {
             meshTemplate.texture[1] = m_api->getDevice()->createBlpTexture(tex1, true, true);
             meshTemplate.texture[2] = m_api->getDevice()->createBlpTexture(tex2, true, true);
         }
-
+        meshTemplate.texture.resize(3);
         meshTemplate.textureCount = (multitex) ? 3 : 1;
 
         meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();

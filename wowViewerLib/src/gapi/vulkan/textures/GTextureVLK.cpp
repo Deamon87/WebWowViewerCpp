@@ -198,8 +198,8 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
 
 
     // Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
-// Source pipeline stage stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
-// Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
+    // Source pipeline stage stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
+    // Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
     vkCmdPipelineBarrier(
         m_device.getUploadCommandBuffer(),
         VK_PIPELINE_STAGE_TRANSFER_BIT ,
@@ -221,11 +221,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     // Store current layout for later reuse
     texture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-
-
-
-
-    // Clean up staging resources
+// Clean up staging resources
 //    vkFreeMemory(m_device.getVkDevice(), stagingMemory, nullptr);
 //    vkDestroyBuffer(m_device.getVkDevice(), stagingBuffer, nullptr);
 
@@ -238,8 +234,8 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     sampler.magFilter = VK_FILTER_LINEAR;
     sampler.minFilter = VK_FILTER_LINEAR;
     sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler.addressModeU = m_wrapX ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    sampler.addressModeV = m_wrapY ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     sampler.mipLodBias = 0.0f;
     sampler.compareOp = VK_COMPARE_OP_NEVER;

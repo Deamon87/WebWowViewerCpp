@@ -251,7 +251,9 @@ private:
 
     bool needToDropCache = false;
     std::promise<float> nextDeltaTime;
+    std::promise<float> nextDeltaTimeForUpdate;
     std::promise<bool> cullingFinished;
+    std::promise<bool> updateFinished;
 
     std::mutex m_lockNextMeshes;            // mutex for critical section
     std::unique_lock<std::mutex> renderLockNextMeshes;

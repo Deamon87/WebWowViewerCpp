@@ -58,9 +58,9 @@ public:
     MeshType meshType = MeshType::eGeneralMesh;
 
     int8_t triCCW = 1; //counter-clockwise
-    bool depthWrite;
-    bool depthCulling;
-    bool backFaceCulling;
+    bool depthWrite = true;
+    bool depthCulling = true;
+    bool backFaceCulling = true;
     EGxBlendEnum blendMode;
 
     uint8_t colorMask = 0xFF;

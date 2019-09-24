@@ -502,6 +502,7 @@ void WmoGroupObject::createMeshes() {
         HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, isSecondTextSpec);
         HGTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
 
+        meshTemplate.texture.resize(3);
         meshTemplate.texture[0] = texture1;
         meshTemplate.texture[1] = texture2;
         meshTemplate.texture[2] = texture3;
@@ -513,7 +514,7 @@ void WmoGroupObject::createMeshes() {
         meshTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(wmoMeshWideBlockVS));
 
         meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.fragmentBuffers[1] = nullptr;
+        meshTemplate.fragmentBuffers[1] = vertexModelWideUniformBuffer;
         meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(wmoMeshWideBlockPS));
 
 

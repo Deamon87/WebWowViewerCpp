@@ -20,9 +20,6 @@ private:
     void decompressAndUpload(TextureFormat textureFormat, const MipmapsVector &mipmaps);
 private:
     HBlpTexture m_texture;
-
-    bool xWrapTex;
-    bool yWrapTex;
 };
 
 

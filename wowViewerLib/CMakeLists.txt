@@ -322,7 +322,7 @@ IF(WIN32)
         find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS ${CMAKE_SOURCE_DIR}/libs/vulkan)
         IF (Vulkan_LIBRARY)
             set(Vulkan_FOUND ON)
-            MESSAGE("Using bundled Vulkan library version")
+            MESSAGE("Using bundled Vulkan library version win32")
         ENDIF()
     ENDIF()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
@@ -331,7 +331,7 @@ ELSE(WIN32)
         find_library(Vulkan_LIBRARY NAMES vulkan HINTS "$ENV{VULKAN_SDK}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan" REQUIRED)
         IF (Vulkan_LIBRARY)
             set(Vulkan_FOUND ON)
-            MESSAGE("Using bundled Vulkan library version")
+            MESSAGE("Using bundled Vulkan library version non-win32")
         ENDIF()
     ENDIF()
     find_package(Threads REQUIRED)
@@ -344,6 +344,9 @@ set(VULKAN_IMPLEMENTATION
         src/gapi/vulkan/GVertexBufferBindingsVLK.cpp
         src/gapi/vulkan/shaders/GShaderPermutationVLK.cpp
         src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
+        src/gapi/vulkan/shaders/GM2ParticleShaderPermutationVLK.cpp
+        src/gapi/vulkan/shaders/GWMOWaterShaderVLK.cpp
+        src/gapi/vulkan/shaders/GWMOShaderPermutationVLK.cpp
         src/gapi/vulkan/meshes/GM2MeshVLK.cpp
         src/gapi/vulkan/meshes/GMeshVLK.cpp
         src/gapi/vulkan/textures/GTextureVLK.cpp

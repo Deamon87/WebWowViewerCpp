@@ -11,7 +11,8 @@
 //#ifdef DODEBUGTHREADS
 class GlobalThreads {
 public:
-    std::thread cullingAndUpdateThread;
+    std::thread cullingThread;
+    std::thread updateThread;
     std::thread renderThread;
     std::thread loadingResourcesThread;
 };

@@ -8,8 +8,8 @@
 
 GBlpTextureVLK::GBlpTextureVLK(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
     : GTextureVLK(device), m_texture(texture) {
-    this->xWrapTex = xWrapTex;
-    this->yWrapTex = yWrapTex;
+    this->m_wrapX = xWrapTex;
+    this->m_wrapY = yWrapTex;
 }
 
 GBlpTextureVLK::~GBlpTextureVLK() {

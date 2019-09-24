@@ -9,7 +9,11 @@ layout(location=4) in vec4 vColor2;
 layout(location=5) in vec4 vPosition;
 layout(location=6) in vec3 vNormal;
 
-layout(std140, binding=2) uniform meshWideBlockPS {
+layout(std140, set=0, binding=3) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
+};
+
+layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     vec4 uViewUp;
     vec4 uSunDir_FogStart;
     vec4 uSunColor_uFogEnd;
@@ -19,9 +23,12 @@ layout(std140, binding=2) uniform meshWideBlockPS {
     vec4 FogColor_AlphaTest;
 };
 
-layout(binding=3) uniform sampler2D uTexture;
-layout(binding=4) uniform sampler2D uTexture2;
-layout(binding=5) uniform sampler2D uTexture3;
+
+
+
+layout(binding=5) uniform sampler2D uTexture;
+layout(binding=6) uniform sampler2D uTexture2;
+layout(binding=7) uniform sampler2D uTexture3;
 
 layout (location = 0) out vec4 outputColor;
 
@@ -74,138 +81,147 @@ void main() {
     vec4 tex2 = texture(uTexture2, vTexCoord2).rgba;
     vec4 tex3 = texture(uTexture3, vTexCoord3).rgba;
 
-    if (UseLitColor_EnableAlpha_PixelShader.y == 1) {
-        if ((tex.a - 0.501960814) < 0.0) {
-            discard;
-        }
-    }
+//    vec4 tex = vec4(0,0,0,0);
+//    vec4 tex2 = vec4(0,0,0,0);
+//    vec4 tex3 = vec4(0,0,0,0);
+
+//    if (UseLitColor_EnableAlpha_PixelShader.y == 1) {
+//        if ((tex.a - 0.501960814) < 0.0) {
+//            discard;
+//        }
+//    }
 
     int uPixelShader = UseLitColor_EnableAlpha_PixelShader.z;
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
-    #if(FRAGMENTSHADER==-1)
-        finalColor = vec4(makeDiffTerm(tex.rgb * vColor.rgb + tex2.rgb*vColor2.bgr), tex.a);
-    #endif
-    #if(FRAGMENTSHADER==0) //MapObjDiffuse
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+    if ( uPixelShader == -1 ) {
+         finalColor = vec4(makeDiffTerm(tex.rgb * vColor.rgb + tex2.rgb*vColor2.bgr), tex.a);
+     } else if (uPixelShader == 0) { //MapObjDiffuse
 
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==1) //MapObjSpecular
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==2) //MapObjMetal
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==3) //MapObjEnv
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        vec3 env = tex2.rgb * tex.a;
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
 
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==4) //MapObjOpaque
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==5) //MapObjEnvMetal
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        vec3 env = (tex.rgb * tex.a) * tex2.rgb;
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
 
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==6) //MapObjTwoLayerDiffuse
-        vec3 layer1 = tex.rgb;
-        vec3 layer2 = mix(layer1, tex2.rgb, tex2.a);
-        vec3 matDiffuse = (vColor.rgb * 2.0) * mix(layer2, layer1, vColor2.a);
+     } else if (uPixelShader == 1) { //MapObjSpecular
 
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), 1.0);
-    #endif
-    #if(FRAGMENTSHADER==7) //MapObjTwoLayerEnvMetal
-        vec4 colorMix = mix(tex2, tex, vColor2.a);
-        vec3 env = (colorMix.rgb * colorMix.a) * tex3.rgb;
-        vec3 matDiffuse = colorMix.rgb * (2.0 * vColor.rgb);
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
 
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==8) //MapObjTwoLayerTerrain
-        vec3 layer1 = tex.rgb;
-        vec3 layer2 = tex2.rgb;
+     } else if (uPixelShader == 2) { //MapObjMetal
 
-        vec3 matDiffuse = ((vColor.rgb * 2.0) * mix(layer2, layer1, vColor2.a));
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==9) //MapObjDiffuseEmissive
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        vec3 env = tex2.rgb * tex2.a * vColor2.a;
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
 
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==10) //MapObjMaskedEnvMetal
-        float mixFactor = clamp((tex3.a * vColor2.a), 0.0, 1.0);
-        vec3 matDiffuse =
-            (vColor.rgb * 2.0) *
-            mix(mix(((tex.rgb * tex2.rgb) * 2.0), tex3.rgb, mixFactor), tex.rgb, tex.a);
+     } else if (uPixelShader == 3) { //MapObjEnv
 
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==11) //MapObjEnvMetalEmissive
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        vec3 env =
-            (
-                ((tex.rgb * tex.a) * tex2.rgb) +
-                ((tex3.rgb * tex3.a) * vColor2.a)
-            );
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         vec3 env = tex2.rgb * tex.a;
 
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==12) //MapObjTwoLayerDiffuseOpaque
-        vec3 matDiffuse =
-            (vColor.rgb * 2.0) *
-            mix(tex2.rgb, tex.rgb, vColor2.a);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
 
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==13) //MapObjTwoLayerDiffuseEmissive
-        vec3 t1diffuse = (tex2.rgb * (1.0 - tex2.a));
+     } else if (uPixelShader == 4) { //MapObjOpaque
 
-        vec3 matDiffuse =
-            ((vColor.rgb * 2.0) *
-            mix(t1diffuse, tex.rgb, vColor2.a));
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
 
-        //TODO: there is env missing here
-        vec3 env = ((tex2.rgb * tex2.a) * (1.0 - vColor2.a));
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==14) //MapObjAdditiveMaskedEnvMetal
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==15) //MapObjTwoLayerDiffuseMod2x
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==16) //MapObjTwoLayerDiffuseMod2xNA
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==17) //MapObjTwoLayerDiffuseAlpha
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==18) //MapObjLod
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==19) //MapObjParallax
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
+     } else if (uPixelShader == 5) { //MapObjEnvMetal
+
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         vec3 env = (tex.rgb * tex.a) * tex2.rgb;
+
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
+
+     } else if (uPixelShader == 6) { //MapObjTwoLayerDiffuse
+
+         vec3 layer1 = tex.rgb;
+         vec3 layer2 = mix(layer1, tex2.rgb, tex2.a);
+         vec3 matDiffuse = (vColor.rgb * 2.0) * mix(layer2, layer1, vColor2.a);
+
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), 1.0);
+     } else if (uPixelShader == 7) { //MapObjTwoLayerEnvMetal
+
+         vec4 colorMix = mix(tex2, tex, vColor2.a);
+         vec3 env = (colorMix.rgb * colorMix.a) * tex3.rgb;
+         vec3 matDiffuse = colorMix.rgb * (2.0 * vColor.rgb);
+
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
+
+     } else if (uPixelShader == 8) { //MapObjTwoLayerTerrain
+
+         vec3 layer1 = tex.rgb;
+         vec3 layer2 = tex2.rgb;
+
+         vec3 matDiffuse = ((vColor.rgb * 2.0) * mix(layer2, layer1, vColor2.a));
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+
+     } else if (uPixelShader == 9) { //MapObjDiffuseEmissive
+
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         vec3 env = tex2.rgb * tex2.a * vColor2.a;
+
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
+
+     } else if (uPixelShader == 10) { //MapObjMaskedEnvMetal
+
+         float mixFactor = clamp((tex3.a * vColor2.a), 0.0, 1.0);
+         vec3 matDiffuse =
+             (vColor.rgb * 2.0) *
+             mix(mix(((tex.rgb * tex2.rgb) * 2.0), tex3.rgb, mixFactor), tex.rgb, tex.a);
+
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+
+     } else if (uPixelShader == 11) { //MapObjEnvMetalEmissive
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         vec3 env =
+             (
+                 ((tex.rgb * tex.a) * tex2.rgb) +
+                 ((tex3.rgb * tex3.a) * vColor2.a)
+             );
+
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
+     } else if (uPixelShader == 12) { //MapObjTwoLayerDiffuseOpaque
+         vec3 matDiffuse =
+             (vColor.rgb * 2.0) *
+             mix(tex2.rgb, tex.rgb, vColor2.a);
+
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+     } else if (uPixelShader == 13) { //MapObjTwoLayerDiffuseEmissive
+         vec3 t1diffuse = (tex2.rgb * (1.0 - tex2.a));
+
+         vec3 matDiffuse =
+             ((vColor.rgb * 2.0) *
+             mix(t1diffuse, tex.rgb, vColor2.a));
+
+         //TODO: there is env missing here
+         vec3 env = ((tex2.rgb * tex2.a) * (1.0 - vColor2.a));
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
+     } else if (uPixelShader == 13) { //MapObjTwoLayerDiffuseEmissive
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+     } else if (uPixelShader == 14) { //MapObjAdditiveMaskedEnvMetal
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+     } else if (uPixelShader == 15) { //MapObjTwoLayerDiffuseMod2x
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+     } if (uPixelShader == 16) { //MapObjTwoLayerDiffuseMod2xNA
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+     } if (uPixelShader == 17) { //MapObjTwoLayerDiffuseAlpha
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+     } if (uPixelShader == 18) { //MapObjLod
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+     } if (uPixelShader == 19) { //MapObjParallax
+         vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+         finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
+     }
+
 
     //finalColor.rgb *= 4.0;
 
-    if(finalColor.a < FogColor_AlphaTest.w)
-        discard;
+//    if(finalColor.a < FogColor_AlphaTest.w)
+//        discard;
 
     vec3 fogColor = FogColor_AlphaTest.xyz;
     float fog_start = uSunDir_FogStart.w;

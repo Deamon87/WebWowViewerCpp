@@ -635,6 +635,9 @@ void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
 }
 
 HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
+    if (textureId == 0) return nullptr; //Usual case
+
+    //Non-usual case
     if (textureId < 0 || (mainGeom->textureNamesField != nullptr && textureId >= mainGeom->textureNamesFieldLen)) {
         debuglog("Non valid textureindex for WMO")
         return nullptr;
