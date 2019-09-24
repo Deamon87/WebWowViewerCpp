@@ -26,4 +26,5 @@ void main() {
     vTexcoord1 = aTexcoord1;
     vTexcoord2 = aTexcoord2;
     gl_Position = uPMatrix * uLookAtMat * aPositionVec4;
+    gl_Position.y *= -1;
 }

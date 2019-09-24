@@ -192,8 +192,13 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     imageMemoryBarrier.dstAccessMask = 0;
     imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageMemoryBarrier.srcQueueFamilyIndex = indicies.transferFamily.value();
-    imageMemoryBarrier.dstQueueFamilyIndex = indicies.graphicsFamily.value();
+    if (m_device.getIsAsynBuffUploadSupported()) {
+        imageMemoryBarrier.srcQueueFamilyIndex = indicies.transferFamily.value();
+        imageMemoryBarrier.dstQueueFamilyIndex = indicies.graphicsFamily.value();
+    } else {
+        imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    }
     ///SeparateUploadQueue reference: https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples "Upload data from the CPU to an image sampled in a fragment shader"
 
 
@@ -209,14 +214,16 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
         0, nullptr,
         1, &imageMemoryBarrier);
 
-    vkCmdPipelineBarrier(
-        m_device.getTextureTransferCommandBuffer(),
-        VK_PIPELINE_STAGE_TRANSFER_BIT ,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &imageMemoryBarrier);
+    if (m_device.getIsAsynBuffUploadSupported()) {
+        vkCmdPipelineBarrier(
+            m_device.getTextureTransferCommandBuffer(),
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &imageMemoryBarrier);
+    }
 
     // Store current layout for later reuse
     texture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

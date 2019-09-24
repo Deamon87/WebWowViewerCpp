@@ -154,7 +154,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -891,8 +891,6 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
     }
-
-    updateCommandBuffers(iMeshes);
 }
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
@@ -919,6 +917,9 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         if (texture->postLoad()) texturesLoaded++;
         if (texturesLoaded > 4) return;
     }
+
+
+    updateCommandBuffers(meshes);
 }
 
 void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {

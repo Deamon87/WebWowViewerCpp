@@ -977,7 +977,7 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 
 void ParticleEmitter::updateBuffers() {
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
-    currentFrame.active = !szVertexBuf.empty();
+    currentFrame.active = szVertexBuf.size() > 0;
 
     if (!currentFrame.active)
         return;
