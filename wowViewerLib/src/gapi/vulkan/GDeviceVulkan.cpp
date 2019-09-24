@@ -25,8 +25,8 @@
 #include "shaders/GWMOShaderPermutationVLK.h"
 #include "shaders/GWMOWaterShaderVLK.h"
 
-const int WIDTH = 800;
-const int HEIGHT = 600;
+const int WIDTH = 1024;
+const int HEIGHT = 768;
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation",
@@ -278,7 +278,8 @@ void GDeviceVLK::createSwapChain() {
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
     uint32_t imageCount = 4;
-    if (imageCount > swapChainSupport.capabilities.maxImageCount || (imageCount < swapChainSupport.capabilities.minImageCount)) {
+    if ((imageCount > swapChainSupport.capabilities.maxImageCount && (swapChainSupport.capabilities.maxImageCount != 0))
+    || (imageCount < swapChainSupport.capabilities.minImageCount)) {
         std::cerr << "Your GPU doesnt support 4 images for swapchain, which is required by this application" << std::endl << std::flush;
         throw new std::runtime_error("Boo!");
     }
@@ -824,9 +825,7 @@ void GDeviceVLK::bindTexture(ITexture *texture, int slot) {
 
 }
 
-void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
-//    aggregationBufferForUpload.resize(maxUniformBufferSize);
-
+void GDeviceVLK::startUpdateForNextFrame() {
     int uploadFrame = getUpdateFrameNumber();
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -848,7 +847,30 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
     if (vkBeginCommandBuffer(textureTransferCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
         std::cout << "failed to begin recording textureTransferCommandBuffers command buffer!"  << std::endl;
     }
+}
+void GDeviceVLK::endUpdateForNextFrame() {
+    int uploadFrame = getUpdateFrameNumber();
+    if (vkEndCommandBuffer(uploadCommandBuffers[uploadFrame]) != VK_SUCCESS) {
+        std::cout << "failed to record uploadCommandBuffer command buffer!" << std::endl;
+    }
+    if (vkEndCommandBuffer(textureTransferCommandBuffers[uploadFrame]) != VK_SUCCESS) {
+        std::cout << "failed to record textureTransferCommandBuffers command buffer!" << std::endl;
+    }
 
+    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &uploadCommandBuffers[uploadFrame];
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
+
+
+    if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
+        std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+    }
+}
+
+void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
+//    aggregationBufferForUpload.resize(maxUniformBufferSize);
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture();
         unsigned int ff = 0;
@@ -869,6 +891,8 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
     }
+
+    updateCommandBuffers(iMeshes);
 }
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
@@ -894,27 +918,6 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         if (texture == nullptr) continue;
         if (texture->postLoad()) texturesLoaded++;
         if (texturesLoaded > 4) return;
-    }
-
-    int uploadFrame = getUpdateFrameNumber();
-    if (vkEndCommandBuffer(uploadCommandBuffers[uploadFrame]) != VK_SUCCESS) {
-        std::cout << "failed to record uploadCommandBuffer command buffer!" << std::endl;
-    }
-    if (vkEndCommandBuffer(textureTransferCommandBuffers[uploadFrame]) != VK_SUCCESS) {
-        std::cout << "failed to record textureTransferCommandBuffers command buffer!" << std::endl;
-    }
-
-    updateCommandBuffers(meshes);
-
-    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &uploadCommandBuffers[uploadFrame];
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
-
-
-    if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
-        std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
     }
 }
 
@@ -1083,6 +1086,12 @@ void GDeviceVLK::commitFrame() {
 
     if (imageIndex >= inFlightFences.size()) {
         std::cout << "imageIndex >= inFlightFences.size()" << std::endl;
+    }
+
+//    std::cout << "imageIndex = " << imageIndex << " currentDrawFrame = " << currentDrawFrame << std::endl << std::flush;
+
+    if (((imageIndex+1)&3) != currentDrawFrame) {
+//        std::cout << "imageIndex != currentDrawFrame" << std::endl;
     }
 
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());

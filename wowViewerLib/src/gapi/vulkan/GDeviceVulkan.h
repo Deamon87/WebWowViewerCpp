@@ -79,6 +79,9 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
+    void startUpdateForNextFrame() override;
+    void endUpdateForNextFrame() override;
+
     void updateBuffers(std::vector<HGMesh> &meshes) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;

@@ -378,7 +378,7 @@ int main(){
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    auto window = glfwCreateWindow(1920, 1080, "Vulkan", nullptr, nullptr);
+    auto window = glfwCreateWindow(1024, 768, "Vulkan", nullptr, nullptr);
 
     vkCallInitCallback callback;
     callback.createSurface = [&](VkInstance vkInstance) {

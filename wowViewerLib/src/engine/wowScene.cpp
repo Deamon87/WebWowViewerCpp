@@ -422,7 +422,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
-   m_firstCamera.setCameraPos(0, 0, 0);
+//   m_firstCamera.setCameraPos(0, 0, 0);
     currentScene = new M2Scene(this,
         "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
@@ -570,9 +570,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
@@ -636,7 +636,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
                 DoCulling();
                 localLockNextMeshes.unlock();
 
-                cullingFinished.set_value(true);
+                this->cullingFinished.set_value(true);
             }
         }));
 
@@ -654,8 +654,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
                     updateFrameIndex = updateObjFrame;
 
+                    device->startUpdateForNextFrame();
                     currentScene->update(objFrameParam);
                     currentScene->collectMeshes(objFrameParam);
+
                     device->updateBuffers(objFrameParam->renderedThisFrame);
 
                     sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
@@ -665,6 +667,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
                     currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
                     device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
+
+                    device->endUpdateForNextFrame();
 
                     updateFinished.set_value(true);
                 }
@@ -732,9 +736,14 @@ struct timespec& end)
 
 void WoWSceneImpl::draw(animTime_t deltaTime) {
     renderLockNextMeshes.lock();
+    auto cullingFuture = cullingFinished.get_future();
+    std::future<bool> updateFuture;
 
     nextDeltaTime.set_value(deltaTime);
-    nextDeltaTimeForUpdate.set_value(deltaTime);
+    if (getDevice()->getIsAsynBuffUploadSupported()) {
+        nextDeltaTimeForUpdate.set_value(deltaTime);
+        updateFuture = updateFinished.get_future();
+    }
     renderLockNextMeshes.unlock();
 
 //    std::cout << "draw frame = " << getDevice()->getDrawFrameNumber() << std::endl;
@@ -773,18 +782,21 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
         updateFrameIndex = updateObjFrame;
 
-        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
-        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
-        m_sceneWideUniformBuffer->save();
-
+        device->startUpdateForNextFrame();
         currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
 
         device->updateBuffers(objFrameParam->renderedThisFrame);
 
+        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
+        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
+        m_sceneWideUniformBuffer->save();
+
         currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
         device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
+
+        device->endUpdateForNextFrame();
     }
 
     device->setClearScreenColor(0.117647, 0.207843, 0.392157);
@@ -870,11 +882,11 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     device->reset();
 
 
-    cullingFinished.get_future().wait();
+    cullingFuture.wait();
     cullingFinished = std::promise<bool>();
 
     if (device->getIsAsynBuffUploadSupported()) {
-        updateFinished.get_future().wait();
+        updateFuture.wait();
         updateFinished = std::promise<bool>();
     }
 
