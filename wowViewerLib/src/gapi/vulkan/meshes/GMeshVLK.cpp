@@ -395,7 +395,9 @@ void GMeshVLK::updateDescriptor() {
             bindIndex++;
         }
 
-        vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
+        if (descriptorWrites.size() > 0) {
+            vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
+        }
 
         descriptorSetsUpdated[updateFrame] = true;
     }

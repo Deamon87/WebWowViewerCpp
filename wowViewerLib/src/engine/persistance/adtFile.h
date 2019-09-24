@@ -34,7 +34,7 @@ public:
     AdtFile(std::string fileName){};
     AdtFile(int fileDataId){};
 
-    std::vector<uint8_t> processTexture(const MPHDFlags &wdtObjFlags, int i);
+    void processTexture(const MPHDFlags &wdtObjFlags, int i, std::vector<uint8_t> &currentLayer);
     void process(const std::vector<unsigned char> &adtFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
     void setIsMain(bool isMain) { m_mainAdt = isMain; };

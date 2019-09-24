@@ -61,4 +61,5 @@ void main() {
     vNormal = (uLookAtMat * vec4(aNormal, 0)).xyz;
 
     gl_Position = uPMatrix * uLookAtMat * worldPoint;
+    gl_Position.y *= -1;
 }

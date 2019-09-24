@@ -358,7 +358,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new Map(this, 0, "HawaiiMainLand");
 
 //    m_firstCamera.setCameraPos(-12886, -165, 200); // Pandaria
-//    currentScene = new Map(this, "Azeroth");createTriangleStrip
+//    currentScene = new Map(this, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-12017, 3100, 200); // Pandaria
 //    currentScene = new Map(this, 0, "Kalimdor");
@@ -423,8 +423,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -489,7 +489,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
 
 
-//   m_firstCamera.setCameraPos(0, 0, 0);
+   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "WORLD/WMO/NORTHREND/BUILDINGS/HUMAN/ND_HUMAN_INN/ND_HUMAN_INN.WMO");
 
@@ -533,8 +533,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
-// currentScene = new WmoScene(this,
-//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+ currentScene = new WmoScene(this,
+        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");

@@ -343,6 +343,7 @@ set(VULKAN_IMPLEMENTATION
         src/gapi/vulkan/vkAllocator.cpp
         src/gapi/vulkan/GVertexBufferBindingsVLK.cpp
         src/gapi/vulkan/shaders/GShaderPermutationVLK.cpp
+        src/gapi/vulkan/shaders/GAdtShaderPermutationVLK.cpp
         src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
         src/gapi/vulkan/shaders/GM2ParticleShaderPermutationVLK.cpp
         src/gapi/vulkan/shaders/GWMOWaterShaderVLK.cpp

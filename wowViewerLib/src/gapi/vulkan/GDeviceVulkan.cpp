@@ -22,6 +22,7 @@
 #include "shaders/GM2ShaderPermutationVLK.h"
 #include "shaders/GM2ParticleShaderPermutationVLK.h"
 #include "../../engine/algorithms/hashString.h"
+#include "shaders/GAdtShaderPermutationVLK.h"
 #include "shaders/GWMOShaderPermutationVLK.h"
 #include "shaders/GWMOWaterShaderVLK.h"
 
@@ -154,7 +155,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -952,6 +953,10 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         IShaderPermutation *iPremutation = new GWmoWaterShaderPermutationVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
+    } else if (shaderName == "adtShader"){
+        IShaderPermutation *iPremutation = new GAdtShaderPermutationVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
     }
 
 
@@ -990,10 +995,32 @@ HGVertexBufferBindings GDeviceVLK::createVertexBufferBindings() {
 }
 
 HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
-    std::shared_ptr<GTextureVLK> h_texture;
-    h_texture.reset(new GBlpTextureVLK(*this, texture, xWrapTex, yWrapTex));
+//    std::shared_ptr<GTextureVLK> h_texture;
+//    h_texture.reset(new GBlpTextureVLK(*this, texture, xWrapTex, yWrapTex));
+//
+//    return h_texture;
 
-    return h_texture;
+    BlpCacheRecord blpCacheRecord;
+    blpCacheRecord.texture = texture;
+    blpCacheRecord.wrapX = xWrapTex;
+    blpCacheRecord.wrapY = yWrapTex;
+
+    auto i = loadedTextureCache.find(blpCacheRecord);
+    if (i != loadedTextureCache.end()) {
+        if (!i->second.expired()) {
+            return i->second.lock();
+        } else {
+            loadedTextureCache.erase(i);
+        }
+    }
+
+    std::shared_ptr<GBlpTextureVLK> hgTexture;
+    hgTexture.reset(new GBlpTextureVLK(*this, texture, xWrapTex, yWrapTex));
+
+    std::weak_ptr<GBlpTextureVLK> weakPtr(hgTexture);
+    loadedTextureCache[blpCacheRecord] = weakPtr;
+
+    return hgTexture;
 }
 
 HGTexture GDeviceVLK::createTexture() {
@@ -1200,7 +1227,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
 
         vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->graphicsPipeline);
 
-        auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
+
         auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
         VkDeviceSize offsets[] = {0};
 
@@ -1209,10 +1236,16 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             lastIndexBuffer = indexBuffer;
         }
 
-        if (lastVertexBuffer != vertexBuffer) {
-            vkCmdBindVertexBuffers(commandBuffers[updateFrame], 0, 1, &vertexBuffer, offsets);
-            lastVertexBuffer = vertexBuffer;
+//        if (lastVertexBuffer != vertexBuffer) {
+        uint32_t vboBind = 0;
+        for (auto &vboBinding: binding->m_bindings) {
+            auto vertexBuffer = ((GVertexBufferVLK *)vboBinding.vertexBuffer.get())->g_hVertexBuffer;
+            vkCmdBindVertexBuffers(commandBuffers[updateFrame], vboBind++, 1, &vertexBuffer, offsets);
         }
+//            lastVertexBuffer = vertexBuffer;
+//        }
+
+
         vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
             meshVLK->pipelineLayout, 0, 1, &meshVLK->descriptorSets[updateFrame], 0, 0);
 

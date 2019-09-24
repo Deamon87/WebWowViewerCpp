@@ -408,13 +408,13 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
     }
 };
 
-std::vector<uint8_t> AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i) {
+void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, std::vector<uint8_t> &currentLayer) {
     mcnkStruct_t &mcnkObj = mcnkStructs[i];
     uint8_t* alphaArray = mcnkObj.mcal;
     PointerChecker<SMLayer> &layers = mcnkObj.mcly;
 
-    std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64, 0);
-    if (layers == nullptr || alphaArray == nullptr) return currentLayer;
+    currentLayer = std::vector<uint8_t>((64*4) * 64+4, 0);
+    if (layers == nullptr || alphaArray == nullptr) return;
 
 //    for (int j = 0; j < mapTile[i].nLayers; j++ ) {
     for (int j = 0; j <mcnkObj.mclyCnt; j++ ) {
@@ -483,7 +483,6 @@ std::vector<uint8_t> AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i
 //            }
 //        }
     }
-    return currentLayer;
 }
 
 static bool isHoleLowRes(int hole, int i, int j) {
@@ -502,15 +501,15 @@ static bool isHoleHighRes(uint64_t hole, int i, int j) {
 //    return ((hole >> ((7-j) * 8  + i)) & 1) > 0;
 }
 
+const int stripLenght = 9;
+const int vertCountPerMCNK= 9 * 9 + 8 * 8;
+static uint8_t squareIndsStrip[stripLenght] = {17, 0, 9, 1, 18, 18, 9, 17, 17};
+
 void AdtFile::createTriangleStrip() {
     if (mcnkRead < 0) return;
 
-    strips = std::vector<int16_t>(0);
-    stripOffsets = std::vector<int> (0);
-
-    const int stripLenght = 9;
-    const int vertCountPerMCNK= 9 * 9 + 8 * 8;
-    static uint8_t squareIndsStrip[stripLenght] = {17, 0, 9, 1, 18, 18, 9, 17, 17};
+//    strips = std::vector<int16_t>();
+//    stripOffsets = std::vector<int>();
 
     for (int i = 0; i <= mcnkRead; i++) {
         SMChunk &mcnkObj = mapTile[i];

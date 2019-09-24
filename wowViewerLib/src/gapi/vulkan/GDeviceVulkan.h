@@ -198,7 +198,7 @@ protected:
             return hash<void*>{}(k.texture.get()) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
         };
     };
-    std::unordered_map<BlpCacheRecord, std::weak_ptr<GDeviceVLK>, BlpCacheRecordHasher> loadedTextureCache;
+    std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureVLK>, BlpCacheRecordHasher> loadedTextureCache;
 
     VkDebugUtilsMessengerEXT debugMessenger;
 
