@@ -20,7 +20,9 @@ class GMeshVLK;
 class GM2MeshVLK;
 class GOcclusionQueryVLK;
 class GParticleMeshVLK;
+class GPipelineVLK;
 
+typedef std::shared_ptr<GPipelineVLK> HPipelineVLK;
 
 class gMeshTemplate;
 
@@ -100,6 +102,15 @@ public:
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) override;
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) override;
     HGPUFence createFence() override;
+
+    HPipelineVLK createPipeline(HGVertexBufferBindings m_bindings,
+                                HGShaderPermutation shader,
+                                DrawElementMode element,
+                                int8_t backFaceCulling,
+                                int8_t triCCW,
+                                EGxBlendEnum blendMode,
+                                int8_t depthCulling,
+                                int8_t depthWrite);
 
     HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
@@ -211,6 +222,41 @@ protected:
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureVLK>, BlpCacheRecordHasher> loadedTextureCache;
+
+    struct PipelineCacheRecord {
+        HGShaderPermutation shader;
+        DrawElementMode element;
+        int8_t backFaceCulling;
+        int8_t triCCW;
+        EGxBlendEnum blendMode;
+        int8_t depthCulling;
+        int8_t depthWrite;
+
+        bool operator==(const PipelineCacheRecord &other) const {
+            return
+                (shader == other.shader) &&
+                (element == other.element) &&
+                (backFaceCulling == other.backFaceCulling) &&
+                (triCCW == other.triCCW) &&
+                (blendMode == other.blendMode) &&
+                (depthCulling == other.depthCulling) &&
+                (depthWrite == other.depthWrite);
+
+        };
+    };
+    struct PipelineCacheRecordHasher {
+        std::size_t operator()(const PipelineCacheRecord& k) const {
+            using std::hash;
+            return hash<void*>{}(k.shader.get()) ^
+            (hash<int8_t >{}(k.backFaceCulling) << 2) ^
+            (hash<int8_t >{}(k.triCCW) << 4) ^
+            (hash<int8_t >{}(k.depthCulling) << 8) ^
+            (hash<int8_t >{}(k.depthWrite) << 10) ^
+            (hash<EGxBlendEnum>{}(k.blendMode) << 16) ^
+            (hash<DrawElementMode>{}(k.element) << 24);
+        };
+    };
+    std::unordered_map<PipelineCacheRecord, std::weak_ptr<GPipelineVLK>, PipelineCacheRecordHasher> loadedPipeLines;
 
     VkDebugUtilsMessengerEXT debugMessenger;
 

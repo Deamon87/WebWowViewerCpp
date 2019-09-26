@@ -19,6 +19,7 @@
 #include "textures/GTextureVLK.h"
 #include "textures/GBlpTextureVLK.h"
 #include "GVertexBufferBindingsVLK.h"
+#include "GPipelineVLK.h"
 #include "shaders/GM2ShaderPermutationVLK.h"
 #include "shaders/GM2ParticleShaderPermutationVLK.h"
 #include "../../engine/algorithms/hashString.h"
@@ -1237,7 +1238,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
         auto *binding ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
 
 
-        vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->graphicsPipeline);
+        vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);
 
 
         auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
@@ -1259,7 +1260,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
 
 
         vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-            meshVLK->pipelineLayout, 0, 1, &meshVLK->descriptorSets[updateFrame], 0, 0);
+            meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &meshVLK->descriptorSets[updateFrame], 0, 0);
 
         vkCmdDrawIndexed(commandBuffers[updateFrame], meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }
@@ -1269,4 +1270,41 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     if (vkEndCommandBuffer(commandBuffers[updateFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
+}
+
+HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
+                                        HGShaderPermutation shader,
+                                        DrawElementMode element,
+                                        int8_t backFaceCulling,
+                                        int8_t triCCW,
+                                        EGxBlendEnum blendMode,
+                                        int8_t depthCulling,
+                                        int8_t depthWrite) {
+
+    PipelineCacheRecord pipelineCacheRecord;
+    pipelineCacheRecord.shader = shader;
+    pipelineCacheRecord.element = element;
+    pipelineCacheRecord.backFaceCulling = backFaceCulling;
+    pipelineCacheRecord.triCCW = triCCW;
+    pipelineCacheRecord.blendMode = blendMode;
+    pipelineCacheRecord.depthCulling = depthCulling;
+    pipelineCacheRecord.depthWrite = depthWrite;
+
+    auto i = loadedPipeLines.find(pipelineCacheRecord);
+    if (i != loadedPipeLines.end()) {
+        if (!i->second.expired()) {
+            return i->second.lock();
+        } else {
+            loadedPipeLines.erase(i);
+        }
+    }
+
+    std::shared_ptr<GPipelineVLK> hgPipeline;
+    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, shader, element, backFaceCulling, triCCW, blendMode, depthCulling, depthWrite));
+
+    std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
+    loadedPipeLines[pipelineCacheRecord] = weakPtr;
+
+    return hgPipeline;
+
 }

@@ -2,6 +2,7 @@
 // Created by Deamon on 9/26/2019.
 //
 
+#include <iostream>
 #include "GPipelineVLK.h"
 #include "shaders/GShaderPermutationVLK.h"
 
@@ -202,7 +203,7 @@ void GPipelineVLK::createPipeline(
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descLayout;
 
-//    std::cout << "Pipeline layout for "+((GShaderPermutationVLK *)m_shader.get())->getShaderName() << std::endl;
+    std::cout << "Pipeline layout for "+shaderVLK->getShaderName() << std::endl;
 
     if (vkCreatePipelineLayout(m_device.getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");

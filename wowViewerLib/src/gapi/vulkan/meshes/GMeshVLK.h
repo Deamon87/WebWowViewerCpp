@@ -63,6 +63,8 @@ private:
 
     VkDescriptorPool m_descriptorPool;
 
+    std::shared_ptr<GPipelineVLK> hgPipelineVLK;
+
 
 private:
     GDeviceVLK &m_device;
