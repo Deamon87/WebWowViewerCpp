@@ -58,8 +58,6 @@ private:
 
 
 //Vulkan specific
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
     std::vector<VkDescriptorSet> descriptorSets;
     std::vector<bool> descriptorSetsUpdated;
 
@@ -69,9 +67,7 @@ private:
 private:
     GDeviceVLK &m_device;
 
-    void createPipeline(GShaderPermutationVLK *shaderVLK,
-                        const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
-                        const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);
+    void createDescriptorSets(GShaderPermutationVLK *shaderVLK);
 
     void updateDescriptor();
 };

@@ -5,7 +5,7 @@
 #include "GM2MeshVLK.h"
 
 GM2MeshVLK::GM2MeshVLK(IDevice &device, const gMeshTemplate &meshTemplate) : GMeshVLK(device, meshTemplate){
-    m_meshType = MeshType::eM2Mesh;
+//    m_meshType = MeshType::eM2Mesh;
 }
 
 void GM2MeshVLK::setM2Object(void *m2Object) {

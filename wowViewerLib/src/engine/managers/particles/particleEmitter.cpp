@@ -218,15 +218,15 @@ void ParticleEmitter::createMesh() {
 
 
         uint8_t blendMode = m_data->old.blendingType;
-
+        meshTemplate.meshType = MeshType::eParticleMesh;
         meshTemplate.depthWrite = blendMode <= 1;
         meshTemplate.depthCulling = true;
         meshTemplate.backFaceCulling = false;
 
-        if (blendMode == 4)
-            blendMode = 3;
+//        if (blendMode == 4)
+//            blendMode = 3;
 
-    meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[blendMode];
+        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[blendMode];
 //        meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);//M2BlendingModeToEGxBlendEnum1[blendMode];
 
         meshTemplate.start = 0;
@@ -275,6 +275,7 @@ void ParticleEmitter::createMesh() {
         meshTemplate.fragmentBuffers[2]->save(true);
 
         frame[i].m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
+
     }
 }
 

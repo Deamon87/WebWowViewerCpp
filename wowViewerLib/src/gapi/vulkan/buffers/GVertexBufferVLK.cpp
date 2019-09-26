@@ -29,6 +29,17 @@ static int vbo_uploaded = 0;
 void GVertexBufferVLK::uploadData(void *data, int length) {
     if (!m_dataUploaded || length > m_size) {
         //TODO: free previous memory
+        if (m_dataUploaded) {
+            auto *l_device = &m_device;
+            auto &l_stagingVertexBuffer = stagingVertexBuffer;
+            auto &l_stagingVertexBufferAlloc = stagingVertexBufferAlloc;
+
+            m_device.addDeallocationRecord(
+                [l_device, l_stagingVertexBuffer, l_stagingVertexBufferAlloc]() {
+                    vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingVertexBuffer, l_stagingVertexBufferAlloc);
+                }
+            );
+        }
 
         //Create new buffer for VBO
         VkBufferCreateInfo vbInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -60,6 +71,7 @@ void GVertexBufferVLK::uploadData(void *data, int length) {
         vbCopyRegion.size = vbInfo.size;
         vkCmdCopyBuffer(m_device.getUploadCommandBuffer(), stagingVertexBuffer, g_hVertexBuffer, 1, &vbCopyRegion);
 
+        m_size = vbInfo.size;
         m_dataUploaded = true;
     } else {
         memcpy(stagingVertexBufferAllocInfo.pMappedData, data, length);

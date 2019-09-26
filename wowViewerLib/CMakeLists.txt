@@ -346,6 +346,7 @@ set(VULKAN_IMPLEMENTATION
         src/gapi/vulkan/shaders/GAdtShaderPermutationVLK.cpp
         src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
         src/gapi/vulkan/shaders/GM2ParticleShaderPermutationVLK.cpp
+        src/gapi/vulkan/shaders/GM2RibbonShaderPermutationVLK.cpp
         src/gapi/vulkan/shaders/GWMOWaterShaderVLK.cpp
         src/gapi/vulkan/shaders/GWMOShaderPermutationVLK.cpp
         src/gapi/vulkan/meshes/GM2MeshVLK.cpp
@@ -354,7 +355,7 @@ set(VULKAN_IMPLEMENTATION
         src/gapi/vulkan/textures/GBlpTextureVLK.cpp
         src/gapi/vulkan/buffers/GUniformBufferVLK.cpp
         src/gapi/vulkan/buffers/GVertexBufferVLK.cpp
-        src/gapi/vulkan/buffers/GIndexBufferVLK.cpp)
+        src/gapi/vulkan/buffers/GIndexBufferVLK.cpp src/gapi/vulkan/GPipelineVLK.cpp src/gapi/vulkan/GPipelineVLK.h)
 include_directories(${Vulkan_INCLUDE_DIR})
 
 

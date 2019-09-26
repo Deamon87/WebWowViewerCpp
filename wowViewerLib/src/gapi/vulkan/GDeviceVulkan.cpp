@@ -25,6 +25,7 @@
 #include "shaders/GAdtShaderPermutationVLK.h"
 #include "shaders/GWMOShaderPermutationVLK.h"
 #include "shaders/GWMOWaterShaderVLK.h"
+#include "shaders/GM2RibbonShaderPermutationVLK.h"
 
 const int WIDTH = 1024;
 const int HEIGHT = 768;
@@ -868,6 +869,12 @@ void GDeviceVLK::endUpdateForNextFrame() {
     if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
         std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
     }
+
+    while ((!listOfDeallocators.empty())&&(listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
+        listOfDeallocators.front().callback();
+
+        listOfDeallocators.pop_front();
+    }
 }
 
 void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
@@ -943,6 +950,10 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         sharedPtr->compileShader("","");
     } else if (shaderName == "m2ParticleShader") {
         IShaderPermutation *iPremutation = new GM2ParticleShaderPermutationVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+    } else if (shaderName == "ribbonShader") {
+        IShaderPermutation *iPremutation = new GM2RibbonShaderPermutationVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
     } else if (shaderName == "wmoShader"){
@@ -1040,6 +1051,7 @@ HGMesh GDeviceVLK::createMesh(gMeshTemplate &meshTemplate) {
 HGM2Mesh GDeviceVLK::createM2Mesh(gMeshTemplate &meshTemplate) {
     std::shared_ptr<GM2MeshVLK> h_mesh;
     h_mesh.reset(new GM2MeshVLK(*this, meshTemplate));
+    h_mesh->m_meshType = MeshType::eM2Mesh;
 
     return h_mesh;
 }

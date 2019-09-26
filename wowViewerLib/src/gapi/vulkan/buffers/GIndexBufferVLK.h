@@ -33,6 +33,7 @@ private:
 
     VkBuffer stagingIndexBuffer = VK_NULL_HANDLE;
     VmaAllocation stagingIndexBufferAlloc = VK_NULL_HANDLE;
+    VmaAllocationInfo stagingIndexBufferAllocInfo;
 
 private:
     size_t m_size = 0;

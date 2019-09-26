@@ -85,11 +85,11 @@ void main() {
 //    vec4 tex2 = vec4(0,0,0,0);
 //    vec4 tex3 = vec4(0,0,0,0);
 
-//    if (UseLitColor_EnableAlpha_PixelShader.y == 1) {
-//        if ((tex.a - 0.501960814) < 0.0) {
-//            discard;
-//        }
-//    }
+    if (UseLitColor_EnableAlpha_PixelShader.y == 1) {
+        if ((tex.a - 0.501960814) < 0.0) {
+            discard;
+        }
+    }
 
     int uPixelShader = UseLitColor_EnableAlpha_PixelShader.z;
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
@@ -220,8 +220,8 @@ void main() {
 
     //finalColor.rgb *= 4.0;
 
-//    if(finalColor.a < FogColor_AlphaTest.w)
-//        discard;
+    if(finalColor.a < FogColor_AlphaTest.w)
+        discard;
 
     vec3 fogColor = FogColor_AlphaTest.xyz;
     float fog_start = uSunDir_FogStart.w;

@@ -19,4 +19,5 @@ void main() {
     vColor = aColor;
     vTexcoord0 = aTexcoord0;
     gl_Position = uPMatrix * uLookAtMat * aPositionVec4;
+    gl_Position.y = -gl_Position.y;
 }

@@ -149,6 +149,18 @@ public:
         return indices;
     }
 
+    struct DeallocationRecord {
+        int frameNumberToDoAt;
+        std::function<void()> callback;
+    };
+
+    void addDeallocationRecord(std::function<void()> callback) {
+        DeallocationRecord dr;
+        dr.frameNumberToDoAt = m_frameNumber+4;
+        dr.callback = callback;
+        listOfDeallocators.push_back(dr);
+    };
+
 private:
     void drawMesh(HGMesh &hmesh);
 
@@ -225,10 +237,6 @@ protected:
 
     VkCommandPool commandPool;
     VkCommandPool uploadCommandPool;
-
-    VkImage colorImage;
-    VkDeviceMemory colorImageMemory;
-    VkImageView colorImageView;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -321,9 +329,13 @@ protected:
 
     std::vector<char> aggregationBufferForUpload;
 
+    std::list<DeallocationRecord> listOfDeallocators;
+
     std::unordered_map<std::string, std::string> shaderCache;
 
     int uniformBuffersCreated = 0;
 };
+
+
 
 #endif //AWEBWOWVIEWERCPP_GDEVICEVULKAN_H
