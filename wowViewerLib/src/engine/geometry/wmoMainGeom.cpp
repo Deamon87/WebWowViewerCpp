@@ -167,10 +167,10 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
 
 
 
-void WmoMainGeom::process(const std::vector<unsigned char> &wmoMainFile, const std::string &fileName) {
+void WmoMainGeom::process(HFileContent wmoMainFile, const std::string &fileName) {
     m_wmoMainFile = wmoMainFile;
 
-    CChunkFileReader reader(m_wmoMainFile);
+    CChunkFileReader reader(*m_wmoMainFile.get());
     reader.processFile(*this, &WmoMainGeom::wmoMainTable);
 
     m_loaded = true;

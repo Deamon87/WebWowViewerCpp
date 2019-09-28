@@ -37,19 +37,21 @@ chunkDef<AnimFile> AnimFile::animFileTable = {
     }
 };
 
-void AnimFile::process(const std::vector<unsigned char> &animFile, const std::string &fileName) {
-    m_animFile = std::vector<uint8_t>(animFile);
+void AnimFile::process(HFileContent animFile, const std::string &fileName) {
+    m_animFile = animFile;
+    auto &fileVec = *m_animFile.get();
     if (
-        m_animFile[0] == 'A' &&
-        m_animFile[1] == 'F' &&
-        m_animFile[2] == 'M' &&
-        m_animFile[3] == '2'
+
+        fileVec[0] == 'A' &&
+        fileVec[1] == 'F' &&
+        fileVec[2] == 'M' &&
+        fileVec[3] == '2'
     ) {
-        CChunkFileReader reader(m_animFile);
+        CChunkFileReader reader(fileVec);
         reader.processFile(*this, &AnimFile::animFileTable);
     } else {
-        m_animFileDataBlob = (uint8_t *) &m_animFile[0];
-        m_animFileDataBlob_len = m_animFile.size();
+        m_animFileDataBlob = (uint8_t *) &fileVec[0];
+        m_animFileDataBlob_len = m_animFile->size();
     }
 
     m_loaded = true;

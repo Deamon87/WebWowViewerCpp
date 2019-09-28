@@ -8,6 +8,9 @@
 #include <iterator>
 #include <iomanip>
 #include "HttpRequestProcessor.h"
+#include "../../wowViewerLib/src/include/sharedFile.h"
+
+static const std::string cacheDirectory = "./../cache/";
 
 template< typename T >
 std::string int_to_hex( T i )
@@ -66,7 +69,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     }
 
     size_t hash = std::hash<std::string>{}(fileName);
-    std::string inputFileName = "./cache/" + int_to_hex(hash);
+    std::string inputFileName = cacheDirectory + int_to_hex(hash);
 
     std::ifstream cache_file(inputFileName, std::ios::in |std::ios::binary);
     if (cache_file.good()) {
@@ -79,13 +82,18 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         fileSize = cache_file.tellg();
         cache_file.seekg(0, std::ios::beg);
 
-        std::vector<unsigned char> vec;
-        vec.reserve(fileSize);
+
+        HFileContent vec = std::make_shared<FileContent>(FileContent(std::istreambuf_iterator<char>{cache_file}, {}));
+//        vec.reserve(fileSize);
 
         // read the data:
-        vec.insert(vec.begin(),
-                   std::istream_iterator<unsigned char>(cache_file),
-                   std::istream_iterator<unsigned char>());
+//        vec.insert(vec.begin(),
+//                   std::istream_iterator<unsigned char>(cache_file),
+//                   std::istream_iterator<unsigned char>());
+
+//        std::copy(std::istream_iterator<unsigned char>(cache_file),
+//                  std::istream_iterator<unsigned char>(),
+//                  std::back_inserter(vec));
 
         provideResult(fileName, vec, holderType);
 
@@ -94,13 +102,13 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
 //
     HttpFile * httpFile = new HttpFile(fullUrl.c_str());
     httpFile->setCallback(
-            [=](std::vector<unsigned char> * fileContent) -> void {
+            [fileName, this, holderType, httpFile](HFileContent fileContent) -> void {
                 std::string newFileName = fileName;
-                provideResult(newFileName, *fileContent, holderType);
+                provideResult(newFileName, fileContent, holderType);
 
                 //Write to cache
                 size_t hash = std::hash<std::string>{}(newFileName);
-                std::string outputFileName = "./../cache/" + int_to_hex(hash);
+                std::string outputFileName = cacheDirectory + int_to_hex(hash);
                 std::ofstream output_file(outputFileName, std::ios::out | std::ios::binary);
                 std::ostream_iterator<unsigned char> output_iterator(output_file);
                 std::copy(fileContent->begin(), fileContent->end(), output_iterator);

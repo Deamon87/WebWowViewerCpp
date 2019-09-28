@@ -21,7 +21,7 @@
 
 struct FileCacheRecord {
     std::string fileName;
-    std::vector<unsigned char> fileContent;
+    HFileContent fileContent;
 };
 
 template <typename T>
@@ -65,19 +65,19 @@ public:
         }
         processCacheLock.unlock();
     }
-    void provideFile(std::string &fileName, uint8_t* fileContentPtr, int fileSize) {
+    void provideFile(std::string &fileName, HFileContent fileContent) {
         trim(fileName);
 //        std::cout << "called provideFile with fileName = " << fileName << std::endl;
 //        std::cout << "m_cache.size() == " << m_cache.size() << " " << __PRETTY_FUNCTION__ << std::endl;
 
 //        std::cout << "filename:" << fileName << " hex: " << string_to_hex(fileName) << std::endl;
 //        std::cout << "first in storage:" << m_cache.begin()->first << " hex: " << string_to_hex(m_cache.begin()->first) << std::endl << std::flush;
-//        provideFileLock.lock();
+        provideFileLock.lock();
         auto it = m_cache.find(fileName);
         if (it != m_cache.end()) {
-            m_objectsToBeProcessed.push_front({fileName, std::vector<unsigned char>(fileContentPtr, fileContentPtr+fileSize)});
+            m_objectsToBeProcessed.push_front({fileName, fileContent});
         }
-//        provideFileLock.unlock();
+        provideFileLock.unlock();
     }
 
     /*

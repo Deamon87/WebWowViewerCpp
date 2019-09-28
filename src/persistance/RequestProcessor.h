@@ -6,6 +6,7 @@
 #define WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 
 #include "../../wowViewerLib/src/include/wowScene.h"
+#include "../../wowViewerLib/src/include/sharedFile.h"
 #include <thread>
 #include <list>
 #include <vector>
@@ -35,7 +36,7 @@ private:
     struct ResultStruct {
         std::string fileName;
         CacheHolderType holderType;
-        std::vector<unsigned char> buffer;
+        HFileContent buffer;
     };
 
     std::thread *loaderThread;
@@ -62,7 +63,7 @@ public:
 protected:
     void addRequest (std::string &fileName, CacheHolderType holderType);
 
-    void provideResult(std::string &fileName, std::vector<unsigned char> &content, CacheHolderType holderType);
+    void provideResult(std::string &fileName, HFileContent content, CacheHolderType holderType);
 
 };
 

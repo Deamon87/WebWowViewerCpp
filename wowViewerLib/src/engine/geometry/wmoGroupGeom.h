@@ -16,7 +16,7 @@ public:
     WmoGroupGeom(std::string fileName){};
     WmoGroupGeom(int fileDataId){};
 
-    void process(const std::vector<unsigned char> &wmoGroupFile, const std::string &fileName);
+    void process(HFileContent wmoGroupFile, const std::string &fileName);
 
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 
@@ -44,7 +44,7 @@ private:
     HGVertexBuffer getVBO(IDevice &device);
     HGIndexBuffer getIBO(IDevice &device);
 public:
-    std::vector<uint8_t> m_wmoGroupFile;
+    HFileContent m_wmoGroupFile;
 
     SMOHeader *mohd = nullptr;
 

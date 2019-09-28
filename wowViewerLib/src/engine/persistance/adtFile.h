@@ -35,7 +35,7 @@ public:
     AdtFile(int fileDataId){};
 
     void processTexture(const MPHDFlags &wdtObjFlags, int i, std::vector<uint8_t> &currentLayer);
-    void process(const std::vector<unsigned char> &adtFile, const std::string &fileName);
+    void process(HFileContent adtFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
     void setIsMain(bool isMain) { m_mainAdt = isMain; };
 public:
@@ -113,7 +113,7 @@ private:
 
     void createTriangleStrip();
     static chunkDef<AdtFile> adtFileTable;
-    std::vector<unsigned char> m_adtFile;
+    HFileContent m_adtFile;
 };
 
 #endif //WOWVIEWERLIB_ADTFILE_H

@@ -7,6 +7,7 @@
 
 #include "helper/ChunkFileReader.h"
 #include "header/skelFileHeader.h"
+#include "../../include/sharedFile.h"
 #include <vector>
 
 class SkelFile {
@@ -14,7 +15,7 @@ public:
     SkelFile (std::string fileName){};
     SkelFile(int fileDataId){};
 
-    void process(const std::vector<unsigned char> &animFile, const std::string &fileName);
+    void process(HFileContent animFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 
     void setPostLoad(std::function<void ()> postLoadFunction) {
@@ -39,7 +40,7 @@ public:
 private:
     bool m_loaded = false;
 
-    std::vector<unsigned char> m_skelFile;
+    HFileContent m_skelFile;
     static chunkDef<SkelFile> skelFileTable;
 
     std::function<void ()> m_postLoadFunction = nullptr;

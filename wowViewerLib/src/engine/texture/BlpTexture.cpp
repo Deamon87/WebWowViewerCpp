@@ -120,10 +120,10 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
     }
 }
 
-void BlpTexture::process(const std::vector<unsigned char> &blpFile, const std::string &fileName) {
+void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
-    BlpFile *pBlpFile = (BlpFile *) &blpFile[0];
+    BlpFile *pBlpFile = (BlpFile *) &blpFile.get()[0];
     if (pBlpFile->fileIdent != '2PLB') {
         std::cout << pBlpFile->fileIdent;
     }

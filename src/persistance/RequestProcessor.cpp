@@ -55,7 +55,7 @@ void RequestProcessor::processRequests (bool calledFromThread) {
 
 }
 
-void RequestProcessor::provideResult(std::string &fileName, std::vector<unsigned char> &content, CacheHolderType holderType) {
+void RequestProcessor::provideResult(std::string &fileName, HFileContent content, CacheHolderType holderType) {
     std::unique_lock<std::mutex> lck (resultMtx,std::defer_lock);
 
     ResultStruct resultStructObj;
@@ -81,8 +81,7 @@ void RequestProcessor::processResults(int limit) {
         m_fileRequester->provideFile(
             it->holderType,
             it->fileName.c_str(),
-            &it->buffer[0],
-            it->buffer.size()
+            it->buffer
         );
 
         if (m_threaded) lck.lock();

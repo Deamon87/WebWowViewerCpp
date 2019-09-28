@@ -16,7 +16,7 @@ public:
     WdlFile(std::string fileName){};
     WdlFile(int fileDataId){};
 
-    void process(const std::vector<unsigned char> &wdlFile, const std::string &fileName);
+    void process(HFileContent wdlFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     SMDoodadDef * doodadDefObj = nullptr;
@@ -29,7 +29,7 @@ public:
 private:
     bool m_loaded = false;
 
-    std::vector<unsigned char> m_wdlFile;
+    HFileContent m_wdlFile;
     static chunkDef<WdlFile> wdlFileTable;
 };
 

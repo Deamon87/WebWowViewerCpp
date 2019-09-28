@@ -201,10 +201,10 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
     }
 };
 
-void WmoGroupGeom::process(const std::vector<unsigned char> &wmoGroupFile, const std::string &fileName) {
+void WmoGroupGeom::process(HFileContent wmoGroupFile, const std::string &fileName) {
     m_wmoGroupFile = wmoGroupFile;
 
-    CChunkFileReader reader(m_wmoGroupFile);
+    CChunkFileReader reader(*m_wmoGroupFile.get());
     reader.processFile(*this, &WmoGroupGeom::wmoGroupTable);
 
     fixColorVertexAlpha(mohd);

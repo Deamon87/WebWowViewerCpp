@@ -55,9 +55,9 @@ chunkDef<SkelFile> SkelFile::skelFileTable = {
     }
 };
 
-void SkelFile::process(const std::vector<unsigned char> &animFile, const std::string &fileName) {
-    m_skelFile = std::vector<uint8_t>(animFile);
-    CChunkFileReader reader(m_skelFile);
+void SkelFile::process(HFileContent skelFile, const std::string &fileName) {
+    m_skelFile = skelFile;
+    CChunkFileReader reader(*m_skelFile.get());
     reader.processFile(*this, &SkelFile::skelFileTable);
 
     if (this->m_ska1 != nullptr) {

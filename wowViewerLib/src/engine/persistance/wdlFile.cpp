@@ -32,9 +32,9 @@ chunkDef<WdlFile> WdlFile::wdlFileTable = {
     }
 };
 
-void WdlFile::process(const std::vector<unsigned char> &wdlFile, const std::string &fileName) {
-    m_wdlFile = std::vector<uint8_t>(wdlFile);
-    CChunkFileReader reader(m_wdlFile);
+void WdlFile::process(HFileContent wdlFile, const std::string &fileName) {
+    m_wdlFile = wdlFile;
+    CChunkFileReader reader(*m_wdlFile.get());
     reader.processFile(*this, &WdlFile::wdlFileTable);
 
     m_loaded = true;

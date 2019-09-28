@@ -58,9 +58,9 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
     }
 };
 
-void WdtFile::process(const std::vector<unsigned char> &wdtFile, const std::string &fileName) {
-    m_wdtFile = std::vector<uint8_t>(wdtFile);
-    CChunkFileReader reader(m_wdtFile);
+void WdtFile::process(HFileContent wdtFile, const std::string &fileName) {
+    m_wdtFile = wdtFile;
+    CChunkFileReader reader(*m_wdtFile.get());
     reader.processFile(*this, &WdtFile::wdtFileTable);
 
     m_loaded = true;

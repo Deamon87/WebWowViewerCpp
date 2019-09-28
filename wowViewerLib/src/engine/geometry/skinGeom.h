@@ -16,7 +16,7 @@ public:
     SkinGeom(std::string fileName){};
     SkinGeom(int fileDataId){};
 
-    void process(const std::vector<unsigned char> &skinFile, const std::string &fileName);
+    void process(HFileContent skinFile, const std::string &fileName);
     HGIndexBuffer getIBO(IDevice &device);
 
     bool isLoaded() { return m_loaded; };
@@ -24,7 +24,7 @@ public:
 
     void fixData(M2Data *m2File);
 private:
-    std::vector<uint8_t> m2Skin;
+    HFileContent m2Skin;
     M2SkinProfile *m_skinData = nullptr;
 
     HGIndexBuffer indexVbo = HGIndexBuffer(nullptr);

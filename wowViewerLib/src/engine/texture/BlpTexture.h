@@ -33,7 +33,7 @@ public:
     BlpTexture(int fileDataId){};
 
     std::string getTextureName() { return m_textureName; };
-    void process(const std::vector<unsigned char> &blpFile, const std::string &fileName);
+    void process(HFileContent blpFile, const std::string &fileName);
     bool getIsLoaded() { return m_isLoaded; };
     const MipmapsVector& getMipmapsVector() {
         return m_mipmaps;

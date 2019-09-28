@@ -12,6 +12,7 @@ typedef double animTime_t;
 #include <string>
 #include "config.h"
 #include "controllable.h"
+#include "sharedFile.h"
 
 
 enum class CacheHolderType {
@@ -37,7 +38,7 @@ public:
 class IFileRequester {
 public:
     virtual void setFileRequestProcessor(IFileRequest * requestProcessor) = 0;
-    virtual void provideFile(CacheHolderType holderType, const char* fileName, unsigned char* data, int fileLength) = 0;
+    virtual void provideFile(CacheHolderType holderType, const char* fileName, HFileContent data) = 0;
     virtual void rejectFile(CacheHolderType holderType, const char* fileName) = 0;
 };
 

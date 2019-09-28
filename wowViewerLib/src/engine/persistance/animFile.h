@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_ANIMFILE_H
 
 #include "helper/ChunkFileReader.h"
+#include "../../include/sharedFile.h"
 #include <vector>
 
 class AnimFile {
@@ -13,7 +14,7 @@ public:
     AnimFile(std::string fileName){};
     AnimFile(int fileDataId){};
 
-    void process(const std::vector<unsigned char> &animFile, const std::string &fileName);
+    void process(HFileContent animFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 
     void setPostLoad(std::function<void ()> postLoadFunction) {
@@ -26,7 +27,7 @@ public:
 private:
     bool m_loaded = false;
 
-    std::vector<unsigned char> m_animFile;
+    HFileContent m_animFile;
     static chunkDef<AnimFile> animFileTable;
 
     std::function<void ()> m_postLoadFunction = nullptr;

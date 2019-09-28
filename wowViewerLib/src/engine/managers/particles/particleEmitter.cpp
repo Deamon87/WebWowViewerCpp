@@ -484,7 +484,7 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
     if (this->particleType >= 2) {
         for (int i = 0; i < 2; i++) {
             // s = frac(s + v * dt)
-            float val = (float) (p.texPos[i].x + delta * p.texVel[i].x);
+             float val = (float) (p.texPos[i].x + delta * p.texVel[i].x);
             p.texPos[i].x = (float) (val - floorf(val));
 
             val = (float) (p.texPos[i].y + delta * p.texVel[i].y);

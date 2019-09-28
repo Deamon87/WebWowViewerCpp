@@ -15,13 +15,13 @@ public:
     WmoMainGeom(std::string fileName){};
     WmoMainGeom(int fileDataId){};
 
-    void process(const std::vector<unsigned char> &wmoMainFile, const std::string &fileName);
+    void process(HFileContent wmoMainFile, const std::string &fileName);
     bool getIsLoaded();
 private:
     static chunkDef<WmoMainGeom> wmoMainTable;
     bool m_loaded = false;
 public:
-    std::vector<uint8_t> m_wmoMainFile;
+    HFileContent m_wmoMainFile;
 
     SMOHeader *header;
 

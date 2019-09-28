@@ -7,10 +7,10 @@
 #include "../../gapi/interface/IDevice.h"
 #include "../../include/wowScene.h"
 
-void SkinGeom::process(const std::vector<unsigned char> &skinFile, const std::string &fileName) {
+void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
     this->m2Skin = skinFile;
 
-    M2SkinProfile *skinHeader = (M2SkinProfile *) &this->m2Skin[0];
+    M2SkinProfile *skinHeader = (M2SkinProfile *) this->m2Skin.get();
     this->m_skinData = skinHeader;
 
     //Step 1: Init all m2Arrays

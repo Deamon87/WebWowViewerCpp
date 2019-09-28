@@ -11,7 +11,7 @@ public:
     WdtFile(std::string fileName){};
     WdtFile(int fileDataId){};
 
-    void process(const std::vector<unsigned char> &wdtFile, const std::string &fileName);
+    void process(HFileContent wdtFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     MPHD *mphd;
@@ -25,7 +25,7 @@ public:
 private:
     bool m_loaded = false;
 
-    std::vector<unsigned char> m_wdtFile;
+    HFileContent m_wdtFile;
     static chunkDef<WdtFile> wdtFileTable;
 };
 

@@ -29,7 +29,7 @@ public:
         m_modelFileId = fileDataId;
     };
 
-    void process(const std::vector<unsigned char> &m2File, const std::string &fileName);
+    void process(HFileContent m2File, const std::string &fileName);
     HGVertexBuffer getVBO(IDevice &device);
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
 
@@ -48,7 +48,7 @@ public:
     M2Array<Exp2Record> *exp2Records = nullptr;
     int m_skid = -1;
 private:
-    std::vector<uint8_t> m2File;
+    HFileContent m2File;
 
     std::string m_modelName;
     std::string m_nameTemplate = "";

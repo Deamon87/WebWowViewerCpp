@@ -252,20 +252,20 @@ void initM2ParticlePartTracks(M2Data *m2Header) {
     }
 }
 
-void M2Geom::process(const std::vector<unsigned char> &m2File, const std::string &fileName) {
+void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     this->m2File = m2File;
 
+    auto &m2FileData = *m2File.get();
     if (
-        m2File[0] == 'M' &&
-        m2File[1] == 'D' &&
-        m2File[2] == '2' &&
-        m2File[3] == '1'
-
+        m2FileData[0] == 'M' &&
+        m2FileData[1] == 'D' &&
+        m2FileData[2] == '2' &&
+        m2FileData[3] == '1'
             ) {
-        CChunkFileReader reader(this->m2File);
+        CChunkFileReader reader(*this->m2File.get());
         reader.processFile(*this, &M2Geom::m2FileTable);
     } else {
-        M2Data *m2Header = (M2Data *) &this->m2File[0];
+        M2Data *m2Header = (M2Data *) this->m2File.get();
         this->m_m2Data = m2Header;
     }
     M2Data *m2Header = this->m_m2Data;

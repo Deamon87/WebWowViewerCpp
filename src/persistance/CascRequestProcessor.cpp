@@ -15,18 +15,18 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     std::replace( fileNameFixed.begin(), fileNameFixed.end(), '/', '\\');
 
     HANDLE fileHandle;
-    std::vector<unsigned char> fileContent;
+    HFileContent fileContent;
     bool fileOpened = false;
     if (CascOpenFile(m_storage, fileNameFixed.c_str(), 0,  0, &fileHandle)) {
         DWORD fileSize1 = CascGetFileSize(fileHandle, 0);
         fileOpened = true;
-        fileContent = std::vector<unsigned char> (fileSize1+1);
+        fileContent = std::make_shared<FileContent>(FileContent(fileSize1+1));
 
         DWORD totalBytesRead = 0;
         while (true) {
             DWORD dwBytesRead;
 
-            CascReadFile(fileHandle, &fileContent[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
+            CascReadFile(fileHandle, &(*fileContent.get())[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
 
             if(dwBytesRead == 0) {
                 break;
