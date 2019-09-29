@@ -42,46 +42,7 @@ public:
     void draw(animTime_t deltaTime) override;
     void setScreenSize(int canvWidth, int canvHeight) override;
 
-    virtual void provideFile(CacheHolderType holderType, const char* fileName, HFileContent data) override {
-        std::string s_fileName(fileName);
-
-        switch (holderType) {
-            case CacheHolderType::CACHE_M2:
-                m2GeomCache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_SKIN:
-                skinGeomCache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_MAIN_WMO:
-                wmoMainCache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_GROUP_WMO:
-                wmoGeomCache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_ADT:
-                adtObjectCache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_WDT:
-                wdtCache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_WDL:
-                wdlCache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_BLP:
-                textureCache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_DB2:
-                db2Cache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_ANIM:
-                animCache.provideFile(s_fileName, data);
-                break;
-            case CacheHolderType::CACHE_SKEL:
-                skelCache.provideFile(s_fileName, data);
-                break;
-
-       }
-    };
+    void provideFile(CacheHolderType holderType, const char* fileName, const HFileContent &data) override;
     virtual void rejectFile(CacheHolderType holderType, const char* fileName) override {
         std::string s_fileName(fileName);
 

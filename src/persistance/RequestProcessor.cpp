@@ -16,6 +16,7 @@ void RequestProcessor::addRequest (std::string &fileName, CacheHolderType holder
     // critical section (exclusive access to std::cout signaled by locking lck):
     lck.lock();
 
+
     m_requestQueue.push_front({fileName, holderType});
 
     lck.unlock();
@@ -64,7 +65,7 @@ void RequestProcessor::provideResult(std::string &fileName, HFileContent content
     resultStructObj.holderType = holderType;
 
     if (m_threaded) lck.lock();
-    m_resultQueue.push_front(resultStructObj);
+    m_resultQueue.push_back(resultStructObj);
     if (m_threaded) lck.unlock();
 }
 
@@ -75,17 +76,20 @@ void RequestProcessor::processResults(int limit) {
         if (m_resultQueue.empty()) break;
 
         if (m_threaded) lck.lock();
-        auto it = m_resultQueue.begin();
+        auto it = &m_resultQueue.front();
         if (m_threaded) lck.unlock();
 
+        std::cout << "it->buffer.use_count() = " << it->buffer.use_count() << std::endl << std::flush;
+
+        HFileContent bufferCpy = it->buffer;
         m_fileRequester->provideFile(
             it->holderType,
             it->fileName.c_str(),
-            it->buffer
+            bufferCpy
         );
 
         if (m_threaded) lck.lock();
-        m_resultQueue.erase(it);
+        m_resultQueue.pop_front();
         if (m_threaded) lck.unlock();
     }
 }

@@ -84,6 +84,14 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
 
 
         HFileContent vec = std::make_shared<FileContent>(FileContent(std::istreambuf_iterator<char>{cache_file}, {}));
+//        HFileContent vec = HFileContent(new FileContent());
+//        vec->reserve(fileSize);
+//
+//        // read the data:
+//        std::copy(std::istream_iterator<unsigned char>(cache_file),
+//                  std::istream_iterator<unsigned char>(),
+//                  std::back_inserter(*vec.get()));
+
 //        vec.reserve(fileSize);
 
         // read the data:

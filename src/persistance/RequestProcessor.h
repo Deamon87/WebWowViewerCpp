@@ -28,15 +28,23 @@ public:
     }
 
 private:
-    struct RequestStruct {
+    class RequestStruct {
+    public:
         std::string fileName;
         CacheHolderType holderType;
     };
 
-    struct ResultStruct {
+    class ResultStruct {
+    public:
+        ResultStruct(){};
+        ResultStruct (const ResultStruct &old_obj) {
+            fileName = old_obj.fileName;
+            holderType = old_obj.holderType;
+            buffer = old_obj.buffer;
+        }
         std::string fileName;
         CacheHolderType holderType;
-        HFileContent buffer;
+        HFileContent buffer = nullptr;
     };
 
     std::thread *loaderThread;

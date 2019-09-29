@@ -19,7 +19,6 @@ public:
         this->m_httpUrl = httpUrl;
         this->written = 0;
 //        this->m_callback = nullptr;
-        this->m_fileBuffer;
     }
 
     ~HttpFile(){

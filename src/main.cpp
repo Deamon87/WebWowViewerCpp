@@ -244,7 +244,7 @@ void beforeCrash(void);
 static const bool SET_TERMINATE = std::set_terminate(beforeCrash);
 
 void beforeCrash() {
-    //__asm("int3");
+    __asm("int3");
 }
 
 static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
@@ -375,8 +375,23 @@ int main(){
 
     glfwInit();
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+    //FOR OGL
+
+    if (true)
+    {
+        glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
+
+    } else {
+        //For Vulkan
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    }
 
     auto window = glfwCreateWindow(1024, 768, "Vulkan", nullptr, nullptr);
 
@@ -396,9 +411,13 @@ int main(){
         extensionCnt = count;
     };
 
+    //For OGL
+    {
+        glfwMakeContextCurrent(window);
+    }
 
     //Create device
-    IDevice * device = IDeviceFactory::createDevice("vulkan", &callback);
+    IDevice * device = IDeviceFactory::createDevice("ogl3", &callback);
     WoWScene *scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);
@@ -440,6 +459,8 @@ try {
         }
 
         scene->draw((deltaTime*(1000.0f))); //miliseconds
+
+        glfwSwapBuffers(window);
     }
 } catch(const std::exception &e){
     std::cerr << e.what() << std::endl;

@@ -38,7 +38,7 @@ public:
 class IFileRequester {
 public:
     virtual void setFileRequestProcessor(IFileRequest * requestProcessor) = 0;
-    virtual void provideFile(CacheHolderType holderType, const char* fileName, HFileContent data) = 0;
+    virtual void provideFile(CacheHolderType holderType, const char* fileName, const HFileContent &data) = 0;
     virtual void rejectFile(CacheHolderType holderType, const char* fileName) = 0;
 };
 

@@ -95,6 +95,10 @@ public:
     std::string loadShader(std::string fileName, bool common) override;
 
     virtual void clearScreen() override;
+    void setClearScreenColor(float r, float g, float b) override ;
+    void beginFrame() override ;
+    void commitFrame() override ;
+    void setViewPortDimensions(float x, float y, float width, float height) override;
 
 private:
     void drawMesh(HGMesh &hmesh);
@@ -149,6 +153,8 @@ protected:
     GUniformBufferGL33 * m_fragmentUniformBuffer[3] = {nullptr};
 
     HGTexture m_blackPixelTexture;
+
+    float clearColor[3] = {0,0,0};
 
 public:
     struct M2ShaderCacheRecordHasher {

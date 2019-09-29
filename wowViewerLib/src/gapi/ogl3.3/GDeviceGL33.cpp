@@ -873,4 +873,22 @@ void GDeviceGL33::clearScreen() {
 
 }
 
+void GDeviceGL33::setClearScreenColor(float r, float g, float b) {
+    clearColor[0] = r;
+    clearColor[1] = g;
+    clearColor[2] = b;
+}
+
+void GDeviceGL33::beginFrame() {
+    this->clearScreen();
+}
+
+void GDeviceGL33::commitFrame() {
+
+}
+
+void GDeviceGL33::setViewPortDimensions(float x, float y, float width, float height) {
+    glViewport(x,y,width,height);
+}
+
 

@@ -10,7 +10,7 @@
 void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
     this->m2Skin = skinFile;
 
-    M2SkinProfile *skinHeader = (M2SkinProfile *) this->m2Skin.get();
+    M2SkinProfile *skinHeader = (M2SkinProfile *) &(*this->m2Skin.get())[0];
     this->m_skinData = skinHeader;
 
     //Step 1: Init all m2Arrays
