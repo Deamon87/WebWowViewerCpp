@@ -160,7 +160,6 @@ private:
                 float texStartY, mathfu::vec2 *texPos);
 
     struct {
-        HGIndexBuffer m_indexVBO;
         HGVertexBuffer m_bufferVBO;
 
         HGVertexBufferBindings m_bindings;
@@ -170,6 +169,7 @@ private:
 
     void createMesh();
 
+    static HGIndexBuffer m_indexVBO;
 
     void GetSpin(CParticle2 &p, float &baseSpin, float &deltaSpin) const;
 };

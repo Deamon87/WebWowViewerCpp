@@ -6,7 +6,7 @@
 #define WEBWOWVIEWERCPP_ZIPHTTPREQUESTPROCESSOR_H
 
 
-#include <zip.h>
+//#include <zip.h>
 #include <../../wowViewerLib/src/include/wowScene.h>
 #include <ios>
 #include <fstream>
@@ -31,7 +31,7 @@ public:
         this->loadingFinished(&m_file);
     }
 private:
-    zip_t *zipArchive = nullptr;
+    //zip_t *zipArchive = nullptr;
     std::vector<unsigned char> m_file;
     IFileRequester *m_fileRequester = nullptr;
 

@@ -31,6 +31,7 @@ class gMeshTemplate;
 #include "vk_mem_alloc.h"
 
 #include "../interface/IDevice.h"
+#include <optional>
 
 
 class GDeviceVLK : public IDevice {

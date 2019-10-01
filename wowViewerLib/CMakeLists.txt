@@ -12,8 +12,8 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
  
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize")
 
@@ -92,6 +92,7 @@ endmacro(configure_files)
 
 #Vulkan stuff
 message("GLSL_VALIDATOR_Test = ${GLSL_VALIDATOR_Test}")
+message("SPIRV_OPT_APP = ${SPIRV_OPT_APP}")
 if(NOT GLSL_VALIDATOR_Test)
     message(FATAL_ERROR "GLSL_VALIDATOR_Test is empty. Path to glslvalidator is not set")
 endif()
@@ -106,12 +107,45 @@ macro(configure_filesVLK srcDir destDir)
         if(NOT IS_DIRECTORY ${srcTemplatePath})
             message(STATUS "Configuring file ${templateFile}")
             get_filename_component(FILE_NAME ${srcTemplatePath} NAME)
-            set(SPIRV "${destDir}/${FILE_NAME}.spv")
-            add_custom_command(
-                    OUTPUT ${SPIRV}
-                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                    COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV}
-                    DEPENDS ${srcTemplatePath})
+            set(SPIRV_NonOpt "${destDir}/${FILE_NAME}.non_opt.spv")
+            set(SPIRVOpt "${destDir}/${FILE_NAME}.spv")
+
+            set(SPIRV ${SPIRVOpt})
+            if (NOT SPIRV_OPT_APP)
+                add_custom_command(
+                        OUTPUT ${SPIRV}
+                        COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
+                        COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV}
+                        DEPENDS ${srcTemplatePath})
+            else()
+                add_custom_command(
+                        OUTPUT ${SPIRV_NonOpt}
+                        COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
+                        COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
+                        DEPENDS ${srcTemplatePath})
+
+                add_custom_command(
+                        OUTPUT ${SPIRV}
+                        COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
+                        COMMAND ${SPIRV_OPT_APP} --inline-entry-points-exhaustive
+                        --convert-local-access-chains
+                        --eliminate-local-single-block
+                        --eliminate-local-single-store
+                        --eliminate-insert-extract
+                        --eliminate-dead-code-aggressive
+                        --eliminate-dead-branches
+                        --merge-blocks
+                        --eliminate-local-single-block
+                        --eliminate-local-single-store
+                        --eliminate-local-multi-store
+                        --eliminate-insert-extract
+                        --eliminate-dead-code-aggressive
+                        -o ${SPIRV} ${SPIRV_NonOpt}
+                        DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
+            endif()
+
+
+
 
             list(APPEND SPIRV_BINARY_FILES ${SPIRV})
         endif(NOT IS_DIRECTORY ${srcTemplatePath})
@@ -121,7 +155,7 @@ endmacro(configure_filesVLK)
 
 configure_files(${PROJECT_SOURCE_DIR}/src/glsl/glsl3.3/ ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
 configure_files(${PROJECT_SOURCE_DIR}/src/glsl/common/ ${GLSL_TARGET_FOLDER}/glsl/common/)
-configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv/)
+configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv)
 
 include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
 

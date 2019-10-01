@@ -49,11 +49,15 @@ void GTextureVLK::loadData(int width, int height, void *data) {
 }
 
 void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer) {// Copy data to an optimal tiled image
-// This loads the texture data into a host local buffer that is copied to the optimal tiled image on the device
+    if (m_uploaded) {
+        std::cout << "oops!" << std::endl << std::flush;
+    }
+
+    // This loads the texture data into a host local buffer that is copied to the optimal tiled image on the device
 
     // Create a host-visible staging buffer that contains the raw image data
-// This buffer will be the data source for copying texture data to the optimal tiled image on the device
-///1. Create staging buffer for copy from CPU to GPU
+    // This buffer will be the data source for copying texture data to the optimal tiled image on the device
+    ///1. Create staging buffer for copy from CPU to GPU
     VkBuffer stagingBuffer;
 
     VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};

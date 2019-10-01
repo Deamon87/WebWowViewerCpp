@@ -111,9 +111,9 @@ static GBufferBinding staticM2Bindings[6] = {
 void initEXP2(M2Array<Exp2Record> *exp2Records) {
     exp2Records->initM2Array(exp2Records);
     for (int i = 0; i < exp2Records->size; i++) {
-        Exp2Record *exp2Record = exp2Records->getElement(i);
-        exp2Record->unk3.timestamps.initM2Array(exp2Records);
-        exp2Record->unk3.values.initM2Array(exp2Records);
+        //Exp2Record *exp2Record = exp2Records->getElement(i);
+        //exp2Record->unk3.timestamps.initM2Array(exp2Records);
+        //exp2Record->unk3.values.initM2Array(exp2Records);
     }
 }
 

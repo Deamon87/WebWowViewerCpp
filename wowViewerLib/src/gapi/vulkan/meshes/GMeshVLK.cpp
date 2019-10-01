@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <array>
 #include "GMeshVLK.h"
 #include "../textures/GTextureVLK.h"
 #include "../shaders/GShaderPermutationVLK.h"

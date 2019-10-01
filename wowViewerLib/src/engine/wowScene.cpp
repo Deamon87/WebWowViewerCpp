@@ -313,8 +313,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new Map(this, 571, "Northrend");
 //
 //    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
-//    m_firstCamera.setCameraPos(0, 0, 200); //Stormwind
-//    currentScene = new Map(this, 0, "Azeroth");
+    m_firstCamera.setCameraPos(0, 0, 200); //Stormwind
+    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
 //   m_firstCamera.setCameraPos(-921, 767, 200);
@@ -532,8 +532,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
- currentScene = new WmoScene(this,
-        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
@@ -993,7 +993,7 @@ void WoWSceneImpl::actuallDropCache() {
 }
 
 void WoWSceneImpl::provideFile(CacheHolderType holderType, const char *fileName, const HFileContent &data) {
-    std::cout << "data.use_count() = " << data.use_count() << std::endl << std::flush;
+//    std::cout << "data.use_count() = " << data.use_count() << std::endl << std::flush;
     std::string s_fileName(fileName);
 
     switch (holderType) {

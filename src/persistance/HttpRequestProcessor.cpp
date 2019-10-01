@@ -83,7 +83,13 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         cache_file.seekg(0, std::ios::beg);
 
 
-        HFileContent vec = std::make_shared<FileContent>(FileContent(std::istreambuf_iterator<char>{cache_file}, {}));
+        HFileContent vec = std::make_shared<FileContent>();
+		vec->reserve(fileSize);
+
+		// read the data:
+		vec->insert(vec->begin(),
+			std::istream_iterator<unsigned char>(cache_file),
+			std::istream_iterator<unsigned char>());
 //        HFileContent vec = HFileContent(new FileContent());
 //        vec->reserve(fileSize);
 //
@@ -112,14 +118,28 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     httpFile->setCallback(
             [fileName, this, holderType, httpFile](HFileContent fileContent) -> void {
                 std::string newFileName = fileName;
-                provideResult(newFileName, fileContent, holderType);
 
                 //Write to cache
                 size_t hash = std::hash<std::string>{}(newFileName);
                 std::string outputFileName = cacheDirectory + int_to_hex(hash);
-                std::ofstream output_file(outputFileName, std::ios::out | std::ios::binary);
-                std::ostream_iterator<unsigned char> output_iterator(output_file);
-                std::copy(fileContent->begin(), fileContent->end(), output_iterator);
+
+                std::ofstream FILE(outputFileName, std::ios::out | std::ios::binary);
+                std::copy(fileContent->begin(), fileContent->end(), std::ostreambuf_iterator<char>(FILE));
+                FILE.flush();
+                FILE.close();
+
+
+                //Provide file!
+                provideResult(newFileName, fileContent, holderType);
+
+
+
+
+                //std::ofstream output_file(outputFileName, std::ios::out | std::ofstream::binary);
+				//std::ostreambuf_iterator<unsigned char> output_iterator(output_file);
+
+
+				//std::copy(fileContent->begin(), fileContent->end(), output_iterator);
 
                 delete httpFile;
             }

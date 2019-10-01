@@ -6,8 +6,9 @@
 #include <cstring>
 #include <set>
 #include <vector>
-#include <zconf.h>
+#include <algorithm>
 #include <ctime>
+#include <array>
 #include "GDeviceVulkan.h"
 #include "../../include/vulkancontext.h"
 
@@ -157,7 +158,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -243,7 +244,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
 
     // Create pool
     VkBufferCreateInfo exampleBufCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    exampleBufCreateInfo.size = 1024; // Whatever.
+    exampleBufCreateInfo.size = 65536; // Whatever.
     exampleBufCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // Change if needed.
 
     VmaAllocationCreateInfo allocCreateInfo = {};
@@ -256,7 +257,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     VmaPoolCreateInfo poolCreateInfo = {};
     poolCreateInfo.memoryTypeIndex = memTypeIndex;
     poolCreateInfo.blockSize = 128ull * 1024 * 1024;
-    poolCreateInfo.maxBlockCount = 3;
+    poolCreateInfo.maxBlockCount = 10;
 
     vmaCreatePool(vmaAllocator, &poolCreateInfo, &uboVmaPool);
 
@@ -1060,6 +1061,7 @@ HGM2Mesh GDeviceVLK::createM2Mesh(gMeshTemplate &meshTemplate) {
 HGParticleMesh GDeviceVLK::createParticleMesh(gMeshTemplate &meshTemplate) {
     std::shared_ptr<GM2MeshVLK> h_mesh;
     h_mesh.reset(new GM2MeshVLK(*this, meshTemplate));
+    h_mesh->m_meshType = MeshType::eParticleMesh;
 
     return h_mesh;
 }
@@ -1081,7 +1083,7 @@ HGVertexBufferBindings GDeviceVLK::getBBLinearBinding() {
 }
 
 std::string GDeviceVLK::loadShader(std::string fileName, bool common) {
-    return std::__cxx11::string();
+    return std::string();
 }
 
 void GDeviceVLK::drawMesh(HGMesh &hmesh) {
@@ -1132,7 +1134,7 @@ void GDeviceVLK::commitFrame() {
 //    std::cout << "imageIndex = " << imageIndex << " currentDrawFrame = " << currentDrawFrame << std::endl << std::flush;
 
     if (((imageIndex+1)&3) != currentDrawFrame) {
-//        std::cout << "imageIndex != currentDrawFrame" << std::endl;
+        std::cout << "imageIndex != currentDrawFrame" << std::endl;
     }
 
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());

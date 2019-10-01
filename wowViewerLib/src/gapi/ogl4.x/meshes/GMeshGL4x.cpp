@@ -3,6 +3,8 @@
 //
 
 #include "GMeshGL4x.h"
+#include <stdexcept>
+
 
 GMeshGL4x::GMeshGL4x(IDevice &device,
              const gMeshTemplate &meshTemplate

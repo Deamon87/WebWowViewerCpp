@@ -14,6 +14,10 @@
 #include "../../persistance/header/M2FileHeader.h"
 
 
+HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
+
+static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
+
 static GBufferBinding staticM2ParticleBindings[5] = {
     {+m2ParticleShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 13*4, 0 },
     {+m2ParticleShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, 13*4, 12},
@@ -193,13 +197,27 @@ extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
 void ParticleEmitter::createMesh() {
     IDevice *device = m_api->getDevice();
 
+    if (m_indexVBO == nullptr) {
+        m_indexVBO = device->createIndexBuffer();
+        int vo = 0;
+        for (int i = 0; i < 1000; i++) {
+            szIndexBuff.push_back(vo + 0);
+            szIndexBuff.push_back(vo + 1);
+            szIndexBuff.push_back(vo + 2);
+            szIndexBuff.push_back(vo + 3);
+            szIndexBuff.push_back(vo + 2);
+            szIndexBuff.push_back(vo + 1);
+            vo += 4;
+        }
+        m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
+    }
+
     //Create Buffers
     for (int i = 0; i < 4; i++) {
-        frame[i].m_indexVBO = device->createIndexBuffer();
         frame[i].m_bufferVBO = device->createVertexBuffer();
 
         frame[i].m_bindings = device->createVertexBufferBindings();
-        frame[i].m_bindings->setIndexBuffer(frame[i].m_indexVBO);
+        frame[i].m_bindings->setIndexBuffer(m_indexVBO);
 
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = frame[i].m_bufferVBO;
@@ -435,7 +453,9 @@ void ParticleEmitter::EmitNewParticles(animTime_t delta) {
     float rate = this->generator->GetEmissionRate();
     this->emission += delta * rate;
     while (this->emission > 1) {
-        this->CreateParticle(delta);
+        if (particles.size() < MAX_PARTICLES_PER_EMITTER) {
+            this->CreateParticle(delta);
+        }
         this->emission -= 1;
     }
 }
@@ -538,9 +558,6 @@ CParticle2& ParticleEmitter::BirthParticle() {
 }
 
 void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
-    szVertexBuf = std::vector<ParticleBuffStructQuad>(0);
-    szIndexBuff = std::vector<uint16_t>(0);
-
     if (particles.size() == 0 && this->generator != nullptr) {
         return;
     }
@@ -562,8 +579,9 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     // Vertex format: {float3 pos; float3 norm; float4 col; float2 texcoord} = 12
     // Multitex format: {float3 pos; float4 col; float2 texcoord[3]} = 13
 
+    int previousSize = szVertexBuf.size();
     szVertexBuf = std::vector<ParticleBuffStructQuad>(0);
-    szIndexBuff = std::vector<uint16_t>(0);
+    szVertexBuf.reserve(previousSize);
     int vo = 0;
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = this->particles[i];
@@ -571,23 +589,9 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
         if (this->CalculateParticlePreRenderData(p, particlePreRenderData)) {
             if (m_data->old.flags & 0x20000) {
                 this->buildVertex1(p, particlePreRenderData);
-                szIndexBuff.push_back(vo + 0);
-                szIndexBuff.push_back(vo + 1);
-                szIndexBuff.push_back(vo + 2);
-                szIndexBuff.push_back(vo + 3);
-                szIndexBuff.push_back(vo + 2);
-                szIndexBuff.push_back(vo + 1);
-                vo += 4;
             }
             if ( m_data->old.flags & 0x40000 ) {
                 this->buildVertex2(p, particlePreRenderData);
-                szIndexBuff.push_back(vo + 0);
-                szIndexBuff.push_back(vo + 1);
-                szIndexBuff.push_back(vo + 2);
-                szIndexBuff.push_back(vo + 3);
-                szIndexBuff.push_back(vo + 2);
-                szIndexBuff.push_back(vo + 1);
-                vo += 4;
             }
         }
     }
@@ -983,10 +987,10 @@ void ParticleEmitter::updateBuffers() {
     if (!currentFrame.active)
         return;
 
-    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
+//    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
     currentFrame.m_bufferVBO->uploadData((void *) szVertexBuf.data(), (int) (szVertexBuf.size() * sizeof(ParticleBuffStructQuad)));
 
-    currentFrame.m_mesh->setEnd(szIndexBuff.size());
+    currentFrame.m_mesh->setEnd((szVertexBuf.size() * 6) - 1);
     currentFrame.m_mesh->setSortDistance(m_currentBonePos);
     currentFrame.m_mesh->setPriorityPlane(m_data->old.textureTileRotation);
 

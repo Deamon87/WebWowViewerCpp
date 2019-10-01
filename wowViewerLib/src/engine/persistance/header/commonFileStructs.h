@@ -38,7 +38,7 @@
 #include <stdint.h>
 #endif
 
-#define DEBUGPOINTER 1
+#define DEBUGPOINTER 0
 
 template<class T>
 struct PointerChecker {

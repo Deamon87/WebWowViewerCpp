@@ -79,7 +79,7 @@ void RequestProcessor::processResults(int limit) {
         auto it = &m_resultQueue.front();
         if (m_threaded) lck.unlock();
 
-        std::cout << "it->buffer.use_count() = " << it->buffer.use_count() << std::endl << std::flush;
+//        std::cout << "it->buffer.use_count() = " << it->buffer.use_count() << std::endl << std::flush;
 
         HFileContent bufferCpy = it->buffer;
         m_fileRequester->provideFile(

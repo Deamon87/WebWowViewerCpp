@@ -1,5 +1,8 @@
 #define _X86_ 1
 
+//#define NOWINBASEINTERLOCK
+
+#include <windows.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -11,7 +14,7 @@
 
 // Include GLEW. Always include it before gl.h and glfw.h, since it's a bit magic.
 #define GLFW_INCLUDE_GLCOREARB
-
+ 
 //#define __EMSCRIPTEN__
 #include "engine/HeadersGL.h"
 
@@ -30,7 +33,7 @@
 //#include "persistance/ZipRequestProcessor.h"
 #include "persistance/CascRequestProcessor.h"
 #include "persistance/HttpZipRequestProcessor.h"
-#include "persistance/MpqRequestProcessor.h"
+//#include "persistance/MpqRequestProcessor.h"
 #include "persistance/HttpRequestProcessor.h"
 #include "../wowViewerLib/src/include/vulkancontext.h"
 
@@ -244,7 +247,7 @@ void beforeCrash(void);
 static const bool SET_TERMINATE = std::set_terminate(beforeCrash);
 
 void beforeCrash() {
-    __asm("int3");
+    //__asm("int3");
 }
 
 static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
@@ -343,8 +346,8 @@ int main(){
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
 //8.2.5
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=081460ab8f317f8273068b29288f2af7&cdnconfig=a00c4591f68ddf55d8baa84db360a8d0&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=1c20a0b6492b1ddc16317c3ce859daee&cdnconfig=66a66c217d0c30cd50433908c201cc9f&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=ebd292a06d6a87b7d276ba3bf752a82d&cdnconfig=9a5ae0928328d24e18546189584dceb8&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=ebd292a06d6a87b7d276ba3bf752a82d&cdnconfig=9a5ae0928328d24e18546189584dceb8&filename=data&filedataid=";
 //1.13.0
 //    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=";
 //    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=data&filedataid=";
@@ -375,10 +378,12 @@ int main(){
 
     glfwInit();
 
+//    std::string rendererName = "ogl3";
+    std::string rendererName = "vulkan";
 
     //FOR OGL
 
-    if (true)
+    if (rendererName == "ogl3")
     {
         glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
@@ -387,7 +392,7 @@ int main(){
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
 
-    } else {
+    } else if (rendererName == "vulkan"){
         //For Vulkan
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -412,12 +417,13 @@ int main(){
     };
 
     //For OGL
+    if (rendererName == "ogl3")
     {
         glfwMakeContextCurrent(window);
     }
 
     //Create device
-    IDevice * device = IDeviceFactory::createDevice("ogl3", &callback);
+    IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
     WoWScene *scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);
@@ -460,7 +466,9 @@ try {
 
         scene->draw((deltaTime*(1000.0f))); //miliseconds
 
-        glfwSwapBuffers(window);
+        if (rendererName == "ogl3") {
+            glfwSwapBuffers(window);
+        }
     }
 } catch(const std::exception &e){
     std::cerr << e.what() << std::endl;

@@ -5,6 +5,7 @@
 #include "../../engine/opengl/header.h"
 #include "GVertexBufferBindingsGL4x.h"
 #include "../interface/IDevice.h"
+#include <stdexcept>
 
 constexpr GLenum toOGLEnum(GBindingType bindingType) {
     switch (bindingType) {
