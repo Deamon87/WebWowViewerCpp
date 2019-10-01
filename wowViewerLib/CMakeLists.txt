@@ -12,8 +12,8 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
  
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize")
 
@@ -427,7 +427,7 @@ target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
 if (EMSCRIPTEN)
     mathfu_configure_flags(WoWViewerLib FALSE)
 else()
-    mathfu_configure_flags(WoWViewerLib FALSE)
+    mathfu_configure_flags(WoWViewerLib TRUE)
 endif()
 
 

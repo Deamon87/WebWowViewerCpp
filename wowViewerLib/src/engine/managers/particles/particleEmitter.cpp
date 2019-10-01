@@ -328,7 +328,7 @@ void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, mathfu::mat4 &tra
         }
 
         mathfu::vec3 v28(0,0,1.0);
-        p_quadToViewZVector = p_quadToView.GetColumn(2).xyz();
+        p_quadToViewZVector = p_quadToView.GetColumn(2);
         if (p_quadToViewZVector.LengthSquared() <= 0.00000023841858f) {
             p_quadToViewZVector =  mathfu::vec3(0,0,1.0);
         } else {

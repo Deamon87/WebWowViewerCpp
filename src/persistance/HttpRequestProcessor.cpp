@@ -83,13 +83,15 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         cache_file.seekg(0, std::ios::beg);
 
 
-        HFileContent vec = std::make_shared<FileContent>();
-		vec->reserve(fileSize);
+        HFileContent vec = std::make_shared<FileContent>(fileSize);
+		cache_file.read((char *)&(*vec.get())[0], fileSize);
+
+		//vec->reserve(fileSize);
 
 		// read the data:
-		vec->insert(vec->begin(),
-			std::istream_iterator<unsigned char>(cache_file),
-			std::istream_iterator<unsigned char>());
+		//vec->insert(vec->begin(),
+		//	std::istream_iterator<unsigned char>(cache_file),
+		//	std::istream_iterator<unsigned char>());
 //        HFileContent vec = HFileContent(new FileContent());
 //        vec->reserve(fileSize);
 //
