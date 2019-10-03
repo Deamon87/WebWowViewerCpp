@@ -442,7 +442,7 @@ int main(){
     glfwSetWindowSizeCallback( window, window_size_callback);
     glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback( window, mouse_button_callback);
-//        glfwSwapInterval(0);
+    glfwSwapInterval(0);
 
 try {
     while (!glfwWindowShouldClose(window)) {

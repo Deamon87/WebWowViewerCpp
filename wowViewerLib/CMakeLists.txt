@@ -3,6 +3,7 @@ project(WoWViewerLib)
 
 include(CheckCXXCompilerFlag)
 
+
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
 if (BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
@@ -389,7 +390,7 @@ set(VULKAN_IMPLEMENTATION
         src/gapi/vulkan/textures/GBlpTextureVLK.cpp
         src/gapi/vulkan/buffers/GUniformBufferVLK.cpp
         src/gapi/vulkan/buffers/GVertexBufferVLK.cpp
-        src/gapi/vulkan/buffers/GIndexBufferVLK.cpp src/gapi/vulkan/GPipelineVLK.cpp src/gapi/vulkan/GPipelineVLK.h src/include/sharedFile.h)
+        src/gapi/vulkan/buffers/GIndexBufferVLK.cpp src/gapi/vulkan/GPipelineVLK.cpp src/gapi/vulkan/GPipelineVLK.h src/include/sharedFile.h src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp src/gapi/vulkan/descriptorSets/GDescriptorSet.h)
 include_directories(${Vulkan_INCLUDE_DIR})
 
 
@@ -427,7 +428,7 @@ target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
 if (EMSCRIPTEN)
     mathfu_configure_flags(WoWViewerLib FALSE)
 else()
-    mathfu_configure_flags(WoWViewerLib TRUE)
+    mathfu_configure_flags(WoWViewerLib TRUE) #This being TRUE somehow breaks current ribbonEmitter code
 endif()
 
 

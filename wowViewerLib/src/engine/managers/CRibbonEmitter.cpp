@@ -56,12 +56,12 @@ CRibbonEmitter::CRibbonEmitter(IWoWInnerApi *api, M2Object *object, std::vector<
   this->m_above1.x = 0.0;
   this->m_above1.y = 0.0;
   this->m_above1.z = 0.0;
-  this->m_minWorldBounds.z = 3.4028235f;
-  this->m_minWorldBounds.y = 3.4028235f;
-  this->m_minWorldBounds.x = 3.4028235f;
-  this->m_maxWorldBound.z = -3.4028235f;
-  this->m_maxWorldBound.y = -3.4028235f;
-  this->m_maxWorldBound.x = -3.4028235f;
+  this->m_minWorldBounds.z = 3.4028235e38f;
+  this->m_minWorldBounds.y = 3.4028235e38f;
+  this->m_minWorldBounds.x = 3.4028235e38f;
+  this->m_maxWorldBound.z = -3.4028235e38f;
+  this->m_maxWorldBound.y = -3.4028235e38f;
+  this->m_maxWorldBound.x = -3.4028235e38f;
   this->m_diffuseClr = {0,0,0,0};
   this->m_texBox.miny = 0.0;
   this->m_texBox.minx = 0.0;
@@ -642,12 +642,12 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
 
     this->m_gxVertices[v56].diffuseColor = v95;
   }
-  this->m_minWorldBounds.z = 3.4028235f;
-  this->m_minWorldBounds.y = 3.4028235f;
-  this->m_minWorldBounds.x = 3.4028235f;
-  this->m_maxWorldBound.z = -3.4028235f;
-  this->m_maxWorldBound.y = -3.4028235f;
-  this->m_maxWorldBound.x = -3.4028235f;
+  this->m_minWorldBounds.z = 3.4028235e38f;
+  this->m_minWorldBounds.y = 3.4028235e38f;
+  this->m_minWorldBounds.x = 3.4028235e38f;
+  this->m_maxWorldBound.z = -3.4028235e38f;
+  this->m_maxWorldBound.y = -3.4028235e38f;
+  this->m_maxWorldBound.x = -3.4028235e38f;
   v80 = this->m_readPos;
   for ( j = this->m_readPos; j != this->m_writePos; v80 = j )
   {
@@ -791,9 +791,7 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   this->m_gxVertices = std::vector<CRibbonVertex>(2 * newEdgesCount);
   for (auto &m_gxVertice : this->m_gxVertices) {
     v20 = &m_gxVertice;
-    v20->pos.x = 0.0;
-    v20->pos.y = 0.0;
-    v20->pos.z = 0.0;
+    v20->pos = mathfu::vec3(0.0, 0.0, 0.0);
     *(int *)&v20->diffuseColor = 0;
     v20->texCoord.x = 0.0;
     v20->texCoord.y = 0.0;

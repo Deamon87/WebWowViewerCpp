@@ -1,0 +1,14 @@
+//
+// Created by Deamon on 10/2/2019.
+//
+
+#ifndef AWEBWOWVIEWERCPP_GDESCRIPTORSET_H
+#define AWEBWOWVIEWERCPP_GDESCRIPTORSET_H
+
+
+class GDescriptorSet {
+
+};
+
+
+#endif //AWEBWOWVIEWERCPP_GDESCRIPTORSET_H

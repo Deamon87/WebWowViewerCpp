@@ -15,6 +15,9 @@
 #include <cmath>
 #include <thread>
 #include <chrono>
+#include <future>
+
+
 
 void WoWSceneImpl::processCaches(int limit) {
 //    std::cout << "WoWSceneImpl::processCaches called " << std::endl;

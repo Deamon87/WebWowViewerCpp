@@ -1294,7 +1294,7 @@ void M2Object::createMeshes() {
         meshTemplate.element = DrawElementMode::TRIANGLES;
 
         HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
-        //meshTemplate.texture.resize(textMaterial->textureCount);
+        meshTemplate.texture.resize(textMaterial->textureCount);
         meshTemplate.textureCount = textMaterial->textureCount;
         for (int j = 0; j < material.textureCount; j++) {
             meshTemplate.texture[j] = material.textures[j];
@@ -1394,7 +1394,7 @@ void M2Object::initParticleEmitters() {
 void M2Object::initRibbonEmitters() {
 //    return;
     ribbonEmitters = std::vector<CRibbonEmitter *>();
-//    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
+//    ribbonEmitters.reserve(m_m2Geom->getM2Data()->ribbon_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->ribbon_emitters.size; i++) {
         M2Ribbon *m2Ribbon = m_m2Geom->getM2Data()->ribbon_emitters.getElement(i);
 

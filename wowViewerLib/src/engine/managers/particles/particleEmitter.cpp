@@ -990,7 +990,7 @@ void ParticleEmitter::updateBuffers() {
 //    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
     currentFrame.m_bufferVBO->uploadData((void *) szVertexBuf.data(), (int) (szVertexBuf.size() * sizeof(ParticleBuffStructQuad)));
 
-    currentFrame.m_mesh->setEnd((szVertexBuf.size() * 6) - 1);
+    currentFrame.m_mesh->setEnd((szVertexBuf.size() * 6));
     currentFrame.m_mesh->setSortDistance(m_currentBonePos);
     currentFrame.m_mesh->setPriorityPlane(m_data->old.textureTileRotation);
 

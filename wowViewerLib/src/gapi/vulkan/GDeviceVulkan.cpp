@@ -1244,6 +1244,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
 
 
         auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
+        auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
         VkDeviceSize offsets[] = {0};
 
         if (lastIndexBuffer != indexBuffer) {
@@ -1251,14 +1252,12 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             lastIndexBuffer = indexBuffer;
         }
 
-//        if (lastVertexBuffer != vertexBuffer) {
-        uint32_t vboBind = 0;
-        for (auto &vboBinding: binding->m_bindings) {
-            auto vertexBuffer = ((GVertexBufferVLK *)vboBinding.vertexBuffer.get())->g_hVertexBuffer;
+        if (lastVertexBuffer != vertexBuffer) {
+            uint32_t vboBind = 0;
+
             vkCmdBindVertexBuffers(commandBuffers[updateFrame], vboBind++, 1, &vertexBuffer, offsets);
+            lastVertexBuffer = vertexBuffer;
         }
-//            lastVertexBuffer = vertexBuffer;
-//        }
 
 
         vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,

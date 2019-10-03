@@ -502,7 +502,7 @@ void WmoGroupObject::createMeshes() {
         HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, isSecondTextSpec);
         HGTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
 
-        //meshTemplate.texture.resize(3);
+        meshTemplate.texture.resize(3);
         meshTemplate.texture[0] = texture1;
         meshTemplate.texture[1] = texture2;
         meshTemplate.texture[2] = texture3;

@@ -1,0 +1,16 @@
+//
+// Created by Deamon on 10/2/2019.
+//
+
+#ifndef AWEBWOWVIEWERCPP_GDESCRIPTORPOOLVLK_H
+#define AWEBWOWVIEWERCPP_GDESCRIPTORPOOLVLK_H
+
+
+class GDescriptorPoolVLK {
+    GDescriptorPoolVLK()  {
+
+    }
+};
+
+
+#endif //AWEBWOWVIEWERCPP_GDESCRIPTORPOOLVLK_H

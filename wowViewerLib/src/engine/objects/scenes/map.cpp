@@ -46,9 +46,10 @@ void Map::checkCulling(WoWFrameData *frameData) {
     frameData->interiorViews = std::vector<InteriorView>();
     m_viewRenderOrder = 0;
 
-    if (!this->m_currentInteriorGroups.empty() && m_currentWMO != nullptr && this->m_currentWMO->isLoaded()) {
-        this->m_currentWMO->resetTraversedWmoGroups();
-        if (this->m_currentWMO->startTraversingWMOGroup(
+    auto lcurrentWMO = this->m_currentWMO;
+    if ((lcurrentWMO != nullptr) && (!this->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
+        lcurrentWMO->resetTraversedWmoGroups();
+        if (lcurrentWMO->startTraversingWMOGroup(
             cameraPos,
             projectionModelMat,
             this->m_currentInteriorGroups[0].groupIndex,
@@ -230,13 +231,17 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     m2ObjectsCandidates.erase( unique( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() ), m2ObjectsCandidates.end() );
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
-    for (auto &m2ObjectCandidate : m2ObjectsCandidates) {
+    for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
+        auto m2ObjectCandidate = m2ObjectsCandidates[i];
         bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
             cameraPos,
             frameData->exteriorView.frustumPlanes[0], //TODO:!
-            frustumPoints) ;
+            frustumPoints);
+    }
 //        bool frustumResult = true;
-        if (frustumResult) {
+    for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
+        auto m2ObjectCandidate = m2ObjectsCandidates[i];
+        if (m2ObjectCandidate->m_cullResult) {
             frameData->exteriorView.drawnM2s.push_back(m2ObjectCandidate);
             frameData->m2Array.push_back(m2ObjectCandidate);
         }
@@ -254,6 +259,7 @@ void Map::doPostLoad(WoWFrameData *frameData){
 //    }
 
     for (auto &wmoObject : frameData->wmoArray) {
+        if (wmoObject == nullptr) continue;
         wmoObject->doPostLoad(groupsProcessedThisFrame);
     }
 
@@ -279,6 +285,7 @@ void Map::update(WoWFrameData *frameData) {
 //    }
 
     for (auto &wmoObject : frameData->wmoArray) {
+        if (wmoObject == nullptr) continue;
         wmoObject->update();
     }
 

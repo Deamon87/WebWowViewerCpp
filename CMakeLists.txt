@@ -145,7 +145,7 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	endif(NOT OPENGL_FOUND)
 else()
 #	if (${ANDROID_PLATFORM_LEVEL} LESS 12)
-#		message(FATAL_ERROR "OpenGL 2 is not supported before API level 11 \
+#		message(FATAL_ERROR "OpenGL 2 is not supported before API level 11 /
 #                      (currently using ${ANDROID_PLATFORM_LEVEL}).")
 #		return()
 #	elseif (${ANDROID_PLATFORM_LEVEL} LESS 18)
@@ -224,5 +224,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 else()
 	target_link_libraries(AWebWoWViewerCpp GL)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+
+
 
 INSTALL(TARGETS AWebWoWViewerCpp DESTINATION BIN)
