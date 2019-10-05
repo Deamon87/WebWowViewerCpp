@@ -278,7 +278,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/managers/CRibbonEmitter.cpp
         src/engine/managers/CRibbonEmitter.h
         src/engine/persistance/skelFile.cpp
-        src/engine/persistance/skelFile.h)
+        src/engine/persistance/skelFile.h src/engine/algorithms/FrameCounter.cpp src/engine/algorithms/FrameCounter.h)
 
 set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h

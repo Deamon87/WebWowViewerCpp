@@ -189,28 +189,26 @@ void GMeshVLK::updateDescriptor() {
 
         if (((GShaderPermutationVLK *)m_shader.get())->getTextureCount() == 0) return;
 
-        int bindIndex = 0;
-        for (auto& texture : m_texture) {
-            GTextureVLK *textureVlk = reinterpret_cast<GTextureVLK *>(texture.get());
+        for (size_t i = 0; i < m_texture.size(); i++) {
+            GTextureVLK *textureVlk = reinterpret_cast<GTextureVLK *>(m_texture[i].get());
             if (textureVlk == nullptr) continue;
 
             VkDescriptorImageInfo imageInfo = {};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = textureVlk->texture.view;
             imageInfo.sampler = textureVlk->texture.sampler;
-            imageInfos[bindIndex] = imageInfo;
+            imageInfos[i] = imageInfo;
 
             VkWriteDescriptorSet writeDescriptor;
             writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeDescriptor.dstSet = descriptorSets[updateFrame];
             writeDescriptor.pNext = nullptr;
-            writeDescriptor.dstBinding = textureBegin+bindIndex;
+            writeDescriptor.dstBinding = textureBegin+i;
             writeDescriptor.dstArrayElement = 0;
             writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             writeDescriptor.descriptorCount = 1;
-            writeDescriptor.pImageInfo = &imageInfos[bindIndex];
+            writeDescriptor.pImageInfo = &imageInfos[i];
             descriptorWrites.push_back(writeDescriptor);
-            bindIndex++;
         }
 
         if (descriptorWrites.size() > 0) {

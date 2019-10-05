@@ -10,6 +10,7 @@
 #include "./../gapi/UniformBufferStructures.h"
 #include "objects/GlobalThreads.h"
 #include "../gapi/IDeviceFactory.h"
+#include "algorithms/FrameCounter.h"
 //#include "objects/scenes/creatureScene.h"
 #include <iostream>
 #include <cmath>
@@ -622,10 +623,14 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
         g_globalThreadsSingleton.cullingThread = std::thread(([&]() {
             using namespace std::chrono_literals;
             std::unique_lock<std::mutex> localLockNextMeshes(m_lockNextMeshes, std::defer_lock);
+            FrameCounter frameCounter;
+
 
             while (!this->m_isTerminating) {
                 auto future = nextDeltaTime.get_future();
                 future.wait();
+
+                frameCounter.beginMeasurement();
 
 //                std::cout << "update frame = " << getDevice()->getUpdateFrameNumber() << std::endl;
 
@@ -638,17 +643,21 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
                 DoCulling();
                 localLockNextMeshes.unlock();
 
+                frameCounter.endMeasurement("Culling thread ");
+
                 this->cullingFinished.set_value(true);
             }
         }));
 
         if (device->getIsAsynBuffUploadSupported()) {
             g_globalThreadsSingleton.updateThread = std::thread(([&]() {
-//                std::unique_lock<std::mutex> localLockNextMeshes(m_lockNextMeshes, std::defer_lock);
+                FrameCounter frameCounter;
+
                 while (!this->m_isTerminating) {
                     auto future = nextDeltaTimeForUpdate.get_future();
                     future.wait();
                     nextDeltaTimeForUpdate = std::promise<float>();
+                    frameCounter.beginMeasurement();
 
                     IDevice *device = getDevice();
                     int updateObjFrame = device->getUpdateFrameNumber();
@@ -671,6 +680,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
                     device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
 
                     device->endUpdateForNextFrame();
+                    frameCounter.endMeasurement("Update Thread");
 
                     updateFinished.set_value(true);
                 }
