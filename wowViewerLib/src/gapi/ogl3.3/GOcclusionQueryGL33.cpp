@@ -32,11 +32,11 @@ void GOcclusionQueryGL33::endQuery() {
 }
 
 void GOcclusionQueryGL33::beginConditionalRendering() {
-    glBeginConditionalRender(m_queryIdent, GL_QUERY_NO_WAIT);
+//    glBeginConditionalRender(m_queryIdent, GL_QUERY_NO_WAIT);
 }
 
 void GOcclusionQueryGL33::endConditionalRendering() {
-    glEndConditionalRender();
+//    glEndConditionalRender();
 }
 
 int GOcclusionQueryGL33::getResult() {

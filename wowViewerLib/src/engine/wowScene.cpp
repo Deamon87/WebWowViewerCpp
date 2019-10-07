@@ -755,16 +755,21 @@ struct timespec& end)
 }
 
 void WoWSceneImpl::draw(animTime_t deltaTime) {
-    renderLockNextMeshes.lock();
-    auto cullingFuture = cullingFinished.get_future();
+    std::future<bool> cullingFuture;
     std::future<bool> updateFuture;
+    if (m_supportThreads) {
+        renderLockNextMeshes.lock();
 
-    nextDeltaTime.set_value(deltaTime);
-    if (getDevice()->getIsAsynBuffUploadSupported()) {
-        nextDeltaTimeForUpdate.set_value(deltaTime);
-        updateFuture = updateFinished.get_future();
+        cullingFuture = cullingFinished.get_future();
+        std::future<bool> updateFuture;
+
+        nextDeltaTime.set_value(deltaTime);
+        if (getDevice()->getIsAsynBuffUploadSupported()) {
+            nextDeltaTimeForUpdate.set_value(deltaTime);
+            updateFuture = updateFinished.get_future();
+        }
+        renderLockNextMeshes.unlock();
     }
-    renderLockNextMeshes.unlock();
 
 //    std::cout << "draw frame = " << getDevice()->getDrawFrameNumber() << std::endl;
 
@@ -902,12 +907,14 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     device->reset();
 
 
-    cullingFuture.wait();
-    cullingFinished = std::promise<bool>();
+    if (m_supportThreads) {
+        cullingFuture.wait();
+        cullingFinished = std::promise<bool>();
 
-    if (device->getIsAsynBuffUploadSupported()) {
-        updateFuture.wait();
-        updateFinished = std::promise<bool>();
+        if (device->getIsAsynBuffUploadSupported()) {
+            updateFuture.wait();
+            updateFinished = std::promise<bool>();
+        }
     }
 
 

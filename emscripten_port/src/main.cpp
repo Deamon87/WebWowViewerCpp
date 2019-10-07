@@ -1,4 +1,5 @@
 #include "../../wowViewerLib/src/include/wowScene.h"
+#include "../../wowViewerLib/src/gapi/IDeviceFactory.h"
 #include "RequestProcessor.h"
 #include "HttpRequestProcessor.h"
 #include <iostream>
@@ -204,7 +205,9 @@ extern "C" {
         testConf->setRenderM2(true);
         testConf->setRenderWMO(true);
 
-        scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
+        IDevice * device = IDeviceFactory::createDevice("ogl3", nullptr);
+
+        scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
         processor->setFileRequester(scene);
 
         glfwSetWindowUserPointer(window, scene);

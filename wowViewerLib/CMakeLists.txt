@@ -3,6 +3,29 @@ project(WoWViewerLib)
 
 include(CheckCXXCompilerFlag)
 
+set(LINK_GLEW 1)
+set(LINK_OGL 1)
+set(LINK_OGL4 1)
+set(LINK_VULKAN 1)
+set(LINK_OPENMP 1)
+set(ENABLE_SIMD 1)
+
+
+if (CMAKE_NDK_BUILD)
+    set(LINK_GLEW 0)
+ENDIF()
+
+if (EMSCRIPTEN)
+    message(This is EMSCRIPTEN)
+    set(LINK_GLEW 0)
+    set(LINK_VULKAN 0)
+    set(LINK_OPENMP 0)
+    set(LINK_OGL4 0)
+    if (NOT EMSCRIPTEN_SIMD)
+        set(ENABLE_SIMD 0)
+    endif()
+ENDIF()
+
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
@@ -15,8 +38,24 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
  
 #set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize  -fopenmp" )
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize -fopenmp")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize" )
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize")
+
+if (LINK_OPENMP)
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp")
+
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fopenmp" )
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fopenmp")
+endif()
+if (EMSCRIPTEN_SIMD)
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
+
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -msimd128" )
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -msimd128")
+endif()
+
 
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
@@ -24,20 +63,6 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 IF(CMAKE_BUILD_TYPE MATCHES Release)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
 
-set(LINK_GLEW 1)
-set(LINK_OGL 1)
-set(LINK_OGL4 1)
-set(LINK_VULKAN 1)
-
-
-if (CMAKE_NDK_BUILD)
-    set(LINK_GLEW 0)
-ENDIF()
-
-if (EMSCRIPTEN)
-    set(LINK_GLEW 0)
-    set(LINK_VULKAN 0)
-ENDIF()
 
 include(ExternalProject)
 
@@ -327,6 +352,7 @@ set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
         src/gapi/ogl3.3/GOcclusionQueryGL33.h)
 
+if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/textures/GBlpTextureGL4x.h
         src/gapi/ogl4.x/buffers/GVertexBufferGL4x.cpp
@@ -362,6 +388,7 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/shaders/GAdtShaderPermutationGL4x.h
         src/gapi/ogl4.x/GOcclusionQueryGL4x.cpp
         src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h src/engine/persistance/header/skelFileHeader.h)
+endif()
 
 if (LINK_VULKAN)
     set(VULKAN_IMPLEMENTATION
@@ -435,9 +462,7 @@ endif()
 target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 
-if (NOT EMSCRIPTEN)
-
-
+if (LINK_OPENMP)
     target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY} -fopenmp)
 endif()
 
@@ -445,8 +470,8 @@ endif()
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 
 
-if (EMSCRIPTEN)
-    mathfu_configure_flags(WoWViewerLib FALSE)
+if (ENABLE_SIMD)
+    mathfu_configure_flags(WoWViewerLib TRUE)
 else()
     mathfu_configure_flags(WoWViewerLib FALSE) #This being TRUE somehow breaks current ribbonEmitter code
 endif()

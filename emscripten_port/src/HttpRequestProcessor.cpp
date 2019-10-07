@@ -19,7 +19,10 @@ struct UserDataForRequest {
 void downloadSucceeded(emscripten_fetch_t *fetch) {
 //    printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
 
-    std::vector<unsigned char> fileContent(&fetch->data[0], &fetch->data[fetch->numBytes]);
+    HFileContent fileContent = std::make_shared<FileContent>(fetch->numBytes);
+    std::copy(&fetch->data[0], &fetch->data[fetch->numBytes], fileContent->begin());
+
+//    HFileContent fileContent(&fetch->data[0], &fetch->data[fetch->numBytes]);
     UserDataForRequest * userDataForRequest = (UserDataForRequest *)fetch->userData;
     userDataForRequest->processor->provideResult(userDataForRequest->fileName, fileContent, userDataForRequest->holderType);
     userDataForRequest->processor->currentlyProcessing--;

@@ -32,10 +32,17 @@ private:
         CacheHolderType holderType;
     };
 
-    struct ResultStruct {
+    class ResultStruct {
+    public:
+        ResultStruct(){};
+        ResultStruct (const ResultStruct &old_obj) {
+            fileName = old_obj.fileName;
+            holderType = old_obj.holderType;
+            buffer = old_obj.buffer;
+        }
         std::string fileName;
         CacheHolderType holderType;
-        std::vector<unsigned char> buffer;
+        HFileContent buffer = nullptr;
     };
 
     std::thread *loaderThread;
@@ -48,7 +55,7 @@ private:
 public:
     void processResults(int limit);
     void processRequests(bool calledFromThread);
-    void provideResult(std::string &fileName, std::vector<unsigned char> &content, CacheHolderType holderType);
+    void provideResult(std::string &fileName, HFileContent &content, CacheHolderType holderType);
 
     void setThreaded(bool value) {
         m_threaded = value;
