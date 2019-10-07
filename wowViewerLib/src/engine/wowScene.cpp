@@ -653,6 +653,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
             g_globalThreadsSingleton.updateThread = std::thread(([&]() {
                 FrameCounter frameCounter;
 
+                FrameCounter singleUpdateCNT;
+                FrameCounter meshesCollectCNT;
                 while (!this->m_isTerminating) {
                     auto future = nextDeltaTimeForUpdate.get_future();
                     future.wait();
@@ -666,8 +668,14 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
                     updateFrameIndex = updateObjFrame;
 
                     device->startUpdateForNextFrame();
+
+                    singleUpdateCNT.beginMeasurement();
                     currentScene->update(objFrameParam);
+                    singleUpdateCNT.endMeasurement("single update ");
+
+                    meshesCollectCNT.beginMeasurement();
                     currentScene->collectMeshes(objFrameParam);
+                    meshesCollectCNT.endMeasurement("collectMeshes ");
 
                     device->updateBuffers(objFrameParam->renderedThisFrame);
 

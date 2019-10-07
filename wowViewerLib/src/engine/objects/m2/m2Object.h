@@ -124,7 +124,7 @@ private:
     void initParticleEmitters();
     void initRibbonEmitters();
 
-    void sortMaterials(mathfu::Matrix<float, 4, 4> &lookAtMat4);
+    void sortMaterials(mathfu::Matrix<float, 4, 4> &modelViewMat);
     bool checkIfHasBillboarded();
 
     void createMeshes();
@@ -196,6 +196,7 @@ public:
 
     bool doPostLoad();
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
+    void uploadGeneratorBuffers();
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
     void drawDebugLight();
 

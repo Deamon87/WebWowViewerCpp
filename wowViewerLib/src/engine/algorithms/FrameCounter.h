@@ -16,9 +16,11 @@ public:
     void endMeasurement(const std::string &source);
 
 private:
+#ifdef SKIP_VULKAN
     std::chrono::system_clock::time_point m_startTime;
     double m_accomulatedTimeInterval = 0;
     int frameCounter = 0;
+#endif
 
 };
 

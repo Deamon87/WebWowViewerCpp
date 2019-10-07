@@ -278,10 +278,26 @@ void Map::update(WoWFrameData *frameData) {
 
     Config* config = this->m_api->getConfig();
 //    if (config->getRenderM2()) {
-        std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
-            if (m2Object == nullptr) return;
-            m2Object->update(deltaTime, cameraVec3, lookAtMat);
-        });
+//        std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
+
+//    #pragma
+    {
+        #pragma omp parallel for num_threads(6)
+        for (int i = 0; i < frameData->m2Array.size(); i++) {
+            auto m2Object = frameData->m2Array[i];
+            if (m2Object != nullptr) {
+                m2Object->update(deltaTime, cameraVec3, lookAtMat);
+            }
+        }
+    }
+
+    for (int i = 0; i < frameData->m2Array.size(); i++) {
+        auto m2Object = frameData->m2Array[i];
+        if (m2Object != nullptr) {
+            m2Object->uploadGeneratorBuffers();
+        }
+    }
+//        });
 //    }
 
     for (auto &wmoObject : frameData->wmoArray) {
@@ -294,10 +310,12 @@ void Map::update(WoWFrameData *frameData) {
     }
 
     //2. Calc distance every 100 ms
-    std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [&cameraVec3](M2Object *m2Object) {
-        if (m2Object == nullptr) return;
+//    #pragma omp parallel for
+    for (int i = 0; i < frameData->m2Array.size(); i++) {
+        auto m2Object = frameData->m2Array[i];
+        if (m2Object == nullptr) continue;
         m2Object->calcDistance(cameraVec3);
-    });
+    };
 
     //6. Check what WMO instance we're in
     this->m_currentInteriorGroups = {};
@@ -586,8 +604,14 @@ void Map::collectMeshes(WoWFrameData *frameData) {
     for (auto &view : vector) {
         std::copy(view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
     }
-    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
-    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
+
+    std::unordered_set<M2Object *> s;
+    for (auto i : m2ObjectsRendered)
+        s.insert(i);
+    m2ObjectsRendered.assign( s.begin(), s.end() );
+
+//    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
+//    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
 
 //    if (m_api->getConfig()->getRenderM2()) {
         for (auto &m2Object : m2ObjectsRendered) {

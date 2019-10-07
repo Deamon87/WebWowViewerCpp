@@ -786,13 +786,11 @@ void M2Object::startLoading() {
     }
 }
 
-void M2Object::sortMaterials(mathfu::mat4 &lookAtMat4) {
+void M2Object::sortMaterials(mathfu::mat4 &modelViewMat) {
     if (!m_loaded) return;
 
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
-
-    mathfu::mat4 modelViewMat = lookAtMat4 * this->m_placementMatrix;
 
     for (int i = 0; i < this->m_meshArray.size(); i++) {
         //Update info for sorting
@@ -974,7 +972,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());
 
     for (int i = minBatch; i < maxBatch; i++) {
-        M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], viewMat, *this, m_materialArray[i], m2File, skinData);
+        M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], modelViewMat, *this, m_materialArray[i], m2File, skinData);
     }
 
     mathfu::mat4 viewMatInv = viewMat.Inverse();
@@ -993,11 +991,11 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
         particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D(), nullptr, viewMat);
         particleEmitters[i]->prepearBuffers(viewMat);
-        particleEmitters[i]->updateBuffers();
     }
-    this->sortMaterials(viewMat);
+    this->sortMaterials(modelViewMat);
 
     //Ribbon Emitters
+    mathfu::vec3 nullPos(0,0,0);
     for (int i = 0; i < ribbonEmitters.size(); i++) {
         auto *ribbonRecord = m_m2Geom->m_m2Data->ribbon_emitters.getElement(i);
 
@@ -1009,9 +1007,21 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
                  mathfu::vec3(ribbonRecord->position.x, ribbonRecord->position.y, ribbonRecord->position.z))
             );
 
-        mathfu::vec3 nullPos(0,0,0);
+
         ribbonEmitters[i]->SetPos(transformMat, nullPos, nullptr);
         ribbonEmitters[i]->Update(deltaTime * 0.001f, 0);
+    }
+}
+
+void M2Object::uploadGeneratorBuffers() {
+    int minParticle = m_api->getConfig()->getMinParticle();
+    int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
+
+    for (int i = minParticle; i < maxParticle; i++) {
+        particleEmitters[i]->updateBuffers();
+    }
+
+    for (int i = 0; i < ribbonEmitters.size(); i++) {
         ribbonEmitters[i]->updateBuffers();
     }
 }

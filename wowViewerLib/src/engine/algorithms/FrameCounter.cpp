@@ -7,10 +7,13 @@
 #include <iostream>
 
 void FrameCounter::beginMeasurement() {
-    m_startTime =  std::chrono::high_resolution_clock::now();
+#ifdef SKIP_VULKAN
+    m_startTime = std::chrono::high_resolution_clock::now();
+#endif
 }
 
 void FrameCounter::endMeasurement(const std::string &source) {
+    #ifdef SKIP_VULKAN
     auto end = std::chrono::high_resolution_clock::now();
     frameCounter++;
 
@@ -28,4 +31,5 @@ void FrameCounter::endMeasurement(const std::string &source) {
         frameCounter = 0;
         m_accomulatedTimeInterval = 0;
     }
+#endif
 }

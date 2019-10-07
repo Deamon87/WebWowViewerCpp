@@ -42,6 +42,7 @@ else()
 endif()
 
 #ZLib library
+
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
 set(BUILD_SHARED_LIBS OFF)

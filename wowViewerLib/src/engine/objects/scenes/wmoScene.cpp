@@ -171,6 +171,7 @@ void WmoScene::update(WoWFrameData *frameData)  {
         M2Object *m2Object = frameData->m2Array[i];
         if (m2Object == nullptr) continue;
         m2Object->update(frameData->deltaTime, cameraVec3, lookAtMat4);
+        m2Object->uploadGeneratorBuffers();
     }
 
     for (auto &wmoObject : frameData->wmoArray) {

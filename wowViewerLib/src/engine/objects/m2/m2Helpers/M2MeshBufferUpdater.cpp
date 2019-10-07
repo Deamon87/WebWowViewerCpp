@@ -6,7 +6,7 @@
 #include "../../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../persistance/header/M2FileHeader.h"
 
-bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, mathfu::mat4 &lookAtMat, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
+bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, mathfu::mat4 &modelView, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
     auto textMaterial = m2SkinProfile->batches[materialData.texUnitTexIndex];
     int renderFlagIndex = textMaterial->materialIndex;
     auto renderFlag = m2Data->materials[renderFlagIndex];
@@ -46,7 +46,7 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, mathfu::mat4 &look
     meshblockPS.UnFogged = ((renderFlag->flags & 0x2)  > 0) ? 1 : 0;
     meshblockPS.uFogColorAndAlphaTest = mathfu::vec4(uFogColor, uAlphaTest);
     //Lights
-    fillLights(m2Object, meshblockPS, lookAtMat);
+    fillLights(m2Object, meshblockPS, modelView);
 
     hmesh->getFragmentUniformBuffer(2)->save();
 
@@ -91,8 +91,7 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
     hmesh->setSortDistance(value);
 }
 
-void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, meshWideBlockPS &meshblockPS, mathfu::mat4 &lookAtMat) {
-    mathfu::mat4 viewModelMat = lookAtMat * m2Object.m_placementMatrix;
+void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, meshWideBlockPS &meshblockPS, mathfu::mat4 &modelView) {
     bool BCLoginScreenHack = m2Object.m_api->getConfig()->getBCLightHack();
     int lightCount = (int) std::min(m2Object.lights.size(), (size_t) 4);
     for (int j = 0; j < lightCount; j++) {
@@ -110,7 +109,7 @@ void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, meshWideBlockPS &
         meshblockPS.pc_lights[j].color = m2Object.lights[j].diffuse_color;
 
 
-        mathfu::vec4 viewPos = viewModelMat * m2Object.lights[j].position;
+        mathfu::vec4 viewPos = modelView * m2Object.lights[j].position;
         meshblockPS.pc_lights[j].position = viewPos;
     }
     meshblockPS.LightCount = lightCount;

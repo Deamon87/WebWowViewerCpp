@@ -21,7 +21,9 @@ class gMeshTemplate;
 #include <memory>
 #include <functional>
 #include "syncronization/IGPUFence.h"
+#ifdef SKIP_VULKAN
 #include <vulkan/vulkan_core.h>
+#endif
 
 typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;
 typedef std::shared_ptr<IIndexBuffer> HGIndexBuffer;
@@ -88,11 +90,13 @@ struct WMOShaderCacheRecord {
     };
 };
 
+#ifdef SKIP_VULKAN
 struct vkCallInitCallback {
     std::function<void(char** &extensionNames, int &extensionCnt)> getRequiredExtensions;
     std::function<VkSurfaceKHR(VkInstance vkInstance )> createSurface;
     int extensionCnt;
 };
+#endif
 
 class IDevice {
     public:
@@ -156,9 +160,11 @@ class IDevice {
         virtual void commitFrame() = 0;
 
         //TODO: ifdef for when app is compiled without vulkan support
+#ifdef SKIP_VULKAN
         virtual VkInstance getVkInstance() {
             return nullptr;
         };
+#endif
 };
 
 #include <cassert>
