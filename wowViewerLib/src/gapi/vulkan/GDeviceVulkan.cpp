@@ -883,8 +883,13 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture();
-        unsigned int ff = 0;
-        m_blackPixelTexture->loadData(1,1,&ff);
+        unsigned int zero = 0;
+        m_blackPixelTexture->loadData(1,1,&zero);
+    }
+    if (!m_whitePixelTexture) {
+        m_whitePixelTexture = createTexture();
+        unsigned int ff = 0xff;
+        m_whitePixelTexture->loadData(1,1,&ff);
     }
 
     for (const auto &mesh : iMeshes) {

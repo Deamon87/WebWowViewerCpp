@@ -82,6 +82,7 @@ public:
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture() override;
+    HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) override;
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) override;
@@ -153,6 +154,7 @@ protected:
     GUniformBufferGL33 * m_fragmentUniformBuffer[3] = {nullptr};
 
     HGTexture m_blackPixelTexture;
+    HGTexture m_whitePixelTexture;
 
     float clearColor[3] = {0,0,0};
 

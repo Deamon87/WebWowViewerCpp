@@ -299,8 +299,7 @@ void AdtObject::createMeshes() {
     for (int i = 0; i < 256; i++) {
         //Cant be used only in Wotlk
         //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
-        if (m_adtFileTex->mcnkStructs[i].mclyCnt <= 0) continue;
-        if (m_adtFileTex->mcnkStructs[i].mcly == nullptr) continue;
+        bool noLayers = m_adtFileTex->mcnkStructs[i].mcly == nullptr || m_adtFileTex->mcnkStructs[i].mclyCnt <= 0;
 
         HGShaderPermutation hgShaderPermutation = device->getShader("adtShader", nullptr);
         gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
@@ -337,7 +336,7 @@ void AdtObject::createMeshes() {
             blockPS.uHeightOffset[j] = heightOffset[j];
             blockPS.uHeightScale[j] = heightScale[j];
         }
-        if (m_adtFileTex->mtxp_len > 0) {
+        if (m_adtFileTex->mtxp_len > 0 && !noLayers) {
             for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
                 auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
 
@@ -355,16 +354,20 @@ void AdtObject::createMeshes() {
             }
         }
 
+        if (!noLayers) {
+            aTemplate.texture[4] = alphaTextures[i];
+        }
 
-        aTemplate.texture[4] = alphaTextures[i];
-        for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-            HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-
-
-
+        if (!noLayers) {
+            for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
 //            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-            aTemplate.texture[j] = layer_x;
-
+                aTemplate.texture[j] = layer_x;
+            }
+        } else {
+            for (int j = 0; j < 4; j++) {
+                aTemplate.texture[j] = device->getWhiteTexturePixel();
+            }
         }
 
         aTemplate.fragmentBuffers[2]->save(true);

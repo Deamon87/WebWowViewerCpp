@@ -142,6 +142,7 @@ class IDevice {
 
         virtual HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
         virtual HGTexture createTexture() = 0;
+        virtual HGTexture getWhiteTexturePixel() = 0;
         virtual HGMesh createMesh(gMeshTemplate &meshTemplate) = 0;
         virtual HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) = 0;
         virtual HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) = 0;

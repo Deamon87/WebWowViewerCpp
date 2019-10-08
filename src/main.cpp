@@ -344,8 +344,8 @@ int main(){
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
 //8.2.5
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=ebd292a06d6a87b7d276ba3bf752a82d&cdnconfig=9a5ae0928328d24e18546189584dceb8&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=ebd292a06d6a87b7d276ba3bf752a82d&cdnconfig=9a5ae0928328d24e18546189584dceb8&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=b847e6ab3a8638dda359c379ace9d79f&cdnconfig=1fdb7f2ada5eae29f7073aedbe96bf9d&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=b847e6ab3a8638dda359c379ace9d79f&cdnconfig=1fdb7f2ada5eae29f7073aedbe96bf9d&filename=data&filedataid=";
 //1.13.0
 //    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=";
 //    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=data&filedataid=";
@@ -376,8 +376,8 @@ int main(){
 
     glfwInit();
 
-//    std::string rendererName = "ogl3";
-    std::string rendererName = "vulkan";
+    std::string rendererName = "ogl3";
+//    std::string rendererName = "vulkan";
 
     //FOR OGL
 
