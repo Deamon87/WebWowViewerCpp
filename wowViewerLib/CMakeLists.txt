@@ -26,6 +26,9 @@ if (EMSCRIPTEN)
     endif()
 ENDIF()
 
+if (NOT LINK_VULKAN)
+    add_definitions(-DSKIP_VULKAN)
+endif()
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 

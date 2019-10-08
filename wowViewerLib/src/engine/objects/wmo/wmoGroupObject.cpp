@@ -1230,42 +1230,43 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
 
     if (!m2Object->setUseLocalLighting(true)) return;
 
-    if (m_geom->colorArray != nullptr) {
-        int nodeId = 0;
-        auto &nodes = this->m_geom->bsp_nodes;
-        MOGP *groupInfo = this->m_geom->mogp;
-        std::vector<int> bspLeafList;
+    if (!m2Object->getInteriorAmbientWasSet()) {
+        if (m_geom->colorArray != nullptr) {
+            int nodeId = 0;
+            auto &nodes = this->m_geom->bsp_nodes;
+            MOGP *groupInfo = this->m_geom->mogp;
+            std::vector<int> bspLeafList;
 
-        float epsilon = 1;
-        mathfu::vec4 cameraLocal = mathfu::vec4(m2Object->getLocalPosition(), 0);
-        mathfu::vec3 cameraBBMin(cameraLocal[0] - epsilon, cameraLocal[1] - epsilon, groupInfo->boundingBox.min.z);
-        mathfu::vec3 cameraBBMax(cameraLocal[0] + epsilon, cameraLocal[1] + epsilon, groupInfo->boundingBox.max.z);
+            float epsilon = 1;
+            mathfu::vec4 cameraLocal = mathfu::vec4(m2Object->getLocalPosition(), 0);
+            mathfu::vec3 cameraBBMin(cameraLocal[0] - epsilon, cameraLocal[1] - epsilon, groupInfo->boundingBox.min.z);
+            mathfu::vec3 cameraBBMax(cameraLocal[0] + epsilon, cameraLocal[1] + epsilon, groupInfo->boundingBox.max.z);
 
-        CAaBox cameraBB;
-        cameraBB.max = cameraBBMax;
-        cameraBB.min = cameraBBMin;
+            CAaBox cameraBB;
+            cameraBB.max = cameraBBMax;
+            cameraBB.min = cameraBBMin;
 
-        float topZ;
-        float bottomZ;
+            float topZ;
+            float bottomZ;
 
-        int initLen = -1;
-        PointerChecker<SMOPortalRef> temp = PointerChecker<SMOPortalRef>(initLen);
-        PointerChecker<SMOPortal> temp2 = initLen;
+            int initLen = -1;
+            PointerChecker<SMOPortalRef> temp = PointerChecker<SMOPortalRef>(initLen);
+            PointerChecker<SMOPortal> temp2 = initLen;
 
-        mathfu::vec4 mocvColor (0,0,0,0);
-        WmoGroupObject::queryBspTree(cameraBB, nodeId, nodes, bspLeafList);
-        WmoGroupObject::getBottomVertexesFromBspResult(
-            temp2, temp, bspLeafList, cameraLocal, topZ, bottomZ, mocvColor, false);
+            mathfu::vec4 mocvColor(0, 0, 0, 0);
+            WmoGroupObject::queryBspTree(cameraBB, nodeId, nodes, bspLeafList);
+            WmoGroupObject::getBottomVertexesFromBspResult(
+                temp2, temp, bspLeafList, cameraLocal, topZ, bottomZ, mocvColor, false);
 
-        if (bottomZ < 99999) {
-            mocvColor = mathfu::vec4(mocvColor.z, mocvColor.y, mocvColor.x, 0);
-            ambientColor += mocvColor;
+            if (bottomZ < 99999) {
+                mocvColor = mathfu::vec4(mocvColor.z, mocvColor.y, mocvColor.x, 0);
+                ambientColor += mocvColor;
+            }
         }
+
+        m2Object->setAmbientColorOverride(ambientColor, true);
+        m2Object->setInteriorAmbientWasSet(true);
     }
-
-
-    m2Object->setAmbientColorOverride(ambientColor, true);
-
 
     mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
     mathfu::mat4 transformMatrix = m_api->getViewMat();

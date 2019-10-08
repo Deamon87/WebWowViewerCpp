@@ -110,6 +110,9 @@ private:
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
 
+    bool m_interiorAmbientWasSet = false; // For static only
+
+
     void debugDumpAnimationSequences();
 
     void initAnimationManager();
@@ -133,6 +136,13 @@ private:
     mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, M2MaterialInst &materialData,  std::vector<mathfu::vec4> subMeshColors);
     float getTransparency(M2SkinProfile *skinData,M2MaterialInst &materialData, std::vector<float> &transparencies);
 public:
+
+    bool getInteriorAmbientWasSet() {
+        return m_interiorAmbientWasSet;
+    }
+    bool setInteriorAmbientWasSet(bool value) {
+        m_interiorAmbientWasSet = value;
+    }
 
     void addPostLoadEvent(std::function<void()> &value) {
         m_postLoadEvents.push_back(value);

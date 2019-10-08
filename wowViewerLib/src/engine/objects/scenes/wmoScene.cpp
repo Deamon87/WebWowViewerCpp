@@ -35,17 +35,8 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     int currentWmoGroup = -1;
 
 
-//    mathfu::vec3 nearPlaneCenter(0,0,0);
-//    nearPlaneCenter += frustumPoints[0];
-//    nearPlaneCenter += frustumPoints[1];
-//    nearPlaneCenter += frustumPoints[6];
-//    nearPlaneCenter += frustumPoints[7];
-//    nearPlaneCenter *= 0.25f;
-
-//    for (int i = 0; i < this->wmoRenderedThisFrameArr.size(); i++) {
     WmoObject *checkingWmoObj = this->m_wmoObject;
     WmoGroupResult groupResult;
-//        bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(nearPlaneCenter, 1), groupResult);
     bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(cameraVec3, 1), groupResult);
 
     if (result) {
@@ -95,7 +86,9 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     frameData->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
 
     //Collect M2s for update
+    size_t prev_size = frameData->m2Array.size();
     frameData->m2Array.clear();
+    frameData->m2Array.reserve(prev_size);
     auto inserter = std::back_inserter(frameData->m2Array);
     for (auto &view : frameData->interiorViews) {
         std::copy(view.drawnM2s.begin(), view.drawnM2s.end(), inserter);
@@ -103,14 +96,15 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     std::copy(frameData->exteriorView.drawnM2s.begin(), frameData->exteriorView.drawnM2s.end(), inserter);
 
     //Sort and delete duplicates
-    std::sort( frameData->m2Array.begin(), frameData->m2Array.end() );
-    frameData->m2Array.erase( unique( frameData->m2Array.begin(), frameData->m2Array.end() ), frameData->m2Array.end() );
+    std::unordered_set<M2Object *> m2Set;
+    for (auto i : frameData->m2Array)
+        m2Set.insert(i);
+    frameData->m2Array.assign( m2Set.begin(), m2Set.end() );
 
-    frameData->m2Array= std::vector<M2Object*>(frameData->m2Array.begin(), frameData->m2Array.end());
 
-    std::sort( frameData->wmoArray.begin(), frameData->wmoArray.end() );
-    frameData->wmoArray.erase( unique( frameData->wmoArray.begin(), frameData->wmoArray.end() ), frameData->wmoArray.end() );
-    frameData->wmoArray = std::vector<WmoObject*>(frameData->wmoArray.begin(), frameData->wmoArray.end());
+
+//    std::sort( frameData->wmoArray.begin(), frameData->wmoArray.end() );
+//    frameData->wmoArray.erase( unique( frameData->wmoArray.begin(), frameData->wmoArray.end() ), frameData->wmoArray.end() );
 }
 
 void WmoScene::cullExterior(WoWFrameData *frameData, int viewRenderOrder) {

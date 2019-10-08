@@ -6,7 +6,7 @@
 
 #include "ogl3.3/GDeviceGL33.h"
 #include "ogl4.x/GDeviceGL4x.h"
-#ifdef SKIP_VULKAN
+#ifndef SKIP_VULKAN
 #include "vulkan/GDeviceVulkan.h"
 #endif
 
@@ -29,7 +29,7 @@ IDevice *IDeviceFactory::createDevice(std::string gapiName, void * data) {
         initOGLPointers();
 //        return new GDeviceGL4x();
     } else if (gapiName == "vulkan") {
-#ifdef SKIP_VULKAN
+#ifndef SKIP_VULKAN
         return new GDeviceVLK((vkCallInitCallback *)data);
 #endif
     }

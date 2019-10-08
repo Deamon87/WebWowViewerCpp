@@ -2,8 +2,6 @@
 
 //#define NOWINBASEINTERLOCK
 
-#include <windows.h>
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -230,8 +228,8 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     return fps;
 }
 
-int canvWidth = 640;
-int canvHeight = 480;
+int canvWidth = 1024;
+int canvHeight = 768;
 bool windowSizeChanged = false;
 
 void window_size_callback(GLFWwindow* window, int width, int height)
@@ -398,7 +396,7 @@ int main(){
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     }
 
-    auto window = glfwCreateWindow(1024, 768, "Vulkan", nullptr, nullptr);
+    auto window = glfwCreateWindow(canvWidth, canvHeight, "Vulkan", nullptr, nullptr);
 
     vkCallInitCallback callback;
     callback.createSurface = [&](VkInstance vkInstance) {
