@@ -83,6 +83,7 @@ public:
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture() override;
     HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
+    HGTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) override;
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) override;

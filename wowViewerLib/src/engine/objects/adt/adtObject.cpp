@@ -157,9 +157,9 @@ void AdtObject::createVBO() {
             /* 1.4 MCCV */
             if (m_adtFile->mcnkStructs[i].mccv != nullptr) {
                 auto &mccv = m_adtFile->mcnkStructs[i].mccv;
-                vboArray.push_back(mccv->entries[j].blue / 255.0f);
-                vboArray.push_back(mccv->entries[j].green / 255.0f);
                 vboArray.push_back(mccv->entries[j].red / 255.0f);
+                vboArray.push_back(mccv->entries[j].green / 255.0f);
+                vboArray.push_back(mccv->entries[j].blue / 255.0f);
                 vboArray.push_back(mccv->entries[j].alpha / 255.0f);
             } else {
                 // 0.5 to mitigate multiplication by 2 in shader
@@ -352,10 +352,16 @@ void AdtObject::createMeshes() {
 
                 aTemplate.texture[j + 5] = layer_height;
             }
+        } else {
+            for (int j = 0; j < 4; j++) {
+                aTemplate.texture[j + 5] = device->getWhiteTexturePixel();
+            }
         }
 
         if (!noLayers) {
             aTemplate.texture[4] = alphaTextures[i];
+        } else {
+            aTemplate.texture[4] = device->getBlackTexturePixel();
         }
 
         if (!noLayers) {

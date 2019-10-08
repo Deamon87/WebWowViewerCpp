@@ -608,7 +608,7 @@ void GDeviceGL33::bindProgram(IShaderPermutation *iProgram) {
 }
 
 GDeviceGL33::GDeviceGL33() {
-    unsigned int ff = 0xff;
+    unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
     m_blackPixelTexture = createTexture();
     m_blackPixelTexture->loadData(1,1,&zero);
