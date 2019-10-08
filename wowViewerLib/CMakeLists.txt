@@ -28,6 +28,7 @@ ENDIF()
 
 if (NOT LINK_VULKAN)
     add_definitions(-DSKIP_VULKAN)
+
 endif()
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
@@ -293,8 +294,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/animFile.h
         src/engine/persistance/m2File.cpp
         src/engine/persistance/m2File.h
-        src/gapi/interface/IDevice.h
-        src/gapi/interface/IDevice.cpp
+                src/gapi/interface/IDevice.cpp
         src/gapi/interface/textures/IBlpTexture.h
         src/gapi/interface/textures/ITexture.h
         src/gapi/interface/buffers/IIndexBuffer.h
@@ -305,7 +305,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/interface/IVertexBufferBindings.h
         src/gapi/interface/meshes/IM2Mesh.h
         src/gapi/interface/meshes/IMesh.h
-        src/gapi/IDeviceFactory.cpp src/gapi/IDeviceFactory.h
+        src/gapi/IDeviceFactory.cpp
         src/gapi/interface/meshes/IParticleMesh.h
         src/gapi/interface/syncronization/IGPUFence.h
         src/engine/objects/wowFrameData.h
@@ -441,9 +441,6 @@ if (LINK_VULKAN)
     ENDIF()
 endif()
 
-add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
-
-
 check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
 if(HAVE_FLAG_STD_CXX17)
     # Have -std=c++17, use it
@@ -461,6 +458,8 @@ else()
         message(ERROR "No supported flags")
     endif()
 endif()
+
+add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
 
 target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
@@ -488,6 +487,8 @@ if (LINK_VULKAN)
     add_dependencies(WoWViewerLib Shaders)
     target_include_directories(WoWViewerLib INTERFACE ${Vulkan_INCLUDE_DIR})
     #Vulkan stuff end
+else()
+    target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
 

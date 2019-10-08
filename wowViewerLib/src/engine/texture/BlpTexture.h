@@ -15,6 +15,7 @@ enum class TextureFormat {
     S3TC_RGBA_DXT3,
     S3TC_RGBA_DXT5,
     BGRA,
+    RGBA,
     PalARGB1555DitherFloydSteinberg,
     PalARGB4444DitherFloydSteinberg,
     PalARGB2565DitherFloydSteinberg

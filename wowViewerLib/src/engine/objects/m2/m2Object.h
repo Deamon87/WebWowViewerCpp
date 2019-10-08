@@ -140,7 +140,7 @@ public:
     bool getInteriorAmbientWasSet() {
         return m_interiorAmbientWasSet;
     }
-    bool setInteriorAmbientWasSet(bool value) {
+    void setInteriorAmbientWasSet(bool value) {
         m_interiorAmbientWasSet = value;
     }
 

@@ -67,7 +67,7 @@ public:
         position[2] = camera.z;
     }
 
-    mathfu::mat4 &getLookatMat() {
+    mathfu::mat4 &getLookatMat() override {
         return lookAtMat;
     }
     void setMovementSpeed(float value);
@@ -78,7 +78,7 @@ public:
     mathfu::vec3 getCameraLookAt() override;
 
 public:
-    void tick(animTime_t timeDelta);
+    void tick(animTime_t timeDelta) override;
     void setCameraPos(float x, float y, float z);
 };
 

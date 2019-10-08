@@ -157,10 +157,10 @@ void AdtObject::createVBO() {
             /* 1.4 MCCV */
             if (m_adtFile->mcnkStructs[i].mccv != nullptr) {
                 auto &mccv = m_adtFile->mcnkStructs[i].mccv;
-               vboArray.push_back(mccv->entries[j].red / 255.0f);
-               vboArray.push_back(mccv->entries[j].green / 255.0f);
-               vboArray.push_back(mccv->entries[j].blue / 255.0f);
-               vboArray.push_back(mccv->entries[j].alpha / 255.0f);
+                vboArray.push_back(mccv->entries[j].blue / 255.0f);
+                vboArray.push_back(mccv->entries[j].green / 255.0f);
+                vboArray.push_back(mccv->entries[j].red / 255.0f);
+                vboArray.push_back(mccv->entries[j].alpha / 255.0f);
             } else {
                 // 0.5 to mitigate multiplication by 2 in shader
                 vboArray.push_back(0.5f);
@@ -171,9 +171,9 @@ void AdtObject::createVBO() {
             /* 1.4 MCLV */
             if (m_adtFile->mcnkStructs[i].mclv != nullptr) {
                 auto &mclv = m_adtFile->mcnkStructs[i].mclv;
-                vboArray.push_back(mclv->values[j].b / 255.0f);
-                vboArray.push_back(mclv->values[j].g / 255.0f);
                 vboArray.push_back(mclv->values[j].r / 255.0f);
+                vboArray.push_back(mclv->values[j].g / 255.0f);
+                vboArray.push_back(mclv->values[j].b / 255.0f);
                 vboArray.push_back(mclv->values[j].a / 255.0f);
             } else {
                 // 0.5 to mitigate multiplication by 2 in shader

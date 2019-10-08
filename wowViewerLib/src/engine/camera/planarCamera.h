@@ -85,7 +85,7 @@ public:
     mathfu::vec3 getCameraLookAt() override;
 
 public:
-    void tick(animTime_t timeDelta);
+    void tick(animTime_t timeDelta) override;
     void setCameraPos(float x, float y, float z);
     void setCameraOffset(float x, float y, float z);
 };

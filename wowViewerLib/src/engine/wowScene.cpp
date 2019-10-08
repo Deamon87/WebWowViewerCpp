@@ -54,18 +54,14 @@ void WoWSceneImpl::DoCulling() {
     mathfu::vec4 cameraVec4;
 
     m_firstCamera.setMovementSpeed(m_config->getMovementSpeed());
+    if (controllable == nullptr) return;
+//    if (!m_config->getUseSecondCamera()){
+    ((ICamera *)this->controllable)->tick(frameParam->deltaTime);
+//    } else {
+//        this->m_secondCamera.tick(frameParam->deltaTime);
+//    }
 
-    if (!m_config->getUseSecondCamera()){
-        if (m_usePlanarCamera) {
-            this->m_planarCamera.tick(frameParam->deltaTime);
-        } else {
-            this->m_firstCamera.tick(frameParam->deltaTime);
-        }
-    } else {
-        this->m_secondCamera.tick(frameParam->deltaTime);
-    }
-
-    if ( currentScene->getCameraSettings(cameraResult)) {
+    if ( false) {//currentScene->getCameraSettings(cameraResult)) {
 //        farPlane = cameraResult.far_clip * 100;
         farPlane = 300;
         nearPlane = cameraResult.near_clip;
@@ -81,13 +77,10 @@ void WoWSceneImpl::DoCulling() {
         frameParam->m_lookAtMat4 = lookAtMat4;
 
     } else {
-        if (m_usePlanarCamera) {
-            cameraVec4 = mathfu::vec4(m_planarCamera.getCameraPosition(), 1);
-            lookAtMat4 = this->m_planarCamera.getLookatMat();
-        } else {
-            cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
-            lookAtMat4 = this->m_firstCamera.getLookatMat();
-        }
+
+        cameraVec4 = mathfu::vec4(((ICamera *)controllable)->getCameraPosition(), 1);
+        lookAtMat4 = ((ICamera *)this->controllable)->getLookatMat();
+
         frameParam->m_lookAtMat4 = lookAtMat4;
     }
 
@@ -96,7 +89,7 @@ void WoWSceneImpl::DoCulling() {
                     fov,
                     this->canvAspect,
                     nearPlane,
-                    300);
+                    1000);
     //Camera for rendering
     mathfu::mat4 perspectiveMatrixForCameraRender =
             mathfu::mat4::Perspective(fov,
@@ -402,7 +395,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new M2Scene(this,
 //        "creature/lorthemar/lorthemar.m2");
     m_usePlanarCamera = false;
-    controllable = &m_firstCamera;
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -594,7 +586,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(1, 324981, -1);
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
-//    setScene(2, "world/maps/nzoth/nzoth_32_27.adt", -1);
+    setScene(2, "world/maps/nzoth/nzoth_32_27.adt", -1);
 //    setSceneWithFileDataId(1, 108803, -1);
 //    setSceneWithFileDataId(0, 125407, -1); // phoneix
 //    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
@@ -752,7 +744,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     std::future<bool> updateFuture;
     if (m_supportThreads) {
         cullingFuture = cullingFinished.get_future();
-        std::future<bool> updateFuture;
 
         nextDeltaTime.set_value(deltaTime);
         if (getDevice()->getIsAsynBuffUploadSupported()) {
@@ -785,6 +776,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
     if (!m_supportThreads) {
         processCaches(10);
+        frameParam->deltaTime = deltaTime;
         DoCulling();
     }
 

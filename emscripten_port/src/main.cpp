@@ -286,10 +286,14 @@ extern "C" {
 
 extern "C" {
     void gameloop(double deltaTime) {
+        glfwPollEvents();
+
         processor->processRequests(false);
         processor->processResults(10);
 
-        scene->draw((deltaTime * 1000));
+        scene->draw((deltaTime * 1000.0f));
+        glfwSwapBuffers(window);
+
 
 //        std::cout << "testConf->getRenderWMO() " << testConf->getRenderWMO() << std::endl;
     }
