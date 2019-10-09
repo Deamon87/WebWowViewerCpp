@@ -120,6 +120,15 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         WoWFrameData *frameData
 ) {
 //    std::cout << "Map::checkExterior finished called" << std::endl;
+    if (m_wdlObject == nullptr) {
+        if (m_wdtfile->mphd->flags.wdt_has_maid) {
+            m_wdlObject = new WdlObject(m_api, m_wdtfile->mphd->wdlFileDataID);
+            m_wdlObject->setMapApi(this);
+        }
+
+        return;
+    }
+
 
     std::vector<M2Object *> m2ObjectsCandidates;
     std::vector<WmoObject *> wmoCandidates;
@@ -190,8 +199,14 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                     frameData->adtArray.push_back(adtObject);
                 }
             } else if (!m_lockedMap && true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
-                std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-                adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+                if (m_wdtfile->mphd->flags.wdt_has_maid) {
+                    adtObject = new AdtObject(m_api, i, j, m_wdtfile->mapFileDataIDs[j*64 + i], m_wdtfile);
+                } else {
+                    std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
+                    adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+                }
+
+
 
                 adtObject->setMapApi(this);
                 this->mapTiles[i][j] = adtObject;

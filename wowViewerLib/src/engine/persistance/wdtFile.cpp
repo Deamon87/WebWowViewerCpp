@@ -26,14 +26,11 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
             {
                 [](WdtFile &file, ChunkData &chunkData) {
                     debuglog("Entered MAID");
-                    int *ptr123 ;
-                    chunkData.readValues(ptr123, chunkData.chunkLen/4);
-
-//                    for (int i = 0; i < chunkData.chunkLen/4; i++) {
-//                        std::cout << "i = " << ptr123[i] << std::endl;
-//                    }
+                    for (int i =0; i < 64*64; i++) {
+                        chunkData.readValue(file.mapFileDataIDs[i]);
+                    }
                 }
-            },
+            }
         },
         {
             'MWMO',

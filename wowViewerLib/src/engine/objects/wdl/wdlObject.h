@@ -14,7 +14,8 @@
 class WdlObject {
 
 public:
-    WdlObject(IWoWInnerApi *api, std::string &wdlFileName);
+    explicit WdlObject(IWoWInnerApi *api, std::string &wdlFileName);
+    explicit WdlObject(IWoWInnerApi *api, int wdlFileDataId);
 
     void setMapApi(IMapApi *api) {
         m_mapApi = api;

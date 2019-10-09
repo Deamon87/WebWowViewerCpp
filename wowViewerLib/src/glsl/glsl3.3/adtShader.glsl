@@ -158,7 +158,7 @@ void main() {
     vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
     vec4 weights_temp = (weights * (vec4(1.0) - clamp((vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights), 0.0, 1.0)));
     vec4 weightsNormalized = (weights_temp / vec4(dot(vec4(1.0), weights_temp)));
-    
+
     
     vec4 weightedLayer_0 = (texture(uLayer0, tcLayer0) * weightsNormalized.x);
     vec3 matDiffuse_0 = weightedLayer_0.xyz;
@@ -178,7 +178,7 @@ void main() {
 
     vec4 final = vec4(matDiffuse_3, specBlend_3);
 
-    vec3 matDiffuse = final.rgb * 2.0 * vColor.rgb;
+    vec3 matDiffuse = final.rgb * vColor.rgb;
     vec4 finalColor = vec4(makeDiffTerm(matDiffuse), 1.0);
 
     //Spec part

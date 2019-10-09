@@ -61,7 +61,7 @@ void WoWSceneImpl::DoCulling() {
 //        this->m_secondCamera.tick(frameParam->deltaTime);
 //    }
 
-    if ( false) {//currentScene->getCameraSettings(cameraResult)) {
+    if ( currentScene->getCameraSettings(cameraResult)) {
 //        farPlane = cameraResult.far_clip * 100;
         farPlane = 300;
         nearPlane = cameraResult.near_clip;
@@ -182,6 +182,23 @@ void WoWSceneImpl::setScene(int sceneType, std::string name, int cameraNum) {
         newScene = new Map(this, adtFileName, i, j, mapName);
     }
 }
+
+void WoWSceneImpl::setMap(int mapId, int wdtFileId, float x, float y, float z) {
+    controllable = &m_firstCamera;
+    m_usePlanarCamera = false;
+
+    m_firstCamera.setCameraPos(
+        x,
+        y,
+        z
+    );
+
+    controllable = &m_firstCamera;
+    m_usePlanarCamera = false;
+
+    newScene = new Map(this, mapId, wdtFileId);
+}
+
 
 void WoWSceneImpl::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
     if (newScene != nullptr) {
@@ -586,7 +603,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(1, 324981, -1);
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
-    setScene(2, "world/maps/nzoth/nzoth_32_27.adt", -1);
+//    setScene(2, "world/maps/nzoth/nzoth_32_27.adt", -1);
+    setScene(0, "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    setMap(0, 2339391, 5527, 498, 200);
+//    setScene(2, "world/maps/SilithusPhase01/SilithusPhase01_30_45.adt", -1);
 //    setSceneWithFileDataId(1, 108803, -1);
 //    setSceneWithFileDataId(0, 125407, -1); // phoneix
 //    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
@@ -1040,3 +1060,4 @@ void WoWSceneImpl::provideFile(CacheHolderType holderType, const char *fileName,
 
     }
 }
+

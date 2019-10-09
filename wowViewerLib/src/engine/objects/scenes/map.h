@@ -35,7 +35,7 @@ private:
 
     int m_mapId = -1;
     HWdtFile m_wdtfile;
-    WdlObject * m_wdlObject;
+    WdlObject * m_wdlObject = nullptr;
 
     int m_viewRenderOrder = 0;
 
@@ -56,6 +56,10 @@ public:
         m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
         m_wdlObject = new WdlObject(api, wdlFileName);
         m_wdlObject->setMapApi(this);
+    };
+
+    explicit Map(IWoWInnerApi *api, int mapId, int wdtFileDataId) : m_mapId(mapId), m_api(api), mapName(""){
+        m_wdtfile = api->getWdtFileCache()->getFileId(wdtFileDataId);
     };
 
     explicit Map(IWoWInnerApi *api, std::string adtFileName, int i, int j, std::string mapName) : m_mapId(0), m_api(api), mapName(mapName){

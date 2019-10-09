@@ -227,6 +227,10 @@ extern "C" {
     void setScene(int sceneType, char *name, int cameraNum) {
         scene->setScene(sceneType, std::string(name), cameraNum);
     }
+    EMSCRIPTEN_KEEPALIVE
+    void setMap(int mapId, int wdtFileId, float x, float y, float z) {
+        scene->setMap(mapId, wdtFileId, x, y, z);
+    }
     void setSceneFileDataId(int sceneType, int fileDataId, int cameraNum) {
         scene->setSceneWithFileDataId(sceneType, fileDataId, cameraNum);
     }

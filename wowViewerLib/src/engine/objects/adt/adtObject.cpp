@@ -162,7 +162,6 @@ void AdtObject::createVBO() {
                 vboArray.push_back(mccv->entries[j].blue / 255.0f);
                 vboArray.push_back(mccv->entries[j].alpha / 255.0f);
             } else {
-                // 0.5 to mitigate multiplication by 2 in shader
                 vboArray.push_back(0.5f);
                 vboArray.push_back(0.5f);
                 vboArray.push_back(0.5f);
@@ -171,9 +170,9 @@ void AdtObject::createVBO() {
             /* 1.4 MCLV */
             if (m_adtFile->mcnkStructs[i].mclv != nullptr) {
                 auto &mclv = m_adtFile->mcnkStructs[i].mclv;
-                vboArray.push_back(mclv->values[j].r / 255.0f);
-                vboArray.push_back(mclv->values[j].g / 255.0f);
                 vboArray.push_back(mclv->values[j].b / 255.0f);
+                vboArray.push_back(mclv->values[j].g / 255.0f);
+                vboArray.push_back(mclv->values[j].r / 255.0f);
                 vboArray.push_back(mclv->values[j].a / 255.0f);
             } else {
                 // 0.5 to mitigate multiplication by 2 in shader
@@ -853,4 +852,23 @@ AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::strin
     lodNormalTexture = m_api->getTextureCache()->get("world/maptextures/"+mapname+"/"
         +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+"_n.blp");
 
+}
+
+AdtObject::AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile) {
+    m_api = api;
+    tileAabb = std::vector<CAaBox>(256);
+    globIndexX = std::vector<int>(256);
+    globIndexY = std::vector<int>(256);
+
+    m_wdtFile = wdtFile;
+
+    m_adtFile = m_api->getAdtGeomCache()->getFileId(fileDataIDs.rootADT);
+    m_adtFile->setIsMain(true);
+    m_adtFileTex = m_api->getAdtGeomCache()->getFileId(fileDataIDs.tex0ADT);
+    m_adtFileObj = m_api->getAdtGeomCache()->getFileId(fileDataIDs.obj0ADT);
+    m_adtFileObjLod = m_api->getAdtGeomCache()->getFileId(fileDataIDs.obj1ADT);
+    m_adtFileLod = m_api->getAdtGeomCache()->getFileId(fileDataIDs.lodADT);
+
+    lodDiffuseTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTexture);
+    lodNormalTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTextureN);
 }
