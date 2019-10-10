@@ -72,10 +72,10 @@ void FirstPersonCamera::setMovementSpeed(float value) {
 float springiness = 300; // tweak to taste.
 
 void FirstPersonCamera::tick (animTime_t timeDelta) {
-    double d = timeDelta;//1.0f-exp(log(0.5f)*springiness*timeDelta);
+    double d = 1.0f-exp(log(0.5f)*springiness*timeDelta);
 
-    ah += delta_x;
-    av += delta_y;
+    ah += delta_x*d;
+    av += delta_y*d;
 
     delta_x = 0;
     delta_y = 0;
