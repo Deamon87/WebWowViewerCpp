@@ -62,6 +62,7 @@ public:
     bool depthCulling = true;
     bool backFaceCulling = true;
     EGxBlendEnum blendMode;
+    bool skybox = false;
 
     uint8_t colorMask = 0xFF;
 
@@ -86,6 +87,8 @@ protected:
     int m_layer;
     void *m_m2Object = nullptr;
 
+    bool m_isSkyBox = false;
+
     HGVertexBufferBindings m_bindings;
     int m_start;
     int m_end;
@@ -101,6 +104,7 @@ public:
     virtual bool getIsTransparent() = 0;
     virtual MeshType getMeshType() = 0;
     virtual void setRenderOrder(int renderOrder) = 0;
+    virtual bool getIsSkyBox() { return m_isSkyBox; }
 
     virtual void setStart(int start)  = 0;
     virtual void setEnd(int end)  = 0;

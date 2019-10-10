@@ -476,6 +476,15 @@ void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
         m_lastBlendMode = hmesh->m_blendMode;
     }
 
+    if (m_isInSkyBoxDepthMode != hmesh->getIsSkyBox()) {
+        if (hmesh->getIsSkyBox()) {
+            glDepthRange(0.998f, 1.0f);
+        } else {
+            glDepthRange(0, 1.0f); //default
+        }
+        m_isInSkyBoxDepthMode = hmesh->getIsSkyBox();
+    }
+
     if (gOcclusionQuery != nullptr) {
         gOcclusionQuery->beginQuery();
     }

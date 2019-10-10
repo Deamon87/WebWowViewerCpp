@@ -53,6 +53,7 @@ private:
     bool m_isTransparent;
 
 
+
     uint8_t m_colorMask = 0;
 
     int m_element;

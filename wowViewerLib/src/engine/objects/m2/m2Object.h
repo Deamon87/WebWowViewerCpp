@@ -24,7 +24,7 @@
 
 class M2Object {
 public:
-    M2Object(IWoWInnerApi *api) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr), m_animationManager(nullptr) {}
+    M2Object(IWoWInnerApi *api, bool isSkybox = false) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox) {}
 
     friend class M2InstancingObject;
     friend class M2MeshBufferUpdater;
@@ -47,6 +47,7 @@ private:
 private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
     mathfu::mat4 m_placementInvertMatrix;
+    mathfu::mat4 m_prevSkyBoxMat = mathfu::mat4::Identity();
     mathfu::vec3 m_worldPosition;
     mathfu::vec3 m_localPosition;
     mathfu::vec3 m_localUpVector;
@@ -111,7 +112,7 @@ private:
     AnimationManager *m_animationManager;
 
     bool m_interiorAmbientWasSet = false; // For static only
-
+    bool m_boolSkybox = false;
 
     void debugDumpAnimationSequences();
 

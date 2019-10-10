@@ -32,6 +32,7 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, mathfu::mat4 &mode
     //2. Update individual VS buffer
     auto &meshblockVS = hmesh->getVertexUniformBuffer(2)->getObject<meshWideBlockVS>();
     meshblockVS.Color_Transparency = mathfu::vec4_packed(mathfu::vec4(meshColor.x, meshColor.y, meshColor.z, finalTransparency));
+    meshblockVS.isSkyBox = m2Object.m_boolSkybox ? 1 : 0;
     meshblockVS.VertexShader = materialData.vertexShader;
     meshblockVS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
 

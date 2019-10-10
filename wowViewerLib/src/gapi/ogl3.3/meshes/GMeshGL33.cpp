@@ -16,6 +16,8 @@ GMeshGL33::GMeshGL33(IDevice &device,
     m_backFaceCulling = (int8_t) (meshTemplate.backFaceCulling ? 1 : 0);
     m_triCCW = meshTemplate.triCCW;
 
+    m_isSkyBox = meshTemplate.skybox;
+
     m_colorMask = meshTemplate.colorMask;
 
     m_blendMode = meshTemplate.blendMode;

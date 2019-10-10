@@ -26,7 +26,8 @@ struct modelWideBlockVS {
 struct meshWideBlockVS {
     int VertexShader;
     int IsAffectedByLight;
-    int padding[2];
+    int isSkyBox;
+    int padding;
     mathfu::vec4_packed Color_Transparency;
 
     mathfu::mat4 uTextMat[2];

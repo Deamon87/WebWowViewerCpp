@@ -41,7 +41,7 @@ attribute mat4 aPlacementMat;
 
 //Individual meshes
 layout(std140) uniform meshWideBlockVS {
-    ivec4 vertexShader_IsAffectedByLight;
+    ivec4 vertexShader_IsAffectedByLight_IsSkyBox;
     vec4 color_Transparency;
     mat4 uTextMat[2];
 };
@@ -110,7 +110,8 @@ void main() {
     vTexCoord2 = vec2(0.0);
     vTexCoord3 = vec2(0.0);
 
-    int uVertexShader = vertexShader_IsAffectedByLight.x;
+    int uVertexShader = vertexShader_IsAffectedByLight_IsSkyBox.x;
+    int isSkyBox = vertexShader_IsAffectedByLight_IsSkyBox.z;
 
     //Diffuse_T1
     #if VERTEXSHADER== 0 

@@ -9,6 +9,16 @@
 #include "../../persistance/wdtFile.h"
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/UniformBufferStructures.h"
+#include "../../persistance/header/adtFileHeader.h"
+
+static GBufferBinding bufferBinding[5] = {
+    {(uint32_t)adtShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 60, 0},
+    {(uint32_t)adtShader::Attribute::aHeight, 3, GBindingType::GFLOAT, false, 60, 4},
+    {(uint32_t)adtShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 60, 16 },
+    {(uint32_t)adtShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, 60, 28},
+    {(uint32_t)adtShader::Attribute::aVertexLighting, 4, GBindingType::GFLOAT, false, 60, 44},
+};
+
 
 
 void AdtObject::loadingFinished() {
@@ -144,17 +154,35 @@ void AdtObject::createVBO() {
 //    }
 //    std::cout<< "mlsi: min_index = "<< min_index << " max_index = " << max_index<< std::endl << std::flush;
 
+    const float UNITSIZE =  (1600.0 / 3.0) / 16.0 / 8.0;
     for (int i = 0; i <= m_adtFile->mcnkRead; i++) {
         for (int j = 0; j < 9 * 9 + 8 * 8; j++) {
             /* 1.1 help index */
             vboArray.push_back((float)j);
             /* 1.2 Heights */
-            vboArray.push_back(m_adtFile->mcnkStructs[i].mcvt->height[j]);
+            float iX = fmod(j, 17.0);
+            float iY = floor(j/17.0);
+
+            if (iX > 8.01f) {
+                iY = iY + 0.5;
+                iX = iX - 8.5;
+            }
+            mathfu::vec3 pos = mathfu::vec3(
+                m_adtFile->mapTile[i].position.x - iY * UNITSIZE,
+                m_adtFile->mapTile[i].position.y - iX * UNITSIZE,
+                m_adtFile->mapTile[i].position.z + m_adtFile->mcnkStructs[i].mcvt->height[j] );
+
+            vboArray.push_back(pos.x);
+            vboArray.push_back(pos.y);
+            vboArray.push_back(pos.z);
+
+            std::cout << " i = " << i << " j =  " << j << " pos = " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+
             /* 1.3 Normals */
             for (int k = 0; k < 3; k++) {
                 vboArray.push_back(m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k] / 127.0f);
             }
-            /* 1.4 MCCV */
+            /* 1.4 MCCV */ //Color vertex
             if (m_adtFile->mcnkStructs[i].mccv != nullptr) {
                 auto &mccv = m_adtFile->mcnkStructs[i].mccv;
                 vboArray.push_back(mccv->entries[j].red / 255.0f);
@@ -167,7 +195,7 @@ void AdtObject::createVBO() {
                 vboArray.push_back(0.5f);
                 vboArray.push_back(0.5f);
             }
-            /* 1.4 MCLV */
+            /* 1.4 MCLV */ //Lightning Vertex
             if (m_adtFile->mcnkStructs[i].mclv != nullptr) {
                 auto &mclv = m_adtFile->mcnkStructs[i].mclv;
                 vboArray.push_back(mclv->values[j].b / 255.0f);
@@ -175,7 +203,7 @@ void AdtObject::createVBO() {
                 vboArray.push_back(mclv->values[j].r / 255.0f);
                 vboArray.push_back(mclv->values[j].a / 255.0f);
             } else {
-                // 0.5 to mitigate multiplication by 2 in shader
+                //If MCLV is empty, localDiffuse doesnt exist in shader
                 vboArray.push_back(0.0f);
                 vboArray.push_back(0.0f);
                 vboArray.push_back(0.0f);
@@ -198,17 +226,7 @@ void AdtObject::createVBO() {
 
     GVertexBufferBinding vertexBinding;
     vertexBinding.vertexBuffer = combinedVbo;
-
-	GBufferBinding bufferBinding = {(uint32_t)adtShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 52, 0};
-    vertexBinding.bindings.push_back(bufferBinding);
-	bufferBinding = {(uint32_t)adtShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 52, 4};
-	vertexBinding.bindings.push_back(bufferBinding);
-    bufferBinding = { (uint32_t)adtShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 52, 8 };
-    vertexBinding.bindings.push_back(bufferBinding);
-    bufferBinding = {(uint32_t)adtShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, 52, 20};
-    vertexBinding.bindings.push_back(bufferBinding);
-	bufferBinding = { (uint32_t)adtShader::Attribute::aVertexLighting, 4, GBindingType::GFLOAT, false, 52, 36};
-	vertexBinding.bindings.push_back(bufferBinding);
+    vertexBinding.bindings = std::vector<GBufferBinding>(&bufferBinding[0], &bufferBinding[5]);
 
     adtVertexBindings->addVertexBufferBinding(vertexBinding);
     adtVertexBindings->save();
@@ -304,7 +322,7 @@ void AdtObject::createMeshes() {
         gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
 
         aTemplate.meshType = MeshType::eAdtMesh;
-        aTemplate.triCCW = 0;
+        aTemplate.triCCW = 1;
         aTemplate.depthWrite = 1;
         aTemplate.depthCulling = 1;
         aTemplate.backFaceCulling = 1;
@@ -312,7 +330,7 @@ void AdtObject::createMeshes() {
 
         aTemplate.start = m_adtFile->stripOffsets[i] * 2;
         aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
-        aTemplate.element = DrawElementMode::TRIANGLE_STRIP;
+        aTemplate.element = DrawElementMode::TRIANGLES;
 
         aTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
         aTemplate.vertexBuffers[1] = nullptr;
@@ -365,6 +383,8 @@ void AdtObject::createMeshes() {
 
         if (!noLayers) {
             for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                auto &layerDef = m_adtFileTex->mcnkStructs[i].mcly[j];
+
                 HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
 //            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
                 aTemplate.texture[j] = layer_x;

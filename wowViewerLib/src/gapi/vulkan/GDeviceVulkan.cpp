@@ -888,7 +888,7 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
     }
     if (!m_whitePixelTexture) {
         m_whitePixelTexture = createTexture();
-        unsigned int ff = 0xff;
+        unsigned int ff = 0xffffffff;
         m_whitePixelTexture->loadData(1,1,&ff);
     }
 

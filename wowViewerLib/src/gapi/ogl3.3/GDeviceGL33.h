@@ -137,6 +137,7 @@ protected:
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
+    bool m_isInSkyBoxDepthMode = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
     GVertexBufferGL33 *m_lastBindVertexBuffer = nullptr;

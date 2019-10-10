@@ -168,19 +168,9 @@ if(CMAKE_USE_PTHREADS_INIT)
     set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-pthread")
 endif()
 
-if (CMAKE_NDK_BUILD MATCHES 1)
-	add_library(AWebWoWViewerCpp SHARED ${SOURCE_FILES})
-	target_compile_definitions(AWebWoWViewerCpp PRIVATE WITH_GLESv2=1)
-	target_compile_definitions(WoWViewerLib PRIVATE WITH_GLESv2=1)
-	if (USE_NEON MATCHES 1)
-		target_compile_definitions(WoWViewerLib PRIVATE VECTORIAL_NEON=1)
-		target_compile_definitions(WoWViewerLib PRIVATE VECTORIAL_FORCED=1)
-		target_compile_definitions(WoWViewerLib PRIVATE MATHFU_COMPILE_WITH_SIMD=1)
-	endif ()
-else()
+
 	add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
 
-endif()
 
 add_dependencies(AWebWoWViewerCpp zip)
 add_dependencies(AWebWoWViewerCpp zlib)

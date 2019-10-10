@@ -63,6 +63,10 @@ public:
     PointerChecker<SMOFog> fogs = (fogsLen);
     int fogsLen;
 
+    PointerChecker<char> skyBoxM2FileName = (skyBoxM2FileNameLen);
+    int skyBoxM2FileNameLen = 0;
+
+    int skyboxM2FileId = 0;
 };
 
 

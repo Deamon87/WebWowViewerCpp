@@ -17,6 +17,7 @@
 #include <thread>
 #include <chrono>
 #include <future>
+#include <fstream>
 
 
 
@@ -251,10 +252,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
     m_supportThreads = false;
 #endif
 
-//    std::ofstream *out = new std::ofstream("log_output.txt");
-//    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
-//    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
-
+    std::ofstream *out = new std::ofstream("log_output.txt");
+    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
+    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
+//
     m_sceneWideUniformBuffer = m_gdevice->createUniformBuffer(sizeof(sceneWideBlockVSPS));
 
     this->m_config = config;
@@ -604,14 +605,16 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(2, "world/maps/nzoth/nzoth_32_27.adt", -1);
-    setScene(0, "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
-//    setMap(0, 2339391, 5527, 498, 200);
+//    setScene(2, "world/maps/Kalimdor/Kalimdor_40_47.adt", -1);
+//    setScene(0, "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    setMap(1, 782779, -8183, -4708, 200);
 //    setScene(2, "world/maps/SilithusPhase01/SilithusPhase01_30_45.adt", -1);
 //    setSceneWithFileDataId(1, 108803, -1);
 //    setSceneWithFileDataId(0, 125407, -1); // phoneix
 //    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
     //setSceneWithFileDataId(0, 125995, -1); //portal
 //    setSceneWithFileDataId(0, 1612576, -1); //portal
+    setSceneWithFileDataId(1, 108803, -1); //caverns of time in Tanaris
 
 //    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
 //    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale

@@ -162,6 +162,26 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                         }
                     }
                 },
+                {
+                    'MOSB', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MOSB");
+                            object.skyBoxM2FileNameLen = chunkData.chunkLen;
+                            chunkData.readValues(object.skyBoxM2FileName, object.skyBoxM2FileNameLen);
+                        }
+                    }
+
+                },
+                {
+                    'MOSI', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MOSI");
+                            chunkData.readValue(object.skyboxM2FileId);
+                        }
+                    }
+
+                },
+
         }
 };
 

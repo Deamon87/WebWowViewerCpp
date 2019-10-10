@@ -94,6 +94,8 @@ private:
     std::vector<int> lodGroupLevelWMO;
     std::vector<M2Object*> m_doodadsArray;
 
+    M2Object* skyBox = nullptr;
+
     std::unordered_map<int, HGTexture> diffuseTextures;
     std::unordered_map<int, HGTexture> specularTextures;
 
@@ -132,6 +134,8 @@ public:
     virtual std::vector<PortalInfo_t> &getPortalInfos() override {
         return geometryPerPortal;
     };
+
+    M2Object *getSkyBoxForGroup (int groupNum);;
 
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 

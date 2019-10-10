@@ -34,7 +34,7 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     int interiorGroupNum = -1;
     int currentWmoGroup = -1;
 
-
+    M2Object *m2Skybox = nullptr;
     WmoObject *checkingWmoObj = this->m_wmoObject;
     WmoGroupResult groupResult;
     bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(cameraVec3, 1), groupResult);
@@ -42,6 +42,11 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     if (result) {
         this->m_currentWMO = checkingWmoObj;
         currentWmoGroup = groupResult.groupIndex;
+
+        if (currentWmoGroup > 0) {
+            m2Skybox = this->m_currentWMO->getSkyBoxForGroup(currentWmoGroup);
+        }
+
         if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
             frameData->currentInteriorGroups.push_back(groupResult);
             interiorGroupNum = groupResult.groupIndex;
@@ -86,6 +91,10 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     frameData->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
 
     //Collect M2s for update
+    if (m2Skybox) {
+        frameData->exteriorView.drawnM2s.push_back(m2Skybox);
+        frameData->exteriorView.viewCreated = true;
+    }
     size_t prev_size = frameData->m2Array.size();
     frameData->m2Array.clear();
     frameData->m2Array.reserve(prev_size);
@@ -99,6 +108,8 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     std::unordered_set<M2Object *> m2Set;
     for (auto i : frameData->m2Array)
         m2Set.insert(i);
+
+
     frameData->m2Array.assign( m2Set.begin(), m2Set.end() );
 
 

@@ -47,6 +47,16 @@ void Map::checkCulling(WoWFrameData *frameData) {
     m_viewRenderOrder = 0;
 
     auto lcurrentWMO = this->m_currentWMO;
+    auto currentWmoGroup = this->currentWmoGroup;
+
+    if (currentWmoGroup > 0) {
+        auto m2Skybox = lcurrentWMO->getSkyBoxForGroup(currentWmoGroup);
+        if (m2Skybox != nullptr ) {
+            frameData->exteriorView.drawnM2s.push_back(m2Skybox);
+            std::cout << "m2Skybox added" << std::endl;
+        }
+    }
+
     if ((lcurrentWMO != nullptr) && (!this->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
         lcurrentWMO->resetTraversedWmoGroups();
         if (lcurrentWMO->startTraversingWMOGroup(
@@ -338,7 +348,7 @@ void Map::update(WoWFrameData *frameData) {
 
     int bspNodeId = -1;
     int interiorGroupNum = -1;
-    int currentWmoGroup = -1;
+    this->currentWmoGroup = -1;
 
     //Get center of near plane
     mathfu::vec4 camera4 = mathfu::vec4(cameraVec3, 1.0);

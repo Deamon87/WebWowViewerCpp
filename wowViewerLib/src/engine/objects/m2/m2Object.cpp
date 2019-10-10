@@ -915,6 +915,13 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             0,0,0,1
         );
 
+    if (m_boolSkybox) {
+        m_placementMatrix = m_prevSkyBoxMat.Inverse() * m_placementMatrix;
+        m_prevSkyBoxMat = mathfu::mat4::FromTranslationVector(cameraPos);
+        m_placementMatrix = m_prevSkyBoxMat * m_placementMatrix;
+        m_placementInvertMatrix = m_placementMatrix.Inverse();
+    }
+
 //    /* 1. Calc local camera */
     mathfu::vec3 cameraInlocalPos = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1)).xyz();
 //
@@ -1035,6 +1042,10 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const s
     m_cullResult = false;
     if (!m_loaded) {
         m_cullResult = true;
+        return true;
+    }
+
+    if (m_boolSkybox) {
         return true;
     }
 
@@ -1302,6 +1313,7 @@ void M2Object::createMeshes() {
         meshTemplate.start = (mesh->indexStart + (mesh->Level << 16)) * 2;
         meshTemplate.end = mesh->indexCount;
         meshTemplate.element = DrawElementMode::TRIANGLES;
+        meshTemplate.skybox = m_boolSkybox;
 
         HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
         meshTemplate.texture.resize(textMaterial->textureCount);

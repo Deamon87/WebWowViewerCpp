@@ -33,6 +33,13 @@ bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
         return true;
     }
 
+    if (pA->m_isSkyBox > pB->m_isSkyBox) {
+        return true;
+    }
+    if (pA->m_isSkyBox < pB->m_isSkyBox) {
+        return false;
+    }
+
     if (pA->getMeshType() == MeshType::eM2Mesh && pA->getIsTransparent() && pB->getIsTransparent()) {
         if (pA->m_priorityPlane != pB->m_priorityPlane) {
             return pB->m_priorityPlane > pA->m_priorityPlane;

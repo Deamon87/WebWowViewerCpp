@@ -32,6 +32,7 @@ private:
 
     std::vector<WmoGroupResult> m_currentInteriorGroups;
     WmoObject *m_currentWMO = nullptr;
+    int currentWmoGroup = -1;
 
     int m_mapId = -1;
     HWdtFile m_wdtfile;

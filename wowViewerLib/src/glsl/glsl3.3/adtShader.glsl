@@ -1,6 +1,6 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
-layout(location = 0) in float aHeight;
+layout(location = 0) in vec3 aHeight;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
@@ -46,11 +46,13 @@ void main() {
         iX = iX - 8.5;
     }
 
-    vec4 worldPoint = vec4(
-        uPos.x - iY * UNITSIZE_Y,
-        uPos.y - iX * UNITSIZE_X,
-        uPos.z + aHeight,
-        1);
+//    vec4 worldPoint = vec4(
+//        uPos.x - iY * UNITSIZE_Y,
+//        uPos.y - iX * UNITSIZE_X,
+//        uPos.z + aHeight,
+//        1);
+
+    vec4 worldPoint = vec4(aHeight, 1.0);
 
     vChunkCoords = vec2(iX, iY);
 
@@ -130,9 +132,10 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
         currColor = vec3 (1.0, 1.0, 1.0) ;
         mult = 1.0;
     }
+    vec3 localDiffuse = vVertexLighting;
 
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vVertexLighting;
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
     return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
 }
 
@@ -178,7 +181,7 @@ void main() {
 
     vec4 final = vec4(matDiffuse_3, specBlend_3);
 
-    vec3 matDiffuse = final.rgb * vColor.rgb;
+    vec3 matDiffuse = final.rgb *  vColor.rgb;
     vec4 finalColor = vec4(makeDiffTerm(matDiffuse), 1.0);
 
     //Spec part

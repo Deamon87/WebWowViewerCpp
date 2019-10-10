@@ -504,6 +504,16 @@ static bool isHoleHighRes(uint64_t hole, int i, int j) {
 const int stripLenght = 9;
 const int vertCountPerMCNK= 9 * 9 + 8 * 8;
 static uint8_t squareIndsStrip[stripLenght] = {17, 0, 9, 1, 18, 18, 9, 17, 17};
+const int triangleLength = 12;
+//static uint8_t squareIndsTriangle[triangleLength] = {17, 9, 0, 0, 9, 1, 1, 9, 18, 18, 9, 17};
+static uint8_t squareIndsTriangle[triangleLength] = {9, 0, 17, 9, 1, 0, 9, 18, 1, 9, 17, 18};
+
+
+inline void addSquare(int offset, int x, int y, std::vector<int16_t> &strips) {
+    for (int k = 0; k < triangleLength; k++) {
+        strips.push_back(offset + squareIndsTriangle[k] + 17 * y + x);
+    }
+}
 
 void AdtFile::createTriangleStrip() {
     if (mcnkRead < 0) return;
@@ -528,13 +538,16 @@ void AdtFile::createTriangleStrip() {
                 if (!isHole) {
                     //There are 8 squares in width and 8 square in height.
                     //Each square is 4 triangles
-                    if (!first) {
-                        strips.push_back((i * vertCountPerMCNK) + squareIndsStrip[0] + 17 * y + x);
-                    }
-                    first = false;
-                    for (int k = 0; k < stripLenght; k++) {
-                        strips.push_back((i* vertCountPerMCNK) + squareIndsStrip[k] + 17 * y + x);
-                    }
+//
+//
+//                    if (!first) {
+//                        strips.push_back((i * vertCountPerMCNK) + squareIndsStrip[0] + 17 * y + x);
+//                    }
+//                    first = false;
+//                    for (int k = 0; k < stripLenght; k++) {
+//                        strips.push_back((i* vertCountPerMCNK) + squareIndsStrip[k] + 17 * y + x);
+//                    }
+                    addSquare(i * vertCountPerMCNK, x, y, strips);
                 }
             }
         }

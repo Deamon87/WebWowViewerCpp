@@ -314,6 +314,19 @@ bool WmoObject::doPostLoad(int &groupsProcessedThisFrame) {
             this->createBB(mainGeom->header->bounding_box);
             this->createM2Array();
 
+            if (mainGeom->skyBoxM2FileName != nullptr || mainGeom->skyboxM2FileId != 0) {
+                skyBox = new M2Object(m_api, true);
+                skyBox->setLoadParams(0, {},{});
+
+                if ( mainGeom->skyboxM2FileId != 0) {
+                    skyBox->setModelFileId(mainGeom->skyboxM2FileId);
+                } else {
+                    skyBox->setModelFileName(&mainGeom->skyBoxM2FileName[0]);
+                }
+                skyBox->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+                skyBox->calcWorldPosition();
+            }
+
             m_loaded = true;
             m_loading = false;
             return true;
@@ -1292,6 +1305,15 @@ PointerChecker<SMOLight> &WmoObject::getLightArray() {
 
 PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
     return mainGeom->materials;
+}
+
+M2Object *WmoObject::getSkyBoxForGroup(int groupNum) {
+    if (!m_loaded) return nullptr;
+    if (groupNum < 0 || groupNum >= this->groupObjects.size()) return nullptr;
+    if (!this->groupObjects[groupNum]->getIsLoaded()) return nullptr;
+    if (!this->groupObjects[groupNum]->getWmoGroupGeom()->mogp->flags.showSkyBox) return nullptr;
+
+    return skyBox;
 }
 
 void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {

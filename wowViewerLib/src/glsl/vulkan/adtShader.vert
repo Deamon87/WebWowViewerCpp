@@ -1,7 +1,7 @@
 #version 450
 
 /* vertex shader code */
-layout(location = 0) in float aHeight;
+layout(location = 0) in vec3 aHeight;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
@@ -47,10 +47,14 @@ void main() {
         iX = iX - 8.5;
     }
 
+//    vec4 worldPoint = vec4(
+//        uPos.x - iY * UNITSIZE_Y,
+//        uPos.y - iX * UNITSIZE_X,
+//        uPos.z + aHeight,
+//        1);
+
     vec4 worldPoint = vec4(
-        uPos.x - iY * UNITSIZE_Y,
-        uPos.y - iX * UNITSIZE_X,
-        uPos.z + aHeight,
+        aHeight,
         1);
 
     vChunkCoords = vec2(iX, iY);
