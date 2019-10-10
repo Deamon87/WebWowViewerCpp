@@ -916,9 +916,10 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         );
 
     if (m_boolSkybox) {
-        m_placementMatrix = m_prevSkyBoxMat.Inverse() * m_placementMatrix;
-        m_prevSkyBoxMat = mathfu::mat4::FromTranslationVector(cameraPos);
-        m_placementMatrix = m_prevSkyBoxMat * m_placementMatrix;
+//        m_placementMatrix = m_prevSkyBoxMat.Inverse() * m_placementMatrix;
+//        m_prevSkyBoxMat = mathfu::mat4::FromTranslationVector(cameraPos);
+//        m_placementMatrix = m_prevSkyBoxMat * m_placementMatrix;
+        m_placementMatrix.GetColumn(3) = mathfu::vec4(cameraPos, 1.0);
         m_placementInvertMatrix = m_placementMatrix.Inverse();
     }
 

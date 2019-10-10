@@ -72,16 +72,19 @@ void FirstPersonCamera::setMovementSpeed(float value) {
 float springiness = 300; // tweak to taste.
 
 void FirstPersonCamera::tick (animTime_t timeDelta) {
-    double d = 1-exp(log(0.5)*springiness*timeDelta);
+    double d = timeDelta;//1.0f-exp(log(0.5f)*springiness*timeDelta);
 
-    ah += (delta_x-ah)*d;
-    av += (delta_y-av)*d;
+    ah += delta_x;
+    av += delta_y;
+
+    delta_x = 0;
+    delta_y = 0;
+
+
     if (av < -89.99999f) {
         av = -89.99999f;
-        delta_y = av;
     } else if (av > 89.99999f) {
         av = 89.99999f;
-        delta_y = av;
     }
 
 
@@ -142,7 +145,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     );
     lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
 
-    this->camera = (lookAtMat.Inverse() * mathfu::vec4(0,0,0,1.0)).xyz();
+    this->camera = camera;//(lookAtMat.Inverse() * mathfu::vec4(0,0,0,1.0)).xyz();
 
     //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
 

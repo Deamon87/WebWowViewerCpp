@@ -1099,10 +1099,6 @@ void GDeviceVLK::reset() {
 
 }
 
-VkInstance GDeviceVLK::getVkInstance() {
-    return vkInstance;
-}
-
 void GDeviceVLK::clearScreen() {
 
 }
@@ -1285,7 +1281,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
                                         int8_t triCCW,
                                         EGxBlendEnum blendMode,
                                         int8_t depthCulling,
-                                        int8_t depthWrite) {
+                                        int8_t depthWrite, int8_t skyBoxMode) {
 
     PipelineCacheRecord pipelineCacheRecord;
     pipelineCacheRecord.shader = shader;
@@ -1295,6 +1291,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
     pipelineCacheRecord.blendMode = blendMode;
     pipelineCacheRecord.depthCulling = depthCulling;
     pipelineCacheRecord.depthWrite = depthWrite;
+    pipelineCacheRecord.skyBoxMod = skyBoxMode;
 
     auto i = loadedPipeLines.find(pipelineCacheRecord);
     if (i != loadedPipeLines.end()) {
@@ -1306,7 +1303,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
     }
 
     std::shared_ptr<GPipelineVLK> hgPipeline;
-    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, shader, element, backFaceCulling, triCCW, blendMode, depthCulling, depthWrite));
+    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, shader, element, backFaceCulling, triCCW, blendMode, depthCulling, depthWrite, skyBoxMode));
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;

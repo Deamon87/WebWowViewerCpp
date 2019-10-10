@@ -160,13 +160,6 @@ class IDevice {
 
         virtual void beginFrame() = 0;
         virtual void commitFrame() = 0;
-
-        //TODO: ifdef for when app is compiled without vulkan support
-#ifndef SKIP_VULKAN
-        virtual VkInstance getVkInstance() {
-            return nullptr;
-        };
-#endif
 };
 
 #include <cassert>

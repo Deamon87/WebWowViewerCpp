@@ -107,7 +107,11 @@ void WoWSceneImpl::DoCulling() {
                     upVector);
 
     mathfu::mat4 perspectiveMatrix =
-            mathfu::mat4::Perspective(
+        mathfu::mat4(1, 0, 0, 0,
+                     0, -1, 0, 0,
+                     0, 0, 1.0/2.0, 1/2.0,
+                     0, 0, 0, 1).Transpose() *
+         mathfu::mat4::Perspective(
                     fov,
                     this->canvAspect,
                     nearPlane,
@@ -803,29 +807,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         DoCulling();
     }
 
-    if (!device->getIsAsynBuffUploadSupported()) {
-        int updateObjFrame = device->getUpdateFrameNumber();
-
-        WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
-        updateFrameIndex = updateObjFrame;
-
-        device->startUpdateForNextFrame();
-        currentScene->update(objFrameParam);
-        currentScene->collectMeshes(objFrameParam);
-
-        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
-        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
-        m_sceneWideUniformBuffer->save();
-
-        device->updateBuffers(objFrameParam->renderedThisFrame);
-
-        currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
-        device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
-
-        device->endUpdateForNextFrame();
-    }
-
     device->setClearScreenColor(0.117647, 0.207843, 0.392157);
     device->setViewPortDimensions(0,0,this->canvWidth, this->canvHeight);
     device->beginFrame();
@@ -907,6 +888,29 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 //    nextDeltaTime = deltaTime;
     device->commitFrame();
     device->reset();
+
+    if (!device->getIsAsynBuffUploadSupported()) {
+        int updateObjFrame = device->getUpdateFrameNumber();
+
+        WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+        updateFrameIndex = updateObjFrame;
+
+        device->startUpdateForNextFrame();
+        currentScene->update(objFrameParam);
+        currentScene->collectMeshes(objFrameParam);
+
+        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
+        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
+        m_sceneWideUniformBuffer->save();
+
+        device->updateBuffers(objFrameParam->renderedThisFrame);
+
+        currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
+        device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
+
+        device->endUpdateForNextFrame();
+    }
 
 
     if (m_supportThreads) {

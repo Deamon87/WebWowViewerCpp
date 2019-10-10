@@ -47,8 +47,10 @@ void GUniformBufferVLK::createBuffer() {
     uboAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
 
-    ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &uboInfo, &uboAllocCreateInfo, &stagingUBOBuffer,
-                                     &stagingUBOBufferAlloc, &stagingUBOBufferAllocInfo ));
+    for (int i = 0; i < 4; i++) {
+        ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &uboInfo, &uboAllocCreateInfo, &stagingUBOBuffer[i],
+                                         &stagingUBOBufferAlloc[i], &stagingUBOBufferAllocInfo[i]));
+    }
 
     m_buffCreated = true;
 }
@@ -73,7 +75,7 @@ void GUniformBufferVLK::uploadData(void * data, int length) {
     vbCopyRegion.srcOffset = 0;
     vbCopyRegion.dstOffset = 0;
     vbCopyRegion.size = length;
-    vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), stagingUBOBuffer, g_buf[updateIndex], 1, &vbCopyRegion);
+    vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), stagingUBOBuffer[updateIndex], g_buf[updateIndex], 1, &vbCopyRegion);
 
     m_dataUploaded = true;
     m_needsUpdate[updateIndex] = false;
@@ -82,7 +84,6 @@ void GUniformBufferVLK::uploadData(void * data, int length) {
 void GUniformBufferVLK::save(bool initialSave) {
 ////    if (memcmp(pPreviousContent, pContent, m_size) != 0) {
 //        //1. Copy new to prev
-    memcpy(stagingUBOBufferAllocInfo.pMappedData, getPointerForModification(), m_size);
 
         m_needsUpdate[0] = true;
         m_needsUpdate[1] = true;
@@ -107,6 +108,8 @@ void GUniformBufferVLK::commitUpload() {
     int updateIndex = m_device->getUpdateFrameNumber();
     if (m_buffCreated && m_needsUpdate[updateIndex]) {
         void * data = getPointerForModification();
+        memcpy(stagingUBOBufferAllocInfo[updateIndex].pMappedData, getPointerForModification(), m_size);
+
         this->uploadData(data, m_size);
     }
 }

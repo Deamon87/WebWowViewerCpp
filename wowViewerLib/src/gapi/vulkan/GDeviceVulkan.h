@@ -112,7 +112,8 @@ public:
                                 int8_t triCCW,
                                 EGxBlendEnum blendMode,
                                 int8_t depthCulling,
-                                int8_t depthWrite);
+                                int8_t depthWrite,
+                                int8_t skyBoxMode);
 
     HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
@@ -128,7 +129,6 @@ public:
     virtual void setClearScreenColor(float r, float g, float b) override;
     virtual void setViewPortDimensions(float x, float y, float width, float height) override;
 
-    virtual VkInstance getVkInstance() override;
     virtual VkDevice getVkDevice() {
         return device;
     };
@@ -233,6 +233,7 @@ protected:
         EGxBlendEnum blendMode;
         int8_t depthCulling;
         int8_t depthWrite;
+        int8_t skyBoxMod;
 
         bool operator==(const PipelineCacheRecord &other) const {
             return
@@ -242,7 +243,8 @@ protected:
                 (triCCW == other.triCCW) &&
                 (blendMode == other.blendMode) &&
                 (depthCulling == other.depthCulling) &&
-                (depthWrite == other.depthWrite);
+                (depthWrite == other.depthWrite) &&
+                (skyBoxMod == other.skyBoxMod);
 
         };
     };
@@ -252,6 +254,7 @@ protected:
             return hash<void*>{}(k.shader.get()) ^
             (hash<int8_t >{}(k.backFaceCulling) << 2) ^
             (hash<int8_t >{}(k.triCCW) << 4) ^
+            (hash<int8_t >{}(k.skyBoxMod) << 6) ^
             (hash<int8_t >{}(k.depthCulling) << 8) ^
             (hash<int8_t >{}(k.depthWrite) << 10) ^
             (hash<EGxBlendEnum>{}(k.blendMode) << 16) ^

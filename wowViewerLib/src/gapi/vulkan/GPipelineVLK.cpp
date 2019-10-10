@@ -39,7 +39,8 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     int8_t triCCW,
     EGxBlendEnum blendMode,
     int8_t depthCulling,
-    int8_t depthWrite) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
+    int8_t depthWrite,
+    int8_t skyBoxMode) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
 
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
@@ -61,7 +62,7 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
         triCCW,
         blendMode,
         depthCulling,
-        depthWrite,
+        depthWrite, skyBoxMode,
         vertexBindingDescriptions, vertexAttributeDescriptions);
 }
 
@@ -78,6 +79,7 @@ void GPipelineVLK::createPipeline(
         EGxBlendEnum m_blendMode,
         int8_t m_depthCulling,
         int8_t m_depthWrite,
+        int8_t skyBoxMod,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
@@ -133,8 +135,15 @@ void GPipelineVLK::createPipeline(
     viewport.y = 0.0f;
     viewport.width = (float) swapChainExtent.width;
     viewport.height = (float) swapChainExtent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+
+    if (!skyBoxMod) {
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+    } else {
+        viewport.minDepth = 0.998f;
+        viewport.maxDepth = 1.0f;
+    }
+
 
     VkRect2D scissor = {};
     scissor.offset = {0, 0};
@@ -155,7 +164,14 @@ void GPipelineVLK::createPipeline(
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = m_backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
     rasterizer.frontFace = m_triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
-    rasterizer.depthBiasEnable = VK_FALSE;
+//    if (!skyBoxMod) {
+        rasterizer.depthBiasEnable = VK_FALSE;
+//    } else {
+//        rasterizer.depthBiasEnable = VK_TRUE;
+//        rasterizer.depthBiasConstantFactor = 0.998f;
+//        rasterizer.depthBiasSlopeFactor = 0.002f;
+//        rasterizer.depthBiasClamp = 0.5f;
+//    }
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;

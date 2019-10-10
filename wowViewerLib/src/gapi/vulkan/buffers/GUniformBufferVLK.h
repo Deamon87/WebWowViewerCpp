@@ -60,9 +60,9 @@ private:
     VmaAllocationInfo g_allocInfo[4];
 
 
-    VkBuffer stagingUBOBuffer = VK_NULL_HANDLE;
-    VmaAllocation stagingUBOBufferAlloc = VK_NULL_HANDLE;
-    VmaAllocationInfo stagingUBOBufferAllocInfo = {};
+    VkBuffer stagingUBOBuffer[4] = {VK_NULL_HANDLE,VK_NULL_HANDLE,VK_NULL_HANDLE,VK_NULL_HANDLE};
+    VmaAllocation stagingUBOBufferAlloc[4] = {VK_NULL_HANDLE,VK_NULL_HANDLE,VK_NULL_HANDLE,VK_NULL_HANDLE};
+    VmaAllocationInfo stagingUBOBufferAllocInfo[4] = {};
 };
 
 

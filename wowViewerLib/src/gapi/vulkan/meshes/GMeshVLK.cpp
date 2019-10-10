@@ -24,6 +24,8 @@ GMeshVLK::GMeshVLK(IDevice &device,
     m_backFaceCulling = (int8_t) (meshTemplate.backFaceCulling ? 1 : 0);
     m_triCCW = meshTemplate.triCCW;
 
+    m_isSkyBox = meshTemplate.skybox;
+
     m_colorMask = meshTemplate.colorMask;
 
     m_blendMode = meshTemplate.blendMode;
@@ -47,7 +49,7 @@ GMeshVLK::GMeshVLK(IDevice &device,
 
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(m_shader.get());
     createDescriptorSets(shaderVLK);
-    hgPipelineVLK = m_device.createPipeline(m_bindings, m_shader, m_element, m_backFaceCulling, m_triCCW, m_blendMode,m_depthCulling, m_depthWrite);
+    hgPipelineVLK = m_device.createPipeline(m_bindings, m_shader, m_element, m_backFaceCulling, m_triCCW, m_blendMode,m_depthCulling, m_depthWrite, m_isSkyBox ? 1 : 0);
 }
 
 
