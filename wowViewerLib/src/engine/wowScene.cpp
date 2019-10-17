@@ -107,16 +107,21 @@ void WoWSceneImpl::DoCulling() {
                     upVector);
 
     mathfu::mat4 perspectiveMatrix =
-//        mathfu::mat4(1, 0, 0, 0,
-//                     0, -1, 0, 0,
-//                     0, 0, 1.0/2.0, 1/2.0,
-//                     0, 0, 0, 1).Transpose() *
-
          mathfu::mat4::Perspective(
                     fov,
                     this->canvAspect,
                     nearPlane,
                     farPlane);
+
+    static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1, 0, 0, 0,
+                     0, -1, 0, 0,
+                     0, 0, 1.0/2.0, 1/2.0,
+                     0, 0, 0, 1).Transpose();
+
+     if (device->getIsVulkanAxisSystem()) {
+        perspectiveMatrix = vulkanMatrixFix * perspectiveMatrix;
+     }
+
     frameParam->m_perspectiveMatrix = perspectiveMatrix;
 
     frameParam->m_viewCameraForRender = viewCameraForRender;
