@@ -169,7 +169,6 @@ void WmoScene::doPostLoad(WoWFrameData *frameData) {
 
 void WmoScene::update(WoWFrameData *frameData)  {
     mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
-    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrix;
     mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
 
     for (int i = 0; i < frameData->m2Array.size(); i++) {

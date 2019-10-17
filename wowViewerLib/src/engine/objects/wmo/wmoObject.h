@@ -103,6 +103,8 @@ private:
     std::vector<bool> transverseVisitedPortals;
     // Portal culling stuff end
 
+    HGMesh transformedAntiPortals;
+
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
     void createBB(CAaBox bbox);
@@ -205,7 +207,8 @@ public:
 
     void createWorldPortals();
 
-    void drawTransformedAntiPortalPoints();
+    void createTransformedAntiPortalMesh();
+    void updateTransformedAntiPortalPoints();
 };
 
 

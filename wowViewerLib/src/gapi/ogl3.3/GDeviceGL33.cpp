@@ -480,7 +480,7 @@ void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
         if (hmesh->getIsSkyBox()) {
             glDepthRange(0.998f, 1.0f);
         } else {
-            glDepthRange(0, 1.0f); //default
+            glDepthRange(0, 0.996f); //default
         }
         m_isInSkyBoxDepthMode = hmesh->getIsSkyBox();
     }
@@ -875,7 +875,7 @@ void GDeviceGL33::clearScreen() {
     glDisable(GL_BLEND);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);
 //    glClearColor(0.25, 0.06, 0.015, 0.0);
-    glClearColor(0.117647, 0.207843, 0.392157, 1);
+    glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
     //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
 //    glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);

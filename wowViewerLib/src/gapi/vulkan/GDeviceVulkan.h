@@ -163,7 +163,7 @@ public:
     }
 
     struct DeallocationRecord {
-        int frameNumberToDoAt;
+        unsigned int frameNumberToDoAt;
         std::function<void()> callback;
     };
 

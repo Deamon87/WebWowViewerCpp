@@ -543,10 +543,12 @@ void WmoObject::drawTransformedPortalPoints(){
 #endif
 }
 
-void WmoObject::drawTransformedAntiPortalPoints(){
-    return;
+void WmoObject::createTransformedAntiPortalMesh() {
+
+}
+
+void WmoObject::updateTransformedAntiPortalPoints(){
 #ifndef CULLED_NO_PORTAL_DRAWING
-    /*
     if (!m_loaded) return;
 
     std::vector<uint16_t> indiciesArray;
@@ -560,74 +562,74 @@ void WmoObject::drawTransformedAntiPortalPoints(){
 
     //
 
-    for (int i = 0; i < this->antiPortals.size(); i++) {
-        //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
-
-        int verticlesCount = this->antiPortals[i].portalVertices.size();
-//        if ((verticlesCount - 2) <= 0) {
-//            stripOffsets.push_back(stripOffsets[i]);
-//            continue;
-//        };
+//    for (int i = 0; i < this->antiPortals.size(); i++) {
+//        //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
 //
-//        for (int j =0; j < (((int)verticlesCount)-2); j++) {
-//            indiciesArray.push_back(verticleOffset+0);
-//            indiciesArray.push_back(verticleOffset+j+1);
-//            indiciesArray.push_back(verticleOffset+j+2);
+//        int verticlesCount = this->antiPortals[i].portalVertices.size();
+////        if ((verticlesCount - 2) <= 0) {
+////            stripOffsets.push_back(stripOffsets[i]);
+////            continue;
+////        };
+////
+////        for (int j =0; j < (((int)verticlesCount)-2); j++) {
+////            indiciesArray.push_back(verticleOffset+0);
+////            indiciesArray.push_back(verticleOffset+j+1);
+////            indiciesArray.push_back(verticleOffset+j+2);
+////        }
+////        stripOffset += ((verticlesCount-2) * 3);
+//
+//        for (int j =0; j < verticlesCount; j++) {
+//            verticles.push_back(this->antiPortals[i].portalVertices[j].x);
+//            verticles.push_back(this->antiPortals[i].portalVertices[j].y);
+//            verticles.push_back(this->antiPortals[i].portalVertices[j].z);
 //        }
-//        stripOffset += ((verticlesCount-2) * 3);
-
-        for (int j =0; j < verticlesCount; j++) {
-            verticles.push_back(this->antiPortals[i].portalVertices[j].x);
-            verticles.push_back(this->antiPortals[i].portalVertices[j].y);
-            verticles.push_back(this->antiPortals[i].portalVertices[j].z);
-        }
-
-        verticleOffset += verticlesCount;
-        stripOffsets.push_back(stripOffset);
-    }
-    GLuint indexVBO;
-    GLuint bufferVBO;
-//    glGenBuffers(1, &indexVBO);
-//    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-//    if (indiciesArray.size() > 0) {
-//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size() * 2, &indiciesArray[0], GL_STATIC_DRAW);
+//
+//        verticleOffset += verticlesCount;
+//        stripOffsets.push_back(stripOffset);
 //    }
-    glGenBuffers(1, &bufferVBO);
-    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-    if (verticles.size() > 0) {
-        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
-    }
+//    GLuint indexVBO;
+//    GLuint bufferVBO;
+////    glGenBuffers(1, &indexVBO);
+////    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+////    if (indiciesArray.size() > 0) {
+////        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size() * 2, &indiciesArray[0], GL_STATIC_DRAW);
+////    }
+//    glGenBuffers(1, &bufferVBO);
+//    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
+//    if (verticles.size() > 0) {
+//        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
+//    }
+//
+//    glDisable(GL_BLEND);
+//
+//    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
+//
+//    auto drawPortalShader = m_api->getPortalShader();
+//    static float colorArr[4] = {0.819607843, 0.058, 0.058, 0.3};
+//    glUniformMatrix4fv(drawPortalShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
+//    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
+//
+//    glDisable(GL_CULL_FACE);
+//    glDepthMask(GL_FALSE);
+//
+//    int offset = 0;
+//    for (int i = 0; i < this->antiPortals.size(); i++) {
+////        int indeciesLen = stripOffsets[i+1] - stripOffsets[i];
+//
+////        glDrawElements(GL_TRIANGLES, indeciesLen, GL_UNSIGNED_SHORT, (void *)(offset * 2));
+//        glDrawArrays(GL_TRIANGLES, 0, verticles.size()*4);
+//
+////        offset += indeciesLen;
+//    }
+//    glDepthMask(GL_TRUE);
+//    glDisable(GL_BLEND);
+//
+//    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
+//    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
+//
+//    glDeleteBuffers(1, &indexVBO);
+//    glDeleteBuffers(1, &bufferVBO);
 
-    glDisable(GL_BLEND);
-
-    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
-
-    auto drawPortalShader = m_api->getPortalShader();
-    static float colorArr[4] = {0.819607843, 0.058, 0.058, 0.3};
-    glUniformMatrix4fv(drawPortalShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
-    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
-
-    glDisable(GL_CULL_FACE);
-    glDepthMask(GL_FALSE);
-
-    int offset = 0;
-    for (int i = 0; i < this->antiPortals.size(); i++) {
-//        int indeciesLen = stripOffsets[i+1] - stripOffsets[i];
-
-//        glDrawElements(GL_TRIANGLES, indeciesLen, GL_UNSIGNED_SHORT, (void *)(offset * 2));
-        glDrawArrays(GL_TRIANGLES, 0, verticles.size()*4);
-
-//        offset += indeciesLen;
-    }
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
-    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
-
-    glDeleteBuffers(1, &indexVBO);
-    glDeleteBuffers(1, &bufferVBO);
-          */
 #endif
 
 }

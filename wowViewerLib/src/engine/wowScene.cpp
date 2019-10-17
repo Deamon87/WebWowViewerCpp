@@ -40,7 +40,7 @@ void WoWSceneImpl::processCaches(int limit) {
 void WoWSceneImpl::DoCulling() {
     if (currentScene == nullptr) return;
 
-    float farPlane = 1000;
+    float farPlane = m_config->getFarPlane();
     float nearPlane = 1.0;
     float fov = toRadian(45.0);
 
@@ -90,7 +90,7 @@ void WoWSceneImpl::DoCulling() {
                     fov,
                     this->canvAspect,
                     nearPlane,
-                    1000);
+                    m_config->getFarPlaneForCulling());
     //Camera for rendering
     mathfu::mat4 perspectiveMatrixForCameraRender =
             mathfu::mat4::Perspective(fov,
@@ -107,10 +107,11 @@ void WoWSceneImpl::DoCulling() {
                     upVector);
 
     mathfu::mat4 perspectiveMatrix =
-        mathfu::mat4(1, 0, 0, 0,
-                     0, -1, 0, 0,
-                     0, 0, 1.0/2.0, 1/2.0,
-                     0, 0, 0, 1).Transpose() *
+//        mathfu::mat4(1, 0, 0, 0,
+//                     0, -1, 0, 0,
+//                     0, 0, 1.0/2.0, 1/2.0,
+//                     0, 0, 0, 1).Transpose() *
+
          mathfu::mat4::Perspective(
                     fov,
                     this->canvAspect,
@@ -273,7 +274,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
     //Test scene 1: Shattrath
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
 //    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
-//
+
 //    currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
@@ -534,7 +535,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
 
 //    currentScene = new WmoScene(this,
-//        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
+ //       "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
 //    currentScene = new WmoScene(this,
 //                                "world/wmo/azeroth/buildings/stranglethorn_bootybay/bootybay.wmo"); //bootybay
 //                                2324175);
@@ -604,6 +605,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
 //    setScene(2, "world/maps/ahnqiraj/ahnqiraj_26_46.adt", -1);
 //    setScene(2, "WORLD/MAPTEXTURES/MAELSTROMDEATHWINGFIGHT/MAELSTROMDEATHWINGFIGHT_32_32.adt", -1);
+//    setScene(2, "WORLD/MAPTEXTURES/Expansion01/Expansion01_44_8.adt", -1);
 //    setSceneWithFileDataId(1, 1846142, -1); // wmo with horde symbol
 //    setSceneWithFileDataId(1, 324981, -1);
 //    setSceneWithFileDataId(1, 1120838, -1);
@@ -618,7 +620,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
     //setSceneWithFileDataId(0, 125995, -1); //portal
 //    setSceneWithFileDataId(0, 1612576, -1); //portal
-    setSceneWithFileDataId(1, 108803, -1); //caverns of time in Tanaris
+//    setSceneWithFileDataId(1, 108803, -1); //caverns of time in Tanaris
 
 //    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
 //    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale
@@ -807,7 +809,9 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         DoCulling();
     }
 
-    device->setClearScreenColor(0.117647, 0.207843, 0.392157);
+    float clearColor[4];
+    m_config->getClearColor(clearColor);
+    device->setClearScreenColor(clearColor[0], clearColor[1], clearColor[2]);
     device->setViewPortDimensions(0,0,this->canvWidth, this->canvHeight);
     device->beginFrame();
 

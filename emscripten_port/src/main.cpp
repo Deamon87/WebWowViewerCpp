@@ -273,6 +273,19 @@ extern "C" {
     }
 
     EMSCRIPTEN_KEEPALIVE
+    void setClearColor(float r, float g, float b) {
+        testConf->setClearColor(r,g,b,0.0);
+    }
+    EMSCRIPTEN_KEEPALIVE
+    void setFarPlane(float value) {
+        testConf->setFarPlane(value);
+    }
+    EMSCRIPTEN_KEEPALIVE
+    void setFarPlaneForCulling(float value) {
+        testConf->setFarPlaneForCulling(value);
+    }
+
+    EMSCRIPTEN_KEEPALIVE
     void setAnimationId(int animationId) {
         scene->setAnimationId(animationId);
     }

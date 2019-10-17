@@ -34,9 +34,13 @@ void GVertexBufferVLK::uploadData(void *data, int length) {
             auto &l_stagingVertexBuffer = stagingVertexBuffer;
             auto &l_stagingVertexBufferAlloc = stagingVertexBufferAlloc;
 
+            auto &l_hVertexBuffer = g_hVertexBuffer;
+            auto &l_hVertexBufferAlloc = g_hVertexBufferAlloc;
+
             m_device.addDeallocationRecord(
-                [l_device, l_stagingVertexBuffer, l_stagingVertexBufferAlloc]() {
+                [l_device, l_stagingVertexBuffer, l_stagingVertexBufferAlloc, l_hVertexBuffer, l_hVertexBufferAlloc]() {
                     vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingVertexBuffer, l_stagingVertexBufferAlloc);
+                    vmaDestroyBuffer(l_device->getVMAAllocator(), l_hVertexBuffer, l_hVertexBufferAlloc);
                 }
             );
         }
@@ -51,8 +55,8 @@ void GVertexBufferVLK::uploadData(void *data, int length) {
         ibAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
         ibAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-        vmaCreateBuffer(m_device.getVMAAllocator(), &vbInfo, &ibAllocCreateInfo, &stagingVertexBuffer,
-                                         &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo);
+        ERR_GUARD_VULKAN(vmaCreateBuffer(m_device.getVMAAllocator(), &vbInfo, &ibAllocCreateInfo, &stagingVertexBuffer,
+                                         &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo));
 
         memcpy(stagingVertexBufferAllocInfo.pMappedData, data, length);
 

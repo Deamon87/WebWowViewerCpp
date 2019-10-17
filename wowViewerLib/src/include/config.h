@@ -40,12 +40,30 @@ private:
     bool useWotlkLogic = false;
     float movementSpeed = 1.0;
 
+    float nearPlane = 1;
+    float farPlane = 1000;
+    float farPlaneForCulling = 1000;
+
+    float clearColor[4] = {0.117647, 0.207843, 0.392157, 0};
     float ambientColor[4];
     float sunColor[4];
     float fogColor[4];
 
     std::string areaName;
 public:
+    float getFarPlane() {
+        return farPlane;
+    }
+    void setFarPlane(float value) {
+        farPlane = value;
+    }
+    float getFarPlaneForCulling() {
+        return farPlaneForCulling;
+    }
+    void setFarPlaneForCulling(float value) {
+        farPlaneForCulling = value;
+    }
+
     bool getRenderWMO () {
         return renderWMO;
     }
@@ -182,6 +200,19 @@ public:
         return movementSpeed;
     }
 
+    void setClearColor(float r, float g, float b, float a) {
+        clearColor[0] = r;
+        clearColor[1] = g;
+        clearColor[2] = b;
+        clearColor[3] = a;
+    }
+
+    void getClearColor(float *clearC){
+        clearC[0] = clearColor[0];
+        clearC[1] = clearColor[1];
+        clearC[2] = clearColor[2];
+        clearC[3] = clearColor[3];
+    }
     void setAmbientColor(float r, float g, float b, float a) {
         ambientColor[0] = r;
         ambientColor[1] = g;

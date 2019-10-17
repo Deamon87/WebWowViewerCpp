@@ -16,6 +16,22 @@ void GIndexBufferVLK::createBuffer() {
 }
 
 void GIndexBufferVLK::destroyBuffer() {
+    if (m_dataUploaded) {
+        auto *l_device = &m_device;
+
+        auto &l_stagingIndexBuffer = stagingIndexBuffer;
+        auto &l_stagingIndexBufferAlloc = stagingIndexBufferAlloc;
+
+        auto &l_hIndexBuffer = g_hIndexBuffer;
+        auto &l_hIndexBufferAlloc = g_hIndexBufferAlloc;
+
+        m_device.addDeallocationRecord(
+            [l_device, l_stagingIndexBuffer, l_stagingIndexBufferAlloc, l_hIndexBuffer, l_hIndexBufferAlloc]() {
+                vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingIndexBuffer, l_stagingIndexBufferAlloc);
+                vmaDestroyBuffer(l_device->getVMAAllocator(), l_hIndexBuffer, l_hIndexBufferAlloc);
+            }
+        );
+    }
 }
 
 static int ibo_uploaded = 0;
@@ -26,9 +42,13 @@ void GIndexBufferVLK::uploadData(void * data, int length) {
             auto &l_stagingIndexBuffer = stagingIndexBuffer;
             auto &l_stagingIndexBufferAlloc = stagingIndexBufferAlloc;
 
+            auto &l_hIndexBuffer = g_hIndexBuffer;
+            auto &l_hIndexBufferAlloc = g_hIndexBufferAlloc;
+
             m_device.addDeallocationRecord(
-                [l_device, l_stagingIndexBuffer, l_stagingIndexBufferAlloc]() {
+                [l_device, l_stagingIndexBuffer, l_stagingIndexBufferAlloc, l_hIndexBuffer, l_hIndexBufferAlloc]() {
                     vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingIndexBuffer, l_stagingIndexBufferAlloc);
+                    vmaDestroyBuffer(l_device->getVMAAllocator(), l_hIndexBuffer, l_hIndexBufferAlloc);
                 }
             );
         }
