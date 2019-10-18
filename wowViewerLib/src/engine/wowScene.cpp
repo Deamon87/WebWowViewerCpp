@@ -278,9 +278,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
     //Test scene 1: Shattrath
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
-//    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
+    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-//    currentScene = new Map(this, 530, "Expansion01");
+    currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
@@ -611,7 +611,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setScene(2, "world/maps/ahnqiraj/ahnqiraj_26_46.adt", -1);
 //    setScene(2, "WORLD/MAPTEXTURES/MAELSTROMDEATHWINGFIGHT/MAELSTROMDEATHWINGFIGHT_32_32.adt", -1);
 //    setScene(2, "WORLD/MAPTEXTURES/Expansion01/Expansion01_44_8.adt", -1);
-    setSceneWithFileDataId(1, 1846142, -1); // wmo with horde symbol
+//    setSceneWithFileDataId(1, 1846142, -1); // wmo with horde symbol
 //    setSceneWithFileDataId(1, 324981, -1);
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);

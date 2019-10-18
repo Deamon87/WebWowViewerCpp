@@ -158,7 +158,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -1194,7 +1194,7 @@ void GDeviceVLK::commitFrame() {
 //    std::cout << "imageIndex = " << imageIndex << " currentDrawFrame = " << currentDrawFrame << std::endl << std::flush;
 
     if (((imageIndex+1)&3) != currentDrawFrame) {
-        std::cout << "imageIndex != currentDrawFrame" << std::endl;
+//        std::cout << "imageIndex != currentDrawFrame" << std::endl;
     }
 
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());

@@ -9,17 +9,17 @@ layout(location = 3) in vec3 vNormal;
 layout(location = 4) in vec3 vVertexLighting;
 
 
-layout(binding=5) uniform sampler2D uLayer0;
-layout(binding=6) uniform sampler2D uLayer1;
-layout(binding=7) uniform sampler2D uLayer2;
-layout(binding=8) uniform sampler2D uLayer3;
-layout(binding=9) uniform sampler2D uAlphaTexture;
-layout(binding=10) uniform sampler2D uLayerHeight0;
-layout(binding=11) uniform sampler2D uLayerHeight1;
-layout(binding=12) uniform sampler2D uLayerHeight2;
-layout(binding=13) uniform sampler2D uLayerHeight3;
+layout(set=1, binding=5) uniform sampler2D uLayer0;
+layout(set=1, binding=6) uniform sampler2D uLayer1;
+layout(set=1, binding=7) uniform sampler2D uLayer2;
+layout(set=1, binding=8) uniform sampler2D uLayer3;
+layout(set=1, binding=9) uniform sampler2D uAlphaTexture;
+layout(set=1, binding=10) uniform sampler2D uLayerHeight0;
+layout(set=1, binding=11) uniform sampler2D uLayerHeight1;
+layout(set=1, binding=12) uniform sampler2D uLayerHeight2;
+layout(set=1, binding=13) uniform sampler2D uLayerHeight3;
 
-layout(std140, binding=3) uniform modelWideBlockPS {
+layout(std140, set=0, binding=3) uniform modelWideBlockPS {
     vec4 uViewUp;
     vec4 uSunDir_FogStart;
     vec4 uSunColor_uFogEnd;
@@ -27,7 +27,7 @@ layout(std140, binding=3) uniform modelWideBlockPS {
     vec4 FogColor;
 };
 
-layout(std140, binding=4) uniform meshWideBlockPS {
+layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     vec4 uHeightScale;
     vec4 uHeightOffset;
 };
