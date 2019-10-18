@@ -20,11 +20,6 @@ layout(location=5) in vec4 vDiffuseColor;
 
 layout(location=0) out vec4 outputColor;
 
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-
 //Whole model
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
     vec4 uViewUp;

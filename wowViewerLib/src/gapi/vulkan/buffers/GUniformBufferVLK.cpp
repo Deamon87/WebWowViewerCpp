@@ -62,6 +62,26 @@ void GUniformBufferVLK::uploadData(void * data, int length) {
     assert(m_buffCreated);
     assert(length > 0 && length <= m_size);
 
+    if (length > m_size) {
+        if (m_dataUploaded) {
+            auto *l_device = m_device;
+            auto &l_stagingUBOBuffer = stagingUBOBuffer;
+            auto &l_stagingUBOBufferAlloc = stagingUBOBufferAlloc;
+
+            auto &l_hUBOBuffer = g_buf;
+            auto &l_hUBOBufferAlloc = g_alloc;
+
+            m_device->addDeallocationRecord(
+                [l_device, l_stagingUBOBuffer, l_stagingUBOBufferAlloc, l_hUBOBuffer, l_hUBOBufferAlloc]() {
+                    vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingUBOBuffer, l_stagingUBOBufferAlloc);
+                    vmaDestroyBuffer(l_device->getVMAAllocator(), l_hUBOBuffer, l_hUBOBufferAlloc);
+                }
+            );
+        }
+
+        m_size = length;
+        createBuffer();
+    }
 
 
     memcpy(stagingUBOBufferAllocInfo.pMappedData, data, length);

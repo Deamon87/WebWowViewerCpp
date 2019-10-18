@@ -1278,6 +1278,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
         for(auto shaderVLKRec : m_shaderPermutCache) {
             ((GShaderPermutationVLK *) shaderVLKRec.second.get())->updateDescriptorSet(updateFrame);
         }
+        m_shaderDescriptorUpdateNeeded = false;
     }
 
     if (vkBeginCommandBuffer(commandBuffers[updateFrame], &beginInfo) != VK_SUCCESS) {
@@ -1310,11 +1311,23 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
         auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
         auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
 
+
+        int uboInd = 0;
         for (int k = 0; k < 3; k++) {
-            dynamicOffset[k] = ((GUniformBufferVLK *)(meshVLK->getVertexUniformBuffer(k).get()))->m_offset;
+//            if (shaderVLK->hasBondUBO[k]) {
+                auto *uboB = (GUniformBufferVLK *) (meshVLK->getVertexUniformBuffer(k).get());
+                if (uboB) {
+                    dynamicOffset[uboInd++] = (uboB)->m_offset;
+                }
+//            }
         }
         for (int k = 1; k < 3; k++) {
-            dynamicOffset[k+3] = ((GUniformBufferVLK *)(meshVLK->getFragmentUniformBuffer(k).get()))->m_offset;
+//            if (shaderVLK->hasBondUBO[3+k]) {
+                auto *uboB = (GUniformBufferVLK *) (meshVLK->getFragmentUniformBuffer(k).get());
+                if (uboB) {
+                    dynamicOffset[uboInd++] = (uboB)->m_offset;
+                }
+//            }
         }
 
         vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);
@@ -1342,7 +1355,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
 
         //UBO
         vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-            meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, 5, &dynamicOffset[0]);
+            meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
 
         //Image
         vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,

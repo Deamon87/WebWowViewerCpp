@@ -56,10 +56,11 @@ void GShaderPermutationVLK::createUBODescriptorLayout() {
         VkDescriptorSetLayoutBinding uboLayoutBinding = {};
         uboLayoutBinding.binding = uboVertBinding.binding;
         uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+        hasBondUBO[uboVertBinding.binding] = true;
         shaderLayoutBindings.push_back(uboLayoutBinding);
     }
     for (int i = 0; i < fragShaderMeta->uboBindings.size(); i++) {
@@ -68,10 +69,11 @@ void GShaderPermutationVLK::createUBODescriptorLayout() {
         VkDescriptorSetLayoutBinding uboLayoutBinding = {};
         uboLayoutBinding.binding = uboVertBinding.binding;
         uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
+        hasBondUBO[uboVertBinding.binding] = true;
         shaderLayoutBindings.push_back(uboLayoutBinding);
     }
 
@@ -145,7 +147,7 @@ void GShaderPermutationVLK::updateDescriptorSet(int index) {
         writeDescriptor.pNext = nullptr;
         writeDescriptor.dstBinding = uboVertBinding.binding;
         writeDescriptor.dstArrayElement = 0;
-        writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         writeDescriptor.descriptorCount = 1;
         writeDescriptor.pBufferInfo = &bufferInfos[buffInd++];
         writeDescriptor.pImageInfo = nullptr;
@@ -162,7 +164,7 @@ void GShaderPermutationVLK::updateDescriptorSet(int index) {
         writeDescriptor.pNext = nullptr;
         writeDescriptor.dstBinding = uboFragBinding.binding;
         writeDescriptor.dstArrayElement = 0;
-        writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         writeDescriptor.descriptorCount = 1;
         writeDescriptor.pBufferInfo = &bufferInfos[buffInd++];
         writeDescriptor.pImageInfo = nullptr;

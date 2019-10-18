@@ -60,6 +60,8 @@ private:
     void createUboDescriptorSets();
 
     void updateDescriptorSet(int index);
+
+    std::vector<bool> hasBondUBO = std::vector<bool>(7, false);
 };
 
 
