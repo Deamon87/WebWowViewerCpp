@@ -11,6 +11,7 @@ class GDeviceGL33;
 #include <unordered_map>
 #include "../GDeviceVulkan.h"
 #include "../../interface/IShaderPermutation.h"
+#include "../descriptorSets/GDescriptorSet.h"
 
 class GShaderPermutationVLK : public IShaderPermutation {
     friend class GDeviceVLK;
@@ -20,7 +21,7 @@ public:
 
     VkShaderModule getVertexModule() {return vertShaderModule;}
     VkShaderModule getFragmentModule() {return fragShaderModule;}
-    VkDescriptorSetLayout getDescriptorLayout() {return descriptorSetLayout;}
+    VkDescriptorSetLayout getImageDescriptorLayout() {return imageDescriptorSetLayout;}
     std::string getShaderName() {return m_shaderName; }
     virtual int getTextureBindingStart() = 0;
     virtual int getTextureCount() = 0;
@@ -36,15 +37,17 @@ protected:
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
 
-    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorSetLayout uboDescriptorSetLayout;
+    VkDescriptorSetLayout imageDescriptorSetLayout;
+
+    GDescriptorSets *uboDescriptorSets[4] = {nullptr,nullptr,nullptr,nullptr};
 
     GDeviceVLK *m_device;
 
 
 private:
-    std::unordered_map<size_t, unsigned int> m_uniformMap;
     std::string m_shaderName;
-    };
+};
 
 
 #endif //AWEBWOWVIEWERCPP_GSHADERPERMUTATION_H

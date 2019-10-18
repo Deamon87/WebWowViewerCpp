@@ -21,6 +21,7 @@ class GM2MeshVLK;
 class GOcclusionQueryVLK;
 class GParticleMeshVLK;
 class GPipelineVLK;
+class GDescriptorPoolVLK;
 
 typedef std::shared_ptr<GPipelineVLK> HPipelineVLK;
 
@@ -31,6 +32,8 @@ class gMeshTemplate;
 #include "vk_mem_alloc.h"
 
 #include "../interface/IDevice.h"
+#include "descriptorSets/GDescriptorSet.h"
+#include "descriptorSets/GDescriptorPoolVLK.h"
 #include <optional>
 
 
@@ -129,6 +132,9 @@ public:
 
     virtual void setClearScreenColor(float r, float g, float b) override;
     virtual void setViewPortDimensions(float x, float y, float width, float height) override;
+
+
+    std::shared_ptr<GDescriptorSets> createDescriptorSet(GShaderPermutationVLK *shaderVLK, int uniforms, int images);
 
     virtual VkDevice getVkDevice() {
         return device;
@@ -306,6 +312,8 @@ protected:
     std::vector<VkSemaphore> uploadSemaphores;
     std::vector<VkFence> uploadFences;
 
+    std::vector<GDescriptorPoolVLK*> m_descriptorPools;
+
     VmaAllocator vmaAllocator;
     VmaPool uboVmaPool;
 
@@ -317,6 +325,8 @@ protected:
 
     unsigned int m_frameNumber = 0;
     bool m_firstFrame = true;
+    bool m_shaderDescriptorUpdateNeeded = false;
+
 
     uint8_t m_lastColorMask = 0xFF;
     int8_t m_lastDepthWrite = -1;
@@ -345,31 +355,6 @@ protected:
 
     HGTexture m_blackPixelTexture = nullptr;
     HGTexture m_whitePixelTexture = nullptr;
-
-public:
-    struct M2ShaderCacheRecordHasher {
-        std::size_t operator()(const M2ShaderCacheRecord& k) const {
-            using std::hash;
-            return hash<int>{}(k.vertexShader) ^ (hash<int>{}(k.pixelShader)) ^
-                   (hash<bool>{}(k.unlit)) ^
-                   (hash<bool>{}(k.alphaTestOn) << 8) ^
-                   (hash<bool>{}(k.unFogged) << 16) ^
-                   (hash<bool>{}(k.unShadowed) << 24);
-        };
-    };
-    std::unordered_map<M2ShaderCacheRecord, std::weak_ptr<IShaderPermutation>, M2ShaderCacheRecordHasher> m2ShaderCache;
-
-    struct WMOShaderCacheRecordHasher {
-        std::size_t operator()(const WMOShaderCacheRecord& k) const {
-            using std::hash;
-            return hash<int>{}(k.vertexShader) ^ (hash<int>{}(k.pixelShader)) ^
-                   (hash<bool>{}(k.unlit)) ^
-                   (hash<bool>{}(k.alphaTestOn) << 8) ^
-                   (hash<bool>{}(k.unFogged) << 16) ^
-                   (hash<bool>{}(k.unShadowed) << 24);
-        };
-    };
-    std::unordered_map<WMOShaderCacheRecord, std::weak_ptr<IShaderPermutation>, WMOShaderCacheRecordHasher> wmoShaderCache;
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
@@ -383,8 +368,6 @@ protected:
     std::vector<char> aggregationBufferForUpload;
 
     std::list<DeallocationRecord> listOfDeallocators;
-
-    std::unordered_map<std::string, std::string> shaderCache;
 
     int uniformBuffersCreated = 0;
 };

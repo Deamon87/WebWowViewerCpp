@@ -25,14 +25,11 @@ public:
     void save(bool initialSave = false) override;
     void createBuffer() override;
 
-    void commitUpload();
-    VkBuffer getGPUBuffer() {
-        int updateFrame = m_device->getUpdateFrameNumber();
-        return g_buf[updateFrame];
-    }
     size_t getSize() {return m_size;}
 private:
-
+    void setOffset(size_t offset) {
+        m_offset = offset;
+    }
     void destroyBuffer();
     void bind(int bindingPoint); //Should be called only by GDevice
     void unbind();
@@ -45,7 +42,7 @@ private:
 
 private:
     size_t m_size;
-    size_t m_offset[4] = {0, 0, 0, 0};
+    size_t m_offset = 0;
 
     void * pFrameOneContent;
     bool m_buffCreated = false;
@@ -53,16 +50,13 @@ private:
 
     int m_creationIndex = 0;
 
-    bool m_needsUpdate[4] = {false, false, false, false};
+    VkBuffer g_buf;
+    VmaAllocation g_alloc;
+    VmaAllocationInfo g_allocInfo;
 
-    VkBuffer g_buf[4];
-    VmaAllocation g_alloc[4];
-    VmaAllocationInfo g_allocInfo[4];
-
-
-    VkBuffer stagingUBOBuffer[4] = {VK_NULL_HANDLE,VK_NULL_HANDLE,VK_NULL_HANDLE,VK_NULL_HANDLE};
-    VmaAllocation stagingUBOBufferAlloc[4] = {VK_NULL_HANDLE,VK_NULL_HANDLE,VK_NULL_HANDLE,VK_NULL_HANDLE};
-    VmaAllocationInfo stagingUBOBufferAllocInfo[4] = {};
+    VkBuffer stagingUBOBuffer = VK_NULL_HANDLE;
+    VmaAllocation stagingUBOBufferAlloc = VK_NULL_HANDLE;
+    VmaAllocationInfo stagingUBOBufferAllocInfo = {};
 };
 
 

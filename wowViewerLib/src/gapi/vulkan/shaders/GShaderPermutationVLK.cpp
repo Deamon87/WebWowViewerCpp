@@ -76,6 +76,18 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
         shaderLayoutBindings.push_back(uboLayoutBinding);
     }
 
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = shaderLayoutBindings.size();
+    layoutInfo.pBindings = &shaderLayoutBindings[0];
+
+    if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &uboDescriptorSetLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+
+    shaderLayoutBindings.clear();
+
+
     for (int i = 0; i < getTextureCount(); i++) {
         VkDescriptorSetLayoutBinding imageLayoutBinding = {};
         imageLayoutBinding.binding = getTextureBindingStart()+i;
@@ -87,12 +99,11 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
         shaderLayoutBindings.push_back(imageLayoutBinding);
     }
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = shaderLayoutBindings.size();
     layoutInfo.pBindings = &shaderLayoutBindings[0];
 
-    if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+    if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &uboDescriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
 }

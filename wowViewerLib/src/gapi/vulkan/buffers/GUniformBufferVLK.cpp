@@ -9,7 +9,6 @@
 GUniformBufferVLK::GUniformBufferVLK(IDevice &device, size_t size) : m_device((GDeviceVLK *) &device){
     m_size = size;
     pFrameOneContent = new char[size];
-    createBuffer();
 }
 
 GUniformBufferVLK::~GUniformBufferVLK() {
@@ -32,9 +31,7 @@ void GUniformBufferVLK::createBuffer() {
     VmaAllocationCreateInfo allocCreateInfo = {};
     allocCreateInfo.pool = m_device->getUBOPool();
 
-    for (int i = 0; i < 4; i++) {
-        vmaCreateBuffer(m_device->getVMAAllocator(), &bufCreateInfo, &allocCreateInfo, &g_buf[i], &g_alloc[i], &g_allocInfo[i]);
-    }
+    vmaCreateBuffer(m_device->getVMAAllocator(), &bufCreateInfo, &allocCreateInfo, &g_buf, &g_alloc, &g_allocInfo);
 
     // CPU Buffer
     VkBufferCreateInfo uboInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -47,10 +44,8 @@ void GUniformBufferVLK::createBuffer() {
     uboAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
 
-    for (int i = 0; i < 4; i++) {
-        ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &uboInfo, &uboAllocCreateInfo, &stagingUBOBuffer[i],
-                                         &stagingUBOBufferAlloc[i], &stagingUBOBufferAllocInfo[i]));
-    }
+    ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &uboInfo, &uboAllocCreateInfo, &stagingUBOBuffer,
+                                         &stagingUBOBufferAlloc, &stagingUBOBufferAllocInfo));
 
     m_buffCreated = true;
 }
@@ -67,7 +62,9 @@ void GUniformBufferVLK::uploadData(void * data, int length) {
     assert(m_buffCreated);
     assert(length > 0 && length <= m_size);
 
-    int updateIndex = m_device->getUpdateFrameNumber();
+
+
+    memcpy(stagingUBOBufferAllocInfo.pMappedData, data, length);
 
 //    memcpy(stagingUBOBufferAllocInfo.pMappedData, data, length);
 
@@ -75,24 +72,13 @@ void GUniformBufferVLK::uploadData(void * data, int length) {
     vbCopyRegion.srcOffset = 0;
     vbCopyRegion.dstOffset = 0;
     vbCopyRegion.size = length;
-    vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), stagingUBOBuffer[updateIndex], g_buf[updateIndex], 1, &vbCopyRegion);
+    vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), stagingUBOBuffer, g_buf, 1, &vbCopyRegion);
 
     m_dataUploaded = true;
-    m_needsUpdate[updateIndex] = false;
 }
 
 void GUniformBufferVLK::save(bool initialSave) {
-////    if (memcmp(pPreviousContent, pContent, m_size) != 0) {
-//        //1. Copy new to prev
 
-        m_needsUpdate[0] = true;
-        m_needsUpdate[1] = true;
-        m_needsUpdate[2] = true;
-        m_needsUpdate[3] = true;
-//
-//        2. Update UBO
-
-//    }
 }
 
 void *GUniformBufferVLK::getPointerForUpload() {
@@ -103,14 +89,3 @@ void *GUniformBufferVLK::getPointerForModification() {
     return pFrameOneContent;
 
 }
-
-void GUniformBufferVLK::commitUpload() {
-    int updateIndex = m_device->getUpdateFrameNumber();
-    if (m_buffCreated && m_needsUpdate[updateIndex]) {
-        void * data = getPointerForModification();
-        memcpy(stagingUBOBufferAllocInfo[updateIndex].pMappedData, getPointerForModification(), m_size);
-
-        this->uploadData(data, m_size);
-    }
-}
-
