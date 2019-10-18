@@ -176,7 +176,7 @@ void AdtObject::createVBO() {
             vboArray.push_back(pos.y);
             vboArray.push_back(pos.z);
 
-            std::cout << " i = " << i << " j =  " << j << " pos = " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+//            std::cout << " i = " << i << " j =  " << j << " pos = " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
 
             /* 1.3 Normals */
             for (int k = 0; k < 3; k++) {

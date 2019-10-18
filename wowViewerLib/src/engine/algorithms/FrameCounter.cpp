@@ -8,28 +8,28 @@
 
 void FrameCounter::beginMeasurement() {
 #ifndef SKIP_VULKAN
-    m_startTime = std::chrono::high_resolution_clock::now();
+    //m_startTime = std::chrono::high_resolution_clock::now();
 #endif
 }
 
 void FrameCounter::endMeasurement(const std::string &source) {
     #ifndef SKIP_VULKAN
-    auto end = std::chrono::high_resolution_clock::now();
-    frameCounter++;
+    //auto end = std::chrono::high_resolution_clock::now();
+    //frameCounter++;
 
-    double time_taken =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end - m_startTime).count();
+    //double time_taken =
+    //    std::chrono::duration_cast<std::chrono::milliseconds>(end - m_startTime).count();
 
-    m_accomulatedTimeInterval += time_taken;
+    //m_accomulatedTimeInterval += time_taken;
 
-    //More than 1 second elapsed
-    if (m_accomulatedTimeInterval > 1000) {
-        auto timePerFrame = m_accomulatedTimeInterval / frameCounter;
+    ////More than 1 second elapsed
+    //if (m_accomulatedTimeInterval > 1000) {
+    //    auto timePerFrame = m_accomulatedTimeInterval / frameCounter;
 
-        std::cout << source << " perframe time = " << timePerFrame << "ms " << std::endl;
+    //    std::cout << source << " perframe time = " << timePerFrame << "ms " << std::endl;
 
-        frameCounter = 0;
-        m_accomulatedTimeInterval = 0;
-    }
+    //    frameCounter = 0;
+    //    m_accomulatedTimeInterval = 0;
+    //}
 #endif
 }

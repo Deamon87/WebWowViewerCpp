@@ -1,4 +1,4 @@
-#define _X86_ 1
+#define _AMD64_ 1
 
 //#define NOWINBASEINTERLOCK
 

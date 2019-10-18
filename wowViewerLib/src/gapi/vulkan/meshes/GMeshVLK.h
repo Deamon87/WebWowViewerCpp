@@ -8,6 +8,7 @@
 #include "../GVertexBufferBindingsVLK.h"
 #include "../../interface/meshes/IMesh.h"
 #include "../GDeviceVulkan.h"
+#include "../descriptorSets/GDescriptorSet.h"
 
 class GMeshVLK : public IMesh {
     friend class GDeviceVLK;
@@ -58,7 +59,7 @@ private:
 
 
 //Vulkan specific
-    std::vector<VkDescriptorSet> descriptorSets;
+    std::vector<std::shared_ptr<GDescriptorSets>> descriptorSets;
     std::vector<bool> descriptorSetsUpdated;
 
     VkDescriptorPool m_descriptorPool;

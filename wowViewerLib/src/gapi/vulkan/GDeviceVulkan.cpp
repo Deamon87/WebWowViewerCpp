@@ -29,8 +29,8 @@
 #include "shaders/GWMOWaterShaderVLK.h"
 #include "shaders/GM2RibbonShaderPermutationVLK.h"
 
-const int WIDTH = 1024;
-const int HEIGHT = 768;
+const int WIDTH = 1900;
+const int HEIGHT = 1000;
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation",
@@ -879,6 +879,8 @@ void GDeviceVLK::endUpdateForNextFrame() {
     }
 }
 
+typedef std::shared_ptr<GMeshVLK> HVKMesh;
+
 void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
     if (!m_blackPixelTexture) {
@@ -1260,9 +1262,9 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             lastVertexBuffer = vertexBuffer;
         }
 
-
+        auto descSet = meshVLK->descriptorSets[updateFrame]->getDescSet();
         vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-            meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &meshVLK->descriptorSets[updateFrame], 0, 0);
+            meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &descSet, 0, 0);
 
         vkCmdDrawIndexed(commandBuffers[updateFrame], meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }
@@ -1310,4 +1312,21 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
 
     return hgPipeline;
 
+}
+
+std::shared_ptr<GDescriptorSets>
+GDeviceVLK::createDescriptorSet(GShaderPermutationVLK *shaderVLK, int uniforms, int images) {
+    //1. Try to allocate from existing sets
+    std::shared_ptr<GDescriptorSets> descriptorSet;
+
+    for (size_t i = 0; i < m_descriptorPools.size(); i++) {
+        descriptorSet = m_descriptorPools[i]->allocate(shaderVLK, uniforms, images);
+        if (descriptorSet != nullptr) return descriptorSet;
+    }
+
+    //2. Create new descriptor set and allocate from it
+    GDescriptorPoolVLK * newPool = new GDescriptorPoolVLK(*this);
+    m_descriptorPools.push_back(newPool);
+
+    return newPool->allocate(shaderVLK, uniforms, images);
 }

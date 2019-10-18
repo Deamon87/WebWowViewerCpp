@@ -18,19 +18,19 @@ bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
         return true;
     }
 
+    if (pA->getMeshType() > pB->getMeshType()) {
+        return false;
+    }
+    if (pA->getMeshType() < pB->getMeshType()) {
+        return true;
+    }
+
     if (pA->m_renderOrder != pB->m_renderOrder ) {
         if (!pA->getIsTransparent()) {
             return pA->m_renderOrder < pB->m_renderOrder;
         } else {
             return pA->m_renderOrder > pB->m_renderOrder;
         }
-    }
-
-    if (pA->getMeshType() > pB->getMeshType()) {
-        return false;
-    }
-    if (pA->getMeshType() < pB->getMeshType()) {
-        return true;
     }
 
     if (pA->m_isSkyBox > pB->m_isSkyBox) {

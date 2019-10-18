@@ -5,9 +5,25 @@
 #ifndef AWEBWOWVIEWERCPP_GDESCRIPTORSET_H
 #define AWEBWOWVIEWERCPP_GDESCRIPTORSET_H
 
+class GDeviceVLK;
 
-class GDescriptorSet {
+#include <vector>
+#include <vulkan/vulkan.h>
+#include "../../interface/IDevice.h"
+#include "../GDeviceVulkan.h"
 
+
+
+class GDescriptorSets {
+public:
+    explicit GDescriptorSets(IDevice &device, VkDescriptorSet descriptorSet);
+
+    void writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites);
+
+    VkDescriptorSet getDescSet() {return m_descriptorSet;}
+private:
+    GDeviceVLK &m_device;
+    VkDescriptorSet m_descriptorSet;
 };
 
 

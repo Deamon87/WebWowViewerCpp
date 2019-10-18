@@ -104,7 +104,7 @@ public:
 
 private:
     void drawMesh(HGMesh &hmesh);
-
+    bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {
         HBlpTexture texture;
