@@ -158,7 +158,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -1303,13 +1303,21 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
     VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
 
+    uint32_t dynamicOffset[5] = {};
+
     for (auto &mesh: iMeshes) {
         auto *meshVLK = ((GMeshVLK *)mesh.get());
-        auto *binding ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
+        auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
+        auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
 
+        for (int k = 0; k < 3; k++) {
+            dynamicOffset[k] = ((GUniformBufferVLK *)(meshVLK->getVertexUniformBuffer(k).get()))->m_offset;
+        }
+        for (int k = 1; k < 3; k++) {
+            dynamicOffset[k+3] = ((GUniformBufferVLK *)(meshVLK->getFragmentUniformBuffer(k).get()))->m_offset;
+        }
 
         vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);
-
 
         auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
         auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
@@ -1327,9 +1335,18 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             lastVertexBuffer = vertexBuffer;
         }
 
-        auto descSet = meshVLK->descriptorSets[updateFrame]->getDescSet();
+        auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
+        auto imageDescSet = meshVLK->descriptorSets[updateFrame]->getDescSet();
+
+
+
+        //UBO
         vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-            meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &descSet, 0, 0);
+            meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, 5, &dynamicOffset[0]);
+
+        //Image
+        vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                meshVLK->hgPipelineVLK->pipelineLayout, 1, 1, &imageDescSet, 0, 0);
 
         vkCmdDrawIndexed(commandBuffers[updateFrame], meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }

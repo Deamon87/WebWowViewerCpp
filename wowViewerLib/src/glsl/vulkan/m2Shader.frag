@@ -41,10 +41,10 @@ layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     vec4 uPcColor;
 };
 
-layout(binding=5) uniform sampler2D uTexture;
-layout(binding=6) uniform sampler2D uTexture2;
-layout(binding=7) uniform sampler2D uTexture3;
-layout(binding=8) uniform sampler2D uTexture4;
+layout(set=1,binding=5) uniform sampler2D uTexture;
+layout(set=1,binding=6) uniform sampler2D uTexture2;
+layout(set=1,binding=7) uniform sampler2D uTexture3;
+layout(set=1,binding=8) uniform sampler2D uTexture4;
 
 
 vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {

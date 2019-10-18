@@ -160,6 +160,11 @@ public:
         int uploadFrame = getUpdateFrameNumber();
         return uploadCommandBuffers[uploadFrame];
     }
+
+    HGUniformBuffer getUploadBuffer(int index) {
+        return m_UBOFrames[index].m_uniformBufferForUpload;
+    }
+
     VkCommandBuffer getTextureTransferCommandBuffer() {
         int uploadFrame = getUpdateFrameNumber();
         return textureTransferCommandBuffers[uploadFrame];

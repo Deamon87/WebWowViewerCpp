@@ -210,14 +210,15 @@ void GPipelineVLK::createPipeline(
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 
-    auto descLayout = shaderVLK->getDescriptorLayout();
+    std::array<VkDescriptorSetLayout, 2> descLayouts = {shaderVLK->getUboDescriptorLayout(),shaderVLK->getImageDescriptorLayout()};
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.pNext = NULL;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descLayout;
+    pipelineLayoutInfo.pPushConstantRanges = NULL;
+    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pSetLayouts = &descLayouts[0];
 
     std::cout << "Pipeline layout for "+shaderVLK->getShaderName() << std::endl;
 

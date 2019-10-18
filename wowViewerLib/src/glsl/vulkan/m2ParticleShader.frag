@@ -12,9 +12,9 @@ layout(std140, binding=4) uniform meshWideBlockPS {
     ivec4 uPixelShaderv;
 };
 
-layout(binding=5) uniform sampler2D uTexture;
-layout(binding=6) uniform sampler2D uTexture2;
-layout(binding=7) uniform sampler2D uTexture3;
+layout(set=1,binding=5) uniform sampler2D uTexture;
+layout(set=1,binding=6) uniform sampler2D uTexture2;
+layout(set=1,binding=7) uniform sampler2D uTexture3;
 
 layout(location = 0) out vec4 outputColor;
 

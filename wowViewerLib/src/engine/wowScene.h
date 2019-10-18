@@ -212,7 +212,7 @@ private:
     iInnerSceneApi *newScene = nullptr;
 
     bool needToDropCache = false;
-    std::promise<float> nextDeltaTime;
+    std::promise<float> nextDeltaTime = std::promise<float>();
     std::promise<float> nextDeltaTimeForUpdate;
     std::promise<bool> cullingFinished;
     std::promise<bool> updateFinished;

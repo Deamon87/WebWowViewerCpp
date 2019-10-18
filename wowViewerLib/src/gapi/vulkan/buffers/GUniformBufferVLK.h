@@ -15,6 +15,7 @@ class GUniformBufferVLK : public IUniformBuffer {
 public:
     friend class GDeviceVLK;
     friend class GMeshVLK;
+    friend class GShaderPermutationVLK;
 
     explicit GUniformBufferVLK(IDevice &device, size_t size);
     ~GUniformBufferVLK() override;

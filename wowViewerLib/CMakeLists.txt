@@ -140,6 +140,20 @@ if (LINK_OGL)
 endif()
 
 if (LINK_VULKAN)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross)
+
+    set(SPIRV_REF_SOURCES
+        src/spirv/spirv_refl_main.cpp
+    )
+    set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.cpp)
+
+    add_custom_target(SPIRV_EXTRACT_META ALL)
+
+    add_executable(spirv_reflection ${SPIRV_REF_SOURCES})
+    target_link_libraries(spirv_reflection spirv-cross-c)
+    target_include_directories(spirv_reflection PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross/)
+
+
     macro(configure_filesVLK srcDir destDir)
         message(STATUS "Configuring directory ${destDir}")
         make_directory(${destDir})
@@ -187,12 +201,23 @@ if (LINK_VULKAN)
                             DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
                 endif()
 
+                add_custom_command(
+                        TARGET SPIRV_EXTRACT_META
+                        PRE_BUILD
+                        DEPENDS ${SPIRV})
+
                 list(APPEND SPIRV_BINARY_FILES ${SPIRV})
             endif(NOT IS_DIRECTORY ${srcTemplatePath})
         endforeach(templateFile)
     endmacro(configure_filesVLK)
 
     configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv)
+    add_custom_command(
+            TARGET SPIRV_EXTRACT_META
+            COMMAND spirv_reflection ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
+            DEPENDS ${SPIRV_BINARY_FILES}
+            VERBATIM)
+
 endif()
 
 set(SOURCE_FILES src/engine/wowScene.cpp
@@ -418,7 +443,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
-            src/gapi/vulkan/descriptorSets/GDescriptorSet.h)
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.cpp src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
@@ -487,6 +512,7 @@ if (LINK_VULKAN)
             DEPENDS ${SPIRV_BINARY_FILES}
     )
     add_dependencies(WoWViewerLib Shaders)
+    add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
     target_include_directories(WoWViewerLib INTERFACE ${Vulkan_INCLUDE_DIR})
     #Vulkan stuff end
 else()

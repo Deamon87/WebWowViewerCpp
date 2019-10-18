@@ -61,7 +61,7 @@ void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
 
     descriptorSets = std::vector<std::shared_ptr<GDescriptorSets>>(4, NULL);
     for (int j = 0; j < 4; j++) {
-        descriptorSets[j] = m_device.createDescriptorSet(shaderVLK, 5, shaderVLK->getTextureCount());
+        descriptorSets[j] = m_device.createDescriptorSet(descLayout, 0, shaderVLK->getTextureCount());
     }
 
     descriptorSetsUpdated = std::vector<bool>(4, false);

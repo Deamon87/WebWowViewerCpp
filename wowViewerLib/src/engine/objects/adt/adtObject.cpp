@@ -22,7 +22,7 @@ static GBufferBinding bufferBinding[5] = {
 
 
 void AdtObject::loadingFinished() {
-    std::cout << "AdtObject::loadingFinished finished called";
+//    std::cout << "AdtObject::loadingFinished finished called";
 
     createVBO();
     loadAlphaTextures();

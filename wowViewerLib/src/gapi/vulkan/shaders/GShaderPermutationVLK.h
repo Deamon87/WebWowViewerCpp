@@ -12,6 +12,7 @@ class GDeviceGL33;
 #include "../GDeviceVulkan.h"
 #include "../../interface/IShaderPermutation.h"
 #include "../descriptorSets/GDescriptorSet.h"
+#include "shaderMeta/shaderMetaData.h"
 
 class GShaderPermutationVLK : public IShaderPermutation {
     friend class GDeviceVLK;
@@ -22,6 +23,7 @@ public:
     VkShaderModule getVertexModule() {return vertShaderModule;}
     VkShaderModule getFragmentModule() {return fragShaderModule;}
     VkDescriptorSetLayout getImageDescriptorLayout() {return imageDescriptorSetLayout;}
+    VkDescriptorSetLayout getUboDescriptorLayout() {return uboDescriptorSetLayout;}
     std::string getShaderName() {return m_shaderName; }
     virtual int getTextureBindingStart() = 0;
     virtual int getTextureCount() = 0;
@@ -36,6 +38,9 @@ protected:
 
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
+
+    const shaderMetaData *fragShaderMeta;
+    const shaderMetaData *vertShaderMeta;
 
     VkDescriptorSetLayout uboDescriptorSetLayout;
     VkDescriptorSetLayout imageDescriptorSetLayout;

@@ -299,6 +299,11 @@ extern "C" {
         scene->setReplaceTextureArray(textures);
     }
 
+    EMSCRIPTEN_KEEPALIVE
+    void setScenePos(float x, float y, float z) {
+        scene->setScenePos(x,y,z);
+    }
+
 }
 
 extern "C" {

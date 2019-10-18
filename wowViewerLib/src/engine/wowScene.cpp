@@ -262,9 +262,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
     m_supportThreads = false;
 #endif
 
-    std::ofstream *out = new std::ofstream("log_output.txt");
-    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
-    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
+//    std::ofstream *out = new std::ofstream("log_output.txt");
+//    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
+//    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
 //
     m_sceneWideUniformBuffer = m_gdevice->createUniformBuffer(sizeof(sceneWideBlockVSPS));
 
@@ -611,7 +611,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setScene(2, "world/maps/ahnqiraj/ahnqiraj_26_46.adt", -1);
 //    setScene(2, "WORLD/MAPTEXTURES/MAELSTROMDEATHWINGFIGHT/MAELSTROMDEATHWINGFIGHT_32_32.adt", -1);
 //    setScene(2, "WORLD/MAPTEXTURES/Expansion01/Expansion01_44_8.adt", -1);
-//    setSceneWithFileDataId(1, 1846142, -1); // wmo with horde symbol
+    setSceneWithFileDataId(1, 1846142, -1); // wmo with horde symbol
 //    setSceneWithFileDataId(1, 324981, -1);
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
