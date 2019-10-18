@@ -1276,7 +1276,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     //Update
     if (m_shaderDescriptorUpdateNeeded) {
         for(auto shaderVLKRec : m_shaderPermutCache) {
-            ((GShaderPermutationVLK *) shaderVLKRec.second.get())->
+            ((GShaderPermutationVLK *) shaderVLKRec.second.get())->updateDescriptorSet(updateFrame);
         }
     }
 
@@ -1380,12 +1380,12 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
 }
 
 std::shared_ptr<GDescriptorSets>
-GDeviceVLK::createDescriptorSet(GShaderPermutationVLK *shaderVLK, int uniforms, int images) {
+GDeviceVLK::createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int images) {
     //1. Try to allocate from existing sets
     std::shared_ptr<GDescriptorSets> descriptorSet;
 
     for (size_t i = 0; i < m_descriptorPools.size(); i++) {
-        descriptorSet = m_descriptorPools[i]->allocate(shaderVLK, uniforms, images);
+        descriptorSet = m_descriptorPools[i]->allocate(layout, uniforms, images);
         if (descriptorSet != nullptr) return descriptorSet;
     }
 
@@ -1393,5 +1393,5 @@ GDeviceVLK::createDescriptorSet(GShaderPermutationVLK *shaderVLK, int uniforms, 
     GDescriptorPoolVLK * newPool = new GDescriptorPoolVLK(*this);
     m_descriptorPools.push_back(newPool);
 
-    return newPool->allocate(shaderVLK, uniforms, images);
+    return newPool->allocate(layout, uniforms, images);
 }

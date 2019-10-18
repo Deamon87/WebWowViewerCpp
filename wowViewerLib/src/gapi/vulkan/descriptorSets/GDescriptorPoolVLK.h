@@ -16,7 +16,7 @@ class GDescriptorPoolVLK {
 public:
     explicit GDescriptorPoolVLK(IDevice &device);
 
-    std::shared_ptr<GDescriptorSets> allocate(GShaderPermutationVLK *shaderVLK, int uniforms, int images);
+    std::shared_ptr<GDescriptorSets> allocate(VkDescriptorSetLayout layout, int uniforms, int images);
 
 private:
     GDeviceVLK &m_device;

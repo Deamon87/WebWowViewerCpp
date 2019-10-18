@@ -47,13 +47,7 @@ GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderName, IDevice * 
 
 }
 
-void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
-    auto vertShaderCode = readFile("spirv/"+m_shaderName+".vert.spv");
-    auto fragShaderCode = readFile("spirv/"+m_shaderName+".frag.spv");
-
-    vertShaderModule = createShaderModule(vertShaderCode);
-    fragShaderModule = createShaderModule(fragShaderCode);
-
+void GShaderPermutationVLK::createUBODescriptorLayout() {
     std::vector<VkDescriptorSetLayoutBinding> shaderLayoutBindings;
     for (int i = 0; i < 3; i++) {
         VkDescriptorSetLayoutBinding uboLayoutBinding = {};
@@ -84,9 +78,10 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
     if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &uboDescriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
+}
 
-    shaderLayoutBindings.clear();
-
+void GShaderPermutationVLK::createImageDescriptorLayout() {
+    std::vector<VkDescriptorSetLayoutBinding> shaderLayoutBindings;
 
     for (int i = 0; i < getTextureCount(); i++) {
         VkDescriptorSetLayoutBinding imageLayoutBinding = {};
@@ -99,6 +94,7 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
         shaderLayoutBindings.push_back(imageLayoutBinding);
     }
 
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = shaderLayoutBindings.size();
     layoutInfo.pBindings = &shaderLayoutBindings[0];
@@ -106,5 +102,90 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
     if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &uboDescriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
+}
+
+void GShaderPermutationVLK::updateDescriptorSet(int index) {
+    int bufferInfoInd = 0;
+    std::array<VkDescriptorBufferInfo, 5> bufferInfos;
+    for (int i = 0; i < 3; i++) {
+        GUniformBufferVLK *buffer = (GUniformBufferVLK *) this->getVertexUniformBuffer(i).get();
+        if (buffer != nullptr) {
+            VkDescriptorBufferInfo bufferInfo = {};
+            bufferInfo.buffer = buffer->g_buf[j];
+            bufferInfo.offset = 0;
+            bufferInfo.range = buffer->getSize();
+            bufferInfos[bufferInfoInd] = bufferInfo;
+
+            VkWriteDescriptorSet writeDescriptor;
+            writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptor.dstSet = descriptorSets[j]->getDescSet();
+            writeDescriptor.pNext = nullptr;
+            writeDescriptor.dstBinding = i;
+            writeDescriptor.dstArrayElement = 0;
+            writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptor.descriptorCount = 1;
+            writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];;
+            writeDescriptor.pImageInfo = nullptr;
+            writeDescriptor.pTexelBufferView = nullptr;
+            descriptorWrites.push_back(writeDescriptor);
+
+        }
+    }
+    for (int i = 1; i < 3; i++) {
+        GUniformBufferVLK *buffer = (GUniformBufferVLK *) this->getFragmentUniformBuffer(i).get();
+        if (buffer != nullptr) {
+            VkDescriptorBufferInfo bufferInfo = {};
+            bufferInfo.buffer = buffer->g_buf[j];
+            bufferInfo.offset = 0;
+            bufferInfo.range = buffer->getSize();
+            bufferInfos[bufferInfoInd] = bufferInfo;
+
+            VkWriteDescriptorSet writeDescriptor;
+            writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptor.dstSet = descriptorSets[j]->getDescSet();
+            writeDescriptor.pNext = nullptr;
+            writeDescriptor.dstBinding = 2 + i;
+            writeDescriptor.dstArrayElement = 0;
+            writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptor.descriptorCount = 1;
+            writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];
+            writeDescriptor.pImageInfo = nullptr;
+            writeDescriptor.pTexelBufferView = nullptr;
+            descriptorWrites.push_back(writeDescriptor);
+        }
+    }
+
+    descriptorSets[j]->writeToDescriptorSets(descriptorWrites);
+}
+
+void GShaderPermutationVLK::createUboDescriptorSets() {
+    uboDescriptorSets = std::vector<std::shared_ptr<GDescriptorSets>>(4, NULL);
+
+    for (int j = 0; j < 4; j++) {
+
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+        uboDescriptorSets[j] = m_device->createDescriptorSet(uboDescriptorSetLayout, 5, this->getTextureCount());
+
+
+
+
+    }
+
+
+}
+
+void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
+    auto vertShaderCode = readFile("spirv/"+m_shaderName+".vert.spv");
+    auto fragShaderCode = readFile("spirv/"+m_shaderName+".frag.spv");
+
+    vertShaderModule = createShaderModule(vertShaderCode);
+    fragShaderModule = createShaderModule(fragShaderCode);
+
+    this->createUBODescriptorLayout();
+    this->createImageDescriptorLayout();
+    this->createUboDescriptorSets();
+
+
 }
 

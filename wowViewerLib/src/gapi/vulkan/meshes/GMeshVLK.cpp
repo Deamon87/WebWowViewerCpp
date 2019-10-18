@@ -57,7 +57,7 @@ GMeshVLK::GMeshVLK(IDevice &device,
 
 void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
 
-    auto descLayout = shaderVLK->getDescriptorLayout();
+    auto descLayout = shaderVLK->getImageDescriptorLayout();
 
     descriptorSets = std::vector<std::shared_ptr<GDescriptorSets>>(4, NULL);
     for (int j = 0; j < 4; j++) {
@@ -68,57 +68,7 @@ void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
 
 
     for (int j = 0; j < 4; j++) {
-        std::array<VkDescriptorBufferInfo, 5> bufferInfos;
         std::vector<VkWriteDescriptorSet> descriptorWrites;
-        int bufferInfoInd = 0;
-
-        for (int i = 0; i < 3; i++ ) {
-            GUniformBufferVLK * buffer = (GUniformBufferVLK *) this->getVertexUniformBuffer(i).get();
-            if (buffer != nullptr) {
-                VkDescriptorBufferInfo bufferInfo = {};
-                bufferInfo.buffer = buffer->g_buf[j];
-                bufferInfo.offset = 0;
-                bufferInfo.range = buffer->getSize();
-                bufferInfos[bufferInfoInd] = bufferInfo;
-
-                VkWriteDescriptorSet writeDescriptor;
-                writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                writeDescriptor.dstSet = descriptorSets[j]->getDescSet();
-                writeDescriptor.pNext = nullptr;
-                writeDescriptor.dstBinding = i;
-                writeDescriptor.dstArrayElement = 0;
-                writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                writeDescriptor.descriptorCount = 1;
-                writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];;
-                writeDescriptor.pImageInfo = nullptr;
-                writeDescriptor.pTexelBufferView = nullptr;
-                descriptorWrites.push_back(writeDescriptor);
-
-            }
-        }
-        for (int i = 1; i < 3; i++ ) {
-            GUniformBufferVLK *buffer = (GUniformBufferVLK *) this->getFragmentUniformBuffer(i).get();
-            if (buffer != nullptr) {
-                VkDescriptorBufferInfo bufferInfo = {};
-                bufferInfo.buffer = buffer->g_buf[j];
-                bufferInfo.offset = 0;
-                bufferInfo.range = buffer->getSize();
-                bufferInfos[bufferInfoInd]= bufferInfo;
-
-                VkWriteDescriptorSet writeDescriptor;
-                writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                writeDescriptor.dstSet = descriptorSets[j]->getDescSet();
-                writeDescriptor.pNext = nullptr;
-                writeDescriptor.dstBinding = 2 + i;
-                writeDescriptor.dstArrayElement = 0;
-                writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                writeDescriptor.descriptorCount = 1;
-                writeDescriptor.pBufferInfo = &bufferInfos[bufferInfoInd++];
-                writeDescriptor.pImageInfo = nullptr;
-                writeDescriptor.pTexelBufferView = nullptr;
-                descriptorWrites.push_back(writeDescriptor);
-            }
-        }
 
         //Bind Black pixel texture
         std::vector<VkDescriptorImageInfo> imageInfos(shaderVLK->getTextureCount());

@@ -134,7 +134,7 @@ public:
     virtual void setViewPortDimensions(float x, float y, float width, float height) override;
 
 
-    std::shared_ptr<GDescriptorSets> createDescriptorSet(GShaderPermutationVLK *shaderVLK, int uniforms, int images);
+    std::shared_ptr<GDescriptorSets> createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int images);
 
     virtual VkDevice getVkDevice() {
         return device;

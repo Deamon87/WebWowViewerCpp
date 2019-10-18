@@ -40,13 +40,21 @@ protected:
     VkDescriptorSetLayout uboDescriptorSetLayout;
     VkDescriptorSetLayout imageDescriptorSetLayout;
 
-    GDescriptorSets *uboDescriptorSets[4] = {nullptr,nullptr,nullptr,nullptr};
+    std::vector<std::shared_ptr<GDescriptorSets>> uboDescriptorSets;
 
     GDeviceVLK *m_device;
 
 
 private:
     std::string m_shaderName;
+
+    void createUBODescriptorLayout();
+
+    void createImageDescriptorLayout();
+
+    void createUboDescriptorSets();
+
+    void updateDescriptorSet(int index);
 };
 
 
