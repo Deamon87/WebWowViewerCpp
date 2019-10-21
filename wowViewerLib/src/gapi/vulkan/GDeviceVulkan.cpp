@@ -28,6 +28,7 @@
 #include "shaders/GWMOShaderPermutationVLK.h"
 #include "shaders/GWMOWaterShaderVLK.h"
 #include "shaders/GM2RibbonShaderPermutationVLK.h"
+#include "fastmemcp.h"
 
 const int WIDTH = 1900;
 const int HEIGHT = 1000;
@@ -240,6 +241,10 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
     uniformBufferOffsetAlign = deviceProperties.limits.minUniformBufferOffsetAlignment;
     maxUniformBufferSize = deviceProperties.limits.maxUniformBufferRange;
+
+    std::cout << "uniformBufferOffsetAlign = " << uniformBufferOffsetAlign << std::endl;
+    std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
+
 
 
     // Create pool
@@ -880,6 +885,10 @@ void GDeviceVLK::endUpdateForNextFrame() {
 }
 
 typedef std::shared_ptr<GMeshVLK> HVKMesh;
+void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &meshes) {
+
+}
+
 
 void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
@@ -894,7 +903,7 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
         m_whitePixelTexture->loadData(1,1,&ff);
     }
 
-    aggregationBufferForUpload.resize(maxUniformBufferSize);
+//    aggregationBufferForUpload.resize(maxUniformBufferSize);
 
     std::vector<HVKMesh> &meshes = (std::vector<HVKMesh> &) iMeshes;
 
@@ -918,8 +927,21 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
         }
     }
 
+//    std::cout << "buffersBeforeShrink = " << buffers.size() << std::endl;
     std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
+//    std::cout << "buffersAfterShrink = " << buffers.size() << std::endl;
+
+    int fullSize = 0;
+    for (auto &buffer : buffers) {
+        fullSize += buffer->m_size;
+        int offsetDiff = fullSize % uniformBufferOffsetAlign;
+        if (offsetDiff != 0) {
+            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+            fullSize += bytesToAdd;
+        }
+    }
 
     //2. Create buffers and update them
     int currentSize = 0;
@@ -928,19 +950,36 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
     HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
 
     if (bufferForUpload == nullptr) {
-        bufferForUpload = createUniformBuffer(maxUniformBufferSize);
+        bufferForUpload = createUniformBuffer(10*1024*1024);
         bufferForUpload->createBuffer();
         m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload = bufferForUpload;
     }
+
+    auto bufferForUploadVLK = ((GUniformBufferVLK *) bufferForUpload.get());
+    size_t old_size = bufferForUploadVLK->m_size;
+    bufferForUploadVLK->resize(fullSize);
+    //Buffer identifier was changed, so we need to update shader UBO descriptor
+    if (old_size < fullSize) {
+        m_shaderDescriptorUpdateNeeded = true;
+    }
+    char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->stagingUBOBufferAllocInfo.pMappedData);
 
     for (const auto &buffer : buffers) {
         if (buffer->m_buffCreated) continue;
 
         buffer->setOffset(currentSize);
+        if ((currentSize + buffer->m_size) >=  aggregationBufferForUpload.size()) {
+            aggregationBufferForUpload.resize(2*aggregationBufferForUpload.size() + buffer->m_size);
+        }
+
         void * dataPtr = buffer->getPointerForUpload();
-        std::copy((char*)dataPtr,
-                  ((char*)dataPtr)+buffer->m_size,
-                  &aggregationBufferForUpload[currentSize]);
+//        std::copy((char*)dataPtr,
+//                  ((char*)dataPtr)+buffer->m_size,
+//                  &aggregationBufferForUpload[currentSize]);
+        memcpy_fast(pointerForUpload+currentSize, dataPtr, buffer->m_size);
+//        memcpy(pointerForUpload+currentSize, dataPtr, buffer->m_size);
+
+
 //        aggregationBufferForUpload.insert(
 //            aggregationBufferForUpload.end(),
 //            (char*)buffer->pContent,
@@ -957,13 +996,7 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
     }
 
     if (currentSize > 0) {
-        auto bufferVLK = ((GUniformBufferVLK *) bufferForUpload.get());
-        size_t old_size = bufferVLK->m_size;
-        ((GUniformBufferVLK *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], currentSize);
-        if (old_size < currentSize) {
-            m_shaderDescriptorUpdateNeeded = true;
-        }
-
+        bufferForUploadVLK->uploadFromStaging(currentSize);
     }
 }
 
@@ -1304,7 +1337,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
     VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
 
-    uint32_t dynamicOffset[5] = {};
+    uint32_t dynamicOffset[7] = {};
 
     for (auto &mesh: iMeshes) {
         auto *meshVLK = ((GMeshVLK *)mesh.get());
@@ -1314,20 +1347,20 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
 
         int uboInd = 0;
         for (int k = 0; k < 3; k++) {
-//            if (shaderVLK->hasBondUBO[k]) {
+            if (shaderVLK->hasBondUBO[k]) {
                 auto *uboB = (GUniformBufferVLK *) (meshVLK->getVertexUniformBuffer(k).get());
                 if (uboB) {
                     dynamicOffset[uboInd++] = (uboB)->m_offset;
                 }
-//            }
+            }
         }
         for (int k = 1; k < 3; k++) {
-//            if (shaderVLK->hasBondUBO[3+k]) {
+            if (shaderVLK->hasBondUBO[2+k]) {
                 auto *uboB = (GUniformBufferVLK *) (meshVLK->getFragmentUniformBuffer(k).get());
                 if (uboB) {
                     dynamicOffset[uboInd++] = (uboB)->m_offset;
                 }
-//            }
+            }
         }
 
         vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);

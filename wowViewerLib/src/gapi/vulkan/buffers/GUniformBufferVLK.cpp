@@ -31,7 +31,7 @@ void GUniformBufferVLK::createBuffer() {
     VmaAllocationCreateInfo allocCreateInfo = {};
     allocCreateInfo.pool = m_device->getUBOPool();
 
-    vmaCreateBuffer(m_device->getVMAAllocator(), &bufCreateInfo, &allocCreateInfo, &g_buf, &g_alloc, &g_allocInfo);
+    ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &bufCreateInfo, &allocCreateInfo, &g_buf, &g_alloc, &g_allocInfo));
 
     // CPU Buffer
     VkBufferCreateInfo uboInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -62,26 +62,7 @@ void GUniformBufferVLK::uploadData(void * data, int length) {
     assert(m_buffCreated);
     assert(length > 0 && length <= m_size);
 
-    if (length > m_size) {
-        if (m_dataUploaded) {
-            auto *l_device = m_device;
-            auto &l_stagingUBOBuffer = stagingUBOBuffer;
-            auto &l_stagingUBOBufferAlloc = stagingUBOBufferAlloc;
-
-            auto &l_hUBOBuffer = g_buf;
-            auto &l_hUBOBufferAlloc = g_alloc;
-
-            m_device->addDeallocationRecord(
-                [l_device, l_stagingUBOBuffer, l_stagingUBOBufferAlloc, l_hUBOBuffer, l_hUBOBufferAlloc]() {
-                    vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingUBOBuffer, l_stagingUBOBufferAlloc);
-                    vmaDestroyBuffer(l_device->getVMAAllocator(), l_hUBOBuffer, l_hUBOBufferAlloc);
-                }
-            );
-        }
-
-        m_size = length;
-        createBuffer();
-    }
+    resize(length);
 
 
     memcpy(stagingUBOBufferAllocInfo.pMappedData, data, length);
@@ -108,4 +89,43 @@ void *GUniformBufferVLK::getPointerForUpload() {
 void *GUniformBufferVLK::getPointerForModification() {
     return pFrameOneContent;
 
+}
+
+void GUniformBufferVLK::uploadFromStaging(int length) {
+    VkBufferCopy vbCopyRegion = {};
+    vbCopyRegion.srcOffset = 0;
+    vbCopyRegion.dstOffset = 0;
+    vbCopyRegion.size = length;
+    vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), stagingUBOBuffer, g_buf, 1, &vbCopyRegion);
+
+    m_dataUploaded = true;
+}
+
+void GUniformBufferVLK::resize(int newLength) {
+    if (newLength > m_size) {
+        if (m_buffCreated) {
+            auto *l_device = m_device;
+            auto l_stagingUBOBuffer = stagingUBOBuffer;
+            auto l_stagingUBOBufferAlloc = stagingUBOBufferAlloc;
+
+            auto l_hUBOBuffer = g_buf;
+            auto l_hUBOBufferAlloc = g_alloc;
+
+            m_device->addDeallocationRecord(
+                [l_device, l_stagingUBOBuffer, l_stagingUBOBufferAlloc, l_hUBOBuffer, l_hUBOBufferAlloc]() {
+                    vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingUBOBuffer, l_stagingUBOBufferAlloc);
+                    vmaDestroyBuffer(l_device->getVMAAllocator(), l_hUBOBuffer, l_hUBOBufferAlloc);
+                }
+            );
+        }
+
+        m_size = newLength;
+        m_buffCreated = false;
+        stagingUBOBuffer = VK_NULL_HANDLE;
+        stagingUBOBufferAlloc = VK_NULL_HANDLE;
+        stagingUBOBufferAllocInfo = {};
+        g_buf = VK_NULL_HANDLE;
+        g_alloc = VK_NULL_HANDLE;
+        createBuffer();
+    }
 }

@@ -5,6 +5,7 @@
 #include <iostream>
 #include "GPipelineVLK.h"
 #include "shaders/GShaderPermutationVLK.h"
+#include <array>
 
 struct BlendModeDescVLK {
     bool blendModeEnable;
@@ -210,7 +211,9 @@ void GPipelineVLK::createPipeline(
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 
-    std::array<VkDescriptorSetLayout, 2> descLayouts = {shaderVLK->getUboDescriptorLayout(),shaderVLK->getImageDescriptorLayout()};
+    std::array<VkDescriptorSetLayout, 2> descLayouts ;
+	descLayouts[0] = shaderVLK->getUboDescriptorLayout();
+	descLayouts[1] = shaderVLK->getImageDescriptorLayout();
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

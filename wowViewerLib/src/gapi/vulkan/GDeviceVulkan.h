@@ -89,6 +89,7 @@ public:
     void endUpdateForNextFrame() override;
 
     void updateBuffers(std::vector<HGMesh> &meshes) override;
+    void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
@@ -370,7 +371,7 @@ protected:
 
     FrameUniformBuffers m_UBOFrames[4];
 
-    std::vector<char> aggregationBufferForUpload;
+    std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 
     std::list<DeallocationRecord> listOfDeallocators;
 

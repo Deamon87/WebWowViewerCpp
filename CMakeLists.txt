@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.6)
 project(AWebWoWViewerCpp)
 include(ExternalProject)
 
+cmake_policy(SET CMP0077 NEW)
+
 set(USE_NEON 0)
 if (CMAKE_NDK_BUILD MATCHES 1)
 	include_directories(BEFORE SYSTEM "${NDK_PATH}/include/c++/4.9.x/" "${NDK_PATH}/sysroot/usr/include/")
@@ -20,9 +22,18 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 		set(USE_NEON 0)
 	else() 
 		include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
-		set(USE_NEON 0)
+		set(USE_NEON 0) 
 	endif()
 endif() 
+
+if (WIN32 AND MSVC)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /DWIN64")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /DWIN64")
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /DWIN64")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /DWIN64")
+    endif()
+ endif()
 
 #set(CMAKE_BUILD_TYPE Release)
 #set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
@@ -41,11 +52,24 @@ else()
 	SET(extra_libraries stdc++fs)
 endif()
 
+
+
 #ZLib library
 
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
 set(BUILD_SHARED_LIBS OFF)
+if (MSVC)
+	set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/zlib ${CMAKE_BINARY_DIR}/3rdparty/zlib)
+	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
+	if (CMAKE_BUILD_TYPE EQUAL "DEBUG")
+		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.lib")
+	else()
+		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.lib")
+	endif()
+	set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/3rdparty/zlib)
+endif()
+
 #Zlib
 #ExternalProject_Add("LibZip"
 #		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
@@ -87,8 +111,8 @@ include_directories(${CPR_INCLUDE_DIRS})
 #add_subdirectory(3rdparty/stormlib)
 
 #CascLib
-set(CASC_BUILD_STATIC_LIB ON)
-set(CASC_BUILD_SHARED_LIB OFF)
+set(CASC_BUILD_STATIC_LIB 1)
+set(CASC_BUILD_SHARED_LIB 0)
 if (CMAKE_NDK_BUILD MATCHES 1)
 	#set(CASC_BUILD_SHARED_LIB ON)
 	set(CMAKE_SYSTEM_NAME_TEMPTEMP ${CMAKE_SYSTEM_NAME})
@@ -209,6 +233,7 @@ target_link_libraries(AWebWoWViewerCpp ${glew_lib})
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	include_directories(AWebWoWViewerCpp "./wowViewerLib/src/opengl")
+	target_link_libraries(AWebWoWViewerCpp zlibstatic)
 	target_link_libraries(AWebWoWViewerCpp opengl32)
 	target_link_libraries(AWebWoWViewerCpp -lm)
 	target_link_libraries(AWebWoWViewerCpp -lwininet)

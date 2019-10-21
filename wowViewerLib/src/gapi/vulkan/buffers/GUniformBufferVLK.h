@@ -37,6 +37,8 @@ private:
 
 private:
     void uploadData(void * data, int length);
+    void uploadFromStaging(int length);
+    void resize(int newLength);
 
 private:
     GDeviceVLK *m_device;

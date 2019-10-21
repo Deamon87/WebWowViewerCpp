@@ -18,7 +18,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "adtLo
 },{ "adtShader.vert.spv", {
 {
 {0,0,128},
-{0,2,16},
 }
 }
 },{ "drawBBShader.frag.spv", {
@@ -44,7 +43,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "adtLo
 }
 },{ "drawFrustumShader.frag.spv", {
 {
-{0,2,12},
 }
 }
 },{ "drawFrustumShader.vert.spv", {
@@ -54,7 +52,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "adtLo
 }
 },{ "drawLinesShader.frag.spv", {
 {
-{0,1,12},
 }
 }
 },{ "drawLinesShader.vert.spv", {
@@ -139,7 +136,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "adtLo
 },{ "wmoShader.frag.spv", {
 {
 {0,4,112},
-{0,3,64},
 }
 }
 },{ "wmoShader.vert.spv", {

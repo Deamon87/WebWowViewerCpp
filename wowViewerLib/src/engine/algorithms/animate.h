@@ -136,17 +136,16 @@ int32_t findTimeIndex(
         T *timestamps,
         int times_len
 ) {
-    T timeConverted = convertHelper<R, T>(currTime);
     if (times_len > 1 ) {
-        //return std::binary_search((*timeStamp)[0], (*timeStamp)[timeStamp->size-1], currTime);
-//        return binary_search(*timeStamp, 0, times_len-1, currTime) - 1;
-        for (int i = 1; i < times_len; i++) {
-            T timestamp_time = timestamps[i];
-            if (timestamp_time > timeConverted) {
-                return i-1;
-            }
+        T timeConverted = convertHelper<R, T>(currTime);
+        if (timeConverted > timestamps[times_len - 1]) return times_len - 1;
+        auto time = std::lower_bound(&timestamps[0], &timestamps[times_len - 1], timeConverted);
+        if ((time != &timestamps[0])) {
+            time = time - 1;
         }
-        return times_len-1;
+        return time - timestamps;
+
+
     } else if (times_len == 1){
         return 0;
     } else {
