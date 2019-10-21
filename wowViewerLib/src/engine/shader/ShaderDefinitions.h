@@ -62,6 +62,11 @@ struct m2ParticleShader {
         aPosition = 0, aColor = 1, aTexcoord0 = 2, aTexcoord1 = 3, aTexcoord2 = 4, m2ParticleShaderAttributeEnd
     };
 };
+struct m2RibbonShader {
+    enum class Attribute {
+        aPosition = 0, aColor = 1, aTexcoord0 = 2, m2RibbonShaderAttributeEnd
+    };
+};
 
 
 struct m2Shader {
@@ -105,6 +110,14 @@ struct wmoShader {
         aColor = 5,
         aColor2 = 6,
         wmoShaderAttributeEnd
+    };
+};
+
+struct waterShader {
+    enum class Attribute {
+        aPosition = 0,
+//        aTexCoord = 1,
+//        aDepth = 2
     };
 };
 

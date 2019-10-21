@@ -9,25 +9,27 @@
 #include <string>
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
+#include "../../include/wowScene.h"
 
 class WdlFile {
 public:
-   WdlFile() {};
+    WdlFile(std::string fileName){};
+    WdlFile(int fileDataId){};
 
-    void process(std::vector<unsigned char> &wdlFile, std::string &fileName);
+    void process(HFileContent wdlFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     SMDoodadDef * doodadDefObj = nullptr;
-    int doodadDefObj_len = -1;
+    int doodadDefObj_len = 0;
 
     SMMapObjDefObj1 * mapObjDefObj = nullptr;
-    int mapObjDefObj_len = -1;
+    int mapObjDefObj_len = 0;
 
 
 private:
     bool m_loaded = false;
 
-    std::vector<unsigned char> m_wdlFile;
+    HFileContent m_wdlFile;
     static chunkDef<WdlFile> wdlFileTable;
 };
 

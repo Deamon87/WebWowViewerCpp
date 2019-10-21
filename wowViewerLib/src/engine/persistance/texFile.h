@@ -8,11 +8,14 @@
 #include <vector>
 #include "helper/ChunkFileReader.h"
 #include "header/texFileHeader.h"
+#include "../../include/wowScene.h"
 
 class TexFile {
 public:
-    TexFile() {};
-    void process(std::vector<unsigned char> &wdlFile, std::string &fileName);
+    TexFile(std::string fileName){};
+    TexFile(int fileDataId){};
+
+    void process(const std::vector<unsigned char> &wdlFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     SBlobTexture * entries = nullptr;

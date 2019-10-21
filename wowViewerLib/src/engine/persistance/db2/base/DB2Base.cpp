@@ -6,10 +6,11 @@
 #include <algorithm>
 #include <iostream>
 #include "DB2Base.h"
+#include "../../../../include/wowScene.h"
 
-void DB2Base::process(std::vector<unsigned char> &db2File, std::string &fileName) {
+void DB2Base::process(HFileContent db2File, const std::string &fileName) {
     this->db2File = db2File;
-    fileData = &this->db2File[0];
+    fileData = &(*this->db2File.get())[0];
 
     currentOffset = 0;
     bytesRead = 0;
@@ -150,4 +151,6 @@ bool DB2Base::readRecordByIndex(int index, int minFieldNum, int fieldsToRead,
             }
         }
     }
+
+    return false;
 }

@@ -3,6 +3,7 @@
 //
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 #include "../../engine/opengl/header.h"
 #include "GDeviceGL33.h"
 #include "../../engine/algorithms/hashString.h"
@@ -13,7 +14,7 @@
 #include "shaders/GM2ParticleShaderPermutationGL33.h"
 #include "shaders/GAdtShaderPermutationGL33.h"
 #include "shaders/GWMOShaderPermutationGL33.h"
-
+#include "../../engine/stringTrim.h"
 
 
 BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -51,13 +52,17 @@ BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
 //    }
 //}
 
-void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*userParam*/) {
+void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
             source,
             type,
             id,
             severity,
             std::string(message, message+length).c_str());
+    if (severity == 37190) {
+        std::cout << "lol";
+    }
+
     fflush(stdout);
 }
 
@@ -128,9 +133,10 @@ void GDeviceGL33::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
     if (buffer == nullptr) {
        if (m_vertexBufferBindings != nullptr) {
 //           m_vertexBufferBindings->unbind();
-           ( (GVertexBufferBindingsGL33 *)m_defaultVao.get())->bind();
-           m_vertexBufferBindings = (GVertexBufferBindingsGL33 *)(m_defaultVao.get());
        }
+        ( (GVertexBufferBindingsGL33 *)m_defaultVao.get())->bind();
+        m_vertexBufferBindings = (GVertexBufferBindingsGL33 *)(m_defaultVao.get());
+
         m_lastBindIndexBuffer = nullptr;
         m_lastBindVertexBuffer = nullptr;
     } else {
@@ -144,11 +150,10 @@ void GDeviceGL33::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
     }
 }
 
-std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderName) {
+std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderName, void *permutationDescriptor) {
     const char * cstr = shaderName.c_str();
     size_t hash = CalculateFNV(cstr);
     if (m_shaderPermutCache.count(hash) > 0) {
-
         HGShaderPermutation ptr = m_shaderPermutCache.at(hash);
         return ptr;
     }
@@ -156,34 +161,80 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
     std::shared_ptr<IShaderPermutation> sharedPtr;
     IShaderPermutation *iPremutation = nullptr;
     if (shaderName == "m2Shader") {
-        iPremutation = new GM2ShaderPermutationGL33(shaderName, this);
-        m_m2ShaderCreated = true;
+        M2ShaderCacheRecord *cacheRecord = (M2ShaderCacheRecord * )permutationDescriptor;
+        if (cacheRecord != nullptr) {
+
+
+            auto i = m2ShaderCache.find(*cacheRecord);
+            if (i != m2ShaderCache.end()) {
+                if (!i->second.expired()) {
+                    return i->second.lock();
+                } else {
+                    m2ShaderCache.erase(i);
+                }
+            }
+        }
+
+        iPremutation = new GM2ShaderPermutationGL33(shaderName, this, *cacheRecord);
+        sharedPtr.reset(iPremutation);
+
+        std::weak_ptr<IShaderPermutation> weakPtr(sharedPtr);
+        m2ShaderCache[*cacheRecord] = weakPtr;
     } else if (shaderName == "m2ParticleShader") {
         iPremutation = new GM2ParticleShaderPermutationGL33(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "wmoShader") {
-        iPremutation = new GWMOShaderPermutationGL33(shaderName, this);
+        WMOShaderCacheRecord *cacheRecord = (WMOShaderCacheRecord * )permutationDescriptor;
+        if (cacheRecord != nullptr) {
+
+
+            auto i = wmoShaderCache.find(*cacheRecord);
+            if (i != wmoShaderCache.end()) {
+                if (!i->second.expired()) {
+                    return i->second.lock();
+                } else {
+                    wmoShaderCache.erase(i);
+                }
+            }
+        }
+
+        iPremutation = new GWMOShaderPermutationGL33(shaderName, this, *cacheRecord);
+        sharedPtr.reset(iPremutation);
+
+        std::weak_ptr<IShaderPermutation> weakPtr(sharedPtr);
+        wmoShaderCache[*cacheRecord] = weakPtr;
     } else if (shaderName == "adtShader") {
         iPremutation = new GAdtShaderPermutationGL33(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     } else {
         iPremutation = new GShaderPermutationGL33(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     }
-
-    sharedPtr.reset(iPremutation);
 
     GShaderPermutationGL33 * gShaderPermutation = (GShaderPermutationGL33 *)sharedPtr.get();
 
-    gShaderPermutation->compileShader();
-    m_shaderPermutCache[hash] = sharedPtr;
+    gShaderPermutation->compileShader("", "");
+    if (shaderName == "ribbonShader") {
+        glUseProgram(gShaderPermutation->m_programBuffer);
+        glUniform1i(gShaderPermutation->getUnf("uTexture"), 0);
+        glUseProgram(0);
+    }
 
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[0], 0);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[1], 1);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[2], 2);
+//    glUseProgram(gShaderPermutation->m_programBuffer);
+    for (int i = 0; i < 3; i++) {
+        if (gShaderPermutation->m_uboVertexBlockIndex[i] > -1) {
+            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[i], i);
+        }
+        if (gShaderPermutation->m_uboFragmentBlockIndex[i] > -1) {
+            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[i], 3 + i);
+        }
+    }
+//    glUseProgram(0);
 
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[0], 3+0);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[1], 3+1);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[2], 3+2);
-
-    return m_shaderPermutCache[hash];
+    return sharedPtr;
 }
 
 HGUniformBuffer GDeviceGL33::createUniformBuffer(size_t size) {
@@ -247,49 +298,42 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
         }
     }
 
-    std::sort( buffers.begin(), buffers.end(), [](const GUniformBufferGL33 *a, const GUniformBufferGL33 * b) -> bool {
-        return a->m_creationIndex > b->m_creationIndex;
-    });
+    std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
 
     //2. Create buffers and update them
     int currentSize = 0;
     int buffersIndex = 0;
 
-    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_firstUBOFrame.m_unfiormBuffersForUpload;
-    if (getFrameNumber() & 1) {
-        m_unfiormBuffersForUpload = &m_secondUBOFrame.m_unfiormBuffersForUpload;
-    }
-
+    std::vector<HGUniformBuffer> &m_unfiormBuffersForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBuffersForUpload;
     HGUniformBuffer bufferForUpload;
-    if (buffersIndex >= m_unfiormBuffersForUpload->size()) {
-        bufferForUpload = createUniformBuffer(0);
+    if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
+        bufferForUpload = createUniformBuffer(maxUniformBufferSize);
         bufferForUpload->createBuffer();
-        m_unfiormBuffersForUpload->push_back(bufferForUpload);
+        m_unfiormBuffersForUpload.push_back(bufferForUpload);
     } else {
-        bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
+        bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
     }
 
     for (const auto &buffer : buffers) {
         if (buffer->m_buffCreated) continue;
 
         if ((currentSize + buffer->m_size) > maxUniformBufferSize) {
-            ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], currentSize);
+            ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
 
             buffersIndex++;
             currentSize = 0;
 
-            if (buffersIndex >= m_unfiormBuffersForUpload->size()) {
-                bufferForUpload = createUniformBuffer(0);
+            if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
+                bufferForUpload = createUniformBuffer(maxUniformBufferSize);
                 bufferForUpload->createBuffer();
-                m_unfiormBuffersForUpload->push_back(bufferForUpload);
+                m_unfiormBuffersForUpload.push_back(bufferForUpload);
             } else {
-                bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
+                bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
             }
         }
 
-        buffer->pIdentifierBuffer = ((GUniformBufferGL33 *) bufferForUpload.get())->pIdentifierBuffer;
-        buffer->m_offset = (size_t) currentSize;
+        buffer->setIdentifierBuffer(((GUniformBufferGL33 *) bufferForUpload.get())->getIdentifierBuffer(), currentSize);
         void * dataPtr = buffer->getPointerForUpload();
         std::copy((char*)dataPtr,
                   ((char*)dataPtr)+buffer->m_size,
@@ -301,21 +345,17 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
 //        );
         currentSize += buffer->m_size;
 
-        int bytesToAdd = uniformBufferOffsetAlign - (currentSize % uniformBufferOffsetAlign);
-//        for (int j = 0; j < bytesToAdd; j++) {
-//            aggregationBufferForUpload.push_back(0);
-//        }
-        currentSize+=bytesToAdd;
+        int offsetDiff = currentSize % uniformBufferOffsetAlign;
+        if (offsetDiff != 0) {
+            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+            currentSize += bytesToAdd;
+        }
     }
 
-	if (aggregationBufferForUpload.size() > 0) {
-        ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], currentSize);
-	}
-    buffersIndex++;
-    currentSize = 0;
-
-//    std::cout << "m_unfiormBuffersForUpload.size = " << m_unfiormBuffersForUpload.size() << std::endl;
-
+    if (currentSize > 0) {
+        ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
+    }
 }
 
 void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
@@ -418,7 +458,8 @@ void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
 
     if (m_lastBlendMode != hmesh->m_blendMode) {
         BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
-        if (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable ) {
+        auto &lastBlendMode = blendModes[(char)m_lastBlendMode];
+        if (lastBlendMode.blendModeEnable != selectedBlendMode.blendModeEnable ) {
             if (selectedBlendMode.blendModeEnable) {
                 glEnable(GL_BLEND);
             } else {
@@ -433,6 +474,15 @@ void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
             selectedBlendMode.DestAlpha
         );
         m_lastBlendMode = hmesh->m_blendMode;
+    }
+
+    if (m_isInSkyBoxDepthMode != hmesh->getIsSkyBox()) {
+        if (hmesh->getIsSkyBox()) {
+            glDepthRange(0.998f, 1.0f);
+        } else {
+            glDepthRange(0, 0.996f); //default
+        }
+        m_isInSkyBoxDepthMode = hmesh->getIsSkyBox();
     }
 
     if (gOcclusionQuery != nullptr) {
@@ -500,10 +550,11 @@ HGParticleMesh GDeviceGL33::createParticleMesh(gMeshTemplate &meshTemplate) {
 void GDeviceGL33::bindTexture(ITexture *iTexture, int slot) {
     GTextureGL33 * texture = (GTextureGL33 *) iTexture;
     if (texture == nullptr) {
-        if (m_lastTexture[slot] != nullptr) {
+        auto blackPixel = ((GTextureGL33 *) m_blackPixelTexture.get());
+        if (m_lastTexture[slot] != nullptr && m_lastTexture[slot] != blackPixel) {
             glActiveTexture(GL_TEXTURE0 + slot);
-            m_lastTexture[slot]->unbind();
-            m_lastTexture[slot] = nullptr;
+            blackPixel->bind();
+            m_lastTexture[slot] = blackPixel;
         }
     }  else if (texture != m_lastTexture[slot]) {
         glActiveTexture(GL_TEXTURE0 + slot);
@@ -550,22 +601,37 @@ void GDeviceGL33::bindProgram(IShaderPermutation *iProgram) {
             m_shaderPermutation->unbindProgram();
             m_shaderPermutation = nullptr;
         }
+        m_vertexBufferBindings = nullptr;
     } else if (program != m_shaderPermutation) {
         program->bindProgram();
         m_shaderPermutation = program;
+
+//        m_vertexBufferBindings = nullptr;
+//        m_vertexUniformBuffer[0] = nullptr;
+//        m_vertexUniformBuffer[1] = nullptr;
+//        m_vertexUniformBuffer[2] = nullptr;
+//        m_fragmentUniformBuffer[0] = nullptr;
+//        m_fragmentUniformBuffer[1] = nullptr;
+//        m_fragmentUniformBuffer[2] = nullptr;
     }
 }
 
 GDeviceGL33::GDeviceGL33() {
-    unsigned int ff = 0;
+    unsigned int ff = 0xFFFFFFFF;
+    unsigned int zero = 0;
     m_blackPixelTexture = createTexture();
+    m_blackPixelTexture->loadData(1,1,&zero);
 
-    m_blackPixelTexture->loadData(1,1,&ff);
+    m_whitePixelTexture = createTexture();
+    m_whitePixelTexture->loadData(1,1,&ff);
 
     m_defaultVao = this->createVertexBufferBindings();
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
+    if (getIsAnisFiltrationSupported()) {
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_anisotropicLevel);
+    }
 
     //From https://en.wikibooks.org/wiki/OpenGL_Programming/Bounding_box
     static const float vertices[] = {
@@ -606,7 +672,7 @@ GDeviceGL33::GDeviceGL33() {
     HGIndexBuffer vertexIndexBuffer = this->createIndexBuffer();
     vertexIndexBuffer->uploadData((void *) &vertexElements[0], sizeof(vertexElements));
 
-    GBufferBinding bufferBinding = {0, 3, GL_FLOAT, false, 0, 0 };
+    GBufferBinding bufferBinding = {0, 3, GBindingType::GFLOAT, false, 0, 0 };
 
     GVertexBufferBinding binding={};
     binding.bindings.push_back(bufferBinding);
@@ -624,18 +690,14 @@ GDeviceGL33::GDeviceGL33() {
     m_lineBBBindings->addVertexBufferBinding(binding);
     m_lineBBBindings->save();
 
-
-//    m_defaultVao->save();
-
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize);
+
+    std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
 
 //    glEnable(GL_DEBUG_OUTPUT);
 //    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
+//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
 //    glDebugMessageCallback(debug_func, NULL);
-//
-
-
 }
 
 HGOcclusionQuery GDeviceGL33::createQuery(HGMesh boundingBoxMesh) {
@@ -660,19 +722,40 @@ void GDeviceGL33::reset() {
     m_lastTexture[2] = nullptr;
     m_lastTexture[3] = nullptr;
 
-    m_vertexUniformBuffer[0] = nullptr;
-    m_vertexUniformBuffer[1] = nullptr;
-    m_vertexUniformBuffer[2] = nullptr;
+    bindFragmentUniformBuffer(nullptr, 0);
+    bindFragmentUniformBuffer(nullptr, 1);
+    bindFragmentUniformBuffer(nullptr, 2);
 
-    m_fragmentUniformBuffer[0] = nullptr;
-    m_fragmentUniformBuffer[1] = nullptr;
-    m_fragmentUniformBuffer[2] = nullptr;
+    bindVertexUniformBuffer(nullptr, 0);
+    bindVertexUniformBuffer(nullptr, 1);
+    bindVertexUniformBuffer(nullptr, 2);
+
+    bindVertexBufferBindings(nullptr);
+    bindIndexBuffer(nullptr);
+    bindVertexBuffer(nullptr);
 
     m_shaderPermutation = nullptr;
+
+    ITexture *iTexture = m_blackPixelTexture.get();
+    bindTexture(iTexture, 0);
+    bindTexture(iTexture, 1);
+    bindTexture(iTexture, 2);
+    bindTexture(iTexture, 3);
+    bindTexture(iTexture, 4);
+    bindTexture(iTexture, 5);
+    bindTexture(iTexture, 6);
 }
 
-int GDeviceGL33::getFrameNumber() {
-    return m_frameNumber;
+unsigned int GDeviceGL33::getUpdateFrameNumber() {
+    return (m_frameNumber + 1) & 3;
+//    return 0;
+}
+unsigned int GDeviceGL33::getCullingFrameNumber() {
+    return (m_frameNumber + 3) & 3;
+//    return 0;
+}
+unsigned int GDeviceGL33::getDrawFrameNumber() {
+    return m_frameNumber & 3;
 }
 
 void GDeviceGL33::increaseFrameNumber() {
@@ -690,4 +773,134 @@ HGVertexBufferBindings GDeviceGL33::getBBVertexBinding() {
 HGPUFence GDeviceGL33::createFence() {
     return nullptr;
 }
+
+void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
+    std::vector<HGTexture> textures;
+    textures.reserve(meshes.size() * 3);
+
+    int texturesLoaded = 0;
+
+    for (const auto &hmesh : meshes) {
+        GMeshGL33 * mesh = (GMeshGL33 *) hmesh.get();
+        for (int i = 0; i < mesh->m_textureCount; i++) {
+            textures.push_back(mesh->m_texture[i]);
+        }
+    }
+
+    std::sort(textures.begin(), textures.end());
+    textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
+
+    for (const auto &texture : textures) {
+        if (texture == nullptr) continue;
+        if (texture->postLoad()) texturesLoaded++;
+        if (texturesLoaded > 4) return;
+    }
+}
+
+#ifdef __ANDROID_API__
+#include "../androidLogSupport.h"
+#endif
+
+std::string GDeviceGL33::loadShader(std::string fileName, bool common) {
+    std::string fullPath;
+    trim(fileName);
+    if (common) {
+        fullPath = "./glsl/common/" + fileName + ".glsl";
+    } else {
+        fullPath = "./glsl/glsl3.3/" + fileName + ".glsl";
+    }
+
+//    std::cout << "fullPath = "<< fullPath << std::endl;
+
+    auto i = shaderCache.find(fullPath);
+    if (i != shaderCache.end()) {
+        return i->second;
+    }
+
+#ifdef __ANDROID_API__
+        //TODO: pass this stuff here
+    AAssetManager *mgr = g_assetMgr;
+    if (g_assetMgr == nullptr) {
+        std::cout << "g_assetMgr == nullptr";
+    }
+    std::string filename = "glsl/" + shaderName + ".glsl";
+
+    std::cout << "AAssetManager_open" << std::endl;
+    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);
+    std::cout << "AAssetManager_opened" << std::endl;
+    if (asset == nullptr) {
+        std::cout << "asset == nullptr" << std::endl;
+    }
+
+    char buf[BUFSIZ];
+    std::vector<char> outBuf;
+
+    std::cout << "buffers created" << std::endl;
+    int nb_read = 0;
+    while ((nb_read = AAsset_read(asset, buf, BUFSIZ)) > 0) {
+        std::cout << "file read" << std::endl;
+        for (int i = 0; i < nb_read; i++) {
+            outBuf.push_back(buf[i]);
+        }
+    }
+        //std::copy(&buf[0], &buf[nb_read-1]+1, outPutIterator);
+    std::cout << "file fully read" << std::endl;
+    AAsset_close(asset);
+    std::cout << "asset closed" << std::endl;
+
+    return std::string(outBuf.begin(), outBuf.end());
+#else
+    std::ifstream t(fullPath);
+
+    std::string result = std::string((std::istreambuf_iterator<char>(t)),
+                           std::istreambuf_iterator<char>());
+    shaderCache[fullPath] = result;
+    return result;
+#endif
+}
+
+float GDeviceGL33::getAnisLevel() {
+    return m_anisotropicLevel;
+}
+
+void GDeviceGL33::clearScreen() {
+#ifndef WITH_GLESv2
+    glClearDepthf(1.0f);
+#else
+    glClearDepthf(1.0f);
+#endif
+    glDisable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+//    glClearColor(0.0, 0.0, 0.0, 0.0);
+//    glClearColor(0.25, 0.06, 0.015, 0.0);
+    glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
+    //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
+//    glClearColor(0,0,0,1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    glDisable(GL_SCISSOR_TEST);
+
+}
+
+void GDeviceGL33::setClearScreenColor(float r, float g, float b) {
+    clearColor[0] = r;
+    clearColor[1] = g;
+    clearColor[2] = b;
+}
+
+void GDeviceGL33::beginFrame() {
+    this->clearScreen();
+}
+
+void GDeviceGL33::commitFrame() {
+
+}
+
+void GDeviceGL33::setViewPortDimensions(float x, float y, float width, float height) {
+    glViewport(x,y,width,height);
+}
+
 

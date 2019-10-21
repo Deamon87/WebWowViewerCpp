@@ -1,5 +1,6 @@
-#define _X86_ 1
+#define _AMD64_ 1
 
+//#define NOWINBASEINTERLOCK
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -10,37 +11,40 @@
 #endif
 
 // Include GLEW. Always include it before gl.h and glfw.h, since it's a bit magic.
-#define NKC_IMPLEMENTATION
-#define NKCD NKC_GLFW
-#define NKC_USE_OPENGL 3
 #define GLFW_INCLUDE_GLCOREARB
-
+ 
 //#define __EMSCRIPTEN__
 #include "engine/HeadersGL.h"
-#include <nuklear_cross.h>
 
-
-
+#ifdef __EMSCRIPTEN__
 #undef GLFW_INCLUDE_VULKAN
+#else
+#define GLFW_INCLUDE_VULKAN
+#endif
+
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
 #include <cmath>
+
 #include "../wowViewerLib/src/include/wowScene.h"
 //#include "persistance/ZipRequestProcessor.h"
 #include "persistance/CascRequestProcessor.h"
 #include "persistance/HttpZipRequestProcessor.h"
-#include "persistance/MpqRequestProcessor.h"
+//#include "persistance/MpqRequestProcessor.h"
 #include "persistance/HttpRequestProcessor.h"
+#include "../wowViewerLib/src/include/vulkancontext.h"
 
-
+#include "../wowViewerLib/src/gapi/interface/IDevice.h"
+#include "../wowViewerLib/src/gapi/IDeviceFactory.h"
 
 
 int mleft_pressed = 0;
+int mright_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
 
-bool stopInputs = true;
+bool stopInputs = false;
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     if (stopInputs) return;
@@ -49,39 +53,43 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
 //    if (!pointerIsLocked) {
         if (mleft_pressed == 1) {
-            controllable->addHorizontalViewDir((xpos - m_x) / 4.0);
-            controllable->addVerticalViewDir((ypos - m_y) / 4.0);
+            controllable->addHorizontalViewDir((xpos - m_x) / 4.0f);
+            controllable->addVerticalViewDir((ypos - m_y) / 4.0f);
+
+            m_x = xpos;
+            m_y = ypos;
+        } else if (mright_pressed == 1) {
+            controllable->addCameraViewOffset((xpos - m_x) / 8.0f, -(ypos - m_y) / 8.0f);
 
             m_x = xpos;
             m_y = ypos;
         }
-//    } else {
-//        var delta_x = event.movementX ||
-//                      event.mozMovementX          ||
-//                      event.webkitMovementX       ||
-//                      0;
-//        var delta_y = event.movementY ||
-//                      event.mozMovementY      ||
-//                      event.webkitMovementY   ||
-//                      0;
-//
-//        camera.addHorizontalViewDir((delta_x) / 4.0);
-//        camera.addVerticalViewDir((delta_y) / 4.0);
-//    }
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+//    addCameraViewOffset
     if (stopInputs) return;
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        mleft_pressed = 1;
+    if (action == GLFW_PRESS) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            mleft_pressed = 1;
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            mright_pressed = 1;
+        }
+
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
         m_x = xpos;
         m_y = ypos;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-        mleft_pressed = 0;
+    if (action == GLFW_RELEASE) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            mleft_pressed = 0;
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            mright_pressed = 0;
+        }
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 }
 
@@ -148,7 +156,14 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
         }
     }
+}
 
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
+    IControllable* controllable = scene->getCurrentCamera();
+
+    controllable->zoomInFromMouseScroll(-yoffset/2.0f);
 }
 
 double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string windowTitle = "NONE")
@@ -184,6 +199,7 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     {
         // Calculate the FPS as the number of frames divided by the duration in seconds
         fps = frameCount / duration;
+        std::cout << "fps = " << fps << std::endl;
 
         // If the user specified a window title to append the FPS value to...
         if (windowTitle != "NONE")
@@ -212,8 +228,8 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     return fps;
 }
 
-int canvWidth = 640;
-int canvHeight = 480;
+int canvWidth = 1024;
+int canvHeight = 768;
 bool windowSizeChanged = false;
 
 void window_size_callback(GLFWwindow* window, int width, int height)
@@ -257,8 +273,6 @@ enum radioOptions {
 };
 
 struct my_nkc_app {
-    struct nkc* nkcHandle;
-
     /* some user data */
     float movementSpeed = 1.0;
     bool drawM2AABB = false;
@@ -279,9 +293,9 @@ struct my_nkc_app {
     double currentFrame;
     double lastFrame;
 
-    struct nk_color ambientColor;
+    float ambientColor[4] = {255,255,255,255};
     float ambientIntensity = 1.0;
-    struct nk_color sunColor;
+    float sunColor[4];
 };
 
 inline void CopyAndNullTerminate( const std::string& source,
@@ -293,15 +307,9 @@ inline void CopyAndNullTerminate( const std::string& source,
 
 void mainLoop(void* loopArg){
     struct my_nkc_app* myapp = (struct my_nkc_app*)loopArg;
-    struct nk_context *ctx = nkc_get_ctx(myapp->nkcHandle);
-
-    union nkc_event e = nkc_poll_events(myapp->nkcHandle);
-    if( (e.type == NKC_EWINDOW) && (e.window.param == NKC_EQUIT) ){
-        nkc_stop_main_loop(myapp->nkcHandle);
-    }
 
     // Render scene
-    myapp->currentFrame = glfwGetTime();
+    myapp->currentFrame = glfwGetTime(); // seconds
     double deltaTime = myapp->currentFrame - myapp->lastFrame;
     myapp->lastFrame = myapp->currentFrame;
 
@@ -315,365 +323,15 @@ void mainLoop(void* loopArg){
         windowSizeChanged = false;
     }
 
-    myapp->scene->draw((deltaTime*1000));
+    myapp->scene->draw((deltaTime*(1000.0f))); //miliseconds
 
     stopInputs = false;
-    /* Nuklear GUI code */
-    if (nk_begin(ctx, "Show", nk_rect(50, 50, 300, 300),
-                 NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
-        /* fixed widget pixel width */
-//        nk_layout_row_static(ctx, 30, 80, 1);
-//        if (nk_button_label(ctx, "button")) {
-//            /* event handling */
-//            printf("Button pressed\n");
-//        }
-
-        //        //MENU
-//        {
-//            /* menubar */
-//            enum menu_states {MENU_DEFAULT, MENU_WINDOWS};
-//            static nk_size mprog = 60;
-//            static int mslider = 10;
-//            static int mcheck = nk_true;
-//            nk_menubar_begin(ctx);
-//
-//            /* menu #1 */
-//            nk_layout_row_begin(ctx, NK_STATIC, 25, 5);
-//            nk_layout_row_push(ctx, 45);
-//            if (nk_menu_begin_label(ctx, "MENU", NK_TEXT_LEFT, nk_vec2(120, 200)))
-//            {
-//                static size_t prog = 40;
-//                static int slider = 10;
-//                static int check = nk_true;
-//                nk_layout_row_dynamic(ctx, 25, 1);
-////                if (nk_menu_item_label(ctx, "Hide", NK_TEXT_LEFT))
-////                    show_menu = nk_false;
-////                if (nk_menu_item_label(ctx, "About", NK_TEXT_LEFT))
-////                    show_app_about = nk_true;
-//                nk_progress(ctx, &prog, 100, NK_MODIFIABLE);
-//                nk_slider_int(ctx, 0, &slider, 16, 1);
-//                nk_checkbox_label(ctx, "check", &check);
-//                nk_menu_end(ctx);
-//            }
-//            /* menu #2 */
-//            nk_layout_row_push(ctx, 60);
-//            if (nk_menu_begin_label(ctx, "ADVANCED", NK_TEXT_LEFT, nk_vec2(200, 600)))
-//            {
-//                enum menu_state {MENU_NONE,MENU_FILE, MENU_EDIT,MENU_VIEW,MENU_CHART};
-//                static enum menu_state menu_state = MENU_NONE;
-//                enum nk_collapse_states state;
-//
-//                state = (menu_state == MENU_FILE) ? NK_MAXIMIZED: NK_MINIMIZED;
-//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "FILE", &state)) {
-//                    menu_state = MENU_FILE;
-//                    nk_menu_item_label(ctx, "New", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Open", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Save", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Close", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Exit", NK_TEXT_LEFT);
-//                    nk_tree_pop(ctx);
-//                } else menu_state = (menu_state == MENU_FILE) ? MENU_NONE: menu_state;
-//
-//                state = (menu_state == MENU_EDIT) ? NK_MAXIMIZED: NK_MINIMIZED;
-//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "EDIT", &state)) {
-//                    menu_state = MENU_EDIT;
-//                    nk_menu_item_label(ctx, "Copy", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Delete", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Cut", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Paste", NK_TEXT_LEFT);
-//                    nk_tree_pop(ctx);
-//                } else menu_state = (menu_state == MENU_EDIT) ? MENU_NONE: menu_state;
-//
-//                state = (menu_state == MENU_VIEW) ? NK_MAXIMIZED: NK_MINIMIZED;
-//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "VIEW", &state)) {
-//                    menu_state = MENU_VIEW;
-//                    nk_menu_item_label(ctx, "About", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Options", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Customize", NK_TEXT_LEFT);
-//                    nk_tree_pop(ctx);
-//                } else menu_state = (menu_state == MENU_VIEW) ? MENU_NONE: menu_state;
-//
-//                state = (menu_state == MENU_CHART) ? NK_MAXIMIZED: NK_MINIMIZED;
-//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "CHART", &state)) {
-//                    size_t i = 0;
-//                    const float values[]={26.0f,13.0f,30.0f,15.0f,25.0f,10.0f,20.0f,40.0f,12.0f,8.0f,22.0f,28.0f};
-//                    menu_state = MENU_CHART;
-//                    nk_layout_row_dynamic(ctx, 150, 1);
-//                    nk_chart_begin(ctx, NK_CHART_COLUMN, NK_LEN(values), 0, 50);
-//                    for (i = 0; i < NK_LEN(values); ++i)
-//                    nk_chart_push(ctx, values[i]);
-//                    nk_chart_end(ctx);
-//                    nk_tree_pop(ctx);
-//                } else menu_state = (menu_state == MENU_CHART) ? MENU_NONE: menu_state;
-//                nk_menu_end(ctx);
-//            }
-//            /* menu widgets */
-//            nk_layout_row_push(ctx, 70);
-//            nk_progress(ctx, &mprog, 100, NK_MODIFIABLE);
-//            nk_slider_int(ctx, 0, &mslider, 16, 1);
-//            nk_checkbox_label(ctx, "check", &mcheck);
-//            nk_menubar_end(ctx);
-//        }
-
-
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
-        {
-            nk_layout_row_push(ctx, 250);
-            std::string areaName = "AreaName: " + testConf->getAreaName();
-            nk_label(ctx, areaName.c_str(), NK_TEXT_LEFT);
-        }
-        nk_layout_row_end(ctx);
-        /* fixed widget window ratio width */
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
-        {
-            nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "Draw M2:", NK_TEXT_LEFT);
-        }
-        nk_layout_row_end(ctx);
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-        {
-            nk_layout_row_push(ctx, 50);
-            if (nk_option_label(ctx, "on", myapp->drawM2AABB)) myapp->drawM2AABB = true;
-            if (nk_option_label(ctx, "off", !myapp->drawM2AABB)) myapp->drawM2AABB = false;
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_push(ctx, 50);
-        nk_label(ctx, "Draw WMO:", NK_TEXT_LEFT);
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-        {
-            nk_layout_row_push(ctx, 50);
-            if (nk_option_label(ctx, "on", myapp->drawWMOAABB)) myapp->drawWMOAABB = true;
-            if (nk_option_label(ctx, "off", !myapp->drawWMOAABB)) myapp->drawWMOAABB = false;
-        }
-        nk_layout_row_end(ctx);
-
-
-        testConf->setRenderM2(myapp->drawM2AABB);
-        testConf->setRenderWMO(myapp->drawWMOAABB);
-
-
-        nk_layout_row_push(ctx, 50);
-        nk_label(ctx, "AmbientColor:", NK_TEXT_LEFT);
-        nk_layout_row_dynamic(ctx, 25, 1);
-        if (nk_combo_begin_color(ctx, myapp->ambientColor, nk_vec2(nk_widget_width(ctx),400))) {
-
-            nk_layout_row_dynamic(ctx, 120, 1);
-            myapp->ambientColor = nk_color_picker(ctx, myapp->ambientColor, NK_RGBA);
-            nk_layout_row_dynamic(ctx, 25, 1);
-            myapp->ambientColor.r = (nk_byte)nk_propertyi(ctx, "#R:", 0, myapp->ambientColor.r, 255, 1,1);
-            myapp->ambientColor.g = (nk_byte)nk_propertyi(ctx, "#G:", 0, myapp->ambientColor.g, 255, 1,1);
-            myapp->ambientColor.b = (nk_byte)nk_propertyi(ctx, "#B:", 0, myapp->ambientColor.b, 255, 1,1);
-            myapp->ambientColor.a = (nk_byte)nk_propertyi(ctx, "#A:", 0, myapp->ambientColor.a, 255, 1,1);
-            nk_combo_end(ctx);
-
-            testConf->setAmbientColor(
-                myapp->ambientColor.r / 255.0f,
-                myapp->ambientColor.g / 255.0f,
-                myapp->ambientColor.b / 255.0f,
-                myapp->ambientColor.a / 255.0f
-            );
-            stopInputs = true;
-        }
-
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-        {
-            nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "Ambient intensity:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 110);
-            if (nk_slider_float(ctx, 0, &(myapp->ambientIntensity), 1.0f, 0.1f)) {
-                stopInputs = true;
-            }
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_push(ctx, 50);
-        nk_label(ctx, "SunColor:", NK_TEXT_LEFT);
-        nk_layout_row_dynamic(ctx, 25, 1);
-        if (nk_combo_begin_color(ctx, myapp->sunColor, nk_vec2(nk_widget_width(ctx),400))) {
-
-            nk_layout_row_dynamic(ctx, 120, 1);
-            myapp->sunColor = nk_color_picker(ctx, myapp->sunColor, NK_RGBA);
-            nk_layout_row_dynamic(ctx, 25, 1);
-            myapp->sunColor.r = (nk_byte)nk_propertyi(ctx, "#R:", 0, myapp->sunColor.r, 255, 1,1);
-            myapp->sunColor.g = (nk_byte)nk_propertyi(ctx, "#G:", 0, myapp->sunColor.g, 255, 1,1);
-            myapp->sunColor.b = (nk_byte)nk_propertyi(ctx, "#B:", 0, myapp->sunColor.b, 255, 1,1);
-            myapp->sunColor.a = (nk_byte)nk_propertyi(ctx, "#A:", 0, myapp->sunColor.a, 255, 1,1);
-            nk_combo_end(ctx);
-
-            testConf->setSunColor(
-                myapp->sunColor.r / 255.0f,
-                myapp->sunColor.g / 255.0f,
-                myapp->sunColor.b / 255.0f,
-                myapp->sunColor.a / 255.0f
-            );
-            stopInputs = true;
-        }
-
-        //Debug batch stuff
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 3);
-        {
-            nk_layout_row_push(ctx, 120);
-            nk_label(ctx, "Wmo batch limiter:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
-
-            char buffer[10];
-            CopyAndNullTerminate(std::to_string(myapp->wmoMinBatch), buffer, 10);
-            nk_layout_row_push(ctx, 50);
-            nk_flags event = nk_edit_string_zero_terminated(ctx,
-                                                            NK_EDIT_BOX |
-                                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                                            buffer, sizeof(buffer),
-                                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->wmoMinBatch = std::stoi(buffer);
-            } catch(...) {
-                myapp->wmoMinBatch = 0;
-            }
-            nk_layout_row_push(ctx, 50);
-            CopyAndNullTerminate(std::to_string(myapp->wmoMaxBatch), buffer, 10);
-            nk_edit_string_zero_terminated(ctx,
-                                           NK_EDIT_BOX |
-                                           NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                           buffer, sizeof(buffer),
-                                           nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->wmoMaxBatch = std::stoi(buffer);
-            } catch(...) {
-                myapp->wmoMaxBatch = 9999;
-            }
-
-            testConf->setWmoMinBatch(myapp->wmoMinBatch);
-            testConf->setWmoMaxBatch(myapp->wmoMaxBatch);
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 3);
-        {
-            nk_layout_row_push(ctx, 120);
-            nk_label(ctx, "M2 batch limiter:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
-
-            char buffer[10];
-            CopyAndNullTerminate(std::to_string(myapp->m2MinBatch), buffer, 10);
-            nk_layout_row_push(ctx, 50);
-            nk_flags event = nk_edit_string_zero_terminated(ctx,
-                                                            NK_EDIT_BOX |
-                                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                                            buffer, sizeof(buffer),
-                                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->m2MinBatch = std::stoi(buffer);
-            } catch(...) {
-                myapp->m2MinBatch = 0;
-            }
-            nk_layout_row_push(ctx, 50);
-            CopyAndNullTerminate(std::to_string(myapp->m2MaxBatch), buffer, 10);
-            nk_edit_string_zero_terminated(ctx,
-                                           NK_EDIT_BOX |
-                                           NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                           buffer, sizeof(buffer),
-                                           nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->m2MaxBatch = std::stoi(buffer);
-            } catch(...) {
-                myapp->m2MaxBatch = 9999;
-            }
-
-            testConf->setM2MinBatch(myapp->m2MinBatch);
-            testConf->setM2MaxBatch(myapp->m2MaxBatch);
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 3);
-        {
-            nk_layout_row_push(ctx, 120);
-            nk_label(ctx, "Particle limiter:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
-
-            char buffer[10];
-            CopyAndNullTerminate(std::to_string(myapp->minParticle), buffer, 10);
-            nk_flags event = nk_edit_string_zero_terminated(ctx,
-                                                            NK_EDIT_BOX |
-                                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                                            buffer, sizeof(buffer),
-                                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->minParticle = std::stoi(buffer);
-            } catch(...) {
-                myapp->minParticle = 0;
-            }
-            CopyAndNullTerminate(std::to_string(myapp->maxParticle), buffer, 10);
-            nk_edit_string_zero_terminated(ctx,
-                                           NK_EDIT_BOX |
-                                           NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                           buffer, sizeof(buffer),
-                                           nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->maxParticle = std::stoi(buffer);
-            } catch(...) {
-                myapp->maxParticle = 9999;
-            }
-
-            testConf->setMinParticle(myapp->minParticle);
-            testConf->setMaxParticle(myapp->maxParticle);
-        }
-        nk_layout_row_end(ctx);
-//
-        /* custom widget pixel width */
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-        {
-            nk_layout_row_push(ctx, 120);
-            nk_label(ctx, "Movement Speed:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 110);
-            nk_slider_float(ctx, 0, &(myapp->movementSpeed), 20.0f, 0.1f);
-            testConf->setMovementSpeed(myapp->movementSpeed);
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_push(ctx, 80);
-        nk_label(ctx, "Coordinates :", NK_TEXT_LEFT);
-
-        nk_layout_row_begin(ctx, NK_STATIC, 15, 3);
-        {
-
-
-            float cameraPos[4];
-            myapp->scene->getCurrentCamera()->getCameraPosition(cameraPos);
-
-            nk_layout_row_push(ctx, 80);
-            nk_label(ctx, std::to_string(cameraPos[0]).c_str(), NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 80);
-            nk_label(ctx, std::to_string(cameraPos[1]).c_str(), NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 80);
-            nk_label(ctx, std::to_string(cameraPos[2]).c_str(), NK_TEXT_LEFT);
-        }
-        nk_layout_row_end(ctx);
-        nk_layout_row_begin(ctx, NK_STATIC, 15, 2);
-        {
-            nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "FPS :", NK_TEXT_LEFT);
-            nk_label(ctx, std::to_string(fps).c_str(), NK_TEXT_LEFT);
-        }
-
-    }
-    nk_end(ctx);
-    /* End Nuklear GUI */
-
-    nkc_render_gui(myapp->nkcHandle);
 }
+
 
 
 int main(){
     struct my_nkc_app myapp;
-    struct nkc nkcx; /* Allocate memory for Nuklear+ handle */
-    myapp.nkcHandle = &nkcx;
 
 
 #ifdef _WIN32
@@ -685,50 +343,144 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-    const char * url = "http://178.165.92.24:40001/get/";
-    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
+//8.2.5
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=b847e6ab3a8638dda359c379ace9d79f&cdnconfig=1fdb7f2ada5eae29f7073aedbe96bf9d&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=b847e6ab3a8638dda359c379ace9d79f&cdnconfig=1fdb7f2ada5eae29f7073aedbe96bf9d&filename=data&filedataid=";
+//1.13.0
+//    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=";
+//    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=data&filedataid=";
+
+//    const char * url = "http://178.165.92.24:40001/get/";
+//    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
+
 //    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
     const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
 //     const char *url = "http://localhost:8084/get/";
 
     testConf = new Config();
+    testConf->setAmbientColor(1,1,1,1);
+//    testConf->setSunColor(1,1,1,1);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-//    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
 
-    if( nkc_init( myapp.nkcHandle, "WowViewer", 640, 480, NKC_WIN_NORMAL) ){
-        printf("Successfull init. Starting 'infinite' main loop...\n");
+    printf("Successfull init. Starting 'infinite' main loop...\n");
 
-        //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
-        //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
-        //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+    //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
+    //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
+    //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
+    HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
 //        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
-        processor->setThreaded(true);
+    processor->setThreaded(true);
 
-        WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
-        processor->setFileRequester(scene);
-        testConf->setDrawM2BB(false);
-        //testConf->setUsePortalCulling(false);
 
-        myapp.scene = scene;
-        myapp.processor = processor;
-        myapp.currentFrame = glfwGetTime();
+    glfwInit();
+
+//    std::string rendererName = "ogl3";
+    std::string rendererName = "vulkan";
+
+    //FOR OGL
+
+    if (rendererName == "ogl3")
+    {
+        glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
+
+    } else if (rendererName == "vulkan"){
+        //For Vulkan
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    }
+
+    auto window = glfwCreateWindow(canvWidth, canvHeight, "Vulkan", nullptr, nullptr);
+
+    vkCallInitCallback callback;
+    callback.createSurface = [&](VkInstance vkInstance) {
+        VkSurfaceKHR surface;
+
+        if (glfwCreateWindowSurface(vkInstance, window, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
+
+        return surface;
+    };
+    callback.getRequiredExtensions = [](char** &extensionNames, int &extensionCnt) {
+        uint32_t count;
+        extensionNames = const_cast<char **>(glfwGetRequiredInstanceExtensions(&count));
+        extensionCnt = count;
+    };
+
+    //For OGL
+    if (rendererName == "ogl3")
+    {
+        glfwMakeContextCurrent(window);
+    }
+
+    //Create device
+    IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
+    WoWScene *scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
+    processor->setFileRequester(scene);
+    testConf->setDrawM2BB(false);
+    //testConf->setUsePortalCulling(false);
+
+    myapp.scene = scene;
+    myapp.processor = processor;
+    myapp.currentFrame = glfwGetTime();
+    myapp.lastFrame = myapp.currentFrame;
+
+
+    glfwSetWindowUserPointer(window, scene);
+    glfwSetKeyCallback(window, onKey);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetCursorPosCallback( window, cursor_position_callback);
+    glfwSetWindowSizeCallback( window, window_size_callback);
+    glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    glfwSetMouseButtonCallback( window, mouse_button_callback);
+    glfwSwapInterval(0);
+
+try {
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+
+        // Render scene
+        myapp.currentFrame = glfwGetTime(); // seconds
+        double deltaTime = myapp.currentFrame - myapp.lastFrame;
         myapp.lastFrame = myapp.currentFrame;
 
-        glfwSetWindowUserPointer(myapp.nkcHandle->window, scene);
-        glfwSetKeyCallback(myapp.nkcHandle->window, onKey);
-        glfwSetCursorPosCallback( myapp.nkcHandle->window, cursor_position_callback);
-        glfwSetWindowSizeCallback( myapp.nkcHandle->window, window_size_callback);
-        glfwSetWindowSizeLimits( myapp.nkcHandle->window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
-        glfwSetMouseButtonCallback( myapp.nkcHandle->window, mouse_button_callback);
-        glfwSwapInterval(0);
+        double fps = calcFPS(nullptr, 2.0);
 
-        nkc_set_main_loop(myapp.nkcHandle, mainLoop, (void*)&myapp );
-    } else {
-        printf("Can't init NKC\n");
+
+        processor->processRequests(false);
+        processor->processResults(10);
+
+        if (windowSizeChanged) {
+            scene->setScreenSize(canvWidth, canvHeight);
+            windowSizeChanged = false;
+        }
+
+        scene->draw((deltaTime*(1000.0f))); //miliseconds
+
+        if (rendererName == "ogl3") {
+            glfwSwapBuffers(window);
+        }
     }
-    nkc_shutdown( myapp.nkcHandle );
+} catch(const std::exception &e){
+    std::cerr << e.what() << std::endl;
+    throw;
+} catch(...) {
+    std::cout << "something happened" << std::endl;
+}
+
+std::cout << "program ended" << std::endl;
+//        while (1) {
+//            mainLoop(&myapp);
+//        }
+
+
 
     delete myapp.scene;
 

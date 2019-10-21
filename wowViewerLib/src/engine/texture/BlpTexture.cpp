@@ -6,11 +6,11 @@
 #include <cmath>
 #include <iostream>
 #include <assert.h>
-#include "../opengl/header.h"
 
 #include "BlpTexture.h"
 #include "DxtDecompress.h"
 #include "../persistance/helper/ChunkFileReader.h"
+#include "../../include/wowScene.h"
 
 TextureFormat getTextureType(BlpFile *blpFile) {
     TextureFormat textureFormat = TextureFormat::None;
@@ -120,12 +120,11 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
     }
 }
 
-void BlpTexture::process(std::vector<unsigned char> &blpFile, std::string &fileName) {
+void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
-    BlpFile *pBlpFile = (BlpFile *) &blpFile[0];
+    BlpFile *pBlpFile = (BlpFile *) &(*blpFile.get())[0];
     if (pBlpFile->fileIdent != '2PLB') {
-
         std::cout << pBlpFile->fileIdent;
     }
     this->m_textureFormat = getTextureType(pBlpFile);
@@ -137,5 +136,6 @@ void BlpTexture::process(std::vector<unsigned char> &blpFile, std::string &fileN
 //    /* Load texture into GL memory */
 //    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
     this->m_isLoaded = true;
+    this->m_textureName = fileName;
 }
 

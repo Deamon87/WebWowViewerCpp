@@ -14,9 +14,10 @@ class GBlpTextureGL4x : public GTextureGL4x {
     explicit GBlpTextureGL4x(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GBlpTextureGL4x() override;
-    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps);
+    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override;
 
-    virtual bool getIsLoaded() override;
+    bool getIsLoaded() override;
+    bool postLoad() override {return false;};
 private:
     void bind() override; //Should be called only by GDevice
     void unbind();

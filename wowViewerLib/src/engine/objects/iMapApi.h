@@ -13,6 +13,7 @@ public:
     virtual M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef) = 0;
     virtual M2Object *getM2Object(int fileDataId, SMDoodadDef &doodadDef) = 0;
     virtual WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) = 0;
+    virtual WmoObject *getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) = 0;
     virtual WmoObject *getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) = 0;
     virtual WmoObject *getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) = 0;
 };

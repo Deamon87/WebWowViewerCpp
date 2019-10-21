@@ -8,6 +8,20 @@
 #include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
 #include <vector>
+#include <algorithm>
+
+struct AnimationStruct {
+    int animationIndex;
+    animTime_t animationTime;
+    M2Sequence *animationRecord;
+};
+
+struct FullAnimationInfo {
+    AnimationStruct currentAnimation;
+    AnimationStruct nextSubAnimation;
+    float blendFactor;
+};
+
 
 int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key);
 
@@ -54,12 +68,14 @@ inline float convertUint16ToFloat(unsigned short Short){
 }
 template<>
 inline mathfu::quat convertHelper<Quat16, mathfu::quat>(Quat16 &a ) {
-    return mathfu::quat(
+    mathfu::quat result = mathfu::quat(
         convertUint16ToFloat(a.w),
         convertUint16ToFloat(a.x),
         convertUint16ToFloat(a.y),
         convertUint16ToFloat(a.z)
     ).Normalized();
+
+    return result;
 };
 template<>
 inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(C4Quaternion &a ) {
@@ -72,7 +88,7 @@ inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(C4Quaternion &a ) 
 };
 template<>
 inline float convertHelper<fixed16, float>(fixed16 &a ) {
-    return (float)(a / 32768.0);
+    return (float)(a / 32768.0f);
 };
 
 //template<>
@@ -82,17 +98,17 @@ inline float convertHelper<fixed16, float>(fixed16 &a ) {
 
 template<>
 inline fixed16 convertHelper<float, fixed16>(float &a ) {
-    return (fixed16)(floor(a * 32768.0));
+    return (fixed16)(floor(a * 32768.0f));
 };
 
 template<>
 inline fixed16 convertHelper<double, fixed16>(double &a ) {
-    return (fixed16)(floor(a * 32768.0));
+    return (fixed16)(floor(a * 32768.0f));
 };
 
 template<>
 inline uint32_t convertHelper<animTime_t, uint32_t>(animTime_t &a ) {
-    return (uint32_t)a;
+    return (uint32_t) a;
 };
 
 template<>
@@ -174,7 +190,7 @@ inline mathfu::quat lerpHelper<mathfu::quat>(mathfu::quat &value1, mathfu::quat 
 };
 template<>
 inline float lerpHelper<float>(float &value1, float &value2, float percent) {
-    return (value1 * (1 - percent)) + (value2 * percent);
+    return (value1 * (1.0f - percent)) + (value2 * percent);
 };
 
 static inline mathfu::quat custom_slerp(mathfu::quat &a, mathfu::quat &b, double t) {
@@ -239,16 +255,17 @@ inline R interpolateHermite(M2SplineKey<T> &value1, M2SplineKey<T> &value2, floa
             convertHelper<T, R>(t4)*h4;
 };
 
-
 template<typename T, typename R>
 R animateTrack(
-        animTime_t currTime,
-        uint32_t maxTime,
-        int animationIndex,
+        const AnimationStruct &animationStruct,
         M2Track<T> &animationBlock,
         M2Array<M2Loop> &global_loops,
         std::vector<animTime_t> &globalSequenceTimes,
         R &defaultValue) {
+
+    animTime_t currTime = animationStruct.animationTime;
+    int animationIndex =  animationStruct.animationIndex;
+    uint32_t maxTime = animationStruct.animationRecord->duration;
 
     int16_t globalSequence = animationBlock.global_sequence;
     if (globalSequence >=0) {
@@ -268,21 +285,21 @@ R animateTrack(
         return defaultValue;
     }
 
-
-
     int32_t timeIndex;
-
 
     M2Array<uint32_t > *times = animationBlock.timestamps[animationIndex];
     M2Array<T> *values = animationBlock.values[animationIndex];
 
-    currTime = fmod(currTime , maxTime);
-
+    uint16_t interpolType = animationBlock.interpolation_type;
     M2Array<uint32_t> *timeStamp = animationBlock.timestamps[animationIndex];
 
-    timeIndex = findTimeIndex(currTime, timeStamp->getElement(0), timeStamp->size);
-    uint16_t interpolType = animationBlock.interpolation_type;
+    if (maxTime != 0) {
+//        currTime = fmod(currTime, maxTime);
 
+        timeIndex = findTimeIndex(currTime, timeStamp->getElement(0), timeStamp->size);
+    } else {
+        timeIndex = 0;
+    }
     if (timeIndex == times->size-1) {
         return convertHelper<T, R>(*values->getElement(timeIndex));
     } else if (timeIndex >= 0) {
@@ -304,6 +321,35 @@ R animateTrack(
 
     return defaultValue;
 }
+
+template<typename T, typename R>
+R animateTrackWithBlend(
+    const FullAnimationInfo &animationInfo,
+    M2Track<T> &animationBlock,
+    M2Array<M2Loop> &global_loops,
+    std::vector<animTime_t> &globalSequenceTimes,
+    R &defaultValue) {
+
+    R result = animateTrack<T,R>(
+        animationInfo.currentAnimation,
+        animationBlock,
+        global_loops,
+        globalSequenceTimes,
+        defaultValue
+    );
+    if (animationInfo.nextSubAnimation.animationIndex > -1 && animationInfo.blendFactor < 0.999f) {
+        R result1 = animateTrack<T,R>(
+            animationInfo.nextSubAnimation,
+            animationBlock,
+            global_loops,
+            globalSequenceTimes,
+            defaultValue
+        );
+        result = lerpHelper<R>(result1, result, animationInfo.blendFactor);
+    }
+    return result;
+};
+
 
 template<typename T, typename R>
 R animateSplineTrack(

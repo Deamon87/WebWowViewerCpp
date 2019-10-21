@@ -12,7 +12,7 @@ class GWMOShaderPermutationGL4x : public GShaderPermutationGL4x {
 protected:
     explicit GWMOShaderPermutationGL4x(std::string &shaderName, IDevice *device);
 
-    virtual void compileShader() override;
+    virtual void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
 
 };
 

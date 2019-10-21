@@ -13,7 +13,6 @@ class M2Object;
 #include <set>
 
 #include "../../persistance/header/adtFileHeader.h"
-#include "../../opengl/header.h"
 #include "../../wowInnerApi.h"
 
 #include "../../persistance/adtFile.h"
@@ -25,6 +24,7 @@ class M2Object;
 class AdtObject {
 public:
     AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
+    AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
     }
@@ -76,12 +76,6 @@ private:
 
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;
-
-    uint32_t indexOffset = 0;
-	uint32_t heightOffset = 0;
-	uint32_t normalOffset = 0;
-	uint32_t colorOffset = 0;
-	uint32_t lightingOffset = 0;
 
     int mostDetailedLod = 0; // 0 = most detailed LOD, 5 = least detailed lod
     int leastDetiledLod = 0;
@@ -146,7 +140,7 @@ private:
     bool
     iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len,
                     int curentLod, int lastFoundLod,
-                    const MLND *quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
+                    const PointerChecker<MLND> &quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
                     mathfu::mat4 &lookAtMat4,
                     std::vector<M2Object *> &m2ObjectsCandidates,

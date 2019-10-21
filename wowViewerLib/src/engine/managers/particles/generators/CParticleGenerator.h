@@ -36,7 +36,7 @@ public:
 
     float GetMaxLifeSpan();
 
-    float GetLifeSpan(float m);
+    float GetLifeSpan(int16_t state);
     mathfu::vec3 GetGravity();
 
     float CalcVelocity( );

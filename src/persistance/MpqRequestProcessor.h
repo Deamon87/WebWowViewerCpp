@@ -28,7 +28,7 @@ static std::string mpqPriorityOrder[] = {
 class MpqRequestProcessor : public IFileRequest{
 
 public:
-    void requestFile(const char* fileName) override;
+    void requestFile(const char* fileName, CacheHolderType holderType) override;
 
     explicit MpqRequestProcessor(const char * wowDistPath) {
         HANDLE hMPQFileCurr ;

@@ -12,7 +12,7 @@ class HttpZipRequestProcessor : public ZipRequestProcessor {
 public:
     HttpZipRequestProcessor (const char *url) {
         m_httpFile = new HttpFile(url);
-        m_httpFile->setCallback(std::bind(&ZipRequestProcessor::loadingFinished, this, _1));
+//        m_httpFile->setCallback(std::bind(&ZipRequestProcessor::loadingFinished, this, _1));
         m_httpFile->startDownloading();
     }
 

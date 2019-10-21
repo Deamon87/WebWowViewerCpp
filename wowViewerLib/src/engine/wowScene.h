@@ -7,9 +7,9 @@
 #include <cctype>
 #include <locale>
 #include <mutex>
+#include <future>
 #include "wowInnerApi.h"
 
-#include "shader/ShaderRuntimeData.h"
 #include "../include/wowScene.h"
 #include "../include/config.h"
 #include "mathfu/glsl_mappings.h"
@@ -29,32 +29,21 @@
 #include "persistance/db2/DB2Light.h"
 #include "../gapi/interface/IDevice.h"
 #include "objects/wowFrameData.h"
+#include "camera/planarCamera.h"
+#include "persistance/animFile.h"
+#include "persistance/skelFile.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 
 public:
-    WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight);
+    WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDevice * device, int canvWidth, int canvHeight);
     ~WoWSceneImpl() override;
 
     void draw(animTime_t deltaTime) override;
     void setScreenSize(int canvWidth, int canvHeight) override;
 
-    virtual void provideFile(const char* fileName, unsigned char* data, int fileLength) override {
-        std::vector<unsigned char> fileData;
-        fileData.assign(data, data+fileLength);
-        std::string s_fileName(fileName);
-
-        adtObjectCache.provideFile(s_fileName, fileData);
-        wmoGeomCache.provideFile(s_fileName, fileData);
-        wmoMainCache.provideFile(s_fileName, fileData);
-        m2GeomCache.provideFile(s_fileName, fileData);
-        skinGeomCache.provideFile(s_fileName, fileData);
-        textureCache.provideFile(s_fileName, fileData);
-        wdtCache.provideFile(s_fileName, fileData);
-        wdlCache.provideFile(s_fileName, fileData);
-        db2Cache.provideFile(s_fileName, fileData);
-    };
-    virtual void rejectFile(const char* fileName) override {
+    void provideFile(CacheHolderType holderType, const char* fileName, const HFileContent &data) override;
+    virtual void rejectFile(CacheHolderType holderType, const char* fileName) override {
         std::string s_fileName(fileName);
 
         adtObjectCache.reject(s_fileName);
@@ -101,8 +90,14 @@ public:
     virtual Cache<M2Geom> *getM2GeomCache() override {
         return &m2GeomCache;
     };
-    virtual Cache<SkinGeom> *getSkinGeomCache() override {
+    virtual Cache<SkinGeom>* getSkinGeomCache() override {
         return &skinGeomCache;
+    };
+    virtual Cache<AnimFile>* getAnimCache() override {
+        return &animCache;
+    };
+    virtual Cache<SkelFile>* getSkelCache() override {
+        return &skelCache;
     };
     virtual Cache<BlpTexture> *getTextureCache() override {
         return &textureCache;
@@ -154,9 +149,26 @@ public:
     virtual DB2WmoAreaTable *getDB2WmoAreaTable() override {
         return db2WmoAreaTable;
     };
+    void setScenePos(float x, float y, float z) override {
+        m_firstCamera.setCameraPos(x,y,z);
+    };
+    void setCameraPosition(float x, float y, float z) override {
+        m_planarCamera.setCameraPos(x,y,z);
+    }
+    void setCameraOffset(float x, float y, float z) override {
+        m_planarCamera.setCameraOffset(x,y,z);
+    };
+    void clearCache() override;
 
+    void setAnimationId(int animationId) override;
+    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
+
+    void setScene(int sceneType, std::string fileName, int cameraNum) override;
+    void setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) override;
+    void setMap(int mapId, int wdtFileId, float x, float y, float z) override;
 private:
     void DoCulling();
+    void actuallDropCache();
 private:
     bool m_enable;
 
@@ -167,7 +179,10 @@ private:
 
     WoWFrameData m_FrameParams[4];
 
+    bool m_usePlanarCamera = false;
+
     FirstPersonCamera m_firstCamera;
+    PlanarCamera m_planarCamera;
     FirstPersonCamera m_secondCamera;
 
     DB2Light *db2Light;
@@ -190,23 +205,31 @@ private:
     Cache<SkinGeom> skinGeomCache;
     Cache<BlpTexture> textureCache;
     Cache<DB2Base> db2Cache;
+    Cache<AnimFile> animCache;
+    Cache<SkelFile> skelCache;
 
-    iInnerSceneApi *currentScene;
+    iInnerSceneApi *currentScene = nullptr;
+    iInnerSceneApi *newScene = nullptr;
 
-    bool deltaTimeUpdate;
-    bool nextDataReady;
-    std::mutex m_lockNextMeshes;            // mutex for critical section
-    std::unique_lock<std::mutex> renderLockNextMeshes;
+    bool needToDropCache = false;
+    std::promise<float> nextDeltaTime = std::promise<float>();
+    std::promise<float> nextDeltaTimeForUpdate;
+    std::promise<bool> cullingFinished;
+    std::promise<bool> updateFinished;
 
-    void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
-                          bool drawDepth);
+//    void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
+//                          bool drawDepth);
 
     void drawCamera() override ;
     bool getIsDebugCamera() override {
         return m_isDebugCamera;
     }
 
+    bool m_supportThreads = true;
+
     void SetDirection(WoWFrameData &frameParamHolder);
+
+    void processCaches(int limit);
 };
 
 

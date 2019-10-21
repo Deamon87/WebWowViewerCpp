@@ -2,6 +2,7 @@
 // Created by deamon on 05.06.18.
 //
 
+#include <iostream>
 #include "GMeshGL33.h"
 
 GMeshGL33::GMeshGL33(IDevice &device,
@@ -15,6 +16,8 @@ GMeshGL33::GMeshGL33(IDevice &device,
     m_backFaceCulling = (int8_t) (meshTemplate.backFaceCulling ? 1 : 0);
     m_triCCW = meshTemplate.triCCW;
 
+    m_isSkyBox = meshTemplate.skybox;
+
     m_colorMask = meshTemplate.colorMask;
 
     m_blendMode = meshTemplate.blendMode;
@@ -22,7 +25,17 @@ GMeshGL33::GMeshGL33(IDevice &device,
 
     m_start = meshTemplate.start;
     m_end = meshTemplate.end;
-    m_element = meshTemplate.element;
+    switch (meshTemplate.element) {
+        case DrawElementMode::TRIANGLES:
+            m_element = GL_TRIANGLES;
+            break;
+        case DrawElementMode::TRIANGLE_STRIP:
+            m_element = GL_TRIANGLE_STRIP;
+            break;
+        default:
+            throw new std::runtime_error("unknown DrawElementMode");
+    }
+
     m_textureCount = meshTemplate.textureCount;
 
     m_texture = meshTemplate.texture;
@@ -60,6 +73,7 @@ void GMeshGL33::setRenderOrder(int renderOrder) {
     m_renderOrder = renderOrder;
 }
 
+void GMeshGL33::setStart(int start) {m_start = start; }
 void GMeshGL33::setEnd(int end) {m_end = end; }
 
 

@@ -6,10 +6,11 @@
 #include <functional>
 //curl
 #include "cpr/cpr.h"
+#include "../../wowViewerLib/src/include/sharedFile.h"
 
 class HttpFile;
 
-typedef std::function<void (std::vector<unsigned char>*)> HTTPReadyCallback ;
+typedef std::function<void (HFileContent)> HTTPReadyCallback ;
 
 class HttpFile {
 
@@ -18,21 +19,15 @@ public:
         this->m_httpUrl = httpUrl;
         this->written = 0;
 //        this->m_callback = nullptr;
-        this->m_fileBuffer = new std::vector<unsigned char>();
     }
 
     ~HttpFile(){
-        if (this->m_fileBuffer != nullptr) {
-            delete this->m_fileBuffer;
-        }
+
     }
 
 public:
     void startDownloading();
     void setCallback(HTTPReadyCallback callback);
-    std::vector<unsigned char> * getFileBuffer() {
-        return m_fileBuffer;
-    }
     void writeToBuffer(void *buffer, long int size);
 
 private:
@@ -41,7 +36,7 @@ private:
 
     long int fileSize;
     long int written;
-    std::vector<unsigned char> *m_fileBuffer = nullptr;
+    HFileContent m_fileBuffer;
 
 
 };

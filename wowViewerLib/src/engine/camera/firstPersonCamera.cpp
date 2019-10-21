@@ -12,18 +12,11 @@ void FirstPersonCamera::addForwardDiff(float val) {
 }
 
 void FirstPersonCamera::addHorizontalViewDir(float val) {
-    this->ah = ah + val;
+    delta_x += val;
+//    this->ah = ah + val;
 }
 void FirstPersonCamera::addVerticalViewDir(float val) {
-    float av = this->av;
-    av += val;
-
-    if (av < -89.99999f) {
-        av = -89.99999f;
-    } else if (av > 89.99999f) {
-        av = 89.99999f;
-    }
-    this->av = av;
+    delta_y += val;
 }
 
 void FirstPersonCamera::startMovingForward(){
@@ -76,8 +69,25 @@ void FirstPersonCamera::setMovementSpeed(float value) {
     this->m_moveSpeed = value;
 };
 
+float springiness = 300; // tweak to taste.
 
 void FirstPersonCamera::tick (animTime_t timeDelta) {
+    double d = 1.0f-exp(log(0.5f)*springiness*timeDelta);
+
+    ah += delta_x*d;
+    av += delta_y*d;
+
+    delta_x = 0;
+    delta_y = 0;
+
+
+    if (av < -89.99999f) {
+        av = -89.99999f;
+    } else if (av > 89.99999f) {
+        av = 89.99999f;
+    }
+
+
     mathfu::vec3 dir = {1, 0, 0};
     mathfu::vec3 up = {0, 0, 1};
     float moveSpeed = m_moveSpeed * 1.0f / 30.0f;
@@ -88,6 +98,8 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     float horizontalDiff = (float) (dTime * moveSpeed * (this->MDHorizontalPlus - this->MDHorizontalMinus));
     float depthDiff      = (float) (dTime * moveSpeed * (this->MDDepthPlus - this->MDDepthMinus) + this->depthDiff);
     float verticalDiff   = (float) (dTime * moveSpeed * (this->MDVerticalPlus - this->MDVerticalMinus));
+
+
 
     this->depthDiff = 0;
 
@@ -122,7 +134,6 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
         camera[2] = camera[2] + verticalDiff;
     }
 
-    this->camera = camera;
     this->lookAt = camera + dir;
 
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
@@ -132,11 +143,9 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
         right_move.z, up.z, -dir.z, 0.0f,
         0,0,0,1.0f //translation
     );
-
-
-
     lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
 
+    this->camera = camera;//(lookAtMat.Inverse() * mathfu::vec4(0,0,0,1.0)).xyz();
 
     //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
 
@@ -153,4 +162,16 @@ void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
 
     this->av = 0;
     this->ah = 0;
+}
+
+void FirstPersonCamera::zoomInFromTouch(float val) {
+    addForwardDiff(val);
+}
+
+void FirstPersonCamera::zoomInFromMouseScroll(float val) {
+
+}
+
+void FirstPersonCamera::addCameraViewOffset(float x, float y) {
+
 }

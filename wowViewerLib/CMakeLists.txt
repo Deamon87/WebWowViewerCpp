@@ -1,18 +1,65 @@
 cmake_minimum_required(VERSION 2.8)
 project(WoWViewerLib)
 
+include(CheckCXXCompilerFlag)
+
+set(LINK_GLEW 1)
+set(LINK_OGL 1)
+set(LINK_OGL4 1)
+set(LINK_VULKAN 1)
+set(LINK_OPENMP 1)
+set(ENABLE_SIMD 0)
+set(EMSCRIPTEN_SIMD 0)
+
+if (CMAKE_NDK_BUILD)
+    set(LINK_GLEW 0)
+ENDIF()
+
+if (EMSCRIPTEN)
+    message(This is EMSCRIPTEN)
+    set(LINK_GLEW 0)
+    set(LINK_VULKAN 0)
+    set(LINK_OPENMP 0)
+    set(LINK_OGL4 0)
+    if (NOT EMSCRIPTEN_SIMD)
+        set(ENABLE_SIMD 0)
+    endif()
+ENDIF()
+
+if (NOT LINK_VULKAN)
+    add_definitions(-DSKIP_VULKAN)
+
+endif()
+
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
 if (BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DCULLED_NO_PORTAL_DRAWING")
 endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS" )
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
  
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse2 -ftree-vectorize")
+
+if (LINK_OPENMP)
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp")
+
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fopenmp" )
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fopenmp")
+endif()
+if (EMSCRIPTEN_SIMD)
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
+
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -msimd128" )
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -msimd128")
+endif()
+
 
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
@@ -20,13 +67,7 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 IF(CMAKE_BUILD_TYPE MATCHES Release)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
 
-if (CMAKE_NDK_BUILD MATCHES 1)
-#    include_directories(BEFORE SYSTEM "e:/temp/ndk_toolchain/sysroot/usr/include/" "e:/temp/ndk_toolchain/include/c++/4.9.x/")
-#    set(CMAKE_INCLUDE_PATH "${CMAKE_INCLUDE_PATH} e:/temp/ndk_toolchain/sysroot/usr/include/ e:/temp/ndk_toolchain/include/c++/4.9.x/")
-endif()
 
-
- 
 include(ExternalProject)
 
 set(mathfu_build_benchmarks OFF CACHE BOOL "")
@@ -35,8 +76,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu)
 
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-    include_directories(${PROJECT_SOURCE_DIR}/3rdparty/glew_win/include)
+message(${CMAKE_SYSTEM_NAME})
+if (LINK_GLEW)
     if (WIN32)
         MESSAGE(IT IS WINDOWS!!!!)
         set(GLEW_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/include)
@@ -53,11 +94,12 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
             link_libraries(${GLEW_LIBRARIES})
         endif()
     endif(WIN32)
-else()
-endif(NOT CMAKE_NDK_BUILD MATCHES 1)
 
-set(GLEW_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS} PARENT_SCOPE)
-include_directories(${GLEW_INCLUDE_DIRS})
+    set(GLEW_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS} PARENT_SCOPE)
+    include_directories(${GLEW_INCLUDE_DIRS})
+else()
+endif(LINK_GLEW)
+
 
 if (CMAKE_NDK_BUILD MATCHES 1)
     set(GLSL_TARGET_FOLDER ${ANDROID_ASSETSFOLDER})
@@ -67,23 +109,116 @@ endif()
 
 message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
 
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtLodShader.glsl ${GLSL_TARGET_FOLDER}/glsl/adtLodShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/adtShader.glsl ${GLSL_TARGET_FOLDER}/glsl/adtShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawBBShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawBBShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawDepthShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawDepthShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawFrustumShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawFrustumShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawLinesShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawLinesShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPoints.glsl ${GLSL_TARGET_FOLDER}/glsl/drawPoints.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/drawPortalShader.glsl ${GLSL_TARGET_FOLDER}/glsl/drawPortalShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2ParticleShader.glsl ${GLSL_TARGET_FOLDER}/glsl/m2ParticleShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/m2Shader.glsl ${GLSL_TARGET_FOLDER}/glsl/m2Shader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/readDepthBufferShader.glsl ${GLSL_TARGET_FOLDER}/glsl/readDepthBufferShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/renderFrameBufferShader.glsl ${GLSL_TARGET_FOLDER}/glsl/renderFrameBufferShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/textureCompositionShader.glsl ${GLSL_TARGET_FOLDER}/glsl/textureCompositionShader.glsl COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/src/glsl/wmoShader.glsl ${GLSL_TARGET_FOLDER}/glsl/wmoShader.glsl COPYONLY)
+if (LINK_OGL)
+    macro(configure_files srcDir destDir)
+        message(STATUS "Configuring directory ${destDir}")
+        make_directory(${destDir})
 
-#include_directories(${PROJECT_SOURCE_DIR}/lib/glsl)
-include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
+        file(GLOB templateFiles RELATIVE ${srcDir} ${srcDir}/*)
+        foreach(templateFile ${templateFiles})
+            set(srcTemplatePath ${srcDir}/${templateFile})
+            if(NOT IS_DIRECTORY ${srcTemplatePath})
+                message(STATUS "Configuring file ${templateFile}")
+                configure_file(
+                        ${srcTemplatePath}
+                        ${destDir}/${templateFile}
+                        COPYONLY)
+            endif(NOT IS_DIRECTORY ${srcTemplatePath})
+        endforeach(templateFile)
+    endmacro(configure_files)
+
+
+    message("GLSL_VALIDATOR_Test = ${GLSL_VALIDATOR_Test}")
+    configure_files(${PROJECT_SOURCE_DIR}/src/glsl/glsl3.3/ ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
+    configure_files(${PROJECT_SOURCE_DIR}/src/glsl/common/ ${GLSL_TARGET_FOLDER}/glsl/common/)
+
+    if(NOT GLSL_VALIDATOR_Test)
+        message(FATAL_ERROR "GLSL_VALIDATOR_Test is empty. Path to glslvalidator is not set")
+    endif()
+
+    include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
+endif()
+
+if (LINK_VULKAN)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross)
+
+    set(SPIRV_REF_SOURCES
+        src/spirv/spirv_refl_main.cpp
+    )
+    set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.cpp)
+
+    add_custom_target(SPIRV_EXTRACT_META ALL)
+
+    add_executable(spirv_reflection ${SPIRV_REF_SOURCES})
+    target_link_libraries(spirv_reflection spirv-cross-c)
+    target_include_directories(spirv_reflection PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross/)
+
+
+    macro(configure_filesVLK srcDir destDir)
+        message(STATUS "Configuring directory ${destDir}")
+        make_directory(${destDir})
+
+        file(GLOB templateFiles RELATIVE ${srcDir} ${srcDir}/*.frag ${srcDir}/*.vert)
+        foreach(templateFile ${templateFiles})
+            set(srcTemplatePath ${srcDir}/${templateFile})
+            if(NOT IS_DIRECTORY ${srcTemplatePath})
+                message(STATUS "Configuring file ${templateFile}")
+                get_filename_component(FILE_NAME ${srcTemplatePath} NAME)
+                set(SPIRV_NonOpt "${destDir}/${FILE_NAME}.non_opt.spv")
+                set(SPIRVOpt "${destDir}/${FILE_NAME}.spv")
+
+                set(SPIRV ${SPIRVOpt})
+                if (NOT SPIRV_OPT_APP)
+                    add_custom_command(
+                            OUTPUT ${SPIRV}
+                            COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
+                            COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV}
+                            DEPENDS ${srcTemplatePath})
+                else()
+                    add_custom_command(
+                            OUTPUT ${SPIRV_NonOpt}
+                            COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
+                            COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
+                            DEPENDS ${srcTemplatePath})
+
+                    add_custom_command(
+                            OUTPUT ${SPIRV}
+                            COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
+                            COMMAND ${SPIRV_OPT_APP} --inline-entry-points-exhaustive
+                            --convert-local-access-chains
+                            --eliminate-local-single-block
+                            --eliminate-local-single-store
+                            --eliminate-insert-extract
+                            --eliminate-dead-code-aggressive
+                            --eliminate-dead-branches
+                            --merge-blocks
+                            --eliminate-local-single-block
+                            --eliminate-local-single-store
+                            --eliminate-local-multi-store
+                            --eliminate-insert-extract
+                            --eliminate-dead-code-aggressive
+                            -o ${SPIRV} ${SPIRV_NonOpt}
+                            DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
+                endif()
+
+                add_custom_command(
+                        TARGET SPIRV_EXTRACT_META
+                        PRE_BUILD
+                        DEPENDS ${SPIRV})
+
+                list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+            endif(NOT IS_DIRECTORY ${srcTemplatePath})
+        endforeach(templateFile)
+    endmacro(configure_filesVLK)
+
+    configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv)
+    add_custom_command(
+            TARGET SPIRV_EXTRACT_META
+            COMMAND spirv_reflection ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
+            DEPENDS ${SPIRV_BINARY_FILES}
+            VERBATIM)
+
+endif()
 
 set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/wowScene.h
@@ -134,12 +269,13 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/iInnerSceneApi.h
         src/engine/objects/scenes/m2Scene.cpp
         src/engine/objects/scenes/m2Scene.h
+#        src/engine/objects/scenes/creatureScene.cpp
+#        src/engine/objects/scenes/creatureScene.h
         src/engine/algorithms/PortalCullingAlgo.cpp
         src/engine/algorithms/PortalCullingAlgo.h
         src/engine/objects/scenes/wmoScene.cpp
         src/engine/objects/scenes/wmoScene.h
-        src/engine/objects/objectCache.h src/engine/objects/m2/m2Instancing/m2InstancingObject.cpp
-        src/engine/objects/m2/m2Instancing/m2InstancingObject.h
+        src/engine/objects/objectCache.h
         src/engine/algorithms/hashString.h
         src/engine/persistance/header/wdtFileHeader.h
         src/engine/persistance/wdtFile.cpp
@@ -179,9 +315,11 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/shader/ShaderDefinitions.cpp
         src/engine/objects/GlobalThreads.cpp
         src/engine/objects/GlobalThreads.h
-
-        src/gapi/interface/IDevice.h
-        src/gapi/interface/IDevice.cpp
+        src/engine/persistance/animFile.cpp
+        src/engine/persistance/animFile.h
+        src/engine/persistance/m2File.cpp
+        src/engine/persistance/m2File.h
+                src/gapi/interface/IDevice.cpp
         src/gapi/interface/textures/IBlpTexture.h
         src/gapi/interface/textures/ITexture.h
         src/gapi/interface/buffers/IIndexBuffer.h
@@ -192,8 +330,19 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/gapi/interface/IVertexBufferBindings.h
         src/gapi/interface/meshes/IM2Mesh.h
         src/gapi/interface/meshes/IMesh.h
-        src/gapi/IDeviceFactory.cpp src/gapi/IDeviceFactory.h
-        src/gapi/interface/meshes/IParticleMesh.h src/gapi/interface/syncronization/IGPUFence.h src/engine/objects/wowFrameData.h src/engine/engineClassList.h)
+        src/gapi/IDeviceFactory.cpp
+        src/gapi/interface/meshes/IParticleMesh.h
+        src/gapi/interface/syncronization/IGPUFence.h
+        src/engine/objects/wowFrameData.h
+        src/engine/engineClassList.h
+        src/engine/camera/planarCamera.cpp
+        src/engine/camera/planarCamera.h
+        src/engine/managers/CRibbonEmitter.cpp
+        src/engine/managers/CRibbonEmitter.h
+        src/engine/persistance/skelFile.cpp
+        src/engine/persistance/skelFile.h
+        src/engine/algorithms/FrameCounter.cpp
+        src/engine/algorithms/FrameCounter.h)
 
 set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h
@@ -231,6 +380,7 @@ set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
         src/gapi/ogl3.3/GOcclusionQueryGL33.h)
 
+if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/textures/GBlpTextureGL4x.h
         src/gapi/ogl4.x/buffers/GVertexBufferGL4x.cpp
@@ -265,24 +415,110 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/shaders/GAdtShaderPermutationGL4x.cpp
         src/gapi/ogl4.x/shaders/GAdtShaderPermutationGL4x.h
         src/gapi/ogl4.x/GOcclusionQueryGL4x.cpp
-        src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h)
-
-
-#add_dependencies(WoWViewerLib mathfu)
-add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION})
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+        src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h src/engine/persistance/header/skelFileHeader.h)
 endif()
-target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
-#target_link_libraries(WoWViewerLib gomp) //never use it. It makes uniform buffers screwed up for some reason
 
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-    target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
-    mathfu_configure_flags(WoWViewerLib ON)
+if (LINK_VULKAN)
+    set(VULKAN_IMPLEMENTATION
+            src/include/vulkancontext.h
+            src/gapi/vulkan/GDeviceVulkan.cpp
+            src/gapi/vulkan/GDeviceVulkan.h
+            src/gapi/vulkan/vkAllocator.cpp
+            src/gapi/vulkan/GVertexBufferBindingsVLK.cpp
+            src/gapi/vulkan/shaders/GShaderPermutationVLK.cpp
+            src/gapi/vulkan/shaders/GAdtShaderPermutationVLK.cpp
+            src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
+            src/gapi/vulkan/shaders/GM2ParticleShaderPermutationVLK.cpp
+            src/gapi/vulkan/shaders/GM2RibbonShaderPermutationVLK.cpp
+            src/gapi/vulkan/shaders/GWMOWaterShaderVLK.cpp
+            src/gapi/vulkan/shaders/GWMOShaderPermutationVLK.cpp
+            src/gapi/vulkan/meshes/GM2MeshVLK.cpp
+            src/gapi/vulkan/meshes/GMeshVLK.cpp
+            src/gapi/vulkan/textures/GTextureVLK.cpp
+            src/gapi/vulkan/textures/GBlpTextureVLK.cpp
+            src/gapi/vulkan/buffers/GUniformBufferVLK.cpp
+            src/gapi/vulkan/buffers/GVertexBufferVLK.cpp
+            src/gapi/vulkan/buffers/GIndexBufferVLK.cpp
+            src/gapi/vulkan/GPipelineVLK.cpp src/gapi/vulkan/GPipelineVLK.h
+            src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
+            src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.cpp src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.h)
+    include_directories(${Vulkan_INCLUDE_DIR})
+    IF(WIN32)
+        IF (NOT Vulkan_FOUND)
+            find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS ${CMAKE_SOURCE_DIR}/libs/vulkan)
+            IF (Vulkan_LIBRARY)
+                set(Vulkan_FOUND ON)
+                MESSAGE("Using bundled Vulkan library version win32")
+            ENDIF()
+        ENDIF()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
+    ELSE(WIN32)
+        IF (NOT Vulkan_FOUND)
+            find_library(Vulkan_LIBRARY NAMES vulkan HINTS "$ENV{VULKAN_SDK}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan" REQUIRED)
+            IF (Vulkan_LIBRARY)
+                set(Vulkan_FOUND ON)
+                MESSAGE("Using bundled Vulkan library version non-win32")
+            ENDIF()
+        ENDIF()
+        find_package(Threads REQUIRED)
+    ENDIF()
+endif()
+
+check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
+if(HAVE_FLAG_STD_CXX17)
+    # Have -std=c++17, use it
+    message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++17" )
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++17" )
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17" )
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17" )
 else()
-    mathfu_configure_flags(WoWViewerLib ON)
-#    target_include_directories(WoWViewerLib PRIVATE "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include" "${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include")
+    check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
+    if(HAVE_FLAG_STD_CXX1Z)
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
+    else()
+        message(ERROR "No supported flags")
+    endif()
 endif()
+
+add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
+
+target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
+set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+
+if (LINK_OPENMP)
+    target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY} -fopenmp)
+endif()
+
+
+target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
+
+
+if (ENABLE_SIMD)
+    mathfu_configure_flags(WoWViewerLib TRUE)
+else()
+    mathfu_configure_flags(WoWViewerLib FALSE) #This being TRUE somehow breaks current ribbonEmitter code
+endif()
+
+if (LINK_VULKAN)
+    #Vulkan stuff
+    add_custom_target(
+            Shaders
+            DEPENDS ${SPIRV_BINARY_FILES}
+    )
+    add_dependencies(WoWViewerLib Shaders)
+    add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
+    target_include_directories(WoWViewerLib INTERFACE ${Vulkan_INCLUDE_DIR})
+    #Vulkan stuff end
+else()
+    target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
+endif()
+
 
 target_include_directories(WoWViewerLib
         PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)

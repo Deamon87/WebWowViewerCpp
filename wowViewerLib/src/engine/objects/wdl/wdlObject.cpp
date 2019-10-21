@@ -74,5 +74,9 @@ void WdlObject::loadingFinished() {
 WdlObject::WdlObject(IWoWInnerApi *api, std::string &wdlFileName) {
     m_api = api;
     m_wdlFile = m_api->getWdlFileCache()->get(wdlFileName);
+}
 
+WdlObject::WdlObject(IWoWInnerApi *api, int wdlFileDataId) {
+    m_api = api;
+    m_wdlFile = m_api->getWdlFileCache()->getFileId(wdlFileDataId);
 }

@@ -79,11 +79,17 @@ void HttpFile::startDownloading() {
 //        curl_easy_cleanup(curl);
 //    }
 
-    std::string escaped_url = url_encode(m_httpUrl);
-    auto r = cpr::Get(cpr::Url{escaped_url});
+//    std::string escaped_url = url_encode(m_httpUrl);
+
+    std::string escaped_url = m_httpUrl;
+    auto verSSL = cpr::VerifySsl{false};
+
+    auto r = cpr::Get(cpr::Url{escaped_url}, verSSL );
     if (r.status_code == 200) {
-        if (this->m_fileBuffer != nullptr) delete(this->m_fileBuffer);
-        this->m_fileBuffer = new std::vector<unsigned char>(r.text.begin(), r.text.end());
+        this->m_fileBuffer = std::make_shared<FileContent>(FileContent(r.text.begin(), r.text.end()));
+
+
+
         if (this->m_fileBuffer->size() == 0) {
             std::cout << "File " << this->m_httpUrl.c_str() << " is empty" << std::endl <<
                       escaped_url << std::endl << std::flush;

@@ -31,6 +31,8 @@ public:
     mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
 
     //Frustum culling results
+    std::vector<WmoGroupResult> currentInteriorGroups;
+
     ExteriorView exteriorView;
     std::vector<InteriorView> interiorViews;
 

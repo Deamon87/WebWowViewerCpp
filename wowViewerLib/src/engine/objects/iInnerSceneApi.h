@@ -11,6 +11,10 @@
 
 class iInnerSceneApi {
 public:
+    virtual ~iInnerSceneApi() = default;
+    virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) = 0;
+    virtual void setAnimationId(int animationId) = 0;
+
     virtual void checkCulling(WoWFrameData *frameData) = 0;
     virtual void collectMeshes(WoWFrameData *frameData) = 0;
     virtual void draw(WoWFrameData *frameData) = 0;

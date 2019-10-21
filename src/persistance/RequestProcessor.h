@@ -6,9 +6,11 @@
 #define WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 
 #include "../../wowViewerLib/src/include/wowScene.h"
+#include "../../wowViewerLib/src/include/sharedFile.h"
 #include <thread>
 #include <list>
 #include <vector>
+#include <forward_list>
 
 class RequestProcessor : public IFileRequest {
 protected:
@@ -19,24 +21,40 @@ protected:
 protected:
     IFileRequester *m_fileRequester = nullptr;
 
-    virtual void processFileRequest(std::string &fileName) = 0;
+    virtual void processFileRequest(std::string &fileName, CacheHolderType holderType) = 0;
 public:
     void setFileRequester(IFileRequester *fileRequester) {
         m_fileRequester = fileRequester;
     }
 
 private:
-    struct resultStruct {
+    class RequestStruct {
+    public:
         std::string fileName;
-        std::vector<unsigned char> buffer;
+        CacheHolderType holderType;
+    };
+
+    class ResultStruct {
+    public:
+        ResultStruct(){};
+        ResultStruct (const ResultStruct &old_obj) {
+            fileName = old_obj.fileName;
+            holderType = old_obj.holderType;
+            buffer = old_obj.buffer;
+        }
+        std::string fileName;
+        CacheHolderType holderType;
+        HFileContent buffer = nullptr;
     };
 
     std::thread *loaderThread;
 
-    std::list<std::string> m_requestQueue;
-    std::list<resultStruct> m_resultQueue;
+    std::list<RequestStruct> m_requestQueue;
+    std::list<ResultStruct> m_resultQueue;
 
     bool m_threaded = false;
+
+    int currentlyProcessing = 0;
 public:
     void processResults(int limit);
     void processRequests(bool calledFromThread);
@@ -51,9 +69,9 @@ public:
     }
 
 protected:
-    void addRequest (std::string &fileName);
+    void addRequest (std::string &fileName, CacheHolderType holderType);
 
-    void provideResult(std::string &fileName, std::vector<unsigned char> &content);
+    void provideResult(std::string &fileName, HFileContent content, CacheHolderType holderType);
 
 };
 

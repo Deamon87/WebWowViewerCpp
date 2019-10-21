@@ -5,28 +5,28 @@
 #include <algorithm>
 #include "CascRequestProcessor.h"
 
-void CascRequestProcessor::requestFile(const char *fileName) {
+void CascRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType) {
     std::string fileName_s(fileName);
-    this->addRequest(fileName_s);
+    this->addRequest(fileName_s,holderType);
 }
 
-void CascRequestProcessor::processFileRequest(std::string &fileName) {
+void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType) {
     std::string fileNameFixed = fileName;
     std::replace( fileNameFixed.begin(), fileNameFixed.end(), '/', '\\');
 
     HANDLE fileHandle;
-    std::vector<unsigned char> fileContent;
+    HFileContent fileContent;
     bool fileOpened = false;
     if (CascOpenFile(m_storage, fileNameFixed.c_str(), 0,  0, &fileHandle)) {
         DWORD fileSize1 = CascGetFileSize(fileHandle, 0);
         fileOpened = true;
-        fileContent = std::vector<unsigned char> (fileSize1+1);
+        fileContent = std::make_shared<FileContent>(FileContent(fileSize1+1));
 
         DWORD totalBytesRead = 0;
         while (true) {
             DWORD dwBytesRead;
 
-            CascReadFile(fileHandle, &fileContent[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
+            CascReadFile(fileHandle, &(*fileContent.get())[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
 
             if(dwBytesRead == 0) {
                 break;
@@ -39,7 +39,7 @@ void CascRequestProcessor::processFileRequest(std::string &fileName) {
     }
 
     if (fileOpened) {
-        this->provideResult(fileName, fileContent);
+        this->provideResult(fileName, fileContent, holderType);
     } else {
         std::cout << "Could not open file "<< fileName << std::endl << std::flush;
     }

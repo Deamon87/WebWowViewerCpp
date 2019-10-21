@@ -26,7 +26,8 @@ struct modelWideBlockVS {
 struct meshWideBlockVS {
     int VertexShader;
     int IsAffectedByLight;
-    int padding[2];
+    int isSkyBox;
+    int padding;
     mathfu::vec4_packed Color_Transparency;
 
     mathfu::mat4 uTextMat[2];
@@ -68,7 +69,9 @@ struct wmoMeshWideBlockVS {
     int padding[2];
 };
 
+
 struct wmoMeshWideBlockPS {
+//    PACK({struct
     mathfu::vec4_packed uViewUp;
     mathfu::vec4_packed uSunDir_FogStart;
     mathfu::vec4_packed uSunColor_uFogEnd;
@@ -79,6 +82,7 @@ struct wmoMeshWideBlockPS {
     int PixelShader;
     int padding;
     mathfu::vec4_packed FogColor_AlphaTest;
+//    )}
 };
 
 //ADT

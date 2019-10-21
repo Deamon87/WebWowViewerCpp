@@ -32,8 +32,8 @@ void GIndexBufferGL4x::uploadData(void * data, int length) {
     if (!m_dataUploaded) {
         m_device.bindVertexBufferBindings(nullptr);
         m_device.bindIndexBuffer(this);
-//        glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, length, data, 0);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);
+        glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, length, data, 0);
+//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);
         m_size = (size_t) length;
     } else {
 //        if (m_isImmutable) {
@@ -41,6 +41,7 @@ void GIndexBufferGL4x::uploadData(void * data, int length) {
 //            createBuffer();
 //            m_isImmutable = false;
 //        }
+        assert(false);
         m_device.bindVertexBufferBindings(nullptr);
         m_device.bindIndexBuffer(this);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);

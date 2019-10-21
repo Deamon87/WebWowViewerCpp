@@ -34,6 +34,8 @@ class gMeshTemplate;
 #include "GShaderPermutationGL4x.h"
 #include "meshes/GMeshGL4x.h"
 #include "../interface/IDevice.h"
+#include "../../engine/opengl/header.h"
+
 
 
 
@@ -44,7 +46,9 @@ public:
 
     void reset() override;
 
-    int getFrameNumber() override;
+    unsigned int getUpdateFrameNumber() override;
+    unsigned int getCullingFrameNumber() override;
+    unsigned int getDrawFrameNumber() override;
 
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
@@ -65,7 +69,7 @@ public:
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
-    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName) override;
+    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void * permutationParam) override;
 
     HGPUFence createFence() override;
 
@@ -84,6 +88,7 @@ public:
 
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
+    virtual void clearScreen() override;
 
 private:
     void drawMesh(HGMesh &hmesh);
@@ -110,7 +115,7 @@ protected:
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL4x>, BlpCacheRecordHasher> loadedTextureCache;
 
-    int m_frameNumber = 0;
+    unsigned int m_frameNumber = 0;
 
     uint8_t m_lastColorMask = 0xFF;
     int8_t m_lastDepthWrite = -1;

@@ -43,3 +43,6 @@
 [submodule "wowViewerLib/extlibs/vrm_cmake"]
 	path = wowViewerLib/extlibs/vrm_cmake
 	url = https://github.com/SuperV1234/vrm_cmake.git
+[submodule "wowViewerLib/3rdparty/spirv-cross"]
+	path = wowViewerLib/3rdparty/spirv-cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git

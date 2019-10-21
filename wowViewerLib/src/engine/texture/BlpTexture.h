@@ -5,8 +5,8 @@
 #ifndef WOWVIEWERLIB_BLPTEXTURE_H
 #define WOWVIEWERLIB_BLPTEXTURE_H
 
-#include "../opengl/header.h"
 #include "../persistance/header/blpFileHeader.h"
+#include "../../include/wowScene.h"
 #include <vector>
 enum class TextureFormat {
     None,
@@ -15,6 +15,7 @@ enum class TextureFormat {
     S3TC_RGBA_DXT3,
     S3TC_RGBA_DXT5,
     BGRA,
+    RGBA,
     PalARGB1555DitherFloydSteinberg,
     PalARGB4444DitherFloydSteinberg,
     PalARGB2565DitherFloydSteinberg
@@ -29,7 +30,11 @@ typedef std::vector<mipmapStruct_t> MipmapsVector;
 
 class BlpTexture {
 public:
-    void process(std::vector<unsigned char> &blpFile, std::string &fileName);
+    BlpTexture(std::string fileName){};
+    BlpTexture(int fileDataId){};
+
+    std::string getTextureName() { return m_textureName; };
+    void process(HFileContent blpFile, const std::string &fileName);
     bool getIsLoaded() { return m_isLoaded; };
     const MipmapsVector& getMipmapsVector() {
         return m_mipmaps;
@@ -40,6 +45,7 @@ public:
     }
 private:
     bool m_isLoaded = false;
+    std::string m_textureName;
 
     MipmapsVector m_mipmaps;
     TextureFormat m_textureFormat;

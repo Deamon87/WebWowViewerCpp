@@ -10,10 +10,10 @@
 class GWMOShaderPermutationGL33 : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GWMOShaderPermutationGL33(std::string &shaderName, IDevice *device);
+    explicit GWMOShaderPermutationGL33(std::string &shaderName, IDevice *device, WMOShaderCacheRecord &permutation);
 
-    virtual void compileShader() override;
-
+    virtual void compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) override;
+    WMOShaderCacheRecord &permutation;
 };
 
 

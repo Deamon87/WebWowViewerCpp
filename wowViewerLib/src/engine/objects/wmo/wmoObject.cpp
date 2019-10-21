@@ -4,7 +4,6 @@
 
 #include "wmoObject.h"
 #include "../../algorithms/mathHelper.h"
-#include "../../shader/ShaderDefinitions.h"
 #include "../../persistance/header/commonFileStructs.h"
 #include "./../../../gapi/interface/IDevice.h"
 #include <algorithm>
@@ -82,15 +81,30 @@ M2Object *WmoObject::getDoodad(int index) {
     M2Object *doodadObject = this->m_doodadsArray[doodadIndex];
     if (doodadObject != nullptr) return doodadObject;
 
-
     SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
-    assert(doodadDef->name_offset < this->mainGeom->doodadNamesFieldLen);
-    std::string fileName(&this->mainGeom->doodadNamesField[doodadDef->name_offset]);
+
+    bool fileIdMode = false;
+    int doodadfileDataId = 0;
+    std::string fileName;
+    if (this->mainGeom->doodadFileDataIds == nullptr && this->mainGeom->doodadFileDataIdsLen == 0) {
+        if (this->mainGeom->doodadNamesFieldLen <= 0) {
+            return nullptr;
+        }
+        assert(doodadDef->name_offset < this->mainGeom->doodadNamesFieldLen);
+        fileName = std::string (&this->mainGeom->doodadNamesField[doodadDef->name_offset]);
+    } else {
+        doodadfileDataId = this->mainGeom->doodadFileDataIds[doodadDef->name_offset];
+        fileIdMode = true;
+    }
 
     M2Object *m2Object = new M2Object(m_api);
     m2Object->setDiffuseColor(doodadDef->color);
     m2Object->setLoadParams(0, {},{});
-    m2Object->setModelFileName(fileName);
+    if (fileIdMode) {
+        m2Object->setModelFileId(doodadfileDataId);
+    } else {
+        m2Object->setModelFileName(fileName);
+    }
     m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
 
@@ -179,20 +193,34 @@ void WmoObject::createGroupObjects(){
         if (mainGeom->gfids.size() > 1) {
             groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
             groupObjectsLod1[i]->setWmoApi(this);
+        } else {
+            groupObjectsLod1[i] = nullptr;
         }
         if (mainGeom->gfids.size() > 2) {
             groupObjectsLod2[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
             groupObjectsLod2[i]->setWmoApi(this);
-        }
-
-        if (useFileId) {
-            groupObjects[i]->setModelFileId(mainGeom->gfids[0][i]);
-            if (groupObjectsLod1[i] != nullptr)
-                groupObjectsLod1[i]->setModelFileId(mainGeom->gfids[1][i]);
-
-            if (groupObjectsLod2[i] != nullptr)
-                groupObjectsLod2[i]->setModelFileId(mainGeom->gfids[2][i]);
         } else {
+            groupObjectsLod2[i] = nullptr;
+        };
+
+        if (mainGeom->gfids.size() > 0) {
+            groupObjects[i]->setModelFileId(mainGeom->gfids[0][i]);
+            if (mainGeom->gfids.size() > 1) {
+                if (mainGeom->gfids[1][i] == 0) {
+                    delete groupObjectsLod1[i];
+                    groupObjectsLod1[i] = nullptr;
+                } else if (groupObjectsLod1[i] != nullptr)
+                    groupObjectsLod1[i]->setModelFileId(mainGeom->gfids[1][i]);
+            }
+
+            if (mainGeom->gfids.size() > 2) {
+                if (mainGeom->gfids[2][i] == 0) {
+                    delete groupObjectsLod2[i];
+                    groupObjectsLod2[i] = nullptr;
+                } else if (groupObjectsLod2[i] != nullptr)
+                    groupObjectsLod2[i]->setModelFileId(mainGeom->gfids[2][i]);
+            }
+        } else if (!useFileId) {
             std::string numStr = std::to_string(i);
             for (int j = numStr.size(); j < 3; j++) numStr = '0' + numStr;
 
@@ -211,8 +239,8 @@ void WmoObject::createGroupObjects(){
 void WmoObject::createWorldPortals() {
 
     int portalCnt = mainGeom->portalsLen;
-    SMOPortal *portals = mainGeom->portals;
-    C3Vector *portalVerticles = mainGeom->portal_vertices;
+    auto &portals = mainGeom->portals;
+    auto &portalVerticles = mainGeom->portal_vertices;
 
     if (portalCnt <= 0) return;
     geometryPerPortal = std::vector<PortalInfo_t>(portalCnt);
@@ -278,37 +306,55 @@ void WmoObject::createWorldPortals() {
     }
 }
 
-void WmoObject::doPostLoad() {
+bool WmoObject::doPostLoad(int &groupsProcessedThisFrame) {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getIsLoaded()){
-            m_loaded = true;
-            m_loading = false;
-
             this->createGroupObjects();
             this->createWorldPortals();
             this->createBB(mainGeom->header->bounding_box);
             this->createM2Array();
+
+            if (mainGeom->skyBoxM2FileName != nullptr || mainGeom->skyboxM2FileId != 0) {
+                skyBox = new M2Object(m_api, true);
+                skyBox->setLoadParams(0, {},{});
+
+                if ( mainGeom->skyboxM2FileId != 0) {
+                    skyBox->setModelFileId(mainGeom->skyboxM2FileId);
+                } else {
+                    skyBox->setModelFileName(&mainGeom->skyBoxM2FileName[0]);
+                }
+                skyBox->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+                skyBox->calcWorldPosition();
+            }
+
+            m_loaded = true;
+            m_loading = false;
+            return true;
         } else {
             this->startLoading();
         }
 
-        return;
+        return false;
     }
-    for (int i = 0; i < groupObjects.size(); i++) {
-        if(groupObjects[i] != nullptr) {
-            groupObjects[i]->doPostLoad();
+
+    for (auto &groupObject : groupObjects) {
+        if (groupsProcessedThisFrame > 3) return false;
+        groupObject->doPostLoad();
+    }
+    for (auto &groupObjectLod : groupObjectsLod1) {
+        if (groupsProcessedThisFrame > 3) return false;
+        if (groupObjectLod != nullptr) {
+            if (groupObjectLod->doPostLoad()) groupsProcessedThisFrame++;;
         }
     }
-    for (int i= 0; i < groupObjectsLod1.size(); i++) {
-        if(groupObjectsLod1[i] != nullptr) {
-            groupObjectsLod1[i]->doPostLoad();
+    for (auto &groupObjectLod2 : groupObjectsLod2) {
+        if (groupsProcessedThisFrame > 3) return false;
+        if (groupObjectLod2 != nullptr) {
+            if (groupObjectLod2->doPostLoad()) groupsProcessedThisFrame++;;
         }
     }
-    for (int i= 0; i < groupObjectsLod2.size(); i++) {
-        if(groupObjectsLod2[i] != nullptr) {
-            groupObjectsLod1[i]->doPostLoad();
-        }
-    }
+
+    return false;
 }
 
 void WmoObject::update() {
@@ -497,10 +543,12 @@ void WmoObject::drawTransformedPortalPoints(){
 #endif
 }
 
-void WmoObject::drawTransformedAntiPortalPoints(){
-    return;
+void WmoObject::createTransformedAntiPortalMesh() {
+
+}
+
+void WmoObject::updateTransformedAntiPortalPoints(){
 #ifndef CULLED_NO_PORTAL_DRAWING
-    /*
     if (!m_loaded) return;
 
     std::vector<uint16_t> indiciesArray;
@@ -514,74 +562,74 @@ void WmoObject::drawTransformedAntiPortalPoints(){
 
     //
 
-    for (int i = 0; i < this->antiPortals.size(); i++) {
-        //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
-
-        int verticlesCount = this->antiPortals[i].portalVertices.size();
-//        if ((verticlesCount - 2) <= 0) {
-//            stripOffsets.push_back(stripOffsets[i]);
-//            continue;
-//        };
+//    for (int i = 0; i < this->antiPortals.size(); i++) {
+//        //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
 //
-//        for (int j =0; j < (((int)verticlesCount)-2); j++) {
-//            indiciesArray.push_back(verticleOffset+0);
-//            indiciesArray.push_back(verticleOffset+j+1);
-//            indiciesArray.push_back(verticleOffset+j+2);
+//        int verticlesCount = this->antiPortals[i].portalVertices.size();
+////        if ((verticlesCount - 2) <= 0) {
+////            stripOffsets.push_back(stripOffsets[i]);
+////            continue;
+////        };
+////
+////        for (int j =0; j < (((int)verticlesCount)-2); j++) {
+////            indiciesArray.push_back(verticleOffset+0);
+////            indiciesArray.push_back(verticleOffset+j+1);
+////            indiciesArray.push_back(verticleOffset+j+2);
+////        }
+////        stripOffset += ((verticlesCount-2) * 3);
+//
+//        for (int j =0; j < verticlesCount; j++) {
+//            verticles.push_back(this->antiPortals[i].portalVertices[j].x);
+//            verticles.push_back(this->antiPortals[i].portalVertices[j].y);
+//            verticles.push_back(this->antiPortals[i].portalVertices[j].z);
 //        }
-//        stripOffset += ((verticlesCount-2) * 3);
-
-        for (int j =0; j < verticlesCount; j++) {
-            verticles.push_back(this->antiPortals[i].portalVertices[j].x);
-            verticles.push_back(this->antiPortals[i].portalVertices[j].y);
-            verticles.push_back(this->antiPortals[i].portalVertices[j].z);
-        }
-
-        verticleOffset += verticlesCount;
-        stripOffsets.push_back(stripOffset);
-    }
-    GLuint indexVBO;
-    GLuint bufferVBO;
-//    glGenBuffers(1, &indexVBO);
-//    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-//    if (indiciesArray.size() > 0) {
-//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size() * 2, &indiciesArray[0], GL_STATIC_DRAW);
+//
+//        verticleOffset += verticlesCount;
+//        stripOffsets.push_back(stripOffset);
 //    }
-    glGenBuffers(1, &bufferVBO);
-    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-    if (verticles.size() > 0) {
-        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
-    }
+//    GLuint indexVBO;
+//    GLuint bufferVBO;
+////    glGenBuffers(1, &indexVBO);
+////    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+////    if (indiciesArray.size() > 0) {
+////        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size() * 2, &indiciesArray[0], GL_STATIC_DRAW);
+////    }
+//    glGenBuffers(1, &bufferVBO);
+//    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
+//    if (verticles.size() > 0) {
+//        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
+//    }
+//
+//    glDisable(GL_BLEND);
+//
+//    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
+//
+//    auto drawPortalShader = m_api->getPortalShader();
+//    static float colorArr[4] = {0.819607843, 0.058, 0.058, 0.3};
+//    glUniformMatrix4fv(drawPortalShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
+//    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
+//
+//    glDisable(GL_CULL_FACE);
+//    glDepthMask(GL_FALSE);
+//
+//    int offset = 0;
+//    for (int i = 0; i < this->antiPortals.size(); i++) {
+////        int indeciesLen = stripOffsets[i+1] - stripOffsets[i];
+//
+////        glDrawElements(GL_TRIANGLES, indeciesLen, GL_UNSIGNED_SHORT, (void *)(offset * 2));
+//        glDrawArrays(GL_TRIANGLES, 0, verticles.size()*4);
+//
+////        offset += indeciesLen;
+//    }
+//    glDepthMask(GL_TRUE);
+//    glDisable(GL_BLEND);
+//
+//    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
+//    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
+//
+//    glDeleteBuffers(1, &indexVBO);
+//    glDeleteBuffers(1, &bufferVBO);
 
-    glDisable(GL_BLEND);
-
-    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
-
-    auto drawPortalShader = m_api->getPortalShader();
-    static float colorArr[4] = {0.819607843, 0.058, 0.058, 0.3};
-    glUniformMatrix4fv(drawPortalShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
-    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
-
-    glDisable(GL_CULL_FACE);
-    glDepthMask(GL_FALSE);
-
-    int offset = 0;
-    for (int i = 0; i < this->antiPortals.size(); i++) {
-//        int indeciesLen = stripOffsets[i+1] - stripOffsets[i];
-
-//        glDrawElements(GL_TRIANGLES, indeciesLen, GL_UNSIGNED_SHORT, (void *)(offset * 2));
-        glDrawArrays(GL_TRIANGLES, 0, verticles.size()*4);
-
-//        offset += indeciesLen;
-    }
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
-    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
-
-    glDeleteBuffers(1, &indexVBO);
-    glDeleteBuffers(1, &bufferVBO);
-          */
 #endif
 
 }
@@ -602,7 +650,10 @@ void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
 }
 
 HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
-    if (textureId < 0 || textureId >= mainGeom->textureNamesFieldLen) {
+    if (textureId == 0) return nullptr; //Usual case
+
+    //Non-usual case
+    if (textureId < 0 || (mainGeom->textureNamesField != nullptr && textureId >= mainGeom->textureNamesFieldLen)) {
         debuglog("Non valid textureindex for WMO")
         return nullptr;
     };
@@ -616,17 +667,22 @@ HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
     if (i != textureCache.end()) {
         return i->second;
     }
+    HBlpTexture texture;
+    if (mainGeom->textureNamesField != nullptr) {
+        std::string materialTexture(&mainGeom->textureNamesField[textureId]);
+        if (materialTexture == "") return nullptr;
 
-    std::string materialTexture(&mainGeom->textureNamesField[textureId]);
-    if (materialTexture == "") return nullptr;
+        if (isSpec) {
+            materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
+        }
 
-    if (isSpec) {
-        materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
+        texture = m_api->getTextureCache()->get(materialTexture);
+    } else {
+        texture = m_api->getTextureCache()->getFileId(textureId);
     }
 
-    HBlpTexture texture = m_api->getTextureCache()->get(materialTexture);
     HGTexture hgTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
-    textureCache[textureId] =  hgTexture;
+    textureCache[textureId] = hgTexture;
 
     return hgTexture;
 }
@@ -714,9 +770,6 @@ void WmoObject::resetTraversedWmoGroups() {
     // 1. Create array of visibility with all false
     uint32_t portalCount = (uint32_t) std::max(0, this->mainGeom->portalsLen);
     transverseVisitedPortals = std::vector<bool>(portalCount, false);
-
-    uint32_t doodadsCount = (uint32_t) std::max(0, this->mainGeom->doodadDefsLen);
-    collectedM2s = std::vector<int>(doodadsCount, false);
 }
 
 bool WmoObject::startTraversingWMOGroup(
@@ -753,6 +806,18 @@ bool WmoObject::startTraversingWMOGroup(
         frustumPointsLocal[3], frustumPointsLocal[0]
     ), 1.0);
 
+    //Add all ALAWAYSRENDER to Exterior
+    for (int i = 0; i< mainGeom->groupsLen; i++) {
+        if ((mainGeom->groups[i].flags.ALWAYSDRAW) > 0) { //exterior
+            if (!exteriorView.viewCreated) {
+                exteriorView.viewCreated = true;
+                exteriorView.frustumPlanes.push_back(frustumPlanesExt);
+            }
+
+            exteriorView.drawnWmos.push_back(this->groupObjects[i]);
+        }
+    }
+
     if (traversingFromInterior) {
         InteriorView &interiorView = createdInteriorViews[groupId];
         WmoGroupObject *nextGroupObject = groupObjects[groupId];
@@ -784,8 +849,20 @@ bool WmoObject::startTraversingWMOGroup(
             globalLevel,
             0);
     } else {
+        if (exteriorView.viewCreated) {
+            frustumPlanesExt = exteriorView.frustumPlanes[0];
+            frustumPlanes.clear();
+            std::transform(frustumPlanesExt.begin(), frustumPlanesExt.end(),
+                           std::back_inserter(frustumPlanes),
+                           [&](const mathfu::vec4 &p) -> mathfu::vec4 {
+                               return transposeModelMat * p;
+                           }
+            );
+        }
+
         if (!exteriorView.viewCreated) {
             exteriorView.viewCreated = true;
+            exteriorView.frustumPlanes.push_back(frustumPlanesExt);
         }
 
         if (globalLevel+1 >= exteriorView.level) {
@@ -843,8 +920,7 @@ bool WmoObject::startTraversingWMOGroup(
 
     bool result = createdInteriorViews.size() > 0;
 
-    if (!exteriorView.viewCreated && exteriorView.level > 0) {
-        exteriorView.viewCreated = true;
+    if (exteriorView.viewCreated) {
         exteriorView.renderOrder = renderOrder++;
         result = true;
     }
@@ -855,6 +931,7 @@ bool WmoObject::startTraversingWMOGroup(
     //M2s will be collected later from separate function call
     return true;
 }
+static const float dotepsilon = pow(1.5f, 2.0f);
 
 void WmoObject::transverseGroupWMO(
     int groupId,
@@ -896,7 +973,12 @@ void WmoObject::transverseGroupWMO(
         float dotResult = mathfu::vec4::DotProduct(planeV4, cameraLocal);
         //dotResult = dotResult + relation.side * 0.01;
         bool isInsidePortalThis = (relation->side < 0) ? (dotResult <= 0) : (dotResult >= 0);
-        if (!isInsidePortalThis) continue;
+
+        //This condition checks if camera is very close to the portal. In this case the math doesnt work very properly
+        //So I need to make this hack exactly for this case.z
+
+        bool hackCondition = (fabs(dotResult) > dotepsilon);
+        if (!isInsidePortalThis && hackCondition) continue;
 
         //2.1 If portal has less than 4 vertices - skip it(invalid?)
         if (portalInfo->index_count < 4) continue;
@@ -912,7 +994,8 @@ void WmoObject::transverseGroupWMO(
 
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
 
-        if (!visible) continue;
+
+        if (!visible && hackCondition) continue;
 
         transverseVisitedPortals[relation->portal_index] = true;
 
@@ -920,19 +1003,27 @@ void WmoObject::transverseGroupWMO(
 
         //3. Construct frustum planes for this portal
         std::vector<mathfu::vec4> thisPortalPlanes;
-        bool flip = (relation->side > 0);
+        thisPortalPlanes.reserve(lastFrustumPlanesLen);
 
-        int portalCnt = portalVerticesVec.size();
-        for (int i = 0; i < portalCnt; ++i) {
-            int i2 = (i + 1) % portalCnt;
+        if (hackCondition) {
+            bool flip = (relation->side > 0);
 
-            mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(cameraLocal.xyz(), portalVerticesVec[i], portalVerticesVec[i2]);
+            int portalCnt = portalVerticesVec.size();
+            for (int i = 0; i < portalCnt; ++i) {
+                int i2 = (i + 1) % portalCnt;
 
-            if (flip) {
-                n *= -1.0f;
+                mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(cameraLocal.xyz(), portalVerticesVec[i],
+                                                                           portalVerticesVec[i2]);
+
+                if (flip) {
+                    n *= -1.0f;
+                }
+
+                thisPortalPlanes.push_back(n);
             }
-
-            thisPortalPlanes.push_back(n);
+        } else {
+            // If camera is too close - just use usual frustums
+            thisPortalPlanes = localFrustumPlanes;
         }
 
         //Transform local planes into world planes to use with frustum culling of M2Objects
@@ -948,7 +1039,7 @@ void WmoObject::transverseGroupWMO(
         //5. Traverse next
         WmoGroupObject *nextGroupObject = groupObjects[nextGroup];
         SMOGroupInfo &nextGroupInfo = mainGeom->groups[nextGroup];
-        if ((nextGroupInfo.flags.INTERIOR) > 0) {
+        if ((nextGroupInfo.flags.EXTERIOR) == 0) {
             InteriorView &interiorView = allInteriorViews[nextGroup];
             //5.1 The portal is into interior wmo group. So go on.
             if (!interiorView.viewCreated) {
@@ -983,6 +1074,7 @@ void WmoObject::transverseGroupWMO(
             //5.2 The portal is from interior into exterior wmo group.
             //Make sense to add only if whole traversing process started from interior
             if (!exteriorView.viewCreated) {
+                exteriorView.viewCreated = true;
                 exteriorView.level = globalLevel + 1;
 
                 exteriorView.portalVertices.push_back(portalVerticesVec);
@@ -994,7 +1086,7 @@ void WmoObject::transverseGroupWMO(
 
 bool WmoObject::isGroupWmoInterior(int groupId) {
     SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
-    bool result = ((groupInfo->flags.INTERIOR) != 0);
+    bool result = ((groupInfo->flags.EXTERIOR) == 0);
     return result;
 }
 
@@ -1209,12 +1301,21 @@ SMOHeader *WmoObject::getWmoHeader() {
     return mainGeom->header;
 }
 
-SMOLight *WmoObject::getLightArray() {
+PointerChecker<SMOLight> &WmoObject::getLightArray() {
     return mainGeom->lights;
 }
 
-SMOMaterial *WmoObject::getMaterials() {
+PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
     return mainGeom->materials;
+}
+
+M2Object *WmoObject::getSkyBoxForGroup(int groupNum) {
+    if (!m_loaded) return nullptr;
+    if (groupNum < 0 || groupNum >= this->groupObjects.size()) return nullptr;
+    if (!this->groupObjects[groupNum]->getIsLoaded()) return nullptr;
+    if (!this->groupObjects[groupNum]->getWmoGroupGeom()->mogp->flags.showSkyBox) return nullptr;
+
+    return skyBox;
 }
 
 void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
@@ -1270,6 +1371,10 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
             drawnM2s.push_back(m2Candidate);
         }
     }
+}
+
+void GeneralView::setM2Lights(M2Object *m2Object) {
+    m2Object->setUseLocalLighting(false);
 }
 
 void InteriorView::setM2Lights(M2Object *m2Object) {

@@ -45,7 +45,7 @@ void GUniformBufferGL4x::createBuffer() {
 
 
 void GUniformBufferGL4x::destroyBuffer() {
-    glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer[0]);
 }
 void GUniformBufferGL4x::bind(int bindingPoint) { //Should be called only by GDevice
     if (m_buffCreated && bindingPoint == -1) {
@@ -53,7 +53,7 @@ void GUniformBufferGL4x::bind(int bindingPoint) { //Should be called only by GDe
     } else if (m_buffCreated) {
         glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer[0]);
     } else {
-        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) getIdentifierBuffer(), m_offset[m_device.getFrameNumber() & 1], m_size);
+        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) getIdentifierBuffer(), m_offset[m_device.getDrawFrameNumber()], m_size);
     }
 }
 void GUniformBufferGL4x::unbind() {

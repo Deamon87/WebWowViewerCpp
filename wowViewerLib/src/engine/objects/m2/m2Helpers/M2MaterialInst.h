@@ -21,7 +21,7 @@ public:
     int textureCount;
 
     int texUnitTexIndex = -1;
-    HGTexture textures[4];
+    HGTexture textures[6];
 
     int layer = 0;
     int renderFlagIndex = -1;

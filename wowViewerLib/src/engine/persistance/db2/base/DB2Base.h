@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <functional>
+#include "../../../../include/wowScene.h"
 
 struct wdc2_db2_header
 {
@@ -171,7 +172,7 @@ struct section
 
 class DB2Base {
 public:
-    void process(std::vector<unsigned char> &db2File, std::string &fileName);
+    void process(HFileContent db2File, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
     int readRecord(int id, bool useRelationMappin, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, int stringOffset, char *data, size_t length)>callback);
     bool readRecordByIndex(int index, int minFieldNum, int fieldsToRead, std::function<void(int fieldNum, int fieldOffset, char *data, size_t length)>callback);
@@ -180,7 +181,7 @@ public:
     std::string readString(int index);
 private:
     bool m_loaded = false;
-    std::vector<uint8_t> db2File;
+    HFileContent db2File;
     unsigned char *fileData;
     int currentOffset;
     int bytesRead;

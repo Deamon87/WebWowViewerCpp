@@ -18,7 +18,7 @@ public:
     void setPriorityPlane(int priorityPlane) override;
     void setQuery(const HGOcclusionQuery &query) override;
     void setSortDistance(float distance) override;
-
+    float getSortDistance() override;
 private:
     HGOcclusionQuery m_query = nullptr;
 

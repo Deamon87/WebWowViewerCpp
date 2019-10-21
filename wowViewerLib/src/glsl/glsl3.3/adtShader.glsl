@@ -1,6 +1,6 @@
 #ifdef COMPILING_VS
 /* vertex shader code */
-layout(location = 0) in float aHeight;
+layout(location = 0) in vec3 aHeight;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
@@ -22,11 +22,11 @@ mat3 blizzTranspose(mat4 value) {
     );
 }
 
-varying vec2 vChunkCoords;
-varying vec3 vPosition;
-varying vec4 vColor;
-varying vec3 vNormal;
-varying vec3 vVertexLighting;
+out vec2 vChunkCoords;
+out vec3 vPosition;
+out vec4 vColor;
+out vec3 vNormal;
+out vec3 vVertexLighting;
 
 const float UNITSIZE_X =  (1600.0 / 3.0) / 16.0 / 8.0;
 const float UNITSIZE_Y =  (1600.0 / 3.0) / 16.0 / 8.0;
@@ -46,11 +46,13 @@ void main() {
         iX = iX - 8.5;
     }
 
-    vec4 worldPoint = vec4(
-        uPos.x - iY * UNITSIZE_Y,
-        uPos.y - iX * UNITSIZE_X,
-        uPos.z + aHeight,
-        1);
+//    vec4 worldPoint = vec4(
+//        uPos.x - iY * UNITSIZE_Y,
+//        uPos.y - iX * UNITSIZE_X,
+//        uPos.z + aHeight,
+//        1);
+
+    vec4 worldPoint = vec4(aHeight, 1.0);
 
     vChunkCoords = vec2(iX, iY);
 
@@ -66,11 +68,11 @@ void main() {
 #ifdef COMPILING_FS
 precision highp float;
 
-varying vec2 vChunkCoords;
-varying vec3 vPosition;
-varying vec4 vColor;
-varying vec3 vNormal;
-varying vec3 vVertexLighting;
+in vec2 vChunkCoords;
+in vec3 vPosition;
+in vec4 vColor;
+in vec3 vNormal;
+in vec3 vVertexLighting;
 
 uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayer0;
@@ -130,9 +132,10 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
         currColor = vec3 (1.0, 1.0, 1.0) ;
         mult = 1.0;
     }
+    vec3 localDiffuse = vVertexLighting;
 
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vVertexLighting;
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
     return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
 }
 
@@ -142,40 +145,47 @@ void main() {
     const float threshold = 1.5;
 
     vec2 alphaCoord = vec2(vChunkCoords.x/8.0, vChunkCoords.y/8.0 );
-    vec3 alphaBlend = texture2D( uAlphaTexture, alphaCoord).gba;
+    vec3 alphaBlend = texture( uAlphaTexture, alphaCoord).gba;
 
     vec2 tcLayer0 = vTexCoord;
     vec2 tcLayer1 = vTexCoord;
     vec2 tcLayer2 = vTexCoord;
     vec2 tcLayer3 = vTexCoord;
-    float t906 = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0, 1));
-    vec4 weights_907 = vec4(t906, alphaBlend);
-    float t916 = (t906 * ((texture(uLayerHeight0, tcLayer0).w * uHeightScale[0]) + uHeightOffset[0]));
-    float t926 = (weights_907.y * ((texture(uLayerHeight1, tcLayer1).w * uHeightScale[1]) + uHeightOffset[1]));
-    float t936 = (weights_907.z * ((texture(uLayerHeight2, tcLayer2).w * uHeightScale[2]) + uHeightOffset[2]));
-    float t946 = (weights_907.w * ((texture(uLayerHeight3, tcLayer3).w * uHeightScale[3]) + uHeightOffset[3]));
-    vec4 weights_1222 = vec4(t916, t926, t936, t946);
-    vec4 weights_960 = (weights_1222 * (vec4(1.0) - clamp((vec4(max(max(t916, t926), max(t936, t946))) - weights_1222), 0, 1)));
-    vec4 weights_963 = (weights_960 / vec4(dot(vec4(1.0), weights_960)));
-    vec4 weightedLayer_966 = (texture(uLayer0, tcLayer0) * weights_963.x);
-    vec3 matDiffuse_978 = weightedLayer_966.xyz;
-    float specBlend_988 = weightedLayer_966.w;
-    vec4 weightedLayer_1000 = (texture(uLayer1, tcLayer1) * weights_963.y);
-    vec3 matDiffuse_1021 = (matDiffuse_978 + weightedLayer_1000.xyz);
-    float specBlend_1033 = (specBlend_988 + weightedLayer_1000.w);
-    vec4 weightedLayer_1045 = (texture(uLayer2, tcLayer1) * weights_963.z);
-    vec3 matDiffuse_1066 = (matDiffuse_1021 + weightedLayer_1045.xyz);
-    float specBlend_1078 = (specBlend_1033 + weightedLayer_1045.w);
-    vec4 weightedLayer_1090 = (texture(uLayer3, tcLayer1) * weights_963.w);
-    vec3 matDiffuse_1111 = (matDiffuse_1066 + weightedLayer_1090.xyz);
-    float specBlend_1123 = (specBlend_1078 + weightedLayer_1090.w);
-    vec4 final_1138 = vec4(matDiffuse_1111, specBlend_1123);
 
-    vec3 matDiffuse = final_1138.rgb * 2.0 * vColor.rgb;
+    float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
+    vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
+    float weightedTexture_x = (minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * uHeightScale[0]) + uHeightOffset[0]));
+    float weightedTexture_y = (weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * uHeightScale[1]) + uHeightOffset[1]));
+    float weightedTexture_z = (weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * uHeightScale[2]) + uHeightOffset[2]));
+    float weightedTexture_w = (weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * uHeightScale[3]) + uHeightOffset[3]));
+    vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
+    vec4 weights_temp = (weights * (vec4(1.0) - clamp((vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights), 0.0, 1.0)));
+    vec4 weightsNormalized = (weights_temp / vec4(dot(vec4(1.0), weights_temp)));
+
+    
+    vec4 weightedLayer_0 = (texture(uLayer0, tcLayer0) * weightsNormalized.x);
+    vec3 matDiffuse_0 = weightedLayer_0.xyz;
+    float specBlend_0 = weightedLayer_0.w;
+
+    vec4 weightedLayer_1 = (texture(uLayer1, tcLayer1) * weightsNormalized.y);
+    vec3 matDiffuse_1 = (matDiffuse_0 + weightedLayer_1.xyz);
+    float specBlend_1 = (specBlend_0 + weightedLayer_1.w);
+
+    vec4 weightedLayer_2 = (texture(uLayer2, tcLayer1) * weightsNormalized.z);
+    vec3 matDiffuse_2 = (matDiffuse_1 + weightedLayer_2.xyz);
+    float specBlend_2 = (specBlend_1 + weightedLayer_2.w);
+
+    vec4 weightedLayer_3 = (texture(uLayer3, tcLayer1) * weightsNormalized.w);
+    vec3 matDiffuse_3 = (matDiffuse_2 + weightedLayer_3.xyz);
+    float specBlend_3 = (specBlend_2 + weightedLayer_3.w);
+
+    vec4 final = vec4(matDiffuse_3, specBlend_3);
+
+    vec3 matDiffuse = final.rgb *  vColor.rgb;
     vec4 finalColor = vec4(makeDiffTerm(matDiffuse), 1.0);
 
     //Spec part
-    float specBlend = final_1138.a;
+    float specBlend = final.a;
     vec3 halfVec = -(normalize((uSunDir_FogStart.xyz + normalize(vPosition))));
     vec3 lSpecular = ((uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
     vec3 specTerm = (vec3(specBlend) * lSpecular);

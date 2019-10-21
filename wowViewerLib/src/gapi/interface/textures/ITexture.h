@@ -4,6 +4,7 @@
 
 #ifndef AWEBWOWVIEWERCPP_ITEXTURE_H
 #define AWEBWOWVIEWERCPP_ITEXTURE_H
+
 #include "../../../engine/wowCommonClasses.h"
 #include "../../../engine/texture/BlpTexture.h"
 
@@ -13,6 +14,7 @@ public:
 
     virtual void loadData(int width, int height, void *data) = 0;
     virtual bool getIsLoaded() = 0;
+    virtual bool postLoad() = 0;
 
     virtual void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) = 0;
 };

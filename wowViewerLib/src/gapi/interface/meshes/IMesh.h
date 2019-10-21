@@ -43,6 +43,11 @@ struct BlendModeDesc {
     int DestAlpha;
 };
 
+enum class DrawElementMode {
+    TRIANGLES,
+    TRIANGLE_STRIP
+};
+
 extern BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX];
 
 class gMeshTemplate {
@@ -53,18 +58,19 @@ public:
     MeshType meshType = MeshType::eGeneralMesh;
 
     int8_t triCCW = 1; //counter-clockwise
-    bool depthWrite;
-    bool depthCulling;
-    bool backFaceCulling;
+    bool depthWrite = true;
+    bool depthCulling = true;
+    bool backFaceCulling = true;
     EGxBlendEnum blendMode;
+    bool skybox = false;
 
     uint8_t colorMask = 0xFF;
 
     int start;
     int end;
-    int element;
+    DrawElementMode element;
     unsigned int textureCount;
-    std::vector<HGTexture> texture = std::vector<HGTexture>(4, nullptr);
+    std::vector<HGTexture> texture = std::vector<HGTexture>(6, nullptr);
     HGUniformBuffer vertexBuffers[3] = {nullptr,nullptr,nullptr};
     HGUniformBuffer fragmentBuffers[3] = {nullptr,nullptr,nullptr};
 };
@@ -81,6 +87,8 @@ protected:
     int m_layer;
     void *m_m2Object = nullptr;
 
+    bool m_isSkyBox = false;
+
     HGVertexBufferBindings m_bindings;
     int m_start;
     int m_end;
@@ -96,7 +104,9 @@ public:
     virtual bool getIsTransparent() = 0;
     virtual MeshType getMeshType() = 0;
     virtual void setRenderOrder(int renderOrder) = 0;
+    virtual bool getIsSkyBox() { return m_isSkyBox; }
 
+    virtual void setStart(int start)  = 0;
     virtual void setEnd(int end)  = 0;
 public:
     virtual void setM2Object(void * m2Object) = 0;
@@ -104,6 +114,7 @@ public:
     virtual void setPriorityPlane(int priorityPlane) = 0;
     virtual void setQuery(const HGOcclusionQuery &query) = 0;
     virtual void setSortDistance(float distance) = 0;
+    virtual float getSortDistance() = 0;
 
 };
 #endif //AWEBWOWVIEWERCPP_IMESH_H

@@ -142,7 +142,7 @@ stack<Point> grahamScan(std::vector<Point> &points)    {
     hull.push(points[2]);
 
     for (int i = 3; i < m; i++) {
-        while (orientation(nextToTop(hull), hull.top(), points[i]) != 2)   {
+        while (hull.size() > 1 && orientation(nextToTop(hull), hull.top(), points[i]) != 2)   {
             hull.pop();
         }
         hull.push(points[i]);

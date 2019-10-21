@@ -23,7 +23,7 @@ public:
 protected:
     explicit GShaderPermutationGL4x(std::string &shaderName, IDevice *device);
 
-    void compileShader() override;
+    void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
     GLuint getUnf(const HashedString name) const {
         return m_uniformMap.at(name.Hash());
     }

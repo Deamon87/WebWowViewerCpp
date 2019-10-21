@@ -36,6 +36,9 @@ private:
 
     float ah = 0;
     float av = 0;
+
+    float delta_x = 0;
+    float delta_y = 0;
 public:
     //Implemented IControllable
     void addHorizontalViewDir(float val) override;
@@ -54,13 +57,17 @@ public:
     void startMovingDown() override;
     void stopMovingDown() override;
 
+    void zoomInFromMouseScroll(float val) override;
+    void zoomInFromTouch(float val) override;
+
+    void addCameraViewOffset(float x, float y) override;
     void getCameraPosition(float *position) override {
         position[0] = camera.x;
         position[1] = camera.y;
         position[2] = camera.z;
     }
 
-    mathfu::mat4 &getLookatMat() {
+    mathfu::mat4 &getLookatMat() override {
         return lookAtMat;
     }
     void setMovementSpeed(float value);
@@ -71,7 +78,7 @@ public:
     mathfu::vec3 getCameraLookAt() override;
 
 public:
-    void tick(animTime_t timeDelta);
+    void tick(animTime_t timeDelta) override;
     void setCameraPos(float x, float y, float z);
 };
 

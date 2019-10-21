@@ -26,6 +26,7 @@ public:
     MeshType getMeshType()  override;
     void setRenderOrder(int renderOrder) override;
 
+    void setStart(int start) override;
     void setEnd(int end) override;
 public:
     void setM2Object(void * m2Object) override { throw "Not Implemented";};
@@ -33,6 +34,7 @@ public:
     void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
     void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
     void setSortDistance(float distance) override { throw "Not Implemented";};
+    float getSortDistance() override { throw "Not Implemented";};
 
 protected:
     MeshType m_meshType;
@@ -49,6 +51,7 @@ private:
     int8_t m_triCCW = 1;
     EGxBlendEnum m_blendMode;
     bool m_isTransparent;
+
 
 
     uint8_t m_colorMask = 0;

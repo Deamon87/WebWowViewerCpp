@@ -25,6 +25,9 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 endif() 
 
 #set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread")
 
@@ -39,27 +42,40 @@ else()
 endif()
 
 #ZLib library
-set(BUILD_SHARED_LIBS 1)
+
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
-set(BUILD_SHARED_LIBS )
+set(BUILD_SHARED_LIBS OFF)
 #Zlib
 #ExternalProject_Add("LibZip"
 #		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
 #		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR} -DEXTRA_LIBS=${extra_libraries}
 #		)
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libzip)
 include_directories("lib/libzip/include")
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
+	set(BUILD_SHARED_LIBS OFF)
 	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw)
 endif()
 
-#bz2
+#bz2renderFlag
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(3rdparty/bzip)
  
 #CPR
+if (WIN32)
+set(ENV{USE_SYSTEM_CURL} OFF)
+else()
+set(ENV{USE_SYSTEM_CURL} ON)
+endif()
+
 set(ENV{BUILD_CPR_TESTS} OFF)
-set(ENV{CMAKE_USE_OPENSSL} OFF)
+set(ENV{CMAKE_USE_OPENSSL} ON)
+set(ENV{CURL_DISABLE_LDAP} ON)
+set(CMAKE_USE_OPENSSL ON)
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 
@@ -71,7 +87,7 @@ include_directories(${CPR_INCLUDE_DIRS})
 #add_subdirectory(3rdparty/stormlib)
 
 #CascLib
-set(CASC_BUILD_STATIC_LIB 1)
+set(CASC_BUILD_STATIC_LIB ON)
 set(CASC_BUILD_SHARED_LIB OFF)
 if (CMAKE_NDK_BUILD MATCHES 1)
 	#set(CASC_BUILD_SHARED_LIB ON)
@@ -81,18 +97,18 @@ endif()
 if (WIN32)
 	set(WITH_LIBTOMCRYPT true)
 endif()
-add_subdirectory(3rdparty/casclib)
+set(BUILD_SHARED_LIBS OFF)
 set(CASC_BUILD_STATIC_LIB 1)
+add_subdirectory(3rdparty/casclib)
+
 if (CMAKE_NDK_BUILD MATCHES 1)
 	target_compile_definitions(casc PUBLIC -DCMAKE_SYSTEM_NAME=Linux)
 	set(CMAKE_SYSTEM_NAME "${CMAKE_SYSTEM_NAME_TEMPTEMP}")
 endif()
 
-#nuklear_cross
-include_directories(3rdparty/nuklear_cross)
-
 add_subdirectory(wowViewerLib)
 include_directories(${GLEW_INCLUDE_DIRS})
+
 
 set(SOURCE_FILES
 		src/persistance/httpFile/httpFile.cpp
@@ -121,6 +137,7 @@ endif()
 # FIND OPENGL
 #########################################################
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
+	set(OpenGL_GL_PREFERENCE GLVND)
 	find_package(OpenGL REQUIRED)
 	include_directories(${OpenGL_INCLUDE_DIRS})
 	link_directories(${OpenGL_LIBRARY_DIRS})
@@ -129,7 +146,7 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	endif(NOT OPENGL_FOUND)
 else()
 #	if (${ANDROID_PLATFORM_LEVEL} LESS 12)
-#		message(FATAL_ERROR "OpenGL 2 is not supported before API level 11 \
+#		message(FATAL_ERROR "OpenGL 2 is not supported before API level 11 /
 #                      (currently using ${ANDROID_PLATFORM_LEVEL}).")
 #		return()
 #	elseif (${ANDROID_PLATFORM_LEVEL} LESS 18)
@@ -151,21 +168,10 @@ if(CMAKE_USE_PTHREADS_INIT)
     set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-pthread")
 endif()
 
-if (CMAKE_NDK_BUILD MATCHES 1)
-	add_library(AWebWoWViewerCpp SHARED ${SOURCE_FILES})
-	target_compile_definitions(AWebWoWViewerCpp PRIVATE WITH_GLESv2=1)
-	target_compile_definitions(WoWViewerLib PRIVATE WITH_GLESv2=1)
-	if (USE_NEON MATCHES 1)
-		target_compile_definitions(WoWViewerLib PRIVATE VECTORIAL_NEON=1)
-		target_compile_definitions(WoWViewerLib PRIVATE VECTORIAL_FORCED=1)
-		target_compile_definitions(WoWViewerLib PRIVATE MATHFU_COMPILE_WITH_SIMD=1)
-	endif ()
-else()
+
 	add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
 
-endif()
 
-#add_dependencies(AWebWoWViewerCpp LibZip)
 add_dependencies(AWebWoWViewerCpp zip)
 add_dependencies(AWebWoWViewerCpp zlib)
 add_dependencies(AWebWoWViewerCpp WoWViewerLib)
@@ -200,11 +206,16 @@ target_link_libraries(AWebWoWViewerCpp cpr)
 #target_link_libraries(AWebWoWViewerCpp storm)
 target_link_libraries(AWebWoWViewerCpp casc_static)
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})
+
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	include_directories(AWebWoWViewerCpp "./wowViewerLib/src/opengl")
 	target_link_libraries(AWebWoWViewerCpp opengl32)
 	target_link_libraries(AWebWoWViewerCpp -lm)
 	target_link_libraries(AWebWoWViewerCpp -lwininet)
+else()
+	target_link_libraries(AWebWoWViewerCpp GL)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+
+
 
 INSTALL(TARGETS AWebWoWViewerCpp DESTINATION BIN)

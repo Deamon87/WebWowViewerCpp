@@ -19,7 +19,7 @@ public:
     ~GUniformBufferGL4x() override;
 
     void setIdentifierBuffer(void * ptr, uint32_t offset) {
-        uint8_t frameIndex = (m_device.getFrameNumber() + 1) & 1;
+        uint8_t frameIndex = m_device.getUpdateFrameNumber();
         pIdentifierBuffer[frameIndex] = ptr;
         m_offset[frameIndex] = offset;
     }
@@ -28,7 +28,7 @@ public:
             return pIdentifierBuffer[0];
         }
 
-        return pIdentifierBuffer[m_device.getFrameNumber() & 1];
+        return pIdentifierBuffer[m_device.getDrawFrameNumber()];
     }
 
     void *getPointerForModification() override;
@@ -47,7 +47,7 @@ private:
             return pIdentifierBuffer[0];
         }
 
-        return pIdentifierBuffer[(m_device.getFrameNumber() + 1) & 1];
+        return pIdentifierBuffer[m_device.getUpdateFrameNumber()];
     }
 
 private:

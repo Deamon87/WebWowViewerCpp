@@ -40,7 +40,7 @@ public:
     int renderOrder = -1;
 
     virtual void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
-    virtual void setM2Lights(M2Object * m2Object){};
+    virtual void setM2Lights(M2Object * m2Object);;
     void addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
 };
 
@@ -94,13 +94,16 @@ private:
     std::vector<int> lodGroupLevelWMO;
     std::vector<M2Object*> m_doodadsArray;
 
+    M2Object* skyBox = nullptr;
+
     std::unordered_map<int, HGTexture> diffuseTextures;
     std::unordered_map<int, HGTexture> specularTextures;
 
     // Portal culling stuff begin
     std::vector<bool> transverseVisitedPortals;
-    std::vector<int> collectedM2s;
     // Portal culling stuff end
+
+    HGMesh transformedAntiPortals;
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
@@ -127,12 +130,14 @@ public:
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
     virtual SMOHeader *getWmoHeader() override;
 
-    virtual SMOMaterial *getMaterials() override;
+    virtual PointerChecker<SMOMaterial> &getMaterials() override;
 
-    virtual SMOLight *getLightArray() override;
+    virtual PointerChecker<SMOLight> &getLightArray() override;
     virtual std::vector<PortalInfo_t> &getPortalInfos() override {
         return geometryPerPortal;
     };
+
+    M2Object *getSkyBoxForGroup (int groupNum);;
 
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 
@@ -141,7 +146,7 @@ public:
 
     bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor);
 
-    void doPostLoad();
+    bool doPostLoad(int &processedThisFrame);
     void update();
 
     void createM2Array();
@@ -202,7 +207,8 @@ public:
 
     void createWorldPortals();
 
-    void drawTransformedAntiPortalPoints();
+    void createTransformedAntiPortalMesh();
+    void updateTransformedAntiPortalPoints();
 };
 
 

@@ -88,14 +88,35 @@ GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, IDevice 
 
 }
 
-void GShaderPermutationGL33::compileShader() {
+void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
-    std::string vertShaderString = loadShader(m_shaderName);
+    std::string shaderFile =  m_device->loadShader(m_shaderName, false);
+    if (shaderFile.length() == 0) {
+        throw "shader is empty";
+    }
+
+    //Include system
+    static std::string includeStr = "#include ";
+    int position;
+    while ((position = shaderFile.find(includeStr.c_str())) > 0) {
+        int endPosition = shaderFile.find("\n", position + includeStr.length());
+
+        std::string shaderStart = shaderFile.substr(0, position);
+        std::string shaderEnd = shaderFile.substr(endPosition, shaderFile.length()- endPosition);
+
+        int shaderNameStart = position + includeStr.length();
+        std::string subShaderName = shaderFile.substr(shaderNameStart, endPosition-shaderNameStart);
+        shaderFile = shaderStart+m_device->loadShader(subShaderName, true)+shaderEnd;
+    }
+
+    std::string vertShaderString = shaderFile;
     std::string fragmentShaderString = vertShaderString;
 
-    std::string vertExtraDefStrings = "";
-    std::string fragExtraDefStrings = "";
+    std::string vertExtraDefStrings = vertExtraDef;
+    std::string fragExtraDefStrings = fragExtraDef;
     std::string geomExtraDefStrings = "";
+
+
 
 
     bool esVersion = false;
@@ -114,6 +135,9 @@ void GShaderPermutationGL33::compileShader() {
 #   error "Unknown Apple platform"
 #endif
 #endif
+#ifdef __EMSCRIPTEN__
+    esVersion = true;
+#endif
     bool geomShaderExists = false;
     if (esVersion) {
         vertExtraDefStrings = "#version 300 es\n" + vertExtraDefStrings;
@@ -126,11 +150,18 @@ void GShaderPermutationGL33::compileShader() {
     if (!esVersion) {
         vertExtraDefStrings +=
             "#define precision\n"
-                "#define lowp\n"
-                "#define mediump\n"
-                "#define highp\n";
-    }
+            "#define lowp\n"
+            "#define mediump\n"
+            "#define highp\n"
+            "#define FLOATDEC\n";
+    } else {
+        vertExtraDefStrings += "#define FLOATDEC float;\n";
+    };
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
+
+#ifdef __EMSCRIPTEN__
+    geomShaderExists = false;
+#endif
 
     if (esVersion) {
         fragExtraDefStrings = "#version 300 es\n" + fragExtraDefStrings;
@@ -143,8 +174,11 @@ void GShaderPermutationGL33::compileShader() {
             "#define precision\n"
             "#define lowp\n"
             "#define mediump\n"
-            "#define highp\n";
-    }
+            "#define highp\n"
+            "#define FLOATDEC\n";
+    } else {
+        fragExtraDefStrings += "#define FLOATDEC float;\n";
+    };
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
@@ -281,7 +315,7 @@ void GShaderPermutationGL33::compileShader() {
         GLint location = glGetUniformLocation(program, name);
 
         this->setUnf(std::string(name), location);
-        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
+//        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
 //    if (!shaderName.compare("m2Shader")) {
 //        std::cout << fragmentShaderString << std::endl << std::flush;
@@ -383,7 +417,7 @@ void GShaderPermutationGL33::compileShader() {
      */
 
     if (glGetUniformBlockIndex == nullptr) {
-        std::cout << "glGetUniformBlockIndex == null";
+//        std::cout << "glGetUniformBlockIndex == null";
     }
 
     m_uboVertexBlockIndex[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");

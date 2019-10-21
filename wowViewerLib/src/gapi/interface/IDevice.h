@@ -19,7 +19,11 @@ class IParticleMesh;
 class IGPUFence;
 class gMeshTemplate;
 #include <memory>
+#include <functional>
 #include "syncronization/IGPUFence.h"
+#ifndef SKIP_VULKAN
+#include <vulkan/vulkan_core.h>
+#endif
 
 typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;
 typedef std::shared_ptr<IIndexBuffer> HGIndexBuffer;
@@ -45,12 +49,63 @@ typedef std::shared_ptr<IGPUFence> HGPUFence;
 #include "textures/ITexture.h"
 #include "../../engine/wowCommonClasses.h"
 
+struct M2ShaderCacheRecord {
+    int vertexShader;
+    int pixelShader;
+    bool unlit;
+    bool alphaTestOn;
+    bool unFogged;
+    bool unShadowed;
+    int boneInfluences;
+
+
+    bool operator==(const M2ShaderCacheRecord &other) const {
+        return
+            (vertexShader == other.vertexShader) &&
+            (pixelShader == other.pixelShader) &&
+            (alphaTestOn == other.alphaTestOn) &&
+            (unlit == other.unlit) &&
+            (unFogged == other.unFogged) &&
+            (unShadowed == other.unShadowed) &&
+            (boneInfluences == other.boneInfluences);
+    };
+};
+
+struct WMOShaderCacheRecord {
+    int vertexShader;
+    int pixelShader;
+    bool unlit;
+    bool alphaTestOn;
+    bool unFogged;
+    bool unShadowed;
+
+    bool operator==(const WMOShaderCacheRecord &other) const {
+        return
+            (vertexShader == other.vertexShader) &&
+            (pixelShader == other.pixelShader) &&
+            (alphaTestOn == other.alphaTestOn) &&
+            (unlit == other.unlit) &&
+            (unFogged == other.unFogged) &&
+            (unShadowed == other.unShadowed);
+    };
+};
+
+#ifndef SKIP_VULKAN
+struct vkCallInitCallback {
+    std::function<void(char** &extensionNames, int &extensionCnt)> getRequiredExtensions;
+    std::function<VkSurfaceKHR(VkInstance vkInstance )> createSurface;
+    int extensionCnt;
+};
+#endif
+
 class IDevice {
     public:
         virtual ~IDevice() {};
 
         virtual void reset() = 0;
-        virtual int getFrameNumber() = 0;
+        virtual unsigned int getUpdateFrameNumber() = 0;
+        virtual unsigned int getCullingFrameNumber() = 0;
+        virtual unsigned int getDrawFrameNumber() = 0;
         virtual bool getIsAsynBuffUploadSupported() = 0;
 
         virtual void increaseFrameNumber() = 0;
@@ -65,10 +120,19 @@ class IDevice {
 
         virtual void bindTexture(ITexture *texture, int slot) = 0;
 
-        virtual void updateBuffers(std::vector<HGMesh> &meshes)= 0 ;
+
+        virtual void startUpdateForNextFrame() {};
+        virtual void endUpdateForNextFrame() {};
+        virtual void updateBuffers(std::vector<HGMesh> &meshes)= 0;
+        virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
+
+        virtual bool getIsCompressedTexturesSupported();
+        virtual bool getIsAnisFiltrationSupported();
+        virtual float getAnisLevel() = 0;
+        virtual bool getIsVulkanAxisSystem() {return false;}
     public:
-        virtual HGShaderPermutation getShader(std::string shaderName) = 0;
+        virtual HGShaderPermutation getShader(std::string shaderName, void *permutationDescriptor) = 0;
 
         virtual HGPUFence createFence() = 0;
 
@@ -79,6 +143,8 @@ class IDevice {
 
         virtual HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
         virtual HGTexture createTexture() = 0;
+        virtual HGTexture getWhiteTexturePixel() = 0;
+        virtual HGTexture getBlackTexturePixel() {return nullptr;};
         virtual HGMesh createMesh(gMeshTemplate &meshTemplate) = 0;
         virtual HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) = 0;
         virtual HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) = 0;
@@ -88,7 +154,33 @@ class IDevice {
         static bool sortMeshes(const HGMesh& a, const HGMesh& b);
         virtual HGVertexBufferBindings getBBVertexBinding() = 0;
         virtual HGVertexBufferBindings getBBLinearBinding() = 0;
+        virtual std::string loadShader(std::string fileName, bool common) = 0;
+        virtual void clearScreen() = 0;
+        virtual void setClearScreenColor(float r, float g, float b) = 0;
+        virtual void setViewPortDimensions(float x, float y, float width, float height) = 0;
+
+        virtual void beginFrame() = 0;
+        virtual void commitFrame() = 0;
 };
+
+#include <cassert>
+
+#define _DEBUG
+#ifdef _DEBUG
+#define TEST(expr) do { \
+            if(!(expr)) { \
+                assert(0 && #expr); \
+            } \
+        } while(0)
+#else
+#define TEST(expr) do { \
+            if(!(expr)) { \
+                throw std::runtime_error("TEST FAILED: " #expr); \
+            } \
+        } while(0)
+#endif
+
+#define ERR_GUARD_VULKAN(expr) TEST((expr) >= 0)
 
 
 #endif //AWEBWOWVIEWERCPP_IDEVICE_H

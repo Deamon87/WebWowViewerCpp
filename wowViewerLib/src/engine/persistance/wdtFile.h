@@ -4,12 +4,14 @@
 #include "header/wdtFileHeader.h"
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
+#include "../../include/wowScene.h"
 
 class WdtFile {
 public:
-    WdtFile() {};
+    WdtFile(std::string fileName){};
+    WdtFile(int fileDataId){};
 
-    void process(std::vector<unsigned char> &wdtFile, std::string &fileName);
+    void process(HFileContent wdtFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };
 public:
     MPHD *mphd;
@@ -17,13 +19,25 @@ public:
         MAIN mainInfo[64][64];
     } *mapTileTable;
 
+    struct MapFileDataIDs
+    {
+        uint32_t rootADT; // reference to fdid of mapname_xx_yy.adt
+        uint32_t obj0ADT; // reference to fdid of mapname_xx_yy_obj0.adt
+        uint32_t obj1ADT; // reference to fdid of mapname_xx_yy_obj1.adt
+        uint32_t tex0ADT; // reference to fdid of mapname_xx_yy_tex0.adt
+        uint32_t lodADT;  // reference to fdid of mapname_xx_yy_lod.adt
+        uint32_t mapTexture; // reference to fdid of mapname_xx_yy.blp
+        uint32_t mapTextureN; // reference to fdid of mapname_xx_yy_n.blp
+        uint32_t minimapTexture; // reference to fdid of mapxx_yy.blp
+    } mapFileDataIDs[64*64];
+
     std::string wmoFileName;
     SMMapObjDef *wmoDef;
 
 private:
     bool m_loaded = false;
 
-    std::vector<unsigned char> m_wdtFile;
+    HFileContent m_wdtFile;
     static chunkDef<WdtFile> wdtFileTable;
 };
 

@@ -16,7 +16,7 @@ void M2Scene::checkCulling(WoWFrameData *frameData) {
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
 
     std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
-    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
+//    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
 
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
 
@@ -29,12 +29,50 @@ void M2Scene::draw(WoWFrameData *frameData) {
     m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
 }
 
+extern "C" {
+    extern void supplyPointer(int *availablePointer, int length);
+}
+
 void M2Scene::doPostLoad(WoWFrameData *frameData) {
-    m_m2Object->doPostLoad();
+    if (m_m2Object->doPostLoad()) {
+
+        CAaBox aabb = m_m2Object->getColissionAABB();
+        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 0.001 ) {
+            aabb = m_m2Object->getAABB();
+        }
+
+        auto max = aabb.max;
+        auto min = aabb.min;
+
+        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 20000) {
+
+            mathfu::vec3 modelCenter = mathfu::vec3(
+                ((max.x + min.x) / 2.0f),
+                ((max.y + min.y) / 2.0f),
+                ((max.z + min.z) / 2.0f)
+            );
+
+            if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
+                m_api->setCameraPosition((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+            } else {
+                m_api->setCameraPosition((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+            }
+            m_api->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
+        } else {
+            m_api->setCameraPosition(1.0,0,0);
+            m_api->setCameraOffset(0,0,0);
+        }
+        std::vector <int> availableAnimations;
+        m_m2Object->getAvailableAnimation(availableAnimations);
+#ifdef __EMSCRIPTEN__
+        supplyPointer(&availableAnimations[0], availableAnimations.size());
+#endif
+    }
 }
 
 void M2Scene::update(WoWFrameData *frameData) {
     m_m2Object->update(frameData->deltaTime, frameData->m_cameraVec3, frameData->m_lookAtMat4);
+    m_m2Object->uploadGeneratorBuffers();
 }
 
 mathfu::vec4 M2Scene::getAmbientColor() {
@@ -71,4 +109,26 @@ void M2Scene::collectMeshes(WoWFrameData * frameData) {
               IDevice::sortMeshes
     );
 
+}
+
+void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
+    //std::cout << "replaceTextureArray.size == " << replaceTextureArray.size() << std::endl;
+    //std::cout << "m_m2Object == " << m_m2Object << std::endl;
+    if (m_m2Object == nullptr) return;
+
+    auto textureCache = m_api->getTextureCache();
+    std::vector<HBlpTexture> replaceTextures;
+    replaceTextures.reserve(replaceTextureArray.size());
+
+    for (int i = 0; i < replaceTextureArray.size(); i++) {
+        if (replaceTextureArray[i] == 0) {
+            replaceTextures.push_back(nullptr);
+        } else {
+            //std::cout << "replaceTextureArray[i] == " << replaceTextureArray[i] << std::endl;
+            //std::cout << "i == " << i << std::endl;
+            replaceTextures.push_back(textureCache->getFileId(replaceTextureArray[i]));
+        }
+    }
+
+    m_m2Object->setReplaceTextures(replaceTextures);
 }

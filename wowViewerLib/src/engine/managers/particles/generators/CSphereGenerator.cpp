@@ -9,8 +9,22 @@ void CSphereGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
 
     float dvary = delta * this->seed.UniformPos();
     float life = this->seed.Uniform();
-    p.lifespan = life;
-    float lifespan = this->GetLifeSpan(life);
+
+    int16_t state;
+    if ( life < 1.0 )
+    {
+        if ( life > -1.0 )
+            state = trunc((life * 32767.0f) + 0.5f);
+        else
+            state = -32767;
+    }
+    else
+    {
+        state = 32767;
+    }
+    p.state = state;
+
+    float lifespan = this->GetLifeSpan(state);
     if (lifespan < 0.001) {
         lifespan = 0.001;
     }
@@ -49,5 +63,11 @@ void CSphereGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     }
     mathfu::vec3 velocityCandidate = r0 * velocity;
     p.velocity = velocityCandidate;
+
+
+//    mathfu::mat4 rotateMat = MathHelper::RotationY(toRadian(-90));
+//
+//    p.position = rotateMat * p.position;
+//    p.velocity = rotateMat.Transpose().Inverse() * p.velocity;
 
 }

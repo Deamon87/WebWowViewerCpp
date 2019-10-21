@@ -23,6 +23,9 @@ void GM2MeshGL33::setPriorityPlane(int priorityPlane) {
 void GM2MeshGL33::setSortDistance(float distance) {
     m_sortDistance = distance;
 }
+float GM2MeshGL33::getSortDistance() {
+    return m_sortDistance;
+}
 
 void GM2MeshGL33::setQuery(const HGOcclusionQuery &query) {
     m_query = query;

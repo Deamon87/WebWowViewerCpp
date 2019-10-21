@@ -134,7 +134,7 @@ void GDeviceGL4x::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
     }
 }
 
-std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderName) {
+std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderName, void *permutationParam) {
     const char * cstr = shaderName.c_str();
     size_t hash = CalculateFNV(cstr);
     if (m_shaderPermutCache.count(hash) > 0) {
@@ -162,7 +162,7 @@ std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderNam
 
     GShaderPermutationGL4x * gShaderPermutation = (GShaderPermutationGL4x *)sharedPtr.get();
 
-    gShaderPermutation->compileShader();
+    gShaderPermutation->compileShader("", "");
     m_shaderPermutCache[hash] = sharedPtr;
 
 
@@ -250,7 +250,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
     int currentSize = 0;
     int buffersIndex = 0;
 
-    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[(getFrameNumber() + 1) & 3].m_uniformBuffersForUpload;
+    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[getUpdateFrameNumber()].m_uniformBuffersForUpload;
     HGUniformBuffer bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
 
     for (const auto &buffer : buffers) {
@@ -605,7 +605,7 @@ GDeviceGL4x::GDeviceGL4x() {
     HGIndexBuffer vertexIndexBuffer = this->createIndexBuffer();
     vertexIndexBuffer->uploadData((void *) &vertexElements[0], sizeof(vertexElements));
 
-    GBufferBinding bufferBinding = {0, 3, GL_FLOAT, false, 0, 0 };
+    GBufferBinding bufferBinding = {0, 3, GBindingType::GFLOAT, false, 0, 0 };
 
     GVertexBufferBinding binding={};
     binding.bindings.push_back(bufferBinding);
@@ -628,10 +628,10 @@ GDeviceGL4x::GDeviceGL4x() {
 
     aggregationBufferForUpload = std::vector<char>(maxUniformBufferSize);
 
-    glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_TRUE);
-    glDebugMessageCallback(GDeviceGL4xNS::debug_func, NULL);
+//    glEnable(GL_DEBUG_OUTPUT);
+//    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_TRUE);
+//    glDebugMessageCallback(GDeviceGL4xNS::debug_func, NULL);
 //
 
     m_uniformUploadFence = createFence();
@@ -701,9 +701,16 @@ void GDeviceGL4x::reset() {
     m_shaderPermutation = nullptr;
 }
 
-int GDeviceGL4x::getFrameNumber() {
-    return m_frameNumber;
+unsigned int GDeviceGL4x::getUpdateFrameNumber() {
+    return (m_frameNumber + 1) & 3;
 }
+unsigned int GDeviceGL4x::getCullingFrameNumber() {
+    return (m_frameNumber + 3) & 3;
+}
+unsigned int GDeviceGL4x::getDrawFrameNumber() {
+    return (m_frameNumber) & 3;
+}
+
 
 void GDeviceGL4x::increaseFrameNumber() {
     m_frameNumber++;
@@ -722,5 +729,26 @@ HGPUFence GDeviceGL4x::createFence() {
     hGPUFence.reset(new GPUFenceGL44());
 
     return hGPUFence;
+}
+
+void GDeviceGL4x::clearScreen() {
+#ifndef WITH_GLESv2
+    glClearDepthf(1.0f);
+#else
+    glClearDepthf(1.0f);
+#endif
+    glDisable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+//    glClearColor(0.0, 0.0, 0.0, 0.0);
+//    glClearColor(0.25, 0.06, 0.015, 0.0);
+    glClearColor(0.117647, 0.207843, 0.392157, 1);
+    //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
+//    glClearColor(0,0,0,1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    glDisable(GL_SCISSOR_TEST);
 }
 

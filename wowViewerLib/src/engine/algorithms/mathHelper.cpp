@@ -8,10 +8,16 @@
 
 
 float MathHelper::fp69ToFloat(uint16_t x) {
-    const float divider = float(1 << 9);
-    float int_part = (x >> 9);
-    float float_part = (x & (1<<10) - 1) / divider;
-    return int_part + float_part;
+    float result = (((x & 0x1FF) * 0.001953125f) + (float)(x >> 9));
+    if ((x & 0x8000) != 0) {
+        result *= -1.0f;
+    }
+    return result;
+
+//    const float divider = float(1 << 9);
+//    float int_part = (x >> 9);
+//    float float_part = (x & (1<<10) - 1) / divider;
+//    return int_part + float_part;
 }
 
 mathfu::vec2 MathHelper::convertV69ToV2(vector_2fp_6_9 &fp69) {
@@ -352,7 +358,7 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
     // check box outside/inside of frustum
     std::vector<mathfu::vec4> vec4Points(points.size());
 
-    const float epsilon = 0.001;
+    const float epsilon = 0;
 
     for (int j = 0; j < points.size(); j++) {
         vec4Points[j] = mathfu::vec4(points[j].x, points[j].y, points[j].z, 1.0);

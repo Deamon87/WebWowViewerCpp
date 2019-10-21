@@ -9,18 +9,21 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "mathfu/glsl_mappings.h"
 
-AnimationManager::AnimationManager(M2Data* m2File) {
-    this->m_m2File = m2File;
+AnimationManager::AnimationManager(IWoWInnerApi *api, HM2Geom m2Geom) {
+    this->m_api = api;
+    this->m_m2Geom = m2Geom;
+    this->m_m2File = m2Geom->getM2Data();
 
     this->mainAnimationId = 0;
     this->mainAnimationIndex = 0;
 
-    this->currentAnimationIndex = 0;
-    this->currentAnimationTime = 0;
-    this->currentAnimationPlayedTimes = 0;
+    this->animationInfo.currentAnimation.animationIndex = 0;
+    this->animationInfo.currentAnimation.animationTime = 0;
+    this->animationInfo.currentAnimation.animationRecord = m_m2File->sequences.getElement(0);
 
-    this->nextSubAnimationIndex = -1;
-    this->nextSubAnimationTime = 0;
+    this->animationInfo.nextSubAnimation.animationIndex = -1;
+    this->animationInfo.nextSubAnimation.animationTime = 0;
+    this->animationInfo.nextSubAnimation.animationRecord = nullptr;
 
     this->firstCalc = true;
 
@@ -31,6 +34,28 @@ AnimationManager::AnimationManager(M2Data* m2File) {
 
     if (!this->setAnimationId(0, false)) { // try Stand(0) animation
         this->setAnimationId(147, false); // otherwise try Closed(147) animation
+    }
+}
+
+const int AnimationManager::findAnimationIndex(uint32_t anim_id) const {
+    if (m_m2File->sequence_lookups.size == 0)
+        return -1;
+
+    size_t i (anim_id % m_m2File->sequence_lookups.size);
+
+    for (size_t stride (1); true; ++stride)
+    {
+        if (*m_m2File->sequence_lookups[i] == -1)
+        {
+            return -1;
+        }
+        if (m_m2File->sequences[*m_m2File->sequence_lookups[i]]->id == anim_id)
+        {
+            return *m_m2File->sequence_lookups[i];
+        }
+
+        i = (i + stride * stride) % m_m2File->sequence_lookups.size;
+        // so original_i + 1, original_i + 1 + 4, original_i + 1 + 4 + 9, …
     }
 }
 
@@ -69,7 +94,10 @@ void AnimationManager::calculateBoneTree() {
 
 bool AnimationManager::setAnimationId(int animationId, bool reset) {
     int animationIndex = -1;
-    if ((m_m2File->sequence_lookups.size == 0) && (m_m2File->sequences.size > 0)) {
+
+    animationIndex = findAnimationIndex(animationId);
+
+    if ((animationIndex == -1) && (m_m2File->sequence_lookups.size == 0) && (m_m2File->sequences.size > 0)) {
         for (int i = 0; i < m_m2File->sequences.size; i++) {
             const M2Sequence* animationRecord = m_m2File->sequences[i];
             if (animationRecord->id == animationId) {
@@ -77,23 +105,33 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
                 break;
             }
         }
-    } else if (animationId < m_m2File->sequence_lookups.size) {
-        animationIndex = *m_m2File->sequence_lookups[animationId];
     }
+    if (animationIndex > -1) {
+        while (
+            ((m_m2File->sequences[animationIndex]->flags & 0x20) == 0) &&
+            ((m_m2File->sequences[animationIndex]->flags & 0x40) > 0)
+        ) {
+            animationIndex = m_m2File->sequences[animationIndex]->aliasNext;
+            if (animationIndex < 0) break;
+        }
+    }
+
     if ((animationIndex > - 1)&& (reset || (animationIndex != this->mainAnimationIndex) )) {
         //Reset animation
         this->mainAnimationId = animationId;
         this->mainAnimationIndex = animationIndex;
 
-        this->currentAnimationIndex = animationIndex;
-        this->currentAnimationTime = 0;
-        this->currentAnimationPlayedTimes = 0;
+        this->animationInfo.currentAnimation.animationIndex = animationIndex;
+        this->animationInfo.currentAnimation.animationRecord = m_m2File->sequences[animationIndex];
+        this->animationInfo.currentAnimation.animationTime = 0;
 
-        this->nextSubAnimationIndex = -1;
-        this->nextSubAnimationTime = 0;
-        this->nextSubAnimationActive = false;
+        this->animationInfo.nextSubAnimation.animationIndex = -1;
+        this->animationInfo.nextSubAnimation.animationRecord = nullptr;
+        this->animationInfo.nextSubAnimation.animationTime = 0;
 
         this->firstCalc = true;
+
+        deferredLoadingStarted = false;
     }
     return (animationIndex > -1);
 }
@@ -119,22 +157,18 @@ inline void calcAnimationTransform(
         M2Track<T> &rotationTrack,
         M2Track<C3Vector> &scaleTrack,
         M2Data * m2Data,
-        int animationIndex,
-        animTime_t time
+        const FullAnimationInfo &animationInfo
         ) {
-    const M2Sequence* animationRecord = m2Data->sequences[animationIndex];
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
 //
     if (translationTrack.values.size > 0) {
         mathfu::vec4 defaultValue = mathfu::vec4(0,0,0,0);
-        mathfu::vec4 transVec = animateTrack<C3Vector, mathfu::vec4>(
-                time,
-                animationRecord->duration,
-                animationIndex,
-                translationTrack,
-                m2Data->global_loops,
-                globalSequenceTimes,
-                defaultValue
+        mathfu::vec4 transVec = animateTrackWithBlend<C3Vector, mathfu::vec4>(
+            animationInfo,
+            translationTrack,
+            m2Data->global_loops,
+            globalSequenceTimes,
+            defaultValue
         );
 
         tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(transVec.xyz());
@@ -145,10 +179,8 @@ inline void calcAnimationTransform(
         tranformMat = tranformMat * *billboardMatrix;
     } else if (rotationTrack.values.size > 0) {
         mathfu::quat defaultValue = mathfu::quat(1,0,0,0);
-        mathfu::quat quaternionResult = animateTrack<T, mathfu::quat>(
-            time,
-            animationRecord->duration,
-            animationIndex,
+        mathfu::quat quaternionResult = animateTrackWithBlend<T, mathfu::quat>(
+            animationInfo,
             rotationTrack,
             m2Data->global_loops,
             globalSequenceTimes,
@@ -160,35 +192,87 @@ inline void calcAnimationTransform(
 
     if (scaleTrack.values.size > 0) {
         mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,1);
-        mathfu::vec4 scaleResult = animateTrack<C3Vector, mathfu::vec4>(
-                time,
-                animationRecord->duration,
-                animationIndex,
-                scaleTrack,
-                m2Data->global_loops,
-                globalSequenceTimes,
-                defaultValue);
+        mathfu::vec4 scaleResult = animateTrackWithBlend<C3Vector, mathfu::vec4>(
+            animationInfo,
+            scaleTrack,
+            m2Data->global_loops,
+            globalSequenceTimes,
+            defaultValue);
 
         tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
         isAnimated = true;
     }
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(negatePivotPoint.xyz());
 }
+template <typename T>
+inline void calcTextureAnimationTransform(
+    mathfu::mat4 &tranformMat,
+    mathfu::vec4 &pivotPoint,
+    mathfu::vec4 &negatePivotPoint,
+    std::vector<animTime_t> &globalSequenceTimes,
+    bool &isAnimated,
+    M2Track<C3Vector> &translationTrack,
+    M2Track<T> &rotationTrack,
+    M2Track<C3Vector> &scaleTrack,
+    M2Data * m2Data,
+    const FullAnimationInfo &animationInfo
+) {
+    tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
+//
+    if (scaleTrack.values.size > 0) {
+        mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,1);
+        mathfu::vec4 scaleResult = animateTrackWithBlend<C3Vector, mathfu::vec4>(
+            animationInfo,
+            scaleTrack,
+            m2Data->global_loops,
+            globalSequenceTimes,
+            defaultValue);
+
+        tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
+        isAnimated = true;
+    }
+    if (rotationTrack.values.size > 0) {
+        mathfu::quat defaultValue = mathfu::quat(1,0,0,0);
+        mathfu::quat quaternionResult = animateTrackWithBlend<T, mathfu::quat>(
+            animationInfo,
+            rotationTrack,
+            m2Data->global_loops,
+            globalSequenceTimes,
+            defaultValue);
+
+        tranformMat = tranformMat * quaternionResult.ToMatrix4();
+        isAnimated = true;
+    }
+    if (translationTrack.values.size > 0) {
+        mathfu::vec4 defaultValue = mathfu::vec4(0,0,0,0);
+        mathfu::vec4 transVec = animateTrackWithBlend<C3Vector, mathfu::vec4>(
+            animationInfo,
+            translationTrack,
+            m2Data->global_loops,
+            globalSequenceTimes,
+            defaultValue
+        );
+
+        tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(transVec.xyz());
+        isAnimated = true;
+    }
 
 
-void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices, int animationIndex, animTime_t time) {
+    tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(negatePivotPoint.xyz());
+}
+
+
+void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices) {
 
     mathfu::vec4 pivotPoint(0.5, 0.5, 0, 0);
     mathfu::vec4 negatePivotPoint = -pivotPoint;
 
-    const M2Sequence* animationRecord = m_m2File->sequences[animationIndex];
     for (int i = 0; i < m_m2File->texture_transforms.size; i++) {
         M2TextureTransform *textAnimData = m_m2File->texture_transforms[i];
 
         textAnimMatrices[i] = mathfu::mat4::Identity();
         bool isAnimated;
-        calcAnimationTransform(textAnimMatrices[i],
-           nullptr,
+        calcTextureAnimationTransform(textAnimMatrices[i],
            pivotPoint, negatePivotPoint,
            this->globalSequenceTimes,
            isAnimated,
@@ -196,7 +280,7 @@ void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatr
            textAnimData->rotation,
            textAnimData->scaling,
            m_m2File,
-           animationIndex, time
+           animationInfo
         );
         this->isAnimated = isAnimated ? isAnimated : this->isAnimated;
     }
@@ -208,7 +292,10 @@ void calcBoneBillboardMatrix(
                 M2CompBone *boneDefinition,
                 int parentBone,
                 mathfu::vec4 &pivotPoint,
-                mathfu::vec3 &cameraPosInLocal) {
+                mathfu::vec3 &cameraPosInLocal,
+                mathfu::vec3 &localUpVector,
+                mathfu::vec3 &localRightVector
+                ) {
 
     mathfu::vec3 modelForward;
     mathfu::vec3 modelUp;
@@ -226,16 +313,38 @@ void calcBoneBillboardMatrix(
 
     if ((boneDefinition->flags.cylindrical_billboard_lock_z) > 0) {
         //Cylindrical billboard
-        modelUp = mathfu::vec3(0, 0, 1);
+//        if (mathfu::vec3::DotProduct(modelForward, localUpVector) > 0.01) {
+            modelUp = localUpVector;
+            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+            modelForward = mathfu::vec3::CrossProduct(modelRight, modelUp).Normalized();
 
-        modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
-        modelForward = mathfu::vec3::CrossProduct(modelRight, modelUp).Normalized();
+            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+//        } else {
+//
+//        }
+    } else if ((boneDefinition->flags.spherical_billboard) > 0) {
+//        float dotresult = mathfu::vec3::DotProduct(modelForward, localUpVector);
+//        dotresult = 1.0;
+//        if (fabs(dotresult) <= 0.98) {
+            //Spherical billboard
+            modelUp = localUpVector;
+            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+            if (mathfu::vec3::DotProduct(modelRight, localRightVector) < 0) {
+//                modelRight = -modelRight;
+            }
 
-        modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+            modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
+//        } else {
+//            modelRight = localRightVector;
+//            modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
+//            if (mathfu::vec3::DotProduct(modelUp, localUpVector) < 0) {
+//                modelUp = -modelUp;
+//            }
+//
+//            modelRight = mathfu::vec3::CrossProduct(modelUp, modelForward).Normalized();
+//        }
     } else {
-        //Spherical billboard
-        modelRight = mathfu::vec3::CrossProduct(mathfu::vec3(0, 0, 1), modelForward).Normalized();
-        modelUp = mathfu::vec3::CrossProduct(modelForward, modelRight).Normalized();
+        std::cout << "This billboarding is not implemented";
     }
 
 
@@ -248,11 +357,13 @@ void calcBoneBillboardMatrix(
 }
 
 void
-AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, int animationIndex, animTime_t time,
-                                 mathfu::vec3 cameraPosInLocal) {
+AnimationManager::calcBoneMatrix(
+    std::vector<mathfu::mat4> &boneMatrices,
+    int boneIndex,
+    const mathfu::mat4 &modelViewMatrix
+    ) {
     if (this->bonesIsCalculated[boneIndex]) return;
 
-    const M2Sequence* animationRecord = m_m2File->sequences[animationIndex];
     M2CompBone *boneDefinition = m_m2File->bones[boneIndex];
 
     int parentBone = boneDefinition->parent_bone;
@@ -260,18 +371,65 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int bo
     /* 2. Prepare bone part of animation process */
     boneMatrices[boneIndex] = mathfu::mat4::Identity();
 
-    if (parentBone >= 0) {
-        this->calcBoneMatrix(boneMatrices, parentBone, animationIndex, time, cameraPosInLocal);
-        boneMatrices[boneIndex] = boneMatrices[boneIndex] * boneMatrices[parentBone];
-    }
 
-    if ((boneDefinition->flags.transformed |
-        boneDefinition->flags.spherical_billboard |
-        boneDefinition->flags.cylindrical_billboard_lock_x |
-        boneDefinition->flags.cylindrical_billboard_lock_y |
-        boneDefinition->flags.cylindrical_billboard_lock_z) == 0) {
-        this->bonesIsCalculated[boneIndex] = true;
-        return;
+    mathfu::mat4 parentBoneMat = modelViewMatrix;
+    if (parentBone >= 0) {
+        this->calcBoneMatrix(boneMatrices, parentBone, modelViewMatrix);
+        parentBoneMat = boneMatrices[parentBone];
+        mathfu::mat4 modifiedMatrixUnder0x7 = parentBoneMat;
+
+        if (boneDefinition->flags.unk_0x1 || boneDefinition->flags.unk_0x2 || boneDefinition->flags.unk_0x4) {
+            if (boneDefinition->flags.unk_0x4 && boneDefinition->flags.unk_0x2) {
+                //6
+                modifiedMatrixUnder0x7.GetColumn(0) = modelViewMatrix.GetColumn(0);
+                modifiedMatrixUnder0x7.GetColumn(1) = modelViewMatrix.GetColumn(1);
+                modifiedMatrixUnder0x7.GetColumn(2) = modelViewMatrix.GetColumn(2);
+            } else if (boneDefinition->flags.unk_0x4) {
+                //4
+                float coeff = 1.0f;
+                coeff = modelViewMatrix.GetColumn(0).LengthSquared() ;
+                coeff = (coeff > 0.0000099999997) ? sqrtf(modifiedMatrixUnder0x7.GetColumn(0).LengthSquared() / coeff) : 1.0f;
+                modifiedMatrixUnder0x7.GetColumn(0) = modelViewMatrix.GetColumn(0) * coeff;
+
+                coeff = modelViewMatrix.GetColumn(1).LengthSquared() ;
+                coeff = (coeff > 0.0000099999997) ? sqrtf(modifiedMatrixUnder0x7.GetColumn(1).LengthSquared() / coeff) : 1.0f;
+                modifiedMatrixUnder0x7.GetColumn(1) = modelViewMatrix.GetColumn(1) * coeff;
+
+                coeff = modelViewMatrix.GetColumn(2).LengthSquared() ;
+                coeff = (coeff > 0.0000099999997) ? sqrtf(modifiedMatrixUnder0x7.GetColumn(2).LengthSquared() / coeff) : 1.0f;
+                modifiedMatrixUnder0x7.GetColumn(2) = modelViewMatrix.GetColumn(2) * coeff;
+            } else if (boneDefinition->flags.unk_0x2) {
+                float coeff = 1.0f;
+                coeff = modifiedMatrixUnder0x7.GetColumn(0).LengthSquared() ;
+                if ( coeff > 0.0000099999997) {
+                    modifiedMatrixUnder0x7.GetColumn(0) = modelViewMatrix.GetColumn(0) * (1.0f / sqrt(coeff));
+                }
+                coeff = modifiedMatrixUnder0x7.GetColumn(1).LengthSquared() ;
+                if ( coeff > 0.0000099999997) {
+                    modifiedMatrixUnder0x7.GetColumn(1) = modelViewMatrix.GetColumn(1) * (1.0f / sqrt(coeff));
+                }
+                coeff = modifiedMatrixUnder0x7.GetColumn(2).LengthSquared() ;
+                if ( coeff > 0.0000099999997) {
+                    modifiedMatrixUnder0x7.GetColumn(2) = modelViewMatrix.GetColumn(2) * (1.0f / sqrt(coeff));
+                }
+
+                modifiedMatrixUnder0x7.GetColumn(0) = modifiedMatrixUnder0x7.GetColumn(0) * modelViewMatrix.GetColumn(0).Length();
+                modifiedMatrixUnder0x7.GetColumn(1) = modifiedMatrixUnder0x7.GetColumn(1) * modelViewMatrix.GetColumn(1).Length();
+                modifiedMatrixUnder0x7.GetColumn(2) = modifiedMatrixUnder0x7.GetColumn(2) * modelViewMatrix.GetColumn(2).Length();
+            }
+            if (boneDefinition->flags.unk_0x1) {
+                modifiedMatrixUnder0x7.GetColumn(3) = modelViewMatrix.GetColumn(3);
+            } else {
+                mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
+                mathfu::vec4 pivotVec3 = pivotVec4; pivotVec3.w = 0.0;
+
+                modifiedMatrixUnder0x7.GetColumn(3) = (parentBoneMat * pivotVec4 ) - (modifiedMatrixUnder0x7 * pivotVec3);
+                modifiedMatrixUnder0x7.GetColumn(3).w = 1.0f;
+            }
+
+
+            parentBoneMat = modifiedMatrixUnder0x7;
+        }
     }
 
     C3Vector pP = boneDefinition->pivot;
@@ -282,42 +440,146 @@ AnimationManager::calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int bo
     /* 2.1 Calculate billboard matrix if needed */
     mathfu::mat4 *billboardMatrix = nullptr;
 
-    if ((boneDefinition->flags.spherical_billboard) | (boneDefinition->flags.cylindrical_billboard_lock_z) != 0) {
-        //From http://gamedev.stackexchange.com/questions/112270/calculating-rotation-matrix-for-an-object-relative-to-a-planets-surface-in-monog
-        billboardMatrix = new mathfu::mat4();
-
-        calcBoneBillboardMatrix(billboardMatrix, boneMatrices, boneDefinition, parentBone, pivotPoint,
-                                                       cameraPosInLocal);
-        this->isAnimated = true;
+    /* 3. Calculate matrix */
+    bool isAnimated = (boneDefinition->flags_raw & 0x280) > 0;
+    mathfu::mat4 animatedMatrix = mathfu::mat4::Identity();
+    if (isAnimated) {
+        calcAnimationTransform(animatedMatrix,
+                               billboardMatrix,
+                               pivotPoint, negatePivotPoint,
+                               this->globalSequenceTimes,
+                               isAnimated,
+                               boneDefinition->translation,
+                               boneDefinition->rotation,
+                               boneDefinition->scaling,
+                               m_m2File,
+                               animationInfo);
+        boneMatrices[boneIndex] = parentBoneMat * animatedMatrix;
+    } else {
+        boneMatrices[boneIndex] = parentBoneMat;
     }
 
-    /* 3. Calculate matrix */
-    calcAnimationTransform(boneMatrices[boneIndex],
-           billboardMatrix,
-           pivotPoint, negatePivotPoint,
-           this->globalSequenceTimes,
-           isAnimated,
-           boneDefinition->translation,
-           boneDefinition->rotation,
-           boneDefinition->scaling,
-           m_m2File,
-           animationIndex, time);
 
-    if (billboardMatrix != nullptr) {
-        delete billboardMatrix;
+    int boneBillboardFlags = boneDefinition->flags_raw & 0x78;
+    if (boneBillboardFlags) {
+        mathfu::mat4 &currentBoneMat = boneMatrices[boneIndex];
+        mathfu::mat4 currentBoneMatCopy = currentBoneMat;
+        mathfu::vec3 scaleVector = mathfu::vec3(
+            currentBoneMat.GetColumn(0).Length(),
+            currentBoneMat.GetColumn(1).Length(),
+            currentBoneMat.GetColumn(2).Length()
+        );
+
+        if (boneBillboardFlags == 0x10) {
+            float xAxisLen = currentBoneMat.GetColumn(0).Length();
+            currentBoneMat.GetColumn(0) = currentBoneMat.GetColumn(0) * (1.0f /xAxisLen);
+
+            mathfu::vec4 newYAxis = mathfu::vec4(
+                currentBoneMat(1, 0),
+                -currentBoneMat(0, 0),
+                0.0f,
+                0
+            );
+            currentBoneMat.GetColumn(1) = newYAxis.Normalized();
+            currentBoneMat.GetColumn(2) = mathfu::vec4(
+                mathfu::CrossProductHelper(
+                    currentBoneMat.GetColumn(1).xyz(),
+                    currentBoneMat.GetColumn(0).xyz()
+                ),
+                0.0f
+            );
+        } else if ( boneBillboardFlags > 0x10 ) {
+            if ( boneBillboardFlags == 0x20 ) {
+                float yAxisLen = currentBoneMat.GetColumn(1).Length();
+                currentBoneMat.GetColumn(1) = currentBoneMat.GetColumn(1) * (1.0f /yAxisLen);
+
+                mathfu::vec4 newXAxis = mathfu::vec4(
+                    -currentBoneMat(1, 1),
+                    currentBoneMat(0, 1),
+                    0.0f,
+                    0
+                );
+                currentBoneMat.GetColumn(0) = newXAxis.Normalized();
+                currentBoneMat.GetColumn(2) = mathfu::vec4(
+                    mathfu::CrossProductHelper(
+                        currentBoneMat.GetColumn(1).xyz(),
+                        currentBoneMat.GetColumn(0).xyz()
+                    ),
+                    0.0f
+                );
+            } else if ( boneBillboardFlags == 0x40 ) {
+                currentBoneMat.GetColumn(2) = currentBoneMat.GetColumn(2).Normalized();
+                mathfu::vec4 newYAxis = mathfu::vec4(
+                    currentBoneMat.GetColumn(2).y,
+                    -currentBoneMat.GetColumn(2).x,
+                    0.0f,
+                    0
+                );
+                currentBoneMat.GetColumn(1) = newYAxis.Normalized();
+                currentBoneMat.GetColumn(0) = mathfu::vec4(
+                    mathfu::CrossProductHelper(
+                        currentBoneMat.GetColumn(2).xyz(),
+                        currentBoneMat.GetColumn(1).xyz()
+                    ),
+                    0.0f
+                );
+            }
+        } else if ( boneBillboardFlags == 0x8 ){
+            if (isAnimated) {
+                mathfu::vec4 &xAxis = animatedMatrix.GetColumn(0);
+                currentBoneMat.GetColumn(0) = mathfu::vec4(
+                    xAxis.y,
+                    xAxis.z,
+                    -xAxis.x,
+                    0
+                ).Normalized();
+
+                mathfu::vec4 &yAxis = animatedMatrix.GetColumn(1);
+                currentBoneMat.GetColumn(1) = mathfu::vec4(
+                    yAxis.y,
+                    yAxis.z,
+                    -yAxis.x,
+                    0
+                ).Normalized();
+
+                mathfu::vec4 &zAxis = animatedMatrix.GetColumn(2);
+                currentBoneMat.GetColumn(2) = mathfu::vec4(
+                    zAxis.y,
+                    zAxis.z,
+                    -zAxis.x,
+                    0
+                ).Normalized();
+
+            } else {
+                currentBoneMat.GetColumn(0) = mathfu::vec4(0, 0, -1, 0);
+                currentBoneMat.GetColumn(1) = mathfu::vec4(1.0, 0, 0, 0);
+                currentBoneMat.GetColumn(2) = mathfu::vec4(0, 1.0, 0, 0);
+            }
+        }
+        mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
+        mathfu::vec4 pivotVec3 = pivotVec4; pivotVec3.w = 0.0;
+
+        currentBoneMat.GetColumn(0) *= scaleVector.x;
+        currentBoneMat.GetColumn(1) *= scaleVector.y;
+        currentBoneMat.GetColumn(2) *= scaleVector.z;
+//        currentBoneMat *= mathfu::mat4::FromScaleVector(scaleVector);
+        currentBoneMat.GetColumn(3) = (currentBoneMatCopy * pivotVec4 ) - (currentBoneMat * pivotVec3);
+        currentBoneMat.GetColumn(3).w = 1.0;
     }
 
     this->bonesIsCalculated[boneIndex] = true;
 }
 
-void AnimationManager::calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex,
-                                      int animationIndex, animTime_t time, mathfu::vec3 cameraPosInLocal) {
+void AnimationManager::calcChildBones(
+    std::vector<mathfu::mat4> &boneMatrices,
+    int boneIndex,
+    const mathfu::mat4 &modelViewMatrix) {
     std::vector<int> *childBones = &this->childBonesLookup[boneIndex];
     for (int i = 0; i < childBones->size(); i++) {
         int childBoneIndex = (*childBones)[i];
         this->bonesIsCalculated[childBoneIndex] = false;
-        this->calcBoneMatrix(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal);
-        this->calcChildBones(boneMatrices, childBoneIndex, animationIndex, time, cameraPosInLocal);
+        this->calcBoneMatrix(boneMatrices, childBoneIndex, modelViewMatrix);
+        this->calcChildBones(boneMatrices, childBoneIndex, modelViewMatrix);
     }
 }
 std::string dumpMatrix(mathfu::mat4 &mat4) {
@@ -327,13 +589,15 @@ std::string dumpMatrix(mathfu::mat4 &mat4) {
            std::to_string(mat4[8])+" "+std::to_string(mat4[9])+" "+std::to_string(mat4[10])+" "+std::to_string(mat4[11])+"\n"+
            std::to_string(mat4[12])+" "+std::to_string(mat4[13])+" "+std::to_string(mat4[14])+" "+std::to_string(mat4[15])+"\n";
 }
-void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int animation, animTime_t time, mathfu::vec3 &cameraPosInLocal) {
+void AnimationManager::calcBones (
+    std::vector<mathfu::mat4> &boneMatrices,
+    const mathfu::mat4 &modelViewMatrix) {
 
 
-    if (this->firstCalc || this->isAnimated) {
+    if (true) {
         //Animate everything with standard animation
         for (int i = 0; i < m_m2File->bones.size; i++) {
-            this->calcBoneMatrix(boneMatrices, i, animation, time, cameraPosInLocal);
+            this->calcBoneMatrix(boneMatrices, i, modelViewMatrix);
 //            std::cout << "boneMatrices[" << std::to_string(i) << "] = " << dumpMatrix(boneMatrices[i]) << std::endl;
         }
 
@@ -350,32 +614,30 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
          */
 
         int closedHandAnimation = -1;
-        if (m_m2File->sequence_lookups.size > 15 && *m_m2File->sequence_lookups[15] > 0) { //ANIMATION_HANDSCLOSED = 15
-            closedHandAnimation = *m_m2File->sequence_lookups[15];
-        }
+        closedHandAnimation = findAnimationIndex(15); //ANIMATION_HANDSCLOSED = 15
 
-        if (closedHandAnimation >= 0) {
-            if (this->leftHandClosed && m_m2File->key_bone_lookup.size > (13+5)) {
-                for (int j = 0; j < 5; j++) {
-                    if (*m_m2File->key_bone_lookup[13 + j] > -1) { // BONE_LFINGER1 = 13
-                        int boneId = *m_m2File->key_bone_lookup[13 + j];
-                        this->bonesIsCalculated[boneId] = false;
-                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal);
-                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal);
-                    }
-                }
-            }
-            if (this->rightHandClosed && m_m2File->key_bone_lookup.size > (8+5)) {
-                for (int j = 0; j < 5; j++) {
-                    if (*m_m2File->key_bone_lookup[8 + j] > -1) { // BONE_RFINGER1 = 8
-                        int boneId = *m_m2File->key_bone_lookup[8 + j];
-                        this->bonesIsCalculated[boneId] = false;
-                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal);
-                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, cameraPosInLocal);
-                    }
-                }
-            }
-        }
+//        if (closedHandAnimation >= 0) {
+//            if (this->leftHandClosed && m_m2File->key_bone_lookup.size > (13+5)) {
+//                for (int j = 0; j < 5; j++) {
+//                    if (*m_m2File->key_bone_lookup[13 + j] > -1) { // BONE_LFINGER1 = 13
+//                        int boneId = *m_m2File->key_bone_lookup[13 + j];
+//                        this->bonesIsCalculated[boneId] = false;
+//                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, modelViewMatrix);
+//                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, modelViewMatrix);
+//                    }
+//                }
+//            }
+//            if (this->rightHandClosed && m_m2File->key_bone_lookup.size > (8+5)) {
+//                for (int j = 0; j < 5; j++) {
+//                    if (*m_m2File->key_bone_lookup[8 + j] > -1) { // BONE_RFINGER1 = 8
+//                        int boneId = *m_m2File->key_bone_lookup[8 + j];
+//                        this->bonesIsCalculated[boneId] = false;
+//                        this->calcBoneMatrix(boneMatrices, boneId, closedHandAnimation, 1, modelViewMatrix);
+//                        this->calcChildBones(boneMatrices, boneId, closedHandAnimation, 1, modelViewMatrix);
+//                    }
+//                }
+//            }
+//        }
     }
     this->firstCalc = false;
 }
@@ -383,20 +645,27 @@ void AnimationManager::calcBones (std::vector<mathfu::mat4> &boneMatrices, int a
 
 static bool dump = false;
 
-void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLocal, std::vector<mathfu::mat4> &bonesMatrices,
-                              std::vector<mathfu::mat4> &textAnimMatrices,
-                              std::vector<mathfu::vec4> &subMeshColors,
-                              std::vector<float> &transparencies,
-                              std::vector<M2LightResult> &lights,
-                              std::vector<ParticleEmitter *> &particleEmitters
+void AnimationManager::update(
+    animTime_t deltaTime,
+    mathfu::vec3 &cameraPosInLocal,
+    mathfu::vec3 &localUpVector,
+    mathfu::vec3 &localRightVector,
+    const mathfu::mat4 &modelViewMatrix,
+    std::vector<mathfu::mat4> &bonesMatrices,
+    std::vector<mathfu::mat4> &textAnimMatrices,
+    std::vector<mathfu::vec4> &subMeshColors,
+    std::vector<float> &transparencies,
+    std::vector<M2LightResult> &lights,
+    std::vector<ParticleEmitter *> &particleEmitters,
+    std::vector<CRibbonEmitter *> &ribbonEmitters
 
         /*cameraDetails, , particleEmitters*/) {
     if (m_m2File->sequences.size <= 0) return;
 
     const M2Sequence* mainAnimationRecord = m_m2File->sequences[this->mainAnimationIndex];
-    const M2Sequence* currentAnimationRecord = m_m2File->sequences[this->currentAnimationIndex];
+    const M2Sequence* currentAnimationRecord = m_m2File->sequences[this->animationInfo.currentAnimation.animationIndex];
 
-    this->currentAnimationTime += deltaTime;
+    this->animationInfo.currentAnimation.animationTime += deltaTime;
     //Update global sequences
     int minGlobal = 0; //12;
     int maxGlobal = (int) this->globalSequenceTimes.size();
@@ -404,15 +673,15 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
 //    int maxGlobal = 1;
 
     for (int i = minGlobal; i < maxGlobal; i++) {
+        this->globalSequenceTimes[i] += deltaTime ;
         if (m_m2File->global_loops[i]->timestamp > 0) { // Global sequence values can be 0's
-            this->globalSequenceTimes[i] += deltaTime ;
-            this->globalSequenceTimes[i] = fmod(this->globalSequenceTimes[i], (float)m_m2File->global_loops[i]->timestamp);
+            this->globalSequenceTimes[i] = fmodf(this->globalSequenceTimes[i], (float)m_m2File->global_loops[i]->timestamp);
         }
     }
 
     /* Pick next animation if there is one and no next animation was picked before */
     const M2Sequence* subAnimRecord = nullptr;
-    if (this->nextSubAnimationIndex < 0 && mainAnimationRecord->variationNext > -1) {
+    if (this->animationInfo.nextSubAnimation.animationIndex < 0 && mainAnimationRecord->variationNext > -1) {
         //if (currentAnimationPlayedTimes)
         int probability = ((float)rand() / (float)RAND_MAX) * 0x7FFF;
         int calcProb = 0;
@@ -428,242 +697,180 @@ void AnimationManager::update(animTime_t deltaTime, mathfu::vec3 cameraPosInLoca
             calcProb += subAnimRecord->frequency;
         }
 
-        this->nextSubAnimationIndex = currentSubAnimIndex;
-        this->nextSubAnimationTime = 0;
+        this->animationInfo.nextSubAnimation.animationIndex = currentSubAnimIndex;
+        this->animationInfo.nextSubAnimation.animationRecord = m_m2File->sequences[currentSubAnimIndex];
+        this->animationInfo.nextSubAnimation.animationTime = 0;
     }
 
-    animTime_t currAnimLeft = currentAnimationRecord->duration - this->currentAnimationTime;
+    animTime_t currAnimLeft = currentAnimationRecord->duration - this->animationInfo.currentAnimation.animationTime;
 
-    /*if (this->nextSubAnimationActive) {
-        this->nextSubAnimationTime += deltaTime;
-    }
-    */
-
-    int subAnimBlendTime = 0;
-    float blendAlpha = 1.0;
-    if (this->nextSubAnimationIndex > -1) {
-        subAnimRecord = m_m2File->sequences[this->nextSubAnimationIndex];
+    animTime_t subAnimBlendTime = 0;
+    if (this->animationInfo.nextSubAnimation.animationIndex > -1) {
+        subAnimRecord = m_m2File->sequences[this->animationInfo.nextSubAnimation.animationIndex];
         subAnimBlendTime = subAnimRecord->blendtime;
     }
 
-    int blendAnimationIndex = -1;
+    const M2Sequence* blendAnimationRecord = nullptr;
     if ((subAnimBlendTime > 0) && (currAnimLeft < subAnimBlendTime)) {
         this->firstCalc = true;
-        this->nextSubAnimationTime = fmod((subAnimBlendTime - currAnimLeft) , (subAnimRecord->duration));
-        blendAlpha = currAnimLeft / subAnimBlendTime;
-        blendAnimationIndex = this->nextSubAnimationIndex;
+        this->animationInfo.nextSubAnimation.animationTime = fmod((subAnimBlendTime - currAnimLeft), (subAnimRecord->duration));
+        this->animationInfo.blendFactor = (float) (currAnimLeft / subAnimBlendTime);
+    } else {
+        this->animationInfo.blendFactor = 1.0;
     }
 
-    if (this->currentAnimationTime >= currentAnimationRecord->duration) {
-        if (this->nextSubAnimationIndex > -1) {
-            this->currentAnimationIndex = this->nextSubAnimationIndex;
-            this->currentAnimationTime = this->nextSubAnimationTime;
+    if (this->animationInfo.currentAnimation.animationTime >= currentAnimationRecord->duration) {
+        if (this->animationInfo.nextSubAnimation.animationIndex > -1) {
+            if (this->animationInfo.nextSubAnimation.animationIndex > -1) {
+                while (
+                    ((m_m2File->sequences[this->animationInfo.nextSubAnimation.animationIndex]->flags & 0x20) == 0) &&
+                    ((m_m2File->sequences[this->animationInfo.nextSubAnimation.animationIndex]->flags & 0x40) > 0)
+                    ) {
+                    this->animationInfo.nextSubAnimation.animationIndex = m_m2File->sequences[this->animationInfo.nextSubAnimation.animationIndex]->aliasNext;
+                    this->animationInfo.nextSubAnimation.animationRecord = m_m2File->sequences[this->animationInfo.nextSubAnimation.animationIndex];
+                    if (this->animationInfo.nextSubAnimation.animationIndex < 0) break;
+                }
+            }
+
+            this->animationInfo.currentAnimation = this->animationInfo.nextSubAnimation;
 
             this->firstCalc = true;
 
-            this->nextSubAnimationIndex = -1;
-            this->nextSubAnimationActive = false;
+            this->animationInfo.nextSubAnimation.animationIndex = -1;
+            this->animationInfo.nextSubAnimation.animationRecord = nullptr;
+            this->animationInfo.blendFactor = 1.0;
+            deferredLoadingStarted = false;
         } else if (currentAnimationRecord->duration > 0) {
-            this->currentAnimationTime = fmod(this->currentAnimationTime , currentAnimationRecord->duration);
+            this->animationInfo.currentAnimation.animationTime = fmod(this->animationInfo.currentAnimation.animationTime, currentAnimationRecord->duration);
         }
     }
 
 
     /* Update animated values */
+    if ((currentAnimationRecord->flags & 0x20) == 0) {
+        if (!deferredLoadingStarted) {
+            m_m2Geom->loadLowPriority(m_api, currentAnimationRecord->id, currentAnimationRecord->variationIndex);
+            deferredLoadingStarted = true;
+        }
+        return;
+    } else {
+        deferredLoadingStarted = false;
+    };
+    if ((animationInfo.nextSubAnimation.animationRecord != nullptr) && ((animationInfo.nextSubAnimation.animationRecord->flags & 0x20) == 0)) {
+        if (!deferredLoadingStarted) {
+            m_m2Geom->loadLowPriority(m_api, animationInfo.nextSubAnimation.animationRecord->id, animationInfo.nextSubAnimation.animationRecord->variationIndex);
+            deferredLoadingStarted = true;
+        }
+        return;
+    } else {
+        deferredLoadingStarted = false;
+    };
 
-    this->calcAnimMatrixes(textAnimMatrices, this->currentAnimationIndex, this->currentAnimationTime);
-    if (blendAnimationIndex > -1) {
-        this->calcAnimMatrixes(this->blendMatrixArray, blendAnimationIndex, this->nextSubAnimationTime);
-        blendMatrices(textAnimMatrices, this->blendMatrixArray, m_m2File->texture_transforms.size, blendAlpha);
-    }
+    this->calcAnimMatrixes(textAnimMatrices);
 
     for (int i = 0; i < m_m2File->bones.size; i++) {
         this->bonesIsCalculated[i] = false;
     }
-    this->calcBones(bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime, cameraPosInLocal);
-    if (blendAnimationIndex > -1) {
-        for (int i = 0; i < m_m2File->bones.size; i++) {
-            this->bonesIsCalculated[i] = false;
-            this->blendMatrixArray[i] = mathfu::mat4::Identity();
+    this->calcBones(bonesMatrices, modelViewMatrix);
 
-        }
-
-        this->calcBones(this->blendMatrixArray, blendAnimationIndex, this->nextSubAnimationTime, cameraPosInLocal);
-        blendMatrices(bonesMatrices, this->blendMatrixArray, m_m2File->bones.size, blendAlpha);
+    mathfu::mat4 invModelViewMatrix = modelViewMatrix.Inverse();
+    for (int i = 0; i < m_m2File->bones.size; i++) {
+        bonesMatrices[i] = invModelViewMatrix * bonesMatrices[i];
     }
 
-    this->calcSubMeshColors(subMeshColors, this->currentAnimationIndex, this->currentAnimationTime, blendAnimationIndex,
-                           this->nextSubAnimationTime, blendAlpha);
-    this->calcTransparencies(transparencies, this->currentAnimationIndex, this->currentAnimationTime, blendAnimationIndex,
-                            this->nextSubAnimationTime, blendAlpha);
+    this->calcSubMeshColors(subMeshColors);
+    this->calcTransparencies(transparencies);
 
 //    this->calcCameras(cameraDetails, this->currentAnimationIndex, this->currentAnimationTime);
-    this->calcLights(lights, bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime);
-    this->calcParticleEmitters(particleEmitters, bonesMatrices, this->currentAnimationIndex, this->currentAnimationTime);
+    this->calcLights(lights, bonesMatrices);
+    this->calcParticleEmitters(particleEmitters, bonesMatrices);
+    this->calcRibbonEmitters(ribbonEmitters);
 }
 
-void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors,
-                                         int animationIndex,
-                                         animTime_t time,
-                                         int blendAnimationIndex,
-                                         animTime_t blendAnimationTime,
-                                         float blendAlpha) {
+void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors) {
     M2Array<M2Color> &colors = this->m_m2File->colors;
-    const M2Sequence* animationRecord = this->m_m2File->sequences[animationIndex];
-    const M2Sequence* blendAnimationRecord = nullptr;
-    if (blendAnimationIndex > -1) {
-        blendAnimationRecord = this->m_m2File->sequences[blendAnimationIndex];
-    }
 
     static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
     static float defaultAlpha = 1.0;
 
     for (int i = 0; i < colors.size; i++) {
-        mathfu::vec3 colorResult1 = animateTrack<C3Vector, mathfu::vec3>(time,
-                     animationRecord->duration,
-                     animationIndex,
-                     colors[i]->color,
-                     this->m_m2File->global_loops,
-                     this->globalSequenceTimes,
-                     defaultVector
+        mathfu::vec3 colorResult1 = animateTrackWithBlend<C3Vector, mathfu::vec3>(
+            animationInfo,
+            colors[i]->color,
+            this->m_m2File->global_loops,
+            this->globalSequenceTimes,
+            defaultVector
         );
-
-        //Support for blend
-        if (blendAnimationRecord != nullptr) {
-            mathfu::vec3 colorResult2 = animateTrack<C3Vector, mathfu::vec3>(
-                    blendAnimationTime,
-                    blendAnimationRecord->duration,
-                    blendAnimationIndex,
-                    colors[i]->color,
-                    this->m_m2File->global_loops,
-                    this->globalSequenceTimes,
-                    defaultVector
-            );
-
-            colorResult1 = colorResult1 * blendAlpha + (colorResult2 * (1.0f - (float)blendAlpha));
-        }
 
         subMeshColors[i].x = colorResult1.x;
         subMeshColors[i].y = colorResult1.y;
         subMeshColors[i].z = colorResult1.z;
 
-        float resultAlpha1 = animateTrack<fixed16, float>(time,
-            animationRecord->duration,
-            animationIndex,
+        float resultAlpha1 = animateTrackWithBlend<fixed16, float>(
+            animationInfo,
             colors[i]->alpha,
             this->m_m2File->global_loops,
             this->globalSequenceTimes,
             defaultAlpha
         );
 
-        // Support for blend
-        if (blendAnimationRecord != nullptr) {
-            float resultAlpha2 = animateTrack<fixed16, float>(
-                    blendAnimationTime,
-                    blendAnimationRecord->duration,
-                    blendAnimationIndex,
-                    colors[i]->alpha,
-                    this->m_m2File->global_loops,
-                    this->globalSequenceTimes,
-                    defaultAlpha
-            );
-
-            resultAlpha1 = resultAlpha1 * blendAlpha + (resultAlpha2 * (1.0f - blendAlpha));
-        }
-
         subMeshColors[i][3] = resultAlpha1;
     }
 }
 
-void AnimationManager::calcTransparencies(
-        std::vector<float> &transparencies,
-        int animationIndex,
-        animTime_t time,
-        int blendAnimationIndex,
-        animTime_t blendAnimationTime,
-        double blendAlpha) {
+void AnimationManager::calcTransparencies(std::vector<float> &transparencies) {
 
     M2Array<M2TextureWeight> &transparencyRecords = this->m_m2File->texture_weights;
-    const M2Sequence* animationRecord = this->m_m2File->sequences[animationIndex];
-    const M2Sequence* blendAnimationRecord = nullptr;
-    if (blendAnimationIndex > -1) {
-        blendAnimationRecord = this->m_m2File->sequences[blendAnimationIndex];
-    }
 
     static float defaultAlpha = 1.0;
     for (int i = 0; i < transparencyRecords.size; i++) {
-        float result1 = animateTrack<fixed16, float>(
-            time,
-            animationRecord->duration,
-            animationIndex,
+        float result1 = animateTrackWithBlend<fixed16, float>(
+            animationInfo,
             transparencyRecords[i]->weight,
             this->m_m2File->global_loops,
             this->globalSequenceTimes,
             defaultAlpha
         );
 
-        // Support for blend
-        if (blendAnimationRecord != nullptr) {
-            float result2 = animateTrack<fixed16, float>(
-                blendAnimationTime,
-                blendAnimationRecord->duration,
-                blendAnimationIndex,
-                transparencyRecords[i]->weight,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultAlpha
-            );
-            result1 = (result1 * blendAlpha) + ((1 - blendAlpha) * result2);
-        }
-
         transparencies[i] = result1;
     }
 }
 
 
-void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vector<mathfu::mat4> &bonesMatrices, int animationIndex, animTime_t animationTime) {
+void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vector<mathfu::mat4> &bonesMatrices) {
     auto &lightRecords = m_m2File->lights;
     if (lightRecords.size <= 0) return;
     static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
     static float defaultFloat = 1.0;
 
-    auto animationRecord = m_m2File->sequences[animationIndex];
-
     for (int i = 0; i < lightRecords.size; i++) {
-
         M2Light * lightRecord = lightRecords.getElement(i);
 
         mathfu::vec4 ambient_color =
-            mathfu::vec4(animateTrack<C3Vector, mathfu::vec3>(
-                    animationTime,
-                    animationRecord->duration,
-                    animationIndex,
-                    lightRecord->ambient_color,
-                    this->m_m2File->global_loops,
-                    this->globalSequenceTimes,
-                    defaultVector
+            mathfu::vec4(animateTrackWithBlend<C3Vector, mathfu::vec3>(
+                animationInfo,
+                lightRecord->ambient_color,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultVector
             ), 1.0);
 
         float ambient_intensity =
-                animateTrack<float, float>(
-                        animationTime,
-                        animationRecord->duration,
-                        animationIndex,
-                        lightRecord->ambient_intensity,
-                        this->m_m2File->global_loops,
-                        this->globalSequenceTimes,
-                        defaultFloat
-                );
+            animateTrackWithBlend<float, float>(
+                animationInfo,
+                lightRecord->ambient_intensity,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
         mathfu::vec4 diffuse_color =
-                mathfu::vec4(animateTrack<C3Vector, mathfu::vec3>(
-                        animationTime,
-                        animationRecord->duration,
-                        animationIndex,
-                        lightRecord->diffuse_color,
-                        this->m_m2File->global_loops,
-                        this->globalSequenceTimes,
-                        defaultVector
-                ), 1.0);
+            mathfu::vec4(animateTrackWithBlend<C3Vector, mathfu::vec3>(
+                animationInfo,
+                lightRecord->diffuse_color,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultVector
+            ), 1.0);
 
 //        if (i == 1) {
 //            diffuse_color = mathfu::vec4(diffuse_color.x, diffuse_color.z, diffuse_color.y, diffuse_color.w);
@@ -674,43 +881,35 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
 
 
         float diffuse_intensity =
-                animateTrack<float, float>(
-                        animationTime,
-                        animationRecord->duration,
-                        animationIndex,
-                        lightRecord->diffuse_intensity,
-                        this->m_m2File->global_loops,
-                        this->globalSequenceTimes,
-                        defaultFloat
-                );
+            animateTrackWithBlend<float, float>(
+                animationInfo,
+                lightRecord->diffuse_intensity,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
 
         float attenuation_start =
-                animateTrack<float, float>(
-                        animationTime,
-                        animationRecord->duration,
-                        animationIndex,
-                        lightRecord->attenuation_start,
-                        this->m_m2File->global_loops,
-                        this->globalSequenceTimes,
-                        defaultFloat
-                );
+            animateTrackWithBlend<float, float>(
+                animationInfo,
+                lightRecord->attenuation_start,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
         float attenuation_end =
-                animateTrack<float, float>(
-                        animationTime,
-                        animationRecord->duration,
-                        animationIndex,
-                        lightRecord->attenuation_end,
-                        this->m_m2File->global_loops,
-                        this->globalSequenceTimes,
-                        defaultFloat
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    lightRecord->attenuation_end,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
                 );
 
         static unsigned char defaultChar = 0;
         unsigned char visibility =
-                animateTrack<unsigned char, unsigned char>(
-                        animationTime,
-                        animationRecord->duration,
-                        animationIndex,
+                animateTrackWithBlend<unsigned char, unsigned char>(
+                        animationInfo,
                         lightRecord->visibility,
                         this->m_m2File->global_loops,
                         this->globalSequenceTimes,
@@ -742,7 +941,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
 
 void AnimationManager::calcCamera(M2CameraResult &camera, int cameraId, mathfu::mat4 &placementMatrix) {
     int animationIndex = this->mainAnimationIndex;
-    animTime_t animationTime = this->currentAnimationTime;
+    animTime_t animationTime = this->animationInfo.currentAnimation.animationTime;
 
     auto &cameraRecords = m_m2File->cameras;
     if (cameraRecords.size <= 0) return;
@@ -809,12 +1008,11 @@ void AnimationManager::calcCamera(M2CameraResult &camera, int cameraId, mathfu::
 }
 
 void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &particleEmitters,
-                                            std::vector<mathfu::mat4> &bonesMatrices, int animationIndex,
-                                            animTime_t animationTime) {
+                                            std::vector<mathfu::mat4> &bonesMatrices) {
     auto &peRecords = m_m2File->particle_emitters;
     if (peRecords.size <= 0) return;
     static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
-    static float defaultFloat = 1.0;
+    static float defaultFloat = 0.0;
     static unsigned char defaultChar = 1;
 
 //    check_offset<offsetof(M2Particle, old.geometry_model_filename), 24>();
@@ -823,171 +1021,201 @@ void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &part
     check_size<M2ParticleOld, 476>();
     check_size<M2Particle, 492>();
 
-    auto animationRecord = m_m2File->sequences[animationIndex];
-
-    for (int i = 0; i < peRecords.size; i++) {
+    for (int i = 0; i < particleEmitters.size(); i++) {
         auto &peRecord = *peRecords.getElement(i);
         auto &particleEmitter = particleEmitters[i];
         if (particleEmitter->getGenerator() == nullptr) continue;
         CGeneratorAniProp *aniProp = particleEmitters[i]->getGenerator()->getAniProp();
 
-        unsigned char enabledIn =
-            animateTrack<unsigned char, unsigned char>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
+        unsigned char enabledIn = 1;
+        if (peRecord.old.enabledIn.timestamps.size > 0) {
+            enabledIn = animateTrackWithBlend<unsigned char, unsigned char>(
+                animationInfo,
                 peRecord.old.enabledIn,
                 this->m_m2File->global_loops,
                 this->globalSequenceTimes,
                 defaultChar
             );
+        }
 
         particleEmitter->isEnabled = enabledIn;
 
-        aniProp->emissionSpeed =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.emissionSpeed,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->speedVariation =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.speedVariation,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->verticalRange =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.verticalRange,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->horizontalRange =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.horizontalRange,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        if (peRecord.old.flags & 0x800000) {
-            aniProp->gravity = animateTrack<CompressedParticleGravity, mathfu::vec3>(
-                            animationTime,
-                            animationRecord->duration,
-                            animationIndex,
-                            peRecord.old.gravityCompr,
-                            this->m_m2File->global_loops,
-                            this->globalSequenceTimes,
-                            defaultVector
-                    );
-        } else {
-            aniProp->gravity = mathfu::vec3(
+        if (enabledIn) {
+            aniProp->emissionSpeed =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.emissionSpeed,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->speedVariation =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.speedVariation,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->verticalRange =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.verticalRange,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->horizontalRange =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.horizontalRange,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            if (peRecord.old.flags & 0x800000) {
+                aniProp->gravity = animateTrackWithBlend<CompressedParticleGravity, mathfu::vec3>(
+                    animationInfo,
+                    peRecord.old.gravityCompr,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultVector
+                );
+            } else {
+                aniProp->gravity = mathfu::vec3(
                     0,
                     0,
-                    -animateTrack<float, float>(
-                            animationTime,
-                            animationRecord->duration,
-                            animationIndex,
-                            peRecord.old.gravity,
-                            this->m_m2File->global_loops,
-                            this->globalSequenceTimes,
-                            defaultFloat
+                    -animateTrackWithBlend<float, float>(
+                        animationInfo,
+                        peRecord.old.gravity,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultFloat
                     ));
-        }
-
-
-
-        aniProp->lifespan =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.lifespan,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->emissionRate =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.emissionRate,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->emissionAreaY =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.emissionAreaLength,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->emissionAreaX =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.emissionAreaWidth,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-        aniProp->zSource =
-            animateTrack<float, float>(
-                animationTime,
-                animationRecord->duration,
-                animationIndex,
-                peRecord.old.zSource,
-                this->m_m2File->global_loops,
-                this->globalSequenceTimes,
-                defaultFloat
-            );
-
-        bool enabled = enabledIn != 0;
-        bool emitterEnabled = enabled && 0 != (particleEmitter->flags & 2);
-        bool shouldUpdate = enabled;
-        if (peRecord.old.flags & 0x8000) {
-            if (!enabled) {
-                particleEmitter->emittingLastFrame = false;
             }
-            else {
-                if (aniProp->emissionRate > 0 && !particleEmitter->emittingLastFrame) {
-                    particleEmitter->flags |= 4;
-                    particleEmitter->emittingLastFrame = true;
-                }
-            }
-        }
-        else {
-            if (emitterEnabled) {
-                particleEmitter->flags |= 1;
-            }
-            else {
-                particleEmitter->flags &= ~1;
-            }
-        }
 
-        if (!emitterEnabled) {
-            aniProp->emissionRate = 0;
+
+            aniProp->lifespan =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.lifespan,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->emissionRate =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.emissionRate,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->emissionAreaY =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.emissionAreaWidth,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            aniProp->emissionAreaX =
+                animateTrackWithBlend<float, float>(
+                    animationInfo,
+                    peRecord.old.emissionAreaLength,
+                    this->m_m2File->global_loops,
+                    this->globalSequenceTimes,
+                    defaultFloat
+                );
+            if (m_m2Geom.get()->exp2Records == nullptr) {
+                aniProp->zSource =
+                    animateTrackWithBlend<float, float>(
+                        animationInfo,
+                        peRecord.old.zSource,
+                        this->m_m2File->global_loops,
+                        this->globalSequenceTimes,
+                        defaultFloat
+                    );
+            }
         }
     }
 
+}
+
+void AnimationManager::calcRibbonEmitters(std::vector<CRibbonEmitter *> &ribbonEmitters){
+    auto &ribbonRecords = m_m2File->ribbon_emitters;
+    if (ribbonRecords.size <= 0) return;
+    static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
+    static mathfu::vec4 defaultVector4(1.0, 1.0, 1.0, 1.0);
+    static float defaultFloat = 1.0;
+    static unsigned char defaultChar = 1;
+    static unsigned short defaultInt = 0;
+
+    for (int i = 0; i < ribbonEmitters.size(); i++) {
+        auto *ribbonRecord = ribbonRecords.getElement(i);
+        auto &ribbonEmitter = ribbonEmitters[i];
+
+        mathfu::vec4 colorRGBA =
+            animateTrackWithBlend<C3Vector, mathfu::vec4>(
+                animationInfo,
+                ribbonRecord->colorTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultVector4
+            );
+        ribbonEmitter->SetColor(colorRGBA.x, colorRGBA.y, colorRGBA.z);
+
+        colorRGBA.w =
+            animateTrackWithBlend<fixed16, float>(
+                animationInfo,
+                ribbonRecord->alphaTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+
+        ribbonEmitter->SetAlpha(colorRGBA.w);
+
+        float above =
+            animateTrackWithBlend<float, float>(
+                animationInfo,
+                ribbonRecord->heightAboveTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        ribbonEmitter->SetAbove(above);
+
+        float below =
+            animateTrackWithBlend<float, float>(
+                animationInfo,
+                ribbonRecord->heightBelowTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultFloat
+            );
+        ribbonEmitter->SetBelow(below);
+
+        unsigned short texSlot =
+            animateTrackWithBlend<uint16_t, unsigned short>(
+            animationInfo,
+            ribbonRecord->texSlotTrack,
+            this->m_m2File->global_loops,
+            this->globalSequenceTimes,
+            defaultInt
+        );
+
+        ribbonEmitter->SetTexSlot(texSlot);
+
+        unsigned char dataEnabled =
+            animateTrackWithBlend<unsigned char, unsigned char>(
+                animationInfo,
+                ribbonRecord->visibilityTrack,
+                this->m_m2File->global_loops,
+                this->globalSequenceTimes,
+                defaultChar
+            );
+        ribbonEmitter->SetDataEnabled(dataEnabled);
+
+    }
 }

@@ -1,31 +1,30 @@
 //
 // Created by Deamon on 7/23/2018.
 //
+#include <iostream>
 #include "../GDeviceGL33.h"
 #include "GTextureGL33.h"
 #include "../../../engine/opengl/header.h"
 #include "../../interface/IDevice.h"
 
 GTextureGL33::GTextureGL33(IDevice &device) : m_device(device) {
-    pIdentifierBuffer = new GLuint;
     createBuffer();
 }
 
 GTextureGL33::~GTextureGL33() {
     destroyBuffer();
-    delete (GLuint *) pIdentifierBuffer;
 }
 
 void GTextureGL33::createBuffer() {
-    glGenTextures(1, (GLuint *)pIdentifierBuffer);
+    glGenTextures(1, &textureIdentifier);
 }
 
 void GTextureGL33::destroyBuffer() {
-    glDeleteTextures(1, (GLuint *)pIdentifierBuffer);
+    glDeleteTextures(1, &textureIdentifier);
 }
 
 void GTextureGL33::bind() {
-    glBindTexture(GL_TEXTURE_2D, *(GLuint *)pIdentifierBuffer);
+    glBindTexture(GL_TEXTURE_2D, textureIdentifier);
 
 }
 
@@ -37,7 +36,10 @@ bool GTextureGL33::getIsLoaded() {
     return true;
 }
 
+static int pureTexturesUploaded = 0;
 void GTextureGL33::loadData(int width, int height, void *data) {
+//    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
+
     m_device.bindTexture(this, 0);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
