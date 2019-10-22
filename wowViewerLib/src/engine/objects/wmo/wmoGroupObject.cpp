@@ -314,12 +314,18 @@ void WmoGroupObject::update() {
 }
 
 void WmoGroupObject::uploadGeneratorBuffers()  {
+    if (!this->m_loaded) return;
+
     mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
     mathfu::vec4 localambientColor = this->getAmbientColor();
 
     int minBatch = m_api->getConfig()->getWmoMinBatch();
     int maxBatch = std::min(m_api->getConfig()->getWmoMaxBatch(), m_geom->batchesLen);
     MOGP *mogp = m_geom->mogp;
+
+    wmoModelWideBlockVS &blockVS = vertexModelWideUniformBuffer->getObject<wmoModelWideBlockVS>();
+    blockVS.uPlacementMat = *m_modelMatrix;
+    vertexModelWideUniformBuffer->save(true);
 
     PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
 
@@ -467,10 +473,6 @@ void WmoGroupObject::createMeshes() {
     HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
 
     vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(wmoModelWideBlockVS));
-
-    wmoModelWideBlockVS &blockVS = vertexModelWideUniformBuffer->getObject<wmoModelWideBlockVS>();
-    blockVS.uPlacementMat = *m_modelMatrix;
-    vertexModelWideUniformBuffer->save(true);
 
     MOGP *mogp = m_geom->mogp;
 

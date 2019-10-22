@@ -28,6 +28,8 @@ bool M2MeshBufferUpdater::updateBufferForMat(HGM2Mesh &hmesh, mathfu::mat4 &mode
         uAlphaTest = 1.0f/255.0f;
     }
 
+    hmesh->finalTransparency = finalTransparency;
+
     //Calculate necessary data
     //2. Update individual VS buffer
     auto &meshblockVS = hmesh->getVertexUniformBuffer(2)->getObject<meshWideBlockVS>();

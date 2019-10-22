@@ -83,6 +83,7 @@ protected:
     int m_renderOrder = 0;
 
     float m_sortDistance = 0;
+
     int m_priorityPlane;
     int m_layer;
     void *m_m2Object = nullptr;
@@ -108,6 +109,8 @@ public:
 
     virtual void setStart(int start)  = 0;
     virtual void setEnd(int end)  = 0;
+
+    float finalTransparency = 1.0;
 public:
     virtual void setM2Object(void * m2Object) = 0;
     virtual void setLayer(int layer)  = 0;

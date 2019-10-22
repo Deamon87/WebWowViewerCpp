@@ -987,6 +987,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 }
 
 void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat) {
+    if (!this->m_loaded)  return;
+
     mathfu::mat4 modelViewMat = viewMat * m_placementMatrix;
 
     M2Data * m2File = this->m_m2Geom->getM2Data();
@@ -995,36 +997,38 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat) {
     int minBatch = m_api->getConfig()->getM2MinBatch();
     int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());
 
+    bool atLeastOneIsRendered = false;
     for (int i = minBatch; i < maxBatch; i++) {
-        M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], modelViewMat, *this, m_materialArray[i], m2File, skinData);
+        atLeastOneIsRendered |= M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], modelViewMat, *this, m_materialArray[i], m2File, skinData);
     }
 
     //3. Update model wide VS buffer
-    auto &blockVS = vertexModelWideUniformBuffer->getObject<modelWideBlockVS>();
-    blockVS.uPlacementMat = m_placementMatrix;
-    int interCount = (int) std::min(bonesMatrices.size(), (size_t)MAX_MATRIX_NUM);
-    std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
-    vertexModelWideUniformBuffer->save();
+    if (atLeastOneIsRendered) {
+        auto &blockVS = vertexModelWideUniformBuffer->getObject<modelWideBlockVS>();
+        blockVS.uPlacementMat = m_placementMatrix;
+        int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
+        std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
+        vertexModelWideUniformBuffer->save();
 
-    //4. Update model wide PS buffer
-    mathfu::vec4 ambientLight = getAmbientLight();
+        //4. Update model wide PS buffer
+        mathfu::vec4 ambientLight = getAmbientLight();
 
-    static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
-    mathfu::vec4 localDiffuse = diffuseNon;
-    if (m_useLocalDiffuseColor == 1) {
-        localDiffuse = m_localDiffuseColorV;
-    } else {
-        localDiffuse = m_api->getGlobalSunColor();
+        static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
+        mathfu::vec4 localDiffuse = diffuseNon;
+        if (m_useLocalDiffuseColor == 1) {
+            localDiffuse = m_localDiffuseColorV;
+        } else {
+            localDiffuse = m_api->getGlobalSunColor();
+        }
+
+        modelWideBlockPS &blockPS = fragmentModelWideUniformBuffer->getObject<modelWideBlockPS>();
+        blockPS.uAmbientLight = ambientLight;
+        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
+        blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(getSunDir(), m_api->getGlobalFogStart()));
+        blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
+
+        fragmentModelWideUniformBuffer->save();
     }
-
-    modelWideBlockPS &blockPS = fragmentModelWideUniformBuffer->getObject<modelWideBlockPS>();
-    blockPS.uAmbientLight = ambientLight;
-    blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
-    blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(getSunDir(), m_api->getGlobalFogStart()));
-    blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
-
-    fragmentModelWideUniformBuffer->save();
-
 
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
@@ -1356,9 +1360,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
     int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());
 
     for (int i = minBatch; i < maxBatch; i++) {
-        auto &meshblockVS = this->m_meshArray[i]->getVertexUniformBuffer(2)->getObject<meshWideBlockVS>();
-        float finalTransparency = meshblockVS.Color_Transparency.w;
-        if ((finalTransparency < 0.0001) ) continue;
+        if ((this->m_meshArray[i]->finalTransparency < 0.0001) ) continue;
 
         this->m_meshArray[i]->setRenderOrder(renderOrder);
         renderedThisFrame.push_back(this->m_meshArray[i]);

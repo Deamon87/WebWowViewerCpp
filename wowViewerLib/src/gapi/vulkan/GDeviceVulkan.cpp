@@ -28,7 +28,7 @@
 #include "shaders/GWMOShaderPermutationVLK.h"
 #include "shaders/GWMOWaterShaderVLK.h"
 #include "shaders/GM2RibbonShaderPermutationVLK.h"
-#include "fastmemcp.h"
+//#include "fastmemcp.h"
 
 const int WIDTH = 1900;
 const int HEIGHT = 1000;

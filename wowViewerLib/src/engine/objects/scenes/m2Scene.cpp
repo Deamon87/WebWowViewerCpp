@@ -72,7 +72,7 @@ void M2Scene::doPostLoad(WoWFrameData *frameData) {
 
 void M2Scene::update(WoWFrameData *frameData) {
     m_m2Object->update(frameData->deltaTime, frameData->m_cameraVec3, frameData->m_lookAtMat4);
-    m_m2Object->uploadGeneratorBuffers();
+    m_m2Object->uploadGeneratorBuffers(frameData->m_lookAtMat4);
 }
 
 mathfu::vec4 M2Scene::getAmbientColor() {

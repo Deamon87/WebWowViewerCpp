@@ -26,7 +26,7 @@ void Map::checkCulling(WoWFrameData *frameData) {
     mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
 
     size_t adtRenderedThisFramePrev = frameData->adtArray.size();
-    frameData->adtArray = std::vector<AdtObject*>();
+    frameData->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>();
     frameData->adtArray.reserve(adtRenderedThisFramePrev);
 
     size_t m2RenderedThisFramePrev = frameData->m2Array.size();
@@ -49,12 +49,12 @@ void Map::checkCulling(WoWFrameData *frameData) {
     frameData->interiorViews = std::vector<InteriorView>();
     m_viewRenderOrder = 0;
 
-    this->m_currentInteriorGroups = {};
-    this->m_currentWMO = nullptr;
+    frameData->m_currentInteriorGroups = {};
+    frameData->m_currentWMO = nullptr;
 
     int bspNodeId = -1;
     int interiorGroupNum = -1;
-    this->currentWmoGroup = -1;
+    frameData->m_currentWmoGroup = -1;
 
     //Get center of near plane
 
@@ -67,7 +67,10 @@ void Map::checkCulling(WoWFrameData *frameData) {
     int adt_y = worldCoordinateToAdtIndex(camera4.x);
     AdtObject *adtObject = this->mapTiles[adt_x][adt_y];
     if (adtObject != nullptr) {
+        ADTObjRenderRes tempRes;
+        tempRes.adtObject = adtObject;
         adtObject->checkReferences(
+            tempRes,
             camera4,
             frustumPlanes,
             frustumPoints,
@@ -87,10 +90,10 @@ void Map::checkCulling(WoWFrameData *frameData) {
         bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult);
 
         if (result) {
-            this->m_currentWMO = checkingWmoObj;
-            currentWmoGroup = groupResult.groupIndex;
+            frameData->m_currentWMO = checkingWmoObj;
+            frameData->m_currentWmoGroup = groupResult.groupIndex;
             if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
-                this->m_currentInteriorGroups.push_back(groupResult);
+                frameData->m_currentInteriorGroups.push_back(groupResult);
                 interiorGroupNum = groupResult.groupIndex;
             } else {
             }
@@ -98,8 +101,8 @@ void Map::checkCulling(WoWFrameData *frameData) {
             if (m_api->getDB2WmoAreaTable() != nullptr && m_api->getDB2WmoAreaTable()->getIsLoaded()) {
                 DBWmoAreaTableRecord areaTableRecord;
                 if (m_api->getDB2WmoAreaTable()->findRecord(
-                    this->m_currentWMO->getWmoHeader()->wmoID,
-                    this->m_currentWMO->getNameSet(),
+                    frameData->m_currentWMO->getWmoHeader()->wmoID,
+                    frameData->m_currentWMO->getNameSet(),
                     groupResult.WMOGroupID,
                     areaTableRecord
                 )) {
@@ -113,9 +116,8 @@ void Map::checkCulling(WoWFrameData *frameData) {
         }
     }
 
-
-    auto lcurrentWMO = this->m_currentWMO;
-    auto currentWmoGroup = this->currentWmoGroup;
+    auto lcurrentWMO = frameData->m_currentWMO;
+    auto currentWmoGroup = frameData->m_currentWmoGroup;
 
     if (currentWmoGroup > 0) {
         auto m2Skybox = lcurrentWMO->getSkyBoxForGroup(currentWmoGroup);
@@ -125,19 +127,19 @@ void Map::checkCulling(WoWFrameData *frameData) {
         }
     }
 
-    if ((lcurrentWMO != nullptr) && (!this->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
+    if ((lcurrentWMO != nullptr) && (!frameData->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
         lcurrentWMO->resetTraversedWmoGroups();
         if (lcurrentWMO->startTraversingWMOGroup(
             cameraPos,
             viewPerspectiveMat,
-            this->m_currentInteriorGroups[0].groupIndex,
+            frameData->m_currentInteriorGroups[0].groupIndex,
             0,
             m_viewRenderOrder,
             true,
             frameData->interiorViews,
             frameData->exteriorView)) {
 
-            frameData->wmoArray.push_back(this->m_currentWMO);
+            frameData->wmoArray.push_back(frameData->m_currentWMO);
         }
 
         if (frameData->exteriorView.viewCreated) {
@@ -155,8 +157,8 @@ void Map::checkCulling(WoWFrameData *frameData) {
         view.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
     }
     frameData->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
-    for (auto &adt : frameData->exteriorView.drawnADTs) {
-        adt->collectMeshes(frameData->exteriorView.drawnChunks, frameData->exteriorView.renderOrder);
+    for (auto &adtRes : frameData->exteriorView.drawnADTs) {
+        adtObject->collectMeshes(*adtRes.get(),  frameData->exteriorView.drawnChunks, frameData->exteriorView.renderOrder);
     }
 
     //Collect M2s for update
@@ -176,7 +178,7 @@ void Map::checkCulling(WoWFrameData *frameData) {
     frameData->wmoArray.erase( unique( frameData->wmoArray.begin(), frameData->wmoArray.end() ), frameData->wmoArray.end() );
     frameData->wmoArray = std::vector<WmoObject*>(frameData->wmoArray.begin(), frameData->wmoArray.end());
 
-    frameData->adtArray = std::vector<AdtObject*>(frameData->adtArray.begin(), frameData->adtArray.end());
+    frameData->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>(frameData->adtArray.begin(), frameData->adtArray.end());
 
 //    //Limit M2 count based on distance/m2 height
 //    for (auto it = this->m2RenderedThisFrameArr.begin();
@@ -264,7 +266,12 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             AdtObject *adtObject = this->mapTiles[i][j];
             if (adtObject != nullptr) {
 
+                std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
+                adtFrustRes->adtObject = adtObject;
+
+
                 bool result = adtObject->checkFrustumCulling(
+                    *adtFrustRes.get(),
                     cameraPos,
                     adt_global_x,
                     adt_global_y,
@@ -273,8 +280,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                     hullLines,
                     lookAtMat4, m2ObjectsCandidates, wmoCandidates);
                 if (result) {
-                    frameData->exteriorView.drawnADTs.push_back(adtObject);
-                    frameData->adtArray.push_back(adtObject);
+                    frameData->exteriorView.drawnADTs.push_back(adtFrustRes);
+                    frameData->adtArray.push_back(adtFrustRes);
                 }
             } else if (!m_lockedMap && true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
                 if (m_wdtfile->mphd->flags.wdt_has_maid) {
@@ -361,7 +368,7 @@ void Map::doPostLoad(WoWFrameData *frameData){
     }
 
     for (auto &adtObject : frameData->adtArray) {
-        adtObject->doPostLoad();
+        adtObject->adtObject->doPostLoad();
     }
 };
 
@@ -397,7 +404,7 @@ void Map::update(WoWFrameData *frameData) {
     }
 
     for (auto &adtObject : frameData->adtArray) {
-        adtObject->update();
+        adtObject->adtObject->update();
     }
 
     //2. Calc distance every 100 ms
@@ -453,9 +460,9 @@ void Map::update(WoWFrameData *frameData) {
         mathfu::vec3 directColor = mathfu::vec3(0.0,0.0,0.0);
         mathfu::vec3 endFogColor = mathfu::vec3(0.0,0.0,0.0);
 
-        if (this->m_currentWMO != nullptr) {
+        if (frameData->m_currentWMO != nullptr) {
             CImVector sunFogColor;
-            fogRecordWasFound = this->m_currentWMO->checkFog(cameraVec3, sunFogColor);
+            fogRecordWasFound = frameData->m_currentWMO->checkFog(cameraVec3, sunFogColor);
             if (fogRecordWasFound) {
                 endFogColor =
                   mathfu::vec3((sunFogColor.r & 0xFF) / 255.0f,
@@ -542,6 +549,10 @@ void Map::updateBuffers(WoWFrameData *frameData) {
         wmoObject->uploadGeneratorBuffers();
     }
 
+    for (auto &adtRes: frameData->adtArray) {
+        if (adtRes == nullptr) continue;
+        adtRes->adtObject->uploadGeneratorBuffers(*adtRes.get());
+    }
 
 }
 

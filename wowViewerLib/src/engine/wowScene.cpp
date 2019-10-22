@@ -278,9 +278,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
     //Test scene 1: Shattrath
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
-//    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
+    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-//    currentScene = new Map(this, 530, "Expansion01");
+    currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
@@ -621,7 +621,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setMap(1, 782779, -8183, -4708, 200);
 //    setScene(2, "world/maps/SilithusPhase01/SilithusPhase01_30_45.adt", -1);
 //    setSceneWithFileDataId(1, 108803, -1);
-    setSceneWithFileDataId(0, 125407, -1); // phoneix
+//    setSceneWithFileDataId(0, 125407, -1); // phoneix
 //    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
     //setSceneWithFileDataId(0, 125995, -1); //portal
 //    setSceneWithFileDataId(0, 1612576, -1); //portal
@@ -911,11 +911,15 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         currentScene->update(objFrameParam);
         currentScene->collectMeshes(objFrameParam);
 
-        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
-        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
-        m_sceneWideUniformBuffer->save();
+        device->prepearMemoryForBuffers(objFrameParam->renderedThisFrame);
+        sceneWideBlockVSPS *blockPSVS = &m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+        if (blockPSVS != nullptr) {
+            blockPSVS->uLookAtMat = objFrameParam->m_lookAtMat4;
+            blockPSVS->uPMatrix = objFrameParam->m_perspectiveMatrix;
+            m_sceneWideUniformBuffer->save();
+        }
 
+        currentScene->updateBuffers(objFrameParam);
         device->updateBuffers(objFrameParam->renderedThisFrame);
 
         currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
