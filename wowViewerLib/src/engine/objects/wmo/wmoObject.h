@@ -148,6 +148,7 @@ public:
 
     bool doPostLoad(int &processedThisFrame);
     void update();
+    void uploadGeneratorBuffers();
 
     void createM2Array();
     void updateBB() override ;

@@ -375,7 +375,15 @@ void WmoObject::update() {
             groupObjectsLod2[i]->update();
         }
     }
+}
+void WmoObject::uploadGeneratorBuffers() {
+    if (!m_loaded) return;
 
+    for (int i= 0; i < groupObjects.size(); i++) {
+        if(groupObjects[i] != nullptr) {
+            groupObjects[i]->uploadGeneratorBuffers();
+        }
+    }
 }
 
 void WmoObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame){

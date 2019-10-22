@@ -31,6 +31,9 @@ private:
     void setOffset(size_t offset) {
         m_offset = offset;
     }
+    void setPointer(void *ptr) {
+        m_ptr = ptr;
+    }
     void destroyBuffer();
     void bind(int bindingPoint); //Should be called only by GDevice
     void unbind();
@@ -46,6 +49,7 @@ private:
 private:
     size_t m_size;
     size_t m_offset = 0;
+    void *m_ptr = 0;
 
     void * pFrameOneContent;
     bool m_buffCreated = false;

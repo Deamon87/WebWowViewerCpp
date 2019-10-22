@@ -304,14 +304,7 @@ void AdtObject::createMeshes() {
 
     adtWideBlockPS = m_api->getDevice()->createUniformBuffer(sizeof(adtModelWideBlockPS));
 
-    auto &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
-    adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-    adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-    adtWideblockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
-    adtWideblockPS.uAmbientLight = m_api->getGlobalAmbientColor();
-    adtWideblockPS.FogColor = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), 0));
 
-    adtWideBlockPS->save(true);
 
     for (int i = 0; i < 256; i++) {
         //Cant be used only in Wotlk
@@ -509,14 +502,19 @@ void AdtObject::update() {
     if (!m_loaded) return;
     if (adtWideBlockPS == nullptr) return;
 
-    adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
+}
+
+void AdtObject::uploadGeneratorBuffers() {
+    auto &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
     adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
     adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
     adtWideblockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
     adtWideblockPS.uAmbientLight = m_api->getGlobalAmbientColor();
     adtWideblockPS.FogColor = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), 0));
 
-    adtWideBlockPS->save();
+    adtWideBlockPS->save(true);
+
+
 }
 
 HGTexture AdtObject::getAdtTexture(int textureId) {

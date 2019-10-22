@@ -92,6 +92,7 @@ public:
     void doPostLoad(WoWFrameData *frameData) override;
 
     void update(WoWFrameData *frameData) override;
+    void updateBuffers(WoWFrameData *frameData) override;
     mathfu::vec4 getAmbientColor() override {
         return m_api->getGlobalAmbientColor();
     };
@@ -104,7 +105,7 @@ private:
                        std::vector<mathfu::vec3> &frustumPoints,
                        std::vector<mathfu::vec3> &hullLines,
                        mathfu::mat4 &lookAtMat4,
-                       mathfu::mat4 &projectionModelMat,
+                       mathfu::mat4 &viewPerspectiveMat,
                        int viewRenderOrder,
                        WoWFrameData *frameData);
 };

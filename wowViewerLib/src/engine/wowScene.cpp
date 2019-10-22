@@ -621,7 +621,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setMap(1, 782779, -8183, -4708, 200);
 //    setScene(2, "world/maps/SilithusPhase01/SilithusPhase01_30_45.adt", -1);
 //    setSceneWithFileDataId(1, 108803, -1);
-//    setSceneWithFileDataId(0, 125407, -1); // phoneix
+    setSceneWithFileDataId(0, 125407, -1); // phoneix
 //    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
     //setSceneWithFileDataId(0, 125995, -1); //portal
 //    setSceneWithFileDataId(0, 1612576, -1); //portal
@@ -696,10 +696,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
                     currentScene->collectMeshes(objFrameParam);
                     meshesCollectCNT.endMeasurement("collectMeshes ");
 
-                    sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-                    blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
-                    blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
-                    m_sceneWideUniformBuffer->save();
+                    device->prepearMemoryForBuffers(objFrameParam->meshes);
+                    sceneWideBlockVSPS *blockPSVS = &m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+                    if (blockPSVS != nullptr) {
+                        blockPSVS->uLookAtMat = objFrameParam->m_lookAtMat4;
+                        blockPSVS->uPMatrix = objFrameParam->m_perspectiveMatrix;
+                        m_sceneWideUniformBuffer->save();
+                    }
 
                     device->updateBuffers(objFrameParam->renderedThisFrame);
 

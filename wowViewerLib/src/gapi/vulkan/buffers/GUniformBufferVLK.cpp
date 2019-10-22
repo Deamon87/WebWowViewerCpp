@@ -83,11 +83,11 @@ void GUniformBufferVLK::save(bool initialSave) {
 }
 
 void *GUniformBufferVLK::getPointerForUpload() {
-    return pFrameOneContent;
+    return m_ptr;
 }
 
 void *GUniformBufferVLK::getPointerForModification() {
-    return pFrameOneContent;
+    return m_ptr;
 
 }
 

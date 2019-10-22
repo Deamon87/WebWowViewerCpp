@@ -885,13 +885,7 @@ void GDeviceVLK::endUpdateForNextFrame() {
 }
 
 typedef std::shared_ptr<GMeshVLK> HVKMesh;
-void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &meshes) {
-
-}
-
-
-void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
-//    aggregationBufferForUpload.resize(maxUniformBufferSize);
+void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture();
         unsigned int zero = 0;
@@ -968,23 +962,7 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
         if (buffer->m_buffCreated) continue;
 
         buffer->setOffset(currentSize);
-        if ((currentSize + buffer->m_size) >=  aggregationBufferForUpload.size()) {
-            aggregationBufferForUpload.resize(2*aggregationBufferForUpload.size() + buffer->m_size);
-        }
-
-        void * dataPtr = buffer->getPointerForUpload();
-//        std::copy((char*)dataPtr,
-//                  ((char*)dataPtr)+buffer->m_size,
-//                  &aggregationBufferForUpload[currentSize]);
-        memcpy_fast(pointerForUpload+currentSize, dataPtr, buffer->m_size);
-//        memcpy(pointerForUpload+currentSize, dataPtr, buffer->m_size);
-
-
-//        aggregationBufferForUpload.insert(
-//            aggregationBufferForUpload.end(),
-//            (char*)buffer->pContent,
-//            ((char*)buffer->pContent)+buffer->m_size
-//        );
+        buffer->setPointer(&pointerForUpload[currentSize]);
         currentSize += buffer->m_size;
 
         int offsetDiff = currentSize % uniformBufferOffsetAlign;
@@ -994,9 +972,23 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
             currentSize += bytesToAdd;
         }
     }
-
     if (currentSize > 0) {
         bufferForUploadVLK->uploadFromStaging(currentSize);
+    }
+}
+
+
+void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
+//    aggregationBufferForUpload.resize(maxUniformBufferSize);
+    if (!m_blackPixelTexture) {
+        m_blackPixelTexture = createTexture();
+        unsigned int zero = 0;
+        m_blackPixelTexture->loadData(1,1,&zero);
+    }
+    if (!m_whitePixelTexture) {
+        m_whitePixelTexture = createTexture();
+        unsigned int ff = 0xffffffff;
+        m_whitePixelTexture->loadData(1,1,&ff);
     }
 }
 

@@ -207,7 +207,7 @@ public:
 
     bool doPostLoad();
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
-    void uploadGeneratorBuffers();
+    void uploadGeneratorBuffers(mathfu::mat4 &viewMat);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
     void drawDebugLight();
 

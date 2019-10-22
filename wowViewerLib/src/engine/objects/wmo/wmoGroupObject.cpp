@@ -311,13 +311,18 @@ void WmoGroupObject::update() {
         this->updateWorldGroupBBWithM2();
         m_recalcBoundries = false;
     }
+}
 
+void WmoGroupObject::uploadGeneratorBuffers()  {
     mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
     mathfu::vec4 localambientColor = this->getAmbientColor();
 
     int minBatch = m_api->getConfig()->getWmoMinBatch();
     int maxBatch = std::min(m_api->getConfig()->getWmoMaxBatch(), m_geom->batchesLen);
     MOGP *mogp = m_geom->mogp;
+
+    PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
+
 
     for (int j = minBatch; j < maxBatch; j++) {
         SMOBatch &renderBatch = m_geom->batches[j];
@@ -329,6 +334,29 @@ void WmoGroupObject::update() {
         if (isBatchC) {
             ambientColor = globalAmbientColor;
         }
+        int texIndex;
+        if (renderBatch.flag_use_material_id_large) {
+            texIndex = renderBatch.postLegion.material_id_large;
+        } else {
+            texIndex = renderBatch.material_id;
+        }
+
+        const SMOMaterial &material = materials[texIndex];
+
+        assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
+        auto shaderId = material.shader;
+        if (shaderId >= MAX_WMO_SHADERS) {
+            shaderId = 0;
+        }
+        int pixelShader = wmoMaterialShader[shaderId].pixelShader;
+        int vertexShader = wmoMaterialShader[shaderId].vertexShader;
+        auto blendMode = material.blendMode;
+
+        wmoMeshWideBlockVS &blockVS = this->m_meshArray[j]->getVertexUniformBuffer(2)->getObject<wmoMeshWideBlockVS>();
+        blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockVS.VertexShader = vertexShader;
+        this->m_meshArray[j]->getVertexUniformBuffer(2)->save(true);
+
 
         auto &blockPS = this->m_meshArray[j]->getFragmentUniformBuffer(2)->getObject<wmoMeshWideBlockPS>();
         blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
@@ -342,6 +370,10 @@ void WmoGroupObject::update() {
         } else {
             blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0, 0, 0, 0);
         }
+        blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
+        blockPS.PixelShader = pixelShader;
+
         blockPS.FogColor_AlphaTest = mathfu::vec4_packed(
             mathfu::vec4(m_api->getGlobalFogColor().xyz(), blockPS.FogColor_AlphaTest.w));
 
@@ -516,33 +548,6 @@ void WmoGroupObject::createMeshes() {
         meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
         meshTemplate.fragmentBuffers[1] = vertexModelWideUniformBuffer;
         meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(wmoMeshWideBlockPS));
-
-
-        //Fill buffers
-        wmoMeshWideBlockVS &blockVS = meshTemplate.vertexBuffers[2]->getObject<wmoMeshWideBlockVS>();
-        blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
-        blockVS.VertexShader = vertexShader;
-        meshTemplate.vertexBuffers[2]->save(true);
-
-        wmoMeshWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<wmoMeshWideBlockPS>();
-        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-        blockPS.uSunDir_FogStart = mathfu::vec4_packed(
-            mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-        blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(
-            mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
-        blockPS.uAmbientLight = ambientColor;
-        if (isBatchA) {
-            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);
-        } else {
-            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0, 0, 0, 0);
-        }
-
-        blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
-        blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
-        blockPS.PixelShader = pixelShader;
-        blockPS.FogColor_AlphaTest = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), alphaTest));
-
-        meshTemplate.fragmentBuffers[2]->save(true);
 
         //Make mesh
         HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
