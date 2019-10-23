@@ -110,7 +110,6 @@ public:
     virtual void setStart(int start)  = 0;
     virtual void setEnd(int end)  = 0;
 
-    float finalTransparency = 1.0;
 public:
     virtual void setM2Object(void * m2Object) = 0;
     virtual void setLayer(int layer)  = 0;

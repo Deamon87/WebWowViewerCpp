@@ -98,6 +98,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "adtLo
 {
 {0,4,240},
 {0,3,64},
+{0,0,128},
+{0,1,14144},
 }
 }
 },{ "m2Shader.vert.spv", {

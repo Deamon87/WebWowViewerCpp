@@ -576,14 +576,14 @@ float M2Object::getHeight(){
 
 mathfu::vec4 M2Object::getCombinedColor(
         M2SkinProfile *skinData,
-        M2MaterialInst &materialData,
-        std::vector<mathfu::vec4> subMeshColors
+        int batchIndex,
+        const std::vector<mathfu::vec4> subMeshColors
 ) {
-    int colorIndex = skinData->batches[materialData.texUnitTexIndex]->colorIndex;
+    int colorIndex = skinData->batches[batchIndex]->colorIndex;
     mathfu::vec4 submeshColor = mathfu::vec4(1,1,1,1);
 
     if ((colorIndex >= 0) && (subMeshColors.size() > colorIndex)) {
-        mathfu::vec4 &color = subMeshColors[colorIndex];
+        const mathfu::vec4 &color = subMeshColors[colorIndex];
         submeshColor = color;
     }
 
@@ -592,11 +592,11 @@ mathfu::vec4 M2Object::getCombinedColor(
 
 float M2Object::getTransparency(
         M2SkinProfile *skinData,
-        M2MaterialInst &materialData,
-        std::vector<float> &transparencies) {
+        int batchIndex,
+        const std::vector<float> &transparencies) {
     float transparency = 1.0;
 
-    int transpIndex = skinData->batches[materialData.texUnitTexIndex]->textureWeightComboIndex;
+    int transpIndex = skinData->batches[batchIndex]->textureWeightComboIndex;
     if ((transpIndex >= 0) && (transparencies.size() > transpIndex)) {
         transparency = transparencies[transpIndex];
     }
@@ -916,9 +916,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         );
 
     if (m_boolSkybox) {
-//        m_placementMatrix = m_prevSkyBoxMat.Inverse() * m_placementMatrix;
-//        m_prevSkyBoxMat = mathfu::mat4::FromTranslationVector(cameraPos);
-//        m_placementMatrix = m_prevSkyBoxMat * m_placementMatrix;
         m_placementMatrix.GetColumn(3) = mathfu::vec4(cameraPos, 1.0);
         m_placementInvertMatrix = m_placementMatrix.Inverse();
     }
@@ -946,7 +943,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
-
 
     mathfu::mat4 viewMatInv = viewMat.Inverse();
 
@@ -993,42 +989,6 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat) {
 
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
-
-    int minBatch = m_api->getConfig()->getM2MinBatch();
-    int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());
-
-    bool atLeastOneIsRendered = false;
-    for (int i = minBatch; i < maxBatch; i++) {
-        atLeastOneIsRendered |= M2MeshBufferUpdater::updateBufferForMat(this->m_meshArray[i], modelViewMat, *this, m_materialArray[i], m2File, skinData);
-    }
-
-    //3. Update model wide VS buffer
-    if (atLeastOneIsRendered) {
-        auto &blockVS = vertexModelWideUniformBuffer->getObject<modelWideBlockVS>();
-        blockVS.uPlacementMat = m_placementMatrix;
-        int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
-        std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
-        vertexModelWideUniformBuffer->save();
-
-        //4. Update model wide PS buffer
-        mathfu::vec4 ambientLight = getAmbientLight();
-
-        static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
-        mathfu::vec4 localDiffuse = diffuseNon;
-        if (m_useLocalDiffuseColor == 1) {
-            localDiffuse = m_localDiffuseColorV;
-        } else {
-            localDiffuse = m_api->getGlobalSunColor();
-        }
-
-        modelWideBlockPS &blockPS = fragmentModelWideUniformBuffer->getObject<modelWideBlockPS>();
-        blockPS.uAmbientLight = ambientLight;
-        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
-        blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(getSunDir(), m_api->getGlobalFogStart()));
-        blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
-
-        fragmentModelWideUniformBuffer->save();
-    }
 
     int minParticle = m_api->getConfig()->getMinParticle();
     int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
@@ -1346,21 +1306,24 @@ void M2Object::createMeshes() {
         hmesh->setQuery(nullptr);
 //        hmesh->m_query = occlusionQuery;
 
+        M2MeshBufferUpdater::assignUpdateEvents(this->m_meshArray[i], *this, m_materialArray[i], m_m2Data, skinData);
+
         this->m_meshArray.push_back(hmesh);
         this->m_materialArray.push_back(material);
     }
-
-
 }
 
 void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
     if (!m_loaded) return;
 
+    M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
+
     int minBatch = m_api->getConfig()->getM2MinBatch();
     int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());
 
     for (int i = minBatch; i < maxBatch; i++) {
-        if ((this->m_meshArray[i]->finalTransparency < 0.0001) ) continue;
+        float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, i, skinData);
+        if ((finalTransparency < 0.0001) ) continue;
 
         this->m_meshArray[i]->setRenderOrder(renderOrder);
         renderedThisFrame.push_back(this->m_meshArray[i]);
@@ -1450,8 +1413,6 @@ void M2Object::initRibbonEmitters() {
         rect.minx = 0.0;
         rect.maxy = 1.0;
         rect.maxx = 1.0;
-
-
 
         emitter->Initialize(m2Ribbon->edgesPerSecond, m2Ribbon->edgeLifetime, color, &rect, m2Ribbon->textureCols, m2Ribbon->textureRows);
         emitter->SetGravity(m2Ribbon->gravity);
@@ -1615,4 +1576,33 @@ void M2Object::createVertexBindings() {
 //    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(mathfu::mat4) * (m_m2Geom->m_m2Data->bones.size + 1));
     vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockVS));
     fragmentModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockPS));
+
+    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBuffer *self){
+        auto &blockVS = self->getObject<modelWideBlockVS>();
+
+        blockVS.uPlacementMat = m_placementMatrix;
+        int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
+        std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
+        self->save();
+    });
+
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBuffer *self){
+        mathfu::vec4 ambientLight = getAmbientLight();
+
+        static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
+        mathfu::vec4 localDiffuse = diffuseNon;
+        if (m_useLocalDiffuseColor == 1) {
+            localDiffuse = m_localDiffuseColorV;
+        } else {
+            localDiffuse = m_api->getGlobalSunColor();
+        }
+
+        modelWideBlockPS &blockPS = self->getObject<modelWideBlockPS>();
+        blockPS.uAmbientLight = ambientLight;
+        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
+        blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(getSunDir(), m_api->getGlobalFogStart()));
+        blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
+
+        fragmentModelWideUniformBuffer->save();
+    });
 }

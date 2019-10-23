@@ -129,3 +129,10 @@ void GUniformBufferVLK::resize(int newLength) {
         createBuffer();
     }
 }
+
+void GUniformBufferVLK::setUpdateHandler(std::function<void(IUniformBuffer* self)> handler){
+    m_handler = handler;
+}
+void GUniformBufferVLK::update() {
+    m_handler(this);
+}

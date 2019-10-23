@@ -134,8 +134,8 @@ private:
     void createMeshes();
     void createBoundingBoxMesh();
 
-    mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, M2MaterialInst &materialData,  std::vector<mathfu::vec4> subMeshColors);
-    float getTransparency(M2SkinProfile *skinData,M2MaterialInst &materialData, std::vector<float> &transparencies);
+    static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> subMeshColors) ;
+    static float getTransparency(M2SkinProfile *skinData, int batchIndex, const std::vector<float> &transparencies) ;
 public:
 
     bool getInteriorAmbientWasSet() {

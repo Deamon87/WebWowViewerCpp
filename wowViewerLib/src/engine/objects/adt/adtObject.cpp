@@ -304,7 +304,24 @@ static const float heightOffset [4] = {1.0, 1.0, 1.0, 1.0};
 void AdtObject::createMeshes() {
     IDevice *device = m_api->getDevice();
 
+    auto adtFileTex = m_adtFileTex;
+    auto adtFile = m_adtFile;
+
     adtWideBlockPS = m_api->getDevice()->createUniformBuffer(sizeof(adtModelWideBlockPS));
+
+    auto api = m_api;
+    adtWideBlockPS->setUpdateHandler([&api](IUniformBuffer *self){
+        auto *adtWideblockPS = &self->getObject<adtModelWideBlockPS>();
+        adtWideblockPS->uViewUp = mathfu::vec4_packed(mathfu::vec4(api->getViewUp(), 0.0));;
+        adtWideblockPS->uSunDir_FogStart = mathfu::vec4_packed(
+            mathfu::vec4(api->getGlobalSunDir(), api->getGlobalFogStart()));
+        adtWideblockPS->uSunColor_uFogEnd = mathfu::vec4_packed(
+            mathfu::vec4(api->getGlobalSunColor().xyz(), api->getGlobalFogEnd()));
+        adtWideblockPS->uAmbientLight = api->getGlobalAmbientColor();
+        adtWideblockPS->FogColor = mathfu::vec4_packed(mathfu::vec4(api->getGlobalFogColor().xyz(), 0));
+
+        self->save(true);
+    });
 
 
 
@@ -338,6 +355,35 @@ void AdtObject::createMeshes() {
         aTemplate.textureCount = 9;
 
         aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
+
+        aTemplate.fragmentBuffers[2]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBuffer *self){
+            auto blockPS = self->getObject<adtMeshWideBlockPS>();
+            for (int j = 0; j < 4; j++) {
+                blockPS.uHeightOffset[j] = heightOffset[j];
+                blockPS.uHeightScale[j] = heightScale[j];
+            }
+            if (adtFileTex->mtxp_len > 0 && !noLayers) {
+                for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                    auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
+
+                    blockPS.uHeightOffset[j] = textureParams.heightOffset;
+                    blockPS.uHeightScale[j] = textureParams.heightScale;
+                }
+            }
+
+            self->save(true);
+        });
+
+        aTemplate.vertexBuffers[2]->setUpdateHandler([adtFile, i](IUniformBuffer *self){
+            auto &blockVS = self->getObject<adtMeshWideBlockVS>();
+            blockVS.uPos = mathfu::vec4(
+                adtFile->mapTile[i].position.x,
+                adtFile->mapTile[i].position.y,
+                adtFile->mapTile[i].position.z,
+                0
+            );
+            self->save();
+        });
 
 
         if (m_adtFileTex->mtxp_len > 0 && !noLayers) {
@@ -491,51 +537,14 @@ void AdtObject::uploadGeneratorBuffers(ADTObjRenderRes &adtRes) {
 
     if (!adtRes.wasLoaded) return;
 
-    auto *adtWideblockPS = &adtWideBlockPS->getObject<adtModelWideBlockPS>();
-    if (adtWideblockPS != nullptr) {
-        adtWideblockPS->uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-        adtWideblockPS->uSunDir_FogStart = mathfu::vec4_packed(
-            mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-        adtWideblockPS->uSunColor_uFogEnd = mathfu::vec4_packed(
-            mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
-        adtWideblockPS->uAmbientLight = m_api->getGlobalAmbientColor();
-        adtWideblockPS->FogColor = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), 0));
-    }
-
-    adtWideBlockPS->save(true);
-
 
 
     for (int i = 0; i < adtMeshes.size(); i++) {
-        if (!adtRes.drawChunk[i]) continue;
-
         bool noLayers = m_adtFileTex->mcnkStructs[i].mcly == nullptr || m_adtFileTex->mcnkStructs[i].mclyCnt <= 0;
 
-        auto *blockPS = &adtMeshes[i]->getFragmentUniformBuffer(2)->getObject<adtMeshWideBlockPS>();
-        if (blockPS == nullptr) continue;
 
-        for (int j = 0; j < 4; j++) {
-            blockPS->uHeightOffset[j] = heightOffset[j];
-            blockPS->uHeightScale[j] = heightScale[j];
-        }
-        adtMeshes[i]->getFragmentUniformBuffer(2)->save(true);
 
-        if (m_adtFileTex->mtxp_len > 0 && !noLayers) {
-            for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
 
-                blockPS->uHeightOffset[j] = textureParams.heightOffset;
-                blockPS->uHeightScale[j] = textureParams.heightScale;
-            }
-        }
-        auto &blockVS = adtMeshes[i]->getVertexUniformBuffer(2)->getObject<adtMeshWideBlockVS>();
-        blockVS.uPos = mathfu::vec4(
-            m_adtFile->mapTile[i].position.x,
-            m_adtFile->mapTile[i].position.y,
-            m_adtFile->mapTile[i].position.z,
-            0
-        );
-        adtMeshes[i]->getVertexUniformBuffer(2)->save(true);
     }
 
 }

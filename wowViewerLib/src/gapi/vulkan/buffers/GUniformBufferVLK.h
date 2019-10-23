@@ -26,6 +26,9 @@ public:
     void save(bool initialSave = false) override;
     void createBuffer() override;
 
+    void setUpdateHandler(std::function<void(IUniformBuffer* self)>) override;
+    void update() override;
+
     size_t getSize() {return m_size;}
 private:
     void setOffset(size_t offset) {
@@ -64,6 +67,8 @@ private:
     VkBuffer stagingUBOBuffer = VK_NULL_HANDLE;
     VmaAllocation stagingUBOBufferAlloc = VK_NULL_HANDLE;
     VmaAllocationInfo stagingUBOBufferAllocInfo = {};
+
+    std::function<void(IUniformBuffer* self)> m_handler;
 };
 
 
