@@ -134,5 +134,7 @@ void GUniformBufferVLK::setUpdateHandler(std::function<void(IUniformBuffer* self
     m_handler = handler;
 }
 void GUniformBufferVLK::update() {
-    m_handler(this);
+    if (m_handler) {
+        m_handler(this);
+    }
 }

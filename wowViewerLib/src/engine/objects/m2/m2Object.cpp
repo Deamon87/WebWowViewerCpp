@@ -1306,10 +1306,10 @@ void M2Object::createMeshes() {
         hmesh->setQuery(nullptr);
 //        hmesh->m_query = occlusionQuery;
 
-        M2MeshBufferUpdater::assignUpdateEvents(this->m_meshArray[i], *this, m_materialArray[i], m_m2Data, skinData);
-
         this->m_meshArray.push_back(hmesh);
         this->m_materialArray.push_back(material);
+
+        M2MeshBufferUpdater::assignUpdateEvents(hmesh, *this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinData);
     }
 }
 

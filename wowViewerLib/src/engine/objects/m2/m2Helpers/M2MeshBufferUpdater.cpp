@@ -16,6 +16,8 @@ float M2MeshBufferUpdater::calcFinalTransparency(const M2Object &m2Object, int b
     if ( textMaterial->textureCount && !(textMaterial->flags & 0x40)) {
         finalTransparency *= transparency;
     }
+
+	return finalTransparency;
 }
 
 void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {

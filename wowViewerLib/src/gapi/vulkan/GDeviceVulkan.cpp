@@ -972,6 +972,10 @@ void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
             currentSize += bytesToAdd;
         }
     }
+    for (auto &buffer : buffers) {
+        buffer->update();
+    }
+
     if (currentSize > 0) {
         bufferForUploadVLK->uploadFromStaging(currentSize);
     }
@@ -990,6 +994,8 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
         unsigned int ff = 0xffffffff;
         m_whitePixelTexture->loadData(1,1,&ff);
     }
+
+
 }
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {

@@ -310,7 +310,7 @@ void AdtObject::createMeshes() {
     adtWideBlockPS = m_api->getDevice()->createUniformBuffer(sizeof(adtModelWideBlockPS));
 
     auto api = m_api;
-    adtWideBlockPS->setUpdateHandler([&api](IUniformBuffer *self){
+    adtWideBlockPS->setUpdateHandler([api](IUniformBuffer *self){
         auto *adtWideblockPS = &self->getObject<adtModelWideBlockPS>();
         adtWideblockPS->uViewUp = mathfu::vec4_packed(mathfu::vec4(api->getViewUp(), 0.0));;
         adtWideblockPS->uSunDir_FogStart = mathfu::vec4_packed(
@@ -374,12 +374,12 @@ void AdtObject::createMeshes() {
             self->save(true);
         });
 
-        aTemplate.vertexBuffers[2]->setUpdateHandler([adtFile, i](IUniformBuffer *self){
+        aTemplate.vertexBuffers[2]->setUpdateHandler([this, i](IUniformBuffer *self){
             auto &blockVS = self->getObject<adtMeshWideBlockVS>();
             blockVS.uPos = mathfu::vec4(
-                adtFile->mapTile[i].position.x,
-                adtFile->mapTile[i].position.y,
-                adtFile->mapTile[i].position.z,
+                this->m_adtFile->mapTile[i].position.x,
+                this->m_adtFile->mapTile[i].position.y,
+                this->m_adtFile->mapTile[i].position.z,
                 0
             );
             self->save();
