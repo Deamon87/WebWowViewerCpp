@@ -54,8 +54,8 @@ void GShaderPermutationVLK::createUBODescriptorLayout() {
     for (int i = 0; i < vertShaderMeta->uboBindings.size(); i++) {
         auto &uboVertBinding = vertShaderMeta->uboBindings[i];
 
-
-        if (auto it{ shaderLayoutBindings.find(uboVertBinding.binding) }; it != std::end( shaderLayoutBindings )) {
+        auto it = shaderLayoutBindings.find(uboVertBinding.binding);
+        if (it != std::end( shaderLayoutBindings )) {
             it->second.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
         } else {
             VkDescriptorSetLayoutBinding uboLayoutBinding = {};
@@ -74,7 +74,8 @@ void GShaderPermutationVLK::createUBODescriptorLayout() {
     for (int i = 0; i < fragShaderMeta->uboBindings.size(); i++) {
         auto &uboFragBinding = fragShaderMeta->uboBindings[i];
 
-        if (auto it{ shaderLayoutBindings.find(uboFragBinding.binding) }; it != std::end( shaderLayoutBindings )) {
+        auto it = shaderLayoutBindings.find(uboFragBinding.binding);
+        if (it != std::end( shaderLayoutBindings )) {
             it->second.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
         } else {
             VkDescriptorSetLayoutBinding uboLayoutBinding = {};

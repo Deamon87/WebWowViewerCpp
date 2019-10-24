@@ -376,6 +376,7 @@ protected:
     std::list<DeallocationRecord> listOfDeallocators;
 
     int uniformBuffersCreated = 0;
+    bool attachmentsReady = false;
 };
 
 

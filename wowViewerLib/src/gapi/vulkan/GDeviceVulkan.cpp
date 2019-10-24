@@ -159,7 +159,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -244,8 +244,6 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
 
     std::cout << "uniformBufferOffsetAlign = " << uniformBufferOffsetAlign << std::endl;
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
-
-
 
     // Create pool
     VkBufferCreateInfo exampleBufCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -1225,7 +1223,7 @@ void GDeviceVLK::commitFrame() {
 //    std::cout << "imageIndex = " << imageIndex << " currentDrawFrame = " << currentDrawFrame << std::endl << std::flush;
 
     if (((imageIndex+1)&3) != currentDrawFrame) {
-//        std::cout << "imageIndex != currentDrawFrame" << std::endl;
+        std::cout << "imageIndex != currentDrawFrame" << std::endl;
     }
 
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());

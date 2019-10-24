@@ -314,52 +314,6 @@ void WmoGroupObject::update() {
 }
 
 void WmoGroupObject::uploadGeneratorBuffers()  {
-    if (!this->m_loaded) return;
-
-    mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
-    mathfu::vec4 localambientColor = this->getAmbientColor();
-
-    int minBatch = m_api->getConfig()->getWmoMinBatch();
-    int maxBatch = std::min(m_api->getConfig()->getWmoMaxBatch(), m_geom->batchesLen);
-    MOGP *mogp = m_geom->mogp;
-
-
-    PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
-
-
-    for (int j = minBatch; j < maxBatch; j++) {
-        SMOBatch &renderBatch = m_geom->batches[j];
-
-        bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
-        bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));
-
-        mathfu::vec4 ambientColor = localambientColor;
-        if (isBatchC) {
-            ambientColor = globalAmbientColor;
-        }
-        int texIndex;
-        if (renderBatch.flag_use_material_id_large) {
-            texIndex = renderBatch.postLegion.material_id_large;
-        } else {
-            texIndex = renderBatch.material_id;
-        }
-
-        const SMOMaterial &material = materials[texIndex];
-
-        assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
-        auto shaderId = material.shader;
-        if (shaderId >= MAX_WMO_SHADERS) {
-            shaderId = 0;
-        }
-        int pixelShader = wmoMaterialShader[shaderId].pixelShader;
-        int vertexShader = wmoMaterialShader[shaderId].vertexShader;
-        auto blendMode = material.blendMode;
-
-
-
-
-
-    }
 }
 
 void WmoGroupObject::drawDebugLights() {
@@ -538,14 +492,14 @@ void WmoGroupObject::createMeshes() {
         HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
         this->m_meshArray.push_back(hmesh);
 
-        meshTemplate.vertexBuffers[2]->setUpdateHandler([this, material, vertexShader](IUniformBuffer *self){
+        meshTemplate.vertexBuffers[2]->setUpdateHandler([this, &material, vertexShader](IUniformBuffer *self){
             wmoMeshWideBlockVS &blockVS = self->getObject<wmoMeshWideBlockVS>();
             blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockVS.VertexShader = vertexShader;
             self->save(true);
         });
 
-        meshTemplate.fragmentBuffers[2]->setUpdateHandler([this, isBatchA, isBatchC, material, blendMode, pixelShader](IUniformBuffer *self) {
+        meshTemplate.fragmentBuffers[2]->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBuffer *self) {
             mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
             mathfu::vec4 localambientColor = this->getAmbientColor();
 

@@ -50,6 +50,42 @@ GMeshVLK::GMeshVLK(IDevice &device,
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(m_shader.get());
     createDescriptorSets(shaderVLK);
     hgPipelineVLK = m_device.createPipeline(m_bindings, m_shader, m_element, m_backFaceCulling, m_triCCW, m_blendMode,m_depthCulling, m_depthWrite, m_isSkyBox ? 1 : 0);
+
+    //Check the buffer sizes
+    std::unordered_map<int,uboBindingData> shaderLayoutBindings;
+    for (int i = 0; i < shaderVLK->vertShaderMeta->uboBindings.size(); i++) {
+        auto &uboVertBinding = shaderVLK->vertShaderMeta->uboBindings[i];
+
+        auto it = shaderLayoutBindings.find(uboVertBinding.binding);
+        if (it == std::end( shaderLayoutBindings )) {
+            shaderLayoutBindings.insert({uboVertBinding.binding, uboVertBinding});
+        }
+    }
+    for (int i = 0; i < shaderVLK->fragShaderMeta->uboBindings.size(); i++) {
+        auto &uboFragBinding = shaderVLK->fragShaderMeta->uboBindings[i];
+        auto it = shaderLayoutBindings.find(uboFragBinding.binding);
+        if (it == std::end( shaderLayoutBindings )) {
+            shaderLayoutBindings.insert({uboFragBinding.binding, uboFragBinding});
+        }
+    }
+
+    for (int i = 0; i < 3; i++) {
+        auto it = shaderLayoutBindings.find(i);
+        if (it != shaderLayoutBindings.end()) {
+            if ((m_vertexUniformBuffer[i] == nullptr) || (it->second.size != ((GUniformBufferVLK *)m_vertexUniformBuffer[i].get())->m_size)) {
+                std::cout << "buffers missmatch!" << std::endl;
+            }
+        }
+    }
+    for (int i = 3; i < 5; i++) {
+        auto it = shaderLayoutBindings.find(i);
+        if (it != shaderLayoutBindings.end()) {
+            if ((m_fragmentUniformBuffer[i-2] == nullptr) || (it->second.size != ((GUniformBufferVLK *)m_fragmentUniformBuffer[i-2].get())->m_size)) {
+                std::cout << "buffers missmatch!" << std::endl;
+            }
+        }
+    }
+
 }
 
 
@@ -110,7 +146,7 @@ void GMeshVLK::updateDescriptor() {
     int textureBegin = ((GShaderPermutationVLK *)m_shader.get())->getTextureBindingStart();
 
     int updateFrame = m_device.getUpdateFrameNumber();
-    if (descriptorSetsUpdated[updateFrame]) return;
+//    if (descriptorSetsUpdated[updateFrame]) return;
 
     for (auto& texture : m_texture) {
         if (texture == nullptr) continue;
