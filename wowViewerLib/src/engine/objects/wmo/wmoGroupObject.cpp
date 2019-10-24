@@ -455,7 +455,6 @@ void WmoGroupObject::createMeshes() {
         }
 
         auto blendMode = material.blendMode;
-        float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
         meshTemplate.meshType = MeshType::eWmoMesh;
         meshTemplate.depthWrite = blendMode <= 1;
         meshTemplate.depthCulling = true;
@@ -492,14 +491,14 @@ void WmoGroupObject::createMeshes() {
         HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
         this->m_meshArray.push_back(hmesh);
 
-        meshTemplate.vertexBuffers[2]->setUpdateHandler([this, &material, vertexShader](IUniformBuffer *self){
+        hmesh->getVertexUniformBuffer(2)->setUpdateHandler([this, &material, vertexShader](IUniformBuffer *self){
             wmoMeshWideBlockVS &blockVS = self->getObject<wmoMeshWideBlockVS>();
             blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockVS.VertexShader = vertexShader;
             self->save(true);
         });
 
-        meshTemplate.fragmentBuffers[2]->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBuffer *self) {
+        hmesh->getFragmentUniformBuffer(2)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBuffer *self) {
             mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
             mathfu::vec4 localambientColor = this->getAmbientColor();
 
@@ -507,6 +506,7 @@ void WmoGroupObject::createMeshes() {
             if (isBatchC) {
                 ambientColor = globalAmbientColor;
             }
+            float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
 
             auto &blockPS = self->getObject<wmoMeshWideBlockPS>();
             blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
@@ -525,7 +525,7 @@ void WmoGroupObject::createMeshes() {
             blockPS.PixelShader = pixelShader;
 
             blockPS.FogColor_AlphaTest = mathfu::vec4_packed(
-                mathfu::vec4(m_api->getGlobalFogColor().xyz(), blockPS.FogColor_AlphaTest.w));
+                mathfu::vec4(m_api->getGlobalFogColor().xyz(), alphaTest));
             self->save();
         });
     }

@@ -1378,7 +1378,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
         }
 
         auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
-        auto imageDescSet = meshVLK->descriptorSets[updateFrame]->getDescSet();
+        auto imageDescSet = meshVLK->imageDescriptorSets[updateFrame]->getDescSet();
 
 
 

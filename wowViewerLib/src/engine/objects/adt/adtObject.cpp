@@ -298,8 +298,6 @@ void AdtObject::calcBoundingBoxes() {
         this->globIndexX[i] = worldCoordinateToGlobalAdtChunk((minY + maxY) / 2.0f);
     }
 }
-static const float heightScale [4] = {0.0, 0.0, 0.0, 0.0};
-static const float heightOffset [4] = {1.0, 1.0, 1.0, 1.0};
 
 void AdtObject::createMeshes() {
     IDevice *device = m_api->getDevice();
@@ -357,12 +355,15 @@ void AdtObject::createMeshes() {
         aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
         aTemplate.fragmentBuffers[2]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBuffer *self){
-            auto blockPS = self->getObject<adtMeshWideBlockPS>();
+            static const float heightOffset [4] = {0.0, 0.0, 0.0, 0.0};
+            static const float heightScale[4] = {1.0, 1.0, 1.0, 1.0};
+
+            auto &blockPS = self->getObject<adtMeshWideBlockPS>();
             for (int j = 0; j < 4; j++) {
-                blockPS.uHeightOffset[j] = heightOffset[j];
-                blockPS.uHeightScale[j] = heightScale[j];
+                blockPS.uHeightOffset[j] = 0.0f;
+                blockPS.uHeightScale[j] = 1.0f;
             }
-            if (adtFileTex->mtxp_len > 0 && !noLayers) {
+            if ((adtFileTex->mtxp_len > 0) && !noLayers) {
                 for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
                     auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
 
@@ -371,7 +372,7 @@ void AdtObject::createMeshes() {
                 }
             }
 
-            self->save(true);
+            self->save();
         });
 
         aTemplate.vertexBuffers[2]->setUpdateHandler([this, i](IUniformBuffer *self){

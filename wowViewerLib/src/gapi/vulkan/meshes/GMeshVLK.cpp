@@ -95,9 +95,9 @@ void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
 
     auto descLayout = shaderVLK->getImageDescriptorLayout();
 
-    descriptorSets = std::vector<std::shared_ptr<GDescriptorSets>>(4, NULL);
+    imageDescriptorSets = std::vector<std::shared_ptr<GDescriptorSets>>(4, NULL);
     for (int j = 0; j < 4; j++) {
-        descriptorSets[j] = m_device.createDescriptorSet(descLayout, 0, shaderVLK->getTextureCount());
+        imageDescriptorSets[j] = m_device.createDescriptorSet(descLayout, 0, shaderVLK->getTextureCount());
     }
 
     descriptorSetsUpdated = std::vector<bool>(4, false);
@@ -122,7 +122,7 @@ void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
 
             VkWriteDescriptorSet writeDescriptor;
             writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptor.dstSet = descriptorSets[j]->getDescSet();
+            writeDescriptor.dstSet = imageDescriptorSets[j]->getDescSet();
             writeDescriptor.pNext = nullptr;
             writeDescriptor.dstBinding = shaderVLK->getTextureBindingStart()+bindIndex;
             writeDescriptor.dstArrayElement = 0;
@@ -135,7 +135,7 @@ void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
             bindIndex++;
         }
 
-        descriptorSets[j]->writeToDescriptorSets(descriptorWrites);
+        imageDescriptorSets[j]->writeToDescriptorSets(descriptorWrites);
 //        vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
     }
 }
@@ -146,7 +146,7 @@ void GMeshVLK::updateDescriptor() {
     int textureBegin = ((GShaderPermutationVLK *)m_shader.get())->getTextureBindingStart();
 
     int updateFrame = m_device.getUpdateFrameNumber();
-//    if (descriptorSetsUpdated[updateFrame]) return;
+    if (descriptorSetsUpdated[updateFrame]) return;
 
     for (auto& texture : m_texture) {
         if (texture == nullptr) continue;
@@ -171,7 +171,7 @@ void GMeshVLK::updateDescriptor() {
 
             VkWriteDescriptorSet writeDescriptor;
             writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptor.dstSet = descriptorSets[updateFrame]->getDescSet();
+            writeDescriptor.dstSet = imageDescriptorSets[updateFrame]->getDescSet();
             writeDescriptor.pNext = nullptr;
             writeDescriptor.dstBinding = textureBegin+i;
             writeDescriptor.dstArrayElement = 0;
@@ -182,7 +182,8 @@ void GMeshVLK::updateDescriptor() {
         }
 
         if (descriptorWrites.size() > 0) {
-            vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
+            imageDescriptorSets[updateFrame]->writeToDescriptorSets(descriptorWrites);
+//            vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
         }
 
         descriptorSetsUpdated[updateFrame] = true;

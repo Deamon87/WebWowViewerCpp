@@ -59,7 +59,7 @@ private:
 
 
 //Vulkan specific
-    std::vector<std::shared_ptr<GDescriptorSets>> descriptorSets;
+    std::vector<std::shared_ptr<GDescriptorSets>> imageDescriptorSets;
     std::vector<bool> descriptorSetsUpdated;
 
     VkDescriptorPool m_descriptorPool;
