@@ -24,74 +24,74 @@
         }
     }
 
-    if (pA->m_isSkyBox > pB->m_isSkyBox) {
+    if (pA->isSkyBox() > pB->isSkyBox()) {
         return true;
     }
-    if (pA->m_isSkyBox < pB->m_isSkyBox) {
+    if (pA->isSkyBox() < pB->isSkyBox()) {
         return false;
     }
 
     if (pA->getMeshType() == MeshType::eM2Mesh && pA->getIsTransparent() && pB->getIsTransparent()) {
-        if (pA->m_priorityPlane != pB->m_priorityPlane) {
-            return pB->m_priorityPlane > pA->m_priorityPlane;
+        if (pA->priorityPlane() != pB->priorityPlane()) {
+            return pB->priorityPlane() > pA->priorityPlane();
         }
 
-        if (pA->m_sortDistance > pB->m_sortDistance) {
+        if (pA->sortDistance() > pB->sortDistance()) {
             return true;
         }
-        if (pA->m_sortDistance < pB->m_sortDistance) {
+        if (pA->sortDistance() < pB->sortDistance()) {
             return false;
         }
 
-        if (pA->m_m2Object > pB->m_m2Object) {
-            return true;
-        }
-        if (pA->m_m2Object < pB->m_m2Object) {
-            return false;
-        }
+//        if (pA->m_m2Object > pB->m_m2Object) {
+//            return true;
+//        }
+//        if (pA->m_m2Object < pB->m_m2Object) {
+//            return false;
+//        }
 
-        if (pB->m_layer != pA->m_layer) {
-            return pB->m_layer < pA->m_layer;
+        if (pB->layer() != pA->layer()) {
+            return pB->layer() < pA->layer();
         }
     }
 
     if (pA->getMeshType() == MeshType::eParticleMesh && pB->getMeshType() == MeshType::eParticleMesh) {
-        if (pA->m_priorityPlane != pB->m_priorityPlane) {
-            return pB->m_priorityPlane > pA->m_priorityPlane;
+        if (pA->priorityPlane() != pB->priorityPlane()) {
+            return pB->priorityPlane() > pA->priorityPlane();
         }
 
-        if (pA->m_sortDistance > pB->m_sortDistance) {
+        if (pA->sortDistance() > pB->sortDistance()) {
             return true;
         }
-        if (pA->m_sortDistance < pB->m_sortDistance) {
+        if (pA->sortDistance() < pB->sortDistance()) {
             return false;
         }
     }
 
-    if (pA->m_bindings != pB->m_bindings) {
-        return pA->m_bindings > pB->m_bindings;
+    if (pA->bindings() != pB->bindings()) {
+        return pA->bindings() > pB->bindings();
     }
 
     if (pA->getGxBlendMode() != pB->getGxBlendMode()) {
         return pA->getGxBlendMode() < pB->getGxBlendMode();
     }
 
-    int minTextureCount = std::min(pA->m_textureCount, pB->m_textureCount);
+    int minTextureCount = std::min(pA->textureCount(), pB->textureCount());
     for (int i = 0; i < minTextureCount; i++) {
-        if (pA->m_texture[i] != pB->m_texture[i]) {
-            return pA->m_texture[i] < pB->m_texture[i];
+        if (pA->texture()[i] != pB->texture()[i]) {
+            return pA->texture()[i] < pB->texture()[i];
         }
     }
 
-    if (pA->m_textureCount != pB->m_textureCount) {
-        return pA->m_textureCount < pB->m_textureCount;
+    if (pA->textureCount() != pB->textureCount()) {
+        return pA->textureCount() < pB->textureCount();
     }
 
-    if (pA->m_start != pB->m_start) {
-        return pA->m_start < pB->m_start;
+    if (pA->start() != pB->start()) {
+        return pA->start() < pB->start();
     }
-    if (pA->m_end != pB->m_end) {
-        return pA->m_end < pB->m_end;
+    if (pA->end() != pB->end()) {
+        return pA->end() < pB->end();
     }
 
 

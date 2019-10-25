@@ -87,9 +87,12 @@ public:
     auto isSkyBox()       -> bool& { return m_isSkyBox; }
     auto start()       -> int& { return m_start; }
     auto end()       -> int& { return m_end; }
+    auto textureCount()       -> int& { return m_textureCount; }
 
     auto bindings() const -> const HGVertexBufferBindings& { return m_bindings; }
     auto texture() const -> const std::vector<HGTexture>& { return m_texture; }
+
+//    auto texture() const -> const HGVertexBufferBindings& { return m_bindings; }
 protected:
     int m_renderOrder = 0;
 

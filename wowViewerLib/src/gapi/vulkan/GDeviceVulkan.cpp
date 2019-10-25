@@ -708,6 +708,18 @@ void GDeviceVLK::createCommandBuffers() {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
+    renderCommandBuffers.resize(4);
+    allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+    allocInfo.commandBufferCount = (uint32_t) renderCommandBuffers.size();
+
+    if (vkAllocateCommandBuffers(device, &allocInfo, renderCommandBuffers.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
+
+
 
     uploadCommandBuffers.resize(4);
     VkCommandBufferAllocateInfo allocInfoUpload = {};
@@ -725,7 +737,7 @@ void GDeviceVLK::createCommandBuffers() {
     texttrAllocInfoUpload.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     texttrAllocInfoUpload.commandPool = commandPool;
     texttrAllocInfoUpload.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    texttrAllocInfoUpload.commandBufferCount = (uint32_t) commandBuffers.size();
+    texttrAllocInfoUpload.commandBufferCount = (uint32_t) textureTransferCommandBuffers.size();
 
     if (vkAllocateCommandBuffers(device, &texttrAllocInfoUpload, textureTransferCommandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate upload command buffers!");
@@ -1223,7 +1235,7 @@ void GDeviceVLK::commitFrame() {
 //    std::cout << "imageIndex = " << imageIndex << " currentDrawFrame = " << currentDrawFrame << std::endl << std::flush;
 
     if (((imageIndex+1)&3) != currentDrawFrame) {
-        std::cout << "imageIndex != currentDrawFrame" << std::endl;
+//        std::cout << "imageIndex != currentDrawFrame" << std::endl;
     }
 
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
@@ -1310,25 +1322,26 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
         m_shaderDescriptorUpdateNeeded = false;
     }
 
-    if (vkBeginCommandBuffer(commandBuffers[updateFrame], &beginInfo) != VK_SUCCESS) {
+    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
+    if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
-    std::array<VkClearValue, 2> clearValues = {};
-    clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
-    clearValues[1].depthStencil = {1.0f, 0};
+//    std::array<VkClearValue, 2> clearValues = {};
+//    clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
+//    clearValues[1].depthStencil = {1.0f, 0};
+//
+//    VkRenderPassBeginInfo renderPassInfo = {};
+//    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+//    renderPassInfo.pNext = NULL;
+//    renderPassInfo.renderPass = renderPass;
+//    renderPassInfo.framebuffer = swapChainFramebuffers[updateFrame];
+//    renderPassInfo.renderArea.offset = {0, 0};
+//    renderPassInfo.renderArea.extent = swapChainExtent;
+//    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+//    renderPassInfo.pClearValues = clearValues.data();
 
-    VkRenderPassBeginInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.pNext = NULL;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = swapChainFramebuffers[updateFrame];
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = swapChainExtent;
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
-
-    vkCmdBeginRenderPass(commandBuffers[updateFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+//    vkCmdBeginRenderPass(commandBuffers[updateFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
     VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
@@ -1359,43 +1372,41 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
 
-        vkCmdBindPipeline(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);
+        vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);
 
         auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
         auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
         VkDeviceSize offsets[] = {0};
 
         if (lastIndexBuffer != indexBuffer) {
-            vkCmdBindIndexBuffer(commandBuffers[updateFrame], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(commandBufferForFilling, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
             lastIndexBuffer = indexBuffer;
         }
 
         if (lastVertexBuffer != vertexBuffer) {
             uint32_t vboBind = 0;
 
-            vkCmdBindVertexBuffers(commandBuffers[updateFrame], vboBind++, 1, &vertexBuffer, offsets);
+            vkCmdBindVertexBuffers(commandBufferForFilling, vboBind++, 1, &vertexBuffer, offsets);
             lastVertexBuffer = vertexBuffer;
         }
 
         auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
         auto imageDescSet = meshVLK->imageDescriptorSets[updateFrame]->getDescSet();
 
-
-
         //UBO
-        vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
             meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
 
         //Image
-        vkCmdBindDescriptorSets(commandBuffers[updateFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 meshVLK->hgPipelineVLK->pipelineLayout, 1, 1, &imageDescSet, 0, 0);
 
-        vkCmdDrawIndexed(commandBuffers[updateFrame], meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
+        vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }
-    vkCmdEndRenderPass(commandBuffers[updateFrame]);
+    vkCmdEndRenderPass(commandBufferForFilling);
 
 
-    if (vkEndCommandBuffer(commandBuffers[updateFrame]) != VK_SUCCESS) {
+    if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
 }

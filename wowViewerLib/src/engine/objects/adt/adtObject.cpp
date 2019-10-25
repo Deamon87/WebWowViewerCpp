@@ -355,9 +355,6 @@ void AdtObject::createMeshes() {
         aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
         aTemplate.fragmentBuffers[2]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBuffer *self){
-            static const float heightOffset [4] = {0.0, 0.0, 0.0, 0.0};
-            static const float heightScale[4] = {1.0, 1.0, 1.0, 1.0};
-
             auto &blockPS = self->getObject<adtMeshWideBlockPS>();
             for (int j = 0; j < 4; j++) {
                 blockPS.uHeightOffset[j] = 0.0f;

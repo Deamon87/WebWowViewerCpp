@@ -307,6 +307,7 @@ protected:
     VkImageView depthImageView;
 
     std::vector<VkCommandBuffer> commandBuffers;
+    std::vector<VkCommandBuffer> renderCommandBuffers;
     std::vector<VkCommandBuffer> uploadCommandBuffers;
     std::vector<VkCommandBuffer> textureTransferCommandBuffers;
 
