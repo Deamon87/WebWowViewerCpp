@@ -65,11 +65,11 @@ void Map::checkCulling(WoWFrameData *frameData) {
 
     int adt_x = worldCoordinateToAdtIndex(camera4.y);
     int adt_y = worldCoordinateToAdtIndex(camera4.x);
-    AdtObject *adtObject = this->mapTiles[adt_x][adt_y];
-    if (adtObject != nullptr) {
+    AdtObject *adtObjectCameraAt = this->mapTiles[adt_x][adt_y];
+    if (adtObjectCameraAt != nullptr) {
         ADTObjRenderRes tempRes;
-        tempRes.adtObject = adtObject;
-        adtObject->checkReferences(
+        tempRes.adtObject = adtObjectCameraAt;
+        adtObjectCameraAt->checkReferences(
             tempRes,
             camera4,
             frustumPlanes,
@@ -158,7 +158,7 @@ void Map::checkCulling(WoWFrameData *frameData) {
     }
     frameData->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
     for (auto &adtRes : frameData->exteriorView.drawnADTs) {
-        adtObject->collectMeshes(*adtRes.get(),  frameData->exteriorView.drawnChunks, frameData->exteriorView.renderOrder);
+        adtRes->adtObject->collectMeshes(*adtRes.get(),  frameData->exteriorView.drawnChunks, frameData->exteriorView.renderOrder);
     }
 
     //Collect M2s for update
@@ -669,7 +669,7 @@ void Map::collectMeshes(WoWFrameData *frameData) {
 
     std::sort(frameData->renderedThisFrame.begin(),
               frameData->renderedThisFrame.end(),
-              IDevice::sortMeshes
+              #include "../../../gapi/interface/sortLambda.h"
     );
 };
 

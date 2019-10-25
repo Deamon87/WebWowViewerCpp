@@ -342,7 +342,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/skelFile.cpp
         src/engine/persistance/skelFile.h
         src/engine/algorithms/FrameCounter.cpp
-        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h)
+        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h)
 
 set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h

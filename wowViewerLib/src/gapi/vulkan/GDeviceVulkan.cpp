@@ -159,7 +159,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");

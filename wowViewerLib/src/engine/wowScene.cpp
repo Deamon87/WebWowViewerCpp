@@ -66,7 +66,7 @@ void WoWSceneImpl::DoUpdate() {
         blockPSVS->uPMatrix = objFrameParam->m_perspectiveMatrix;
         m_sceneWideUniformBuffer->save();
     }
-
+    currentScene->updateBuffers(objFrameParam);
     device->updateBuffers(objFrameParam->renderedThisFrame);
 
     currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
@@ -316,8 +316,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
     //Init caches
 
     //Test scene 1: Shattrath
-//    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
-    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
+    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
+//    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
     currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
