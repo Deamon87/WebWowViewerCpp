@@ -667,6 +667,7 @@ void Map::collectMeshes(WoWFrameData *frameData) {
         }
 //    }
 
+
     std::sort(frameData->renderedThisFrame.begin(),
               frameData->renderedThisFrame.end(),
               #include "../../../gapi/interface/sortLambda.h"

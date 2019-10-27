@@ -91,6 +91,7 @@ add_subdirectory(3rdparty/bzip)
 #CPR
 if (WIN32)
 set(ENV{USE_SYSTEM_CURL} OFF)
+set(ENV{CURL_FOUND} ON)
 else()
 set(ENV{USE_SYSTEM_CURL} ON)
 endif()

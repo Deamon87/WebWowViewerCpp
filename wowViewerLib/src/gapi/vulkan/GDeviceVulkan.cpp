@@ -159,7 +159,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -182,10 +182,10 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     int extensionCnt = 0;
     callback->getRequiredExtensions(extensions, extensionCnt);
     std::vector<char *> extensionsVec(extensions, extensions+extensionCnt);
-    extensionsVec.push_back("VK_EXT_debug_report");
-    extensionsVec.push_back("VK_EXT_debug_utils");
-
-
+    if (enableValidationLayers) {
+        extensionsVec.push_back("VK_EXT_debug_report");
+        extensionsVec.push_back("VK_EXT_debug_utils");
+    }
 
     createInfo.enabledExtensionCount = extensionsVec.size();
     createInfo.ppEnabledExtensionNames = &extensionsVec[0];
@@ -1241,6 +1241,46 @@ void GDeviceVLK::commitFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &inFlightFences[currentDrawFrame]);
 
+
+    //Fill command buffer
+    auto commandBufferForFilling = commandBuffers[currentDrawFrame];
+    {
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+        beginInfo.pNext = NULL;
+        beginInfo.pInheritanceInfo = NULL;
+
+        if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("failed to begin recording command buffer!");
+        }
+
+        std::array<VkClearValue, 2> clearValues = {};
+        clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
+        clearValues[1].depthStencil = {1.0f, 0};
+
+        VkRenderPassBeginInfo renderPassInfo = {};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.pNext = NULL;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = swapChainFramebuffers[currentDrawFrame];
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = swapChainExtent;
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
+
+        vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+        vkCmdExecuteCommands(commandBufferForFilling, 1, &renderCommandBuffers[currentDrawFrame]);
+
+        vkCmdEndRenderPass(commandBufferForFilling);
+
+        if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer!");
+        }
+    }
+
+
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.pNext = NULL;
@@ -1258,13 +1298,16 @@ void GDeviceVLK::commitFrame() {
     submitInfo.pWaitSemaphores = &waitSemaphores[0];
     submitInfo.pWaitDstStageMask = &waitStages[0];
 
-    std::array<VkCommandBuffer, 2> grCommandBuffers = {textureTransferCommandBuffers[currentDrawFrame], commandBuffers[currentDrawFrame]};
+    std::array<VkCommandBuffer, 2> grCommandBuffers = {textureTransferCommandBuffers[currentDrawFrame], commandBufferForFilling};
 
     submitInfo.commandBufferCount = 2;
     submitInfo.pCommandBuffers = &grCommandBuffers[0];
 
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderFinishedSemaphores[currentDrawFrame];
+
+
+
 
     if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentDrawFrame]) != VK_SUCCESS) {
         std::cout << "failed to submit draw command buffer!" << std::endl << std::flush;
@@ -1305,11 +1348,21 @@ void GDeviceVLK::setViewPortDimensions(float x, float y, float width, float heig
 void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     int updateFrame = getUpdateFrameNumber();
 
+    VkCommandBufferInheritanceInfo bufferInheritanceInfo;
+    bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+    bufferInheritanceInfo.pNext = nullptr;
+    bufferInheritanceInfo.renderPass = renderPass;
+    bufferInheritanceInfo.subpass = 0;
+    bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
+    bufferInheritanceInfo.occlusionQueryEnable = false;
+    bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
+    bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
+
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
     beginInfo.pNext = NULL;
-    beginInfo.pInheritanceInfo = NULL;
+    beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
 
 //    std::cout << "updateCommandBuffers: updateFrame = " << updateFrame << std::endl;
     vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
@@ -1327,21 +1380,7 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
-//    std::array<VkClearValue, 2> clearValues = {};
-//    clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
-//    clearValues[1].depthStencil = {1.0f, 0};
-//
-//    VkRenderPassBeginInfo renderPassInfo = {};
-//    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-//    renderPassInfo.pNext = NULL;
-//    renderPassInfo.renderPass = renderPass;
-//    renderPassInfo.framebuffer = swapChainFramebuffers[updateFrame];
-//    renderPassInfo.renderArea.offset = {0, 0};
-//    renderPassInfo.renderArea.extent = swapChainExtent;
-//    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-//    renderPassInfo.pClearValues = clearValues.data();
 
-//    vkCmdBeginRenderPass(commandBuffers[updateFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
     VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
@@ -1403,7 +1442,6 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
 
         vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }
-    vkCmdEndRenderPass(commandBufferForFilling);
 
 
     if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
