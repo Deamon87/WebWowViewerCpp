@@ -170,7 +170,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -1226,12 +1226,13 @@ void GDeviceVLK::clearScreen() {
 
 void GDeviceVLK::beginFrame() {
 
-    for (auto &pipelineRec : loadedPipeLines) {
-        if (!pipelineRec.second.expired()) {
-            auto pipelineObj = pipelineRec.second.lock();
-            pipelineObj->createPipeline()
-        }
-    }
+// Rebuild pipelines
+//    for (auto &pipelineRec : loadedPipeLines) {
+//        if (!pipelineRec.second.expired()) {
+//            auto pipelineObj = pipelineRec.second.lock();
+//            pipelineObj->createPipeline()
+//        }
+//    }
 
 }
 
@@ -1249,7 +1250,7 @@ void GDeviceVLK::commitFrame() {
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         std::cout << "got VK_ERROR_OUT_OF_DATE_KHR" << std::endl << std::flush;
-        //recreateSwapChain();
+        recreateSwapChain();
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         std::cout << "error happened " << result << std::endl << std::flush;
@@ -1357,6 +1358,7 @@ void GDeviceVLK::commitFrame() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
         recreateSwapChain();
+        return;
     } else if (result != VK_SUCCESS) {
         std::cout << "failed to present swap chain image!" << std::endl << std::flush;
 //        throw std::runtime_error("failed to present swap chain image!");
@@ -1415,11 +1417,40 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
 
     uint32_t dynamicOffset[7] = {};
 
+    VkViewport usualViewport;
+    usualViewport.width = swapChainExtent.width;
+    usualViewport.height = swapChainExtent.height;
+    usualViewport.x = 0;
+    usualViewport.y = 0;
+    usualViewport.minDepth = 0;
+    usualViewport.maxDepth = 0.990f;
+
+    VkViewport mapAreaViewport = usualViewport;
+    mapAreaViewport.minDepth = 0.991f;
+    mapAreaViewport.maxDepth = 0.996f;
+
+    VkViewport skyBoxViewport = usualViewport;
+    mapAreaViewport.maxDepth = 0.997f;
+    mapAreaViewport.maxDepth = 1.0f;
+
+
+    //Set scissors
+    VkRect2D scissor = {};
+    scissor.offset = {0, 0};
+    scissor.extent = swapChainExtent;
+
+    vkCmdSetScissor(commandBufferForFilling, 0, 1, &scissor);
+
+    //Set new viewport
+    enum class ViewportType {vp_usual, vp_mapArea, vp_skyBox};
+    ViewportType lastViewPort = ViewportType::vp_usual;
+    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
+
+
     for (auto &mesh: iMeshes) {
         auto *meshVLK = ((GMeshVLK *)mesh.get());
         auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
         auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
-
 
         int uboInd = 0;
         for (int k = 0; k < 3; k++) {
@@ -1436,6 +1467,21 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
                 if (uboB) {
                     dynamicOffset[uboInd++] = (uboB)->m_offset;
                 }
+            }
+        }
+
+        ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
+        if (lastViewPort != newViewPort) {
+            switch (newViewPort) {
+                case ViewportType::vp_usual:
+                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
+                    break;
+                case ViewportType::vp_skyBox:
+                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &skyBoxViewport);
+                    break;
+                case ViewportType::vp_mapArea:
+                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &mapAreaViewport);
+                    break;
             }
         }
 
@@ -1484,7 +1530,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
                                         int8_t triCCW,
                                         EGxBlendEnum blendMode,
                                         int8_t depthCulling,
-                                        int8_t depthWrite, int8_t skyBoxMode) {
+                                        int8_t depthWrite) {
 
     PipelineCacheRecord pipelineCacheRecord;
     pipelineCacheRecord.shader = shader;
@@ -1494,7 +1540,6 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
     pipelineCacheRecord.blendMode = blendMode;
     pipelineCacheRecord.depthCulling = depthCulling;
     pipelineCacheRecord.depthWrite = depthWrite;
-    pipelineCacheRecord.skyBoxMod = skyBoxMode;
 
     auto i = loadedPipeLines.find(pipelineCacheRecord);
     if (i != loadedPipeLines.end()) {
@@ -1506,7 +1551,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
     }
 
     std::shared_ptr<GPipelineVLK> hgPipeline;
-    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, shader, element, backFaceCulling, triCCW, blendMode, depthCulling, depthWrite, skyBoxMode));
+    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, shader, element, backFaceCulling, triCCW, blendMode, depthCulling, depthWrite));
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;

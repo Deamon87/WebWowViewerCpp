@@ -49,7 +49,7 @@ GMeshVLK::GMeshVLK(IDevice &device,
 
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(m_shader.get());
     createDescriptorSets(shaderVLK);
-    hgPipelineVLK = m_device.createPipeline(m_bindings, m_shader, m_element, m_backFaceCulling, m_triCCW, m_blendMode,m_depthCulling, m_depthWrite, m_isSkyBox ? 1 : 0);
+    hgPipelineVLK = m_device.createPipeline(m_bindings, m_shader, m_element, m_backFaceCulling, m_triCCW, m_blendMode,m_depthCulling, m_depthWrite);
 
     //Check the buffer sizes
     std::unordered_map<int,uboBindingData> shaderLayoutBindings;

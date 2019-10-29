@@ -117,8 +117,7 @@ public:
                                 int8_t triCCW,
                                 EGxBlendEnum blendMode,
                                 int8_t depthCulling,
-                                int8_t depthWrite,
-                                int8_t skyBoxMode);
+                                int8_t depthWrite);
 
     HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
@@ -248,7 +247,7 @@ protected:
         EGxBlendEnum blendMode;
         int8_t depthCulling;
         int8_t depthWrite;
-        int8_t skyBoxMod;
+
 
         bool operator==(const PipelineCacheRecord &other) const {
             return
@@ -258,8 +257,7 @@ protected:
                 (triCCW == other.triCCW) &&
                 (blendMode == other.blendMode) &&
                 (depthCulling == other.depthCulling) &&
-                (depthWrite == other.depthWrite) &&
-                (skyBoxMod == other.skyBoxMod);
+                (depthWrite == other.depthWrite);
 
         };
     };
@@ -269,7 +267,6 @@ protected:
             return hash<void*>{}(k.shader.get()) ^
             (hash<int8_t >{}(k.backFaceCulling) << 2) ^
             (hash<int8_t >{}(k.triCCW) << 4) ^
-            (hash<int8_t >{}(k.skyBoxMod) << 6) ^
             (hash<int8_t >{}(k.depthCulling) << 8) ^
             (hash<int8_t >{}(k.depthWrite) << 10) ^
             (hash<EGxBlendEnum>{}(k.blendMode) << 16) ^

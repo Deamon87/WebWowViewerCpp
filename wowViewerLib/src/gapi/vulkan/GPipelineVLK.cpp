@@ -33,18 +33,14 @@ BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
 };
 
 GPipelineVLK::GPipelineVLK(IDevice &device,
-    HGVertexBufferBindings &bindings,
-    HGShaderPermutation &shader,
+    HGVertexBufferBindings m_bindings,
+    HGShaderPermutation shader,
     DrawElementMode element,
     int8_t backFaceCulling,
     int8_t triCCW,
     EGxBlendEnum blendMode,
     int8_t depthCulling,
-    int8_t depthWrite,
-    int8_t skyBoxMode) : m_device(dynamic_cast<GDeviceVLK &>(device)), m_bindings(bindings), m_shader(shader),
-                        m_element(element), m_backFaceCulling(backFaceCulling), m_triCCW(triCCW),
-                        m_blendMode(blendMode), m_depthCulling(depthCulling), m_depthWrite(depthWrite),
-                        m_skyBoxMod(skyBoxMode) {
+    int8_t depthWrite) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
 
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
@@ -58,22 +54,34 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
             vertexAttributeDescriptions.push_back(attibuteDesc);
         }
     }
-    createPipeline(vertexBindingDescriptions, vertexAttributeDescriptions);
+    GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(shader.get());
+
+    createPipeline(shaderVLK,
+        element,
+        backFaceCulling,
+        triCCW,
+        blendMode,
+        depthCulling,
+        depthWrite,
+        vertexBindingDescriptions, vertexAttributeDescriptions);
 }
 
 GPipelineVLK::~GPipelineVLK() {
 
 }
 
-void GPipelineVLK::recreatePipeline() {
-    
-}
 
 void GPipelineVLK::createPipeline(
+        GShaderPermutationVLK *shaderVLK,
+        DrawElementMode m_element,
+        int8_t m_backFaceCulling,
+        int8_t m_triCCW,
+        EGxBlendEnum m_blendMode,
+        int8_t m_depthCulling,
+        int8_t m_depthWrite,
+
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
-
-    GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(m_shader.get());
 
     auto swapChainExtent = m_device.getCurrentExtent();
     auto renderPass = m_device.getRenderPass();
@@ -124,16 +132,17 @@ void GPipelineVLK::createPipeline(
     VkViewport viewport = {};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
+    viewport.y = 0.0f;
     viewport.width = (float) swapChainExtent.width;
     viewport.height = (float) swapChainExtent.height;
 
-    if (!m_skyBoxMod) {
+//    if (!skyBoxMod) {
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-    } else {
-        viewport.minDepth = 0.998f;
-        viewport.maxDepth = 1.0f;
-    }
+//    } else {
+//        viewport.minDepth = 0.998f;
+//        viewport.maxDepth = 1.0f;
+//    }
 
 
     VkRect2D scissor = {};
@@ -213,6 +222,14 @@ void GPipelineVLK::createPipeline(
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
+    std::array<VkDynamicState, 2> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+    VkPipelineDynamicStateCreateInfo dynamicState = {};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.pNext = NULL;
+    dynamicState.pDynamicStates = &dynamicStateEnables[0];
+    dynamicState.dynamicStateCount = 2;
+
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = 2;
@@ -224,6 +241,7 @@ void GPipelineVLK::createPipeline(
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDepthStencilState = &depthStencil;
+    pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
