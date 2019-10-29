@@ -28,6 +28,9 @@ public:
     virtual int getTextureBindingStart() = 0;
     virtual int getTextureCount() = 0;
 
+    const shaderMetaData *fragShaderMeta;
+    const shaderMetaData *vertShaderMeta;
+
 protected:
     explicit GShaderPermutationVLK(std::string &shaderName, IDevice *device);
 
@@ -39,8 +42,6 @@ protected:
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
 
-    const shaderMetaData *fragShaderMeta;
-    const shaderMetaData *vertShaderMeta;
 
     VkDescriptorSetLayout uboDescriptorSetLayout;
     VkDescriptorSetLayout imageDescriptorSetLayout;

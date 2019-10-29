@@ -89,6 +89,7 @@ public:
     void endUpdateForNextFrame() override;
 
     void updateBuffers(std::vector<HGMesh> &meshes) override;
+    void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
@@ -116,8 +117,7 @@ public:
                                 int8_t triCCW,
                                 EGxBlendEnum blendMode,
                                 int8_t depthCulling,
-                                int8_t depthWrite,
-                                int8_t skyBoxMode);
+                                int8_t depthWrite);
 
     HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
@@ -200,6 +200,8 @@ private:
     void createFramebuffers();
     void createRenderPass();
 
+    void recreateSwapChain();
+
     void createCommandPool();
     void createCommandBuffers();
     void createSyncObjects();
@@ -245,7 +247,7 @@ protected:
         EGxBlendEnum blendMode;
         int8_t depthCulling;
         int8_t depthWrite;
-        int8_t skyBoxMod;
+
 
         bool operator==(const PipelineCacheRecord &other) const {
             return
@@ -255,8 +257,7 @@ protected:
                 (triCCW == other.triCCW) &&
                 (blendMode == other.blendMode) &&
                 (depthCulling == other.depthCulling) &&
-                (depthWrite == other.depthWrite) &&
-                (skyBoxMod == other.skyBoxMod);
+                (depthWrite == other.depthWrite);
 
         };
     };
@@ -266,7 +267,6 @@ protected:
             return hash<void*>{}(k.shader.get()) ^
             (hash<int8_t >{}(k.backFaceCulling) << 2) ^
             (hash<int8_t >{}(k.triCCW) << 4) ^
-            (hash<int8_t >{}(k.skyBoxMod) << 6) ^
             (hash<int8_t >{}(k.depthCulling) << 8) ^
             (hash<int8_t >{}(k.depthWrite) << 10) ^
             (hash<EGxBlendEnum>{}(k.blendMode) << 16) ^
@@ -288,7 +288,7 @@ protected:
     VkQueue graphicsQueue;
     VkQueue uploadQueue;
 
-    VkSwapchainKHR swapChain;
+    VkSwapchainKHR swapChain = VK_NULL_HANDLE;
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
@@ -306,6 +306,7 @@ protected:
     VkImageView depthImageView;
 
     std::vector<VkCommandBuffer> commandBuffers;
+    std::vector<VkCommandBuffer> renderCommandBuffers;
     std::vector<VkCommandBuffer> uploadCommandBuffers;
     std::vector<VkCommandBuffer> textureTransferCommandBuffers;
 
@@ -370,11 +371,12 @@ protected:
 
     FrameUniformBuffers m_UBOFrames[4];
 
-    std::vector<char> aggregationBufferForUpload;
+    std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 
     std::list<DeallocationRecord> listOfDeallocators;
 
     int uniformBuffersCreated = 0;
+    bool attachmentsReady = false;
 };
 
 

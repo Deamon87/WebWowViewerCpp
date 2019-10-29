@@ -2,6 +2,11 @@
 
 #extension GL_GOOGLE_include_directive: require
 
+#ifndef MAX_MATRIX_NUM
+#define MAX_MATRIX_NUM 220
+#endif
+
+
 precision highp float;
 
 struct LocalLight
@@ -19,6 +24,16 @@ layout(location=4) in vec3 vPosition;
 layout(location=5) in vec4 vDiffuseColor;
 
 layout(location=0) out vec4 outputColor;
+
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+};
+
+layout(std140, set=0, binding=1) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
+    mat4 uBoneMatrixes[MAX_MATRIX_NUM];
+};
 
 //Whole model
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
@@ -131,7 +146,7 @@ void main() {
         {
             if ( index >= PixelShader_UnFogged_IsAffectedByLight_LightCount.w) break;
             LocalLight lightRecord = pc_lights[index];
-            vec3 vectorToLight = ((lightRecord.position).xyz - vPos3);
+            vec3 vectorToLight = ((uLookAtMat * (uPlacementMat * lightRecord.position)).xyz - vPos3);
             float distanceToLightSqr = dot(vectorToLight, vectorToLight);
             float distanceToLightInv = inversesqrt(distanceToLightSqr);
             float distanceToLight = (distanceToLightSqr * distanceToLightInv);

@@ -44,6 +44,7 @@ public:
     bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
     bool doPostLoad();
     void update();
+    void uploadGeneratorBuffers();
     bool checkGroupFrustum(mathfu::vec4 &cameraVec4,
                            std::vector<mathfu::vec4> &frustumPlanes,
                            std::vector<mathfu::vec3> &points);

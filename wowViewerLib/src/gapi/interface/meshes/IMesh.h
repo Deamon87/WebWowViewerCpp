@@ -79,10 +79,25 @@ public:
 class IMesh {
     friend class IDevice;
 
+public:
+    auto renderOrder()       -> int& { return m_renderOrder; }
+    auto sortDistance()       -> float& { return m_sortDistance; }
+    auto priorityPlane()       -> int& { return m_renderOrder; }
+    auto layer()       -> int& { return m_renderOrder; }
+    auto isSkyBox()       -> bool& { return m_isSkyBox; }
+    auto start()       -> int& { return m_start; }
+    auto end()       -> int& { return m_end; }
+    auto textureCount()       -> int& { return m_textureCount; }
+
+    auto bindings() const -> const HGVertexBufferBindings& { return m_bindings; }
+    auto texture() const -> const std::vector<HGTexture>& { return m_texture; }
+
+//    auto texture() const -> const HGVertexBufferBindings& { return m_bindings; }
 protected:
     int m_renderOrder = 0;
 
     float m_sortDistance = 0;
+
     int m_priorityPlane;
     int m_layer;
     void *m_m2Object = nullptr;
@@ -108,6 +123,7 @@ public:
 
     virtual void setStart(int start)  = 0;
     virtual void setEnd(int end)  = 0;
+
 public:
     virtual void setM2Object(void * m2Object) = 0;
     virtual void setLayer(int layer)  = 0;

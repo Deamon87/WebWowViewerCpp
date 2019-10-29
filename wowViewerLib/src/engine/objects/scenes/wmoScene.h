@@ -63,6 +63,7 @@ public:
 
     void doPostLoad(WoWFrameData *frameData) override;
     void update(WoWFrameData *frameData) override;
+    void updateBuffers(WoWFrameData *frameData) override;
 
     void setAnimationId(int animationId) override {
     };

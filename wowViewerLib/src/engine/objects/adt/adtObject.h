@@ -20,6 +20,8 @@ class M2Object;
 #include "../m2/m2Object.h"
 #include "../wmo/wmoObject.h"
 #include "../iMapApi.h"
+#include "../ViewsObjects.h"
+
 
 class AdtObject {
 public:
@@ -30,12 +32,15 @@ public:
     }
 
 
-    void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
+    void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
+
     void update();
+    void uploadGeneratorBuffers(ADTObjRenderRes &adtRes);
     void doPostLoad();
 
     bool checkFrustumCulling(
+            ADTObjRenderRes &adtFrustRes,
             mathfu::vec4 &cameraPos,
             int adt_glob_x,
             int adt_glob_y,
@@ -47,7 +52,7 @@ public:
             std::vector<WmoObject*> &wmoCandidates);
 
     bool
-    checkReferences(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
+    checkReferences(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
                     mathfu::mat4 &lookAtMat4,
                     int lodLevel,
                     std::vector<M2Object *> &m2ObjectsCandidates, std::vector<WmoObject *> &wmoCandidates,
@@ -104,7 +109,7 @@ private:
     HBlpTexture lodDiffuseTexture  = nullptr;
     HBlpTexture lodNormalTexture  = nullptr;
 
-    std::vector<HGMesh> adtMeshes;
+    std::vector<HGMesh> adtMeshes = {};
     std::vector<HGMesh> adtLodMeshes;
 
     std::vector<CAaBox> tileAabb;
@@ -116,9 +121,6 @@ private:
 
 
     std::string m_adtFileTemplate;
-
-    bool drawChunk[256] = {};
-    bool checkRefs[256] = {};
 
     struct {
         std::vector<M2Object *> m2Objects;
@@ -133,12 +135,12 @@ private:
     void loadM2s();
     void loadWmos();
 
-    bool checkNonLodChunkCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
+    bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                                  std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines, int x,
                                  int y, int x_len, int y_len);
 
     bool
-    iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len,
+    iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len,
                     int curentLod, int lastFoundLod,
                     const PointerChecker<MLND> &quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,

@@ -10,6 +10,7 @@
 #include "../../UniformBufferStructures.h"
 #include "../buffers/GUniformBufferVLK.h"
 #include "../../interface/IDevice.h"
+#include <unordered_map>
 
 static std::vector<char> readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -49,39 +50,58 @@ GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderName, IDevice * 
 }
 
 void GShaderPermutationVLK::createUBODescriptorLayout() {
-    std::vector<VkDescriptorSetLayoutBinding> shaderLayoutBindings;
+    std::unordered_map<int,VkDescriptorSetLayoutBinding> shaderLayoutBindings;
     for (int i = 0; i < vertShaderMeta->uboBindings.size(); i++) {
         auto &uboVertBinding = vertShaderMeta->uboBindings[i];
 
-        VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-        uboLayoutBinding.binding = uboVertBinding.binding;
-        uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        uboLayoutBinding.pImmutableSamplers = nullptr;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        auto it = shaderLayoutBindings.find(uboVertBinding.binding);
+        if (it != std::end( shaderLayoutBindings )) {
+            it->second.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
+        } else {
+            VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+            uboLayoutBinding.binding = uboVertBinding.binding;
+            uboLayoutBinding.descriptorCount = 1;
+            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            uboLayoutBinding.pImmutableSamplers = nullptr;
+            uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+            shaderLayoutBindings.insert({uboVertBinding.binding, uboLayoutBinding});
+        }
 
         hasBondUBO[uboVertBinding.binding] = true;
-        shaderLayoutBindings.push_back(uboLayoutBinding);
+
     }
     for (int i = 0; i < fragShaderMeta->uboBindings.size(); i++) {
-        auto &uboVertBinding = fragShaderMeta->uboBindings[i];
+        auto &uboFragBinding = fragShaderMeta->uboBindings[i];
 
-        VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-        uboLayoutBinding.binding = uboVertBinding.binding;
-        uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        uboLayoutBinding.pImmutableSamplers = nullptr;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        auto it = shaderLayoutBindings.find(uboFragBinding.binding);
+        if (it != std::end( shaderLayoutBindings )) {
+            it->second.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        } else {
+            VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+            uboLayoutBinding.binding = uboFragBinding.binding;
+            uboLayoutBinding.descriptorCount = 1;
+            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            uboLayoutBinding.pImmutableSamplers = nullptr;
+            uboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        hasBondUBO[uboVertBinding.binding] = true;
-        shaderLayoutBindings.push_back(uboLayoutBinding);
+            shaderLayoutBindings.insert({uboFragBinding.binding, uboLayoutBinding});
+        }
+
+        hasBondUBO[uboFragBinding.binding] = true;
+    }
+
+    std::vector<VkDescriptorSetLayoutBinding> shaderLayoutBindingsVec;
+    shaderLayoutBindingsVec.reserve(shaderLayoutBindings.size());
+    for(auto elem : shaderLayoutBindings) {
+        shaderLayoutBindingsVec.push_back(elem.second);
     }
 
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.pNext = NULL;
-    layoutInfo.bindingCount = shaderLayoutBindings.size();
-    layoutInfo.pBindings = &shaderLayoutBindings[0];
+    layoutInfo.bindingCount = shaderLayoutBindingsVec.size();
+    layoutInfo.pBindings = &shaderLayoutBindingsVec[0];
 
     if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &uboDescriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");

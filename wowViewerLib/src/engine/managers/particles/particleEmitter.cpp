@@ -277,20 +277,23 @@ void ParticleEmitter::createMesh() {
         meshTemplate.fragmentBuffers[1] = nullptr;
         meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
 
-        meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
-        if (blendMode == 0) {
-            blockPS.uAlphaTest = -1.0f;
-        } else if (blendMode == 1) {
-            blockPS.uAlphaTest = 0.501960814f;
-        } else {
-            blockPS.uAlphaTest = 0.0039215689f;
-        }
+        meshTemplate.fragmentBuffers[2]->setUpdateHandler([this](IUniformBuffer *self) {
+            meshParticleWideBlockPS &blockPS = self->getObject<meshParticleWideBlockPS>();
+            uint8_t blendMode = m_data->old.blendingType;
+            if (blendMode == 0) {
+                blockPS.uAlphaTest = -1.0f;
+            } else if (blendMode == 1) {
+                blockPS.uAlphaTest = 0.501960814f;
+            } else {
+                blockPS.uAlphaTest = 0.0039215689f;
+            }
 
-        int uPixelShader = particleMaterialShader[this->particleType].pixelShader;
+            int uPixelShader = particleMaterialShader[this->particleType].pixelShader;
 
-        blockPS.uPixelShader = uPixelShader;
+            blockPS.uPixelShader = uPixelShader;
 
-        meshTemplate.fragmentBuffers[2]->save(true);
+            self->save(true);
+        });
 
         frame[i].m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
 

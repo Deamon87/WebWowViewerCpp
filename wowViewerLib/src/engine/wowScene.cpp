@@ -36,7 +36,46 @@ void WoWSceneImpl::processCaches(int limit) {
     this->textureCache.processCacheQueue(limit);
     this->db2Cache.processCacheQueue(limit);
 }
+void WoWSceneImpl::DoUpdate() {
+    FrameCounter frameCounter;
 
+    FrameCounter singleUpdateCNT;
+    FrameCounter meshesCollectCNT;
+
+    frameCounter.beginMeasurement();
+
+    IDevice *device = getDevice();
+    int updateObjFrame = device->getUpdateFrameNumber();
+    WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+    updateFrameIndex = updateObjFrame;
+
+    device->startUpdateForNextFrame();
+
+    singleUpdateCNT.beginMeasurement();
+    currentScene->update(objFrameParam);
+    singleUpdateCNT.endMeasurement("single update ");
+
+    meshesCollectCNT.beginMeasurement();
+    currentScene->collectMeshes(objFrameParam);
+    meshesCollectCNT.endMeasurement("collectMeshes ");
+
+    device->prepearMemoryForBuffers(objFrameParam->renderedThisFrame);
+    sceneWideBlockVSPS *blockPSVS = &m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
+    if (blockPSVS != nullptr) {
+        blockPSVS->uLookAtMat = objFrameParam->m_lookAtMat4;
+        blockPSVS->uPMatrix = objFrameParam->m_perspectiveMatrix;
+        m_sceneWideUniformBuffer->save();
+    }
+    currentScene->updateBuffers(objFrameParam);
+    device->updateBuffers(objFrameParam->renderedThisFrame);
+
+    currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
+    device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
+
+    device->endUpdateForNextFrame();
+    frameCounter.endMeasurement("Update Thread");
+
+}
 void WoWSceneImpl::DoCulling() {
     if (currentScene == nullptr) return;
 
@@ -278,9 +317,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
     //Test scene 1: Shattrath
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
-    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
+//    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-    currentScene = new Map(this, 530, "Expansion01");
+//    currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
@@ -444,8 +483,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new M2Scene(this,
-//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+    currentScene = new M2Scene(this,
+        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -670,44 +709,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
         if (device->getIsAsynBuffUploadSupported()) {
             g_globalThreadsSingleton.updateThread = std::thread(([&]() {
-                FrameCounter frameCounter;
-
-                FrameCounter singleUpdateCNT;
-                FrameCounter meshesCollectCNT;
                 while (!this->m_isTerminating) {
                     auto future = nextDeltaTimeForUpdate.get_future();
                     future.wait();
                     nextDeltaTimeForUpdate = std::promise<float>();
-                    frameCounter.beginMeasurement();
-
-                    IDevice *device = getDevice();
-                    int updateObjFrame = device->getUpdateFrameNumber();
-                    WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
-
-                    updateFrameIndex = updateObjFrame;
-
-                    device->startUpdateForNextFrame();
-
-                    singleUpdateCNT.beginMeasurement();
-                    currentScene->update(objFrameParam);
-                    singleUpdateCNT.endMeasurement("single update ");
-
-                    meshesCollectCNT.beginMeasurement();
-                    currentScene->collectMeshes(objFrameParam);
-                    meshesCollectCNT.endMeasurement("collectMeshes ");
-
-                    sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-                    blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
-                    blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
-                    m_sceneWideUniformBuffer->save();
-
-                    device->updateBuffers(objFrameParam->renderedThisFrame);
-
-                    currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
-                    device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
-
-                    device->endUpdateForNextFrame();
-                    frameCounter.endMeasurement("Update Thread");
+                    DoUpdate();
 
                     updateFinished.set_value(true);
                 }
@@ -899,26 +905,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     device->reset();
 
     if (!device->getIsAsynBuffUploadSupported()) {
-        int updateObjFrame = device->getUpdateFrameNumber();
-
-        WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
-        updateFrameIndex = updateObjFrame;
-
-        device->startUpdateForNextFrame();
-        currentScene->update(objFrameParam);
-        currentScene->collectMeshes(objFrameParam);
-
-        sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-        blockPSVS.uLookAtMat = objFrameParam->m_lookAtMat4;
-        blockPSVS.uPMatrix = objFrameParam->m_perspectiveMatrix;
-        m_sceneWideUniformBuffer->save();
-
-        device->updateBuffers(objFrameParam->renderedThisFrame);
-
-        currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
-        device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
-
-        device->endUpdateForNextFrame();
+        DoUpdate();
     }
 
 

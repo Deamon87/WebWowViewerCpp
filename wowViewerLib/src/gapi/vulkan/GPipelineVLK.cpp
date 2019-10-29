@@ -5,6 +5,7 @@
 #include <iostream>
 #include "GPipelineVLK.h"
 #include "shaders/GShaderPermutationVLK.h"
+#include <array>
 
 struct BlendModeDescVLK {
     bool blendModeEnable;
@@ -39,8 +40,7 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     int8_t triCCW,
     EGxBlendEnum blendMode,
     int8_t depthCulling,
-    int8_t depthWrite,
-    int8_t skyBoxMode) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
+    int8_t depthWrite) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
 
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
@@ -62,7 +62,7 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
         triCCW,
         blendMode,
         depthCulling,
-        depthWrite, skyBoxMode,
+        depthWrite,
         vertexBindingDescriptions, vertexAttributeDescriptions);
 }
 
@@ -79,7 +79,6 @@ void GPipelineVLK::createPipeline(
         EGxBlendEnum m_blendMode,
         int8_t m_depthCulling,
         int8_t m_depthWrite,
-        int8_t skyBoxMod,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
@@ -133,16 +132,17 @@ void GPipelineVLK::createPipeline(
     VkViewport viewport = {};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
+    viewport.y = 0.0f;
     viewport.width = (float) swapChainExtent.width;
     viewport.height = (float) swapChainExtent.height;
 
-    if (!skyBoxMod) {
+//    if (!skyBoxMod) {
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-    } else {
-        viewport.minDepth = 0.998f;
-        viewport.maxDepth = 1.0f;
-    }
+//    } else {
+//        viewport.minDepth = 0.998f;
+//        viewport.maxDepth = 1.0f;
+//    }
 
 
     VkRect2D scissor = {};
@@ -164,14 +164,8 @@ void GPipelineVLK::createPipeline(
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = m_backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
     rasterizer.frontFace = m_triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
-//    if (!skyBoxMod) {
-        rasterizer.depthBiasEnable = VK_FALSE;
-//    } else {
-//        rasterizer.depthBiasEnable = VK_TRUE;
-//        rasterizer.depthBiasConstantFactor = 0.998f;
-//        rasterizer.depthBiasSlopeFactor = 0.002f;
-//        rasterizer.depthBiasClamp = 0.5f;
-//    }
+    rasterizer.depthBiasEnable = VK_FALSE;
+
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -210,7 +204,9 @@ void GPipelineVLK::createPipeline(
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 
-    std::array<VkDescriptorSetLayout, 2> descLayouts = {shaderVLK->getUboDescriptorLayout(),shaderVLK->getImageDescriptorLayout()};
+    std::array<VkDescriptorSetLayout, 2> descLayouts ;
+	descLayouts[0] = shaderVLK->getUboDescriptorLayout();
+	descLayouts[1] = shaderVLK->getImageDescriptorLayout();
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -226,6 +222,14 @@ void GPipelineVLK::createPipeline(
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
+    std::array<VkDynamicState, 2> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+    VkPipelineDynamicStateCreateInfo dynamicState = {};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.pNext = NULL;
+    dynamicState.pDynamicStates = &dynamicStateEnables[0];
+    dynamicState.dynamicStateCount = 2;
+
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = 2;
@@ -237,6 +241,7 @@ void GPipelineVLK::createPipeline(
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDepthStencilState = &depthStencil;
+    pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;

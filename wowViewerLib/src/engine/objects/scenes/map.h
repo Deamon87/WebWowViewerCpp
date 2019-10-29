@@ -23,16 +23,9 @@ private:
     std::string mapName;
 
     float m_currentTime = 0;
-    float lastInstanceCollect = 0;
-    float m_lastTimeSort = 0;
-    float m_lastTimeDistanceCalc = 0;
     float m_lastTimeLightCheck = 0;
 
     bool m_lockedMap = false;
-
-    std::vector<WmoGroupResult> m_currentInteriorGroups;
-    WmoObject *m_currentWMO = nullptr;
-    int currentWmoGroup = -1;
 
     int m_mapId = -1;
     HWdtFile m_wdtfile;
@@ -92,6 +85,7 @@ public:
     void doPostLoad(WoWFrameData *frameData) override;
 
     void update(WoWFrameData *frameData) override;
+    void updateBuffers(WoWFrameData *frameData) override;
     mathfu::vec4 getAmbientColor() override {
         return m_api->getGlobalAmbientColor();
     };
@@ -104,7 +98,7 @@ private:
                        std::vector<mathfu::vec3> &frustumPoints,
                        std::vector<mathfu::vec3> &hullLines,
                        mathfu::mat4 &lookAtMat4,
-                       mathfu::mat4 &projectionModelMat,
+                       mathfu::mat4 &viewPerspectiveMat,
                        int viewRenderOrder,
                        WoWFrameData *frameData);
 };

@@ -27,7 +27,7 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     m_viewRenderOrder = 0;
 
     //6. Check what WMO instance we're in
-    frameData->currentInteriorGroups = {};
+    frameData->m_currentInteriorGroups = {};
     this->m_currentWMO = nullptr;
 
     int bspNodeId = -1;
@@ -48,7 +48,7 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
         }
 
         if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
-            frameData->currentInteriorGroups.push_back(groupResult);
+            frameData->m_currentInteriorGroups.push_back(groupResult);
             interiorGroupNum = groupResult.groupIndex;
         } else {
 //            std::cout << "not found! duh!";
@@ -61,12 +61,12 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     }
 //    }
 
-    if (!frameData->currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
+    if (!frameData->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
         this->m_wmoObject->resetTraversedWmoGroups();
         if (this->m_wmoObject->startTraversingWMOGroup(
             cameraPos,
             projectionModelMat,
-            frameData->currentInteriorGroups[0].groupIndex,
+            frameData->m_currentInteriorGroups[0].groupIndex,
             0,
             m_viewRenderOrder,
             true,
@@ -126,7 +126,7 @@ void WmoScene::cullExterior(WoWFrameData *frameData, int viewRenderOrder) {
 
     mathfu::mat4 projectionModelMat = frustumMat * lookAtMat4;
 
-    if (m_currentWMO != m_wmoObject || frameData->currentInteriorGroups.size() <= 0) {
+    if (m_currentWMO != m_wmoObject || frameData->m_currentInteriorGroups.size() <= 0) {
         this->m_wmoObject->resetTraversedWmoGroups();
     }
     if (m_wmoObject->startTraversingWMOGroup(
@@ -175,7 +175,7 @@ void WmoScene::update(WoWFrameData *frameData)  {
         M2Object *m2Object = frameData->m2Array[i];
         if (m2Object == nullptr) continue;
         m2Object->update(frameData->deltaTime, cameraVec3, lookAtMat4);
-        m2Object->uploadGeneratorBuffers();
+        m2Object->uploadGeneratorBuffers(lookAtMat4);
     }
 
     for (auto &wmoObject : frameData->wmoArray) {
@@ -193,6 +193,9 @@ void WmoScene::update(WoWFrameData *frameData)  {
     //}
 
      this->m_currentTime += frameData->deltaTime;
+}
+void WmoScene::updateBuffers(WoWFrameData *frameData) {
+
 }
 
 void WmoScene::collectMeshes(WoWFrameData * frameData) {

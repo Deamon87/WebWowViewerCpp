@@ -168,6 +168,7 @@ public:
     void setMap(int mapId, int wdtFileId, float x, float y, float z) override;
 private:
     void DoCulling();
+    void DoUpdate();
     void actuallDropCache();
 private:
     bool m_enable;

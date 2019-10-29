@@ -42,7 +42,7 @@ private:
 
     float nearPlane = 1;
     float farPlane = 1000;
-    float farPlaneForCulling = 1000;
+    float farPlaneForCulling = 400;
 
     float clearColor[4] = {0.117647, 0.207843, 0.392157, 0};
     float ambientColor[4];

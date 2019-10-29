@@ -21,6 +21,7 @@ public:
 
     virtual void doPostLoad(WoWFrameData *frameData) = 0;
     virtual void update(WoWFrameData *frameData) = 0;
+    virtual void updateBuffers(WoWFrameData *frameData) = 0;
     virtual mathfu::vec4 getAmbientColor() = 0;
     virtual void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) = 0;
     virtual bool getCameraSettings(M2CameraResult &cameraResult) = 0;

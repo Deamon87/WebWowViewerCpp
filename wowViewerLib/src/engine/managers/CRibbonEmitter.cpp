@@ -138,12 +138,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         meshTemplate.fragmentBuffers[1] = nullptr;
         meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
 
-        meshParticleWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<meshParticleWideBlockPS>();
-        blockPS.uAlphaTest = -1.0f;
-        blockPS.uPixelShader = 0;
-
-        meshTemplate.fragmentBuffers[2]->save(true);
-
+        
         frame[k].m_meshes.push_back(m_api->getDevice()->createParticleMesh(meshTemplate));
     }
   }
@@ -853,6 +848,16 @@ void CRibbonEmitter::updateBuffers() {
   auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
   currentFrame.isDead = this->IsDead();
   if (currentFrame.isDead) return;
+
+  for (auto& mesh : currentFrame.m_meshes) {
+	  auto preMeshBuffer = mesh->getFragmentUniformBuffer(2);
+	  meshParticleWideBlockPS& blockPS = preMeshBuffer->getObject<meshParticleWideBlockPS>();
+
+	  blockPS.uAlphaTest = -1.0f;
+	  blockPS.uPixelShader = 0;
+
+	  preMeshBuffer->save(true);
+  }
 
   currentFrame.m_indexVBO->uploadData((void *) m_gxIndices.data(), (int) (m_gxIndices.size() * sizeof(uint16_t)));
   currentFrame.m_bufferVBO->uploadData((void *) m_gxVertices.data(), (int) (m_gxVertices.size() * sizeof(CRibbonVertex)));

@@ -20,8 +20,7 @@ public:
                           int8_t triCCW,
                           EGxBlendEnum blendMode,
                           int8_t depthCulling,
-                          int8_t depthWrite,
-                          int8_t skyBoxMode);
+                          int8_t depthWrite);
     ~GPipelineVLK();
 
     void createPipeline(
@@ -32,7 +31,6 @@ public:
         EGxBlendEnum m_blendMode,
         int8_t m_depthCulling,
         int8_t m_depthWrite,
-        int8_t skyBoxMod,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);

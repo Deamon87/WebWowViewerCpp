@@ -9,6 +9,8 @@
 #include "wmo/wmoObject.h"
 #include <vector>
 
+
+
 class WoWFrameData {
 public:
     animTime_t deltaTime = 0.0;
@@ -31,12 +33,15 @@ public:
     mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
 
     //Frustum culling results
-    std::vector<WmoGroupResult> currentInteriorGroups;
+    std::vector<WmoGroupResult> m_currentInteriorGroups;
+    WmoObject *m_currentWMO = nullptr;
+    int m_currentWmoGroup = -1;
+
 
     ExteriorView exteriorView;
     std::vector<InteriorView> interiorViews;
 
-    std::vector<AdtObject*> adtArray;
+    std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray;
     std::vector<M2Object*> m2Array;
     std::vector<WmoObject*> wmoArray;
 

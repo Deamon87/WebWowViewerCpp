@@ -302,16 +302,26 @@ void AdtObject::calcBoundingBoxes() {
 void AdtObject::createMeshes() {
     IDevice *device = m_api->getDevice();
 
+    auto adtFileTex = m_adtFileTex;
+    auto adtFile = m_adtFile;
+
     adtWideBlockPS = m_api->getDevice()->createUniformBuffer(sizeof(adtModelWideBlockPS));
 
-    auto &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
-    adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-    adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-    adtWideblockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
-    adtWideblockPS.uAmbientLight = m_api->getGlobalAmbientColor();
-    adtWideblockPS.FogColor = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), 0));
+    auto api = m_api;
+    adtWideBlockPS->setUpdateHandler([api](IUniformBuffer *self){
+        auto *adtWideblockPS = &self->getObject<adtModelWideBlockPS>();
+        adtWideblockPS->uViewUp = mathfu::vec4_packed(mathfu::vec4(api->getViewUp(), 0.0));;
+        adtWideblockPS->uSunDir_FogStart = mathfu::vec4_packed(
+            mathfu::vec4(api->getGlobalSunDir(), api->getGlobalFogStart()));
+        adtWideblockPS->uSunColor_uFogEnd = mathfu::vec4_packed(
+            mathfu::vec4(api->getGlobalSunColor().xyz(), api->getGlobalFogEnd()));
+        adtWideblockPS->uAmbientLight = api->getGlobalAmbientColor();
+        adtWideblockPS->FogColor = mathfu::vec4_packed(mathfu::vec4(api->getGlobalFogColor().xyz(), 0));
 
-    adtWideBlockPS->save(true);
+        self->save(true);
+    });
+
+
 
     for (int i = 0; i < 256; i++) {
         //Cant be used only in Wotlk
@@ -340,29 +350,47 @@ void AdtObject::createMeshes() {
         aTemplate.fragmentBuffers[1] = adtWideBlockPS;
         aTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(adtMeshWideBlockPS));
 
-        auto &blockPS = aTemplate.fragmentBuffers[2]->getObject<adtMeshWideBlockPS>();
-
-        static const float heightScale [4] = {0.0, 0.0, 0.0, 0.0};
-        static const float heightOffset [4] = {1.0, 1.0, 1.0, 1.0};
-
         aTemplate.textureCount = 9;
 
         aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
-        for (int j = 0; j < 4; j++) {
-            blockPS.uHeightOffset[j] = heightOffset[j];
-            blockPS.uHeightScale[j] = heightScale[j];
-        }
+        aTemplate.fragmentBuffers[2]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBuffer *self){
+            auto &blockPS = self->getObject<adtMeshWideBlockPS>();
+            for (int j = 0; j < 4; j++) {
+                blockPS.uHeightOffset[j] = 0.0f;
+                blockPS.uHeightScale[j] = 1.0f;
+            }
+            if ((adtFileTex->mtxp_len > 0) && !noLayers) {
+                for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                    auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
+
+                    blockPS.uHeightOffset[j] = textureParams.heightOffset;
+                    blockPS.uHeightScale[j] = textureParams.heightScale;
+                }
+            }
+
+            self->save();
+        });
+
+        aTemplate.vertexBuffers[2]->setUpdateHandler([this, i](IUniformBuffer *self){
+            auto &blockVS = self->getObject<adtMeshWideBlockVS>();
+            blockVS.uPos = mathfu::vec4(
+                this->m_adtFile->mapTile[i].position.x,
+                this->m_adtFile->mapTile[i].position.y,
+                this->m_adtFile->mapTile[i].position.z,
+                0
+            );
+            self->save();
+        });
+
+
         if (m_adtFileTex->mtxp_len > 0 && !noLayers) {
             for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
                 auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
 
-                blockPS.uHeightOffset[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightOffset;
-                blockPS.uHeightScale[j] = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId].heightScale;
-
                 HGTexture layer_height = nullptr;
                 if (textureParams.flags.do_not_load_specular_or_height_texture_but_use_cubemap == 0) {
-                    if (!feq(blockPS.uHeightOffset[j], 1.0f) && !feq(blockPS.uHeightScale[j], 0.0)) {
+                    if (!feq(textureParams.heightOffset, 1.0f) && !feq(textureParams.heightScale, 0.0)) {
                         layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
                     }
                 }
@@ -395,17 +423,6 @@ void AdtObject::createMeshes() {
             }
         }
 
-        aTemplate.fragmentBuffers[2]->save(true);
-
-        auto &blockVS = aTemplate.vertexBuffers[2]->getObject<adtMeshWideBlockVS>();
-        blockVS.uPos = mathfu::vec4(
-            m_adtFile->mapTile[i].position.x,
-            m_adtFile->mapTile[i].position.y,
-            m_adtFile->mapTile[i].position.z,
-            0
-        );
-        aTemplate.vertexBuffers[2]->save(true);
-
         HGMesh hgMesh = device->createMesh(aTemplate);
         adtMeshes.push_back(hgMesh);
     }
@@ -435,12 +452,14 @@ void AdtObject::loadAlphaTextures() {
 
 
 
-void AdtObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
+void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
     if (!m_loaded) return;
+
+    adtRes.wasLoaded = true;
 
     size_t meshCount = adtMeshes.size();
     for (int i = 0; i < meshCount; i++) {
-        if (!drawChunk[i]) continue;
+        if (!adtRes.drawChunk[i]) continue;
         adtMeshes[i]->setRenderOrder(renderOrder);
         renderedThisFrame.push_back(adtMeshes[i]);
     }
@@ -509,14 +528,23 @@ void AdtObject::update() {
     if (!m_loaded) return;
     if (adtWideBlockPS == nullptr) return;
 
-    adtModelWideBlockPS &adtWideblockPS = adtWideBlockPS->getObject<adtModelWideBlockPS>();
-    adtWideblockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-    adtWideblockPS.uSunDir_FogStart = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-    adtWideblockPS.uSunColor_uFogEnd = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
-    adtWideblockPS.uAmbientLight = m_api->getGlobalAmbientColor();
-    adtWideblockPS.FogColor = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), 0));
+}
 
-    adtWideBlockPS->save();
+void AdtObject::uploadGeneratorBuffers(ADTObjRenderRes &adtRes) {
+    if (!m_loaded) return;
+
+    if (!adtRes.wasLoaded) return;
+
+
+
+    for (int i = 0; i < adtMeshes.size(); i++) {
+        bool noLayers = m_adtFileTex->mcnkStructs[i].mcly == nullptr || m_adtFileTex->mcnkStructs[i].mclyCnt <= 0;
+
+
+
+
+    }
+
 }
 
 HGTexture AdtObject::getAdtTexture(int textureId) {
@@ -590,7 +618,7 @@ static const float perLodDist[5] = {9999999999.99f,
 };
 
 
-bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
+bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &camera, const mathfu::vec3 &pos,
                                 float x_offset, float y_offset, float cell_len,
                                 int curentLod, int lastFoundLod,
                                 const PointerChecker<MLND> &quadTree, int quadTreeInd,
@@ -616,12 +644,12 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
         //General frustum cull!
         bool atLeastOneIsDrawn = false;
 
-        atLeastOneIsDrawn = checkNonLodChunkCulling(camera, frustumPlanes, frustumPoints, hullLines,
+        atLeastOneIsDrawn = checkNonLodChunkCulling(adtFrustRes, camera, frustumPlanes, frustumPoints, hullLines,
                                                          16.0f * x_offset, 16.0f * y_offset,
                                                          16.0f * cell_len, 16.0f * cell_len
         );
 
-        checkReferences(camera, frustumPlanes, frustumPoints,
+        checkReferences(adtFrustRes, camera, frustumPlanes, frustumPoints,
                         lookAtMat4, 5,
                         m2ObjectsCandidates, wmoCandidates,
                         16.1f * x_offset, 16.1f * y_offset,
@@ -652,16 +680,16 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
         bool atLeastOneIsDrawn = false;
 
         //1. Node 1
-        atLeastOneIsDrawn |= iterateQuadTree(camera, pos, x_offset, y_offset , newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[0],
+        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes, camera, pos, x_offset, y_offset , newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[0],
                                             frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
         //2. Node 2
-        atLeastOneIsDrawn |= iterateQuadTree(camera, pos, x_offset, y_offset + newCellLen, newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[1],
+        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes,camera, pos, x_offset, y_offset + newCellLen, newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[1],
                                             frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
         //3. Node 3
-        atLeastOneIsDrawn |= iterateQuadTree(camera, pos, x_offset + newCellLen, y_offset, newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[2],
+        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes,camera, pos, x_offset + newCellLen, y_offset, newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[2],
                                             frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
         //4. Node 4
-        atLeastOneIsDrawn |= iterateQuadTree(camera, pos, x_offset+ newCellLen, y_offset+ newCellLen, newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[3],
+        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes, camera, pos, x_offset+ newCellLen, y_offset+ newCellLen, newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[3],
                                             frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
 
         return atLeastOneIsDrawn;
@@ -673,7 +701,7 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
 
             lodCommands.push_back(command);
 
-            checkReferences(camera, frustumPlanes, frustumPoints,
+            checkReferences(adtFrustRes, camera, frustumPlanes, frustumPoints,
                             lookAtMat4, curentLod,
                             m2ObjectsCandidates, wmoCandidates,
                             16.0f * x_offset, 16.0f * y_offset,
@@ -685,7 +713,7 @@ bool AdtObject::iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos,
     }
 }
 
-bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
+bool AdtObject::checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos,
                                         std::vector<mathfu::vec4> &frustumPlanes,
                                         std::vector<mathfu::vec3> &frustumPoints,
                                         std::vector<mathfu::vec3> &hullLines,
@@ -700,7 +728,7 @@ bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
 
             mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
             CAaBox &aabb = this->tileAabb[i];
-            this->drawChunk[i] = false;
+            adtFrustRes.drawChunk[i] = false;
 
             //1. Check if camera position is inside Bounding Box
             bool cameraOnChunk =
@@ -709,19 +737,19 @@ bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
             if (cameraOnChunk &&
                 cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
                     ) {
-                this->drawChunk[i] = true;
+                adtFrustRes.drawChunk[i] = true;
                 atLeastOneIsDrawn = true;
             }
 
             //2. Check aabb is inside camera frustum
             bool result = false;
-            checkRefs[i] = this->drawChunk[i];
-            if (!this->drawChunk[i]) {
+            adtFrustRes.checkRefs[i] = adtFrustRes.drawChunk[i];
+            if (!adtFrustRes.drawChunk[i]) {
                 result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
                 bool frustum2DRes = MathHelper::checkFrustum2D(hullLines, aabb);
-                checkRefs[i] = result || frustum2DRes;
+                adtFrustRes.checkRefs[i] = result || frustum2DRes;
 
-                this->drawChunk[i] = result;
+                adtFrustRes.drawChunk[i] = result;
                 atLeastOneIsDrawn = atLeastOneIsDrawn || result;
             }
         }
@@ -730,7 +758,9 @@ bool AdtObject::checkNonLodChunkCulling(mathfu::vec4 &cameraPos,
     return atLeastOneIsDrawn;
 }
 
-bool AdtObject::checkReferences(mathfu::vec4 &cameraPos,
+bool AdtObject::checkReferences(
+                          ADTObjRenderRes &adtFrustRes,
+                          mathfu::vec4 &cameraPos,
                           std::vector<mathfu::vec4> &frustumPlanes,
                           std::vector<mathfu::vec3> &frustumPoints,
                           mathfu::mat4 &lookAtMat4,
@@ -804,7 +834,8 @@ bool AdtObject::checkReferences(mathfu::vec4 &cameraPos,
 	return true;
 }
 
-bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
+bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
+                                    mathfu::vec4 &cameraPos,
                                     int adt_glob_x,
                                     int adt_glob_y,
                                     std::vector<mathfu::vec4> &frustumPlanes,
@@ -821,7 +852,7 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     leastDetiledLod = 0;
 
     for (int i = 0; i < 256; i++) {
-        drawChunk[i] = false;
+        adtFrustRes.drawChunk[i] = false;
     }
     lodCommands.clear();
 
@@ -829,7 +860,8 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
     if (false) {
 //    if (m_wdtFile->mphd->flags.unk_0x0100) {
         mathfu::vec3 adtPos = mathfu::vec3(m_adtFile->mapTile[m_adtFile->mcnkMap[0][0]].position);
-        atLeastOneIsDrawn |= iterateQuadTree(cameraPos, adtPos,
+        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes,
+                                             cameraPos, adtPos,
                                              0, 0, 1.0,
                                              0, 0,
                                              m_adtFileLod->mlnds, 0,
@@ -837,10 +869,10 @@ bool AdtObject::checkFrustumCulling(mathfu::vec4 &cameraPos,
                                              wmoCandidates);
     } else {
         //For old ADT without _lod.adt
-        atLeastOneIsDrawn |= checkNonLodChunkCulling(cameraPos,
+        atLeastOneIsDrawn |= checkNonLodChunkCulling(adtFrustRes, cameraPos,
                                 frustumPlanes, frustumPoints, hullLines,
                                 0, 0, 16, 16);
-        checkReferences(cameraPos, frustumPlanes, frustumPoints,
+        checkReferences(adtFrustRes, cameraPos, frustumPlanes, frustumPoints,
                         lookAtMat4, 5,
                         m2ObjectsCandidates, wmoCandidates,
                         0, 0,
