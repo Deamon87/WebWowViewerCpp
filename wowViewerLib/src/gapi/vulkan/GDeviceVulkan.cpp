@@ -112,16 +112,27 @@ VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avai
 }
 
 VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+    VkExtent2D actualExtent;
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-        return capabilities.currentExtent;
+        actualExtent = capabilities.currentExtent;
+        std::cout << "capabilities.currentExtent.width = " << capabilities.currentExtent.width
+            << " capabilities.currentExtent.height = " << capabilities.currentExtent.height << std::endl;
     } else {
-        VkExtent2D actualExtent = {WIDTH, HEIGHT};
-
-        actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
-        actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
-
-        return actualExtent;
+        actualExtent = {WIDTH, HEIGHT};
     }
+
+    std::cout << "capabilities.minImageExtent.width = " << capabilities.minImageExtent.width
+              << " capabilities.minImageExtent.height = " << capabilities.minImageExtent.height << std::endl;
+    std::cout << "capabilities.maxImageExtent.width = " << capabilities.maxImageExtent.width
+              << " capabilities.maxImageExtent.height = " << capabilities.maxImageExtent.height << std::endl;
+
+    actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+    actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+    std::cout << "actualExtent.width = " << actualExtent.width
+              << " actualExtent.height = " << actualExtent.height << std::endl;
+
+    return actualExtent;
 }
 
 GDeviceVLK::SwapChainSupportDetails GDeviceVLK::querySwapChainSupport(VkPhysicalDevice device) {
@@ -229,8 +240,8 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
 
     createSwapChain();
     createImageViews();
-    createRenderPass();
 
+    createRenderPass();
 
     createDepthResources();
     createFramebuffers();
@@ -264,6 +275,14 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
 
     vmaCreatePool(vmaAllocator, &poolCreateInfo, &uboVmaPool);
 
+}
+
+void GDeviceVLK::recreateSwapChain() {
+    createSwapChain();
+    createImageViews();
+
+    createDepthResources();
+    createFramebuffers();
 }
 
 void GDeviceVLK::setupDebugMessenger() {
@@ -322,9 +341,11 @@ void GDeviceVLK::createSwapChain() {
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
 
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
+    createInfo.oldSwapchain = swapChain;
 
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+    auto error = vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain);
+    if ( error != VK_SUCCESS) {
+        std::cout << "error = " << error << std::endl << std::flush;
         throw std::runtime_error("failed to create swap chain!");
     }
 
@@ -1205,6 +1226,13 @@ void GDeviceVLK::clearScreen() {
 
 void GDeviceVLK::beginFrame() {
 
+    for (auto &pipelineRec : loadedPipeLines) {
+        if (!pipelineRec.second.expired()) {
+            auto pipelineObj = pipelineRec.second.lock();
+            pipelineObj->createPipeline()
+        }
+    }
+
 }
 
 void GDeviceVLK::commitFrame() {
@@ -1263,7 +1291,7 @@ void GDeviceVLK::commitFrame() {
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.pNext = NULL;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChainFramebuffers[currentDrawFrame];
+        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapChainExtent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -1328,7 +1356,7 @@ void GDeviceVLK::commitFrame() {
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
-//        recreateSwapChain();
+        recreateSwapChain();
     } else if (result != VK_SUCCESS) {
         std::cout << "failed to present swap chain image!" << std::endl << std::flush;
 //        throw std::runtime_error("failed to present swap chain image!");

@@ -228,8 +228,8 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     return fps;
 }
 
-int canvWidth = 1900;
-int canvHeight = 1000;
+int canvWidth = 640;
+int canvHeight = 480;
 bool windowSizeChanged = false;
 
 void window_size_callback(GLFWwindow* window, int width, int height)

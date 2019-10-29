@@ -201,6 +201,8 @@ private:
     void createFramebuffers();
     void createRenderPass();
 
+    void recreateSwapChain();
+
     void createCommandPool();
     void createCommandBuffers();
     void createSyncObjects();
@@ -289,7 +291,7 @@ protected:
     VkQueue graphicsQueue;
     VkQueue uploadQueue;
 
-    VkSwapchainKHR swapChain;
+    VkSwapchainKHR swapChain = VK_NULL_HANDLE;
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;

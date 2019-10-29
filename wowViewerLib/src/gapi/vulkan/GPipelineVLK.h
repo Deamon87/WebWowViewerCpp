@@ -13,8 +13,8 @@ class GPipelineVLK {
     friend class GDeviceVLK;
 public:
     explicit GPipelineVLK(IDevice &m_device,
-                          HGVertexBufferBindings m_bindings,
-                          HGShaderPermutation shader,
+                          HGVertexBufferBindings &m_bindings,
+                          HGShaderPermutation &shader,
                           DrawElementMode element,
                           int8_t backFaceCulling,
                           int8_t triCCW,
@@ -25,22 +25,25 @@ public:
     ~GPipelineVLK();
 
     void createPipeline(
-        GShaderPermutationVLK *shaderVLK,
-        DrawElementMode m_element,
-        int8_t m_backFaceCulling,
-        int8_t m_triCCW,
-        EGxBlendEnum m_blendMode,
-        int8_t m_depthCulling,
-        int8_t m_depthWrite,
-        int8_t skyBoxMod,
-
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);
+
+    void recreatePipeline();
 private:
     GDeviceVLK &m_device;
 
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
+
+    HGVertexBufferBindings m_bindings,
+    HGShaderPermutation m_shader;
+    DrawElementMode m_element;
+    int8_t m_backFaceCulling;
+    int8_t m_triCCW;
+    EGxBlendEnum m_blendMode;
+    int8_t m_depthCulling;
+    int8_t m_depthWrite;
+    int8_t m_skyBoxMod;
 };
 
 

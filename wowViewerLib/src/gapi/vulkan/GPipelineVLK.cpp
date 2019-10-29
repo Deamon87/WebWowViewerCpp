@@ -33,15 +33,18 @@ BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
 };
 
 GPipelineVLK::GPipelineVLK(IDevice &device,
-    HGVertexBufferBindings m_bindings,
-    HGShaderPermutation shader,
+    HGVertexBufferBindings &bindings,
+    HGShaderPermutation &shader,
     DrawElementMode element,
     int8_t backFaceCulling,
     int8_t triCCW,
     EGxBlendEnum blendMode,
     int8_t depthCulling,
     int8_t depthWrite,
-    int8_t skyBoxMode) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
+    int8_t skyBoxMode) : m_device(dynamic_cast<GDeviceVLK &>(device)), m_bindings(bindings), m_shader(shader),
+                        m_element(element), m_backFaceCulling(backFaceCulling), m_triCCW(triCCW),
+                        m_blendMode(blendMode), m_depthCulling(depthCulling), m_depthWrite(depthWrite),
+                        m_skyBoxMod(skyBoxMode) {
 
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
@@ -55,35 +58,22 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
             vertexAttributeDescriptions.push_back(attibuteDesc);
         }
     }
-    GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(shader.get());
-
-    createPipeline(shaderVLK,
-        element,
-        backFaceCulling,
-        triCCW,
-        blendMode,
-        depthCulling,
-        depthWrite, skyBoxMode,
-        vertexBindingDescriptions, vertexAttributeDescriptions);
+    createPipeline(vertexBindingDescriptions, vertexAttributeDescriptions);
 }
 
 GPipelineVLK::~GPipelineVLK() {
 
 }
 
+void GPipelineVLK::recreatePipeline() {
+    
+}
 
 void GPipelineVLK::createPipeline(
-        GShaderPermutationVLK *shaderVLK,
-        DrawElementMode m_element,
-        int8_t m_backFaceCulling,
-        int8_t m_triCCW,
-        EGxBlendEnum m_blendMode,
-        int8_t m_depthCulling,
-        int8_t m_depthWrite,
-        int8_t skyBoxMod,
-
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
+
+    GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(m_shader.get());
 
     auto swapChainExtent = m_device.getCurrentExtent();
     auto renderPass = m_device.getRenderPass();
@@ -137,7 +127,7 @@ void GPipelineVLK::createPipeline(
     viewport.width = (float) swapChainExtent.width;
     viewport.height = (float) swapChainExtent.height;
 
-    if (!skyBoxMod) {
+    if (!m_skyBoxMod) {
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
     } else {
@@ -165,14 +155,8 @@ void GPipelineVLK::createPipeline(
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = m_backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
     rasterizer.frontFace = m_triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
-//    if (!skyBoxMod) {
-        rasterizer.depthBiasEnable = VK_FALSE;
-//    } else {
-//        rasterizer.depthBiasEnable = VK_TRUE;
-//        rasterizer.depthBiasConstantFactor = 0.998f;
-//        rasterizer.depthBiasSlopeFactor = 0.002f;
-//        rasterizer.depthBiasClamp = 0.5f;
-//    }
+    rasterizer.depthBiasEnable = VK_FALSE;
+
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
