@@ -301,6 +301,10 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
     std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
 
+    for (auto &buffer : buffers) {
+        buffer->update();
+    }
+
     //2. Create buffers and update them
     int currentSize = 0;
     int buffersIndex = 0;

@@ -170,7 +170,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -897,15 +897,17 @@ void GDeviceVLK::endUpdateForNextFrame() {
         std::cout << "failed to record textureTransferCommandBuffers command buffer!" << std::endl;
     }
 
-    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &uploadCommandBuffers[uploadFrame];
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
+    if (this->canUploadInSeparateThread()) {
+        VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &uploadCommandBuffers[uploadFrame];
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
 
 
-    if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
-        std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
+            std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        }
     }
 
     while ((!listOfDeallocators.empty())&&(listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
@@ -1251,6 +1253,20 @@ void GDeviceVLK::commitFrame() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         std::cout << "got VK_ERROR_OUT_OF_DATE_KHR" << std::endl << std::flush;
         recreateSwapChain();
+
+        if (!this->canUploadInSeparateThread()) {
+            VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &uploadCommandBuffers[currentDrawFrame];
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores = &uploadSemaphores[currentDrawFrame];
+
+
+            if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]) != VK_SUCCESS) {
+                std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+            }
+        }
+
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         std::cout << "error happened " << result << std::endl << std::flush;
@@ -1267,8 +1283,22 @@ void GDeviceVLK::commitFrame() {
 //        std::cout << "imageIndex != currentDrawFrame" << std::endl;
     }
 
+    if (!this->canUploadInSeparateThread()) {
+        VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &uploadCommandBuffers[currentDrawFrame];
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &uploadSemaphores[currentDrawFrame];
+
+
+        if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]) != VK_SUCCESS) {
+            std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        }
+    }
+
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &inFlightFences[currentDrawFrame]);
+
 
 
     //Fill command buffer
@@ -1322,6 +1352,7 @@ void GDeviceVLK::commitFrame() {
 
     waitSemaphores[1] = uploadSemaphores[currentDrawFrame];
     waitStages[1] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
 
     submitInfo.waitSemaphoreCount = 2;
     submitInfo.pWaitSemaphores = &waitSemaphores[0];
@@ -1430,8 +1461,8 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     mapAreaViewport.maxDepth = 0.996f;
 
     VkViewport skyBoxViewport = usualViewport;
-    mapAreaViewport.maxDepth = 0.997f;
-    mapAreaViewport.maxDepth = 1.0f;
+    skyBoxViewport.minDepth = 0.997f;
+    skyBoxViewport.maxDepth = 1.0f;
 
 
     //Set scissors
@@ -1470,6 +1501,8 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
 
+        vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);
+
         ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
         if (lastViewPort != newViewPort) {
             switch (newViewPort) {
@@ -1485,7 +1518,6 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
 
-        vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);
 
         auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
         auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;

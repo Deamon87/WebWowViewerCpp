@@ -46,8 +46,8 @@ private:
 
 private:
     void uploadData(void * data, int length);
-    void setUpdateHandler(std::function<void(IUniformBuffer* self)>) override {};
-    void update() override {};
+    void setUpdateHandler(std::function<void(IUniformBuffer* self)>) override;
+    void update() override;
 
 private:
     IDevice &m_device;
@@ -65,6 +65,8 @@ private:
     int m_creationIndex = 0;
 
     bool m_needsUpdate = false;
+
+    std::function<void(IUniformBuffer* self)> m_handler;
 };
 
 

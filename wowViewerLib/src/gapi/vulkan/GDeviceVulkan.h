@@ -67,8 +67,12 @@ public:
 
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
+        return true;
+    }
+    bool canUploadInSeparateThread() {
         return uploadQueue != graphicsQueue;
     }
+
     HGTexture getBlackPixelTexture() {
         return m_blackPixelTexture;
     }

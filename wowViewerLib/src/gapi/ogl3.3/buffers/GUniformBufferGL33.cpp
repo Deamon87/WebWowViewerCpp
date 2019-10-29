@@ -93,3 +93,11 @@ void *GUniformBufferGL33::getPointerForModification() {
 //    }
 }
 
+void GUniformBufferGL33::setUpdateHandler(std::function<void(IUniformBuffer* self)> handler){
+    m_handler = handler;
+}
+void GUniformBufferGL33::update() {
+    if (m_handler) {
+        m_handler(this);
+    }
+}

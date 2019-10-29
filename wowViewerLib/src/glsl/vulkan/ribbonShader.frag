@@ -4,7 +4,7 @@ precision highp float;
 layout(location = 0) in vec4 vColor;
 layout(location = 1) in vec2 vTexcoord0;
 
-layout(binding=5) uniform sampler2D uTexture;
+layout(set=1, binding=5) uniform sampler2D uTexture;
 
 layout(location = 0) out vec4 outputColor;
 
