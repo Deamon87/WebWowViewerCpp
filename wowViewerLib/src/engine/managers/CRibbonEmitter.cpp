@@ -73,6 +73,13 @@ CRibbonEmitter::CRibbonEmitter(IWoWInnerApi *api, M2Object *object, std::vector<
   this->m_currPos.y = 0.0;
   this->m_currPos.z = 0.0;
 
+//  std::cout << "sizeof(CRibbonVertex) = " << sizeof(CRibbonVertex) << std::endl;
+//  std::cout << "offset(CRibbonVertex.diffuseColor) = " << sizeof(CRibbonVertex) << std::endl;
+//  std::cout << "offset(CRibbonVertex.texCoord) = " << sizeof(CRibbonVertex) << std::endl;
+
+  check_offset<offsetof(CRibbonVertex, diffuseColor), 12>();
+  check_offset<offsetof(CRibbonVertex, texCoord), 16>();
+
   createMesh(object, materials, textureIndicies);
 }
 PACK(
@@ -388,7 +395,7 @@ void CRibbonEmitter::ChangeFrameOfReference(const mathfu::mat4 *frameOfReference
     {
       result = &this->m_gxVertices[v17];
 
-      result->pos = (*frameOfReference * mathfu::vec4(result->pos, 1.0f)).xyz();
+      result->pos = (*frameOfReference * mathfu::vec4(mathfu::vec3(result->pos), 1.0f)).xyz();
       ++v16;
       ++v17;
     }

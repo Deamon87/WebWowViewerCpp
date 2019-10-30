@@ -422,7 +422,7 @@ template <typename ToCheck, std::size_t ExpectedSize, std::size_t RealSize = siz
 void check_size() {
     static_assert(ExpectedSize == RealSize, "Size is off!");
 }
-template <std::size_t ExpectedOffset, std::size_t RealOffset>
+template <std::size_t RealOffset, std::size_t ExpectedOffset>
 void check_offset() {
     static_assert(ExpectedOffset == RealOffset, "Offset is off!");
 }
