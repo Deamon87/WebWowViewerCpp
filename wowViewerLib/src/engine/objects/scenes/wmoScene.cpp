@@ -43,9 +43,9 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
         this->m_currentWMO = checkingWmoObj;
         currentWmoGroup = groupResult.groupIndex;
 
-        if (currentWmoGroup > 0) {
-            m2Skybox = this->m_currentWMO->getSkyBoxForGroup(currentWmoGroup);
-        }
+//        if (currentWmoGroup > 0) {
+//            m2Skybox = this->m_currentWMO->getSkyBoxForGroup(currentWmoGroup);
+//        }
 
         if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
             frameData->m_currentInteriorGroups.push_back(groupResult);
