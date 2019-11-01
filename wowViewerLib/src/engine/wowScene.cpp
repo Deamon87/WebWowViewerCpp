@@ -593,8 +593,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
-// currentScene = new WmoScene(this,
-//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+ currentScene = new WmoScene(this,
+        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
@@ -626,11 +626,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //
 
 
-//  m_firstCamera.setCameraPos(0, 0, 0);
+  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-//    m_firstCamera.setCameraPos(0, 0, 0);
+    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
@@ -664,7 +664,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
     //setSceneWithFileDataId(0, 125995, -1); //portal
 //    setSceneWithFileDataId(0, 1612576, -1); //portal
-    setSceneWithFileDataId(1, 108803, -1); //caverns of time in Tanaris
+//    setSceneWithFileDataId(1, 108803, -1); //caverns of time in Tanaris
 
 //    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
 //    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale

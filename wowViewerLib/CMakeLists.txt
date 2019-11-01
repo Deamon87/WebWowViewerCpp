@@ -437,6 +437,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/textures/GTextureVLK.cpp
             src/gapi/vulkan/textures/GBlpTextureVLK.cpp
             src/gapi/vulkan/buffers/GUniformBufferVLK.cpp
+            src/gapi/vulkan/buffers/GVertexBufferDynamicVLK.cpp
             src/gapi/vulkan/buffers/GVertexBufferVLK.cpp
             src/gapi/vulkan/buffers/GIndexBufferVLK.cpp
             src/gapi/vulkan/GPipelineVLK.cpp src/gapi/vulkan/GPipelineVLK.h

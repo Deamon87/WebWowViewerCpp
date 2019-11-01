@@ -16,6 +16,7 @@
 #include "meshes/GMeshVLK.h"
 #include "buffers/GUniformBufferVLK.h"
 #include "buffers/GVertexBufferVLK.h"
+#include "buffers/GVertexBufferDynamicVLK.h"
 #include "buffers/GIndexBufferVLK.h"
 #include "textures/GTextureVLK.h"
 #include "textures/GBlpTextureVLK.h"
@@ -1114,6 +1115,13 @@ HGUniformBuffer GDeviceVLK::createUniformBuffer(size_t size) {
     return h_uniformBuffer;
 }
 
+HGVertexBufferDynamic GDeviceVLK::createVertexBufferDynamic(size_t size) {
+    std::shared_ptr<GVertexBufferDynamicVLK> h_vertexBuffer;
+    h_vertexBuffer.reset(new GVertexBufferDynamicVLK(*this, size));
+
+    return h_vertexBuffer;
+}
+
 HGVertexBuffer GDeviceVLK::createVertexBuffer() {
     std::shared_ptr<GVertexBufferVLK> h_vertexBuffer;
     h_vertexBuffer.reset(new GVertexBufferVLK(*this));
@@ -1477,13 +1485,14 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     ViewportType lastViewPort = ViewportType::vp_usual;
     vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
 
+    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
 
     for (auto &mesh: iMeshes) {
         auto *meshVLK = ((GMeshVLK *)mesh.get());
         auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
         auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
 
-        int uboInd = 0;
+        uint32_t uboInd = 0;
         for (int k = 0; k < 3; k++) {
             if (shaderVLK->hasBondUBO[k]) {
                 auto *uboB = (GUniformBufferVLK *) (meshVLK->getVertexUniformBuffer(k).get());
@@ -1501,7 +1510,12 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
 
-        vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);
+        if (lastPipeline != meshVLK->hgPipelineVLK) {
+            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              meshVLK->hgPipelineVLK->graphicsPipeline);
+
+            lastPipeline = meshVLK->hgPipelineVLK;
+        }
 
         ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
         if (lastViewPort != newViewPort) {

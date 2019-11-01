@@ -24,7 +24,7 @@ void initOGLPointers(){
 IDevice *IDeviceFactory::createDevice(std::string gapiName, void * data) {
     if (gapiName == "ogl3") {
         initOGLPointers();
-        return new GDeviceGL33();
+//        return new GDeviceGL33();
     } else if (gapiName == "ogl4") {
         initOGLPointers();
 //        return new GDeviceGL4x();

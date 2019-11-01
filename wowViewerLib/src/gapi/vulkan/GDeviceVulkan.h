@@ -103,6 +103,7 @@ public:
 
     HGUniformBuffer createUniformBuffer(size_t size) override;
     HGVertexBuffer createVertexBuffer() override;
+    HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
 

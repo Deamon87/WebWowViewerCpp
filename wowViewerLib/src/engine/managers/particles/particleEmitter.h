@@ -101,7 +101,8 @@ private:
     float texScaleX;
     float texScaleY;
 
-    std::vector<ParticleBuffStructQuad> szVertexBuf;
+    ParticleBuffStructQuad *szVertexBuf = nullptr;
+    int szVertexCnt = 0;
     std::vector<uint16_t> szIndexBuff;
 
 
@@ -155,12 +156,11 @@ private:
 
     void
     BuildQuadT3(
-            std::vector<ParticleBuffStructQuad> &szVertexBuf,
             mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
                 float texStartY, mathfu::vec2 *texPos);
 
     struct {
-        HGVertexBuffer m_bufferVBO;
+        HGVertexBufferDynamic m_bufferVBO;
 
         HGVertexBufferBindings m_bindings;
         HGParticleMesh m_mesh;

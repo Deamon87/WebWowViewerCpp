@@ -214,7 +214,7 @@ void ParticleEmitter::createMesh() {
 
     //Create Buffers
     for (int i = 0; i < 4; i++) {
-        frame[i].m_bufferVBO = device->createVertexBuffer();
+        frame[i].m_bufferVBO = device->createVertexBufferDynamic(10 * sizeof(ParticleBuffStructQuad));
 
         frame[i].m_bindings = device->createVertexBufferBindings();
         frame[i].m_bindings->setIndexBuffer(m_indexVBO);
@@ -576,16 +576,11 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     );
     this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
 
-    // Mat34.Col(this.particleNormal, viewMatrix, 2);
-    // Build vertices for each particle
 
-    // Vertex format: {float3 pos; float3 norm; float4 col; float2 texcoord} = 12
-    // Multitex format: {float3 pos; float4 col; float2 texcoord[3]} = 13
-
-    int previousSize = szVertexBuf.size();
-    szVertexBuf = std::vector<ParticleBuffStructQuad>(0);
-    szVertexBuf.reserve(previousSize);
-    int vo = 0;
+    auto vboBufferDynamic = frame[m_api->getDevice()->getUpdateFrameNumber()].m_bufferVBO;
+    vboBufferDynamic->resize(particles.size() * sizeof(ParticleBuffStructQuad));
+    szVertexBuf = (ParticleBuffStructQuad *) vboBufferDynamic->getPointerForModification();
+    szVertexCnt = 0;
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = this->particles[i];
         ParticlePreRenderData particlePreRenderData;
@@ -753,7 +748,7 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
         }
     }
 
-    this->BuildQuadT3(szVertexBuf, m0, m1,
+    this->BuildQuadT3(m0, m1,
         particlePreRenderData.m_particleCenter,
             particlePreRenderData.m_ageDependentValues.m_timedColor,
             particlePreRenderData.m_ageDependentValues.m_alpha,
@@ -800,7 +795,7 @@ int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particle
             0);
     }
 
-    this->BuildQuadT3(szVertexBuf, m0, m1,
+    this->BuildQuadT3(m0, m1,
                       particlePreRenderData.m_particleCenter,
                       particlePreRenderData.m_ageDependentValues.m_timedColor,
                       particlePreRenderData.m_ageDependentValues.m_alpha,
@@ -933,7 +928,6 @@ inline float paramXTransform(uint32_t x) {
 
 void
 ParticleEmitter::BuildQuadT3(
-    std::vector<ParticleBuffStructQuad> &szVertexBuf,
     mathfu::vec3 &m0, mathfu::vec3 &m1,
     mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
     float texStartX, float texStartY, mathfu::vec2 *texPos) {
@@ -942,7 +936,7 @@ ParticleEmitter::BuildQuadT3(
     static const float vys[4] = {1, -1, 1, -1};
     static const float txs[4] = {0, 0, 1, 1};
     static const float tys[4] = {0, 1, 0, 1};
-    ParticleBuffStructQuad record;
+    ParticleBuffStructQuad &record = szVertexBuf[szVertexCnt++];
 
 //    mathfu::mat4 inverseLookAt = mathfu::mat4::Identity();
     mathfu::mat4 inverseLookAt = this->inverseViewMatrix;
@@ -970,7 +964,6 @@ ParticleEmitter::BuildQuadT3(
 
     }
 
-    szVertexBuf.push_back(record);
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
@@ -985,15 +978,15 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 
 void ParticleEmitter::updateBuffers() {
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
-    currentFrame.active = szVertexBuf.size() > 0;
+    currentFrame.active = szVertexCnt > 0;
 
     if (!currentFrame.active)
         return;
 
 //    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
-    currentFrame.m_bufferVBO->uploadData((void *) szVertexBuf.data(), (int) (szVertexBuf.size() * sizeof(ParticleBuffStructQuad)));
+    currentFrame.m_bufferVBO->save(szVertexCnt * sizeof(ParticleBuffStructQuad));
 
-    currentFrame.m_mesh->setEnd((szVertexBuf.size() * 6));
+    currentFrame.m_mesh->setEnd(szVertexCnt * 6);
     currentFrame.m_mesh->setSortDistance(m_currentBonePos);
     currentFrame.m_mesh->setPriorityPlane(m_data->old.textureTileRotation);
 

@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_IDEVICE_H
 
 class IVertexBuffer;
+class IVertexBufferDynamic;
 class IVertexBufferBindings;
 class IIndexBuffer;
 class IUniformBuffer;
@@ -25,6 +26,7 @@ class gMeshTemplate;
 #include <vulkan/vulkan_core.h>
 #endif
 
+typedef std::shared_ptr<IVertexBufferDynamic> HGVertexBufferDynamic;
 typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;
 typedef std::shared_ptr<IIndexBuffer> HGIndexBuffer;
 typedef std::shared_ptr<IVertexBufferBindings> HGVertexBufferBindings;
@@ -44,6 +46,7 @@ typedef std::shared_ptr<IGPUFence> HGPUFence;
 #include "IShaderPermutation.h"
 #include "buffers/IIndexBuffer.h"
 #include "buffers/IVertexBuffer.h"
+#include "buffers/IVertexBufferDynamic.h"
 #include "IVertexBufferBindings.h"
 #include "buffers/IUniformBuffer.h"
 #include "textures/ITexture.h"
@@ -138,6 +141,7 @@ class IDevice {
         virtual HGPUFence createFence() = 0;
 
         virtual HGUniformBuffer createUniformBuffer(size_t size) = 0;
+        virtual HGVertexBufferDynamic createVertexBufferDynamic(size_t size) = 0;
         virtual HGVertexBuffer createVertexBuffer() = 0;
         virtual HGIndexBuffer createIndexBuffer() = 0;
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
