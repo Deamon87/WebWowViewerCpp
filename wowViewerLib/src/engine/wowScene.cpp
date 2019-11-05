@@ -77,7 +77,10 @@ void WoWSceneImpl::DoUpdate() {
 
 }
 void WoWSceneImpl::DoCulling() {
-    if (currentScene == nullptr) return;
+	if (currentScene == nullptr) {
+
+		return;
+	}
 
     float farPlane = m_config->getFarPlane();
     float nearPlane = 1.0;
@@ -658,6 +661,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setScene(2, "world/maps/Kalimdor/Kalimdor_40_47.adt", -1);
 //    setScene(0, "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    setMap(1, 782779, -8183, -4708, 200);
+//    setMap(530, 828395, -1663, 5098, 27); //Sharrath
 //    setScene(2, "world/maps/SilithusPhase01/SilithusPhase01_30_45.adt", -1);
 //    setSceneWithFileDataId(1, 108803, -1);
 //    setSceneWithFileDataId(0, 125407, -1); // phoneix
@@ -783,6 +787,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     //Replace the scene
     if (newScene != nullptr) {
         if (currentScene != nullptr) delete currentScene;
+		for (int i = 0; i < 4; i++) {
+			m_FrameParams[i] = WoWFrameData();
+		}
+
         currentScene = newScene;
         newScene = nullptr;
     }

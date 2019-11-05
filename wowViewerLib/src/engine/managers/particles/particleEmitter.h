@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <vector>
 #include <random>
+#include <array>
 //#include <strings.h>
 #include "../../persistance/header/M2FileHeader.h"
 #include "../../wowInnerApi.h"
@@ -162,13 +163,14 @@ private:
             mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
                 float texStartY, mathfu::vec2 *texPos);
 
-    struct {
-        HGVertexBufferDynamic m_bufferVBO;
+	typedef struct {
+		HGVertexBufferDynamic m_bufferVBO;
 
-        HGVertexBufferBindings m_bindings;
-        HGParticleMesh m_mesh;
-        bool active = false;
-    } frame[4];
+		HGVertexBufferBindings m_bindings;
+		HGParticleMesh m_mesh;
+		bool active = false;
+	} particleFrame;
+    std::array<particleFrame, 4> frame;
 
     void createMesh();
 

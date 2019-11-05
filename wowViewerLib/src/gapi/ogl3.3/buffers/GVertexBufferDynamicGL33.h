@@ -35,7 +35,7 @@ private:
 
 private:
     std::vector<char> m_buffer;
-    void * pIdentifierBuffer = nullptr;
+	std::vector<char> pIdentifierBuffer = {};
     size_t m_size = 0;
     bool m_buffCreated = false;
     bool m_dataUploaded = false;

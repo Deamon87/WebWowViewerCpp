@@ -30,7 +30,7 @@ private:
     IDevice &m_device;
 
 private:
-    void * buffer = nullptr;
+    std::vector<char> buffer = {};
 
     bool m_buffCreated = true;
     size_t m_size;

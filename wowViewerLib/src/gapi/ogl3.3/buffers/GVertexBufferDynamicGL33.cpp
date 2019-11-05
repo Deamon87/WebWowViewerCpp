@@ -10,23 +10,22 @@
 
 
 GVertexBufferDynamicGL33::GVertexBufferDynamicGL33(IDevice &device, size_t maxSize)  : m_device(device) {
-    pIdentifierBuffer = new GLuint;
+    pIdentifierBuffer = std::vector<char>(sizeof(GLuint));
     m_size = maxSize;
 	m_buffer.resize(maxSize);
     createBuffer();
 }
 GVertexBufferDynamicGL33::~GVertexBufferDynamicGL33() {
-    destroyBuffer();
-    delete (GLuint *)pIdentifierBuffer;
+	destroyBuffer();
 }
 
 void GVertexBufferDynamicGL33::createBuffer() {
-    glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    glGenBuffers(1, (GLuint *)&this->pIdentifierBuffer[0]);
     m_buffCreated = true;
 }
 
 void GVertexBufferDynamicGL33::destroyBuffer() {
-    glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    glDeleteBuffers(1, (GLuint *)&this->pIdentifierBuffer[0]);
 }
 
 static int vbo_uploaded = 0;
@@ -58,7 +57,7 @@ void GVertexBufferDynamicGL33::uploadData(void * data, int length) {
 }
 
 void GVertexBufferDynamicGL33::bind() {
-    glBindBuffer(GL_ARRAY_BUFFER, *(GLuint *) this->pIdentifierBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, *(GLuint *) &this->pIdentifierBuffer[0]);
 }
 
 void GVertexBufferDynamicGL33::unbind() {
