@@ -15,6 +15,7 @@
 #include "shaders/GAdtShaderPermutationGL33.h"
 #include "shaders/GWMOShaderPermutationGL33.h"
 #include "../../engine/stringTrim.h"
+#include "buffers/GVertexBufferDynamicGL33.h"
 
 
 BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -80,7 +81,7 @@ void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {
 }
 
 void GDeviceGL33::bindVertexBuffer(IVertexBuffer *buffer)  {
-    GVertexBufferGL33 *gbuffer = (GVertexBufferGL33 *) buffer;
+//    GVertexBufferGL33 *gbuffer = (IVertexBuffer *) buffer;
 
     if (buffer == nullptr) {
         if (m_lastBindVertexBuffer != nullptr) {
@@ -88,8 +89,8 @@ void GDeviceGL33::bindVertexBuffer(IVertexBuffer *buffer)  {
             m_lastBindVertexBuffer = nullptr;
         }
     }  else if (buffer != m_lastBindVertexBuffer) {
-        gbuffer->bind();
-        m_lastBindVertexBuffer = gbuffer;
+        buffer->bind();
+        m_lastBindVertexBuffer = buffer;
     }
 }
 
@@ -514,6 +515,12 @@ HGVertexBuffer GDeviceGL33::createVertexBuffer() {
 
     return h_vertexBuffer;
 }
+HGVertexBufferDynamic GDeviceGL33::createVertexBufferDynamic(size_t size) {
+    std::shared_ptr<GVertexBufferDynamicGL33> h_vertexBuffer;
+    h_vertexBuffer.reset(new GVertexBufferDynamicGL33(*this, size));
+
+    return h_vertexBuffer;
+};
 
 HGIndexBuffer GDeviceGL33::createIndexBuffer() {
     bindVertexBufferBindings(nullptr);

@@ -21,6 +21,7 @@ class IGPUFence;
 class gMeshTemplate;
 #include <memory>
 #include <functional>
+#include <algorithm>
 #include "syncronization/IGPUFence.h"
 #ifndef SKIP_VULKAN
 #include <vulkan/vulkan_core.h>
@@ -234,7 +235,7 @@ class IDevice {
                 return pA->getGxBlendMode() < pB->getGxBlendMode();
             }
 
-            int minTextureCount = std::min(pA->m_textureCount, pB->m_textureCount);
+            int minTextureCount = pA->m_textureCount < pB->m_textureCount ? pA->m_textureCount : pB->m_textureCount;
             for (int i = 0; i < minTextureCount; i++) {
                 if (pA->m_texture[i] != pB->m_texture[i]) {
                     return pA->m_texture[i] < pB->m_texture[i];

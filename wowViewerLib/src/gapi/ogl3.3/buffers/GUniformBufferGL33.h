@@ -57,8 +57,8 @@ private:
     size_t m_offset[4] = {0, 0, 0, 0};
     GLuint glBuffId[4] = {0, 0, 0, 0};
 
-    void * pFrameOneContent;
-    void * pFrameTwoContent;
+    std::vector<char> pFrameOneContent;
+	
     bool m_buffCreated = false;
     bool m_dataUploaded = false;
 

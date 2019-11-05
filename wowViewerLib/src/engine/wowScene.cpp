@@ -316,10 +316,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
     //Init caches
 
     //Test scene 1: Shattrath
-//    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
+    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
 //    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-//    currentScene = new Map(this, 530, "Expansion01");
+    currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
@@ -593,8 +593,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
- currentScene = new WmoScene(this,
-        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
@@ -626,11 +626,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //
 
 
-  m_firstCamera.setCameraPos(0, 0, 0);
+//  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-    m_firstCamera.setCameraPos(0, 0, 0);
+//    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
@@ -780,6 +780,13 @@ struct timespec& end)
 }
 
 void WoWSceneImpl::draw(animTime_t deltaTime) {
+    //Replace the scene
+    if (newScene != nullptr) {
+        if (currentScene != nullptr) delete currentScene;
+        currentScene = newScene;
+        newScene = nullptr;
+    }
+
     std::future<bool> cullingFuture;
     std::future<bool> updateFuture;
     if (m_supportThreads) {
@@ -794,12 +801,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
 //    std::cout << "draw frame = " << getDevice()->getDrawFrameNumber() << std::endl;
 
-    //Replace the scene
-    if (newScene != nullptr) {
-        if (currentScene != nullptr) delete currentScene;
-        currentScene = newScene;
-        newScene = nullptr;
-    }
+
 
     if (currentScene == nullptr) return;
 

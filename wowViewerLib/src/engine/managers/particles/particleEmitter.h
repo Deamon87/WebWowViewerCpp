@@ -37,6 +37,9 @@ struct ParticleBuffStructQuad {
 class ParticleEmitter {
 public:
     ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object);
+    ~ParticleEmitter() {
+        delete generator;
+    }
 
     void Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix);
     void prepearBuffers(mathfu::mat4 &viewMatrix);

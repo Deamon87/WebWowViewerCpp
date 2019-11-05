@@ -70,7 +70,7 @@ public:
         return true;
     }
     bool canUploadInSeparateThread() {
-        return uploadQueue != graphicsQueue;
+        return false;//uploadQueue != graphicsQueue;
     }
 
     HGTexture getBlackPixelTexture() {
@@ -304,6 +304,7 @@ protected:
 
 
     VkCommandPool commandPool;
+    VkCommandPool renderCommandPool;
     VkCommandPool uploadCommandPool;
 
     VkImage depthImage;

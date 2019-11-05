@@ -78,6 +78,7 @@ public:
 
     HGUniformBuffer createUniformBuffer(size_t size) override;
     HGVertexBuffer createVertexBuffer() override;
+    HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
 
@@ -141,7 +142,7 @@ protected:
     bool m_isInSkyBoxDepthMode = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
-    GVertexBufferGL33 *m_lastBindVertexBuffer = nullptr;
+	IVertexBuffer* m_lastBindVertexBuffer = nullptr;
     GVertexBufferBindingsGL33 *m_vertexBufferBindings = nullptr;
     GShaderPermutationGL33 * m_shaderPermutation = nullptr;
 

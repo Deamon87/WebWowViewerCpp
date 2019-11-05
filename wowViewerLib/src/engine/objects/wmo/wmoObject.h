@@ -34,6 +34,22 @@ class WmoObject : public IWmoApi {
 public:
     WmoObject(IWoWInnerApi *api) : m_api(api) {
     }
+
+	~WmoObject() {
+		for (auto& obj : groupObjects) {
+			delete obj;
+		}
+		for (auto& obj : groupObjectsLod1) {
+			delete obj;
+		}
+		for (auto& obj : groupObjectsLod2) {
+			delete obj;
+		}
+		for (auto& obj : m_doodadsArray) {
+			delete obj;
+		}
+		
+	}
 private:
     IWoWInnerApi *m_api;
 

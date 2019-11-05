@@ -346,6 +346,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
 
 set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h
+        src/gapi/ogl3.3/buffers/GVertexBufferDynamicGL33.cpp
         src/gapi/ogl3.3/buffers/GVertexBufferGL33.cpp
         src/gapi/ogl3.3/buffers/GVertexBufferGL33.h
         src/gapi/ogl3.3/buffers/GIndexBufferGL33.cpp

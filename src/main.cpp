@@ -144,7 +144,8 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 controllable->stopMovingDown();
                 break;
             case 'H':
-                scene->switchCameras();
+//                scene->switchCameras();
+                scene->setScene(0, "trash", 0);
                 break;
             case 'J':
                 testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
@@ -376,8 +377,8 @@ int main(){
 
     glfwInit();
 
-//    std::string rendererName = "ogl3";
-    std::string rendererName = "vulkan";
+    std::string rendererName = "ogl3";
+//    std::string rendererName = "vulkan";
 
     //FOR OGL
 

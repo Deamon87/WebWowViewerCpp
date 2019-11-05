@@ -9,8 +9,7 @@
 
 GUniformBufferGL33::GUniformBufferGL33(IDevice &device, size_t size) : m_device(device){
     m_size = size;
-    pFrameOneContent = new char[size];
-    pFrameTwoContent = new char[size];
+    pFrameOneContent = std::vector<char>(size);
 //    createBuffer();
 }
 
@@ -19,8 +18,6 @@ GUniformBufferGL33::~GUniformBufferGL33() {
         destroyBuffer();
     }
 
-    delete (char *)pFrameOneContent;
-    delete (char *)pFrameTwoContent;
 }
 
 void GUniformBufferGL33::createBuffer() {
@@ -81,7 +78,7 @@ void *GUniformBufferGL33::getPointerForUpload() {
 //    if (!m_device.getIsEvenFrame()) {
 //        return pFrameTwoContent;
 //    } else {
-        return pFrameOneContent;
+        return &pFrameOneContent[0];
 //    }
 }
 
@@ -89,7 +86,7 @@ void *GUniformBufferGL33::getPointerForModification() {
 //    if (m_device.getIsEvenFrame()) {
 //        return pFrameTwoContent;
 //    } else {
-        return pFrameOneContent;
+        return &pFrameOneContent[0];
 //    }
 }
 
