@@ -81,7 +81,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         glfwGetCursorPos(window, &xpos, &ypos);
         m_x = xpos;
         m_y = ypos;
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+//        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
     if (action == GLFW_RELEASE) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -145,9 +145,11 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
             case 'H':
 //                scene->switchCameras();
-                scene->setScene(0, "trash", 0);
+//                scene->setScene(0, "trash", 0);
+                scene->setAnimationId(159);
                 break;
             case 'J':
+                scene->setAnimationId(0);
                 testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
                 break;
             case 'K':
@@ -344,12 +346,12 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-//8.2.5
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=b847e6ab3a8638dda359c379ace9d79f&cdnconfig=1fdb7f2ada5eae29f7073aedbe96bf9d&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=b847e6ab3a8638dda359c379ace9d79f&cdnconfig=1fdb7f2ada5eae29f7073aedbe96bf9d&filename=data&filedataid=";
+//8.3.0
+//    const char * url = "https://wow.tools/casc/file/fname?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=";
+//    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=data&filedataid=";
 //1.13.0
-//    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=";
-//    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
+   const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
 
 //    const char * url = "http://178.165.92.24:40001/get/";
 //    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";

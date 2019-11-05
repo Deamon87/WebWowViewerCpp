@@ -319,10 +319,10 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
     //Init caches
 
     //Test scene 1: Shattrath
-    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
+//    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
 //    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
 
-    currentScene = new Map(this, 530, "Expansion01");
+//    currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
@@ -466,7 +466,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //        "creature/lorthemar/lorthemar.m2");
     m_usePlanarCamera = false;
 
-//    m_firstCamera.setCameraPos(0, 0, 0);
+    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "creature\\wingedhorse\\wingedhorse.m2");
 //    currentScene = new M2Scene(this,
@@ -596,8 +596,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
-// currentScene = new WmoScene(this,
-//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+ currentScene = new WmoScene(this,
+        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
@@ -658,21 +658,24 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(2, "world/maps/nzoth/nzoth_32_27.adt", -1);
-//    setScene(2, "world/maps/Kalimdor/Kalimdor_40_47.adt", -1);
+//    setScene(2, "world/maps/Kalimdor/Kalimdor_41_47.adt", -1);
 //    setScene(0, "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    setMap(1, 782779, -8183, -4708, 200);
 //    setMap(530, 828395, -1663, 5098, 27); //Sharrath
 //    setScene(2, "world/maps/SilithusPhase01/SilithusPhase01_30_45.adt", -1);
+//    setSceneWithFileDataId(1, 113992, -1); //Ironforge
 //    setSceneWithFileDataId(1, 108803, -1);
+//    setSceneWithFileDataId(0, 352511, -1); // arthas souls
+//    setSceneWithFileDataId(0, 3180291, -1); // arthas souls
 //    setSceneWithFileDataId(0, 125407, -1); // phoneix
 //    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
-    //setSceneWithFileDataId(0, 125995, -1); //portal
+//    setSceneWithFileDataId(0, 125995, -1); //portal
 //    setSceneWithFileDataId(0, 1612576, -1); //portal
 //    setSceneWithFileDataId(1, 108803, -1); //caverns of time in Tanaris
 
 //    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
 //    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale
-//    setSceneWithFileDataId(0, 1269330, -1); //nightbornemale creature
+//    setwthFileDataId(0, 1269330, -1); //nightbornemale creature
 
 
     if (m_supportThreads) {
@@ -790,6 +793,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 		for (int i = 0; i < 4; i++) {
 			m_FrameParams[i] = WoWFrameData();
 		}
+        getDevice()->shrinkData();
 
         currentScene = newScene;
         newScene = nullptr;

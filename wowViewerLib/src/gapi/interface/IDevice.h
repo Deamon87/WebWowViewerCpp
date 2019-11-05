@@ -265,6 +265,8 @@ class IDevice {
 
         virtual void beginFrame() = 0;
         virtual void commitFrame() = 0;
+
+        virtual void shrinkData() {};
 };
 
 #include <cassert>

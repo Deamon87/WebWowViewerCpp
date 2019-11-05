@@ -104,6 +104,7 @@ public:
     void commitFrame() override ;
     void setViewPortDimensions(float x, float y, float width, float height) override;
 
+    void shrinkData() override;
 private:
     void drawMesh(HGMesh &hmesh);
     bool isDepthPreFill = false;

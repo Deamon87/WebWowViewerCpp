@@ -11,5 +11,5 @@ layout(location = 0) out vec4 outputColor;
 void main() {
     vec4 tex = texture(uTexture, vTexcoord0).rgba;
 
-    outputColor = vec4((vColor.rgb*tex.rgb), vColor.a );
+    outputColor = vec4((vColor.rgb*tex.rgb), tex.a * vColor.a );
 }

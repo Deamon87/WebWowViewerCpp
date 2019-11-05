@@ -914,4 +914,10 @@ void GDeviceGL33::setViewPortDimensions(float x, float y, float width, float hei
     glViewport(x,y,width,height);
 }
 
+void GDeviceGL33::shrinkData()  {
+    for (int i=0; i < 4; i++) {
+        m_UBOFrames[i] = {};
+    }
 
+    aggregationBufferForUpload = {};
+}

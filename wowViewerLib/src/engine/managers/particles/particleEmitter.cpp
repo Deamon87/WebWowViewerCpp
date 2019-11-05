@@ -562,6 +562,7 @@ CParticle2& ParticleEmitter::BirthParticle() {
 
 void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     if (particles.size() == 0 && this->generator != nullptr) {
+        szVertexCnt = 0;
         return;
     }
 
@@ -578,7 +579,13 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
 
 
     auto vboBufferDynamic = frame[m_api->getDevice()->getUpdateFrameNumber()].m_bufferVBO;
-    vboBufferDynamic->resize(particles.size() * sizeof(ParticleBuffStructQuad));
+    size_t maxFutureSize = particles.size() * sizeof(ParticleBuffStructQuad);
+    if ((m_data->old.flags & 0x60000) == 0x60000) {
+        maxFutureSize *= 2;
+    }
+
+    vboBufferDynamic->resize(maxFutureSize);
+
     szVertexBuf = (ParticleBuffStructQuad *) vboBufferDynamic->getPointerForModification();
     szVertexCnt = 0;
     for (int i = 0; i < particles.size(); i++) {
