@@ -195,14 +195,14 @@ bool CRibbonEmitter::IsDead() const
 //----- (00A19AA0) --------------------------------------------------------
 void CRibbonEmitter::SetBelow(float below)
 {
-  assert(below >= 0.0f);
+//  assert(below >= 0.0f);
   this->m_below = below;
 }
 
 //----- (00A19B10) --------------------------------------------------------
 void CRibbonEmitter::SetAbove(float above)
 {
-    assert(above >= 0.0f);
+//    assert(above >= 0.0f);
     this->m_above = above;
 }
 

@@ -22,14 +22,16 @@ void downloadSucceeded(emscripten_fetch_t *fetch) {
     HFileContent fileContent = std::make_shared<FileContent>(fetch->numBytes);
     std::copy(&fetch->data[0], &fetch->data[fetch->numBytes], fileContent->begin());
 
-    if (fileContent->size() > 4 && (*(uint32_t *)fileContent->data() == 0)) {
+
+//    HFileContent fileContent(&fetch->data[0], &fetch->data[fetch->numBytes]);
+    UserDataForRequest * userDataForRequest = (UserDataForRequest *)fetch->userData;
+
+    if (userDataForRequest->holderType != CacheHolderType::CACHE_ANIM && fileContent->size() > 4 && (*(uint32_t *)fileContent->data() == 0)) {
         std::cout << "Encountered encrypted file " << std::string(fetch->url) << std::endl;
         return;
     }
 
 
-//    HFileContent fileContent(&fetch->data[0], &fetch->data[fetch->numBytes]);
-    UserDataForRequest * userDataForRequest = (UserDataForRequest *)fetch->userData;
     userDataForRequest->processor->provideResult(userDataForRequest->fileName, fileContent, userDataForRequest->holderType);
     userDataForRequest->processor->currentlyProcessing--;
 

@@ -144,7 +144,7 @@ if (LINK_VULKAN)
 
     set(SPIRV_REF_SOURCES
         src/spirv/spirv_refl_main.cpp
-    )
+            src/gapi/interface/buffers/IVertexBufferDynamic.h src/spirv/webGLSLCompiler.cpp src/spirv/webGLSLCompiler.h)
     set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.cpp)
 
     add_custom_target(SPIRV_EXTRACT_META ALL)

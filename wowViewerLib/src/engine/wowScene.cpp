@@ -466,7 +466,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //        "creature/lorthemar/lorthemar.m2");
     m_usePlanarCamera = false;
 
-    m_firstCamera.setCameraPos(0, 0, 0);
+//    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
 //        "creature\\wingedhorse\\wingedhorse.m2");
 //    currentScene = new M2Scene(this,
@@ -596,8 +596,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\dungeon\\tombofsargerasraid\\7du_tombofsargeras_raid.wmo");
- currentScene = new WmoScene(this,
-        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
+// currentScene = new WmoScene(this,
+//        "world\\wmo\\khazmodan\\cities\\ironforge\\ironforge.wmo");
 
 // currentScene = new WmoScene(this,
 //        "WORLD\\WMO\\PANDARIA\\VALEOFETERNALBLOSSOMS\\TEMPLES\\MG_RAIDBUILDING_LD.WMO");
@@ -670,10 +670,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(0, 125407, -1); // phoneix
 //    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
 //    setSceneWithFileDataId(0, 125995, -1); //portal
+//    setSceneWithFileDataId(0, 418699, -1); //turtle
 //    setSceneWithFileDataId(0, 1612576, -1); //portal
 //    setSceneWithFileDataId(1, 108803, -1); //caverns of time in Tanaris
 
 //    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
+//    setSceneWithFileDataId(0, 1416430, -1); //illidan crystal
+    setSceneWithFileDataId(0, 341893, -1); //bone spike
+
+
 //    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale
 //    setwthFileDataId(0, 1269330, -1); //nightbornemale creature
 
