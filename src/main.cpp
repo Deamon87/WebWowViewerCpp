@@ -350,8 +350,8 @@ int main(){
 //    const char * url = "https://wow.tools/casc/file/fname?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=";
 //    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=data&filedataid=";
 //1.13.0
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
-   const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
+   const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
 
 //    const char * url = "http://178.165.92.24:40001/get/";
 //    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
