@@ -218,7 +218,7 @@ namespace SPIRV_CROSS_NAMESPACE {
 
         virtual void emit_subgroup_op(const Instruction &i);
 
-        virtual std::string type_to_glsl(const SPIRType &type, uint32_t id = 0);
+        virtual std::string type_to_glsl(const SPIRType &type, uint32_t id = 0, bool raiseException = true);
 
         virtual std::string builtin_to_glsl(spv::BuiltIn builtin, spv::StorageClass storage);
 

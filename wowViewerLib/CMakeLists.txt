@@ -165,26 +165,20 @@ if (LINK_VULKAN)
             set(srcTemplatePath ${srcDir}/${templateFile})
             if(NOT IS_DIRECTORY ${srcTemplatePath})
                 message(STATUS "Configuring file ${templateFile}")
+                get_filename_component(FILE_NAME_WO_EXT ${srcTemplatePath} NAME_WE)
                 get_filename_component(FILE_NAME ${srcTemplatePath} NAME)
-                set(SPIRV_NonOpt "${destDir}/${FILE_NAME}.non_opt.spv")
-                set(SPIRVOpt "${destDir}/${FILE_NAME}.spv")
+                set(SPIRV_NonOpt "${destDir}/${FILE_NAME}.spv")
+                set(SPIRVOpt "${destDir}/${FILE_NAME}.opt.spv")
 
-                set(SPIRV ${SPIRVOpt})
-                if (NOT SPIRV_OPT_APP)
-                    add_custom_command(
-                            OUTPUT ${SPIRV}
-                            COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                            COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV}
-                            DEPENDS ${srcTemplatePath})
-                else()
-                    add_custom_command(
-                            OUTPUT ${SPIRV_NonOpt}
-                            COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                            COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
-                            DEPENDS ${srcTemplatePath})
+                add_custom_command(
+                    OUTPUT ${SPIRV_NonOpt}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
+                    COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
+                    DEPENDS ${srcTemplatePath})
 
+                if(SPIRV_OPT_APP)
                     add_custom_command(
-                            OUTPUT ${SPIRV}
+                            OUTPUT ${SPIRVOpt}
                             COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
                             COMMAND ${SPIRV_OPT_APP} --inline-entry-points-exhaustive
                             --convert-local-access-chains
@@ -199,7 +193,7 @@ if (LINK_VULKAN)
                             --eliminate-local-multi-store
                             --eliminate-insert-extract
                             --eliminate-dead-code-aggressive
-                            -o ${SPIRV} ${SPIRV_NonOpt}
+                            -o ${SPIRVOpt} ${SPIRV_NonOpt}
                             DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
                 endif()
 
@@ -208,15 +202,22 @@ if (LINK_VULKAN)
                         PRE_BUILD
                         DEPENDS ${SPIRV})
 
-                list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+                list(APPEND SPIRV_BINARY_FILES_NON_OPT ${SPIRV_NonOpt})
+                list(APPEND SPIRV_BINARY_FILES_OPT ${SPIRVOpt})
             endif(NOT IS_DIRECTORY ${srcTemplatePath})
         endforeach(templateFile)
+
+        if (NOT SPIRV_OPT_APP)
+            SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_NON_OPT})
+        else()
+            SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
+        endif()
     endmacro(configure_filesVLK)
 
     configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv)
     add_custom_command(
             TARGET SPIRV_EXTRACT_META
-            COMMAND spirv_reflection ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
+            COMMAND spirv_reflection -smd ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
             DEPENDS ${SPIRV_BINARY_FILES}
             VERBATIM)
 

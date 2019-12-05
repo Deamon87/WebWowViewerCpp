@@ -10465,7 +10465,7 @@ string WebGLSLCompiler::convert_row_major_matrix(string exp_str, const SPIRType 
 
 string WebGLSLCompiler::variable_decl(const SPIRType &type, const string &name, uint32_t id)
 {
-    string type_name = type_to_glsl(type, id);
+    string type_name = type_to_glsl(type, id, false);
     remap_variable_type_name(type, name, type_name);
     return join(type_name, " ", name, type_to_array_glsl(type));
 }
@@ -10891,7 +10891,7 @@ string WebGLSLCompiler::type_to_glsl_constructor(const SPIRType &type)
 // The optional id parameter indicates the object whose type we are trying
 // to find the description for. It is optional. Most type descriptions do not
 // depend on a specific object's use of that type.
-string WebGLSLCompiler::type_to_glsl(const SPIRType &type, uint32_t id)
+string WebGLSLCompiler::type_to_glsl(const SPIRType &type, uint32_t id, bool raiseException)
 {
     if (type.pointer && type.storage == StorageClassPhysicalStorageBufferEXT && type.basetype != SPIRType::Struct)
     {
@@ -10936,7 +10936,7 @@ string WebGLSLCompiler::type_to_glsl(const SPIRType &type, uint32_t id)
             break;
     }
 
-    if (type.basetype == SPIRType::UInt && is_legacy())
+    if (type.basetype == SPIRType::UInt && is_legacy() && raiseException)
         SPIRV_CROSS_THROW("Unsigned integers are not supported on legacy targets.");
 
     if (type.vecsize == 1 && type.columns == 1) // Scalar builtin
@@ -11635,9 +11635,12 @@ void WebGLSLCompiler::branch(BlockID from, uint32_t cond, BlockID true_block, Bl
 
 //        std::cout << condStr << std::endl;
 
-        bool defineSubstituteRequired = condStr.find("uPixelShader") != std::string::npos;
+        bool defineSubstituteRequired =
+            (condStr.find("uPixelShader") != std::string::npos) ||
+            (condStr.find("uVertexShader") != std::string::npos) ;
         if (defineSubstituteRequired) {
             replace_str( condStr, "uPixelShader", "FRAGMENTSHADER");
+            replace_str( condStr, "uVertexShader", "VERTEXSHADER");
 //            condStr.replace()
         }
 
