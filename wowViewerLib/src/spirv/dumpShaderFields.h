@@ -11,6 +11,11 @@
 #include "fileHelpers.h"
 #include "webGLSLCompiler.h"
 
+struct attributeDefine {
+    std::string name;
+    int location;
+};
+
 struct fieldDefine {
     std::string name;
     bool isFloat ;
@@ -18,6 +23,21 @@ struct fieldDefine {
     int vecSize;
     int arraySize;
 };
+
+struct uboBindingData {
+    int set;
+    int binding;
+    int size;
+};
+
+struct shaderMetaData {
+    std::vector<uboBindingData> uboBindings;
+};
+
+//Per file
+std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;
+
+
 void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &fieldDefines, spirv_cross::TypeID type, std::string namePrefix, int offset, int currmemberSize) {
     auto memberType = glsl.get_type(type);
     int arraySize = memberType.array.size() > 0 ? memberType.array[0] : 0;
@@ -36,11 +56,6 @@ void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &f
         if (arrayLiteral) {
             for (int j = 0; j < arraySize; j++) {
                 for (int k = 0; k < memberType.member_types.size(); k++) {
-//                auto memberSize = glsl.get_declared_struct_member_size(type,., j);
-//                auto offset = glsl.type_struct_member_offset(uboParentType, j);
-
-
-
                     auto memberName = glsl.get_member_name(memberType.parent_type, k);
                     auto memberOffset = glsl.type_struct_member_offset(memberType, k);
                     auto memberSize = glsl.get_declared_struct_member_size(memberType, k);
@@ -77,8 +92,19 @@ void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &f
 
 void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
-    std::cout << "#include <string>" << std::endl;
-    std::cout << "#include <unordered_map>" << std::endl;
+
+    std::cout << "#ifndef WOWMAPVIEWERREVIVED_SHADERDEFINITIONS_H\n"
+                 "#define WOWMAPVIEWERREVIVED_SHADERDEFINITIONS_H\n"
+                 "\n"
+                 "#include <string>\n"
+                 "#include <iostream>\n"
+                 "#include <fstream>\n"
+                "#include <unordered_map>\n"
+                 "\n"
+                 "template <typename T>\n"
+                 "inline constexpr const uint32_t operator+ (T const val) { return static_cast<const uint32_t>(val); };" << std::endl;
+
+
     std::cout << "    struct fieldDefine {\n"
                  "        std::string name;\n"
                  "        bool isFloat ;\n"
@@ -87,8 +113,27 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                  "        int arraySize;\n"
                  "    };" << std::endl;
 
+    std::cout << "struct attributeDefine {\n"
+                 "    std::string name;\n"
+                 "    int location;\n"
+                 "};" << std::endl;
+
+    std::cout << "struct uboBindingData {\n"
+                 "    int set;\n"
+                 "    int binding;\n"
+                 "    int size;\n"
+                 "};\n"
+                 "\n"
+                 "struct shaderMetaData {\n"
+                 "    std::vector<uboBindingData> uboBindings;\n"
+                 "};\n"
+                 "\n"
+                 "//Per file\n"
+                 "const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;" << std::endl;
+
 
     std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName;
+    std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName;
 
     for (auto &filePath : shaderFilePaths) {
 
@@ -100,21 +145,52 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         auto tokens = split(fileName, '.');
 
 
-        //Find or create new record for shader
 
-        auto it = fieldDefMapPerShaderName.find(tokens[0]);
-        if (it == fieldDefMapPerShaderName.end()) {
-            fieldDefMapPerShaderName[tokens[0]] = {};
+
+        //Find or create new record for shader
+        {
+            auto it = fieldDefMapPerShaderName.find(tokens[0]);
+            if (it == fieldDefMapPerShaderName.end()) {
+                fieldDefMapPerShaderName[tokens[0]] = {};
+            }
+        }
+
+        {
+            auto it = shaderMetaInfo.find(fileName);
+            if (it == shaderMetaInfo.end()) {
+                shaderMetaInfo[fileName] = {};
+            }
         }
         auto &perSetMap = fieldDefMapPerShaderName.at(tokens[0]);
+        auto &metaInfo = shaderMetaInfo.at(fileName);
 
 
         spirv_cross::WebGLSLCompiler glsl(std::move(spirv_binary));
 
+        if (glsl.get_entry_points_and_stages()[0].execution_model == spv::ExecutionModel::ExecutionModelVertex) {
+            auto it = attributesPerShaderName.find(tokens[0]);
+            if (it == attributesPerShaderName.end()) {
+                attributesPerShaderName[tokens[0]] = {};
+            }
+            auto &shaderAttributeVector = attributesPerShaderName.at(tokens[0]);
+
+
+            auto inputAttributes = glsl.get_shader_resources();
+            for (auto &attribute : inputAttributes.stage_inputs) {
+                //Create a record if it didnt exist yet
+
+                auto location = glsl.get_decoration(attribute.id, spv::DecorationLocation);
+
+                shaderAttributeVector.push_back({attribute.name, location});
+            }
+
+            std::sort(shaderAttributeVector.begin(), shaderAttributeVector.end(), [](const attributeDefine &a, const attributeDefine &b) -> bool {
+               return a.location < b.location;
+            });
+        }
+
         // The SPIR-V is now parsed, and we can perform reflection on it.
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();
-
-
         for (auto &resource : resources.uniform_buffers) {
             auto uboType = glsl.get_type(resource.type_id);
 
@@ -122,6 +198,9 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
             unsigned set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
             unsigned binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
+
+            metaInfo.uboBindings.push_back({set, binding, typeId_size});
+            std::cout << "{" << set << "," << binding << "," << typeId_size << "}," << std::endl;
 
             if (perSetMap.find(binding) != perSetMap.end()) {
                 perSetMap[binding]={};
@@ -143,17 +222,69 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         }
     }
 
-    std::cout << "std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName = {" << std::endl;
-    for (auto it = fieldDefMapPerShaderName.begin(); it != fieldDefMapPerShaderName.end(); it++) {
+    //Create attribute enums
+    for (auto it = attributesPerShaderName.begin(); it != attributesPerShaderName.end(); it++) {
+        std::cout << "struct "<< it->first << " {\n"
+                     "    enum class Attribute {"   << std::endl;
+
+        std::cout << "        ";
+        for (auto &attributeInfo : it->second) {
+            std::cout << "" << attributeInfo.name << " = " << attributeInfo.location << ", ";
+        }
+
+        std::cout << it->first << "AttributeEnd" << std::endl;
+        std::cout << "    };\n"
+                     "};" << std::endl << std::endl;
+    }
+
+
+
+    //Dump attribute info
+    std::cout << "std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName = {" << std::endl;
+
+    for (auto it = attributesPerShaderName.begin(); it != attributesPerShaderName.end(); it++) {
         std::cout << "{\"" << it->first << "\", " << " {" << std::endl;
 
-        for (auto subIt = it->second.begin(); subIt != it->second.end(); subIt++) {
-            std::cout << "{" << std::endl;
+        for (auto &attributeInfo : it->second) {
+            std::cout << "{\"" << attributeInfo.name << "\", " << attributeInfo.location << "}," << std::endl;
+        }
 
-            std::cout << subIt->first <<", {" << std::endl;
+        std::cout << "}},";
+    }
+    std::cout << "};" << std::endl << std::endl;
+
+    //Add shader meta
+    std::cout << "const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {";
+    for (auto it = shaderMetaInfo.begin(); it != shaderMetaInfo.end(); it++) {
+        std::cout << "{ \"" << it->first << "\", {\n";
+        std::cout << "{\n";
+
+        for (auto subIt = it->second.uboBindings.begin(); subIt != it->second.uboBindings.end(); subIt++) {
+            std::cout << "{" << subIt->set << "," << subIt->binding << "," << subIt->size << "}," << std::endl;
+        }
+
+        std::cout << "}\n";
+        std::cout << "}\n},";
+
+
+    }
+    std::cout << "};" << std::endl << std::endl;
+
+
+
+
+    //Dump unfform bufffers info
+    std::cout << "std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName = {" << std::endl;
+    for (auto it = fieldDefMapPerShaderName.begin(); it != fieldDefMapPerShaderName.end(); it++) {
+        std::cout << "  {\"" << it->first << "\", " << " {" << std::endl;
+
+        for (auto subIt = it->second.begin(); subIt != it->second.end(); subIt++) {
+            std::cout << "    {" << std::endl;
+
+            std::cout << "      " << subIt->first <<", {" << std::endl;
 
             for (auto &fieldDef : subIt->second) {
-                std::cout << "{"
+                std::cout << "        {"
                           << "\"" << fieldDef.name << "\", "
                           << (fieldDef.isFloat ? "true" : "false") << ", "
                           << fieldDef.columns << ", "
@@ -161,17 +292,17 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                           << fieldDef.arraySize << "}," << std::endl;
             }
 
-            std::cout << "}" << std::endl;
+            std::cout << "      }" << std::endl;
 
-            std::cout << "}," << std::endl;
+            std::cout << "    }," << std::endl;
         }
 
-        std::cout << "}},";
-
-
+        std::cout << "  }}," << std::endl;
     }
 
     std::cout << "};" << std::endl;
+
+    std::cout << std::endl << "#endif" << std::endl;
 }
 
 #endif //AWEBWOWVIEWERCPP_DUMPSHADERFIELDS_H
