@@ -1332,3 +1332,19 @@ M2Object *WmoObject::getSkyBoxForGroup(int groupNum) {
 
     return skyBox;
 }
+
+WmoObject::~WmoObject() {
+    for (auto& obj : groupObjects) {
+        delete obj;
+    }
+    for (auto& obj : groupObjectsLod1) {
+        delete obj;
+    }
+    for (auto& obj : groupObjectsLod2) {
+        delete obj;
+    }
+    for (auto& obj : m_doodadsArray) {
+        delete obj;
+    }
+
+}

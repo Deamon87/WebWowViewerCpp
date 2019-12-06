@@ -26,16 +26,7 @@ class M2Object {
 public:
     M2Object(IWoWInnerApi *api, bool isSkybox = false) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox) {}
 
-    ~M2Object() {
-        delete m_animationManager;
-
-        for (auto &obj: particleEmitters) {
-            delete obj;
-        }
-        for (auto &obj: ribbonEmitters) {
-            delete obj;
-        }
-    }
+    ~M2Object();
 
     friend class M2InstancingObject;
     friend class M2MeshBufferUpdater;

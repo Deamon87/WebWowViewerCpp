@@ -12,7 +12,7 @@ class GDeviceGL33;
 #include "../GDeviceVulkan.h"
 #include "../../interface/IShaderPermutation.h"
 #include "../descriptorSets/GDescriptorSet.h"
-#include "shaderMeta/shaderMetaData.h"
+#include "../../../engine/shader/ShaderDefinitions.h"
 
 class GShaderPermutationVLK : public IShaderPermutation {
     friend class GDeviceVLK;

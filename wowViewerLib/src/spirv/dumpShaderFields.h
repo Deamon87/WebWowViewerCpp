@@ -91,27 +91,26 @@ void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &f
 }
 
 void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
-
-
     std::cout << "#ifndef WOWMAPVIEWERREVIVED_SHADERDEFINITIONS_H\n"
                  "#define WOWMAPVIEWERREVIVED_SHADERDEFINITIONS_H\n"
                  "\n"
                  "#include <string>\n"
                  "#include <iostream>\n"
                  "#include <fstream>\n"
-                "#include <unordered_map>\n"
+                 "#include <vector>\n"
+                 "#include <unordered_map>\n"
                  "\n"
                  "template <typename T>\n"
                  "inline constexpr const uint32_t operator+ (T const val) { return static_cast<const uint32_t>(val); };" << std::endl;
 
 
-    std::cout << "    struct fieldDefine {\n"
-                 "        std::string name;\n"
-                 "        bool isFloat ;\n"
-                 "        int columns;\n"
-                 "        int vecSize;\n"
-                 "        int arraySize;\n"
-                 "    };" << std::endl;
+    std::cout << "struct fieldDefine {\n"
+                 "    std::string name;\n"
+                 "    bool isFloat ;\n"
+                 "    int columns;\n"
+                 "    int vecSize;\n"
+                 "    int arraySize;\n"
+                 "};" << std::endl;
 
     std::cout << "struct attributeDefine {\n"
                  "    std::string name;\n"
@@ -129,12 +128,13 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                  "};\n"
                  "\n"
                  "//Per file\n"
-                 "const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;" << std::endl;
+                 "extern const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;" << std::endl;
 
 
     std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName;
     std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName;
 
+    //1. Collect data
     for (auto &filePath : shaderFilePaths) {
 
 //        std::cerr << filePath << std::endl << std::flush;
@@ -143,9 +143,6 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
         std::string fileName = basename(filePath);
         auto tokens = split(fileName, '.');
-
-
-
 
         //Find or create new record for shader
         {
@@ -200,7 +197,6 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
             unsigned binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
 
             metaInfo.uboBindings.push_back({set, binding, typeId_size});
-            std::cout << "{" << set << "," << binding << "," << typeId_size << "}," << std::endl;
 
             if (perSetMap.find(binding) != perSetMap.end()) {
                 perSetMap[binding]={};
@@ -222,7 +218,7 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         }
     }
 
-    //Create attribute enums
+    //2.1 Create attribute enums
     for (auto it = attributesPerShaderName.begin(); it != attributesPerShaderName.end(); it++) {
         std::cout << "struct "<< it->first << " {\n"
                      "    enum class Attribute {"   << std::endl;
@@ -236,10 +232,13 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         std::cout << "    };\n"
                      "};" << std::endl << std::endl;
     }
+    std::cout << "std::string loadShader(std::string shaderName);" << std::endl;
 
+    //3.1 cpp only data
 
+    std::cout << "#ifdef SHADERDATACPP" << std::endl;
 
-    //Dump attribute info
+    //3.2 Dump attribute info
     std::cout << "std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName = {" << std::endl;
 
     for (auto it = attributesPerShaderName.begin(); it != attributesPerShaderName.end(); it++) {
@@ -299,8 +298,10 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
         std::cout << "  }}," << std::endl;
     }
-
     std::cout << "};" << std::endl;
+
+    std::cout << "#endif" << std::endl << std::endl;
+
 
     std::cout << std::endl << "#endif" << std::endl;
 }

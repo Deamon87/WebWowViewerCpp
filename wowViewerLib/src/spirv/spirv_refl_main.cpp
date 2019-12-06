@@ -5,7 +5,6 @@
 #include "spirv_glsl.hpp"
 #include "webGLSLCompiler.h"
 #include "dumpShaderFields.h"
-#include "dumpShaderMetaData.h"
 #include "dumpGLSLShader.h"
 #include <vector>
 #include <utility>
@@ -25,9 +24,7 @@ int main(int argc, char **argv)
 
     if (mode == "-sf") {
         dumpShaderUniformOffsets(filePaths);
-    } else if (mode == "-smd") {
-        dumpMetaData(filePaths);
-    } else if (mode == "-glsl100") {
+    }  else if (mode == "-glsl100") {
         dumpGLSLText(filePaths, 100);
     } else if (mode == "-glsl330") {
         dumpGLSLText(filePaths, 330);

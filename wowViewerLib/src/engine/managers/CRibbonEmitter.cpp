@@ -6,9 +6,9 @@
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 
 static GBufferBinding staticRibbonBindings[3] = {
-    {+m2RibbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 24, 0 }, // 0
-    {+m2RibbonShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 24, 12}, // 12
-    {+m2RibbonShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 24, 16}, // 16
+    {+ribbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 24, 0 }, // 0
+    {+ribbonShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 24, 12}, // 12
+    {+ribbonShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 24, 16}, // 16
     //24
 };
 

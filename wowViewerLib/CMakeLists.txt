@@ -147,7 +147,7 @@ if (LINK_VULKAN)
             src/spirv/webGLSLCompiler.cpp
             src/spirv/webGLSLCompiler.h
             src/spirv/dumpShaderFields.h src/spirv/dumpShaderMetaData.h src/spirv/dumpGLSLShader.h)
-    set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.cpp)
+    set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/engine/shader/ShaderDefinitions.h)
 
     add_custom_target(SPIRV_EXTRACT_META ALL)
 
@@ -217,8 +217,8 @@ if (LINK_VULKAN)
     configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv)
     add_custom_command(
             TARGET SPIRV_EXTRACT_META
-            COMMAND spirv_reflection -smd ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
-            DEPENDS ${SPIRV_BINARY_FILES}
+            COMMAND spirv_reflection -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
+            DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
             VERBATIM)
 
 endif()
@@ -448,7 +448,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
-            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.cpp src/gapi/vulkan/shaders/shaderMeta/shaderMetaData.h)
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)

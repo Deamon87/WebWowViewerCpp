@@ -411,6 +411,18 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
     return 1;
 }
 
+M2Object::~M2Object() {
+    delete m_animationManager;
+
+    for (auto &obj: particleEmitters) {
+        delete obj;
+    }
+    for (auto &obj: ribbonEmitters) {
+        delete obj;
+    }
+}
+
+
 void M2Object::createAABB() {
     M2Data *m2Data = m_m2Geom->getM2Data();
 
