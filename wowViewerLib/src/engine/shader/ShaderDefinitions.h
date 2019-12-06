@@ -12,6 +12,7 @@ inline constexpr const uint32_t operator+ (T const val) { return static_cast<con
 struct fieldDefine {
     std::string name;
     bool isFloat ;
+    int offset;
     int columns;
     int vecSize;
     int arraySize;
@@ -330,246 +331,246 @@ std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>
   {"renderFrameBufferShader",  {
     {
       2, {
-        {"_34.gauss_offsets", true, 1, 1, 5},
-        {"_34.gauss_weights", true, 1, 1, 5},
-        {"_34.uResolution", true, 1, 2, 0},
+        {"_34.gauss_offsets", true, 0, 1, 1, 5},
+        {"_34.gauss_weights", true, 80, 1, 1, 5},
+        {"_34.uResolution", true, 160, 1, 2, 0},
       }
     },
   }},
   {"m2Shader",  {
     {
       2, {
-        {"_230.vertexShader_IsAffectedByLight", false, 1, 4, 0},
-        {"_230.color_Transparency", true, 1, 4, 0},
-        {"_230.uTextMat", true, 4, 4, 2},
+        {"_230.vertexShader_IsAffectedByLight", false, 0, 1, 4, 0},
+        {"_230.color_Transparency", true, 16, 1, 4, 0},
+        {"_230.uTextMat", true, 32, 4, 4, 2},
       }
     },
     {
       1, {
-        {"_133.uPlacementMat", true, 4, 4, 0},
-        {"_133.uBoneMatrixes", true, 4, 4, 220},
+        {"_133.uPlacementMat", true, 0, 4, 4, 0},
+        {"_133.uBoneMatrixes", true, 64, 4, 4, 220},
       }
     },
     {
       0, {
-        {"_237.uLookAtMat", true, 4, 4, 0},
-        {"_237.uPMatrix", true, 4, 4, 0},
+        {"_237.uLookAtMat", true, 0, 4, 4, 0},
+        {"_237.uPMatrix", true, 64, 4, 4, 0},
       }
     },
     {
       4, {
-        {"_29.PixelShader_UnFogged_IsAffectedByLight_LightCount", false, 1, 4, 0},
-        {"_29.uFogColorAndAlphaTest", true, 1, 4, 0},
-        {"_29.pc_lights[0].color", true, 1, 4, 0},
-        {"_29.pc_lights[0].position", true, 1, 4, 0},
-        {"_29.pc_lights[0].attenuation", true, 1, 4, 0},
-        {"_29.pc_lights[1].color", true, 1, 4, 0},
-        {"_29.pc_lights[1].position", true, 1, 4, 0},
-        {"_29.pc_lights[1].attenuation", true, 1, 4, 0},
-        {"_29.pc_lights[2].color", true, 1, 4, 0},
-        {"_29.pc_lights[2].position", true, 1, 4, 0},
-        {"_29.pc_lights[2].attenuation", true, 1, 4, 0},
-        {"_29.pc_lights[3].color", true, 1, 4, 0},
-        {"_29.pc_lights[3].position", true, 1, 4, 0},
-        {"_29.pc_lights[3].attenuation", true, 1, 4, 0},
-        {"_29.uPcColor", true, 1, 4, 0},
+        {"_29.PixelShader_UnFogged_IsAffectedByLight_LightCount", false, 0, 1, 4, 0},
+        {"_29.uFogColorAndAlphaTest", true, 16, 1, 4, 0},
+        {"_29.pc_lights[0].color", true, 32, 1, 4, 0},
+        {"_29.pc_lights[0].position", true, 48, 1, 4, 0},
+        {"_29.pc_lights[0].attenuation", true, 64, 1, 4, 0},
+        {"_29.pc_lights[1].color", true, 80, 1, 4, 0},
+        {"_29.pc_lights[1].position", true, 96, 1, 4, 0},
+        {"_29.pc_lights[1].attenuation", true, 112, 1, 4, 0},
+        {"_29.pc_lights[2].color", true, 128, 1, 4, 0},
+        {"_29.pc_lights[2].position", true, 144, 1, 4, 0},
+        {"_29.pc_lights[2].attenuation", true, 160, 1, 4, 0},
+        {"_29.pc_lights[3].color", true, 176, 1, 4, 0},
+        {"_29.pc_lights[3].position", true, 192, 1, 4, 0},
+        {"_29.pc_lights[3].attenuation", true, 208, 1, 4, 0},
+        {"_29.uPcColor", true, 224, 1, 4, 0},
       }
     },
     {
       3, {
-        {"_49.uViewUp", true, 1, 4, 0},
-        {"_49.uSunDirAndFogStart", true, 1, 4, 0},
-        {"_49.uSunColorAndFogEnd", true, 1, 4, 0},
-        {"_49.uAmbientLight", true, 1, 4, 0},
+        {"_49.uViewUp", true, 0, 1, 4, 0},
+        {"_49.uSunDirAndFogStart", true, 16, 1, 4, 0},
+        {"_49.uSunColorAndFogEnd", true, 32, 1, 4, 0},
+        {"_49.uAmbientLight", true, 48, 1, 4, 0},
       }
     },
   }},
   {"wmoShader",  {
     {
       2, {
-        {"_164.VertexShader_UseLitColor", false, 1, 4, 0},
+        {"_164.VertexShader_UseLitColor", false, 0, 1, 4, 0},
       }
     },
     {
       0, {
-        {"_75.uLookAtMat", true, 4, 4, 0},
-        {"_75.uPMatrix", true, 4, 4, 0},
+        {"_75.uLookAtMat", true, 0, 4, 4, 0},
+        {"_75.uPMatrix", true, 64, 4, 4, 0},
       }
     },
     {
       1, {
-        {"_58.uPlacementMat", true, 4, 4, 0},
+        {"_58.uPlacementMat", true, 0, 4, 4, 0},
       }
     },
     {
       4, {
-        {"_21.uViewUp", true, 1, 4, 0},
-        {"_21.uSunDir_FogStart", true, 1, 4, 0},
-        {"_21.uSunColor_uFogEnd", true, 1, 4, 0},
-        {"_21.uAmbientLight", true, 1, 4, 0},
-        {"_21.uAmbientLight2AndIsBatchA", true, 1, 4, 0},
-        {"_21.UseLitColor_EnableAlpha_PixelShader", false, 1, 4, 0},
-        {"_21.FogColor_AlphaTest", true, 1, 4, 0},
+        {"_21.uViewUp", true, 0, 1, 4, 0},
+        {"_21.uSunDir_FogStart", true, 16, 1, 4, 0},
+        {"_21.uSunColor_uFogEnd", true, 32, 1, 4, 0},
+        {"_21.uAmbientLight", true, 48, 1, 4, 0},
+        {"_21.uAmbientLight2AndIsBatchA", true, 64, 1, 4, 0},
+        {"_21.UseLitColor_EnableAlpha_PixelShader", false, 80, 1, 4, 0},
+        {"_21.FogColor_AlphaTest", true, 96, 1, 4, 0},
       }
     },
     {
       3, {
-        {"_895.uPlacementMat", true, 4, 4, 0},
+        {"_895.uPlacementMat", true, 0, 4, 4, 0},
       }
     },
   }},
   {"drawPortalShader",  {
     {
       0, {
-        {"_30.uLookAtMat", true, 4, 4, 0},
-        {"_30.uPMatrix", true, 4, 4, 0},
+        {"_30.uLookAtMat", true, 0, 4, 4, 0},
+        {"_30.uPMatrix", true, 64, 4, 4, 0},
       }
     },
     {
       1, {
-        {"_40.uPlacementMat", true, 4, 4, 0},
+        {"_40.uPlacementMat", true, 0, 4, 4, 0},
       }
     },
   }},
   {"m2ParticleShader",  {
     {
       0, {
-        {"_47.uLookAtMat", true, 4, 4, 0},
-        {"_47.uPMatrix", true, 4, 4, 0},
+        {"_47.uLookAtMat", true, 0, 4, 4, 0},
+        {"_47.uPMatrix", true, 64, 4, 4, 0},
       }
     },
     {
       4, {
-        {"_38.uAlphaTestv", true, 1, 4, 0},
-        {"_38.uPixelShaderv", false, 1, 4, 0},
+        {"_38.uAlphaTestv", true, 0, 1, 4, 0},
+        {"_38.uPixelShaderv", false, 16, 1, 4, 0},
       }
     },
   }},
   {"adtShader",  {
     {
       2, {
-        {"_100.uPos", true, 1, 4, 0},
+        {"_100.uPos", true, 0, 1, 4, 0},
       }
     },
     {
       0, {
-        {"_53.uLookAtMat", true, 4, 4, 0},
-        {"_53.uPMatrix", true, 4, 4, 0},
+        {"_53.uLookAtMat", true, 0, 4, 4, 0},
+        {"_53.uPMatrix", true, 64, 4, 4, 0},
       }
     },
     {
       3, {
-        {"_33.uViewUp", true, 1, 4, 0},
-        {"_33.uSunDir_FogStart", true, 1, 4, 0},
-        {"_33.uSunColor_uFogEnd", true, 1, 4, 0},
-        {"_33.uAmbientLight", true, 1, 4, 0},
-        {"_33.FogColor", true, 1, 4, 0},
+        {"_33.uViewUp", true, 0, 1, 4, 0},
+        {"_33.uSunDir_FogStart", true, 16, 1, 4, 0},
+        {"_33.uSunColor_uFogEnd", true, 32, 1, 4, 0},
+        {"_33.uAmbientLight", true, 48, 1, 4, 0},
+        {"_33.FogColor", true, 64, 1, 4, 0},
       }
     },
     {
       4, {
-        {"_184.uHeightScale", true, 1, 4, 0},
-        {"_184.uHeightOffset", true, 1, 4, 0},
+        {"_184.uHeightScale", true, 0, 1, 4, 0},
+        {"_184.uHeightOffset", true, 16, 1, 4, 0},
       }
     },
   }},
   {"adtLodShader",  {
     {
       0, {
-        {"_55.uPos", true, 1, 3, 0},
-        {"_55.uLookAtMat", true, 4, 4, 0},
-        {"_55.uPMatrix", true, 4, 4, 0},
+        {"_55.uPos", true, 0, 1, 3, 0},
+        {"_55.uLookAtMat", true, 16, 4, 4, 0},
+        {"_55.uPMatrix", true, 80, 4, 4, 0},
       }
     },
   }},
   {"ribbonShader",  {
     {
       0, {
-        {"_41.uLookAtMat", true, 4, 4, 0},
-        {"_41.uPMatrix", true, 4, 4, 0},
+        {"_41.uLookAtMat", true, 0, 4, 4, 0},
+        {"_41.uPMatrix", true, 64, 4, 4, 0},
       }
     },
   }},
   {"drawDepthShader",  {
     {
       2, {
-        {"_36.uWidth", true, 1, 1, 0},
-        {"_36.uHeight", true, 1, 1, 0},
-        {"_36.uX", true, 1, 1, 0},
-        {"_36.uY", true, 1, 1, 0},
+        {"_36.uWidth", true, 0, 1, 1, 0},
+        {"_36.uHeight", true, 4, 1, 1, 0},
+        {"_36.uX", true, 8, 1, 1, 0},
+        {"_36.uY", true, 12, 1, 1, 0},
       }
     },
   }},
   {"drawLinesShader",  {
     {
       0, {
-        {"_19.uLookAtMat", true, 4, 4, 0},
-        {"_19.uPMatrix", true, 4, 4, 0},
+        {"_19.uLookAtMat", true, 0, 4, 4, 0},
+        {"_19.uPMatrix", true, 64, 4, 4, 0},
       }
     },
     {
       1, {
-        {"_19.uColor", true, 1, 3, 0},
+        {"_19.uColor", true, 0, 1, 3, 0},
       }
     },
   }},
   {"waterShader",  {
     {
       1, {
-        {"_32.uPlacementMat", true, 4, 4, 0},
+        {"_32.uPlacementMat", true, 0, 4, 4, 0},
       }
     },
     {
       4, {
-        {"_9.waterType", false, 1, 1, 0},
+        {"_9.waterType", false, 0, 1, 1, 0},
       }
     },
     {
       0, {
-        {"_24.uLookAtMat", true, 4, 4, 0},
-        {"_24.uPMatrix", true, 4, 4, 0},
+        {"_24.uLookAtMat", true, 0, 4, 4, 0},
+        {"_24.uPMatrix", true, 64, 4, 4, 0},
       }
     },
   }},
   {"drawBBShader",  {
     {
       1, {
-        {"_21.uPlacementMat", true, 4, 4, 0},
-        {"_21.uBBScale", true, 1, 4, 0},
-        {"_21.uBBCenter", true, 1, 4, 0},
-        {"_21.uColor", true, 1, 4, 0},
+        {"_21.uPlacementMat", true, 0, 4, 4, 0},
+        {"_21.uBBScale", true, 64, 1, 4, 0},
+        {"_21.uBBCenter", true, 80, 1, 4, 0},
+        {"_21.uColor", true, 96, 1, 4, 0},
       }
     },
     {
       0, {
-        {"_59.uLookAtMat", true, 4, 4, 0},
-        {"_59.uPMatrix", true, 4, 4, 0},
+        {"_59.uLookAtMat", true, 0, 4, 4, 0},
+        {"_59.uPMatrix", true, 64, 4, 4, 0},
       }
     },
   }},
   {"drawPoints",  {
     {
       0, {
-        {"_19.uLookAtMat", true, 4, 4, 0},
-        {"_19.uPMatrix", true, 4, 4, 0},
+        {"_19.uLookAtMat", true, 0, 4, 4, 0},
+        {"_19.uPMatrix", true, 64, 4, 4, 0},
       }
     },
     {
       1, {
-        {"_29.uPlacementMat", true, 4, 4, 0},
+        {"_29.uPlacementMat", true, 0, 4, 4, 0},
       }
     },
   }},
   {"drawFrustumShader",  {
     {
       0, {
-        {"_13.uLookAtMat", true, 4, 4, 0},
-        {"_13.uPMatrix", true, 4, 4, 0},
+        {"_13.uLookAtMat", true, 0, 4, 4, 0},
+        {"_13.uPMatrix", true, 64, 4, 4, 0},
       }
     },
     {
       2, {
-        {"_22.uColor", true, 1, 3, 0},
+        {"_22.uColor", true, 0, 1, 3, 0},
       }
     },
   }},

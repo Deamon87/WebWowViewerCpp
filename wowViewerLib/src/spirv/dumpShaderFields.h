@@ -19,6 +19,7 @@ struct attributeDefine {
 struct fieldDefine {
     std::string name;
     bool isFloat ;
+    int offset;
     int columns;
     int vecSize;
     int arraySize;
@@ -75,7 +76,7 @@ void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &f
     } else {
         bool isFloat = (memberType.basetype == spirv_cross::SPIRType::Float);
 //        std::cout << "{\"" <<namePrefix <<"\","<< isFloat << ", " <<columns<<","<<vecSize<<","<<arraySize << "}"<<std::endl;
-        fieldDefines.push_back({namePrefix,isFloat ,columns,vecSize,arraySize});
+        fieldDefines.push_back({namePrefix, isFloat, offset, columns,vecSize,arraySize});
 
 //        std::cout <<
 //                  namePrefix <<
@@ -107,6 +108,7 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
     std::cout << "struct fieldDefine {\n"
                  "    std::string name;\n"
                  "    bool isFloat ;\n"
+                 "    int offset;\n"
                  "    int columns;\n"
                  "    int vecSize;\n"
                  "    int arraySize;\n"
@@ -286,6 +288,7 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                 std::cout << "        {"
                           << "\"" << fieldDef.name << "\", "
                           << (fieldDef.isFloat ? "true" : "false") << ", "
+                          << fieldDef.offset << ", "
                           << fieldDef.columns << ", "
                           << fieldDef.vecSize << ", "
                           << fieldDef.arraySize << "}," << std::endl;
