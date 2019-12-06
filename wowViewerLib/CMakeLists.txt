@@ -4,7 +4,8 @@ project(WoWViewerLib)
 include(CheckCXXCompilerFlag)
 
 set(LINK_GLEW 1)
-set(LINK_OGL 1)
+set(LINK_OGL2 1)
+set(LINK_OGL3 1)
 set(LINK_OGL4 1)
 set(LINK_VULKAN 1)
 set(LINK_OPENMP 1)
@@ -109,37 +110,7 @@ endif()
 
 message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
 
-if (LINK_OGL)
-    macro(configure_files srcDir destDir)
-        message(STATUS "Configuring directory ${destDir}")
-        make_directory(${destDir})
-
-        file(GLOB templateFiles RELATIVE ${srcDir} ${srcDir}/*)
-        foreach(templateFile ${templateFiles})
-            set(srcTemplatePath ${srcDir}/${templateFile})
-            if(NOT IS_DIRECTORY ${srcTemplatePath})
-                message(STATUS "Configuring file ${templateFile}")
-                configure_file(
-                        ${srcTemplatePath}
-                        ${destDir}/${templateFile}
-                        COPYONLY)
-            endif(NOT IS_DIRECTORY ${srcTemplatePath})
-        endforeach(templateFile)
-    endmacro(configure_files)
-
-
-    message("GLSL_VALIDATOR_Test = ${GLSL_VALIDATOR_Test}")
-    configure_files(${PROJECT_SOURCE_DIR}/src/glsl/glsl3.3/ ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
-    configure_files(${PROJECT_SOURCE_DIR}/src/glsl/common/ ${GLSL_TARGET_FOLDER}/glsl/common/)
-
-    if(NOT GLSL_VALIDATOR_Test)
-        message(FATAL_ERROR "GLSL_VALIDATOR_Test is empty. Path to glslvalidator is not set")
-    endif()
-
-    include_directories(${PROJECT_SOURCE_DIR}/src/opengl/)
-endif()
-
-if (LINK_VULKAN)
+if (1)
     add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross)
 
     set(SPIRV_REF_SOURCES
@@ -156,7 +127,7 @@ if (LINK_VULKAN)
     target_include_directories(spirv_reflection PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross/)
 
 
-    macro(configure_filesVLK srcDir destDir)
+    macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
         message(STATUS "Configuring directory ${destDir}")
         make_directory(${destDir})
 
@@ -204,6 +175,11 @@ if (LINK_VULKAN)
 
                 list(APPEND SPIRV_BINARY_FILES_NON_OPT ${SPIRV_NonOpt})
                 list(APPEND SPIRV_BINARY_FILES_OPT ${SPIRVOpt})
+
+                #Generate GLSL for ogl33 and ogl20 from spirv
+                set(GLSL20_FILE ${destDirGL20}/${FILE_NAME})
+                set(GLSL33_FILE ${destDirGL33}/${FILE_NAME})
+
             endif(NOT IS_DIRECTORY ${srcTemplatePath})
         endforeach(templateFile)
 
@@ -214,7 +190,8 @@ if (LINK_VULKAN)
         endif()
     endmacro(configure_filesVLK)
 
-    configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv)
+    configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv
+            ${GLSL_TARGET_FOLDER}/glsl/glsl20/ ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
     add_custom_command(
             TARGET SPIRV_EXTRACT_META
             COMMAND spirv_reflection -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
@@ -347,7 +324,46 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/algorithms/FrameCounter.cpp
         src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h)
 
-set(OPENGL33_IMPLEMENTATION    src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
+set(OPENGL20_IMPLEMENTATION
+        src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
+        src/gapi/ogl2.0/textures/GBlpTextureGL20.h
+        src/gapi/ogl2.0/buffers/GVertexBufferDynamicGL20.cpp
+        src/gapi/ogl2.0/buffers/GVertexBufferGL20.cpp
+        src/gapi/ogl2.0/buffers/GVertexBufferGL20.h
+        src/gapi/ogl2.0/buffers/GIndexBufferGL20.cpp
+        src/gapi/ogl2.0/buffers/GIndexBufferGL20.h
+        src/gapi/ogl2.0/buffers/GUniformBufferGL20.cpp
+        src/gapi/ogl2.0/buffers/GUniformBufferGL20.h
+        src/gapi/ogl2.0/GRenderTargetGL20.cpp
+        src/gapi/ogl2.0/GRenderTargetGL20.h
+        src/gapi/ogl2.0/GDeviceGL20.cpp
+        src/gapi/ogl2.0/GDeviceGL20.h
+        src/gapi/ogl2.0/meshes/GMeshGL20.cpp
+        src/gapi/ogl2.0/meshes/GMeshGL20.h
+        src/gapi/ogl2.0/GVertexBufferBindingsGL20.cpp
+        src/gapi/ogl2.0/GVertexBufferBindingsGL20.h
+        src/gapi/ogl2.0/GShaderPermutationGL20.cpp
+        src/gapi/ogl2.0/GShaderPermutationGL20.h
+        src/gapi/ogl2.0/shaders/GM2ShaderPermutationGL20.cpp
+        src/gapi/ogl2.0/shaders/GM2ShaderPermutationGL20.h
+        src/gapi/UniformBufferStructures.h
+        src/gapi/ogl2.0/meshes/GM2MeshGL20.cpp
+        src/gapi/ogl2.0/meshes/GM2MeshGL20.h
+        src/gapi/ogl2.0/textures/GTextureGL20.cpp
+        src/gapi/ogl2.0/textures/GTextureGL20.h
+        src/gapi/ogl2.0/shaders/GM2ParticleShaderPermutationGL20.cpp
+        src/gapi/ogl2.0/shaders/GM2ParticleShaderPermutationGL20.h
+        src/gapi/ogl2.0/meshes/GParticleMeshGL20.cpp
+        src/gapi/ogl2.0/meshes/GParticleMeshGL20.h
+        src/gapi/ogl2.0/shaders/GWMOShaderPermutationGL20.cpp
+        src/gapi/ogl2.0/shaders/GWMOShaderPermutationGL20.h
+        src/gapi/ogl2.0/shaders/GAdtShaderPermutationGL20.cpp
+        src/gapi/ogl2.0/shaders/GAdtShaderPermutationGL20.h
+        src/gapi/ogl2.0/GOcclusionQueryGL20.cpp
+        src/gapi/ogl2.0/GOcclusionQueryGL20.h)
+
+set(OPENGL33_IMPLEMENTATION
+        src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h
         src/gapi/ogl3.3/buffers/GVertexBufferDynamicGL33.cpp
         src/gapi/ogl3.3/buffers/GVertexBufferGL33.cpp
@@ -491,7 +507,7 @@ else()
     endif()
 endif()
 
-add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
+add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
 
 target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
