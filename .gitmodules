@@ -19,9 +19,6 @@
 [submodule "3rdparty/libzip"]
 	path = 3rdparty/libzip
 	url = https://github.com/nih-at/libzip.git
-[submodule "cpr"]
-	path = cpr
-	url = https://github.com/whoshuu/cpr.git
 [submodule "3rdparty/PolyM"]
 	path = 3rdparty/PolyM
 	url = https://github.com/khuttun/PolyM
@@ -31,13 +28,12 @@
 [submodule "3rdparty/casclib"]
 	path = 3rdparty/casclib
 	url = https://github.com/ladislav-zezula/CascLib.git
-[submodule "3rdparty/nuklear_cross"]
-	path = 3rdparty/nuklear_cross
-	url = https://github.com/DeXP/nuklear_cross.git
-[submodule "wowViewerLib/3rdparty/RTree"]
-	path = wowViewerLib/3rdparty/RTree
-	url = https://github.com/nushoin/RTree
-
-[submodule "wowViewerLib/3rdparty/spirv-cross"]
-	path = wowViewerLib/3rdparty/spirv-cross
+[submodule "3rdparty/cpr"]
+	path = 3rdparty/cpr
+	url = https://github.com/whoshuu/cpr.git
+[submodule "wowViewerLib/shaders/3rdparty/spirv-cross"]
+	path = wowViewerLib/shaders/3rdparty/spirv-cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "wowViewerLib/shaders/3rdparty/glsllang"]
+	path = wowViewerLib/shaders/3rdparty/glsllang
+	url = https://github.com/KhronosGroup/glslang.git

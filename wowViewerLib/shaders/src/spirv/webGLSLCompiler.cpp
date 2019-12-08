@@ -11276,25 +11276,21 @@ void WebGLSLCompiler::emit_function_prototype(SPIRFunction &func, const Bitset &
     statement(decl);
 }
 
-void WebGLSLCompiler::emit_function(SPIRFunction &func, const Bitset &return_flags)
-{
-    // Avoid potential cycles.
+void WebGLSLCompiler::emit_function(SPIRFunction &func, const Bitset &return_flags) {
+// Avoid potential cycles.
     if (func.active)
         return;
     func.active = true;
 
-    // If we depend on a function, emit that function before we emit our own function.
-    for (auto block : func.blocks)
-    {
+// If we depend on a function, emit that function before we emit our own function.
+    for (auto block : func.blocks) {
         auto &b = get<SPIRBlock>(block);
-        for (auto &i : b.ops)
-        {
+        for (auto &i : b.ops) {
             auto ops = stream(i);
             auto op = static_cast<Op>(i.op);
 
-            if (op == OpFunctionCall)
-            {
-                // Recursively emit functions which are called.
+            if (op == OpFunctionCall) {
+// Recursively emit functions which are called.
                 uint32_t id = ops[2];
                 emit_function(get<SPIRFunction>(id), ir.meta[ops[1]].decoration.decoration_flags);
             }
@@ -11312,81 +11308,61 @@ void WebGLSLCompiler::emit_function(SPIRFunction &func, const Bitset &return_fla
     current_function = &func;
     auto &entry_block = get<SPIRBlock>(func.entry_block);
 
-    sort(begin(func.constant_arrays_needed_on_stack), end(func.constant_arrays_needed_on_stack));
-    for (auto &array : func.constant_arrays_needed_on_stack)
-    {
-        auto &c = get<SPIRConstant>(array);
-        auto &type = get<SPIRType>(c.constant_type);
-        statement(variable_decl(type, join("_", array, "_array_copy")), " = ", constant_expression(c), ";");
-    }
-
-    for (auto &v : func.local_variables)
-    {
+    for (auto &v : func.local_variables) {
         auto &var = get<SPIRVariable>(v);
         var.deferred_declaration = false;
 
-        if (var.storage == StorageClassWorkgroup)
-        {
-            // Special variable type which cannot have initializer,
-            // need to be declared as standalone variables.
-            // Comes from MSL which can push global variables as local variables in main function.
+        if (var.storage == StorageClassWorkgroup) {
+// Special variable type which cannot have initializer,
+// need to be declared as standalone variables.
+// Comes from MSL which can push global variables as local variables in main function.
             add_local_variable_name(var.self);
             statement(variable_decl(var), ";");
             var.deferred_declaration = false;
-        }
-        else if (var.storage == StorageClassPrivate)
-        {
-            // These variables will not have had their CFG usage analyzed, so move it to the entry block.
-            // Comes from MSL which can push global variables as local variables in main function.
-            // We could just declare them right now, but we would miss out on an important initialization case which is
-            // LUT declaration in MSL.
-            // If we don't declare the variable when it is assigned we're forced to go through a helper function
-            // which copies elements one by one.
+        } else if (var.storage == StorageClassPrivate) {
+// These variables will not have had their CFG usage analyzed, so move it to the entry block.
+// Comes from MSL which can push global variables as local variables in main function.
+// We could just declare them right now, but we would miss out on an important initialization case which is
+// LUT declaration in MSL.
+// If we don't declare the variable when it is assigned we're forced to go through a helper function
+// which copies elements one by one.
             add_local_variable_name(var.self);
             auto &dominated = entry_block.dominated_variables;
             if (find(begin(dominated), end(dominated), var.self) == end(dominated))
                 entry_block.dominated_variables.push_back(var.self);
             var.deferred_declaration = true;
-        }
-        else if (var.storage == StorageClassFunction && var.remapped_variable && var.static_expression)
-        {
-            // No need to declare this variable, it has a static expression.
+        } else if (var.storage == StorageClassFunction && var.remapped_variable && var.static_expression) {
+// No need to declare this variable, it has a static expression.
             var.deferred_declaration = false;
-        }
-        else if (expression_is_lvalue(v))
-        {
+        } else if (expression_is_lvalue(v)) {
             add_local_variable_name(var.self);
 
             if (var.initializer)
                 statement(variable_decl_function_local(var), ";");
-            else
-            {
-                // Don't declare variable until first use to declutter the GLSL output quite a lot.
-                // If we don't touch the variable before first branch,
-                // declare it then since we need variable declaration to be in top scope.
+            else {
+// Don't declare variable until first use to declutter the GLSL output quite a lot.
+// If we don't touch the variable before first branch,
+// declare it then since we need variable declaration to be in top scope.
                 var.deferred_declaration = true;
             }
-        }
-        else
-        {
-            // HACK: SPIR-V in older glslang output likes to use samplers and images as local variables, but GLSL does not allow this.
-            // For these types (non-lvalue), we enforce forwarding through a shadowed variable.
-            // This means that when we OpStore to these variables, we just write in the expression ID directly.
-            // This breaks any kind of branching, since the variable must be statically assigned.
-            // Branching on samplers and images would be pretty much impossible to fake in GLSL.
+        } else {
+// HACK: SPIR-V in older glslang output likes to use samplers and images as local variables, but GLSL does not allow this.
+// For these types (non-lvalue), we enforce forwarding through a shadowed variable.
+// This means that when we OpStore to these variables, we just write in the expression ID directly.
+// This breaks any kind of branching, since the variable must be statically assigned.
+// Branching on samplers and images would be pretty much impossible to fake in GLSL.
             var.statically_assigned = true;
         }
 
         var.loop_variable_enable = false;
 
-        // Loop variables are never declared outside their for-loop, so block any implicit declaration.
+// Loop variables are never declared outside their for-loop, so block any implicit declaration.
         if (var.loop_variable)
             var.deferred_declaration = false;
     }
 
-    // Enforce declaration order for regression testing purposes.
-    for (auto &block_id : func.blocks)
-    {
+// Enforce declaration order for regression testing purposes.
+    for (auto &block_id : func.blocks) {
         auto &block = get<SPIRBlock>(block_id);
         sort(begin(block.dominated_variables), end(block.dominated_variables));
     }
@@ -11400,10 +11376,9 @@ void WebGLSLCompiler::emit_function(SPIRFunction &func, const Bitset &return_fla
     processing_entry_point = false;
     statement("");
 
-    // Make sure deferred declaration state for local variables is cleared when we are done with function.
-    // We risk declaring Private/Workgroup variables in places we are not supposed to otherwise.
-    for (auto &v : func.local_variables)
-    {
+// Make sure deferred declaration state for local variables is cleared when we are done with function.
+// We risk declaring Private/Workgroup variables in places we are not supposed to otherwise.
+    for (auto &v : func.local_variables) {
         auto &var = get<SPIRVariable>(v);
         var.deferred_declaration = false;
     }

@@ -29,4 +29,6 @@ int main(int argc, char **argv)
     } else if (mode == "-glsl330") {
         dumpGLSLText(filePaths, 330);
     }
+
+    return 0;
 }

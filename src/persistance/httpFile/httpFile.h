@@ -6,7 +6,7 @@
 #include <functional>
 //curl
 #include "cpr/cpr.h"
-#include "../../wowViewerLib/src/include/sharedFile.h"
+#include "../../../wowViewerLib/src/include/sharedFile.h"
 
 class HttpFile;
 

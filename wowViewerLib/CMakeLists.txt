@@ -102,103 +102,7 @@ else()
 endif(LINK_GLEW)
 
 
-if (CMAKE_NDK_BUILD MATCHES 1)
-    set(GLSL_TARGET_FOLDER ${ANDROID_ASSETSFOLDER})
-else()
-    set(GLSL_TARGET_FOLDER ${CMAKE_BINARY_DIR})
-endif()
 
-message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
-
-if (1)
-    add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross)
-
-    set(SPIRV_REF_SOURCES
-        src/spirv/spirv_refl_main.cpp
-            src/spirv/webGLSLCompiler.cpp
-            src/spirv/webGLSLCompiler.h
-            src/spirv/dumpShaderFields.h src/spirv/dumpShaderMetaData.h src/spirv/dumpGLSLShader.h)
-    set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/engine/shader/ShaderDefinitions.h)
-
-    add_custom_target(SPIRV_EXTRACT_META ALL)
-
-    add_executable(spirv_reflection ${SPIRV_REF_SOURCES})
-    target_link_libraries(spirv_reflection spirv-cross-c)
-    target_include_directories(spirv_reflection PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross/)
-
-
-    macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
-        message(STATUS "Configuring directory ${destDir}")
-        make_directory(${destDir})
-
-        file(GLOB templateFiles RELATIVE ${srcDir} ${srcDir}/*.frag ${srcDir}/*.vert)
-        foreach(templateFile ${templateFiles})
-            set(srcTemplatePath ${srcDir}/${templateFile})
-            if(NOT IS_DIRECTORY ${srcTemplatePath})
-                message(STATUS "Configuring file ${templateFile}")
-                get_filename_component(FILE_NAME_WO_EXT ${srcTemplatePath} NAME_WE)
-                get_filename_component(FILE_NAME ${srcTemplatePath} NAME)
-                set(SPIRV_NonOpt "${destDir}/${FILE_NAME}.spv")
-                set(SPIRVOpt "${destDir}/${FILE_NAME}.opt.spv")
-
-                add_custom_command(
-                    OUTPUT ${SPIRV_NonOpt}
-                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                    COMMAND ${GLSL_VALIDATOR_Test} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
-                    DEPENDS ${srcTemplatePath})
-
-                if(SPIRV_OPT_APP)
-                    add_custom_command(
-                            OUTPUT ${SPIRVOpt}
-                            COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                            COMMAND ${SPIRV_OPT_APP} --inline-entry-points-exhaustive
-                            --convert-local-access-chains
-                            --eliminate-local-single-block
-                            --eliminate-local-single-store
-                            --eliminate-insert-extract
-                            --eliminate-dead-code-aggressive
-                            --eliminate-dead-branches
-                            --merge-blocks
-                            --eliminate-local-single-block
-                            --eliminate-local-single-store
-                            --eliminate-local-multi-store
-                            --eliminate-insert-extract
-                            --eliminate-dead-code-aggressive
-                            -o ${SPIRVOpt} ${SPIRV_NonOpt}
-                            DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
-                endif()
-
-                add_custom_command(
-                        TARGET SPIRV_EXTRACT_META
-                        PRE_BUILD
-                        DEPENDS ${SPIRV})
-
-                list(APPEND SPIRV_BINARY_FILES_NON_OPT ${SPIRV_NonOpt})
-                list(APPEND SPIRV_BINARY_FILES_OPT ${SPIRVOpt})
-
-                #Generate GLSL for ogl33 and ogl20 from spirv
-                set(GLSL20_FILE ${destDirGL20}/${FILE_NAME})
-                set(GLSL33_FILE ${destDirGL33}/${FILE_NAME})
-
-            endif(NOT IS_DIRECTORY ${srcTemplatePath})
-        endforeach(templateFile)
-
-        if (NOT SPIRV_OPT_APP)
-            SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_NON_OPT})
-        else()
-            SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
-        endif()
-    endmacro(configure_filesVLK)
-
-    configure_filesVLK(${PROJECT_SOURCE_DIR}/src/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv
-            ${GLSL_TARGET_FOLDER}/glsl/glsl20/ ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
-    add_custom_command(
-            TARGET SPIRV_EXTRACT_META
-            COMMAND spirv_reflection -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
-            DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
-            VERBATIM)
-
-endif()
 
 set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/wowScene.h
@@ -533,13 +437,17 @@ if (LINK_VULKAN)
             DEPENDS ${SPIRV_BINARY_FILES}
     )
     add_dependencies(WoWViewerLib Shaders)
-    add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
     target_include_directories(WoWViewerLib INTERFACE ${Vulkan_INCLUDE_DIR})
     #Vulkan stuff end
 else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
+add_subdirectory(shaders)
+
+
+add_dependencies(WoWViewerLib ShadersGLSL20)
+add_dependencies(WoWViewerLib ShadersGLSL33)
 
 target_include_directories(WoWViewerLib
         PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)

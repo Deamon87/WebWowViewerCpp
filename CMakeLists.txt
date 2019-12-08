@@ -101,7 +101,7 @@ set(ENV{CMAKE_USE_OPENSSL} ON)
 set(ENV{CURL_DISABLE_LDAP} ON)
 set(CMAKE_USE_OPENSSL ON)
 set(BUILD_SHARED_LIBS OFF)
-add_subdirectory(cpr)
+add_subdirectory(3rdparty/cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 
 #PolyM
@@ -134,6 +134,8 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 endif()
 
 add_subdirectory(wowViewerLib)
+
+
 include_directories(${GLEW_INCLUDE_DIRS})
 
 
@@ -196,7 +198,7 @@ if(CMAKE_USE_PTHREADS_INIT)
 endif()
 
 
-	add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
+add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
 
 
 add_dependencies(AWebWoWViewerCpp zip)
