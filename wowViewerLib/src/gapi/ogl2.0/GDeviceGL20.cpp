@@ -895,6 +895,7 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
         }
     }
 
+    //TODO: Hack fix for matrices
 
     shaderCache[hashRecord] = result;
     return result;

@@ -327,8 +327,8 @@ std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>
   {"renderFrameBufferShader",  {
     {
       2, {
-        {"_34.gauss_offsets", true, 0, 1, 1, 5},
-        {"_34.gauss_weights", true, 80, 1, 1, 5},
+        {"_34.gauss_offsets[0]", true, 0, 1, 1, 5},
+        {"_34.gauss_weights[0]", true, 80, 1, 1, 5},
         {"_34.uResolution", true, 160, 1, 2, 0},
       }
     },
@@ -338,13 +338,13 @@ std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>
       2, {
         {"_230.vertexShader_IsAffectedByLight", false, 0, 1, 4, 0},
         {"_230.color_Transparency", true, 16, 1, 4, 0},
-        {"_230.uTextMat", true, 32, 4, 4, 2},
+        {"_230.uTextMat[0]", true, 32, 4, 4, 2},
       }
     },
     {
       1, {
         {"_133.uPlacementMat", true, 0, 4, 4, 0},
-        {"_133.uBoneMatrixes", true, 64, 4, 4, 220},
+        {"_133.uBoneMatrixes[0]", true, 64, 4, 4, 220},
       }
     },
     {

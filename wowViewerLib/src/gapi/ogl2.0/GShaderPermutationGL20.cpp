@@ -293,7 +293,7 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
         GLint location = glGetUniformLocation(program, name);
 
         this->setUnf(std::string(name), location);
-//        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
+        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
 //    if (!shaderName.compare("m2Shader")) {
 //        std::cout << fragmentShaderString << std::endl << std::flush;

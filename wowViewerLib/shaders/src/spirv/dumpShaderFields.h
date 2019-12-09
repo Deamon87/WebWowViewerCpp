@@ -286,7 +286,7 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
             for (auto &fieldDef : subIt->second) {
                 std::cout << "        {"
-                          << "\"" << fieldDef.name << "\", "
+                          << "\"" << fieldDef.name << ((fieldDef.arraySize > 0) ? "[0]" : "") << "\", "
                           << (fieldDef.isFloat ? "true" : "false") << ", "
                           << fieldDef.offset << ", "
                           << fieldDef.columns << ", "
