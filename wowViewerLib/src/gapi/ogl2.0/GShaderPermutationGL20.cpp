@@ -419,32 +419,17 @@ void GShaderPermutationGL20::unbindProgram() {
     glUseProgram(0);
 }
 
-void GShaderPermutationGL20::assignUniformsFromBuffer(char* buffer,  int slot) {
-
-}
-
-void GShaderPermutationGL20::bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) {
+void GShaderPermutationGL20::bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) {
     GUniformBufferGL20 *gbuffer = (GUniformBufferGL20 *) buffer;
     if (buffer == nullptr) {
-        m_vertexUniformBuffer[slot] = nullptr;
+        m_UniformBuffer[slot] = nullptr;
     }  else {
-        if (buffer != m_vertexUniformBuffer[slot]) {
+        if (buffer != m_UniformBuffer[slot]) {
 
 //            gbuffer->bind(slot);
-            assignUniformsFromBuffer(gbuffer->getPointerForModification())
-            m_vertexUniformBuffer[slot] = gbuffer;
+//            assignUniformsFromBuffer(gbuffer->getPointerForModification())
+            m_UniformBuffer[slot] = gbuffer;
         }
     }
 }
-void GShaderPermutationGL20::bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) {
-    GUniformBufferGL20 *gbuffer = (GUniformBufferGL20 *) buffer;
-    if (buffer == nullptr) {
-        if (m_fragmentUniformBuffer[slot] != nullptr) {
-            m_fragmentUniformBuffer[slot] = nullptr;
-        }
-    }  else if (gbuffer != m_fragmentUniformBuffer[slot]) {
-        gbuffer->bind(3+slot);
 
-        m_fragmentUniformBuffer[slot] = gbuffer;
-    }
-}

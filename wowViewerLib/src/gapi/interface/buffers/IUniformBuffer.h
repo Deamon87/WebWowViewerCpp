@@ -6,6 +6,9 @@
 #define AWEBWOWVIEWERCPP_IUNIFORMBUFFER_H
 
 class IUniformBuffer {
+private:
+    void bind(int bindingPoint, int slot, int offset, int length); //Should be called only by GDevice
+
 public:
     virtual ~IUniformBuffer() {};
 
@@ -20,8 +23,7 @@ public:
     virtual void save(bool initialSave = false) = 0;
     virtual void createBuffer() = 0;
 
-    virtual void setUpdateHandler(std::function<void(IUniformBuffer* self)>) = 0;
-    virtual void update() = 0;
+
 };
 
 #endif //AWEBWOWVIEWERCPP_IUNIFORMBUFFER_H

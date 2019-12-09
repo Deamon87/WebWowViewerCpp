@@ -269,15 +269,14 @@ void ParticleEmitter::createMesh() {
         meshTemplate.texture.resize(3);
         meshTemplate.textureCount = (multitex) ? 3 : 1;
 
-        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.vertexBuffers[1] = nullptr;
-        meshTemplate.vertexBuffers[2] = nullptr;
+        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[1] = nullptr;
+        meshTemplate.ubo[2] = nullptr;
 
-        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.fragmentBuffers[1] = nullptr;
-        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[3] = nullptr;
+        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
 
-        meshTemplate.fragmentBuffers[2]->setUpdateHandler([this](IUniformBuffer *self) {
+        meshTemplate.ubo[4]->setUpdateHandler([this](IUniformBufferChunk *self) {
             meshParticleWideBlockPS &blockPS = self->getObject<meshParticleWideBlockPS>();
             uint8_t blendMode = m_data->old.blendingType;
             if (blendMode == 0) {
@@ -291,8 +290,6 @@ void ParticleEmitter::createMesh() {
             int uPixelShader = particleMaterialShader[this->particleType].pixelShader;
 
             blockPS.uPixelShader = uPixelShader;
-
-            self->save(true);
         });
 
         frame[i].m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);

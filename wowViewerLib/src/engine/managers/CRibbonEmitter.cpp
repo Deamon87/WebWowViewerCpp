@@ -137,21 +137,18 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
         meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(tex0, true, true);
 
-        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.vertexBuffers[1] = nullptr;
-        meshTemplate.vertexBuffers[2] = nullptr;
+        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[1] = nullptr;
+        meshTemplate.ubo[2] = nullptr;
 
-        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.fragmentBuffers[1] = nullptr;
-        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[3] = nullptr;
+        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
 
-        meshTemplate.fragmentBuffers[2]->setUpdateHandler([](IUniformBuffer *self) {
+        meshTemplate.ubo[4]->setUpdateHandler([](IUniformBufferChunk *self) {
             meshParticleWideBlockPS& blockPS = self->getObject<meshParticleWideBlockPS>();
 
             blockPS.uAlphaTest = -1.0f;
             blockPS.uPixelShader = 0;
-
-            self->save(true);
         });
 
         

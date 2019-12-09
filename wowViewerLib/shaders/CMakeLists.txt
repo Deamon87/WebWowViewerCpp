@@ -7,7 +7,9 @@ endif()
 message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/spirv-cross)
+set(BUILD_EXTERNAL OFF)
 add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/glsllang)
+set(BUILD_EXTERNAL OFF)
 
 set(SPIRV_REF_SOURCES
         src/spirv/spirv_refl_main.cpp
@@ -38,7 +40,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             get_filename_component(FILE_NAME_WO_EXT ${srcTemplatePath} NAME_WE)
             get_filename_component(FILE_NAME ${srcTemplatePath} NAME)
             set(SPIRV_NonOpt "${destDir}/${FILE_NAME}.spv")
-            set(SPIRVOpt "${destDir}/${FILE_NAME}.opt.spv")
+#            set(SPIRVOpt "${destDir}/${FILE_NAME}.opt.spv")
 
             add_custom_command(
                     OUTPUT ${SPIRV_NonOpt}
@@ -48,25 +50,25 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
                     COMMAND glslangValidator -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
                     DEPENDS ${srcTemplatePath})
 
-            if(SPIRV_OPT_APP)
-                add_custom_command(
-                        OUTPUT ${SPIRVOpt}
-                        COMMAND ${SPIRV_OPT_APP} --inline-entry-points-exhaustive
-                        --convert-local-access-chains
-                        --eliminate-local-single-block
-                        --eliminate-local-single-store
-                        --eliminate-insert-extract
-                        --eliminate-dead-code-aggressive
-                        --eliminate-dead-branches
-                        --merge-blocks
-                        --eliminate-local-single-block
-                        --eliminate-local-single-store
-                        --eliminate-local-multi-store
-                        --eliminate-insert-extract
-                        --eliminate-dead-code-aggressive
-                        -o ${SPIRVOpt} ${SPIRV_NonOpt}
-                        DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
-            endif()
+#            if(SPIRV_OPT_APP)
+#                add_custom_command(
+#                        OUTPUT ${SPIRVOpt}
+#                        COMMAND ${SPIRV_OPT_APP} --inline-entry-points-exhaustive
+#                        --convert-local-access-chains
+#                        --eliminate-local-single-block
+#                        --eliminate-local-single-store
+#                        --eliminate-insert-extract
+#                        --eliminate-dead-code-aggressive
+#                        --eliminate-dead-branches
+#                        --merge-blocks
+#                        --eliminate-local-single-block
+#                        --eliminate-local-single-store
+#                        --eliminate-local-multi-store
+#                        --eliminate-insert-extract
+#                        --eliminate-dead-code-aggressive
+#                        -o ${SPIRVOpt} ${SPIRV_NonOpt}
+#                        DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
+#            endif()
 
             add_custom_command(
                     TARGET SPIRV_EXTRACT_META
@@ -119,14 +121,17 @@ add_custom_command(
         COMMAND spirv_reflection -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
         VERBATIM)
-add_dependencies(SPIRV_EXTRACT_META spirv_reflection)
+add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator)
 
 add_custom_target(
         ShadersGLSL20
         DEPENDS ${GLSL20Files}
 )
+add_dependencies(ShadersGLSL20 spirv_reflection)
+
 
 add_custom_target(
         ShadersGLSL33
         DEPENDS ${GLSL30Files}
 )
+add_dependencies(ShadersGLSL33 spirv_reflection)

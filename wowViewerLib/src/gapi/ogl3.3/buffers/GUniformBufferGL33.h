@@ -41,13 +41,11 @@ public:
 private:
 
     void destroyBuffer();
-    void bind(int bindingPoint); //Should be called only by GDevice
+    void bind(int bindingPoint, int slot, int offset, int length); //Should be called only by GDevice
     void unbind();
 
 private:
     void uploadData(void * data, int length);
-    void setUpdateHandler(std::function<void(IUniformBuffer* self)>) override;
-    void update() override;
 
 private:
     IDevice &m_device;

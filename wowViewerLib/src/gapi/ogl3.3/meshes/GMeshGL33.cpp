@@ -53,13 +53,10 @@ GMeshGL33::~GMeshGL33() {
 
 }
 
-HGUniformBuffer GMeshGL33::getVertexUniformBuffer(int slot) {
+HGUniformBuffer GMeshGL33::getUniformBuffer(int slot) {
     return m_vertexUniformBuffer[slot];
 }
 
-HGUniformBuffer GMeshGL33::getFragmentUniformBuffer(int slot) {
-    return m_fragmentUniformBuffer[slot];
-}
 
 EGxBlendEnum GMeshGL33::getGxBlendMode() { return m_blendMode; }
 

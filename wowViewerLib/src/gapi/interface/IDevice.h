@@ -10,6 +10,7 @@ class IVertexBufferDynamic;
 class IVertexBufferBindings;
 class IIndexBuffer;
 class IUniformBuffer;
+class IUniformBufferChunk;
 class IBlpTexture;
 class ITexture;
 class IShaderPermutation;
@@ -32,6 +33,7 @@ typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;
 typedef std::shared_ptr<IIndexBuffer> HGIndexBuffer;
 typedef std::shared_ptr<IVertexBufferBindings> HGVertexBufferBindings;
 typedef std::shared_ptr<IUniformBuffer> HGUniformBuffer;
+typedef std::shared_ptr<IUniformBufferChunk> HGUniformBufferChunk;
 typedef std::shared_ptr<IShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<IMesh> HGMesh;
 typedef std::shared_ptr<IMesh> HGM2Mesh;
@@ -50,6 +52,7 @@ typedef std::shared_ptr<IGPUFence> HGPUFence;
 #include "buffers/IVertexBufferDynamic.h"
 #include "IVertexBufferBindings.h"
 #include "buffers/IUniformBuffer.h"
+#include "buffers/IUniformBufferChunk.h"
 #include "textures/ITexture.h"
 #include "../../engine/wowCommonClasses.h"
 
@@ -141,8 +144,7 @@ class IDevice {
 
         virtual void bindIndexBuffer(IIndexBuffer *buffer) = 0;
         virtual void bindVertexBuffer(IVertexBuffer *buffer) = 0;
-        virtual void bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) = 0;
-        virtual void bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) = 0;
+        virtual void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) = 0;
         virtual void bindVertexBufferBindings(IVertexBufferBindings *buffer) = 0;
 
         virtual void bindTexture(ITexture *texture, int slot) = 0;
@@ -165,6 +167,12 @@ class IDevice {
         virtual HGPUFence createFence() = 0;
 
         virtual HGUniformBuffer createUniformBuffer(size_t size) = 0;
+        virtual HGUniformBufferChunk createUniformBufferChunk(size_t size) {
+            HGUniformBufferChunk h_uniformBuffer;
+            h_uniformBuffer.reset(new IUniformBufferChunk(size));
+
+            return h_uniformBuffer;
+        };
         virtual HGVertexBufferDynamic createVertexBufferDynamic(size_t size) = 0;
         virtual HGVertexBuffer createVertexBuffer() = 0;
         virtual HGIndexBuffer createIndexBuffer() = 0;

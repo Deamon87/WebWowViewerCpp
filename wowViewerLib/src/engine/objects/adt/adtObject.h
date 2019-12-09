@@ -100,7 +100,7 @@ private:
 
     HGVertexBufferBindings lodVertexBindings;
 
-    HGUniformBuffer adtWideBlockPS;
+    HGUniformBufferChunk adtWideBlockPS;
 
 
 

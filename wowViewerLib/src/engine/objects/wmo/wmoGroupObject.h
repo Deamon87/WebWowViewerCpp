@@ -73,7 +73,7 @@ private:
     mathfu::mat4 *m_modelMatrix;
     int m_groupNumber;
 
-    HGUniformBuffer vertexModelWideUniformBuffer = nullptr;
+    HGUniformBufferChunk vertexModelWideUniformBuffer = nullptr;
     std::vector<HGMesh> m_meshArray;
     std::vector<HGMesh> m_waterMeshArray;
 

@@ -80,7 +80,7 @@ public:
         return m_gdevice.get();
     }
 
-    virtual HGUniformBuffer getSceneWideUniformBuffer() override {
+    virtual HGUniformBufferChunk getSceneWideUniformBuffer() override {
         return m_sceneWideUniformBuffer;
     }
 
@@ -176,7 +176,7 @@ private:
     bool m_isTerminating = false;
     Config * m_config;
     std::unique_ptr<IDevice> m_gdevice;
-    HGUniformBuffer m_sceneWideUniformBuffer;
+    HGUniformBufferChunk m_sceneWideUniformBuffer;
 
     WoWFrameData m_FrameParams[4];
 

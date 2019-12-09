@@ -71,8 +71,7 @@ public:
     DrawElementMode element;
     unsigned int textureCount;
     std::vector<HGTexture> texture = std::vector<HGTexture>(6, nullptr);
-    HGUniformBuffer vertexBuffers[3] = {nullptr,nullptr,nullptr};
-    HGUniformBuffer fragmentBuffers[3] = {nullptr,nullptr,nullptr};
+    HGUniformBufferChunk ubo[6] = {nullptr,nullptr,nullptr};
 };
 
 
@@ -113,8 +112,7 @@ protected:
 
 public:
     virtual ~IMesh(){};
-    virtual HGUniformBuffer getVertexUniformBuffer(int slot) = 0;
-    virtual HGUniformBuffer getFragmentUniformBuffer(int slot) = 0;
+    virtual HGUniformBufferChunk getUniformBuffer(int slot) = 0;
     virtual EGxBlendEnum getGxBlendMode() = 0;
     virtual bool getIsTransparent() = 0;
     virtual MeshType getMeshType() = 0;

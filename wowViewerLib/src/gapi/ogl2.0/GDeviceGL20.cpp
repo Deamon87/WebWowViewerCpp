@@ -94,39 +94,11 @@ void GDeviceGL20::bindVertexBuffer(IVertexBuffer *buffer)  {
     }
 }
 
-void GDeviceGL20::bindVertexUniformBuffer(IUniformBuffer *buffer, int slot)  {
-    GUniformBufferGL20 *gbuffer = (GUniformBufferGL20 *) buffer;
-
-    if (buffer == nullptr) {
-        if (m_vertexUniformBuffer[slot] != nullptr) {
-            m_vertexUniformBuffer[slot]->unbind();
-            m_vertexUniformBuffer[slot] = nullptr;
-        }
-    }  else {
-        if (slot == -1) {
-            gbuffer->bind(slot);
-            m_vertexUniformBuffer[0] = nullptr;
-        } else if (buffer != m_vertexUniformBuffer[slot]) {
-            gbuffer->bind(slot);
-
-            m_vertexUniformBuffer[slot] = gbuffer;
-        }
+void GDeviceGL20::bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length)  {
+    if (m_shaderPermutation != nullptr) {
+        m_shaderPermutation->bindUniformBuffer(buffer, slot, offset, length);
     }
 }
-void GDeviceGL20::bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot)  {
-    GUniformBufferGL20 *gbuffer = (GUniformBufferGL20 *) buffer;
-    if (buffer == nullptr) {
-        if (m_fragmentUniformBuffer[slot] != nullptr) {
-            ((GUniformBufferGL20 *)m_fragmentUniformBuffer[slot])->unbind();
-            m_fragmentUniformBuffer[slot] = nullptr;
-        }
-    }  else if (gbuffer != m_fragmentUniformBuffer[slot]) {
-        gbuffer->bind(3+slot);
-
-        m_fragmentUniformBuffer[slot] = gbuffer;
-    }
-}
-
 
 void GDeviceGL20::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
     GVertexBufferBindingsGL20 *gbuffer = ((GVertexBufferBindingsGL20 *) buffer);
@@ -242,7 +214,6 @@ HGUniformBuffer GDeviceGL20::createUniformBuffer(size_t size) {
     std::shared_ptr<GUniformBufferGL20> h_uniformBuffer;
     h_uniformBuffer.reset(new GUniformBufferGL20(*this, size));
 
-    h_uniformBuffer->m_creationIndex = uniformBuffersCreated++;
     std::weak_ptr<GUniformBufferGL20> w_uniformBuffer = h_uniformBuffer;
 
     m_unfiormBufferCache.push_back(w_uniformBuffer);
@@ -280,21 +251,14 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
     std::vector<HGL20Mesh> &meshes = (std::vector<HGL20Mesh> &) iMeshes;
 
     //1. Collect buffers
-    std::vector<GUniformBufferGL20 *> buffers;
+    std::vector<IUniformBufferChunk *> buffers;
     int renderIndex = 0;
     for (const auto &mesh : meshes) {
-        for (int i = 0; i < 3; i++ ) {
-            GUniformBufferGL20 *buffer = (GUniformBufferGL20 *) mesh->m_fragmentUniformBuffer[i].get();
+        for (int i = 0; i < 5; i++ ) {
+            IUniformBufferChunk * buffer = (IUniformBufferChunk *)mesh->m_UniformBuffer[i].get();
             if (buffer != nullptr) {
                 buffers.push_back(buffer);
-                buffer->m_creationIndex = renderIndex++;
-            }
-        }
-        for (int i = 0; i < 3; i++ ) {
-            GUniformBufferGL20 * buffer = (GUniformBufferGL20 *)mesh->m_vertexUniformBuffer[i].get();
-            if (buffer != nullptr) {
-                buffers.push_back(buffer);
-                buffer->m_creationIndex = renderIndex++;
+
             }
         }
     }
@@ -321,9 +285,7 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
     }
 
     for (const auto &buffer : buffers) {
-        if (buffer->m_buffCreated) continue;
-
-        if ((currentSize + buffer->m_size) > maxUniformBufferSize) {
+        if ((currentSize + buffer->getSize()) > maxUniformBufferSize) {
             ((GUniformBufferGL20 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
 
             buffersIndex++;
@@ -338,17 +300,17 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
 
-        buffer->setIdentifierBuffer(((GUniformBufferGL20 *) bufferForUpload.get())->getIdentifierBuffer(), currentSize);
-        void * dataPtr = buffer->getPointerForUpload();
+        buffer->setOffset(currentSize);
+
         std::copy((char*)dataPtr,
-                  ((char*)dataPtr)+buffer->m_size,
+                  ((char*)dataPtr)+buffer->getSize(),
                   &aggregationBufferForUpload[currentSize]);
 //        aggregationBufferForUpload.insert(
 //            aggregationBufferForUpload.end(),
 //            (char*)buffer->pContent,
 //            ((char*)buffer->pContent)+buffer->m_size
 //        );
-        currentSize += buffer->m_size;
+        currentSize += buffer->getSize();
 
         int offsetDiff = currentSize % uniformBufferOffsetAlign;
         if (offsetDiff != 0) {
@@ -379,13 +341,10 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
     bindProgram(hmesh->m_shader.get());
     bindVertexBufferBindings(hmesh->m_bindings.get());
 
-    bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[0].get(), 0);
-    bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[1].get(), 1);
-    bindVertexUniformBuffer(hmesh->m_vertexUniformBuffer[2].get(), 2);
-
-    bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[0].get(), 0);
-    bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[1].get(), 1);
-    bindFragmentUniformBuffer(hmesh->m_fragmentUniformBuffer[2].get(), 2);
+    for (int i = 0; i < 5; i++) {
+        auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
+        bindUniformBuffer(, i, uniformChunk->getOffset(), uniformChunk->getSize());
+    }
 
     for (int i = 0; i < hmesh->m_textureCount; i++) {
         if (hmesh->m_texture[i] != nullptr && hmesh->m_texture[i]->getIsLoaded()) {
@@ -733,13 +692,11 @@ void GDeviceGL20::reset() {
     m_lastTexture[2] = nullptr;
     m_lastTexture[3] = nullptr;
 
-    bindFragmentUniformBuffer(nullptr, 0);
-    bindFragmentUniformBuffer(nullptr, 1);
-    bindFragmentUniformBuffer(nullptr, 2);
-
-    bindVertexUniformBuffer(nullptr, 0);
-    bindVertexUniformBuffer(nullptr, 1);
-    bindVertexUniformBuffer(nullptr, 2);
+    bindUniformBuffer(nullptr, 0, 0, 0);
+    bindUniformBuffer(nullptr, 1, 0, 0);
+    bindUniformBuffer(nullptr, 2, 0, 0);
+    bindUniformBuffer(nullptr, 3, 0, 0);
+    bindUniformBuffer(nullptr, 4, 0, 0);
 
     bindVertexBufferBindings(nullptr);
     bindIndexBuffer(nullptr);

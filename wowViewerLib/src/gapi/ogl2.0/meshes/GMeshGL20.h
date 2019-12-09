@@ -19,8 +19,7 @@ protected:
 
 public:
     ~GMeshGL20() override;
-    HGUniformBuffer getVertexUniformBuffer(int slot) override;
-    HGUniformBuffer getFragmentUniformBuffer(int slot) override;
+    HGUniformBufferChunk getUniformBuffer(int slot) override;
     EGxBlendEnum getGxBlendMode() override;
     bool getIsTransparent() override;
     MeshType getMeshType()  override;
@@ -42,8 +41,7 @@ private:
 
     HGShaderPermutation m_shader;
 
-    HGUniformBuffer m_vertexUniformBuffer[3] = {nullptr, nullptr, nullptr};
-    HGUniformBuffer m_fragmentUniformBuffer[3] = {nullptr, nullptr, nullptr};
+    HGUniformBufferChunk m_UniformBuffer[6] = {nullptr, nullptr, nullptr};
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;

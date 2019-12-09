@@ -27,8 +27,7 @@ private:
 
 public:
     ~GMeshGL4x() override;
-    HGUniformBuffer getVertexUniformBuffer(int slot) override;
-    HGUniformBuffer getFragmentUniformBuffer(int slot) override;
+    HGUniformBufferChunk getUniformBuffer(int slot) override;
     EGxBlendEnum getGxBlendMode() override;
     bool getIsTransparent() override;
     MeshType getMeshType()  override;

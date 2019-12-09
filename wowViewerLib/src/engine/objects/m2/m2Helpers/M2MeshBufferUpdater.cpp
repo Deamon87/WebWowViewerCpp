@@ -25,7 +25,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
     int batchIndex = materialData.texUnitTexIndex;
     auto vertexShader = materialData.vertexShader;
 
-    hmesh->getVertexUniformBuffer(2)->setUpdateHandler([&m2Object, m2Data, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBuffer *self){
+    hmesh->getUniformBuffer(2)->setUpdateHandler([&m2Object, m2Data, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self){
         auto textMaterial = m2SkinProfile->batches[batchIndex];
         int renderFlagIndex = textMaterial->materialIndex;
         auto renderFlag = m2Data->materials[renderFlagIndex];
@@ -45,12 +45,11 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
 
         fillTextureMatrices(m2Object, batchIndex, m2Data, m2SkinProfile, meshblockVS.uTextMat);
 
-        self->save();
     });
 
     //3. Update individual PS buffer
     auto pixelShader = materialData.pixelShader;
-    hmesh->getFragmentUniformBuffer(2)->setUpdateHandler([&m2Object, m2Data, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBuffer *self) {
+    hmesh->getUniformBuffer(5)->setUpdateHandler([&m2Object, m2Data, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self) {
 
         auto textMaterial = m2SkinProfile->batches[batchIndex];
         int renderFlagIndex = textMaterial->materialIndex;
@@ -76,8 +75,6 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
         meshblockPS.uFogColorAndAlphaTest = mathfu::vec4(uFogColor, uAlphaTest);
         //Lights
         fillLights(m2Object, meshblockPS);
-
-        self->save();
     });
 }
 

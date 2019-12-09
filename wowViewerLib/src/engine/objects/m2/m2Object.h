@@ -67,8 +67,8 @@ private:
     HSkelGeom m_skelGeom = nullptr;
 
     HGVertexBufferBindings bufferBindings = nullptr;
-    HGUniformBuffer vertexModelWideUniformBuffer = nullptr;
-    HGUniformBuffer fragmentModelWideUniformBuffer = nullptr;
+    HGUniformBufferChunk vertexModelWideUniformBuffer = nullptr;
+    HGUniformBufferChunk fragmentModelWideUniformBuffer = nullptr;
 
     HGMesh boundingBoxMesh = nullptr;
     HGOcclusionQuery occlusionQuery = nullptr;

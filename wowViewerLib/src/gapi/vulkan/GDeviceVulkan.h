@@ -83,8 +83,7 @@ public:
 
     void bindIndexBuffer(IIndexBuffer *buffer) override;
     void bindVertexBuffer(IVertexBuffer *buffer) override;
-    void bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) override;
-    void bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) override;
+    void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override;
     void bindVertexBufferBindings(IVertexBufferBindings *buffer) override;
 
     void bindTexture(ITexture *texture, int slot) override;

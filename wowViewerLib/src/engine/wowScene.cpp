@@ -60,12 +60,13 @@ void WoWSceneImpl::DoUpdate() {
     meshesCollectCNT.endMeasurement("collectMeshes ");
 
     device->prepearMemoryForBuffers(objFrameParam->renderedThisFrame);
-    sceneWideBlockVSPS *blockPSVS = &m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-    if (blockPSVS != nullptr) {
+    m_sceneWideUniformBuffer->setUpdateHandler([objFrameParam](IUniformBufferChunk *chunk) -> void {
+        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
         blockPSVS->uLookAtMat = objFrameParam->m_lookAtMat4;
         blockPSVS->uPMatrix = objFrameParam->m_perspectiveMatrix;
-        m_sceneWideUniformBuffer->save();
-    }
+
+    });
+
     currentScene->updateBuffers(objFrameParam);
     device->updateBuffers(objFrameParam->renderedThisFrame);
 
@@ -308,7 +309,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
 //    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
 //
-    m_sceneWideUniformBuffer = m_gdevice->createUniformBuffer(sizeof(sceneWideBlockVSPS));
+    m_sceneWideUniformBuffer = m_gdevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
 
     this->m_config = config;
 
