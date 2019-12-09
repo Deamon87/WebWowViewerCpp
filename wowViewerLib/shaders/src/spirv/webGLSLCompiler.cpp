@@ -11151,29 +11151,29 @@ bool WebGLSLCompiler::check_atomic_image(uint32_t id)
 void WebGLSLCompiler::add_function_overload(const SPIRFunction &func)
 {
     Hasher hasher;
-    for (auto &arg : func.arguments)
-    {
-        // Parameters can vary with pointer type or not,
-        // but that will not change the signature in GLSL/HLSL,
-        // so strip the pointer type before hashing.
-        uint32_t type_id = get_pointee_type_id(arg.type);
-        auto &type = get<SPIRType>(type_id);
-
-        if (!combined_image_samplers.empty())
-        {
-            // If we have combined image samplers, we cannot really trust the image and sampler arguments
-            // we pass down to callees, because they may be shuffled around.
-            // Ignore these arguments, to make sure that functions need to differ in some other way
-            // to be considered different overloads.
-            if (type.basetype == SPIRType::SampledImage ||
-                (type.basetype == SPIRType::Image && type.image.sampled == 1) || type.basetype == SPIRType::Sampler)
-            {
-                continue;
-            }
-        }
-
-        hasher.u32(type_id);
-    }
+//    for (auto &arg : func.arguments)
+//    {
+//        // Parameters can vary with pointer type or not,
+//        // but that will not change the signature in GLSL/HLSL,
+//        // so strip the pointer type before hashing.
+//        uint32_t type_id = get_pointee_type_id(arg.type);
+//        auto &type = get<SPIRType>(type_id);
+//
+//        if (!combined_image_samplers.empty())
+//        {
+//            // If we have combined image samplers, we cannot really trust the image and sampler arguments
+//            // we pass down to callees, because they may be shuffled around.
+//            // Ignore these arguments, to make sure that functions need to differ in some other way
+//            // to be considered different overloads.
+//            if (type.basetype == SPIRType::SampledImage ||
+//                (type.basetype == SPIRType::Image && type.image.sampled == 1) || type.basetype == SPIRType::Sampler)
+//            {
+//                continue;
+//            }
+//        }
+//
+//        hasher.u32(type_id);
+//    }
     uint64_t types_hash = hasher.get();
 
     auto function_name = to_name(func.self);
@@ -11204,6 +11204,8 @@ void WebGLSLCompiler::add_function_overload(const SPIRFunction &func)
 
 void WebGLSLCompiler::emit_function_prototype(SPIRFunction &func, const Bitset &return_flags)
 {
+    auto nameTMP = to_name(func.self);
+
     if (func.self != ir.default_entry_point)
         add_function_overload(func);
 
@@ -11307,6 +11309,14 @@ void WebGLSLCompiler::emit_function(SPIRFunction &func, const Bitset &return_fla
 
     current_function = &func;
     auto &entry_block = get<SPIRBlock>(func.entry_block);
+
+//	sort(begin(func.constant_arrays_needed_on_stack), end(func.constant_arrays_needed_on_stack));
+//	for (auto &array : func.constant_arrays_needed_on_stack)
+//	{
+//		auto &c = get<SPIRConstant>(array);
+//		auto &type = get<SPIRType>(c.constant_type);
+//		statement(variable_decl(type, join("_", array, "_array_copy")), " = ", constant_expression(c), ";");
+//	}
 
     for (auto &v : func.local_variables) {
         auto &var = get<SPIRVariable>(v);
@@ -12054,7 +12064,7 @@ void WebGLSLCompiler::emit_block_chain(SPIRBlock &block)
     emit_hoisted_temporaries(block.declare_temporary);
 
     SPIRBlock::ContinueBlockType continue_type = SPIRBlock::ContinueNone;
-    if (block.continue_block)
+    if (block.continue_block && this->ir.ids[block.continue_block].get_type() == TypeBlock)
         continue_type = continue_block_type(get<SPIRBlock>(block.continue_block));
 
     // If we have loop variables, stop masking out access to the variable now.

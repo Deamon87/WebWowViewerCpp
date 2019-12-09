@@ -31,9 +31,10 @@
 [submodule "3rdparty/cpr"]
 	path = 3rdparty/cpr
 	url = https://github.com/whoshuu/cpr.git
-[submodule "wowViewerLib/shaders/3rdparty/spirv-cross"]
-	path = wowViewerLib/shaders/3rdparty/spirv-cross
-	url = https://github.com/KhronosGroup/SPIRV-Cross.git
 [submodule "wowViewerLib/shaders/3rdparty/glsllang"]
 	path = wowViewerLib/shaders/3rdparty/glsllang
 	url = https://github.com/KhronosGroup/glslang.git
+	branch = SPIR-V_1.5
+[submodule "wowViewerLib/shaders/3rdparty/spirv-cross"]
+	path = wowViewerLib/shaders/3rdparty/spirv-cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git

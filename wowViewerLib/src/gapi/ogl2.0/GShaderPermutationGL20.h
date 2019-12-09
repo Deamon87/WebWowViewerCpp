@@ -42,6 +42,13 @@ protected:
 private:
     IDevice *m_device;
 private:
+    GUniformBufferGL20 * m_vertexUniformBuffer[3] = {nullptr};
+    GUniformBufferGL20 * m_fragmentUniformBuffer[3] = {nullptr};
+
+    void assignUniformsFromBuffer(char* buffer,  int slot);
+    void bindVertexUniformBuffer(IUniformBuffer *buffer, int slot);
+    void bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot);
+
     std::unordered_map<size_t, unsigned int> m_uniformMap;
     int m_uboVertexBlockIndex[3];
     int m_uboFragmentBlockIndex[3];

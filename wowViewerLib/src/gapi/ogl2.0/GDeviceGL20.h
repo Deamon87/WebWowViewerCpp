@@ -155,9 +155,6 @@ protected:
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
         nullptr};
 
-    GUniformBufferGL20 * m_vertexUniformBuffer[3] = {nullptr};
-    GUniformBufferGL20 * m_fragmentUniformBuffer[3] = {nullptr};
-
     HGTexture m_blackPixelTexture;
     HGTexture m_whitePixelTexture;
 
