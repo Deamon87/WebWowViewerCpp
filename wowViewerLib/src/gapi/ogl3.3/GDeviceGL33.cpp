@@ -17,54 +17,57 @@
 #include "../../engine/stringTrim.h"
 #include "buffers/GVertexBufferDynamicGL33.h"
 
+namespace GL33 {
+    BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
+            /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
+            /*GxBlend_AlphaKey*/         {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
+            /*GxBlend_Alpha*/            {true,GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA},
+            /*GxBlend_Add*/              {true,GL_SRC_ALPHA,GL_ONE,GL_ZERO,GL_ONE},
+            /*GxBlend_Mod*/              {true,GL_DST_COLOR,GL_ZERO,GL_DST_ALPHA,GL_ZERO},
+            /*GxBlend_Mod2x*/            {true,GL_DST_COLOR,GL_SRC_COLOR,GL_DST_ALPHA,GL_SRC_ALPHA},
+            /*GxBlend_ModAdd*/           {true,GL_DST_COLOR,GL_ONE,GL_DST_ALPHA,GL_ONE},
+            /*GxBlend_InvSrcAlphaAdd*/   {true,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE},
+            /*GxBlend_InvSrcAlphaOpaque*/{true,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO},
+            /*GxBlend_SrcAlphaOpaque*/   {true,GL_SRC_ALPHA,GL_ZERO,GL_SRC_ALPHA,GL_ZERO},
+            /*GxBlend_NoAlphaAdd*/       {true,GL_ONE,GL_ONE,GL_ZERO,GL_ONE},
+            /*GxBlend_ConstantAlpha*/    {true,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA},
+            /*GxBlend_Screen*/           {true,GL_ONE_MINUS_DST_COLOR,GL_ONE,GL_ONE,GL_ZERO},
+            /*GxBlend_BlendAdd*/         {true,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA}
+    };
 
-BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
-        /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
-        /*GxBlend_AlphaKey*/         {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
-        /*GxBlend_Alpha*/            {true,GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA},
-        /*GxBlend_Add*/              {true,GL_SRC_ALPHA,GL_ONE,GL_ZERO,GL_ONE},
-        /*GxBlend_Mod*/              {true,GL_DST_COLOR,GL_ZERO,GL_DST_ALPHA,GL_ZERO},
-        /*GxBlend_Mod2x*/            {true,GL_DST_COLOR,GL_SRC_COLOR,GL_DST_ALPHA,GL_SRC_ALPHA},
-        /*GxBlend_ModAdd*/           {true,GL_DST_COLOR,GL_ONE,GL_DST_ALPHA,GL_ONE},
-        /*GxBlend_InvSrcAlphaAdd*/   {true,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE},
-        /*GxBlend_InvSrcAlphaOpaque*/{true,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO},
-        /*GxBlend_SrcAlphaOpaque*/   {true,GL_SRC_ALPHA,GL_ZERO,GL_SRC_ALPHA,GL_ZERO},
-        /*GxBlend_NoAlphaAdd*/       {true,GL_ONE,GL_ONE,GL_ZERO,GL_ONE},
-        /*GxBlend_ConstantAlpha*/    {true,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA},
-        /*GxBlend_Screen*/           {true,GL_ONE_MINUS_DST_COLOR,GL_ONE,GL_ONE,GL_ZERO},
-        /*GxBlend_BlendAdd*/         {true,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA}
-};
+    //std::string source_to_string(KHR_debug::Source source) {
+    //    if(source == KHR_debug::Source::API) {
+    //        return "GL_DEBUG_SOURCE_API";
+    //    } else if(source == KHR_debug::Source::WINDOW_SYSTEM) {
+    //        return "GL_DEBUG_SOURCE_WINDOW_SYSTEM";
+    //    } else if(source == KHR_debug::Source::SHADER_COMPILER) {
+    //        return "GL_DEBUG_SOURCE_SHADER_COMPILER";
+    //    } else if(source == KHR_debug::Source::THIRD_PARTY) {
+    //        return "GL_DEBUG_SOURCE_THIRD_PARTY";
+    //    } else if(source == KHR_debug::Source::APPLICATION) {
+    //        return "GL_DEBUG_SOURCE_APPLICATION";
+    //    } else if(source == KHR_debug::Source::OTHER) {
+    //        return "GL_DEBUG_SOURCE_OTHER";
+    //    } else {
+    //        return "INVALID_SOURCE_ENUM";
+    //    }
+    //}
 
-//std::string source_to_string(KHR_debug::Source source) {
-//    if(source == KHR_debug::Source::API) {
-//        return "GL_DEBUG_SOURCE_API";
-//    } else if(source == KHR_debug::Source::WINDOW_SYSTEM) {
-//        return "GL_DEBUG_SOURCE_WINDOW_SYSTEM";
-//    } else if(source == KHR_debug::Source::SHADER_COMPILER) {
-//        return "GL_DEBUG_SOURCE_SHADER_COMPILER";
-//    } else if(source == KHR_debug::Source::THIRD_PARTY) {
-//        return "GL_DEBUG_SOURCE_THIRD_PARTY";
-//    } else if(source == KHR_debug::Source::APPLICATION) {
-//        return "GL_DEBUG_SOURCE_APPLICATION";
-//    } else if(source == KHR_debug::Source::OTHER) {
-//        return "GL_DEBUG_SOURCE_OTHER";
-//    } else {
-//        return "INVALID_SOURCE_ENUM";
-//    }
-//}
 
-void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-    fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-            source,
-            type,
-            id,
-            severity,
-            std::string(message, message+length).c_str());
-    if (severity == 37190) {
-        std::cout << "lol";
+    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+                    const void *userParam) {
+        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+                source,
+                type,
+                id,
+                severity,
+                std::string(message, message + length).c_str());
+        if (severity == 37190) {
+            std::cout << "lol";
+        }
+
+        fflush(stdout);
     }
-
-    fflush(stdout);
 }
 
 void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {
@@ -277,7 +280,7 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
-    std::vector<HGLMesh> &meshes = (std::vector<HGLMesh> &) iMeshes;
+    std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
 
     //1. Collect buffers
     std::vector<GUniformBufferGL33 *> buffers;
@@ -812,18 +815,26 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 #include "../androidLogSupport.h"
 #endif
 
-std::string GDeviceGL33::loadShader(std::string fileName, bool common) {
+std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType) {
     std::string fullPath;
     trim(fileName);
-    if (common) {
-        fullPath = "./glsl/common/" + fileName + ".glsl";
-    } else {
-        fullPath = "./glsl/glsl3.3/" + fileName + ".glsl";
+    fullPath = "./glsl/glsl20/" + fileName;
+    switch (shaderType) {
+        case IShaderType::gVertexShader :
+            fullPath += ".vert";
+            break;
+
+        case IShaderType::gFragmentShader :
+            fullPath += ".frag";
+            break;
     }
 
-//    std::cout << "fullPath = "<< fullPath << std::endl;
+    ShaderContentCacheRecord hashRecord;
+    hashRecord.fileName = fullPath;
+    hashRecord.shaderType = shaderType;
 
-    auto i = shaderCache.find(fullPath);
+
+    auto i = shaderCache.find(hashRecord);
     if (i != shaderCache.end()) {
         return i->second;
     }
@@ -865,7 +876,7 @@ std::string GDeviceGL33::loadShader(std::string fileName, bool common) {
 
     std::string result = std::string((std::istreambuf_iterator<char>(t)),
                            std::istreambuf_iterator<char>());
-    shaderCache[fullPath] = result;
+    shaderCache[hashRecord] = result;
     return result;
 #endif
 }

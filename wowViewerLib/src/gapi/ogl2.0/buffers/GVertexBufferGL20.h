@@ -2,8 +2,8 @@
 // Created by deamon on 05.06.18.
 //
 
-#ifndef WEBWOWVIEWERCPP_GVERTEXBUFFER_H
-#define WEBWOWVIEWERCPP_GVERTEXBUFFER_H
+#ifndef WEBWOWVIEWERCPP_GVERTEXBUFFER20_H
+#define WEBWOWVIEWERCPP_GVERTEXBUFFER20_H
 
 #include "../../interface/IDevice.h"
 #include "../../interface/buffers/IVertexBuffer.h"
@@ -36,4 +36,4 @@ private:
 
 };
 
-#endif //WEBWOWVIEWERCPP_GVERTEXBUFFER_H
+#endif //WEBWOWVIEWERCPP_GVERTEXBUFFER20_H

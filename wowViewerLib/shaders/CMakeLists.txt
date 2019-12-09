@@ -119,7 +119,7 @@ add_custom_command(
         COMMAND spirv_reflection -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
         VERBATIM)
-
+add_dependencies(SPIRV_EXTRACT_META spirv_reflection)
 
 add_custom_target(
         ShadersGLSL20

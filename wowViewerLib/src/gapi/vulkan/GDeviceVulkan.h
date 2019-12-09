@@ -129,7 +129,7 @@ public:
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
 
-    std::string loadShader(std::string fileName, bool common) override;
+    std::string loadShader(std::string fileName, IShaderType shaderType) override;
 
     virtual void clearScreen() override;
     virtual void beginFrame() override;

@@ -2,8 +2,8 @@
 // Created by deamon on 05.06.18.
 //
 
-#ifndef WEBWOWVIEWERCPP_GVERTEXBUFFERDYNAMIC_H
-#define WEBWOWVIEWERCPP_GVERTEXBUFFERDYNAMIC_H
+#ifndef WEBWOWVIEWERCPP_GVERTEXBUFFERDYNAMIC20_H
+#define WEBWOWVIEWERCPP_GVERTEXBUFFERDYNAMIC20_H
 
 #include "../../interface/IDevice.h"
 #include "../../interface/buffers/IVertexBuffer.h"

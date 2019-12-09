@@ -2,8 +2,8 @@
 // Created by deamon on 05.06.18.
 //
 
-#ifndef WEBWOWVIEWERCPP_GINDEXBUFFER_H
-#define WEBWOWVIEWERCPP_GINDEXBUFFER_H
+#ifndef WEBWOWVIEWERCPP_GINDEXBUFFER20_H
+#define WEBWOWVIEWERCPP_GINDEXBUFFER20_H
 
 #include "../../interface/buffers/IIndexBuffer.h"
 #include "../../interface/IDevice.h"

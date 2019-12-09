@@ -2,8 +2,8 @@
 // Created by Deamon on 7/23/2018.
 //
 
-#ifndef AWEBWOWVIEWERCPP_GTEXTURE_H
-#define AWEBWOWVIEWERCPP_GTEXTURE_H
+#ifndef AWEBWOWVIEWERCPP_GTEXTURE20_H
+#define AWEBWOWVIEWERCPP_GTEXTURE20_H
 
 #include "../GDeviceGL20.h"
 #include "../../interface/textures/ITexture.h"

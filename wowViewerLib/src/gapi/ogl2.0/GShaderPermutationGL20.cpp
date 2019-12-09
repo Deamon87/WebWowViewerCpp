@@ -90,27 +90,19 @@ GShaderPermutationGL20::GShaderPermutationGL20(std::string &shaderName, IDevice 
 
 void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
-    std::string shaderFile =  m_device->loadShader(m_shaderName, false);
-    if (shaderFile.length() == 0) {
-        throw "shader is empty";
+    std::string shaderVertFile =  m_device->loadShader(m_shaderName, IShaderType::gVertexShader);
+    std::string shaderFragFile =  m_device->loadShader(m_shaderName, IShaderType::gFragmentShader);
+    if (shaderVertFile.length() == 0) {
+        std::cout << "shaderVertFile " << m_shaderName << " is empty" << std::endl;
+        throw;
+    }
+    if (shaderFragFile.length() == 0) {
+        std::cout << "shaderFragFile " << m_shaderName << " is empty" << std::endl;
+        throw;
     }
 
-    //Include system
-    static std::string includeStr = "#include ";
-    int position;
-    while ((position = shaderFile.find(includeStr.c_str())) > 0) {
-        int endPosition = shaderFile.find("\n", position + includeStr.length());
-
-        std::string shaderStart = shaderFile.substr(0, position);
-        std::string shaderEnd = shaderFile.substr(endPosition, shaderFile.length()- endPosition);
-
-        int shaderNameStart = position + includeStr.length();
-        std::string subShaderName = shaderFile.substr(shaderNameStart, endPosition-shaderNameStart);
-        shaderFile = shaderStart+m_device->loadShader(subShaderName, true)+shaderEnd;
-    }
-
-    std::string vertShaderString = shaderFile;
-    std::string fragmentShaderString = vertShaderString;
+    std::string vertShaderString = shaderVertFile;
+    std::string fragmentShaderString = shaderFragFile;
 
     std::string vertExtraDefStrings = vertExtraDef;
     std::string fragExtraDefStrings = fragExtraDef;
@@ -140,23 +132,16 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
 #endif
     bool geomShaderExists = false;
     if (esVersion) {
-        vertExtraDefStrings = "#version 300 es\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 300 es\n" + geomExtraDefStrings;
+        vertExtraDefStrings = "#version 100 es\n" + vertExtraDefStrings;
+        geomExtraDefStrings = "#version 100 es\n" + geomExtraDefStrings;
     } else {
-        vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 330\n" + geomExtraDefStrings;
+        vertExtraDefStrings = "#version 100\n" + vertExtraDefStrings;
+        geomExtraDefStrings = "#version 100\n" + geomExtraDefStrings;
     }
 
-    if (!esVersion) {
-        vertExtraDefStrings +=
-            "#define precision\n"
-            "#define lowp\n"
-            "#define mediump\n"
-            "#define highp\n"
-            "#define FLOATDEC\n";
-    } else {
-        vertExtraDefStrings += "#define FLOATDEC float;\n";
-    };
+    //OGL 2.0 requires this for both vertex and fragment shader
+    vertExtraDefStrings += "precision mediump float;\n";
+
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
 
 #ifdef __EMSCRIPTEN__
@@ -164,21 +149,14 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
 #endif
 
     if (esVersion) {
-        fragExtraDefStrings = "#version 300 es\n" + fragExtraDefStrings;
+        fragExtraDefStrings = "#version 100 es\n" + fragExtraDefStrings;
     } else {
-        fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
+        fragExtraDefStrings = "#version 100\n" + fragExtraDefStrings;
     }
 
-    if (!esVersion) {
-        fragExtraDefStrings +=
-            "#define precision\n"
-            "#define lowp\n"
-            "#define mediump\n"
-            "#define highp\n"
-            "#define FLOATDEC\n";
-    } else {
-        fragExtraDefStrings += "#define FLOATDEC float;\n";
-    };
+    //OGL 2.0 requires this for both vertex and fragment shader
+    fragExtraDefStrings += "precision mediump float;\n";
+
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);

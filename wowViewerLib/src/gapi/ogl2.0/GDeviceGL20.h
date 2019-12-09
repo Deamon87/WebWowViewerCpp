@@ -2,8 +2,8 @@
 // Created by deamon on 05.06.18.
 //
 
-#ifndef WEBWOWVIEWERCPP_GDEVICE_H
-#define WEBWOWVIEWERCPP_GDEVICE_H
+#ifndef WEBWOWVIEWERCPP_GDEVICE20_H
+#define WEBWOWVIEWERCPP_GDEVICE20_H
 
 #include <memory>
 
@@ -22,8 +22,8 @@ class GParticleMeshGL20;
 
 class gMeshTemplate;
 
-typedef std::shared_ptr<GUniformBufferGL20> HGLUniformBuffer;
-typedef std::shared_ptr<GMeshGL20> HGLMesh;
+typedef std::shared_ptr<GUniformBufferGL20> HGL20UniformBuffer;
+typedef std::shared_ptr<GMeshGL20> HGL20Mesh;
 
 #include <unordered_set>
 #include <list>
@@ -96,7 +96,7 @@ public:
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
 
-    std::string loadShader(std::string fileName, bool common) override;
+    std::string loadShader(std::string fileName, IShaderType shaderType) override;
 
     virtual void clearScreen() override;
     void setClearScreenColor(float r, float g, float b) override ;
@@ -199,7 +199,7 @@ protected:
 
     std::vector<char> aggregationBufferForUpload;
 
-    std::unordered_map<std::string, std::string> shaderCache;
+    std::unordered_map<ShaderContentCacheRecord, std::string, ShaderContentCacheRecordHasher> shaderCache;
 
     int uniformBuffersCreated = 0;
 };

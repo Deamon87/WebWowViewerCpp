@@ -2,8 +2,8 @@
 // Created by deamon on 05.06.18.
 //
 
-#ifndef WEBWOWVIEWERCPP_GMESH_H
-#define WEBWOWVIEWERCPP_GMESH_H
+#ifndef WEBWOWVIEWERCPP_GMESH20_H
+#define WEBWOWVIEWERCPP_GMESH20_H
 
 #include "../GVertexBufferBindingsGL20.h"
 #include "../textures/GBlpTextureGL20.h"

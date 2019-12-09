@@ -13,7 +13,7 @@
 
 struct attributeDefine {
     std::string name;
-    int location;
+    unsigned int location;
 };
 
 struct fieldDefine {
@@ -26,9 +26,9 @@ struct fieldDefine {
 };
 
 struct uboBindingData {
-    int set;
-    int binding;
-    int size;
+    unsigned int set;
+    unsigned int binding;
+    unsigned long long size;
 };
 
 struct shaderMetaData {

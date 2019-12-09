@@ -2,8 +2,8 @@
 // Created by Deamon on 7/24/2018.
 //
 
-#ifndef AWEBWOWVIEWERCPP_GPARTICLEMESH_H
-#define AWEBWOWVIEWERCPP_GPARTICLEMESH_H
+#ifndef AWEBWOWVIEWERCPP_GPARTICLEMESH20_H
+#define AWEBWOWVIEWERCPP_GPARTICLEMESH20_H
 #include "GMeshGL20.h"
 #include "../../interface/meshes/IParticleMesh.h"
 

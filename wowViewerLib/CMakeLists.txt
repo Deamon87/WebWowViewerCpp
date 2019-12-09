@@ -8,7 +8,7 @@ set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 1)
 set(LINK_VULKAN 1)
-set(LINK_OPENMP 1)
+set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
 set(EMSCRIPTEN_SIMD 0)
 
@@ -417,12 +417,13 @@ target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 
 if (LINK_OPENMP)
-    target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY} -fopenmp)
+    target_link_libraries(WoWViewerLib  -fopenmp)
+endif()
+if (LINK_VULKAN)
+    target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
 endif()
 
-
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
-
 
 if (ENABLE_SIMD)
     mathfu_configure_flags(WoWViewerLib TRUE)
@@ -446,6 +447,7 @@ endif()
 add_subdirectory(shaders)
 
 
+add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
 add_dependencies(WoWViewerLib ShadersGLSL20)
 add_dependencies(WoWViewerLib ShadersGLSL33)
 

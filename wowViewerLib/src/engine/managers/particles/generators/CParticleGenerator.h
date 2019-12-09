@@ -18,6 +18,7 @@ public:
         this->seed = seed;
         this->m_particleData = particle;
     }
+    virtual ~CParticleGenerator() {};
 
 public:
     virtual float GetEmissionRate();

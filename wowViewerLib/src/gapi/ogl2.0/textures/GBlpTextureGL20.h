@@ -2,8 +2,8 @@
 // Created by deamon on 05.06.18.
 //
 
-#ifndef WEBWOWVIEWERCPP_GBLPTEXTURE_H
-#define WEBWOWVIEWERCPP_GBLPTEXTURE_H
+#ifndef WEBWOWVIEWERCPP_GBLPTEXTURE20_H
+#define WEBWOWVIEWERCPP_GBLPTEXTURE20_H
 
 #include "../../../gapi/interface/textures/IBlpTexture.h"
 #include "GTextureGL20.h"

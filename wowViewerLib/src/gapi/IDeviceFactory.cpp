@@ -4,6 +4,7 @@
 
 #include "IDeviceFactory.h"
 
+#include "ogl2.0/GDeviceGL20.h"
 #include "ogl3.3/GDeviceGL33.h"
 #include "ogl4.x/GDeviceGL4x.h"
 #ifndef SKIP_VULKAN
@@ -22,7 +23,10 @@ void initOGLPointers(){
 }
 
 IDevice *IDeviceFactory::createDevice(std::string gapiName, void * data) {
-    if (gapiName == "ogl3") {
+    if (gapiName == "ogl2") {
+        initOGLPointers();
+        return new GDeviceGL20();
+    } else if (gapiName == "ogl3") {
         initOGLPointers();
         return new GDeviceGL33();
     } else if (gapiName == "ogl4") {

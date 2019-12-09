@@ -277,7 +277,7 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
 void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
-    std::vector<HGLMesh> &meshes = (std::vector<HGLMesh> &) iMeshes;
+    std::vector<HGL20Mesh> &meshes = (std::vector<HGL20Mesh> &) iMeshes;
 
     //1. Collect buffers
     std::vector<GUniformBufferGL20 *> buffers;
@@ -812,18 +812,27 @@ void GDeviceGL20::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 #include "../androidLogSupport.h"
 #endif
 
-std::string GDeviceGL20::loadShader(std::string fileName, bool common) {
+std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType) {
     std::string fullPath;
     trim(fileName);
-    if (common) {
-        fullPath = "./glsl/common/" + fileName + ".glsl";
-    } else {
-        fullPath = "./glsl/glsl3.3/" + fileName + ".glsl";
+
+    fullPath = "./glsl/glsl20/" + fileName;
+    switch (shaderType) {
+        case IShaderType::gVertexShader :
+            fullPath += ".vert";
+            break;
+
+        case IShaderType::gFragmentShader :
+            fullPath += ".frag";
+            break;
     }
 
-//    std::cout << "fullPath = "<< fullPath << std::endl;
+    ShaderContentCacheRecord hashRecord;
+    hashRecord.fileName = fullPath;
+    hashRecord.shaderType = shaderType;
 
-    auto i = shaderCache.find(fullPath);
+
+    auto i = shaderCache.find(hashRecord);
     if (i != shaderCache.end()) {
         return i->second;
     }
@@ -865,7 +874,29 @@ std::string GDeviceGL20::loadShader(std::string fileName, bool common) {
 
     std::string result = std::string((std::istreambuf_iterator<char>(t)),
                            std::istreambuf_iterator<char>());
-    shaderCache[fullPath] = result;
+
+    //Delete version
+    {
+        auto start = result.find("#version");
+        if (start != std::string::npos) {
+            auto end = result.find("\n");
+            result = result.substr(end);
+        }
+    }
+
+    //Hack fix for bones
+    {
+        auto start = result.find("[bones");
+        while(start != std::string::npos) {
+            auto end = result.find("]", start);
+
+            result = result.substr(0, start) + "[int(" + result.substr(start+1, end-start-1)+")"+ result.substr(end);
+            start = result.find("[bones");
+        }
+    }
+
+
+    shaderCache[hashRecord] = result;
     return result;
 #endif
 }

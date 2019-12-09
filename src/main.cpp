@@ -379,20 +379,25 @@ int main(){
 
     glfwInit();
 
-    std::string rendererName = "ogl3";
+    std::string rendererName = "ogl2";
+//    std::string rendererName = "ogl3";
 //    std::string rendererName = "vulkan";
 
     //FOR OGL
 
-    if (rendererName == "ogl3")
-    {
+    if (rendererName == "ogl3") {
         glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 //    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
-
+    } else if ( rendererName == "ogl2") {
+        glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2); // We want OpenGL 3.3
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
     } else if (rendererName == "vulkan"){
         //For Vulkan
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -418,7 +423,7 @@ int main(){
     };
 
     //For OGL
-    if (rendererName == "ogl3")
+    if (rendererName == "ogl3" || rendererName == "ogl2")
     {
         glfwMakeContextCurrent(window);
     }
@@ -467,7 +472,7 @@ try {
 
         scene->draw((deltaTime*(1000.0f))); //miliseconds
 
-        if (rendererName == "ogl3") {
+        if (rendererName == "ogl3" || rendererName == "ogl2") {
             glfwSwapBuffers(window);
         }
     }

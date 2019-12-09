@@ -1228,7 +1228,7 @@ HGVertexBufferBindings GDeviceVLK::getBBLinearBinding() {
     return HGVertexBufferBindings();
 }
 
-std::string GDeviceVLK::loadShader(std::string fileName, bool common) {
+std::string GDeviceVLK::loadShader(std::string fileName, IShaderType shaderType) {
     return std::string();
 }
 

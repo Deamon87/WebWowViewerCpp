@@ -94,6 +94,29 @@ struct WMOShaderCacheRecord {
     };
 };
 
+enum class IShaderType {
+    gVertexShader,
+    gFragmentShader
+};
+
+struct ShaderContentCacheRecord {
+    std::string fileName;
+    IShaderType shaderType;
+    bool operator==(const ShaderContentCacheRecord &other) const {
+        return
+            (fileName == other.fileName) &&
+            (shaderType == other.shaderType);
+    }
+};
+
+struct ShaderContentCacheRecordHasher {
+    std::size_t operator()(const ShaderContentCacheRecord& k) const {
+        using std::hash;
+        return hash<std::string>{}(k.fileName) ^
+                (hash<int>{}((int)k.shaderType));
+    };
+};
+
 #ifndef SKIP_VULKAN
 struct vkCallInitCallback {
     std::function<void(char** &extensionNames, int &extensionCnt)> getRequiredExtensions;
@@ -258,7 +281,7 @@ class IDevice {
         }
         virtual HGVertexBufferBindings getBBVertexBinding() = 0;
         virtual HGVertexBufferBindings getBBLinearBinding() = 0;
-        virtual std::string loadShader(std::string fileName, bool common) = 0;
+        virtual std::string loadShader(std::string fileName, IShaderType shaderType) = 0;
         virtual void clearScreen() = 0;
         virtual void setClearScreenColor(float r, float g, float b) = 0;
         virtual void setViewPortDimensions(float x, float y, float width, float height) = 0;
