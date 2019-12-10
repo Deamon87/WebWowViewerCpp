@@ -45,7 +45,7 @@ void GUniformBufferGL33::uploadData(void * data, int length) {
     assert(length > 0 && length <= 65536);
 
     if (!m_dataUploaded || m_size < length) {
-        glBufferData(GL_UNIFORM_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);
         m_size = (size_t) length;
     } else {
         glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
@@ -53,5 +53,4 @@ void GUniformBufferGL33::uploadData(void * data, int length) {
 
     m_dataUploaded = true;
     m_needsUpdate = false;
-//    m_device.bindVertexUniformBuffer(this, -1);
 }

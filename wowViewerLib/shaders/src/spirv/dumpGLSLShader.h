@@ -26,14 +26,13 @@ void dumpGLSLText(std::vector<std::string> &shaderFilePaths, int glslVersion) {
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();
 
 //         Get all sampled images in the shader.
-        if (glslVersion < 300) {
             glsl.set_variable_type_remap_callback(
                 [](const spirv_cross::SPIRType &type, const std::string &var_name, std::string &name_of_type) -> void {
                     if (name_of_type == "uvec4") {
                         name_of_type  = "vec4";
                     }
-                });
-        }
+            });
+
 
         for (auto &resource : resources.stage_inputs) {
 

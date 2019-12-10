@@ -378,7 +378,7 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
         glGetActiveUniformBlockName(program, uniformBlock,
                                     nameLength, nullptr, blockName.get());
 
-        std::cout << "Uniform Block : " << blockName.get() << std::endl;
+        std::cout << "Uniform Block "<< uniformBlock<< " : " << blockName.get() << std::endl;
 
         // get size of uniform block in bytes
         GLint uboSize;

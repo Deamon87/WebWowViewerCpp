@@ -20,49 +20,24 @@ constexpr GLenum toOGLEnum(GBindingType bindingType) {
 
 GVertexBufferBindingsGL20::GVertexBufferBindingsGL20(IDevice &m_device) : m_device(m_device) {
     m_buffer = std::vector<char>(sizeof(GLuint));
-    createBuffer();
+//    createBuffer();
 }
 
 GVertexBufferBindingsGL20::~GVertexBufferBindingsGL20() {
-    destroyBuffer();
+//    destroyBuffer();
 }
 
 void GVertexBufferBindingsGL20::createBuffer() {
-    glGenVertexArrays(1, (GLuint *)&this->m_buffer[0]);
+//    glGenVertexArrays(1, (GLuint *)&this->m_buffer[0]);
 }
 
 void GVertexBufferBindingsGL20::destroyBuffer() {
-    glDeleteVertexArrays(1, (GLuint *)&this->m_buffer[0]);
+//    glDeleteVertexArrays(1, (GLuint *)&this->m_buffer[0]);
 }
 
 void GVertexBufferBindingsGL20::bind() {
-    glBindVertexArray(*(GLuint *)&this->m_buffer[0]);
-}
+//    glBindVertexArray(*(GLuint *)&this->m_buffer[0]);
 
-void GVertexBufferBindingsGL20::unbind() {
-    glBindVertexArray(0);
-}
-
-void GVertexBufferBindingsGL20::setIndexBuffer(HGIndexBuffer indexBuffer) {
-    m_indexBuffer = indexBuffer;
-}
-
-void GVertexBufferBindingsGL20::addVertexBufferBinding(GVertexBufferBinding binding) {
-    m_bindings.push_back(binding);
-}
-
-static int VAO_updated = 0;
-void GVertexBufferBindingsGL20::save() {
-//    std::cout << "VAO_updated = " << VAO_updated++ << std::endl;
-
-    m_device.bindVertexBufferBindings(this);
-//    for (GVertexBufferBinding &binding : m_bindings) {
-//        for (GBufferBinding &bufferBinding : binding.bindings) {
-//
-//        }
-//    }
-//    m_device.bindIndexBuffer(nullptr);
-//    m_device.bindVertexBuffer(nullptr);
     m_device.bindIndexBuffer(m_indexBuffer.get());
     for (GVertexBufferBinding &binding : m_bindings) {
         m_device.bindVertexBuffer(binding.vertexBuffer.get());
@@ -79,9 +54,36 @@ void GVertexBufferBindingsGL20::save() {
             );
         }
     }
+}
+
+void GVertexBufferBindingsGL20::unbind() {
+//    glBindVertexArray(0);
+}
+
+void GVertexBufferBindingsGL20::setIndexBuffer(HGIndexBuffer indexBuffer) {
+    m_indexBuffer = indexBuffer;
+}
+
+void GVertexBufferBindingsGL20::addVertexBufferBinding(GVertexBufferBinding binding) {
+    m_bindings.push_back(binding);
+}
+
+static int VAO_updated = 0;
+void GVertexBufferBindingsGL20::save() {
+//    std::cout << "VAO_updated = " << VAO_updated++ << std::endl;
+
+//    m_device.bindVertexBufferBindings(this);
+//    for (GVertexBufferBinding &binding : m_bindings) {
+//        for (GBufferBinding &bufferBinding : binding.bindings) {
+//
+//        }
+//    }
+//    m_device.bindIndexBuffer(nullptr);
+//    m_device.bindVertexBuffer(nullptr);
 
 
-    m_device.bindVertexBufferBindings(nullptr);
+
+//    m_device.bindVertexBufferBindings(nullptr);
 
 }
 

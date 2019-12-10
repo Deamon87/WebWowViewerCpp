@@ -324,7 +324,9 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
 
     for (int i = 0; i < 5; i++) {
         auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
-        bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
+        if (uniformChunk != nullptr) {
+            bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
+        }
     }
 
     for (int i = 0; i < hmesh->m_textureCount; i++) {

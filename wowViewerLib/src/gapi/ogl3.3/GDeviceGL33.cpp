@@ -342,9 +342,12 @@ void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
     bindProgram(hmesh->m_shader.get());
     bindVertexBufferBindings(hmesh->m_bindings.get());
 
+
     for (int i = 0; i < 5; i++) {
         auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
-        bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
+        if (uniformChunk != nullptr) {
+            bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
+        }
     }
 
     for (int i = 0; i < hmesh->m_textureCount; i++) {
@@ -577,13 +580,12 @@ void GDeviceGL33::bindProgram(IShaderPermutation *iProgram) {
         program->bindProgram();
         m_shaderPermutation = program;
 
-//        m_vertexBufferBindings = nullptr;
-//        m_vertexUniformBuffer[0] = nullptr;
-//        m_vertexUniformBuffer[1] = nullptr;
-//        m_vertexUniformBuffer[2] = nullptr;
-//        m_fragmentUniformBuffer[0] = nullptr;
-//        m_fragmentUniformBuffer[1] = nullptr;
-//        m_fragmentUniformBuffer[2] = nullptr;
+        m_vertexBufferBindings = nullptr;
+        m_UniformBuffer[0] = {};
+        m_UniformBuffer[1] = {};
+        m_UniformBuffer[2] = {};
+        m_UniformBuffer[3] = {};
+        m_UniformBuffer[4] = {};
     }
 }
 
@@ -837,6 +839,17 @@ std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType
         if (start != std::string::npos) {
             auto end = result.find("\n");
             result = result.substr(end);
+        }
+    }
+
+    //Hack fix for bones
+    {
+        auto start = result.find("[bones");
+        while(start != std::string::npos) {
+            auto end = result.find("]", start);
+
+            result = result.substr(0, start) + "[int(" + result.substr(start+1, end-start-1)+")"+ result.substr(end);
+            start = result.find("[bones");
         }
     }
 
