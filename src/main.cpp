@@ -16,10 +16,11 @@
 //#define __EMSCRIPTEN__
 #include "engine/HeadersGL.h"
 
-#ifdef __EMSCRIPTEN__
-#undef GLFW_INCLUDE_VULKAN
-#else
+#ifdef LINK_VULKAN
 #define GLFW_INCLUDE_VULKAN
+#include "../wowViewerLib/src/include/vulkancontext.h"
+#else
+#undef GLFW_INCLUDE_VULKAN
 #endif
 
 #include <GLFW/glfw3.h>
@@ -33,7 +34,7 @@
 #include "persistance/HttpZipRequestProcessor.h"
 //#include "persistance/MpqRequestProcessor.h"
 #include "persistance/HttpRequestProcessor.h"
-#include "../wowViewerLib/src/include/vulkancontext.h"
+
 
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
@@ -406,6 +407,7 @@ int main(){
 
     auto window = glfwCreateWindow(canvWidth, canvHeight, "Vulkan", nullptr, nullptr);
 
+#ifdef LINK_VULKAN
     vkCallInitCallback callback;
     callback.createSurface = [&](VkInstance vkInstance) {
         VkSurfaceKHR surface;
@@ -421,6 +423,9 @@ int main(){
         extensionNames = const_cast<char **>(glfwGetRequiredInstanceExtensions(&count));
         extensionCnt = count;
     };
+#else
+    void *callback = nullptr;
+#endif
 
     //For OGL
     if (rendererName == "ogl3" || rendererName == "ogl2")

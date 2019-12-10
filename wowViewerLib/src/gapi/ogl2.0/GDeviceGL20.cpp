@@ -196,17 +196,6 @@ std::shared_ptr<IShaderPermutation> GDeviceGL20::getShader(std::string shaderNam
         glUseProgram(0);
     }
 
-//    glUseProgram(gShaderPermutation->m_programBuffer);
-    for (int i = 0; i < 3; i++) {
-        if (gShaderPermutation->m_uboVertexBlockIndex[i] > -1) {
-            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[i], i);
-        }
-        if (gShaderPermutation->m_uboFragmentBlockIndex[i] > -1) {
-            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[i], 3 + i);
-        }
-    }
-//    glUseProgram(0);
-
     return sharedPtr;
 }
 
@@ -246,8 +235,6 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
-    aggregationBufferForUpload.resize(maxUniformBufferSize);
-
     std::vector<HGL20Mesh> &meshes = (std::vector<HGL20Mesh> &) iMeshes;
 
     //1. Collect buffers
@@ -266,51 +253,40 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
     std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
 
+    int fullSize = 0;
     for (auto &buffer : buffers) {
-        buffer->update();
+        fullSize += buffer->getSize();
+        int offsetDiff = fullSize % uniformBufferOffsetAlign;
+        if (offsetDiff != 0) {
+            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+            fullSize += bytesToAdd;
+        }
+    }
+    if (fullSize > aggregationBufferForUpload.size()) {
+        aggregationBufferForUpload.resize(fullSize);
     }
 
     //2. Create buffers and update them
     int currentSize = 0;
     int buffersIndex = 0;
 
-    std::vector<HGUniformBuffer> &m_unfiormBuffersForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBuffersForUpload;
-    HGUniformBuffer bufferForUpload;
-    if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
-        bufferForUpload = createUniformBuffer(maxUniformBufferSize);
+    HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
+    if (bufferForUpload == nullptr) {
+        bufferForUpload = createUniformBuffer(10*1024*1024);
         bufferForUpload->createBuffer();
-        m_unfiormBuffersForUpload.push_back(bufferForUpload);
-    } else {
-        bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
+        m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload = bufferForUpload;
     }
 
-    for (const auto &buffer : buffers) {
-        if ((currentSize + buffer->getSize()) > maxUniformBufferSize) {
-            ((GUniformBufferGL20 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
+    auto bufferForUploadGL = ((GUniformBufferGL20 *) bufferForUpload.get());
+    //Buffer identifier was changed, so we need to update shader UBO descriptor
 
-            buffersIndex++;
-            currentSize = 0;
+    char *pointerForUpload = static_cast<char *>(&aggregationBufferForUpload[0]);
+    for (const auto &bufferChunk : buffers) {
 
-            if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
-                bufferForUpload = createUniformBuffer(maxUniformBufferSize);
-                bufferForUpload->createBuffer();
-                m_unfiormBuffersForUpload.push_back(bufferForUpload);
-            } else {
-                bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
-            }
-        }
-
-        buffer->setOffset(currentSize);
-
-        std::copy((char*)dataPtr,
-                  ((char*)dataPtr)+buffer->getSize(),
-                  &aggregationBufferForUpload[currentSize]);
-//        aggregationBufferForUpload.insert(
-//            aggregationBufferForUpload.end(),
-//            (char*)buffer->pContent,
-//            ((char*)buffer->pContent)+buffer->m_size
-//        );
-        currentSize += buffer->getSize();
+        bufferChunk->setOffset(currentSize);
+        bufferChunk->setPointer(&pointerForUpload[currentSize]);
+        currentSize += bufferChunk->getSize();
 
         int offsetDiff = currentSize % uniformBufferOffsetAlign;
         if (offsetDiff != 0) {
@@ -319,9 +295,12 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
             currentSize += bytesToAdd;
         }
     }
+    for (auto &buffer : buffers) {
+        buffer->update();
+    }
 
     if (currentSize > 0) {
-        ((GUniformBufferGL20 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
+        ((GUniformBufferGL20 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], fullSize);
     }
 }
 
@@ -338,12 +317,14 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
         gm2Mesh = (GM2MeshGL20 *)(hmesh);
     }
 
+    HGUniformBuffer bufferForUpload = m_UBOFrames[getDrawFrameNumber()].m_uniformBufferForUpload;
+
     bindProgram(hmesh->m_shader.get());
     bindVertexBufferBindings(hmesh->m_bindings.get());
 
     for (int i = 0; i < 5; i++) {
         auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
-        bindUniformBuffer(, i, uniformChunk->getOffset(), uniformChunk->getSize());
+        bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
     }
 
     for (int i = 0; i < hmesh->m_textureCount; i++) {

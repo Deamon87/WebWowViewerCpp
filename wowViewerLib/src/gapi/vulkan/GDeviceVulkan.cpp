@@ -1001,7 +1001,6 @@ void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
         m_shaderDescriptorUpdateNeeded = true;
     }
     char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->stagingUBOBufferAllocInfo.pMappedData);
-
     for (const auto &buffer : buffers) {
         if (buffer->m_buffCreated) continue;
 

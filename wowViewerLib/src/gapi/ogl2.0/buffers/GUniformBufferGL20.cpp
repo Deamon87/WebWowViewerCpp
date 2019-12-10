@@ -23,29 +23,9 @@ void GUniformBufferGL20::destroyBuffer() {
 }
 
 void GUniformBufferGL20::unbind() {
-//    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void GUniformBufferGL20::uploadData(void * data, int length) {
-
+        dataPtr = data;
 }
 
-void GUniformBufferGL20::save(bool initialSave) {
-
-}
-
-void *GUniformBufferGL20::getPointerForUpload() {
-//    if (!m_device.getIsEvenFrame()) {
-//        return pFrameTwoContent;
-//    } else {
-        return &pFrameOneContent[0];
-//    }
-}
-
-void *GUniformBufferGL20::getPointerForModification() {
-//    if (m_device.getIsEvenFrame()) {
-//        return pFrameTwoContent;
-//    } else {
-        return &pFrameOneContent[0];
-//    }
-}

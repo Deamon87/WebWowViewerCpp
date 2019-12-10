@@ -188,12 +188,12 @@ protected:
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBufferGL20>> m_unfiormBufferCache;
     struct FrameUniformBuffers {
-        std::vector<HGUniformBuffer> m_uniformBuffersForUpload;
+        HGUniformBuffer m_uniformBufferForUpload;
     };
 
-    FrameUniformBuffers m_UBOFrames[4];
+    std::array<FrameUniformBuffers, 4> m_UBOFrames;
 
-    std::vector<char> aggregationBufferForUpload;
+    std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 
     std::unordered_map<ShaderContentCacheRecord, std::string, ShaderContentCacheRecordHasher> shaderCache;
 

@@ -18,11 +18,8 @@ public:
     explicit GUniformBufferGL20(IDevice &device, size_t size);
     ~GUniformBufferGL20() override;
 
-    void *getPointerForModification() override;
-    void *getPointerForUpload() override;
-
-    void save(bool initialSave = false) override;
     void createBuffer() override;
+    void *getPtr(){ return dataPtr; }
 private:
 
     void destroyBuffer();
@@ -35,12 +32,8 @@ private:
     IDevice &m_device;
 
 private:
-    size_t m_size;
+    void *dataPtr;
 
-    std::vector<char> pFrameOneContent;
-	
-    bool m_buffCreated = false;
-    bool m_dataUploaded = false;
 };
 
 

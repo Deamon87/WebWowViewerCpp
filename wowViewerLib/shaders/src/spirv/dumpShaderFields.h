@@ -130,7 +130,9 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                  "};\n"
                  "\n"
                  "//Per file\n"
-                 "extern const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;" << std::endl;
+                 "extern const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;" << std::endl <<
+                 "extern const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName;" << std::endl <<
+                 "extern const std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName;" << std::endl;
 
 
     std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName;
@@ -241,7 +243,7 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
     std::cout << "#ifdef SHADERDATACPP" << std::endl;
 
     //3.2 Dump attribute info
-    std::cout << "std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName = {" << std::endl;
+    std::cout << "const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName = {" << std::endl;
 
     for (auto it = attributesPerShaderName.begin(); it != attributesPerShaderName.end(); it++) {
         std::cout << "{\"" << it->first << "\", " << " {" << std::endl;
@@ -275,7 +277,7 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
 
     //Dump unfform bufffers info
-    std::cout << "std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName = {" << std::endl;
+    std::cout << "const  std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName = {" << std::endl;
     for (auto it = fieldDefMapPerShaderName.begin(); it != fieldDefMapPerShaderName.end(); it++) {
         std::cout << "  {\"" << it->first << "\", " << " {" << std::endl;
 

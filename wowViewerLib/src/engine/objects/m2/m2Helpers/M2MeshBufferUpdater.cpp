@@ -49,7 +49,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
 
     //3. Update individual PS buffer
     auto pixelShader = materialData.pixelShader;
-    hmesh->getUniformBuffer(5)->setUpdateHandler([&m2Object, m2Data, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self) {
+    hmesh->getUniformBuffer(4)->setUpdateHandler([&m2Object, m2Data, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self) {
 
         auto textMaterial = m2SkinProfile->batches[batchIndex];
         int renderFlagIndex = textMaterial->materialIndex;

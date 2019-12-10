@@ -155,8 +155,8 @@ protected:
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
         nullptr};
 
-    GUniformBufferGL33 * m_vertexUniformBuffer[3] = {nullptr};
-    GUniformBufferGL33 * m_fragmentUniformBuffer[3] = {nullptr};
+    struct GUBOMappingRec { GUniformBufferGL33 * buffer = nullptr; uint32_t offset = 0;};
+    std::array<GUBOMappingRec, 5> m_UniformBuffer;
 
     HGTexture m_blackPixelTexture;
     HGTexture m_whitePixelTexture;
@@ -192,10 +192,10 @@ protected:
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBufferGL33>> m_unfiormBufferCache;
     struct FrameUniformBuffers {
-        std::vector<HGUniformBuffer> m_uniformBuffersForUpload;
+        HGUniformBuffer m_uniformBufferForUpload;
     };
 
-    FrameUniformBuffers m_UBOFrames[4];
+    std::array<FrameUniformBuffers, 4> m_UBOFrames;
 
     std::vector<char> aggregationBufferForUpload;
 

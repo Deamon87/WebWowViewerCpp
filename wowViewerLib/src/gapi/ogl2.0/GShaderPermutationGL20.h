@@ -42,13 +42,13 @@ protected:
 private:
     IDevice *m_device;
 private:
-    GUniformBufferGL20 * m_UniformBuffer[6] = {nullptr};
+    struct GUBOMappingRec { GUniformBufferGL20 * buffer = nullptr; uint32_t offset = 0;};
+    std::array<GUBOMappingRec, 5> m_UniformBuffer;
 
     void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length);
 
     std::unordered_map<size_t, unsigned int> m_uniformMap;
-    int m_uboVertexBlockIndex[3];
-    int m_uboFragmentBlockIndex[3];
+    int m_uboBlockIndex[5];
     std::string m_shaderName;
 
 

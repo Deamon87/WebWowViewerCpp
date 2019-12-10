@@ -2,6 +2,8 @@
 #ifndef HASHEDSTRING_HPP_INCLUDED
 #define HASHEDSTRING_HPP_INCLUDED
 
+static size_t CalculateFNV(const char* str);
+
 /////////////
 // LINKING //
 /////////////
@@ -57,7 +59,7 @@ private:
     // Just a constant wrapper
     struct ConstCharWrapper
     {
-        inline ConstCharWrapper(const char* str);
+        inline ConstCharWrapper(const char* str) : str(str) {};
         const char* str;
     };
 
@@ -66,7 +68,8 @@ public:
     // A wrapper so we can generate any number of functions using the pre-processor (const strings)
     template <size_t N>
     constexpr HashedString(const char(&str)[N]);
-    explicit constexpr HashedString(ConstCharWrapper str);
+    explicit HashedString(ConstCharWrapper str): m_Hash(CalculateFNV(str.str)){
+    };
 
     // Return the original string
 //#ifdef _DEBUG

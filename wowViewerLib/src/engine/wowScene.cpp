@@ -64,7 +64,6 @@ void WoWSceneImpl::DoUpdate() {
         auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
         blockPSVS->uLookAtMat = objFrameParam->m_lookAtMat4;
         blockPSVS->uPMatrix = objFrameParam->m_perspectiveMatrix;
-
     });
 
     currentScene->updateBuffers(objFrameParam);

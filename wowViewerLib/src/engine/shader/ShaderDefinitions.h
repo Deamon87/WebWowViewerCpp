@@ -33,6 +33,8 @@ struct shaderMetaData {
 
 //Per file
 extern const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;
+extern const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName;
+extern const std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName;
 struct renderFrameBufferShader {
     enum class Attribute {
         a_position = 0, renderFrameBufferShaderAttributeEnd
@@ -119,7 +121,7 @@ struct drawFrustumShader {
 
 std::string loadShader(std::string shaderName);
 #ifdef SHADERDATACPP
-std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName = {
+const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName = {
 {"renderFrameBufferShader",  {
 {"a_position", 0},
 }},{"m2Shader",  {
@@ -327,7 +329,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },};
 
-std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName = {
+const  std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderName = {
   {"renderFrameBufferShader",  {
     {
       2, {
