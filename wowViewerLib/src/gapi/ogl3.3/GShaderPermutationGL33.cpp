@@ -159,9 +159,6 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
     std::string fragExtraDefStrings = fragExtraDef;
     std::string geomExtraDefStrings = "";
 
-
-
-
     bool esVersion = false;
 #ifdef __ANDROID_API__
     esVersion = true;

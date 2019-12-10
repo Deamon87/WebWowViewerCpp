@@ -28,12 +28,10 @@ void GUniformBufferGL33::destroyBuffer() {
     glDeleteBuffers(1, (GLuint *)&glBuffId);
 }
 void GUniformBufferGL33::bind(int bindingPoint, int offset, int length) { //Should be called only by GDevice
-    if (bindingPoint == 0) {
+    if (bindingPoint == 0 && offset == 0 && length == 0) {
         glBindBuffer(GL_UNIFORM_BUFFER, glBuffId);
-    } else if (offset == 0) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, glBuffId);
     } else {
-        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, glBuffId, m_offset, m_size);
+        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, glBuffId, offset, length);
     }
 }
 void GUniformBufferGL33::unbind() {

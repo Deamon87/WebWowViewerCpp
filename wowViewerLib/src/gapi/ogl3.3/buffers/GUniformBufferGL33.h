@@ -33,7 +33,6 @@ private:
 
 private:
     size_t m_size;
-    size_t m_offset;
     GLuint glBuffId;
 
     std::vector<char> pFrameOneContent;

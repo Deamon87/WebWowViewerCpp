@@ -106,7 +106,7 @@ void GDeviceGL33::bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset
             m_UniformBuffer[slot] = {};
         }
     }  else {
-        if (buffer != m_UniformBuffer[slot].buffer || m_UniformBuffer[slot].offset != offset) {
+        if ((buffer != m_UniformBuffer[slot].buffer) || (m_UniformBuffer[slot].offset != offset)) {
             gbuffer->bind(slot, offset, length);
 
             m_UniformBuffer[slot] = {gbuffer, (uint32_t)offset};
@@ -772,7 +772,7 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType) {
     std::string fullPath;
     trim(fileName);
-    fullPath = "./glsl/glsl20/" + fileName;
+    fullPath = "./glsl/glsl3.3/" + fileName;
     switch (shaderType) {
         case IShaderType::gVertexShader :
             fullPath += ".vert";
@@ -830,6 +830,17 @@ std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType
 
     std::string result = std::string((std::istreambuf_iterator<char>(t)),
                            std::istreambuf_iterator<char>());
+
+    //Delete version
+    {
+        auto start = result.find("#version");
+        if (start != std::string::npos) {
+            auto end = result.find("\n");
+            result = result.substr(end);
+        }
+    }
+
+
     shaderCache[hashRecord] = result;
     return result;
 #endif
