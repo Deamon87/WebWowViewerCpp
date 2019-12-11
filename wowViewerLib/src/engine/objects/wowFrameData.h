@@ -33,26 +33,26 @@ public:
     mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
 
     //Frustum culling results
-    std::vector<WmoGroupResult> m_currentInteriorGroups;
+	std::vector<WmoGroupResult> m_currentInteriorGroups = {};
     WmoObject *m_currentWMO = nullptr;
     int m_currentWmoGroup = -1;
 
 
-    ExteriorView exteriorView;
-    std::vector<InteriorView> interiorViews;
+    ExteriorView exteriorView = ExteriorView();
+    std::vector<InteriorView> interiorViews = {};
 
-    std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray;
-    std::vector<M2Object*> m2Array;
-    std::vector<WmoObject*> wmoArray;
+    std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
+	std::vector<M2Object*> m2Array = {};
+    std::vector<WmoObject*> wmoArray = {};
 
     //Occlusion culling params
-    std::vector<HGOcclusionQuery> renderedThisFrame;
+    std::vector<HGOcclusionQuery> renderedThisFrame = {};
 
     //Occlusion culling results
-    int *occlusionResults;
+    int *occlusionResults = 0;
 
     //Rendering params
-    std::vector<HGMesh> meshes;
+    std::vector<HGMesh> meshes = {};
 };
 
 #endif //AWEBWOWVIEWERCPP_WOWFRAMEDATA_H

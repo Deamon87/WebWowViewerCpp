@@ -411,6 +411,18 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
     return 1;
 }
 
+M2Object::~M2Object() {
+    delete m_animationManager;
+
+    for (auto &obj: particleEmitters) {
+        delete obj;
+    }
+    for (auto &obj: ribbonEmitters) {
+        delete obj;
+    }
+}
+
+
 void M2Object::createAABB() {
     M2Data *m2Data = m_m2Geom->getM2Data();
 
@@ -1192,15 +1204,14 @@ void M2Object::createBoundingBoxMesh() {
     meshTemplate.element = DrawElementMode::TRIANGLES;
     meshTemplate.textureCount = 0;
 
-    HGUniformBuffer bbBlockVS = m_api->getDevice()->createUniformBuffer(sizeof(bbModelWideBlockVS));
+    HGUniformBufferChunk bbBlockVS = m_api->getDevice()->createUniformBufferChunk(sizeof(bbModelWideBlockVS));
 
-    meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-    meshTemplate.vertexBuffers[1] = bbBlockVS;
-    meshTemplate.vertexBuffers[2] = nullptr;
+    meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.ubo[1] = bbBlockVS;
+    meshTemplate.ubo[2] = nullptr;
 
-    meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-    meshTemplate.fragmentBuffers[1] = nullptr;
-    meshTemplate.fragmentBuffers[2] = nullptr;
+    meshTemplate.ubo[3] = nullptr;
+    meshTemplate.ubo[4] = nullptr;
 
     M2Data *m2Data = m_m2Geom->getM2Data();
     CAaBox &aaBox = m2Data->bounding_box;
@@ -1224,7 +1235,7 @@ void M2Object::createBoundingBoxMesh() {
     blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
     blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
 
-    bbBlockVS->save(true);
+//    bbBlockVS->save(true);
 
     boundingBoxMesh = m_api->getDevice()->createMesh(meshTemplate);
 
@@ -1290,13 +1301,12 @@ void M2Object::createMeshes() {
         for (int j = 0; j < material.textureCount; j++) {
             meshTemplate.texture[j] = material.textures[j];
         }
-        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.vertexBuffers[1] = vertexModelWideUniformBuffer;
-        meshTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshWideBlockVS));
+        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
+        meshTemplate.ubo[2] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshWideBlockVS));
 
-        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.fragmentBuffers[1] = fragmentModelWideUniformBuffer;
-        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshWideBlockPS));
+        meshTemplate.ubo[3] = fragmentModelWideUniformBuffer;
+        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshWideBlockPS));
 
          //Make mesh
         HGM2Mesh hmesh = m_api->getDevice()->createM2Mesh(meshTemplate);
@@ -1574,19 +1584,18 @@ void M2Object::createVertexBindings() {
 
     //3. Create model wide uniform buffer
 //    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(mathfu::mat4) * (m_m2Geom->m_m2Data->bones.size + 1));
-    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockVS));
-    fragmentModelWideUniformBuffer = device->createUniformBuffer(sizeof(modelWideBlockPS));
+    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(modelWideBlockVS));
+    fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(modelWideBlockPS));
 
-    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBuffer *self){
+    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
         auto &blockVS = self->getObject<modelWideBlockVS>();
 
         blockVS.uPlacementMat = m_placementMatrix;
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
-        self->save();
     });
 
-    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBuffer *self){
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
         mathfu::vec4 ambientLight = getAmbientLight();
 
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
@@ -1602,7 +1611,5 @@ void M2Object::createVertexBindings() {
         blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
         blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(getSunDir(), m_api->getGlobalFogStart()));
         blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
-
-        fragmentModelWideUniformBuffer->save();
     });
 }

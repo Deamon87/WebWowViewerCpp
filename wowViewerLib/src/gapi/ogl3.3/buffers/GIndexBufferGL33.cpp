@@ -7,20 +7,19 @@
 #include "../GDeviceGL33.h"
 
 GIndexBufferGL33::GIndexBufferGL33(IDevice &device) : m_device(device) {
-    buffer = new GLuint;
+    buffer = std::vector<char>(sizeof(GLuint));
     createBuffer();
 }
 GIndexBufferGL33::~GIndexBufferGL33(){
     destroyBuffer();
-    delete (GLuint *)buffer;
 }
 
 void GIndexBufferGL33::createBuffer() {
-    glGenBuffers(1, (GLuint *) this->buffer);
+    glGenBuffers(1, (GLuint *) &this->buffer[0]);
 }
 
 void GIndexBufferGL33::destroyBuffer() {
-    glDeleteBuffers(1, (const GLuint *) this->buffer);
+    glDeleteBuffers(1, (const GLuint *) &this->buffer[0]);
 }
 
 static int ibo_uploaded = 0;
@@ -52,7 +51,7 @@ void GIndexBufferGL33::uploadData(void * data, int length) {
 }
 
 void GIndexBufferGL33::bind() {
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *(GLuint*) this->buffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *(GLuint*) &this->buffer[0]);
 }
 
 void GIndexBufferGL33::unbind() {

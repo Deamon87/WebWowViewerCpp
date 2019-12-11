@@ -119,14 +119,6 @@ void Map::checkCulling(WoWFrameData *frameData) {
     auto lcurrentWMO = frameData->m_currentWMO;
     auto currentWmoGroup = frameData->m_currentWmoGroup;
 
-    if (currentWmoGroup > 0) {
-        auto m2Skybox = lcurrentWMO->getSkyBoxForGroup(currentWmoGroup);
-        if (m2Skybox != nullptr ) {
-            frameData->exteriorView.drawnM2s.push_back(m2Skybox);
-            std::cout << "m2Skybox added" << std::endl;
-        }
-    }
-
     if ((lcurrentWMO != nullptr) && (!frameData->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
         lcurrentWMO->resetTraversedWmoGroups();
         if (lcurrentWMO->startTraversingWMOGroup(

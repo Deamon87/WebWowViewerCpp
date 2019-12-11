@@ -86,6 +86,11 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         HFileContent vec = std::make_shared<FileContent>(fileSize);
 		cache_file.read((char *)&(*vec.get())[0], fileSize);
 
+        if (holderType != CacheHolderType::CACHE_ANIM && vec->size() > 4 && (*(uint32_t *)vec->data() == 0)) {
+            std::cout << "Encountered encrypted file in cache " << inputFileName << " initial name " << fileName << std::endl;
+            return;
+        }
+
 		//vec->reserve(fileSize);
 
 		// read the data:
@@ -116,10 +121,15 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         return;
     }
 //
-    HttpFile * httpFile = new HttpFile(fullUrl.c_str());
+    HttpFile * httpFile = new HttpFile(fullUrl);
     httpFile->setCallback(
-            [fileName, this, holderType, httpFile](HFileContent fileContent) -> void {
+            [fileName, this, holderType, httpFile, fullUrl](HFileContent fileContent) -> void {
                 std::string newFileName = fileName;
+
+                if (holderType != CacheHolderType::CACHE_ANIM && fileContent->size() > 4 && (*(uint32_t *)fileContent->data() == 0)) {
+                    std::cout << "Encountered encrypted file " << fullUrl << std::endl;
+                    return;
+                }
 
                 //Write to cache
                 size_t hash = std::hash<std::string>{}(newFileName);

@@ -7,7 +7,7 @@
 
 
 //#include <zip.h>
-#include <../../wowViewerLib/src/include/wowScene.h>
+#include "../../../wowViewerLib/src/include/wowScene.h"
 #include <ios>
 #include <fstream>
 #include <regex>

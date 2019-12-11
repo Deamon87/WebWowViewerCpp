@@ -16,10 +16,11 @@
 //#define __EMSCRIPTEN__
 #include "engine/HeadersGL.h"
 
-#ifdef __EMSCRIPTEN__
-#undef GLFW_INCLUDE_VULKAN
-#else
+#ifdef LINK_VULKAN
 #define GLFW_INCLUDE_VULKAN
+#include "../wowViewerLib/src/include/vulkancontext.h"
+#else
+#undef GLFW_INCLUDE_VULKAN
 #endif
 
 #include <GLFW/glfw3.h>
@@ -33,7 +34,7 @@
 #include "persistance/HttpZipRequestProcessor.h"
 //#include "persistance/MpqRequestProcessor.h"
 #include "persistance/HttpRequestProcessor.h"
-#include "../wowViewerLib/src/include/vulkancontext.h"
+
 
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
@@ -81,7 +82,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         glfwGetCursorPos(window, &xpos, &ypos);
         m_x = xpos;
         m_y = ypos;
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+//        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
     if (action == GLFW_RELEASE) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -144,9 +145,12 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 controllable->stopMovingDown();
                 break;
             case 'H':
-                scene->switchCameras();
+//                scene->switchCameras();
+//                scene->setScene(0, "trash", 0);
+                scene->setAnimationId(159);
                 break;
             case 'J':
+                scene->setAnimationId(0);
                 testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
                 break;
             case 'K':
@@ -343,12 +347,12 @@ int main(){
 //    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
 //    const char *filePath = "D:\\shattrath (1).zip\0";
 //    const char *filePath = "D:\\ironforge.zip\0";
-//8.2.5
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=b847e6ab3a8638dda359c379ace9d79f&cdnconfig=1fdb7f2ada5eae29f7073aedbe96bf9d&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=b847e6ab3a8638dda359c379ace9d79f&cdnconfig=1fdb7f2ada5eae29f7073aedbe96bf9d&filename=data&filedataid=";
+//8.3.0
+//    const char * url = "https://wow.tools/casc/file/fname?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=";
+//    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=data&filedataid=";
 //1.13.0
-//    const char * url = "https://bnet.marlam.in/casc/file/fname?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=";
-//    const char * urlFileId = "https://bnet.marlam.in/casc/file/fdid?buildconfig=db00c310c6ba0215be3f386264402d56&cdnconfig=1e32d08ef668e70aac36a516bd43dff1&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
+   const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
 
 //    const char * url = "http://178.165.92.24:40001/get/";
 //    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
@@ -376,20 +380,25 @@ int main(){
 
     glfwInit();
 
+    std::string rendererName = "ogl2";
 //    std::string rendererName = "ogl3";
-    std::string rendererName = "vulkan";
+//    std::string rendererName = "vulkan";
 
     //FOR OGL
 
-    if (rendererName == "ogl3")
-    {
+    if (rendererName == "ogl3") {
         glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 //    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
-
+    } else if ( rendererName == "ogl2") {
+        glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2); // We want OpenGL 3.3
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
     } else if (rendererName == "vulkan"){
         //For Vulkan
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -398,6 +407,7 @@ int main(){
 
     auto window = glfwCreateWindow(canvWidth, canvHeight, "Vulkan", nullptr, nullptr);
 
+#ifdef LINK_VULKAN
     vkCallInitCallback callback;
     callback.createSurface = [&](VkInstance vkInstance) {
         VkSurfaceKHR surface;
@@ -413,9 +423,12 @@ int main(){
         extensionNames = const_cast<char **>(glfwGetRequiredInstanceExtensions(&count));
         extensionCnt = count;
     };
+#else
+    void *callback = nullptr;
+#endif
 
     //For OGL
-    if (rendererName == "ogl3")
+    if (rendererName == "ogl3" || rendererName == "ogl2")
     {
         glfwMakeContextCurrent(window);
     }
@@ -464,7 +477,7 @@ try {
 
         scene->draw((deltaTime*(1000.0f))); //miliseconds
 
-        if (rendererName == "ogl3") {
+        if (rendererName == "ogl3" || rendererName == "ogl2") {
             glfwSwapBuffers(window);
         }
     }

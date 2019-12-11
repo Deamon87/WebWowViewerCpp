@@ -16,19 +16,19 @@ GOcclusionQueryGL33::~GOcclusionQueryGL33() {
 }
 
 void GOcclusionQueryGL33::createQuery() {
-    glGenQueries(1, &m_queryIdent);
+//    glGenQueries(1, &m_queryIdent);
 }
 
 void GOcclusionQueryGL33::deleteQuery() {
-    glDeleteQueries(1, &m_queryIdent);
+//    glDeleteQueries(1, &m_queryIdent);
 }
 
 void GOcclusionQueryGL33::beginQuery() {
-    glBeginQuery(GL_SAMPLES_PASSED, m_queryIdent);
+//    glBeginQuery(GL_SAMPLES_PASSED, m_queryIdent);
 }
 
 void GOcclusionQueryGL33::endQuery() {
-    glEndQuery(GL_SAMPLES_PASSED);
+//    glEndQuery(GL_SAMPLES_PASSED);
 }
 
 void GOcclusionQueryGL33::beginConditionalRendering() {
@@ -41,6 +41,6 @@ void GOcclusionQueryGL33::endConditionalRendering() {
 
 int GOcclusionQueryGL33::getResult() {
     int ns;
-    glGetQueryObjectiv(m_queryIdent, GL_QUERY_RESULT, &ns);
+//    glGetQueryObjectiv(m_queryIdent, GL_QUERY_RESULT, &ns);
     return ns;
 }

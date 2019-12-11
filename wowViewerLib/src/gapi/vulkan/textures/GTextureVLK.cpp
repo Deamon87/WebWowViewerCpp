@@ -196,7 +196,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     imageMemoryBarrier.dstAccessMask = 0;
     imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if (m_device.getIsAsynBuffUploadSupported()) {
+    if (m_device.canUploadInSeparateThread()) {
         imageMemoryBarrier.srcQueueFamilyIndex = indicies.transferFamily.value();
         imageMemoryBarrier.dstQueueFamilyIndex = indicies.graphicsFamily.value();
     } else {
@@ -218,7 +218,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
         0, nullptr,
         1, &imageMemoryBarrier);
 
-    if (m_device.getIsAsynBuffUploadSupported()) {
+    if (m_device.canUploadInSeparateThread()) {
         vkCmdPipelineBarrier(
             m_device.getTextureTransferCommandBuffer(),
             VK_PIPELINE_STAGE_TRANSFER_BIT,

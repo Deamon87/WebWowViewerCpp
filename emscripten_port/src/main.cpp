@@ -5,6 +5,7 @@
 #include <iostream>
 #include <emscripten/threading.h>
 #include <emscripten.h>
+#include <emscripten/html5.h>
 #include <GLFW/glfw3.h>
 
 WoWScene *scene;
@@ -205,7 +206,16 @@ extern "C" {
         testConf->setRenderM2(true);
         testConf->setRenderWMO(true);
 
-        IDevice * device = IDeviceFactory::createDevice("ogl3", nullptr);
+        EmscriptenWebGLContextAttributes contextAttributes;
+        emscripten_webgl_get_context_attributes(emscripten_webgl_get_current_context(), &contextAttributes);
+
+        //TODO: Check max uniform vectors
+        std::string glVersion = "ogl2";
+        if (contextAttributes.majorVersion >=2) {
+            glVersion = "ogl3";
+        }
+
+        IDevice * device = IDeviceFactory::createDevice(glVersion, nullptr);
 
         scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
         processor->setFileRequester(scene);

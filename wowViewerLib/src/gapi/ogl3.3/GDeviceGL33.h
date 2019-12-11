@@ -2,8 +2,8 @@
 // Created by deamon on 05.06.18.
 //
 
-#ifndef WEBWOWVIEWERCPP_GDEVICE_H
-#define WEBWOWVIEWERCPP_GDEVICE_H
+#ifndef WEBWOWVIEWERCPP_GDEVICE33_H
+#define WEBWOWVIEWERCPP_GDEVICE33_H
 
 #include <memory>
 
@@ -22,11 +22,12 @@ class GParticleMeshGL33;
 
 class gMeshTemplate;
 
-typedef std::shared_ptr<GUniformBufferGL33> HGLUniformBuffer;
-typedef std::shared_ptr<GMeshGL33> HGLMesh;
+typedef std::shared_ptr<GUniformBufferGL33> HGL33UniformBuffer;
+typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 
 #include <unordered_set>
 #include <list>
+#include <array>
 #include "GVertexBufferBindingsGL33.h"
 #include "buffers/GIndexBufferGL33.h"
 #include "buffers/GVertexBufferGL33.h"
@@ -62,8 +63,8 @@ public:
 
     void bindIndexBuffer(IIndexBuffer *buffer) override;
     void bindVertexBuffer(IVertexBuffer *buffer) override;
-    void bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) override;
-    void bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) override;
+    void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override;
+
     void bindVertexBufferBindings(IVertexBufferBindings *buffer) override;
 
     void bindTexture(ITexture *texture, int slot) override;
@@ -78,6 +79,7 @@ public:
 
     HGUniformBuffer createUniformBuffer(size_t size) override;
     HGVertexBuffer createVertexBuffer() override;
+    HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
 
@@ -95,7 +97,7 @@ public:
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
 
-    std::string loadShader(std::string fileName, bool common) override;
+    std::string loadShader(std::string fileName, IShaderType shaderType) override;
 
     virtual void clearScreen() override;
     void setClearScreenColor(float r, float g, float b) override ;
@@ -103,6 +105,7 @@ public:
     void commitFrame() override ;
     void setViewPortDimensions(float x, float y, float width, float height) override;
 
+    void shrinkData() override;
 private:
     void drawMesh(HGMesh &hmesh);
     bool isDepthPreFill = false;
@@ -141,7 +144,7 @@ protected:
     bool m_isInSkyBoxDepthMode = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
-    GVertexBufferGL33 *m_lastBindVertexBuffer = nullptr;
+	IVertexBuffer* m_lastBindVertexBuffer = nullptr;
     GVertexBufferBindingsGL33 *m_vertexBufferBindings = nullptr;
     GShaderPermutationGL33 * m_shaderPermutation = nullptr;
 
@@ -153,8 +156,8 @@ protected:
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
         nullptr};
 
-    GUniformBufferGL33 * m_vertexUniformBuffer[3] = {nullptr};
-    GUniformBufferGL33 * m_fragmentUniformBuffer[3] = {nullptr};
+    struct GUBOMappingRec { GUniformBufferGL33 * buffer = nullptr; uint32_t offset = 0;};
+    std::array<GUBOMappingRec, 5> m_UniformBuffer;
 
     HGTexture m_blackPixelTexture;
     HGTexture m_whitePixelTexture;
@@ -190,14 +193,14 @@ protected:
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBufferGL33>> m_unfiormBufferCache;
     struct FrameUniformBuffers {
-        std::vector<HGUniformBuffer> m_uniformBuffersForUpload;
+        HGUniformBuffer m_uniformBufferForUpload;
     };
 
-    FrameUniformBuffers m_UBOFrames[4];
+    std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
 
     std::vector<char> aggregationBufferForUpload;
 
-    std::unordered_map<std::string, std::string> shaderCache;
+    std::unordered_map<ShaderContentCacheRecord, std::string, ShaderContentCacheRecordHasher> shaderCache;
 
     int uniformBuffersCreated = 0;
 };

@@ -6,9 +6,9 @@
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 
 static GBufferBinding staticRibbonBindings[3] = {
-    {+m2RibbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 24, 0 }, // 0
-    {+m2RibbonShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 24, 12}, // 12
-    {+m2RibbonShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 24, 16}, // 16
+    {+ribbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 24, 0 }, // 0
+    {+ribbonShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 24, 12}, // 12
+    {+ribbonShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 24, 16}, // 16
     //24
 };
 
@@ -73,6 +73,13 @@ CRibbonEmitter::CRibbonEmitter(IWoWInnerApi *api, M2Object *object, std::vector<
   this->m_currPos.y = 0.0;
   this->m_currPos.z = 0.0;
 
+//  std::cout << "sizeof(CRibbonVertex) = " << sizeof(CRibbonVertex) << std::endl;
+//  std::cout << "offset(CRibbonVertex.diffuseColor) = " << sizeof(CRibbonVertex) << std::endl;
+//  std::cout << "offset(CRibbonVertex.texCoord) = " << sizeof(CRibbonVertex) << std::endl;
+
+  check_offset<offsetof(CRibbonVertex, diffuseColor), 12>();
+  check_offset<offsetof(CRibbonVertex, texCoord), 16>();
+
   createMesh(object, materials, textureIndicies);
 }
 PACK(
@@ -130,13 +137,19 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
         meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(tex0, true, true);
 
-        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.vertexBuffers[1] = nullptr;
-        meshTemplate.vertexBuffers[2] = nullptr;
+        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[1] = nullptr;
+        meshTemplate.ubo[2] = nullptr;
 
-        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.fragmentBuffers[1] = nullptr;
-        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[3] = nullptr;
+        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
+
+        meshTemplate.ubo[4]->setUpdateHandler([](IUniformBufferChunk *self) {
+            meshParticleWideBlockPS& blockPS = self->getObject<meshParticleWideBlockPS>();
+
+            blockPS.uAlphaTest = -1.0f;
+            blockPS.uPixelShader = 0;
+        });
 
         
         frame[k].m_meshes.push_back(m_api->getDevice()->createParticleMesh(meshTemplate));
@@ -179,14 +192,14 @@ bool CRibbonEmitter::IsDead() const
 //----- (00A19AA0) --------------------------------------------------------
 void CRibbonEmitter::SetBelow(float below)
 {
-  assert(below >= 0.0f);
+//  assert(below >= 0.0f);
   this->m_below = below;
 }
 
 //----- (00A19B10) --------------------------------------------------------
 void CRibbonEmitter::SetAbove(float above)
 {
-    assert(above >= 0.0f);
+//    assert(above >= 0.0f);
     this->m_above = above;
 }
 
@@ -379,7 +392,7 @@ void CRibbonEmitter::ChangeFrameOfReference(const mathfu::mat4 *frameOfReference
     {
       result = &this->m_gxVertices[v17];
 
-      result->pos = (*frameOfReference * mathfu::vec4(result->pos, 1.0f)).xyz();
+      result->pos = (*frameOfReference * mathfu::vec4(mathfu::vec3(result->pos), 1.0f)).xyz();
       ++v16;
       ++v17;
     }
@@ -848,16 +861,6 @@ void CRibbonEmitter::updateBuffers() {
   auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
   currentFrame.isDead = this->IsDead();
   if (currentFrame.isDead) return;
-
-  for (auto& mesh : currentFrame.m_meshes) {
-	  auto preMeshBuffer = mesh->getFragmentUniformBuffer(2);
-	  meshParticleWideBlockPS& blockPS = preMeshBuffer->getObject<meshParticleWideBlockPS>();
-
-	  blockPS.uAlphaTest = -1.0f;
-	  blockPS.uPixelShader = 0;
-
-	  preMeshBuffer->save(true);
-  }
 
   currentFrame.m_indexVBO->uploadData((void *) m_gxIndices.data(), (int) (m_gxIndices.size() * sizeof(uint16_t)));
   currentFrame.m_bufferVBO->uploadData((void *) m_gxVertices.data(), (int) (m_gxVertices.size() * sizeof(CRibbonVertex)));

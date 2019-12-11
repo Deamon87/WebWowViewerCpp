@@ -401,12 +401,11 @@ void WmoGroupObject::createMeshes() {
     IDevice *device = m_api->getDevice();
     HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
 
-    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(wmoModelWideBlockVS));
+    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(wmoModelWideBlockVS));
 
-    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBuffer *self){
+    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
         wmoModelWideBlockVS &blockVS = self->getObject<wmoModelWideBlockVS>();
         blockVS.uPlacementMat = *m_modelMatrix;
-        self->save();
     });
 
 
@@ -479,26 +478,24 @@ void WmoGroupObject::createMeshes() {
 
         meshTemplate.textureCount = 3;
 
-        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.vertexBuffers[1] = vertexModelWideUniformBuffer;
-        meshTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(wmoMeshWideBlockVS));
+        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
+        meshTemplate.ubo[2] = m_api->getDevice()->createUniformBufferChunk(sizeof(wmoMeshWideBlockVS));
 
-        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.fragmentBuffers[1] = vertexModelWideUniformBuffer;
-        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(wmoMeshWideBlockPS));
+        meshTemplate.ubo[3] = vertexModelWideUniformBuffer;
+        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(wmoMeshWideBlockPS));
 
         //Make mesh
         HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
         this->m_meshArray.push_back(hmesh);
 
-        hmesh->getVertexUniformBuffer(2)->setUpdateHandler([this, &material, vertexShader](IUniformBuffer *self){
+        hmesh->getUniformBuffer(2)->setUpdateHandler([this, &material, vertexShader](IUniformBufferChunk *self){
             wmoMeshWideBlockVS &blockVS = self->getObject<wmoMeshWideBlockVS>();
             blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockVS.VertexShader = vertexShader;
-            self->save(true);
         });
 
-        hmesh->getFragmentUniformBuffer(2)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBuffer *self) {
+        hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self) {
             mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
             mathfu::vec4 localambientColor = this->getAmbientColor();
 
@@ -526,7 +523,6 @@ void WmoGroupObject::createMeshes() {
 
             blockPS.FogColor_AlphaTest = mathfu::vec4_packed(
                 mathfu::vec4(m_api->getGlobalFogColor().xyz(), alphaTest));
-            self->save();
         });
     }
 }
@@ -627,21 +623,20 @@ void WmoGroupObject::createWaterMeshes() {
     meshTemplate.texture[1] = texture2;
     meshTemplate.texture[2] = texture3;
 
-    meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-    meshTemplate.vertexBuffers[1] = vertexModelWideUniformBuffer;
-    meshTemplate.vertexBuffers[2] = nullptr;
+    meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
+    meshTemplate.ubo[2] = nullptr;
 
-    meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-    meshTemplate.fragmentBuffers[1] = nullptr;
-    meshTemplate.fragmentBuffers[2] = device->createUniformBuffer(16);
+    meshTemplate.ubo[3] = nullptr;
+    meshTemplate.ubo[4] = device->createUniformBufferChunk(16);
 
     meshTemplate.start = 0;
     meshTemplate.end = m_geom->waterIndexSize;
     meshTemplate.element = DrawElementMode::TRIANGLES;
 
-    int &waterType = meshTemplate.fragmentBuffers[2]->getObject<int>();
+    int &waterType = meshTemplate.ubo[2]->getObject<int>();
     waterType = liquid_type;
-    meshTemplate.fragmentBuffers[2]->save();
+
 
     HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
     m_waterMeshArray.push_back(hmesh);

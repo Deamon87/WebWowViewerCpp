@@ -40,26 +40,21 @@ GMeshGL33::GMeshGL33(IDevice &device,
 
     m_texture = meshTemplate.texture;
 
-    m_vertexUniformBuffer[0] = meshTemplate.vertexBuffers[0];
-    m_vertexUniformBuffer[1] = meshTemplate.vertexBuffers[1];
-    m_vertexUniformBuffer[2] = meshTemplate.vertexBuffers[2];
-
-    m_fragmentUniformBuffer[0] = meshTemplate.fragmentBuffers[0];
-    m_fragmentUniformBuffer[1] = meshTemplate.fragmentBuffers[1];
-    m_fragmentUniformBuffer[2] = meshTemplate.fragmentBuffers[2];
-
+    m_UniformBuffer[0] = meshTemplate.ubo[0];
+    m_UniformBuffer[1] = meshTemplate.ubo[1];
+    m_UniformBuffer[2] = meshTemplate.ubo[2];
+    m_UniformBuffer[3] = meshTemplate.ubo[3];
+    m_UniformBuffer[4] = meshTemplate.ubo[4];
+    m_UniformBuffer[5] = meshTemplate.ubo[5];
 }
 GMeshGL33::~GMeshGL33() {
 
 }
 
-HGUniformBuffer GMeshGL33::getVertexUniformBuffer(int slot) {
-    return m_vertexUniformBuffer[slot];
+HGUniformBufferChunk GMeshGL33::getUniformBuffer(int slot) {
+    return m_UniformBuffer[slot];
 }
 
-HGUniformBuffer GMeshGL33::getFragmentUniformBuffer(int slot) {
-    return m_fragmentUniformBuffer[slot];
-}
 
 EGxBlendEnum GMeshGL33::getGxBlendMode() { return m_blendMode; }
 

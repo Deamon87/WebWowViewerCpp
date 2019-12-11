@@ -10,6 +10,9 @@ class WdtFile {
 public:
     WdtFile(std::string fileName){};
     WdtFile(int fileDataId){};
+	~WdtFile() {
+		std::cout << "destructor was called" << std::endl;
+	}
 
     void process(HFileContent wdtFile, const std::string &fileName);
     bool getIsLoaded() { return m_loaded; };

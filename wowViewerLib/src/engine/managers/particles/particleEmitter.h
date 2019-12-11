@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <vector>
 #include <random>
+#include <array>
 //#include <strings.h>
 #include "../../persistance/header/M2FileHeader.h"
 #include "../../wowInnerApi.h"
@@ -37,6 +38,9 @@ struct ParticleBuffStructQuad {
 class ParticleEmitter {
 public:
     ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object);
+    ~ParticleEmitter() {
+        delete generator;
+    }
 
     void Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix);
     void prepearBuffers(mathfu::mat4 &viewMatrix);
@@ -101,7 +105,8 @@ private:
     float texScaleX;
     float texScaleY;
 
-    std::vector<ParticleBuffStructQuad> szVertexBuf;
+    ParticleBuffStructQuad *szVertexBuf = nullptr;
+    int szVertexCnt = 0;
     std::vector<uint16_t> szIndexBuff;
 
 
@@ -155,17 +160,17 @@ private:
 
     void
     BuildQuadT3(
-            std::vector<ParticleBuffStructQuad> &szVertexBuf,
             mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
                 float texStartY, mathfu::vec2 *texPos);
 
-    struct {
-        HGVertexBuffer m_bufferVBO;
+	typedef struct {
+		HGVertexBufferDynamic m_bufferVBO;
 
-        HGVertexBufferBindings m_bindings;
-        HGParticleMesh m_mesh;
-        bool active = false;
-    } frame[4];
+		HGVertexBufferBindings m_bindings;
+		HGParticleMesh m_mesh;
+		bool active = false;
+	} particleFrame;
+    std::array<particleFrame, 4> frame;
 
     void createMesh();
 

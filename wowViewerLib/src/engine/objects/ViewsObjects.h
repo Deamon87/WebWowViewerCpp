@@ -24,11 +24,11 @@ public:
 class GeneralView {
 public:
     bool viewCreated = false;
-    std::vector<WmoGroupObject *> drawnWmos;
-    std::vector<M2Object *> drawnM2s;
+    std::vector<WmoGroupObject *> drawnWmos = {};
+    std::vector<M2Object *> drawnM2s = {};
     //Support several frustum planes because of how portal culling works
-    std::vector<std::vector<mathfu::vec3>> portalVertices;
-    std::vector<std::vector<mathfu::vec4>> frustumPlanes;
+    std::vector<std::vector<mathfu::vec3>> portalVertices = {};
+    std::vector<std::vector<mathfu::vec4>> frustumPlanes = {};
     int level = -1;
     int renderOrder = -1;
 
@@ -45,8 +45,8 @@ public:
 
 class ExteriorView : public GeneralView {
 public:
-    std::vector<std::shared_ptr<ADTObjRenderRes>> drawnADTs;
-    std::vector<HGMesh> drawnChunks;
+	std::vector<std::shared_ptr<ADTObjRenderRes>> drawnADTs = {};
+    std::vector<HGMesh> drawnChunks = {};
 
 public:
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame) override;

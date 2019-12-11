@@ -10,114 +10,154 @@
 #include "../../gapi/UniformBufferStructures.h"
 #include "../interface/IDevice.h"
 
-std::string textFromUniformType(GLint type)
-{
-    std::string s;
-    switch(type)
-    {
-        case GL_FLOAT	: s = "GL_FLOAT"; break;
-        case GL_FLOAT_VEC2	: s = "GL_FLOAT_VEC2"; break;
-        case GL_FLOAT_VEC3	: s = "GL_FLOAT_VEC3"; break;
-        case GL_FLOAT_VEC4	: s = "GL_FLOAT_VEC4"; break;
-        case GL_INT	: s = "GL_INT"; break;
-        case GL_INT_VEC2	: s = "GL_INT_VEC2"; break;
-        case GL_INT_VEC3	: s = "GL_INT_VEC3"; break;
-        case GL_INT_VEC4	: s = "GL_INT_VEC4"; break;
-        case GL_UNSIGNED_INT	: s = "GL_UNSIGNED_INT"; break;
-        case GL_UNSIGNED_INT_VEC2	: s = "GL_UNSIGNED_INT_VEC2"; break;
-        case GL_UNSIGNED_INT_VEC3	: s = "GL_UNSIGNED_INT_VEC3"; break;
-        case GL_UNSIGNED_INT_VEC4	: s = "GL_UNSIGNED_INT_VEC4"; break;
-        case GL_BOOL	: s = "GL_BOOL"; break;
-        case GL_BOOL_VEC2	: s = "GL_BOOL_VEC2"; break;
-        case GL_BOOL_VEC3	: s = "GL_BOOL_VEC3"; break;
-        case GL_BOOL_VEC4	: s = "GL_BOOL_VEC4"; break;
-        case GL_FLOAT_MAT2	: s = "GL_FLOAT_MAT2"; break;
-        case GL_FLOAT_MAT3	: s = "GL_FLOAT_MAT3"; break;
-        case GL_FLOAT_MAT4	: s = "GL_FLOAT_MAT4"; break;
-        case GL_FLOAT_MAT2x3	: s = "GL_FLOAT_MAT2x3"; break;
-        case GL_FLOAT_MAT2x4	: s = "GL_FLOAT_MAT2x4"; break;
-        case GL_FLOAT_MAT3x2	: s = "GL_FLOAT_MAT3x2"; break;
-        case GL_FLOAT_MAT3x4	: s = "GL_FLOAT_MAT3x4"; break;
-        case GL_FLOAT_MAT4x2	: s = "GL_FLOAT_MAT4x2"; break;
-        case GL_FLOAT_MAT4x3	: s = "GL_FLOAT_MAT4x3"; break;
-        default	: s = "Unknown"; break;
+namespace GL33 {
+    std::string textFromUniformType(GLint type) {
+        std::string s;
+        switch (type) {
+            case GL_FLOAT    :
+                s = "GL_FLOAT";
+                break;
+            case GL_FLOAT_VEC2    :
+                s = "GL_FLOAT_VEC2";
+                break;
+            case GL_FLOAT_VEC3    :
+                s = "GL_FLOAT_VEC3";
+                break;
+            case GL_FLOAT_VEC4    :
+                s = "GL_FLOAT_VEC4";
+                break;
+            case GL_INT    :
+                s = "GL_INT";
+                break;
+            case GL_INT_VEC2    :
+                s = "GL_INT_VEC2";
+                break;
+            case GL_INT_VEC3    :
+                s = "GL_INT_VEC3";
+                break;
+            case GL_INT_VEC4    :
+                s = "GL_INT_VEC4";
+                break;
+            case GL_UNSIGNED_INT    :
+                s = "GL_UNSIGNED_INT";
+                break;
+            case GL_UNSIGNED_INT_VEC2    :
+                s = "GL_UNSIGNED_INT_VEC2";
+                break;
+            case GL_UNSIGNED_INT_VEC3    :
+                s = "GL_UNSIGNED_INT_VEC3";
+                break;
+            case GL_UNSIGNED_INT_VEC4    :
+                s = "GL_UNSIGNED_INT_VEC4";
+                break;
+            case GL_BOOL    :
+                s = "GL_BOOL";
+                break;
+            case GL_BOOL_VEC2    :
+                s = "GL_BOOL_VEC2";
+                break;
+            case GL_BOOL_VEC3    :
+                s = "GL_BOOL_VEC3";
+                break;
+            case GL_BOOL_VEC4    :
+                s = "GL_BOOL_VEC4";
+                break;
+            case GL_FLOAT_MAT2    :
+                s = "GL_FLOAT_MAT2";
+                break;
+            case GL_FLOAT_MAT3    :
+                s = "GL_FLOAT_MAT3";
+                break;
+            case GL_FLOAT_MAT4    :
+                s = "GL_FLOAT_MAT4";
+                break;
+            case GL_FLOAT_MAT2x3    :
+                s = "GL_FLOAT_MAT2x3";
+                break;
+            case GL_FLOAT_MAT2x4    :
+                s = "GL_FLOAT_MAT2x4";
+                break;
+            case GL_FLOAT_MAT3x2    :
+                s = "GL_FLOAT_MAT3x2";
+                break;
+            case GL_FLOAT_MAT3x4    :
+                s = "GL_FLOAT_MAT3x4";
+                break;
+            case GL_FLOAT_MAT4x2    :
+                s = "GL_FLOAT_MAT4x2";
+                break;
+            case GL_FLOAT_MAT4x3    :
+                s = "GL_FLOAT_MAT4x3";
+                break;
+            default    :
+                s = "Unknown";
+                break;
+        }
+        return s;
     }
-    return s;
-}
 
-GLuint sizeFromUniformType(GLint type)
-{
-    GLuint s;
+    GLuint sizeFromUniformType(GLint type) {
+        GLuint s;
 
 #define UNI_CASE(type, numElementsInType, elementType) \
       case type : s = (numElementsInType) * sizeof(elementType); break;
 
-    switch(type)
-    {
-        UNI_CASE(GL_FLOAT,	1, GLfloat);
-        UNI_CASE(GL_FLOAT_VEC2,	2, GLfloat);
-        UNI_CASE(GL_FLOAT_VEC3,	3, GLfloat);
-        UNI_CASE(GL_FLOAT_VEC4,	4, GLfloat);
-        UNI_CASE(GL_INT,	1, GLint);
-        UNI_CASE(GL_INT_VEC2,	2, GLint);
-        UNI_CASE(GL_INT_VEC3,	3, GLint);
-        UNI_CASE(GL_INT_VEC4,	4, GLint);
-        UNI_CASE(GL_UNSIGNED_INT,	1, GLuint);
-        UNI_CASE(GL_UNSIGNED_INT_VEC2,	2, GLuint);
-        UNI_CASE(GL_UNSIGNED_INT_VEC3,	3, GLuint);
-        UNI_CASE(GL_UNSIGNED_INT_VEC4,	4, GLuint);
-        UNI_CASE(GL_BOOL,	1, GLboolean);
-        UNI_CASE(GL_BOOL_VEC2,	2, GLboolean);
-        UNI_CASE(GL_BOOL_VEC3,	3, GLboolean);
-        UNI_CASE(GL_BOOL_VEC4,	4, GLboolean);
-        UNI_CASE(GL_FLOAT_MAT2,	4, GLfloat);
-        UNI_CASE(GL_FLOAT_MAT3,	9, GLfloat);
-        UNI_CASE(GL_FLOAT_MAT4,	16, GLfloat);
-        UNI_CASE(GL_FLOAT_MAT2x3,	6, GLfloat);
-        UNI_CASE(GL_FLOAT_MAT2x4,	8, GLfloat);
-        UNI_CASE(GL_FLOAT_MAT3x2,	6, GLfloat);
-        UNI_CASE(GL_FLOAT_MAT3x4,	12, GLfloat);
-        UNI_CASE(GL_FLOAT_MAT4x2,	8, GLfloat);
-        UNI_CASE(GL_FLOAT_MAT4x3,	12, GLfloat);
-        default	: s = 0; break;
+        switch (type) {
+            UNI_CASE(GL_FLOAT, 1, GLfloat);
+            UNI_CASE(GL_FLOAT_VEC2, 2, GLfloat);
+            UNI_CASE(GL_FLOAT_VEC3, 3, GLfloat);
+            UNI_CASE(GL_FLOAT_VEC4, 4, GLfloat);
+            UNI_CASE(GL_INT, 1, GLint);
+            UNI_CASE(GL_INT_VEC2, 2, GLint);
+            UNI_CASE(GL_INT_VEC3, 3, GLint);
+            UNI_CASE(GL_INT_VEC4, 4, GLint);
+            UNI_CASE(GL_UNSIGNED_INT, 1, GLuint);
+            UNI_CASE(GL_UNSIGNED_INT_VEC2, 2, GLuint);
+            UNI_CASE(GL_UNSIGNED_INT_VEC3, 3, GLuint);
+            UNI_CASE(GL_UNSIGNED_INT_VEC4, 4, GLuint);
+            UNI_CASE(GL_BOOL, 1, GLboolean);
+            UNI_CASE(GL_BOOL_VEC2, 2, GLboolean);
+            UNI_CASE(GL_BOOL_VEC3, 3, GLboolean);
+            UNI_CASE(GL_BOOL_VEC4, 4, GLboolean);
+            UNI_CASE(GL_FLOAT_MAT2, 4, GLfloat);
+            UNI_CASE(GL_FLOAT_MAT3, 9, GLfloat);
+            UNI_CASE(GL_FLOAT_MAT4, 16, GLfloat);
+            UNI_CASE(GL_FLOAT_MAT2x3, 6, GLfloat);
+            UNI_CASE(GL_FLOAT_MAT2x4, 8, GLfloat);
+            UNI_CASE(GL_FLOAT_MAT3x2, 6, GLfloat);
+            UNI_CASE(GL_FLOAT_MAT3x4, 12, GLfloat);
+            UNI_CASE(GL_FLOAT_MAT4x2, 8, GLfloat);
+            UNI_CASE(GL_FLOAT_MAT4x3, 12, GLfloat);
+            default    :
+                s = 0;
+                break;
+        }
+        return s;
     }
-    return s;
 }
-
 GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, IDevice * device) : m_device(device), m_shaderName(shaderName){
 
 }
 
 void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
-    std::string shaderFile =  m_device->loadShader(m_shaderName, false);
-    if (shaderFile.length() == 0) {
-        throw "shader is empty";
+    std::string shaderVertFile =  m_device->loadShader(m_shaderName, IShaderType::gVertexShader);
+    std::string shaderFragFile =  m_device->loadShader(m_shaderName, IShaderType::gFragmentShader);
+    if (shaderVertFile.length() == 0) {
+        std::cout << "shaderVertFile " << m_shaderName << " is empty" << std::endl;
+        throw;
+    }
+    if (shaderFragFile.length() == 0) {
+        std::cout << "shaderFragFile " << m_shaderName << " is empty" << std::endl;
+        throw;
     }
 
-    //Include system
-    static std::string includeStr = "#include ";
-    int position;
-    while ((position = shaderFile.find(includeStr.c_str())) > 0) {
-        int endPosition = shaderFile.find("\n", position + includeStr.length());
-
-        std::string shaderStart = shaderFile.substr(0, position);
-        std::string shaderEnd = shaderFile.substr(endPosition, shaderFile.length()- endPosition);
-
-        int shaderNameStart = position + includeStr.length();
-        std::string subShaderName = shaderFile.substr(shaderNameStart, endPosition-shaderNameStart);
-        shaderFile = shaderStart+m_device->loadShader(subShaderName, true)+shaderEnd;
-    }
-
-    std::string vertShaderString = shaderFile;
-    std::string fragmentShaderString = vertShaderString;
+    std::string vertShaderString = shaderVertFile;
+    std::string fragmentShaderString = shaderFragFile;
 
     std::string vertExtraDefStrings = vertExtraDef;
     std::string fragExtraDefStrings = fragExtraDef;
     std::string geomExtraDefStrings = "";
-
-
-
 
     bool esVersion = false;
 #ifdef __ANDROID_API__
@@ -156,6 +196,7 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
             "#define FLOATDEC\n";
     } else {
         vertExtraDefStrings += "#define FLOATDEC float;\n";
+        vertExtraDefStrings += "precision mediump float;\n";
     };
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
 
@@ -177,7 +218,9 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
             "#define highp\n"
             "#define FLOATDEC\n";
     } else {
+        fragExtraDefStrings += "precision mediump float;\n";
         fragExtraDefStrings += "#define FLOATDEC float;\n";
+
     };
 
     GLint maxVertexUniforms;
@@ -242,33 +285,33 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 
     GLuint geometryShader = 0;
 
-#ifndef WITH_GLESv2
-    if (geomShaderExists) {
-        /* 1.2.1 Compile geometry shader */
-        geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
-        const GLchar *geometryShaderConst = (const GLchar *) geometryShaderString.c_str();
-        glShaderSource(geometryShader, 1, &geometryShaderConst, 0);
-        glCompileShader(geometryShader);
-
-        // Check if it compiled
-        success = 0;
-        glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            // Something went wrong during compilation; get the error
-            GLint maxLength = 0;
-            glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
-
-            //The maxLength includes the NULL character
-            std::vector<GLchar> infoLog(maxLength);
-            glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
-            std::cout << "\ncould not compile fragment shader " << m_shaderName << ":" << std::endl
-                      << fragmentShaderConst << std::endl << std::endl
-                      << "error: " << std::string(infoLog.begin(), infoLog.end()) << std::endl << std::flush;
-
-            throw "";
-        }
-    }
-#endif
+//#ifndef WITH_GLESv2
+//    if (geomShaderExists) {
+//        /* 1.2.1 Compile geometry shader */
+//        geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+//        const GLchar *geometryShaderConst = (const GLchar *) geometryShaderString.c_str();
+//        glShaderSource(geometryShader, 1, &geometryShaderConst, 0);
+//        glCompileShader(geometryShader);
+//
+//        // Check if it compiled
+//        success = 0;
+//        glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &success);
+//        if (!success) {
+//            // Something went wrong during compilation; get the error
+//            GLint maxLength = 0;
+//            glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
+//
+//            //The maxLength includes the NULL character
+//            std::vector<GLchar> infoLog(maxLength);
+//            glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
+//            std::cout << "\ncould not compile fragment shader " << m_shaderName << ":" << std::endl
+//                      << fragmentShaderConst << std::endl << std::endl
+//                      << "error: " << std::string(infoLog.begin(), infoLog.end()) << std::endl << std::flush;
+//
+//            throw "";
+//        }
+//    }
+//#endif
 
 
 
@@ -338,7 +381,7 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
         glGetActiveUniformBlockName(program, uniformBlock,
                                     nameLength, nullptr, blockName.get());
 
-        std::cout << "Uniform Block : " << blockName.get() << std::endl;
+        std::cout << "Uniform Block "<< uniformBlock<< " : " << blockName.get() << std::endl;
 
         // get size of uniform block in bytes
         GLint uboSize;
@@ -420,13 +463,12 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 //        std::cout << "glGetUniformBlockIndex == null";
     }
 
-    m_uboVertexBlockIndex[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
-    m_uboVertexBlockIndex[1] = glGetUniformBlockIndex(program, "modelWideBlockVS");
-    m_uboVertexBlockIndex[2] = glGetUniformBlockIndex(program, "meshWideBlockVS");
+    m_uboBlockIndex[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
+    m_uboBlockIndex[1] = glGetUniformBlockIndex(program, "modelWideBlockVS");
+    m_uboBlockIndex[2] = glGetUniformBlockIndex(program, "meshWideBlockVS");
 
-    m_uboFragmentBlockIndex[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
-    m_uboFragmentBlockIndex[1] = glGetUniformBlockIndex(program, "modelWideBlockPS");
-    m_uboFragmentBlockIndex[2] = glGetUniformBlockIndex(program, "meshWideBlockPS");
+    m_uboBlockIndex[3] = glGetUniformBlockIndex(program, "modelWideBlockPS");
+    m_uboBlockIndex[4] = glGetUniformBlockIndex(program, "meshWideBlockPS");
 }
 
 void GShaderPermutationGL33::setUnf(const std::string &name, GLuint index)  {

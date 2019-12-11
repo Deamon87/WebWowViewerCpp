@@ -15,6 +15,8 @@ public:
 
     }
 
+    ~CPlaneGenerator() override {}
+
     void CreateParticle(CParticle2 &p, animTime_t delta) override;
 };
 

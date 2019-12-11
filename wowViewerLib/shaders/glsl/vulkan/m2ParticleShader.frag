@@ -29,12 +29,12 @@ void main() {
         discard;
 
     vec4 finalColor = vec4((tex * vColor ).rgb, tex.a*vColor.a );
-    int uPixelShader = uPixelShaderv.x;
-    if (uPixelShader == 0) { //particle_mod
+    int uNonOptPixelShader = uPixelShaderv.x;
+    if (uNonOptPixelShader == 0) { //particle_mod
         vec3 matDiffuse = vColor.xyz * tex.rgb;
 
         finalColor = vec4(matDiffuse.rgb, tex.a*vColor.a);
-    } else if (uPixelShader == 1) {//particle_2colortex_3alphatex
+    } else if (uNonOptPixelShader == 1) {//particle_2colortex_3alphatex
         vec4 textureMod = tex*tex2;
         float texAlpha = (textureMod.w * tex3.w);
         float opacity = texAlpha*vColor.a;
@@ -42,7 +42,7 @@ void main() {
 
         vec3 matDiffuse = vColor.xyz * textureMod.rgb;
         finalColor = vec4(matDiffuse.rgb, opacity);
-    } else if (uPixelShader == 2) { //particle_3colortex_3alphatex
+    } else if (uNonOptPixelShader == 2) { //particle_3colortex_3alphatex
         vec4 textureMod = tex*tex2*tex3;
         float texAlpha = (textureMod.w);
         float opacity = texAlpha*vColor.a;
@@ -50,7 +50,7 @@ void main() {
 
         vec3 matDiffuse = vColor.xyz * textureMod.rgb;
         finalColor = vec4(matDiffuse.rgb, opacity);
-    } else if (uPixelShader == 3) { //Particle_3ColorTex_3AlphaTex_UV
+    } else if (uNonOptPixelShader == 3) { //Particle_3ColorTex_3AlphaTex_UV
         //TODO: incorrect implementation, because the original shader is too complicated
         vec4 textureMod = tex*tex2*tex3;
         float texAlpha = (textureMod.w);
@@ -58,7 +58,7 @@ void main() {
 
         vec3 matDiffuse = vColor.xyz * textureMod.rgb;
         finalColor = vec4(matDiffuse.rgb, opacity);
-    } else if (uPixelShader == 4) { //Refraction
+    } else if (uNonOptPixelShader == 4) { //Refraction
         //TODO:!
     }
 

@@ -966,6 +966,13 @@ void WmoObject::transverseGroupWMO(
     int moprIndex = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprIndex;
     int numItems = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprCount;
 
+    if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.showSkyBox) {
+        allInteriorViews[groupId].drawnM2s.push_back(skyBox);
+    }
+
+
+
+
     for (int j = moprIndex; j < moprIndex+numItems; j++) {
         SMOPortalRef * relation = &mainGeom->portalReferences[j];
         SMOPortal * portalInfo = &mainGeom->portals[relation->portal_index];
@@ -1324,4 +1331,20 @@ M2Object *WmoObject::getSkyBoxForGroup(int groupNum) {
     if (!this->groupObjects[groupNum]->getWmoGroupGeom()->mogp->flags.showSkyBox) return nullptr;
 
     return skyBox;
+}
+
+WmoObject::~WmoObject() {
+    for (auto& obj : groupObjects) {
+        delete obj;
+    }
+    for (auto& obj : groupObjectsLod1) {
+        delete obj;
+    }
+    for (auto& obj : groupObjectsLod2) {
+        delete obj;
+    }
+    for (auto& obj : m_doodadsArray) {
+        delete obj;
+    }
+
 }

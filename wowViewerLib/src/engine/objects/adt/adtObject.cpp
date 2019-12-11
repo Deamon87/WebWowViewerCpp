@@ -305,10 +305,10 @@ void AdtObject::createMeshes() {
     auto adtFileTex = m_adtFileTex;
     auto adtFile = m_adtFile;
 
-    adtWideBlockPS = m_api->getDevice()->createUniformBuffer(sizeof(adtModelWideBlockPS));
+    adtWideBlockPS = m_api->getDevice()->createUniformBufferChunk(sizeof(adtModelWideBlockPS));
 
     auto api = m_api;
-    adtWideBlockPS->setUpdateHandler([api](IUniformBuffer *self){
+    adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self){
         auto *adtWideblockPS = &self->getObject<adtModelWideBlockPS>();
         adtWideblockPS->uViewUp = mathfu::vec4_packed(mathfu::vec4(api->getViewUp(), 0.0));;
         adtWideblockPS->uSunDir_FogStart = mathfu::vec4_packed(
@@ -317,11 +317,7 @@ void AdtObject::createMeshes() {
             mathfu::vec4(api->getGlobalSunColor().xyz(), api->getGlobalFogEnd()));
         adtWideblockPS->uAmbientLight = api->getGlobalAmbientColor();
         adtWideblockPS->FogColor = mathfu::vec4_packed(mathfu::vec4(api->getGlobalFogColor().xyz(), 0));
-
-        self->save(true);
     });
-
-
 
     for (int i = 0; i < 256; i++) {
         //Cant be used only in Wotlk
@@ -342,19 +338,17 @@ void AdtObject::createMeshes() {
         aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
         aTemplate.element = DrawElementMode::TRIANGLES;
 
-        aTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-        aTemplate.vertexBuffers[1] = nullptr;
-        aTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(adtMeshWideBlockVS));
-
-        aTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-        aTemplate.fragmentBuffers[1] = adtWideBlockPS;
-        aTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(adtMeshWideBlockPS));
+        aTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        aTemplate.ubo[1] = nullptr;
+        aTemplate.ubo[2] = m_api->getDevice()->createUniformBufferChunk(sizeof(adtMeshWideBlockVS));
+        aTemplate.ubo[3] = adtWideBlockPS;
+        aTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(adtMeshWideBlockPS));
 
         aTemplate.textureCount = 9;
 
         aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
-        aTemplate.fragmentBuffers[2]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBuffer *self){
+        aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBufferChunk *self){
             auto &blockPS = self->getObject<adtMeshWideBlockPS>();
             for (int j = 0; j < 4; j++) {
                 blockPS.uHeightOffset[j] = 0.0f;
@@ -368,11 +362,9 @@ void AdtObject::createMeshes() {
                     blockPS.uHeightScale[j] = textureParams.heightScale;
                 }
             }
-
-            self->save();
         });
 
-        aTemplate.vertexBuffers[2]->setUpdateHandler([this, i](IUniformBuffer *self){
+        aTemplate.ubo[2]->setUpdateHandler([this, i](IUniformBufferChunk *self){
             auto &blockVS = self->getObject<adtMeshWideBlockVS>();
             blockVS.uPos = mathfu::vec4(
                 this->m_adtFile->mapTile[i].position.x,
@@ -380,7 +372,6 @@ void AdtObject::createMeshes() {
                 this->m_adtFile->mapTile[i].position.z,
                 0
             );
-            self->save();
         });
 
 

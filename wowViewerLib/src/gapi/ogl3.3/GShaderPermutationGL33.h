@@ -43,8 +43,7 @@ private:
     IDevice *m_device;
 private:
     std::unordered_map<size_t, unsigned int> m_uniformMap;
-    int m_uboVertexBlockIndex[3];
-    int m_uboFragmentBlockIndex[3];
+    int m_uboBlockIndex[5];
     std::string m_shaderName;
 
 

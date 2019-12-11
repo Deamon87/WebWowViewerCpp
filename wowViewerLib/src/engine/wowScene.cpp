@@ -60,12 +60,12 @@ void WoWSceneImpl::DoUpdate() {
     meshesCollectCNT.endMeasurement("collectMeshes ");
 
     device->prepearMemoryForBuffers(objFrameParam->renderedThisFrame);
-    sceneWideBlockVSPS *blockPSVS = &m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-    if (blockPSVS != nullptr) {
+    m_sceneWideUniformBuffer->setUpdateHandler([objFrameParam](IUniformBufferChunk *chunk) -> void {
+        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
         blockPSVS->uLookAtMat = objFrameParam->m_lookAtMat4;
         blockPSVS->uPMatrix = objFrameParam->m_perspectiveMatrix;
-        m_sceneWideUniformBuffer->save();
-    }
+    });
+
     currentScene->updateBuffers(objFrameParam);
     device->updateBuffers(objFrameParam->renderedThisFrame);
 
@@ -77,7 +77,10 @@ void WoWSceneImpl::DoUpdate() {
 
 }
 void WoWSceneImpl::DoCulling() {
-    if (currentScene == nullptr) return;
+	if (currentScene == nullptr) {
+
+		return;
+	}
 
     float farPlane = m_config->getFarPlane();
     float nearPlane = 1.0;
@@ -305,7 +308,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
 //    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
 //
-    m_sceneWideUniformBuffer = m_gdevice->createUniformBuffer(sizeof(sceneWideBlockVSPS));
+    m_sceneWideUniformBuffer = m_gdevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
 
     this->m_config = config;
 
@@ -483,8 +486,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new M2Scene(this,
 //                               "WORLD\\EXPANSION02\\DOODADS\\ULDUAR\\UL_SMALLSTATUE_DRUID.m2");
 //   m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new M2Scene(this,
-        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    currentScene = new M2Scene(this,
+//        "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    currentScene = new M2Scene(this,
 //        "interface/glues/models/ui_mainmenu_legion/ui_mainmenu_legion.m2", 0);
 //
@@ -655,20 +658,29 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    setSceneWithFileDataId(1, 1120838, -1);
 //    setSceneWithFileDataId(1, 1699872, -1);
 //    setScene(2, "world/maps/nzoth/nzoth_32_27.adt", -1);
-//    setScene(2, "world/maps/Kalimdor/Kalimdor_40_47.adt", -1);
+//    setScene(2, "world/maps/Kalimdor/Kalimdor_41_47.adt", -1);
 //    setScene(0, "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
 //    setMap(1, 782779, -8183, -4708, 200);
+//    setMap(530, 828395, -1663, 5098, 27); //Sharrath
 //    setScene(2, "world/maps/SilithusPhase01/SilithusPhase01_30_45.adt", -1);
+//    setSceneWithFileDataId(1, 113992, -1); //Ironforge
 //    setSceneWithFileDataId(1, 108803, -1);
+//    setSceneWithFileDataId(0, 352511, -1); // arthas souls
+//    setSceneWithFileDataId(0, 3180291, -1); // arthas souls
 //    setSceneWithFileDataId(0, 125407, -1); // phoneix
-//    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
-    //setSceneWithFileDataId(0, 125995, -1); //portal
+    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
+//    setSceneWithFileDataId(0, 125995, -1); //portal
+//    setSceneWithFileDataId(0, 418699, -1); //turtle
 //    setSceneWithFileDataId(0, 1612576, -1); //portal
 //    setSceneWithFileDataId(1, 108803, -1); //caverns of time in Tanaris
 
 //    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
+//    setSceneWithFileDataId(0, 1416430, -1); //illidan crystal
+//    setSceneWithFileDataId(0, 341893, -1); //bone spike
+
+
 //    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale
-//    setSceneWithFileDataId(0, 1269330, -1); //nightbornemale creature
+//    setwthFileDataId(0, 1269330, -1); //nightbornemale creature
 
 
     if (m_supportThreads) {
@@ -780,6 +792,18 @@ struct timespec& end)
 }
 
 void WoWSceneImpl::draw(animTime_t deltaTime) {
+    //Replace the scene
+    if (newScene != nullptr) {
+        if (currentScene != nullptr) delete currentScene;
+		for (int i = 0; i < 4; i++) {
+			m_FrameParams[i] = WoWFrameData();
+		}
+        getDevice()->shrinkData();
+
+        currentScene = newScene;
+        newScene = nullptr;
+    }
+
     std::future<bool> cullingFuture;
     std::future<bool> updateFuture;
     if (m_supportThreads) {
@@ -794,12 +818,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
 
 //    std::cout << "draw frame = " << getDevice()->getDrawFrameNumber() << std::endl;
 
-    //Replace the scene
-    if (newScene != nullptr) {
-        if (currentScene != nullptr) delete currentScene;
-        currentScene = newScene;
-        newScene = nullptr;
-    }
+
 
     if (currentScene == nullptr) return;
 

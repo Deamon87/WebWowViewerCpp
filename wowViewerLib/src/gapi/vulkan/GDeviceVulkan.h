@@ -67,8 +67,12 @@ public:
 
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
-        return uploadQueue != graphicsQueue;
+        return true;
     }
+    bool canUploadInSeparateThread() {
+        return false;//uploadQueue != graphicsQueue;
+    }
+
     HGTexture getBlackPixelTexture() {
         return m_blackPixelTexture;
     }
@@ -79,8 +83,7 @@ public:
 
     void bindIndexBuffer(IIndexBuffer *buffer) override;
     void bindVertexBuffer(IVertexBuffer *buffer) override;
-    void bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) override;
-    void bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) override;
+    void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override;
     void bindVertexBufferBindings(IVertexBufferBindings *buffer) override;
 
     void bindTexture(ITexture *texture, int slot) override;
@@ -99,6 +102,7 @@ public:
 
     HGUniformBuffer createUniformBuffer(size_t size) override;
     HGVertexBuffer createVertexBuffer() override;
+    HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
 
@@ -124,7 +128,7 @@ public:
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
 
-    std::string loadShader(std::string fileName, bool common) override;
+    std::string loadShader(std::string fileName, IShaderType shaderType) override;
 
     virtual void clearScreen() override;
     virtual void beginFrame() override;
@@ -299,6 +303,7 @@ protected:
 
 
     VkCommandPool commandPool;
+    VkCommandPool renderCommandPool;
     VkCommandPool uploadCommandPool;
 
     VkImage depthImage;

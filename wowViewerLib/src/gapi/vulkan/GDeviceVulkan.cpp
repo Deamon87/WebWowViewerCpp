@@ -16,6 +16,7 @@
 #include "meshes/GMeshVLK.h"
 #include "buffers/GUniformBufferVLK.h"
 #include "buffers/GVertexBufferVLK.h"
+#include "buffers/GVertexBufferDynamicVLK.h"
 #include "buffers/GIndexBufferVLK.h"
 #include "textures/GTextureVLK.h"
 #include "textures/GBlpTextureVLK.h"
@@ -699,17 +700,27 @@ void GDeviceVLK::createCommandPool() {
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.pNext = NULL;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics command pool!");
     }
 
+    VkCommandPoolCreateInfo renderPoolInfo = {};
+    renderPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    renderPoolInfo.pNext = NULL;
+    renderPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    renderPoolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+    if (vkCreateCommandPool(device, &renderPoolInfo, nullptr, &renderCommandPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create render command pool!");
+    }
+
     VkCommandPoolCreateInfo uploadPoolInfo = {};
     uploadPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     uploadPoolInfo.pNext = NULL;
-    uploadPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    uploadPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     uploadPoolInfo.queueFamilyIndex = queueFamilyIndices.transferFamily.value();
 
     if (vkCreateCommandPool(device, &uploadPoolInfo, nullptr, &uploadCommandPool) != VK_SUCCESS) {
@@ -732,7 +743,7 @@ void GDeviceVLK::createCommandBuffers() {
     renderCommandBuffers.resize(4);
     allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
+    allocInfo.commandPool = renderCommandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
     allocInfo.commandBufferCount = (uint32_t) renderCommandBuffers.size();
 
@@ -897,15 +908,17 @@ void GDeviceVLK::endUpdateForNextFrame() {
         std::cout << "failed to record textureTransferCommandBuffers command buffer!" << std::endl;
     }
 
-    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &uploadCommandBuffers[uploadFrame];
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
+    if (this->canUploadInSeparateThread()) {
+        VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &uploadCommandBuffers[uploadFrame];
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
 
 
-    if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
-        std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
+            std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        }
     }
 
     while ((!listOfDeallocators.empty())&&(listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
@@ -988,7 +1001,6 @@ void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
         m_shaderDescriptorUpdateNeeded = true;
     }
     char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->stagingUBOBufferAllocInfo.pMappedData);
-
     for (const auto &buffer : buffers) {
         if (buffer->m_buffCreated) continue;
 
@@ -1112,6 +1124,13 @@ HGUniformBuffer GDeviceVLK::createUniformBuffer(size_t size) {
     return h_uniformBuffer;
 }
 
+HGVertexBufferDynamic GDeviceVLK::createVertexBufferDynamic(size_t size) {
+    std::shared_ptr<GVertexBufferDynamicVLK> h_vertexBuffer;
+    h_vertexBuffer.reset(new GVertexBufferDynamicVLK(*this, size));
+
+    return h_vertexBuffer;
+}
+
 HGVertexBuffer GDeviceVLK::createVertexBuffer() {
     std::shared_ptr<GVertexBufferVLK> h_vertexBuffer;
     h_vertexBuffer.reset(new GVertexBufferVLK(*this));
@@ -1208,7 +1227,7 @@ HGVertexBufferBindings GDeviceVLK::getBBLinearBinding() {
     return HGVertexBufferBindings();
 }
 
-std::string GDeviceVLK::loadShader(std::string fileName, bool common) {
+std::string GDeviceVLK::loadShader(std::string fileName, IShaderType shaderType) {
     return std::string();
 }
 
@@ -1251,6 +1270,20 @@ void GDeviceVLK::commitFrame() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         std::cout << "got VK_ERROR_OUT_OF_DATE_KHR" << std::endl << std::flush;
         recreateSwapChain();
+
+        if (!this->canUploadInSeparateThread()) {
+            VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &uploadCommandBuffers[currentDrawFrame];
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores = &uploadSemaphores[currentDrawFrame];
+
+
+            if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]) != VK_SUCCESS) {
+                std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+            }
+        }
+
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         std::cout << "error happened " << result << std::endl << std::flush;
@@ -1267,8 +1300,22 @@ void GDeviceVLK::commitFrame() {
 //        std::cout << "imageIndex != currentDrawFrame" << std::endl;
     }
 
+    if (!this->canUploadInSeparateThread()) {
+        VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &uploadCommandBuffers[currentDrawFrame];
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &uploadSemaphores[currentDrawFrame];
+
+
+        if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]) != VK_SUCCESS) {
+            std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        }
+    }
+
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &inFlightFences[currentDrawFrame]);
+
 
 
     //Fill command buffer
@@ -1322,6 +1369,7 @@ void GDeviceVLK::commitFrame() {
 
     waitSemaphores[1] = uploadSemaphores[currentDrawFrame];
     waitStages[1] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
 
     submitInfo.waitSemaphoreCount = 2;
     submitInfo.pWaitSemaphores = &waitSemaphores[0];
@@ -1430,8 +1478,8 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     mapAreaViewport.maxDepth = 0.996f;
 
     VkViewport skyBoxViewport = usualViewport;
-    mapAreaViewport.maxDepth = 0.997f;
-    mapAreaViewport.maxDepth = 1.0f;
+    skyBoxViewport.minDepth = 0.997f;
+    skyBoxViewport.maxDepth = 1.0f;
 
 
     //Set scissors
@@ -1446,13 +1494,14 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
     ViewportType lastViewPort = ViewportType::vp_usual;
     vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
 
+    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
 
     for (auto &mesh: iMeshes) {
         auto *meshVLK = ((GMeshVLK *)mesh.get());
         auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
         auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
 
-        int uboInd = 0;
+        uint32_t uboInd = 0;
         for (int k = 0; k < 3; k++) {
             if (shaderVLK->hasBondUBO[k]) {
                 auto *uboB = (GUniformBufferVLK *) (meshVLK->getVertexUniformBuffer(k).get());
@@ -1470,6 +1519,13 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
 
+        if (lastPipeline != meshVLK->hgPipelineVLK) {
+            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              meshVLK->hgPipelineVLK->graphicsPipeline);
+
+            lastPipeline = meshVLK->hgPipelineVLK;
+        }
+
         ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
         if (lastViewPort != newViewPort) {
             switch (newViewPort) {
@@ -1483,9 +1539,10 @@ void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
                     vkCmdSetViewport(commandBufferForFilling, 0, 1, &mapAreaViewport);
                     break;
             }
+
+            lastViewPort = newViewPort;
         }
 
-        vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS, meshVLK->hgPipelineVLK->graphicsPipeline);
 
         auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
         auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;

@@ -26,7 +26,7 @@ private:
 private:
     IDevice &m_device;
 private:
-    void * m_buffer;
+    std::vector<char> m_buffer;
 
 public:
     explicit GVertexBufferBindingsGL33(IDevice &m_device);

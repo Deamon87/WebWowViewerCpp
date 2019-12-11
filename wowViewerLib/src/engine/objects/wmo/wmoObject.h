@@ -34,6 +34,8 @@ class WmoObject : public IWmoApi {
 public:
     WmoObject(IWoWInnerApi *api) : m_api(api) {
     }
+
+	~WmoObject();
 private:
     IWoWInnerApi *m_api;
 

@@ -32,6 +32,7 @@ public:
         m_m2Object = m2Object;
     };
 
+
     M2Scene(IWoWInnerApi *api, int fileDataId, int cameraView = - 1) : m_api(api), m_cameraView(cameraView){
         M2Object *m2Object = new M2Object(m_api);
         m2Object->setLoadParams(0, {}, {});
@@ -42,7 +43,9 @@ public:
 
         m_m2Object = m2Object;
     };
-    ~M2Scene(){}
+    ~M2Scene() override {
+        delete m_m2Object;
+    }
 
     void setAnimationId(int animationId) override {
         m_m2Object->setAnimationId(animationId);

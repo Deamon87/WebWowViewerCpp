@@ -72,6 +72,24 @@ public:
         this->mapTiles[i][j] = adtObject;
     };
 
+    ~Map() override {
+		for (int i = 0; i < 64; i++) {
+			for (int j = 0; j < 64; j++) {
+				if (mapTiles[i][j] != nullptr) {
+					delete mapTiles[i][j];
+				}
+			}
+		}
+
+		for (auto &objRec : m_m2MapObjects.m_cache) {
+			delete objRec.second->obj;
+		}
+		for (auto& objRec : m_wmoMapObjects.m_cache) {
+			delete objRec.second->obj;
+		}
+
+	} ;
+
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void checkCulling(WoWFrameData *frameData) override;
 

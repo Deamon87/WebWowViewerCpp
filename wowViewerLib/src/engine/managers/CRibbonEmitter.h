@@ -13,7 +13,7 @@
 
 struct CRibbonVertex
 {
-    mathfu::vec3 pos;
+    C3Vector pos;
     CImVector diffuseColor;
     C2Vector texCoord;
 };
