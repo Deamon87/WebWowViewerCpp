@@ -135,3 +135,9 @@ add_custom_target(
         DEPENDS ${GLSL30Files}
 )
 add_dependencies(ShadersGLSL33 spirv_reflection)
+
+add_custom_target(
+    GenerateForWebgl
+    DEPENDS ${GLSL20Files}
+    DEPENDS ${GLSL30Files}
+)

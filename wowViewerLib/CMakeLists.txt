@@ -454,12 +454,17 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-add_subdirectory(shaders)
+if (NOT EMSCRIPTEN)
+    add_subdirectory(shaders)
 
-
-add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
-add_dependencies(WoWViewerLib ShadersGLSL20)
-add_dependencies(WoWViewerLib ShadersGLSL33)
+    add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
+    if (LINK_OGL2)
+        add_dependencies(WoWViewerLib ShadersGLSL20)
+    endif()
+    if (LINK_OGL3)
+        add_dependencies(WoWViewerLib ShadersGLSL33)
+    endif()
+endif()
 
 target_include_directories(WoWViewerLib
         PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)

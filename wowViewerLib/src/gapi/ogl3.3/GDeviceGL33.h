@@ -27,6 +27,7 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 
 #include <unordered_set>
 #include <list>
+#include <array>
 #include "GVertexBufferBindingsGL33.h"
 #include "buffers/GIndexBufferGL33.h"
 #include "buffers/GVertexBufferGL33.h"
@@ -195,7 +196,7 @@ protected:
         HGUniformBuffer m_uniformBufferForUpload;
     };
 
-    std::array<FrameUniformBuffers, 4> m_UBOFrames;
+    std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
 
     std::vector<char> aggregationBufferForUpload;
 

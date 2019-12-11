@@ -106,9 +106,6 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
 
     std::string vertExtraDefStrings = vertExtraDef;
     std::string fragExtraDefStrings = fragExtraDef;
-    std::string geomExtraDefStrings = "";
-
-
 
 
     bool esVersion = false;
@@ -130,23 +127,16 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
 #ifdef __EMSCRIPTEN__
     esVersion = true;
 #endif
-    bool geomShaderExists = false;
+
     if (esVersion) {
         vertExtraDefStrings = "#version 100 es\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 100 es\n" + geomExtraDefStrings;
     } else {
         vertExtraDefStrings = "#version 100\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 100\n" + geomExtraDefStrings;
     }
 
     //OGL 2.0 requires this for both vertex and fragment shader
     vertExtraDefStrings += "precision mediump float;\n";
 
-    geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
-
-#ifdef __EMSCRIPTEN__
-    geomShaderExists = false;
-#endif
 
     if (esVersion) {
         fragExtraDefStrings = "#version 100 es\n" + fragExtraDefStrings;
@@ -163,14 +153,11 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
     int maxMatrixUniforms = MAX_MATRIX_NUM;//(maxVertexUniforms / 4) - 9;
 
     vertExtraDefStrings = vertExtraDefStrings + "#define COMPILING_VS 1\r\n ";
-    geomExtraDefStrings = geomExtraDefStrings + "#define COMPILING_GS 1\r\n";
     fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
 
-    std::string geometryShaderString = vertShaderString;
 
     vertShaderString = vertShaderString.insert(0, vertExtraDefStrings);
     fragmentShaderString = fragmentShaderString.insert(0, fragExtraDefStrings);
-    geometryShaderString = geometryShaderString.insert(0, geomExtraDefStrings);
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     const GLchar *vertexShaderConst = (const GLchar *)vertShaderString.c_str();
@@ -218,44 +205,13 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
         throw "" ;
     }
 
-    GLuint geometryShader = 0;
-
-#ifndef WITH_GLESv2
-    if (geomShaderExists) {
-        /* 1.2.1 Compile geometry shader */
-        geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
-        const GLchar *geometryShaderConst = (const GLchar *) geometryShaderString.c_str();
-        glShaderSource(geometryShader, 1, &geometryShaderConst, 0);
-        glCompileShader(geometryShader);
-
-        // Check if it compiled
-        success = 0;
-        glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            // Something went wrong during compilation; get the error
-            GLint maxLength = 0;
-            glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
-
-            //The maxLength includes the NULL character
-            std::vector<GLchar> infoLog(maxLength);
-            glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
-            std::cout << "\ncould not compile fragment shader " << m_shaderName << ":" << std::endl
-                      << fragmentShaderConst << std::endl << std::endl
-                      << "error: " << std::string(infoLog.begin(), infoLog.end()) << std::endl << std::flush;
-
-            throw "";
-        }
-    }
-#endif
-
 
 
     /* 1.3 Link the program */
     GLuint program = glCreateProgram();
     glAttachShader(program, vertexShader);
     glAttachShader(program, fragmentShader);
-    if (geomShaderExists)
-        glAttachShader(program, geometryShader);
+
 
 
     auto const &attribVec = attributesPerShaderName.at(m_shaderName);

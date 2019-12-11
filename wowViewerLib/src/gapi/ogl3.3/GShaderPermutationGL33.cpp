@@ -196,6 +196,7 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
             "#define FLOATDEC\n";
     } else {
         vertExtraDefStrings += "#define FLOATDEC float;\n";
+        vertExtraDefStrings += "precision mediump float;\n";
     };
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
 
@@ -217,7 +218,9 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
             "#define highp\n"
             "#define FLOATDEC\n";
     } else {
+        fragExtraDefStrings += "precision mediump float;\n";
         fragExtraDefStrings += "#define FLOATDEC float;\n";
+
     };
 
     GLint maxVertexUniforms;
@@ -282,33 +285,33 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 
     GLuint geometryShader = 0;
 
-#ifndef WITH_GLESv2
-    if (geomShaderExists) {
-        /* 1.2.1 Compile geometry shader */
-        geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
-        const GLchar *geometryShaderConst = (const GLchar *) geometryShaderString.c_str();
-        glShaderSource(geometryShader, 1, &geometryShaderConst, 0);
-        glCompileShader(geometryShader);
-
-        // Check if it compiled
-        success = 0;
-        glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            // Something went wrong during compilation; get the error
-            GLint maxLength = 0;
-            glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
-
-            //The maxLength includes the NULL character
-            std::vector<GLchar> infoLog(maxLength);
-            glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
-            std::cout << "\ncould not compile fragment shader " << m_shaderName << ":" << std::endl
-                      << fragmentShaderConst << std::endl << std::endl
-                      << "error: " << std::string(infoLog.begin(), infoLog.end()) << std::endl << std::flush;
-
-            throw "";
-        }
-    }
-#endif
+//#ifndef WITH_GLESv2
+//    if (geomShaderExists) {
+//        /* 1.2.1 Compile geometry shader */
+//        geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+//        const GLchar *geometryShaderConst = (const GLchar *) geometryShaderString.c_str();
+//        glShaderSource(geometryShader, 1, &geometryShaderConst, 0);
+//        glCompileShader(geometryShader);
+//
+//        // Check if it compiled
+//        success = 0;
+//        glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &success);
+//        if (!success) {
+//            // Something went wrong during compilation; get the error
+//            GLint maxLength = 0;
+//            glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
+//
+//            //The maxLength includes the NULL character
+//            std::vector<GLchar> infoLog(maxLength);
+//            glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
+//            std::cout << "\ncould not compile fragment shader " << m_shaderName << ":" << std::endl
+//                      << fragmentShaderConst << std::endl << std::endl
+//                      << "error: " << std::string(infoLog.begin(), infoLog.end()) << std::endl << std::flush;
+//
+//            throw "";
+//        }
+//    }
+//#endif
 
 
 

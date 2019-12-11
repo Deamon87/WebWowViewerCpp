@@ -27,6 +27,7 @@ typedef std::shared_ptr<GMeshGL20> HGL20Mesh;
 
 #include <unordered_set>
 #include <list>
+#include <array>
 #include "GVertexBufferBindingsGL20.h"
 #include "buffers/GIndexBufferGL20.h"
 #include "buffers/GVertexBufferGL20.h"
@@ -191,7 +192,7 @@ protected:
         HGUniformBuffer m_uniformBufferForUpload;
     };
 
-    std::array<FrameUniformBuffers, 4> m_UBOFrames;
+    std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
 
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 

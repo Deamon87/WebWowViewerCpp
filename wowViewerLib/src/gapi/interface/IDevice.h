@@ -24,7 +24,7 @@ class gMeshTemplate;
 #include <functional>
 #include <algorithm>
 #include "syncronization/IGPUFence.h"
-#ifndef SKIP_VULKAN
+#ifdef LINK_VULKAN
 #include <vulkan/vulkan_core.h>
 #endif
 
@@ -120,7 +120,7 @@ struct ShaderContentCacheRecordHasher {
     };
 };
 
-#ifndef SKIP_VULKAN
+#ifdef LINK_VULKAN
 struct vkCallInitCallback {
     std::function<void(char** &extensionNames, int &extensionCnt)> getRequiredExtensions;
     std::function<VkSurfaceKHR(VkInstance vkInstance )> createSurface;
