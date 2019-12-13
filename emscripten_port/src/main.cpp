@@ -211,8 +211,14 @@ extern "C" {
 
         //TODO: Check max uniform vectors
         std::string glVersion = "ogl2";
-        if (contextAttributes.majorVersion >=2) {
-            glVersion = "ogl3";
+        GLint uboSize = 0;
+        if ((contextAttributes.majorVersion >= 2) ) {
+//            this will be 0 for Apples
+            glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &uboSize);
+            if (uboSize > 0) {
+                glVersion = "ogl3";
+            }
+
         }
 
         IDevice * device = IDeviceFactory::createDevice(glVersion, nullptr);

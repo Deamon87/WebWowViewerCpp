@@ -9,7 +9,6 @@
 
 GUniformBufferGL33::GUniformBufferGL33(IDevice &device, size_t size) : m_device(device){
     m_size = size;
-    pFrameOneContent = std::vector<char>(size);
     createBuffer();
 }
 
@@ -52,5 +51,4 @@ void GUniformBufferGL33::uploadData(void * data, int length) {
     }
 
     m_dataUploaded = true;
-    m_needsUpdate = false;
 }

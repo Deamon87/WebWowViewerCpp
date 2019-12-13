@@ -35,14 +35,9 @@ private:
     size_t m_size;
     GLuint glBuffId;
 
-    std::vector<char> pFrameOneContent;
-	
     bool m_buffCreated = false;
     bool m_dataUploaded = false;
 
-    int m_creationIndex = 0;
-
-    bool m_needsUpdate = false;
 
     std::function<void(IUniformBuffer* self)> m_handler;
 };

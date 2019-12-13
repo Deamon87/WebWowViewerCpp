@@ -82,6 +82,7 @@ public:
     HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
+    HGUniformBufferChunk createUniformBufferChunk(size_t size) override;
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture() override;
@@ -193,7 +194,7 @@ protected:
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBufferGL33>> m_unfiormBufferCache;
     struct FrameUniformBuffers {
-        HGUniformBuffer m_uniformBufferForUpload;
+        std::vector<HGUniformBuffer> m_uniformBuffersForUpload;
     };
 
     std::array<FrameUniformBuffers, 4> m_UBOFrames = {};

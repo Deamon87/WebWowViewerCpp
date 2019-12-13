@@ -312,7 +312,7 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.cpp
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.h
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
-        src/gapi/ogl3.3/GOcclusionQueryGL33.h)
+        src/gapi/ogl3.3/GOcclusionQueryGL33.h src/gapi/ogl3.3/buffers/GUnformBufferChunk33.h)
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp

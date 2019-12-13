@@ -141,10 +141,11 @@ void main() {
         vec3 vNormal3 = normalize(vNormal.xyz);
         vec3 lightColor = vec3(0.0);
         int count = int(pc_lights[0].attenuation.w);
-        int index = 0;
-        for (;;)
+
+        for (int index = 0; index < 4; index++)
         {
-            if ( index >= PixelShader_UnFogged_IsAffectedByLight_LightCount.w) break;
+            if (index >= PixelShader_UnFogged_IsAffectedByLight_LightCount.w) break;
+
             LocalLight lightRecord = pc_lights[index];
             vec3 vectorToLight = ((uLookAtMat * (uPlacementMat * lightRecord.position)).xyz - vPos3);
             float distanceToLightSqr = dot(vectorToLight, vectorToLight);
@@ -157,7 +158,6 @@ void main() {
 
             vec3 attenuatedColor = attenuation * lightRecord.color.xyz * attenuationRec.y;
             lightColor = (lightColor + vec3(attenuatedColor * attenuatedColor * diffuseTerm1 ));
-            index++;
         }
         meshResColor.rgb = clamp(lightColor , 0.0, 1.0);
         accumLight = meshResColor.rgb;

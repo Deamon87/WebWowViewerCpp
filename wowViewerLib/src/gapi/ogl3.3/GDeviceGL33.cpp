@@ -16,6 +16,7 @@
 #include "shaders/GWMOShaderPermutationGL33.h"
 #include "../../engine/stringTrim.h"
 #include "buffers/GVertexBufferDynamicGL33.h"
+#include "buffers/GUnformBufferChunk33.h"
 
 namespace GL33 {
     BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -223,7 +224,7 @@ HGUniformBuffer GDeviceGL33::createUniformBuffer(size_t size) {
     std::shared_ptr<GUniformBufferGL33> h_uniformBuffer;
     h_uniformBuffer.reset(new GUniformBufferGL33(*this, size));
 
-    h_uniformBuffer->m_creationIndex = uniformBuffersCreated++;
+
     std::weak_ptr<GUniformBufferGL33> w_uniformBuffer = h_uniformBuffer;
 
     m_unfiormBufferCache.push_back(w_uniformBuffer);
@@ -257,6 +258,7 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 
 void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
     std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
+    aggregationBufferForUpload.resize(maxUniformBufferSize);
 
     //1. Collect buffers
     std::vector<IUniformBufferChunk *> buffers;
@@ -274,38 +276,52 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
     std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
 
-    int fullSize = 0;
-    for (auto &buffer : buffers) {
-        fullSize += buffer->getSize();
-        int offsetDiff = fullSize % uniformBufferOffsetAlign;
-        if (offsetDiff != 0) {
-            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
-
-            fullSize += bytesToAdd;
-        }
-    }
-    if (fullSize > aggregationBufferForUpload.size()) {
-        aggregationBufferForUpload.resize(fullSize);
-    }
-
     //2. Create buffers and update them
     int currentSize = 0;
     int buffersIndex = 0;
 
-    HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
-    if (bufferForUpload == nullptr) {
-        bufferForUpload = createUniformBuffer(10*1024*1024);
+    std::vector<HGUniformBuffer> &m_unfiormBuffersForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBuffersForUpload;
+    HGUniformBuffer bufferForUpload;
+    if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
+        bufferForUpload = createUniformBuffer(maxUniformBufferSize);
         bufferForUpload->createBuffer();
-        m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload = bufferForUpload;
+        m_unfiormBuffersForUpload.push_back(bufferForUpload);
+    } else {
+        bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
     }
 
-    auto bufferForUploadGL = ((GUniformBufferGL33 *) bufferForUpload.get());
-    //Buffer identifier was changed, so we need to update shader UBO descriptor
 
     char *pointerForUpload = static_cast<char *>(&aggregationBufferForUpload[0]);
-    for (const auto &buffer : buffers) {
+    int lastUploadIndx = 0;
+    for (int i = 0; i < buffers.size(); i++) {
+        const auto &buffer = buffers[i];
+
+        if ((currentSize + buffer->getSize()) > maxUniformBufferSize) {
+            for (int j = lastUploadIndx; j < i; j++) {
+                auto &bufferUpl = buffers[j];
+                bufferUpl->update();
+            }
+
+
+            lastUploadIndx = i;
+            ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
+
+            buffersIndex++;
+            currentSize = 0;
+
+            if (buffersIndex >= m_unfiormBuffersForUpload.size()) {
+                bufferForUpload = createUniformBuffer(maxUniformBufferSize);
+                bufferForUpload->createBuffer();
+                m_unfiormBuffersForUpload.push_back(bufferForUpload);
+            } else {
+                bufferForUpload = m_unfiormBuffersForUpload.at(buffersIndex);
+            }
+        }
+
         buffer->setOffset(currentSize);
         buffer->setPointer(&pointerForUpload[currentSize]);
+        ((GUniformBufferChunk33*) buffer)->setUniformBuffer(bufferForUpload);
+
         currentSize += buffer->getSize();
 
         int offsetDiff = currentSize % uniformBufferOffsetAlign;
@@ -315,12 +331,14 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
             currentSize += bytesToAdd;
         }
     }
-    for (auto &buffer : buffers) {
-        buffer->update();
-    }
 
     if (currentSize > 0) {
-        bufferForUploadGL->uploadData(pointerForUpload, currentSize);
+        for (int j = lastUploadIndx; j < buffers.size(); j++) {
+            auto &bufferUpl = buffers[j];
+            bufferUpl->update();
+        }
+
+        ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(pointerForUpload, currentSize);
     }
 }
 
@@ -337,16 +355,19 @@ void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
         gm2Mesh = (GM2MeshGL33 *)(hmesh);
     }
 
-    HGUniformBuffer bufferForUpload = m_UBOFrames[getDrawFrameNumber()].m_uniformBufferForUpload;
+//    HGUniformBuffer bufferForUpload = m_UBOFrames[getDrawFrameNumber()].m_uniformBufferForUpload;
+
 
     bindProgram(hmesh->m_shader.get());
     bindVertexBufferBindings(hmesh->m_bindings.get());
 
 
     for (int i = 0; i < 5; i++) {
-        auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
+        GUniformBufferChunk33 * uniformChunk = (GUniformBufferChunk33 *) hmesh->m_UniformBuffer[i].get();
         if (uniformChunk != nullptr) {
-            bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
+            auto bufferForUpload = uniformChunk->getUniformBuffer().get();
+
+            bindUniformBuffer(bufferForUpload, i, uniformChunk->getOffset(), uniformChunk->getSize());
         }
     }
 
@@ -499,6 +520,13 @@ HGVertexBufferBindings GDeviceGL33::createVertexBufferBindings() {
 
     return h_vertexBufferBindings;
 }
+
+HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size) {
+    HGUniformBufferChunk h_uniformBuffer;
+    h_uniformBuffer.reset(new GUniformBufferChunk33(size));
+
+    return h_uniformBuffer;
+};
 
 HGMesh GDeviceGL33::createMesh(gMeshTemplate &meshTemplate) {
     std::shared_ptr<GMeshGL33> h_mesh;
