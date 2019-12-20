@@ -74,7 +74,7 @@ public:
         position[2] = camera.z;
     }
 
-    mathfu::mat4 &getLookatMat() {
+    mathfu::mat4 &getLookatMat() override {
         return lookAtMat;
     }
     void setMovementSpeed(float value);

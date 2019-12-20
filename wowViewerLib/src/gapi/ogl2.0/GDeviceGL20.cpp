@@ -942,7 +942,10 @@ void GDeviceGL20::beginFrame() {
 }
 
 void GDeviceGL20::commitFrame() {
-
+    for (auto &deviceUI: deviceUIs) {
+        if (deviceUI != nullptr)
+            deviceUI->renderUI();
+    }
 }
 
 void GDeviceGL20::setViewPortDimensions(float x, float y, float width, float height) {

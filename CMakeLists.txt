@@ -152,7 +152,18 @@ set(SOURCE_FILES
 		src/persistance/CascRequestProcessor.cpp
 		src/persistance/CascRequestProcessor.h
 		src/persistance/HttpRequestProcessor.cpp
-		src/persistance/HttpRequestProcessor.h)
+		src/persistance/HttpRequestProcessor.h
+
+		src/ui/imguiLib/imgui.cpp
+		src/ui/imguiLib/imgui_demo.cpp
+		src/ui/imguiLib/imgui_draw.cpp
+		src/ui/imguiLib/imgui_widgets.cpp
+		src/ui/imguiLib/imguiImpl/imgui_impl_glfw.cpp
+		src/ui/imguiLib/imguiImpl/imgui_impl_opengl2.cpp
+		src/ui/imguiLib/imguiImpl/imgui_impl_opengl3.cpp
+		src/ui/FrontendUI.cpp src/ui/FrontendUI.h
+)
+
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	set(SOURCE_FILES ${SOURCE_FILES}
@@ -200,6 +211,7 @@ endif()
 
 
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
+target_include_directories(AWebWoWViewerCpp PUBLIC src/ui/imguiLib)
 
 
 add_dependencies(AWebWoWViewerCpp zip)

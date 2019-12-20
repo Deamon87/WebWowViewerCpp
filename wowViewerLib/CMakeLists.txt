@@ -236,7 +236,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/skelFile.cpp
         src/engine/persistance/skelFile.h
         src/engine/algorithms/FrameCounter.cpp
-        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h)
+        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp

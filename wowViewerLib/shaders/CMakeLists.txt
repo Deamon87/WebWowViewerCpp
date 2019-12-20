@@ -45,8 +45,6 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     OUTPUT ${SPIRV_NonOpt}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL20}"
-                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL33}"
                     COMMAND glslangValidator -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
                     DEPENDS ${srcTemplatePath})
 
@@ -87,6 +85,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
 
             add_custom_command(
                     OUTPUT ${GLSL20_FILE}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL20}"
                     COMMAND spirv_reflection -glsl100 ${SPIRV_NonOpt} > ${GLSL20_FILE_FULLPATH}
                     DEPENDS ${SPIRV_NonOpt})
 
@@ -98,6 +97,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
 
             add_custom_command(
                     OUTPUT ${GLSL33_FILE}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL33}"
                     COMMAND spirv_reflection -glsl330 ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
                     DEPENDS ${SPIRV_NonOpt})
 

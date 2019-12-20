@@ -38,6 +38,7 @@
 
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
+#include "ui/FrontendUI.h"
 
 
 int mleft_pressed = 0;
@@ -436,6 +437,12 @@ int main(){
     //Create device
     IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
     WoWScene *scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
+
+    FrontendUI frontendUI;
+    frontendUI.initImgui(window);
+
+    device->addIDeviceUI(&frontendUI);
+
     processor->setFileRequester(scene);
     testConf->setDrawM2BB(false);
     //testConf->setUsePortalCulling(false);
@@ -458,6 +465,8 @@ int main(){
 try {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        frontendUI.composeUI();
 
         // Render scene
         myapp.currentFrame = glfwGetTime(); // seconds

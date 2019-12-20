@@ -97,8 +97,10 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
 
     //Sort and delete duplicates
     std::unordered_set<M2Object *> m2Set;
-    for (auto i : frameData->m2Array)
+    for (auto i : frameData->m2Array) {
+        if (!i) continue;
         m2Set.insert(i);
+    }
 
 
     frameData->m2Array.assign( m2Set.begin(), m2Set.end() );

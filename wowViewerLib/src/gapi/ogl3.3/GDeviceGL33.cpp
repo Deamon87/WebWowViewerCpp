@@ -924,7 +924,10 @@ void GDeviceGL33::beginFrame() {
 }
 
 void GDeviceGL33::commitFrame() {
-
+    for (auto &deviceUI: deviceUIs) {
+        if (deviceUI != nullptr)
+            deviceUI->renderUI();
+    }
 }
 
 void GDeviceGL33::setViewPortDimensions(float x, float y, float width, float height) {

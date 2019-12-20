@@ -633,9 +633,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-//    m_firstCamera.setCameraPos(0, 0, 0);
-//    currentScene = new WmoScene(this,
-//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
+    m_firstCamera.setCameraPos(0, 0, 0);
+    currentScene = new WmoScene(this,
+        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
