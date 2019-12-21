@@ -9,6 +9,9 @@
 #include "../../wowViewerLib/src/gapi/interface/IDeviceUI.h"
 
 class FrontendUI : public IDeviceUI {
+private:
+    std::function <void(std::string cascPath)> openCascCallback;
+    std::function <void(int fdid)> openSceneByfdid;
 
 public:
     void initImgui(GLFWwindow* window);
@@ -21,6 +24,7 @@ public:
     bool getStopKeyboard();
 
     void setOpenCascStorageCallback(std::function <void(std::string cascPath)> callback);
+    void setOpenSceneByfdidCallback(std::function <void(int fdid)> callback);
 
 #ifdef LINK_VULKAN
     virtual void renderUIVLK(VkCommandBuffer commandBuffer) = 0;

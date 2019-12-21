@@ -42,6 +42,9 @@ public:
 
     void draw(animTime_t deltaTime) override;
     void setScreenSize(int canvWidth, int canvHeight) override;
+    void setCacheStorage(WoWFilesCacheStorage * pcacheStorage) override {
+        cacheStorage = pcacheStorage;
+    };
 
     IControllable* controllable = &m_firstCamera;
 

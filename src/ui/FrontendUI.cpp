@@ -26,35 +26,18 @@ void FrontendUI::composeUI() {
             if (ImGui::MenuItem("Open CASC Storage...")) {
                 fileDialog.Open();
             }
-            if (ImGui::MenuItem("Open", "Ctrl+O")) {}
-            if (ImGui::BeginMenu("Open Recent"))
-            {
-                ImGui::MenuItem("fish_hat.c");
-                ImGui::MenuItem("fish_hat.inl");
-                ImGui::MenuItem("fish_hat.h");
-                if (ImGui::BeginMenu("More.."))
-                {
-                    ImGui::MenuItem("Hello");
-                    ImGui::MenuItem("Sailor");
-                    if (ImGui::BeginMenu("Recurse.."))
-                    {
-//                        ShowExampleMenuFile();
-                        ImGui::EndMenu();
-                    }
-                    ImGui::EndMenu();
+            if (ImGui::MenuItem("Open test scene")) {
+                if ((openSceneByfdid)){
+                    openSceneByfdid(0);
                 }
-                ImGui::EndMenu();
             }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Edit"))
+        if (ImGui::BeginMenu("View"))
         {
-            if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
-            if (ImGui::MenuItem("Redo", "CTRL+Y", false, false)) {}  // Disabled item
+            if (ImGui::MenuItem("Open minimap")) {}
             ImGui::Separator();
-            if (ImGui::MenuItem("Cut", "CTRL+X")) {}
-            if (ImGui::MenuItem("Copy", "CTRL+C")) {}
-            if (ImGui::MenuItem("Paste", "CTRL+V")) {}
+            if (ImGui::MenuItem("Open settings")) {}
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -66,6 +49,9 @@ void FrontendUI::composeUI() {
     if(fileDialog.HasSelected())
     {
         std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
+        if (openCascCallback) {
+            openCascCallback(fileDialog.GetSelected().string());
+        }
         fileDialog.ClearSelected();
     }
 
@@ -151,7 +137,11 @@ bool FrontendUI::getStopKeyboard() {
 }
 
 void FrontendUI::setOpenCascStorageCallback(std::function<void(std::string cascPath)> callback) {
+    openCascCallback = callback;
+}
 
+void FrontendUI::setOpenSceneByfdidCallback(std::function<void(int fdid)> callback) {
+    openSceneByfdid = callback;
 }
 
 

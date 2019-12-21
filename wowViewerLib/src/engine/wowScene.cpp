@@ -22,7 +22,7 @@
 void WoWSceneImpl::processCaches(int limit) {
 //    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
 //    std::cout << "this->adtObjectCache.m_cache.size() = " << this->adtObjectCache.m_cache.size()<< std::endl;
-
+    cacheStorage->processCaches(limit);
 }
 void WoWSceneImpl::DoUpdate() {
     FrameCounter frameCounter;
@@ -66,7 +66,6 @@ void WoWSceneImpl::DoUpdate() {
 }
 void WoWSceneImpl::DoCulling() {
 	if (currentScene == nullptr) {
-
 		return;
 	}
 

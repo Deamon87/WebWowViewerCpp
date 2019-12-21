@@ -315,7 +315,7 @@ int main(){
     //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
     //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
     //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-    HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+    RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
 //        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
     processor->setThreaded(true);
 
@@ -386,6 +386,21 @@ int main(){
 //    device->createBlpTexture()
 
     FrontendUI frontendUI;
+    frontendUI.setOpenCascStorageCallback([&processor, &storage, &scene](std::string cascPath) -> void {
+        CascRequestProcessor *newProcessor = new CascRequestProcessor(cascPath.c_str());
+        WoWFilesCacheStorage *newStorage = new WoWFilesCacheStorage(newProcessor);
+        newProcessor->setFileRequester(newStorage);
+
+        storage = newStorage;
+        processor = newProcessor;
+
+        scene->setCacheStorage(newStorage);
+    });
+    frontendUI.setOpenSceneByfdidCallback([&scene](int fdid) {
+        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
+    });
+
+
     frontendUI.initImgui(window);
 
     device->addIDeviceUI(&frontendUI);
