@@ -8,25 +8,23 @@
 #include <imguiImpl/imgui_impl_opengl3.h>
 #include <iostream>
 #include "imguiLib/imguiImpl/imgui_impl_glfw.h"
+#include "imguiLib/fileBrowser/imfilebrowser.h"
 
 void FrontendUI::composeUI() {
     // Start the Dear ImGui frame
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
     static float clear_color[3] = {0,0,0};
+    static ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory);
 
-    bool show_demo_window = true;
-    bool show_another_window = true;
+    static bool show_demo_window = true;
+    static bool show_another_window = true;
 
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
         {
-            ImGui::MenuItem("(dummy menu)", NULL, false, false);
-            if (ImGui::MenuItem("New")) {
-                std::cout << "New clicked" << std::endl;
+//            ImGui::MenuItem("(dummy menu)", NULL, false, false);
+            if (ImGui::MenuItem("Open CASC Storage...")) {
+                fileDialog.Open();
             }
             if (ImGui::MenuItem("Open", "Ctrl+O")) {}
             if (ImGui::BeginMenu("Open Recent"))
@@ -60,6 +58,15 @@ void FrontendUI::composeUI() {
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
+    }
+
+    //Show filePicker
+    fileDialog.Display();
+
+    if(fileDialog.HasSelected())
+    {
+        std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
+        fileDialog.ClearSelected();
     }
 
 //    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
@@ -124,7 +131,29 @@ void FrontendUI::initImgui(GLFWwindow* window) {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 150");
 
+
 }
+
+void FrontendUI::newFrame() {
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+}
+
+bool FrontendUI::getStopMouse() {
+    ImGuiIO& io = ImGui::GetIO();
+    return io.WantCaptureMouse;
+}
+
+bool FrontendUI::getStopKeyboard() {
+    ImGuiIO& io = ImGui::GetIO();
+    return io.WantCaptureKeyboard;
+}
+
+void FrontendUI::setOpenCascStorageCallback(std::function<void(std::string cascPath)> callback) {
+
+}
+
 
 #ifdef LINK_VULKAN
 void FrontendUI::renderUIVLK(VkCommandBuffer commandBuffer){

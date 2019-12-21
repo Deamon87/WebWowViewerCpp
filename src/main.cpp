@@ -39,6 +39,7 @@
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
 #include "ui/FrontendUI.h"
+#include "../wowViewerLib/src/engine/WowFilesCacheStorage.h"
 
 
 int mleft_pressed = 0;
@@ -46,10 +47,11 @@ int mright_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
 
-bool stopInputs = false;
+bool stopMouse = false;
+bool stopKeyboard = false;
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
-    if (stopInputs) return;
+    if (stopMouse) return;
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
     IControllable* controllable = scene->getCurrentCamera();
 
@@ -71,7 +73,8 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 //    addCameraViewOffset
-    if (stopInputs) return;
+    if (stopMouse) return;
+
     if (action == GLFW_PRESS) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
             mleft_pressed = 1;
@@ -98,7 +101,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 Config *testConf;
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (stopInputs) return;
+    if (stopKeyboard) return;
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
     IControllable* controllable = scene->getCurrentCamera();
     if ( action == GLFW_PRESS) {
@@ -165,6 +168,8 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
+    if (stopMouse) return;
+
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
     IControllable* controllable = scene->getCurrentCamera();
 
@@ -271,74 +276,10 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 }
 #endif
 
-
-enum radioOptions {
-    EASY,
-    HARD
-};
-
-struct my_nkc_app {
-    /* some user data */
-    float movementSpeed = 1.0;
-    bool drawM2AABB = false;
-    bool drawWMOAABB = false;
-
-    int wmoMinBatch = 0;
-    int wmoMaxBatch = 9999;
-
-    int m2MinBatch = 0;
-    int m2MaxBatch = 9999;
-
-    int minParticle = 0;
-    int maxParticle = 9999;
-
-    WoWScene *scene;
-    RequestProcessor *processor;
-
-    double currentFrame;
-    double lastFrame;
-
-    float ambientColor[4] = {255,255,255,255};
-    float ambientIntensity = 1.0;
-    float sunColor[4];
-};
-
-inline void CopyAndNullTerminate( const std::string& source,
-                                  char* dest,
-                                  size_t dest_size )
-{
-    dest[source.copy(dest, dest_size-1)] = 0;
-}
-
-void mainLoop(void* loopArg){
-    struct my_nkc_app* myapp = (struct my_nkc_app*)loopArg;
-
-    // Render scene
-    myapp->currentFrame = glfwGetTime(); // seconds
-    double deltaTime = myapp->currentFrame - myapp->lastFrame;
-    myapp->lastFrame = myapp->currentFrame;
-
-    double fps = calcFPS(nullptr, 2.0);
-
-    myapp->processor->processRequests(false);
-    myapp->processor->processResults(10);
-
-    if (windowSizeChanged) {
-        myapp->scene->setScreenSize(canvWidth, canvHeight);
-        windowSizeChanged = false;
-    }
-
-    myapp->scene->draw((deltaTime*(1000.0f))); //miliseconds
-
-    stopInputs = false;
-}
-
-
+double currentFrame;
+double lastFrame;
 
 int main(){
-    struct my_nkc_app myapp;
-
-
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
 #endif
@@ -406,7 +347,7 @@ int main(){
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     }
 
-    auto window = glfwCreateWindow(canvWidth, canvHeight, "Vulkan", nullptr, nullptr);
+    auto window = glfwCreateWindow(canvWidth, canvHeight, "WowMapViewer", nullptr, nullptr);
 
 #ifdef LINK_VULKAN
     vkCallInitCallback callback;
@@ -434,24 +375,24 @@ int main(){
         glfwMakeContextCurrent(window);
     }
 
+    WoWFilesCacheStorage *storage = new WoWFilesCacheStorage(processor);
+    processor->setFileRequester(storage);
+
     //Create device
     IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
-    WoWScene *scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
+    WoWScene *scene = createWoWScene(testConf, storage, device, canvWidth, canvHeight);
+
+
+//    device->createBlpTexture()
 
     FrontendUI frontendUI;
     frontendUI.initImgui(window);
 
     device->addIDeviceUI(&frontendUI);
 
-    processor->setFileRequester(scene);
+
     testConf->setDrawM2BB(false);
     //testConf->setUsePortalCulling(false);
-
-    myapp.scene = scene;
-    myapp.processor = processor;
-    myapp.currentFrame = glfwGetTime();
-    myapp.lastFrame = myapp.currentFrame;
-
 
     glfwSetWindowUserPointer(window, scene);
     glfwSetKeyCallback(window, onKey);
@@ -464,14 +405,17 @@ int main(){
 
 try {
     while (!glfwWindowShouldClose(window)) {
+        frontendUI.newFrame();
+        stopMouse = frontendUI.getStopMouse();
+        stopKeyboard = frontendUI.getStopKeyboard();
         glfwPollEvents();
 
         frontendUI.composeUI();
 
         // Render scene
-        myapp.currentFrame = glfwGetTime(); // seconds
-        double deltaTime = myapp.currentFrame - myapp.lastFrame;
-        myapp.lastFrame = myapp.currentFrame;
+        currentFrame = glfwGetTime(); // seconds
+        double deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
 
         double fps = calcFPS(nullptr, 2.0);
 
@@ -497,14 +441,10 @@ try {
     std::cout << "something happened" << std::endl;
 }
 
-std::cout << "program ended" << std::endl;
-//        while (1) {
-//            mainLoop(&myapp);
-//        }
-
-
-
-    delete myapp.scene;
+    std::cout << "program ended" << std::endl;
+    //        while (1) {
+    //            mainLoop(&myapp);
+    //        }
 
     return 0;
 }

@@ -16,8 +16,9 @@
 #include <memory>
 #include <mutex>
 #include <forward_list>
-#include "../../include/wowScene.h"
 #include "../stringTrim.h"
+#include "../../include/iostuff.h"
+#include "../../include/sharedFile.h"
 
 struct FileCacheRecord {
     std::string fileName;

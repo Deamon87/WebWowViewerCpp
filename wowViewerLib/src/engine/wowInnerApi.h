@@ -8,7 +8,6 @@
 #include "engineClassList.h"
 
 #include "./wowCommonClasses.h"
-#include "objects/wmo/wmoObject.h"
 
 //Functional classes
 
@@ -18,9 +17,6 @@
 #include "persistance/adtFile.h"
 #include "persistance/wdtFile.h"
 #include "persistance/wdlFile.h"
-#include "persistance/db2/DB2Light.h"
-#include "persistance/db2/DB2LightData.h"
-#include "persistance/db2/DB2WmoAreaTable.h"
 #include "../gapi/interface/IDevice.h"
 #include "persistance/animFile.h"
 
@@ -55,10 +51,6 @@ public:
     virtual mathfu::vec3 getViewUp() = 0;
 
     virtual Config *getConfig() = 0;
-
-    virtual DB2Light *getDB2Light() = 0;
-    virtual DB2LightData *getDB2LightData() = 0;
-    virtual DB2WmoAreaTable *getDB2WmoAreaTable() = 0;
 
     virtual void setCameraPosition(float x, float y, float z) = 0;
     virtual void setCameraOffset(float x, float y, float z) = 0;

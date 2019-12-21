@@ -5,8 +5,6 @@
 #include "androidLogSupport.h"
 
 #include "mathfu/glsl_mappings.h"
-#include "persistance/db2/DB2Light.h"
-#include "persistance/db2/DB2WmoAreaTable.h"
 #include "./../gapi/UniformBufferStructures.h"
 #include "objects/GlobalThreads.h"
 #include "../gapi/IDeviceFactory.h"
@@ -24,17 +22,7 @@
 void WoWSceneImpl::processCaches(int limit) {
 //    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
 //    std::cout << "this->adtObjectCache.m_cache.size() = " << this->adtObjectCache.m_cache.size()<< std::endl;
-    this->adtObjectCache.processCacheQueue(limit);
-    this->wdtCache.processCacheQueue(limit);
-    this->wdlCache.processCacheQueue(limit);
-    this->wmoGeomCache.processCacheQueue(limit);
-    this->wmoMainCache.processCacheQueue(limit);
-    this->skinGeomCache.processCacheQueue(limit);
-    this->animCache.processCacheQueue(limit);
-    this->skelCache.processCacheQueue(limit);
-    this->m2GeomCache.processCacheQueue(limit);
-    this->textureCache.processCacheQueue(limit);
-    this->db2Cache.processCacheQueue(limit);
+
 }
 void WoWSceneImpl::DoUpdate() {
     FrameCounter frameCounter;
@@ -283,19 +271,8 @@ void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cam
     }
 }
 
-WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDevice * device, int canvWidth, int canvHeight)
-        :
-        wmoMainCache(requestProcessor, CacheHolderType::CACHE_MAIN_WMO),
-        wmoGeomCache(requestProcessor, CacheHolderType::CACHE_GROUP_WMO),
-        wdtCache(requestProcessor, CacheHolderType::CACHE_WDT),
-        wdlCache(requestProcessor, CacheHolderType::CACHE_WDL),
-        m2GeomCache(requestProcessor, CacheHolderType::CACHE_M2),
-        skinGeomCache(requestProcessor, CacheHolderType::CACHE_SKIN),
-        textureCache(requestProcessor, CacheHolderType::CACHE_BLP),
-        adtObjectCache(requestProcessor, CacheHolderType::CACHE_ADT),
-        db2Cache(requestProcessor, CacheHolderType::CACHE_DB2),
-        animCache(requestProcessor, CacheHolderType::CACHE_ANIM),
-        skelCache(requestProcessor, CacheHolderType::CACHE_SKEL)
+WoWSceneImpl::WoWSceneImpl(Config *config, WoWFilesCacheStorage * woWFilesCacheStorage, IDevice * device, int canvWidth, int canvHeight) :
+    cacheStorage(woWFilesCacheStorage)
 {
     m_gdevice.reset(device);
 //    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
@@ -633,9 +610,9 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
 
-    m_firstCamera.setCameraPos(0, 0, 0);
-    currentScene = new WmoScene(this,
-        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
+//    m_firstCamera.setCameraPos(0, 0, 0);
+//    currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/argusraid/7du_argusraid_pantheon.wmo");
 //
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
@@ -645,10 +622,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDev
 
 //   currentScene = new WmoScene(this,
 //        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
-
-    db2Light = nullptr;
-    db2LightData = nullptr;
-    db2WmoAreaTable = nullptr;
 
 //    setScene(2, "world/maps/ahnqiraj/ahnqiraj_26_46.adt", -1);
 //    setScene(2, "WORLD/MAPTEXTURES/MAELSTROMDEATHWINGFIGHT/MAELSTROMDEATHWINGFIGHT_32_32.adt", -1);
@@ -823,7 +796,7 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     if (currentScene == nullptr) return;
 
     if (needToDropCache) {
-        this->actuallDropCache();
+        cacheStorage->actuallDropCache();
         needToDropCache = false;
     }
 
@@ -1001,85 +974,36 @@ void WoWSceneImpl::SetDirection(WoWFrameData &frameParamHolder) {
 
 WoWSceneImpl::~WoWSceneImpl() {
     m_isTerminating = true;
+    g_globalThreadsSingleton.cullingThread.detach();
     if (g_globalThreadsSingleton.cullingThread.joinable()) {
         g_globalThreadsSingleton.cullingThread.join();
     }
 
+    g_globalThreadsSingleton.updateThread.detach();
     if (g_globalThreadsSingleton.updateThread.joinable()) {
         g_globalThreadsSingleton.updateThread.join();
     }
 
+    g_globalThreadsSingleton.loadingResourcesThread.detach();
     if (g_globalThreadsSingleton.loadingResourcesThread.joinable()) {
         g_globalThreadsSingleton.loadingResourcesThread.join();
     }
 }
 
-WoWScene *createWoWScene(Config *config, IFileRequest *requestProcessor, IDevice *device, int canvWidth, int canvHeight) {
+WoWScene *createWoWScene(Config *config, WoWFilesCacheStorage * cacheStorage, IDevice *device, int canvWidth, int canvHeight) {
 #ifdef __ANDROID_API__
     std::cout.rdbuf(new androidbuf());
 #endif
 
-    return new WoWSceneImpl(config, requestProcessor, device, canvWidth, canvHeight);
+    return new WoWSceneImpl(config, cacheStorage, device, canvWidth, canvHeight);
 }
 
 void WoWSceneImpl::clearCache() {
 //    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
 //    needToDropCache = true;
-    actuallDropCache();
-}
-void WoWSceneImpl::actuallDropCache() {
-//    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
-    this->adtObjectCache.clear();
-    this->wdtCache.clear();
-    this->wdlCache.clear();
-    this->wmoGeomCache.clear();
-    this->wmoMainCache.clear();
-    this->m2GeomCache.clear();
-    this->skinGeomCache.clear();
-    this->animCache.clear();
-    this->textureCache.clear();
-    this->db2Cache.clear();
+    cacheStorage->actuallDropCache();
 }
 
-void WoWSceneImpl::provideFile(CacheHolderType holderType, const char *fileName, const HFileContent &data) {
-//    std::cout << "data.use_count() = " << data.use_count() << std::endl << std::flush;
-    std::string s_fileName(fileName);
 
-    switch (holderType) {
-        case CacheHolderType::CACHE_M2:
-            m2GeomCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_SKIN:
-            skinGeomCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_MAIN_WMO:
-            wmoMainCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_GROUP_WMO:
-            wmoGeomCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_ADT:
-            adtObjectCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_WDT:
-            wdtCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_WDL:
-            wdlCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_BLP:
-            textureCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_DB2:
-            db2Cache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_ANIM:
-            animCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_SKEL:
-            skelCache.provideFile(s_fileName, data);
-            break;
 
-    }
-}
 

@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_BLPTEXTURE_H
 
 #include "../persistance/header/blpFileHeader.h"
-#include "../../include/wowScene.h"
+#include "../../include/sharedFile.h"
 #include <vector>
 enum class TextureFormat {
     None,

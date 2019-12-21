@@ -191,16 +191,6 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/texture/DxtDecompress.cpp
         src/engine/texture/DxtDecompress.h
         src/engine/androidLogSupport.h
-        src/engine/persistance/db2/base/DB2Base.cpp
-        src/engine/persistance/db2/base/DB2Base.h
-        src/engine/persistance/db2/DB2Light.cpp
-        src/engine/persistance/db2/DB2Light.h
-        src/engine/persistance/db2/DB2LightData.cpp
-        src/engine/persistance/db2/DB2LightData.h
-        src/engine/persistance/db2/DB2LightParams.cpp
-        src/engine/persistance/db2/DB2LightParams.h
-        src/engine/persistance/db2/DB2WmoAreaTable.cpp
-        src/engine/persistance/db2/DB2WmoAreaTable.h
         src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h
         src/engine/persistance/header/texFileHeader.h
         src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp
@@ -236,7 +226,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/skelFile.cpp
         src/engine/persistance/skelFile.h
         src/engine/algorithms/FrameCounter.cpp
-        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h)
+        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h src/engine/WowFilesCacheStorage.h src/engine/WowFilesCacheStorage.cpp)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -378,7 +368,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
-            src/gapi/vulkan/descriptorSets/GDescriptorSet.h)
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/include/iostuff.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
@@ -467,4 +457,4 @@ if (NOT EMSCRIPTEN)
 endif()
 
 target_include_directories(WoWViewerLib
-        PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
+        PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)

@@ -25,38 +25,23 @@
 #include "objects/scenes/map.h"
 #include "persistance/wdtFile.h"
 #include "persistance/wdlFile.h"
-#include "persistance/db2/base/DB2Base.h"
-#include "persistance/db2/DB2Light.h"
 #include "../gapi/interface/IDevice.h"
 #include "objects/wowFrameData.h"
 #include "camera/planarCamera.h"
 #include "persistance/animFile.h"
 #include "persistance/skelFile.h"
+#include "objects/scenes/NullScene.h"
+#include "WowFilesCacheStorage.h"
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
-
+private:
+    WoWFilesCacheStorage * cacheStorage;
 public:
-    WoWSceneImpl(Config *config, IFileRequest * requestProcessor, IDevice * device, int canvWidth, int canvHeight);
+    WoWSceneImpl(Config *config, WoWFilesCacheStorage * cacheStorage, IDevice * device, int canvWidth, int canvHeight);
     ~WoWSceneImpl() override;
 
     void draw(animTime_t deltaTime) override;
     void setScreenSize(int canvWidth, int canvHeight) override;
-
-    void provideFile(CacheHolderType holderType, const char* fileName, const HFileContent &data) override;
-    virtual void rejectFile(CacheHolderType holderType, const char* fileName) override {
-        std::string s_fileName(fileName);
-
-        adtObjectCache.reject(s_fileName);
-        wmoGeomCache.reject(s_fileName);
-        wmoMainCache.reject(s_fileName);
-        m2GeomCache.reject(s_fileName);
-        skinGeomCache.reject(s_fileName);
-        textureCache.reject(s_fileName);
-        wdtCache.reject(s_fileName);
-        wdlCache.reject(s_fileName);
-        db2Cache.reject(s_fileName);
-    }
-    void setFileRequestProcessor(IFileRequest*) override {} ;
 
     IControllable* controllable = &m_firstCamera;
 
@@ -85,35 +70,35 @@ public:
     }
 
     virtual Cache<AdtFile> *getAdtGeomCache() override {
-        return &adtObjectCache;
+        return cacheStorage->getAdtGeomCache();
     }
     virtual Cache<M2Geom> *getM2GeomCache() override {
-        return &m2GeomCache;
+        return cacheStorage->getM2GeomCache();
     };
     virtual Cache<SkinGeom>* getSkinGeomCache() override {
-        return &skinGeomCache;
+        return cacheStorage->getSkinGeomCache();
     };
     virtual Cache<AnimFile>* getAnimCache() override {
-        return &animCache;
+        return cacheStorage->getAnimCache();
     };
     virtual Cache<SkelFile>* getSkelCache() override {
-        return &skelCache;
+        return cacheStorage->getSkelCache();
     };
     virtual Cache<BlpTexture> *getTextureCache() override {
-        return &textureCache;
+        return cacheStorage->getTextureCache();
     };
     virtual Cache<WmoMainGeom>* getWmoMainCache() override {
-        return &wmoMainCache;
+        return cacheStorage->getWmoMainCache();
     };
     virtual Cache<WmoGroupGeom>* getWmoGroupGeomCache() override {
-        return &wmoGeomCache;
+        return cacheStorage->getWmoGroupGeomCache();
     };
     virtual Cache<WdtFile>* getWdtFileCache() override {
-        return &wdtCache;
+        return cacheStorage->getWdtFileCache();
     };
 
     virtual Cache<WdlFile>* getWdlFileCache() override {
-        return &wdlCache;
+        return cacheStorage->getWdlFileCache();
     };
 
     virtual mathfu::mat4& getViewMat() override {
@@ -140,15 +125,6 @@ public:
     virtual Config *getConfig() override {
         return m_config;
     }
-    virtual DB2Light *getDB2Light() override {
-        return db2Light;
-    };
-    virtual DB2LightData *getDB2LightData() override {
-        return db2LightData;
-    };
-    virtual DB2WmoAreaTable *getDB2WmoAreaTable() override {
-        return db2WmoAreaTable;
-    };
     void setScenePos(float x, float y, float z) override {
         m_firstCamera.setCameraPos(x,y,z);
     };
@@ -169,7 +145,6 @@ public:
 private:
     void DoCulling();
     void DoUpdate();
-    void actuallDropCache();
 private:
     bool m_enable;
 
@@ -186,10 +161,6 @@ private:
     PlanarCamera m_planarCamera;
     FirstPersonCamera m_secondCamera;
 
-    DB2Light *db2Light;
-    DB2LightData *db2LightData;
-    DB2WmoAreaTable *db2WmoAreaTable;
-
     int canvWidth;
     int canvHeight;
     float canvAspect;
@@ -197,19 +168,8 @@ private:
 
     bool m_isDebugCamera = false;
 
-    Cache<AdtFile> adtObjectCache;
-    Cache<WdtFile> wdtCache;
-    Cache<WdlFile> wdlCache;
-    Cache<WmoGroupGeom> wmoGeomCache;
-    Cache<WmoMainGeom> wmoMainCache;
-    Cache<M2Geom> m2GeomCache;
-    Cache<SkinGeom> skinGeomCache;
-    Cache<BlpTexture> textureCache;
-    Cache<DB2Base> db2Cache;
-    Cache<AnimFile> animCache;
-    Cache<SkelFile> skelCache;
 
-    iInnerSceneApi *currentScene = nullptr;
+    iInnerSceneApi *currentScene = new NullScene();
     iInnerSceneApi *newScene = nullptr;
 
     bool needToDropCache = false;

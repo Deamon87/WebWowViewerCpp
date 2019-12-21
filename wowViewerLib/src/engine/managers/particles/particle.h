@@ -7,7 +7,7 @@
 
 
 #include "../../persistance/header/commonFileStructs.h"
-#include "../../../include/wowScene.h"
+#include "../../../include/iostuff.h"
 
 class CParticle2 {
 public:

@@ -39,8 +39,14 @@ if (WIN32 AND MSVC)
 #set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static -femulated-tls")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -pthread -femulated-tls")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -femulated-tls")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread -femulated-tls")
+
+if(WIN32)
+	link_libraries(wsock32 ws2_32 libws2_32.a)
+endif()
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -pthread")
 
@@ -211,6 +217,8 @@ endif()
 
 
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
+#target_compile_options(AWebWoWViewerCpp PRIVATE "-static")
+
 target_include_directories(AWebWoWViewerCpp PUBLIC src/ui/imguiLib)
 
 

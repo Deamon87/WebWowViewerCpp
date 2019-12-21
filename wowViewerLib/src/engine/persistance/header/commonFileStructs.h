@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_COMMONFILESTRUCTS_H
 #include <cstdint>
 #include <string>
-#include "mathfu/glsl_mappings.h"
+#include <mathfu/glsl_mappings.h>
 
 // Check windows
 #if _WIN32 || _WIN64

@@ -106,11 +106,11 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
         endif(NOT IS_DIRECTORY ${srcTemplatePath})
     endforeach(templateFile)
 
-    if (NOT SPIRV_OPT_APP)
+#    if (NOT SPIRV_OPT_APP)
         SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_NON_OPT})
-    else()
-        SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
-    endif()
+#    else()
+#        SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
+#    endif()
 endmacro(configure_filesVLK)
 
 configure_filesVLK(${PROJECT_SOURCE_DIR}/shaders/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv
@@ -121,6 +121,7 @@ add_custom_command(
         COMMAND spirv_reflection -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
         VERBATIM)
+
 add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator)
 
 add_custom_target(

@@ -14,7 +14,13 @@ public:
     void initImgui(GLFWwindow* window);
 
     void composeUI();
+    void newFrame();
     void renderUI() override;
+
+    bool getStopMouse();
+    bool getStopKeyboard();
+
+    void setOpenCascStorageCallback(std::function <void(std::string cascPath)> callback);
 
 #ifdef LINK_VULKAN
     virtual void renderUIVLK(VkCommandBuffer commandBuffer) = 0;

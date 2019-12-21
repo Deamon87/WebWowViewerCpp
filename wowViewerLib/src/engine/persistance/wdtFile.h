@@ -4,7 +4,8 @@
 #include "header/wdtFileHeader.h"
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
-#include "../../include/wowScene.h"
+#include "../../include/sharedFile.h"
+
 
 class WdtFile {
 public:

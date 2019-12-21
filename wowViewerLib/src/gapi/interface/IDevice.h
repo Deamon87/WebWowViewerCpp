@@ -56,8 +56,9 @@ typedef std::shared_ptr<IGPUFence> HGPUFence;
 #include "IVertexBufferBindings.h"
 #include "buffers/IUniformBuffer.h"
 #include "buffers/IUniformBufferChunk.h"
-#include "textures/ITexture.h"
 #include "../../engine/wowCommonClasses.h"
+#include "../../engine/texture/BlpTexture.h"
+#include "textures/ITexture.h"
 
 struct M2ShaderCacheRecord {
     int vertexShader;
