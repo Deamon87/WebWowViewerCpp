@@ -15,8 +15,33 @@ void FrontendUI::composeUI() {
     static float clear_color[3] = {0,0,0};
     static ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory);
 
-    static bool show_demo_window = true;
+    static bool show_demo_window = false;
     static bool show_another_window = true;
+    static bool showCurrentStats = true;
+    static bool showSelectAdtPoint = false;
+    static float minimapZoom = 1;
+    static float prevMinimapZoom = 1;
+
+    static float prevScrollX = 1;
+    static float prevScrollY = 1;
+
+    if (fillAdtSelectionminimap) {
+        if (fillAdtSelectionminimap(adtSelectionMinimap)) {
+            fillAdtSelectionminimap = nullptr;
+
+            requiredTextures.clear();
+            requiredTextures.reserve(64*64);
+            for (int i = 0; i < 64; i++) {
+                for (int j = 0; j < 64; j++) {
+                    if (adtSelectionMinimap[i][j] != nullptr) {
+                        requiredTextures.push_back(adtSelectionMinimap[i][j]);
+                    }
+                }
+            }
+
+        }
+    }
+
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -31,11 +56,18 @@ void FrontendUI::composeUI() {
                     openSceneByfdid(0);
                 }
             }
+            if (ImGui::MenuItem("Open ADT")) {
+                if (getAdtSelectionMinimap) {
+                    getAdtSelectionMinimap(0);
+                    showSelectAdtPoint = true;
+                }
+            }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View"))
         {
             if (ImGui::MenuItem("Open minimap")) {}
+            if (ImGui::MenuItem("Open current stats")) {showCurrentStats = true;}
             ImGui::Separator();
             if (ImGui::MenuItem("Open settings")) {}
             ImGui::EndMenu();
@@ -55,41 +87,99 @@ void FrontendUI::composeUI() {
         fileDialog.ClearSelected();
     }
 
-//    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-//    if (show_demo_window)
-//        ImGui::ShowDemoWindow(&show_demo_window);
+    if (show_demo_window)
+        ImGui::ShowDemoWindow(&show_demo_window);
 
-    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+    {
+        if (showSelectAdtPoint) {
+            ImGui::Begin("Adt select dialog", &showSelectAdtPoint);
+            {
+                ImGui::SliderFloat("Sample count", &minimapZoom, 0.1, 10);
+                ImGui::BeginChild("left pane", ImVec2(0, 0), true, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
+                if (minimapZoom < 0.001)
+                    minimapZoom = 0.001;
+                if (prevMinimapZoom != minimapZoom) {
+                    auto windowSize = ImGui::GetWindowSize();
+                    ImGui::SetScrollX((ImGui::GetScrollX() + windowSize.x/2.0)*minimapZoom/prevMinimapZoom - windowSize.x/2.0);
+                    ImGui::SetScrollY((ImGui::GetScrollY() + windowSize.y/2.0)*minimapZoom/prevMinimapZoom - windowSize.y/2.0);
+                }
+                prevMinimapZoom = minimapZoom;
+
+
+
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0,0));
+                ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0,0));
+                  for (int i = 0; i < 64; i++) {
+                    for (int j = 0; j < 64; j++) {
+                        if (adtSelectionMinimap[i][j] != nullptr && adtSelectionMinimap[i][j]->getIsLoaded()) {
+                            ImGui::Image(adtSelectionMinimap[i][j]->getIdent(), ImVec2(100*minimapZoom, 100*minimapZoom) );
+                        }
+                        else {
+                            ImGui::Dummy(ImVec2(100*minimapZoom, 100*minimapZoom));
+                        }
+
+                        ImGui::SameLine(0,0);
+                    }
+                    ImGui::NewLine();
+                }
+                ImGui::PopStyleVar();
+                ImGui::PopStyleVar();
+                ImGui::PopStyleVar();
+                ImGui::EndChild();
+            }
+
+            ImGui::End();
+
+        }
+    }
+
     {
         static float f = 0.0f;
         static int counter = 0;
 
-        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+        if (showCurrentStats) {
+            ImGui::Begin("Current stats",
+                         &showCurrentStats);                          // Create a window called "Hello, world!" and append into it.
 
-        ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-        ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-        ImGui::Checkbox("Another Window", &show_another_window);
+            static float cameraPosition[3] = {0, 0, 0};
+            if (getCameraPos) {
+                getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+            }
 
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-        ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+            ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
+                        cameraPosition[2]);               // Display some text (you can use a format strings too)
+//        ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+//        ImGui::Checkbox("Another Window", &show_another_window);
+//
+//        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+//        ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+//
+//        if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+//            counter++;
+//        ImGui::SameLine();
+//        ImGui::Text("counter = %d", counter);
 
-        if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-            counter++;
-        ImGui::SameLine();
-        ImGui::Text("counter = %d", counter);
-
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        ImGui::End();
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
+                        ImGui::GetIO().Framerate);
+            ImGui::End();
+        }
     }
 
     // 3. Show another simple window.
-    if (show_another_window)
+//    if (show_another_window)
+//    {
+//        ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+//        ImGui::Text("Hello from another window!");
+//        if (ImGui::Button("Close Me"))
+//            show_another_window = false;
+//        ImGui::End();
+//    }
+
+    //Minimap
     {
-        ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        ImGui::Text("Hello from another window!");
-        if (ImGui::Button("Close Me"))
-            show_another_window = false;
-        ImGui::End();
+
     }
 
     // Rendering
@@ -101,6 +191,8 @@ void FrontendUI::renderUI() {
 }
 
 void FrontendUI::initImgui(GLFWwindow* window) {
+
+    emptyMinimap();
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -142,6 +234,19 @@ void FrontendUI::setOpenCascStorageCallback(std::function<void(std::string cascP
 
 void FrontendUI::setOpenSceneByfdidCallback(std::function<void(int fdid)> callback) {
     openSceneByfdid = callback;
+}
+
+void FrontendUI::setGetCameraPos(std::function<void(float &cameraX, float &cameraY, float &cameraZ)> callback) {
+    getCameraPos = callback;
+}
+
+void FrontendUI::setGetAdtSelectionMinimap(std::function<void(int mapId)> callback) {
+    getAdtSelectionMinimap = callback;
+}
+
+void FrontendUI::setFillAdtSelectionMinimap(
+    std::function<bool (std::array<std::array<HGTexture, 64>, 64> &minimap)> callback) {
+    fillAdtSelectionminimap = callback;
 }
 
 

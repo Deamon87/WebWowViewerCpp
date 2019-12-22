@@ -134,7 +134,7 @@ struct vkCallInitCallback {
 
 class IDevice {
 
-protected:
+    protected:
         std::vector<IDeviceUI *> deviceUIs;
     public:
         virtual ~IDevice() {};

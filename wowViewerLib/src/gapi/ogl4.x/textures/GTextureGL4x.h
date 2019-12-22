@@ -21,6 +21,7 @@ public:
         throw "Not Implemented in this class";
     }
     bool postLoad() override {return false;};
+    void* getIdent() override { return reinterpret_cast<void *>(textureIdentifier); };
 private:
     void createBuffer();
     void destroyBuffer();

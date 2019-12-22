@@ -11,6 +11,8 @@ class IDeviceUI {
 public:
     virtual void renderUI() = 0;
 
+    std::vector<HGTexture> requiredTextures;
+
     #ifdef LINK_VULKAN
     virtual void renderUIVLK(VkCommandBuffer commandBuffer) = 0;
     #endif

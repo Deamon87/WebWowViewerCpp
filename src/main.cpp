@@ -399,7 +399,32 @@ int main(){
     frontendUI.setOpenSceneByfdidCallback([&scene](int fdid) {
         scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
     });
+    frontendUI.setGetCameraPos([scene](float &cameraX,float &cameraY,float &cameraZ) -> void {
+        float currentCameraPos[4] = {0,0,0,0};
+        scene->getCurrentCamera()->getCameraPosition(&currentCameraPos[0]);
+        cameraX = currentCameraPos[0];
+        cameraY = currentCameraPos[1];
+        cameraZ = currentCameraPos[2];
+    });
+    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, &device](int mapId) {
+        auto wdtFile = storage->getWdtFileCache()->getFileId(775971);
+        frontendUI.setFillAdtSelectionMinimap([wdtFile, &storage, &device](std::array<std::array<HGTexture, 64>, 64> &minimap) -> bool {
+            if (!wdtFile->getIsLoaded()) return false;
 
+            for (int i = 0; i < 64; i++) {
+                for (int j = 0; j < 64; j++) {
+                    if (wdtFile->mapFileDataIDs[i*64 + j].minimapTexture > 0) {
+                        auto texture = storage->getTextureCache()->getFileId(wdtFile->mapFileDataIDs[i*64 + j].minimapTexture);
+                        minimap[i][j] = device->createBlpTexture(texture, false, false);
+                    } else {
+                        minimap[i][j] = nullptr;
+                    }
+                }
+            }
+            return true;
+        });
+
+    });
 
     frontendUI.initImgui(window);
 

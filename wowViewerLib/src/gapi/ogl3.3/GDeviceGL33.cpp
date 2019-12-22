@@ -785,6 +785,12 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         }
     }
 
+    for (auto &deviceUI : deviceUIs) {
+        for (auto &texture: deviceUI->requiredTextures) {
+            textures.push_back(texture);
+        }
+    }
+
     std::sort(textures.begin(), textures.end());
     textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
 
