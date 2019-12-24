@@ -369,15 +369,25 @@ int main(){
     WoWScene *scene = createWoWScene(testConf, storage, device, canvWidth, canvHeight);
 
     FrontendUI frontendUI;
-    frontendUI.setOpenCascStorageCallback([&processor, &storage, &scene](std::string cascPath) -> void {
-        CascRequestProcessor *newProcessor = new CascRequestProcessor(cascPath.c_str());
-        WoWFilesCacheStorage *newStorage = new WoWFilesCacheStorage(newProcessor);
-        newProcessor->setFileRequester(newStorage);
+    frontendUI.setOpenCascStorageCallback([&processor, &storage, &scene](std::string cascPath) -> bool {
+        CascRequestProcessor *newProcessor = nullptr;
+        WoWFilesCacheStorage *newStorage = nullptr;
+        try {
+            newProcessor = new CascRequestProcessor(cascPath.c_str());
+            newStorage = new WoWFilesCacheStorage(newProcessor);
+            newProcessor->setFileRequester(newStorage);
+        } catch (...){
+            delete newProcessor;
+            delete newStorage;
+            return false;
+        };
 
         storage = newStorage;
         processor = newProcessor;
 
         scene->setCacheStorage(newStorage);
+
+        return true;
     });
     frontendUI.setOpenSceneByfdidCallback([&scene](int fdid) {
 //        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
@@ -447,7 +457,7 @@ try {
         double deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        double fps = calcFPS(nullptr, 2.0);
+//        double fps = calcFPS(nullptr, 2.0);
 
 
         processor->processRequests(false);

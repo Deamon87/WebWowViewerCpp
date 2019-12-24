@@ -30,13 +30,25 @@ void FrontendUI::composeUI() {
 
     showMainMenu();
 
+    if (ImGui::BeginPopupModal("Casc failed"))
+    {
+        ImGui::Text("Could not open CASC storage at selected folder");
+        if (ImGui::Button("Ok", ImVec2(-1, 23))) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+
     //Show filePicker
     fileDialog.Display();
 
     if (fileDialog.HasSelected()) {
         std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
         if (openCascCallback) {
-            openCascCallback(fileDialog.GetSelected().string());
+            if (!openCascCallback(fileDialog.GetSelected().string())) {
+                ImGui::OpenPopup("Casc failed");
+            };
         }
         fileDialog.ClearSelected();
     }
@@ -293,7 +305,7 @@ bool FrontendUI::getStopKeyboard() {
     return io.WantCaptureKeyboard;
 }
 
-void FrontendUI::setOpenCascStorageCallback(std::function<void(std::string cascPath)> callback) {
+void FrontendUI::setOpenCascStorageCallback(std::function<bool(std::string cascPath)> callback) {
     openCascCallback = callback;
 }
 

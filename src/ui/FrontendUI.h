@@ -13,7 +13,7 @@
 
 class FrontendUI : public IDeviceUI {
 private:
-    std::function <void(std::string cascPath)> openCascCallback = nullptr;
+    std::function <bool(std::string cascPath)> openCascCallback = nullptr;
     std::function <void(int fdid)> openSceneByfdid = nullptr;
     std::function <void(float &cameraX,float &cameraY,float &cameraZ)> getCameraPos = nullptr;
 
@@ -62,7 +62,7 @@ public:
     bool getStopMouse();
     bool getStopKeyboard();
 
-    void setOpenCascStorageCallback(std::function <void(std::string cascPath)> callback);
+    void setOpenCascStorageCallback(std::function <bool(std::string cascPath)> callback);
     void setOpenSceneByfdidCallback(std::function <void(int fdid)> callback);
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
 
