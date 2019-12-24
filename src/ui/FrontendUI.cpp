@@ -76,6 +76,18 @@ void FrontendUI::showMapSelectionDialog() {
     if (showSelectMap) {
         if (mapList.size() == 0 && getMapList) {
             getMapList(mapList);
+            mapListStringMap = {};
+            for (int i = 0; i < mapList.size(); i++) {
+                auto mapRec = mapList[i];
+
+                std::vector<std::string> mapStrRec;
+                mapStrRec.push_back(std::to_string(mapRec.ID));
+                mapStrRec.push_back(mapRec.MapName);
+                mapStrRec.push_back(std::to_string(mapRec.WdtFileID));
+                mapStrRec.push_back(std::to_string(mapRec.MapType));
+
+                mapListStringMap.push_back(mapStrRec);
+            }
         }
 
         ImGui::Begin("Map Select Dialog", &showSelectMap);
@@ -99,7 +111,7 @@ void FrontendUI::showMapSelectionDialog() {
                 for (int i = 0; i < mapList.size(); i++) {
                     auto mapRec = mapList[i];
 
-                    if (ImGui::Selectable(std::to_string(mapRec.ID).c_str(), selected == i, ImGuiSelectableFlags_SpanAllColumns)) {
+                    if (ImGui::Selectable(mapListStringMap[i][0].c_str(), selected == i, ImGuiSelectableFlags_SpanAllColumns)) {
                         if (mapRec.ID != prevMapId) {
                             if (getAdtSelectionMinimap) {
                                 adtSelectionMinimap = {};
@@ -111,11 +123,11 @@ void FrontendUI::showMapSelectionDialog() {
                     }
                     bool hovered = ImGui::IsItemHovered();
                     ImGui::NextColumn();
-                    ImGui::Text(mapRec.MapName.c_str());
+                    ImGui::Text(mapListStringMap[i][1].c_str());
                     ImGui::NextColumn();
-                    ImGui::Text(std::to_string(mapRec.WdtFileID).c_str());
+                    ImGui::Text(mapListStringMap[i][2].c_str());
                     ImGui::NextColumn();
-                    ImGui::Text(std::to_string(mapRec.MapType).c_str());
+                    ImGui::Text(mapListStringMap[i][3].c_str());
                     ImGui::NextColumn();
                 }
                 ImGui::Columns(1);

@@ -49,6 +49,7 @@ private:
     float worldPosY = 0;
 
     std::vector<MapRecord> mapList = {};
+    std::vector<std::vector<std::string>> mapListStringMap = {};
 
 public:
     void initImgui(GLFWwindow* window);
