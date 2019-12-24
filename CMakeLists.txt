@@ -39,10 +39,20 @@ if (WIN32 AND MSVC)
 #set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static -femulated-tls")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -pthread -femulated-tls")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -femulated-tls")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread -femulated-tls")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static -femulated-tls")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -femulated-tls")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -static -femulated-tls")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -femulated-tls")
+endif()
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	link_libraries(stdc++fs)
+endif()
+
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread")
+#set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread")
 
 if(WIN32)
 	link_libraries(wsock32 ws2_32 libws2_32.a)
@@ -168,6 +178,7 @@ set(SOURCE_FILES
 		src/ui/imguiLib/imguiImpl/imgui_impl_opengl2.cpp
 		src/ui/imguiLib/imguiImpl/imgui_impl_opengl3.cpp
 		src/ui/FrontendUI.cpp src/ui/FrontendUI.h
+		src/database/CSqliteDB.cpp src/database/CSqliteDB.h
 )
 
 
@@ -176,7 +187,7 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 		src/main.cpp)
 else()
 	set(SOURCE_FILES ${SOURCE_FILES}
-			src/jniLib.cpp)
+			src/jniLib.cpp src/database/dbStructs.h)
 endif()
 
 
@@ -216,6 +227,8 @@ if(CMAKE_USE_PTHREADS_INIT)
 endif()
 
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp)
+
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
 #target_compile_options(AWebWoWViewerCpp PRIVATE "-static")
 
@@ -240,6 +253,7 @@ target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
 #target_link_libraries(AWebWoWViewerCpp zip)
 target_link_libraries(AWebWoWViewerCpp zlib)
+target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
 target_link_libraries(AWebWoWViewerCpp WoWViewerLib)
 
   target_link_libraries(AWebWoWViewerCpp Threads::Threads)

@@ -39,7 +39,9 @@
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
 #include "ui/FrontendUI.h"
+#include "database/CSqliteDB.h"
 #include "../wowViewerLib/src/engine/WowFilesCacheStorage.h"
+#include "database/CSqliteDB.h"
 
 
 int mleft_pressed = 0;
@@ -284,34 +286,14 @@ int main(){
     SetUnhandledExceptionFilter(windows_exception_handler);
 #endif
 
-
-//    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
-//    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
-//    const char *filePath = "D:\\shattrath (1).zip\0";
-//    const char *filePath = "D:\\ironforge.zip\0";
-//8.3.0
-//    const char * url = "https://wow.tools/casc/file/fname?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=";
-//    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=data&filedataid=";
-//1.13.0
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
-   const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
-
-//    const char * url = "http://178.165.92.24:40001/get/";
-//    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
-
-//    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
-    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
-//     const char *url = "http://localhost:8084/get/";
-
     testConf = new Config();
     testConf->setAmbientColor(1,1,1,1);
 //    testConf->setSunColor(1,1,1,1);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
 
-
-    printf("Successfull init. Starting 'infinite' main loop...\n");
-
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
     //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
     //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
     //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
@@ -375,15 +357,16 @@ int main(){
         glfwMakeContextCurrent(window);
     }
 
+    //Open Sql storage
+    CSqliteDB *sqliteDB = new CSqliteDB("export.db3");
+
+
     WoWFilesCacheStorage *storage = new WoWFilesCacheStorage(processor);
     processor->setFileRequester(storage);
 
     //Create device
     IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
     WoWScene *scene = createWoWScene(testConf, storage, device, canvWidth, canvHeight);
-
-
-//    device->createBlpTexture()
 
     FrontendUI frontendUI;
     frontendUI.setOpenCascStorageCallback([&processor, &storage, &scene](std::string cascPath) -> void {
@@ -397,7 +380,9 @@ int main(){
         scene->setCacheStorage(newStorage);
     });
     frontendUI.setOpenSceneByfdidCallback([&scene](int fdid) {
-        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
+//        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
+        testConf->setFarPlane(200);
+        scene->setMap(1, 775971, 358.702, 407.051, 200); //Ironforge
     });
     frontendUI.setGetCameraPos([scene](float &cameraX,float &cameraY,float &cameraZ) -> void {
         float currentCameraPos[4] = {0,0,0,0};
@@ -406,8 +391,8 @@ int main(){
         cameraY = currentCameraPos[1];
         cameraZ = currentCameraPos[2];
     });
-    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, &device](int mapId) {
-        auto wdtFile = storage->getWdtFileCache()->getFileId(775971);
+    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, &device](int wdtFileDataId) {
+        auto wdtFile = storage->getWdtFileCache()->getFileId(wdtFileDataId);
         frontendUI.setFillAdtSelectionMinimap([wdtFile, &storage, &device](std::array<std::array<HGTexture, 64>, 64> &minimap) -> bool {
             if (!wdtFile->getIsLoaded()) return false;
 
@@ -424,6 +409,11 @@ int main(){
             return true;
         });
 
+    });
+    frontendUI.setGetMapList([&sqliteDB](std::vector<MapRecord> &mapList) -> void {
+        if (sqliteDB == nullptr)  return;
+
+        sqliteDB->getMapArray(mapList);
     });
 
     frontendUI.initImgui(window);
