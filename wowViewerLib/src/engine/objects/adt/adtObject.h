@@ -48,14 +48,14 @@ public:
             std::vector<mathfu::vec3> &frustumPoints,
             std::vector<mathfu::vec3> &hullLines,
             mathfu::mat4 &lookAtMat4,
-            std::vector<M2Object*> &m2ObjectsCandidates,
-            std::vector<WmoObject*> &wmoCandidates);
+            std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+            std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 
     bool
     checkReferences(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
                     mathfu::mat4 &lookAtMat4,
                     int lodLevel,
-                    std::vector<M2Object *> &m2ObjectsCandidates, std::vector<WmoObject *> &wmoCandidates,
+                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates, std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
                     int x, int y, int x_len, int y_len);
 
 private:
@@ -123,8 +123,8 @@ private:
     std::string m_adtFileTemplate;
 
     struct {
-        std::vector<M2Object *> m2Objects;
-        std::vector<WmoObject *> wmoObjects;
+        std::vector<std::shared_ptr<M2Object>> m2Objects;
+        std::vector<std::shared_ptr<WmoObject>> wmoObjects;
     } objectLods[2];
 
     HGTexture getAdtTexture(int textureId);
@@ -145,8 +145,8 @@ private:
                     const PointerChecker<MLND> &quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
                     mathfu::mat4 &lookAtMat4,
-                    std::vector<M2Object *> &m2ObjectsCandidates,
-                    std::vector<WmoObject *> &wmoCandidates);
+                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                    std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 };
 
 

@@ -14,7 +14,7 @@
 class FrontendUI : public IDeviceUI {
 private:
     std::function <void(std::string cascPath)> openCascCallback = nullptr;
-    std::function <void(int fdid)> openSceneByfdid = nullptr;
+    std::function <void(int mapId, int wdtFileId, float x, float y, float z)> openSceneByfdid = nullptr;
     std::function <void(float &cameraX,float &cameraY,float &cameraZ)> getCameraPos = nullptr;
 
     std::function <void(int wdtFileDataId)> getAdtSelectionMinimap = nullptr;
@@ -43,6 +43,7 @@ private:
     float minimapZoom = 1;
     float prevMinimapZoom = 1;
     int prevMapId = -1;
+    MapRecord prevMapRec;
 
 
     float worldPosX = 0;
@@ -63,7 +64,7 @@ public:
     bool getStopKeyboard();
 
     void setOpenCascStorageCallback(std::function <void(std::string cascPath)> callback);
-    void setOpenSceneByfdidCallback(std::function <void(int fdid)> callback);
+    void setOpenSceneByfdidCallback(std::function <void(int mapId, int wdtFileId, float x, float y, float z)> callback);
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
 
     void setGetAdtSelectionMinimap( std::function <void(int mapId)> callback);

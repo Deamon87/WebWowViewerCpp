@@ -253,7 +253,7 @@ target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
 #target_link_libraries(AWebWoWViewerCpp zip)
 target_link_libraries(AWebWoWViewerCpp zlib)
-target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
+target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3 ssp)
 target_link_libraries(AWebWoWViewerCpp WoWViewerLib)
 
   target_link_libraries(AWebWoWViewerCpp Threads::Threads)

@@ -18,7 +18,7 @@ struct PortalInfo_t {
 
 class IWmoApi {
 public:
-    virtual M2Object *getDoodad(int index) = 0;
+    virtual std::shared_ptr<M2Object> getDoodad(int index) = 0;
     virtual SMOHeader *getWmoHeader() = 0;
     virtual PointerChecker<SMOMaterial> &getMaterials() = 0;
     virtual bool isLoaded() = 0;

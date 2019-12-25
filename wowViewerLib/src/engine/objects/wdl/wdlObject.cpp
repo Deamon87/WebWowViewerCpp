@@ -6,8 +6,8 @@
 
 bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
-                                    mathfu::mat4 &lookAtMat4, std::vector<M2Object *> &m2ObjectsCandidates,
-                                    std::vector<WmoObject *> &wmoCandidates) {
+                                    mathfu::mat4 &lookAtMat4, std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                    std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
     if (!this->m_loaded) {
         if (m_wdlFile->getIsLoaded()) {
             this->loadingFinished();
@@ -31,7 +31,7 @@ bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu:
 void WdlObject::loadM2s() {
     int offset = 0;
     int length = m_wdlFile->doodadDefObj_len;
-    m2Objects = std::vector<M2Object *>(m_wdlFile->doodadDefObj_len);
+    m2Objects = std::vector<std::shared_ptr<M2Object>>(m_wdlFile->doodadDefObj_len);
     for (int j = 0, i = offset; i < offset+length; i++, j++) {
         //1. Get filename
         SMDoodadDef &doodadDef = m_wdlFile->doodadDefObj[i];
@@ -49,7 +49,7 @@ void WdlObject::loadWmos() {
     uint32_t offset = 0;
     int32_t length = m_wdlFile->mapObjDefObj_len;
 
-    wmoObjects = std::vector<WmoObject *>(length);
+    wmoObjects = std::vector<std::shared_ptr<WmoObject>>(length);
     for (int j = 0, i = offset; i < offset + length; i++, j++) {
         //1. Get filename
 

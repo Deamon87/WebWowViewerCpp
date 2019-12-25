@@ -25,7 +25,7 @@ class GeneralView {
 public:
     bool viewCreated = false;
     std::vector<WmoGroupObject *> drawnWmos = {};
-    std::vector<M2Object *> drawnM2s = {};
+    std::vector<std::shared_ptr<M2Object>> drawnM2s = {};
     //Support several frustum planes because of how portal culling works
     std::vector<std::vector<mathfu::vec3>> portalVertices = {};
     std::vector<std::vector<mathfu::vec4>> frustumPlanes = {};
@@ -33,14 +33,14 @@ public:
     int renderOrder = -1;
 
     virtual void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
-    virtual void setM2Lights(M2Object * m2Object);;
+    virtual void setM2Lights(std::shared_ptr<M2Object> m2Object);;
     void addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
 };
 
 class InteriorView : public GeneralView {
 public:
     int portalIndex;
-    void setM2Lights(M2Object * m2Object) override;;
+    void setM2Lights(std::shared_ptr<M2Object> m2Object) override;
 };
 
 class ExteriorView : public GeneralView {

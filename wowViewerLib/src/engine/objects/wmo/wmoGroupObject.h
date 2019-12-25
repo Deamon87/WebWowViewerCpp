@@ -31,7 +31,7 @@ public:
         return m_localGroupBorder;
     }
     const HWmoGroupGeom getWmoGroupGeom() const { return m_geom; };
-    const std::vector <M2Object *> *getDoodads() const { return &m_doodads; };
+    const std::vector <std::shared_ptr<M2Object>> *getDoodads() const { return &m_doodads; };
 
     void setWmoApi(IWmoApi *api);
     IWmoApi *getWmoApi() { return m_wmoApi; };
@@ -50,7 +50,7 @@ public:
                            std::vector<mathfu::vec3> &points);
 
     mathfu::vec4 getAmbientColor();
-    void assignInteriorParams(M2Object * m2Object);
+    void assignInteriorParams(std::shared_ptr<M2Object> m2Object);
 
     bool checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                             mathfu::vec4 &cameraLocal,
@@ -79,7 +79,7 @@ private:
 
     SMOGroupInfo *m_main_groupInfo;
 
-    std::vector <M2Object *> m_doodads = std::vector<M2Object *>(0);
+    std::vector <std::shared_ptr<M2Object>> m_doodads = std::vector<std::shared_ptr<M2Object>>(0);
 
     bool m_useLocalLightingForM2 = false;
 
@@ -93,7 +93,7 @@ private:
     void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
 
     void updateWorldGroupBBWithM2();
-    void checkDoodads(std::vector<M2Object*> &wmoM2Candidates);
+    void checkDoodads(std::vector<std::shared_ptr<M2Object>> &wmoM2Candidates);
 
     void postLoad();
     void createMeshes();

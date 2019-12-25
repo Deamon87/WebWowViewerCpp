@@ -29,11 +29,11 @@ void Map::checkCulling(WoWFrameData *frameData) {
     frameData->adtArray.reserve(adtRenderedThisFramePrev);
 
     size_t m2RenderedThisFramePrev = frameData->m2Array.size();
-    frameData->m2Array = std::vector<M2Object*>();
+    frameData->m2Array = std::vector<std::shared_ptr<M2Object>>();
     frameData->m2Array.reserve(m2RenderedThisFramePrev);
 
     size_t wmoRenderedThisFramePrev = frameData->wmoArray.size();
-    frameData->wmoArray = std::vector<WmoObject*>();
+    frameData->wmoArray = std::vector<std::shared_ptr<WmoObject>>();
     frameData->wmoArray.reserve(wmoRenderedThisFramePrev);
 
 
@@ -59,8 +59,8 @@ void Map::checkCulling(WoWFrameData *frameData) {
 
 
     //Get potential WMO
-    std::vector<WmoObject*> potentialWmo;
-    std::vector<M2Object*> potentialM2;
+    std::vector<std::shared_ptr<WmoObject>> potentialWmo;
+    std::vector<std::shared_ptr<M2Object>> potentialM2;
 
     int adt_x = worldCoordinateToAdtIndex(camera4.y);
     int adt_y = worldCoordinateToAdtIndex(camera4.x);
@@ -162,11 +162,11 @@ void Map::checkCulling(WoWFrameData *frameData) {
     //Sort and delete duplicates
     std::sort( frameData->m2Array.begin(), frameData->m2Array.end() );
     frameData->m2Array.erase( unique( frameData->m2Array.begin(), frameData->m2Array.end() ), frameData->m2Array.end() );
-    frameData->m2Array = std::vector<M2Object*>(frameData->m2Array.begin(), frameData->m2Array.end());
+    frameData->m2Array = std::vector<std::shared_ptr<M2Object>>(frameData->m2Array.begin(), frameData->m2Array.end());
 
     std::sort( frameData->wmoArray.begin(), frameData->wmoArray.end() );
     frameData->wmoArray.erase( unique( frameData->wmoArray.begin(), frameData->wmoArray.end() ), frameData->wmoArray.end() );
-    frameData->wmoArray = std::vector<WmoObject*>(frameData->wmoArray.begin(), frameData->wmoArray.end());
+    frameData->wmoArray = std::vector<std::shared_ptr<WmoObject>>(frameData->wmoArray.begin(), frameData->wmoArray.end());
 
     frameData->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>(frameData->adtArray.begin(), frameData->adtArray.end());
 
@@ -200,8 +200,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     }
 
 
-    std::vector<M2Object *> m2ObjectsCandidates;
-    std::vector<WmoObject *> wmoCandidates;
+    std::vector<std::shared_ptr<M2Object>> m2ObjectsCandidates;
+    std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
 
 //    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
 //    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
@@ -295,7 +295,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     //Frustum cull
     for (auto it = wmoCandidates.begin(); it != wmoCandidates.end(); ++it) {
-        WmoObject *wmoCandidate = *it;
+        auto wmoCandidate = *it;
 
         if (!wmoCandidate->isLoaded()) {
             frameData->wmoArray.push_back(wmoCandidate);
@@ -346,7 +346,7 @@ void Map::doPostLoad(WoWFrameData *frameData){
     int groupsProcessedThisFrame = 0;
 //    if (m_api->getConfig()->getRenderM2()) {
         for (int i = 0; i < frameData->m2Array.size(); i++) {
-            M2Object *m2Object = frameData->m2Array[i];
+            auto m2Object = frameData->m2Array[i];
             if (m2Object == nullptr) continue;
             m2Object->doPostLoad();
         }
@@ -546,74 +546,98 @@ void Map::updateBuffers(WoWFrameData *frameData) {
 
 }
 
-M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
-    M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
-    if (m2Object == nullptr) {
-        m2Object = new M2Object(m_api);
+std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
+    auto it = m_m2MapObjects.find(doodadDef.uniqueId);
+    if (it != m_m2MapObjects.end() && !it->second.expired()) {
+        return it->second.lock();
+    } else {
+        auto m2Object = std::make_shared<M2Object>(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileName(fileName);
         m2Object->createPlacementMatrix(doodadDef);
         m2Object->calcWorldPosition();
-        m_m2MapObjects.put(doodadDef.uniqueId, m2Object);
+
+        m_m2MapObjects[doodadDef.uniqueId] = std::weak_ptr<M2Object>(m2Object);
+        return m2Object;
     }
-    return m2Object;
+    return nullptr;
 }
 
-M2Object *Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
-    M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
-    if (m2Object == nullptr) {
-        m2Object = new M2Object(m_api);
+std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
+    auto it = m_m2MapObjects.find(doodadDef.uniqueId);
+    if (it != m_m2MapObjects[].end() && !it->second.expired()) {
+        return it->second.lock();
+    } else {
+        auto m2Object = std::make_shared<M2Object>(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileId(fileDataId);
         m2Object->createPlacementMatrix(doodadDef);
         m2Object->calcWorldPosition();
-        m_m2MapObjects.put(doodadDef.uniqueId, m2Object);
+
+        m_m2MapObjects[doodadDef.uniqueId] = std::weak_ptr<M2Object>(m2Object);
+        return m2Object;
     }
-    return m2Object;
+    return nullptr;
 }
 
 
-WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    if (wmoObject == nullptr) {
-        wmoObject = new WmoObject(m_api);
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
+    auto it = m_wmoMapObjects.find(mapObjDef.uniqueId);
+    if (it != m_wmoMapObjects.end() && !it->second.expired()) {
+        return it->second.lock();
+    } else {
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(fileName);
-        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
     }
-    return wmoObject;
+    return nullptr;
 }
-WmoObject *Map::getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    if (wmoObject == nullptr) {
-        wmoObject = new WmoObject(m_api);
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) {
+    auto it = m_wmoMapObjects.find(mapObjDef.uniqueId);
+    if (it != m_wmoMapObjects.end() && !it->second.expired()) {
+        return it->second.lock();
+    } else {
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
-        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
     }
-    return wmoObject;
+    return nullptr;
 }
 
-WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    if (wmoObject == nullptr) {
-        wmoObject = new WmoObject(m_api);
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
+    auto it = m_wmoMapObjects.find(mapObjDef.uniqueId);
+    if (it != m_wmoMapObjects.end() && !it->second.expired()) {
+        return it->second.lock();
+    } else {
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(fileName);
-        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
     }
-    return wmoObject;
+    return nullptr;
 }
 
-WmoObject *Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    if (wmoObject == nullptr) {
-        wmoObject = new WmoObject(m_api);
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
+    auto it = m_wmoMapObjects.find(mapObjDef.uniqueId);
+    if (it != m_wmoMapObjects.end() && !it->second.expired()) {
+        return it->second.lock();
+    } else {
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
-        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
     }
-    return wmoObject;
+    return nullptr;
 }
 
 void Map::collectMeshes(WoWFrameData *frameData) {
@@ -636,12 +660,12 @@ void Map::collectMeshes(WoWFrameData *frameData) {
         }
 //    }
 
-    std::vector<M2Object *> m2ObjectsRendered;
+    std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
     for (auto &view : vector) {
         std::copy(view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
     }
 
-    std::unordered_set<M2Object *> s;
+    std::unordered_set<std::shared_ptr<M2Object>> s;
     for (auto i : m2ObjectsRendered)
         s.insert(i);
     m2ObjectsRendered.assign( s.begin(), s.end() );

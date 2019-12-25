@@ -372,6 +372,7 @@ int main(){
     frontendUI.setOpenCascStorageCallback([&processor, &storage, &scene](std::string cascPath) -> void {
         CascRequestProcessor *newProcessor = new CascRequestProcessor(cascPath.c_str());
         WoWFilesCacheStorage *newStorage = new WoWFilesCacheStorage(newProcessor);
+        newProcessor->setThreaded(true);
         newProcessor->setFileRequester(newStorage);
 
         storage = newStorage;
@@ -379,10 +380,10 @@ int main(){
 
         scene->setCacheStorage(newStorage);
     });
-    frontendUI.setOpenSceneByfdidCallback([&scene](int fdid) {
+    frontendUI.setOpenSceneByfdidCallback([&scene](int mapId, int wdtFileId, float x, float y, float z) {
 //        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
         testConf->setFarPlane(200);
-        scene->setMap(1, 775971, 358.702, 407.051, 200); //Ironforge
+        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
     frontendUI.setGetCameraPos([scene](float &cameraX,float &cameraY,float &cameraZ) -> void {
         float currentCameraPos[4] = {0,0,0,0};

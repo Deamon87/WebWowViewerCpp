@@ -113,6 +113,7 @@ void FrontendUI::showMapSelectionDialog() {
 
                     if (ImGui::Selectable(mapListStringMap[i][0].c_str(), selected == i, ImGuiSelectableFlags_SpanAllColumns)) {
                         if (mapRec.ID != prevMapId) {
+                            prevMapRec = mapRec;
                             if (getAdtSelectionMinimap) {
                                 adtSelectionMinimap = {};
                                 getAdtSelectionMinimap(mapRec.WdtFileID);
@@ -216,7 +217,12 @@ void FrontendUI::showAdtSelectionMinimap() {
 
     if (ImGui::BeginPopup("AdtWorldCoordsTest", ImGuiWindowFlags_NoMove)) {
         ImGui::Text("Pos: (%.2f,%.2f,200)", worldPosX, worldPosY);
-        ImGui::Button("Go");
+        if (ImGui::Button("Go")) {
+            if (openSceneByfdid) {
+                openSceneByfdid(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+            }
+            ImGui::CloseCurrentPopup();
+        }
         ImGui::EndPopup();
     }
     ImGui::EndChild();
@@ -229,12 +235,8 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open CASC Storage...")) {
                 fileDialog.Open();
             }
-            if (ImGui::MenuItem("Open test scene")) {
-                if ((openSceneByfdid)) {
-                    openSceneByfdid(0);
-                }
-            }
-            if (ImGui::MenuItem("Open ADT")) {
+
+            if (ImGui::MenuItem("Open Map selection")) {
                 showSelectMap = true;
             }
             ImGui::EndMenu();
@@ -297,7 +299,7 @@ void FrontendUI::setOpenCascStorageCallback(std::function<void(std::string cascP
     openCascCallback = callback;
 }
 
-void FrontendUI::setOpenSceneByfdidCallback(std::function<void(int fdid)> callback) {
+void FrontendUI::setOpenSceneByfdidCallback(std::function<void(int mapId, int wdtFileId, float x, float y, float z)> callback) {
     openSceneByfdid = callback;
 }
 

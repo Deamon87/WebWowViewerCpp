@@ -39,7 +39,7 @@ void AdtObject::loadM2s() {
     uint32_t offset = 0;
     int32_t length = m_adtFileObj->doodadDef_len;
     //1. Load non-lod
-    objectLods[0].m2Objects = std::vector<M2Object *>(length, nullptr);
+    objectLods[0].m2Objects = std::vector<std::shared_ptr<M2Object>>(length, nullptr);
     for (int j = 0, i = offset; i < offset+length; i++, j++) {
         SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
         if (doodadDef.flags.mddf_entry_is_filedata_id) {
@@ -62,7 +62,7 @@ void AdtObject::loadM2s() {
     } else {
         length = 0;
     };
-    objectLods[1].m2Objects = std::vector<M2Object *>(length, nullptr);
+    objectLods[1].m2Objects = std::vector<std::shared_ptr<M2Object>>(length, nullptr);
     for (int j = 0, i = offset; i < offset+length; i++, j++) {
         //1. Get filename
         SMDoodadDef &doodadDef = m_adtFileObjLod->doodadDefObj1[i];
@@ -82,7 +82,7 @@ void AdtObject::loadWmos() {
     int32_t length = m_adtFileObj->mapObjDef_len;
 
     //1. Load non lod
-    objectLods[0].wmoObjects = std::vector<WmoObject *>(length, nullptr);
+    objectLods[0].wmoObjects = std::vector<std::shared_ptr<WmoObject>>(length, nullptr);
 
     for (int j = 0, i = offset; i < offset + length; i++, j++) {
         //1. Get filename
@@ -108,7 +108,7 @@ void AdtObject::loadWmos() {
     } else {
         length = 0;
     }
-    objectLods[1].wmoObjects = std::vector<WmoObject *>(length, nullptr);
+    objectLods[1].wmoObjects = std::vector<std::shared_ptr<WmoObject>>(length, nullptr);
     for (int j = 0, i = offset; i < offset + length; i++, j++) {
         //Load Lods
         std::string fileName;
@@ -617,8 +617,8 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &came
                                 std::vector<mathfu::vec3> &frustumPoints,
                                 std::vector<mathfu::vec3> &hullLines,
                                 mathfu::mat4 &lookAtMat4,
-                                std::vector<M2Object *> &m2ObjectsCandidates,
-                                std::vector<WmoObject *> &wmoCandidates) {
+                                std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
 
 
 
@@ -756,8 +756,8 @@ bool AdtObject::checkReferences(
                           std::vector<mathfu::vec3> &frustumPoints,
                           mathfu::mat4 &lookAtMat4,
                           int lodLevel,
-                          std::vector<M2Object *> &m2ObjectsCandidates,
-                          std::vector<WmoObject *> &wmoCandidates,
+                          std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                          std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
                           int x, int y, int x_len, int y_len) {
     if (!m_loaded) return false;
 
@@ -833,8 +833,8 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
                                     std::vector<mathfu::vec3> &frustumPoints,
                                     std::vector<mathfu::vec3> &hullLines,
                                     mathfu::mat4 &lookAtMat4,
-                                    std::vector<M2Object *> &m2ObjectsCandidates,
-                                    std::vector<WmoObject *> &wmoCandidates) {
+                                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                    std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
 
     if (!this->m_loaded) return true;
     bool atLeastOneIsDrawn = false;

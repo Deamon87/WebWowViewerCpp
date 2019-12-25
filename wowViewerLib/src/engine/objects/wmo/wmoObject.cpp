@@ -69,7 +69,7 @@ void WmoObject::startLoading() {
     }
 }
 
-M2Object *WmoObject::getDoodad(int index) {
+std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     int doodadsSet = this->m_doodadSet;
 
     SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
@@ -78,7 +78,7 @@ M2Object *WmoObject::getDoodad(int index) {
 
     int doodadIndex = index - doodadSetDef->firstinstanceindex;
 
-    M2Object *doodadObject = this->m_doodadsArray[doodadIndex];
+    auto doodadObject = this->m_doodadsArray[doodadIndex];
     if (doodadObject != nullptr) return doodadObject;
 
     SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
@@ -97,7 +97,7 @@ M2Object *WmoObject::getDoodad(int index) {
         fileIdMode = true;
     }
 
-    M2Object *m2Object = new M2Object(m_api);
+    auto m2Object = std::make_shared<M2Object>(m_api);
     m2Object->setDiffuseColor(doodadDef->color);
     m2Object->setLoadParams(0, {},{});
     if (fileIdMode) {
@@ -315,7 +315,7 @@ bool WmoObject::doPostLoad(int &groupsProcessedThisFrame) {
             this->createM2Array();
 
             if (mainGeom->skyBoxM2FileName != nullptr || mainGeom->skyboxM2FileId != 0) {
-                skyBox = new M2Object(m_api, true);
+                skyBox = std::make_shared<M2Object>(m_api, true);
                 skyBox->setLoadParams(0, {},{});
 
                 if ( mainGeom->skyboxM2FileId != 0) {
@@ -738,7 +738,7 @@ void WmoObject::updateBB() {
 }
 
 void WmoObject::createM2Array() {
-    this->m_doodadsArray = std::vector<M2Object*>(this->mainGeom->doodadDefsLen, nullptr);
+    this->m_doodadsArray = std::vector<std::shared_ptr<M2Object>>(this->mainGeom->doodadDefsLen, nullptr);
 }
 
 void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
@@ -747,15 +747,15 @@ void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
 
 void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
                                   std::vector<mathfu::vec4> &frustumPlane,
-                                  std::vector<M2Object *> &m2Candidates) {
+                                  std::vector<std::shared_ptr<M2Object>> &m2Candidates) {
     WmoGroupObject *groupWmoObject = groupObjects[groupId];
     if (groupWmoObject != nullptr && groupWmoObject->getIsLoaded()) {
-        const std::vector <M2Object *> *doodads = groupWmoObject->getDoodads();
+        const std::vector <std::shared_ptr<M2Object>> *doodads = groupWmoObject->getDoodads();
 
         mathfu::vec4 ambientColor = groupWmoObject->getAmbientColor() ;
 
         for (int j = 0; j < doodads->size(); j++) {
-            M2Object *m2Object = doodads->at(j);
+            auto m2Object = doodads->at(j);
             if (!m2Object) continue;
             if (groupWmoObject->getDontUseLocalLightingForM2()) {
                 m2Object->setUseLocalLighting(false);
@@ -1324,7 +1324,7 @@ PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
     return mainGeom->materials;
 }
 
-M2Object *WmoObject::getSkyBoxForGroup(int groupNum) {
+std::shared_ptr<M2Object> WmoObject::getSkyBoxForGroup(int groupNum) {
     if (!m_loaded) return nullptr;
     if (groupNum < 0 || groupNum >= this->groupObjects.size()) return nullptr;
     if (!this->groupObjects[groupNum]->getIsLoaded()) return nullptr;
@@ -1343,8 +1343,4 @@ WmoObject::~WmoObject() {
     for (auto& obj : groupObjectsLod2) {
         delete obj;
     }
-    for (auto& obj : m_doodadsArray) {
-        delete obj;
-    }
-
 }

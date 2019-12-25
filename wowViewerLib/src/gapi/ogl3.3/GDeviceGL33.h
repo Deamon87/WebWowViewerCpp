@@ -193,9 +193,16 @@ protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBufferGL33>> m_unfiormBufferCache;
+#ifndef __EMSCRIPTEN__
+    struct FrameUniformBuffers {
+        HGUniformBuffer m_uniformBufferForUpload;
+    };
+#else
     struct FrameUniformBuffers {
         std::vector<HGUniformBuffer> m_uniformBuffersForUpload;
     };
+#endif
+
 
     std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
 
