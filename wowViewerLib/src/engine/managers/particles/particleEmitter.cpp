@@ -107,7 +107,8 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
             break;
         default:
             this->generator = nullptr;
-            std::cout << "Found unimplemented generator " << m_data->old.emitterType << std::flush;
+            std::cout << "Found unimplemented generator " << (int)m_data->old.emitterType << std::endl;
+            return;
             break;
     }
 
@@ -558,6 +559,8 @@ CParticle2& ParticleEmitter::BirthParticle() {
 }
 
 void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
+    if (getGenerator() == nullptr) return;
+
     if (particles.size() == 0 && this->generator != nullptr) {
         szVertexCnt = 0;
         return;
@@ -971,6 +974,8 @@ ParticleEmitter::BuildQuadT3(
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
+    if (getGenerator() == nullptr) return;
+
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
     if (!currentFrame.active)
         return;
@@ -981,6 +986,8 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 }
 
 void ParticleEmitter::updateBuffers() {
+    if (getGenerator() == nullptr) return;
+
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
     currentFrame.active = szVertexCnt > 0;
 

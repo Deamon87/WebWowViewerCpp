@@ -164,10 +164,10 @@ private:
                 float texStartY, mathfu::vec2 *texPos);
 
 	typedef struct {
-		HGVertexBufferDynamic m_bufferVBO;
+		HGVertexBufferDynamic m_bufferVBO = nullptr;
 
-		HGVertexBufferBindings m_bindings;
-		HGParticleMesh m_mesh;
+		HGVertexBufferBindings m_bindings = nullptr;
+		HGParticleMesh m_mesh = nullptr;
 		bool active = false;
 	} particleFrame;
     std::array<particleFrame, 4> frame;

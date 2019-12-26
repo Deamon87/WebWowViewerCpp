@@ -195,7 +195,7 @@ class IDevice {
 
         virtual HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) = 0;
 
-        static inline bool sortMeshes(const HGMesh& a, const HGMesh& b) {
+        static inline bool sortMeshes(const HGMesh a, const HGMesh b) {
             auto* pA = a.get();
             auto* pB = b.get();
 

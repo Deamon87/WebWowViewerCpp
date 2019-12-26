@@ -646,7 +646,7 @@ void WmoGroupObject::loadDoodads() {
     if (this->m_geom->doodadRefsLen <= 0) return;
     if (m_wmoApi == nullptr) return;
 
-    m_doodads = std::vector<M2Object *>(this->m_geom->doodadRefsLen, nullptr);
+    m_doodads = std::vector<std::shared_ptr<M2Object>>(this->m_geom->doodadRefsLen, nullptr);
 
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
@@ -691,7 +691,7 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 //    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
 //
     for (int j = 0; j < this->m_doodads.size(); j++) {
-        M2Object *m2Object = this->m_doodads[j];
+        std::shared_ptr<M2Object> m2Object = this->m_doodads[j];
         if (m2Object == nullptr || !m2Object->getGetIsLoaded()) continue; //corrupted :(
 
         CAaBox m2AAbb = m2Object->getAABB();
@@ -1130,7 +1130,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 }
 
 
-void WmoGroupObject::checkDoodads(std::vector<M2Object *> &wmoM2Candidates) {
+void WmoGroupObject::checkDoodads(std::vector<std::shared_ptr<M2Object>> &wmoM2Candidates) {
     if (!m_loaded) return;
 
     mathfu::vec4 ambientColor = getAmbientColor();
@@ -1202,7 +1202,7 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
     }
 }
 
-void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
+void WmoGroupObject::assignInteriorParams(std::shared_ptr<M2Object> m2Object) {
     mathfu::vec4 ambientColor = getAmbientColor();
 
     if (!m2Object->setUseLocalLighting(true)) return;

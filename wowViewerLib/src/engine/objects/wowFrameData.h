@@ -34,7 +34,7 @@ public:
 
     //Frustum culling results
 	std::vector<WmoGroupResult> m_currentInteriorGroups = {};
-    WmoObject *m_currentWMO = nullptr;
+    std::shared_ptr<WmoObject> m_currentWMO = nullptr;
     int m_currentWmoGroup = -1;
 
 
@@ -42,8 +42,8 @@ public:
     std::vector<InteriorView> interiorViews = {};
 
     std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
-	std::vector<M2Object*> m2Array = {};
-    std::vector<WmoObject*> wmoArray = {};
+	std::vector<std::shared_ptr<M2Object>> m2Array = {};
+    std::vector<std::shared_ptr<WmoObject>> wmoArray = {};
 
     //Occlusion culling params
     std::vector<HGOcclusionQuery> renderedThisFrame = {};

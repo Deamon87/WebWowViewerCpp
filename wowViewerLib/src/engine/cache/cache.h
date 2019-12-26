@@ -113,13 +113,10 @@ public:
         std::string fileName = ss.str();
 
 
-        auto it = m_cache.find(fileName);
-        if(it != m_cache.end())
+        auto it = m_cache[fileName];
+        if(!it.expired() )
         {
-            if (std::shared_ptr<T> shared = it->second.lock()) {
-                //element found;
-                return shared;
-            }
+            return it.lock();
         }
 
         std::shared_ptr<T> sharedPtr = std::make_shared<T>(id);

@@ -1,6 +1,11 @@
-[](const HGMesh& a, const HGMesh& b) {
-    auto* pA = a.get();
-    auto* pB = b.get();
+[&sortedArray](int indexA, int indexB) {
+//    auto* pA = a.get();
+//    auto* pB = b.get();
+
+    HGMesh pA = sortedArray[indexA];
+    HGMesh pB = sortedArray[indexB];
+    if (pA == nullptr) return false;
+    if (pB == nullptr) return true;
 
     if (pA->getIsTransparent() > pB->getIsTransparent()) {
         return false;
@@ -95,5 +100,5 @@
     }
 
 
-    return a > b;
+    return indexA > indexB;
 }

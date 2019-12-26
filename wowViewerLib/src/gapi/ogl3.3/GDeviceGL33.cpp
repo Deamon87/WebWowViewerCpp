@@ -250,11 +250,84 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 //    }
 
     int j = 0;
-    for (auto &hgMesh : meshes) {
+    for (auto hgMesh : meshes) {
         this->drawMesh(hgMesh);
         j++;
     }
 }
+
+#ifdef SINGLE_BUFFER_UPLOAD
+void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
+    std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
+
+    //1. Collect buffers
+    std::vector<IUniformBufferChunk *> buffers;
+    int renderIndex = 0;
+    for (const auto &mesh : meshes) {
+        for (int i = 0; i < 5; i++ ) {
+            IUniformBufferChunk *buffer = (IUniformBufferChunk *) mesh->m_UniformBuffer[i].get();
+            if (buffer != nullptr) {
+                buffers.push_back(buffer);
+            }
+        }
+    }
+
+
+    std::sort( buffers.begin(), buffers.end());
+    buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
+
+    int fullSize = 0;
+    for (auto &buffer : buffers) {
+        fullSize += buffer->getSize();
+        int offsetDiff = fullSize % uniformBufferOffsetAlign;
+        if (offsetDiff != 0) {
+            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+            fullSize += bytesToAdd;
+        }
+    }
+    if (fullSize > aggregationBufferForUpload.size()) {
+        aggregationBufferForUpload.resize(fullSize);
+    }
+
+    //2. Create buffers and update them
+    int currentSize = 0;
+    int buffersIndex = 0;
+
+    HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
+    if (bufferForUpload == nullptr) {
+        bufferForUpload = createUniformBuffer(10*1024*1024);
+        bufferForUpload->createBuffer();
+        m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload = bufferForUpload;
+    }
+
+    auto bufferForUploadGL = ((GUniformBufferGL33 *) bufferForUpload.get());
+    //Buffer identifier was changed, so we need to update shader UBO descriptor
+
+    char *pointerForUpload = static_cast<char *>(&aggregationBufferForUpload[0]);
+    for (const auto &buffer : buffers) {
+        buffer->setOffset(currentSize);
+        buffer->setPointer(&pointerForUpload[currentSize]);
+        currentSize += buffer->getSize();
+
+        int offsetDiff = currentSize % uniformBufferOffsetAlign;
+        if (offsetDiff != 0) {
+            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+            currentSize += bytesToAdd;
+        }
+    }
+    assert(currentSize == fullSize);
+
+    for (auto &buffer : buffers) {
+        buffer->update();
+    }
+
+    if (currentSize > 0) {
+        bufferForUploadGL->uploadData(pointerForUpload, currentSize);
+    }
+}
+#else
 
 void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
     std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
@@ -341,8 +414,9 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
         ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(pointerForUpload, currentSize);
     }
 }
+#endif
 
-void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
+void GDeviceGL33::drawMesh(HGMesh hIMesh) {
     GMeshGL33 * hmesh = (GMeshGL33 *) hIMesh.get();
     if (hmesh->m_end <= 0) return;
 
@@ -355,13 +429,22 @@ void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
         gm2Mesh = (GM2MeshGL33 *)(hmesh);
     }
 
-//    HGUniformBuffer bufferForUpload = m_UBOFrames[getDrawFrameNumber()].m_uniformBufferForUpload;
-
+#ifndef __EMSCRIPTEN__
+    HGUniformBuffer bufferForUpload = m_UBOFrames[getDrawFrameNumber()].m_uniformBufferForUpload;
+#endif
 
     bindProgram(hmesh->m_shader.get());
     bindVertexBufferBindings(hmesh->m_bindings.get());
 
 
+#ifndef __EMSCRIPTEN__
+    for (int i = 0; i < 5; i++) {
+        auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
+        if (uniformChunk != nullptr) {
+            bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
+        }
+    }
+#else
     for (int i = 0; i < 5; i++) {
         GUniformBufferChunk33 * uniformChunk = (GUniformBufferChunk33 *) hmesh->m_UniformBuffer[i].get();
         if (uniformChunk != nullptr) {
@@ -370,6 +453,7 @@ void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
             bindUniformBuffer(bufferForUpload, i, uniformChunk->getOffset(), uniformChunk->getSize());
         }
     }
+#endif
 
     for (int i = 0; i < hmesh->m_textureCount; i++) {
         if (hmesh->m_texture[i] != nullptr && hmesh->m_texture[i]->getIsLoaded()) {
@@ -529,15 +613,13 @@ HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size) {
 };
 
 HGMesh GDeviceGL33::createMesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GMeshGL33> h_mesh;
-    h_mesh.reset(new GMeshGL33(*this, meshTemplate));
+    std::shared_ptr<GMeshGL33> h_mesh = std::make_shared<GMeshGL33>(*this, meshTemplate);
 
     return h_mesh;
 }
 
 HGM2Mesh GDeviceGL33::createM2Mesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GM2MeshGL33> h_mesh;
-    h_mesh.reset(new GM2MeshGL33(*this, meshTemplate));
+    std::shared_ptr<GM2MeshGL33> h_mesh = std::make_shared<GM2MeshGL33>(*this, meshTemplate);
 
     return h_mesh;
 }

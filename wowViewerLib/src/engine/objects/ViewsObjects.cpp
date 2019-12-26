@@ -23,7 +23,7 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
 }
 
 void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
-    std::vector<M2Object *> candidates;
+    std::vector<std::shared_ptr<M2Object>> candidates;
     for (auto &wmoGroup : drawnWmos) {
         auto doodads = wmoGroup->getDoodads();
         std::copy(doodads->begin(), doodads->end(), std::back_inserter(candidates));
@@ -38,7 +38,7 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
     std::for_each(
         candidates.begin(),
         candidates.end(),
-        [this, &cameraPos](M2Object * m2Candidate) {  // copies are safer, and the resulting code will be as quick.
+        [this, &cameraPos](std::shared_ptr<M2Object> m2Candidate) {  // copies are safer, and the resulting code will be as quick.
             if (m2Candidate == nullptr) return;
             for (auto &frustumPlane : this->frustumPlanes) {
                 if (m2Candidate->checkFrustumCulling(cameraPos, frustumPlane, {})) {
@@ -59,11 +59,11 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
     }
 }
 
-void GeneralView::setM2Lights(M2Object *m2Object) {
+void GeneralView::setM2Lights(std::shared_ptr<M2Object> m2Object) {
     m2Object->setUseLocalLighting(false);
 }
 
-void InteriorView::setM2Lights(M2Object *m2Object) {
+void InteriorView::setM2Lights(std::shared_ptr<M2Object> m2Object) {
     if (!drawnWmos[0]->getIsLoaded()) return;
 
     if (drawnWmos[0]->getDontUseLocalLightingForM2()) {

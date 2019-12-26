@@ -41,7 +41,9 @@ void GUniformBufferGL33::uploadData(void * data, int length) {
     m_device.bindUniformBuffer(this, 0, 0, 0);
 
     assert(m_buffCreated);
+#ifdef __EMSCRIPTEN__
     assert(length > 0 && length <= 65536);
+#endif
 
     if (!m_dataUploaded || m_size < length) {
         glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);

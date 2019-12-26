@@ -846,13 +846,15 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
 
 void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
 
-  auto &currFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
-  if (currFrame.isDead) return;
+    auto &currFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+    if (currFrame.isDead) return;
 
-  for (auto mesh : currFrame.m_meshes) {
-    mesh->setRenderOrder(renderOrder);
-    meshes.push_back(mesh);
-  }
+    for (int i = 0; i < currFrame.m_meshes.size(); i++) {
+        auto mesh = currFrame.m_meshes[i];
+
+        mesh->setRenderOrder(renderOrder);
+        meshes.push_back(mesh);
+    }
 }
 
 void CRibbonEmitter::updateBuffers() {

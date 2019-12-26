@@ -14,14 +14,14 @@ private:
     IWoWInnerApi *m_api;
     std::string m_wmoModel;
 
-    WmoObject *m_wmoObject;
+    std::shared_ptr<WmoObject> m_wmoObject;
 
     float m_currentTime = 0;
     float m_lastTimeSort = 0;
     float m_lastTimeDistanceCalc = 0;
     int m_viewRenderOrder = 0;
 
-    WmoObject *m_currentWMO = nullptr;
+    std::shared_ptr<WmoObject> m_currentWMO = nullptr;
 public:
     WmoScene(IWoWInnerApi *api, std::string wmoModel) : m_api (api), m_wmoModel(wmoModel) {
         SMMapObjDef mapObjDef;
@@ -32,7 +32,7 @@ public:
         mapObjDef.extents.max = C3Vector(mathfu::vec3(9999,9999,9999));
         mapObjDef.doodadSet = 0;
 
-        auto *wmoObject = new WmoObject(m_api);
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(m_wmoModel);
 
@@ -48,7 +48,7 @@ public:
         mapObjDef.extents.max = C3Vector(mathfu::vec3(9999,9999,9999));
         mapObjDef.doodadSet = 0;
 
-        auto *wmoObject = new WmoObject(m_api);
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
 
@@ -56,7 +56,7 @@ public:
     };
 
     ~WmoScene() override {
-        delete m_wmoObject;
+
     }
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};

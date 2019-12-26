@@ -21,8 +21,8 @@ public:
         m_mapApi = api;
     }
 
-    std::vector<M2Object*> m2Objects;
-    std::vector<WmoObject*> wmoObjects;
+    std::vector<std::shared_ptr<M2Object>> m2Objects;
+    std::vector<std::shared_ptr<WmoObject>> wmoObjects;
 
 private:
     IWoWInnerApi *m_api;
@@ -44,8 +44,8 @@ public:
                                         std::vector<mathfu::vec3> &frustumPoints,
                                         std::vector<mathfu::vec3> &hullLines,
                                         mathfu::mat4 &lookAtMat4,
-                                        std::vector<M2Object *> &m2ObjectsCandidates,
-                                        std::vector<WmoObject *> &wmoCandidates);
+                                        std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                        std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 };
 
 

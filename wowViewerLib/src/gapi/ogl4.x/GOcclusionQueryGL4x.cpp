@@ -5,7 +5,7 @@
 #include "GOcclusionQueryGL4x.h"
 
 
-GOcclusionQueryGL4x::GOcclusionQueryGL4x(IDevice &device, HGMesh &oclludee) : GMeshGL4x(*(GMeshGL4x *)(oclludee.get())){
+GOcclusionQueryGL4x::GOcclusionQueryGL4x(IDevice &device, HGMesh oclludee) : GMeshGL4x(*(GMeshGL4x *)(oclludee.get())){
     createQuery();
 
     m_meshType = MeshType::eOccludingQuery;

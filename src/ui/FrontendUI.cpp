@@ -56,6 +56,8 @@ void FrontendUI::composeUI() {
     if (show_demo_window)
         ImGui::ShowDemoWindow(&show_demo_window);
 
+    showSettingsDialog();
+
     showMapSelectionDialog();
 
     {
@@ -125,6 +127,7 @@ void FrontendUI::showMapSelectionDialog() {
 
                     if (ImGui::Selectable(mapListStringMap[i][0].c_str(), selected == i, ImGuiSelectableFlags_SpanAllColumns)) {
                         if (mapRec.ID != prevMapId) {
+                            prevMapRec = mapRec;
                             if (getAdtSelectionMinimap) {
                                 adtSelectionMinimap = {};
                                 getAdtSelectionMinimap(mapRec.WdtFileID);
@@ -228,7 +231,12 @@ void FrontendUI::showAdtSelectionMinimap() {
 
     if (ImGui::BeginPopup("AdtWorldCoordsTest", ImGuiWindowFlags_NoMove)) {
         ImGui::Text("Pos: (%.2f,%.2f,200)", worldPosX, worldPosY);
-        ImGui::Button("Go");
+        if (ImGui::Button("Go")) {
+            if (openSceneByfdid) {
+                openSceneByfdid(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+            }
+            ImGui::CloseCurrentPopup();
+        }
         ImGui::EndPopup();
     }
     ImGui::EndChild();
@@ -241,12 +249,8 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open CASC Storage...")) {
                 fileDialog.Open();
             }
-            if (ImGui::MenuItem("Open test scene")) {
-                if ((openSceneByfdid)) {
-                    openSceneByfdid(0);
-                }
-            }
-            if (ImGui::MenuItem("Open ADT")) {
+
+            if (ImGui::MenuItem("Open Map selection")) {
                 showSelectMap = true;
             }
             ImGui::EndMenu();
@@ -255,7 +259,7 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open minimap")) {}
             if (ImGui::MenuItem("Open current stats")) { showCurrentStats = true; }
             ImGui::Separator();
-            if (ImGui::MenuItem("Open settings")) {}
+            if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -309,7 +313,7 @@ void FrontendUI::setOpenCascStorageCallback(std::function<bool(std::string cascP
     openCascCallback = callback;
 }
 
-void FrontendUI::setOpenSceneByfdidCallback(std::function<void(int fdid)> callback) {
+void FrontendUI::setOpenSceneByfdidCallback(std::function<void(int mapId, int wdtFileId, float x, float y, float z)> callback) {
     openSceneByfdid = callback;
 }
 
@@ -327,6 +331,31 @@ void FrontendUI::setFillAdtSelectionMinimap(std::function<bool (std::array<std::
 
 void FrontendUI::setGetMapList(std::function<void(std::vector<MapRecord> &mapList)> callback) {
     getMapList = callback;
+}
+
+void FrontendUI::setFarPlaneChangeCallback(std::function<void(float farPlane)> callback) {
+    setFarPlane = callback;
+}
+void FrontendUI::setSpeedCallback(std::function<void(float speed)> callback) {
+    setMovementSpeed = callback;
+}
+
+void FrontendUI::showSettingsDialog() {
+    if(showSettings) {
+        ImGui::Begin("Settings", &showSelectMap);
+        if (ImGui::SliderFloat("Far plane", &farPlane, 200, 700)) {
+            if (setFarPlane){
+                setFarPlane(farPlane);
+            }
+        }
+        if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 10)) {
+            if (setMovementSpeed){
+                setMovementSpeed(movementSpeed);
+            }
+        }
+
+        ImGui::End();
+    }
 }
 
 

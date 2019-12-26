@@ -9,7 +9,8 @@
 
 class GM2MeshGL33 : public GMeshGL33 {
     friend class GDeviceGL33;
-protected:
+
+public:
     GM2MeshGL33(IDevice &device, const gMeshTemplate &meshTemplate);
 
 public:
