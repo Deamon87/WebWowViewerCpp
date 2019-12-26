@@ -179,46 +179,29 @@ void WmoObject::createPlacementMatrix(SMMapObjDefObj1 &mapObjDef){
 }
 
 void WmoObject::createGroupObjects(){
-    groupObjects = std::vector<WmoGroupObject*>(mainGeom->groupsLen, nullptr);
-    groupObjectsLod1 = std::vector<WmoGroupObject*>(mainGeom->groupsLen, nullptr);
-    groupObjectsLod2 = std::vector<WmoGroupObject*>(mainGeom->groupsLen, nullptr);
+    groupObjects = std::vector<std::shared_ptr<WmoGroupObject>>(mainGeom->groupsLen, nullptr);
+    groupObjectsLod1 = std::vector<std::shared_ptr<WmoGroupObject>>(mainGeom->groupsLen, nullptr);
+    groupObjectsLod2 = std::vector<std::shared_ptr<WmoGroupObject>>(mainGeom->groupsLen, nullptr);
     drawGroupWMO = std::vector<bool>(mainGeom->groupsLen, false);
     lodGroupLevelWMO = std::vector<int>(mainGeom->groupsLen, 0);
 
     std::string nameTemplate = m_modelName.substr(0, m_modelName.find_last_of("."));
     for(int i = 0; i < mainGeom->groupsLen; i++) {
 
-        groupObjects[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
+        groupObjects[i] = std::make_shared<WmoGroupObject>(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
         groupObjects[i]->setWmoApi(this);
-        if (mainGeom->gfids.size() > 1) {
-            groupObjectsLod1[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
-            groupObjectsLod1[i]->setWmoApi(this);
-        } else {
-            groupObjectsLod1[i] = nullptr;
-        }
-        if (mainGeom->gfids.size() > 2) {
-            groupObjectsLod2[i] = new WmoGroupObject(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
-            groupObjectsLod2[i]->setWmoApi(this);
-        } else {
-            groupObjectsLod2[i] = nullptr;
-        };
 
         if (mainGeom->gfids.size() > 0) {
             groupObjects[i]->setModelFileId(mainGeom->gfids[0][i]);
-            if (mainGeom->gfids.size() > 1) {
-                if (mainGeom->gfids[1][i] == 0) {
-                    delete groupObjectsLod1[i];
-                    groupObjectsLod1[i] = nullptr;
-                } else if (groupObjectsLod1[i] != nullptr)
-                    groupObjectsLod1[i]->setModelFileId(mainGeom->gfids[1][i]);
+            if (mainGeom->gfids.size() > 1 && i < mainGeom->gfids[1].size() && mainGeom->gfids[1][i] > 0) {
+                groupObjectsLod1[i] = std::make_shared<WmoGroupObject>(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
+                groupObjectsLod1[i]->setWmoApi(this);
+                groupObjectsLod1[i]->setModelFileId(mainGeom->gfids[1][i]);
             }
-
-            if (mainGeom->gfids.size() > 2) {
-                if (mainGeom->gfids[2][i] == 0) {
-                    delete groupObjectsLod2[i];
-                    groupObjectsLod2[i] = nullptr;
-                } else if (groupObjectsLod2[i] != nullptr)
-                    groupObjectsLod2[i]->setModelFileId(mainGeom->gfids[2][i]);
+            if (mainGeom->gfids.size() > 2 && i < mainGeom->gfids[2].size() && mainGeom->gfids[2][i] > 0) {
+                groupObjectsLod2[i] = std::make_shared<WmoGroupObject>(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
+                groupObjectsLod2[i]->setWmoApi(this);
+                groupObjectsLod2[i]->setModelFileId(mainGeom->gfids[2][i]);
             }
         } else if (!useFileId) {
             std::string numStr = std::to_string(i);
@@ -228,10 +211,14 @@ void WmoObject::createGroupObjects(){
             std::string groupFilenameLod1 = nameTemplate + "_" + numStr + "_lod1.wmo";
             std::string groupFilenameLod2 = nameTemplate + "_" + numStr + "_lod2.wmo";
             groupObjects[i]->setModelFileName(groupFilename);
-            if (groupObjectsLod1[i] != nullptr)
-                groupObjectsLod1[i]->setModelFileName(groupFilenameLod1);
-            if (groupObjectsLod2[i] != nullptr)
-                groupObjectsLod2[i]->setModelFileName(groupFilenameLod2);
+
+            groupObjectsLod1[i] = std::make_shared<WmoGroupObject>(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
+            groupObjectsLod1[i]->setWmoApi(this);
+            groupObjectsLod1[i]->setModelFileName(groupFilenameLod1);
+
+            groupObjectsLod2[i] = std::make_shared<WmoGroupObject>(this->m_placementMatrix, m_api, mainGeom->groups[i], i);
+            groupObjectsLod2[i]->setWmoApi(this);
+            groupObjectsLod2[i]->setModelFileName(groupFilenameLod2);
         }
     }
 }
@@ -721,7 +708,7 @@ void WmoObject::updateBB() {
 //    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
 //
     for (int j = 0; j < this->groupObjects.size(); j++) {
-        WmoGroupObject* wmoGroupObject= this->groupObjects[j];
+        std::shared_ptr<WmoGroupObject> wmoGroupObject= this->groupObjects[j];
 
 
         CAaBox groupAAbb = wmoGroupObject->getWorldAABB();
@@ -748,7 +735,7 @@ void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
 void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
                                   std::vector<mathfu::vec4> &frustumPlane,
                                   std::vector<std::shared_ptr<M2Object>> &m2Candidates) {
-    WmoGroupObject *groupWmoObject = groupObjects[groupId];
+    std::shared_ptr<WmoGroupObject> groupWmoObject = groupObjects[groupId];
     if (groupWmoObject != nullptr && groupWmoObject->getIsLoaded()) {
         const std::vector <std::shared_ptr<M2Object>> *doodads = groupWmoObject->getDoodads();
 
@@ -828,7 +815,7 @@ bool WmoObject::startTraversingWMOGroup(
 
     if (traversingFromInterior) {
         InteriorView &interiorView = createdInteriorViews[groupId];
-        WmoGroupObject *nextGroupObject = groupObjects[groupId];
+        std::shared_ptr<WmoGroupObject> nextGroupObject = groupObjects[groupId];
         //5.1 The portal is into interior wmo group. So go on.
         if (!interiorView.viewCreated) {
             interiorView.viewCreated = true;
@@ -1052,7 +1039,7 @@ void WmoObject::transverseGroupWMO(
         );
 
         //5. Traverse next
-        WmoGroupObject *nextGroupObject = groupObjects[nextGroup];
+        std::shared_ptr<WmoGroupObject> nextGroupObject = groupObjects[nextGroup];
         SMOGroupInfo &nextGroupInfo = mainGeom->groups[nextGroup];
         if ((nextGroupInfo.flags.EXTERIOR) == 0) {
             InteriorView &interiorView = allInteriorViews[nextGroup];
@@ -1334,13 +1321,4 @@ std::shared_ptr<M2Object> WmoObject::getSkyBoxForGroup(int groupNum) {
 }
 
 WmoObject::~WmoObject() {
-    for (auto& obj : groupObjects) {
-        delete obj;
-    }
-    for (auto& obj : groupObjectsLod1) {
-        delete obj;
-    }
-    for (auto& obj : groupObjectsLod2) {
-        delete obj;
-    }
 }

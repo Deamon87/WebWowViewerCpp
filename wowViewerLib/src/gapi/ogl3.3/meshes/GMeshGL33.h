@@ -12,9 +12,10 @@
 
 class GMeshGL33 : public IMesh {
     friend class GDeviceGL33;
-protected:
+
+public:
     explicit GMeshGL33(IDevice &device,
-                   const gMeshTemplate &meshTemplate
+                       const gMeshTemplate &meshTemplate
     );
 
 public:

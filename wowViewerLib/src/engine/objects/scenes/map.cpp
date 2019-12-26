@@ -547,9 +547,9 @@ void Map::updateBuffers(WoWFrameData *frameData) {
 }
 
 std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
-    auto it = m_m2MapObjects.find(doodadDef.uniqueId);
-    if (it != m_m2MapObjects.end() && !it->second.expired()) {
-        return it->second.lock();
+    auto it = m_m2MapObjects[doodadDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
     } else {
         auto m2Object = std::make_shared<M2Object>(m_api);
         m2Object->setLoadParams(0, {}, {});
@@ -564,9 +564,9 @@ std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &do
 }
 
 std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
-    auto it = m_m2MapObjects.find(doodadDef.uniqueId);
-    if (it != m_m2MapObjects[].end() && !it->second.expired()) {
-        return it->second.lock();
+    auto it = m_m2MapObjects[doodadDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
     } else {
         auto m2Object = std::make_shared<M2Object>(m_api);
         m2Object->setLoadParams(0, {}, {});
@@ -582,9 +582,9 @@ std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, SMDoodadDef &doodadDe
 
 
 std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
-    auto it = m_wmoMapObjects.find(mapObjDef.uniqueId);
-    if (it != m_wmoMapObjects.end() && !it->second.expired()) {
-        return it->second.lock();
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
     } else {
         auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
@@ -596,9 +596,9 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDef &
     return nullptr;
 }
 std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) {
-    auto it = m_wmoMapObjects.find(mapObjDef.uniqueId);
-    if (it != m_wmoMapObjects.end() && !it->second.expired()) {
-        return it->second.lock();
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
     } else {
         auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
@@ -611,9 +611,9 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDef &mapObj
 }
 
 std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
-    auto it = m_wmoMapObjects.find(mapObjDef.uniqueId);
-    if (it != m_wmoMapObjects.end() && !it->second.expired()) {
-        return it->second.lock();
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
     } else {
         auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
@@ -626,9 +626,9 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefOb
 }
 
 std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
-    auto it = m_wmoMapObjects.find(mapObjDef.uniqueId);
-    if (it != m_wmoMapObjects.end() && !it->second.expired()) {
-        return it->second.lock();
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
     } else {
         auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
@@ -641,7 +641,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
 }
 
 void Map::collectMeshes(WoWFrameData *frameData) {
-    frameData->renderedThisFrame = std::vector<HGMesh>();
+    auto renderedThisFramePreSort = std::vector<HGMesh>();
 
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;
@@ -656,7 +656,7 @@ void Map::collectMeshes(WoWFrameData *frameData) {
 
 //    if (m_api->getConfig()->getRenderWMO()) {
         for (auto &view : vector) {
-            view->collectMeshes(frameData->renderedThisFrame);
+            view->collectMeshes(renderedThisFramePreSort);
         }
 //    }
 
@@ -670,22 +670,31 @@ void Map::collectMeshes(WoWFrameData *frameData) {
         s.insert(i);
     m2ObjectsRendered.assign( s.begin(), s.end() );
 
-//    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
-//    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
+    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
+    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
 
 //    if (m_api->getConfig()->getRenderM2()) {
         for (auto &m2Object : m2ObjectsRendered) {
             if (m2Object == nullptr) continue;
-            m2Object->collectMeshes(frameData->renderedThisFrame, m_viewRenderOrder);
-            m2Object->drawParticles(frameData->renderedThisFrame, m_viewRenderOrder);
+            m2Object->collectMeshes(renderedThisFramePreSort, m_viewRenderOrder);
+            m2Object->drawParticles(renderedThisFramePreSort, m_viewRenderOrder);
         }
 //    }
 
+    auto &sortedArray = renderedThisFramePreSort;
+    std::vector<int> indexArray = std::vector<int>(sortedArray.size());
+    for (int i = 0; i < indexArray.size(); i++) {
+        indexArray[i] = i;
+    }
 
-    std::sort(frameData->renderedThisFrame.begin(),
-              frameData->renderedThisFrame.end(),
+    std::sort(indexArray.begin(),
+              indexArray.end(),
               #include "../../../gapi/interface/sortLambda.h"
     );
+    frameData->renderedThisFrame.resize(indexArray.size());
+    for (int i = 0; i < indexArray.size(); i++) {
+        frameData->renderedThisFrame[i] = renderedThisFramePreSort[indexArray[i]];
+    }
 };
 
 void Map::draw(WoWFrameData *frameData) {

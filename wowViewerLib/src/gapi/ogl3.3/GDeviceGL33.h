@@ -7,6 +7,10 @@
 
 #include <memory>
 
+#ifndef __EMSCRIPTEN__
+#define SINGLE_BUFFER_UPLOAD
+#endif
+
 class GVertexBufferGL33;
 class GVertexBufferBindingsGL33;
 class GIndexBufferGL33;
@@ -108,7 +112,7 @@ public:
 
     void shrinkData() override;
 private:
-    void drawMesh(HGMesh &hmesh);
+    void drawMesh(HGMesh hmesh);
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {
@@ -193,7 +197,7 @@ protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBufferGL33>> m_unfiormBufferCache;
-#ifndef __EMSCRIPTEN__
+#ifdef SINGLE_BUFFER_UPLOAD
     struct FrameUniformBuffers {
         HGUniformBuffer m_uniformBufferForUpload;
     };

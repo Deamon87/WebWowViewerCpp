@@ -23,6 +23,8 @@ private:
     std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap)> fillAdtSelectionminimap = nullptr;
 
     std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimap;
+    std::function<void(float farPlane)> setFarPlane;
+    std::function<void(float farPlane)> setMovementSpeed;
 
     void emptyMinimap() {
         for (int i = 0; i < 64; i++) {
@@ -38,9 +40,12 @@ private:
     bool show_another_window = true;
     bool showCurrentStats = true;
     bool showSelectMap = false;
+    bool showSettings = false;
 //  c bool showWorldPosTooltip = false;
 
     float minimapZoom = 1;
+    float farPlane = 200;
+    float movementSpeed = 1;
     float prevMinimapZoom = 1;
     int prevMapId = -1;
     MapRecord prevMapRec;
@@ -67,6 +72,9 @@ public:
     void setOpenSceneByfdidCallback(std::function <void(int mapId, int wdtFileId, float x, float y, float z)> callback);
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
 
+    void setFarPlaneChangeCallback(std::function<void(float farPlane)> callback);
+    void setSpeedCallback(std::function<void(float speed)> callback);
+
     void setGetAdtSelectionMinimap( std::function <void(int mapId)> callback);
     void setFillAdtSelectionMinimap( std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap)> callback);
     void setGetMapList( std::function <void(std::vector<MapRecord> &mapList)> callback);
@@ -81,6 +89,7 @@ public:
     void showMapSelectionDialog();
 
     void showAdtSelectionMinimap();
+    void showSettingsDialog();
 };
 
 

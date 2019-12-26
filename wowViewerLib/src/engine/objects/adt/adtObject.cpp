@@ -231,7 +231,8 @@ void AdtObject::createVBO() {
     adtVertexBindings->addVertexBufferBinding(vertexBinding);
     adtVertexBindings->save();
 
-    if (m_adtFileLod->getIsLoaded()) {
+    //Sometimes mvli can be zero, while there is still data in floatDataBlob
+    if (m_adtFileLod->getIsLoaded() && m_adtFileLod->floatDataBlob_len > 0 && m_adtFileLod->mvli_len > 0) {
         //Generate MLLL buffers
         //Index buffer for lod
         std::vector<float> vboLod;

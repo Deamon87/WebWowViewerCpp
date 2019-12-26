@@ -22,6 +22,10 @@ public:
         m_main_groupInfo = &groupInfo;
         createWorldGroupBB(groupInfo.bounding_box, modelMatrix);
     }
+    ~WmoGroupObject(){
+        std::cout << "WmoGroupObject destroyed" << std::endl;
+    }
+
     void drawDebugLights();
     bool getIsLoaded() { return m_loaded; };
     CAaBox getWorldAABB() {
@@ -63,23 +67,23 @@ private:
     IWmoApi *m_wmoApi = nullptr;
     HWmoGroupGeom m_geom = nullptr;
 
-    std::string m_fileName;
+    std::string m_fileName = "";
     bool useFileId = false;
     int m_modelFileId;
 
     CAaBox m_worldGroupBorder;
     CAaBox m_localGroupBorder;
     CAaBox m_volumeWorldGroupBorder;
-    mathfu::mat4 *m_modelMatrix;
+    mathfu::mat4 *m_modelMatrix = nullptr;
     int m_groupNumber;
 
     HGUniformBufferChunk vertexModelWideUniformBuffer = nullptr;
-    std::vector<HGMesh> m_meshArray;
-    std::vector<HGMesh> m_waterMeshArray;
+    std::vector<HGMesh> m_meshArray = {};
+    std::vector<HGMesh> m_waterMeshArray = {};
 
     SMOGroupInfo *m_main_groupInfo;
 
-    std::vector <std::shared_ptr<M2Object>> m_doodads = std::vector<std::shared_ptr<M2Object>>(0);
+    std::vector <std::shared_ptr<M2Object>> m_doodads = {};
 
     bool m_useLocalLightingForM2 = false;
 

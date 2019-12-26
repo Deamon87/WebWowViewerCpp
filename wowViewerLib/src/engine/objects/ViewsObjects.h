@@ -24,7 +24,7 @@ public:
 class GeneralView {
 public:
     bool viewCreated = false;
-    std::vector<WmoGroupObject *> drawnWmos = {};
+    std::vector<std::shared_ptr<WmoGroupObject>> drawnWmos = {};
     std::vector<std::shared_ptr<M2Object>> drawnM2s = {};
     //Support several frustum planes because of how portal culling works
     std::vector<std::vector<mathfu::vec3>> portalVertices = {};

@@ -56,9 +56,9 @@ private:
     bool useFileId = false;
     int m_modelFileId;
 
-    std::vector<WmoGroupObject*> groupObjects = std::vector<WmoGroupObject*>(0);
-    std::vector<WmoGroupObject*> groupObjectsLod1 = std::vector<WmoGroupObject*>(0);
-    std::vector<WmoGroupObject*> groupObjectsLod2 = std::vector<WmoGroupObject*>(0);
+    std::vector<std::shared_ptr<WmoGroupObject>> groupObjects = std::vector<std::shared_ptr<WmoGroupObject>>(0);
+    std::vector<std::shared_ptr<WmoGroupObject>> groupObjectsLod1 = std::vector<std::shared_ptr<WmoGroupObject>>(0);
+    std::vector<std::shared_ptr<WmoGroupObject>> groupObjectsLod2 = std::vector<std::shared_ptr<WmoGroupObject>>(0);
     std::vector<BlpTexture> blpTextures;
 
     std::vector<bool> drawGroupWMO;

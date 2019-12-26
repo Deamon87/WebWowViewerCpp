@@ -414,10 +414,10 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
 M2Object::~M2Object() {
     delete m_animationManager;
 
-    for (auto &obj: particleEmitters) {
+    for (auto obj: particleEmitters) {
         delete obj;
     }
-    for (auto &obj: ribbonEmitters) {
+    for (auto obj: ribbonEmitters) {
         delete obj;
     }
 }

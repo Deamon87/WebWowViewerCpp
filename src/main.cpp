@@ -382,9 +382,17 @@ int main(){
     });
     frontendUI.setOpenSceneByfdidCallback([&scene](int mapId, int wdtFileId, float x, float y, float z) {
 //        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
-        testConf->setFarPlane(200);
         scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
+    frontendUI.setFarPlaneChangeCallback([&scene](float farPlane) -> void {
+        testConf->setFarPlane(farPlane);
+        testConf->setFarPlaneForCulling(farPlane+50);
+    });
+    frontendUI.setSpeedCallback([&scene](float movementSpeed) -> void {
+        testConf->setMovementSpeed(movementSpeed);
+
+    });
+
     frontendUI.setGetCameraPos([scene](float &cameraX,float &cameraY,float &cameraZ) -> void {
         float currentCameraPos[4] = {0,0,0,0};
         scene->getCurrentCamera()->getCameraPosition(&currentCameraPos[0]);
@@ -432,7 +440,7 @@ int main(){
     glfwSetWindowSizeCallback( window, window_size_callback);
     glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback( window, mouse_button_callback);
-    glfwSwapInterval(0);
+//    glfwSwapInterval(0);
 
 try {
     while (!glfwWindowShouldClose(window)) {
@@ -448,7 +456,7 @@ try {
         double deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        double fps = calcFPS(nullptr, 2.0);
+//        double fps = calcFPS(nullptr, 2.0);
 
 
         processor->processRequests(false);

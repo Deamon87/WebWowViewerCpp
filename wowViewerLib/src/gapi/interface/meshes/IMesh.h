@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_IMESH_H
 
 #include <vector>
+#include <iostream>
 #include "../IDevice.h"
 
 enum class MeshType {
@@ -111,7 +112,10 @@ protected:
     int m_textureCount;
 
 public:
-    virtual ~IMesh(){};
+    virtual ~IMesh(){
+        std::cout << "Mesh destroyed" << std::endl;
+
+    };
     virtual HGUniformBufferChunk getUniformBuffer(int slot) = 0;
     virtual EGxBlendEnum getGxBlendMode() = 0;
     virtual bool getIsTransparent() = 0;

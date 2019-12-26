@@ -250,13 +250,13 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 //    }
 
     int j = 0;
-    for (auto &hgMesh : meshes) {
+    for (auto hgMesh : meshes) {
         this->drawMesh(hgMesh);
         j++;
     }
 }
 
-#ifndef __EMSCRIPTEN__
+#ifdef SINGLE_BUFFER_UPLOAD
 void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
     std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
 
@@ -317,6 +317,8 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
             currentSize += bytesToAdd;
         }
     }
+    assert(currentSize == fullSize);
+
     for (auto &buffer : buffers) {
         buffer->update();
     }
@@ -414,7 +416,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
 }
 #endif
 
-void GDeviceGL33::drawMesh(HGMesh &hIMesh) {
+void GDeviceGL33::drawMesh(HGMesh hIMesh) {
     GMeshGL33 * hmesh = (GMeshGL33 *) hIMesh.get();
     if (hmesh->m_end <= 0) return;
 
@@ -611,15 +613,13 @@ HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size) {
 };
 
 HGMesh GDeviceGL33::createMesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GMeshGL33> h_mesh;
-    h_mesh.reset(new GMeshGL33(*this, meshTemplate));
+    std::shared_ptr<GMeshGL33> h_mesh = std::make_shared<GMeshGL33>(*this, meshTemplate);
 
     return h_mesh;
 }
 
 HGM2Mesh GDeviceGL33::createM2Mesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GM2MeshGL33> h_mesh;
-    h_mesh.reset(new GM2MeshGL33(*this, meshTemplate));
+    std::shared_ptr<GM2MeshGL33> h_mesh = std::make_shared<GM2MeshGL33>(*this, meshTemplate);
 
     return h_mesh;
 }

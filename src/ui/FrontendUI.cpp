@@ -44,6 +44,8 @@ void FrontendUI::composeUI() {
     if (show_demo_window)
         ImGui::ShowDemoWindow(&show_demo_window);
 
+    showSettingsDialog();
+
     showMapSelectionDialog();
 
     {
@@ -245,7 +247,7 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open minimap")) {}
             if (ImGui::MenuItem("Open current stats")) { showCurrentStats = true; }
             ImGui::Separator();
-            if (ImGui::MenuItem("Open settings")) {}
+            if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -317,6 +319,31 @@ void FrontendUI::setFillAdtSelectionMinimap(std::function<bool (std::array<std::
 
 void FrontendUI::setGetMapList(std::function<void(std::vector<MapRecord> &mapList)> callback) {
     getMapList = callback;
+}
+
+void FrontendUI::setFarPlaneChangeCallback(std::function<void(float farPlane)> callback) {
+    setFarPlane = callback;
+}
+void FrontendUI::setSpeedCallback(std::function<void(float speed)> callback) {
+    setMovementSpeed = callback;
+}
+
+void FrontendUI::showSettingsDialog() {
+    if(showSettings) {
+        ImGui::Begin("Settings", &showSelectMap);
+        if (ImGui::SliderFloat("Far plane", &farPlane, 200, 700)) {
+            if (setFarPlane){
+                setFarPlane(farPlane);
+            }
+        }
+        if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 10)) {
+            if (setMovementSpeed){
+                setMovementSpeed(movementSpeed);
+            }
+        }
+
+        ImGui::End();
+    }
 }
 
 
