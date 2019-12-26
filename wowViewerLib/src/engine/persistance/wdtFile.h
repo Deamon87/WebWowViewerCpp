@@ -12,7 +12,7 @@ public:
     WdtFile(std::string fileName){};
     WdtFile(int fileDataId){};
 	~WdtFile() {
-		std::cout << "destructor was called" << std::endl;
+//		std::cout << "destructor for WdtFile was called" << std::endl;
 	}
 
     void process(HFileContent wdtFile, const std::string &fileName);

@@ -394,6 +394,10 @@ int main(){
 //        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
         scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
+    frontendUI.setOpenSceneByfdidCallback([&scene](int mapId, int wdtFileId, float x, float y, float z) {
+//        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
+        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
+    });
     frontendUI.setFarPlaneChangeCallback([&scene](float farPlane) -> void {
         testConf->setFarPlane(farPlane);
         testConf->setFarPlaneForCulling(farPlane+50);
@@ -410,10 +414,22 @@ int main(){
         cameraY = currentCameraPos[1];
         cameraZ = currentCameraPos[2];
     });
-    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, &device](int wdtFileDataId) {
+    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, &device, &scene](int wdtFileDataId) {
         auto wdtFile = storage->getWdtFileCache()->getFileId(wdtFileDataId);
-        frontendUI.setFillAdtSelectionMinimap([wdtFile, &storage, &device](std::array<std::array<HGTexture, 64>, 64> &minimap) -> bool {
+
+        frontendUI.setOpenWMOMapCallback(nullptr);
+
+        frontendUI.setFillAdtSelectionMinimap([&frontendUI, wdtFile, &storage, &device, &scene](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap) -> bool {
             if (!wdtFile->getIsLoaded()) return false;
+
+            isWMOMap = wdtFile->mphd->flags.wdt_uses_global_map_obj;
+
+            if(isWMOMap) {
+                frontendUI.setOpenWMOMapCallback([wdtFile, &scene]() -> void {
+                    scene->setSceneWithFileDataId(1, wdtFile->wmoDef->nameId, 0 );
+                    scene->setScenePos(0,0,0);
+                });
+            }
 
             for (int i = 0; i < 64; i++) {
                 for (int j = 0; j < 64; j++) {

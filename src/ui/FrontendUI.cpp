@@ -13,7 +13,7 @@
 void FrontendUI::composeUI() {
 
     if (fillAdtSelectionminimap) {
-        if (fillAdtSelectionminimap(adtSelectionMinimap)) {
+        if (fillAdtSelectionminimap(adtSelectionMinimap, isWmoMap)) {
             fillAdtSelectionminimap = nullptr;
 
             requiredTextures.clear();
@@ -53,8 +53,8 @@ void FrontendUI::composeUI() {
         fileDialog.ClearSelected();
     }
 
-    if (show_demo_window)
-        ImGui::ShowDemoWindow(&show_demo_window);
+//    if (show_demo_window)
+//        ImGui::ShowDemoWindow(&show_demo_window);
 
     showSettingsDialog();
 
@@ -129,6 +129,7 @@ void FrontendUI::showMapSelectionDialog() {
                         if (mapRec.ID != prevMapId) {
                             prevMapRec = mapRec;
                             if (getAdtSelectionMinimap) {
+                                isWmoMap = false;
                                 adtSelectionMinimap = {};
                                 getAdtSelectionMinimap(mapRec.WdtFileID);
                             }
@@ -154,9 +155,18 @@ void FrontendUI::showMapSelectionDialog() {
             {
                 ImGui::BeginChild("Map Select Dialog Right panel", ImVec2(0, 0));
                 {
-                    ImGui::SliderFloat("Zoom", &minimapZoom, 0.1, 10);
+                    if (!isWmoMap) {
+                        ImGui::SliderFloat("Zoom", &minimapZoom, 0.1, 10);
 //                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-                    showAdtSelectionMinimap();
+                        showAdtSelectionMinimap();
+                    } else {
+                        worldPosX = 0;
+                        worldPosY = 0;
+                        if (ImGui::Button("Open WMO Map", ImVec2(-1, 0))) {
+                            openWMOMap();
+                            showSelectMap = false;
+                        }
+                    }
 
                 }
                 ImGui::EndChild();
@@ -234,6 +244,7 @@ void FrontendUI::showAdtSelectionMinimap() {
         if (ImGui::Button("Go")) {
             if (openSceneByfdid) {
                 openSceneByfdid(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+                showSelectMap = false;
             }
             ImGui::CloseCurrentPopup();
         }
@@ -325,7 +336,7 @@ void FrontendUI::setGetAdtSelectionMinimap(std::function<void(int wdtFileDataId)
     getAdtSelectionMinimap = callback;
 }
 
-void FrontendUI::setFillAdtSelectionMinimap(std::function<bool (std::array<std::array<HGTexture, 64>, 64> &minimap)> callback) {
+void FrontendUI::setFillAdtSelectionMinimap(std::function<bool (std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap)> callback) {
     fillAdtSelectionminimap = callback;
 }
 
@@ -342,7 +353,7 @@ void FrontendUI::setSpeedCallback(std::function<void(float speed)> callback) {
 
 void FrontendUI::showSettingsDialog() {
     if(showSettings) {
-        ImGui::Begin("Settings", &showSelectMap);
+        ImGui::Begin("Settings", &showSettings);
         if (ImGui::SliderFloat("Far plane", &farPlane, 200, 700)) {
             if (setFarPlane){
                 setFarPlane(farPlane);
@@ -356,6 +367,10 @@ void FrontendUI::showSettingsDialog() {
 
         ImGui::End();
     }
+}
+
+void FrontendUI::setOpenWMOMapCallback(std::function<void()> callback) {
+    openWMOMap = callback;
 }
 
 

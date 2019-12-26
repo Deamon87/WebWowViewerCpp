@@ -113,7 +113,7 @@ protected:
 
 public:
     virtual ~IMesh(){
-        std::cout << "Mesh destroyed" << std::endl;
+//        std::cout << "Mesh destroyed" << std::endl;
 
     };
     virtual HGUniformBufferChunk getUniformBuffer(int slot) = 0;

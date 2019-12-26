@@ -23,7 +23,7 @@ public:
         createWorldGroupBB(groupInfo.bounding_box, modelMatrix);
     }
     ~WmoGroupObject(){
-        std::cout << "WmoGroupObject destroyed" << std::endl;
+//        std::cout << "WmoGroupObject destroyed" << std::endl;
     }
 
     void drawDebugLights();

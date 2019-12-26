@@ -15,12 +15,13 @@ class FrontendUI : public IDeviceUI {
 private:
     std::function <bool(std::string cascPath)> openCascCallback = nullptr;
     std::function <void(int mapId, int wdtFileId, float x, float y, float z)> openSceneByfdid = nullptr;
+    std::function <void()> openWMOMap = nullptr;
     std::function <void(float &cameraX,float &cameraY,float &cameraZ)> getCameraPos = nullptr;
 
     std::function <void(int wdtFileDataId)> getAdtSelectionMinimap = nullptr;
     std::function <void(std::vector<MapRecord> &mapList)> getMapList = nullptr;
 
-    std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap)> fillAdtSelectionminimap = nullptr;
+    std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap)> fillAdtSelectionminimap = nullptr;
 
     std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimap;
     std::function<void(float farPlane)> setFarPlane;
@@ -48,6 +49,7 @@ private:
     float movementSpeed = 1;
     float prevMinimapZoom = 1;
     int prevMapId = -1;
+    bool isWmoMap = false;
     MapRecord prevMapRec;
 
 
@@ -70,13 +72,14 @@ public:
 
     void setOpenCascStorageCallback(std::function <bool(std::string cascPath)> callback);
     void setOpenSceneByfdidCallback(std::function <void(int mapId, int wdtFileId, float x, float y, float z)> callback);
+    void setOpenWMOMapCallback(std::function <void()> callback);
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
 
     void setFarPlaneChangeCallback(std::function<void(float farPlane)> callback);
     void setSpeedCallback(std::function<void(float speed)> callback);
 
     void setGetAdtSelectionMinimap( std::function <void(int mapId)> callback);
-    void setFillAdtSelectionMinimap( std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap)> callback);
+    void setFillAdtSelectionMinimap( std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap)> callback);
     void setGetMapList( std::function <void(std::vector<MapRecord> &mapList)> callback);
 
 #ifdef LINK_VULKAN
