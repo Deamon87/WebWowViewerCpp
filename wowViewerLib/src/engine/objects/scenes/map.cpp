@@ -323,7 +323,9 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {
+        int numThreads = m_api->getConfig()->getThreadCount();
 
+        #pragma omp parallel for num_threads(numThreads)
         for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
             auto m2ObjectCandidate = m2ObjectsCandidates[i];
             bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
@@ -377,8 +379,9 @@ void Map::update(WoWFrameData *frameData) {
 //        std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
 
 //    #pragma
+    int numThreads = m_api->getConfig()->getThreadCount();
     {
-        #pragma omp parallel for num_threads(6)
+        #pragma omp parallel for num_threads(numThreads)
         for (int i = 0; i < frameData->m2Array.size(); i++) {
             auto m2Object = frameData->m2Array[i];
             if (m2Object != nullptr) {

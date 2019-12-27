@@ -370,7 +370,7 @@ void FrontendUI::showSettingsDialog() {
                 setThreadCount(threadCount);
             }
         }
-        if (ImGui::SliderInt("QuickSort cutoff", &quickSortCutoff, 1, 100000)) {
+        if (ImGui::SliderInt("QuickSort cutoff", &quickSortCutoff, 1, 1000)) {
             if (setQuicksortCutoff){
                 setQuicksortCutoff(quickSortCutoff);
             }

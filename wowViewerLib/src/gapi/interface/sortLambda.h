@@ -100,5 +100,5 @@
     }
 
 
-    return (pA) > (pB);
+    return (pA) >= (pB);
 }

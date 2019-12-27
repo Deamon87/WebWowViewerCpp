@@ -12,7 +12,7 @@ void quickSort_parallel(int* array, int lenArray, int numThreads, int cutoff, st
     {
         #pragma omp parallel num_threads(numThreads)
         {
-            #pragma omp single nowait private(array, lenArray, cutoff, compare)
+            #pragma omp single nowait
             {
                 quickSort_parallel_internal(array, 0, lenArray - 1, cutoff, compare);
             }

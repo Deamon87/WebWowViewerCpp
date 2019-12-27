@@ -432,21 +432,33 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
     this->CalculateForces(forces, delta);
     this->EmitNewParticles(delta);
     int i = 0;
-    while (i < this->particles.size()) {
+
+
+    std::list<int> listForDeletion;
+
+    int numThreads = m_api->getConfig()->getThreadCount();
+
+//    #pragma omp parallel for num_threads(numThreads)
+    for (int i = 0; i < this->particles.size(); i++) {
         auto &p = this->particles[i];
+        bool killParticle = false;
         p.age = p.age + delta;
 
         if (p.age > (fmaxf(this->generator->GetLifeSpan(p.seed), 0.001f))) {
-            this->KillParticle(i);
-            i--;
+            killParticle = true;
         } else {
             if (!this->UpdateParticle(p, delta, forces)) {
-                this->KillParticle(i);
-                i--;
+                killParticle = true;//                i--;
             }
         }
-        i++;
+
+        listForDeletion.push_back(i);
     }
+    for (auto it = listForDeletion.begin(); it != listForDeletion.end(); it++) {
+        this->KillParticle(*it);
+    }
+
+
 }
 void ParticleEmitter::EmitNewParticles(animTime_t delta) {
     if (!isEnabled) return;
