@@ -37,6 +37,9 @@ private:
     int minParticle = 0;
     int maxParticle = 9999;
 
+    int threadCount = 4;
+    int quickSortCutoff = 10;
+
     bool useWotlkLogic = false;
     float movementSpeed = 1.0;
 
@@ -261,6 +264,20 @@ public:
 
     std::string getAreaName() {
         return areaName;
+    }
+
+    int getThreadCount() {
+        return threadCount;
+    }
+    void setThreadCount(int value) {
+        threadCount = value;
+    }
+
+    int getQuickSortCutoff() {
+        return quickSortCutoff;
+    }
+    void setQuickSortCutoff(int value) {
+        quickSortCutoff = value;
     }
 };
 

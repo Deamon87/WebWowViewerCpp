@@ -1,9 +1,9 @@
-[&sortedArray](int indexA, int indexB) {
-//    auto* pA = a.get();
-//    auto* pB = b.get();
+[sortedArrayPtr](int indexA, int indexB) {
+    auto* pA = sortedArrayPtr[indexA].get();
+    auto* pB = sortedArrayPtr[indexB].get();
 
-    HGMesh pA = sortedArray[indexA];
-    HGMesh pB = sortedArray[indexB];
+//    HGMesh pA = sortedArrayPtr[indexA];
+//    HGMesh pB = sortedArrayPtr[indexB];
     if (pA == nullptr) return false;
     if (pB == nullptr) return true;
 
@@ -22,7 +22,7 @@
     }
 
     if (pA->renderOrder() != pB->renderOrder() ) {
-        if (!pA->getIsTransparent()) {
+        if (!pA->getIsTransparent() && !pB->getIsTransparent()) {
             return pA->renderOrder() < pB->renderOrder();
         } else {
             return pA->renderOrder() > pB->renderOrder();
@@ -100,5 +100,5 @@
     }
 
 
-    return indexA > indexB;
+    return (pA) > (pB);
 }

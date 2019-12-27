@@ -365,12 +365,32 @@ void FrontendUI::showSettingsDialog() {
             }
         }
 
+        if (ImGui::SliderInt("Thread Count", &threadCount, 1, 16)) {
+            if (setThreadCount){
+                setThreadCount(threadCount);
+            }
+        }
+        if (ImGui::SliderInt("QuickSort cutoff", &quickSortCutoff, 1, 100000)) {
+            if (setQuicksortCutoff){
+                setQuicksortCutoff(quickSortCutoff);
+            }
+        }
+
+
         ImGui::End();
     }
 }
 
 void FrontendUI::setOpenWMOMapCallback(std::function<void()> callback) {
     openWMOMap = callback;
+}
+
+void FrontendUI::setThreadCountCallback(std::function<void(int value)> callback) {
+    setThreadCount = callback;
+}
+
+void FrontendUI::setQuicksortCutoffCallback(std::function<void(int value)> callback) {
+    setQuicksortCutoff = callback;
 }
 
 

@@ -404,8 +404,14 @@ int main(){
     });
     frontendUI.setSpeedCallback([&scene](float movementSpeed) -> void {
         testConf->setMovementSpeed(movementSpeed);
-
     });
+    frontendUI.setThreadCountCallback([&scene](int value) -> void {
+        testConf->setThreadCount(value);
+    });
+    frontendUI.setQuicksortCutoffCallback([&scene](int value) -> void {
+        testConf->setQuickSortCutoff(value);
+    });
+
 
     frontendUI.setGetCameraPos([scene](float &cameraX,float &cameraY,float &cameraZ) -> void {
         float currentCameraPos[4] = {0,0,0,0};

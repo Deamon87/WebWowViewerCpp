@@ -8,7 +8,7 @@ set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)
 set(LINK_VULKAN 0)
-set(LINK_OPENMP 0)
+set(LINK_OPENMP 1)
 set(ENABLE_SIMD 1)
 set(EMSCRIPTEN_SIMD 0)
 
@@ -56,13 +56,7 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize")
 
-if (LINK_OPENMP)
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp -openmp")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp -openmp")
 
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fopenmp -openmp" )
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fopenmp -openmp")
-endif()
 if (EMSCRIPTEN_SIMD)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
@@ -226,7 +220,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/skelFile.cpp
         src/engine/persistance/skelFile.h
         src/engine/algorithms/FrameCounter.cpp
-        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h src/engine/WowFilesCacheStorage.h src/engine/WowFilesCacheStorage.cpp)
+        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h src/engine/WowFilesCacheStorage.h src/engine/WowFilesCacheStorage.cpp src/engine/algorithms/quick-sort-omp.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -417,7 +411,8 @@ target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 
 if (LINK_OPENMP)
-    target_link_libraries(WoWViewerLib  -fopenmp)
+    target_compile_options(WoWViewerLib PRIVATE -fopenmp=libgomp)
+#    target_compile_options(WoWViewerLib PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-openmp>)
 endif()
 if (LINK_VULKAN)
     target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})

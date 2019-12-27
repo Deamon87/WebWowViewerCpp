@@ -12,6 +12,7 @@
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
 #include "../wowFrameData.h"
+#include "../../algorithms/quick-sort-omp.h"
 
 void Map::checkCulling(WoWFrameData *frameData) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
@@ -321,25 +322,26 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     m2ObjectsCandidates.erase( unique( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() ), m2ObjectsCandidates.end() );
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
-    for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
-        auto m2ObjectCandidate = m2ObjectsCandidates[i];
-        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
-            cameraPos,
-            frameData->exteriorView.frustumPlanes[0], //TODO:!
-            frustumPoints);
-    }
-//        bool frustumResult = true;
-    for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
-        auto m2ObjectCandidate = m2ObjectsCandidates[i];
-        if (m2ObjectCandidate->m_cullResult) {
-            frameData->exteriorView.drawnM2s.push_back(m2ObjectCandidate);
-            frameData->m2Array.push_back(m2ObjectCandidate);
+    {
+
+        for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
+            auto m2ObjectCandidate = m2ObjectsCandidates[i];
+            bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
+                cameraPos,
+                frameData->exteriorView.frustumPlanes[0], //TODO:!
+                frustumPoints);
         }
     }
-
-
-
-
+//        bool frustumResult = true;
+    {
+        for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
+            auto m2ObjectCandidate = m2ObjectsCandidates[i];
+            if (m2ObjectCandidate->m_cullResult) {
+                frameData->exteriorView.drawnM2s.push_back(m2ObjectCandidate);
+                frameData->m2Array.push_back(m2ObjectCandidate);
+            }
+        }
+    }
 }
 void Map::doPostLoad(WoWFrameData *frameData){
     int processedThisFrame = 0;
@@ -681,16 +683,25 @@ void Map::collectMeshes(WoWFrameData *frameData) {
         }
 //    }
 
-    auto &sortedArray = renderedThisFramePreSort;
-    std::vector<int> indexArray = std::vector<int>(sortedArray.size());
+    auto *sortedArrayPtr = &renderedThisFramePreSort[0];
+    std::vector<int> indexArray = std::vector<int>(renderedThisFramePreSort.size());
     for (int i = 0; i < indexArray.size(); i++) {
         indexArray[i] = i;
     }
 
-    std::sort(indexArray.begin(),
-              indexArray.end(),
-              #include "../../../gapi/interface/sortLambda.h"
-    );
+    //No need to sort array which has only one element
+    if (renderedThisFramePreSort.size() > 1) {
+        auto *config = m_api->getConfig();
+        quickSort_parallel(indexArray.data(), indexArray.size(), config->getThreadCount(), config->getQuickSortCutoff(),
+
+#include "../../../gapi/interface/sortLambda.h"
+
+        );
+    }
+//    std::sort(indexArray.begin(),
+//              indexArray.end(),
+//              #include "../../../gapi/interface/sortLambda.h"
+//    );
     frameData->renderedThisFrame.resize(indexArray.size());
     for (int i = 0; i < indexArray.size(); i++) {
         frameData->renderedThisFrame[i] = renderedThisFramePreSort[indexArray[i]];

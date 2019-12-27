@@ -26,6 +26,8 @@ private:
     std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimap;
     std::function<void(float farPlane)> setFarPlane;
     std::function<void(float farPlane)> setMovementSpeed;
+    std::function<void(int value)> setThreadCount;
+    std::function<void(int value)> setQuicksortCutoff;
 
     void emptyMinimap() {
         for (int i = 0; i < 64; i++) {
@@ -47,6 +49,8 @@ private:
     float minimapZoom = 1;
     float farPlane = 200;
     float movementSpeed = 1;
+    int  threadCount = 4;
+    int  quickSortCutoff = 10;
     float prevMinimapZoom = 1;
     int prevMapId = -1;
     bool isWmoMap = false;
@@ -77,6 +81,10 @@ public:
 
     void setFarPlaneChangeCallback(std::function<void(float farPlane)> callback);
     void setSpeedCallback(std::function<void(float speed)> callback);
+
+
+    void setThreadCountCallback(std::function<void(int value)> callback);
+    void setQuicksortCutoffCallback(std::function<void(int value)> callback);
 
     void setGetAdtSelectionMinimap( std::function <void(int mapId)> callback);
     void setFillAdtSelectionMinimap( std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap)> callback);
