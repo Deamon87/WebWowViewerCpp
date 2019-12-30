@@ -40,6 +40,8 @@ private:
     int threadCount = 4;
     int quickSortCutoff = 10;
 
+    int currentTime = 0;
+
     bool useWotlkLogic = false;
     float movementSpeed = 1.0;
 
@@ -278,6 +280,13 @@ public:
     }
     void setQuickSortCutoff(int value) {
         quickSortCutoff = value;
+    }
+
+    void setCurrentTime(int value) {
+        currentTime = value;
+    }
+    int getCurrentTime() {
+        return currentTime;
     }
 };
 

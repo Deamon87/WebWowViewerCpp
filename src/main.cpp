@@ -415,6 +415,9 @@ int main(){
         return testConf->getAreaName();
     });
 
+    frontendUI.setCurrentTimeChangeCallback([](int value) -> void{
+        testConf->setCurrentTime(value);
+    });
 
     frontendUI.setGetCameraPos([scene](float &cameraX,float &cameraY,float &cameraZ) -> void {
         float currentCameraPos[4] = {0,0,0,0};

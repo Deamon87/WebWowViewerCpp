@@ -14,6 +14,7 @@ public:
     virtual void getMapArray(std::vector<MapRecord> &mapRecords) = 0;
     virtual std::string getAreaName(int areaId) = 0;
     virtual std::string getWmoAreaName(int wmoId, int nameId, int groupId) = 0;
+    virtual void getEnvInfo(int mapId, float x, float y, float z, int time, LightResult &lightResult) = 0;
 };
 
 #endif //AWEBWOWVIEWERCPP_DATABASEHANDLER_H

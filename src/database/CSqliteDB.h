@@ -16,11 +16,15 @@ public:
     void getMapArray(std::vector<MapRecord> &mapRecords) override;
     std::string getAreaName(int areaId) override;
     std::string getWmoAreaName(int wmoId, int nameId, int groupId) override;
+
+    void getEnvInfo(int mapId, float x, float y, float z, int time, LightResult &lightResult) override;
 private:
     SQLite::Database m_sqliteDatabase;
 
     SQLite::Statement getWmoAreaAreaName;
     SQLite::Statement getAreaNameStatement;
+    SQLite::Statement getLightStatement;
+    SQLite::Statement getLightData;
 };
 
 

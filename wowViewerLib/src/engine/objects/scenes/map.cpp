@@ -487,58 +487,17 @@ void Map::update(WoWFrameData *frameData) {
             }
         }
 
-//        if (m_api->getDB2Light() != nullptr && m_api->getDB2Light()->getIsLoaded() && m_api->getDB2LightData()->getIsLoaded()) {
-//            //Check areaRecord
-//
-//            //Query Light Record
-//            std::vector<FoundLightRecord> result = m_api->getDB2Light()->findRecord(m_mapId, cameraVec3);
-//            float totalSummator = 0.0f;
-//
-//            for (int i = 0; i < result.size() && totalSummator < 1.0f; i++) {
-//                DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(result[i].lightRec.lightParamsID[0]);
-//                float blendPart = result[i].blendAlpha < 1.0f ? result[i].blendAlpha : 1.0f;
-//                blendPart = blendPart + totalSummator < 1.0f ? blendPart : 1.0f - totalSummator;
-//
-//                ambientColor = ambientColor +
-//                    mathfu::vec3((lightData.ambientColor & 0xFF) / 255.0f,
-//                    ((lightData.ambientColor >> 8) & 0xFF) / 255.0f,
-//                    ((lightData.ambientColor >> 16) & 0xFF) / 255.0f) * blendPart ;
-//                directColor = directColor +
-//                    mathfu::vec3((lightData.directColor & 0xFF) / 255.0f,
-//                        ((lightData.directColor >> 8) & 0xFF) / 255.0f,
-//                        ((lightData.directColor >> 16) & 0xFF) / 255.0f) * blendPart ;
-//
-//                if (!fogRecordWasFound) {
-//                    endFogColor = endFogColor +
-//                                  mathfu::vec3((lightData.sunFogColor & 0xFF) / 255.0f,
-//                                               ((lightData.sunFogColor >> 8) & 0xFF) / 255.0f,
-//                                               ((lightData.sunFogColor >> 16) & 0xFF) / 255.0f) * blendPart;
-//                }
-//
-//                totalSummator += blendPart;
-//            }
-////            DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(20947);
-//
-////            for (int jk = 0; jk < 10000; jk++) {
-////                DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(20947+jk);
-////                std::cout << "lightParamID = " << lightData.lightParamID << ", time = " << lightData.time << std::endl;
-////                if (lightData.lightParamID == 379) {
-////                    std::cout << "found :D" << std::endl;
-////                }
-////            }
-//            config->setAmbientColor(
-//                ambientColor.x,
-//                ambientColor.y,
-//                ambientColor.z,
-//                1.0
-//            );
-//            config->setSunColor(
-//                directColor.x,
-//                directColor.y,
-//                directColor.z,
-//                1.0
-//            );
-//        }
+        LightResult lightResult;
+        m_api->getDatabaseHandler()->getEnvInfo(m_mapId,
+            frameData->m_cameraVec3[0],
+            frameData->m_cameraVec3[1],
+            frameData->m_cameraVec3[2],
+            config->getCurrentTime(),
+            lightResult
+        );
+
+        config->setAmbientColor(lightResult.ambientColor[0], lightResult.ambientColor[1], lightResult.ambientColor[2], 0);
+        config->setSunColor(lightResult.directColor[0], lightResult.directColor[1], lightResult.directColor[2], 0);
 
         config->setFogColor(
                 endFogColor.x,

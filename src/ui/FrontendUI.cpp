@@ -366,6 +366,13 @@ void FrontendUI::showSettingsDialog() {
                 setFarPlane(farPlane);
             }
         }
+        ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
+        if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
+            if (setCurrentTime){
+                setCurrentTime(currentTime);
+            }
+        }
+
         if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 10)) {
             if (setMovementSpeed){
                 setMovementSpeed(movementSpeed);
@@ -398,6 +405,10 @@ void FrontendUI::setThreadCountCallback(std::function<void(int value)> callback)
 
 void FrontendUI::setQuicksortCutoffCallback(std::function<void(int value)> callback) {
     setQuicksortCutoff = callback;
+}
+
+void FrontendUI::setCurrentTimeChangeCallback(std::function<void(int value)> callback) {
+    setCurrentTime = callback;
 }
 
 

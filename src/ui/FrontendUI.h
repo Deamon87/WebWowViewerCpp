@@ -27,6 +27,7 @@ private:
 
     std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimap;
     std::function<void(float farPlane)> setFarPlane;
+    std::function<void(int currentTime)> setCurrentTime;
     std::function<void(float farPlane)> setMovementSpeed;
     std::function<void(int value)> setThreadCount;
     std::function<void(int value)> setQuicksortCutoff;
@@ -50,6 +51,7 @@ private:
 
     float minimapZoom = 1;
     float farPlane = 200;
+    int currentTime = 0;
     float movementSpeed = 1;
     int  threadCount = 4;
     int  quickSortCutoff = 10;
@@ -82,6 +84,7 @@ public:
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
 
     void setFarPlaneChangeCallback(std::function<void(float farPlane)> callback);
+    void setCurrentTimeChangeCallback(std::function<void(int currentTime)> callback);
     void setSpeedCallback(std::function<void(float speed)> callback);
 
 

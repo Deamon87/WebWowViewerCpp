@@ -10,4 +10,11 @@ struct MapRecord {
     int WdtFileID;
     int MapType;
 };
+
+struct LightResult {
+    float ambientColor[3];
+    float directColor[3];
+    std::string skyBoxName;
+    int skyBoxFdid;
+};
 #endif //AWEBWOWVIEWERCPP_DBSTRUCTS_H
