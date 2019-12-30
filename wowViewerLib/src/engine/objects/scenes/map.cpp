@@ -103,19 +103,6 @@ void Map::checkCulling(WoWFrameData *frameData) {
                 interiorGroupNum = groupResult.groupIndex;
             } else {
             }
-
-//            if (m_api->getDB2WmoAreaTable() != nullptr && m_api->getDB2WmoAreaTable()->getIsLoaded()) {
-//                DBWmoAreaTableRecord areaTableRecord;
-//                if (m_api->getDB2WmoAreaTable()->findRecord(
-//                    frameData->m_currentWMO->getWmoHeader()->wmoID,
-//                    frameData->m_currentWMO->getNameSet(),
-//                    groupResult.WMOGroupID,
-//                    areaTableRecord
-//                )) {
-//                    config->setAreaName(areaTableRecord.AreaName);
-//                }
-//            }
-
             bspNodeId = groupResult.nodeId;
             break;
         }
@@ -435,40 +422,7 @@ void Map::update(WoWFrameData *frameData) {
     }
     m_api->getConfig()->setAreaName(areaName);
 
-//    var currentAreaName = '';
-//    var wmoAreaTableDBC = this.sceneApi.dbc.getWmoAreaTableDBC();
-//    var areaTableDBC = this.sceneApi.dbc.getAreaTableDBC();
-//    var areaRecord = null;
-//    if (wmoAreaTableDBC && areaTableDBC) {
-//        if (this.currentWMO) {
-//            var wmoFile = this.currentWMO.wmoObj;
-//            var wmoId = wmoFile.wmoId;
-//            var wmoGroupId = this.currentWMO.wmoGroupArray[currentWmoGroup].wmoGeom.wmoGroupFile.mogp.groupID;
-//            var nameSetId = this.currentWMO.nameSet;
-//
-//            var wmoAreaTableRecord = wmoAreaTableDBC.findRecord(wmoId, nameSetId, wmoGroupId);
-//            if (wmoAreaTableRecord) {
-//                var areaRecord = areaTableDBC[wmoAreaTableRecord.areaId];
-//                if (wmoAreaTableRecord) {
-//                    if (wmoAreaTableRecord.name == '') {
-//                        var areaRecord = areaTableDBC[wmoAreaTableRecord.areaId];
-//                        if (areaRecord) {
-//                            currentAreaName = areaRecord.name
-//                        }
-//                    } else {
-//                        currentAreaName = wmoAreaTableRecord.name;
-//                    }
-//                }
-//            }
-//        }
-//        if (currentAreaName == '' && mcnkChunk) {
-//            var areaRecord = areaTableDBC[mcnkChunk.areaId];
-//            if (areaRecord) {
-//                currentAreaName = areaRecord.name
-//            }
-//        }
-//    }
-//
+
     //8. Check fog color every 2 seconds
     bool fogRecordWasFound = false;
     if (this->m_currentTime + frameData->deltaTime - this->m_lastTimeLightCheck > 30) {
@@ -496,8 +450,9 @@ void Map::update(WoWFrameData *frameData) {
             lightResult
         );
 
-        config->setAmbientColor(lightResult.ambientColor[0], lightResult.ambientColor[1], lightResult.ambientColor[2], 0);
-        config->setSunColor(lightResult.directColor[0], lightResult.directColor[1], lightResult.directColor[2], 0);
+        //Database is in BGRA
+        config->setAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
+        config->setSunColor(lightResult.directColor[2], lightResult.directColor[1], lightResult.directColor[2], 0);
 
         config->setFogColor(
                 endFogColor.x,

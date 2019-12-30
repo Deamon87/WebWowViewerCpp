@@ -185,6 +185,11 @@ struct InnerLightResult {
 
         InnerLightDataRes lastLdRes = {0, 0, -1};
         bool assigned = false;
+        float innerAlpha = innerResult.blendAlpha < 1.0 ? innerResult.blendAlpha : 1.0;
+        if (totalSummator + innerAlpha > 1.0f) {
+            innerAlpha = 1.0f - totalSummator;
+        }
+
         while (getLightData.executeStep()) {
             InnerLightDataRes currLdRes;
             currLdRes.ambientLight = getLightData.getColumn(0);
@@ -192,26 +197,29 @@ struct InnerLightResult {
             currLdRes.time = getLightData.getColumn(2);
             if (currLdRes.time > ptime) {
                 assigned = true;
+
+
+
                 if (lastLdRes.time == -1) {
                     //Set as is
-                    lightResult.ambientColor[0] += getFloatFromInt<0>(currLdRes.ambientLight) * innerResult.blendAlpha;
-                    lightResult.ambientColor[1] += getFloatFromInt<1>(currLdRes.ambientLight) * innerResult.blendAlpha;
-                    lightResult.ambientColor[2] += getFloatFromInt<2>(currLdRes.ambientLight) * innerResult.blendAlpha;
+                    lightResult.ambientColor[0] += getFloatFromInt<0>(currLdRes.ambientLight) * innerAlpha;
+                    lightResult.ambientColor[1] += getFloatFromInt<1>(currLdRes.ambientLight) * innerAlpha;
+                    lightResult.ambientColor[2] += getFloatFromInt<2>(currLdRes.ambientLight) * innerAlpha;
 
-                    lightResult.directColor[0] += getFloatFromInt<0>(currLdRes.directLight) * innerResult.blendAlpha;
-                    lightResult.directColor[1] += getFloatFromInt<1>(currLdRes.directLight) * innerResult.blendAlpha;
-                    lightResult.directColor[2] += getFloatFromInt<2>(currLdRes.directLight) * innerResult.blendAlpha;
+                    lightResult.directColor[0] += getFloatFromInt<0>(currLdRes.directLight) * innerAlpha;
+                    lightResult.directColor[1] += getFloatFromInt<1>(currLdRes.directLight) * innerAlpha;
+                    lightResult.directColor[2] += getFloatFromInt<2>(currLdRes.directLight) * innerAlpha;
                 } else {
                     //Blend using time as alpha
                     float timeAlphaBlend = 1.0f - (((float)currLdRes.time - (float)ptime) / ((float)currLdRes.time - (float)lastLdRes.time));
 
-                    lightResult.ambientColor[0] += (getFloatFromInt<0>(currLdRes.ambientLight) * timeAlphaBlend + getFloatFromInt<0>(lastLdRes.ambientLight)*(1.0 - timeAlphaBlend)) * innerResult.blendAlpha;
-                    lightResult.ambientColor[1] += (getFloatFromInt<1>(currLdRes.ambientLight) * timeAlphaBlend + getFloatFromInt<1>(lastLdRes.ambientLight)*(1.0 - timeAlphaBlend)) * innerResult.blendAlpha;
-                    lightResult.ambientColor[2] += (getFloatFromInt<2>(currLdRes.ambientLight) * timeAlphaBlend + getFloatFromInt<2>(lastLdRes.ambientLight)*(1.0 - timeAlphaBlend)) * innerResult.blendAlpha;
+                    lightResult.ambientColor[0] += (getFloatFromInt<0>(currLdRes.ambientLight) * timeAlphaBlend + getFloatFromInt<0>(lastLdRes.ambientLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.ambientColor[1] += (getFloatFromInt<1>(currLdRes.ambientLight) * timeAlphaBlend + getFloatFromInt<1>(lastLdRes.ambientLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.ambientColor[2] += (getFloatFromInt<2>(currLdRes.ambientLight) * timeAlphaBlend + getFloatFromInt<2>(lastLdRes.ambientLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
 
-                    lightResult.directColor[0] += (getFloatFromInt<0>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<0>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerResult.blendAlpha;
-                    lightResult.directColor[1] += (getFloatFromInt<1>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<1>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerResult.blendAlpha;
-                    lightResult.directColor[2] += (getFloatFromInt<2>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<2>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerResult.blendAlpha;
+                    lightResult.directColor[0] += (getFloatFromInt<0>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<0>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.directColor[1] += (getFloatFromInt<1>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<1>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.directColor[2] += (getFloatFromInt<2>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<2>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
                 }
                 break;
             }
@@ -219,13 +227,13 @@ struct InnerLightResult {
         }
 
         if (!assigned) {
-            lightResult.ambientColor[0] += getFloatFromInt<0>(lastLdRes.ambientLight) * innerResult.blendAlpha;
-            lightResult.ambientColor[1] += getFloatFromInt<1>(lastLdRes.ambientLight) * innerResult.blendAlpha;
-            lightResult.ambientColor[2] += getFloatFromInt<2>(lastLdRes.ambientLight) * innerResult.blendAlpha;
+            lightResult.ambientColor[0] += getFloatFromInt<0>(lastLdRes.ambientLight) * innerAlpha;
+            lightResult.ambientColor[1] += getFloatFromInt<1>(lastLdRes.ambientLight) * innerAlpha;
+            lightResult.ambientColor[2] += getFloatFromInt<2>(lastLdRes.ambientLight) * innerAlpha;
 
-            lightResult.directColor[0] += getFloatFromInt<0>(lastLdRes.directLight) * innerResult.blendAlpha;
-            lightResult.directColor[1] += getFloatFromInt<1>(lastLdRes.directLight) * innerResult.blendAlpha;
-            lightResult.directColor[2] += getFloatFromInt<2>(lastLdRes.directLight) * innerResult.blendAlpha;
+            lightResult.directColor[0] += getFloatFromInt<0>(lastLdRes.directLight) * innerAlpha;
+            lightResult.directColor[1] += getFloatFromInt<1>(lastLdRes.directLight) * innerAlpha;
+            lightResult.directColor[2] += getFloatFromInt<2>(lastLdRes.directLight) * innerAlpha;
         }
 
         totalSummator+= innerResult.blendAlpha;
