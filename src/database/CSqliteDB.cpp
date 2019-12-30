@@ -9,7 +9,9 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
     getWmoAreaAreaName(m_sqliteDatabase,
         "select wat.AreaName_lang as wmoAreaName, at.AreaName_lang from WMOAreaTable wat "
         "left join AreaTable at on at.id = wat.AreaTableID "
-        "where wat.WMOID == ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC")
+        "where wat.WMOID == ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC"),
+    getAreaNameStatement(m_sqliteDatabase,
+        "select at.AreaName_lang from AreaTable at where at.ID = ?")
 
 {
     char *sErrMsg = "";
@@ -36,6 +38,14 @@ void CSqliteDB::getMapArray(std::vector<MapRecord> &mapRecords) {
 }
 
 std::string CSqliteDB::getAreaName(int areaId) {
+    getAreaNameStatement.reset();
+
+    getAreaNameStatement.bind(1, areaId);
+    while (getAreaNameStatement.executeStep()) {
+        std::string areaName = getAreaNameStatement.getColumn(0);
+
+        return areaName;
+    }
 
 
     return std::string();

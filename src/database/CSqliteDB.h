@@ -20,6 +20,7 @@ private:
     SQLite::Database m_sqliteDatabase;
 
     SQLite::Statement getWmoAreaAreaName;
+    SQLite::Statement getAreaNameStatement;
 };
 
 
