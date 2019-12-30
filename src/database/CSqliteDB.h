@@ -7,16 +7,19 @@
 
 #include <vector>
 #include <SQLiteCpp/Database.h>
-#include "dbStructs.h"
+#include "../../wowViewerLib/src/include/databaseHandler.h"
 
 
-
-class CSqliteDB {
+class CSqliteDB : public IClientDatabase {
 public:
     CSqliteDB(std::string dbFileName);
-    void getMapArray(std::vector<MapRecord> &mapRecords);
+    void getMapArray(std::vector<MapRecord> &mapRecords) override;
+    std::string getAreaName(int areaId) override;
+    std::string getWmoAreaName(int wmoId, int nameId, int groupId) override;
 private:
     SQLite::Database m_sqliteDatabase;
+
+    SQLite::Statement getWmoAreaAreaName;
 };
 
 

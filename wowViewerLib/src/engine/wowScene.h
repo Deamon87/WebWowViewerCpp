@@ -37,7 +37,7 @@ class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 private:
     WoWFilesCacheStorage * cacheStorage;
 public:
-    WoWSceneImpl(Config *config, WoWFilesCacheStorage * cacheStorage, IDevice * device, int canvWidth, int canvHeight);
+    WoWSceneImpl(Config *config, WoWFilesCacheStorage * cacheStorage, IClientDatabase * clientDatabase, IDevice * device, int canvWidth, int canvHeight);
     ~WoWSceneImpl() override;
 
     void draw(animTime_t deltaTime) override;
@@ -128,6 +128,9 @@ public:
     virtual Config *getConfig() override {
         return m_config;
     }
+    virtual IClientDatabase *getDatabaseHandler() override {
+        return m_clientDatabase;
+    }
     void setScenePos(float x, float y, float z) override {
         m_firstCamera.setCameraPos(x,y,z);
     };
@@ -153,6 +156,7 @@ private:
 
     bool m_isTerminating = false;
     Config * m_config;
+    IClientDatabase * m_clientDatabase;
     std::unique_ptr<IDevice> m_gdevice;
     HGUniformBufferChunk m_sceneWideUniformBuffer;
 

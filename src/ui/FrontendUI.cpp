@@ -78,6 +78,9 @@ void FrontendUI::composeUI() {
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
                         ImGui::GetIO().Framerate);
+            if(getCurrentAreaName) {
+                ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
+            }
             ImGui::End();
         }
     }
@@ -344,6 +347,10 @@ void FrontendUI::setGetMapList(std::function<void(std::vector<MapRecord> &mapLis
     getMapList = callback;
 }
 
+void FrontendUI::setGetCurrentAreaName( std::function <std::string()> callback) {
+    getCurrentAreaName = callback;
+}
+
 void FrontendUI::setFarPlaneChangeCallback(std::function<void(float farPlane)> callback) {
     setFarPlane = callback;
 }
@@ -365,7 +372,7 @@ void FrontendUI::showSettingsDialog() {
             }
         }
 
-        if (ImGui::SliderInt("Thread Count", &threadCount, 1, 16)) {
+        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
             if (setThreadCount){
                 setThreadCount(threadCount);
             }

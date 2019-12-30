@@ -366,7 +366,7 @@ int main(){
 
     //Create device
     IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
-    WoWScene *scene = createWoWScene(testConf, storage, device, canvWidth, canvHeight);
+    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
     FrontendUI frontendUI;
     frontendUI.setOpenCascStorageCallback([&processor, &storage, &scene](std::string cascPath) -> bool {
@@ -410,6 +410,9 @@ int main(){
     });
     frontendUI.setQuicksortCutoffCallback([&scene](int value) -> void {
         testConf->setQuickSortCutoff(value);
+    });
+    frontendUI.setGetCurrentAreaName([]()->std::string {
+        return testConf->getAreaName();
     });
 
 
@@ -472,7 +475,7 @@ int main(){
     glfwSetWindowSizeCallback( window, window_size_callback);
     glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback( window, mouse_button_callback);
-//    glfwSwapInterval(0);
+    glfwSwapInterval(0);
 
 try {
     while (!glfwWindowShouldClose(window)) {
@@ -486,7 +489,7 @@ try {
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+
 
 //        double fps = calcFPS(nullptr, 2.0);
 
@@ -500,6 +503,12 @@ try {
         }
 
         scene->draw((deltaTime*(1000.0f))); //miliseconds
+        double currentDeltaAfterDraw = (glfwGetTime() - lastFrame)*(1000.0f);
+        lastFrame = currentFrame;
+        if (currentDeltaAfterDraw < 5.0) {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(std::chrono::milliseconds((int)(5.0 - currentDeltaAfterDraw)));
+        }
 
         if (rendererName == "ogl3" || rendererName == "ogl2") {
             glfwSwapBuffers(window);

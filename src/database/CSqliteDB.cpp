@@ -4,9 +4,17 @@
 
 #include <sqlite3.h>
 #include "CSqliteDB.h"
-CSqliteDB::CSqliteDB(std::string dbFileName) : m_sqliteDatabase(dbFileName, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE){
+CSqliteDB::CSqliteDB(std::string dbFileName) :
+    m_sqliteDatabase(dbFileName, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE),
+    getWmoAreaAreaName(m_sqliteDatabase,
+        "select wat.AreaName_lang as wmoAreaName, at.AreaName_lang from WMOAreaTable wat "
+        "left join AreaTable at on at.id = wat.AreaTableID "
+        "where wat.WMOID == ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC")
+
+{
     char *sErrMsg = "";
     sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA synchronous = OFF", NULL, NULL, &sErrMsg);
+
 }
 
 void CSqliteDB::getMapArray(std::vector<MapRecord> &mapRecords) {
@@ -25,4 +33,32 @@ void CSqliteDB::getMapArray(std::vector<MapRecord> &mapRecords) {
         mapRecords.push_back(mapRecord);
     }
 
+}
+
+std::string CSqliteDB::getAreaName(int areaId) {
+
+
+    return std::string();
+}
+
+std::string CSqliteDB::getWmoAreaName(int wmoId, int nameId, int groupId) {
+    getWmoAreaAreaName.reset();
+
+    getWmoAreaAreaName.bind(1, wmoId);
+    getWmoAreaAreaName.bind(2, nameId);
+    getWmoAreaAreaName.bind(3, groupId);
+
+    while (getWmoAreaAreaName.executeStep()) {
+        std::string wmoAreaName = getWmoAreaAreaName.getColumn(0);
+        std::string areaName = getWmoAreaAreaName.getColumn(1);
+
+        if (wmoAreaName == "") {
+            return areaName;
+        } else {
+            return wmoAreaName;
+        }
+    }
+
+
+    return "";
 }

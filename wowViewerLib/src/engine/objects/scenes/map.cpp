@@ -65,6 +65,7 @@ void Map::checkCulling(WoWFrameData *frameData) {
 
     int adt_x = worldCoordinateToAdtIndex(camera4.y);
     int adt_y = worldCoordinateToAdtIndex(camera4.x);
+    frameData->adtAreadId = -1;
     AdtObject *adtObjectCameraAt = this->mapTiles[adt_x][adt_y];
     if (adtObjectCameraAt != nullptr) {
         ADTObjRenderRes tempRes;
@@ -83,6 +84,11 @@ void Map::checkCulling(WoWFrameData *frameData) {
             16,
             16
         );
+
+        int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
+        int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
+
+        frameData->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
     }
 
     for (auto &checkingWmoObj : potentialWmo) {
@@ -381,7 +387,7 @@ void Map::update(WoWFrameData *frameData) {
 //    #pragma
     int numThreads = m_api->getConfig()->getThreadCount();
     {
-        #pragma omp parallel for num_threads(numThreads)
+        #pragma omp parallel for num_threads(numThreads) schedule(dynamic, 4)
         for (int i = 0; i < frameData->m2Array.size(); i++) {
             auto m2Object = frameData->m2Array[i];
             if (m2Object != nullptr) {
@@ -410,10 +416,25 @@ void Map::update(WoWFrameData *frameData) {
         m2Object->calcDistance(cameraVec3);
     };
 
-    //6. Check what WMO instance we're in
 
+    //7. Get AreaId and Area Name
+    std::string areaName = "";
+    if (frameData->m_currentWMO != nullptr) {
+        auto nameId = frameData->m_currentWMO->getNameSet();
+        auto wmoId = frameData->m_currentWMO->getWmoId();
+        auto groupId = frameData->m_currentWMO->getWmoGroupId(frameData->m_currentWmoGroup);
 
-//    //7. Get AreaId and Area Name
+        areaName = m_api->getDatabaseHandler()->getWmoAreaName(wmoId, nameId, groupId);
+    };
+    if (areaName == "") {
+        if (frameData->adtAreadId > 0) {
+            areaName = m_api->getDatabaseHandler()->getAreaName(frameData->adtAreadId);
+        } else {
+            areaName = "";
+        }
+    }
+    m_api->getConfig()->setAreaName(areaName);
+
 //    var currentAreaName = '';
 //    var wmoAreaTableDBC = this.sceneApi.dbc.getWmoAreaTableDBC();
 //    var areaTableDBC = this.sceneApi.dbc.getAreaTableDBC();

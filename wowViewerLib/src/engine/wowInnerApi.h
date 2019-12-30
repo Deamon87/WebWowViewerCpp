@@ -8,6 +8,7 @@
 #include "engineClassList.h"
 
 #include "./wowCommonClasses.h"
+#include "./../include/databaseHandler.h"
 
 //Functional classes
 
@@ -51,6 +52,8 @@ public:
     virtual mathfu::vec3 getViewUp() = 0;
 
     virtual Config *getConfig() = 0;
+
+    virtual IClientDatabase *getDatabaseHandler() = 0;
 
     virtual void setCameraPosition(float x, float y, float z) = 0;
     virtual void setCameraOffset(float x, float y, float z) = 0;

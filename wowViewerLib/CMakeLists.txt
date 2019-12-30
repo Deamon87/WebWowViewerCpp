@@ -220,7 +220,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/skelFile.cpp
         src/engine/persistance/skelFile.h
         src/engine/algorithms/FrameCounter.cpp
-        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h src/engine/WowFilesCacheStorage.h src/engine/WowFilesCacheStorage.cpp src/engine/algorithms/quick-sort-omp.h)
+        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h src/engine/WowFilesCacheStorage.h src/engine/WowFilesCacheStorage.cpp src/engine/algorithms/quick-sort-omp.h src/include/databaseHandler.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -413,6 +413,7 @@ set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 if (LINK_OPENMP)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options(WoWViewerLib PRIVATE -fopenmp=libgomp)
+        target_link_libraries(WoWViewerLib -fopenmp=libgomp)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(WoWViewerLib PRIVATE -fopenmp)
         target_link_libraries(WoWViewerLib -fopenmp)

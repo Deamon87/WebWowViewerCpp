@@ -7,6 +7,7 @@ class WoWFilesCacheStorage;
 
 #include <string>
 #include "config.h"
+#include "databaseHandler.h"
 #include "controllable.h"
 #include "sharedFile.h"
 #include "iostuff.h"
@@ -38,6 +39,6 @@ public:
 
 
 #include "../engine/WowFilesCacheStorage.h"
-extern "C" { WoWScene * createWoWScene(Config *config, WoWFilesCacheStorage * cacheStorage, IDevice * device, int canvWidth, int canvHeight); };
+extern "C" { WoWScene *createWoWScene(Config *config, WoWFilesCacheStorage * cacheStorage, IClientDatabase * clientDatabase, IDevice *device, int canvWidth, int canvHeight) ; };
 
 #endif //WOWMAPVIEWERREVIVED_WOWSCENE_H_H

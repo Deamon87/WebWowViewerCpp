@@ -916,3 +916,12 @@ AdtObject::AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDa
     lodDiffuseTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTexture);
     lodNormalTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTextureN);
 }
+
+int AdtObject::getAreaId(int mcnk_x, int mcnk_y) {
+    auto index = m_adtFile->mcnkMap[mcnk_x][mcnk_y];
+    if (index > -1) {
+        return m_adtFile->mapTile[index].areaid;
+    }
+
+    return 0;
+}

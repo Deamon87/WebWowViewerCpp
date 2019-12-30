@@ -270,8 +270,8 @@ void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cam
     }
 }
 
-WoWSceneImpl::WoWSceneImpl(Config *config, WoWFilesCacheStorage * woWFilesCacheStorage, IDevice * device, int canvWidth, int canvHeight) :
-    cacheStorage(woWFilesCacheStorage)
+WoWSceneImpl::WoWSceneImpl(Config *config, WoWFilesCacheStorage * woWFilesCacheStorage, IClientDatabase * clientDatabase, IDevice * device, int canvWidth, int canvHeight) :
+    cacheStorage(woWFilesCacheStorage), m_clientDatabase(clientDatabase)
 {
     m_gdevice.reset(device);
 //    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
@@ -989,12 +989,12 @@ WoWSceneImpl::~WoWSceneImpl() {
     }
 }
 
-WoWScene *createWoWScene(Config *config, WoWFilesCacheStorage * cacheStorage, IDevice *device, int canvWidth, int canvHeight) {
+WoWScene *createWoWScene(Config *config, WoWFilesCacheStorage * cacheStorage, IClientDatabase * clientDatabase, IDevice *device, int canvWidth, int canvHeight) {
 #ifdef __ANDROID_API__
     std::cout.rdbuf(new androidbuf());
 #endif
 
-    return new WoWSceneImpl(config, cacheStorage, device, canvWidth, canvHeight);
+    return new WoWSceneImpl(config, cacheStorage, clientDatabase, device, canvWidth, canvHeight);
 }
 
 void WoWSceneImpl::clearCache() {

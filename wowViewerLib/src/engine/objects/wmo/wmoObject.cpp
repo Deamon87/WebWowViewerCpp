@@ -1322,3 +1322,10 @@ std::shared_ptr<M2Object> WmoObject::getSkyBoxForGroup(int groupNum) {
 
 WmoObject::~WmoObject() {
 }
+
+int WmoObject::getWmoGroupId(int groupNum) {
+    if (!m_loaded) return 0;
+    if (!groupObjects[groupNum]->getIsLoaded()) return 0;
+
+    return groupObjects[groupNum]->getWmoGroupGeom()->mogp->wmoGroupID;
+}

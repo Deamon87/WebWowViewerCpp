@@ -9,7 +9,8 @@
 #include "imguiLib/imgui.h"
 #include <fileBrowser/imfilebrowser.h>
 #include "../../wowViewerLib/src/gapi/interface/IDeviceUI.h"
-#include "../database/dbStructs.h"
+#include "../../wowViewerLib/src/include/database/dbStructs.h"
+
 
 class FrontendUI : public IDeviceUI {
 private:
@@ -20,6 +21,7 @@ private:
 
     std::function <void(int wdtFileDataId)> getAdtSelectionMinimap = nullptr;
     std::function <void(std::vector<MapRecord> &mapList)> getMapList = nullptr;
+    std::function <std::string()> getCurrentAreaName = nullptr;
 
     std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap)> fillAdtSelectionminimap = nullptr;
 
@@ -89,6 +91,7 @@ public:
     void setGetAdtSelectionMinimap( std::function <void(int mapId)> callback);
     void setFillAdtSelectionMinimap( std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap)> callback);
     void setGetMapList( std::function <void(std::vector<MapRecord> &mapList)> callback);
+    void setGetCurrentAreaName( std::function <std::string()> callback);
 
 #ifdef LINK_VULKAN
     virtual void renderUIVLK(VkCommandBuffer commandBuffer) = 0;

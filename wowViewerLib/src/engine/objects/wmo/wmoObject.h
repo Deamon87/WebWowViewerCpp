@@ -97,6 +97,13 @@ public:
     int getNameSet() {
         return m_nameSet;
     }
+    int getWmoId() {
+        if (m_loaded) {
+            return mainGeom->header->wmoID;
+        }
+        return 0;
+    }
+    int getWmoGroupId (int groupNum);
 
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
     virtual SMOHeader *getWmoHeader() override;

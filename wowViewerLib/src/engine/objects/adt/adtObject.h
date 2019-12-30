@@ -31,13 +31,14 @@ public:
         m_mapApi = api;
     }
 
-
     void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
 
     void update();
     void uploadGeneratorBuffers(ADTObjRenderRes &adtRes);
     void doPostLoad();
+
+    int getAreaId(int mcnk_x, int mcnk_y);
 
     bool checkFrustumCulling(
             ADTObjRenderRes &adtFrustRes,

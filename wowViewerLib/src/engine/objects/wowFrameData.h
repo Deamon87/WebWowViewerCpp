@@ -37,6 +37,7 @@ public:
     std::shared_ptr<WmoObject> m_currentWMO = nullptr;
     int m_currentWmoGroup = -1;
 
+    int adtAreadId = -1;
 
     ExteriorView exteriorView = ExteriorView();
     std::vector<InteriorView> interiorViews = {};
