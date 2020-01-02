@@ -31,6 +31,7 @@ private:
     std::function<void(float farPlane)> setMovementSpeed;
     std::function<void(int value)> setThreadCount;
     std::function<void(int value)> setQuicksortCutoff;
+    std::function<void()> unloadScene;
 
     void emptyMinimap() {
         for (int i = 0; i < 64; i++) {
@@ -95,6 +96,9 @@ public:
     void setFillAdtSelectionMinimap( std::function <bool(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap)> callback);
     void setGetMapList( std::function <void(std::vector<MapRecord> &mapList)> callback);
     void setGetCurrentAreaName( std::function <std::string()> callback);
+    void setUnloadScene( std::function <void()> callback) {
+        unloadScene = callback;
+    };
 
 #ifdef LINK_VULKAN
     virtual void renderUIVLK(VkCommandBuffer commandBuffer) = 0;

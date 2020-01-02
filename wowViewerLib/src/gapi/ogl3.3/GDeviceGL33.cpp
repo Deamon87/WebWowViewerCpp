@@ -649,18 +649,17 @@ void GDeviceGL33::bindTexture(ITexture *iTexture, int slot) {
 
 HGTexture GDeviceGL33::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
     BlpCacheRecord blpCacheRecord;
-    blpCacheRecord.texture = texture;
+    blpCacheRecord.texture = texture.get();
     blpCacheRecord.wrapX = xWrapTex;
     blpCacheRecord.wrapY = yWrapTex;
 
-    auto i = loadedTextureCache.find(blpCacheRecord);
-    if (i != loadedTextureCache.end()) {
-        if (!i->second.expired()) {
-            return i->second.lock();
-        } else {
-            loadedTextureCache.erase(i);
-        }
+    auto i = loadedTextureCache[blpCacheRecord];
+    if (!i.expired()) {
+        return i.lock();
+    } else {
+//        loadedTextureCache.erase(blpCacheRecord);
     }
+
 
     std::shared_ptr<GBlpTextureGL33> hgTexture;
     hgTexture.reset(new GBlpTextureGL33(*this, texture, xWrapTex, yWrapTex));

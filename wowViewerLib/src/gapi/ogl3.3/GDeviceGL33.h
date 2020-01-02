@@ -116,7 +116,7 @@ private:
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {
-        HBlpTexture texture;
+        BlpTexture* texture;
         bool wrapX;
         bool wrapY;
 
@@ -131,7 +131,7 @@ protected:
     struct BlpCacheRecordHasher {
         std::size_t operator()(const BlpCacheRecord& k) const {
             using std::hash;
-            return hash<void*>{}(k.texture.get()) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
+            return hash<void*>{}(k.texture) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL33>, BlpCacheRecordHasher> loadedTextureCache;

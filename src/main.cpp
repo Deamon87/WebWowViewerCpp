@@ -358,7 +358,8 @@ int main(){
     }
 
     //Open Sql storage
-    CSqliteDB *sqliteDB = new CSqliteDB("export.db3");
+	
+    CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
 
 
     WoWFilesCacheStorage *storage = new WoWFilesCacheStorage(processor);
@@ -394,10 +395,6 @@ int main(){
 //        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
         scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
-    frontendUI.setOpenSceneByfdidCallback([&scene](int mapId, int wdtFileId, float x, float y, float z) {
-//        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
-        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
-    });
     frontendUI.setFarPlaneChangeCallback([&scene](float farPlane) -> void {
         testConf->setFarPlane(farPlane);
         testConf->setFarPlaneForCulling(farPlane+50);
@@ -413,6 +410,9 @@ int main(){
     });
     frontendUI.setGetCurrentAreaName([]()->std::string {
         return testConf->getAreaName();
+    });
+    frontendUI.setUnloadScene([&scene]()->void {
+        scene->setSceneWithFileDataId(-1, 0, -1);
     });
 
     frontendUI.setCurrentTimeChangeCallback([](int value) -> void{

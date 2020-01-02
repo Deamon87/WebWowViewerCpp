@@ -183,7 +183,9 @@ void WoWSceneImpl::DoCulling() {
 }
 
 void WoWSceneImpl::setScene(int sceneType, std::string name, int cameraNum) {
-    if (sceneType == 0) {
+    if (sceneType == -1) {
+        newScene = new NullScene();
+    } else if (sceneType == 0) {
         m_usePlanarCamera = cameraNum == -1;
         if (m_usePlanarCamera) {
             controllable = &m_planarCamera;
@@ -257,7 +259,9 @@ void WoWSceneImpl::setAnimationId(int animationId) {
 }
 
 void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) {
-    if (sceneType == 0) {
+    if (sceneType == -1) {
+        newScene = new NullScene();
+    } else if (sceneType == 0) {
         m_usePlanarCamera = cameraNum == -1;
         if (m_usePlanarCamera) {
             controllable = &m_planarCamera;

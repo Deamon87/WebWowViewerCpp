@@ -9,6 +9,7 @@ class IWoWInnerApi;
 class AdtObject;
 class M2Object;
 
+#include <array>
 #include <vector>
 #include <set>
 
@@ -123,10 +124,11 @@ private:
 
     std::string m_adtFileTemplate;
 
-    struct {
+    struct lodLevels {
         std::vector<std::shared_ptr<M2Object>> m2Objects;
         std::vector<std::shared_ptr<WmoObject>> wmoObjects;
-    } objectLods[2];
+    };
+    std::array<lodLevels, 2> objectLods;
 
     HGTexture getAdtTexture(int textureId);
     HGTexture getAdtHeightTexture(int textureId);

@@ -18,6 +18,7 @@ public:
     uint16_t seed;
     mathfu::vec2 texPos[2] = {{0,0}, {0,0}};
     mathfu::vec2 texVel[2];
+    bool isDead = false;
 };
 
 

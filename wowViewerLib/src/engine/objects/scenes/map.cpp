@@ -26,15 +26,15 @@ void Map::checkCulling(WoWFrameData *frameData) {
     mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
 
     size_t adtRenderedThisFramePrev = frameData->adtArray.size();
-    frameData->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>();
+    frameData->adtArray = {};
     frameData->adtArray.reserve(adtRenderedThisFramePrev);
 
     size_t m2RenderedThisFramePrev = frameData->m2Array.size();
-    frameData->m2Array = std::vector<std::shared_ptr<M2Object>>();
+    frameData->m2Array = {};
     frameData->m2Array.reserve(m2RenderedThisFramePrev);
 
     size_t wmoRenderedThisFramePrev = frameData->wmoArray.size();
-    frameData->wmoArray = std::vector<std::shared_ptr<WmoObject>>();
+    frameData->wmoArray = {};
     frameData->wmoArray.reserve(wmoRenderedThisFramePrev);
 
 
@@ -452,7 +452,7 @@ void Map::update(WoWFrameData *frameData) {
 
         //Database is in BGRA
         config->setAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
-        config->setSunColor(lightResult.directColor[2], lightResult.directColor[1], lightResult.directColor[2], 0);
+        config->setSunColor(lightResult.directColor[2]*3.0, lightResult.directColor[1]*3.0, lightResult.directColor[0]*3.0, 0);
 
         config->setFogColor(
                 endFogColor.x,

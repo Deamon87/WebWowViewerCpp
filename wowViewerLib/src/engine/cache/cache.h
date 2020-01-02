@@ -113,11 +113,14 @@ public:
         std::string fileName = ss.str();
 
 
-        auto it = m_cache[fileName];
-        if(!it.expired() )
-        {
-            return it.lock();
-        }
+		std::weak_ptr<T> it = m_cache[fileName];
+		if (!it.expired())
+		{
+			return it.lock();
+		}
+		else {
+			m_cache.erase(fileName);
+		}
 
         std::shared_ptr<T> sharedPtr = std::make_shared<T>(id);
         std::weak_ptr<T> weakPtr(sharedPtr);

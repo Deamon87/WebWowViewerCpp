@@ -453,11 +453,16 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
         }
 
         if (killParticle) {
-            listForDeletion.push_back(i);
+            p.isDead = true;
         }
     }
-    for (auto it = listForDeletion.begin(); it != listForDeletion.end(); it++) {
-        this->KillParticle(*it);
+
+    for (int i = 0; i < this->particles.size();) {
+        if (particles[i].isDead) {
+            this->KillParticle(i);
+        } else {
+            i++;
+        }
     }
 
 

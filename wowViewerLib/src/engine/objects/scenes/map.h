@@ -34,7 +34,7 @@ private:
     int m_viewRenderOrder = 0;
 
     std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};
-    std::unordered_map<int, std::weak_ptr<WmoObject>> m_wmoMapObjects;
+    std::unordered_map<int, std::weak_ptr<WmoObject>> m_wmoMapObjects = {};
 
     std::shared_ptr<M2Object> getM2Object(std::string fileName, SMDoodadDef &doodadDef) override ;
     std::shared_ptr<M2Object> getM2Object(int fileDataId, SMDoodadDef &doodadDef) override ;
@@ -52,7 +52,7 @@ public:
         m_wdlObject->setMapApi(this);
     };
 
-    explicit Map(IWoWInnerApi *api, int mapId, int wdtFileDataId) : m_mapId(mapId), m_api(api), mapName(""){
+    explicit Map(IWoWInnerApi *api, int mapId, int wdtFileDataId) : m_mapId(mapId), m_api(api), mapName("") {
         m_wdtfile = api->getWdtFileCache()->getFileId(wdtFileDataId);
     };
 

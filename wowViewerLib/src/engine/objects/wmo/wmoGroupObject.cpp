@@ -498,10 +498,12 @@ void WmoGroupObject::createMeshes() {
         hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self) {
             mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
             mathfu::vec4 localambientColor = this->getAmbientColor();
+            mathfu::vec3 directLight = mathfu::vec3(0,0,0);
 
             mathfu::vec4 ambientColor = localambientColor;
             if (isBatchC) {
                 ambientColor = globalAmbientColor;
+                directLight = m_api->getGlobalSunColor().xyz();
             }
             float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
 
@@ -510,7 +512,7 @@ void WmoGroupObject::createMeshes() {
             blockPS.uSunDir_FogStart = mathfu::vec4_packed(
                 mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
             blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(
-                mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
+                mathfu::vec4(directLight, m_api->getGlobalFogEnd()));
             blockPS.uAmbientLight = ambientColor;
             if (isBatchA) {
                 blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);

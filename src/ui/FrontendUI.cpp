@@ -267,6 +267,11 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open Map selection")) {
                 showSelectMap = true;
             }
+            if (ImGui::MenuItem("Unload scene")) {
+                if (unloadScene) {
+                    unloadScene();
+                }
+            }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
