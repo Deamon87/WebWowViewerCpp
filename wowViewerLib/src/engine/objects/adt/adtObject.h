@@ -28,8 +28,11 @@ class AdtObject {
 public:
     AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
     AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
+    ~AdtObject() = default;
+
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
+        m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
     }
 
     void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder);
@@ -60,7 +63,12 @@ public:
                     std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates, std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
                     int x, int y, int x_len, int y_len);
 
+    animTime_t getLastTimeOfUpdate() {
+        return m_lastTimeOfUpdateOrRefCheck;
+    }
 private:
+    animTime_t m_lastTimeOfUpdateOrRefCheck = 0;
+
     struct LodCommand {
         int index;
         int length;

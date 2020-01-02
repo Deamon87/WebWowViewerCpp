@@ -15,7 +15,7 @@ class ADTObjRenderRes;
 
 class ADTObjRenderRes {
 public:
-    AdtObject* adtObject;
+    std::shared_ptr<AdtObject> adtObject;
     bool wasLoaded = false;
     bool drawChunk[256] = {false};
     bool checkRefs[256] = {false};

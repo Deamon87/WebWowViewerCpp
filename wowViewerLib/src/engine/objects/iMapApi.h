@@ -16,6 +16,8 @@ public:
     virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) = 0;
     virtual std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) = 0;
     virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) = 0;
+
+    virtual animTime_t getCurrentSceneTime() = 0;
 };
 
 

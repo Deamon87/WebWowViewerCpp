@@ -66,7 +66,7 @@ void Map::checkCulling(WoWFrameData *frameData) {
     int adt_x = worldCoordinateToAdtIndex(camera4.y);
     int adt_y = worldCoordinateToAdtIndex(camera4.x);
     frameData->adtAreadId = -1;
-    AdtObject *adtObjectCameraAt = this->mapTiles[adt_x][adt_y];
+    std::shared_ptr<AdtObject> adtObjectCameraAt = this->mapTiles[adt_x][adt_y];
     if (adtObjectCameraAt != nullptr) {
         ADTObjRenderRes tempRes;
         tempRes.adtObject = adtObjectCameraAt;
@@ -247,7 +247,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             if ((i < 0) || (i > 64)) continue;
             if ((j < 0) || (j > 64)) continue;
 
-            AdtObject *adtObject = this->mapTiles[i][j];
+            auto adtObject = this->mapTiles[i][j];
             if (adtObject != nullptr) {
 
                 std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
@@ -269,10 +269,10 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                 }
             } else if (!m_lockedMap && true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
                 if (m_wdtfile->mphd->flags.wdt_has_maid) {
-                    adtObject = new AdtObject(m_api, i, j, m_wdtfile->mapFileDataIDs[j*64 + i], m_wdtfile);
+                    adtObject = std::make_shared<AdtObject>(m_api, i, j, m_wdtfile->mapFileDataIDs[j*64 + i], m_wdtfile);
                 } else {
                     std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-                    adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+                    adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
                 }
 
 
@@ -463,6 +463,21 @@ void Map::update(WoWFrameData *frameData) {
 
         this->m_lastTimeLightCheck = this->m_currentTime;
     }
+
+    //Cleanup ADT every 10 seconds
+    if (this->m_currentTime + frameData->deltaTime - this->m_lastTimeAdtCleanup > 10000) {
+        for (int i = 0; i < 64; i++) {
+            for (int j = 0; j < 64; j++) {
+                auto adtObj = mapTiles[i][j];
+                //Free obj, if it was unused for 10 secs
+                if (adtObj != nullptr && ((this->m_currentTime - adtObj->getLastTimeOfUpdate()) > 10000)) {
+                    mapTiles[i][j] = nullptr;
+                }
+            }
+        }
+
+        this->m_lastTimeAdtCleanup = this->m_currentTime;
+    }
     this->m_currentTime += frameData->deltaTime;
 }
 
@@ -648,4 +663,8 @@ void Map::collectMeshes(WoWFrameData *frameData) {
 
 void Map::draw(WoWFrameData *frameData) {
     m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
+}
+
+animTime_t Map::getCurrentSceneTime() {
+    return m_currentTime;
 }

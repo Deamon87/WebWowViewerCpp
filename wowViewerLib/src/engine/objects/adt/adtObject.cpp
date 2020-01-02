@@ -445,6 +445,8 @@ void AdtObject::loadAlphaTextures() {
 
 
 void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
+    m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
+
     if (!m_loaded) return;
 
     adtRes.wasLoaded = true;
@@ -516,6 +518,7 @@ void AdtObject::doPostLoad() {
     }
 }
 void AdtObject::update() {
+    m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
 //    std::cout << "AdtObject::update finished called" << std::endl;
     if (!m_loaded) return;
     if (adtWideBlockPS == nullptr) return;
@@ -760,6 +763,8 @@ bool AdtObject::checkReferences(
                           std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                           std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
                           int x, int y, int x_len, int y_len) {
+    m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
+
     if (!m_loaded) return false;
 
     for (int k = x; k < x+x_len; k++) {
