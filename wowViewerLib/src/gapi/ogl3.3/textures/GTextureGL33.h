@@ -31,7 +31,7 @@ private:
 protected:
     GLuint textureIdentifier;
 
-    IDevice &m_device;
+    GDeviceGL33 &m_device;
 
     bool m_loaded = false;
 };

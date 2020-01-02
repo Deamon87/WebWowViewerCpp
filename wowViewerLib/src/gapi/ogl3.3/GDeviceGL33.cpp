@@ -1015,6 +1015,13 @@ void GDeviceGL33::commitFrame() {
         if (deviceUI != nullptr)
             deviceUI->renderUI();
     }
+
+    //Release resources
+    while ((!listOfDeallocators.empty())&&(listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
+        listOfDeallocators.front().callback();
+
+        listOfDeallocators.pop_front();
+    }
 }
 
 void GDeviceGL33::setViewPortDimensions(float x, float y, float width, float height) {

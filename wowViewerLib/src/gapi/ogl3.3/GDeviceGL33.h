@@ -111,6 +111,18 @@ public:
     void setViewPortDimensions(float x, float y, float width, float height) override;
 
     void shrinkData() override;
+
+    struct DeallocationRecord {
+        unsigned int frameNumberToDoAt;
+        std::function<void()> callback;
+    };
+
+    void addDeallocationRecord(std::function<void()> callback) {
+        DeallocationRecord dr;
+        dr.frameNumberToDoAt = m_frameNumber+4;
+        dr.callback = callback;
+        listOfDeallocators.push_back(dr);
+    };
 private:
     void drawMesh(HGMesh hmesh);
     bool isDepthPreFill = false;
@@ -215,6 +227,7 @@ protected:
     std::unordered_map<ShaderContentCacheRecord, std::string, ShaderContentCacheRecordHasher> shaderCache;
 
     int uniformBuffersCreated = 0;
+    std::list<DeallocationRecord> listOfDeallocators;
 };
 
 

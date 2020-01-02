@@ -29,7 +29,7 @@ private:
     void uploadData(void * data, int length);
 
 private:
-    IDevice &m_device;
+    GDeviceGL33 &m_device;
 
 private:
     size_t m_size;
