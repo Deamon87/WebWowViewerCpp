@@ -101,8 +101,8 @@ public:
     int mwid_length;
 
     int mcnkRead = -1;
-    SMChunk mapTile[16*16];
-    mcnkStruct_t mcnkStructs[16*16];
+    std::array<SMChunk, 16*16> mapTile;
+    std::array<mcnkStruct_t, 16*16> mcnkStructs;
     int mcnkMap[16][16] = {{-1}};
 
     std::vector<int16_t> strips;
