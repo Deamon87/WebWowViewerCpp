@@ -5,6 +5,7 @@
 #ifndef AWEBWOWVIEWERCPP_IMESH_H
 #define AWEBWOWVIEWERCPP_IMESH_H
 
+#include <array>
 #include <vector>
 #include <iostream>
 #include "../IDevice.h"

@@ -655,9 +655,11 @@ void Map::collectMeshes(WoWFrameData *frameData) {
 //              indexArray.end(),
 //              #include "../../../gapi/interface/sortLambda.h"
 //    );
-    frameData->renderedThisFrame.resize(indexArray.size());
+	//frameData->renderedThisFrame.resize(indexArray.size());
+	frameData->renderedThisFrame = {};
+	frameData->renderedThisFrame.reserve(indexArray.size());
     for (int i = 0; i < indexArray.size(); i++) {
-        frameData->renderedThisFrame[i] = renderedThisFramePreSort[indexArray[i]];
+        frameData->renderedThisFrame.push_back(renderedThisFramePreSort[indexArray[i]]);
     }
 };
 
