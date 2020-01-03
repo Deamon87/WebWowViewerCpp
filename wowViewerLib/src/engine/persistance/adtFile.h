@@ -31,8 +31,8 @@ struct mcnkStruct_t {
 
 class AdtFile {
 public:
-    AdtFile(std::string fileName){};
-    AdtFile(int fileDataId){};
+    AdtFile(std::string fileName){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
+    AdtFile(int fileDataId){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
 
     void processTexture(const MPHDFlags &wdtObjFlags, int i, std::vector<uint8_t> &currentLayer);
     void process(HFileContent adtFile, const std::string &fileName);
@@ -103,7 +103,7 @@ public:
     int mcnkRead = -1;
     std::array<SMChunk, 16*16> mapTile;
     std::array<mcnkStruct_t, 16*16> mcnkStructs;
-    int mcnkMap[16][16] = {{-1}};
+    std::array<std::array<int, 16>,16> mcnkMap = {{-1}};
 
     std::vector<int16_t> strips;
     std::vector<int> stripOffsets;

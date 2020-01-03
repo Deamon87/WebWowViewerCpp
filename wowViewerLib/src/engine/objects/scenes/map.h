@@ -29,8 +29,10 @@ private:
     bool m_lockedMap = false;
 
     int m_mapId = -1;
-    HWdtFile m_wdtfile;
-    WdlObject * m_wdlObject = nullptr;
+    HWdtFile m_wdtfile = nullptr;
+    std::shared_ptr<WmoObject> wmoMap = nullptr;
+
+    std::shared_ptr<WdlObject> m_wdlObject = nullptr;
 
     int m_viewRenderOrder = 0;
 
@@ -52,7 +54,7 @@ public:
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
         m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
-        m_wdlObject = new WdlObject(api, wdlFileName);
+        m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
         m_wdlObject->setMapApi(this);
     };
 
@@ -65,7 +67,7 @@ public:
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
         m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
-        m_wdlObject = new WdlObject(api, wdlFileName);
+        m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
         m_wdlObject->setMapApi(this);
 
         m_lockedMap = true;

@@ -63,33 +63,44 @@ void Map::checkCulling(WoWFrameData *frameData) {
     std::vector<std::shared_ptr<WmoObject>> potentialWmo;
     std::vector<std::shared_ptr<M2Object>> potentialM2;
 
-    int adt_x = worldCoordinateToAdtIndex(camera4.y);
-    int adt_y = worldCoordinateToAdtIndex(camera4.x);
-    frameData->adtAreadId = -1;
-    std::shared_ptr<AdtObject> adtObjectCameraAt = this->mapTiles[adt_x][adt_y];
-    if (adtObjectCameraAt != nullptr) {
-        ADTObjRenderRes tempRes;
-        tempRes.adtObject = adtObjectCameraAt;
-        adtObjectCameraAt->checkReferences(
-            tempRes,
-            camera4,
-            frustumPlanes,
-            frustumPoints,
-            lookAtMat4,
-            5,
-            potentialM2,
-            potentialWmo,
-            0,
-            0,
-            16,
-            16
-        );
+    if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+        int adt_x = worldCoordinateToAdtIndex(camera4.y);
+        int adt_y = worldCoordinateToAdtIndex(camera4.x);
+        frameData->adtAreadId = -1;
+        std::shared_ptr<AdtObject> adtObjectCameraAt = this->mapTiles[adt_x][adt_y];
+        if (adtObjectCameraAt != nullptr) {
+            ADTObjRenderRes tempRes;
+            tempRes.adtObject = adtObjectCameraAt;
+            adtObjectCameraAt->checkReferences(
+                tempRes,
+                camera4,
+                frustumPlanes,
+                frustumPoints,
+                lookAtMat4,
+                5,
+                potentialM2,
+                potentialWmo,
+                0,
+                0,
+                16,
+                16
+            );
 
-        int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
-        int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
+            int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
+            int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
 
-        frameData->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
+            frameData->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
+        }
+    } else {
+        if (wmoMap == nullptr) {
+            wmoMap = std::make_shared<WmoObject>(m_api);
+            wmoMap->setLoadingParam(*m_wdtfile->wmoDef);
+            wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
+        }
+
+        potentialWmo.push_back(wmoMap);
     }
+
 
     for (auto &checkingWmoObj : potentialWmo) {
         WmoGroupResult groupResult;
@@ -186,7 +197,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 //    std::cout << "Map::checkExterior finished called" << std::endl;
     if (m_wdlObject == nullptr) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
-            m_wdlObject = new WdlObject(m_api, m_wdtfile->mphd->wdlFileDataID);
+            m_wdlObject = std::make_shared<WdlObject>(m_api, m_wdtfile->mphd->wdlFileDataID);
             m_wdlObject->setMapApi(this);
         }
 
@@ -242,45 +253,50 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         hullLines,
         lookAtMat4, m2ObjectsCandidates, wmoCandidates);
 
-    for (int i = adt_x_min; i <= adt_x_max; i++) {
-        for (int j = adt_y_min; j <= adt_y_max; j++) {
-            if ((i < 0) || (i > 64)) continue;
-            if ((j < 0) || (j > 64)) continue;
+    if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+        for (int i = adt_x_min; i <= adt_x_max; i++) {
+            for (int j = adt_y_min; j <= adt_y_max; j++) {
+                if ((i < 0) || (i > 64)) continue;
+                if ((j < 0) || (j > 64)) continue;
 
-            auto adtObject = this->mapTiles[i][j];
-            if (adtObject != nullptr) {
+                auto adtObject = this->mapTiles[i][j];
+                if (adtObject != nullptr) {
 
-                std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
-                adtFrustRes->adtObject = adtObject;
+                    std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
+                    adtFrustRes->adtObject = adtObject;
 
 
-                bool result = adtObject->checkFrustumCulling(
-                    *adtFrustRes.get(),
-                    cameraPos,
-                    adt_global_x,
-                    adt_global_y,
-                    frameData->exteriorView.frustumPlanes[0], //TODO:!
-                    frustumPoints,
-                    hullLines,
-                    lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-                if (result) {
-                    frameData->exteriorView.drawnADTs.push_back(adtFrustRes);
-                    frameData->adtArray.push_back(adtFrustRes);
+                    bool result = adtObject->checkFrustumCulling(
+                        *adtFrustRes.get(),
+                        cameraPos,
+                        adt_global_x,
+                        adt_global_y,
+                        frameData->exteriorView.frustumPlanes[0], //TODO:!
+                        frustumPoints,
+                        hullLines,
+                        lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+                    if (result) {
+                        frameData->exteriorView.drawnADTs.push_back(adtFrustRes);
+                        frameData->adtArray.push_back(adtFrustRes);
+                    }
+                } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
+                    if (m_wdtfile->mphd->flags.wdt_has_maid) {
+                        adtObject = std::make_shared<AdtObject>(m_api, i, j, m_wdtfile->mapFileDataIDs[j * 64 + i],
+                                                                m_wdtfile);
+                    } else {
+                        std::string adtFileTemplate =
+                            "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" + std::to_string(j);
+                        adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+                    }
+
+
+                    adtObject->setMapApi(this);
+                    this->mapTiles[i][j] = adtObject;
                 }
-            } else if (!m_lockedMap && true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
-                if (m_wdtfile->mphd->flags.wdt_has_maid) {
-                    adtObject = std::make_shared<AdtObject>(m_api, i, j, m_wdtfile->mapFileDataIDs[j*64 + i], m_wdtfile);
-                } else {
-                    std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-                    adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
-                }
-
-
-
-                adtObject->setMapApi(this);
-                this->mapTiles[i][j] = adtObject;
             }
         }
+    } else {
+        wmoCandidates.push_back(wmoMap);
     }
 
     //Sort and delete duplicates

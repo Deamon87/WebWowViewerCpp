@@ -437,10 +437,10 @@ int main(){
             isWMOMap = wdtFile->mphd->flags.wdt_uses_global_map_obj;
 
             if(isWMOMap) {
-                frontendUI.setOpenWMOMapCallback([wdtFile, &scene]() -> void {
-                    scene->setSceneWithFileDataId(1, wdtFile->wmoDef->nameId, 0 );
-                    scene->setScenePos(0,0,0);
-                });
+//                frontendUI.setOpenWMOMapCallback([wdtFile, &scene]() -> void {
+//                    scene->setSceneWithFileDataId(1, wdtFile->wmoDef->nameId, 0 );
+//                    scene->setScenePos(0,0,0);
+//                });
             }
 
             for (int i = 0; i < 64; i++) {

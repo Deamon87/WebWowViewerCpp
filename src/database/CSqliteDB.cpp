@@ -17,13 +17,15 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "select at.AreaName_lang from AreaTable at where at.ID = ?"),
 
     getLightStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, LightParamsID_0 from Light l"
-        " where "
-        "  (l.ContinentID = ?) and (("
-        "    abs(l.GameCoords_0 - ?) < l.GameFalloffEnd and\n"
-        "    abs(l.GameCoords_1 - ?) < l.GameFalloffEnd and\n"
-        "    abs(l.GameCoords_2 - ?) < l.GameFalloffEnd\n"
-        "  ) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 )) ORDER BY ID desc "),
+        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, LightParamsID_0 from Light l "
+        " where  "
+        "   ((l.ContinentID = ?) and (( "
+        "    abs(l.GameCoords_0 - ?) < l.GameFalloffEnd and "
+        "    abs(l.GameCoords_1 - ?) < l.GameFalloffEnd and "
+        "    abs(l.GameCoords_2 - ?) < l.GameFalloffEnd "
+        "  ) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0))) "
+        "    or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)  "
+        "ORDER BY ID desc"),
     getLightData(m_sqliteDatabase,
         "select ld.AmbientColor, ld.DirectColor, ld.Time from LightData ld where ld.LightParamID = ? ORDER BY Time ASC"
         )

@@ -446,13 +446,6 @@ void WmoGroupObject::createMeshes() {
         bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
         bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));
 
-        mathfu::vec4 ambientColor;
-        if (isBatchC) {
-            ambientColor = m_api->getGlobalAmbientColor();
-        } else {
-            ambientColor = this->getAmbientColor();
-        }
-
         auto blendMode = material.blendMode;
         meshTemplate.meshType = MeshType::eWmoMesh;
         meshTemplate.depthWrite = blendMode <= 1;
@@ -501,7 +494,8 @@ void WmoGroupObject::createMeshes() {
             mathfu::vec3 directLight = mathfu::vec3(0,0,0);
 
             mathfu::vec4 ambientColor = localambientColor;
-            if (isBatchC) {
+            //TODO: check ironforge entrance. There must be something wrong with it
+            if (isBatchC || isBatchA || (this->m_geom->mogp->flags.EXTERIOR > 0)) {
                 ambientColor = globalAmbientColor;
                 directLight = m_api->getGlobalSunColor().xyz();
             }
@@ -515,7 +509,7 @@ void WmoGroupObject::createMeshes() {
                 mathfu::vec4(directLight, m_api->getGlobalFogEnd()));
             blockPS.uAmbientLight = ambientColor;
             if (isBatchA) {
-                blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);
+                blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(localambientColor.xyz(), 1.0);
             } else {
                 blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0, 0, 0, 0);
             }
@@ -1179,7 +1173,6 @@ void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int r
 }
 
 mathfu::vec4 WmoGroupObject::getAmbientColor() {
-
     if (!m_geom->mogp->flags.EXTERIOR && !m_geom->mogp->flags.EXTERIOR_LIT) {
         mathfu::vec4 ambColor;
         ambColor = mathfu::vec4(
@@ -1199,9 +1192,8 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
         }
 
         return ambColor;
-    } else {
-        return m_api->getGlobalAmbientColor();
     }
+    return mathfu::vec4(0,0,0,0);
 }
 
 void WmoGroupObject::assignInteriorParams(std::shared_ptr<M2Object> m2Object) {

@@ -166,7 +166,7 @@ void FrontendUI::showMapSelectionDialog() {
                         worldPosX = 0;
                         worldPosY = 0;
                         if (ImGui::Button("Open WMO Map", ImVec2(-1, 0))) {
-                            openWMOMap();
+                            openSceneByfdid(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
                             showSelectMap = false;
                         }
                     }

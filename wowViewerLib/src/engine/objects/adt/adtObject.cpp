@@ -719,7 +719,8 @@ bool AdtObject::checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::ve
     for (int k = x; k < x + x_len; k++) {
         for (int l = y; l < y + y_len; l++) {
             int i = this->m_adtFile->mcnkMap[l][k];
-
+            if (i < 0)
+                continue;
 
             mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
             CAaBox &aabb = this->tileAabb[i];
