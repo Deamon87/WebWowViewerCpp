@@ -72,7 +72,7 @@ public:
     DrawElementMode element;
     unsigned int textureCount;
     std::vector<HGTexture> texture = std::vector<HGTexture>(6, nullptr);
-    HGUniformBufferChunk ubo[6] = {nullptr,nullptr,nullptr};
+    std::array<HGUniformBufferChunk, 6> ubo = {nullptr,nullptr,nullptr};
 };
 
 

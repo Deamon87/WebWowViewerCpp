@@ -114,7 +114,8 @@ std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4
                 {-1, 1, -1, 1},  //7
         };
 
-        std::vector<mathfu::vec3> points;
+        std::vector<mathfu::vec3> points(8);
+        
         for (int i = 0; i < 8; i++) {
             mathfu::vec4 &vert = vertices[i];
 
@@ -122,7 +123,7 @@ std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4
             resVec4 = resVec4 * (1/resVec4[3]);
             //vec4.transformMat4(resVec4, vert, perspectiveViewMat);
 
-            points.push_back(resVec4.xyz());
+            points[i] = resVec4.xyz();
         }
 
         return points;
@@ -203,6 +204,7 @@ std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
     std::vector<mathfu::vec3> hullPointsArr = MathHelper::getHullPoints(points);
 
     std::vector<mathfu::vec3> hullLines;
+    hullLines.reserve(hullPointsArr.size());
     
     if (hullPointsArr.size() > 2) {
         for (int i = 0; i < hullPointsArr.size(); i++) {

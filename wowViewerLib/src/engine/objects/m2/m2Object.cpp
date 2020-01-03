@@ -589,7 +589,7 @@ float M2Object::getHeight(){
 mathfu::vec4 M2Object::getCombinedColor(
         M2SkinProfile *skinData,
         int batchIndex,
-        const std::vector<mathfu::vec4> subMeshColors
+        const std::vector<mathfu::vec4> &subMeshColors
 ) {
     int colorIndex = skinData->batches[batchIndex]->colorIndex;
     mathfu::vec4 submeshColor = mathfu::vec4(1,1,1,1);

@@ -43,7 +43,7 @@ private:
 
     HGShaderPermutation m_shader;
 
-    HGUniformBufferChunk m_UniformBuffer[6] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    std::array<HGUniformBufferChunk, 6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;

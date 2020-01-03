@@ -620,10 +620,10 @@ void Map::collectMeshes(WoWFrameData *frameData) {
         std::copy(view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
     }
 
-    std::unordered_set<std::shared_ptr<M2Object>> s;
-    for (auto i : m2ObjectsRendered)
-        s.insert(i);
-    m2ObjectsRendered.assign( s.begin(), s.end() );
+//    std::unordered_set<std::shared_ptr<M2Object>> s;
+//    for (auto i : m2ObjectsRendered)
+//        s.insert(i);
+//    m2ObjectsRendered.assign( s.begin(), s.end() );
 
     std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
     m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
