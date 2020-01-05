@@ -493,10 +493,6 @@ try {
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
 
-
-//        double fps = calcFPS(nullptr, 2.0);
-
-
         processor->processRequests(false);
         processor->processResults(10);
 

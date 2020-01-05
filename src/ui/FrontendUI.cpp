@@ -89,22 +89,66 @@ void FrontendUI::composeUI() {
     ImGui::Render();
 }
 
+// templated version of my_equal so it could work with both char and wchar_t
+template<typename charT>
+struct my_equal {
+    my_equal( const std::locale& loc ) : loc_(loc) {}
+    bool operator()(charT ch1, charT ch2) {
+        return std::toupper(ch1, loc_) == std::toupper(ch2, loc_);
+    }
+private:
+    const std::locale& loc_;
+};
+
+// find substring (case insensitive)
+template<typename T>
+int ci_find_substr( const T& str1, const T& str2, const std::locale& loc = std::locale() )
+{
+    typename T::const_iterator it = std::search( str1.begin(), str1.end(),
+                                                 str2.begin(), str2.end(), my_equal<typename T::value_type>(loc) );
+    if ( it != str1.end() ) return it - str1.begin();
+    else return -1; // not found
+}
+
+void FrontendUI::filterMapList(std::string text) {
+    filteredMapList = {};
+    for (int i = 0; i < mapList.size(); i++) {
+        auto &currentRec = mapList[i];
+        if (text == "" ||
+            (
+                (ci_find_substr(currentRec.MapName, text) != std::string::npos) ||
+                (ci_find_substr(currentRec.MapDirectory, text) != std::string::npos)
+            )
+            ) {
+            filteredMapList.push_back(currentRec);
+        }
+    }
+}
+
 void FrontendUI::showMapSelectionDialog() {
     if (showSelectMap) {
         if (mapList.size() == 0 && getMapList) {
             getMapList(mapList);
+            refilterIsNeeded = true;
+
+        }
+        if (refilterIsNeeded) {
+            filterMapList(std::string(&filterText[0]));
             mapListStringMap = {};
-            for (int i = 0; i < mapList.size(); i++) {
-                auto mapRec = mapList[i];
+            for (int i = 0; i < filteredMapList.size(); i++) {
+                auto mapRec = filteredMapList[i];
 
                 std::vector<std::string> mapStrRec;
                 mapStrRec.push_back(std::to_string(mapRec.ID));
                 mapStrRec.push_back(mapRec.MapName);
+                mapStrRec.push_back(mapRec.MapDirectory);
                 mapStrRec.push_back(std::to_string(mapRec.WdtFileID));
                 mapStrRec.push_back(std::to_string(mapRec.MapType));
 
                 mapListStringMap.push_back(mapStrRec);
             }
+
+            refilterIsNeeded = false;
         }
 
         ImGui::Begin("Map Select Dialog", &showSelectMap);
@@ -112,12 +156,19 @@ void FrontendUI::showMapSelectionDialog() {
             ImGui::Columns(2, NULL, true);
             //Left panel
             {
+                //Filter
+                if (ImGui::InputText("Filter: ", filterText.begin(), filterText.size(), ImGuiInputTextFlags_AlwaysInsertMode)) {
+                    refilterIsNeeded = true;
+                }
+                //The table
                 ImGui::BeginChild("Map Select Dialog Left panel");
-                ImGui::Columns(4, "mycolumns"); // 4-ways, with border
+                ImGui::Columns(5, "mycolumns"); // 5-ways, with border
                 ImGui::Separator();
                 ImGui::Text("ID");
                 ImGui::NextColumn();
                 ImGui::Text("MapName");
+                ImGui::NextColumn();
+                ImGui::Text("MapDirectory");
                 ImGui::NextColumn();
                 ImGui::Text("WdtFileID");
                 ImGui::NextColumn();
@@ -125,8 +176,8 @@ void FrontendUI::showMapSelectionDialog() {
                 ImGui::NextColumn();
                 ImGui::Separator();
                 static int selected = -1;
-                for (int i = 0; i < mapList.size(); i++) {
-                    auto mapRec = mapList[i];
+                for (int i = 0; i < filteredMapList.size(); i++) {
+                    auto mapRec = filteredMapList[i];
 
                     if (ImGui::Selectable(mapListStringMap[i][0].c_str(), selected == i, ImGuiSelectableFlags_SpanAllColumns)) {
                         if (mapRec.ID != prevMapId) {
@@ -147,6 +198,8 @@ void FrontendUI::showMapSelectionDialog() {
                     ImGui::Text(mapListStringMap[i][2].c_str());
                     ImGui::NextColumn();
                     ImGui::Text(mapListStringMap[i][3].c_str());
+                    ImGui::NextColumn();
+                    ImGui::Text(mapListStringMap[i][4].c_str());
                     ImGui::NextColumn();
                 }
                 ImGui::Columns(1);
@@ -203,11 +256,13 @@ void FrontendUI::showAdtSelectionMinimap() {
     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 //                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
+
+    const float defaultImageDimension = 100;
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 64; j++) {
             if (adtSelectionMinimap[i][j] != nullptr && adtSelectionMinimap[i][j]->getIsLoaded()) {
                 if (ImGui::ImageButton(adtSelectionMinimap[i][j]->getIdent(),
-                                       ImVec2(100 * minimapZoom, 100 * minimapZoom))) {
+                                       ImVec2(defaultImageDimension * minimapZoom, defaultImageDimension * minimapZoom))) {
                     auto mousePos = ImGui::GetMousePos();
                     ImGuiStyle &style = ImGui::GetStyle();
 
@@ -215,8 +270,8 @@ void FrontendUI::showAdtSelectionMinimap() {
                     mousePos.x += ImGui::GetScrollX() - ImGui::GetWindowPos().x - style.WindowPadding.x;
                     mousePos.y += ImGui::GetScrollY() - ImGui::GetWindowPos().y - style.WindowPadding.y;
 
-                    mousePos.x = ((mousePos.x / minimapZoom) / 100);
-                    mousePos.y = ((mousePos.y / minimapZoom) / 100);
+                    mousePos.x = ((mousePos.x / minimapZoom) / defaultImageDimension);
+                    mousePos.y = ((mousePos.y / minimapZoom) / defaultImageDimension);
 
                     mousePos.x = (32.0f - mousePos.x) * 533.33333f;
                     mousePos.y = (32.0f - mousePos.y) * 533.33333f;

@@ -36,19 +36,16 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     HFileContent fileContent;
     bool fileOpened = false;
     if (CascOpenFile(m_storage, fileNameToPass, 0, openFlags, &fileHandle)) {
-        DWORD fileSize1 = CascGetFileSize(fileHandle, 0);
+        DWORD fileSize1 = CascGetFileSize(fileHandle, nullptr);
         fileOpened = true;
         fileContent = std::make_shared<FileContent>(FileContent(fileSize1+1));
+        auto dataPtr = fileContent->data();
 
         DWORD totalBytesRead = 0;
-        while (true) {
+        while (totalBytesRead < fileSize1) {
             DWORD dwBytesRead;
 
-            CascReadFile(fileHandle, &(*fileContent.get())[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
-
-            if(dwBytesRead == 0) {
-                break;
-            }
+            CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
 
             totalBytesRead += dwBytesRead;
         }

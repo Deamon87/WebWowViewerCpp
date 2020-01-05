@@ -28,11 +28,13 @@ void AdtObject::loadingFinished() {
     loadAlphaTextures();
     createMeshes();
 //    createIndexVBO();
-    m_loaded = true;
+
     calcBoundingBoxes();
 
     loadM2s();
     loadWmos();
+
+    m_loaded = true;
 }
 
 void AdtObject::loadM2s() {

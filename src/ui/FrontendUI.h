@@ -41,6 +41,11 @@ private:
         }
     }
 
+
+    std::array<char, 128> filterText = {0};
+    bool refilterIsNeeded = false;
+    void filterMapList(std::string text);
+
     ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory);
 
     bool show_demo_window = true;
@@ -48,6 +53,7 @@ private:
     bool showCurrentStats = true;
     bool showSelectMap = false;
     bool showSettings = false;
+    bool showAboutWindow = false;
 //  c bool showWorldPosTooltip = false;
 
     float minimapZoom = 1;
@@ -62,10 +68,12 @@ private:
     MapRecord prevMapRec;
 
 
+
     float worldPosX = 0;
     float worldPosY = 0;
 
     std::vector<MapRecord> mapList = {};
+    std::vector<MapRecord> filteredMapList = {};
     std::vector<std::vector<std::string>> mapListStringMap = {};
 
 public:

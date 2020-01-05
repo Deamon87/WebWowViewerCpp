@@ -37,7 +37,7 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
 }
 
 void CSqliteDB::getMapArray(std::vector<MapRecord> &mapRecords) {
-    SQLite::Statement getMapList(m_sqliteDatabase, "select m.ID, m.Directory, m.WdtFileDataID, m.MapType from Map m where m.WdtFileDataID > 0");
+    SQLite::Statement getMapList(m_sqliteDatabase, "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.WdtFileDataID > 0");
 
     while (getMapList.executeStep())
     {
@@ -45,9 +45,10 @@ void CSqliteDB::getMapArray(std::vector<MapRecord> &mapRecords) {
 
         // Demonstrate how to get some typed column value
         mapRecord.ID = getMapList.getColumn(0);
-        mapRecord.MapName = std::string((const char*) getMapList.getColumn(1));
-        mapRecord.WdtFileID = getMapList.getColumn(2);
-        mapRecord.MapType = getMapList.getColumn(3);
+        mapRecord.MapDirectory = std::string((const char*) getMapList.getColumn(1));
+        mapRecord.MapName = std::string((const char*) getMapList.getColumn(2));
+        mapRecord.WdtFileID = getMapList.getColumn(3);
+        mapRecord.MapType = getMapList.getColumn(4);
 
         mapRecords.push_back(mapRecord);
     }

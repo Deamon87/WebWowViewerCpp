@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_DBSTRUCTS_H
 struct MapRecord {
     int ID;
+    std::string MapDirectory;
     std::string MapName;
     int WdtFileID;
     int MapType;
