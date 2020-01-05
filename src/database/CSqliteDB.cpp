@@ -17,7 +17,9 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "select at.AreaName_lang from AreaTable at where at.ID = ?"),
 
     getLightStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, LightParamsID_0 from Light l "
+        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0) from Light l "
+        "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
+        "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
         " where  "
         "   ((l.ContinentID = ?) and (( "
         "    abs(l.GameCoords_0 - ?) < l.GameFalloffEnd and "
@@ -25,9 +27,11 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "    abs(l.GameCoords_2 - ?) < l.GameFalloffEnd "
         "  ) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0))) "
         "    or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)  "
-        "ORDER BY ID desc"),
+        "ORDER BY l.ID desc"),
     getLightData(m_sqliteDatabase,
-        "select ld.AmbientColor, ld.DirectColor, ld.Time from LightData ld where ld.LightParamID = ? ORDER BY Time ASC"
+        "select ld.AmbientColor, ld.DirectColor, ld.Time from LightData ld "
+
+        " where ld.LightParamID = ? ORDER BY Time ASC"
         )
 
 {
@@ -118,6 +122,7 @@ struct InnerLightResult {
     float fallbackEnd;
     float blendAlpha = 0;
     int paramId;
+    int skyBoxFileId;
 };
 
     std::vector<InnerLightResult> innerResults;
@@ -131,6 +136,7 @@ struct InnerLightResult {
         ilr.fallbackStart = getLightStatement.getColumn(3).getDouble();
         ilr.fallbackEnd = getLightStatement.getColumn(4).getDouble();
         ilr.paramId = getLightStatement.getColumn(5).getDouble();
+        ilr.skyBoxFileId = getLightStatement.getColumn(6).getInt();
 
         bool defaultRec = false;
         if (ilr.pos[0] == 0 && ilr.pos[1] == 0 && ilr.pos[2] == 0 ) {
@@ -177,6 +183,8 @@ struct InnerLightResult {
     lightResult.directColor[1] = 0;
     lightResult.directColor[2] = 0;
 
+    lightResult.skyBoxFdid = 0;
+
 
     float totalSummator = 0.0f;
     for (int i = 0; i < innerResults.size() && totalSummator < 1.0f; i++) {
@@ -191,6 +199,10 @@ struct InnerLightResult {
         float innerAlpha = innerResult.blendAlpha < 1.0 ? innerResult.blendAlpha : 1.0;
         if (totalSummator + innerAlpha > 1.0f) {
             innerAlpha = 1.0f - totalSummator;
+        }
+
+        if (lightResult.skyBoxFdid == 0) {
+            lightResult.skyBoxFdid = innerResult.skyBoxFileId;
         }
 
         while (getLightData.executeStep()) {

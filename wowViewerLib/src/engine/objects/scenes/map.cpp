@@ -146,6 +146,9 @@ void Map::checkCulling(WoWFrameData *frameData) {
         frameData->exteriorView.frustumPlanes.push_back(frustumPlanes);
         checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, viewPerspectiveMat, m_viewRenderOrder, frameData);
     }
+    if (  frameData->exteriorView.viewCreated && (m_currentSkyFDID != 0)) {
+        frameData->exteriorView.drawnM2s.push_back(m_exteriorSkyBox);
+    }
 
     //Fill M2 objects for views from WmoGroups
     for (auto &view : frameData->interiorViews) {
@@ -465,6 +468,21 @@ void Map::update(WoWFrameData *frameData) {
             config->getCurrentTime(),
             lightResult
         );
+
+        if (m_currentSkyFDID != lightResult.skyBoxFdid) {
+            if (lightResult.skyBoxFdid == 0) {
+                m_exteriorSkyBox = nullptr;
+            } else {
+                m_exteriorSkyBox = std::make_shared<M2Object>(m_api, true);
+                m_exteriorSkyBox->setLoadParams(0, {},{});
+
+                m_exteriorSkyBox->setModelFileId(lightResult.skyBoxFdid);
+
+                m_exteriorSkyBox->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+                m_exteriorSkyBox->calcWorldPosition();
+            }
+            m_currentSkyFDID = lightResult.skyBoxFdid;
+        }
 
         //Database is in BGRA
         config->setAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);

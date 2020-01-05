@@ -82,9 +82,9 @@ class IMesh {
 
 public:
     auto renderOrder()       -> int& { return m_renderOrder; }
-    auto sortDistance()       -> float& { return m_sortDistance; }
-    auto priorityPlane()       -> int& { return m_renderOrder; }
-    auto layer()       -> int& { return m_renderOrder; }
+    auto sortDistance()       -> float { return m_sortDistance; }
+    auto priorityPlane()       -> int { return m_priorityPlane; }
+    auto layer()       -> int& { return m_layer; }
     auto isSkyBox()       -> bool& { return m_isSkyBox; }
     auto start()       -> int& { return m_start; }
     auto end()       -> int& { return m_end; }
@@ -99,8 +99,8 @@ protected:
 
     float m_sortDistance = 0;
 
-    int m_priorityPlane;
-    int m_layer;
+    int m_priorityPlane = 0;
+    int m_layer = 0;
     void *m_m2Object = nullptr;
 
     bool m_isSkyBox = false;

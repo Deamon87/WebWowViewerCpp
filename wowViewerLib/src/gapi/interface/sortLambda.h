@@ -1,6 +1,6 @@
 [sortedArrayPtr](int indexA, int indexB) {
-    auto* pA = sortedArrayPtr[indexA].get();
-    auto* pB = sortedArrayPtr[indexB].get();
+    IMesh * pA = sortedArrayPtr[indexA].get();
+    IMesh* pB = sortedArrayPtr[indexB].get();
 
 //    HGMesh pA = sortedArrayPtr[indexA];
 //    HGMesh pB = sortedArrayPtr[indexB];
@@ -21,13 +21,13 @@
         return true;
     }
 
-    if (pA->renderOrder() != pB->renderOrder() ) {
-        if (!pA->getIsTransparent() && !pB->getIsTransparent()) {
-            return pA->renderOrder() < pB->renderOrder();
-        } else {
-            return pA->renderOrder() > pB->renderOrder();
-        }
-    }
+//    if (pA->renderOrder() != pB->renderOrder() ) {
+//        if (!pA->getIsTransparent() && !pB->getIsTransparent()) {
+//            return pA->renderOrder() < pB->renderOrder();
+//        } else {
+//            return pA->renderOrder() > pB->renderOrder();
+//        }
+//    }
 
     if (pA->isSkyBox() > pB->isSkyBox()) {
         return true;
@@ -41,10 +41,14 @@
             return pB->priorityPlane() > pA->priorityPlane();
         }
 
-        if (pA->sortDistance() > pB->sortDistance()) {
+        if (pB->layer() != pA->layer()) {
+            return pB->layer() < pA->layer();
+        }
+
+        if (pA->getSortDistance() > pB->getSortDistance()) {
             return true;
         }
-        if (pA->sortDistance() < pB->sortDistance()) {
+        if (pA->getSortDistance() < pB->getSortDistance()) {
             return false;
         }
 
@@ -55,9 +59,8 @@
 //            return false;
 //        }
 
-        if (pB->layer() != pA->layer()) {
-            return pB->layer() < pA->layer();
-        }
+
+
     }
 
     if (pA->getMeshType() == MeshType::eParticleMesh && pB->getMeshType() == MeshType::eParticleMesh) {
