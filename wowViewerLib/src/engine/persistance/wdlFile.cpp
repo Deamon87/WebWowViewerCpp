@@ -37,5 +37,5 @@ void WdlFile::process(HFileContent wdlFile, const std::string &fileName) {
     CChunkFileReader reader(*m_wdlFile.get());
     reader.processFile(*this, &WdlFile::wdlFileTable);
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }

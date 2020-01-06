@@ -212,7 +212,7 @@ void WmoGroupGeom::process(HFileContent wmoGroupFile, const std::string &fileNam
         this->m_attenuateFunc(*this);
     }
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }
 
 

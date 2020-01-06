@@ -346,6 +346,22 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                                 chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcal);
                             }
                         }
+                    },
+                    {
+                        'MCLQ',
+                        {
+                            [](AdtFile& file, ChunkData& chunkData){
+                                debuglog("Entered MCQL");
+                                std::cout << "Entered MCQL" << std::endl;
+
+
+                                file.mcnkStructs[file.mcnkRead].mcqlLen = chunkData.chunkLen;
+                                chunkData.readValues(
+                                    file.mcnkStructs[file.mcnkRead].mcql,
+                                    file.mcnkStructs[file.mcnkRead].mcqlLen
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -562,5 +578,5 @@ void AdtFile::process(HFileContent adtFile, const std::string &fileName) {
 
     createTriangleStrip();
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }

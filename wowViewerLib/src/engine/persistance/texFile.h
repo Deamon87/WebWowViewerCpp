@@ -10,13 +10,12 @@
 #include "header/texFileHeader.h"
 #include "../../include/wowScene.h"
 
-class TexFile {
+class TexFile : public PersistentFile {
 public:
     TexFile(std::string fileName){};
     TexFile(int fileDataId){};
 
-    void process(const std::vector<unsigned char> &wdlFile, const std::string &fileName);
-    bool getIsLoaded() { return m_loaded; };
+    void process(HFileContent fileContent, const std::string &fileName) override;
 public:
     SBlobTexture * entries = nullptr;
     int entriesNum = -1;
@@ -27,8 +26,6 @@ public:
     char * textureData = nullptr;
     int textureData_len = -1;
 private:
-    bool m_loaded = false;
-
     std::vector<unsigned char> m_texFile;
     static chunkDef<TexFile> texFileTable;
 };

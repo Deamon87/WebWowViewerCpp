@@ -12,7 +12,7 @@ std::vector<mathfu::vec3> CreateOccluders(const HWmoGroupGeom groupGeom)
 {
     std::vector<mathfu::vec3> points(0);
 
-    if (groupGeom == nullptr || !groupGeom->isLoaded()) return points;
+    if (groupGeom == nullptr || groupGeom->getStatus() != FileStatus::FSLoaded) return points;
     for ( unsigned int mopy_index (0), movi_index (0)
             ; mopy_index < groupGeom->mopyLen
             ; ++mopy_index, ++movi_index
@@ -295,7 +295,7 @@ void WmoObject::createWorldPortals() {
 
 bool WmoObject::doPostLoad(int &groupsProcessedThisFrame) {
     if (!m_loaded) {
-        if (mainGeom != nullptr && mainGeom->getIsLoaded()){
+        if (mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSLoaded){
             this->createGroupObjects();
             this->createWorldPortals();
             this->createBB(mainGeom->header->bounding_box);

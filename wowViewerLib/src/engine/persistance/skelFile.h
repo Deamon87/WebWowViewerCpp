@@ -8,15 +8,15 @@
 #include "helper/ChunkFileReader.h"
 #include "header/skelFileHeader.h"
 #include "../../include/sharedFile.h"
+#include "PersistentFile.h"
 #include <vector>
 
-class SkelFile {
+class SkelFile : public PersistentFile {
 public:
     SkelFile (std::string fileName){};
     SkelFile(int fileDataId){};
 
-    void process(HFileContent animFile, const std::string &fileName);
-    bool getIsLoaded() { return m_loaded; };
+    void process(HFileContent animFile, const std::string &fileName) override;
 
     void setPostLoad(std::function<void ()> postLoadFunction) {
         this->m_postLoadFunction = postLoadFunction;
@@ -38,8 +38,6 @@ public:
     int m_skpd_len = -1;
 
 private:
-    bool m_loaded = false;
-
     HFileContent m_skelFile;
     static chunkDef<SkelFile> skelFileTable;
 

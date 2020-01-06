@@ -77,7 +77,7 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
 bool GBlpTextureVLK::postLoad() {
     if (m_loaded) return false;
     if (m_texture == nullptr) return false;
-    if (!m_texture->getIsLoaded()) return false;
+    if (m_texture->getStatus() != FileStatus::FSLoaded) return false;
 
     if (m_uploaded) {
         return GTextureVLK::postLoad();

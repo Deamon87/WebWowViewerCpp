@@ -58,14 +58,38 @@ void WoWFilesCacheStorage::processCaches(int limit) {
 void WoWFilesCacheStorage::rejectFile(CacheHolderType holderType, const char* fileName) {
     std::string s_fileName(fileName);
 
-    adtObjectCache.reject(s_fileName);
-    wmoGeomCache.reject(s_fileName);
-    wmoMainCache.reject(s_fileName);
-    m2GeomCache.reject(s_fileName);
-    skinGeomCache.reject(s_fileName);
-    textureCache.reject(s_fileName);
-    wdtCache.reject(s_fileName);
-    wdlCache.reject(s_fileName);
+    switch (holderType) {
+        case CacheHolderType::CACHE_M2:
+            m2GeomCache.reject(s_fileName);
+            break;
+        case CacheHolderType::CACHE_SKIN:
+            skinGeomCache.reject(s_fileName);
+            break;
+        case CacheHolderType::CACHE_MAIN_WMO:
+            wmoMainCache.reject(s_fileName);
+            break;
+        case CacheHolderType::CACHE_GROUP_WMO:
+            wmoGeomCache.reject(s_fileName);
+            break;
+        case CacheHolderType::CACHE_ADT:
+            adtObjectCache.reject(s_fileName);
+            break;
+        case CacheHolderType::CACHE_WDT:
+            wdtCache.reject(s_fileName);
+            break;
+        case CacheHolderType::CACHE_WDL:
+            wdlCache.reject(s_fileName);
+            break;
+        case CacheHolderType::CACHE_BLP:
+            textureCache.reject(s_fileName);
+            break;
+        case CacheHolderType::CACHE_ANIM:
+            animCache.reject(s_fileName);
+            break;
+        case CacheHolderType::CACHE_SKEL:
+            skelCache.reject(s_fileName);
+            break;
+    }
 }
 
 WoWFilesCacheStorage::WoWFilesCacheStorage(IFileRequest *requestProcessor) :

@@ -17,7 +17,7 @@
 void Map::checkCulling(WoWFrameData *frameData) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
 //    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
-    if (!m_wdtfile->getIsLoaded()) return;
+    if (m_wdtfile->getStatus() != FileStatus::FSLoaded) return;
 
     Config* config = this->m_api->getConfig();
 
@@ -379,7 +379,7 @@ void Map::doPostLoad(WoWFrameData *frameData){
 };
 
 void Map::update(WoWFrameData *frameData) {
-    if (!m_wdtfile->getIsLoaded()) return;
+    if (m_wdtfile->getStatus() != FileStatus::FSLoaded) return;
 
     mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
     mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
@@ -670,30 +670,30 @@ void Map::collectMeshes(WoWFrameData *frameData) {
         }
 //    }
 
-    auto *sortedArrayPtr = &renderedThisFramePreSort[0];
-    std::vector<int> indexArray = std::vector<int>(renderedThisFramePreSort.size());
-    for (int i = 0; i < indexArray.size(); i++) {
-        indexArray[i] = i;
-    }
-
     //No need to sort array which has only one element
+    frameData->renderedThisFrame = {};
     if (renderedThisFramePreSort.size() > 1) {
+        auto *sortedArrayPtr = &renderedThisFramePreSort[0];
+        std::vector<int> indexArray = std::vector<int>(renderedThisFramePreSort.size());
+        for (int i = 0; i < indexArray.size(); i++) {
+            indexArray[i] = i;
+        }
+
         auto *config = m_api->getConfig();
         quickSort_parallel(indexArray.data(), indexArray.size(), config->getThreadCount(), config->getQuickSortCutoff(),
 
 #include "../../../gapi/interface/sortLambda.h"
 
         );
-    }
-//    std::sort(indexArray.begin(),
-//              indexArray.end(),
-//              #include "../../../gapi/interface/sortLambda.h"
-//    );
-	//frameData->renderedThisFrame.resize(indexArray.size());
-	frameData->renderedThisFrame = {};
-	frameData->renderedThisFrame.reserve(indexArray.size());
-    for (int i = 0; i < indexArray.size(); i++) {
-        frameData->renderedThisFrame.push_back(renderedThisFramePreSort[indexArray[i]]);
+
+        frameData->renderedThisFrame.reserve(indexArray.size());
+        for (int i = 0; i < indexArray.size(); i++) {
+            frameData->renderedThisFrame.push_back(renderedThisFramePreSort[indexArray[i]]);
+        }
+    } else {
+        for (int i = 0; i < renderedThisFramePreSort.size(); i++) {
+            frameData->renderedThisFrame.push_back(renderedThisFramePreSort[i]);
+        }
     }
 };
 

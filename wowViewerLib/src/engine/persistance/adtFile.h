@@ -8,6 +8,7 @@
 #include "header/adtFileHeader.h"
 #include "header/wdtFileHeader.h"
 #include "../../include/wowScene.h"
+#include "PersistentFile.h"
 
 struct mcnkStruct_t {
     MCVT *mcvt = nullptr;
@@ -27,23 +28,25 @@ struct mcnkStruct_t {
 
 
     uint8_t *mcal = nullptr;
+
+    uint8_t *mcql = nullptr;
+    int mcqlLen = 0;
 };
 
-class AdtFile {
+class AdtFile: public PersistentFile {
 public:
     AdtFile(std::string fileName){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
     AdtFile(int fileDataId){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
 
     void processTexture(const MPHDFlags &wdtObjFlags, int i, std::vector<uint8_t> &currentLayer);
-    void process(HFileContent adtFile, const std::string &fileName);
-    bool getIsLoaded() { return m_loaded; };
+    void process(HFileContent adtFile, const std::string &fileName) override;
     void setIsMain(bool isMain) { m_mainAdt = isMain; };
 public:
-    SMMapHeader* mhdr;
+    SMMapHeader* mhdr = nullptr;
 
     struct {
         SMChunkInfo chunkInfo[16][16];
-    } *mcins;
+    } *mcins = nullptr;
 
     std::vector<std::string> textureNames;
 
@@ -54,10 +57,10 @@ public:
     int mhid_len = 0;
 
     PointerChecker<char> doodadNamesField = doodadNamesFieldLen;
-    int doodadNamesFieldLen;
+    int doodadNamesFieldLen = 0;
 
     PointerChecker<char> wmoNamesField = wmoNamesFieldLen;
-    int wmoNamesFieldLen;
+    int wmoNamesFieldLen = 0;
 
     PointerChecker<SMTextureParams> mtxp = mtxp_len;
     int mtxp_len = 0;
@@ -95,10 +98,10 @@ public:
     SMLodLevelPerObject * lod_levels_for_objects = nullptr;
 
     PointerChecker<uint32_t> mmid = mmid_length;
-    int mmid_length;
+    int mmid_length = 0;
 
     PointerChecker<uint32_t> mwid = mwid_length;
-    int mwid_length;
+    int mwid_length = 0;
 
     int mcnkRead = -1;
     std::array<SMChunk, 16*16> mapTile;
@@ -108,7 +111,6 @@ public:
     std::vector<int16_t> strips;
     std::vector<int> stripOffsets;
 private:
-    bool m_loaded = false;
     bool m_mainAdt = false;
 
     void createTriangleStrip();

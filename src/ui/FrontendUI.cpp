@@ -12,8 +12,9 @@
 
 void FrontendUI::composeUI() {
 
-    if (fillAdtSelectionminimap) {
-        if (fillAdtSelectionminimap(adtSelectionMinimap, isWmoMap)) {
+    if (fillAdtSelectionminimap && mapCanBeOpened) {
+
+        if (fillAdtSelectionminimap(adtSelectionMinimap, isWmoMap, mapCanBeOpened )) {
             fillAdtSelectionminimap = nullptr;
 
             requiredTextures.clear();
@@ -195,6 +196,7 @@ void FrontendUI::showMapSelectionDialog() {
 
                     if (ImGui::Selectable(mapListStringMap[i][0].c_str(), selected == i, ImGuiSelectableFlags_SpanAllColumns)) {
                         if (mapRec.ID != prevMapId) {
+                            mapCanBeOpened = true;
                             prevMapRec = mapRec;
                             if (getAdtSelectionMinimap) {
                                 isWmoMap = false;
@@ -225,7 +227,10 @@ void FrontendUI::showMapSelectionDialog() {
             {
                 ImGui::BeginChild("Map Select Dialog Right panel", ImVec2(0, 0));
                 {
-                    if (!isWmoMap) {
+                    if (!mapCanBeOpened) {
+                        ImGui::Text("Cannot open this map.");
+                        ImGui::Text("WDT file either does not exist in CASC repository or is encrypted");
+                    } else if (!isWmoMap) {
                         ImGui::SliderFloat("Zoom", &minimapZoom, 0.1, 10);
 //                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
                         showAdtSelectionMinimap();
@@ -413,7 +418,7 @@ void FrontendUI::setGetAdtSelectionMinimap(std::function<void(int wdtFileDataId)
     getAdtSelectionMinimap = callback;
 }
 
-void FrontendUI::setFillAdtSelectionMinimap(std::function<bool (std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap)> callback) {
+void FrontendUI::setFillAdtSelectionMinimap(std::function<bool (std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists)> callback) {
     fillAdtSelectionminimap = callback;
 }
 
@@ -467,10 +472,6 @@ void FrontendUI::showSettingsDialog() {
 
         ImGui::End();
     }
-}
-
-void FrontendUI::setOpenWMOMapCallback(std::function<void()> callback) {
-    openWMOMap = callback;
 }
 
 void FrontendUI::setThreadCountCallback(std::function<void(int value)> callback) {

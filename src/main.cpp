@@ -297,10 +297,10 @@ int main(){
     //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
     //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
     //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-//    RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+    RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
 //        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
-//    processor->setThreaded(true);
-    RequestProcessor *processor = nullptr;
+    processor->setThreaded(true);
+//    RequestProcessor *processor = nullptr;
 
     glfwInit();
 
@@ -362,12 +362,15 @@ int main(){
     CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
 
 
-    WoWFilesCacheStorage *storage = nullptr;
-//    processor->setFileRequester(storage);
+//    WoWFilesCacheStorage *storage = nullptr;
+    WoWFilesCacheStorage *storage = new WoWFilesCacheStorage(processor);
+    processor->setFileRequester(storage);
 
     //Create device
     IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
     WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
+
+    scene->setCacheStorage(storage);
 
     FrontendUI frontendUI;
     frontendUI.setOpenCascStorageCallback([&processor, &storage, &scene](std::string cascPath) -> bool {
@@ -435,10 +438,15 @@ int main(){
     frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, &device, &scene](int wdtFileDataId) {
         auto wdtFile = storage->getWdtFileCache()->getFileId(wdtFileDataId);
 
-        frontendUI.setOpenWMOMapCallback(nullptr);
 
-        frontendUI.setFillAdtSelectionMinimap([&frontendUI, wdtFile, &storage, &device, &scene](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap) -> bool {
-            if (!wdtFile->getIsLoaded()) return false;
+        frontendUI.setFillAdtSelectionMinimap([&frontendUI, wdtFile, &storage, &device, &scene](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists) -> bool {
+            if (wdtFile->getStatus() == FileStatus::FSRejected) {
+                wdtFileExists = false;
+                isWMOMap = false;
+                return false;
+            }
+
+            if (wdtFile->getStatus() != FileStatus::FSLoaded) return false;
 
             isWMOMap = wdtFile->mphd->flags.wdt_uses_global_map_obj;
 

@@ -296,7 +296,7 @@ bool WmoGroupObject::doPostLoad() {
         return false;
     }
 
-    if ((m_geom == nullptr) || (!m_geom->isLoaded()) || (!m_wmoApi->isLoaded())) return false;
+    if ((m_geom == nullptr) || (m_geom->getStatus() != FileStatus::FSLoaded) || (!m_wmoApi->isLoaded())) return false;
 
     this->postLoad();
     this->m_loaded = true;
@@ -578,7 +578,6 @@ void WmoGroupObject::setLiquidType() {
 }
 
 void WmoGroupObject::createWaterMeshes() {
-	return;
 
     IDevice *device = m_api->getDevice();
     HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(*device);
@@ -630,8 +629,12 @@ void WmoGroupObject::createWaterMeshes() {
     meshTemplate.end = m_geom->waterIndexSize;
     meshTemplate.element = DrawElementMode::TRIANGLES;
 
-    int &waterType = meshTemplate.ubo[2]->getObject<int>();
-    waterType = liquid_type;
+    auto l_liquidType = liquid_type;
+    meshTemplate.ubo[4]->setUpdateHandler([l_liquidType](IUniformBufferChunk* self) -> void {
+        int (&waterType)[4] = self->getObject<int[4]>();
+
+        waterType[0] = l_liquidType;
+    });
 
 
     HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);

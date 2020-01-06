@@ -66,7 +66,7 @@ public:
         return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,0,1)).ToMatrix4();
     };
 
-    static const mathfu::mat4 getAdtToWorldMat4() {
+    static const mathfu::mat4 &getAdtToWorldMat4() {
         const float TILESIZE = 533.333333333f;
 
 //        mathfu::mat4 adtToWorldMat4 = mathfu::mat4::Identity();

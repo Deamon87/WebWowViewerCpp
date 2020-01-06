@@ -11,13 +11,13 @@
 #include "header/adtFileHeader.h"
 #include "../../include/wowScene.h"
 
-class WdlFile {
+class WdlFile : public PersistentFile {
 public:
     WdlFile(std::string fileName){};
     WdlFile(int fileDataId){};
 
-    void process(HFileContent wdlFile, const std::string &fileName);
-    bool getIsLoaded() { return m_loaded; };
+    void process(HFileContent wdlFile, const std::string &fileName) override;
+
 public:
     SMDoodadDef * doodadDefObj = nullptr;
     int doodadDefObj_len = 0;
@@ -27,7 +27,6 @@ public:
 
 
 private:
-    bool m_loaded = false;
 
     HFileContent m_wdlFile;
     static chunkDef<WdlFile> wdlFileTable;

@@ -14,7 +14,7 @@
 #include "../wowInnerApi.h"
 
 
-class M2Geom {
+class M2Geom : public PersistentFile {
 public:
     M2Geom(std::string fileName){
         std::string delimiter = ".";
@@ -29,17 +29,14 @@ public:
         m_modelFileId = fileDataId;
     };
 
-    void process(HFileContent m2File, const std::string &fileName);
+    void process(HFileContent m2File, const std::string &fileName) override;
     HGVertexBuffer getVBO(IDevice &device);
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
 
     int findAnimationIndex(uint32_t anim_id);
     void loadLowPriority(IWoWInnerApi *m_api, uint32_t animationId, uint32_t subAnimationId);
 
-
-    bool isLoaded() { return m_loaded; };
-
-    M2Data * getM2Data(){ if (m_loaded) {return m_m2Data;} else {return nullptr;}};
+    M2Data * getM2Data(){ if (fsStatus == FileStatus::FSLoaded) {return m_m2Data;} else {return nullptr;}};
 
     M2Data *m_m2Data = nullptr;
     std::vector<uint32_t> skinFileDataIDs;
@@ -56,7 +53,6 @@ private:
     bool useFileId = false;
     int m_modelFileId;
 
-    bool m_loaded = false;
     HGVertexBuffer vertexVbo = HGVertexBuffer(nullptr);
     std::unordered_map<SkinGeom *, HGVertexBufferBindings> vaoMap;
 

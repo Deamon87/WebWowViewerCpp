@@ -81,13 +81,13 @@ private:
 
     IWoWInnerApi *m_api;
     IMapApi *m_mapApi;
-    HWdtFile m_wdtFile;
+    HWdtFile m_wdtFile= nullptr;
 
-    HAdtFile m_adtFile;
-    HAdtFile m_adtFileTex;
-    HAdtFile m_adtFileObj;
-    HAdtFile m_adtFileObjLod;
-    HAdtFile m_adtFileLod;
+    HAdtFile m_adtFile = nullptr;
+    HAdtFile m_adtFileTex = nullptr;
+    HAdtFile m_adtFileObj = nullptr;
+    HAdtFile m_adtFileObjLod = nullptr;
+    HAdtFile m_adtFileLod = nullptr;
 
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;

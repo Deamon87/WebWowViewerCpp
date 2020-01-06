@@ -76,7 +76,7 @@ void SkelFile::process(HFileContent skelFile, const std::string &fileName) {
         this->m_sks1->sequence_lookups.initM2Array(this->m_sks1);
     }
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 
     for (int i =0; i < this->m_sks1->sequences.size; i++) {
         if(this->m_sks1->sequences.getElement(i)->id == 804) {

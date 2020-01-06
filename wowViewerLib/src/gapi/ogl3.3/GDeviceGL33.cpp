@@ -303,28 +303,29 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
 
     auto bufferForUploadGL = ((GUniformBufferGL33 *) bufferForUpload.get());
     //Buffer identifier was changed, so we need to update shader UBO descriptor
+    if (fullSize > 0) {
+        char *pointerForUpload = static_cast<char *>(&aggregationBufferForUpload[0]);
+        for (const auto &buffer : buffers) {
+            buffer->setOffset(currentSize);
+            buffer->setPointer(&pointerForUpload[currentSize]);
+            currentSize += buffer->getSize();
 
-    char *pointerForUpload = static_cast<char *>(&aggregationBufferForUpload[0]);
-    for (const auto &buffer : buffers) {
-        buffer->setOffset(currentSize);
-        buffer->setPointer(&pointerForUpload[currentSize]);
-        currentSize += buffer->getSize();
+            int offsetDiff = currentSize % uniformBufferOffsetAlign;
+            if (offsetDiff != 0) {
+                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-        int offsetDiff = currentSize % uniformBufferOffsetAlign;
-        if (offsetDiff != 0) {
-            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
-
-            currentSize += bytesToAdd;
+                currentSize += bytesToAdd;
+            }
         }
-    }
-    assert(currentSize == fullSize);
+        assert(currentSize == fullSize);
 
-    for (auto &buffer : buffers) {
-        buffer->update();
-    }
+        for (auto &buffer : buffers) {
+            buffer->update();
+        }
 
-    if (currentSize > 0) {
-        bufferForUploadGL->uploadData(pointerForUpload, currentSize);
+        if (currentSize > 0) {
+            bufferForUploadGL->uploadData(pointerForUpload, currentSize);
+        }
     }
 }
 #else

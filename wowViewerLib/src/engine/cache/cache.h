@@ -134,6 +134,14 @@ public:
 
     void reject(std::string fileName) {
         trim(fileName);
+
+        std::weak_ptr<T> weakPtr = m_cache[fileName];
+        if (!weakPtr.expired())
+        {
+            if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
+                sharedPtr->rejected();
+            }
+        }
     }
 
     void clear() {

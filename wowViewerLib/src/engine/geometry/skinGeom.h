@@ -11,16 +11,15 @@
 #include "../../gapi/interface/IDevice.h"
 #include "../../include/wowScene.h"
 
-class SkinGeom {
+class SkinGeom : public PersistentFile {
 public:
     SkinGeom(std::string fileName){};
     SkinGeom(int fileDataId){};
 
-    void process(HFileContent skinFile, const std::string &fileName);
+    void process(HFileContent skinFile, const std::string &fileName) override;
     HGIndexBuffer getIBO(IDevice &device);
 
-    bool isLoaded() { return m_loaded; };
-    M2SkinProfile * getSkinData(){ if (m_loaded) {return m_skinData;} else {return nullptr;}};
+    M2SkinProfile * getSkinData(){ if (fsStatus == FileStatus::FSLoaded) {return m_skinData;} else {return nullptr;}};
 
     void fixData(M2Data *m2File);
 private:
@@ -28,7 +27,6 @@ private:
     M2SkinProfile *m_skinData = nullptr;
 
     HGIndexBuffer indexVbo = HGIndexBuffer(nullptr);
-    bool m_loaded = false;
     bool m_fixed = false;
 
     void fixShaderIdBasedOnLayer(M2Data *m2Filem2File);

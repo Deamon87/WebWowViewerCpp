@@ -9,7 +9,7 @@ bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu:
                                     mathfu::mat4 &lookAtMat4, std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                     std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
     if (!this->m_loaded) {
-        if (m_wdlFile->getIsLoaded()) {
+        if (m_wdlFile->getStatus() == FileStatus::FSLoaded) {
             this->loadingFinished();
             m_loaded = true;
         } else {

@@ -7,6 +7,7 @@
 
 #include "../persistance/header/blpFileHeader.h"
 #include "../../include/sharedFile.h"
+#include "../persistance/PersistentFile.h"
 #include <vector>
 enum class TextureFormat {
     None,
@@ -28,14 +29,13 @@ struct mipmapStruct_t {
 };
 typedef std::vector<mipmapStruct_t> MipmapsVector;
 
-class BlpTexture {
+class BlpTexture : public PersistentFile{
 public:
     BlpTexture(std::string fileName){};
     BlpTexture(int fileDataId){};
 
     std::string getTextureName() { return m_textureName; };
-    void process(HFileContent blpFile, const std::string &fileName);
-    bool getIsLoaded() { return m_isLoaded; };
+    void process(HFileContent blpFile, const std::string &fileName) override;
     const MipmapsVector& getMipmapsVector() {
         return m_mipmaps;
     }
@@ -44,11 +44,10 @@ public:
         return m_textureFormat;
     }
 private:
-    bool m_isLoaded = false;
     std::string m_textureName;
 
     MipmapsVector m_mipmaps;
-    TextureFormat m_textureFormat;
+    TextureFormat m_textureFormat = TextureFormat::None;
 };
 
 

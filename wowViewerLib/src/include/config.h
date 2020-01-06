@@ -38,7 +38,7 @@ private:
     int maxParticle = 9999;
 
     int threadCount = 4;
-    int quickSortCutoff = 10;
+    int quickSortCutoff = 100;
 
     int currentTime = 0;
 

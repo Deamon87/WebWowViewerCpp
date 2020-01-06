@@ -234,7 +234,7 @@ void AdtObject::createVBO() {
     adtVertexBindings->save();
 
     //Sometimes mvli can be zero, while there is still data in floatDataBlob
-    if (m_adtFileLod->getIsLoaded() && m_adtFileLod->floatDataBlob_len > 0 && m_adtFileLod->mvli_len > 0) {
+    if (m_adtFileLod!= nullptr && m_adtFileLod->getStatus()==FileStatus::FSLoaded && m_adtFileLod->floatDataBlob_len > 0 && m_adtFileLod->mvli_len > 0) {
         //Generate MLLL buffers
         //Index buffer for lod
         std::vector<float> vboLod;
@@ -509,11 +509,11 @@ void AdtObject::collectMeshesLod(std::vector<HGMesh> &renderedThisFrame) {
 void AdtObject::doPostLoad() {
 //    std::cout << "AdtObject::doPostLoad finished called" << std::endl;
     if (!m_loaded) {
-        if (m_adtFile->getIsLoaded() &&
-            m_adtFileObj->getIsLoaded() &&
-            m_adtFileObjLod->getIsLoaded() &&
-            (m_adtFileLod->getIsLoaded() || !m_wdtFile->mphd->flags.unk_0x0100) &&
-            m_adtFileTex->getIsLoaded()) {
+        if (m_adtFile->getStatus()==FileStatus::FSLoaded &&
+            m_adtFileObj->getStatus()==FileStatus::FSLoaded &&
+            m_adtFileObjLod->getStatus()==FileStatus::FSLoaded &&
+            ((m_adtFileLod != nullptr && m_adtFileLod->getStatus()==FileStatus::FSLoaded) || !m_wdtFile->mphd->flags.unk_0x0100) &&
+            m_adtFileTex->getStatus()==FileStatus::FSLoaded) {
             this->loadingFinished();
             m_loaded = true;
         }
@@ -919,7 +919,11 @@ AdtObject::AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDa
     m_adtFileTex = m_api->getAdtGeomCache()->getFileId(fileDataIDs.tex0ADT);
     m_adtFileObj = m_api->getAdtGeomCache()->getFileId(fileDataIDs.obj0ADT);
     m_adtFileObjLod = m_api->getAdtGeomCache()->getFileId(fileDataIDs.obj1ADT);
-    m_adtFileLod = m_api->getAdtGeomCache()->getFileId(fileDataIDs.lodADT);
+    if (fileDataIDs.lodADT != 0) {
+        m_adtFileLod = m_api->getAdtGeomCache()->getFileId(fileDataIDs.lodADT);
+    } else {
+        m_adtFileLod = nullptr;
+    }
 
     lodDiffuseTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTexture);
     lodNormalTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTextureN);

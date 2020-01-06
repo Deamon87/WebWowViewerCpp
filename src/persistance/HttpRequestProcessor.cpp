@@ -143,19 +143,17 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
 
                 //Provide file!
                 provideResult(newFileName, fileContent, holderType);
-
-
-
-
                 //std::ofstream output_file(outputFileName, std::ios::out | std::ofstream::binary);
 				//std::ostreambuf_iterator<unsigned char> output_iterator(output_file);
 
 
 				//std::copy(fileContent->begin(), fileContent->end(), output_iterator);
-
-                delete httpFile;
             }
     );
+    httpFile->setFailCallback([fileName, this, holderType, httpFile](HFileContent fileContent) -> void {
+        this->m_fileRequester->rejectFile(holderType, fileName.c_str());
+    });
     httpFile->startDownloading();
 
+    delete httpFile;
 }

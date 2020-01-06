@@ -862,7 +862,7 @@ bool M2Object::doPostLoad(){
 
     //1. Check if .m2 files is loaded
     if (m_m2Geom == nullptr) return false;
-    if (!m_m2Geom->isLoaded()) return false;
+    if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return false;
 
     //2. Check if .skin file is loaded
     if (m_skinGeom == nullptr) {
@@ -877,14 +877,14 @@ bool M2Object::doPostLoad(){
         }
         return false;
     }
-    if (!m_skinGeom->isLoaded()) return false;
+    if (m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
     if (m_m2Geom->m_skid > 0) {
         if (m_skelGeom == nullptr) {
             auto skelCache = m_api->getSkelCache();
             m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
             return false;
         }
-        if (!m_skelGeom->getIsLoaded()) return false;
+        if (m_skelGeom->getStatus() != FileStatus::FSLoaded) return false;
     }
 
     //3. Do post load procedures

@@ -20,7 +20,7 @@ void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
     skinHeader->submeshes.initM2Array(skinHeader);
     skinHeader->batches.initM2Array(skinHeader);
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }
 HGIndexBuffer SkinGeom::getIBO(IDevice &device) {
     if (indexVbo == nullptr) {
