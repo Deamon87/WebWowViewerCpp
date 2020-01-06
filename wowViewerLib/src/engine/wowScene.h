@@ -35,7 +35,7 @@
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 private:
-    WoWFilesCacheStorage * cacheStorage;
+    WoWFilesCacheStorage * cacheStorage = nullptr;
 public:
     WoWSceneImpl(Config *config, WoWFilesCacheStorage * cacheStorage, IClientDatabase * clientDatabase, IDevice * device, int canvWidth, int canvHeight);
     ~WoWSceneImpl() override;

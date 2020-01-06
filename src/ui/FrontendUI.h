@@ -56,6 +56,8 @@ private:
     bool showAboutWindow = false;
 //  c bool showWorldPosTooltip = false;
 
+    bool cascOpened = false;
+
     float minimapZoom = 1;
     float farPlane = 200;
     int currentTime = 0;

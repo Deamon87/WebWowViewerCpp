@@ -297,10 +297,10 @@ int main(){
     //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
     //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
     //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-    RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+//    RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
 //        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
-    processor->setThreaded(true);
-
+//    processor->setThreaded(true);
+    RequestProcessor *processor = nullptr;
 
     glfwInit();
 
@@ -362,8 +362,8 @@ int main(){
     CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
 
 
-    WoWFilesCacheStorage *storage = new WoWFilesCacheStorage(processor);
-    processor->setFileRequester(storage);
+    WoWFilesCacheStorage *storage = nullptr;
+//    processor->setFileRequester(storage);
 
     //Create device
     IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
@@ -391,8 +391,11 @@ int main(){
 
         return true;
     });
-    frontendUI.setOpenSceneByfdidCallback([&scene](int mapId, int wdtFileId, float x, float y, float z) {
+    frontendUI.setOpenSceneByfdidCallback([&scene, &storage](int mapId, int wdtFileId, float x, float y, float z) {
 //        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
+        if (storage) {
+            storage->actuallDropCache();
+        }
         scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
     frontendUI.setFarPlaneChangeCallback([&scene](float farPlane) -> void {
@@ -411,7 +414,10 @@ int main(){
     frontendUI.setGetCurrentAreaName([]()->std::string {
         return testConf->getAreaName();
     });
-    frontendUI.setUnloadScene([&scene]()->void {
+    frontendUI.setUnloadScene([&scene, &storage]()->void {
+        if (storage) {
+            storage->actuallDropCache();
+        }
         scene->setSceneWithFileDataId(-1, 0, -1);
     });
 
@@ -493,9 +499,10 @@ try {
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
 
-        processor->processRequests(false);
-        processor->processResults(10);
-
+        if (processor) {
+            processor->processRequests(false);
+            processor->processResults(10);
+        }
         if (windowSizeChanged) {
             scene->setScreenSize(canvWidth, canvHeight);
             windowSizeChanged = false;

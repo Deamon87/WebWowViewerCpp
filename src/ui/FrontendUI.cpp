@@ -40,6 +40,16 @@ void FrontendUI::composeUI() {
         ImGui::EndPopup();
     }
 
+    if (ImGui::BeginPopupModal("Casc succesed"))
+    {
+        ImGui::Text("CASC storage succefully opened");
+        if (ImGui::Button("Ok", ImVec2(-1, 23))) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+
     //Show filePicker
     fileDialog.Display();
 
@@ -48,7 +58,11 @@ void FrontendUI::composeUI() {
         if (openCascCallback) {
             if (!openCascCallback(fileDialog.GetSelected().string())) {
                 ImGui::OpenPopup("Casc failed");
-            };
+                cascOpened = false;
+            } else {
+                ImGui::OpenPopup("Casc succesed");
+                cascOpened = true;
+            }
         }
         fileDialog.ClearSelected();
     }
@@ -157,7 +171,7 @@ void FrontendUI::showMapSelectionDialog() {
             //Left panel
             {
                 //Filter
-                if (ImGui::InputText("Filter: ", filterText.begin(), filterText.size(), ImGuiInputTextFlags_AlwaysInsertMode)) {
+                if (ImGui::InputText("Filter: ", filterText.data(), filterText.size(), ImGuiInputTextFlags_AlwaysInsertMode)) {
                     refilterIsNeeded = true;
                 }
                 //The table
@@ -319,10 +333,10 @@ void FrontendUI::showMainMenu() {
                 fileDialog.Open();
             }
 
-            if (ImGui::MenuItem("Open Map selection")) {
+            if (ImGui::MenuItem("Open Map selection", "", false, cascOpened)) {
                 showSelectMap = true;
             }
-            if (ImGui::MenuItem("Unload scene")) {
+            if (ImGui::MenuItem("Unload scene", "", false, cascOpened)) {
                 if (unloadScene) {
                     unloadScene();
                 }

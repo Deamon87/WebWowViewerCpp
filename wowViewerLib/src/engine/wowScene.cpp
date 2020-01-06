@@ -22,7 +22,9 @@
 void WoWSceneImpl::processCaches(int limit) {
 //    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
 //    std::cout << "this->adtObjectCache.m_cache.size() = " << this->adtObjectCache.m_cache.size()<< std::endl;
-    cacheStorage->processCaches(limit);
+    if (cacheStorage) {
+        cacheStorage->processCaches(limit);
+    }
 }
 void WoWSceneImpl::DoUpdate() {
     FrameCounter frameCounter;
@@ -799,7 +801,9 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     if (currentScene == nullptr) return;
 
     if (needToDropCache) {
-        cacheStorage->actuallDropCache();
+        if (cacheStorage) {
+            cacheStorage->actuallDropCache();
+        }
         needToDropCache = false;
     }
 
@@ -1004,7 +1008,9 @@ WoWScene *createWoWScene(Config *config, WoWFilesCacheStorage * cacheStorage, IC
 void WoWSceneImpl::clearCache() {
 //    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
 //    needToDropCache = true;
-    cacheStorage->actuallDropCache();
+    if (cacheStorage) {
+        cacheStorage->actuallDropCache();
+    };
 }
 
 
