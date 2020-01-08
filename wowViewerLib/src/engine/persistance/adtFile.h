@@ -103,6 +103,15 @@ public:
     PointerChecker<uint32_t> mwid = mwid_length;
     int mwid_length = 0;
 
+    //Water
+    M2HOHeader * mH2OHeader = nullptr;
+    int mH2OblobOffset = 0;
+    PointerChecker<char> mH2OBlob = mH2OBlob_len;
+    int mH2OBlob_len = 0;
+
+
+
+
     int mcnkRead = -1;
     std::array<SMChunk, 16*16> mapTile;
     std::array<mcnkStruct_t, 16*16> mcnkStructs;

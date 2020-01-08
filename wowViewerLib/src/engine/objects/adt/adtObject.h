@@ -132,6 +132,11 @@ private:
 
     std::string m_adtFileTemplate;
 
+    HGVertexBuffer waterVBO;
+    HGIndexBuffer waterIBO;
+    HGVertexBufferBindings vertexWaterBufferBindings;
+    HGMesh waterMesh = nullptr;
+
     struct lodLevels {
         std::vector<std::shared_ptr<M2Object>> m2Objects;
         std::vector<std::shared_ptr<WmoObject>> wmoObjects;
@@ -145,6 +150,7 @@ private:
     void calcBoundingBoxes();
     void loadM2s();
     void loadWmos();
+    void loadWater();
 
     bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                                  std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines, int x,

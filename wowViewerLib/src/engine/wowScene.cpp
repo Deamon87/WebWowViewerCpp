@@ -663,49 +663,72 @@ WoWSceneImpl::WoWSceneImpl(Config *config, WoWFilesCacheStorage * woWFilesCacheS
 
     if (m_supportThreads) {
         g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
-            using namespace std::chrono_literals;
+            try {
+                using namespace std::chrono_literals;
 
-            while (!this->m_isTerminating) {
-                std::this_thread::sleep_for(1ms);
+                while (!this->m_isTerminating) {
+                    std::this_thread::sleep_for(1ms);
 
-                processCaches(1000);
+                    processCaches(1000);
+                }
+            } catch(const std::exception &e) {
+                std::cerr << e.what() << std::endl;
+                throw;
+            } catch (...) {
+                throw;
             }
         });
 
 
         g_globalThreadsSingleton.cullingThread = std::thread(([&]() {
-            using namespace std::chrono_literals;
-            FrameCounter frameCounter;
+            try {
+                using namespace std::chrono_literals;
+                FrameCounter frameCounter;
 
-            while (!this->m_isTerminating) {
-                auto future = nextDeltaTime.get_future();
-                future.wait();
+                while (!this->m_isTerminating) {
+                    auto future = nextDeltaTime.get_future();
+                    future.wait();
 
-//                std::cout << "update frame = " << getDevice()->getUpdateFrameNumber() << std::endl;
+    //                std::cout << "update frame = " << getDevice()->getUpdateFrameNumber() << std::endl;
 
-                int currentFrame = m_gdevice->getCullingFrameNumber();
-                WoWFrameData *frameParam = &m_FrameParams[currentFrame];
-                frameParam->deltaTime = future.get();
-                nextDeltaTime = std::promise<float>();
+                    int currentFrame = m_gdevice->getCullingFrameNumber();
+                    WoWFrameData *frameParam = &m_FrameParams[currentFrame];
+                    frameParam->deltaTime = future.get();
+                    nextDeltaTime = std::promise<float>();
 
-                frameCounter.beginMeasurement();
-                DoCulling();
+                    frameCounter.beginMeasurement();
+                    DoCulling();
 
-                frameCounter.endMeasurement("Culling thread ");
+                    frameCounter.endMeasurement("Culling thread ");
 
-                this->cullingFinished.set_value(true);
+                    this->cullingFinished.set_value(true);
+                }
+            } catch(const std::exception &e) {
+                std::cerr << e.what() << std::endl;
+                throw;
+            } catch (...) {
+                throw;
             }
         }));
 
         if (device->getIsAsynBuffUploadSupported()) {
             g_globalThreadsSingleton.updateThread = std::thread(([&]() {
-                while (!this->m_isTerminating) {
-                    auto future = nextDeltaTimeForUpdate.get_future();
-                    future.wait();
-                    nextDeltaTimeForUpdate = std::promise<float>();
-                    DoUpdate();
+                try {
 
-                    updateFinished.set_value(true);
+
+                    while (!this->m_isTerminating) {
+                        auto future = nextDeltaTimeForUpdate.get_future();
+                        future.wait();
+                        nextDeltaTimeForUpdate = std::promise<float>();
+                        DoUpdate();
+
+                        updateFinished.set_value(true);
+                    }
+                } catch(const std::exception &e) {
+                    std::cerr << e.what() << std::endl;
+                    throw;
+                } catch (...) {
+                    throw;
                 }
             }));
         }

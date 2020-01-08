@@ -24,7 +24,6 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         ss >> fileDataId;
 
         if (fileDataId == 0) {
-
             return;
         }
 
@@ -37,20 +36,21 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     bool fileOpened = false;
     if (CascOpenFile(m_storage, fileNameToPass, 0, openFlags, &fileHandle)) {
         DWORD fileSize1 = CascGetFileSize(fileHandle, nullptr);
-        fileOpened = true;
-        fileContent = std::make_shared<FileContent>(FileContent(fileSize1+1));
-        auto dataPtr = fileContent->data();
+        if (fileSize1 != CASC_INVALID_SIZE) {
+            fileOpened = true;
+            fileContent = std::make_shared<FileContent>(FileContent(fileSize1 + 1));
+            auto dataPtr = fileContent->data();
 
-        DWORD totalBytesRead = 0;
-        while (totalBytesRead < fileSize1) {
-            DWORD dwBytesRead;
+            DWORD totalBytesRead = 0;
+            while (totalBytesRead < fileSize1) {
+                DWORD dwBytesRead = 0;
 
-            CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
 
-            totalBytesRead += dwBytesRead;
+                CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1 - totalBytesRead, &dwBytesRead);
+
+                totalBytesRead += dwBytesRead;
+            }
         }
-
-
     }
 
     if (fileOpened) {

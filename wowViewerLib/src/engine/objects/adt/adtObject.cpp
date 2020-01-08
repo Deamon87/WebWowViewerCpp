@@ -19,6 +19,14 @@ static GBufferBinding bufferBinding[5] = {
     {(uint32_t)adtShader::Attribute::aVertexLighting, 4, GBindingType::GFLOAT, false, 60, 44},
 };
 
+static GBufferBinding staticWaterBindings[2] = {
+    {+adtWater::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, 24, 0},
+    {+adtWater::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 16},
+//    {+waterShader::Attribute::aDepth, 1, GBindingType::GFLOAT, false, 24, 0 },
+//    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 4},
+
+};
+
 
 
 void AdtObject::loadingFinished() {
@@ -33,6 +41,7 @@ void AdtObject::loadingFinished() {
 
     loadM2s();
     loadWmos();
+    loadWater();
 
     m_loaded = true;
 }
@@ -124,6 +133,157 @@ void AdtObject::loadWmos() {
         }
     }
 }
+void AdtObject::loadWater() {
+    if (m_adtFile->mH2OHeader == nullptr) return;
+
+    //Parse the blob
+    PACK(
+    struct LiquidVertexFormat {
+        mathfu::vec4_packed pos_transp;
+        mathfu::vec2_packed uv;
+    });
+    std::vector<LiquidVertexFormat> vertexBuffer;
+    std::vector<uint16_t > indexBuffer;
+
+    const float TILESIZE =  533.3433333f ;
+    const float CHUNKSIZE = TILESIZE / 16.0f;
+    const float UNITSIZE =  CHUNKSIZE / 8.0f;
+
+    mathfu::vec3 adtBasePos = mathfu::vec3(AdtIndexToWorldCoordinate(adt_y), AdtIndexToWorldCoordinate(adt_x), 0);
+
+    for (int y_chunk = 0; y_chunk < 16; y_chunk++) {
+        for (int x_chunk = 0; x_chunk < 16; x_chunk++) {
+            auto &liquidChunk = m_adtFile->mH2OHeader->chunks[y_chunk*16 + x_chunk];
+
+            if (liquidChunk.layer_count == 0) continue;
+
+            auto *liquidInstPtr =
+                ((SMLiquidInstance *)(&m_adtFile->mH2OBlob[liquidChunk.offset_instances - m_adtFile->mH2OblobOffset]));
+
+            mathfu::vec3 liquidBasePos =
+                adtBasePos -
+                mathfu::vec3(
+                    CHUNKSIZE*y_chunk,
+                    CHUNKSIZE*x_chunk,
+                0);
+
+            for (int layerInd = 0; layerInd < liquidChunk.layer_count; layerInd++) {
+                SMLiquidInstance &liquidInstance = liquidInstPtr[layerInd];
+
+                float *heightPtr = nullptr;
+                if (liquidInstance.offset_vertex_data != 0) {
+                    ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data - m_adtFile->mH2OblobOffset]));
+                }
+
+                int baseVertexIndForInst = vertexBuffer.size();
+
+                for (int y = 0; y < liquidInstance.height + 1; y++) {
+                    for (int x = 0; x < liquidInstance.width + 1; x++) {
+                        mathfu::vec3 pos =
+                            liquidBasePos -
+                            mathfu::vec3(
+                                UNITSIZE*(x+liquidInstance.x_offset),
+                                UNITSIZE*(y+liquidInstance.y_offset),
+                                -liquidInstance.min_height_level
+                            );
+
+                        if (liquidInstance.liquid_object_or_lvf != 2 && heightPtr!= nullptr) {
+                            pos.z = heightPtr[y * (liquidInstance.width + 1) + x];
+                        }
+
+                        LiquidVertexFormat vertex;
+                        vertex.pos_transp = mathfu::vec4(pos, 1.0);
+                        vertex.uv = mathfu::vec2(0,0);
+
+                        vertexBuffer.push_back(vertex);
+                    }
+                }
+
+                for (int y = 0; y < liquidInstance.height; y++) {
+                    for (int x = 0; x < liquidInstance.width; x++) {
+                        int16_t vertindexes[4] = {
+                            (int16_t) (baseVertexIndForInst + y * (liquidInstance.width +1 ) + x),
+                            (int16_t) (baseVertexIndForInst + y * (liquidInstance.width + 1) + x + 1),
+                            (int16_t) (baseVertexIndForInst + (y + 1) * (liquidInstance.width + 1) + x),
+                            (int16_t) (baseVertexIndForInst + (y + 1) * (liquidInstance.width + 1) + x + 1),
+                        };
+
+                        indexBuffer.push_back (vertindexes[0]);
+                        indexBuffer.push_back (vertindexes[1]);
+                        indexBuffer.push_back (vertindexes[2]);
+
+                        indexBuffer.push_back (vertindexes[1]);
+                        indexBuffer.push_back (vertindexes[3]);
+                        indexBuffer.push_back (vertindexes[2]);
+                    }
+                }
+            }
+        }
+    }
+
+    IDevice *device = m_api->getDevice();
+
+    waterIBO = device->createIndexBuffer();
+    waterIBO->uploadData(
+        indexBuffer.data(),
+        indexBuffer.size() * sizeof(uint16_t));
+
+    waterVBO = device->createVertexBuffer();
+    waterVBO->uploadData(
+        vertexBuffer.data(),
+        vertexBuffer.size() * sizeof(LiquidVertexFormat)
+    );
+
+    vertexWaterBufferBindings = device->createVertexBufferBindings();
+    vertexWaterBufferBindings->setIndexBuffer(waterIBO);
+
+    GVertexBufferBinding vertexBinding;
+    vertexBinding.vertexBuffer = waterVBO;
+
+    vertexBinding.bindings = std::vector<GBufferBinding>(&staticWaterBindings[0], &staticWaterBindings[2]);
+
+    vertexWaterBufferBindings->addVertexBufferBinding(vertexBinding);
+    vertexWaterBufferBindings->save();
+
+
+//Create mesh(es)
+    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("adtWater", nullptr);
+
+    gMeshTemplate meshTemplate(vertexWaterBufferBindings, shaderPermutation);
+
+    meshTemplate.meshType = MeshType::eWmoMesh;
+    meshTemplate.depthWrite = false;
+    meshTemplate.depthCulling = true;
+    meshTemplate.backFaceCulling = false;
+
+    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+
+    meshTemplate.textureCount = 0;
+
+    meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.ubo[1] = nullptr;
+    meshTemplate.ubo[2] = nullptr;
+
+    meshTemplate.ubo[3] = nullptr;
+    meshTemplate.ubo[4] = device->createUniformBufferChunk(16);
+
+    meshTemplate.start = 0;
+    meshTemplate.end = indexBuffer.size();
+    meshTemplate.element = DrawElementMode::TRIANGLES;
+
+    auto l_liquidType = 0;
+    meshTemplate.ubo[4]->setUpdateHandler([l_liquidType](IUniformBufferChunk* self) -> void {
+        int (&waterType)[4] = self->getObject<int[4]>();
+
+        waterType[0] = l_liquidType;
+    });
+
+
+    waterMesh = m_api->getDevice()->createMesh(meshTemplate);
+
+
+}
+
 
 void AdtObject::createVBO() {
     /* 1. help index + Heights + texCoords +  */
@@ -217,11 +377,15 @@ void AdtObject::createVBO() {
     /* 1.3 Make combinedVbo */
     IDevice *device = m_api->getDevice();
     combinedVbo = device->createVertexBuffer();
-    combinedVbo->uploadData(&vboArray[0], vboArray.size()*sizeof(float));
+    combinedVbo->uploadData(vboArray.data(), vboArray.size()*sizeof(float));
 
     /* 2. Strips */
     stripVBO = device->createIndexBuffer();
-    stripVBO->uploadData(&m_adtFile->strips[0], m_adtFile->strips.size() * sizeof(int16_t));
+    if (m_adtFile->strips.size() > 0) {
+        stripVBO->uploadData(m_adtFile->strips.data(), m_adtFile->strips.size() * sizeof(int16_t));
+    } else {
+        stripVBO->uploadData(nullptr, 0);
+    }
 
     adtVertexBindings = device->createVertexBufferBindings();
     adtVertexBindings->setIndexBuffer(stripVBO);
@@ -458,6 +622,9 @@ void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &rend
         if (!adtRes.drawChunk[i]) continue;
         adtMeshes[i]->setRenderOrder(renderOrder);
         renderedThisFrame.push_back(adtMeshes[i]);
+    }
+    if (waterMesh!= nullptr) {
+        renderedThisFrame.push_back(waterMesh);
     }
 }
 void AdtObject::collectMeshesLod(std::vector<HGMesh> &renderedThisFrame) {
@@ -906,7 +1073,7 @@ AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::strin
 
 }
 
-AdtObject::AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile) {
+AdtObject::AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile): adt_x(adt_x), adt_y(adt_y) {
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);

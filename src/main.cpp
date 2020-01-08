@@ -253,10 +253,25 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
 void beforeCrash(void);
 
-#ifdef _WIN32
-static const bool SET_TERMINATE = std::set_terminate(beforeCrash);
 
+extern "C" void my_function_to_handle_aborts(int signal_number)
+{
+    /*Your code goes here. You can output debugging info.
+      If you return from this function, and it was called
+      because abort() was called, your program will exit or crash anyway
+      (with a dialog box on Windows).
+     */
+
+    std::cout << "HELLO" << std::endl;
+    std::cout << "HELLO" << std::endl;
+}
+
+/*Do this early in your program's initialization */
+
+
+#ifdef _WIN32
 void beforeCrash() {
+    std::cout << "HELLO" << std::endl;
     //__asm("int3");
 }
 
@@ -284,7 +299,11 @@ double lastFrame;
 int main(){
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
+    const bool SET_TERMINATE = std::set_terminate(beforeCrash);
+    const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
+
+    signal(SIGABRT, &my_function_to_handle_aborts);
 
     testConf = new Config();
     testConf->setAmbientColor(1,1,1,1);
@@ -397,7 +416,7 @@ int main(){
     frontendUI.setOpenSceneByfdidCallback([&scene, &storage](int mapId, int wdtFileId, float x, float y, float z) {
 //        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
         if (storage) {
-            storage->actuallDropCache();
+//            storage->actuallDropCache();
         }
         scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });

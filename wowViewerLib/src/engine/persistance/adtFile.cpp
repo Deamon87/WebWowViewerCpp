@@ -192,6 +192,22 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             }
         },
         {
+            'MH2O',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MH2O");
+
+                    chunkData.readValue(file.mH2OHeader);
+                    //Read the remaining into blob and parse in ADTObject
+                    file.mH2OblobOffset = chunkData.bytesRead;
+                    int byteSize = chunkData.chunkLen - chunkData.bytesRead;
+                    file.mH2OBlob_len = byteSize;
+                    chunkData.readValues(file.mH2OBlob, byteSize);
+
+                }
+            }
+        },
+        {
             'MCNK',
             {
                 [](AdtFile& file, ChunkData& chunkData){
