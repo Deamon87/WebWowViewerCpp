@@ -29,10 +29,23 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "    or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)  "
         "ORDER BY l.ID desc"),
     getLightData(m_sqliteDatabase,
-        "select ld.AmbientColor, ld.DirectColor, ld.Time from LightData ld "
+        "select ld.AmbientColor, ld.DirectColor, ld.RiverCloseColor, ld.Time from LightData ld "
 
         " where ld.LightParamID = ? ORDER BY Time ASC"
-        )
+        ),
+    getLiquidObjectInfo(m_sqliteDatabase,
+        "select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.MinimapStaticCol from LiquidObject lo "
+        "left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lo.LiquidTypeID "
+        "left join LiquidType lt on lt.ID = lo.LiquidTypeID "
+        "left join LiquidMaterial lm on lt.MaterialID = lm.ID "
+        "where lo.ID = ? "
+    ),
+    getLiquidTypeInfo(m_sqliteDatabase,
+        "select ltxt.FileDataID from LiquidTypeXTexture ltxt where "
+        "ltxt.LiquidTypeID = ? order by ltxt.OrderIndex"
+    )
+
+
 
 {
     char *sErrMsg = "";
@@ -172,6 +185,7 @@ struct InnerLightResult {
     struct InnerLightDataRes {
         int ambientLight;
         int directLight;
+        int closeRiverColor;
         int time;
     };
 
@@ -182,6 +196,10 @@ struct InnerLightResult {
     lightResult.directColor[0] = 0;
     lightResult.directColor[1] = 0;
     lightResult.directColor[2] = 0;
+
+    lightResult.closeRiverColor[0] = 0;
+    lightResult.closeRiverColor[1] = 0;
+    lightResult.closeRiverColor[2] = 0;
 
     lightResult.skyBoxFdid = 0;
 
@@ -209,11 +227,10 @@ struct InnerLightResult {
             InnerLightDataRes currLdRes;
             currLdRes.ambientLight = getLightData.getColumn(0);
             currLdRes.directLight = getLightData.getColumn(1);
-            currLdRes.time = getLightData.getColumn(2);
+            currLdRes.closeRiverColor = getLightData.getColumn(2);
+            currLdRes.time = getLightData.getColumn(3);
             if (currLdRes.time > ptime) {
                 assigned = true;
-
-
 
                 if (lastLdRes.time == -1) {
                     //Set as is
@@ -224,6 +241,10 @@ struct InnerLightResult {
                     lightResult.directColor[0] += getFloatFromInt<0>(currLdRes.directLight) * innerAlpha;
                     lightResult.directColor[1] += getFloatFromInt<1>(currLdRes.directLight) * innerAlpha;
                     lightResult.directColor[2] += getFloatFromInt<2>(currLdRes.directLight) * innerAlpha;
+
+                    lightResult.closeRiverColor[0] += getFloatFromInt<0>(currLdRes.closeRiverColor) * innerAlpha;
+                    lightResult.closeRiverColor[1] += getFloatFromInt<1>(currLdRes.closeRiverColor) * innerAlpha;
+                    lightResult.closeRiverColor[2] += getFloatFromInt<2>(currLdRes.closeRiverColor) * innerAlpha;
                 } else {
                     //Blend using time as alpha
                     float timeAlphaBlend = 1.0f - (((float)currLdRes.time - (float)ptime) / ((float)currLdRes.time - (float)lastLdRes.time));
@@ -235,6 +256,10 @@ struct InnerLightResult {
                     lightResult.directColor[0] += (getFloatFromInt<0>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<0>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
                     lightResult.directColor[1] += (getFloatFromInt<1>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<1>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
                     lightResult.directColor[2] += (getFloatFromInt<2>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<2>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
+
+                    lightResult.closeRiverColor[0] += (getFloatFromInt<0>(currLdRes.closeRiverColor) * timeAlphaBlend + getFloatFromInt<0>(lastLdRes.closeRiverColor)*(1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.closeRiverColor[1] += (getFloatFromInt<1>(currLdRes.closeRiverColor) * timeAlphaBlend + getFloatFromInt<1>(lastLdRes.closeRiverColor)*(1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.closeRiverColor[2] += (getFloatFromInt<2>(currLdRes.closeRiverColor) * timeAlphaBlend + getFloatFromInt<2>(lastLdRes.closeRiverColor)*(1.0 - timeAlphaBlend)) * innerAlpha;
                 }
                 break;
             }
@@ -249,9 +274,42 @@ struct InnerLightResult {
             lightResult.directColor[0] += getFloatFromInt<0>(lastLdRes.directLight) * innerAlpha;
             lightResult.directColor[1] += getFloatFromInt<1>(lastLdRes.directLight) * innerAlpha;
             lightResult.directColor[2] += getFloatFromInt<2>(lastLdRes.directLight) * innerAlpha;
+
+            lightResult.closeRiverColor[0] += getFloatFromInt<0>(lastLdRes.closeRiverColor) * innerAlpha;
+            lightResult.closeRiverColor[1] += getFloatFromInt<1>(lastLdRes.closeRiverColor) * innerAlpha;
+            lightResult.closeRiverColor[2] += getFloatFromInt<2>(lastLdRes.closeRiverColor) * innerAlpha;
         }
 
         totalSummator+= innerResult.blendAlpha;
+    }
+
+}
+
+void CSqliteDB::getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &loData) {
+    getLiquidObjectInfo.reset();
+
+    getLiquidObjectInfo.bind(1, liquidObjectId);
+
+    while (getLiquidObjectInfo.executeStep()) {
+        LiquidMat lm = {};
+        lm.FileDataId = getLiquidObjectInfo.getColumn(0).getInt();
+        lm.LVF = getLiquidObjectInfo.getColumn(1).getInt();
+        lm.OrderIndex = getLiquidObjectInfo.getColumn(2).getInt();
+        int color1 = getLiquidObjectInfo.getColumn(3).getInt();
+        lm.color1[0] = getFloatFromInt<0>(color1);
+        lm.color1[1] = getFloatFromInt<1>(color1);
+        lm.color1[2] = getFloatFromInt<2>(color1);
+
+        loData.push_back(lm);
+    }
+}
+
+void CSqliteDB::getLiquidTypeData(int liquidTypeId, std::vector<int > &fileDataIds) {
+    getLiquidTypeInfo.reset();
+
+    getLiquidTypeInfo.bind(1, liquidTypeId);
+    while (getLiquidTypeInfo.executeStep()) {
+        fileDataIds.push_back(getLiquidTypeInfo.getColumn(0).getInt());
     }
 
 }

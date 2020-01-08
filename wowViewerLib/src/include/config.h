@@ -52,6 +52,7 @@ private:
     float clearColor[4] = {0.117647, 0.207843, 0.392157, 0};
     float ambientColor[4];
     float sunColor[4];
+    float closeRiverColor[4] = {1,1,1,1};
     float fogColor[4];
 
     std::string areaName;
@@ -244,6 +245,20 @@ public:
         aSunColor[1] = sunColor[1];
         aSunColor[2] = sunColor[2];
         aSunColor[3] = sunColor[3];
+    }
+
+    void setCloseRiverColor(float r, float g, float b, float a) {
+        closeRiverColor[0] = r;
+        closeRiverColor[1] = g;
+        closeRiverColor[2] = b;
+        closeRiverColor[3] = a;
+    }
+
+    void getCloseRiverColor(float *aCloseRiverColor){
+        aCloseRiverColor[0] = closeRiverColor[0];
+        aCloseRiverColor[1] = closeRiverColor[1];
+        aCloseRiverColor[2] = closeRiverColor[2];
+        aCloseRiverColor[3] = closeRiverColor[3];
     }
 
     void setFogColor(float r, float g, float b, float a) {

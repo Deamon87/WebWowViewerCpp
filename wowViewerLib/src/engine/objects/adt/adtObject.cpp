@@ -151,6 +151,8 @@ void AdtObject::loadWater() {
 
     mathfu::vec3 adtBasePos = mathfu::vec3(AdtIndexToWorldCoordinate(adt_y), AdtIndexToWorldCoordinate(adt_x), 0);
 
+    int basetextureFDID = 0;
+    mathfu::vec3 color = mathfu::vec3(1,1,1);
     for (int y_chunk = 0; y_chunk < 16; y_chunk++) {
         for (int x_chunk = 0; x_chunk < 16; x_chunk++) {
             auto &liquidChunk = m_adtFile->mH2OHeader->chunks[y_chunk*16 + x_chunk];
@@ -174,6 +176,33 @@ void AdtObject::loadWater() {
                 if (liquidInstance.offset_vertex_data != 0) {
                     heightPtr = ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data - m_adtFile->mH2OblobOffset]));
                 }
+
+                //SmallHack
+                if (basetextureFDID == 0) {
+                    if (liquidInstance.liquid_object_or_lvf > 42) {
+                        std::vector<LiquidMat> liqMats;
+                        m_api->getDatabaseHandler()->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liqMats);
+                        for (auto &liqMat : liqMats) {
+                            if (liqMat.FileDataId != 0) {
+                                basetextureFDID = liqMat.FileDataId;
+                                if (liqMat.color1[0] > 0 || liqMat.color1[1] > 0 || liqMat.color1[2] > 0) {
+                                    color = mathfu::vec3(liqMat.color1[0], liqMat.color1[1], liqMat.color1[2]);
+                                }
+                                break;
+                            }
+                        }
+                    } else {
+                        std::vector<int> fileDataIds;
+                        m_api->getDatabaseHandler()->getLiquidTypeData(liquidInstance.liquid_type, fileDataIds);
+                        for (auto fdid: fileDataIds) {
+                            if (fdid != 0) {
+                                basetextureFDID = fdid;
+                                break;
+                            }
+                        }
+                    }
+                }
+
 
                 int baseVertexIndForInst = vertexBuffer.size();
 
@@ -259,7 +288,14 @@ void AdtObject::loadWater() {
 
     meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
-    meshTemplate.textureCount = 0;
+    meshTemplate.textureCount = 1;
+    if (basetextureFDID != 0) {
+
+        auto htext = m_api->getTextureCache()->getFileId(basetextureFDID);
+        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(htext, true, true);
+    } else {
+        meshTemplate.texture[0] = m_api->getDevice()->getBlackTexturePixel();
+    }
 
     meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
     meshTemplate.ubo[1] = nullptr;
@@ -273,10 +309,13 @@ void AdtObject::loadWater() {
     meshTemplate.element = DrawElementMode::TRIANGLES;
 
     auto l_liquidType = 0;
-    meshTemplate.ubo[4]->setUpdateHandler([l_liquidType](IUniformBufferChunk* self) -> void {
-        int (&waterType)[4] = self->getObject<int[4]>();
+    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color](IUniformBufferChunk* self) -> void {
+//        int (&waterType)[4] = self->getObject<int[4]>();
+        float closeRiverColor[4];
+        this->m_api->getConfig()->getCloseRiverColor(closeRiverColor);
+        mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
 
-        waterType[0] = l_liquidType;
+        color_ = mathfu::vec4(closeRiverColor[0], closeRiverColor[1], closeRiverColor[2], 0.7);
     });
 
 

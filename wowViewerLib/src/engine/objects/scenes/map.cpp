@@ -487,6 +487,7 @@ void Map::update(WoWFrameData *frameData) {
         //Database is in BGRA
         config->setAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
         config->setSunColor(lightResult.directColor[2]*3.0, lightResult.directColor[1]*3.0, lightResult.directColor[0]*3.0, 0);
+        config->setCloseRiverColor(lightResult.closeRiverColor[2], lightResult.directColor[1], lightResult.directColor[0], 0);
 
         config->setFogColor(
                 endFogColor.x,

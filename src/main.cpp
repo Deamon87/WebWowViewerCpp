@@ -27,6 +27,7 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+#include <csignal>
 
 #include "../wowViewerLib/src/include/wowScene.h"
 //#include "persistance/ZipRequestProcessor.h"
