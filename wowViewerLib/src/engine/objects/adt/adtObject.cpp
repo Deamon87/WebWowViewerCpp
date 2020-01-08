@@ -187,7 +187,8 @@ void AdtObject::loadWater() {
                                 -liquidInstance.min_height_level
                             );
 
-                        if (liquidInstance.liquid_object_or_lvf != 2 && heightPtr!= nullptr) {
+                        bool hackBool = !((liquidInstance.liquid_object_or_lvf == 42) && (liquidInstance.liquid_type == 2));
+                        if (liquidInstance.liquid_object_or_lvf != 2 && heightPtr!= nullptr && hackBool) {
                             pos.z = heightPtr[y * (liquidInstance.width + 1) + x];
                         }
 
