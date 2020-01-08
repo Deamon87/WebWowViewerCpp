@@ -172,7 +172,7 @@ void AdtObject::loadWater() {
 
                 float *heightPtr = nullptr;
                 if (liquidInstance.offset_vertex_data != 0) {
-                    ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data - m_adtFile->mH2OblobOffset]));
+                    heightPtr = ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data - m_adtFile->mH2OblobOffset]));
                 }
 
                 int baseVertexIndForInst = vertexBuffer.size();
@@ -182,8 +182,8 @@ void AdtObject::loadWater() {
                         mathfu::vec3 pos =
                             liquidBasePos -
                             mathfu::vec3(
-                                UNITSIZE*(x+liquidInstance.x_offset),
                                 UNITSIZE*(y+liquidInstance.y_offset),
+                                UNITSIZE*(x+liquidInstance.x_offset),
                                 -liquidInstance.min_height_level
                             );
 
