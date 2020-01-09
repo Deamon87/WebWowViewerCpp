@@ -31,7 +31,7 @@ public:
     void uploadData(void *, int length) override;
 
 private:
-    IDevice &m_device;
+	GDeviceGL33 &m_device;
 
 private:
     std::vector<char> m_buffer;

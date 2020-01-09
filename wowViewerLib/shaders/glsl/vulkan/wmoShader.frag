@@ -44,8 +44,10 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
         vec3 precomputed = vColor2.rgb;
 
         vec3 ambientColor = uAmbientLight.rgb;
+        vec3 directColor = uSunColor_uFogEnd.xyz;
         if (uAmbientLight2AndIsBatchA.w > 0.0) {
-            ambientColor = mix(uAmbientLight.rgb, uAmbientLight2AndIsBatchA.rgb, vec3(vPosition.w));
+            ambientColor = mix(uAmbientLight2AndIsBatchA.rgb, uAmbientLight.rgb, vec3(vPosition.w));
+            directColor = mix(vec3(0), directColor.rgb, vec3(vPosition.w));
         }
 
         vec3 adjAmbient = (ambientColor.rgb + precomputed);
@@ -64,7 +66,7 @@ vec3 makeDiffTerm(vec3 matDiffuse) {
         vec3 skyColor = (currColor * 1.10000002);
         vec3 groundColor = (currColor* 0.699999988);
         currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-        lDiffuse = (uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0));
+        lDiffuse = (directColor * clamp(nDotL, 0.0, 1.0));
     } else {
         currColor = vec3 (1.0, 1.0, 1.0) * uAmbientLight.rgb;
     }

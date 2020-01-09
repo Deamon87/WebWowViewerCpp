@@ -60,5 +60,5 @@ void WdtFile::process(HFileContent wdtFile, const std::string &fileName) {
     CChunkFileReader reader(*m_wdtFile.get());
     reader.processFile(*this, &WdtFile::wdtFileTable);
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }

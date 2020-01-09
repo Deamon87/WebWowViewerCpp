@@ -38,3 +38,6 @@
 [submodule "wowViewerLib/shaders/3rdparty/spirv-cross"]
 	path = wowViewerLib/shaders/3rdparty/spirv-cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "3rdparty/SQLiteCpp"]
+	path = 3rdparty/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp.git

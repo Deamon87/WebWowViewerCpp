@@ -45,8 +45,6 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     OUTPUT ${SPIRV_NonOpt}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL20}"
-                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL33}"
                     COMMAND glslangValidator -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
                     DEPENDS ${srcTemplatePath})
 
@@ -87,6 +85,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
 
             add_custom_command(
                     OUTPUT ${GLSL20_FILE}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL20}"
                     COMMAND spirv_reflection -glsl100 ${SPIRV_NonOpt} > ${GLSL20_FILE_FULLPATH}
                     DEPENDS ${SPIRV_NonOpt})
 
@@ -98,6 +97,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
 
             add_custom_command(
                     OUTPUT ${GLSL33_FILE}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL33}"
                     COMMAND spirv_reflection -glsl330 ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
                     DEPENDS ${SPIRV_NonOpt})
 
@@ -106,11 +106,11 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
         endif(NOT IS_DIRECTORY ${srcTemplatePath})
     endforeach(templateFile)
 
-    if (NOT SPIRV_OPT_APP)
+#    if (NOT SPIRV_OPT_APP)
         SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_NON_OPT})
-    else()
-        SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
-    endif()
+#    else()
+#        SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
+#    endif()
 endmacro(configure_filesVLK)
 
 configure_filesVLK(${PROJECT_SOURCE_DIR}/shaders/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv
@@ -121,6 +121,7 @@ add_custom_command(
         COMMAND spirv_reflection -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
         VERBATIM)
+
 add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator)
 
 add_custom_target(

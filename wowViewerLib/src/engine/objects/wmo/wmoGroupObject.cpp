@@ -296,7 +296,7 @@ bool WmoGroupObject::doPostLoad() {
         return false;
     }
 
-    if ((m_geom == nullptr) || (!m_geom->isLoaded()) || (!m_wmoApi->isLoaded())) return false;
+    if ((m_geom == nullptr) || (m_geom->getStatus() != FileStatus::FSLoaded) || (!m_wmoApi->isLoaded())) return false;
 
     this->postLoad();
     this->m_loaded = true;
@@ -446,13 +446,6 @@ void WmoGroupObject::createMeshes() {
         bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
         bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));
 
-        mathfu::vec4 ambientColor;
-        if (isBatchC) {
-            ambientColor = m_api->getGlobalAmbientColor();
-        } else {
-            ambientColor = this->getAmbientColor();
-        }
-
         auto blendMode = material.blendMode;
         meshTemplate.meshType = MeshType::eWmoMesh;
         meshTemplate.depthWrite = blendMode <= 1;
@@ -498,10 +491,13 @@ void WmoGroupObject::createMeshes() {
         hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self) {
             mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
             mathfu::vec4 localambientColor = this->getAmbientColor();
+            mathfu::vec3 directLight = mathfu::vec3(0,0,0);
 
             mathfu::vec4 ambientColor = localambientColor;
-            if (isBatchC) {
+            //TODO: check ironforge entrance. There must be something wrong with it
+            if (isBatchC || isBatchA || (this->m_geom->mogp->flags.EXTERIOR > 0)) {
                 ambientColor = globalAmbientColor;
+                directLight = m_api->getGlobalSunColor().xyz();
             }
             float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
 
@@ -510,10 +506,10 @@ void WmoGroupObject::createMeshes() {
             blockPS.uSunDir_FogStart = mathfu::vec4_packed(
                 mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
             blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(
-                mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
+                mathfu::vec4(directLight, m_api->getGlobalFogEnd()));
             blockPS.uAmbientLight = ambientColor;
             if (isBatchA) {
-                blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);
+                blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(localambientColor.xyz(), 1.0);
             } else {
                 blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0, 0, 0, 0);
             }
@@ -582,7 +578,6 @@ void WmoGroupObject::setLiquidType() {
 }
 
 void WmoGroupObject::createWaterMeshes() {
-	return;
 
     IDevice *device = m_api->getDevice();
     HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(*device);
@@ -634,8 +629,12 @@ void WmoGroupObject::createWaterMeshes() {
     meshTemplate.end = m_geom->waterIndexSize;
     meshTemplate.element = DrawElementMode::TRIANGLES;
 
-    int &waterType = meshTemplate.ubo[2]->getObject<int>();
-    waterType = liquid_type;
+    auto l_liquidType = liquid_type;
+    meshTemplate.ubo[4]->setUpdateHandler([l_liquidType](IUniformBufferChunk* self) -> void {
+        int (&waterType)[4] = self->getObject<int[4]>();
+
+        waterType[0] = l_liquidType;
+    });
 
 
     HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
@@ -646,7 +645,7 @@ void WmoGroupObject::loadDoodads() {
     if (this->m_geom->doodadRefsLen <= 0) return;
     if (m_wmoApi == nullptr) return;
 
-    m_doodads = std::vector<M2Object *>(this->m_geom->doodadRefsLen, nullptr);
+    m_doodads = std::vector<std::shared_ptr<M2Object>>(this->m_geom->doodadRefsLen, nullptr);
 
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
@@ -691,7 +690,7 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 //    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
 //
     for (int j = 0; j < this->m_doodads.size(); j++) {
-        M2Object *m2Object = this->m_doodads[j];
+        std::shared_ptr<M2Object> m2Object = this->m_doodads[j];
         if (m2Object == nullptr || !m2Object->getGetIsLoaded()) continue; //corrupted :(
 
         CAaBox m2AAbb = m2Object->getAABB();
@@ -1130,7 +1129,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 }
 
 
-void WmoGroupObject::checkDoodads(std::vector<M2Object *> &wmoM2Candidates) {
+void WmoGroupObject::checkDoodads(std::vector<std::shared_ptr<M2Object>> &wmoM2Candidates) {
     if (!m_loaded) return;
 
     mathfu::vec4 ambientColor = getAmbientColor();
@@ -1177,7 +1176,6 @@ void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int r
 }
 
 mathfu::vec4 WmoGroupObject::getAmbientColor() {
-
     if (!m_geom->mogp->flags.EXTERIOR && !m_geom->mogp->flags.EXTERIOR_LIT) {
         mathfu::vec4 ambColor;
         ambColor = mathfu::vec4(
@@ -1197,12 +1195,11 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
         }
 
         return ambColor;
-    } else {
-        return m_api->getGlobalAmbientColor();
     }
+    return mathfu::vec4(0,0,0,0);
 }
 
-void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
+void WmoGroupObject::assignInteriorParams(std::shared_ptr<M2Object> m2Object) {
     mathfu::vec4 ambientColor = getAmbientColor();
 
     if (!m2Object->setUseLocalLighting(true)) return;

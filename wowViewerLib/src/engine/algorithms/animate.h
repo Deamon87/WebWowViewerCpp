@@ -5,8 +5,8 @@
 #ifndef WOWVIEWERLIB_ANIMATE_H
 #define WOWVIEWERLIB_ANIMATE_H
 
-#include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
+#include "../../include/iostuff.h"
 #include <vector>
 #include <algorithm>
 

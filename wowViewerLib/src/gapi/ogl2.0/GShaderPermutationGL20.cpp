@@ -129,7 +129,9 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
 #endif
 
     if (esVersion) {
-        vertExtraDefStrings = "#version 100 es\n" + vertExtraDefStrings;
+//#ifndef __EMSCRIPTEN__
+        vertExtraDefStrings = "#version 100 \n" + vertExtraDefStrings;
+//#endif
     } else {
         vertExtraDefStrings = "#version 100\n" + vertExtraDefStrings;
     }
@@ -139,7 +141,7 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
 
 
     if (esVersion) {
-        fragExtraDefStrings = "#version 100 es\n" + fragExtraDefStrings;
+        fragExtraDefStrings =  fragExtraDefStrings;
     } else {
         fragExtraDefStrings = "#version 100\n" + fragExtraDefStrings;
     }
@@ -252,7 +254,7 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
         GLint location = glGetUniformLocation(program, name);
 
         this->setUnf(std::string(name), location);
-//        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
+        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
 //    if (!shaderName.compare("m2Shader")) {
 //        std::cout << fragmentShaderString << std::endl << std::flush;
@@ -370,7 +372,29 @@ void GShaderPermutationGL20::unbindProgram() {
     glUseProgram(0);
 }
 
+static const HashedString boneMatHashed = HashedString("uBoneMatrixes[0]");
+static HashedString boneMatHashedToReplace = HashedString("");
+static bool isHashStrInited = false;
+
+
 void GShaderPermutationGL20::bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) {
+    if (!isHashStrInited) {
+        boneMatHashedToReplace = [](){
+            for (auto shaderIter : fieldDefMapPerShaderName) {
+                for (auto fieldVectorIter : shaderIter.second) {
+                    for (auto const fieldDef : fieldVectorIter.second) {
+                        if (fieldDef.name.find("uBoneMatrixes[0]") != std::string::npos) {
+                            return HashedString(fieldDef.name.c_str());
+                        }
+                    }
+                }
+            }
+            return HashedString("");
+        } ();
+        isHashStrInited = true;
+    }
+
+
     GUniformBufferGL20 *gbuffer = (GUniformBufferGL20 *) buffer;
     if (buffer == nullptr) {
         m_UniformBuffer[slot].buffer = nullptr;
@@ -383,6 +407,10 @@ void GShaderPermutationGL20::bindUniformBuffer(IUniformBuffer *buffer, int slot,
             for (auto const &fieldDef : fieldVector) {
 //                const char * cstr = name.c_str();
                 auto hashedStr = HashedString(fieldDef.name.c_str());
+                if (hashedStr == boneMatHashedToReplace) {
+                    hashedStr = boneMatHashed;
+                }
+
                 if (!hasUnf(hashedStr)) continue;
 
                 auto uniformLoc = getUnf(hashedStr);

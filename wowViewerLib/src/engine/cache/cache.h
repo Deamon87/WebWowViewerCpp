@@ -16,8 +16,9 @@
 #include <memory>
 #include <mutex>
 #include <forward_list>
-#include "../../include/wowScene.h"
 #include "../stringTrim.h"
+#include "../../include/iostuff.h"
+#include "../../include/sharedFile.h"
 
 struct FileCacheRecord {
     std::string fileName;
@@ -112,14 +113,14 @@ public:
         std::string fileName = ss.str();
 
 
-        auto it = m_cache.find(fileName);
-        if(it != m_cache.end())
-        {
-            if (std::shared_ptr<T> shared = it->second.lock()) {
-                //element found;
-                return shared;
-            }
-        }
+		std::weak_ptr<T> it = m_cache[fileName];
+		if (!it.expired())
+		{
+			return it.lock();
+		}
+		else {
+			m_cache.erase(fileName);
+		}
 
         std::shared_ptr<T> sharedPtr = std::make_shared<T>(id);
         std::weak_ptr<T> weakPtr(sharedPtr);
@@ -133,6 +134,14 @@ public:
 
     void reject(std::string fileName) {
         trim(fileName);
+
+        std::weak_ptr<T> weakPtr = m_cache[fileName];
+        if (!weakPtr.expired())
+        {
+            if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
+                sharedPtr->rejected();
+            }
+        }
     }
 
     void clear() {

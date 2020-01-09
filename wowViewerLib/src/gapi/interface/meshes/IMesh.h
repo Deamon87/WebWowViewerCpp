@@ -5,7 +5,9 @@
 #ifndef AWEBWOWVIEWERCPP_IMESH_H
 #define AWEBWOWVIEWERCPP_IMESH_H
 
+#include <array>
 #include <vector>
+#include <iostream>
 #include "../IDevice.h"
 
 enum class MeshType {
@@ -71,7 +73,7 @@ public:
     DrawElementMode element;
     unsigned int textureCount;
     std::vector<HGTexture> texture = std::vector<HGTexture>(6, nullptr);
-    HGUniformBufferChunk ubo[6] = {nullptr,nullptr,nullptr};
+    std::array<HGUniformBufferChunk, 6> ubo = {nullptr,nullptr,nullptr};
 };
 
 
@@ -80,9 +82,9 @@ class IMesh {
 
 public:
     auto renderOrder()       -> int& { return m_renderOrder; }
-    auto sortDistance()       -> float& { return m_sortDistance; }
-    auto priorityPlane()       -> int& { return m_renderOrder; }
-    auto layer()       -> int& { return m_renderOrder; }
+    auto sortDistance()       -> float { return m_sortDistance; }
+    auto priorityPlane()       -> int { return m_priorityPlane; }
+    auto layer()       -> int& { return m_layer; }
     auto isSkyBox()       -> bool& { return m_isSkyBox; }
     auto start()       -> int& { return m_start; }
     auto end()       -> int& { return m_end; }
@@ -97,8 +99,8 @@ protected:
 
     float m_sortDistance = 0;
 
-    int m_priorityPlane;
-    int m_layer;
+    int m_priorityPlane = 0;
+    int m_layer = 0;
     void *m_m2Object = nullptr;
 
     bool m_isSkyBox = false;
@@ -111,7 +113,10 @@ protected:
     int m_textureCount;
 
 public:
-    virtual ~IMesh(){};
+    virtual ~IMesh(){
+//        std::cout << "Mesh destroyed" << std::endl;
+
+    };
     virtual HGUniformBufferChunk getUniformBuffer(int slot) = 0;
     virtual EGxBlendEnum getGxBlendMode() = 0;
     virtual bool getIsTransparent() = 0;

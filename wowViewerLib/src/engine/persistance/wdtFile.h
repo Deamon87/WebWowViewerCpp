@@ -4,18 +4,19 @@
 #include "header/wdtFileHeader.h"
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
-#include "../../include/wowScene.h"
+#include "../../include/sharedFile.h"
+#include "PersistentFile.h"
 
-class WdtFile {
+
+class WdtFile : public PersistentFile {
 public:
     WdtFile(std::string fileName){};
     WdtFile(int fileDataId){};
 	~WdtFile() {
-		std::cout << "destructor was called" << std::endl;
+//		std::cout << "destructor for WdtFile was called" << std::endl;
 	}
 
-    void process(HFileContent wdtFile, const std::string &fileName);
-    bool getIsLoaded() { return m_loaded; };
+    void process(HFileContent wdtFile, const std::string &fileName) override;
 public:
     MPHD *mphd;
     struct {
@@ -38,7 +39,6 @@ public:
     SMMapObjDef *wmoDef;
 
 private:
-    bool m_loaded = false;
 
     HFileContent m_wdtFile;
     static chunkDef<WdtFile> wdtFileTable;

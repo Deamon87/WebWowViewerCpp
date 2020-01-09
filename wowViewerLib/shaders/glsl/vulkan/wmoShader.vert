@@ -41,11 +41,10 @@ void main() {
 
 
     mat4 viewModelMat = uLookAtMat * uPlacementMat;
-    mat3 viewModelMatTransposed = mat3(
-                viewModelMat[0].xyz,
-                viewModelMat[1].xyz,
-                viewModelMat[2].xyz
-            );
+    mat3 viewModelMatTransposed =
+        blizzTranspose(uLookAtMat) *
+        blizzTranspose(uPlacementMat);
+
 
     gl_Position = uPMatrix * cameraPoint;
     vPosition = vec4(cameraPoint.xyz, aColor.w);

@@ -93,11 +93,17 @@ void HttpFile::startDownloading() {
         if (this->m_fileBuffer->size() == 0) {
             std::cout << "File " << this->m_httpUrl.c_str() << " is empty" << std::endl <<
                       escaped_url << std::endl << std::flush;
+            m_failCallback({});
         } else if (this->m_callback != nullptr) {
             m_callback(this->m_fileBuffer);
         }
     } else {
         std::cout << "Could not download file " << this->m_httpUrl.c_str() << std::endl <<
                   escaped_url << std::endl << std::flush;
+        m_failCallback({});
     }
+}
+
+void HttpFile::setFailCallback(HTTPReadyCallback callback) {
+    m_failCallback = callback;
 }

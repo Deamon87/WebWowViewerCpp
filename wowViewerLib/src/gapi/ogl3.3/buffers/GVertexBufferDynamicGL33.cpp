@@ -9,7 +9,8 @@
 
 
 
-GVertexBufferDynamicGL33::GVertexBufferDynamicGL33(IDevice &device, size_t maxSize)  : m_device(device) {
+GVertexBufferDynamicGL33::GVertexBufferDynamicGL33(IDevice &device, size_t maxSize)  : m_device(
+    dynamic_cast<GDeviceGL33 &>(device)) {
     pIdentifierBuffer = std::vector<char>(sizeof(GLuint));
     m_size = maxSize;
 	m_buffer.resize(maxSize);
@@ -25,7 +26,10 @@ void GVertexBufferDynamicGL33::createBuffer() {
 }
 
 void GVertexBufferDynamicGL33::destroyBuffer() {
-    glDeleteBuffers(1, (GLuint *)&this->pIdentifierBuffer[0]);
+    const GLuint indent = *(const GLuint *) &this->pIdentifierBuffer[0];
+    m_device.addDeallocationRecord([indent]() -> void {
+        glDeleteBuffers(1, &indent);
+    });
 }
 
 static int vbo_uploaded = 0;

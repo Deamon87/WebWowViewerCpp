@@ -256,11 +256,13 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
     int fullSize = 0;
     for (auto &buffer : buffers) {
         fullSize += buffer->getSize();
-        int offsetDiff = fullSize % uniformBufferOffsetAlign;
-        if (offsetDiff != 0) {
-            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+        if (uniformBufferOffsetAlign > 0) {
+            int offsetDiff = fullSize % uniformBufferOffsetAlign;
+            if (offsetDiff != 0) {
+                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-            fullSize += bytesToAdd;
+                fullSize += bytesToAdd;
+            }
         }
     }
     if (fullSize > aggregationBufferForUpload.size()) {
@@ -288,11 +290,13 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
         bufferChunk->setPointer(&pointerForUpload[currentSize]);
         currentSize += bufferChunk->getSize();
 
-        int offsetDiff = currentSize % uniformBufferOffsetAlign;
-        if (offsetDiff != 0) {
-            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+        if (uniformBufferOffsetAlign > 0) {
+            int offsetDiff = currentSize % uniformBufferOffsetAlign;
+            if (offsetDiff != 0) {
+                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-            currentSize += bytesToAdd;
+                currentSize += bytesToAdd;
+            }
         }
     }
     for (auto &buffer : buffers) {
@@ -580,8 +584,11 @@ GDeviceGL20::GDeviceGL20() {
 
     m_defaultVao = this->createVertexBufferBindings();
 
-    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
-    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
+    maxUniformBufferSize = 0;
+    uniformBufferOffsetAlign = 0;
+
+//    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
+//    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
     if (getIsAnisFiltrationSupported()) {
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_anisotropicLevel);
     }
@@ -835,7 +842,63 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
         }
     }
 
-    //TODO: Hack fix for matrices
+
+    //Hack fix for bone matrices
+    {
+        auto boneMatStart = result.find("mat4 boneTransformMat = ");
+        if (boneMatStart != std::string::npos) {
+
+            //Struct override:
+            {
+                auto structStart = result.find( "struct modelWideBlockVS");
+                auto structEnd = result.find( "};", structStart);
+
+                result = result.substr(0, structStart) +
+                    "struct modelWideBlockVS\n"
+                    "{\n"
+                    "    mat4 uPlacementMat;\n"
+                    "};"
+                    "uniform mat4 uBoneMatrixes[220];"+
+                    result.substr(structEnd+2);
+            }
+
+
+            //Get uniiform prefix
+            auto prefixEnd = result.find(".uBoneMatrixes");
+            auto prefixStart = result.rfind( " ",  prefixEnd);
+            std::string prefix = result.substr(prefixStart, prefixEnd-prefixStart+1);
+
+
+            auto startIterator = boneMatStart;
+            auto end = boneMatStart; end = 0;
+            while(startIterator != std::string::npos) {
+                end = result.find("\n", startIterator + 1);
+
+                startIterator = result.find("boneTransformMat = ", end+1);
+            }
+
+            //Replace the whole block with old info
+            result = result.substr(0, boneMatStart) +
+                "mat4 boneTransformMat = mat4(1.0);\n"
+                "\n"
+                "#if BONEINFLUENCES>0\n"
+                "    boneTransformMat = mat4(0.0);\n"
+                "    const float inttofloat = (1.0/255.0);\n"
+                "    boneTransformMat += (boneWeights.x ) * uBoneMatrixes[int(bones.x)];\n"
+                "#endif\n"
+                "#if BONEINFLUENCES>1\n"
+                "    boneTransformMat += (boneWeights.y ) * uBoneMatrixes[int(bones.y)];\n"
+                "#endif\n"
+                "#if BONEINFLUENCES>2\n"
+                "    boneTransformMat += (boneWeights.z ) * uBoneMatrixes[int(bones.z)];\n"
+                "#endif\n"
+                "#if BONEINFLUENCES>3\n"
+                "    boneTransformMat += (boneWeights.w ) * uBoneMatrixes[int(bones.w)];\n"
+                "#endif"+
+                result.substr(end);
+
+        }
+    }
 
     shaderCache[hashRecord] = result;
     return result;
@@ -879,7 +942,10 @@ void GDeviceGL20::beginFrame() {
 }
 
 void GDeviceGL20::commitFrame() {
-
+    for (auto &deviceUI: deviceUIs) {
+        if (deviceUI != nullptr)
+            deviceUI->renderUI();
+    }
 }
 
 void GDeviceGL20::setViewPortDimensions(float x, float y, float width, float height) {

@@ -313,7 +313,7 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     initTracks(nullptr);
 
     //Step 2: init tracks
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }
 
 void M2Geom::initTracks(CM2SequenceLoad * cm2SequenceLoad) {

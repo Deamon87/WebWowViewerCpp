@@ -107,7 +107,8 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
             break;
         default:
             this->generator = nullptr;
-            std::cout << "Found unimplemented generator " << m_data->old.emitterType << std::flush;
+            std::cout << "Found unimplemented generator " << (int)m_data->old.emitterType << std::endl;
+            return;
             break;
     }
 
@@ -431,21 +432,40 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
     this->CalculateForces(forces, delta);
     this->EmitNewParticles(delta);
     int i = 0;
-    while (i < this->particles.size()) {
+
+
+    std::list<int> listForDeletion;
+
+    int numThreads = m_api->getConfig()->getThreadCount();
+
+    #pragma omp parallel for schedule(dynamic, 4) num_threads(numThreads)
+    for (int i = 0; i < this->particles.size(); i++) {
         auto &p = this->particles[i];
+        bool killParticle = false;
         p.age = p.age + delta;
 
         if (p.age > (fmaxf(this->generator->GetLifeSpan(p.seed), 0.001f))) {
-            this->KillParticle(i);
-            i--;
+            killParticle = true;
         } else {
             if (!this->UpdateParticle(p, delta, forces)) {
-                this->KillParticle(i);
-                i--;
+                killParticle = true;//                i--;
             }
         }
-        i++;
+
+        if (killParticle) {
+            p.isDead = true;
+        }
     }
+
+    for (int i = 0; i < this->particles.size();) {
+        if (particles[i].isDead) {
+            this->KillParticle(i);
+        } else {
+            i++;
+        }
+    }
+
+
 }
 void ParticleEmitter::EmitNewParticles(animTime_t delta) {
     if (!isEnabled) return;
@@ -558,6 +578,8 @@ CParticle2& ParticleEmitter::BirthParticle() {
 }
 
 void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
+    if (getGenerator() == nullptr) return;
+
     if (particles.size() == 0 && this->generator != nullptr) {
         szVertexCnt = 0;
         return;
@@ -971,6 +993,8 @@ ParticleEmitter::BuildQuadT3(
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
+    if (getGenerator() == nullptr) return;
+
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
     if (!currentFrame.active)
         return;
@@ -981,6 +1005,8 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 }
 
 void ParticleEmitter::updateBuffers() {
+    if (getGenerator() == nullptr) return;
+
     auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
     currentFrame.active = szVertexCnt > 0;
 

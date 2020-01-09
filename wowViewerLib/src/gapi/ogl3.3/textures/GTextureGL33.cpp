@@ -7,7 +7,7 @@
 #include "../../../engine/opengl/header.h"
 #include "../../interface/IDevice.h"
 
-GTextureGL33::GTextureGL33(IDevice &device) : m_device(device) {
+GTextureGL33::GTextureGL33(IDevice &device) : m_device(dynamic_cast<GDeviceGL33 &>(device)) {
     createBuffer();
 }
 
@@ -20,7 +20,10 @@ void GTextureGL33::createBuffer() {
 }
 
 void GTextureGL33::destroyBuffer() {
-    glDeleteTextures(1, &textureIdentifier);
+    const GLuint indent = textureIdentifier;
+    m_device.addDeallocationRecord([indent]() -> void {
+        glDeleteTextures(1, &indent);
+    });
 }
 
 void GTextureGL33::bind() {

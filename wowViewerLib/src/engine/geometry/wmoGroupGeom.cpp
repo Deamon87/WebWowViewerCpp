@@ -212,7 +212,7 @@ void WmoGroupGeom::process(HFileContent wmoGroupFile, const std::string &fileNam
         this->m_attenuateFunc(*this);
     }
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }
 
 
@@ -460,7 +460,7 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
                 assert(tileIndex < m_liquidTiles_len);
                 SMOLTile tile = m_liquidTiles[tileIndex];
 
-                if ((tile.legacyLiquidType == 15)) continue;
+                if (tile.legacyLiquidType == 15) continue;
 
                 if (liquidType == -1) {
                     liquidType = getLegacyWaterType(tile.legacyLiquidType);

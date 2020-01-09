@@ -36,11 +36,30 @@ if (WIN32 AND MSVC)
  endif()
 
 #set(CMAKE_BUILD_TYPE Release)
-#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -DFUCK ")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -DFUCK ")
 
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static -femulated-tls ")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -femulated-tls -std=c++1z")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -static -femulated-tls ")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -femulated-tls -std=c++1z")
+endif()
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	link_libraries(stdc++fs)
+endif()
+
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread -s")
+
+if(WIN32)
+	link_libraries(wsock32 ws2_32)
+endif()
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	link_libraries(libws2_32.a)
+endif()
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -pthread")
 
@@ -152,14 +171,26 @@ set(SOURCE_FILES
 		src/persistance/CascRequestProcessor.cpp
 		src/persistance/CascRequestProcessor.h
 		src/persistance/HttpRequestProcessor.cpp
-		src/persistance/HttpRequestProcessor.h)
+		src/persistance/HttpRequestProcessor.h
+
+		src/ui/imguiLib/imgui.cpp
+		src/ui/imguiLib/imgui_demo.cpp
+		src/ui/imguiLib/imgui_draw.cpp
+		src/ui/imguiLib/imgui_widgets.cpp
+		src/ui/imguiLib/imguiImpl/imgui_impl_glfw.cpp
+		src/ui/imguiLib/imguiImpl/imgui_impl_opengl2.cpp
+		src/ui/imguiLib/imguiImpl/imgui_impl_opengl3.cpp
+		src/ui/FrontendUI.cpp src/ui/FrontendUI.h
+		src/database/CSqliteDB.cpp src/database/CSqliteDB.h
+)
+
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	set(SOURCE_FILES ${SOURCE_FILES}
 		src/main.cpp)
 else()
 	set(SOURCE_FILES ${SOURCE_FILES}
-			src/jniLib.cpp)
+			src/jniLib.cpp src/database/dbStructs.h)
 endif()
 
 
@@ -199,7 +230,12 @@ if(CMAKE_USE_PTHREADS_INIT)
 endif()
 
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp)
+
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
+#target_compile_options(AWebWoWViewerCpp PRIVATE "-static")
+
+target_include_directories(AWebWoWViewerCpp PUBLIC src/ui/imguiLib)
 
 
 add_dependencies(AWebWoWViewerCpp zip)
@@ -220,6 +256,13 @@ target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
 #target_link_libraries(AWebWoWViewerCpp zip)
 target_link_libraries(AWebWoWViewerCpp zlib)
+target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+	target_link_libraries(AWebWoWViewerCpp ssp)
+endif()
+ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+	target_link_libraries(AWebWoWViewerCpp ssp)
+endif()
 target_link_libraries(AWebWoWViewerCpp WoWViewerLib)
 
   target_link_libraries(AWebWoWViewerCpp Threads::Threads)

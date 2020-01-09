@@ -18,6 +18,7 @@ public:
             std::cout << "Opened CascStorage at "<< path;
         } else {
             std::cout << "Could not open CascStorage at "<< path;
+            throw  "Could not open CascStorage";
         }
     }
 private:

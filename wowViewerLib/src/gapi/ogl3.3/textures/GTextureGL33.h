@@ -22,6 +22,7 @@ public:
         throw "Not Implemented in this class";
     }
     bool postLoad() override { return false;};
+    void* getIdent() override { return reinterpret_cast<void *>(textureIdentifier); };
 private:
     void createBuffer();
     void destroyBuffer();
@@ -30,7 +31,7 @@ private:
 protected:
     GLuint textureIdentifier;
 
-    IDevice &m_device;
+    GDeviceGL33 &m_device;
 
     bool m_loaded = false;
 };

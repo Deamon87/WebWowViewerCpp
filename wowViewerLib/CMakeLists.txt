@@ -8,7 +8,7 @@ set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)
 set(LINK_VULKAN 0)
-set(LINK_OPENMP 0)
+set(LINK_OPENMP 1)
 set(ENABLE_SIMD 1)
 set(EMSCRIPTEN_SIMD 0)
 
@@ -56,13 +56,7 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize")
 
-if (LINK_OPENMP)
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp -openmp")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp -openmp")
 
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fopenmp -openmp" )
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fopenmp -openmp")
-endif()
 if (EMSCRIPTEN_SIMD)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
@@ -191,16 +185,6 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/texture/DxtDecompress.cpp
         src/engine/texture/DxtDecompress.h
         src/engine/androidLogSupport.h
-        src/engine/persistance/db2/base/DB2Base.cpp
-        src/engine/persistance/db2/base/DB2Base.h
-        src/engine/persistance/db2/DB2Light.cpp
-        src/engine/persistance/db2/DB2Light.h
-        src/engine/persistance/db2/DB2LightData.cpp
-        src/engine/persistance/db2/DB2LightData.h
-        src/engine/persistance/db2/DB2LightParams.cpp
-        src/engine/persistance/db2/DB2LightParams.h
-        src/engine/persistance/db2/DB2WmoAreaTable.cpp
-        src/engine/persistance/db2/DB2WmoAreaTable.h
         src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h
         src/engine/persistance/header/texFileHeader.h
         src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp
@@ -236,7 +220,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/skelFile.cpp
         src/engine/persistance/skelFile.h
         src/engine/algorithms/FrameCounter.cpp
-        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h)
+        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h src/engine/WowFilesCacheStorage.h src/engine/WowFilesCacheStorage.cpp src/engine/algorithms/quick-sort-omp.h src/include/databaseHandler.h src/engine/persistance/PersistentFile.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -312,7 +296,7 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.cpp
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.h
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
-        src/gapi/ogl3.3/GOcclusionQueryGL33.h)
+        src/gapi/ogl3.3/GOcclusionQueryGL33.h src/gapi/ogl3.3/buffers/GUnformBufferChunk33.h)
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
@@ -378,7 +362,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
-            src/gapi/vulkan/descriptorSets/GDescriptorSet.h)
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/include/iostuff.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
@@ -427,7 +411,14 @@ target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 
 if (LINK_OPENMP)
-    target_link_libraries(WoWViewerLib  -fopenmp)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(WoWViewerLib PRIVATE -fopenmp=libgomp)
+        target_link_libraries(WoWViewerLib -fopenmp=libgomp)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        MESSAGE("OPENMP GNU ROUTE WAS TAKEN")
+        target_compile_options(WoWViewerLib PRIVATE -fopenmp)
+        target_link_libraries(WoWViewerLib -fopenmp)
+    endif()
 endif()
 if (LINK_VULKAN)
     target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
@@ -467,4 +458,4 @@ if (NOT EMSCRIPTEN)
 endif()
 
 target_include_directories(WoWViewerLib
-        PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
+        PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)

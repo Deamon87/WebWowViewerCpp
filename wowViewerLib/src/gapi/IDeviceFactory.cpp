@@ -2,6 +2,7 @@
 // Created by Deamon on 9/4/2018.
 //
 
+#include <GL/glew.h>
 #include "IDeviceFactory.h"
 
 #include "ogl2.0/GDeviceGL20.h"
@@ -14,14 +15,14 @@
 #endif
 
 void initOGLPointers(){
-#ifdef _WIN32
+//#ifdef _WIN32
     glewExperimental = true; // Needed in core profile
     auto result = glewInit();
 
     if (result != GLEW_OK) {
         fprintf(stderr, "Failed to initialize GLEW\n");
     }
-#endif
+//#endif
 }
 
 IDevice *IDeviceFactory::createDevice(std::string gapiName, void * data) {

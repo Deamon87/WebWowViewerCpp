@@ -5,6 +5,8 @@
 #ifndef WEBWOWVIEWERCPP_GVERTEXBUFFER_H
 #define WEBWOWVIEWERCPP_GVERTEXBUFFER_H
 
+class GDeviceGL33;
+
 #include "../../interface/IDevice.h"
 #include "../../interface/buffers/IVertexBuffer.h"
 #include "../GDeviceGL33.h"
@@ -26,7 +28,7 @@ public:
     void uploadData(void *, int length) override;
 
 private:
-    IDevice &m_device;
+    GDeviceGL33 &m_device;
 
 private:
     std::vector<char> pIdentifierBuffer {};

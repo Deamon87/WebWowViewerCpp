@@ -27,6 +27,7 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+#include <csignal>
 
 #include "../wowViewerLib/src/include/wowScene.h"
 //#include "persistance/ZipRequestProcessor.h"
@@ -38,6 +39,10 @@
 
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
+#include "ui/FrontendUI.h"
+#include "database/CSqliteDB.h"
+#include "../wowViewerLib/src/engine/WowFilesCacheStorage.h"
+#include "database/CSqliteDB.h"
 
 
 int mleft_pressed = 0;
@@ -45,10 +50,11 @@ int mright_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
 
-bool stopInputs = false;
+bool stopMouse = false;
+bool stopKeyboard = false;
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
-    if (stopInputs) return;
+    if (stopMouse) return;
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
     IControllable* controllable = scene->getCurrentCamera();
 
@@ -70,7 +76,8 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 //    addCameraViewOffset
-    if (stopInputs) return;
+    if (stopMouse) return;
+
     if (action == GLFW_PRESS) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
             mleft_pressed = 1;
@@ -97,7 +104,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 Config *testConf;
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (stopInputs) return;
+    if (stopKeyboard) return;
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
     IControllable* controllable = scene->getCurrentCamera();
     if ( action == GLFW_PRESS) {
@@ -164,6 +171,8 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
+    if (stopMouse) return;
+
     WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
     IControllable* controllable = scene->getCurrentCamera();
 
@@ -245,10 +254,25 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
 void beforeCrash(void);
 
-#ifdef _WIN32
-static const bool SET_TERMINATE = std::set_terminate(beforeCrash);
 
+extern "C" void my_function_to_handle_aborts(int signal_number)
+{
+    /*Your code goes here. You can output debugging info.
+      If you return from this function, and it was called
+      because abort() was called, your program will exit or crash anyway
+      (with a dialog box on Windows).
+     */
+
+    std::cout << "HELLO" << std::endl;
+    std::cout << "HELLO" << std::endl;
+}
+
+/*Do this early in your program's initialization */
+
+
+#ifdef _WIN32
 void beforeCrash() {
+    std::cout << "HELLO" << std::endl;
     //__asm("int3");
 }
 
@@ -270,96 +294,17 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 }
 #endif
 
-
-enum radioOptions {
-    EASY,
-    HARD
-};
-
-struct my_nkc_app {
-    /* some user data */
-    float movementSpeed = 1.0;
-    bool drawM2AABB = false;
-    bool drawWMOAABB = false;
-
-    int wmoMinBatch = 0;
-    int wmoMaxBatch = 9999;
-
-    int m2MinBatch = 0;
-    int m2MaxBatch = 9999;
-
-    int minParticle = 0;
-    int maxParticle = 9999;
-
-    WoWScene *scene;
-    RequestProcessor *processor;
-
-    double currentFrame;
-    double lastFrame;
-
-    float ambientColor[4] = {255,255,255,255};
-    float ambientIntensity = 1.0;
-    float sunColor[4];
-};
-
-inline void CopyAndNullTerminate( const std::string& source,
-                                  char* dest,
-                                  size_t dest_size )
-{
-    dest[source.copy(dest, dest_size-1)] = 0;
-}
-
-void mainLoop(void* loopArg){
-    struct my_nkc_app* myapp = (struct my_nkc_app*)loopArg;
-
-    // Render scene
-    myapp->currentFrame = glfwGetTime(); // seconds
-    double deltaTime = myapp->currentFrame - myapp->lastFrame;
-    myapp->lastFrame = myapp->currentFrame;
-
-    double fps = calcFPS(nullptr, 2.0);
-
-    myapp->processor->processRequests(false);
-    myapp->processor->processResults(10);
-
-    if (windowSizeChanged) {
-        myapp->scene->setScreenSize(canvWidth, canvHeight);
-        windowSizeChanged = false;
-    }
-
-    myapp->scene->draw((deltaTime*(1000.0f))); //miliseconds
-
-    stopInputs = false;
-}
-
-
+double currentFrame;
+double lastFrame;
 
 int main(){
-    struct my_nkc_app myapp;
-
-
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
+    const bool SET_TERMINATE = std::set_terminate(beforeCrash);
+    const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
 
-
-//    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
-//    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
-//    const char *filePath = "D:\\shattrath (1).zip\0";
-//    const char *filePath = "D:\\ironforge.zip\0";
-//8.3.0
-//    const char * url = "https://wow.tools/casc/file/fname?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=";
-//    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=b5cdfffe83be9b1b03e291ab4384bfad&cdnconfig=33facf21f4e21f77aac08bed52801ea2&filename=data&filedataid=";
-//1.13.0
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
-   const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
-
-//    const char * url = "http://178.165.92.24:40001/get/";
-//    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
-
-//    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
-    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
-//     const char *url = "http://localhost:8084/get/";
+    signal(SIGABRT, &my_function_to_handle_aborts);
 
     testConf = new Config();
     testConf->setAmbientColor(1,1,1,1);
@@ -367,21 +312,20 @@ int main(){
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
 
-
-    printf("Successfull init. Starting 'infinite' main loop...\n");
-
+//    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
+//    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
     //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
     //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
     //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-    HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+//    RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
 //        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
-    processor->setThreaded(true);
-
+//    processor->setThreaded(true);
+    RequestProcessor *processor = nullptr;
 
     glfwInit();
 
-    std::string rendererName = "ogl2";
-//    std::string rendererName = "ogl3";
+//    std::string rendererName = "ogl2";
+    std::string rendererName = "ogl3";
 //    std::string rendererName = "vulkan";
 
     //FOR OGL
@@ -405,7 +349,7 @@ int main(){
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     }
 
-    auto window = glfwCreateWindow(canvWidth, canvHeight, "Vulkan", nullptr, nullptr);
+    auto window = glfwCreateWindow(canvWidth, canvHeight, "WowMapViewer", nullptr, nullptr);
 
 #ifdef LINK_VULKAN
     vkCallInitCallback callback;
@@ -433,18 +377,133 @@ int main(){
         glfwMakeContextCurrent(window);
     }
 
+    //Open Sql storage
+	
+    CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
+
+
+    WoWFilesCacheStorage *storage = nullptr;
+//    WoWFilesCacheStorage *storage = new WoWFilesCacheStorage(processor);
+//    processor->setFileRequester(storage);
+
     //Create device
     IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
-    WoWScene *scene = createWoWScene(testConf, processor, device, canvWidth, canvHeight);
-    processor->setFileRequester(scene);
+    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
+
+    scene->setCacheStorage(storage);
+
+    FrontendUI frontendUI;
+    frontendUI.setOpenCascStorageCallback([&processor, &storage, &scene](std::string cascPath) -> bool {
+        CascRequestProcessor *newProcessor = nullptr;
+        WoWFilesCacheStorage *newStorage = nullptr;
+        try {
+            newProcessor = new CascRequestProcessor(cascPath.c_str());
+            newStorage = new WoWFilesCacheStorage(newProcessor);
+            newProcessor->setThreaded(true);
+            newProcessor->setFileRequester(newStorage);
+        } catch (...){
+            delete newProcessor;
+            delete newStorage;
+            return false;
+        };
+
+        storage = newStorage;
+        processor = newProcessor;
+
+        scene->setCacheStorage(newStorage);
+
+        return true;
+    });
+    frontendUI.setOpenSceneByfdidCallback([&scene, &storage](int mapId, int wdtFileId, float x, float y, float z) {
+//        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
+        if (storage) {
+//            storage->actuallDropCache();
+        }
+        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
+    });
+    frontendUI.setFarPlaneChangeCallback([&scene](float farPlane) -> void {
+        testConf->setFarPlane(farPlane);
+        testConf->setFarPlaneForCulling(farPlane+50);
+    });
+    frontendUI.setSpeedCallback([&scene](float movementSpeed) -> void {
+        testConf->setMovementSpeed(movementSpeed);
+    });
+    frontendUI.setThreadCountCallback([&scene](int value) -> void {
+        testConf->setThreadCount(value);
+    });
+    frontendUI.setQuicksortCutoffCallback([&scene](int value) -> void {
+        testConf->setQuickSortCutoff(value);
+    });
+    frontendUI.setGetCurrentAreaName([]()->std::string {
+        return testConf->getAreaName();
+    });
+    frontendUI.setUnloadScene([&scene, &storage]()->void {
+        if (storage) {
+            storage->actuallDropCache();
+        }
+        scene->setSceneWithFileDataId(-1, 0, -1);
+    });
+
+    frontendUI.setCurrentTimeChangeCallback([](int value) -> void{
+        testConf->setCurrentTime(value);
+    });
+
+    frontendUI.setGetCameraPos([scene](float &cameraX,float &cameraY,float &cameraZ) -> void {
+        float currentCameraPos[4] = {0,0,0,0};
+        scene->getCurrentCamera()->getCameraPosition(&currentCameraPos[0]);
+        cameraX = currentCameraPos[0];
+        cameraY = currentCameraPos[1];
+        cameraZ = currentCameraPos[2];
+    });
+    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, &device, &scene](int wdtFileDataId) {
+        auto wdtFile = storage->getWdtFileCache()->getFileId(wdtFileDataId);
+
+
+        frontendUI.setFillAdtSelectionMinimap([&frontendUI, wdtFile, &storage, &device, &scene](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists) -> bool {
+            if (wdtFile->getStatus() == FileStatus::FSRejected) {
+                wdtFileExists = false;
+                isWMOMap = false;
+                return false;
+            }
+
+            if (wdtFile->getStatus() != FileStatus::FSLoaded) return false;
+
+            isWMOMap = wdtFile->mphd->flags.wdt_uses_global_map_obj;
+
+            if(isWMOMap) {
+//                frontendUI.setOpenWMOMapCallback([wdtFile, &scene]() -> void {
+//                    scene->setSceneWithFileDataId(1, wdtFile->wmoDef->nameId, 0 );
+//                    scene->setScenePos(0,0,0);
+//                });
+            }
+
+            for (int i = 0; i < 64; i++) {
+                for (int j = 0; j < 64; j++) {
+                    if (wdtFile->mapFileDataIDs[i*64 + j].minimapTexture > 0) {
+                        auto texture = storage->getTextureCache()->getFileId(wdtFile->mapFileDataIDs[i*64 + j].minimapTexture);
+                        minimap[i][j] = device->createBlpTexture(texture, false, false);
+                    } else {
+                        minimap[i][j] = nullptr;
+                    }
+                }
+            }
+            return true;
+        });
+
+    });
+    frontendUI.setGetMapList([&sqliteDB](std::vector<MapRecord> &mapList) -> void {
+        if (sqliteDB == nullptr)  return;
+
+        sqliteDB->getMapArray(mapList);
+    });
+
+    frontendUI.initImgui(window);
+
+    device->addIDeviceUI(&frontendUI);
+
+
     testConf->setDrawM2BB(false);
     //testConf->setUsePortalCulling(false);
-
-    myapp.scene = scene;
-    myapp.processor = processor;
-    myapp.currentFrame = glfwGetTime();
-    myapp.lastFrame = myapp.currentFrame;
-
 
     glfwSetWindowUserPointer(window, scene);
     glfwSetKeyCallback(window, onKey);
@@ -457,25 +516,33 @@ int main(){
 
 try {
     while (!glfwWindowShouldClose(window)) {
+        frontendUI.newFrame();
+        stopMouse = frontendUI.getStopMouse();
+        stopKeyboard = frontendUI.getStopKeyboard();
         glfwPollEvents();
 
+        frontendUI.composeUI();
+
         // Render scene
-        myapp.currentFrame = glfwGetTime(); // seconds
-        double deltaTime = myapp.currentFrame - myapp.lastFrame;
-        myapp.lastFrame = myapp.currentFrame;
+        currentFrame = glfwGetTime(); // seconds
+        double deltaTime = currentFrame - lastFrame;
 
-        double fps = calcFPS(nullptr, 2.0);
-
-
-        processor->processRequests(false);
-        processor->processResults(10);
-
+        if (processor) {
+            processor->processRequests(false);
+            processor->processResults(10);
+        }
         if (windowSizeChanged) {
             scene->setScreenSize(canvWidth, canvHeight);
             windowSizeChanged = false;
         }
 
         scene->draw((deltaTime*(1000.0f))); //miliseconds
+        double currentDeltaAfterDraw = (glfwGetTime() - lastFrame)*(1000.0f);
+        lastFrame = currentFrame;
+        if (currentDeltaAfterDraw < 5.0) {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(std::chrono::milliseconds((int)(5.0 - currentDeltaAfterDraw)));
+        }
 
         if (rendererName == "ogl3" || rendererName == "ogl2") {
             glfwSwapBuffers(window);
@@ -488,14 +555,10 @@ try {
     std::cout << "something happened" << std::endl;
 }
 
-std::cout << "program ended" << std::endl;
-//        while (1) {
-//            mainLoop(&myapp);
-//        }
-
-
-
-    delete myapp.scene;
+    std::cout << "program ended" << std::endl;
+    //        while (1) {
+    //            mainLoop(&myapp);
+    //        }
 
     return 0;
 }

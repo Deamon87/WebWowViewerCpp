@@ -7,15 +7,15 @@
 
 #include "helper/ChunkFileReader.h"
 #include "../../include/sharedFile.h"
+#include "PersistentFile.h"
 #include <vector>
 
-class AnimFile {
+class AnimFile : public PersistentFile {
 public:
     AnimFile(std::string fileName){};
     AnimFile(int fileDataId){};
 
-    void process(HFileContent animFile, const std::string &fileName);
-    bool getIsLoaded() { return m_loaded; };
+    void process(HFileContent animFile, const std::string &fileName) override;
 
     void setPostLoad(std::function<void ()> postLoadFunction) {
         this->m_postLoadFunction = postLoadFunction;
@@ -25,7 +25,6 @@ public:
     int m_animFileDataBlob_len = -1;
 
 private:
-    bool m_loaded = false;
 
     HFileContent m_animFile;
     static chunkDef<AnimFile> animFileTable;

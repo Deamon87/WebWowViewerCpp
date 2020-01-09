@@ -34,9 +34,17 @@ void dumpGLSLText(std::vector<std::string> &shaderFilePaths, int glslVersion) {
             });
 
 
-        for (auto &resource : resources.stage_inputs) {
-
-
+        for (auto &resource : resources.sampled_images) {
+            glsl.unset_decoration(resource.id, spv::DecorationDescriptorSet);
+            glsl.unset_decoration(resource.id, spv::DecorationBinding);
+        }
+        for (auto &resource : resources.storage_images) {
+            glsl.unset_decoration(resource.id, spv::DecorationDescriptorSet);
+            glsl.unset_decoration(resource.id, spv::DecorationBinding);
+        }
+        for (auto &resource : resources.storage_buffers) {
+            glsl.unset_decoration(resource.id, spv::DecorationDescriptorSet);
+            glsl.unset_decoration(resource.id, spv::DecorationBinding);
         }
 
         for (auto &resource : resources.uniform_buffers)

@@ -4,6 +4,11 @@ project(WoWWebViewerJs)
 
 include(CheckCXXCompilerFlag)
 
+message( EMSCRIPTEN_ROOT = emc${EMSCRIPTEN_ROOT})
+
+set(CMAKE_C_COMPILER /home/deamon/Downloads/emsdk-master/upstream/emscripten/emcc)
+set(CMAKE_CXX_COMPILER /home/deamon/Downloads/emsdk-master/upstream/emscripten/em++)
+
 check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
 if(HAVE_FLAG_STD_CXX17)
     # Have -std=c++17, use it
@@ -22,6 +27,7 @@ else()
     endif()
 endif()
 
+set(EMSCRIPTEN 1)
 
 add_subdirectory(../wowViewerLib ${CMAKE_CURRENT_BINARY_DIR}/A)
 
@@ -34,9 +40,5 @@ add_library(AWoWWebViewerJs ${SOURCE_FILES})
 
 add_dependencies(AWoWWebViewerJs WoWViewerLib)
 target_link_libraries(AWoWWebViewerJs WoWViewerLib)
-
-
-
-
 
 INSTALL(TARGETS AWoWWebViewerJs DESTINATION BIN)

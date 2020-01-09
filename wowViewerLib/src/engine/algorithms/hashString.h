@@ -30,6 +30,10 @@ class HashedString
 {
 public:
 
+    bool operator == (HashedString &second) {
+        return this->m_Hash == second.m_Hash;
+    }
+
     // Used to return the hash component
     class Hasher
     {

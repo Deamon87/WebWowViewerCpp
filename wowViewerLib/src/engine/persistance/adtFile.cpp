@@ -192,6 +192,22 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             }
         },
         {
+            'MH2O',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MH2O");
+
+                    chunkData.readValue(file.mH2OHeader);
+                    //Read the remaining into blob and parse in ADTObject
+                    file.mH2OblobOffset = chunkData.bytesRead;
+                    int byteSize = chunkData.chunkLen - chunkData.bytesRead;
+                    file.mH2OBlob_len = byteSize;
+                    chunkData.readValues(file.mH2OBlob, byteSize);
+
+                }
+            }
+        },
+        {
             'MCNK',
             {
                 [](AdtFile& file, ChunkData& chunkData){
@@ -344,6 +360,22 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                             [](AdtFile& file, ChunkData& chunkData){
                                 debuglog("Entered MCAL");
                                 chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcal);
+                            }
+                        }
+                    },
+                    {
+                        'MCLQ',
+                        {
+                            [](AdtFile& file, ChunkData& chunkData){
+                                debuglog("Entered MCQL");
+                                std::cout << "Entered MCQL" << std::endl;
+
+
+                                file.mcnkStructs[file.mcnkRead].mcqlLen = chunkData.chunkLen;
+                                chunkData.readValues(
+                                    file.mcnkStructs[file.mcnkRead].mcql,
+                                    file.mcnkStructs[file.mcnkRead].mcqlLen
+                                );
                             }
                         }
                     }
@@ -562,5 +594,5 @@ void AdtFile::process(HFileContent adtFile, const std::string &fileName) {
 
     createTriangleStrip();
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }

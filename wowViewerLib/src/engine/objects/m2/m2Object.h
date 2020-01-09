@@ -49,7 +49,6 @@ private:
 private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
     mathfu::mat4 m_placementInvertMatrix;
-    mathfu::mat4 m_prevSkyBoxMat = mathfu::mat4::Identity();
     mathfu::vec3 m_worldPosition;
     mathfu::vec3 m_localPosition;
     mathfu::vec3 m_localUpVector;
@@ -60,7 +59,7 @@ private:
     CAaBox aabb;
     CAaBox colissionAabb;
 
-    IWoWInnerApi *m_api;
+    IWoWInnerApi *m_api = nullptr;
 
     HM2Geom m_m2Geom = nullptr;
     HSkinGeom m_skinGeom = nullptr;
@@ -136,7 +135,7 @@ private:
     void createMeshes();
     void createBoundingBoxMesh();
 
-    static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> subMeshColors) ;
+    static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> &subMeshColors) ;
     static float getTransparency(M2SkinProfile *skinData, int batchIndex, const std::vector<float> &transparencies) ;
 public:
 

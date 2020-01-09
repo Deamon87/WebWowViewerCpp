@@ -414,10 +414,10 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
 M2Object::~M2Object() {
     delete m_animationManager;
 
-    for (auto &obj: particleEmitters) {
+    for (auto obj: particleEmitters) {
         delete obj;
     }
-    for (auto &obj: ribbonEmitters) {
+    for (auto obj: ribbonEmitters) {
         delete obj;
     }
 }
@@ -589,7 +589,7 @@ float M2Object::getHeight(){
 mathfu::vec4 M2Object::getCombinedColor(
         M2SkinProfile *skinData,
         int batchIndex,
-        const std::vector<mathfu::vec4> subMeshColors
+        const std::vector<mathfu::vec4> &subMeshColors
 ) {
     int colorIndex = skinData->batches[batchIndex]->colorIndex;
     mathfu::vec4 submeshColor = mathfu::vec4(1,1,1,1);
@@ -862,7 +862,7 @@ bool M2Object::doPostLoad(){
 
     //1. Check if .m2 files is loaded
     if (m_m2Geom == nullptr) return false;
-    if (!m_m2Geom->isLoaded()) return false;
+    if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return false;
 
     //2. Check if .skin file is loaded
     if (m_skinGeom == nullptr) {
@@ -877,14 +877,14 @@ bool M2Object::doPostLoad(){
         }
         return false;
     }
-    if (!m_skinGeom->isLoaded()) return false;
+    if (m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
     if (m_m2Geom->m_skid > 0) {
         if (m_skelGeom == nullptr) {
             auto skelCache = m_api->getSkelCache();
             m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
             return false;
         }
-        if (!m_skelGeom->getIsLoaded()) return false;
+        if (m_skelGeom->getStatus() != FileStatus::FSLoaded) return false;
     }
 
     //3. Do post load procedures

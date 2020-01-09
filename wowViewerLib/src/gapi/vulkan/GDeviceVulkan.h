@@ -191,7 +191,7 @@ public:
     };
 
 private:
-    void drawMesh(HGMesh &hmesh);
+    void drawMesh(HGMesh hmesh);
 
     void setupDebugMessenger();
     void pickPhysicalDevice();

@@ -193,11 +193,6 @@ void WmoMainGeom::process(HFileContent wmoMainFile, const std::string &fileName)
     CChunkFileReader reader(*m_wmoMainFile.get());
     reader.processFile(*this, &WmoMainGeom::wmoMainTable);
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }
-
-bool WmoMainGeom::getIsLoaded() {
-    return m_loaded;
-}
-
 

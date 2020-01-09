@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_COMMONFILESTRUCTS_H
 #include <cstdint>
 #include <string>
-#include "mathfu/glsl_mappings.h"
+#include <mathfu/glsl_mappings.h>
 
 // Check windows
 #if _WIN32 || _WIN64
@@ -74,13 +74,17 @@ public:
 
     inline T& operator[](size_t index) {
 #ifdef DEBUGPOINTER
-        assert(index < maxLenPtr);
+        if (index >= maxLenPtr) {
+            assert(index < maxLenPtr);
+        }
 #endif
         return elementOffset[index];
     }
     inline T& operator[](size_t index) const {
 #ifdef DEBUGPOINTER
-        assert(index < maxLenPtr);
+        if (index >= maxLenPtr) {
+            assert(index < maxLenPtr);
+        }
 #endif
         return elementOffset[index];
     }
@@ -118,8 +122,9 @@ struct CAaBox
 {
 public:
     CAaBox(){};
-    CAaBox(C3Vector min, C3Vector max) : min(min), max(max) {
-
+    CAaBox(C3Vector pmin, C3Vector pmax) {
+		this->min = pmin;
+        this->max = pmax;
     }
 
 //    CAaBox operator=(CAaBox &a) {

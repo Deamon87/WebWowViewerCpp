@@ -91,7 +91,7 @@ public:
     virtual void clearScreen() override;
 
 private:
-    void drawMesh(HGMesh &hmesh);
+    void drawMesh(HGMesh hmesh);
 
 protected:
     struct BlpCacheRecord {

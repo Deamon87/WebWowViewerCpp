@@ -7,6 +7,10 @@
 
 #include <memory>
 
+#ifndef __EMSCRIPTEN__
+#define SINGLE_BUFFER_UPLOAD
+#endif
+
 class GVertexBufferGL33;
 class GVertexBufferBindingsGL33;
 class GIndexBufferGL33;
@@ -82,6 +86,7 @@ public:
     HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
+    HGUniformBufferChunk createUniformBufferChunk(size_t size) override;
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture() override;
@@ -106,12 +111,24 @@ public:
     void setViewPortDimensions(float x, float y, float width, float height) override;
 
     void shrinkData() override;
+
+    struct DeallocationRecord {
+        unsigned int frameNumberToDoAt;
+        std::function<void()> callback;
+    };
+
+    void addDeallocationRecord(std::function<void()> callback) {
+        DeallocationRecord dr;
+        dr.frameNumberToDoAt = m_frameNumber+4;
+        dr.callback = callback;
+        listOfDeallocators.push_back(dr);
+    };
 private:
-    void drawMesh(HGMesh &hmesh);
+    void drawMesh(HGMesh hmesh);
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {
-        HBlpTexture texture;
+        BlpTexture* texture;
         bool wrapX;
         bool wrapY;
 
@@ -126,7 +143,7 @@ protected:
     struct BlpCacheRecordHasher {
         std::size_t operator()(const BlpCacheRecord& k) const {
             using std::hash;
-            return hash<void*>{}(k.texture.get()) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
+            return hash<void*>{}(k.texture) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL33>, BlpCacheRecordHasher> loadedTextureCache;
@@ -192,9 +209,16 @@ protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
     std::list<std::weak_ptr<GUniformBufferGL33>> m_unfiormBufferCache;
+#ifdef SINGLE_BUFFER_UPLOAD
     struct FrameUniformBuffers {
         HGUniformBuffer m_uniformBufferForUpload;
     };
+#else
+    struct FrameUniformBuffers {
+        std::vector<HGUniformBuffer> m_uniformBuffersForUpload;
+    };
+#endif
+
 
     std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
 
@@ -203,6 +227,7 @@ protected:
     std::unordered_map<ShaderContentCacheRecord, std::string, ShaderContentCacheRecordHasher> shaderCache;
 
     int uniformBuffersCreated = 0;
+    std::list<DeallocationRecord> listOfDeallocators;
 };
 
 

@@ -16,11 +16,13 @@ class ITexture;
 class IShaderPermutation;
 class IMesh;
 class IM2Mesh;
+class IDeviceUI;
 class IOcclusionQuery;
 class IParticleMesh;
 class IGPUFence;
 class gMeshTemplate;
 #include <memory>
+#include <vector>
 #include <functional>
 #include <algorithm>
 #include "syncronization/IGPUFence.h"
@@ -46,6 +48,7 @@ typedef std::shared_ptr<IGPUFence> HGPUFence;
 #include "meshes/IMesh.h"
 #include "meshes/IM2Mesh.h"
 #include "IOcclusionQuery.h"
+#include "IDeviceUI.h"
 #include "IShaderPermutation.h"
 #include "buffers/IIndexBuffer.h"
 #include "buffers/IVertexBuffer.h"
@@ -53,8 +56,9 @@ typedef std::shared_ptr<IGPUFence> HGPUFence;
 #include "IVertexBufferBindings.h"
 #include "buffers/IUniformBuffer.h"
 #include "buffers/IUniformBufferChunk.h"
-#include "textures/ITexture.h"
 #include "../../engine/wowCommonClasses.h"
+#include "../../engine/texture/BlpTexture.h"
+#include "textures/ITexture.h"
 
 struct M2ShaderCacheRecord {
     int vertexShader;
@@ -129,6 +133,9 @@ struct vkCallInitCallback {
 #endif
 
 class IDevice {
+
+    protected:
+        std::vector<IDeviceUI *> deviceUIs;
     public:
         virtual ~IDevice() {};
 
@@ -188,7 +195,7 @@ class IDevice {
 
         virtual HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) = 0;
 
-        static inline bool sortMeshes(const HGMesh& a, const HGMesh& b) {
+        static inline bool sortMeshes(const HGMesh a, const HGMesh b) {
             auto* pA = a.get();
             auto* pB = b.get();
 
@@ -298,6 +305,10 @@ class IDevice {
         virtual void commitFrame() = 0;
 
         virtual void shrinkData() {};
+
+        virtual void addIDeviceUI(IDeviceUI * deviceUI){
+            deviceUIs.push_back(deviceUI);
+        }
 };
 
 #include <cassert>

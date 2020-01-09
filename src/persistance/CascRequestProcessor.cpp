@@ -14,28 +14,43 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     std::string fileNameFixed = fileName;
     std::replace( fileNameFixed.begin(), fileNameFixed.end(), '/', '\\');
 
+    void *fileNameToPass = (void *) fileNameFixed.c_str();
+    DWORD openFlags = CASC_OPEN_BY_NAME;
+    if (fileNameFixed.find("File") == 0) {
+        std::stringstream ss;
+        std::string fileDataIdHex = fileNameFixed.substr(4, fileNameFixed.find(".")-4);
+        uint32_t fileDataId;
+        ss << std::hex << fileDataIdHex;
+        ss >> fileDataId;
+
+        if (fileDataId == 0) {
+            return;
+        }
+
+        fileNameToPass = reinterpret_cast<void *>(fileDataId);
+        openFlags = CASC_OPEN_BY_FILEID;
+    }
+
     HANDLE fileHandle;
     HFileContent fileContent;
     bool fileOpened = false;
-    if (CascOpenFile(m_storage, fileNameFixed.c_str(), 0,  0, &fileHandle)) {
-        DWORD fileSize1 = CascGetFileSize(fileHandle, 0);
-        fileOpened = true;
-        fileContent = std::make_shared<FileContent>(FileContent(fileSize1+1));
+    if (CascOpenFile(m_storage, fileNameToPass, 0, openFlags, &fileHandle)) {
+        DWORD fileSize1 = CascGetFileSize(fileHandle, nullptr);
+        if (fileSize1 != CASC_INVALID_SIZE) {
+            fileOpened = true;
+            fileContent = std::make_shared<FileContent>(FileContent(fileSize1 + 1));
+            auto dataPtr = fileContent->data();
 
-        DWORD totalBytesRead = 0;
-        while (true) {
-            DWORD dwBytesRead;
+            DWORD totalBytesRead = 0;
+            while (totalBytesRead < fileSize1) {
+                DWORD dwBytesRead = 0;
 
-            CascReadFile(fileHandle, &(*fileContent.get())[totalBytesRead], fileSize1-totalBytesRead, &dwBytesRead);
 
-            if(dwBytesRead == 0) {
-                break;
+                CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1 - totalBytesRead, &dwBytesRead);
+
+                totalBytesRead += dwBytesRead;
             }
-
-            totalBytesRead += dwBytesRead;
         }
-
-
     }
 
     if (fileOpened) {

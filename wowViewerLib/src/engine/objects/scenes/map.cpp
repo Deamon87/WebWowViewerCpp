@@ -9,15 +9,15 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/grahamScan.h"
 #include "../../persistance/wdtFile.h"
-#include "../../persistance/db2/DB2WmoAreaTable.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
 #include "../wowFrameData.h"
+#include "../../algorithms/quick-sort-omp.h"
 
 void Map::checkCulling(WoWFrameData *frameData) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
 //    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
-    if (!m_wdtfile->getIsLoaded()) return;
+    if (m_wdtfile->getStatus() != FileStatus::FSLoaded) return;
 
     Config* config = this->m_api->getConfig();
 
@@ -26,15 +26,15 @@ void Map::checkCulling(WoWFrameData *frameData) {
     mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
 
     size_t adtRenderedThisFramePrev = frameData->adtArray.size();
-    frameData->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>();
+    frameData->adtArray = {};
     frameData->adtArray.reserve(adtRenderedThisFramePrev);
 
     size_t m2RenderedThisFramePrev = frameData->m2Array.size();
-    frameData->m2Array = std::vector<M2Object*>();
+    frameData->m2Array = {};
     frameData->m2Array.reserve(m2RenderedThisFramePrev);
 
     size_t wmoRenderedThisFramePrev = frameData->wmoArray.size();
-    frameData->wmoArray = std::vector<WmoObject*>();
+    frameData->wmoArray = {};
     frameData->wmoArray.reserve(wmoRenderedThisFramePrev);
 
 
@@ -60,30 +60,47 @@ void Map::checkCulling(WoWFrameData *frameData) {
 
 
     //Get potential WMO
-    std::vector<WmoObject*> potentialWmo;
-    std::vector<M2Object*> potentialM2;
+    std::vector<std::shared_ptr<WmoObject>> potentialWmo;
+    std::vector<std::shared_ptr<M2Object>> potentialM2;
 
-    int adt_x = worldCoordinateToAdtIndex(camera4.y);
-    int adt_y = worldCoordinateToAdtIndex(camera4.x);
-    AdtObject *adtObjectCameraAt = this->mapTiles[adt_x][adt_y];
-    if (adtObjectCameraAt != nullptr) {
-        ADTObjRenderRes tempRes;
-        tempRes.adtObject = adtObjectCameraAt;
-        adtObjectCameraAt->checkReferences(
-            tempRes,
-            camera4,
-            frustumPlanes,
-            frustumPoints,
-            lookAtMat4,
-            5,
-            potentialM2,
-            potentialWmo,
-            0,
-            0,
-            16,
-            16
-        );
+    if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+        int adt_x = worldCoordinateToAdtIndex(camera4.y);
+        int adt_y = worldCoordinateToAdtIndex(camera4.x);
+        frameData->adtAreadId = -1;
+        std::shared_ptr<AdtObject> adtObjectCameraAt = this->mapTiles[adt_x][adt_y];
+        if (adtObjectCameraAt != nullptr) {
+            ADTObjRenderRes tempRes;
+            tempRes.adtObject = adtObjectCameraAt;
+            adtObjectCameraAt->checkReferences(
+                tempRes,
+                camera4,
+                frustumPlanes,
+                frustumPoints,
+                lookAtMat4,
+                5,
+                potentialM2,
+                potentialWmo,
+                0,
+                0,
+                16,
+                16
+            );
+
+            int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
+            int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
+
+            frameData->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
+        }
+    } else {
+        if (wmoMap == nullptr) {
+            wmoMap = std::make_shared<WmoObject>(m_api);
+            wmoMap->setLoadingParam(*m_wdtfile->wmoDef);
+            wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
+        }
+
+        potentialWmo.push_back(wmoMap);
     }
+
 
     for (auto &checkingWmoObj : potentialWmo) {
         WmoGroupResult groupResult;
@@ -97,20 +114,6 @@ void Map::checkCulling(WoWFrameData *frameData) {
                 interiorGroupNum = groupResult.groupIndex;
             } else {
             }
-
-            if (m_api->getDB2WmoAreaTable() != nullptr && m_api->getDB2WmoAreaTable()->getIsLoaded()) {
-                DBWmoAreaTableRecord areaTableRecord;
-                if (m_api->getDB2WmoAreaTable()->findRecord(
-                    frameData->m_currentWMO->getWmoHeader()->wmoID,
-                    frameData->m_currentWMO->getNameSet(),
-                    groupResult.WMOGroupID,
-                    areaTableRecord
-                )) {
-                    config->setAreaName(areaTableRecord.AreaName);
-                }
-
-            }
-
             bspNodeId = groupResult.nodeId;
             break;
         }
@@ -143,6 +146,9 @@ void Map::checkCulling(WoWFrameData *frameData) {
         frameData->exteriorView.frustumPlanes.push_back(frustumPlanes);
         checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, viewPerspectiveMat, m_viewRenderOrder, frameData);
     }
+    if (  frameData->exteriorView.viewCreated && (m_currentSkyFDID != 0)) {
+        frameData->exteriorView.drawnM2s.push_back(m_exteriorSkyBox);
+    }
 
     //Fill M2 objects for views from WmoGroups
     for (auto &view : frameData->interiorViews) {
@@ -164,11 +170,11 @@ void Map::checkCulling(WoWFrameData *frameData) {
     //Sort and delete duplicates
     std::sort( frameData->m2Array.begin(), frameData->m2Array.end() );
     frameData->m2Array.erase( unique( frameData->m2Array.begin(), frameData->m2Array.end() ), frameData->m2Array.end() );
-    frameData->m2Array = std::vector<M2Object*>(frameData->m2Array.begin(), frameData->m2Array.end());
+    frameData->m2Array = std::vector<std::shared_ptr<M2Object>>(frameData->m2Array.begin(), frameData->m2Array.end());
 
     std::sort( frameData->wmoArray.begin(), frameData->wmoArray.end() );
     frameData->wmoArray.erase( unique( frameData->wmoArray.begin(), frameData->wmoArray.end() ), frameData->wmoArray.end() );
-    frameData->wmoArray = std::vector<WmoObject*>(frameData->wmoArray.begin(), frameData->wmoArray.end());
+    frameData->wmoArray = std::vector<std::shared_ptr<WmoObject>>(frameData->wmoArray.begin(), frameData->wmoArray.end());
 
     frameData->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>(frameData->adtArray.begin(), frameData->adtArray.end());
 
@@ -194,7 +200,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 //    std::cout << "Map::checkExterior finished called" << std::endl;
     if (m_wdlObject == nullptr) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
-            m_wdlObject = new WdlObject(m_api, m_wdtfile->mphd->wdlFileDataID);
+            m_wdlObject = std::make_shared<WdlObject>(m_api, m_wdtfile->mphd->wdlFileDataID);
             m_wdlObject->setMapApi(this);
         }
 
@@ -202,8 +208,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     }
 
 
-    std::vector<M2Object *> m2ObjectsCandidates;
-    std::vector<WmoObject *> wmoCandidates;
+    std::vector<std::shared_ptr<M2Object>> m2ObjectsCandidates;
+    std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
 
 //    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
 //    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
@@ -250,45 +256,50 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         hullLines,
         lookAtMat4, m2ObjectsCandidates, wmoCandidates);
 
-    for (int i = adt_x_min; i <= adt_x_max; i++) {
-        for (int j = adt_y_min; j <= adt_y_max; j++) {
-            if ((i < 0) || (i > 64)) continue;
-            if ((j < 0) || (j > 64)) continue;
+    if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+        for (int i = adt_x_min; i <= adt_x_max; i++) {
+            for (int j = adt_y_min; j <= adt_y_max; j++) {
+                if ((i < 0) || (i > 64)) continue;
+                if ((j < 0) || (j > 64)) continue;
 
-            AdtObject *adtObject = this->mapTiles[i][j];
-            if (adtObject != nullptr) {
+                auto adtObject = this->mapTiles[i][j];
+                if (adtObject != nullptr) {
 
-                std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
-                adtFrustRes->adtObject = adtObject;
+                    std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
+                    adtFrustRes->adtObject = adtObject;
 
 
-                bool result = adtObject->checkFrustumCulling(
-                    *adtFrustRes.get(),
-                    cameraPos,
-                    adt_global_x,
-                    adt_global_y,
-                    frameData->exteriorView.frustumPlanes[0], //TODO:!
-                    frustumPoints,
-                    hullLines,
-                    lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-                if (result) {
-                    frameData->exteriorView.drawnADTs.push_back(adtFrustRes);
-                    frameData->adtArray.push_back(adtFrustRes);
+                    bool result = adtObject->checkFrustumCulling(
+                        *adtFrustRes.get(),
+                        cameraPos,
+                        adt_global_x,
+                        adt_global_y,
+                        frameData->exteriorView.frustumPlanes[0], //TODO:!
+                        frustumPoints,
+                        hullLines,
+                        lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+                    if (result) {
+                        frameData->exteriorView.drawnADTs.push_back(adtFrustRes);
+                        frameData->adtArray.push_back(adtFrustRes);
+                    }
+                } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
+                    if (m_wdtfile->mphd->flags.wdt_has_maid) {
+                        adtObject = std::make_shared<AdtObject>(m_api, i, j, m_wdtfile->mapFileDataIDs[j * 64 + i],
+                                                                m_wdtfile);
+                    } else {
+                        std::string adtFileTemplate =
+                            "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" + std::to_string(j);
+                        adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+                    }
+
+
+                    adtObject->setMapApi(this);
+                    this->mapTiles[i][j] = adtObject;
                 }
-            } else if (!m_lockedMap && true){ //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
-                if (m_wdtfile->mphd->flags.wdt_has_maid) {
-                    adtObject = new AdtObject(m_api, i, j, m_wdtfile->mapFileDataIDs[j*64 + i], m_wdtfile);
-                } else {
-                    std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-                    adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
-                }
-
-
-
-                adtObject->setMapApi(this);
-                this->mapTiles[i][j] = adtObject;
             }
         }
+    } else {
+        wmoCandidates.push_back(wmoMap);
     }
 
     //Sort and delete duplicates
@@ -297,7 +308,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     //Frustum cull
     for (auto it = wmoCandidates.begin(); it != wmoCandidates.end(); ++it) {
-        WmoObject *wmoCandidate = *it;
+        auto wmoCandidate = *it;
 
         if (!wmoCandidate->isLoaded()) {
             frameData->wmoArray.push_back(wmoCandidate);
@@ -323,32 +334,35 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     m2ObjectsCandidates.erase( unique( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() ), m2ObjectsCandidates.end() );
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
-    for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
-        auto m2ObjectCandidate = m2ObjectsCandidates[i];
-        bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
-            cameraPos,
-            frameData->exteriorView.frustumPlanes[0], //TODO:!
-            frustumPoints);
-    }
-//        bool frustumResult = true;
-    for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
-        auto m2ObjectCandidate = m2ObjectsCandidates[i];
-        if (m2ObjectCandidate->m_cullResult) {
-            frameData->exteriorView.drawnM2s.push_back(m2ObjectCandidate);
-            frameData->m2Array.push_back(m2ObjectCandidate);
+    {
+        int numThreads = m_api->getConfig()->getThreadCount();
+
+        #pragma omp parallel for num_threads(numThreads)
+        for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
+            auto m2ObjectCandidate = m2ObjectsCandidates[i];
+            bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
+                cameraPos,
+                frameData->exteriorView.frustumPlanes[0], //TODO:!
+                frustumPoints);
         }
     }
-
-
-
-
+//        bool frustumResult = true;
+    {
+        for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
+            auto m2ObjectCandidate = m2ObjectsCandidates[i];
+            if (m2ObjectCandidate->m_cullResult) {
+                frameData->exteriorView.drawnM2s.push_back(m2ObjectCandidate);
+                frameData->m2Array.push_back(m2ObjectCandidate);
+            }
+        }
+    }
 }
 void Map::doPostLoad(WoWFrameData *frameData){
     int processedThisFrame = 0;
     int groupsProcessedThisFrame = 0;
 //    if (m_api->getConfig()->getRenderM2()) {
         for (int i = 0; i < frameData->m2Array.size(); i++) {
-            M2Object *m2Object = frameData->m2Array[i];
+            auto m2Object = frameData->m2Array[i];
             if (m2Object == nullptr) continue;
             m2Object->doPostLoad();
         }
@@ -365,7 +379,7 @@ void Map::doPostLoad(WoWFrameData *frameData){
 };
 
 void Map::update(WoWFrameData *frameData) {
-    if (!m_wdtfile->getIsLoaded()) return;
+    if (m_wdtfile->getStatus() != FileStatus::FSLoaded) return;
 
     mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
     mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
@@ -377,8 +391,9 @@ void Map::update(WoWFrameData *frameData) {
 //        std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
 
 //    #pragma
+    int numThreads = m_api->getConfig()->getThreadCount();
     {
-        #pragma omp parallel for num_threads(6)
+        #pragma omp parallel for num_threads(numThreads) schedule(dynamic, 4)
         for (int i = 0; i < frameData->m2Array.size(); i++) {
             auto m2Object = frameData->m2Array[i];
             if (m2Object != nullptr) {
@@ -407,44 +422,26 @@ void Map::update(WoWFrameData *frameData) {
         m2Object->calcDistance(cameraVec3);
     };
 
-    //6. Check what WMO instance we're in
+
+    //7. Get AreaId and Area Name
+    std::string areaName = "";
+    if (frameData->m_currentWMO != nullptr) {
+        auto nameId = frameData->m_currentWMO->getNameSet();
+        auto wmoId = frameData->m_currentWMO->getWmoId();
+        auto groupId = frameData->m_currentWMO->getWmoGroupId(frameData->m_currentWmoGroup);
+
+        areaName = m_api->getDatabaseHandler()->getWmoAreaName(wmoId, nameId, groupId);
+    };
+    if (areaName == "") {
+        if (frameData->adtAreadId > 0) {
+            areaName = m_api->getDatabaseHandler()->getAreaName(frameData->adtAreadId);
+        } else {
+            areaName = "";
+        }
+    }
+    m_api->getConfig()->setAreaName(areaName);
 
 
-//    //7. Get AreaId and Area Name
-//    var currentAreaName = '';
-//    var wmoAreaTableDBC = this.sceneApi.dbc.getWmoAreaTableDBC();
-//    var areaTableDBC = this.sceneApi.dbc.getAreaTableDBC();
-//    var areaRecord = null;
-//    if (wmoAreaTableDBC && areaTableDBC) {
-//        if (this.currentWMO) {
-//            var wmoFile = this.currentWMO.wmoObj;
-//            var wmoId = wmoFile.wmoId;
-//            var wmoGroupId = this.currentWMO.wmoGroupArray[currentWmoGroup].wmoGeom.wmoGroupFile.mogp.groupID;
-//            var nameSetId = this.currentWMO.nameSet;
-//
-//            var wmoAreaTableRecord = wmoAreaTableDBC.findRecord(wmoId, nameSetId, wmoGroupId);
-//            if (wmoAreaTableRecord) {
-//                var areaRecord = areaTableDBC[wmoAreaTableRecord.areaId];
-//                if (wmoAreaTableRecord) {
-//                    if (wmoAreaTableRecord.name == '') {
-//                        var areaRecord = areaTableDBC[wmoAreaTableRecord.areaId];
-//                        if (areaRecord) {
-//                            currentAreaName = areaRecord.name
-//                        }
-//                    } else {
-//                        currentAreaName = wmoAreaTableRecord.name;
-//                    }
-//                }
-//            }
-//        }
-//        if (currentAreaName == '' && mcnkChunk) {
-//            var areaRecord = areaTableDBC[mcnkChunk.areaId];
-//            if (areaRecord) {
-//                currentAreaName = areaRecord.name
-//            }
-//        }
-//    }
-//
     //8. Check fog color every 2 seconds
     bool fogRecordWasFound = false;
     if (this->m_currentTime + frameData->deltaTime - this->m_lastTimeLightCheck > 30) {
@@ -463,58 +460,34 @@ void Map::update(WoWFrameData *frameData) {
             }
         }
 
-        if (m_api->getDB2Light() != nullptr && m_api->getDB2Light()->getIsLoaded() && m_api->getDB2LightData()->getIsLoaded()) {
-            //Check areaRecord
+        LightResult lightResult;
+        m_api->getDatabaseHandler()->getEnvInfo(m_mapId,
+            frameData->m_cameraVec3[0],
+            frameData->m_cameraVec3[1],
+            frameData->m_cameraVec3[2],
+            config->getCurrentTime(),
+            lightResult
+        );
 
-            //Query Light Record
-            std::vector<FoundLightRecord> result = m_api->getDB2Light()->findRecord(m_mapId, cameraVec3);
-            float totalSummator = 0.0f;
+        if (m_currentSkyFDID != lightResult.skyBoxFdid) {
+            if (lightResult.skyBoxFdid == 0) {
+                m_exteriorSkyBox = nullptr;
+            } else {
+                m_exteriorSkyBox = std::make_shared<M2Object>(m_api, true);
+                m_exteriorSkyBox->setLoadParams(0, {},{});
 
-            for (int i = 0; i < result.size() && totalSummator < 1.0f; i++) {
-                DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(result[i].lightRec.lightParamsID[0]);
-                float blendPart = result[i].blendAlpha < 1.0f ? result[i].blendAlpha : 1.0f;
-                blendPart = blendPart + totalSummator < 1.0f ? blendPart : 1.0f - totalSummator;
+                m_exteriorSkyBox->setModelFileId(lightResult.skyBoxFdid);
 
-                ambientColor = ambientColor +
-                    mathfu::vec3((lightData.ambientColor & 0xFF) / 255.0f,
-                    ((lightData.ambientColor >> 8) & 0xFF) / 255.0f,
-                    ((lightData.ambientColor >> 16) & 0xFF) / 255.0f) * blendPart ;
-                directColor = directColor +
-                    mathfu::vec3((lightData.directColor & 0xFF) / 255.0f,
-                        ((lightData.directColor >> 8) & 0xFF) / 255.0f,
-                        ((lightData.directColor >> 16) & 0xFF) / 255.0f) * blendPart ;
-
-                if (!fogRecordWasFound) {
-                    endFogColor = endFogColor +
-                                  mathfu::vec3((lightData.sunFogColor & 0xFF) / 255.0f,
-                                               ((lightData.sunFogColor >> 8) & 0xFF) / 255.0f,
-                                               ((lightData.sunFogColor >> 16) & 0xFF) / 255.0f) * blendPart;
-                }
-
-                totalSummator += blendPart;
+                m_exteriorSkyBox->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+                m_exteriorSkyBox->calcWorldPosition();
             }
-//            DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(20947);
-
-//            for (int jk = 0; jk < 10000; jk++) {
-//                DB2LightDataRecord lightData = m_api->getDB2LightData()->getRecord(20947+jk);
-//                std::cout << "lightParamID = " << lightData.lightParamID << ", time = " << lightData.time << std::endl;
-//                if (lightData.lightParamID == 379) {
-//                    std::cout << "found :D" << std::endl;
-//                }
-//            }
-            config->setAmbientColor(
-                ambientColor.x,
-                ambientColor.y,
-                ambientColor.z,
-                1.0
-            );
-            config->setSunColor(
-                directColor.x,
-                directColor.y,
-                directColor.z,
-                1.0
-            );
+            m_currentSkyFDID = lightResult.skyBoxFdid;
         }
+
+        //Database is in BGRA
+        config->setAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
+        config->setSunColor(lightResult.directColor[2]*3.0, lightResult.directColor[1]*3.0, lightResult.directColor[0]*3.0, 0);
+        config->setCloseRiverColor(lightResult.closeRiverColor[2], lightResult.directColor[1], lightResult.directColor[0], 0);
 
         config->setFogColor(
                 endFogColor.x,
@@ -524,6 +497,21 @@ void Map::update(WoWFrameData *frameData) {
         );
 
         this->m_lastTimeLightCheck = this->m_currentTime;
+    }
+
+    //Cleanup ADT every 10 seconds
+    if (this->m_currentTime + frameData->deltaTime - this->m_lastTimeAdtCleanup > 10000) {
+        for (int i = 0; i < 64; i++) {
+            for (int j = 0; j < 64; j++) {
+                auto adtObj = mapTiles[i][j];
+                //Free obj, if it was unused for 10 secs
+                if (adtObj != nullptr && ((this->m_currentTime - adtObj->getLastTimeOfUpdate()) > 10000)) {
+                    mapTiles[i][j] = nullptr;
+                }
+            }
+        }
+
+        this->m_lastTimeAdtCleanup = this->m_currentTime;
     }
     this->m_currentTime += frameData->deltaTime;
 }
@@ -548,78 +536,102 @@ void Map::updateBuffers(WoWFrameData *frameData) {
 
 }
 
-M2Object *Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
-    M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
-    if (m2Object == nullptr) {
-        m2Object = new M2Object(m_api);
+std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
+    auto it = m_m2MapObjects[doodadDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
+    } else {
+        auto m2Object = std::make_shared<M2Object>(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileName(fileName);
         m2Object->createPlacementMatrix(doodadDef);
         m2Object->calcWorldPosition();
-        m_m2MapObjects.put(doodadDef.uniqueId, m2Object);
+
+        m_m2MapObjects[doodadDef.uniqueId] = std::weak_ptr<M2Object>(m2Object);
+        return m2Object;
     }
-    return m2Object;
+    return nullptr;
 }
 
-M2Object *Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
-    M2Object * m2Object = m_m2MapObjects.get(doodadDef.uniqueId);
-    if (m2Object == nullptr) {
-        m2Object = new M2Object(m_api);
+std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
+    auto it = m_m2MapObjects[doodadDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
+    } else {
+        auto m2Object = std::make_shared<M2Object>(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileId(fileDataId);
         m2Object->createPlacementMatrix(doodadDef);
         m2Object->calcWorldPosition();
-        m_m2MapObjects.put(doodadDef.uniqueId, m2Object);
+
+        m_m2MapObjects[doodadDef.uniqueId] = std::weak_ptr<M2Object>(m2Object);
+        return m2Object;
     }
-    return m2Object;
+    return nullptr;
 }
 
 
-WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    if (wmoObject == nullptr) {
-        wmoObject = new WmoObject(m_api);
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
+    } else {
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(fileName);
-        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
     }
-    return wmoObject;
+    return nullptr;
 }
-WmoObject *Map::getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    if (wmoObject == nullptr) {
-        wmoObject = new WmoObject(m_api);
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) {
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
+    } else {
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
-        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
     }
-    return wmoObject;
+    return nullptr;
 }
 
-WmoObject *Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    if (wmoObject == nullptr) {
-        wmoObject = new WmoObject(m_api);
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
+    } else {
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(fileName);
-        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
     }
-    return wmoObject;
+    return nullptr;
 }
 
-WmoObject *Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
-    WmoObject * wmoObject = m_wmoMapObjects.get(mapObjDef.uniqueId);
-    if (wmoObject == nullptr) {
-        wmoObject = new WmoObject(m_api);
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
+    } else {
+        auto wmoObject = std::make_shared<WmoObject>(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
-        m_wmoMapObjects.put(mapObjDef.uniqueId, wmoObject);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
     }
-    return wmoObject;
+    return nullptr;
 }
 
 void Map::collectMeshes(WoWFrameData *frameData) {
-    frameData->renderedThisFrame = std::vector<HGMesh>();
+    auto renderedThisFramePreSort = std::vector<HGMesh>();
 
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;
@@ -634,38 +646,62 @@ void Map::collectMeshes(WoWFrameData *frameData) {
 
 //    if (m_api->getConfig()->getRenderWMO()) {
         for (auto &view : vector) {
-            view->collectMeshes(frameData->renderedThisFrame);
+            view->collectMeshes(renderedThisFramePreSort);
         }
 //    }
 
-    std::vector<M2Object *> m2ObjectsRendered;
+    std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
     for (auto &view : vector) {
         std::copy(view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
     }
 
-    std::unordered_set<M2Object *> s;
-    for (auto i : m2ObjectsRendered)
-        s.insert(i);
-    m2ObjectsRendered.assign( s.begin(), s.end() );
+//    std::unordered_set<std::shared_ptr<M2Object>> s;
+//    for (auto i : m2ObjectsRendered)
+//        s.insert(i);
+//    m2ObjectsRendered.assign( s.begin(), s.end() );
 
-//    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
-//    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
+    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
+    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
 
 //    if (m_api->getConfig()->getRenderM2()) {
         for (auto &m2Object : m2ObjectsRendered) {
             if (m2Object == nullptr) continue;
-            m2Object->collectMeshes(frameData->renderedThisFrame, m_viewRenderOrder);
-            m2Object->drawParticles(frameData->renderedThisFrame, m_viewRenderOrder);
+            m2Object->collectMeshes(renderedThisFramePreSort, m_viewRenderOrder);
+            m2Object->drawParticles(renderedThisFramePreSort, m_viewRenderOrder);
         }
 //    }
 
+    //No need to sort array which has only one element
+    frameData->renderedThisFrame = {};
+    if (renderedThisFramePreSort.size() > 1) {
+        auto *sortedArrayPtr = &renderedThisFramePreSort[0];
+        std::vector<int> indexArray = std::vector<int>(renderedThisFramePreSort.size());
+        for (int i = 0; i < indexArray.size(); i++) {
+            indexArray[i] = i;
+        }
 
-    std::sort(frameData->renderedThisFrame.begin(),
-              frameData->renderedThisFrame.end(),
-              #include "../../../gapi/interface/sortLambda.h"
-    );
+        auto *config = m_api->getConfig();
+        quickSort_parallel(indexArray.data(), indexArray.size(), config->getThreadCount(), config->getQuickSortCutoff(),
+
+#include "../../../gapi/interface/sortLambda.h"
+
+        );
+
+        frameData->renderedThisFrame.reserve(indexArray.size());
+        for (int i = 0; i < indexArray.size(); i++) {
+            frameData->renderedThisFrame.push_back(renderedThisFramePreSort[indexArray[i]]);
+        }
+    } else {
+        for (int i = 0; i < renderedThisFramePreSort.size(); i++) {
+            frameData->renderedThisFrame.push_back(renderedThisFramePreSort[i]);
+        }
+    }
 };
 
 void Map::draw(WoWFrameData *frameData) {
     m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
+}
+
+animTime_t Map::getCurrentSceneTime() {
+    return m_currentTime;
 }

@@ -316,7 +316,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
     }
 }
 
-void GDeviceGL4x::drawMesh(HGMesh &hIMesh) {
+void GDeviceGL4x::drawMesh(HGMesh hIMesh) {
     GMeshGL4x * hmesh = (GMeshGL4x *) hIMesh.get();
     if (hmesh->m_end <= 0) return;
 

@@ -11,26 +11,23 @@
 #include "../persistance/helper/ChunkFileReader.h"
 #include "../wowInnerApi.h"
 
-class WmoGroupGeom {
+class WmoGroupGeom : public PersistentFile {
 public:
     WmoGroupGeom(std::string fileName){};
     WmoGroupGeom(int fileDataId){};
 
-    void process(HFileContent wmoGroupFile, const std::string &fileName);
+    void process(HFileContent wmoGroupFile, const std::string &fileName) override;
 
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 
     void setMOHD(SMOHeader *mohd) {this->mohd = mohd; };
     void setAttenuateFunction(std::function<void (WmoGroupGeom& wmoGroupGeom)> attenuateFunc) {this->m_attenuateFunc = attenuateFunc; };
-    bool isLoaded() const { return m_loaded; };
     bool hasWater() const {return m_mliq != nullptr; };
 
 
     HGVertexBufferBindings getVertexBindings(IDevice &device);
     HGVertexBufferBindings getWaterVertexBindings(IDevice &device);
 private:
-    bool m_loaded = false;
-
     int normalOffset = 0;
     int textOffset = 0;
     int textOffset2 = 0;

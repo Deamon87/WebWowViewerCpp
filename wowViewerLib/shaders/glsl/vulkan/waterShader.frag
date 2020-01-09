@@ -10,10 +10,11 @@ layout(location=0) out vec4 outputColor;
 
 //Individual meshes
 layout(std140, binding=4) uniform meshWideBlockPS {
-    int waterType;
+    ivec4 waterTypeV;
 };
 
 void main() {
+    int waterType = int(waterTypeV.x);
     if (waterType == 13) { // LIQUID_WMO_Water
         outputColor = vec4(0.0, 0, 0.3, 0.5);
     } else if (waterType == 14) { //LIQUID_WMO_Ocean

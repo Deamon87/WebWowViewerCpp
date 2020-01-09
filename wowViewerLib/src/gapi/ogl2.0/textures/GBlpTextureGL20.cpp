@@ -183,7 +183,7 @@ bool GBlpTextureGL20::getIsLoaded() {
 bool GBlpTextureGL20::postLoad() {
     if (m_loaded) return false;
     if (m_texture == nullptr) return false;
-    if (!m_texture->getIsLoaded()) return false;
+    if (m_texture->getStatus() != FileStatus::FSLoaded) return false;
 
     m_device.bindTexture(this, 0);
     this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());

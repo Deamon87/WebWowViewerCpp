@@ -56,16 +56,16 @@ private:
     bool useFileId = false;
     int m_modelFileId;
 
-    std::vector<WmoGroupObject*> groupObjects = std::vector<WmoGroupObject*>(0);
-    std::vector<WmoGroupObject*> groupObjectsLod1 = std::vector<WmoGroupObject*>(0);
-    std::vector<WmoGroupObject*> groupObjectsLod2 = std::vector<WmoGroupObject*>(0);
+    std::vector<std::shared_ptr<WmoGroupObject>> groupObjects = std::vector<std::shared_ptr<WmoGroupObject>>(0);
+    std::vector<std::shared_ptr<WmoGroupObject>> groupObjectsLod1 = std::vector<std::shared_ptr<WmoGroupObject>>(0);
+    std::vector<std::shared_ptr<WmoGroupObject>> groupObjectsLod2 = std::vector<std::shared_ptr<WmoGroupObject>>(0);
     std::vector<BlpTexture> blpTextures;
 
     std::vector<bool> drawGroupWMO;
     std::vector<int> lodGroupLevelWMO;
-    std::vector<M2Object*> m_doodadsArray;
+    std::vector<std::shared_ptr<M2Object>> m_doodadsArray;
 
-    M2Object* skyBox = nullptr;
+    std::shared_ptr<M2Object> skyBox = nullptr;
 
     std::unordered_map<int, HGTexture> diffuseTextures;
     std::unordered_map<int, HGTexture> specularTextures;
@@ -83,7 +83,7 @@ private:
     void fillLodGroup(mathfu::vec3 &cameraLocal);
     friend void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom);
 public:
-    M2Object *getDoodad(int index) override ;
+    std::shared_ptr<M2Object> getDoodad(int index) override ;
     HGTexture getTexture(int materialId, bool isSpec) override;
     void setLoadingParam( SMMapObjDef &mapObjDef);
     void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
@@ -97,6 +97,13 @@ public:
     int getNameSet() {
         return m_nameSet;
     }
+    int getWmoId() {
+        if (m_loaded) {
+            return mainGeom->header->wmoID;
+        }
+        return 0;
+    }
+    int getWmoGroupId (int groupNum);
 
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
     virtual SMOHeader *getWmoHeader() override;
@@ -108,7 +115,7 @@ public:
         return geometryPerPortal;
     };
 
-    M2Object *getSkyBoxForGroup (int groupNum);;
+    std::shared_ptr<M2Object> getSkyBoxForGroup (int groupNum);;
 
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 
@@ -153,7 +160,7 @@ public:
         int groupId,
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
-        std::vector<M2Object*> &m2Candidates);
+        std::vector<std::shared_ptr<M2Object>> &m2Candidates);
 
     void transverseGroupWMO (
         int groupId,

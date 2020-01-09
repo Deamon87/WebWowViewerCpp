@@ -73,14 +73,16 @@ class CRibbonEmitter {
 private:
     IWoWInnerApi *m_api;
 
-    struct {
+    struct RibbonFrame {
         HGIndexBuffer m_indexVBO;
         HGVertexBuffer m_bufferVBO;
 
         HGVertexBufferBindings m_bindings;
         std::vector<HGParticleMesh> m_meshes = {};
         bool isDead = false;
-    } frame[4];
+    };
+
+    std::array<RibbonFrame, 4> frame;
 
     void createMesh(M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
 

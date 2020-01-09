@@ -7,9 +7,8 @@
 #include "GUniformBufferGL33.h"
 #include "../../interface/IDevice.h"
 
-GUniformBufferGL33::GUniformBufferGL33(IDevice &device, size_t size) : m_device(device){
+GUniformBufferGL33::GUniformBufferGL33(IDevice &device, size_t size) : m_device(dynamic_cast<GDeviceGL33 &>(device)){
     m_size = size;
-    pFrameOneContent = std::vector<char>(size);
     createBuffer();
 }
 
@@ -25,7 +24,10 @@ void GUniformBufferGL33::createBuffer() {
 }
 
 void GUniformBufferGL33::destroyBuffer() {
-    glDeleteBuffers(1, (GLuint *)&glBuffId);
+    const GLuint indent = glBuffId;
+    m_device.addDeallocationRecord([indent]() -> void {
+        glDeleteBuffers(1, &indent);
+    });
 }
 void GUniformBufferGL33::bind(int bindingPoint, int offset, int length) { //Should be called only by GDevice
     if (bindingPoint == 0 && offset == 0 && length == 0) {
@@ -42,7 +44,9 @@ void GUniformBufferGL33::uploadData(void * data, int length) {
     m_device.bindUniformBuffer(this, 0, 0, 0);
 
     assert(m_buffCreated);
+#ifdef __EMSCRIPTEN__
     assert(length > 0 && length <= 65536);
+#endif
 
     if (!m_dataUploaded || m_size < length) {
         glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);
@@ -52,5 +56,4 @@ void GUniformBufferGL33::uploadData(void * data, int length) {
     }
 
     m_dataUploaded = true;
-    m_needsUpdate = false;
 }

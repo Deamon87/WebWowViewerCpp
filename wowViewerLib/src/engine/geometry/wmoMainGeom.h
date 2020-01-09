@@ -6,20 +6,19 @@
 #define WOWVIEWERLIB_WMOMAINGEOM_H
 
 #include <vector>
+#include "../persistance/PersistentFile.h"
 #include "../persistance/helper/ChunkFileReader.h"
 #include "../persistance/header/wmoFileHeader.h"
 #include "../../gapi/interface/IDevice.h"
 
-class WmoMainGeom {
+class WmoMainGeom : public PersistentFile {
 public:
     WmoMainGeom(std::string fileName){};
     WmoMainGeom(int fileDataId){};
 
-    void process(HFileContent wmoMainFile, const std::string &fileName);
-    bool getIsLoaded();
+    void process(HFileContent wmoMainFile, const std::string &fileName) override;
 private:
     static chunkDef<WmoMainGeom> wmoMainTable;
-    bool m_loaded = false;
 public:
     HFileContent m_wmoMainFile;
 

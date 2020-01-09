@@ -54,7 +54,7 @@ void AnimFile::process(HFileContent animFile, const std::string &fileName) {
         m_animFileDataBlob_len = m_animFile->size();
     }
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 
     if (m_postLoadFunction != nullptr) {
         m_postLoadFunction();

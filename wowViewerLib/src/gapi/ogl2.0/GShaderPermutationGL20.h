@@ -53,6 +53,8 @@ private:
 
 
     void setUnf(const std::string &name, GLuint index);
+
+
 };
 
 

@@ -19,40 +19,49 @@
 class Map : public IMapApi, public iInnerSceneApi {
 private:
     IWoWInnerApi *m_api;
-    AdtObject *mapTiles[64][64]={};
+    std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
     std::string mapName;
 
     float m_currentTime = 0;
     float m_lastTimeLightCheck = 0;
+    float m_lastTimeAdtCleanup = 0;
 
     bool m_lockedMap = false;
 
     int m_mapId = -1;
-    HWdtFile m_wdtfile;
-    WdlObject * m_wdlObject = nullptr;
+    HWdtFile m_wdtfile = nullptr;
+    std::shared_ptr<WmoObject> wmoMap = nullptr;
+
+    int m_currentSkyFDID = 0;
+    std::shared_ptr<M2Object> m_exteriorSkyBox = nullptr;
+
+    std::shared_ptr<WdlObject> m_wdlObject = nullptr;
 
     int m_viewRenderOrder = 0;
 
-    ObjectCache<M2Object, int> m_m2MapObjects;
-    ObjectCache<WmoObject, int> m_wmoMapObjects;
 
-    M2Object *getM2Object(std::string fileName, SMDoodadDef &doodadDef) override ;
-    M2Object *getM2Object(int fileDataId, SMDoodadDef &doodadDef) override ;
-    WmoObject *getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) override ;
-    WmoObject *getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) override ;
-    WmoObject *getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) override ;
-    WmoObject *getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
+    std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};
+    std::unordered_map<int, std::weak_ptr<WmoObject>> m_wmoMapObjects = {};
+
+    std::shared_ptr<M2Object> getM2Object(std::string fileName, SMDoodadDef &doodadDef) override ;
+    std::shared_ptr<M2Object> getM2Object(int fileDataId, SMDoodadDef &doodadDef) override ;
+    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) override ;
+    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) override ;
+    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) override ;
+    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
+
+    animTime_t getCurrentSceneTime() override ;
 public:
     explicit Map(IWoWInnerApi *api, int mapId, std::string mapName) : m_mapId(mapId), m_api(api), mapName(mapName){
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
         m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
-        m_wdlObject = new WdlObject(api, wdlFileName);
+        m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
         m_wdlObject->setMapApi(this);
     };
 
-    explicit Map(IWoWInnerApi *api, int mapId, int wdtFileDataId) : m_mapId(mapId), m_api(api), mapName(""){
+    explicit Map(IWoWInnerApi *api, int mapId, int wdtFileDataId) : m_mapId(mapId), m_api(api), mapName("") {
         m_wdtfile = api->getWdtFileCache()->getFileId(wdtFileDataId);
     };
 
@@ -61,32 +70,18 @@ public:
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
         m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
-        m_wdlObject = new WdlObject(api, wdlFileName);
+        m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
         m_wdlObject->setMapApi(this);
 
         m_lockedMap = true;
         std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-        AdtObject * adtObject = new AdtObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+        auto adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
 
         adtObject->setMapApi(this);
         this->mapTiles[i][j] = adtObject;
     };
 
     ~Map() override {
-		for (int i = 0; i < 64; i++) {
-			for (int j = 0; j < 64; j++) {
-				if (mapTiles[i][j] != nullptr) {
-					delete mapTiles[i][j];
-				}
-			}
-		}
-
-		for (auto &objRec : m_m2MapObjects.m_cache) {
-			delete objRec.second->obj;
-		}
-		for (auto& objRec : m_wmoMapObjects.m_cache) {
-			delete objRec.second->obj;
-		}
 
 	} ;
 

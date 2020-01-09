@@ -135,7 +135,7 @@ void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
 
 //    /* Load texture into GL memory */
 //    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
-    this->m_isLoaded = true;
+    this->fsStatus = FileStatus ::FSLoaded;
     this->m_textureName = fileName;
 }
 

@@ -28,11 +28,13 @@ public:
 public:
     void startDownloading();
     void setCallback(HTTPReadyCallback callback);
+    void setFailCallback(HTTPReadyCallback callback);
     void writeToBuffer(void *buffer, long int size);
 
 private:
     std::string m_httpUrl;
     HTTPReadyCallback m_callback;
+    HTTPReadyCallback m_failCallback;
 
     long int fileSize;
     long int written;

@@ -18,7 +18,8 @@ constexpr GLenum toOGLEnum(GBindingType bindingType) {
     }
 }
 
-GVertexBufferBindingsGL33::GVertexBufferBindingsGL33(IDevice &m_device) : m_device(m_device) {
+GVertexBufferBindingsGL33::GVertexBufferBindingsGL33(IDevice &m_device) : m_device(
+    dynamic_cast<GDeviceGL33 &>(m_device)) {
     m_buffer = std::vector<char>(sizeof(GLuint));
     createBuffer();
 }
@@ -32,7 +33,10 @@ void GVertexBufferBindingsGL33::createBuffer() {
 }
 
 void GVertexBufferBindingsGL33::destroyBuffer() {
-    glDeleteVertexArrays(1, (GLuint *)&this->m_buffer[0]);
+    const GLuint indent = *(const GLuint *) &this->m_buffer[0];
+    m_device.addDeallocationRecord([indent]() -> void {
+        glDeleteVertexArrays(1, &indent);
+    });
 }
 
 void GVertexBufferBindingsGL33::bind() {

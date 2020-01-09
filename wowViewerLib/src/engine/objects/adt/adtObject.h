@@ -9,6 +9,7 @@ class IWoWInnerApi;
 class AdtObject;
 class M2Object;
 
+#include <array>
 #include <vector>
 #include <set>
 
@@ -27,10 +28,12 @@ class AdtObject {
 public:
     AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
     AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
+    ~AdtObject() = default;
+
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
+        m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
     }
-
 
     void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
@@ -38,6 +41,8 @@ public:
     void update();
     void uploadGeneratorBuffers(ADTObjRenderRes &adtRes);
     void doPostLoad();
+
+    int getAreaId(int mcnk_x, int mcnk_y);
 
     bool checkFrustumCulling(
             ADTObjRenderRes &adtFrustRes,
@@ -48,17 +53,22 @@ public:
             std::vector<mathfu::vec3> &frustumPoints,
             std::vector<mathfu::vec3> &hullLines,
             mathfu::mat4 &lookAtMat4,
-            std::vector<M2Object*> &m2ObjectsCandidates,
-            std::vector<WmoObject*> &wmoCandidates);
+            std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+            std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 
     bool
     checkReferences(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
                     mathfu::mat4 &lookAtMat4,
                     int lodLevel,
-                    std::vector<M2Object *> &m2ObjectsCandidates, std::vector<WmoObject *> &wmoCandidates,
+                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates, std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
                     int x, int y, int x_len, int y_len);
 
+    animTime_t getLastTimeOfUpdate() {
+        return m_lastTimeOfUpdateOrRefCheck;
+    }
 private:
+    animTime_t m_lastTimeOfUpdateOrRefCheck = 0;
+
     struct LodCommand {
         int index;
         int length;
@@ -71,13 +81,13 @@ private:
 
     IWoWInnerApi *m_api;
     IMapApi *m_mapApi;
-    HWdtFile m_wdtFile;
+    HWdtFile m_wdtFile= nullptr;
 
-    HAdtFile m_adtFile;
-    HAdtFile m_adtFileTex;
-    HAdtFile m_adtFileObj;
-    HAdtFile m_adtFileObjLod;
-    HAdtFile m_adtFileLod;
+    HAdtFile m_adtFile = nullptr;
+    HAdtFile m_adtFileTex = nullptr;
+    HAdtFile m_adtFileObj = nullptr;
+    HAdtFile m_adtFileObjLod = nullptr;
+    HAdtFile m_adtFileLod = nullptr;
 
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;
@@ -122,10 +132,16 @@ private:
 
     std::string m_adtFileTemplate;
 
-    struct {
-        std::vector<M2Object *> m2Objects;
-        std::vector<WmoObject *> wmoObjects;
-    } objectLods[2];
+    HGVertexBuffer waterVBO;
+    HGIndexBuffer waterIBO;
+    HGVertexBufferBindings vertexWaterBufferBindings;
+    HGMesh waterMesh = nullptr;
+
+    struct lodLevels {
+        std::vector<std::shared_ptr<M2Object>> m2Objects;
+        std::vector<std::shared_ptr<WmoObject>> wmoObjects;
+    };
+    std::array<lodLevels, 2> objectLods;
 
     HGTexture getAdtTexture(int textureId);
     HGTexture getAdtHeightTexture(int textureId);
@@ -134,6 +150,7 @@ private:
     void calcBoundingBoxes();
     void loadM2s();
     void loadWmos();
+    void loadWater();
 
     bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                                  std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines, int x,
@@ -145,8 +162,8 @@ private:
                     const PointerChecker<MLND> &quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
                     mathfu::mat4 &lookAtMat4,
-                    std::vector<M2Object *> &m2ObjectsCandidates,
-                    std::vector<WmoObject *> &wmoCandidates);
+                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                    std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 };
 
 

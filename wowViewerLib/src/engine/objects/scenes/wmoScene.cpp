@@ -8,8 +8,8 @@
 #include "../../../gapi/interface/IDevice.h"
 
 void WmoScene::checkCulling(WoWFrameData *frameData) {
-    frameData->m2Array = std::vector<M2Object*>();
-    frameData->wmoArray = std::vector<WmoObject*>();
+    frameData->m2Array = std::vector<std::shared_ptr<M2Object>>();
+    frameData->wmoArray = std::vector<std::shared_ptr<WmoObject>>();
 
     mathfu::vec4 cameraPos = mathfu::vec4(frameData->m_cameraVec3, 1.0);
     mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
@@ -34,7 +34,7 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     int interiorGroupNum = -1;
     int currentWmoGroup = -1;
 
-    WmoObject *checkingWmoObj = this->m_wmoObject;
+    std::shared_ptr<WmoObject> checkingWmoObj = this->m_wmoObject;
     WmoGroupResult groupResult;
     bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(mathfu::vec4(cameraVec3, 1), groupResult);
 
@@ -96,9 +96,11 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     std::copy(frameData->exteriorView.drawnM2s.begin(), frameData->exteriorView.drawnM2s.end(), inserter);
 
     //Sort and delete duplicates
-    std::unordered_set<M2Object *> m2Set;
-    for (auto i : frameData->m2Array)
+    std::unordered_set<std::shared_ptr<M2Object>> m2Set;
+    for (auto i : frameData->m2Array) {
+        if (!i) continue;
         m2Set.insert(i);
+    }
 
 
     frameData->m2Array.assign( m2Set.begin(), m2Set.end() );
@@ -143,7 +145,7 @@ void WmoScene::doPostLoad(WoWFrameData *frameData) {
     int groupsProcessedThisFrame = 0;
 
     for (int i = 0; i < frameData->m2Array.size(); i++) {
-        M2Object *m2Object = frameData->m2Array[i];
+        std::shared_ptr<M2Object> m2Object = frameData->m2Array[i];
         if (m2Object == nullptr) continue;
         if (m2Object->doPostLoad()) processedThisFrame++;
         if (processedThisFrame > 3) return;
@@ -163,7 +165,7 @@ void WmoScene::update(WoWFrameData *frameData)  {
     mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
 
     for (int i = 0; i < frameData->m2Array.size(); i++) {
-        M2Object *m2Object = frameData->m2Array[i];
+        auto m2Object = frameData->m2Array[i];
         if (m2Object == nullptr) continue;
         m2Object->update(frameData->deltaTime, cameraVec3, lookAtMat4);
         m2Object->uploadGeneratorBuffers(lookAtMat4);
@@ -207,7 +209,7 @@ void WmoScene::collectMeshes(WoWFrameData * frameData) {
         view->collectMeshes(frameData->renderedThisFrame);
     }
 
-    std::vector<M2Object *> m2ObjectsRendered;
+    std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
     for (auto &view : vector) {
         std::copy(view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
     }
