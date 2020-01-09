@@ -312,15 +312,15 @@ int main(){
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
+//    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
+//    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
     //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
     //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
     //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-    RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+//    RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
 //        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
-    processor->setThreaded(true);
-//    RequestProcessor *processor = nullptr;
+//    processor->setThreaded(true);
+    RequestProcessor *processor = nullptr;
 
     glfwInit();
 
@@ -382,9 +382,9 @@ int main(){
     CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
 
 
-//    WoWFilesCacheStorage *storage = nullptr;
-    WoWFilesCacheStorage *storage = new WoWFilesCacheStorage(processor);
-    processor->setFileRequester(storage);
+    WoWFilesCacheStorage *storage = nullptr;
+//    WoWFilesCacheStorage *storage = new WoWFilesCacheStorage(processor);
+//    processor->setFileRequester(storage);
 
     //Create device
     IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
