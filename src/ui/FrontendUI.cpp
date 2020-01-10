@@ -381,13 +381,27 @@ void FrontendUI::initImgui(GLFWwindow *window) {
 
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 150");
-
-
 }
 
 void FrontendUI::newFrame() {
-    ImGui_ImplOpenGL3_NewFrame();
+
+//    ImGui_ImplOpenGL3_NewFrame();
+    //Create Font image
+    if (this->fontTexture == nullptr) {
+        ImGuiIO& io = ImGui::GetIO();
+        unsigned char* pixels;
+        int width, height;
+        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
+
+        // Upload texture to graphics system
+
+        this->fontTexture = m_device->createTexture();
+        this->fontTexture->loadData(width, height, pixels);
+
+        // Store our identifier
+        io.Fonts->TexID = (ImTextureID)this->fontTexture->getIdent();
+    }
+
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }

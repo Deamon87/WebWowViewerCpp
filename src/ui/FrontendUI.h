@@ -76,6 +76,11 @@ private:
     float worldPosY = 0;
     float worldPosZ = 0;
 
+    IDevice *m_device;
+
+    HGTexture fontTexture;
+
+
     std::vector<MapRecord> mapList = {};
     std::vector<MapRecord> filteredMapList = {};
     std::vector<std::vector<std::string>> mapListStringMap = {};
