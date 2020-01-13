@@ -9782,7 +9782,7 @@ void ImGui::ShowMetricsWindow(bool* p_open)
                 ImDrawIdx* idx_buffer = (draw_list->IdxBuffer.Size > 0) ? draw_list->IdxBuffer.Data : NULL;
                 char buf[300];
                 ImFormatString(buf, IM_ARRAYSIZE(buf), "DrawCmd: %4d triangles, Tex 0x%p, ClipRect (%4.0f,%4.0f)-(%4.0f,%4.0f)",
-                    pcmd->ElemCount/3, (void*)(intptr_t)pcmd->TextureId,
+                    pcmd->ElemCount/3, (void*)(intptr_t)pcmd->TextureId.get(),
                     pcmd->ClipRect.x, pcmd->ClipRect.y, pcmd->ClipRect.z, pcmd->ClipRect.w);
                 bool pcmd_node_open = ImGui::TreeNode((void*)(pcmd - draw_list->CmdBuffer.begin()), "%s", buf);
                 if (show_drawcmd_details && fg_draw_list && ImGui::IsItemHovered())

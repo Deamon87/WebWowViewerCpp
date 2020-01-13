@@ -13,6 +13,7 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../wowFrameData.h"
 #include "../../algorithms/quick-sort-omp.h"
+//#include "../../algorithms/quicksort-dualpivot.h"
 
 void Map::checkCulling(WoWFrameData *frameData) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
@@ -681,11 +682,24 @@ void Map::collectMeshes(WoWFrameData *frameData) {
         }
 
         auto *config = m_api->getConfig();
-        quickSort_parallel(indexArray.data(), indexArray.size(), config->getThreadCount(), config->getQuickSortCutoff(),
 
-#include "../../../gapi/interface/sortLambda.h"
-
-        );
+//        if (config->getMovementSpeed() > 2) {
+            quickSort_parallel(
+                indexArray.data(),
+                indexArray.size(),
+                config->getThreadCount(),
+                config->getQuickSortCutoff(),
+                #include "../../../gapi/interface/sortLambda.h"
+            );
+//        } else {
+//            quickSort_dualPoint(
+//                indexArray.data(),
+//                indexArray.size(),
+//                config->getThreadCount(),
+//                config->getQuickSortCutoff(),
+//                #include "../../../gapi/interface/sortLambda.h"
+//            );
+//        }
 
         frameData->renderedThisFrame.reserve(indexArray.size());
         for (int i = 0; i < indexArray.size(); i++) {

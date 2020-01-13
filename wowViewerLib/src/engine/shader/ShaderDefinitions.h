@@ -47,6 +47,12 @@ struct m2Shader {
     };
 };
 
+struct imguiShader {
+    enum class Attribute {
+        Position = 0, UV = 1, Color = 2, imguiShaderAttributeEnd
+    };
+};
+
 struct wmoShader {
     enum class Attribute {
         aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aColor = 5, aColor2 = 6, wmoShaderAttributeEnd
@@ -137,6 +143,10 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 {"boneWeights", 3},
 {"aTexCoord", 4},
 {"aTexCoord2", 5},
+}},{"imguiShader",  {
+{"Position", 0},
+{"UV", 1},
+{"Color", 2},
 }},{"wmoShader",  {
 {"aPosition", 0},
 {"aNormal", 1},
@@ -216,10 +226,19 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "water
 {0,4,32},
 }
 }
+},{ "imguiShader.frag.spv", {
+{
+}
+}
 },{ "waterShader.vert.spv", {
 {
 {0,0,128},
 {0,1,64},
+}
+}
+},{ "imguiShader.vert.spv", {
+{
+{0,0,64},
 }
 }
 },{ "drawPortalShader.vert.spv", {
@@ -403,6 +422,13 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_49.uSunDirAndFogStart", true, 16, 1, 4, 0},
         {"_49.uSunColorAndFogEnd", true, 32, 1, 4, 0},
         {"_49.uAmbientLight", true, 48, 1, 4, 0},
+      }
+    },
+  }},
+  {"imguiShader",  {
+    {
+      0, {
+        {"_30.ProjMtx", true, 0, 4, 4, 0},
       }
     },
   }},

@@ -178,8 +178,6 @@ set(SOURCE_FILES
 		src/ui/imguiLib/imgui_draw.cpp
 		src/ui/imguiLib/imgui_widgets.cpp
 		src/ui/imguiLib/imguiImpl/imgui_impl_glfw.cpp
-		src/ui/imguiLib/imguiImpl/imgui_impl_opengl2.cpp
-		src/ui/imguiLib/imguiImpl/imgui_impl_opengl3.cpp
 		src/ui/FrontendUI.cpp src/ui/FrontendUI.h
 		src/database/CSqliteDB.cpp src/database/CSqliteDB.h
 )
@@ -190,7 +188,7 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 		src/main.cpp)
 else()
 	set(SOURCE_FILES ${SOURCE_FILES}
-			src/jniLib.cpp src/database/dbStructs.h)
+			src/jniLib.cpp src/database/dbStructs.h src/ui/imguiLib/imguiCustomConfig.h)
 endif()
 
 
@@ -234,6 +232,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp)
 
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
 #target_compile_options(AWebWoWViewerCpp PRIVATE "-static")
+target_compile_definitions(AWebWoWViewerCpp PUBLIC -DIMGUI_USER_CONFIG=<imguiCustomConfig.h>)
 
 target_include_directories(AWebWoWViewerCpp PUBLIC src/ui/imguiLib)
 
