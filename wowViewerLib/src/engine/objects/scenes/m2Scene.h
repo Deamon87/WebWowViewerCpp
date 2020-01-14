@@ -55,7 +55,7 @@ public:
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
     void checkCulling(WoWFrameData *frameData) override;
-    void draw(WoWFrameData *frameData) override;
+
     void collectMeshes(WoWFrameData*) override;
     void doPostLoad(WoWFrameData *frameData) override;
     void update(WoWFrameData *frameData) override;

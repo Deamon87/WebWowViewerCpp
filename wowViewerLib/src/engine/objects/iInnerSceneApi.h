@@ -9,6 +9,8 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "wowFrameData.h"
 
+
+
 class iInnerSceneApi {
 public:
     virtual ~iInnerSceneApi() = default;
@@ -17,7 +19,6 @@ public:
 
     virtual void checkCulling(WoWFrameData *frameData) = 0;
     virtual void collectMeshes(WoWFrameData *frameData) = 0;
-    virtual void draw(WoWFrameData *frameData) = 0;
 
     virtual void doPostLoad(WoWFrameData *frameData) = 0;
     virtual void update(WoWFrameData *frameData) = 0;

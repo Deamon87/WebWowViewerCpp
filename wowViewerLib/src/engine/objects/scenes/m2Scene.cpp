@@ -23,12 +23,6 @@ void M2Scene::checkCulling(WoWFrameData *frameData) {
     m_drawModel = m_m2Object->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints);
 }
 
-void M2Scene::draw(WoWFrameData *frameData) {
-    if (!m_drawModel) return;
-
-    m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
-}
-
 extern "C" {
     extern void supplyPointer(int *availablePointer, int length);
 }
@@ -99,6 +93,8 @@ void M2Scene::setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override)
 }
 
 void M2Scene::collectMeshes(WoWFrameData * frameData) {
+    if (!m_drawModel) return;
+
     frameData->renderedThisFrame = std::vector<HGMesh>();
 
     m_m2Object->collectMeshes(frameData->renderedThisFrame, 0);

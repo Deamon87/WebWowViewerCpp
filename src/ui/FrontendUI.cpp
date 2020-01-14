@@ -22,19 +22,8 @@ static const GBufferBinding imguiBindings[3] = {
 void FrontendUI::composeUI() {
 
     if (fillAdtSelectionminimap && mapCanBeOpened) {
-
         if (fillAdtSelectionminimap(adtSelectionMinimap, isWmoMap, mapCanBeOpened )) {
             fillAdtSelectionminimap = nullptr;
-
-            requiredTextures.clear();
-            requiredTextures.reserve(64 * 64);
-            for (int i = 0; i < 64; i++) {
-                for (int j = 0; j < 64; j++) {
-                    if (adtSelectionMinimap[i][j] != nullptr) {
-                        requiredTextures.push_back(adtSelectionMinimap[i][j]);
-                    }
-                }
-            }
         }
     }
 
@@ -373,6 +362,13 @@ void FrontendUI::showMainMenu() {
 void FrontendUI::renderUI() {
     auto *draw_data = ImGui::GetDrawData();
 
+    int  fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
+    int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
+    if (fb_width <= 0 || fb_height <= 0) {
+        return;
+    }
+
+
     ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
     ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
@@ -459,20 +455,12 @@ void FrontendUI::renderUI() {
                     meshTemplate.textureCount = 1;
                     meshTemplate.texture[0] = fontTexture;
 
-                    // Bind texture, Draw
-//                    glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
-#if IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
-                    if (g_GlVersion >= 3200)
-                        glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (GLint)pcmd->VtxOffset);
-                    else
-#endif
-                    glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)));
+                    meshTemplate.start = pcmd->IdxOffset;
+                    meshTemplate.end = pcmd->ElemCount;
                 }
             }
         }
     }
-
-
 }
 
 void FrontendUI::initImgui(GLFWwindow *window) {
@@ -484,8 +472,8 @@ void FrontendUI::initImgui(GLFWwindow *window) {
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -612,9 +600,3 @@ void FrontendUI::setCurrentTimeChangeCallback(std::function<void(int value)> cal
     setCurrentTime = callback;
 }
 
-
-#ifdef LINK_VULKAN
-void FrontendUI::renderUIVLK(VkCommandBuffer commandBuffer){
-
-};
-#endif

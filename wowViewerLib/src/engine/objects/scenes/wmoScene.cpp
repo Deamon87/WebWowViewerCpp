@@ -136,10 +136,6 @@ void WmoScene::cullExterior(WoWFrameData *frameData, int viewRenderOrder) {
     }
 }
 
-void WmoScene::draw(WoWFrameData *frameData) {
-    m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
-}
-
 void WmoScene::doPostLoad(WoWFrameData *frameData) {
     int processedThisFrame = 0;
     int groupsProcessedThisFrame = 0;

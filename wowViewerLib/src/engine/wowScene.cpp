@@ -817,10 +817,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         }
     }
 
-//    std::cout << "draw frame = " << getDevice()->getDrawFrameNumber() << std::endl;
-
-
-
     if (currentScene == nullptr) return;
 
     if (needToDropCache) {
@@ -848,81 +844,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     device->setViewPortDimensions(0,0,this->canvWidth, this->canvHeight);
     device->beginFrame();
 
-    mathfu::mat4 mainLookAtMat4 = frameParam->m_lookAtMat4;
-
-    if (this->m_config->getDoubleCameraDebug()) {
-        //Draw static camera
-        m_isDebugCamera = true;
-        frameParam->m_lookAtMat4 = frameParam->m_secondLookAtMat;
-        currentScene->draw(frameParam);
-        m_isDebugCamera = false;
-
-        if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
-            /*
-            //Draw real camera into square at bottom of screen
-            this->activateRenderDepthShader();
-            glEnableVertexAttribArray(0);
-            glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
-            glUniform1f(drawDepthBuffer->getUnf("uNearPlane"), nearPlane);
-
-            this->drawTexturedQuad(this->frameBufferDepthTexture,
-                                   this->canvWidth * 0.60f,
-                                   0,//this.canvas.height * 0.75,
-                                   this->canvWidth * 0.40f,
-                                   this->canvHeight * 0.40f,
-                                   this->canvWidth,
-                                   this->canvHeight, true);
-           */
-        } else {
-            //Render real camera
-//            glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
-//            glClearScreen(/*this.fogColor*/);
-//            glDepthMask(GL_TRUE);
-//
-//            this->m_lookAtMat4 = lookAtMat4;
-//            currentScene->draw();
-//            glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
-//
-//            this->activateRenderDepthShader();
-//            this->drawTexturedQuad(this->frameBufferColorTexture,
-//                                   this->canvWidth * 0.60f,
-//                                   0,//this.canvas.height * 0.75,
-//                                   this->canvWidth * 0.40f,
-//                                   this->canvHeight * 0.40f,
-//                                   this->canvWidth,
-//                                   this->canvHeight, false);
+    device->drawMeshes(frameParam->renderedThisFrame);
+    m_isDebugCamera = false;
 
 
-        }
-    } else {
-        //Render real camera
-        frameParam->m_lookAtMat4 = mainLookAtMat4;
-        currentScene->draw(frameParam);
-
-        if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
-            //Draw real camera into square at bottom of screen
-            /*
-            this->activateRenderDepthShader();
-            glEnableVertexAttribArray(0);
-            glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
-            glUniform1f(drawDepthBuffer->getUnf("uNearPlane"), nearPlane);
-
-            this->drawTexturedQuad(this->frameBufferDepthTexture,
-                                   this->canvWidth * 0.60f,
-                                   0,//this.canvas.height * 0.75,
-                                   this->canvWidth * 0.40f,
-                                   this->canvHeight * 0.40f,
-                                   this->canvWidth,
-                                   this->canvHeight, true);
-           */
-        }
-    }
-//    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateEnd);
-
-//    print_timediff("rendering", renderingAndUpdateStart, renderingAndUpdateEnd);
-
-
-//    nextDeltaTime = deltaTime;
     device->commitFrame();
     device->reset();
 

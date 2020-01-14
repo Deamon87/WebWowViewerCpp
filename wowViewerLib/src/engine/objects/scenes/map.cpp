@@ -712,10 +712,6 @@ void Map::collectMeshes(WoWFrameData *frameData) {
     }
 };
 
-void Map::draw(WoWFrameData *frameData) {
-    m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
-}
-
 animTime_t Map::getCurrentSceneTime() {
     return m_currentTime;
 }

@@ -8,11 +8,15 @@
 
 #include "imguiLib/imgui.h"
 #include <fileBrowser/imfilebrowser.h>
-#include "../../wowViewerLib/src/gapi/interface/IDeviceUI.h"
 #include "../../wowViewerLib/src/include/database/dbStructs.h"
+#include "../../wowViewerLib/src/engine/objects/iInnerSceneApi.h"
 
 
-class FrontendUI : public IDeviceUI {
+class FrontendUI : public iInnerSceneApi {
+//Implementation of iInnerSceneApi
+public:
+
+
 private:
     std::function <bool(std::string cascPath)> openCascCallback = nullptr;
     std::function <void(int mapId, int wdtFileId, float x, float y, float z)> openSceneByfdid = nullptr;
@@ -114,11 +118,6 @@ public:
     void setUnloadScene( std::function <void()> callback) {
         unloadScene = callback;
     };
-
-#ifdef LINK_VULKAN
-    virtual void renderUIVLK(VkCommandBuffer commandBuffer) = 0;
-#endif
-
 
     void showMainMenu();
 

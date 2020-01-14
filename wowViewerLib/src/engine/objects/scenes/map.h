@@ -89,7 +89,7 @@ public:
     void checkCulling(WoWFrameData *frameData) override;
 
     void collectMeshes(WoWFrameData *frameData) override;
-    void draw(WoWFrameData *frameData) override;
+
     void setAnimationId(int animationId) override {
 
     };
