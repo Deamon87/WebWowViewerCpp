@@ -359,7 +359,7 @@ void FrontendUI::showMainMenu() {
 
 //
 
-void FrontendUI::renderUI() {
+void FrontendUI::collectMeshes(WoWFrameData *frameData) {
     auto *draw_data = ImGui::GetDrawData();
 
     int  fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
@@ -457,6 +457,8 @@ void FrontendUI::renderUI() {
 
                     meshTemplate.start = pcmd->IdxOffset;
                     meshTemplate.end = pcmd->ElemCount;
+
+                    frameData->renderedThisFrame.push_back(m_device->createMesh(meshTemplate));
                 }
             }
         }

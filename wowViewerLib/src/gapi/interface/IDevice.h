@@ -133,9 +133,6 @@ struct vkCallInitCallback {
 #endif
 
 class IDevice {
-
-    protected:
-        std::vector<IDeviceUI *> deviceUIs;
     public:
         virtual ~IDevice() {};
 
@@ -305,10 +302,6 @@ class IDevice {
         virtual void commitFrame() = 0;
 
         virtual void shrinkData() {};
-
-        virtual void addIDeviceUI(IDeviceUI * deviceUI){
-            deviceUIs.push_back(deviceUI);
-        }
 };
 
 #include <cassert>

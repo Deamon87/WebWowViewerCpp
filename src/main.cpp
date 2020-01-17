@@ -468,15 +468,6 @@ int main(){
 
             if (wdtFile->getStatus() != FileStatus::FSLoaded) return false;
 
-            isWMOMap = wdtFile->mphd->flags.wdt_uses_global_map_obj;
-
-            if(isWMOMap) {
-//                frontendUI.setOpenWMOMapCallback([wdtFile, &scene]() -> void {
-//                    scene->setSceneWithFileDataId(1, wdtFile->wmoDef->nameId, 0 );
-//                    scene->setScenePos(0,0,0);
-//                });
-            }
-
             for (int i = 0; i < 64; i++) {
                 for (int j = 0; j < 64; j++) {
                     if (wdtFile->mapFileDataIDs[i*64 + j].minimapTexture > 0) {
@@ -489,7 +480,6 @@ int main(){
             }
             return true;
         });
-
     });
     frontendUI.setGetMapList([&sqliteDB](std::vector<MapRecord> &mapList) -> void {
         if (sqliteDB == nullptr)  return;
@@ -498,9 +488,6 @@ int main(){
     });
 
     frontendUI.initImgui(window);
-
-    device->addIDeviceUI(&frontendUI);
-
 
     testConf->setDrawM2BB(false);
     //testConf->setUsePortalCulling(false);
@@ -521,7 +508,7 @@ try {
         stopKeyboard = frontendUI.getStopKeyboard();
         glfwPollEvents();
 
-        frontendUI.composeUI();
+//        frontendUI.composeUI();
 
         // Render scene
         currentFrame = glfwGetTime(); // seconds
@@ -531,12 +518,27 @@ try {
             processor->processRequests(false);
             processor->processResults(10);
         }
-        if (windowSizeChanged) {
-            scene->setScreenSize(canvWidth, canvHeight);
-            windowSizeChanged = false;
-        }
+//        if (windowSizeChanged) {
+//            scene->setScreenSize(canvWidth, canvHeight);
+//            windowSizeChanged = false;
+//        }
 
-        scene->draw((deltaTime*(1000.0f))); //miliseconds
+//        scene->draw((deltaTime*(1000.0f))); //miliseconds
+
+        auto *camera = scene->getCurrentCamera();
+        auto *cameraDebug = scene->getCurrentCamera();
+
+        auto updateResult = scene->cull(camera)->update(camera);
+        SceneComposer::All({
+            updateResult->render(camera)->toFB(frameBuffer, viewPortDims),
+            updateResult->render(cameraDebug)->toFB(frameBuffer, viewPortDims);
+        }).then([]{
+            frontendUI.bind("", frameBuffer.getTexture())
+            SceneComposer.renderToScreen()
+        })
+
+
+
         double currentDeltaAfterDraw = (glfwGetTime() - lastFrame)*(1000.0f);
         lastFrame = currentFrame;
         if (currentDeltaAfterDraw < 5.0) {
