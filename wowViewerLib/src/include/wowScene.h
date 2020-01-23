@@ -13,7 +13,7 @@ class WoWFilesCacheStorage;
 #include "iostuff.h"
 
 
-
+class Update
 
 class WoWScene {
 
@@ -34,6 +34,8 @@ public:
     virtual void setMap(int mapId, int wdtFileId, float x, float y, float z) = 0;
 
     virtual IControllable* getCurrentCamera() = 0;
+
+    getCullFlow();
 };
 
 
