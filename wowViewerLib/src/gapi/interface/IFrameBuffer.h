@@ -1,0 +1,12 @@
+//
+// Created by deamon on 30.01.20.
+//
+
+#ifndef AWEBWOWVIEWERCPP_IFRAMEBUFFER_H
+#define AWEBWOWVIEWERCPP_IFRAMEBUFFER_H
+
+class IFrameBuffer {
+
+};
+
+#endif //AWEBWOWVIEWERCPP_IFRAMEBUFFER_H

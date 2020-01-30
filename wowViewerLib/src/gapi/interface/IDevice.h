@@ -20,6 +20,7 @@ class IDeviceUI;
 class IOcclusionQuery;
 class IParticleMesh;
 class IGPUFence;
+class IFrameBuffer;
 class gMeshTemplate;
 #include <memory>
 #include <vector>
@@ -44,6 +45,7 @@ typedef std::shared_ptr<IMesh> HGOcclusionQuery;
 typedef std::shared_ptr<IBlpTexture> HGBlpTexture;
 typedef std::shared_ptr<ITexture> HGTexture;
 typedef std::shared_ptr<IGPUFence> HGPUFence;
+typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
 
 #include "meshes/IMesh.h"
 #include "meshes/IM2Mesh.h"
@@ -59,6 +61,7 @@ typedef std::shared_ptr<IGPUFence> HGPUFence;
 #include "../../engine/wowCommonClasses.h"
 #include "../../engine/texture/BlpTexture.h"
 #include "textures/ITexture.h"
+#include "IFrameBuffer.h"
 
 struct M2ShaderCacheRecord {
     int vertexShader;

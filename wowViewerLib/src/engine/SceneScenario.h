@@ -5,16 +5,30 @@
 #ifndef AWEBWOWVIEWERCPP_SCENESCENARIO_H
 #define AWEBWOWVIEWERCPP_SCENESCENARIO_H
 
+#include <vector>
 #include "../gapi/interface/meshes/IMesh.h"
 #include "objects/ViewsObjects.h"
+#include "objects/iInnerSceneApi.h"
+#include "camera/CameraInterface.h"
 
 //Holds dependency graph for different scenes
+class FrameScenario;
 
-struct FrameBufferScenario {
-    
+struct CameraMatrices {
+    mathfu::mat4 perspectiveMat;
+    mathfu::mat4 lookAtMat;
 };
+typedef std::shared_ptr<CameraMatrices> HCameraMatrices;
 
-struct CullResult {
+
+struct CullStage {
+private:
+//Input:
+    HCameraMatrices matricesForCulling;
+    iInnerSceneApi* scene;
+
+//Output:
+
     std::vector<WmoGroupResult> m_currentInteriorGroups = {};
     std::shared_ptr<WmoObject> m_currentWMO = nullptr;
     int m_currentWmoGroup = -1;
@@ -27,24 +41,52 @@ struct CullResult {
     std::vector<std::shared_ptr<WmoObject>> wmoArray = {};
 };
 
-struct FrameBufferStages {
-    //Stages
-    std::vector<IMesh> adtOpaqueMeshes;
-    std::vector<IMesh> wmoOpaqueMeshes;
+typedef std::shared_ptr<CullStage> HCullStage;
 
-    std::vector<IMesh> projectionMeshes;
+struct UpdateStage {
+private:
+//input
+    HCullStage cullResult;
+    animTime_t delta;
 
-    std::vector<IMesh> m2OpaqueMeshes;
-    std::vector<IMesh> skyBoxMeshes;
-    std::vector<IMesh> areaMeshes;
+    mathfu::mat4 lookAtMat;
+//Output
+    std::vector<HGMesh> adtOpaqueMeshes;
+    std::vector<HGMesh> wmoOpaqueMeshes;
 
-    std::vector<IMesh> transparentMeshes;
+    std::vector<HGMesh> projectionMeshes;
+
+    std::vector<HGMesh> m2OpaqueMeshes;
+    std::vector<HGMesh> skyBoxMeshes;
+    std::vector<HGMesh> areaMeshes;
+
+    std::vector<HGMesh> transparentMeshes;
+};
+
+typedef std::shared_ptr<UpdateStage> HUpdateStage;
+
+struct DrawStage;
+typedef std::shared_ptr<DrawStage> HDrawStage;
+
+struct DrawStage {
+    HCameraMatrices matricesForRendering;
+    std::vector<HDrawStage> drawStageDependencies;
+
+    std::vector<HGMesh> meshes;
+
     HFrameBuffer target;
 };
 
-struct SceneScenario {
 
+class FrameScenario {
+private:
+    std::vector<HCullStage> cullStages;
+    std::vector<HUpdateStage> updateStages;
 
+    HDrawStage drawStage;
+public:
+    HCullStage addCullStage(CameraMatrices matricesForCulling, iInnerSceneApi* scene);
+    HUpdateStage addUpdateStage(HCullStage cullStage, animTime_t deltaTime, ICamera* camera);
 
 };
 
