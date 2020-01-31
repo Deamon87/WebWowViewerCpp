@@ -84,6 +84,16 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
                     }
                 }
             }
+        },
+        {
+            'DIPR',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered RPID");
+
+
+                }
+            }
         }
     }
 };

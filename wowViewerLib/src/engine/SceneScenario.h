@@ -22,7 +22,6 @@ typedef std::shared_ptr<CameraMatrices> HCameraMatrices;
 
 
 struct CullStage {
-private:
 //Input:
     HCameraMatrices matricesForCulling;
     iInnerSceneApi* scene;
@@ -44,23 +43,11 @@ private:
 typedef std::shared_ptr<CullStage> HCullStage;
 
 struct UpdateStage {
-private:
 //input
     HCullStage cullResult;
     animTime_t delta;
 
-    mathfu::mat4 lookAtMat;
-//Output
-    std::vector<HGMesh> adtOpaqueMeshes;
-    std::vector<HGMesh> wmoOpaqueMeshes;
-
-    std::vector<HGMesh> projectionMeshes;
-
-    std::vector<HGMesh> m2OpaqueMeshes;
-    std::vector<HGMesh> skyBoxMeshes;
-    std::vector<HGMesh> areaMeshes;
-
-    std::vector<HGMesh> transparentMeshes;
+    HCameraMatrices cameraMatrices;
 };
 
 typedef std::shared_ptr<UpdateStage> HUpdateStage;
@@ -85,9 +72,10 @@ private:
 
     HDrawStage drawStage;
 public:
-    HCullStage addCullStage(CameraMatrices matricesForCulling, iInnerSceneApi* scene);
-    HUpdateStage addUpdateStage(HCullStage cullStage, animTime_t deltaTime, ICamera* camera);
+    HCullStage addCullStage(HCameraMatrices matricesForCulling, iInnerSceneApi* scene);
+    HUpdateStage addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate);
 
+    HDrawStage getDrawStage();
 };
 
 #endif //AWEBWOWVIEWERCPP_SCENESCENARIO_H
