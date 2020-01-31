@@ -72,23 +72,7 @@ public:
     void setAnimationId(int animationId) override {
     };
 
-
-    mathfu::vec4 getAmbientColor() override {
-//        if (m_wmoObject->isLoaded()) {
-//            return mathfu::vec4(m_wmoObject->getAmbientLight(), 0.0);
-//        } else
-//        return mathfu::vec4(0.0, 0.0, 0.0, 0.0);
-        return m_api->getGlobalAmbientColor();
-    };
-
-    bool getCameraSettings(M2CameraResult&) override {
-        return false;
-    }
-
-    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {
-
-    };
-
+    HDrawStage produceDrawStage(HUpdateStage updateStage) { return HDrawStage();};
     void cullExterior(WoWFrameData *frameData, int viewRenderOrder);
 };
 

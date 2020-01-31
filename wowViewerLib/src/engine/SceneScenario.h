@@ -5,6 +5,8 @@
 #ifndef AWEBWOWVIEWERCPP_SCENESCENARIO_H
 #define AWEBWOWVIEWERCPP_SCENESCENARIO_H
 
+class iInnerSceneApi;
+
 #include <vector>
 #include "../gapi/interface/meshes/IMesh.h"
 #include "objects/ViewsObjects.h"

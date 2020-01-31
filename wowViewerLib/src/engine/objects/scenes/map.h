@@ -99,13 +99,8 @@ public:
 
     void update(WoWFrameData *frameData) override;
     void updateBuffers(WoWFrameData *frameData) override;
-    mathfu::vec4 getAmbientColor() override {
-        return m_api->getGlobalAmbientColor();
-    };
-    bool getCameraSettings(M2CameraResult &cameraResult) override{
-        return false;
-    };
-    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
+
+    HDrawStage produceDrawStage(HUpdateStage updateStage) { return HDrawStage();};
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        std::vector<mathfu::vec3> &frustumPoints,

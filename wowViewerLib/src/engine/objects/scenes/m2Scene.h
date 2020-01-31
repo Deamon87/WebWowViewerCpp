@@ -60,10 +60,8 @@ public:
     void doPostLoad(WoWFrameData *frameData) override;
     void update(WoWFrameData *frameData) override;
     void updateBuffers(WoWFrameData *frameData) override {};
-    mathfu::vec4 getAmbientColor() override;
-    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override;
-    bool getCameraSettings(M2CameraResult &result) override ;
 
+    HDrawStage produceDrawStage(HUpdateStage updateStage) override {};
 };
 
 

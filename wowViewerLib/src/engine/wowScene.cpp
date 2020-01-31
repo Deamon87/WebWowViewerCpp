@@ -92,7 +92,7 @@ void WoWSceneImpl::DoCulling() {
 //        this->m_secondCamera.tick(frameParam->deltaTime);
 //    }
 
-    if ( currentScene->getCameraSettings(cameraResult)) {
+    if ( false /*currentScene->getCameraSettings(cameraResult)*/) {
 //        farPlane = cameraResult.far_clip * 100;
         farPlane = 300;
         nearPlane = cameraResult.near_clip;
