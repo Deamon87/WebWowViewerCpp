@@ -108,7 +108,7 @@ endif(LINK_GLEW)
 
 
 
-set(SOURCE_FILES src/engine/wowScene.cpp
+set(SOURCE_FILES
         src/engine/wowScene.h
         src/engine/shader/ShaderRuntimeData.cpp
         src/engine/shader/ShaderRuntimeData.h
@@ -154,7 +154,7 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/algorithms/grahamScan.cpp
         src/engine/algorithms/grahamScan.h
         src/engine/objects/iMapApi.h
-        src/engine/objects/iInnerSceneApi.h
+        src/engine/objects/iScene.h
         src/engine/objects/scenes/m2Scene.cpp
         src/engine/objects/scenes/m2Scene.h
 #        src/engine/objects/scenes/creatureScene.cpp
@@ -218,7 +218,23 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/skelFile.cpp
         src/engine/persistance/skelFile.h
         src/engine/algorithms/FrameCounter.cpp
-        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h src/engine/WowFilesCacheStorage.h src/engine/WowFilesCacheStorage.cpp src/engine/algorithms/quick-sort-omp.h src/include/databaseHandler.h src/engine/persistance/PersistentFile.h src/engine/SceneComposer.cpp src/engine/SceneComposer.h src/engine/SceneScenario.h src/gapi/interface/IFrameBuffer.h src/engine/SceneScenario.cpp)
+        src/engine/algorithms/FrameCounter.h
+        src/engine/objects/ViewsObjects.cpp
+        src/engine/objects/ViewsObjects.h
+        src/gapi/interface/sortLambda.h
+        src/gapi/interface/buffers/IUniformBufferChunk.h
+        src/gapi/interface/IDeviceUI.h
+        src/engine/WowFilesCacheStorage.h
+        src/engine/WowFilesCacheStorage.cpp
+        src/engine/algorithms/quick-sort-omp.h
+        src/include/databaseHandler.h
+        src/engine/persistance/PersistentFile.h
+        src/engine/SceneComposer.cpp
+        src/engine/SceneComposer.h
+        src/engine/SceneScenario.h
+        src/gapi/interface/IFrameBuffer.h
+        src/engine/SceneScenario.cpp
+        src/engine/DrawStage.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp

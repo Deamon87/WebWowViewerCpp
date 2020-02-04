@@ -5,9 +5,9 @@
 #ifndef AWEBWOWVIEWERCPP_NULLSCENE_H
 #define AWEBWOWVIEWERCPP_NULLSCENE_H
 
-#include "../iInnerSceneApi.h"
+#include "../iScene.h"
 
-class NullScene : public iInnerSceneApi {
+class NullScene : public IScene {
 public:
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setAnimationId(int animationId) override {};
@@ -18,8 +18,7 @@ public:
     void doPostLoad(WoWFrameData *frameData) override {};
     void update(WoWFrameData *frameData) override {};
     void updateBuffers(WoWFrameData *frameData) override {};
-    mathfu::vec4 getAmbientColor() override {return mathfu::vec4(1,1,1,1);};
-    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
-    bool getCameraSettings(M2CameraResult &cameraResult) override {return false;};
+
+    HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) override {return nullptr; };
 };
 #endif //AWEBWOWVIEWERCPP_NULLSCENE_H

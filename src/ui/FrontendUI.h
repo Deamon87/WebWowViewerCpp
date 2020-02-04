@@ -9,25 +9,26 @@
 #include "imguiLib/imgui.h"
 #include <fileBrowser/imfilebrowser.h>
 #include "../../wowViewerLib/src/include/database/dbStructs.h"
-#include "../../wowViewerLib/src/engine/objects/iInnerSceneApi.h"
+#include "../../wowViewerLib/src/engine/objects/iScene.h"
 
 
-class FrontendUI : public iInnerSceneApi {
+class FrontendUI : public IScene {
 //Implementation of iInnerSceneApi
 public:
     ~FrontendUI() override {};
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setAnimationId(int animationId) override {};
 
-    void checkCulling(WoWFrameData *frameData) override {};
+    HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) override {
+        return HDrawStage();
+    };
+
+    void checkCulling(HCullStage cullStage) override {};
     void collectMeshes(WoWFrameData *frameData) override;
 
     void doPostLoad(WoWFrameData *frameData) override {};
     void update(WoWFrameData *frameData) override {};
     void updateBuffers(WoWFrameData *frameData) override {};
-    mathfu::vec4 getAmbientColor() override {};
-    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
-    bool getCameraSettings(M2CameraResult &cameraResult) override {};
 
 private:
     std::function <bool(std::string cascPath)> openCascCallback = nullptr;

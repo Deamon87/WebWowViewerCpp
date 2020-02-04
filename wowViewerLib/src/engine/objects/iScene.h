@@ -7,19 +7,24 @@
 
 #include "mathfu/glsl_mappings.h"
 #include "../persistance/header/M2FileHeader.h"
+#include "../DrawStage.h"
 #include "wowFrameData.h"
 #include "../SceneScenario.h"
 
-
-class iInnerSceneApi {
+class IScene {
+private:
+    Config m_config;
 public:
-    virtual ~iInnerSceneApi() = default;
+    Config &getConfig() { return m_config; };
+
+    virtual ~IScene() = default;
     virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) = 0;
+
     virtual void setAnimationId(int animationId) = 0;
 
-    virtual HDrawStage produceDrawStage(HUpdateStage updateStage) = 0;
+    virtual HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) = 0;
 
-    virtual void checkCulling(WoWFrameData *frameData) = 0;
+    virtual void checkCulling(HCullStage cullStage) = 0;
     virtual void collectMeshes(WoWFrameData *frameData) = 0;
 
     virtual void doPostLoad(WoWFrameData *frameData) = 0;

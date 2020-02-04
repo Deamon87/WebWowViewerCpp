@@ -25,31 +25,31 @@ void initOGLPointers(){
 //#endif
 }
 
-IDevice *IDeviceFactory::createDevice(std::string gapiName, void * data) {
+std::shared_ptr<IDevice> IDeviceFactory::createDevice(std::string gapiName, void * data) {
 #ifdef LINK_OGL2
     if (gapiName == "ogl2") {
         initOGLPointers();
-        return new GDeviceGL20();
+        return std::make_shared<GDeviceGL20>();
     } else
 #endif
 
 #ifdef LINK_OGL3
     if (gapiName == "ogl3") {
         initOGLPointers();
-        return new GDeviceGL33();
+        return std::make_shared<GDeviceGL33>();
     } else
 #endif
 #ifdef LINK_OGL4
     if (gapiName == "ogl4") {
         initOGLPointers();
-//        return new GDeviceGL4x();
+//        return std::make_shared<GDeviceGL4x>();
     } else
 #endif
 
 
 #ifndef SKIP_VULKAN
     if (gapiName == "vulkan") {
-        return new GDeviceVLK((vkCallInitCallback *) data);
+        return std::make_shared<GDeviceVLK>((vkCallInitCallback *) data);
     } else
 #endif
     {}

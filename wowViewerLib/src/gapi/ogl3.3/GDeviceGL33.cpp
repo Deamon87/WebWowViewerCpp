@@ -867,12 +867,6 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         }
     }
 
-    for (auto &deviceUI : deviceUIs) {
-        for (auto &texture: deviceUI->requiredTextures) {
-            textures.push_back(texture);
-        }
-    }
-
     std::sort(textures.begin(), textures.end());
     textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
 
@@ -1012,11 +1006,6 @@ void GDeviceGL33::beginFrame() {
 }
 
 void GDeviceGL33::commitFrame() {
-    for (auto &deviceUI: deviceUIs) {
-        if (deviceUI != nullptr)
-            deviceUI->renderUI();
-    }
-
     //Release resources
     while ((!listOfDeallocators.empty())&&(listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
         listOfDeallocators.front().callback();

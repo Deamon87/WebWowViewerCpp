@@ -43,6 +43,7 @@
 #include "database/CSqliteDB.h"
 #include "../wowViewerLib/src/engine/WowFilesCacheStorage.h"
 #include "database/CSqliteDB.h"
+#include "../wowViewerLib/src/engine/SceneComposer.h"
 
 
 int mleft_pressed = 0;
@@ -387,8 +388,8 @@ int main(){
 //    processor->setFileRequester(storage);
 
     //Create device
-    IDevice * device = IDeviceFactory::createDevice(rendererName, &callback);
-    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
+    auto device = IDeviceFactory::createDevice(rendererName, &callback);
+//    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
     scene->setCacheStorage(storage);
 
@@ -501,6 +502,8 @@ int main(){
     glfwSetMouseButtonCallback( window, mouse_button_callback);
     glfwSwapInterval(0);
 
+    SceneComposer composer = SceneComposer(device);
+
 try {
     while (!glfwWindowShouldClose(window)) {
         frontendUI.newFrame();
@@ -528,14 +531,16 @@ try {
         auto *camera = scene->getCurrentCamera();
         auto *cameraDebug = scene->getCurrentCamera();
 
-        auto updateResult = scene->cull(camera)->update(camera);
-        SceneComposer::All({
-            updateResult->render(camera)->toFB(frameBuffer, viewPortDims),
-            updateResult->render(cameraDebug)->toFB(frameBuffer, viewPortDims);
-        }).then([]{
-            frontendUI.bind("", frameBuffer.getTexture())
-            SceneComposer.renderToScreen()
-        })
+        HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
+
+//        auto updateResult = scene->cull(camera)->update(camera);
+//        SceneComposer::All({
+//            updateResult->render(camera)->toFB(frameBuffer, viewPortDims),
+//            updateResult->render(cameraDebug)->toFB(frameBuffer, viewPortDims);
+//        }).then([]{
+//            frontendUI.bind("", frameBuffer.getTexture())
+//            SceneComposer.renderToScreen()
+//        });
 
 
 

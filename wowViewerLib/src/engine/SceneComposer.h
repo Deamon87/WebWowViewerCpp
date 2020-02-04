@@ -9,29 +9,36 @@
 #include <thread>
 #include "../include/iostuff.h"
 #include "../gapi/interface/IDevice.h"
+#include "SceneScenario.h"
 
 
 class SceneComposer {
+private:
+    HWoWFilesCacheStorage cacheStorage = nullptr;
 private:
     std::thread cullingThread;
     std::thread updateThread;
     std::thread loadingResourcesThread;
 
     bool m_supportThreads = true;
+    bool m_isTerminating = false;
 
-    std::unique_ptr<IDevice> m_gdevice;
+    std::shared_ptr<IDevice> m_gdevice;
 
     void DoCulling();
     void DoUpdate();
+    void processCaches(int limit);
 
     std::promise<float> nextDeltaTime = std::promise<float>();
     std::promise<float> nextDeltaTimeForUpdate;
     std::promise<bool> cullingFinished;
     std::promise<bool> updateFinished;
-public:
-    SceneComposer();
 
-    void draw(animTime_t deltaTime);
+    std::array<HFrameScenario, 4> m_frameScenarios;
+public:
+    SceneComposer(std::shared_ptr<IDevice> hDevice);
+
+    void draw(HFrameScenario frameScenario);
 };
 
 

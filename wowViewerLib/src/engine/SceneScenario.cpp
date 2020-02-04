@@ -4,7 +4,7 @@
 
 #include "SceneScenario.h"
 
-HCullStage FrameScenario::addCullStage(HCameraMatrices matricesForCulling, iInnerSceneApi *scene) {
+HCullStage FrameScenario::addCullStage(HCameraMatrices matricesForCulling, IScene *scene) {
     HCullStage newCullStage = std::make_shared<CullStage>();
     newCullStage->matricesForCulling = matricesForCulling;
     newCullStage->scene = scene;

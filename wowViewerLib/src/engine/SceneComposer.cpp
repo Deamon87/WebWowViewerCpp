@@ -5,8 +5,17 @@
 #include <iostream>
 #include <future>
 #include "SceneComposer.h"
+#include "algorithms/FrameCounter.h"
 
-SceneComposer::SceneComposer() {
+void SceneComposer::processCaches(int limit) {
+//    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
+//    std::cout << "this->adtObjectCache.m_cache.size() = " << this->adtObjectCache.m_cache.size()<< std::endl;
+    if (cacheStorage) {
+        cacheStorage->processCaches(limit);
+    }
+}
+
+SceneComposer::SceneComposer(std::shared_ptr<IDevice> hDevice) : m_gdevice(hDevice){
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
 #endif
@@ -42,8 +51,6 @@ SceneComposer::SceneComposer() {
                     //                std::cout << "update frame = " << getDevice()->getUpdateFrameNumber() << std::endl;
 
                     int currentFrame = m_gdevice->getCullingFrameNumber();
-                    WoWFrameData *frameParam = &m_FrameParams[currentFrame];
-                    frameParam->deltaTime = future.get();
                     nextDeltaTime = std::promise<float>();
 
                     frameCounter.beginMeasurement();
@@ -61,7 +68,7 @@ SceneComposer::SceneComposer() {
             }
         }));
 
-        if (device->getIsAsynBuffUploadSupported()) {
+        if (m_gdevice->getIsAsynBuffUploadSupported()) {
             updateThread = std::thread(([&]() {
                 try {
 
@@ -86,71 +93,79 @@ SceneComposer::SceneComposer() {
 }
 
 void SceneComposer::DoCulling() {
+    static const mathfu::vec3 upVector(0,0,1);
+    static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1, 0, 0, 0,
+                                                             0, -1, 0, 0,
+                                                             0, 0, 1.0/2.0, 1/2.0,
+                                                             0, 0, 0, 1).Transpose();
 
+    int currentFrame = m_gdevice->getCullingFrameNumber();
+    auto frameScenario = m_frameScenarios[currentFrame];
+
+    for (int i = 0; i < frameScenario->cullStages.size(); i++) {
+        auto cullStage = frameScenario->cullStages[i];
+        auto &config = cullStage->scene->getConfig();
+
+        float farPlane = config.getFarPlane();
+        float nearPlane = 1.0;
+        float fov = toRadian(45.0);
+
+        auto &perspectiveMatrix = cullStage->matricesForCulling->perspectiveMat;
+
+        if (m_gdevice->getIsVulkanAxisSystem()) {
+            perspectiveMatrix = vulkanMatrixFix * perspectiveMatrix;
+        }
+
+        cullStage->scene->checkCulling(cullStage);
+    }
 }
 
 void SceneComposer::DoUpdate() {
 
 }
 
-void SceneComposer::draw(animTime_t deltaTime) {
-    //Replace the scene
-    if (newScene != nullptr) {
-        if (currentScene != nullptr) delete currentScene;
-        for (int i = 0; i < 4; i++) {
-            m_FrameParams[i] = WoWFrameData();
-        }
-        getDevice()->shrinkData();
-
-        currentScene = newScene;
-        newScene = nullptr;
-    }
-
+void SceneComposer::draw(HFrameScenario frameScenario) {
     std::future<bool> cullingFuture;
     std::future<bool> updateFuture;
     if (m_supportThreads) {
         cullingFuture = cullingFinished.get_future();
 
-        nextDeltaTime.set_value(deltaTime);
-        if (getDevice()->getIsAsynBuffUploadSupported()) {
-            nextDeltaTimeForUpdate.set_value(deltaTime);
+        nextDeltaTime.set_value(0);
+        if (m_gdevice->getIsAsynBuffUploadSupported()) {
+            nextDeltaTimeForUpdate.set_value(0);
             updateFuture = updateFinished.get_future();
         }
     }
 
-    if (currentScene == nullptr) return;
+    if (frameScenario == nullptr) return;
 
-    if (needToDropCache) {
-        if (cacheStorage) {
-            cacheStorage->actuallDropCache();
-        }
-        needToDropCache = false;
-    }
+//    if (needToDropCache) {
+//        if (cacheStorage) {
+//            cacheStorage->actuallDropCache();
+//        }
+//        needToDropCache = false;
+//    }
 
 
-    IDevice *device = getDevice();
-    device->reset();
-    int currentFrame = device->getDrawFrameNumber();
-    WoWFrameData *frameParam = &m_FrameParams[currentFrame];
+
+    m_gdevice->reset();
+    int currentFrame = m_gdevice->getDrawFrameNumber();
+    auto thisFrameScenario = m_frameScenarios[currentFrame];
 
     if (!m_supportThreads) {
         processCaches(10);
-        frameParam->deltaTime = deltaTime;
         DoCulling();
     }
 
     float clearColor[4];
-    m_config->getClearColor(clearColor);
-    device->setClearScreenColor(clearColor[0], clearColor[1], clearColor[2]);
-    device->setViewPortDimensions(0,0,this->canvWidth, this->canvHeight);
-    device->beginFrame();
+    m_gdevice->beginFrame();
 
-    device->drawMeshes(frameParam->renderedThisFrame);
+    m_gdevice->drawStageAndDeps(thisFrameScenario->drawStage);
 
-    device->commitFrame();
-    device->reset();
+    m_gdevice->commitFrame();
+    m_gdevice->reset();
 
-    if (!device->getIsAsynBuffUploadSupported()) {
+    if (!m_gdevice->getIsAsynBuffUploadSupported()) {
         DoUpdate();
     }
 
@@ -159,12 +174,12 @@ void SceneComposer::draw(animTime_t deltaTime) {
         cullingFuture.wait();
         cullingFinished = std::promise<bool>();
 
-        if (device->getIsAsynBuffUploadSupported()) {
+        if (m_gdevice->getIsAsynBuffUploadSupported()) {
             updateFuture.wait();
             updateFinished = std::promise<bool>();
         }
     }
 
 
-    device->increaseFrameNumber();
+    m_gdevice->increaseFrameNumber();
 }

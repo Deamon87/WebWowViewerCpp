@@ -5,28 +5,38 @@
 #ifndef AWEBWOWVIEWERCPP_SCENESCENARIO_H
 #define AWEBWOWVIEWERCPP_SCENESCENARIO_H
 
+#include <memory>
+
+class IScene;
+struct CameraMatrices;
+struct CullStage;
+struct UpdateStage;
+
+typedef std::shared_ptr<CullStage> HCullStage;
+typedef std::shared_ptr<UpdateStage> HUpdateStage;
+
+
+
+
 #include <vector>
+#include "../gapi/interface/IDevice.h"
 #include "../gapi/interface/meshes/IMesh.h"
 #include "objects/ViewsObjects.h"
-#include "objects/iInnerSceneApi.h"
+#include "objects/iScene.h"
 #include "camera/CameraInterface.h"
 
 //Holds dependency graph for different scenes
 class FrameScenario;
 
-struct CameraMatrices {
-    mathfu::mat4 perspectiveMat;
-    mathfu::mat4 lookAtMat;
-};
-typedef std::shared_ptr<CameraMatrices> HCameraMatrices;
 
 
 struct CullStage {
 //Input:
     HCameraMatrices matricesForCulling;
-    iInnerSceneApi* scene;
+    IScene* scene;
 
 //Output:
+    int adtAreadId = -1;
 
     std::vector<WmoGroupResult> m_currentInteriorGroups = {};
     std::shared_ptr<WmoObject> m_currentWMO = nullptr;
@@ -40,7 +50,6 @@ struct CullStage {
     std::vector<std::shared_ptr<WmoObject>> wmoArray = {};
 };
 
-typedef std::shared_ptr<CullStage> HCullStage;
 
 struct UpdateStage {
 //input
@@ -50,32 +59,26 @@ struct UpdateStage {
     HCameraMatrices cameraMatrices;
 };
 
-typedef std::shared_ptr<UpdateStage> HUpdateStage;
 
-struct DrawStage;
-typedef std::shared_ptr<DrawStage> HDrawStage;
 
-struct DrawStage {
-    HCameraMatrices matricesForRendering;
-    std::vector<HDrawStage> drawStageDependencies;
 
-    std::vector<HGMesh> meshes;
 
-    HFrameBuffer target;
-};
-
+class SceneComposer;
 
 class FrameScenario {
+    friend class SceneComposer;
 private:
     std::vector<HCullStage> cullStages;
     std::vector<HUpdateStage> updateStages;
 
     HDrawStage drawStage;
 public:
-    HCullStage addCullStage(HCameraMatrices matricesForCulling, iInnerSceneApi* scene);
+    HCullStage addCullStage(HCameraMatrices matricesForCulling, IScene* scene);
     HUpdateStage addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate);
 
     HDrawStage getDrawStage();
 };
+
+typedef std::shared_ptr<FrameScenario> HFrameScenario;
 
 #endif //AWEBWOWVIEWERCPP_SCENESCENARIO_H
