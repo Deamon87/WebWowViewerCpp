@@ -44,6 +44,9 @@
 #include "../wowViewerLib/src/engine/WowFilesCacheStorage.h"
 #include "database/CSqliteDB.h"
 #include "../wowViewerLib/src/engine/SceneComposer.h"
+#include "../wowViewerLib/src/engine/camera/firstPersonCamera.h"
+#include "../wowViewerLib/src/engine/objects/scenes/map.h"
+#include "../wowViewerLib/src/engine/ApiContainer.h"
 
 
 int mleft_pressed = 0;
@@ -102,7 +105,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
-Config *testConf;
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (stopKeyboard) return;
@@ -159,10 +161,10 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
             case 'J':
                 scene->setAnimationId(0);
-                testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
+//                testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
                 break;
             case 'K':
-                testConf->setRenderPortals(!testConf->getRenderPortals());
+//                testConf->setRenderPortals(!testConf->getRenderPortals());
                 break;
             default:
                 break;
@@ -265,7 +267,6 @@ extern "C" void my_function_to_handle_aborts(int signal_number)
      */
 
     std::cout << "HELLO" << std::endl;
-    std::cout << "HELLO" << std::endl;
 }
 
 /*Do this early in your program's initialization */
@@ -307,21 +308,8 @@ int main(){
 
     signal(SIGABRT, &my_function_to_handle_aborts);
 
-    testConf = new Config();
-    testConf->setAmbientColor(1,1,1,1);
-//    testConf->setSunColor(1,1,1,1);
+
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-
-
-//    const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
-//    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
-    //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
-    //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
-    //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-//    RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
-//    processor->setThreaded(true);
-    RequestProcessor *processor = nullptr;
 
     glfwInit();
 
@@ -383,48 +371,69 @@ int main(){
     CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
 
 
-    WoWFilesCacheStorage *storage = nullptr;
-//    WoWFilesCacheStorage *storage = new WoWFilesCacheStorage(processor);
-//    processor->setFileRequester(storage);
+    ApiContainer apiContainer;
+    RequestProcessor *processor = nullptr;
+    {
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
+        //  HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
+        //  ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
+        //  MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
+          RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
+        //  CascRequestProcessor *processor = new CascRequestProcessor(filePath);
+        //  processor->setThreaded(true);
 
+        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+        processor->setFileRequester(apiContainer.cacheStorage.get());
+
+    }
     //Create device
-    auto device = IDeviceFactory::createDevice(rendererName, &callback);
-//    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
+    auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
+    SceneComposer sceneComposer = SceneComposer(hdevice, apiContainer.cacheStorage);
 
-    scene->setCacheStorage(storage);
+    std::shared_ptr<IScene> currentScene = nullptr;
+    FirstPersonCamera firstCamera;
+
+    apiContainer.databaseHandler = sqliteDB;
+    apiContainer.hDevice = hdevice;
+
+    //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
     FrontendUI frontendUI;
-    frontendUI.setOpenCascStorageCallback([&processor, &storage, &scene](std::string cascPath) -> bool {
+    frontendUI.setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
         CascRequestProcessor *newProcessor = nullptr;
-        WoWFilesCacheStorage *newStorage = nullptr;
+        std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
         try {
             newProcessor = new CascRequestProcessor(cascPath.c_str());
-            newStorage = new WoWFilesCacheStorage(newProcessor);
+            newStorage = std::make_shared<WoWFilesCacheStorage>(processor);
             newProcessor->setThreaded(true);
-            newProcessor->setFileRequester(newStorage);
+            newProcessor->setFileRequester(newStorage.get());
         } catch (...){
             delete newProcessor;
-            delete newStorage;
             return false;
         };
 
-        storage = newStorage;
+        apiContainer.cacheStorage = newStorage;
         processor = newProcessor;
 
-        scene->setCacheStorage(newStorage);
+        sceneComposer.setCacheStorage(newStorage);
 
         return true;
     });
-    frontendUI.setOpenSceneByfdidCallback([&scene, &storage](int mapId, int wdtFileId, float x, float y, float z) {
+    frontendUI.setOpenSceneByfdidCallback([&currentScene, &apiContainer, &firstCamera](int mapId, int wdtFileId, float x, float y, float z) {
 //        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
-        if (storage) {
+        if (apiContainer.cacheStorage) {
 //            storage->actuallDropCache();
         }
-        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
+
+        currentScene = std::make_shared<Map>(apiContainer, mapId, wdtFileId);
+        firstCamera.setCameraPos(x, y, z);
+//        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
-    frontendUI.setFarPlaneChangeCallback([&scene](float farPlane) -> void {
-        testConf->setFarPlane(farPlane);
-        testConf->setFarPlaneForCulling(farPlane+50);
+    frontendUI.setFarPlaneChangeCallback([&currentScene](float farPlane) -> void {
+        auto &conf = currentScene->getConfig();
+        conf.setFarPlane(farPlane);
+        conf.setFarPlaneForCulling(farPlane+50);
     });
     frontendUI.setSpeedCallback([&scene](float movementSpeed) -> void {
         testConf->setMovementSpeed(movementSpeed);
@@ -456,11 +465,11 @@ int main(){
         cameraY = currentCameraPos[1];
         cameraZ = currentCameraPos[2];
     });
-    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, &device, &scene](int wdtFileDataId) {
+    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, hdevice, &scene](int wdtFileDataId) {
         auto wdtFile = storage->getWdtFileCache()->getFileId(wdtFileDataId);
 
 
-        frontendUI.setFillAdtSelectionMinimap([&frontendUI, wdtFile, &storage, &device, &scene](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists) -> bool {
+        frontendUI.setFillAdtSelectionMinimap([&frontendUI, wdtFile, &storage, hdevice, &scene](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists) -> bool {
             if (wdtFile->getStatus() == FileStatus::FSRejected) {
                 wdtFileExists = false;
                 isWMOMap = false;
@@ -473,7 +482,7 @@ int main(){
                 for (int j = 0; j < 64; j++) {
                     if (wdtFile->mapFileDataIDs[i*64 + j].minimapTexture > 0) {
                         auto texture = storage->getTextureCache()->getFileId(wdtFile->mapFileDataIDs[i*64 + j].minimapTexture);
-                        minimap[i][j] = device->createBlpTexture(texture, false, false);
+                        minimap[i][j] = hdevice->createBlpTexture(texture, false, false);
                     } else {
                         minimap[i][j] = nullptr;
                     }
@@ -490,10 +499,9 @@ int main(){
 
     frontendUI.initImgui(window);
 
-    testConf->setDrawM2BB(false);
-    //testConf->setUsePortalCulling(false);
 
-    glfwSetWindowUserPointer(window, scene);
+
+//    glfwSetWindowUserPointer(window, scene);
     glfwSetKeyCallback(window, onKey);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetCursorPosCallback( window, cursor_position_callback);
@@ -501,8 +509,6 @@ int main(){
     glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback( window, mouse_button_callback);
     glfwSwapInterval(0);
-
-    SceneComposer composer = SceneComposer(device);
 
 try {
     while (!glfwWindowShouldClose(window)) {
@@ -528,10 +534,10 @@ try {
 
 //        scene->draw((deltaTime*(1000.0f))); //miliseconds
 
-        auto *camera = scene->getCurrentCamera();
-        auto *cameraDebug = scene->getCurrentCamera();
 
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
+
+
 
 //        auto updateResult = scene->cull(camera)->update(camera);
 //        SceneComposer::All({

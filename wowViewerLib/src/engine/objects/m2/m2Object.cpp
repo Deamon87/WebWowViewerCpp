@@ -1204,9 +1204,9 @@ void M2Object::createBoundingBoxMesh() {
     meshTemplate.element = DrawElementMode::TRIANGLES;
     meshTemplate.textureCount = 0;
 
-    HGUniformBufferChunk bbBlockVS = m_api->getDevice()->createUniformBufferChunk(sizeof(bbModelWideBlockVS));
+    HGUniformBufferChunk bbBlockVS = m_api->hDevice->createUniformBufferChunk(sizeof(bbModelWideBlockVS));
 
-    meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
     meshTemplate.ubo[1] = bbBlockVS;
     meshTemplate.ubo[2] = nullptr;
 
@@ -1301,15 +1301,15 @@ void M2Object::createMeshes() {
         for (int j = 0; j < material.textureCount; j++) {
             meshTemplate.texture[j] = material.textures[j];
         }
-        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[0] = nullptr;
         meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
-        meshTemplate.ubo[2] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshWideBlockVS));
+        meshTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(meshWideBlockVS));
 
         meshTemplate.ubo[3] = fragmentModelWideUniformBuffer;
-        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshWideBlockPS));
+        meshTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(meshWideBlockPS));
 
          //Make mesh
-        HGM2Mesh hmesh = m_api->getDevice()->createM2Mesh(meshTemplate);
+        HGM2Mesh hmesh = m_api->hDevice->createM2Mesh(meshTemplate);
         hmesh->setM2Object(this);
         hmesh->setLayer(textMaterial->materialLayer);
         hmesh->setPriorityPlane(textMaterial->priorityPlane);
@@ -1473,7 +1473,7 @@ mathfu::vec4 M2Object::getAmbientLight() {
             ;
     }
 
-    mathfu::vec4 ambientColor = m_api->getGlobalAmbientColor();
+    mathfu::vec4 ambientColor = m_api->getConfig()->getGlobalAmbientColor();
     if (m_modelAsScene) {
         ambientColor = mathfu::vec4(0,0,0,0);
         for (int i = 0; i < lights.size(); ++i) {

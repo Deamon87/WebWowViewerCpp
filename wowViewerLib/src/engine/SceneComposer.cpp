@@ -10,12 +10,12 @@
 void SceneComposer::processCaches(int limit) {
 //    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
 //    std::cout << "this->adtObjectCache.m_cache.size() = " << this->adtObjectCache.m_cache.size()<< std::endl;
-    if (cacheStorage) {
-        cacheStorage->processCaches(limit);
+    if (m_cacheStorage) {
+        m_cacheStorage->processCaches(limit);
     }
 }
 
-SceneComposer::SceneComposer(std::shared_ptr<IDevice> hDevice) : m_gdevice(hDevice){
+SceneComposer::SceneComposer(std::shared_ptr<IDevice> hDevice, HWoWFilesCacheStorage cacheStorage) : m_gdevice(hDevice), m_cacheStorage(cacheStorage){
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
 #endif

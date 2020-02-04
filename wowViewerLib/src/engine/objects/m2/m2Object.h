@@ -21,6 +21,7 @@
 
 #include "mathfu/internal/vector_4.h"
 #include "../../managers/CRibbonEmitter.h"
+#include "../../ApiContainer.h"
 
 class M2Object {
 public:
@@ -59,7 +60,7 @@ private:
     CAaBox aabb;
     CAaBox colissionAabb;
 
-    IWoWInnerApi *m_api = nullptr;
+    ApiContainer *m_api = nullptr;
 
     HM2Geom m_m2Geom = nullptr;
     HSkinGeom m_skinGeom = nullptr;

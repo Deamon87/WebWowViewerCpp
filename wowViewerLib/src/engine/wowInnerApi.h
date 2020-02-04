@@ -25,6 +25,7 @@ class IWoWInnerApi {
 public:
     virtual ~IWoWInnerApi() = default;
 
+    //WoWFilesCacheStorage
     virtual Cache<AdtFile>* getAdtGeomCache() = 0;
     virtual Cache<M2Geom>* getM2GeomCache() = 0;
     virtual Cache<SkinGeom>* getSkinGeomCache() = 0;
@@ -36,27 +37,16 @@ public:
     virtual Cache<WdtFile>* getWdtFileCache() = 0;
     virtual Cache<WdlFile>* getWdlFileCache() = 0;
 
-    virtual bool getIsDebugCamera() = 0;
-    virtual void drawCamera() = 0;
-
+    //Device
     virtual IDevice * getDevice()= 0;
-    virtual HGUniformBufferChunk getSceneWideUniformBuffer() = 0;
 
-    virtual mathfu::mat4& getViewMat() = 0;
-    virtual mathfu::vec4 getGlobalAmbientColor() = 0;
-    virtual mathfu::vec3 getGlobalSunDir() = 0;
-    virtual mathfu::vec4 getGlobalSunColor() = 0;
-    virtual mathfu::vec4 getGlobalFogColor() = 0;
-    virtual float getGlobalFogStart() = 0;
-    virtual float getGlobalFogEnd() = 0;
-    virtual mathfu::vec3 getViewUp() = 0;
-
+    //Config
     virtual Config *getConfig() = 0;
-
+    //DB
     virtual IClientDatabase *getDatabaseHandler() = 0;
 
-    virtual void setCameraPosition(float x, float y, float z) = 0;
-    virtual void setCameraOffset(float x, float y, float z) = 0;
+//    virtual void setCameraPosition(float x, float y, float z) = 0;
+//    virtual void setCameraOffset(float x, float y, float z) = 0;
 };
 
 #include "geometry/m2Geom.h"

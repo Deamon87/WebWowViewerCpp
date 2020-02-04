@@ -14,7 +14,7 @@
 
 class SceneComposer {
 private:
-    HWoWFilesCacheStorage cacheStorage = nullptr;
+    HWoWFilesCacheStorage m_cacheStorage = nullptr;
 private:
     std::thread cullingThread;
     std::thread updateThread;
@@ -36,7 +36,11 @@ private:
 
     std::array<HFrameScenario, 4> m_frameScenarios;
 public:
-    SceneComposer(std::shared_ptr<IDevice> hDevice);
+    SceneComposer(std::shared_ptr<IDevice> hDevice, HWoWFilesCacheStorage cacheStorage);
+    void setCacheStorage(HWoWFilesCacheStorage cacheStorage) {
+        m_cacheStorage = cacheStorage;
+    };
+
 
     void draw(HFrameScenario frameScenario);
 };

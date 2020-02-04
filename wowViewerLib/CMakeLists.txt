@@ -234,7 +234,7 @@ set(SOURCE_FILES
         src/engine/SceneScenario.h
         src/gapi/interface/IFrameBuffer.h
         src/engine/SceneScenario.cpp
-        src/engine/DrawStage.h)
+        src/engine/DrawStage.h src/engine/ApiContainer.cpp src/engine/ApiContainer.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp

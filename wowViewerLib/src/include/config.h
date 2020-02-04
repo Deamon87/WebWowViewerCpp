@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_CONFIG_H
 
 #include <string>
+#include <mathfu/glsl_mappings.h>
 
 class Config {
 
@@ -49,11 +50,11 @@ private:
     float farPlane = 1000;
     float farPlaneForCulling = 400;
 
-    float clearColor[4] = {0.117647, 0.207843, 0.392157, 0};
-    float ambientColor[4];
-    float sunColor[4];
-    float closeRiverColor[4] = {1,1,1,1};
-    float fogColor[4];
+    mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
+    mathfu::vec4 ambientColor;
+    mathfu::vec4 sunColor;
+    mathfu::vec4 closeRiverColor = {1,1,1,1};
+    mathfu::vec4 fogColor;
 
     std::string areaName;
 public:
