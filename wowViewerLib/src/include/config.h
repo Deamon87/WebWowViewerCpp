@@ -51,8 +51,15 @@ private:
     float farPlaneForCulling = 400;
 
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
-    mathfu::vec4 ambientColor;
-    mathfu::vec4 sunColor;
+
+    mathfu::vec4 exteriorAmbientColor;
+    mathfu::vec4 exteriorDirectColor;
+    mathfu::vec3 exteriorDirectColorDir;
+
+    mathfu::vec4 interiorAmbientColor;
+    mathfu::vec4 interiorSunColor;
+    mathfu::vec3 interiorSunDir;
+
     mathfu::vec4 closeRiverColor = {1,1,1,1};
     mathfu::vec4 fogColor;
 
@@ -214,38 +221,39 @@ public:
         clearColor[3] = a;
     }
 
-    void getClearColor(float *clearC){
-        clearC[0] = clearColor[0];
-        clearC[1] = clearColor[1];
-        clearC[2] = clearColor[2];
-        clearC[3] = clearColor[3];
+    mathfu::vec4 getClearColor(){
+        return clearColor;
     }
-    void setAmbientColor(float r, float g, float b, float a) {
-        ambientColor[0] = r;
-        ambientColor[1] = g;
-        ambientColor[2] = b;
-        ambientColor[3] = a;
+    void setExteriorAmbientColor(float r, float g, float b, float a) {
+        exteriorAmbientColor[0] = r;
+        exteriorAmbientColor[1] = g;
+        exteriorAmbientColor[2] = b;
+        exteriorAmbientColor[3] = a;
     }
 
-    void getAmbientColor(float *ambient){
-        ambient[0] = ambientColor[0];
-        ambient[1] = ambientColor[1];
-        ambient[2] = ambientColor[2];
-        ambient[3] = ambientColor[3];
+    mathfu::vec4 getExteriorAmbientColor(){
+        return exteriorAmbientColor;
     }
 
-    void setSunColor(float r, float g, float b, float a) {
-        sunColor[0] = r;
-        sunColor[1] = g;
-        sunColor[2] = b;
-        sunColor[3] = a;
+    void setExteriorDirectColor(float r, float g, float b, float a) {
+        exteriorDirectColor[0] = r;
+        exteriorDirectColor[1] = g;
+        exteriorDirectColor[2] = b;
+        exteriorDirectColor[3] = a;
     }
 
-    void getSunColor(float *aSunColor){
-        aSunColor[0] = sunColor[0];
-        aSunColor[1] = sunColor[1];
-        aSunColor[2] = sunColor[2];
-        aSunColor[3] = sunColor[3];
+    mathfu::vec4 getExteriorDirectColor(){
+        return exteriorDirectColor;
+    }
+
+    void setExteriorDirectColorDir(float x, float y, float z) {
+        exteriorDirectColorDir[0] = x;
+        exteriorDirectColorDir[1] = y;
+        exteriorDirectColorDir[2] = z;
+    }
+
+    mathfu::vec3 getExteriorDirectColorDir(){
+        return exteriorDirectColorDir;
     }
 
     void setCloseRiverColor(float r, float g, float b, float a) {
@@ -255,11 +263,8 @@ public:
         closeRiverColor[3] = a;
     }
 
-    void getCloseRiverColor(float *aCloseRiverColor){
-        aCloseRiverColor[0] = closeRiverColor[0];
-        aCloseRiverColor[1] = closeRiverColor[1];
-        aCloseRiverColor[2] = closeRiverColor[2];
-        aCloseRiverColor[3] = closeRiverColor[3];
+    mathfu::vec4 getCloseRiverColor(){
+        return closeRiverColor;
     }
 
     void setFogColor(float r, float g, float b, float a) {
@@ -269,11 +274,8 @@ public:
         fogColor[3] = a;
     }
 
-    void getFogColor(float *aFogColor){
-        aFogColor[0] = fogColor[0];
-        aFogColor[1] = fogColor[1];
-        aFogColor[2] = fogColor[2];
-        aFogColor[3] = fogColor[3];
+    mathfu::vec4 getFogColor(){
+        return fogColor;
     }
 
     void setAreaName(std::string a) {

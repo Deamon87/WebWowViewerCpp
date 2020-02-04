@@ -14,7 +14,6 @@ class M2Object;
 #include <set>
 
 #include "../../persistance/header/adtFileHeader.h"
-#include "../../wowInnerApi.h"
 
 #include "../../persistance/adtFile.h"
 #include "../../persistance/wdtFile.h"
@@ -26,8 +25,8 @@ class M2Object;
 
 class AdtObject {
 public:
-    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
-    AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
+    AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
+    AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
     ~AdtObject() = default;
 
     void setMapApi(IMapApi *api) {
@@ -79,7 +78,7 @@ private:
     void createMeshes();
     void loadAlphaTextures();
 
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
     IMapApi *m_mapApi;
     HWdtFile m_wdtFile= nullptr;
 

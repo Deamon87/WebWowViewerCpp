@@ -409,7 +409,7 @@ int M2Geom::findAnimationIndex(uint32_t anim_id) {
     }
 }
 
-void M2Geom::loadLowPriority(IWoWInnerApi *m_api, uint32_t animationId, uint32_t variationId) {
+void M2Geom::loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t variationId) {
     int animationIndex = findAnimationIndex(animationId);
     if (animationIndex < 0) return;
 
@@ -438,12 +438,12 @@ void M2Geom::loadLowPriority(IWoWInnerApi *m_api, uint32_t animationId, uint32_t
     }
     std::shared_ptr<AnimFile> animFile = nullptr;
     if (animationFileDataId != 0) {
-        animFile = m_api->getAnimCache()->getFileId(animationFileDataId);
+        animFile = m_api->cacheStorage->getAnimCache()->getFileId(animationFileDataId);
     } else if (!useFileId) {
         char buffer[1024];
         std::snprintf(buffer, 1024, "%s%04d-%02d.anim", m_nameTemplate.c_str(), animationId, variationId);
 
-        animFile = m_api->getAnimCache()->get(buffer);
+        animFile = m_api->cacheStorage->getAnimCache()->get(buffer);
     }
     if (animFile == nullptr) return;
 

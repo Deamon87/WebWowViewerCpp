@@ -9,7 +9,7 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "mathfu/glsl_mappings.h"
 
-AnimationManager::AnimationManager(IWoWInnerApi *api, HM2Geom m2Geom) {
+AnimationManager::AnimationManager(ApiContainer *api, HM2Geom m2Geom) {
     this->m_api = api;
     this->m_m2Geom = m2Geom;
     this->m_m2File = m2Geom->getM2Data();

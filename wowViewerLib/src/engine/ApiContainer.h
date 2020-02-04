@@ -5,6 +5,7 @@
 #ifndef AWEBWOWVIEWERCPP_APICONTAINER_H
 #define AWEBWOWVIEWERCPP_APICONTAINER_H
 
+class ApiContainer;
 
 #include "WowFilesCacheStorage.h"
 

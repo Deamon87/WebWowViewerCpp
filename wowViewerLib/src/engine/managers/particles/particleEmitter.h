@@ -5,16 +5,19 @@
 #ifndef WEBWOWVIEWERCPP_PARTICLEEMITTER_H
 #define WEBWOWVIEWERCPP_PARTICLEEMITTER_H
 
+class ParticleEmitter;
+
 #include <cstdlib>
 #include <vector>
 #include <random>
 #include <array>
 //#include <strings.h>
 #include "../../persistance/header/M2FileHeader.h"
-#include "../../wowInnerApi.h"
 #include "../../algorithms/mathHelper.h"
 #include "generators/CParticleGenerator.h"
 #include "../../../gapi/interface/IDevice.h"
+#include "../../ApiContainer.h"
+#include "../../objects/m2/m2Object.h"
 
 struct ParticleForces {
     mathfu::vec3 drift; // 0
@@ -37,7 +40,7 @@ struct ParticleBuffStructQuad {
 
 class ParticleEmitter {
 public:
-    ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object);
+    ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Object *m2Object);
     ~ParticleEmitter() {
         delete generator;
     }
@@ -57,7 +60,7 @@ public:
     static float RandTable[128];
     static bool randTableInited;
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
 
     M2Particle *m_data;
     M2Object *m2Object;

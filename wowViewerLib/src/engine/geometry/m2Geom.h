@@ -11,7 +11,7 @@
 #include "../persistance/animFile.h"
 #include "../../gapi/interface/IDevice.h"
 #include "../persistance/helper/ChunkFileReader.h"
-#include "../wowInnerApi.h"
+#include "../ApiContainer.h"
 
 
 class M2Geom : public PersistentFile {
@@ -34,7 +34,7 @@ public:
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
 
     int findAnimationIndex(uint32_t anim_id);
-    void loadLowPriority(IWoWInnerApi *m_api, uint32_t animationId, uint32_t subAnimationId);
+    void loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t subAnimationId);
 
     M2Data * getM2Data(){ if (fsStatus == FileStatus::FSLoaded) {return m_m2Data;} else {return nullptr;}};
 

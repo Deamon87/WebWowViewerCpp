@@ -181,7 +181,7 @@ void AdtObject::loadWater() {
                 if (basetextureFDID == 0) {
                     if (liquidInstance.liquid_object_or_lvf > 42) {
                         std::vector<LiquidMat> liqMats;
-                        m_api->getDatabaseHandler()->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liqMats);
+                        m_api->databaseHandler->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liqMats);
                         for (auto &liqMat : liqMats) {
                             if (liqMat.FileDataId != 0) {
                                 basetextureFDID = liqMat.FileDataId;
@@ -193,7 +193,7 @@ void AdtObject::loadWater() {
                         }
                     } else {
                         std::vector<int> fileDataIds;
-                        m_api->getDatabaseHandler()->getLiquidTypeData(liquidInstance.liquid_type, fileDataIds);
+                        m_api->databaseHandler->getLiquidTypeData(liquidInstance.liquid_type, fileDataIds);
                         for (auto fdid: fileDataIds) {
                             if (fdid != 0) {
                                 basetextureFDID = fdid;
@@ -251,7 +251,7 @@ void AdtObject::loadWater() {
         }
     }
 
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
 
     waterIBO = device->createIndexBuffer();
     waterIBO->uploadData(
@@ -277,7 +277,7 @@ void AdtObject::loadWater() {
 
 
 //Create mesh(es)
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("adtWater", nullptr);
+    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("adtWater", nullptr);
 
     gMeshTemplate meshTemplate(vertexWaterBufferBindings, shaderPermutation);
 
@@ -291,13 +291,13 @@ void AdtObject::loadWater() {
     meshTemplate.textureCount = 1;
     if (basetextureFDID != 0) {
 
-        auto htext = m_api->getTextureCache()->getFileId(basetextureFDID);
-        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(htext, true, true);
+        auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);
+        meshTemplate.texture[0] = m_api->hDevice->createBlpTexture(htext, true, true);
     } else {
-        meshTemplate.texture[0] = m_api->getDevice()->getBlackTexturePixel();
+        meshTemplate.texture[0] = m_api->hDevice->getBlackTexturePixel();
     }
 
-    meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
     meshTemplate.ubo[1] = nullptr;
     meshTemplate.ubo[2] = nullptr;
 
@@ -311,15 +311,15 @@ void AdtObject::loadWater() {
     auto l_liquidType = 0;
     meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color](IUniformBufferChunk* self) -> void {
 //        int (&waterType)[4] = self->getObject<int[4]>();
-        float closeRiverColor[4];
-        this->m_api->getConfig()->getCloseRiverColor(closeRiverColor);
+
+        mathfu::vec4 closeRiverColor = this->m_api->getConfig()->getCloseRiverColor();
         mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
 
-        color_ = mathfu::vec4(closeRiverColor[0], closeRiverColor[1], closeRiverColor[2], 0.7);
+        color_ = mathfu::vec4(closeRiverColor.xyz(), 0.7);
     });
 
 
-    waterMesh = m_api->getDevice()->createMesh(meshTemplate);
+    waterMesh = m_api->hDevice->createMesh(meshTemplate);
 
 
 }
@@ -415,7 +415,7 @@ void AdtObject::createVBO() {
     }
 
     /* 1.3 Make combinedVbo */
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
     combinedVbo = device->createVertexBuffer();
     combinedVbo->uploadData(vboArray.data(), vboArray.size()*sizeof(float));
 
@@ -507,12 +507,12 @@ void AdtObject::calcBoundingBoxes() {
 }
 
 void AdtObject::createMeshes() {
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
 
     auto adtFileTex = m_adtFileTex;
     auto adtFile = m_adtFile;
 
-    adtWideBlockPS = m_api->getDevice()->createUniformBufferChunk(sizeof(adtModelWideBlockPS));
+    adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(adtModelWideBlockPS));
 
     auto api = m_api;
     adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self){
@@ -545,11 +545,11 @@ void AdtObject::createMeshes() {
         aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
         aTemplate.element = DrawElementMode::TRIANGLES;
 
-        aTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        aTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
         aTemplate.ubo[1] = nullptr;
-        aTemplate.ubo[2] = m_api->getDevice()->createUniformBufferChunk(sizeof(adtMeshWideBlockVS));
+        aTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(adtMeshWideBlockVS));
         aTemplate.ubo[3] = adtWideBlockPS;
-        aTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(adtMeshWideBlockPS));
+        aTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(adtMeshWideBlockPS));
 
         aTemplate.textureCount = 9;
 
@@ -637,7 +637,7 @@ void AdtObject::loadAlphaTextures() {
 
     int createdThisRun = 0;
     for (int i = 0; i < chunkCount; i++) {
-        HGTexture alphaTexture = m_api->getDevice()->createTexture();
+        HGTexture alphaTexture = m_api->hDevice->createTexture();
         std::vector<uint8_t> alphaTextureData;
         m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData);
 
@@ -760,13 +760,13 @@ HGTexture AdtObject::getAdtTexture(int textureId) {
     HBlpTexture texture;
     if (m_adtFileTex->textureNames.size() != 0) {
         std::string &materialTexture = m_adtFileTex->textureNames[textureId];
-        texture = m_api->getTextureCache()->get(materialTexture);
+        texture = m_api->cacheStorage->getTextureCache()->get(materialTexture);
     } else if (textureId < m_adtFileTex->mdid_len) {
         uint32_t filedataId = m_adtFileTex->mdid[textureId];
-        texture = m_api->getTextureCache()->getFileId(filedataId);
+        texture = m_api->cacheStorage->getTextureCache()->getFileId(filedataId);
     }
 
-    HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
+    HGTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     m_requestedTextures[textureId] = h_gblpTexture;
 
     return h_gblpTexture;
@@ -783,13 +783,13 @@ HGTexture AdtObject::getAdtHeightTexture(int textureId) {
         std::string &materialTexture = m_adtFileTex->textureNames[textureId];
         std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_h.blp";
 
-        texture = m_api->getTextureCache()->get(matHeightText);
+        texture = m_api->cacheStorage->getTextureCache()->get(matHeightText);
     } else if (textureId < m_adtFileTex->mhid_len) {
         uint32_t filedataId = m_adtFileTex->mhid[textureId];
-        texture = m_api->getTextureCache()->getFileId(filedataId);
+        texture = m_api->cacheStorage->getTextureCache()->getFileId(filedataId);
     }
 
-    HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
+    HGTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     m_requestedTexturesHeight[textureId] = h_gblpTexture;
 
     return h_gblpTexture;
@@ -805,8 +805,8 @@ HGTexture AdtObject::getAdtSpecularTexture(int textureId) {
 
     std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_s.blp";
 
-    HBlpTexture texture = m_api->getTextureCache()->get(matHeightText);
-    HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
+    HBlpTexture texture = m_api->cacheStorage->getTextureCache()->get(matHeightText);
+    HGTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     m_requestedTexturesSpec[textureId] = h_gblpTexture;
 
     return h_gblpTexture;
@@ -1090,7 +1090,7 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
     return atLeastOneIsDrawn;
 }
 
-AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(), adt_x(adt_x), adt_y(adt_y){
+AdtObject::AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(), adt_x(adt_x), adt_y(adt_y){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);
@@ -1099,21 +1099,23 @@ AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::strin
 
     m_wdtFile = wdtFile;
 
-    m_adtFile = m_api->getAdtGeomCache()->get(adtFileTemplate+".adt");
-    m_adtFile->setIsMain(true);
-    m_adtFileTex = m_api->getAdtGeomCache()->get(adtFileTemplate+"_tex"+std::to_string(0)+".adt");
-    m_adtFileObj = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt");
-    m_adtFileObjLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(1)+".adt");
-    m_adtFileLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_lod.adt");
+    auto adtGeomCache = m_api->cacheStorage->getAdtGeomCache();
 
-    lodDiffuseTexture = m_api->getTextureCache()->get("world/maptextures/"+mapname+"/"
+    m_adtFile =         adtGeomCache->get(adtFileTemplate+".adt");
+    m_adtFile->setIsMain(true);
+    m_adtFileTex =      adtGeomCache->get(adtFileTemplate+"_tex"+std::to_string(0)+".adt");
+    m_adtFileObj =      adtGeomCache->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt");
+    m_adtFileObjLod =   adtGeomCache->get(adtFileTemplate+"_obj"+std::to_string(1)+".adt");
+    m_adtFileLod =      adtGeomCache->get(adtFileTemplate+"_lod.adt");
+
+    lodDiffuseTexture = m_api->cacheStorage->getTextureCache()->get("world/maptextures/"+mapname+"/"
         +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+".blp");
-    lodNormalTexture = m_api->getTextureCache()->get("world/maptextures/"+mapname+"/"
+    lodNormalTexture = m_api->cacheStorage->getTextureCache()->get("world/maptextures/"+mapname+"/"
         +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+"_n.blp");
 
 }
 
-AdtObject::AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile): adt_x(adt_x), adt_y(adt_y) {
+AdtObject::AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile): adt_x(adt_x), adt_y(adt_y) {
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);
@@ -1121,19 +1123,19 @@ AdtObject::AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDa
 
     m_wdtFile = wdtFile;
 
-    m_adtFile = m_api->getAdtGeomCache()->getFileId(fileDataIDs.rootADT);
+    m_adtFile = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.rootADT);
     m_adtFile->setIsMain(true);
-    m_adtFileTex = m_api->getAdtGeomCache()->getFileId(fileDataIDs.tex0ADT);
-    m_adtFileObj = m_api->getAdtGeomCache()->getFileId(fileDataIDs.obj0ADT);
-    m_adtFileObjLod = m_api->getAdtGeomCache()->getFileId(fileDataIDs.obj1ADT);
+    m_adtFileTex = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.tex0ADT);
+    m_adtFileObj = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.obj0ADT);
+    m_adtFileObjLod = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.obj1ADT);
     if (fileDataIDs.lodADT != 0) {
-        m_adtFileLod = m_api->getAdtGeomCache()->getFileId(fileDataIDs.lodADT);
+        m_adtFileLod = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.lodADT);
     } else {
         m_adtFileLod = nullptr;
     }
 
-    lodDiffuseTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTexture);
-    lodNormalTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTextureN);
+    lodDiffuseTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataIDs.mapTexture);
+    lodNormalTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataIDs.mapTextureN);
 }
 
 int AdtObject::getAreaId(int mcnk_x, int mcnk_y) {

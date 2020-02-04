@@ -789,7 +789,7 @@ void M2Object::startLoading() {
     if (!m_loading) {
         m_loading = true;
 
-        Cache<M2Geom> *m2GeomCache = m_api->getM2GeomCache();
+        Cache<M2Geom> *m2GeomCache = m_api->cacheStorage->getM2GeomCache();
         if (!useFileId) {
             m_m2Geom = m2GeomCache->get(m_modelName);
         } else {
@@ -866,7 +866,7 @@ bool M2Object::doPostLoad(){
 
     //2. Check if .skin file is loaded
     if (m_skinGeom == nullptr) {
-        Cache<SkinGeom> *skinGeomCache = m_api->getSkinGeomCache();
+        Cache<SkinGeom> *skinGeomCache = m_api->cacheStorage->getSkinGeomCache();
         if (m_m2Geom->skinFileDataIDs.size() > 0) {
             assert(m_m2Geom->skinFileDataIDs.size() > 0);
             m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
@@ -880,7 +880,7 @@ bool M2Object::doPostLoad(){
     if (m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
     if (m_m2Geom->m_skid > 0) {
         if (m_skelGeom == nullptr) {
-            auto skelCache = m_api->getSkelCache();
+            auto skelCache = m_api->cacheStorage->getSkelCache();
             m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
             return false;
         }
@@ -1188,9 +1188,9 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int materialIndex) {
 void M2Object::createBoundingBoxMesh() {
     return;
     //Create bounding box mesh
-    HGShaderPermutation boundingBoxshaderPermutation = m_api->getDevice()->getShader("drawBBShader", nullptr);
+    HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", nullptr);
 
-    gMeshTemplate meshTemplate(m_api->getDevice()->getBBVertexBinding(), boundingBoxshaderPermutation);
+    gMeshTemplate meshTemplate(m_api->hDevice->getBBVertexBinding(), boundingBoxshaderPermutation);
 
     meshTemplate.depthWrite = false;
     meshTemplate.depthCulling = true;
@@ -1237,9 +1237,9 @@ void M2Object::createBoundingBoxMesh() {
 
 //    bbBlockVS->save(true);
 
-    boundingBoxMesh = m_api->getDevice()->createMesh(meshTemplate);
+    boundingBoxMesh = m_api->hDevice->createMesh(meshTemplate);
 
-    occlusionQuery = m_api->getDevice()->createQuery(boundingBoxMesh);
+    occlusionQuery = m_api->hDevice->createQuery(boundingBoxMesh);
 
 }
 
@@ -1278,7 +1278,7 @@ void M2Object::createMeshes() {
         } else {
             cacheRecord.boneInfluences = mesh->boneCount > 0 ? 1 : 0;
         }
-        HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2Shader", &cacheRecord);
+        HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("m2Shader", &cacheRecord);
         gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
 
         int renderFlagIndex = textMaterial->materialIndex;
@@ -1473,7 +1473,7 @@ mathfu::vec4 M2Object::getAmbientLight() {
             ;
     }
 
-    mathfu::vec4 ambientColor = m_api->getConfig()->getGlobalAmbientColor();
+    mathfu::vec4 ambientColor = m_api->getConfig()->getExteriorAmbientColor();
     if (m_modelAsScene) {
         ambientColor = mathfu::vec4(0,0,0,0);
         for (int i = 0; i < lights.size(); ++i) {
@@ -1493,7 +1493,7 @@ mathfu::vec3 M2Object::getSunDir() {
         return mathfu::vec3(m_sunDirOverride.x, m_sunDirOverride.y, m_sunDirOverride.z);
     }
 
-    return m_api->getGlobalSunDir();
+    return m_api->getConfig()->getExteriorDirectColorDir();
 }
 void M2Object::getAvailableAnimation(std::vector<int> &allAnimationList) {
     allAnimationList.reserve(m_m2Geom->m_m2Data->sequences.size);
@@ -1548,7 +1548,7 @@ HGTexture M2Object::getTexture(int textureInd) {
     if (blpData == nullptr)
         return nullptr;
 
-    HGTexture hgTexture = m_api->getDevice()->createBlpTexture(
+    HGTexture hgTexture = m_api->hDevice->createBlpTexture(
         blpData,
         (textureDefinition->flags & 1) > 0,
         (textureDefinition->flags & 2) > 0
@@ -1559,7 +1559,7 @@ HGTexture M2Object::getTexture(int textureInd) {
 
 HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
     M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
-    auto textureCache = m_api->getTextureCache();
+    auto textureCache = m_api->cacheStorage->getTextureCache();
     HBlpTexture texture;
     if (textureDefinition->filename.size > 0) {
         std::string fileName = textureDefinition->filename.toString();
@@ -1577,7 +1577,7 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
 }
 
 void M2Object::createVertexBindings() {
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
 
     //2. Create buffer binding and fill it
     bufferBindings = m_m2Geom->getVAO(*device, m_skinGeom.get());
@@ -1603,13 +1603,15 @@ void M2Object::createVertexBindings() {
         if (m_useLocalDiffuseColor == 1) {
             localDiffuse = m_localDiffuseColorV;
         } else {
-            localDiffuse = m_api->getGlobalSunColor();
+            localDiffuse = m_api->getConfig()->getExteriorDirectColor();
         }
 
         modelWideBlockPS &blockPS = self->getObject<modelWideBlockPS>();
         blockPS.uAmbientLight = ambientLight;
-        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
-        blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(getSunDir(), m_api->getGlobalFogStart()));
-        blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
+
+        //TODO: move this calculation to camera
+//        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
+//        blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(getSunDir(), m_api->getGlobalFogStart()));
+//        blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));
     });
 }

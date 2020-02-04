@@ -12,11 +12,7 @@
 #include "../SceneScenario.h"
 
 class IScene {
-private:
-    Config m_config;
 public:
-    Config &getConfig() { return m_config; };
-
     virtual ~IScene() = default;
     virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) = 0;
 

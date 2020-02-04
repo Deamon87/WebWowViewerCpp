@@ -5,10 +5,10 @@
 #ifndef WOWVIEWERLIB_M2OBJECT_H
 #define WOWVIEWERLIB_M2OBJECT_H
 
+class M2Object;
 
 #include <cstdint>
 #include "mathfu/glsl_mappings.h"
-#include "../../wowInnerApi.h"
 #include "../../managers/particles/particleEmitter.h"
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../../geometry/m2Geom.h"
@@ -25,7 +25,7 @@
 
 class M2Object {
 public:
-    M2Object(IWoWInnerApi *api, bool isSkybox = false) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox) {}
+    M2Object(ApiContainer *api, bool isSkybox = false) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox) {}
 
     ~M2Object();
 

@@ -5,6 +5,9 @@
 #ifndef AWEBWOWVIEWERCPP_WOWFILESCACHESTORAGE_H
 #define AWEBWOWVIEWERCPP_WOWFILESCACHESTORAGE_H
 
+class WoWFilesCacheStorage;
+typedef std::shared_ptr<WoWFilesCacheStorage> HWoWFilesCacheStorage;
+
 #include <memory>
 #include "../include/iostuff.h"
 #include "../gapi/interface/IDevice.h"
@@ -52,5 +55,6 @@ public:
     Cache<WdlFile>* getWdlFileCache();
 };
 
-typedef std::shared_ptr<WoWFilesCacheStorage> HWoWFilesCacheStorage;
+
+
 #endif //AWEBWOWVIEWERCPP_WOWFILESCACHESTORAGE_H
