@@ -14,6 +14,8 @@
 struct sceneWideBlockVSPS {
     mathfu::mat4 uLookAtMat;
     mathfu::mat4 uPMatrix;
+    mathfu::vec4_packed uViewUp;
+    mathfu::vec4_packed uInteriorSunDir;
 };
 
 
@@ -35,7 +37,7 @@ struct meshWideBlockVS {
 
 //M2 Pixel buffer formats
 struct modelWideBlockPS {
-    mathfu::vec4_packed uViewUp;
+
     mathfu::vec4_packed uSunDirAndFogStart;
     mathfu::vec4_packed uSunColorAndFogEnd;
     mathfu::vec4_packed uAmbientLight;
