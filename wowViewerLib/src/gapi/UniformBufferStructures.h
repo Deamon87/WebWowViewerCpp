@@ -3,7 +3,7 @@
 //
 
 #ifndef AWEBWOWVIEWERCPP_UNIFORMBUFFERSTRUCTURES_H
-#define AWEBWOWVIEWERCPP_UNIFORMBUFFERSTRUCTURES_H
+#def  ine AWEBWOWVIEWERCPP_UNIFORMBUFFERSTRUCTURES_H
 
 //Uniform buffer structures
 #include <mathfu/glsl_mappings.h>
@@ -18,6 +18,16 @@ struct sceneWideBlockVSPS {
     mathfu::vec4_packed uInteriorSunDir;
 };
 
+
+struct exteriorLightParams {
+    mathfu::vec4_packed uExteriorAmbientColor;
+    mathfu::vec4_packed uExteriorDirectColor;
+    mathfu::vec4_packed uExteriorDirectColorDir;
+};
+
+struct interiorLightParams {
+    mathfu::vec4_packed uInteriorAmbientColor;
+};
 
 //M2 Vertex buffer formats
 struct modelWideBlockVS {
@@ -37,10 +47,7 @@ struct meshWideBlockVS {
 
 //M2 Pixel buffer formats
 struct modelWideBlockPS {
-
-    mathfu::vec4_packed uSunDirAndFogStart;
-    mathfu::vec4_packed uSunColorAndFogEnd;
-    mathfu::vec4_packed uAmbientLight;
+    mathfu::vec4_packed uFogStartAndFogEnd;
 };
 
 struct LocalLight
@@ -74,11 +81,7 @@ struct wmoMeshWideBlockVS {
 
 struct wmoMeshWideBlockPS {
 //    PACK({struct
-    mathfu::vec4_packed uViewUp;
-    mathfu::vec4_packed uSunDir_FogStart;
-    mathfu::vec4_packed uSunColor_uFogEnd;
-    mathfu::vec4_packed uAmbientLight;
-    mathfu::vec4_packed uAmbientLight2AndIsBatchA;
+    mathfu::vec4_packed uFogStartAndFogEndAndIsBatchA;
     int UseLitColor;
     int EnableAlpha;
     int PixelShader;
@@ -94,11 +97,8 @@ struct adtMeshWideBlockVS {
 };
 
 struct adtModelWideBlockPS {
-    mathfu::vec4_packed uViewUp;
-    mathfu::vec4_packed uSunDir_FogStart;
-    mathfu::vec4_packed uSunColor_uFogEnd;
-    mathfu::vec4_packed uAmbientLight;
-    mathfu::vec4_packed FogColor;
+    mathfu::vec4_packed uFogStartAndFogEnd;
+    mathfu::vec4_packed uFogColor;
 };
 
 struct adtMeshWideBlockPS {

@@ -517,7 +517,6 @@ void AdtObject::createMeshes() {
     auto api = m_api;
     adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self){
         auto *adtWideblockPS = &self->getObject<adtModelWideBlockPS>();
-        adtWideblockPS->uViewUp = mathfu::vec4_packed(mathfu::vec4(api->getViewUp(), 0.0));;
         adtWideblockPS->uSunDir_FogStart = mathfu::vec4_packed(
             mathfu::vec4(api->getGlobalSunDir(), api->getGlobalFogStart()));
         adtWideblockPS->uSunColor_uFogEnd = mathfu::vec4_packed(

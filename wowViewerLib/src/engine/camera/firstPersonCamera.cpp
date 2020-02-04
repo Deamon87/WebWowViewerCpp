@@ -149,6 +149,11 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 
     //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
 
+    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
+    interiorSunDir = lookAtMat.Transpose().Inverse() * interiorSunDir;
+    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
+
+
 }
 void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera
