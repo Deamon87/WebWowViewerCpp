@@ -35,7 +35,7 @@
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 private:
-    WoWFilesCacheStorage * cacheStorage = nullptr;
+    HWoWFilesCacheStorage cacheStorage = nullptr;
 public:
     WoWSceneImpl(Config *config, WoWFilesCacheStorage * cacheStorage, IClientDatabase * clientDatabase, IDevice * device, int canvWidth, int canvHeight);
     ~WoWSceneImpl() override;
@@ -172,8 +172,8 @@ private:
     bool m_isDebugCamera = false;
 
 
-    iInnerSceneApi *currentScene = new NullScene();
-    iInnerSceneApi *newScene = nullptr;
+    IScene *currentScene = new NullScene();
+    IScene *newScene = nullptr;
 
     bool needToDropCache = false;
 

@@ -6,10 +6,10 @@
 #define WEBWOWVIEWERCPP_M2SCENE_H
 
 
-#include "../iInnerSceneApi.h"
+#include "../iScene.h"
 #include "../m2/m2Object.h"
 
-class M2Scene : public iInnerSceneApi {
+class M2Scene : public IScene {
 private:
     IWoWInnerApi *m_api;
     std::string m_m2Model;
@@ -54,14 +54,12 @@ public:
     M2Object * getM2Object() { return m_m2Object; };
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
-    void checkCulling(WoWFrameData *frameData) override;
+    void checkCulling(HCullStage cullStage) override;
 
     void collectMeshes(WoWFrameData*) override;
     void doPostLoad(WoWFrameData *frameData) override;
     void update(WoWFrameData *frameData) override;
     void updateBuffers(WoWFrameData *frameData) override {};
-
-    HDrawStage produceDrawStage(HUpdateStage updateStage) override {};
 };
 
 

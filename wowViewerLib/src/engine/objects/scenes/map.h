@@ -11,12 +11,13 @@
 #include "../m2/m2Object.h"
 #include "../wmo/wmoObject.h"
 #include "../iMapApi.h"
-#include "../iInnerSceneApi.h"
+#include "../iScene.h"
 #include "../objectCache.h"
 #include "../wdl/wdlObject.h"
 #include "../wowFrameData.h"
+#include "../../SceneScenario.h"
 
-class Map : public IMapApi, public iInnerSceneApi {
+class Map : public IMapApi, public IScene {
 private:
     IWoWInnerApi *m_api;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
@@ -86,7 +87,7 @@ public:
 	} ;
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
-    void checkCulling(WoWFrameData *frameData) override;
+    void checkCulling(HCullStage cullStage) override;
 
     void collectMeshes(WoWFrameData *frameData) override;
 
@@ -100,7 +101,7 @@ public:
     void update(WoWFrameData *frameData) override;
     void updateBuffers(WoWFrameData *frameData) override;
 
-    HDrawStage produceDrawStage(HUpdateStage updateStage) { return HDrawStage();};
+//    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        std::vector<mathfu::vec3> &frustumPoints,
@@ -108,7 +109,7 @@ private:
                        mathfu::mat4 &lookAtMat4,
                        mathfu::mat4 &viewPerspectiveMat,
                        int viewRenderOrder,
-                       WoWFrameData *frameData);
+                       HCullStage cullStage);
 };
 
 

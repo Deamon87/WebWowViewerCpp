@@ -92,20 +92,20 @@ void WoWSceneImpl::DoCulling() {
 //        this->m_secondCamera.tick(frameParam->deltaTime);
 //    }
 
-    if ( false /*currentScene->getCameraSettings(cameraResult)*/) {
+    if ( /*currentScene->getCameraSettings(cameraResult)*/ false) {
 //        farPlane = cameraResult.far_clip * 100;
-        farPlane = 300;
-        nearPlane = cameraResult.near_clip;
-
-        fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
-
-        lookAtMat4 =
-                mathfu::mat4::LookAt(
-                        -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
-                        mathfu::vec3(0,0,0),
-                        upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
-        cameraVec4 = cameraResult.position;
-        frameParam->m_lookAtMat4 = lookAtMat4;
+//        farPlane = 300;
+//        nearPlane = cameraResult.near_clip;
+//
+//        fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
+//
+//        lookAtMat4 =
+//                mathfu::mat4::LookAt(
+//                        -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
+//                        mathfu::vec3(0,0,0),
+//                        upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
+//        cameraVec4 = cameraResult.position;
+//        frameParam->m_lookAtMat4 = lookAtMat4;
 
     } else {
 

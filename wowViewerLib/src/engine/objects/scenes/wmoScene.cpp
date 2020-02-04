@@ -7,14 +7,14 @@
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
 
-void WmoScene::checkCulling(WoWFrameData *frameData) {
-    frameData->m2Array = std::vector<std::shared_ptr<M2Object>>();
-    frameData->wmoArray = std::vector<std::shared_ptr<WmoObject>>();
+void WmoScene::checkCulling(HCullStage cullStage) {
+    cullStage->m2Array = std::vector<std::shared_ptr<M2Object>>();
+    cullStage->wmoArray = std::vector<std::shared_ptr<WmoObject>>();
 
-    mathfu::vec4 cameraPos = mathfu::vec4(frameData->m_cameraVec3, 1.0);
-    mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
-    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
-    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
+    mathfu::vec4 cameraPos = mathfu::vec4(cullStage->matricesForCulling->cameraPos, 1.0);
+    mathfu::vec3 &cameraVec3 = cullStage->matricesForCulling->cameraPos;
+    mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
+    mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
 
     mathfu::mat4 projectionModelMat = frustumMat * lookAtMat4;
 
@@ -22,12 +22,12 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
     std::vector<mathfu::vec3> hullines = MathHelper::getHullLines(frustumPoints);
 
-    frameData->exteriorView = ExteriorView();
-    frameData->interiorViews = std::vector<InteriorView>();
+    cullStage->exteriorView = ExteriorView();
+    cullStage->interiorViews = std::vector<InteriorView>();
     m_viewRenderOrder = 0;
 
     //6. Check what WMO instance we're in
-    frameData->m_currentInteriorGroups = {};
+    cullStage->m_currentInteriorGroups = {};
     this->m_currentWMO = nullptr;
 
     int bspNodeId = -1;
@@ -43,7 +43,7 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
         currentWmoGroup = groupResult.groupIndex;
 
         if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
-            frameData->m_currentInteriorGroups.push_back(groupResult);
+            cullStage->m_currentInteriorGroups.push_back(groupResult);
             interiorGroupNum = groupResult.groupIndex;
         } else {
 //            std::cout << "not found! duh!";
@@ -56,54 +56,53 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
     }
 //    }
 
-    if (!frameData->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
+    if (!cullStage->m_currentInteriorGroups.empty() && this->m_wmoObject->isLoaded()) {
         this->m_wmoObject->resetTraversedWmoGroups();
         if (this->m_wmoObject->startTraversingWMOGroup(
             cameraPos,
             projectionModelMat,
-            frameData->m_currentInteriorGroups[0].groupIndex,
+            cullStage->m_currentInteriorGroups[0].groupIndex,
             0,
             m_viewRenderOrder,
             true,
-            frameData->interiorViews,
-            frameData->exteriorView)) {
+            cullStage->interiorViews,
+            cullStage->exteriorView)) {
 
-            frameData->wmoArray.push_back(this->m_wmoObject);
+            cullStage->wmoArray.push_back(this->m_wmoObject);
         }
 
-        if (frameData->exteriorView.viewCreated) {
-            cullExterior(frameData, m_viewRenderOrder);
+        if (cullStage->exteriorView.viewCreated) {
+            cullExterior(cullStage, m_viewRenderOrder);
         }
     } else {
         //Cull exterior
-        cullExterior(frameData, m_viewRenderOrder);
+        cullExterior(cullStage, m_viewRenderOrder);
     }
 
     //Fill M2 objects for views from WmoGroups
-    for (auto &view : frameData->interiorViews) {
+    for (auto &view : cullStage->interiorViews) {
         view.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
     }
-    frameData->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
+    cullStage->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
 
     //Collect M2s for update
-    size_t prev_size = frameData->m2Array.size();
-    frameData->m2Array.clear();
-    frameData->m2Array.reserve(prev_size);
-    auto inserter = std::back_inserter(frameData->m2Array);
-    for (auto &view : frameData->interiorViews) {
+    size_t prev_size = cullStage->m2Array.size();
+    cullStage->m2Array.clear();
+    cullStage->m2Array.reserve(prev_size);
+    auto inserter = std::back_inserter(cullStage->m2Array);
+    for (auto &view : cullStage->interiorViews) {
         std::copy(view.drawnM2s.begin(), view.drawnM2s.end(), inserter);
     }
-    std::copy(frameData->exteriorView.drawnM2s.begin(), frameData->exteriorView.drawnM2s.end(), inserter);
+    std::copy(cullStage->exteriorView.drawnM2s.begin(), cullStage->exteriorView.drawnM2s.end(), inserter);
 
     //Sort and delete duplicates
     std::unordered_set<std::shared_ptr<M2Object>> m2Set;
-    for (auto i : frameData->m2Array) {
+    for (auto i : cullStage->m2Array) {
         if (!i) continue;
         m2Set.insert(i);
     }
 
-
-    frameData->m2Array.assign( m2Set.begin(), m2Set.end() );
+    cullStage->m2Array.assign( m2Set.begin(), m2Set.end() );
 
 
 
@@ -111,15 +110,15 @@ void WmoScene::checkCulling(WoWFrameData *frameData) {
 //    frameData->wmoArray.erase( unique( frameData->wmoArray.begin(), frameData->wmoArray.end() ), frameData->wmoArray.end() );
 }
 
-void WmoScene::cullExterior(WoWFrameData *frameData, int viewRenderOrder) {
-    mathfu::vec4 cameraVec4 = mathfu::vec4(frameData->m_cameraVec3, 1.0);
+void WmoScene::cullExterior(HCullStage cullStage, int viewRenderOrder) {
+    mathfu::vec4 cameraVec4 = mathfu::vec4(cullStage->matricesForCulling->cameraPos, 1.0);
 
-    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
-    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
+    mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
+    mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
 
     mathfu::mat4 projectionModelMat = frustumMat * lookAtMat4;
 
-    if (m_currentWMO != m_wmoObject || frameData->m_currentInteriorGroups.size() <= 0) {
+    if (m_currentWMO != m_wmoObject || cullStage->m_currentInteriorGroups.size() <= 0) {
         this->m_wmoObject->resetTraversedWmoGroups();
     }
     if (m_wmoObject->startTraversingWMOGroup(
@@ -129,10 +128,10 @@ void WmoScene::cullExterior(WoWFrameData *frameData, int viewRenderOrder) {
         0,
         viewRenderOrder,
         false,
-        frameData->interiorViews,
-        frameData->exteriorView)) {
+        cullStage->interiorViews,
+        cullStage->exteriorView)) {
 
-        frameData->wmoArray.push_back(m_wmoObject);
+        cullStage->wmoArray.push_back(m_wmoObject);
     }
 }
 

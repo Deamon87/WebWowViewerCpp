@@ -11,11 +11,12 @@ class WmoGroupObject;
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
+#include "../../geometry/wmoMainGeom.h"
+
 #include "../../persistance/header/adtFileHeader.h"
 #include "mathfu/glsl_mappings.h"
 #include "wmoGroupObject.h"
 #include "../m2/m2Object.h"
-#include "../../geometry/wmoMainGeom.h"
 #include "../iWmoApi.h"
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../ViewsObjects.h"

@@ -7,10 +7,10 @@
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
 
-void M2Scene::checkCulling(WoWFrameData *frameData) {
-    mathfu::vec4 cameraPos = mathfu::vec4(frameData->m_cameraVec3, 1.0);
-    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
-    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
+void M2Scene::checkCulling(HCullStage cullStage) {
+    mathfu::vec4 cameraPos = mathfu::vec4(cullStage->matricesForCulling->cameraPos, 1.0);
+    mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
+    mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
 
 
     mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
@@ -69,28 +69,28 @@ void M2Scene::update(WoWFrameData *frameData) {
     m_m2Object->uploadGeneratorBuffers(frameData->m_lookAtMat4);
 }
 
-mathfu::vec4 M2Scene::getAmbientColor() {
-    if (doOverride) {
-        return m_ambientColorOverride;
-    } else {
-        return m_m2Object->getAmbientLight();
-    }
-}
-
-bool M2Scene::getCameraSettings(M2CameraResult &result) {
-    if (m_cameraView > -1 && m_m2Object->getGetIsLoaded()) {
-        result = m_m2Object->updateCamera(0, m_cameraView);
-        return true;
-    }
-    return false;
-}
-
-void M2Scene::setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
-    doOverride = override;
-    m_ambientColorOverride = ambientColor;
-
-    m_m2Object->setAmbientColorOverride(ambientColor, override);
-}
+//mathfu::vec4 M2Scene::getAmbientColor() {
+//    if (doOverride) {
+//        return m_ambientColorOverride;
+//    } else {
+//        return m_m2Object->getAmbientLight();
+//    }
+//}
+//
+//bool M2Scene::getCameraSettings(M2CameraResult &result) {
+//    if (m_cameraView > -1 && m_m2Object->getGetIsLoaded()) {
+//        result = m_m2Object->updateCamera(0, m_cameraView);
+//        return true;
+//    }
+//    return false;
+//}
+//
+//void M2Scene::setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
+//    doOverride = override;
+//    m_ambientColorOverride = ambientColor;
+//
+//    m_m2Object->setAmbientColorOverride(ambientColor, override);
+//}
 
 void M2Scene::collectMeshes(WoWFrameData * frameData) {
     if (!m_drawModel) return;

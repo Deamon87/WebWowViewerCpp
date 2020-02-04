@@ -62,6 +62,7 @@ typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
 #include "../../engine/texture/BlpTexture.h"
 #include "textures/ITexture.h"
 #include "IFrameBuffer.h"
+#include "../../engine/DrawStage.h"
 
 struct M2ShaderCacheRecord {
     int vertexShader;
@@ -163,6 +164,7 @@ class IDevice {
         virtual void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) = 0;
         virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
+        virtual void drawStageAndDeps(HDrawStage drawStage) {};
 
         virtual bool getIsCompressedTexturesSupported();
         virtual bool getIsAnisFiltrationSupported();

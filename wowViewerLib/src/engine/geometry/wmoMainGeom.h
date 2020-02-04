@@ -5,6 +5,8 @@
 #ifndef WOWVIEWERLIB_WMOMAINGEOM_H
 #define WOWVIEWERLIB_WMOMAINGEOM_H
 
+class WmoMainGeom;
+
 #include <vector>
 #include "../persistance/PersistentFile.h"
 #include "../persistance/helper/ChunkFileReader.h"

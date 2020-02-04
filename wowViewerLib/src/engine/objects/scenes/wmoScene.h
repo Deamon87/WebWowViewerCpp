@@ -5,11 +5,11 @@
 #ifndef WEBWOWVIEWERCPP_WMOSCENE_H
 #define WEBWOWVIEWERCPP_WMOSCENE_H
 
-#include "../iInnerSceneApi.h"
+#include "../iScene.h"
 #include "../wmo/wmoObject.h"
 #include "../objectCache.h"
 
-class WmoScene : public iInnerSceneApi {
+class WmoScene : public IScene {
 private:
     IWoWInnerApi *m_api;
     std::string m_wmoModel;
@@ -61,7 +61,7 @@ public:
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
 
-    void checkCulling(WoWFrameData *frameData) override;
+    void checkCulling(HCullStage cullStage) override;
     void collectMeshes(WoWFrameData*) override ;
 
 
@@ -72,8 +72,24 @@ public:
     void setAnimationId(int animationId) override {
     };
 
-    HDrawStage produceDrawStage(HUpdateStage updateStage) { return HDrawStage();};
-    void cullExterior(WoWFrameData *frameData, int viewRenderOrder);
+
+//    mathfu::vec4 getAmbientColor() override {
+////        if (m_wmoObject->isLoaded()) {
+////            return mathfu::vec4(m_wmoObject->getAmbientLight(), 0.0);
+////        } else
+////        return mathfu::vec4(0.0, 0.0, 0.0, 0.0);
+//        return m_api->getGlobalAmbientColor();
+//    };
+//
+//    bool getCameraSettings(M2CameraResult&) override {
+//        return false;
+//    }
+//
+//    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {
+//
+//    };
+
+    void cullExterior(HCullStage cullStage, int viewRenderOrder);
 };
 
 

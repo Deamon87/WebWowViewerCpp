@@ -5,9 +5,9 @@
 #ifndef AWEBWOWVIEWERCPP_NULLSCENE_H
 #define AWEBWOWVIEWERCPP_NULLSCENE_H
 
-#include "../iInnerSceneApi.h"
+#include "../iScene.h"
 
-class NullScene : public iInnerSceneApi {
+class NullScene : public IScene {
 public:
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setAnimationId(int animationId) override {};
@@ -19,6 +19,6 @@ public:
     void update(WoWFrameData *frameData) override {};
     void updateBuffers(WoWFrameData *frameData) override {};
 
-    HDrawStage produceDrawStage(HUpdateStage updateStage) { return HDrawStage();};
+    HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) override {return nullptr; };
 };
 #endif //AWEBWOWVIEWERCPP_NULLSCENE_H

@@ -5,6 +5,7 @@
 #ifndef WOWVIEWERLIB_M2MATERIALINST_H
 #define WOWVIEWERLIB_M2MATERIALINST_H
 
+class M2MaterialInst;
 #include <string>
 #include "../../../wowCommonClasses.h"
 #include "../../../persistance/header/blpFileHeader.h"
@@ -21,7 +22,7 @@ public:
     int textureCount;
 
     int texUnitTexIndex = -1;
-    HGTexture textures[6];
+    std::array<HGTexture, 6> textures;
 
     int layer = 0;
     int renderFlagIndex = -1;
