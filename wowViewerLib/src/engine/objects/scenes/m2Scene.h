@@ -56,10 +56,10 @@ public:
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
     void checkCulling(HCullStage cullStage) override;
 
-    void collectMeshes(WoWFrameData*) override;
-    void doPostLoad(WoWFrameData *frameData) override;
-    void update(WoWFrameData *frameData) override;
-    void updateBuffers(WoWFrameData *frameData) override {};
+    void collectMeshes(HUpdateStage updateStage) override;
+    void doPostLoad(HCullStage cullStage) override;
+    void update(HUpdateStage updateStage) override;
+    void updateBuffers(HCullStage cullStage) override;
 };
 
 

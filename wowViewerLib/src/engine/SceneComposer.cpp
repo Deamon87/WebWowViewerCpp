@@ -71,8 +71,6 @@ SceneComposer::SceneComposer(ApiContainer *apiContainer) : m_apiContainer(apiCon
         if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
             updateThread = std::thread(([&]() {
                 try {
-
-
                     while (!this->m_isTerminating) {
                         auto future = nextDeltaTimeForUpdate.get_future();
                         future.wait();
@@ -102,6 +100,8 @@ void SceneComposer::DoCulling() {
     int currentFrame = m_apiContainer->hDevice->getCullingFrameNumber();
     auto frameScenario = m_frameScenarios[currentFrame];
 
+    if (frameScenario == nullptr) return;
+
     for (int i = 0; i < frameScenario->cullStages.size(); i++) {
         auto cullStage = frameScenario->cullStages[i];
         auto config = m_apiContainer->getConfig();
@@ -121,7 +121,57 @@ void SceneComposer::DoCulling() {
 }
 
 void SceneComposer::DoUpdate() {
+    FrameCounter frameCounter;
 
+    FrameCounter singleUpdateCNT;
+    FrameCounter meshesCollectCNT;
+
+    frameCounter.beginMeasurement();
+
+    auto device = m_apiContainer->hDevice;
+
+    int updateObjFrame = device->getUpdateFrameNumber();
+
+    auto frameScenario = m_frameScenarios[updateObjFrame];
+    if (frameScenario == nullptr) return;
+
+    device->startUpdateForNextFrame();
+
+    singleUpdateCNT.beginMeasurement();
+    for (auto updateStage : frameScenario->updateStages) {
+        updateStage->cullResult->scene->update(updateStage);
+    }
+    singleUpdateCNT.endMeasurement("single update ");
+
+    meshesCollectCNT.beginMeasurement();
+    for (auto updateStage : frameScenario->updateStages) {
+        updateStage->cullResult->scene->collectMeshes(updateStage);
+    }
+    meshesCollectCNT.endMeasurement("collectMeshes ");
+    std::vector<HGMesh> meshes;
+    for (int i = 0; i < frameScenario->updateStages.size(); i++) {
+        auto updateStage = frameScenario->updateStages[i];
+        std::copy(
+            updateStage->meshes.begin(),
+            updateStage->meshes.end(),
+            std::back_inserter(meshes)
+        );
+    }
+
+    device->prepearMemoryForBuffers(meshes);
+
+    for (auto cullStage : frameScenario->cullStages) {
+        cullStage->scene->updateBuffers(cullStage);
+    }
+    device->updateBuffers(meshes);
+
+    for (auto cullStage : frameScenario->cullStages) {
+        cullStage->scene->doPostLoad(cullStage); //Do post load after rendering is done!
+    }
+    device->uploadTextureForMeshes(meshes);
+
+    device->endUpdateForNextFrame();
+    frameCounter.endMeasurement("Update Thread");
 }
 
 void SceneComposer::draw(HFrameScenario frameScenario) {
@@ -152,13 +202,17 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     int currentFrame = m_apiContainer->hDevice->getDrawFrameNumber();
     auto thisFrameScenario = m_frameScenarios[currentFrame];
 
+    m_frameScenarios[currentFrame] = frameScenario;
+
     if (!m_supportThreads) {
         processCaches(10);
         DoCulling();
     }
 
     m_apiContainer->hDevice->beginFrame();
-    m_apiContainer->hDevice->drawStageAndDeps(thisFrameScenario->getDrawStage());
+    if (thisFrameScenario != nullptr) {
+        m_apiContainer->hDevice->drawStageAndDeps(thisFrameScenario->getDrawStage());
+    }
     m_apiContainer->hDevice->commitFrame();
     m_apiContainer->hDevice->reset();
 

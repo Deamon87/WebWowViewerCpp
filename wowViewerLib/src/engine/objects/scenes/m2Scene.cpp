@@ -27,7 +27,7 @@ extern "C" {
     extern void supplyPointer(int *availablePointer, int length);
 }
 
-void M2Scene::doPostLoad(WoWFrameData *frameData) {
+void M2Scene::doPostLoad(HCullStage cullStage) {
     if (m_m2Object->doPostLoad()) {
 
         CAaBox aabb = m_m2Object->getColissionAABB();
@@ -64,9 +64,9 @@ void M2Scene::doPostLoad(WoWFrameData *frameData) {
     }
 }
 
-void M2Scene::update(WoWFrameData *frameData) {
-    m_m2Object->update(frameData->deltaTime, frameData->m_cameraVec3, frameData->m_lookAtMat4);
-    m_m2Object->uploadGeneratorBuffers(frameData->m_lookAtMat4);
+void M2Scene::update(HUpdateStage updateStage) {
+    m_m2Object->update(updateStage->delta, updateStage->cameraMatrices->cameraPos, updateStage->cameraMatrices->lookAtMat);
+    m_m2Object->uploadGeneratorBuffers(updateStage->cameraMatrices->lookAtMat);
 }
 
 //mathfu::vec4 M2Scene::getAmbientColor() {
@@ -92,16 +92,16 @@ void M2Scene::update(WoWFrameData *frameData) {
 //    m_m2Object->setAmbientColorOverride(ambientColor, override);
 //}
 
-void M2Scene::collectMeshes(WoWFrameData * frameData) {
+void M2Scene::collectMeshes(HUpdateStage updateStage) {
     if (!m_drawModel) return;
 
-    frameData->renderedThisFrame = std::vector<HGMesh>();
+    updateStage->meshes = std::vector<HGMesh>();
 
-    m_m2Object->collectMeshes(frameData->renderedThisFrame, 0);
-    m_m2Object->drawParticles(frameData->renderedThisFrame, 0);
+    m_m2Object->collectMeshes(updateStage->meshes, 0);
+    m_m2Object->drawParticles(updateStage->meshes, 0);
 
-    std::sort(frameData->renderedThisFrame.begin(),
-              frameData->renderedThisFrame.end(),
+    std::sort(updateStage->meshes.begin(),
+              updateStage->meshes.end(),
               IDevice::sortMeshes
     );
 
@@ -127,4 +127,8 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
     }
 
     m_m2Object->setReplaceTextures(replaceTextures);
+}
+
+void M2Scene::updateBuffers(HCullStage cullStage) {
+
 }

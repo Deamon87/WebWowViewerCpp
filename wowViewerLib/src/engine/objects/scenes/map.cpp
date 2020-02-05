@@ -359,34 +359,34 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 }
-void Map::doPostLoad(WoWFrameData *frameData){
+void Map::doPostLoad(HCullStage cullStage){
     int processedThisFrame = 0;
     int groupsProcessedThisFrame = 0;
 //    if (m_api->getConfig()->getRenderM2()) {
-        for (int i = 0; i < frameData->m2Array.size(); i++) {
-            auto m2Object = frameData->m2Array[i];
+        for (int i = 0; i < cullStage->m2Array.size(); i++) {
+            auto m2Object = cullStage->m2Array[i];
             if (m2Object == nullptr) continue;
             m2Object->doPostLoad();
         }
 //    }
 
-    for (auto &wmoObject : frameData->wmoArray) {
+    for (auto &wmoObject : cullStage->wmoArray) {
         if (wmoObject == nullptr) continue;
         wmoObject->doPostLoad(groupsProcessedThisFrame);
     }
 
-    for (auto &adtObject : frameData->adtArray) {
+    for (auto &adtObject : cullStage->adtArray) {
         adtObject->adtObject->doPostLoad();
     }
 };
 
-void Map::update(WoWFrameData *frameData) {
+void Map::update(HUpdateStage updateStage) {
     if (m_wdtfile->getStatus() != FileStatus::FSLoaded) return;
 
-    mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
-    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
-    mathfu::mat4 &lookAtMat = frameData->m_lookAtMat4;
-    animTime_t deltaTime = frameData->deltaTime;
+    mathfu::vec3 &cameraVec3 = updateStage->cameraMatrices->cameraPos;
+    mathfu::mat4 &frustumMat = updateStage->cameraMatrices->perspectiveMat;
+    mathfu::mat4 &lookAtMat = updateStage->cameraMatrices->lookAtMat;
+    animTime_t deltaTime = updateStage->delta;
 
     Config* config = this->m_api->getConfig();
 //    if (config->getRenderM2()) {
@@ -396,8 +396,8 @@ void Map::update(WoWFrameData *frameData) {
     int numThreads = m_api->getConfig()->getThreadCount();
     {
         #pragma omp parallel for num_threads(numThreads) schedule(dynamic, 4)
-        for (int i = 0; i < frameData->m2Array.size(); i++) {
-            auto m2Object = frameData->m2Array[i];
+        for (int i = 0; i < updateStage->cullResult->m2Array.size(); i++) {
+            auto m2Object = updateStage->cullResult->m2Array[i];
             if (m2Object != nullptr) {
                 m2Object->update(deltaTime, cameraVec3, lookAtMat);
             }
@@ -407,19 +407,19 @@ void Map::update(WoWFrameData *frameData) {
 //        });
 //    }
 
-    for (auto &wmoObject : frameData->wmoArray) {
+    for (auto &wmoObject : updateStage->cullResult->wmoArray) {
         if (wmoObject == nullptr) continue;
         wmoObject->update();
     }
 
-    for (auto &adtObject : frameData->adtArray) {
+    for (auto &adtObject : updateStage->cullResult->adtArray) {
         adtObject->adtObject->update();
     }
 
     //2. Calc distance every 100 ms
 //    #pragma omp parallel for
-    for (int i = 0; i < frameData->m2Array.size(); i++) {
-        auto m2Object = frameData->m2Array[i];
+    for (int i = 0; i < updateStage->cullResult->m2Array.size(); i++) {
+        auto m2Object = updateStage->cullResult->m2Array[i];
         if (m2Object == nullptr) continue;
         m2Object->calcDistance(cameraVec3);
     };
@@ -427,16 +427,16 @@ void Map::update(WoWFrameData *frameData) {
 
     //7. Get AreaId and Area Name
     std::string areaName = "";
-    if (frameData->m_currentWMO != nullptr) {
-        auto nameId = frameData->m_currentWMO->getNameSet();
-        auto wmoId = frameData->m_currentWMO->getWmoId();
-        auto groupId = frameData->m_currentWMO->getWmoGroupId(frameData->m_currentWmoGroup);
+    if (updateStage->cullResult->m_currentWMO != nullptr) {
+        auto nameId = updateStage->cullResult->m_currentWMO->getNameSet();
+        auto wmoId = updateStage->cullResult->m_currentWMO->getWmoId();
+        auto groupId = updateStage->cullResult->m_currentWMO->getWmoGroupId(updateStage->cullResult->m_currentWmoGroup);
 
         areaName = m_api->databaseHandler->getWmoAreaName(wmoId, nameId, groupId);
     };
     if (areaName == "") {
-        if (frameData->adtAreadId > 0) {
-            areaName = m_api->databaseHandler->getAreaName(frameData->adtAreadId);
+        if (updateStage->cullResult->adtAreadId > 0) {
+            areaName = m_api->databaseHandler->getAreaName(updateStage->cullResult->adtAreadId);
         } else {
             areaName = "";
         }
@@ -446,14 +446,14 @@ void Map::update(WoWFrameData *frameData) {
 
     //8. Check fog color every 2 seconds
     bool fogRecordWasFound = false;
-    if (this->m_currentTime + frameData->deltaTime - this->m_lastTimeLightCheck > 30) {
+    if (this->m_currentTime + updateStage->delta - this->m_lastTimeLightCheck > 30) {
         mathfu::vec3 ambientColor = mathfu::vec3(0.0,0.0,0.0);
         mathfu::vec3 directColor = mathfu::vec3(0.0,0.0,0.0);
         mathfu::vec3 endFogColor = mathfu::vec3(0.0,0.0,0.0);
 
-        if (frameData->m_currentWMO != nullptr) {
+        if (updateStage->cullResult->m_currentWMO != nullptr) {
             CImVector sunFogColor;
-            fogRecordWasFound = frameData->m_currentWMO->checkFog(cameraVec3, sunFogColor);
+            fogRecordWasFound = updateStage->cullResult->m_currentWMO->checkFog(cameraVec3, sunFogColor);
             if (fogRecordWasFound) {
                 endFogColor =
                   mathfu::vec3((sunFogColor.r & 0xFF) / 255.0f,
@@ -464,9 +464,9 @@ void Map::update(WoWFrameData *frameData) {
 
         LightResult lightResult;
         m_api->databaseHandler->getEnvInfo(m_mapId,
-            frameData->m_cameraVec3[0],
-            frameData->m_cameraVec3[1],
-            frameData->m_cameraVec3[2],
+            updateStage->cameraMatrices->cameraPos[0],
+            updateStage->cameraMatrices->cameraPos[1],
+            updateStage->cameraMatrices->cameraPos[2],
             config->getCurrentTime(),
             lightResult
         );
@@ -502,7 +502,7 @@ void Map::update(WoWFrameData *frameData) {
     }
 
     //Cleanup ADT every 10 seconds
-    if (this->m_currentTime + frameData->deltaTime - this->m_lastTimeAdtCleanup > 10000) {
+    if (this->m_currentTime + updateStage->delta- this->m_lastTimeAdtCleanup > 10000) {
         for (int i = 0; i < 64; i++) {
             for (int j = 0; j < 64; j++) {
                 auto adtObj = mapTiles[i][j];
@@ -515,23 +515,23 @@ void Map::update(WoWFrameData *frameData) {
 
         this->m_lastTimeAdtCleanup = this->m_currentTime;
     }
-    this->m_currentTime += frameData->deltaTime;
+    this->m_currentTime += updateStage->delta;
 }
 
-void Map::updateBuffers(WoWFrameData *frameData) {
-    for (int i = 0; i < frameData->m2Array.size(); i++) {
-        auto m2Object = frameData->m2Array[i];
+void Map::updateBuffers(HCullStage cullStage) {
+    for (int i = 0; i < cullStage->m2Array.size(); i++) {
+        auto m2Object = cullStage->m2Array[i];
         if (m2Object != nullptr) {
-            m2Object->uploadGeneratorBuffers(frameData->m_lookAtMat4);
+            m2Object->uploadGeneratorBuffers(cullStage->matricesForCulling->lookAtMat);
         }
     }
 
-    for (auto &wmoObject : frameData->wmoArray) {
+    for (auto &wmoObject : cullStage->wmoArray) {
         if (wmoObject == nullptr) continue;
         wmoObject->uploadGeneratorBuffers();
     }
 
-    for (auto &adtRes: frameData->adtArray) {
+    for (auto &adtRes: cullStage->adtArray) {
         if (adtRes == nullptr) continue;
         adtRes->adtObject->uploadGeneratorBuffers(*adtRes.get());
     }
@@ -632,18 +632,19 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
     return nullptr;
 }
 
-void Map::collectMeshes(WoWFrameData *frameData) {
+void Map::collectMeshes(HUpdateStage updateStage) {
+    auto cullStage = updateStage->cullResult;
     auto renderedThisFramePreSort = std::vector<HGMesh>();
 
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;
-    for (auto & interiorView : frameData->interiorViews) {
+    for (auto & interiorView : updateStage->cullResult->interiorViews) {
         if (interiorView.viewCreated) {
             vector.push_back(&interiorView);
         }
     }
-    if (frameData->exteriorView.viewCreated) {
-        vector.push_back(&frameData->exteriorView);
+    if (updateStage->cullResult->exteriorView.viewCreated) {
+        vector.push_back(&updateStage->cullResult->exteriorView);
     }
 
 //    if (m_api->getConfig()->getRenderWMO()) {
@@ -674,7 +675,7 @@ void Map::collectMeshes(WoWFrameData *frameData) {
 //    }
 
     //No need to sort array which has only one element
-    frameData->renderedThisFrame = {};
+    updateStage->meshes = {};
     if (renderedThisFramePreSort.size() > 1) {
         auto *sortedArrayPtr = &renderedThisFramePreSort[0];
         std::vector<int> indexArray = std::vector<int>(renderedThisFramePreSort.size());
@@ -702,13 +703,13 @@ void Map::collectMeshes(WoWFrameData *frameData) {
 //            );
 //        }
 
-        frameData->renderedThisFrame.reserve(indexArray.size());
+        updateStage->meshes.reserve(indexArray.size());
         for (int i = 0; i < indexArray.size(); i++) {
-            frameData->renderedThisFrame.push_back(renderedThisFramePreSort[indexArray[i]]);
+            updateStage->meshes.push_back(renderedThisFramePreSort[indexArray[i]]);
         }
     } else {
         for (int i = 0; i < renderedThisFramePreSort.size(); i++) {
-            frameData->renderedThisFrame.push_back(renderedThisFramePreSort[i]);
+            updateStage->meshes.push_back(renderedThisFramePreSort[i]);
         }
     }
 };

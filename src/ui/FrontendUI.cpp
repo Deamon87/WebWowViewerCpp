@@ -359,7 +359,7 @@ void FrontendUI::showMainMenu() {
 
 //
 
-void FrontendUI::collectMeshes(WoWFrameData *frameData) {
+void FrontendUI::collectMeshes(HUpdateStage updateStage) {
     auto *draw_data = ImGui::GetDrawData();
 
     int  fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
@@ -451,14 +451,14 @@ void FrontendUI::collectMeshes(WoWFrameData *frameData) {
                     meshTemplate.scissorOffset = {(int)clip_rect.x, (int)(fb_height - clip_rect.w)};
                     meshTemplate.scissorSize = {(int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y)};
 
-                    meshTemplate.ubo[0] = uboPart;
+                    meshTemplate.ubo[1] = uboPart;
                     meshTemplate.textureCount = 1;
                     meshTemplate.texture[0] = fontTexture;
 
                     meshTemplate.start = pcmd->IdxOffset;
                     meshTemplate.end = pcmd->ElemCount;
 
-                    frameData->renderedThisFrame.push_back(m_device->createMesh(meshTemplate));
+                    updateStage->meshes.push_back(m_device->createMesh(meshTemplate));
                 }
             }
         }

@@ -27,11 +27,11 @@ public:
     };
 
     void checkCulling(HCullStage cullStage) override {};
-    void collectMeshes(WoWFrameData *frameData) override;
+    void collectMeshes(HUpdateStage updateStage) override;
 
-    void doPostLoad(WoWFrameData *frameData) override {};
-    void update(WoWFrameData *frameData) override {};
-    void updateBuffers(WoWFrameData *frameData) override {};
+    void doPostLoad(HCullStage cullStage) override {};
+    void update(HUpdateStage updateStage) override {};
+    void updateBuffers(HCullStage cullStage) override {};
 
 private:
     std::function <bool(std::string cascPath)> openCascCallback = nullptr;

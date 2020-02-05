@@ -135,19 +135,19 @@ void WmoScene::cullExterior(HCullStage cullStage, int viewRenderOrder) {
     }
 }
 
-void WmoScene::doPostLoad(WoWFrameData *frameData) {
+void WmoScene::doPostLoad(HCullStage cullStage) {
     int processedThisFrame = 0;
     int groupsProcessedThisFrame = 0;
 
-    for (int i = 0; i < frameData->m2Array.size(); i++) {
-        std::shared_ptr<M2Object> m2Object = frameData->m2Array[i];
+    for (int i = 0; i < cullStage->m2Array.size(); i++) {
+        std::shared_ptr<M2Object> m2Object = cullStage->m2Array[i];
         if (m2Object == nullptr) continue;
         if (m2Object->doPostLoad()) processedThisFrame++;
         if (processedThisFrame > 3) return;
     }
 //    }
 
-    for (auto &wmoObject : frameData->wmoArray) {
+    for (auto &wmoObject : cullStage->wmoArray) {
         if (wmoObject == nullptr) continue;
         if (wmoObject->doPostLoad(groupsProcessedThisFrame)) processedThisFrame++;
 
@@ -155,53 +155,53 @@ void WmoScene::doPostLoad(WoWFrameData *frameData) {
     }
 }
 
-void WmoScene::update(WoWFrameData *frameData)  {
-    mathfu::vec3 &cameraVec3 = frameData->m_cameraVec3;
-    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
+void WmoScene::update(HUpdateStage updateStage)  {
+    mathfu::vec3 &cameraVec3 = updateStage->cameraMatrices->cameraPos;
+    mathfu::mat4 &lookAtMat4 = updateStage->cameraMatrices->lookAtMat;
 
-    for (int i = 0; i < frameData->m2Array.size(); i++) {
-        auto m2Object = frameData->m2Array[i];
+    for (int i = 0; i < updateStage->cullResult->m2Array.size(); i++) {
+        auto m2Object = updateStage->cullResult->m2Array[i];
         if (m2Object == nullptr) continue;
-        m2Object->update(frameData->deltaTime, cameraVec3, lookAtMat4);
+        m2Object->update(updateStage->delta, cameraVec3, lookAtMat4);
         m2Object->uploadGeneratorBuffers(lookAtMat4);
     }
 
-    for (auto &wmoObject : frameData->wmoArray) {
+    for (auto &wmoObject : updateStage->cullResult->wmoArray) {
         if (wmoObject == nullptr) continue;
         wmoObject->update();
     }
 
     //2. Calc distance every 100 ms
     //if (this->m_currentTime + deltaTime - this->m_lastTimeDistanceCalc > 100) {
-        for (int j = 0; j < frameData->m2Array.size(); j++) {
-            frameData->m2Array[j]->calcDistance(cameraVec3);
+        for (int j = 0; j < updateStage->cullResult->m2Array.size(); j++) {
+            updateStage->cullResult->m2Array[j]->calcDistance(cameraVec3);
         }
 
         this->m_lastTimeDistanceCalc = this->m_currentTime;
     //}
 
-     this->m_currentTime += frameData->deltaTime;
+     this->m_currentTime += updateStage->delta;
 }
-void WmoScene::updateBuffers(WoWFrameData *frameData) {
+void WmoScene::updateBuffers(HCullStage cullStage) {
 
 }
 
-void WmoScene::collectMeshes(WoWFrameData * frameData) {
-    frameData->renderedThisFrame = std::vector<HGMesh>();
+void WmoScene::collectMeshes(HUpdateStage updateStage) {
+    updateStage->meshes = std::vector<HGMesh>();
 
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;
-    for (auto & interiorView : frameData->interiorViews) {
+    for (auto & interiorView : updateStage->cullResult->interiorViews) {
         if (interiorView.viewCreated) {
             vector.push_back(&interiorView);
         }
     }
-    if (frameData->exteriorView.viewCreated) {
-        vector.push_back(&frameData->exteriorView);
+    if (updateStage->cullResult->exteriorView.viewCreated) {
+        vector.push_back(&updateStage->cullResult->exteriorView);
     }
 
     for (auto &view : vector) {
-        view->collectMeshes(frameData->renderedThisFrame);
+        view->collectMeshes(updateStage->meshes);
     }
 
     std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
@@ -213,12 +213,12 @@ void WmoScene::collectMeshes(WoWFrameData * frameData) {
 
     for (auto &m2Object : m2ObjectsRendered) {
         if (m2Object == nullptr) continue;
-        m2Object->collectMeshes(frameData->renderedThisFrame, m_viewRenderOrder);
-        m2Object->drawParticles(frameData->renderedThisFrame, m_viewRenderOrder);
+        m2Object->collectMeshes(updateStage->meshes, m_viewRenderOrder);
+        m2Object->drawParticles(updateStage->meshes, m_viewRenderOrder);
     }
 
-    std::sort(frameData->renderedThisFrame.begin(),
-              frameData->renderedThisFrame.end(),
+    std::sort(updateStage->meshes.begin(),
+              updateStage->meshes.end(),
               IDevice::sortMeshes
     );
 

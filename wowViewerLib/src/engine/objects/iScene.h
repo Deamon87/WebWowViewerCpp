@@ -21,10 +21,10 @@ public:
     virtual HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) = 0;
 
     virtual void checkCulling(HCullStage cullStage) = 0;
-    virtual void collectMeshes(WoWFrameData *frameData) = 0;
+    virtual void collectMeshes(HUpdateStage updateStage) = 0;
 
-    virtual void doPostLoad(WoWFrameData *frameData) = 0;
-    virtual void update(WoWFrameData *frameData) = 0;
-    virtual void updateBuffers(WoWFrameData *frameData) = 0;
+    virtual void doPostLoad(HCullStage cullStage) = 0;
+    virtual void update(HUpdateStage updateStage) = 0;
+    virtual void updateBuffers(HCullStage cullStage) = 0;
 };
 #endif //WEBWOWVIEWERCPP_IINNERSCENEAPI_H

@@ -542,14 +542,21 @@ try {
         auto cameraMatrices = apiContainer.camera->getCameraMatrices();
 
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
-        auto cullStage = sceneScenario->addCullStage(cameraMatrices, currentScene);
-        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime, cameraMatrices);
-        auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, cameraMatrices, {}, true, {{0, canvWidth},{0, canvHeight}}, true);
 
+        std::vector<HDrawStage> uiDependecies = {};
+        if (currentScene != nullptr) {
+            auto cullStage = sceneScenario->addCullStage(cameraMatrices, currentScene);
+            auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime, cameraMatrices);
+            auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, cameraMatrices, {}, true,
+                {{0, canvWidth},{0, canvHeight}},
+                true);
+
+            uiDependecies.push_back(sceneDrawStage);
+        }
 
         auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
-        auto uiUpdateStage = sceneScenario->addUpdateStage(nullptr, deltaTime, nullptr);
-        auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, nullptr, {sceneDrawStage}, true, {}, false);
+        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime, nullptr);
+        auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, nullptr, uiDependecies, true, {}, false);
 
 
 //        auto updateResult = scene->cull(camera)->update(camera);
@@ -561,7 +568,7 @@ try {
 //            SceneComposer.renderToScreen()
 //        });
 
-
+        sceneComposer.draw(sceneScenario);
 
         double currentDeltaAfterDraw = (glfwGetTime() - lastFrame)*(1000.0f);
         lastFrame = currentFrame;
