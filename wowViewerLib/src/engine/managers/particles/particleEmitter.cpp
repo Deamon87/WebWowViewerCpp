@@ -87,7 +87,7 @@ static const struct {
 };
 
 
-ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object) : m_seed(rand()), m_api(api), m2Object(m2Object) {
+ParticleEmitter::ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Object *m2Object) : m_seed(rand()), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
         for (int i = 0; i < 128; i++) {
@@ -196,7 +196,7 @@ EGxBlendEnum PaticleBlendingModeToEGxBlendEnum1 [14] =
 
 extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
 void ParticleEmitter::createMesh() {
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
 
     if (m_indexVBO == nullptr) {
         m_indexVBO = device->createIndexBuffer();
@@ -230,7 +230,7 @@ void ParticleEmitter::createMesh() {
 
 
         //Get shader
-        HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2ParticleShader", nullptr);
+        HGShaderPermutation shaderPermutation = device->getShader("m2ParticleShader", nullptr);
 
         //Create mesh
         gMeshTemplate meshTemplate(frame[i].m_bindings, shaderPermutation);
@@ -259,23 +259,23 @@ void ParticleEmitter::createMesh() {
         } else {
             tex0 = m2Object->getBlpTextureData(this->m_data->old.texture);
         }
-        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(tex0, true, true);
+        meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
         if (multitex) {
             HBlpTexture tex1 = m2Object->getBlpTextureData(this->m_data->old.texture_1);
             HBlpTexture tex2 = m2Object->getBlpTextureData(this->m_data->old.texture_2);
 
-            meshTemplate.texture[1] = m_api->getDevice()->createBlpTexture(tex1, true, true);
-            meshTemplate.texture[2] = m_api->getDevice()->createBlpTexture(tex2, true, true);
+            meshTemplate.texture[1] = device->createBlpTexture(tex1, true, true);
+            meshTemplate.texture[2] = device->createBlpTexture(tex2, true, true);
         }
         meshTemplate.texture.resize(3);
         meshTemplate.textureCount = (multitex) ? 3 : 1;
 
-        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
         meshTemplate.ubo[1] = nullptr;
         meshTemplate.ubo[2] = nullptr;
 
         meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
 
         meshTemplate.ubo[4]->setUpdateHandler([this](IUniformBufferChunk *self) {
             meshParticleWideBlockPS &blockPS = self->getObject<meshParticleWideBlockPS>();
@@ -293,7 +293,7 @@ void ParticleEmitter::createMesh() {
             blockPS.uPixelShader = uPixelShader;
         });
 
-        frame[i].m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
+        frame[i].m_mesh = device->createParticleMesh(meshTemplate);
 
     }
 }
@@ -597,7 +597,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
 
 
-    auto vboBufferDynamic = frame[m_api->getDevice()->getUpdateFrameNumber()].m_bufferVBO;
+    auto vboBufferDynamic = frame[m_api->hDevice->getUpdateFrameNumber()].m_bufferVBO;
     size_t maxFutureSize = particles.size() * sizeof(ParticleBuffStructQuad);
     if ((m_data->old.flags & 0x60000) == 0x60000) {
         maxFutureSize *= 2;
@@ -995,11 +995,11 @@ ParticleEmitter::BuildQuadT3(
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
     if (getGenerator() == nullptr) return;
 
-    auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
     if (!currentFrame.active)
         return;
 
-    HGParticleMesh mesh = frame[m_api->getDevice()->getUpdateFrameNumber()].m_mesh;
+    HGParticleMesh mesh = frame[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
     mesh->setRenderOrder(renderOrder);
     meshes.push_back(mesh);
 }
@@ -1007,7 +1007,7 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 void ParticleEmitter::updateBuffers() {
     if (getGenerator() == nullptr) return;
 
-    auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
     currentFrame.active = szVertexCnt > 0;
 
     if (!currentFrame.active)

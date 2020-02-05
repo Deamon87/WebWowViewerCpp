@@ -10,12 +10,12 @@
 void SceneComposer::processCaches(int limit) {
 //    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
 //    std::cout << "this->adtObjectCache.m_cache.size() = " << this->adtObjectCache.m_cache.size()<< std::endl;
-    if (m_cacheStorage) {
-        m_cacheStorage->processCaches(limit);
+    if (m_apiContainer->cacheStorage) {
+        m_apiContainer->cacheStorage->processCaches(limit);
     }
 }
 
-SceneComposer::SceneComposer(std::shared_ptr<IDevice> hDevice, HWoWFilesCacheStorage cacheStorage) : m_gdevice(hDevice), m_cacheStorage(cacheStorage){
+SceneComposer::SceneComposer(ApiContainer *apiContainer) : m_apiContainer(apiContainer) {
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
 #endif
@@ -50,7 +50,7 @@ SceneComposer::SceneComposer(std::shared_ptr<IDevice> hDevice, HWoWFilesCacheSto
 
                     //                std::cout << "update frame = " << getDevice()->getUpdateFrameNumber() << std::endl;
 
-                    int currentFrame = m_gdevice->getCullingFrameNumber();
+                    int currentFrame = m_apiContainer->hDevice->getCullingFrameNumber();
                     nextDeltaTime = std::promise<float>();
 
                     frameCounter.beginMeasurement();
@@ -68,7 +68,7 @@ SceneComposer::SceneComposer(std::shared_ptr<IDevice> hDevice, HWoWFilesCacheSto
             }
         }));
 
-        if (m_gdevice->getIsAsynBuffUploadSupported()) {
+        if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
             updateThread = std::thread(([&]() {
                 try {
 
@@ -99,20 +99,20 @@ void SceneComposer::DoCulling() {
                                                              0, 0, 1.0/2.0, 1/2.0,
                                                              0, 0, 0, 1).Transpose();
 
-    int currentFrame = m_gdevice->getCullingFrameNumber();
+    int currentFrame = m_apiContainer->hDevice->getCullingFrameNumber();
     auto frameScenario = m_frameScenarios[currentFrame];
 
     for (int i = 0; i < frameScenario->cullStages.size(); i++) {
         auto cullStage = frameScenario->cullStages[i];
-        auto &config = cullStage->scene->getConfig();
+        auto config = m_apiContainer->getConfig();
 
-        float farPlane = config.getFarPlane();
+        float farPlane = config->getFarPlane();
         float nearPlane = 1.0;
         float fov = toRadian(45.0);
 
         auto &perspectiveMatrix = cullStage->matricesForCulling->perspectiveMat;
 
-        if (m_gdevice->getIsVulkanAxisSystem()) {
+        if (m_apiContainer->hDevice->getIsVulkanAxisSystem()) {
             perspectiveMatrix = vulkanMatrixFix * perspectiveMatrix;
         }
 
@@ -131,7 +131,7 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
         cullingFuture = cullingFinished.get_future();
 
         nextDeltaTime.set_value(0);
-        if (m_gdevice->getIsAsynBuffUploadSupported()) {
+        if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
             nextDeltaTimeForUpdate.set_value(0);
             updateFuture = updateFinished.get_future();
         }
@@ -148,8 +148,8 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
 
 
 
-    m_gdevice->reset();
-    int currentFrame = m_gdevice->getDrawFrameNumber();
+    m_apiContainer->hDevice->reset();
+    int currentFrame = m_apiContainer->hDevice->getDrawFrameNumber();
     auto thisFrameScenario = m_frameScenarios[currentFrame];
 
     if (!m_supportThreads) {
@@ -158,14 +158,14 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     }
 
     float clearColor[4];
-    m_gdevice->beginFrame();
+    m_apiContainer->hDevice->beginFrame();
 
-    m_gdevice->drawStageAndDeps(thisFrameScenario->drawStage);
+    m_apiContainer->hDevice->drawStageAndDeps(thisFrameScenario->drawStage);
 
-    m_gdevice->commitFrame();
-    m_gdevice->reset();
+    m_apiContainer->hDevice->commitFrame();
+    m_apiContainer->hDevice->reset();
 
-    if (!m_gdevice->getIsAsynBuffUploadSupported()) {
+    if (!m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
         DoUpdate();
     }
 
@@ -174,12 +174,12 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
         cullingFuture.wait();
         cullingFinished = std::promise<bool>();
 
-        if (m_gdevice->getIsAsynBuffUploadSupported()) {
+        if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
             updateFuture.wait();
             updateFinished = std::promise<bool>();
         }
     }
 
 
-    m_gdevice->increaseFrameNumber();
+    m_apiContainer->hDevice->increaseFrameNumber();
 }

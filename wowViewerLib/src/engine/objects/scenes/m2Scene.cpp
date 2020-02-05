@@ -47,14 +47,14 @@ void M2Scene::doPostLoad(WoWFrameData *frameData) {
             );
 
             if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
-                m_api->setCameraPosition((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+//                m_api->setCameraPosition((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
             } else {
-                m_api->setCameraPosition((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+//                m_api->setCameraPosition((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
             }
-            m_api->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
+//            m_api->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
         } else {
-            m_api->setCameraPosition(1.0,0,0);
-            m_api->setCameraOffset(0,0,0);
+//            m_api->setCameraPosition(1.0,0,0);
+//            m_api->setCameraOffset(0,0,0);
         }
         std::vector <int> availableAnimations;
         m_m2Object->getAvailableAnimation(availableAnimations);
@@ -112,7 +112,7 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
     //std::cout << "m_m2Object == " << m_m2Object << std::endl;
     if (m_m2Object == nullptr) return;
 
-    auto textureCache = m_api->getTextureCache();
+    auto textureCache = m_api->cacheStorage->getTextureCache();
     std::vector<HBlpTexture> replaceTextures;
     replaceTextures.reserve(replaceTextureArray.size());
 

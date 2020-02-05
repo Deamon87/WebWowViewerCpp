@@ -3,7 +3,7 @@
 //
 
 #ifndef AWEBWOWVIEWERCPP_UNIFORMBUFFERSTRUCTURES_H
-#def  ine AWEBWOWVIEWERCPP_UNIFORMBUFFERSTRUCTURES_H
+#define AWEBWOWVIEWERCPP_UNIFORMBUFFERSTRUCTURES_H
 
 //Uniform buffer structures
 #include <mathfu/glsl_mappings.h>
@@ -86,7 +86,7 @@ struct wmoMeshWideBlockPS {
     int EnableAlpha;
     int PixelShader;
     int padding;
-    mathfu::vec4_packed FogColor_AlphaTest;
+    mathfu::vec4_packed uFogColor_AlphaTest;
 //    )}
 };
 

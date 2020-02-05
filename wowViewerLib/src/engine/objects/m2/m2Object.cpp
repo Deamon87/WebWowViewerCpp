@@ -1607,7 +1607,7 @@ void M2Object::createVertexBindings() {
         }
 
         modelWideBlockPS &blockPS = self->getObject<modelWideBlockPS>();
-        blockPS.uAmbientLight = ambientLight;
+
 
         //TODO: move this calculation to camera
 //        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));

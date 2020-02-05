@@ -5,6 +5,7 @@
 #ifndef AWEBWOWVIEWERCPP_WOWFILESCACHESTORAGE_H
 #define AWEBWOWVIEWERCPP_WOWFILESCACHESTORAGE_H
 
+#include <memory>
 class WoWFilesCacheStorage;
 typedef std::shared_ptr<WoWFilesCacheStorage> HWoWFilesCacheStorage;
 
@@ -13,6 +14,8 @@ typedef std::shared_ptr<WoWFilesCacheStorage> HWoWFilesCacheStorage;
 #include "../gapi/interface/IDevice.h"
 #include "persistance/adtFile.h"
 #include "persistance/wdtFile.h"
+#include "persistance/wdlFile.h"
+#include "persistance/skelFile.h"
 #include "cache/cache.h"
 
 

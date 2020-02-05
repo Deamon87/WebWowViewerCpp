@@ -389,13 +389,13 @@ int main(){
     }
     //Create device
     auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
-    SceneComposer sceneComposer = SceneComposer(hdevice, apiContainer.cacheStorage);
 
     std::shared_ptr<IScene> currentScene = nullptr;
-    FirstPersonCamera firstCamera;
 
     apiContainer.databaseHandler = sqliteDB;
     apiContainer.hDevice = hdevice;
+
+    SceneComposer sceneComposer = SceneComposer(&apiContainer);
 
     //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
@@ -416,8 +416,6 @@ int main(){
         apiContainer.cacheStorage = newStorage;
         processor = newProcessor;
 
-        sceneComposer.setCacheStorage(newStorage);
-
         return true;
     });
     frontendUI.setOpenSceneByfdidCallback([&currentScene, &apiContainer, &firstCamera](int mapId, int wdtFileId, float x, float y, float z) {
@@ -426,50 +424,56 @@ int main(){
 //            storage->actuallDropCache();
         }
 
-        currentScene = std::make_shared<Map>(apiContainer, mapId, wdtFileId);
+        currentScene = std::make_shared<Map>(&apiContainer, mapId, wdtFileId);
         firstCamera.setCameraPos(x, y, z);
 //        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
-    frontendUI.setFarPlaneChangeCallback([&currentScene](float farPlane) -> void {
-        auto &conf = currentScene->getConfig();
-        conf.setFarPlane(farPlane);
-        conf.setFarPlaneForCulling(farPlane+50);
+    frontendUI.setFarPlaneChangeCallback([&apiContainer](float farPlane) -> void {
+        auto conf = apiContainer.getConfig();
+        conf->setFarPlane(farPlane);
+        conf->setFarPlaneForCulling(farPlane+50);
     });
-    frontendUI.setSpeedCallback([&scene](float movementSpeed) -> void {
-        testConf->setMovementSpeed(movementSpeed);
+    frontendUI.setSpeedCallback([&apiContainer](float movementSpeed) -> void {
+        auto conf = apiContainer.getConfig();
+        conf->setMovementSpeed(movementSpeed);
     });
-    frontendUI.setThreadCountCallback([&scene](int value) -> void {
-        testConf->setThreadCount(value);
+    frontendUI.setThreadCountCallback([&apiContainer](int value) -> void {
+        auto conf = apiContainer.getConfig();
+        conf->setThreadCount(value);
     });
-    frontendUI.setQuicksortCutoffCallback([&scene](int value) -> void {
-        testConf->setQuickSortCutoff(value);
+    frontendUI.setQuicksortCutoffCallback([&apiContainer](int value) -> void {
+        auto conf = apiContainer.getConfig();
+        conf->setQuickSortCutoff(value);
     });
-    frontendUI.setGetCurrentAreaName([]()->std::string {
-        return testConf->getAreaName();
+    frontendUI.setGetCurrentAreaName([&apiContainer]()->std::string {
+        auto conf = apiContainer.getConfig();
+        return conf->getAreaName();
     });
-    frontendUI.setUnloadScene([&scene, &storage]()->void {
-        if (storage) {
-            storage->actuallDropCache();
+    frontendUI.setUnloadScene([&apiContainer, &currentScene]()->void {
+        if (apiContainer.cacheStorage) {
+            apiContainer.cacheStorage->actuallDropCache();
         }
-        scene->setSceneWithFileDataId(-1, 0, -1);
+        currentScene = nullptr;
+        //scene->setSceneWithFileDataId(-1, 0, -1);
     });
 
-    frontendUI.setCurrentTimeChangeCallback([](int value) -> void{
-        testConf->setCurrentTime(value);
+    frontendUI.setCurrentTimeChangeCallback([&apiContainer](int value) -> void {
+        auto conf = apiContainer.getConfig();
+        conf->setCurrentTime(value);
     });
 
-    frontendUI.setGetCameraPos([scene](float &cameraX,float &cameraY,float &cameraZ) -> void {
+    frontendUI.setGetCameraPos([&apiContainer](float &cameraX,float &cameraY,float &cameraZ) -> void {
         float currentCameraPos[4] = {0,0,0,0};
         scene->getCurrentCamera()->getCameraPosition(&currentCameraPos[0]);
         cameraX = currentCameraPos[0];
         cameraY = currentCameraPos[1];
         cameraZ = currentCameraPos[2];
     });
-    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &storage, hdevice, &scene](int wdtFileDataId) {
-        auto wdtFile = storage->getWdtFileCache()->getFileId(wdtFileDataId);
+    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &apiContainer](int wdtFileDataId) {
+        auto wdtFile = apiContainer.cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
 
 
-        frontendUI.setFillAdtSelectionMinimap([&frontendUI, wdtFile, &storage, hdevice, &scene](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists) -> bool {
+        frontendUI.setFillAdtSelectionMinimap([&frontendUI, wdtFile, &apiContainer](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists) -> bool {
             if (wdtFile->getStatus() == FileStatus::FSRejected) {
                 wdtFileExists = false;
                 isWMOMap = false;
@@ -481,8 +485,8 @@ int main(){
             for (int i = 0; i < 64; i++) {
                 for (int j = 0; j < 64; j++) {
                     if (wdtFile->mapFileDataIDs[i*64 + j].minimapTexture > 0) {
-                        auto texture = storage->getTextureCache()->getFileId(wdtFile->mapFileDataIDs[i*64 + j].minimapTexture);
-                        minimap[i][j] = hdevice->createBlpTexture(texture, false, false);
+                        auto texture = apiContainer.cacheStorage->getTextureCache()->getFileId(wdtFile->mapFileDataIDs[i*64 + j].minimapTexture);
+                        minimap[i][j] = apiContainer.hDevice->createBlpTexture(texture, false, false);
                     } else {
                         minimap[i][j] = nullptr;
                     }

@@ -64,7 +64,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
             uAlphaTest = 1.0f/255.0f;
         }
 
-        mathfu::vec3 uGlobalFogColor = m2Object.m_api->getGlobalFogColor().xyz();
+        mathfu::vec3 uGlobalFogColor = m2Object.m_api->getConfig()->getFogColor().xyz();
         mathfu::vec3 uFogColor = getFogColor(blendMode, uGlobalFogColor);
 
         //Fill values into buffer

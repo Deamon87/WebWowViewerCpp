@@ -7,15 +7,17 @@
 
 #include <vector>
 #include <set>
+#include "../iMapApi.h"
 #include "mathfu/glsl_mappings.h"
+#include "../wmo/wmoObject.h"
 #include "../m2/m2Object.h"
 #include "../../persistance/wdlFile.h"
 
 class WdlObject {
 
 public:
-    explicit WdlObject(IWoWInnerApi *api, std::string &wdlFileName);
-    explicit WdlObject(IWoWInnerApi *api, int wdlFileDataId);
+    explicit WdlObject(ApiContainer *api, std::string &wdlFileName);
+    explicit WdlObject(ApiContainer *api, int wdlFileDataId);
 
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
@@ -25,7 +27,7 @@ public:
     std::vector<std::shared_ptr<WmoObject>> wmoObjects;
 
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
     IMapApi *m_mapApi;
 
     HWdlFile m_wdlFile;

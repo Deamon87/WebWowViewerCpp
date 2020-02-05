@@ -7,6 +7,7 @@
 
 class IMapApi;
 #include "m2/m2Object.h"
+#include "wmo/wmoObject.h"
 
 class IMapApi {
 public:

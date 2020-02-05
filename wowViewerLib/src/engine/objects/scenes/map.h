@@ -19,7 +19,7 @@
 
 class Map : public IMapApi, public IScene {
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
     std::string mapName;
 
@@ -53,24 +53,24 @@ private:
 
     animTime_t getCurrentSceneTime() override ;
 public:
-    explicit Map(IWoWInnerApi *api, int mapId, std::string mapName) : m_mapId(mapId), m_api(api), mapName(mapName){
+    explicit Map(ApiContainer *api, int mapId, std::string mapName) : m_mapId(mapId), m_api(api), mapName(mapName){
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
-        m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
+        m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
         m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
         m_wdlObject->setMapApi(this);
     };
 
-    explicit Map(IWoWInnerApi *api, int mapId, int wdtFileDataId) : m_mapId(mapId), m_api(api), mapName("") {
-        m_wdtfile = api->getWdtFileCache()->getFileId(wdtFileDataId);
+    explicit Map(ApiContainer *api, int mapId, int wdtFileDataId) : m_mapId(mapId), m_api(api), mapName("") {
+        m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
     };
 
-    explicit Map(IWoWInnerApi *api, std::string adtFileName, int i, int j, std::string mapName) : m_mapId(0), m_api(api), mapName(mapName){
+    explicit Map(ApiContainer *api, std::string adtFileName, int i, int j, std::string mapName) : m_mapId(0), m_api(api), mapName(mapName){
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
-        m_wdtfile = api->getWdtFileCache()->get(wdtFileName);
+        m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
         m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
         m_wdlObject->setMapApi(this);
 

@@ -9,6 +9,8 @@ class CRibbonEmitter;
 #include <cstdint>
 #include <vector>
 #include "../persistance/header/commonFileStructs.h"
+#include "../ApiContainer.h"
+#include "../objects/m2/m2Object.h"
 
 struct CRibbonVertex
 {

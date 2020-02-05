@@ -59,7 +59,7 @@ void WmoObject::startLoading() {
         m_loading = true;
 
 
-        Cache<WmoMainGeom> *wmoGeomCache = m_api->getWmoMainCache();
+        Cache<WmoMainGeom> *wmoGeomCache = m_api->cacheStorage->getWmoMainCache();
         if (!useFileId) {
             mainGeom = wmoGeomCache->get(m_modelName);
         } else {
@@ -671,12 +671,12 @@ HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
             materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
         }
 
-        texture = m_api->getTextureCache()->get(materialTexture);
+        texture = m_api->cacheStorage->getTextureCache()->get(materialTexture);
     } else {
-        texture = m_api->getTextureCache()->getFileId(textureId);
+        texture = m_api->cacheStorage->getTextureCache()->getFileId(textureId);
     }
 
-    HGTexture hgTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
+    HGTexture hgTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     textureCache[textureId] = hgTexture;
 
     return hgTexture;

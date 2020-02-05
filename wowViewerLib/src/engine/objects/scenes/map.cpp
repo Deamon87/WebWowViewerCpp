@@ -432,11 +432,11 @@ void Map::update(WoWFrameData *frameData) {
         auto wmoId = frameData->m_currentWMO->getWmoId();
         auto groupId = frameData->m_currentWMO->getWmoGroupId(frameData->m_currentWmoGroup);
 
-        areaName = m_api->getDatabaseHandler()->getWmoAreaName(wmoId, nameId, groupId);
+        areaName = m_api->databaseHandler->getWmoAreaName(wmoId, nameId, groupId);
     };
     if (areaName == "") {
         if (frameData->adtAreadId > 0) {
-            areaName = m_api->getDatabaseHandler()->getAreaName(frameData->adtAreadId);
+            areaName = m_api->databaseHandler->getAreaName(frameData->adtAreadId);
         } else {
             areaName = "";
         }
@@ -463,7 +463,7 @@ void Map::update(WoWFrameData *frameData) {
         }
 
         LightResult lightResult;
-        m_api->getDatabaseHandler()->getEnvInfo(m_mapId,
+        m_api->databaseHandler->getEnvInfo(m_mapId,
             frameData->m_cameraVec3[0],
             frameData->m_cameraVec3[1],
             frameData->m_cameraVec3[2],
@@ -487,8 +487,8 @@ void Map::update(WoWFrameData *frameData) {
         }
 
         //Database is in BGRA
-        config->setAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
-        config->setSunColor(lightResult.directColor[2]*3.0, lightResult.directColor[1]*3.0, lightResult.directColor[0]*3.0, 0);
+        config->setExteriorAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
+        config->setExteriorDirectColor(lightResult.directColor[2]*3.0, lightResult.directColor[1]*3.0, lightResult.directColor[0]*3.0, 0);
         config->setCloseRiverColor(lightResult.closeRiverColor[2], lightResult.directColor[1], lightResult.directColor[0], 0);
 
         config->setFogColor(

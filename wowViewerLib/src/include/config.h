@@ -50,6 +50,9 @@ private:
     float farPlane = 1000;
     float farPlaneForCulling = 400;
 
+    float fogStart;
+    float fogEnd;
+
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
 
     mathfu::vec4 exteriorAmbientColor;
@@ -265,6 +268,20 @@ public:
 
     mathfu::vec4 getCloseRiverColor(){
         return closeRiverColor;
+    }
+
+    void setFogStart(float value) {
+        fogStart = value;
+    }
+    float getFogStart() {
+        return fogStart;
+    };
+
+    void setFogEnd(float value) {
+        fogEnd = value;
+    }
+    float getFogEnd() {
+        return fogEnd;
     }
 
     void setFogColor(float r, float g, float b, float a) {

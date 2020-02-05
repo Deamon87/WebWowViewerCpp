@@ -11,7 +11,7 @@
 
 class M2Scene : public IScene {
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
     std::string m_m2Model;
     int m_cameraView;
     mathfu::vec4 m_ambientColorOverride;
@@ -21,7 +21,7 @@ private:
     bool m_drawModel = false;
 
 public:
-    M2Scene(IWoWInnerApi *api, std::string m2Model, int cameraView = - 1) : m_api(api), m_m2Model(m2Model), m_cameraView(cameraView){
+    M2Scene(ApiContainer *api, std::string m2Model, int cameraView = - 1) : m_api(api), m_m2Model(m2Model), m_cameraView(cameraView){
         M2Object *m2Object = new M2Object(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileName(m_m2Model);
@@ -33,7 +33,7 @@ public:
     };
 
 
-    M2Scene(IWoWInnerApi *api, int fileDataId, int cameraView = - 1) : m_api(api), m_cameraView(cameraView){
+    M2Scene(ApiContainer *api, int fileDataId, int cameraView = - 1) : m_api(api), m_cameraView(cameraView){
         M2Object *m2Object = new M2Object(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileId(fileDataId);

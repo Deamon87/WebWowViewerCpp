@@ -517,12 +517,10 @@ void AdtObject::createMeshes() {
     auto api = m_api;
     adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self){
         auto *adtWideblockPS = &self->getObject<adtModelWideBlockPS>();
-        adtWideblockPS->uSunDir_FogStart = mathfu::vec4_packed(
-            mathfu::vec4(api->getGlobalSunDir(), api->getGlobalFogStart()));
-        adtWideblockPS->uSunColor_uFogEnd = mathfu::vec4_packed(
-            mathfu::vec4(api->getGlobalSunColor().xyz(), api->getGlobalFogEnd()));
-        adtWideblockPS->uAmbientLight = api->getGlobalAmbientColor();
-        adtWideblockPS->FogColor = mathfu::vec4_packed(mathfu::vec4(api->getGlobalFogColor().xyz(), 0));
+        adtWideblockPS->uFogStartAndFogEnd = mathfu::vec4_packed(
+            mathfu::vec4(api->getConfig()->getFogStart(), api->getConfig()->getFogEnd(), 0, 0));
+        adtWideblockPS->uFogColor = mathfu::vec4_packed(
+            mathfu::vec4(api->getConfig()->getFogColor().xyz(), 0));
     });
 
     for (int i = 0; i < 256; i++) {

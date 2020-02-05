@@ -398,7 +398,7 @@ void WmoGroupObject::createMeshes() {
 
     PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
 
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
     HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
 
     vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(wmoModelWideBlockVS));
@@ -439,7 +439,7 @@ void WmoGroupObject::createMeshes() {
         cacheRecord.unFogged = true;
         cacheRecord.unShadowed = true;
 
-        HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("wmoShader", &cacheRecord);
+        HGShaderPermutation shaderPermutation = device->getShader("wmoShader", &cacheRecord);
 
         gMeshTemplate meshTemplate(binding, shaderPermutation);
 
@@ -471,15 +471,15 @@ void WmoGroupObject::createMeshes() {
 
         meshTemplate.textureCount = 3;
 
-        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[0] = nullptr;
         meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
-        meshTemplate.ubo[2] = m_api->getDevice()->createUniformBufferChunk(sizeof(wmoMeshWideBlockVS));
+        meshTemplate.ubo[2] = device->createUniformBufferChunk(sizeof(wmoMeshWideBlockVS));
 
         meshTemplate.ubo[3] = vertexModelWideUniformBuffer;
-        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(wmoMeshWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(wmoMeshWideBlockPS));
 
         //Make mesh
-        HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
+        HGMesh hmesh = device->createMesh(meshTemplate);
         this->m_meshArray.push_back(hmesh);
 
         hmesh->getUniformBuffer(2)->setUpdateHandler([this, &material, vertexShader](IUniformBufferChunk *self){
@@ -489,36 +489,32 @@ void WmoGroupObject::createMeshes() {
         });
 
         hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self) {
-            mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
+//            mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
             mathfu::vec4 localambientColor = this->getAmbientColor();
             mathfu::vec3 directLight = mathfu::vec3(0,0,0);
 
             mathfu::vec4 ambientColor = localambientColor;
             //TODO: check ironforge entrance. There must be something wrong with it
             if (isBatchC || isBatchA || (this->m_geom->mogp->flags.EXTERIOR > 0)) {
-                ambientColor = globalAmbientColor;
-                directLight = m_api->getGlobalSunColor().xyz();
+//                ambientColor = globalAmbientColor;
+//                directLight = m_api->getGlobalSunColor().xyz();
             }
             float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
 
             auto &blockPS = self->getObject<wmoMeshWideBlockPS>();
-            blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-            blockPS.uSunDir_FogStart = mathfu::vec4_packed(
-                mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-            blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(
-                mathfu::vec4(directLight, m_api->getGlobalFogEnd()));
-            blockPS.uAmbientLight = ambientColor;
-            if (isBatchA) {
-                blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(localambientColor.xyz(), 1.0);
-            } else {
-                blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0, 0, 0, 0);
-            }
+            blockPS.uFogStartAndFogEndAndIsBatchA = mathfu::vec4_packed(
+                mathfu::vec4(
+                    m_api->getConfig()->getFogStart(),
+                    m_api->getConfig()->getFogEnd(),
+                    isBatchA ? 1.0 : 0.0,
+                    0.0));
+
             blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
             blockPS.PixelShader = pixelShader;
 
-            blockPS.FogColor_AlphaTest = mathfu::vec4_packed(
-                mathfu::vec4(m_api->getGlobalFogColor().xyz(), alphaTest));
+            blockPS.uFogColor_AlphaTest = mathfu::vec4_packed(
+                mathfu::vec4(m_api->getConfig()->getFogColor().xyz(), alphaTest));
         });
     }
 }
@@ -579,7 +575,7 @@ void WmoGroupObject::setLiquidType() {
 
 void WmoGroupObject::createWaterMeshes() {
 
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
     HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(*device);
     if (binding == nullptr)
         return;
@@ -595,7 +591,7 @@ void WmoGroupObject::createWaterMeshes() {
         shaderId = 0;
     }
 
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("waterShader", nullptr);
+    HGShaderPermutation shaderPermutation = device->getShader("waterShader", nullptr);
 
     gMeshTemplate meshTemplate(binding, shaderPermutation);
 
@@ -618,7 +614,7 @@ void WmoGroupObject::createWaterMeshes() {
     meshTemplate.texture[1] = texture2;
     meshTemplate.texture[2] = texture3;
 
-    meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.ubo[0] = nullptr;//m_api->getSceneWideUniformBuffer();
     meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
     meshTemplate.ubo[2] = nullptr;
 
@@ -637,7 +633,7 @@ void WmoGroupObject::createWaterMeshes() {
     });
 
 
-    HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
+    HGMesh hmesh = device->createMesh(meshTemplate);
     m_waterMeshArray.push_back(hmesh);
 }
 
@@ -1242,9 +1238,9 @@ void WmoGroupObject::assignInteriorParams(std::shared_ptr<M2Object> m2Object) {
         m2Object->setInteriorAmbientWasSet(true);
     }
 
-    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
-    mathfu::mat4 transformMatrix = m_api->getViewMat();
-    interiorSunDir = transformMatrix.Transpose().Inverse() * interiorSunDir;
-    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
-    m2Object->setSunDirOverride(interiorSunDir, true);
+//    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
+//    mathfu::mat4 transformMatrix = m_api->getViewMat();
+//    interiorSunDir = transformMatrix.Transpose().Inverse() * interiorSunDir;
+//    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
+//    m2Object->setSunDirOverride(interiorSunDir, true);
 }

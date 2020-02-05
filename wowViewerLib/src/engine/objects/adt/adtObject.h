@@ -5,7 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_ADTOBJECT_H
 #define WEBWOWVIEWERCPP_ADTOBJECT_H
 
-class IWoWInnerApi;
 class AdtObject;
 class M2Object;
 

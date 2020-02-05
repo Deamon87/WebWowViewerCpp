@@ -11,7 +11,7 @@
 
 class WmoScene : public IScene {
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
     std::string m_wmoModel;
 
     std::shared_ptr<WmoObject> m_wmoObject;
@@ -23,7 +23,7 @@ private:
 
     std::shared_ptr<WmoObject> m_currentWMO = nullptr;
 public:
-    WmoScene(IWoWInnerApi *api, std::string wmoModel) : m_api (api), m_wmoModel(wmoModel) {
+    WmoScene(ApiContainer *api, std::string wmoModel) : m_api (api), m_wmoModel(wmoModel) {
         SMMapObjDef mapObjDef;
         mapObjDef.position = C3Vector(mathfu::vec3(17064.6621f, 0, 17066.6738f));
         mapObjDef.rotation = C3Vector(mathfu::vec3(0,0,0));
@@ -39,7 +39,7 @@ public:
         m_wmoObject = wmoObject;
     };
 
-    WmoScene(IWoWInnerApi *api, int fileDataId) : m_api (api) {
+    WmoScene(ApiContainer *api, int fileDataId) : m_api (api) {
         SMMapObjDef mapObjDef;
         mapObjDef.position = C3Vector(mathfu::vec3(17064.6621f, 0, 17066.6738f));
         mapObjDef.rotation = C3Vector(mathfu::vec3(0,0,0));

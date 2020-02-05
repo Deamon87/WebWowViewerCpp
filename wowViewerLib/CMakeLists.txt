@@ -129,7 +129,6 @@ set(SOURCE_FILES
         src/engine/geometry/skinGeom.h src/engine/persistance/header/skinFileHeader.h
         src/engine/objects/m2/m2Object.cpp src/engine/objects/m2/m2Object.h
         src/engine/algorithms/mathHelper.cpp src/engine/algorithms/mathHelper.h
-        src/engine/wowInnerApi.h
         src/engine/objects/m2/m2Helpers/M2MaterialInst.cpp
         src/engine/objects/m2/m2Helpers/M2MaterialInst.h
         src/engine/managers/animationManager.cpp
