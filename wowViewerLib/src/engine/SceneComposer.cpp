@@ -157,11 +157,8 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
         DoCulling();
     }
 
-    float clearColor[4];
     m_apiContainer->hDevice->beginFrame();
-
-    m_apiContainer->hDevice->drawStageAndDeps(thisFrameScenario->drawStage);
-
+    m_apiContainer->hDevice->drawStageAndDeps(thisFrameScenario->getDrawStage());
     m_apiContainer->hDevice->commitFrame();
     m_apiContainer->hDevice->reset();
 

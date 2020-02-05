@@ -10,7 +10,6 @@
 #include "BlpTexture.h"
 #include "DxtDecompress.h"
 #include "../persistance/helper/ChunkFileReader.h"
-#include "../../include/wowScene.h"
 
 TextureFormat getTextureType(BlpFile *blpFile) {
     TextureFormat textureFormat = TextureFormat::None;

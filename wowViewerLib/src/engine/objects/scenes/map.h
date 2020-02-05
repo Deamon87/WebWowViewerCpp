@@ -100,6 +100,7 @@ public:
 
     void update(WoWFrameData *frameData) override;
     void updateBuffers(WoWFrameData *frameData) override;
+    HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) override {};
 
 //    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
 private:

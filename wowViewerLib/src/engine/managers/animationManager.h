@@ -8,7 +8,6 @@
 class AnimationManager;
 
 #include <vector>
-#include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "particles/particleEmitter.h"
 #include "CRibbonEmitter.h"

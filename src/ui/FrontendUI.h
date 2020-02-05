@@ -15,6 +15,9 @@
 class FrontendUI : public IScene {
 //Implementation of iInnerSceneApi
 public:
+    FrontendUI(std::shared_ptr<IDevice> device) {
+        m_device = device;
+    }
     ~FrontendUI() override {};
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setAnimationId(int animationId) override {};
@@ -93,7 +96,7 @@ private:
     float worldPosY = 0;
     float worldPosZ = 0;
 
-    IDevice *m_device;
+    std::shared_ptr<IDevice> m_device;
 
     HGTexture fontTexture;
 

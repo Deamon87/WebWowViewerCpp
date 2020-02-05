@@ -8,6 +8,9 @@
 class ApiContainer;
 
 #include "WowFilesCacheStorage.h"
+#include "camera/CameraInterface.h"
+#include "../include/config.h"
+#include "../include/databaseHandler.h"
 
 class ApiContainer {
 private:
@@ -16,6 +19,8 @@ public:
     HWoWFilesCacheStorage cacheStorage = nullptr;
     std::shared_ptr<IDevice> hDevice = nullptr;
     IClientDatabase *databaseHandler = nullptr;
+    std::shared_ptr<ICamera> camera = nullptr;
+    std::shared_ptr<ICamera> debugCamera = nullptr;
 
     Config *getConfig() {
         return &config;

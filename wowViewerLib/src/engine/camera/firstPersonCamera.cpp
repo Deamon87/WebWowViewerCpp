@@ -3,9 +3,9 @@
 //
 
 #include <iostream>
+#include "../algorithms/mathHelper.h"
 #include "firstPersonCamera.h"
 #include "math.h"
-#include "../algorithms/mathHelper.h"
 
 void FirstPersonCamera::addForwardDiff(float val) {
     this->depthDiff = this->depthDiff + val;
@@ -56,13 +56,6 @@ void FirstPersonCamera::startMovingDown(){
 }
 void FirstPersonCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
-}
-
-mathfu::vec3 FirstPersonCamera::getCameraPosition(){
-    return camera;
-}
-mathfu::vec3 FirstPersonCamera::getCameraLookAt(){
-    return lookAt;
 }
 
 void FirstPersonCamera::setMovementSpeed(float value) {
@@ -179,4 +172,13 @@ void FirstPersonCamera::zoomInFromMouseScroll(float val) {
 
 void FirstPersonCamera::addCameraViewOffset(float x, float y) {
 
+}
+
+HCameraMatrices FirstPersonCamera::getCameraMatrices() {
+    HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
+    cameraMatrices->cameraPos = camera;
+    cameraMatrices->lookAtMat = lookAtMat;
+
+
+    return cameraMatrices;
 }

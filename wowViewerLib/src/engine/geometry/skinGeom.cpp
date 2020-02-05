@@ -5,7 +5,6 @@
 #include "skinGeom.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "../../gapi/interface/IDevice.h"
-#include "../../include/wowScene.h"
 
 void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
     this->m2Skin = skinFile;

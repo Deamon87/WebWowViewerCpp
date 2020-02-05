@@ -58,17 +58,9 @@ void PlanarCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
 
-mathfu::vec3 PlanarCamera::getCameraPosition(){
-    return camera;
-}
-mathfu::vec3 PlanarCamera::getCameraLookAt(){
-    return lookAt;
-}
-
 void PlanarCamera::setMovementSpeed(float value) {
     this->m_moveSpeed = value;
 };
-
 
 
 void PlanarCamera::tick (animTime_t timeDelta) {
@@ -139,4 +131,13 @@ void PlanarCamera::zoomInFromMouseScroll(float val) {
 
 void PlanarCamera::addCameraViewOffset(float x, float y) {
     cameraViewOffset += mathfu::vec2(x, y);
+}
+
+HCameraMatrices PlanarCamera::getCameraMatrices() {
+    HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
+    cameraMatrices->cameraPos = camera;
+    cameraMatrices->lookAtMat = lookAtMat;
+
+
+    return cameraMatrices;
 }

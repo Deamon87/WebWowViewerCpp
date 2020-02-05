@@ -6,7 +6,6 @@
 #include "skinGeom.h"
 #include "../shader/ShaderDefinitions.h"
 #include "../../gapi/interface/IDevice.h"
-#include "../../include/wowScene.h"
 
 chunkDef<M2Geom> M2Geom::m2FileTable = {
     [](M2Geom& file, ChunkData& chunkData){},

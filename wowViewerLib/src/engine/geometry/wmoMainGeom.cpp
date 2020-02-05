@@ -3,7 +3,6 @@
 //
 
 #include "wmoMainGeom.h"
-#include "../../include/wowScene.h"
 #include <iostream>
 
 chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {

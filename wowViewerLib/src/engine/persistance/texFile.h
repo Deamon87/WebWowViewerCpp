@@ -8,7 +8,7 @@
 #include <vector>
 #include "helper/ChunkFileReader.h"
 #include "header/texFileHeader.h"
-#include "../../include/wowScene.h"
+#include "PersistentFile.h"
 
 class TexFile : public PersistentFile {
 public:

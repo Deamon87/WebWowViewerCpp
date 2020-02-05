@@ -28,7 +28,7 @@ public:
     virtual void zoomInFromTouch(float val) = 0;
     virtual void addCameraViewOffset(float x, float y) = 0;
 
-
+    virtual void setCameraPos(float x, float y, float z) = 0;
     virtual void getCameraPosition(float *position) = 0;
 };
 #endif //WOWVIEWERLIB_CONTROLLABLE_H

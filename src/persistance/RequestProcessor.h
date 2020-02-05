@@ -5,8 +5,8 @@
 #ifndef WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 
-#include "../../wowViewerLib/src/include/wowScene.h"
 #include "../../wowViewerLib/src/include/sharedFile.h"
+#include "../../wowViewerLib/src/include/iostuff.h"
 #include <thread>
 #include <list>
 #include <vector>

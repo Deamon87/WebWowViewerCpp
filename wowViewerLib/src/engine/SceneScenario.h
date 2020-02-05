@@ -33,7 +33,7 @@ class FrameScenario;
 struct CullStage {
 //Input:
     HCameraMatrices matricesForCulling;
-    IScene* scene;
+    std::shared_ptr<IScene> scene;
 
 //Output:
     int adtAreadId = -1;
@@ -55,8 +55,10 @@ struct UpdateStage {
 //input
     HCullStage cullResult;
     animTime_t delta;
-
     HCameraMatrices cameraMatrices;
+
+    //Result
+    std::vector<HGMesh> meshes;
 };
 
 
@@ -71,10 +73,17 @@ private:
     std::vector<HCullStage> cullStages;
     std::vector<HUpdateStage> updateStages;
 
-    HDrawStage drawStage;
+    HDrawStage lastDrawStage;
 public:
-    HCullStage addCullStage(HCameraMatrices matricesForCulling, IScene* scene);
+    HCullStage addCullStage(HCameraMatrices matricesForCulling, std::shared_ptr<IScene> scene);
     HUpdateStage addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate);
+
+    HDrawStage addDrawStage(HUpdateStage updateStage,
+                            HCameraMatrices matricesForDrawing,
+                            std::vector<HDrawStage> drawStageDependencies,
+                            bool setViewPort,
+                            ViewPortDimensions viewPortDimensions,
+                            bool clearScreen);
 
     HDrawStage getDrawStage();
 };

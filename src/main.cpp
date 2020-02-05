@@ -7,7 +7,7 @@
 #endif
 
 #ifdef _WIN32
-#include <errhandlingapi.h>
+ #include <errhandlingapi.h>
 #endif
 
 // Include GLEW. Always include it before gl.h and glfw.h, since it's a bit magic.
@@ -29,7 +29,6 @@
 #include <cmath>
 #include <csignal>
 
-#include "../wowViewerLib/src/include/wowScene.h"
 //#include "persistance/ZipRequestProcessor.h"
 #include "persistance/CascRequestProcessor.h"
 #include "persistance/HttpZipRequestProcessor.h"
@@ -42,7 +41,6 @@
 #include "ui/FrontendUI.h"
 #include "database/CSqliteDB.h"
 #include "../wowViewerLib/src/engine/WowFilesCacheStorage.h"
-#include "database/CSqliteDB.h"
 #include "../wowViewerLib/src/engine/SceneComposer.h"
 #include "../wowViewerLib/src/engine/camera/firstPersonCamera.h"
 #include "../wowViewerLib/src/engine/objects/scenes/map.h"
@@ -59,8 +57,8 @@ bool stopKeyboard = false;
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     if (stopMouse) return;
-    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
-    IControllable* controllable = scene->getCurrentCamera();
+    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    auto controllable = apiContainer->camera;
 
 //    if (!pointerIsLocked) {
         if (mleft_pressed == 1) {
@@ -108,8 +106,9 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (stopKeyboard) return;
-    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
-    IControllable* controllable = scene->getCurrentCamera();
+    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    auto controllable = apiContainer->camera;
+
     if ( action == GLFW_PRESS) {
         switch (key) {
             case 'W' :
@@ -157,10 +156,10 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
             case 'H':
 //                scene->switchCameras();
 //                scene->setScene(0, "trash", 0);
-                scene->setAnimationId(159);
+//                scene->setAnimationId(159);
                 break;
             case 'J':
-                scene->setAnimationId(0);
+//                scene->setAnimationId(0);
 //                testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
                 break;
             case 'K':
@@ -176,8 +175,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     if (stopMouse) return;
 
-    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
-    IControllable* controllable = scene->getCurrentCamera();
+    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    auto controllable = apiContainer->camera;
 
     controllable->zoomInFromMouseScroll(-yoffset/2.0f);
 }
@@ -394,13 +393,14 @@ int main(){
 
     apiContainer.databaseHandler = sqliteDB;
     apiContainer.hDevice = hdevice;
+    apiContainer.camera = std::make_shared<FirstPersonCamera>();
 
     SceneComposer sceneComposer = SceneComposer(&apiContainer);
 
     //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
-    FrontendUI frontendUI;
-    frontendUI.setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
+    std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(hdevice);
+    frontendUI->setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
         CascRequestProcessor *newProcessor = nullptr;
         std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
         try {
@@ -418,38 +418,38 @@ int main(){
 
         return true;
     });
-    frontendUI.setOpenSceneByfdidCallback([&currentScene, &apiContainer, &firstCamera](int mapId, int wdtFileId, float x, float y, float z) {
+    frontendUI->setOpenSceneByfdidCallback([&currentScene, &apiContainer](int mapId, int wdtFileId, float x, float y, float z) {
 //        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
         if (apiContainer.cacheStorage) {
 //            storage->actuallDropCache();
         }
 
         currentScene = std::make_shared<Map>(&apiContainer, mapId, wdtFileId);
-        firstCamera.setCameraPos(x, y, z);
+        apiContainer.camera->setCameraPos(x, y, z);
 //        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
-    frontendUI.setFarPlaneChangeCallback([&apiContainer](float farPlane) -> void {
+    frontendUI->setFarPlaneChangeCallback([&apiContainer](float farPlane) -> void {
         auto conf = apiContainer.getConfig();
         conf->setFarPlane(farPlane);
         conf->setFarPlaneForCulling(farPlane+50);
     });
-    frontendUI.setSpeedCallback([&apiContainer](float movementSpeed) -> void {
+    frontendUI->setSpeedCallback([&apiContainer](float movementSpeed) -> void {
         auto conf = apiContainer.getConfig();
         conf->setMovementSpeed(movementSpeed);
     });
-    frontendUI.setThreadCountCallback([&apiContainer](int value) -> void {
+    frontendUI->setThreadCountCallback([&apiContainer](int value) -> void {
         auto conf = apiContainer.getConfig();
         conf->setThreadCount(value);
     });
-    frontendUI.setQuicksortCutoffCallback([&apiContainer](int value) -> void {
+    frontendUI->setQuicksortCutoffCallback([&apiContainer](int value) -> void {
         auto conf = apiContainer.getConfig();
         conf->setQuickSortCutoff(value);
     });
-    frontendUI.setGetCurrentAreaName([&apiContainer]()->std::string {
+    frontendUI->setGetCurrentAreaName([&apiContainer]()->std::string {
         auto conf = apiContainer.getConfig();
         return conf->getAreaName();
     });
-    frontendUI.setUnloadScene([&apiContainer, &currentScene]()->void {
+    frontendUI->setUnloadScene([&apiContainer, &currentScene]()->void {
         if (apiContainer.cacheStorage) {
             apiContainer.cacheStorage->actuallDropCache();
         }
@@ -457,23 +457,23 @@ int main(){
         //scene->setSceneWithFileDataId(-1, 0, -1);
     });
 
-    frontendUI.setCurrentTimeChangeCallback([&apiContainer](int value) -> void {
+    frontendUI->setCurrentTimeChangeCallback([&apiContainer](int value) -> void {
         auto conf = apiContainer.getConfig();
         conf->setCurrentTime(value);
     });
 
-    frontendUI.setGetCameraPos([&apiContainer](float &cameraX,float &cameraY,float &cameraZ) -> void {
+    frontendUI->setGetCameraPos([&apiContainer](float &cameraX,float &cameraY,float &cameraZ) -> void {
         float currentCameraPos[4] = {0,0,0,0};
-        scene->getCurrentCamera()->getCameraPosition(&currentCameraPos[0]);
+        apiContainer.camera->getCameraPosition(&currentCameraPos[0]);
         cameraX = currentCameraPos[0];
         cameraY = currentCameraPos[1];
         cameraZ = currentCameraPos[2];
     });
-    frontendUI.setGetAdtSelectionMinimap([&frontendUI, &apiContainer](int wdtFileDataId) {
+    frontendUI->setGetAdtSelectionMinimap([&frontendUI, &apiContainer](int wdtFileDataId) {
         auto wdtFile = apiContainer.cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
 
 
-        frontendUI.setFillAdtSelectionMinimap([&frontendUI, wdtFile, &apiContainer](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists) -> bool {
+        frontendUI->setFillAdtSelectionMinimap([&frontendUI, wdtFile, &apiContainer](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists) -> bool {
             if (wdtFile->getStatus() == FileStatus::FSRejected) {
                 wdtFileExists = false;
                 isWMOMap = false;
@@ -495,17 +495,17 @@ int main(){
             return true;
         });
     });
-    frontendUI.setGetMapList([&sqliteDB](std::vector<MapRecord> &mapList) -> void {
+    frontendUI->setGetMapList([&sqliteDB](std::vector<MapRecord> &mapList) -> void {
         if (sqliteDB == nullptr)  return;
 
         sqliteDB->getMapArray(mapList);
     });
 
-    frontendUI.initImgui(window);
+    frontendUI->initImgui(window);
 
 
 
-//    glfwSetWindowUserPointer(window, scene);
+    glfwSetWindowUserPointer(window, &apiContainer);
     glfwSetKeyCallback(window, onKey);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetCursorPosCallback( window, cursor_position_callback);
@@ -516,12 +516,12 @@ int main(){
 
 try {
     while (!glfwWindowShouldClose(window)) {
-        frontendUI.newFrame();
-        stopMouse = frontendUI.getStopMouse();
-        stopKeyboard = frontendUI.getStopKeyboard();
+        frontendUI->newFrame();
+        stopMouse = frontendUI->getStopMouse();
+        stopKeyboard = frontendUI->getStopKeyboard();
         glfwPollEvents();
 
-//        frontendUI.composeUI();
+        frontendUI->composeUI();
 
         // Render scene
         currentFrame = glfwGetTime(); // seconds
@@ -538,9 +538,18 @@ try {
 
 //        scene->draw((deltaTime*(1000.0f))); //miliseconds
 
+        apiContainer.camera->tick(deltaTime);
+        auto cameraMatrices = apiContainer.camera->getCameraMatrices();
 
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
+        auto cullStage = sceneScenario->addCullStage(cameraMatrices, currentScene);
+        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime, cameraMatrices);
+        auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, cameraMatrices, {}, true, {{0, canvWidth},{0, canvHeight}}, true);
 
+
+        auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
+        auto uiUpdateStage = sceneScenario->addUpdateStage(nullptr, deltaTime, nullptr);
+        auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, nullptr, {sceneDrawStage}, true, {}, false);
 
 
 //        auto updateResult = scene->cull(camera)->update(camera);
@@ -548,7 +557,7 @@ try {
 //            updateResult->render(camera)->toFB(frameBuffer, viewPortDims),
 //            updateResult->render(cameraDebug)->toFB(frameBuffer, viewPortDims);
 //        }).then([]{
-//            frontendUI.bind("", frameBuffer.getTexture())
+//            frontendUI->bind("", frameBuffer.getTexture())
 //            SceneComposer.renderToScreen()
 //        });
 

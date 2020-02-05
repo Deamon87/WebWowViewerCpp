@@ -8,8 +8,6 @@
 #include <mathfu/vector.h>
 #include "mathfu/glsl_mappings.h"
 #include "CameraInterface.h"
-#include "../../include/wowScene.h"
-
 
 class FirstPersonCamera: public ICamera {
 public:
@@ -67,19 +65,15 @@ public:
         position[2] = camera.z;
     }
 
-    mathfu::mat4 &getLookatMat() override {
-        return lookAtMat;
-    }
     void setMovementSpeed(float value);
 
 public:
     //Implemented ICamera
-    mathfu::vec3 getCameraPosition() override;
-    mathfu::vec3 getCameraLookAt() override;
+    HCameraMatrices getCameraMatrices() override;
 
 public:
     void tick(animTime_t timeDelta) override;
-    void setCameraPos(float x, float y, float z);
+    void setCameraPos(float x, float y, float z) override;
 };
 
 

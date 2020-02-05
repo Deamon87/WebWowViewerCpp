@@ -4,7 +4,7 @@
 
 #include "SceneScenario.h"
 
-HCullStage FrameScenario::addCullStage(HCameraMatrices matricesForCulling, IScene *scene) {
+HCullStage FrameScenario::addCullStage(HCameraMatrices matricesForCulling, std::shared_ptr<IScene> scene) {
     HCullStage newCullStage = std::make_shared<CullStage>();
     newCullStage->matricesForCulling = matricesForCulling;
     newCullStage->scene = scene;
@@ -25,4 +25,26 @@ FrameScenario::addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCamer
     updateStages.push_back(newUpdateStage);
 
     return newUpdateStage;
+}
+
+HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
+    HCameraMatrices matricesForDrawing,
+    std::vector<HDrawStage> drawStageDependencies,
+    bool setViewPort,
+    ViewPortDimensions viewPortDimensions,
+    bool clearScreen) {
+    HDrawStage drawStage = std::make_shared<DrawStage>();
+
+    drawStage->drawStageDependencies = drawStageDependencies,
+    drawStage->matricesForRendering = matricesForDrawing;
+    drawStage->setViewPort = setViewPort;
+    drawStage->clearScreen = clearScreen;
+
+    this->lastDrawStage = drawStage;
+
+    return drawStage;
+}
+
+HDrawStage FrameScenario::getDrawStage() {
+    return lastDrawStage;
 }

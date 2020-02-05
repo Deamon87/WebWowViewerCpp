@@ -2,7 +2,7 @@
 // Created by deamon on 11.01.18.
 //
 #include "wdlFile.h"
-#include "../../include/wowScene.h"
+
 
 chunkDef<WdlFile> WdlFile::wdlFileTable = {
     [](WdlFile &file, ChunkData &chunkData) {},

@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <sstream>
 #include "CascRequestProcessor.h"
 
 void CascRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType) {

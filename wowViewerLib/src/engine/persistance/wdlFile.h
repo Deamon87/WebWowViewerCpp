@@ -9,7 +9,8 @@
 #include <string>
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
-#include "../../include/wowScene.h"
+#include "../../include/sharedFile.h"
+#include "PersistentFile.h"
 
 class WdlFile : public PersistentFile {
 public:

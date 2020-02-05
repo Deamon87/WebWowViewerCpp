@@ -7,7 +7,6 @@
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
 #include "header/wdtFileHeader.h"
-#include "../../include/wowScene.h"
 #include "PersistentFile.h"
 
 struct mcnkStruct_t {

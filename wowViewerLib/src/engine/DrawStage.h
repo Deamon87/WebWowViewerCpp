@@ -12,6 +12,12 @@ typedef std::shared_ptr<DrawStage> HDrawStage;
 #include <mathfu/glsl_mappings.h>
 #include "../gapi/interface/IDevice.h"
 
+
+struct ViewPortDimensions{
+    std::array<int, 2> mins;
+    std::array<int, 2> maxs;
+};
+
 struct CameraMatrices {
     mathfu::mat4 perspectiveMat;
     mathfu::mat4 lookAtMat;
@@ -34,7 +40,7 @@ struct DrawStage {
     bool clearScreen = false;
     mathfu::vec4 clearColor;
 
-    std::vector<HGMesh> meshes;
+
 
     HFrameBuffer target;
 };

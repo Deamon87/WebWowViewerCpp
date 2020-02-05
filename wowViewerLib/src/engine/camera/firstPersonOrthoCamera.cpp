@@ -55,14 +55,6 @@ void FirstPersonOrthoCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
 
-mathfu::vec3 FirstPersonOrthoCamera::getCameraPosition(){
-    return camera;
-}
-mathfu::vec3 FirstPersonOrthoCamera::getCameraLookAt(){
-    return lookAt;
-}
-
-
 void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
     float moveSpeed = 1.0f / 10.0f;
@@ -134,4 +126,13 @@ void FirstPersonOrthoCamera :: setCameraPos (float x, float y, float z) {
 
     this->av = 0;
     this->ah = 0;
+}
+
+HCameraMatrices FirstPersonOrthoCamera::getCameraMatrices() {
+    HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
+    cameraMatrices->cameraPos = camera;
+    cameraMatrices->lookAtMat = lookAtMat;
+
+
+    return cameraMatrices;
 }
