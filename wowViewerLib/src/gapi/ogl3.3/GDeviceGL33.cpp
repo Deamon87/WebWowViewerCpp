@@ -552,6 +552,24 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh) {
         m_lastColorMask = hmesh->m_colorMask;
     }
 
+    if (m_isScissorsEnabled != hmesh->m_isScissorsEnabled) {
+        if (hmesh->m_isScissorsEnabled) {
+            glEnable(GL_SCISSOR_TEST);
+        } else {
+            glDisable(GL_SCISSOR_TEST);
+        }
+
+        m_isScissorsEnabled = true;
+    }
+    if (hmesh->m_isScissorsEnabled) {
+        glScissor(
+            hmesh->m_scissorOffset[0],
+            hmesh->m_scissorOffset[1],
+            hmesh->m_scissorSize[0],
+            hmesh->m_scissorSize[1]
+        );
+    }
+
     if (m_lastBlendMode != hmesh->m_blendMode) {
         BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
         auto &lastBlendMode = blendModes[(char)m_lastBlendMode];
@@ -817,6 +835,7 @@ void GDeviceGL33::reset() {
     m_lastDepthWrite = -1;
     m_lastDepthCulling = -1;
     m_backFaceCulling = -1;
+    m_isScissorsEnabled = -1;
     m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     m_lastBindIndexBuffer = nullptr;
     m_lastBindVertexBuffer = nullptr;

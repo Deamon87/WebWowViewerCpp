@@ -160,6 +160,7 @@ protected:
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
     bool m_isInSkyBoxDepthMode = false;
+    int8_t m_isScissorsEnabled = -1;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
 	IVertexBuffer* m_lastBindVertexBuffer = nullptr;

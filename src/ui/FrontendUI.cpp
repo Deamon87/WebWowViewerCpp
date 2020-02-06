@@ -277,7 +277,7 @@ void FrontendUI::showAdtSelectionMinimap() {
     const float defaultImageDimension = 100;
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 64; j++) {
-            if (adtSelectionMinimap[i][j] != nullptr && adtSelectionMinimap[i][j]->getIsLoaded()) {
+            if (adtSelectionMinimap[i][j] != nullptr) {
                 if (ImGui::ImageButton(adtSelectionMinimap[i][j],
                                        ImVec2(defaultImageDimension * minimapZoom, defaultImageDimension * minimapZoom))) {
                     auto mousePos = ImGui::GetMousePos();
@@ -453,7 +453,7 @@ void FrontendUI::collectMeshes(HUpdateStage updateStage) {
 
                     meshTemplate.ubo[1] = uboPart;
                     meshTemplate.textureCount = 1;
-                    meshTemplate.texture[0] = fontTexture;
+                    meshTemplate.texture[0] = pcmd->TextureId;
 
                     meshTemplate.start = pcmd->IdxOffset * 2;
                     meshTemplate.end = pcmd->ElemCount;

@@ -49,6 +49,10 @@ private:
     int8_t m_depthCulling;
     int8_t m_backFaceCulling;
     int8_t m_triCCW = 1;
+    int8_t m_isScissorsEnabled = -1;
+    std::array<int, 2> m_scissorOffset = {0,0};
+    std::array<int, 2> m_scissorSize = {0,0};
+
     EGxBlendEnum m_blendMode;
     bool m_isTransparent;
 

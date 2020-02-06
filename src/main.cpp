@@ -375,12 +375,12 @@ int main(){
     {
         const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
         const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
-        //  HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
-        //  ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
-        //  MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-          RequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-        //  CascRequestProcessor *processor = new CascRequestProcessor(filePath);
-        //  processor->setThreaded(true);
+//        processor = new HttpZipRequestProcessor(url);
+//        processor = new ZipRequestProcessor(filePath);
+//        processor = new MpqRequestProcessor(filePath);
+        processor = new HttpRequestProcessor(url, urlFileId);
+        //  processor = new CascRequestProcessor(filePath);
+        processor->setThreaded(true);
 
         apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
         processor->setFileRequester(apiContainer.cacheStorage.get());

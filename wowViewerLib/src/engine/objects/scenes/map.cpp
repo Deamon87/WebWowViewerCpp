@@ -675,7 +675,6 @@ void Map::collectMeshes(HUpdateStage updateStage) {
 //    }
 
     //No need to sort array which has only one element
-    updateStage->meshes = {};
     if (renderedThisFramePreSort.size() > 1) {
         auto *sortedArrayPtr = &renderedThisFramePreSort[0];
         std::vector<int> indexArray = std::vector<int>(renderedThisFramePreSort.size());

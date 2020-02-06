@@ -76,7 +76,7 @@ private:
     bool showAboutWindow = false;
 //  c bool showWorldPosTooltip = false;
 
-    bool cascOpened = false;
+    bool cascOpened = true;
     bool mapCanBeOpened = true;
 
     float minimapZoom = 1;
