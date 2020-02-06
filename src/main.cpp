@@ -482,6 +482,8 @@ int main(){
 
             if (wdtFile->getStatus() != FileStatus::FSLoaded) return false;
 
+            isWMOMap = wdtFile->mphd->flags.wdt_uses_global_map_obj != 0;
+
             for (int i = 0; i < 64; i++) {
                 for (int j = 0; j < 64; j++) {
                     if (wdtFile->mapFileDataIDs[i*64 + j].minimapTexture > 0) {
@@ -539,7 +541,32 @@ try {
 //        scene->draw((deltaTime*(1000.0f))); //miliseconds
 
         apiContainer.camera->tick(deltaTime);
-        auto cameraMatrices = apiContainer.camera->getCameraMatrices();
+        auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices();
+        auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices();
+
+        {
+            float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
+            float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
+
+            float nearPlane = 1.0;
+            float fov = toRadian(45.0);
+
+            float canvasAspect = (float)canvWidth / (float)canvHeight;
+
+            cameraMatricesCulling->perspectiveMat =
+                mathfu::mat4::Perspective(
+                    fov,
+                    canvasAspect,
+                    nearPlane,
+                    farPlaneCulling);
+
+            cameraMatricesRendering->perspectiveMat =
+                mathfu::mat4::Perspective(
+                    fov,
+                    canvasAspect,
+                    nearPlane,
+                    farPlaneCulling);
+        }
 
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
 
@@ -547,9 +574,9 @@ try {
         bool clearOnUi = true;
         auto clearColor = apiContainer.getConfig()->getClearColor();
         if (currentScene != nullptr) {
-            auto cullStage = sceneScenario->addCullStage(cameraMatrices, currentScene);
-            auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime, cameraMatrices);
-            auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, cameraMatrices, {}, true,
+            auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
+            auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime, cameraMatricesRendering);
+            auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, cameraMatricesRendering, {}, true,
                 {{0, canvWidth},{0, canvHeight}},
                 true, clearColor);
 
