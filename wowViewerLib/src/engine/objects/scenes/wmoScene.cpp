@@ -187,8 +187,6 @@ void WmoScene::updateBuffers(HCullStage cullStage) {
 }
 
 void WmoScene::collectMeshes(HUpdateStage updateStage) {
-    updateStage->meshes = std::vector<HGMesh>();
-
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;
     for (auto & interiorView : updateStage->cullResult->interiorViews) {
@@ -201,7 +199,7 @@ void WmoScene::collectMeshes(HUpdateStage updateStage) {
     }
 
     for (auto &view : vector) {
-        view->collectMeshes(updateStage->meshes);
+        view->collectMeshes(*updateStage->meshes);
     }
 
     std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
@@ -213,12 +211,12 @@ void WmoScene::collectMeshes(HUpdateStage updateStage) {
 
     for (auto &m2Object : m2ObjectsRendered) {
         if (m2Object == nullptr) continue;
-        m2Object->collectMeshes(updateStage->meshes, m_viewRenderOrder);
-        m2Object->drawParticles(updateStage->meshes, m_viewRenderOrder);
+        m2Object->collectMeshes(*updateStage->meshes, m_viewRenderOrder);
+        m2Object->drawParticles(*updateStage->meshes, m_viewRenderOrder);
     }
 
-    std::sort(updateStage->meshes.begin(),
-              updateStage->meshes.end(),
+    std::sort(updateStage->meshes->begin(),
+              updateStage->meshes->end(),
               IDevice::sortMeshes
     );
 

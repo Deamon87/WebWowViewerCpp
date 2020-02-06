@@ -455,10 +455,10 @@ void FrontendUI::collectMeshes(HUpdateStage updateStage) {
                     meshTemplate.textureCount = 1;
                     meshTemplate.texture[0] = fontTexture;
 
-                    meshTemplate.start = pcmd->IdxOffset;
+                    meshTemplate.start = pcmd->IdxOffset * 2;
                     meshTemplate.end = pcmd->ElemCount;
 
-                    updateStage->meshes.push_back(m_device->createMesh(meshTemplate));
+                    updateStage->meshes->push_back(m_device->createMesh(meshTemplate));
                 }
             }
         }

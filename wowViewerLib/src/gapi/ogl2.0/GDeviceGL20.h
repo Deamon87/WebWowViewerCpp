@@ -72,6 +72,7 @@ public:
     void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) override {};
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
+    void drawStageAndDeps(HDrawStage drawStage) override {};
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
     std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void *permutationDescriptor) override;

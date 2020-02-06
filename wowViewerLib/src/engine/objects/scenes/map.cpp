@@ -703,13 +703,13 @@ void Map::collectMeshes(HUpdateStage updateStage) {
 //            );
 //        }
 
-        updateStage->meshes.reserve(indexArray.size());
+        updateStage->meshes->reserve(indexArray.size());
         for (int i = 0; i < indexArray.size(); i++) {
-            updateStage->meshes.push_back(renderedThisFramePreSort[indexArray[i]]);
+            updateStage->meshes->push_back(renderedThisFramePreSort[indexArray[i]]);
         }
     } else {
         for (int i = 0; i < renderedThisFramePreSort.size(); i++) {
-            updateStage->meshes.push_back(renderedThisFramePreSort[i]);
+            updateStage->meshes->push_back(renderedThisFramePreSort[i]);
         }
     }
 };

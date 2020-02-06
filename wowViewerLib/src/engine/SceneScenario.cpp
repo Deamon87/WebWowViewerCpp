@@ -21,6 +21,7 @@ FrameScenario::addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCamer
     newUpdateStage->cullResult = cullStage;
     newUpdateStage->delta = deltaTime;
     newUpdateStage->cameraMatrices = matricesForUpdate;
+    newUpdateStage->meshes = std::make_shared<MeshesToRender>();
 
     updateStages.push_back(newUpdateStage);
 
@@ -35,10 +36,13 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
     bool clearScreen) {
     HDrawStage drawStage = std::make_shared<DrawStage>();
 
-    drawStage->drawStageDependencies = drawStageDependencies,
+    drawStage->drawStageDependencies = drawStageDependencies;
     drawStage->matricesForRendering = matricesForDrawing;
     drawStage->setViewPort = setViewPort;
+    drawStage->viewPortDimensions = viewPortDimensions;
     drawStage->clearScreen = clearScreen;
+
+    drawStageLinks.push_back({updateStage, drawStage});
 
     this->lastDrawStage = drawStage;
 

@@ -58,7 +58,7 @@ struct UpdateStage {
     HCameraMatrices cameraMatrices;
 
     //Result
-    std::vector<HGMesh> meshes;
+    HMeshesToRender meshes;
 };
 
 
@@ -69,9 +69,15 @@ class SceneComposer;
 
 class FrameScenario {
     friend class SceneComposer;
+    struct DrawStageLinkage {
+        HUpdateStage updateStage;
+        HDrawStage drawStage;
+    };
 private:
     std::vector<HCullStage> cullStages;
     std::vector<HUpdateStage> updateStages;
+
+    std::vector <DrawStageLinkage> drawStageLinks;
 
     HDrawStage lastDrawStage;
 public:

@@ -16,7 +16,7 @@ class ITexture;
 class IShaderPermutation;
 class IMesh;
 class IM2Mesh;
-class IDeviceUI;
+class IDevice;
 class IOcclusionQuery;
 class IParticleMesh;
 class IGPUFence;
@@ -164,7 +164,7 @@ class IDevice {
         virtual void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) = 0;
         virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
-        virtual void drawStageAndDeps(HDrawStage drawStage) {};
+        virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
 
         virtual bool getIsCompressedTexturesSupported();
         virtual bool getIsAnisFiltrationSupported();

@@ -17,6 +17,7 @@
 #include "../../engine/stringTrim.h"
 #include "buffers/GVertexBufferDynamicGL33.h"
 #include "buffers/GUnformBufferChunk33.h"
+#include "../../engine/DrawStage.h"
 
 namespace GL33 {
     BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -230,6 +231,27 @@ HGUniformBuffer GDeviceGL33::createUniformBuffer(size_t size) {
     m_unfiormBufferCache.push_back(w_uniformBuffer);
 
     return h_uniformBuffer;
+}
+
+void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
+    for (int i = 0; i < drawStage->drawStageDependencies.size(); i++) {
+        this->drawStageAndDeps(drawStage->drawStageDependencies[i]);
+    }
+
+    this->setViewPortDimensions(
+        drawStage->viewPortDimensions.mins[0],
+        drawStage->viewPortDimensions.mins[1],
+        drawStage->viewPortDimensions.maxs[0],
+        drawStage->viewPortDimensions.maxs[1]
+    );
+    if (drawStage->clearScreen) {
+        clearColor[0] = drawStage->clearColor[0];
+        clearColor[1] = drawStage->clearColor[1];
+        clearColor[2] = drawStage->clearColor[2];
+    }
+    this->clearScreen();
+
+    drawMeshes(*drawStage->meshesToRender);
 }
 
 void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
@@ -1025,3 +1047,5 @@ void GDeviceGL33::shrinkData()  {
 
     aggregationBufferForUpload = {};
 }
+
+

@@ -147,13 +147,18 @@ void SceneComposer::DoUpdate() {
     for (auto updateStage : frameScenario->updateStages) {
         updateStage->cullResult->scene->collectMeshes(updateStage);
     }
+
+    for (auto &link : frameScenario->drawStageLinks) {
+        link.drawStage->meshesToRender = link.updateStage->meshes;
+    }
+
     meshesCollectCNT.endMeasurement("collectMeshes ");
     std::vector<HGMesh> meshes;
     for (int i = 0; i < frameScenario->updateStages.size(); i++) {
         auto updateStage = frameScenario->updateStages[i];
         std::copy(
-            updateStage->meshes.begin(),
-            updateStage->meshes.end(),
+            updateStage->meshes->begin(),
+            updateStage->meshes->end(),
             std::back_inserter(meshes)
         );
     }

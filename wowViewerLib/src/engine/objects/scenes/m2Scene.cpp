@@ -95,13 +95,11 @@ void M2Scene::update(HUpdateStage updateStage) {
 void M2Scene::collectMeshes(HUpdateStage updateStage) {
     if (!m_drawModel) return;
 
-    updateStage->meshes = std::vector<HGMesh>();
+    m_m2Object->collectMeshes(*updateStage->meshes, 0);
+    m_m2Object->drawParticles(*updateStage->meshes, 0);
 
-    m_m2Object->collectMeshes(updateStage->meshes, 0);
-    m_m2Object->drawParticles(updateStage->meshes, 0);
-
-    std::sort(updateStage->meshes.begin(),
-              updateStage->meshes.end(),
+    std::sort(updateStage->meshes->begin(),
+              updateStage->meshes->end(),
               IDevice::sortMeshes
     );
 

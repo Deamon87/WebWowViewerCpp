@@ -556,7 +556,9 @@ try {
 
         auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
         auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime, nullptr);
-        auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, nullptr, uiDependecies, true, {}, false);
+        auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, nullptr, uiDependecies, true, {
+            {0,0}, {canvWidth, canvHeight}
+        }, false);
 
 
 //        auto updateResult = scene->cull(camera)->update(camera);

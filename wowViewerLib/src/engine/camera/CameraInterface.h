@@ -8,8 +8,8 @@
 class ICamera;
 #include <mathfu/vector.h>
 #include "../../include/controllable.h"
-#include "../DrawStage.h"
 #include "../../include/iostuff.h"
+#include "../CameraMatrices.h"
 
 
 class ICamera : public IControllable {
