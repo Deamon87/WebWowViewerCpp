@@ -33,7 +33,7 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
     std::vector<HDrawStage> drawStageDependencies,
     bool setViewPort,
     ViewPortDimensions viewPortDimensions,
-    bool clearScreen) {
+    bool clearScreen, mathfu::vec4 clearColor) {
     HDrawStage drawStage = std::make_shared<DrawStage>();
 
     drawStage->drawStageDependencies = drawStageDependencies;
@@ -41,6 +41,7 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
     drawStage->setViewPort = setViewPort;
     drawStage->viewPortDimensions = viewPortDimensions;
     drawStage->clearScreen = clearScreen;
+    drawStage->clearColor = clearColor;
 
     drawStageLinks.push_back({updateStage, drawStage});
 

@@ -544,13 +544,16 @@ try {
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
 
         std::vector<HDrawStage> uiDependecies = {};
+        bool clearOnUi = true;
+        auto clearColor = apiContainer.getConfig()->getClearColor();
         if (currentScene != nullptr) {
             auto cullStage = sceneScenario->addCullStage(cameraMatrices, currentScene);
             auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime, cameraMatrices);
             auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, cameraMatrices, {}, true,
                 {{0, canvWidth},{0, canvHeight}},
-                true);
+                true, clearColor);
 
+            clearOnUi = false;
             uiDependecies.push_back(sceneDrawStage);
         }
 
@@ -558,7 +561,7 @@ try {
         auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime, nullptr);
         auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, nullptr, uiDependecies, true, {
             {0,0}, {canvWidth, canvHeight}
-        }, false);
+        }, clearOnUi, clearColor);
 
 
 //        auto updateResult = scene->cull(camera)->update(camera);

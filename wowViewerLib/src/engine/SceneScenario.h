@@ -89,7 +89,7 @@ public:
                             std::vector<HDrawStage> drawStageDependencies,
                             bool setViewPort,
                             ViewPortDimensions viewPortDimensions,
-                            bool clearScreen);
+                            bool clearScreen, mathfu::vec4 clearColor);
 
     HDrawStage getDrawStage();
 };
