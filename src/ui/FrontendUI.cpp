@@ -259,15 +259,6 @@ void FrontendUI::showAdtSelectionMinimap() {
 
     if (minimapZoom < 0.001)
         minimapZoom = 0.001;
-    if (prevMinimapZoom != minimapZoom) {
-        auto windowSize = ImGui::GetWindowSize();
-        ImGui::SetScrollX((ImGui::GetScrollX() + windowSize.x / 2.0) * minimapZoom / prevMinimapZoom -
-                          windowSize.x / 2.0);
-        ImGui::SetScrollY((ImGui::GetScrollY() + windowSize.y / 2.0) * minimapZoom / prevMinimapZoom -
-                          windowSize.y / 2.0);
-    }
-    prevMinimapZoom = minimapZoom;
-
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
@@ -325,6 +316,16 @@ void FrontendUI::showAdtSelectionMinimap() {
         }
         ImGui::EndPopup();
     }
+
+    if (prevMinimapZoom != minimapZoom) {
+        auto windowSize = ImGui::GetWindowSize();
+        ImGui::SetScrollX((ImGui::GetScrollX() + windowSize.x / 2.0) * minimapZoom / prevMinimapZoom -
+                          windowSize.x / 2.0);
+        ImGui::SetScrollY((ImGui::GetScrollY() + windowSize.y / 2.0) * minimapZoom / prevMinimapZoom -
+                          windowSize.y / 2.0);
+    }
+    prevMinimapZoom = minimapZoom;
+
     ImGui::EndChild();
 }
 

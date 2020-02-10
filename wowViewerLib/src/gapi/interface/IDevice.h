@@ -160,8 +160,7 @@ class IDevice {
 
         virtual void startUpdateForNextFrame() {};
         virtual void endUpdateForNextFrame() {};
-        virtual void updateBuffers(std::vector<HGMesh> &meshes)= 0;
-        virtual void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) = 0;
+        virtual void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks)= 0;
         virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
         virtual void drawStageAndDeps(HDrawStage drawStage) = 0;

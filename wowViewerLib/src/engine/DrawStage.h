@@ -27,6 +27,7 @@ typedef std::shared_ptr<MeshesToRender> HMeshesToRender;
 
 struct DrawStage {
     HCameraMatrices matricesForRendering;
+    HGUniformBufferChunk sceneWideBlockVSPSChunk;
 
     HMeshesToRender meshesToRender;
     std::vector<HDrawStage> drawStageDependencies;

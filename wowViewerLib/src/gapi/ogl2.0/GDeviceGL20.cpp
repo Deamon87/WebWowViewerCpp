@@ -234,7 +234,7 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
     }
 }
 
-void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
     std::vector<HGL20Mesh> &meshes = (std::vector<HGL20Mesh> &) iMeshes;
 
     //1. Collect buffers

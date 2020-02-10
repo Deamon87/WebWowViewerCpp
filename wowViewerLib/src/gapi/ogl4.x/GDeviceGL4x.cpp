@@ -218,7 +218,7 @@ void GDeviceGL4x::drawMeshes(std::vector<HGMesh> &meshes) {
 //    m_uniformUploadFence->setGpuFence();
 }
 
-void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
     std::vector<HGLMesh> &meshes = (std::vector<HGLMesh> &) iMeshes;

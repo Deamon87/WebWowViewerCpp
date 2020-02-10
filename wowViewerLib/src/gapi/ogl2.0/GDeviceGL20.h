@@ -68,8 +68,7 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes) override;
-    void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) override {};
+    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     void drawStageAndDeps(HDrawStage drawStage) override {};

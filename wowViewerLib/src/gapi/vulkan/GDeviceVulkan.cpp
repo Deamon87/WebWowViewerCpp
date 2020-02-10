@@ -929,7 +929,8 @@ void GDeviceVLK::endUpdateForNextFrame() {
 }
 
 typedef std::shared_ptr<GMeshVLK> HVKMesh;
-void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
+//    aggregationBufferForUpload.resize(maxUniformBufferSize);
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture();
         unsigned int zero = 0;
@@ -940,8 +941,6 @@ void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
         unsigned int ff = 0xffffffff;
         m_whitePixelTexture->loadData(1,1,&ff);
     }
-
-//    aggregationBufferForUpload.resize(maxUniformBufferSize);
 
     std::vector<HVKMesh> &meshes = (std::vector<HVKMesh> &) iMeshes;
 
@@ -1021,21 +1020,6 @@ void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
 
     if (currentSize > 0) {
         bufferForUploadVLK->uploadFromStaging(currentSize);
-    }
-}
-
-
-void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
-//    aggregationBufferForUpload.resize(maxUniformBufferSize);
-    if (!m_blackPixelTexture) {
-        m_blackPixelTexture = createTexture();
-        unsigned int zero = 0;
-        m_blackPixelTexture->loadData(1,1,&zero);
-    }
-    if (!m_whitePixelTexture) {
-        m_whitePixelTexture = createTexture();
-        unsigned int ff = 0xffffffff;
-        m_whitePixelTexture->loadData(1,1,&ff);
     }
 
 

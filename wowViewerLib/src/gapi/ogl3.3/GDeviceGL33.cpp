@@ -279,7 +279,7 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 #ifdef SINGLE_BUFFER_UPLOAD
-void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
     std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
 
     //1. Collect buffers
@@ -293,7 +293,9 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
             }
         }
     }
-
+    std::transform(additionalChunks.begin(), additionalChunks.end(), std::back_inserter(buffers), [](HGUniformBufferChunk &chunk) {
+        return chunk.get();
+    });
 
     std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
@@ -352,7 +354,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
 }
 #else
 
-void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
     std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
@@ -462,6 +464,11 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh) {
 
 #ifndef __EMSCRIPTEN__
     for (int i = 0; i < 5; i++) {
+        //TODO:!
+        if (i == 0) {
+
+        }
+
         auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
         if (uniformChunk != nullptr) {
             bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());

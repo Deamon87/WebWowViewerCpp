@@ -11,6 +11,7 @@ struct CameraMatrices {
     mathfu::mat4 perspectiveMat;
     mathfu::mat4 lookAtMat;
     mathfu::vec4 cameraPos;
+    mathfu::vec4 viewUp;
     mathfu::vec4 interiorDirectLightDir;
 };
 

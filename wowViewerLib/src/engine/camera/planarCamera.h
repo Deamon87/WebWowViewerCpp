@@ -18,8 +18,10 @@ public:
 private:
 
     mathfu::vec3 camera = {0, 0, 0};
+    mathfu::vec4 interiorDirectLightDir = {0, 0, 0, 0};
     mathfu::vec3 cameraOffset = {0, 0, 0};
     mathfu::vec3 lookAt = {0, 0, 0};
+    mathfu::vec3 upVector = {0, 0, 0};
     mathfu::mat4 lookAtMat = {};
 
     mathfu::vec2 cameraViewOffset = {0, 0};

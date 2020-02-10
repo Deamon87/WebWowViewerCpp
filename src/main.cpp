@@ -541,32 +541,17 @@ try {
 //        scene->draw((deltaTime*(1000.0f))); //miliseconds
 
         apiContainer.camera->tick(deltaTime);
-        auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices();
-        auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices();
+        float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
+        float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
 
-        {
-            float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
-            float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
+        float nearPlane = 1.0;
+        float fov = toRadian(45.0);
 
-            float nearPlane = 1.0;
-            float fov = toRadian(45.0);
+        float canvasAspect = (float)canvWidth / (float)canvHeight;
 
-            float canvasAspect = (float)canvWidth / (float)canvHeight;
 
-            cameraMatricesCulling->perspectiveMat =
-                mathfu::mat4::Perspective(
-                    fov,
-                    canvasAspect,
-                    nearPlane,
-                    farPlaneCulling);
-
-            cameraMatricesRendering->perspectiveMat =
-                mathfu::mat4::Perspective(
-                    fov,
-                    canvasAspect,
-                    nearPlane,
-                    farPlaneCulling);
-        }
+        auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+        auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
 
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
 

@@ -18,6 +18,7 @@ private:
     mathfu::vec4 camera = {0, 0, 0, 0};
     mathfu::vec4 interiorDirectLightDir = {0, 0, 0, 0};
     mathfu::vec3 lookAt = {0, 0, 0};
+    mathfu::vec3 upVector = {0, 0, 0};
     mathfu::mat4 lookAtMat = {};
 
     float MDDepthPlus = 0;

@@ -6,6 +6,7 @@
 #include <future>
 #include "SceneComposer.h"
 #include "algorithms/FrameCounter.h"
+#include "../gapi/UniformBufferStructures.h"
 
 void SceneComposer::processCaches(int limit) {
 //    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
@@ -148,7 +149,21 @@ void SceneComposer::DoUpdate() {
         updateStage->cullResult->scene->collectMeshes(updateStage);
     }
 
+
+    std::vector<HGUniformBufferChunk> additionalChunks;
     for (auto &link : frameScenario->drawStageLinks) {
+        auto renderMats = link.drawStage->matricesForRendering;
+
+        link.drawStage->sceneWideBlockVSPSChunk = device->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+        link.drawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats](IUniformBufferChunk *chunk) -> void {
+            auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
+            blockPSVS->uLookAtMat = renderMats->lookAtMat;
+            blockPSVS->uPMatrix = renderMats->perspectiveMat;
+            blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
+            blockPSVS->uViewUp = renderMats->viewUp;
+        });
+
+        additionalChunks.push_back(link.drawStage->sceneWideBlockVSPSChunk);
         link.drawStage->meshesToRender = link.updateStage->meshes;
     }
 
@@ -163,12 +178,10 @@ void SceneComposer::DoUpdate() {
         );
     }
 
-    device->prepearMemoryForBuffers(meshes);
-
     for (auto cullStage : frameScenario->cullStages) {
         cullStage->scene->updateBuffers(cullStage);
     }
-    device->updateBuffers(meshes);
+    device->updateBuffers(meshes, additionalChunks);
 
     for (auto cullStage : frameScenario->cullStages) {
         cullStage->scene->doPostLoad(cullStage); //Do post load after rendering is done!
