@@ -100,7 +100,7 @@ public:
 
     void update(HUpdateStage updateStage) override;
     void updateBuffers(HCullStage cullStage) override;
-    HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) override {};
+    HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) override { return nullptr; };
 
 //    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
 private:

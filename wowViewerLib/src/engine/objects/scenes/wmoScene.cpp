@@ -11,8 +11,8 @@ void WmoScene::checkCulling(HCullStage cullStage) {
     cullStage->m2Array = std::vector<std::shared_ptr<M2Object>>();
     cullStage->wmoArray = std::vector<std::shared_ptr<WmoObject>>();
 
-    mathfu::vec4 cameraPos = mathfu::vec4(cullStage->matricesForCulling->cameraPos, 1.0);
-    mathfu::vec3 &cameraVec3 = cullStage->matricesForCulling->cameraPos;
+    mathfu::vec4 cameraPos = cullStage->matricesForCulling->cameraPos;
+    mathfu::vec3 cameraVec3 = cullStage->matricesForCulling->cameraPos.xyz();
     mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
     mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
 
@@ -111,7 +111,7 @@ void WmoScene::checkCulling(HCullStage cullStage) {
 }
 
 void WmoScene::cullExterior(HCullStage cullStage, int viewRenderOrder) {
-    mathfu::vec4 cameraVec4 = mathfu::vec4(cullStage->matricesForCulling->cameraPos, 1.0);
+    mathfu::vec4 cameraVec4 = cullStage->matricesForCulling->cameraPos;
 
     mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
     mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
@@ -156,7 +156,7 @@ void WmoScene::doPostLoad(HCullStage cullStage) {
 }
 
 void WmoScene::update(HUpdateStage updateStage)  {
-    mathfu::vec3 &cameraVec3 = updateStage->cameraMatrices->cameraPos;
+    mathfu::vec3 cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
     mathfu::mat4 &lookAtMat4 = updateStage->cameraMatrices->lookAtMat;
 
     for (int i = 0; i < updateStage->cullResult->m2Array.size(); i++) {

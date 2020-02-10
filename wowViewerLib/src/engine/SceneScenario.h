@@ -50,7 +50,6 @@ struct CullStage {
     std::vector<std::shared_ptr<WmoObject>> wmoArray = {};
 };
 
-
 struct UpdateStage {
 //input
     HCullStage cullResult;
@@ -60,10 +59,6 @@ struct UpdateStage {
     //Result
     HMeshesToRender meshes;
 };
-
-
-
-
 
 class SceneComposer;
 

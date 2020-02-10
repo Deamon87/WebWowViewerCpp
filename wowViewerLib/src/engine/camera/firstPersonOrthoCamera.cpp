@@ -58,7 +58,7 @@ void FirstPersonOrthoCamera::stopMovingDown(){
 void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
     float moveSpeed = 1.0f / 10.0f;
-    mathfu::vec3 camera = this->camera;
+    mathfu::vec3 camera = this->camera.xyz();
 
     double dTime = timeDelta;
 
@@ -101,7 +101,7 @@ void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
         camera[2] = camera[2] + verticalDiff;
     }
 
-    this->camera = camera;
+    this->camera = mathfu::vec4(camera, 1.0);
     this->lookAt = camera + dir;
 
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
@@ -113,6 +113,12 @@ void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
     );
 
     lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
+
+    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
+    interiorSunDir = lookAtMat.Transpose().Inverse() * interiorSunDir;
+    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
+
+    this->interiorDirectLightDir = interiorSunDir;
 }
 void FirstPersonOrthoCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera
@@ -128,7 +134,10 @@ void FirstPersonOrthoCamera :: setCameraPos (float x, float y, float z) {
     this->ah = 0;
 }
 
-HCameraMatrices FirstPersonOrthoCamera::getCameraMatrices() {
+HCameraMatrices FirstPersonOrthoCamera::getCameraMatrices(float fov,
+                                                          float canvasAspect,
+                                                          float nearPlane,
+                                                          float farPlane) {
     HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
     cameraMatrices->cameraPos = camera;
     cameraMatrices->lookAtMat = lookAtMat;

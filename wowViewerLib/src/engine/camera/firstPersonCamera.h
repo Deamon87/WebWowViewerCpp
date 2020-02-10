@@ -14,7 +14,8 @@ public:
     FirstPersonCamera(){};
 
 private:
-    mathfu::vec3 camera = {0, 0, 0};
+    mathfu::vec4 camera = {0, 0, 0, 0};
+    mathfu::vec4 interiorDirectLightDir = {0, 0, 0, 0};
     mathfu::vec3 lookAt = {0, 0, 0};
     mathfu::mat4 lookAtMat = {};
 
@@ -69,7 +70,10 @@ public:
 
 public:
     //Implemented ICamera
-    HCameraMatrices getCameraMatrices() override;
+    HCameraMatrices getCameraMatrices(float fov,
+                                      float canvasAspect,
+                                      float nearPlane,
+                                      float farPlane) override;
 
 public:
     void tick(animTime_t timeDelta) override;

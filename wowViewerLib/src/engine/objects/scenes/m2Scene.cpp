@@ -8,7 +8,7 @@
 #include "../../../gapi/interface/IDevice.h"
 
 void M2Scene::checkCulling(HCullStage cullStage) {
-    mathfu::vec4 cameraPos = mathfu::vec4(cullStage->matricesForCulling->cameraPos, 1.0);
+    mathfu::vec4 cameraPos = cullStage->matricesForCulling->cameraPos;
     mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
     mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
 
@@ -65,7 +65,8 @@ void M2Scene::doPostLoad(HCullStage cullStage) {
 }
 
 void M2Scene::update(HUpdateStage updateStage) {
-    m_m2Object->update(updateStage->delta, updateStage->cameraMatrices->cameraPos, updateStage->cameraMatrices->lookAtMat);
+    auto cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
+    m_m2Object->update(updateStage->delta, cameraVec3, updateStage->cameraMatrices->lookAtMat);
     m_m2Object->uploadGeneratorBuffers(updateStage->cameraMatrices->lookAtMat);
 }
 

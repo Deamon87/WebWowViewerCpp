@@ -133,9 +133,12 @@ void PlanarCamera::addCameraViewOffset(float x, float y) {
     cameraViewOffset += mathfu::vec2(x, y);
 }
 
-HCameraMatrices PlanarCamera::getCameraMatrices() {
+HCameraMatrices PlanarCamera::getCameraMatrices(float fov,
+                                                float canvasAspect,
+                                                float nearPlane,
+                                                float farPlane) {
     HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
-    cameraMatrices->cameraPos = camera;
+    cameraMatrices->cameraPos = mathfu::vec4(camera, 1.0);
     cameraMatrices->lookAtMat = lookAtMat;
 
 

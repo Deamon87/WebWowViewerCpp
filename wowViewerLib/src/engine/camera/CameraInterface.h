@@ -15,7 +15,10 @@ class ICamera;
 class ICamera : public IControllable {
 public:
 
-    virtual HCameraMatrices getCameraMatrices() = 0;
+    virtual HCameraMatrices getCameraMatrices(float fov,
+                                              float canvasAspect,
+                                              float nearPlane,
+                                              float farPlane) = 0;
 
     virtual void tick(animTime_t timeDelta) = 0;
 };

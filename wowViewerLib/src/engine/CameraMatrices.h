@@ -10,7 +10,8 @@
 struct CameraMatrices {
     mathfu::mat4 perspectiveMat;
     mathfu::mat4 lookAtMat;
-    mathfu::vec3 cameraPos;
+    mathfu::vec4 cameraPos;
+    mathfu::vec4 interiorDirectLightDir;
 };
 
 typedef std::shared_ptr<CameraMatrices> HCameraMatrices;

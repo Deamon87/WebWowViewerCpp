@@ -76,7 +76,10 @@ public:
 
 public:
     //Implemented ICamera
-    HCameraMatrices getCameraMatrices() override;
+    HCameraMatrices getCameraMatrices(float fov,
+                                      float canvasAspect,
+                                      float nearPlane,
+                                      float farPlane) override;
 
 public:
     void tick(animTime_t timeDelta) override;

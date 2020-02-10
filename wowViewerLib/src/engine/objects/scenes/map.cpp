@@ -23,7 +23,7 @@ void Map::checkCulling(HCullStage cullStage) {
 
     Config* config = this->m_api->getConfig();
 
-    mathfu::vec4 cameraPos = mathfu::vec4(cullStage->matricesForCulling->cameraPos, 1.0);
+    mathfu::vec4 cameraPos = cullStage->matricesForCulling->cameraPos;
     mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
     mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
 
@@ -383,7 +383,7 @@ void Map::doPostLoad(HCullStage cullStage){
 void Map::update(HUpdateStage updateStage) {
     if (m_wdtfile->getStatus() != FileStatus::FSLoaded) return;
 
-    mathfu::vec3 &cameraVec3 = updateStage->cameraMatrices->cameraPos;
+    mathfu::vec3 cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
     mathfu::mat4 &frustumMat = updateStage->cameraMatrices->perspectiveMat;
     mathfu::mat4 &lookAtMat = updateStage->cameraMatrices->lookAtMat;
     animTime_t deltaTime = updateStage->delta;
