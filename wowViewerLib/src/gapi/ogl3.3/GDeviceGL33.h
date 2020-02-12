@@ -124,7 +124,7 @@ public:
         listOfDeallocators.push_back(dr);
     };
 private:
-    void drawMesh(HGMesh hmesh);
+    void drawMesh(HGMesh hmesh, HGUniformBufferChunk matrixChunk);
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {

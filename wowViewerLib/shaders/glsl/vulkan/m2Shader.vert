@@ -18,6 +18,8 @@ layout(location=5) in vec2 aTexCoord2;
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
 };
 
 // Whole model

@@ -251,6 +251,10 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
     }
     this->clearScreen();
 
+    for (auto hgMesh : *drawStage->meshesToRender) {
+        this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
+    }
+
     drawMeshes(*drawStage->meshesToRender);
 }
 
@@ -273,7 +277,7 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 
     int j = 0;
     for (auto hgMesh : meshes) {
-        this->drawMesh(hgMesh);
+        this->drawMesh(hgMesh, nullptr);
         j++;
     }
 }
@@ -441,7 +445,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
 }
 #endif
 
-void GDeviceGL33::drawMesh(HGMesh hIMesh) {
+void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     GMeshGL33 * hmesh = (GMeshGL33 *) hIMesh.get();
     if (hmesh->m_end <= 0) return;
 
@@ -464,12 +468,14 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh) {
 
 #ifndef __EMSCRIPTEN__
     for (int i = 0; i < 5; i++) {
-        //TODO:!
-        if (i == 0) {
 
+        IUniformBufferChunk *uniformChunk = nullptr;
+        if (i == 0) {
+            uniformChunk = matrixChunk.get();
+        } else {
+            uniformChunk = hmesh->m_UniformBuffer[i].get();
         }
 
-        auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
         if (uniformChunk != nullptr) {
             bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
         }
@@ -478,7 +484,12 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh) {
     for (int i = 0; i < 5; i++) {
         GUniformBufferChunk33 * uniformChunk = (GUniformBufferChunk33 *) hmesh->m_UniformBuffer[i].get();
         if (uniformChunk != nullptr) {
-            auto bufferForUpload = uniformChunk->getUniformBuffer().get();
+            IUniformBuffer *uniformBuffer = nullptr;
+            if (i == 0) {
+                bufferForUpload = matrixChunk->getUniformBuffer().get();
+            } else {
+                bufferForUpload = uniformChunk->getUniformBuffer().get();
+            }
 
             bindUniformBuffer(bufferForUpload, i, uniformChunk->getOffset(), uniformChunk->getSize());
         }

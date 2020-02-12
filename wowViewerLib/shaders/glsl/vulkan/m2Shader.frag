@@ -28,6 +28,8 @@ layout(location=0) out vec4 outputColor;
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     mat4 uLookAtMat;
     mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
 };
 
 layout(std140, set=0, binding=1) uniform modelWideBlockVS {
@@ -37,10 +39,7 @@ layout(std140, set=0, binding=1) uniform modelWideBlockVS {
 
 //Whole model
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
-    vec4 uViewUp;
-    vec4 uSunDirAndFogStart;
-    vec4 uSunColorAndFogEnd;
-    vec4 uAmbientLight;
+    vec4 uFogStartAndFogEnd;
 };
 
 //Individual meshes
