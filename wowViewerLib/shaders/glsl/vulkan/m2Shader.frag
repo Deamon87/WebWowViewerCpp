@@ -56,54 +56,6 @@ layout(set=1,binding=7) uniform sampler2D uTexture3;
 layout(set=1,binding=8) uniform sampler2D uTexture4;
 
 
-vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
-//    return matDiffuse;
-    vec3 currColor;
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1) {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = clamp(dot(normalizedN, -(uSunDirAndFogStart.xyz)), 0.0, 1.0);
-        float nDotUp = dot(normalizedN, uViewUp.xyz);
-
-        vec4 AmbientLight = uAmbientLight;
-
-        vec3 adjAmbient = (AmbientLight.rgb );
-        vec3 adjHorizAmbient = (AmbientLight.rgb );
-        vec3 adjGroundAmbient = (AmbientLight.rgb );
-
-        if ((nDotUp >= 0.0))
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-        }
-
-        vec3 skyColor = (currColor * 1.10000002);
-        vec3 groundColor = (currColor* 0.699999988);
-
-
-        lDiffuse = (uSunColorAndFogEnd.xyz * nDotL);
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-//
-
-    } else {
-        currColor = vec3 (1.0, 1.0, 1.0) ;
-        accumLight = vec3(0,0,0);
-        mult = 1.0;
-    }
-
-
-//    return currColor.rgb * matDiffuse;
-//    return sqrt((matDiffuse*matDiffuse)*0.5 + currColor.rgb*(matDiffuse*matDiffuse));
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * accumLight;
-//    return sqrt((matDiffuse*matDiffuse)*mult + currColor.rgb*(matDiffuse*matDiffuse)) ;
-    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
-}
-
 #include "../common/commonFunctions.glsl"
 
 void main() {

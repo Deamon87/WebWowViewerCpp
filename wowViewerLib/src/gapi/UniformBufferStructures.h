@@ -21,6 +21,8 @@ struct sceneWideBlockVSPS {
 
 struct exteriorLightParams {
     mathfu::vec4_packed uExteriorAmbientColor;
+    mathfu::vec4_packed uExteriorHorizontAmbientColor;
+    mathfu::vec4_packed uExteriorGroundAmbientColor;
     mathfu::vec4_packed uExteriorDirectColor;
     mathfu::vec4_packed uExteriorDirectColorDir;
 };
