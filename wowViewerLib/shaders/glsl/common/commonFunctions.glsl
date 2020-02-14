@@ -25,7 +25,10 @@ mat3 blizzTranspose(mat4 value) {
 }
 
 
-vec3 calcLight(vec3 matDiffuse, bool applyLight, vec3 accumLight, vec3 precomputedLight) {
+vec3 calcLight(vec3 matDiffuse,
+    bool applyLight, bool applyExteriorLight, bool applyInteriorLight,
+    float interiorExteriorBlend,
+    vec3 accumLight, vec3 precomputedLight) {
 //    return matDiffuse;
     vec3 currColor;
     vec3 localDiffuse = accumLight;
@@ -36,31 +39,46 @@ vec3 calcLight(vec3 matDiffuse, bool applyLight, vec3 accumLight, vec3 precomput
 
     vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
     vec3 normalizedN = normalize(vNormal);
-    float nDotL = clamp(dot(normalizedN, -(uExteriorDirectColorDir.xyz)), 0.0, 1.0);
-    float nDotUp = dot(normalizedN, uViewUp.xyz);
 
-    vec3 adjAmbient =       (uExteriorAmbientColor.rgb         + precomputedLight);
-    vec3 adjHorizAmbient =  (uExteriorHorizontAmbientColor.rgb + precomputedLight);
-    vec3 adjGroundAmbient = (uExteriorGroundAmbientColor.rgb   + precomputedLight);
+    if (applyExteriorLight) {
+        float nDotL = clamp(dot(normalizedN, -(uExteriorDirectColorDir.xyz)), 0.0, 1.0);
+        float nDotUp = dot(normalizedN, uViewUp.xyz);
 
-    if ((nDotUp >= 0.0))
-    {
-        currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
+        vec3 adjAmbient =       (uExteriorAmbientColor.rgb         + precomputedLight);
+        vec3 adjHorizAmbient =  (uExteriorHorizontAmbientColor.rgb + precomputedLight);
+        vec3 adjGroundAmbient = (uExteriorGroundAmbientColor.rgb   + precomputedLight);
+
+        if ((nDotUp >= 0.0))
+        {
+            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
+        }
+        else
+        {
+            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
+        }
+
+        vec3 skyColor = (currColor * 1.10000002);
+        vec3 groundColor = (currColor* 0.699999988);
+
+
+        lDiffuse = (uExteriorDirectColor.xyz * nDotL);
+        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
     }
-    else
-    {
-        currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
+    if (applyInteriorLight) {
+        float nDotL = clamp(dot(normalizedN, -(uInteriorSunDir.xyz)), 0.0, 1.0);
+        lDiffuseInterior = uInteriorAmbientColor * nDotL;
+
+        if (applyExteriorLight) {
+            lDiffuse = mix(lDiffuse, lDiffuseInterior, interiorExteriorBlend);
+        } else {
+            lDiffuse = lDiffuseInterior;
+            currColor = uInteriorDirectColor;
+        }
     }
-
-    vec3 skyColor = (currColor * 1.10000002);
-    vec3 groundColor = (currColor* 0.699999988);
-
-
-    lDiffuse = (uExteriorDirectColor.xyz * nDotL);
-    currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
 
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
+
     //Specular term
     vec3 specTerm = vec3(0,0,0);
     //Emission term

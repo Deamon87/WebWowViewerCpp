@@ -43,6 +43,7 @@ struct meshWideBlockVS {
     int isSkyBox;
     int padding;
     mathfu::vec4_packed Color_Transparency;
+    mathfu::vec4_packed uInteriorDirectColor;
 
     mathfu::mat4 uTextMat[2];
 };
