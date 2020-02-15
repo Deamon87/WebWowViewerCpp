@@ -1,13 +1,16 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
 precision highp float;
+
+#include "../common/commonLightFunctions.glsl"
 
 layout(location = 0) in vec2 vChunkCoords;
 layout(location = 1) in vec3 vPosition;
 layout(location = 2) in vec4 vColor;
 layout(location = 3) in vec3 vNormal;
 layout(location = 4) in vec3 vVertexLighting;
-
 
 layout(set=1, binding=5) uniform sampler2D uLayer0;
 layout(set=1, binding=6) uniform sampler2D uLayer1;
@@ -33,46 +36,6 @@ layout(std140, set=0, binding=4) uniform meshWideBlockPS {
 };
 
 layout(location = 0) out vec4 outColor;
-
-vec3 makeDiffTerm(vec3 matDiffuse) {
-  vec3 currColor;
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (true) {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -(uSunDir_FogStart.xyz));
-        float nDotUp = dot(normalizedN, uViewUp.xyz);
-
-        vec4 AmbientLight = uAmbientLight;
-
-        vec3 adjAmbient = (AmbientLight.rgb );
-        vec3 adjHorizAmbient = (AmbientLight.rgb );
-        vec3 adjGroundAmbient = (AmbientLight.rgb );
-
-        if ((nDotUp >= 0.0))
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-        }
-
-        vec3 skyColor = (currColor * 1.10000002);
-        vec3 groundColor = (currColor* 0.699999988);
-
-        lDiffuse = (uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0));
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-    } else {
-        currColor = vec3 (1.0, 1.0, 1.0) ;
-        mult = 1.0;
-    }
-
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vVertexLighting;
-    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
-}
-
 
 void main() {
     vec2 vTexCoord = vChunkCoords;
@@ -116,6 +79,8 @@ void main() {
     vec4 final = vec4(matDiffuse_3, specBlend_3);
 
     vec3 matDiffuse = final.rgb * vColor.rgb;
+
+
     vec4 finalColor = vec4(makeDiffTerm(matDiffuse), 1.0);
 
     //Spec part

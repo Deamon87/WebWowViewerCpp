@@ -21,47 +21,6 @@ layout(binding=5) uniform sampler2D uNormalTexture;
 layout(location = 0) out vec4 fragColor;
 
 
-vec3 makeDiffTerm(vec3 matDiffuse, vec3 vNormal) {
-  vec3 currColor;
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (true) {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -(uSunDir_FogStart.xyz));
-        float nDotUp = dot(normalizedN, uViewUp.xyz);
-
-        vec4 AmbientLight = uAmbientLight;
-
-        vec3 adjAmbient = (AmbientLight.rgb );
-        vec3 adjHorizAmbient = (AmbientLight.rgb );
-        vec3 adjGroundAmbient = (AmbientLight.rgb );
-
-        if ((nDotUp >= 0.0))
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-        }
-
-        vec3 skyColor = (currColor * 1.10000002);
-        vec3 groundColor = (currColor* 0.699999988);
-
-        lDiffuse = (uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0));
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-    } else {
-        currColor = vec3 (1.0, 1.0, 1.0) ;
-        mult = 1.0;
-    }
-
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-//    vec3 linearDiffTerm = (matDiffuse * matDiffuse);
-    vec3 linearDiffTerm = vec3(0.0, 0.0, 0.0);
-    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
-}
-
-
 void main() {
     vec2 TextureCoords = vec2(vChunkCoords.x, vChunkCoords.y );
 
@@ -79,11 +38,11 @@ void main() {
     finalColor.rgba = vec4(makeDiffTerm(matDiffuse, vNormal), 1.0);
 
     //Spec part
-    float specBlend = texDiffuse.a;
-    vec3 halfVec = -(normalize((uSunDir_FogStart.xyz + normalize(vPosition))));
-    vec3 lSpecular = ((uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
-    vec3 specTerm = (vec3(specBlend) * lSpecular);
-    finalColor.rgb += specTerm;
+//    float specBlend = texDiffuse.a;
+//    vec3 halfVec = -(normalize((uSunDir_FogStart.xyz + normalize(vPosition))));
+//    vec3 lSpecular = ((uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
+//    vec3 specTerm = (vec3(specBlend) * lSpecular);
+//    finalColor.rgb += specTerm;
 
     // --- Fog start ---
     vec3 fogColor = FogColor.xyz;

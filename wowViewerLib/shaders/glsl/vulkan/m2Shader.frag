@@ -9,6 +9,8 @@
 
 precision highp float;
 
+#include "../common/commonLightFunctions.glsl"
+
 struct LocalLight
 {
     vec4 color;
@@ -26,10 +28,7 @@ layout(location=5) in vec4 vDiffuseColor;
 layout(location=0) out vec4 outputColor;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-    vec4 uViewUp;
-    vec4 uInteriorSunDir;
+    SceneWideParams scene;
 };
 
 layout(std140, set=0, binding=1) uniform modelWideBlockVS {
@@ -39,7 +38,7 @@ layout(std140, set=0, binding=1) uniform modelWideBlockVS {
 
 //Whole model
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
-    vec4 uFogStartAndFogEnd;
+    InteriorLightParam intLight;
 };
 
 //Individual meshes
@@ -56,7 +55,7 @@ layout(set=1,binding=7) uniform sampler2D uTexture3;
 layout(set=1,binding=8) uniform sampler2D uTexture4;
 
 
-#include "../common/commonFunctions.glsl"
+
 
 void main() {
     /* Animation support */
@@ -98,7 +97,7 @@ void main() {
             if (index >= PixelShader_UnFogged_IsAffectedByLight_LightCount.w) break;
 
             LocalLight lightRecord = pc_lights[index];
-            vec3 vectorToLight = ((uLookAtMat * (uPlacementMat * lightRecord.position)).xyz - vPos3);
+            vec3 vectorToLight = ((scene.uLookAtMat * (uPlacementMat * lightRecord.position)).xyz - vPos3);
             float distanceToLightSqr = dot(vectorToLight, vectorToLight);
             float distanceToLightInv = inversesqrt(distanceToLightSqr);
             float distanceToLight = (distanceToLightSqr * distanceToLightInv);
@@ -139,6 +138,7 @@ void main() {
 
     } else if ( uPixelShader == 2 ) {//Combiners_Opaque_Mod
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
+        opacity = tex2.a * vDiffuseColor.a;
         opacity = tex2.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 3 ) {//Combiners_Opaque_Mod2x
@@ -316,7 +316,17 @@ void main() {
     }
 
 
-    finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + specular, finalOpacity);
+    finalColor = vec4(
+        calcLight(
+            matDiffuse,
+            vNormal,
+            PixelShader_UnFogged_IsAffectedByLight_LightCount.z > 0,
+            scene,
+            intLight,
+            accumLight, vec3(0.0)
+        ),
+        finalOpacity
+    );
 
     if(finalColor.a < uFogColorAndAlphaTest.w)
         discard;

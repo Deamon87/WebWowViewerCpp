@@ -19,38 +19,12 @@ struct sceneWideBlockVSPS {
 };
 
 
-struct exteriorLightParams {
+struct sceneExteriorLight {
     mathfu::vec4_packed uExteriorAmbientColor;
     mathfu::vec4_packed uExteriorHorizontAmbientColor;
     mathfu::vec4_packed uExteriorGroundAmbientColor;
     mathfu::vec4_packed uExteriorDirectColor;
     mathfu::vec4_packed uExteriorDirectColorDir;
-};
-
-struct interiorLightParams {
-    mathfu::vec4_packed uInteriorAmbientColor;
-};
-
-//M2 Vertex buffer formats
-struct modelWideBlockVS {
-    mathfu::mat4 uPlacementMat;
-    mathfu::mat4 uBoneMatrixes[MAX_MATRIX_NUM];
-};
-
-struct meshWideBlockVS {
-    int VertexShader;
-    int IsAffectedByLight;
-    int isSkyBox;
-    int padding;
-    mathfu::vec4_packed Color_Transparency;
-    mathfu::vec4_packed uInteriorDirectColor;
-
-    mathfu::mat4 uTextMat[2];
-};
-
-//M2 Pixel buffer formats
-struct modelWideBlockPS {
-    mathfu::vec4_packed uFogStartAndFogEnd;
 };
 
 struct LocalLight
@@ -60,54 +34,84 @@ struct LocalLight
     mathfu::vec4_packed attenuation;
 };
 
-struct meshWideBlockPS {
-    int PixelShader;
-    int UnFogged;
-    int IsAffectedByLight;
-    int LightCount;
-    mathfu::vec4_packed uFogColorAndAlphaTest;
-    LocalLight pc_lights[4];
-    mathfu::vec4_packed uPcColor;
-};
+namespace M2 {
+    struct modelWideBlockVS {
+        mathfu::mat4 uPlacementMat;
+        mathfu::mat4 uBoneMatrixes[MAX_MATRIX_NUM];
+    };
 
-//WMO VertexBuffer format
-struct wmoModelWideBlockVS {
-    mathfu::mat4 uPlacementMat;
-};
+    struct meshWideBlockVS {
+        int VertexShader;
+        int IsAffectedByLight;
+        int isSkyBox;
+        int padding;
+        mathfu::vec4_packed Color_Transparency;
+        mathfu::vec4_packed uInteriorDirectColor;
 
-struct wmoMeshWideBlockVS {
-    int VertexShader;
-    int UseLitColor;
-    int padding[2];
-};
+        mathfu::mat4 uTextMat[2];
+    };
+    //M2 Pixel buffer formats
+    struct modelWideBlockPS {
+        mathfu::vec4_packed uInteriorAmbientColor;
+        mathfu::vec4_packed uInteriorDirectColor;
+        mathfu::vec4_packed uFogStartAndFogEnd;
+    };
 
+    struct meshWideBlockPS {
+        int PixelShader;
+        int UnFogged;
+        int IsAffectedByLight;
+        int LightCount;
 
-struct wmoMeshWideBlockPS {
+        mathfu::vec4_packed uFogColorAndAlphaTest;
+        LocalLight pc_lights[4];
+        mathfu::vec4_packed uPcColor;
+    };
+}
+
+namespace WMO {
+    //WMO VertexBuffer format
+    struct modelWideBlockVS {
+        mathfu::mat4 uPlacementMat;
+    };
+
+    struct meshWideBlockVS {
+        int VertexShader;
+        int UseLitColor;
+        int padding[2];
+    };
+
+    struct modelWideBlockPS {
+        mathfu::vec4_packed uInteriorAmbientColor;
+    };
+
+    struct meshWideBlockPS {
 //    PACK({struct
-    mathfu::vec4_packed uFogStartAndFogEndAndIsBatchA;
-    int UseLitColor;
-    int EnableAlpha;
-    int PixelShader;
-    int padding;
-    mathfu::vec4_packed uFogColor_AlphaTest;
+        mathfu::vec4_packed uFogStartAndFogEndAndIsBatchA;
+        int UseLitColor;
+        int EnableAlpha;
+        int PixelShader;
+        int padding;
+        mathfu::vec4_packed uFogColor_AlphaTest;
 //    )}
-};
+    };
+}
+namespace ADT {
+    struct meshWideBlockVS {
+        mathfu::vec4 uPos;
+    };
 
-//ADT
+    struct modelWideBlockPS {
+        mathfu::vec4_packed uFogStartAndFogEnd;
+        mathfu::vec4_packed uFogColor;
+    };
 
-struct adtMeshWideBlockVS {
-    mathfu::vec4 uPos;
-};
+    struct meshWideBlockPS {
+        float uHeightScale[4];
+        float uHeightOffset[4];
+    };
+}
 
-struct adtModelWideBlockPS {
-    mathfu::vec4_packed uFogStartAndFogEnd;
-    mathfu::vec4_packed uFogColor;
-};
-
-struct adtMeshWideBlockPS {
-    float uHeightScale[4];
-    float uHeightOffset[4];
-};
 
 
 struct bbModelWideBlockVS {
