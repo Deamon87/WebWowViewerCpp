@@ -62,11 +62,11 @@ public:
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
 
     void checkCulling(HCullStage cullStage) override;
-    void collectMeshes(HUpdateStage updateStage) override ;
 
     void doPostLoad(HCullStage cullStage) override;
     void update(HUpdateStage updateStage) override;
     void updateBuffers(HCullStage cullStage) override;
+    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) override;
 
     void setAnimationId(int animationId) override {
     };

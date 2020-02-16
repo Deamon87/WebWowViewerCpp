@@ -18,10 +18,9 @@ public:
 
     virtual void setAnimationId(int animationId) = 0;
 
-    virtual HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) = 0;
+    virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) = 0;
 
     virtual void checkCulling(HCullStage cullStage) = 0;
-    virtual void collectMeshes(HUpdateStage updateStage) = 0;
 
     virtual void doPostLoad(HCullStage cullStage) = 0;
     virtual void update(HUpdateStage updateStage) = 0;

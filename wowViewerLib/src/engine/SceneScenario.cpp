@@ -21,7 +21,6 @@ FrameScenario::addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCamer
     newUpdateStage->cullResult = cullStage;
     newUpdateStage->delta = deltaTime;
     newUpdateStage->cameraMatrices = matricesForUpdate;
-    newUpdateStage->meshes = std::make_shared<MeshesToRender>();
 
     updateStages.push_back(newUpdateStage);
 
@@ -29,6 +28,7 @@ FrameScenario::addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCamer
 }
 
 HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
+    HScene scene,
     HCameraMatrices matricesForDrawing,
     std::vector<HDrawStage> drawStageDependencies,
     bool setViewPort,
@@ -45,7 +45,7 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
 
     drawStage->sceneWideBlockVSPSChunk;
 
-    drawStageLinks.push_back({updateStage, drawStage});
+    drawStageLinks.push_back({scene, updateStage, drawStage});
 
     this->lastDrawStage = drawStage;
 

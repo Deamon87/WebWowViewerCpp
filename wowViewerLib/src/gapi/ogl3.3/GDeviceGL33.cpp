@@ -251,11 +251,11 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
     }
     this->clearScreen();
 
-    for (auto hgMesh : *drawStage->meshesToRender) {
+    for (auto hgMesh : drawStage->meshesToRender->meshes) {
         this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
     }
 
-    drawMeshes(*drawStage->meshesToRender);
+    drawMeshes(drawStage->meshesToRender->meshes);
 }
 
 void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
@@ -297,9 +297,12 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
             }
         }
     }
-    std::transform(additionalChunks.begin(), additionalChunks.end(), std::back_inserter(buffers), [](HGUniformBufferChunk &chunk) {
-        return chunk.get();
-    });
+    for (const auto &bufferChunks : additionalChunks) {
+        if (bufferChunks != nullptr) {
+            buffers.push_back(bufferChunks.get());
+        }
+    }
+
 
     std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );

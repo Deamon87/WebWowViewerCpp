@@ -11,21 +11,30 @@
 
 #define MAX_MATRIX_NUM 220
 
-struct sceneWideBlockVSPS {
-    mathfu::mat4 uLookAtMat;
-    mathfu::mat4 uPMatrix;
-    mathfu::vec4_packed uViewUp;
-    mathfu::vec4_packed uInteriorSunDir;
-};
-
-
-struct sceneExteriorLight {
+struct SceneExteriorLight {
     mathfu::vec4_packed uExteriorAmbientColor;
     mathfu::vec4_packed uExteriorHorizontAmbientColor;
     mathfu::vec4_packed uExteriorGroundAmbientColor;
     mathfu::vec4_packed uExteriorDirectColor;
     mathfu::vec4_packed uExteriorDirectColorDir;
 };
+
+struct sceneWideBlockVSPS {
+    mathfu::mat4 uLookAtMat;
+    mathfu::mat4 uPMatrix;
+    mathfu::vec4_packed uViewUp;
+    mathfu::vec4_packed uInteriorSunDir;
+
+    SceneExteriorLight extLight;
+};
+
+struct InteriorLightParam {
+    mathfu::vec4_packed uInteriorAmbientColorAndApplyInteriorLight;
+    mathfu::vec4_packed uInteriorDirectColorAndApplyExteriorLight;
+    mathfu::vec4_packed interiorExteriorBlend;
+};
+
+
 
 struct LocalLight
 {
@@ -52,12 +61,10 @@ namespace M2 {
     };
     //M2 Pixel buffer formats
     struct modelWideBlockPS {
-        mathfu::vec4_packed uInteriorAmbientColor;
-        mathfu::vec4_packed uInteriorDirectColor;
-        mathfu::vec4_packed uFogStartAndFogEnd;
+        InteriorLightParam intLight;
     };
 
-    struct meshWideBlockPS {
+    struct  meshWideBlockPS {
         int PixelShader;
         int UnFogged;
         int IsAffectedByLight;
@@ -73,6 +80,7 @@ namespace WMO {
     //WMO VertexBuffer format
     struct modelWideBlockVS {
         mathfu::mat4 uPlacementMat;
+        InteriorLightParam intLight;
     };
 
     struct meshWideBlockVS {
@@ -87,7 +95,6 @@ namespace WMO {
 
     struct meshWideBlockPS {
 //    PACK({struct
-        mathfu::vec4_packed uFogStartAndFogEndAndIsBatchA;
         int UseLitColor;
         int EnableAlpha;
         int PixelShader;

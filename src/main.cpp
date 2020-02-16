@@ -561,7 +561,7 @@ try {
         if (currentScene != nullptr) {
             auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
             auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime, cameraMatricesRendering);
-            auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, cameraMatricesRendering, {}, true,
+            auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
                 {{0, canvWidth},{0, canvHeight}},
                 true, clearColor);
 
@@ -571,7 +571,7 @@ try {
 
         auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
         auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime, nullptr);
-        auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, nullptr, uiDependecies, true, {
+        auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies, true, {
             {0,0}, {canvWidth, canvHeight}
         }, clearOnUi, clearColor);
 

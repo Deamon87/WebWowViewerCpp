@@ -401,10 +401,10 @@ void WmoGroupObject::createMeshes() {
     std::shared_ptr<IDevice> device = m_api->hDevice;
     HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
 
-    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(wmoModelWideBlockVS));
+    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockVS));
 
     vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
-        wmoModelWideBlockVS &blockVS = self->getObject<wmoModelWideBlockVS>();
+        WMO::modelWideBlockVS &blockVS = self->getObject<WMO::modelWideBlockVS>();
         blockVS.uPlacementMat = *m_modelMatrix;
     });
 
@@ -473,17 +473,17 @@ void WmoGroupObject::createMeshes() {
 
         meshTemplate.ubo[0] = nullptr;
         meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
-        meshTemplate.ubo[2] = device->createUniformBufferChunk(sizeof(wmoMeshWideBlockVS));
+        meshTemplate.ubo[2] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockVS));
 
         meshTemplate.ubo[3] = vertexModelWideUniformBuffer;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(wmoMeshWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockPS));
 
         //Make mesh
         HGMesh hmesh = device->createMesh(meshTemplate);
         this->m_meshArray.push_back(hmesh);
 
         hmesh->getUniformBuffer(2)->setUpdateHandler([this, &material, vertexShader](IUniformBufferChunk *self){
-            wmoMeshWideBlockVS &blockVS = self->getObject<wmoMeshWideBlockVS>();
+            WMO::meshWideBlockVS &blockVS = self->getObject<WMO::meshWideBlockVS>();
             blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockVS.VertexShader = vertexShader;
         });
@@ -501,13 +501,13 @@ void WmoGroupObject::createMeshes() {
             }
             float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
 
-            auto &blockPS = self->getObject<wmoMeshWideBlockPS>();
-            blockPS.uFogStartAndFogEndAndIsBatchA = mathfu::vec4_packed(
-                mathfu::vec4(
-                    m_api->getConfig()->getFogStart(),
-                    m_api->getConfig()->getFogEnd(),
-                    isBatchA ? 1.0 : 0.0,
-                    0.0));
+            auto &blockPS = self->getObject<WMO::meshWideBlockPS>();
+//            blockPS.uFogStartAndFogEndAndIsBatchA = mathfu::vec4_packed(
+//                mathfu::vec4(
+//                    m_api->getConfig()->getFogStart(),
+//                    m_api->getConfig()->getFogEnd(),
+//                    isBatchA ? 1.0 : 0.0,
+//                    0.0));
 
             blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;

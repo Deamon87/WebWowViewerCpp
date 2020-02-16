@@ -22,12 +22,10 @@ public:
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setAnimationId(int animationId) override {};
 
-    HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) override {
-        return HDrawStage();
-    };
+    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) override;
 
     void checkCulling(HCullStage cullStage) override {};
-    void collectMeshes(HUpdateStage updateStage) override;
+
 
     void doPostLoad(HCullStage cullStage) override {};
     void update(HUpdateStage updateStage) override {};

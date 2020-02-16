@@ -23,11 +23,6 @@ layout(std140, set=0, binding=3) uniform modelWideBlockVS {
 };
 
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
-    vec4 uViewUp;
-    vec4 uSunDir_FogStart;
-    vec4 uSunColor_uFogEnd;
-    vec4 uAmbientLight;
-    vec4 uAmbientLight2AndIsBatchA;
     ivec4 UseLitColor_EnableAlpha_PixelShader;
     vec4 FogColor_AlphaTest;
 };

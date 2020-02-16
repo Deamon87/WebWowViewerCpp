@@ -25,9 +25,9 @@ vec3 calcLight(
     vec3 matDiffuse,
     vec3 vNormal,
     bool applyLight,
-    const SceneWideParams sceneParams,
-    const InteriorLightParam intLight,
-    const vec3 accumLight, const vec3 precomputedLight) {
+    readonly SceneWideParams sceneParams,
+    readonly InteriorLightParam intLight,
+    readonly vec3 accumLight, const vec3 precomputedLight) {
 
     vec3 currColor;
     vec3 localDiffuse = accumLight;

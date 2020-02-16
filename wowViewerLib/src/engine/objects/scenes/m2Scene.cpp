@@ -93,18 +93,6 @@ void M2Scene::update(HUpdateStage updateStage) {
 //    m_m2Object->setAmbientColorOverride(ambientColor, override);
 //}
 
-void M2Scene::collectMeshes(HUpdateStage updateStage) {
-    if (!m_drawModel) return;
-
-    m_m2Object->collectMeshes(*updateStage->meshes, 0);
-    m_m2Object->drawParticles(*updateStage->meshes, 0);
-
-    std::sort(updateStage->meshes->begin(),
-              updateStage->meshes->end(),
-              IDevice::sortMeshes
-    );
-
-}
 
 void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
     //std::cout << "replaceTextureArray.size == " << replaceTextureArray.size() << std::endl;
@@ -130,4 +118,18 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
 
 void M2Scene::updateBuffers(HCullStage cullStage) {
 
+}
+
+void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
+    if (!m_drawModel) return;
+
+    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+
+    m_m2Object->collectMeshes(resultDrawStage->meshesToRender->meshes, 0);
+    m_m2Object->drawParticles(resultDrawStage->meshesToRender->meshes, 0);
+
+    std::sort(resultDrawStage->meshesToRender->meshes.begin(),
+              resultDrawStage->meshesToRender->meshes.end(),
+              IDevice::sortMeshes
+    );
 }

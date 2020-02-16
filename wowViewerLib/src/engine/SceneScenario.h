@@ -8,6 +8,7 @@
 #include <memory>
 
 class IScene;
+typedef std::shared_ptr<IScene> HScene;
 struct CameraMatrices;
 struct CullStage;
 struct UpdateStage;
@@ -33,7 +34,7 @@ class FrameScenario;
 struct CullStage {
 //Input:
     HCameraMatrices matricesForCulling;
-    std::shared_ptr<IScene> scene;
+    HScene scene;
 
 //Output:
     int adtAreadId = -1;
@@ -55,9 +56,6 @@ struct UpdateStage {
     HCullStage cullResult;
     animTime_t delta;
     HCameraMatrices cameraMatrices;
-
-    //Result
-    HMeshesToRender meshes;
 };
 
 class SceneComposer;
@@ -65,6 +63,7 @@ class SceneComposer;
 class FrameScenario {
     friend class SceneComposer;
     struct DrawStageLinkage {
+        HScene scene;
         HUpdateStage updateStage;
         HDrawStage drawStage;
     };
@@ -80,6 +79,7 @@ public:
     HUpdateStage addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate);
 
     HDrawStage addDrawStage(HUpdateStage updateStage,
+                            HScene scene,
                             HCameraMatrices matricesForDrawing,
                             std::vector<HDrawStage> drawStageDependencies,
                             bool setViewPort,

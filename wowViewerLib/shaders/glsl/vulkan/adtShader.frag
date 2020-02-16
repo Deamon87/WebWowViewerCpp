@@ -22,6 +22,10 @@ layout(set=1, binding=11) uniform sampler2D uLayerHeight1;
 layout(set=1, binding=12) uniform sampler2D uLayerHeight2;
 layout(set=1, binding=13) uniform sampler2D uLayerHeight3;
 
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
+    SceneWideParams scene;
+};
+
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
     vec4 uViewUp;
     vec4 uSunDir_FogStart;
@@ -36,6 +40,12 @@ layout(std140, set=0, binding=4) uniform meshWideBlockPS {
 };
 
 layout(location = 0) out vec4 outColor;
+
+const InteriorLightParam intLight = {
+    vec4(0,0,0,0),
+    vec4(0,0,0,1),
+    vec4(0,0,0,0)
+};
 
 void main() {
     vec2 vTexCoord = vChunkCoords;
@@ -81,12 +91,24 @@ void main() {
     vec3 matDiffuse = final.rgb * vColor.rgb;
 
 
-    vec4 finalColor = vec4(makeDiffTerm(matDiffuse), 1.0);
+    vec4 finalColor = vec4(
+        calcLight(
+            matDiffuse,
+            vNormal,
+            true,
+            scene,
+            intLight,
+            vVertexLighting.rgb, /* accumLight */
+            vec3(0.0) /*precomputedLight*/
+
+        ),
+        1.0
+    );
 
     //Spec part
     float specBlend = final.a;
     vec3 halfVec = -(normalize((uSunDir_FogStart.xyz + normalize(vPosition))));
-    vec3 lSpecular = ((uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
+    vec3 lSpecular = ((scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
     vec3 specTerm = (vec3(specBlend) * lSpecular);
     finalColor.rgb += specTerm;
 

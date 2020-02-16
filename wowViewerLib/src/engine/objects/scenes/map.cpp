@@ -13,6 +13,7 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../wowFrameData.h"
 #include "../../algorithms/quick-sort-omp.h"
+#include "../../../gapi/UniformBufferStructures.h"
 
 //#include "../../algorithms/quicksort-dualpivot.h"
 
@@ -632,9 +633,29 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
     return nullptr;
 }
 
-void Map::collectMeshes(HUpdateStage updateStage) {
+animTime_t Map::getCurrentSceneTime() {
+    return m_currentTime;
+}
+
+void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
     auto cullStage = updateStage->cullResult;
     auto renderedThisFramePreSort = std::vector<HGMesh>();
+
+    //Create scenewide uniform
+    auto renderMats = resultDrawStage->matricesForRendering;
+
+    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats](IUniformBufferChunk *chunk) -> void {
+        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
+        blockPSVS->uLookAtMat = renderMats->lookAtMat;
+        blockPSVS->uPMatrix = renderMats->perspectiveMat;
+        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
+        blockPSVS->uViewUp = renderMats->viewUp;
+    });
+
+    //Create meshes
+    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+
 
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;
@@ -648,9 +669,9 @@ void Map::collectMeshes(HUpdateStage updateStage) {
     }
 
 //    if (m_api->getConfig()->getRenderWMO()) {
-        for (auto &view : vector) {
-            view->collectMeshes(renderedThisFramePreSort);
-        }
+    for (auto &view : vector) {
+        view->collectMeshes(renderedThisFramePreSort);
+    }
 //    }
 
     std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
@@ -667,11 +688,11 @@ void Map::collectMeshes(HUpdateStage updateStage) {
     m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
 
 //    if (m_api->getConfig()->getRenderM2()) {
-        for (auto &m2Object : m2ObjectsRendered) {
-            if (m2Object == nullptr) continue;
-            m2Object->collectMeshes(renderedThisFramePreSort, m_viewRenderOrder);
-            m2Object->drawParticles(renderedThisFramePreSort, m_viewRenderOrder);
-        }
+    for (auto &m2Object : m2ObjectsRendered) {
+        if (m2Object == nullptr) continue;
+        m2Object->collectMeshes(renderedThisFramePreSort, m_viewRenderOrder);
+        m2Object->drawParticles(renderedThisFramePreSort, m_viewRenderOrder);
+    }
 //    }
 
     //No need to sort array which has only one element
@@ -685,13 +706,13 @@ void Map::collectMeshes(HUpdateStage updateStage) {
         auto *config = m_api->getConfig();
 
 //        if (config->getMovementSpeed() > 2) {
-            quickSort_parallel(
-                indexArray.data(),
-                indexArray.size(),
-                config->getThreadCount(),
-                config->getQuickSortCutoff(),
-                #include "../../../gapi/interface/sortLambda.h"
-            );
+        quickSort_parallel(
+            indexArray.data(),
+            indexArray.size(),
+            config->getThreadCount(),
+            config->getQuickSortCutoff(),
+#include "../../../gapi/interface/sortLambda.h"
+        );
 //        } else {
 //            quickSort_dualPoint(
 //                indexArray.data(),
@@ -702,17 +723,13 @@ void Map::collectMeshes(HUpdateStage updateStage) {
 //            );
 //        }
 
-        updateStage->meshes->reserve(indexArray.size());
+        resultDrawStage->meshesToRender->meshes.reserve(indexArray.size());
         for (int i = 0; i < indexArray.size(); i++) {
-            updateStage->meshes->push_back(renderedThisFramePreSort[indexArray[i]]);
+            resultDrawStage->meshesToRender->meshes.push_back(renderedThisFramePreSort[indexArray[i]]);
         }
     } else {
         for (int i = 0; i < renderedThisFramePreSort.size(); i++) {
-            updateStage->meshes->push_back(renderedThisFramePreSort[i]);
+            resultDrawStage->meshesToRender->meshes.push_back(renderedThisFramePreSort[i]);
         }
     }
-};
-
-animTime_t Map::getCurrentSceneTime() {
-    return m_currentTime;
 }

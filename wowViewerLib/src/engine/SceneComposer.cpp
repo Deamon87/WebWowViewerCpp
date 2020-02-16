@@ -121,6 +121,17 @@ void SceneComposer::DoCulling() {
     }
 }
 
+void collectMeshes(HDrawStage drawStage, std::vector<HGMesh> &meshes) {
+    std::copy(
+        drawStage->meshesToRender->meshes.begin(),
+        drawStage->meshesToRender->meshes.end(),
+        std::back_inserter(meshes)
+    );
+    for (auto deps : drawStage->drawStageDependencies) {
+        collectMeshes(deps, meshes);
+    }
+}
+
 void SceneComposer::DoUpdate() {
     FrameCounter frameCounter;
 
@@ -145,38 +156,18 @@ void SceneComposer::DoUpdate() {
     singleUpdateCNT.endMeasurement("single update ");
 
     meshesCollectCNT.beginMeasurement();
-    for (auto updateStage : frameScenario->updateStages) {
-        updateStage->cullResult->scene->collectMeshes(updateStage);
-    }
-
 
     std::vector<HGUniformBufferChunk> additionalChunks;
     for (auto &link : frameScenario->drawStageLinks) {
-        auto renderMats = link.drawStage->matricesForRendering;
-
-        link.drawStage->sceneWideBlockVSPSChunk = device->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
-        link.drawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats](IUniformBufferChunk *chunk) -> void {
-            auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
-            blockPSVS->uLookAtMat = renderMats->lookAtMat;
-            blockPSVS->uPMatrix = renderMats->perspectiveMat;
-            blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
-            blockPSVS->uViewUp = renderMats->viewUp;
-        });
+        link.scene->produceDrawStage(link.drawStage, link.updateStage);
 
         additionalChunks.push_back(link.drawStage->sceneWideBlockVSPSChunk);
-        link.drawStage->meshesToRender = link.updateStage->meshes;
     }
 
-    meshesCollectCNT.endMeasurement("collectMeshes ");
     std::vector<HGMesh> meshes;
-    for (int i = 0; i < frameScenario->updateStages.size(); i++) {
-        auto updateStage = frameScenario->updateStages[i];
-        std::copy(
-            updateStage->meshes->begin(),
-            updateStage->meshes->end(),
-            std::back_inserter(meshes)
-        );
-    }
+    collectMeshes(frameScenario->getDrawStage(), meshes);
+
+    meshesCollectCNT.endMeasurement("collectMeshes ");
 
     for (auto cullStage : frameScenario->cullStages) {
         cullStage->scene->updateBuffers(cullStage);

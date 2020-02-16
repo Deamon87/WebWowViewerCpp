@@ -1303,10 +1303,10 @@ void M2Object::createMeshes() {
         }
         meshTemplate.ubo[0] = nullptr;
         meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
-        meshTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(meshWideBlockVS));
+        meshTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::meshWideBlockVS));
 
         meshTemplate.ubo[3] = fragmentModelWideUniformBuffer;
-        meshTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(meshWideBlockPS));
+        meshTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::meshWideBlockPS));
 
          //Make mesh
         HGM2Mesh hmesh = m_api->hDevice->createM2Mesh(meshTemplate);
@@ -1584,11 +1584,11 @@ void M2Object::createVertexBindings() {
 
     //3. Create model wide uniform buffer
 //    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(mathfu::mat4) * (m_m2Geom->m_m2Data->bones.size + 1));
-    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(modelWideBlockVS));
-    fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(modelWideBlockPS));
+    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockVS));
+    fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockPS));
 
     vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
-        auto &blockVS = self->getObject<modelWideBlockVS>();
+        auto &blockVS = self->getObject<M2::modelWideBlockVS>();
 
         blockVS.uPlacementMat = m_placementMatrix;
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
@@ -1606,7 +1606,7 @@ void M2Object::createVertexBindings() {
             localDiffuse = m_api->getConfig()->getExteriorDirectColor();
         }
 
-        modelWideBlockPS &blockPS = self->getObject<modelWideBlockPS>();
+        M2::modelWideBlockPS &blockPS = self->getObject<M2::modelWideBlockPS>();
 
 
         //TODO: move this calculation to camera

@@ -512,11 +512,11 @@ void AdtObject::createMeshes() {
     auto adtFileTex = m_adtFileTex;
     auto adtFile = m_adtFile;
 
-    adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(adtModelWideBlockPS));
+    adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::modelWideBlockPS));
 
     auto api = m_api;
     adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self){
-        auto *adtWideblockPS = &self->getObject<adtModelWideBlockPS>();
+        auto *adtWideblockPS = &self->getObject<ADT::modelWideBlockPS>();
         adtWideblockPS->uFogStartAndFogEnd = mathfu::vec4_packed(
             mathfu::vec4(api->getConfig()->getFogStart(), api->getConfig()->getFogEnd(), 0, 0));
         adtWideblockPS->uFogColor = mathfu::vec4_packed(
@@ -544,16 +544,16 @@ void AdtObject::createMeshes() {
 
         aTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
         aTemplate.ubo[1] = nullptr;
-        aTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(adtMeshWideBlockVS));
+        aTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockVS));
         aTemplate.ubo[3] = adtWideBlockPS;
-        aTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(adtMeshWideBlockPS));
+        aTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockPS));
 
         aTemplate.textureCount = 9;
 
         aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
         aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBufferChunk *self){
-            auto &blockPS = self->getObject<adtMeshWideBlockPS>();
+            auto &blockPS = self->getObject<ADT::meshWideBlockPS>();
             for (int j = 0; j < 4; j++) {
                 blockPS.uHeightOffset[j] = 0.0f;
                 blockPS.uHeightScale[j] = 1.0f;
@@ -569,7 +569,7 @@ void AdtObject::createMeshes() {
         });
 
         aTemplate.ubo[2]->setUpdateHandler([this, i](IUniformBufferChunk *self){
-            auto &blockVS = self->getObject<adtMeshWideBlockVS>();
+            auto &blockVS = self->getObject<ADT::meshWideBlockVS>();
             blockVS.uPos = mathfu::vec4(
                 this->m_adtFile->mapTile[i].position.x,
                 this->m_adtFile->mapTile[i].position.y,

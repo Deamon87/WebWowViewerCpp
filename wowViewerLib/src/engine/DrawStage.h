@@ -22,7 +22,7 @@ struct ViewPortDimensions{
     std::array<int, 2> maxs;
 };
 
-typedef std::vector<HGMesh> MeshesToRender;
+struct MeshesToRender {std::vector<HGMesh> meshes;} ;
 typedef std::shared_ptr<MeshesToRender> HMeshesToRender;
 
 struct DrawStage {

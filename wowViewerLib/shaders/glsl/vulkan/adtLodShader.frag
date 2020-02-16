@@ -35,7 +35,7 @@ void main() {
 
 
 
-    finalColor.rgba = vec4(makeDiffTerm(matDiffuse, vNormal), 1.0);
+    finalColor.rgba = vec4(0,0,0, 1.0);
 
     //Spec part
 //    float specBlend = texDiffuse.a;

@@ -6,6 +6,7 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
+#include "../../../gapi/UniformBufferStructures.h"
 
 void WmoScene::checkCulling(HCullStage cullStage) {
     cullStage->m2Array = std::vector<std::shared_ptr<M2Object>>();
@@ -186,8 +187,26 @@ void WmoScene::updateBuffers(HCullStage cullStage) {
 
 }
 
-void WmoScene::collectMeshes(HUpdateStage updateStage) {
-    // Put everything into one array and sort
+void WmoScene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
+    auto cullStage = updateStage->cullResult;
+    auto renderedThisFramePreSort = std::vector<HGMesh>();
+
+    //Create meshes
+    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+
+    //Create scenewide uniform
+    auto renderMats = resultDrawStage->matricesForRendering;
+
+    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats](IUniformBufferChunk *chunk) -> void {
+        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
+        blockPSVS->uLookAtMat = renderMats->lookAtMat;
+        blockPSVS->uPMatrix = renderMats->perspectiveMat;
+        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
+        blockPSVS->uViewUp = renderMats->viewUp;
+    });
+
+
     std::vector<GeneralView *> vector;
     for (auto & interiorView : updateStage->cullResult->interiorViews) {
         if (interiorView.viewCreated) {
@@ -199,7 +218,7 @@ void WmoScene::collectMeshes(HUpdateStage updateStage) {
     }
 
     for (auto &view : vector) {
-        view->collectMeshes(*updateStage->meshes);
+        view->collectMeshes(resultDrawStage->meshesToRender->meshes);
     }
 
     std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
@@ -211,13 +230,12 @@ void WmoScene::collectMeshes(HUpdateStage updateStage) {
 
     for (auto &m2Object : m2ObjectsRendered) {
         if (m2Object == nullptr) continue;
-        m2Object->collectMeshes(*updateStage->meshes, m_viewRenderOrder);
-        m2Object->drawParticles(*updateStage->meshes, m_viewRenderOrder);
+        m2Object->collectMeshes(resultDrawStage->meshesToRender->meshes, m_viewRenderOrder);
+        m2Object->drawParticles(resultDrawStage->meshesToRender->meshes, m_viewRenderOrder);
     }
 
-    std::sort(updateStage->meshes->begin(),
-              updateStage->meshes->end(),
+    std::sort(resultDrawStage->meshesToRender->meshes.begin(),
+              resultDrawStage->meshesToRender->meshes.end(),
               IDevice::sortMeshes
     );
-
 }

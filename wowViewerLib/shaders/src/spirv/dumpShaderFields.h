@@ -51,7 +51,12 @@ void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &f
     bool isStruct = memberType.basetype == spirv_cross::SPIRType::Struct;
 
     if (isStruct) {
-        auto submemberType = glsl.get_type(memberType.parent_type);
+        auto submemberTypeId = memberType.parent_type;
+        if (submemberTypeId == spirv_cross::TypeID(0)) {
+            submemberTypeId = memberType.type_alias;
+        }
+
+        auto submemberType = glsl.get_type(submemberTypeId);
         int structSize = submemberType.vecsize * submemberType.columns*(submemberType.width/8);
 
         if (arrayLiteral) {

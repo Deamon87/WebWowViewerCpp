@@ -360,112 +360,6 @@ void FrontendUI::showMainMenu() {
 
 //
 
-void FrontendUI::collectMeshes(HUpdateStage updateStage) {
-    auto *draw_data = ImGui::GetDrawData();
-
-    int  fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
-    int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
-    if (fb_width <= 0 || fb_height <= 0) {
-        return;
-    }
-
-
-    ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
-    ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
-
-    //Create projection matrix:
-    float L = draw_data->DisplayPos.x;
-    float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
-    float T = draw_data->DisplayPos.y;
-    float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
-
-    mathfu::mat4 ortho_projection =
-        {
-            { 2.0f/(R-L),   0.0f,         0.0f,   0.0f },
-            { 0.0f,         2.0f/(T-B),   0.0f,   0.0f },
-            { 0.0f,         0.0f,        -1.0f,   0.0f },
-            { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
-        };
-    auto uboPart = m_device->createUniformBufferChunk(sizeof(mathfu::mat4));
-    uboPart->setUpdateHandler([ortho_projection](IUniformBufferChunk* self) {
-       self->getObject<mathfu::mat4>() = ortho_projection;
-    });
-
-    auto shaderPermute = m_device->getShader("imguiShader", nullptr);
-
-    // Render command lists
-    for (int n = 0; n < draw_data->CmdListsCount; n++)
-    {
-        const ImDrawList* cmd_list = draw_data->CmdLists[n];
-
-        // Upload vertex/index buffers
-        auto vertexBufferBindings = m_device->createVertexBufferBindings();
-        auto vboBuffer = m_device->createVertexBuffer();
-        auto iboBuffer = m_device->createIndexBuffer();
-
-        vboBuffer->uploadData(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
-        iboBuffer->uploadData(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
-
-        //Create vao
-        GVertexBufferBinding vertexBufferBinding;
-        vertexBufferBinding.bindings = std::vector<GBufferBinding>(&imguiBindings[0], &imguiBindings[3]);
-        vertexBufferBinding.vertexBuffer = vboBuffer;
-
-        vertexBufferBindings->setIndexBuffer(iboBuffer);
-        vertexBufferBindings->addVertexBufferBinding(vertexBufferBinding);
-        vertexBufferBindings->save();
-
-        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
-        {
-
-
-            const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
-            if (pcmd->UserCallback != NULL)
-            {
-                // User callback, registered via ImDrawList::AddCallback()
-                // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
-//                if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
-//                    ImGui_ImplOpenGL3_SetupRenderState(draw_data, fb_width, fb_height, vertex_array_object);
-//                else
-//                    pcmd->UserCallback(cmd_list, pcmd);
-                assert(pcmd->UserCallback == NULL);
-            }
-            else
-            {
-                // Project scissor/clipping rectangles into framebuffer space
-                ImVec4 clip_rect;
-                clip_rect.x = (pcmd->ClipRect.x - clip_off.x) * clip_scale.x;
-                clip_rect.y = (pcmd->ClipRect.y - clip_off.y) * clip_scale.y;
-                clip_rect.z = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x;
-                clip_rect.w = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y;
-
-                if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f)
-                {
-                    // Apply scissor/clipping rectangle
-                    // Create mesh add add it to collected meshes
-                    gMeshTemplate meshTemplate(vertexBufferBindings, shaderPermute);
-                    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-                    meshTemplate.backFaceCulling = false;
-                    meshTemplate.depthCulling = false;
-
-                    meshTemplate.scissorEnabled = true;
-                    meshTemplate.scissorOffset = {(int)clip_rect.x, (int)(fb_height - clip_rect.w)};
-                    meshTemplate.scissorSize = {(int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y)};
-
-                    meshTemplate.ubo[1] = uboPart;
-                    meshTemplate.textureCount = 1;
-                    meshTemplate.texture[0] = pcmd->TextureId;
-
-                    meshTemplate.start = pcmd->IdxOffset * 2;
-                    meshTemplate.end = pcmd->ElemCount;
-
-                    updateStage->meshes->push_back(m_device->createMesh(meshTemplate));
-                }
-            }
-        }
-    }
-}
-
 void FrontendUI::initImgui(GLFWwindow *window) {
 
     emptyMinimap();
@@ -601,5 +495,114 @@ void FrontendUI::setQuicksortCutoffCallback(std::function<void(int value)> callb
 
 void FrontendUI::setCurrentTimeChangeCallback(std::function<void(int value)> callback) {
     setCurrentTime = callback;
+}
+
+void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
+    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+
+    auto *draw_data = ImGui::GetDrawData();
+
+    int  fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
+    int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
+    if (fb_width <= 0 || fb_height <= 0) {
+        return;
+    }
+
+
+    ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
+    ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+
+    //Create projection matrix:
+    float L = draw_data->DisplayPos.x;
+    float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
+    float T = draw_data->DisplayPos.y;
+    float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
+
+    mathfu::mat4 ortho_projection =
+        {
+            { 2.0f/(R-L),   0.0f,         0.0f,   0.0f },
+            { 0.0f,         2.0f/(T-B),   0.0f,   0.0f },
+            { 0.0f,         0.0f,        -1.0f,   0.0f },
+            { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
+        };
+    auto uboPart = m_device->createUniformBufferChunk(sizeof(mathfu::mat4));
+    uboPart->setUpdateHandler([ortho_projection](IUniformBufferChunk* self) {
+        self->getObject<mathfu::mat4>() = ortho_projection;
+    });
+
+    auto shaderPermute = m_device->getShader("imguiShader", nullptr);
+
+    // Render command lists
+    for (int n = 0; n < draw_data->CmdListsCount; n++)
+    {
+        const ImDrawList* cmd_list = draw_data->CmdLists[n];
+
+        // Upload vertex/index buffers
+        auto vertexBufferBindings = m_device->createVertexBufferBindings();
+        auto vboBuffer = m_device->createVertexBuffer();
+        auto iboBuffer = m_device->createIndexBuffer();
+
+        vboBuffer->uploadData(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
+        iboBuffer->uploadData(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+
+        //Create vao
+        GVertexBufferBinding vertexBufferBinding;
+        vertexBufferBinding.bindings = std::vector<GBufferBinding>(&imguiBindings[0], &imguiBindings[3]);
+        vertexBufferBinding.vertexBuffer = vboBuffer;
+
+        vertexBufferBindings->setIndexBuffer(iboBuffer);
+        vertexBufferBindings->addVertexBufferBinding(vertexBufferBinding);
+        vertexBufferBindings->save();
+
+        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
+        {
+
+
+            const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+            if (pcmd->UserCallback != NULL)
+            {
+                // User callback, registered via ImDrawList::AddCallback()
+                // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
+//                if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+//                    ImGui_ImplOpenGL3_SetupRenderState(draw_data, fb_width, fb_height, vertex_array_object);
+//                else
+//                    pcmd->UserCallback(cmd_list, pcmd);
+                assert(pcmd->UserCallback == NULL);
+            }
+            else
+            {
+                // Project scissor/clipping rectangles into framebuffer space
+                ImVec4 clip_rect;
+                clip_rect.x = (pcmd->ClipRect.x - clip_off.x) * clip_scale.x;
+                clip_rect.y = (pcmd->ClipRect.y - clip_off.y) * clip_scale.y;
+                clip_rect.z = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x;
+                clip_rect.w = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y;
+
+                if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f)
+                {
+                    // Apply scissor/clipping rectangle
+                    // Create mesh add add it to collected meshes
+                    gMeshTemplate meshTemplate(vertexBufferBindings, shaderPermute);
+                    meshTemplate.element = DrawElementMode::TRIANGLES;
+                    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+                    meshTemplate.backFaceCulling = false;
+                    meshTemplate.depthCulling = false;
+
+                    meshTemplate.scissorEnabled = true;
+                    meshTemplate.scissorOffset = {(int)clip_rect.x, (int)(fb_height - clip_rect.w)};
+                    meshTemplate.scissorSize = {(int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y)};
+
+                    meshTemplate.ubo[1] = uboPart;
+                    meshTemplate.textureCount = 1;
+                    meshTemplate.texture[0] = pcmd->TextureId;
+
+                    meshTemplate.start = pcmd->IdxOffset * 2;
+                    meshTemplate.end = pcmd->ElemCount;
+
+                    resultDrawStage->meshesToRender->meshes.push_back(m_device->createMesh(meshTemplate));
+                }
+            }
+        }
+    }
 }
 

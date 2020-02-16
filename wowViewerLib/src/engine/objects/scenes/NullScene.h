@@ -19,6 +19,6 @@ public:
     void update(WoWFrameData *frameData) override {};
     void updateBuffers(WoWFrameData *frameData) override {};
 
-    HDrawStage produceDrawStage(std::vector<HDrawStage> fbInputs, HUpdateStage updateStage) override {return nullptr; };
+    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) override {return ; };
 };
 #endif //AWEBWOWVIEWERCPP_NULLSCENE_H

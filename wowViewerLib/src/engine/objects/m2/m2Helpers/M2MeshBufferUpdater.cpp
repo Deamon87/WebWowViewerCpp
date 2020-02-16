@@ -37,7 +37,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
             finalTransparency *= transparency;
         }
 
-        auto &meshblockVS = self->getObject<meshWideBlockVS>();
+        auto &meshblockVS = self->getObject<M2::meshWideBlockVS>();
         meshblockVS.Color_Transparency = mathfu::vec4_packed(mathfu::vec4(meshColor.x, meshColor.y, meshColor.z, finalTransparency));
         meshblockVS.isSkyBox = m2Object.m_boolSkybox ? 1 : 0;
         meshblockVS.VertexShader = vertexShader;
@@ -68,7 +68,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
         mathfu::vec3 uFogColor = getFogColor(blendMode, uGlobalFogColor);
 
         //Fill values into buffer
-        auto &meshblockPS = self->getObject<meshWideBlockPS>();
+        auto &meshblockPS = self->getObject<M2::meshWideBlockPS>();
         meshblockPS.PixelShader = pixelShader;
         meshblockPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
         meshblockPS.UnFogged = ((renderFlag->flags & 0x2) > 0) ? 1 : 0;
@@ -116,7 +116,7 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
     hmesh->setSortDistance(value);
 }
 
-void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, meshWideBlockPS &meshblockPS) {
+void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, M2::meshWideBlockPS &meshblockPS) {
     bool BCLoginScreenHack = m2Object.m_api->getConfig()->getBCLightHack();
     int lightCount = (int) std::min(m2Object.lights.size(), (size_t) 4);
     for (int j = 0; j < lightCount; j++) {

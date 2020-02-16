@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.6)
 project(AWebWoWViewerCpp)
 include(ExternalProject)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 cmake_policy(SET CMP0077 NEW)
 
 set(USE_NEON 0)
