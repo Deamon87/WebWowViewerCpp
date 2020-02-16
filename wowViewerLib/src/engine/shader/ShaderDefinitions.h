@@ -197,7 +197,7 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoShader.vert.spv", {
 {
 {0,1,64},
-{0,0,128},
+{0,0,240},
 {0,2,16},
 }
 }
@@ -214,7 +214,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },{ "ribbonShader.vert.spv", {
 {
-{0,0,128},
+{0,0,240},
 }
 }
 },{ "ribbonShader.frag.spv", {
@@ -230,7 +230,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {
 {0,1,14144},
 {0,2,160},
-{0,0,160},
+{0,0,240},
 }
 }
 },{ "drawDepthShader.frag.spv", {
@@ -240,7 +240,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },{ "adtWater.vert.spv", {
 {
-{0,0,128},
+{0,0,240},
 }
 }
 },{ "m2ParticleShader.frag.spv", {
@@ -283,7 +283,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },{ "adtShader.vert.spv", {
 {
-{0,0,128},
+{0,0,240},
 {0,2,16},
 }
 }
@@ -300,7 +300,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {
 {0,4,32},
 {0,0,240},
-{0,3,112},
+{0,3,48},
 }
 }
 },{ "drawLinesShader.vert.spv", {
@@ -373,7 +373,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"wmoShader",  {
     {
       2, {
-        {"_179.VertexShader_UseLitColor", false, 0, 1, 4, 0},
+        {"_181.VertexShader_UseLitColor", false, 0, 1, 4, 0},
       }
     },
     {
@@ -383,10 +383,9 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       3, {
-        {"_685.uPlacementMat", true, 0, 4, 4, 0},
-        {"_685.intLight.", true, 64, 1, 4, 0},
-        {"_685.intLight.", true, 80, 1, 4, 0},
-        {"_685.intLight.", true, 96, 1, 4, 0},
+        {"_685.intLight.uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
+        {"_685.intLight.uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
+        {"_685.intLight.interiorExteriorBlend", true, 32, 1, 4, 0},
       }
     },
     {
@@ -397,8 +396,15 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       0, {
-        {"_108.uLookAtMat", true, 0, 4, 4, 0},
-        {"_108.uPMatrix", true, 64, 4, 4, 0},
+        {"_110.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_110.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_110.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_110.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_110.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_110.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_110.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_110.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_110.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
       }
     },
   }},
@@ -430,9 +436,9 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       3, {
-        {"_1462.intLight.", true, 0, 1, 4, 0},
-        {"_1462.intLight.", true, 16, 1, 4, 0},
-        {"_1462.intLight.", true, 32, 1, 4, 0},
+        {"_1462.intLight.uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
+        {"_1462.intLight.uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
+        {"_1462.intLight.interiorExteriorBlend", true, 32, 1, 4, 0},
       }
     },
     {
@@ -462,10 +468,15 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       0, {
-        {"_237.uLookAtMat", true, 0, 4, 4, 0},
-        {"_237.uPMatrix", true, 64, 4, 4, 0},
-        {"_237.uViewUp", true, 128, 1, 4, 0},
-        {"_237.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_239.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_239.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_239.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_239.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_239.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_239.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_239.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_239.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_239.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
       }
     },
   }},
@@ -495,8 +506,15 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"adtWater",  {
     {
       0, {
-        {"_25.uLookAtMat", true, 0, 4, 4, 0},
-        {"_25.uPMatrix", true, 64, 4, 4, 0},
+        {"_27.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_27.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_27.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_27.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
       }
     },
     {
@@ -533,7 +551,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"adtShader",  {
     {
       2, {
-        {"_100.uPos", true, 0, 1, 4, 0},
+        {"_102.uPos", true, 0, 1, 4, 0},
       }
     },
     {
@@ -553,8 +571,15 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       0, {
-        {"_53.uLookAtMat", true, 0, 4, 4, 0},
-        {"_53.uPMatrix", true, 64, 4, 4, 0},
+        {"_55.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_55.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_55.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_55.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_55.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_55.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_55.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_55.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_55.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
       }
     },
   }},
@@ -600,8 +625,15 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"ribbonShader",  {
     {
       0, {
-        {"_41.uLookAtMat", true, 0, 4, 4, 0},
-        {"_41.uPMatrix", true, 64, 4, 4, 0},
+        {"_43.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_43.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_43.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_43.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
       }
     },
   }},

@@ -248,8 +248,9 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
         clearColor[0] = drawStage->clearColor[0];
         clearColor[1] = drawStage->clearColor[1];
         clearColor[2] = drawStage->clearColor[2];
+        this->clearScreen();
     }
-    this->clearScreen();
+
 
     for (auto hgMesh : drawStage->meshesToRender->meshes) {
         this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);

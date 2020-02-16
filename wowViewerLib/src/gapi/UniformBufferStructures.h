@@ -80,7 +80,6 @@ namespace WMO {
     //WMO VertexBuffer format
     struct modelWideBlockVS {
         mathfu::mat4 uPlacementMat;
-        InteriorLightParam intLight;
     };
 
     struct meshWideBlockVS {
@@ -90,7 +89,7 @@ namespace WMO {
     };
 
     struct modelWideBlockPS {
-        mathfu::vec4_packed uInteriorAmbientColor;
+        InteriorLightParam intLight;
     };
 
     struct meshWideBlockPS {

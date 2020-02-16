@@ -6,6 +6,8 @@
 #define MAX_MATRIX_NUM 220
 #endif
 
+#include "../common/commonLightFunctions.glsl"
+
 /* vertex shader code */
 layout(location=0) in vec3 aPosition;
 layout(location=1) in vec3 aNormal;
@@ -16,10 +18,7 @@ layout(location=5) in vec2 aTexCoord2;
 
 //Whole scene
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-    vec4 uViewUp;
-    vec4 uInteriorSunDir;
+    SceneWideParams scene;
 };
 
 // Whole model
@@ -63,10 +62,10 @@ void main() {
 
     vec4 lDiffuseColor = color_Transparency;
 
-    mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
+    mat4 cameraMatrix = scene.uLookAtMat * placementMat  * boneTransformMat ;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
     mat3 viewModelMatTransposed =
-        blizzTranspose(uLookAtMat) *
+        blizzTranspose(scene.uLookAtMat) *
         blizzTranspose(placementMat) *
         blizzTranspose(boneTransformMat);
 
@@ -163,7 +162,7 @@ void main() {
     }
 
 
-    gl_Position = uPMatrix * cameraPoint;
+    gl_Position = scene.uPMatrix * cameraPoint;
     vNormal = normal;
     vPosition = cameraPoint.xyz;
 }

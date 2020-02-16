@@ -1,5 +1,9 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
+#include "../common/commonLightFunctions.glsl"
+
 /* vertex shader code */
 layout(location = 0) in vec3 aHeight;
 layout(location = 1) in vec4 aColor;
@@ -7,9 +11,8 @@ layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
 layout(location = 4) in float aIndex;
 
-layout(std140, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
+    SceneWideParams scene;
 };
 layout(std140, binding=2) uniform meshWideBlockVS {
     vec4 uPos;
@@ -59,10 +62,10 @@ void main() {
 
     vChunkCoords = vec2(iX, iY);
 
-    vPosition = (uLookAtMat * worldPoint).xyz;
+    vPosition = (scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;
     vVertexLighting = aVertexLighting.rgb;
-    vNormal = (uLookAtMat * vec4(aNormal, 0)).xyz;
+    vNormal = (scene.uLookAtMat * vec4(aNormal, 0)).xyz;
 
-    gl_Position = uPMatrix * uLookAtMat * worldPoint;
+    gl_Position = scene.uPMatrix * scene.uLookAtMat * worldPoint;
 }

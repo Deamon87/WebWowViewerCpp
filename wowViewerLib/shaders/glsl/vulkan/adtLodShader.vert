@@ -1,5 +1,9 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
+#include "../common/commonLightFunctions.glsl"
+
 layout(location = 0) in float aHeight;
 layout(location = 1) in float aIndex;
 

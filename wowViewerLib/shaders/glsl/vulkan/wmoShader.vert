@@ -2,6 +2,8 @@
 
 #extension GL_GOOGLE_include_directive: require
 
+#include "../common/commonLightFunctions.glsl"
+
 /* vertex shader code */
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec3 aNormal;
@@ -12,10 +14,8 @@ layout (location = 5) in vec4 aColor;
 layout (location = 6) in vec4 aColor2;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
+    SceneWideParams scene;
 };
-
 layout(std140, set=0, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 };
@@ -37,16 +37,16 @@ layout(location=6) out vec3 vNormal;
 void main() {
     vec4 worldPoint = uPlacementMat * vec4(aPosition, 1);
 
-    vec4 cameraPoint = uLookAtMat * worldPoint;
+    vec4 cameraPoint = scene.uLookAtMat * worldPoint;
 
 
-    mat4 viewModelMat = uLookAtMat * uPlacementMat;
+    mat4 viewModelMat = scene.uLookAtMat * uPlacementMat;
     mat3 viewModelMatTransposed =
-        blizzTranspose(uLookAtMat) *
+        blizzTranspose(scene.uLookAtMat) *
         blizzTranspose(uPlacementMat);
 
 
-    gl_Position = uPMatrix * cameraPoint;
+    gl_Position = scene.uPMatrix * cameraPoint;
     vPosition = vec4(cameraPoint.xyz, aColor.w);
     vNormal = normalize(viewModelMatTransposed * aNormal);
 

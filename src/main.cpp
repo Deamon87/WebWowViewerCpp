@@ -378,12 +378,12 @@ int main(){
 //        processor = new HttpZipRequestProcessor(url);
 //        processor = new ZipRequestProcessor(filePath);
 //        processor = new MpqRequestProcessor(filePath);
-        processor = new HttpRequestProcessor(url, urlFileId);
-        //  processor = new CascRequestProcessor(filePath);
-        processor->setThreaded(true);
-
-        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
-        processor->setFileRequester(apiContainer.cacheStorage.get());
+//        processor = new HttpRequestProcessor(url, urlFileId);
+//        //  processor = new CascRequestProcessor(filePath);
+//        processor->setThreaded(true);
+//
+//        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+//        processor->setFileRequester(apiContainer.cacheStorage.get());
 
     }
     //Create device
@@ -405,7 +405,7 @@ int main(){
         std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
         try {
             newProcessor = new CascRequestProcessor(cascPath.c_str());
-            newStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+            newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor);
             newProcessor->setThreaded(true);
             newProcessor->setFileRequester(newStorage.get());
         } catch (...){
@@ -516,7 +516,7 @@ int main(){
     glfwSetMouseButtonCallback( window, mouse_button_callback);
     glfwSwapInterval(0);
 
-try {
+//try {
     while (!glfwWindowShouldClose(window)) {
         frontendUI->newFrame();
         stopMouse = frontendUI->getStopMouse();
@@ -540,7 +540,7 @@ try {
 
 //        scene->draw((deltaTime*(1000.0f))); //miliseconds
 
-        apiContainer.camera->tick(deltaTime);
+        apiContainer.camera->tick(deltaTime*(1000.0f));
         float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
         float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
 
@@ -560,9 +560,9 @@ try {
         auto clearColor = apiContainer.getConfig()->getClearColor();
         if (currentScene != nullptr) {
             auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
-            auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime, cameraMatricesRendering);
+            auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
             auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
-                {{0, canvWidth},{0, canvHeight}},
+                {{0, 0}, {canvWidth, canvHeight}},
                 true, clearColor);
 
             clearOnUi = false;
@@ -570,7 +570,7 @@ try {
         }
 
         auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
-        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime, nullptr);
+        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime*(1000.0f), nullptr);
         auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies, true, {
             {0,0}, {canvWidth, canvHeight}
         }, clearOnUi, clearColor);
@@ -598,12 +598,12 @@ try {
             glfwSwapBuffers(window);
         }
     }
-} catch(const std::exception &e){
-    std::cerr << e.what() << std::endl;
-    throw;
-} catch(...) {
-    std::cout << "something happened" << std::endl;
-}
+//} catch(const std::exception &e){
+//    std::cerr << e.what() << std::endl;
+//    throw;
+//} catch(...) {
+//    std::cout << "something happened" << std::endl;
+//}
 
     std::cout << "program ended" << std::endl;
     //        while (1) {

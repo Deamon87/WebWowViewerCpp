@@ -1,13 +1,16 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
+#include "../common/commonLightFunctions.glsl"
+
 precision highp float;
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec2 aTexcoord0;
 
-layout(std140, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
+    SceneWideParams scene;
 };
 
 layout(location = 0) out vec4 vColor;
@@ -18,5 +21,5 @@ void main() {
 
     vColor = aColor;
     vTexcoord0 = aTexcoord0;
-    gl_Position = uPMatrix * uLookAtMat * aPositionVec4;
+    gl_Position = scene.uPMatrix * scene.uLookAtMat * aPositionVec4;
 }

@@ -1,5 +1,9 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
+#include "../common/commonLightFunctions.glsl"
+
 precision highp float;
 layout(location = 0) in vec4 vColor;
 layout(location = 1) in vec2 vTexcoord0;

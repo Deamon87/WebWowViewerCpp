@@ -17,8 +17,7 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
 };
 
-layout(std140, set=0, binding=3) uniform modelWideBlockVS {
-    mat4 uPlacementMat;
+layout(std140, set=0, binding=3) uniform modelWideBlockPS {
     InteriorLightParam intLight;
 };
 
