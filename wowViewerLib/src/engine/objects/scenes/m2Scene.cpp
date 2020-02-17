@@ -6,6 +6,7 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
+#include "../../../gapi/UniformBufferStructures.h"
 
 void M2Scene::checkCulling(HCullStage cullStage) {
     mathfu::vec4 cameraPos = cullStage->matricesForCulling->cameraPos;
@@ -127,6 +128,24 @@ void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateSt
 
     m_m2Object->collectMeshes(resultDrawStage->meshesToRender->meshes, 0);
     m_m2Object->drawParticles(resultDrawStage->meshesToRender->meshes, 0);
+
+    auto renderMats = resultDrawStage->matricesForRendering;
+    auto config = m_api->getConfig();
+
+    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk) -> void {
+        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
+        blockPSVS->uLookAtMat = renderMats->lookAtMat;
+        blockPSVS->uPMatrix = renderMats->perspectiveMat;
+        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
+        blockPSVS->uViewUp = renderMats->viewUp;
+
+        blockPSVS->extLight.uExteriorAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
+        blockPSVS->extLight.uExteriorHorizontAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
+        blockPSVS->extLight.uExteriorGroundAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
+        blockPSVS->extLight.uExteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,1.0);
+        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(0.0,0.0,0.0,1.0);
+    });
 
     std::sort(resultDrawStage->meshesToRender->meshes.begin(),
               resultDrawStage->meshesToRender->meshes.end(),

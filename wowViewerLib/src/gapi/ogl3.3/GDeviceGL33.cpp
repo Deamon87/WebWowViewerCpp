@@ -581,7 +581,7 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
             glDisable(GL_SCISSOR_TEST);
         }
 
-        m_isScissorsEnabled = true;
+        m_isScissorsEnabled = hmesh->m_isScissorsEnabled;
     }
     if (hmesh->m_isScissorsEnabled) {
         glScissor(

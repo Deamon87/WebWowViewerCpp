@@ -978,6 +978,8 @@ bool AdtObject::checkReferences(
         for (int l = y; l < y + y_len; l++) {
             int i = this->m_adtFile->mcnkMap[k][l];
 
+            if (i < 0) continue;
+
             bool wotlk = false;
             float chunkDist = 1.0;
             if (wotlk) {

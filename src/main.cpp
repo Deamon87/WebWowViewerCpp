@@ -374,8 +374,8 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
     {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=edece5d974f65c808160c75026123699&cdnconfig=da2558dea92f537b793ad6fe1eaaaeeb&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=edece5d974f65c808160c75026123699&cdnconfig=da2558dea92f537b793ad6fe1eaaaeeb&filename=data&filedataid=";
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=3a2cb80017792235b94dc6e43424fbc8&cdnconfig=5f086f2db5fb2aa59d00206e85223e1a&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=3a2cb80017792235b94dc6e43424fbc8&cdnconfig=5f086f2db5fb2aa59d00206e85223e1a&filename=data&filedataid=";
 //        processor = new HttpZipRequestProcessor(url);
 //        processor = new ZipRequestProcessor(filePath);
 //        processor = new MpqRequestProcessor(filePath);

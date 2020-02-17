@@ -25,7 +25,9 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
     int batchIndex = materialData.texUnitTexIndex;
     auto vertexShader = materialData.vertexShader;
 
-    hmesh->getUniformBuffer(2)->setUpdateHandler([&m2Object, m2Data, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self){
+    hmesh->getUniformBuffer(2)->setUpdateHandler([&m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self){
+        auto m2Data = m2Object.m_m2Geom->getM2Data();
+
         auto textMaterial = m2SkinProfile->batches[batchIndex];
         int renderFlagIndex = textMaterial->materialIndex;
         auto renderFlag = m2Data->materials[renderFlagIndex];
@@ -49,7 +51,8 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
 
     //3. Update individual PS buffer
     auto pixelShader = materialData.pixelShader;
-    hmesh->getUniformBuffer(4)->setUpdateHandler([&m2Object, m2Data, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self) {
+    hmesh->getUniformBuffer(4)->setUpdateHandler([&m2Object, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self) {
+        auto m2Data = m2Object.m_m2Geom->getM2Data();
 
         auto textMaterial = m2SkinProfile->batches[batchIndex];
         int renderFlagIndex = textMaterial->materialIndex;
