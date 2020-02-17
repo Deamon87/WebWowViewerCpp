@@ -24,6 +24,7 @@ vec3 calcLight(
     vec3 matDiffuse,
     vec3 vNormal,
     bool applyLight,
+    float interiorExteriorBlend,
     readonly SceneWideParams sceneParams,
     readonly InteriorLightParam intLight,
     readonly vec3 accumLight, const vec3 precomputedLight) {
@@ -64,13 +65,15 @@ vec3 calcLight(
     }
     if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0) {
         float nDotL = clamp(dot(normalizedN, -(sceneParams.uInteriorSunDir.xyz)), 0.0, 1.0);
-        vec3 lDiffuseInterior = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz * nDotL;
+        vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL;
+        vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
 
         if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0) {
-            lDiffuse = mix(lDiffuse, lDiffuseInterior, intLight.interiorExteriorBlend.x);
+            lDiffuse = mix(lDiffuseInterior, lDiffuse, interiorExteriorBlend);
+            currColor = mix(interiorAmbient, currColor, interiorExteriorBlend);
         } else {
             lDiffuse = lDiffuseInterior;
-            currColor = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz;
+            currColor = interiorAmbient;
         }
     }
 

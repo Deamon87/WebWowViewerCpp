@@ -378,12 +378,12 @@ int main(){
 //        processor = new HttpZipRequestProcessor(url);
 //        processor = new ZipRequestProcessor(filePath);
 //        processor = new MpqRequestProcessor(filePath);
-//        processor = new HttpRequestProcessor(url, urlFileId);
+        processor = new HttpRequestProcessor(url, urlFileId);
 //        //  processor = new CascRequestProcessor(filePath);
-//        processor->setThreaded(true);
+        processor->setThreaded(true);
 //
-//        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
-//        processor->setFileRequester(apiContainer.cacheStorage.get());
+        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+        processor->setFileRequester(apiContainer.cacheStorage.get());
 
     }
     //Create device

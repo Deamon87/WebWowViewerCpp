@@ -125,7 +125,7 @@ void main() {
 
     } else if (uPixelShader == 4) { //MapObjOpaque
 
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
+        matDiffuse = tex.rgb * (2.0 * vColor.rgb);
         finalOpacity = vColor.a;
 
     } else if (uPixelShader == 5) { //MapObjEnvMetal
@@ -227,6 +227,7 @@ void main() {
             matDiffuse,
             vNormal,
             true,
+            vPosition.w,
             scene,
             intLight,
             vec3(0.0) /*accumLight*/,

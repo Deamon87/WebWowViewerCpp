@@ -41,6 +41,7 @@ layout(std140, set=0, binding=3) uniform modelWideBlockPS {
     InteriorLightParam intLight;
     LocalLight pc_lights[4];
     ivec4 lightCount;
+    vec4 interiorExteriorBlend;
 };
 
 //Individual meshes
@@ -323,6 +324,7 @@ void main() {
             matDiffuse,
             vNormal,
             PixelShader_UnFogged_IsAffectedByLight.z > 0,
+            interiorExteriorBlend.x,
             scene,
             intLight,
             accumLight, vec3(0.0)

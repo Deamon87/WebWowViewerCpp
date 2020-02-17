@@ -1616,7 +1616,7 @@ void M2Object::createVertexBindings() {
                 m_useLocalDiffuseColor == 1 ? 0.0 : 1
             ));
 
-        blockPS.intLight.interiorExteriorBlend =
+        blockPS.interiorExteriorBlend =
             mathfu::vec4_packed(mathfu::vec4(
                 (m_useLocalDiffuseColor == 1) ? 1.0 : 0.0,
                 0,0,0));

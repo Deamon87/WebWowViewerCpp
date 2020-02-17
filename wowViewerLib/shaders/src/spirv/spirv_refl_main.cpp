@@ -12,6 +12,7 @@
 #include <iostream>
 #include <spirv.h>
 #include <map>
+#include <csignal>
 
 extern "C" void my_function_to_handle_aborts(int signal_number)
 {

@@ -66,6 +66,7 @@ namespace M2 {
         int notUsed1;
         int notUsed2;
         int notUsed3;
+        mathfu::vec4_packed interiorExteriorBlend;
 
     };
 

@@ -410,9 +410,20 @@ void WmoGroupObject::createMeshes() {
 
     fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockPS));
     fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
-        WMO::modelWideBlockPS &blockVS = self->getObject<WMO::modelWideBlockPS>();
-        blockVS.intLight.uInteriorAmbientColorAndApplyInteriorLight =
-
+        WMO::modelWideBlockPS &blockPS = self->getObject<WMO::modelWideBlockPS>();
+        blockPS.intLight.uInteriorAmbientColorAndApplyInteriorLight =
+            mathfu::vec4_packed(
+                mathfu::vec4(
+                    this->getAmbientColor().xyz(),
+                    this->m_geom->mogp->flags.INTERIOR > 0 ? 1.0f : 0.0f
+                )
+            );
+        blockPS.intLight.uInteriorDirectColorAndApplyExteriorLight =
+            mathfu::vec4_packed(
+                mathfu::vec4(
+                    0, 0, 0, 1.0f
+                )
+            );
     });
 
     MOGP *mogp = m_geom->mogp;
@@ -480,7 +491,7 @@ void WmoGroupObject::createMeshes() {
         meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
         meshTemplate.ubo[2] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockVS));
 
-        meshTemplate.ubo[3] = vertexModelWideUniformBuffer;
+        meshTemplate.ubo[3] = fragmentModelWideUniformBuffer;
         meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockPS));
 
         //Make mesh
