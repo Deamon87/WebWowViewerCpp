@@ -45,6 +45,7 @@
 #include "../wowViewerLib/src/engine/camera/firstPersonCamera.h"
 #include "../wowViewerLib/src/engine/objects/scenes/map.h"
 #include "../wowViewerLib/src/engine/ApiContainer.h"
+#include "../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
 
 
 int mleft_pressed = 0;
@@ -373,8 +374,8 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
     {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=54b3dc4ced90d45071f72a05fecfd063&cdnconfig=524df013928ee0fa66af5cfa1862153e&filename=data&filedataid=";
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=edece5d974f65c808160c75026123699&cdnconfig=da2558dea92f537b793ad6fe1eaaaeeb&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=edece5d974f65c808160c75026123699&cdnconfig=da2558dea92f537b793ad6fe1eaaaeeb&filename=data&filedataid=";
 //        processor = new HttpZipRequestProcessor(url);
 //        processor = new ZipRequestProcessor(filePath);
 //        processor = new MpqRequestProcessor(filePath);
@@ -428,6 +429,11 @@ int main(){
         apiContainer.camera->setCameraPos(x, y, z);
 //        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
+    frontendUI->setOpenWMOSceneByfdidCallback([&currentScene, &apiContainer](int wmoFDid) {
+        currentScene = std::make_shared<WmoScene>(&apiContainer, wmoFDid);
+        apiContainer.camera->setCameraPos(0, 0, 0);
+    });
+
     frontendUI->setFarPlaneChangeCallback([&apiContainer](float farPlane) -> void {
         auto conf = apiContainer.getConfig();
         conf->setFarPlane(farPlane);

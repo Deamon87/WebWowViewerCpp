@@ -34,6 +34,7 @@ public:
 private:
     std::function <bool(std::string cascPath)> openCascCallback = nullptr;
     std::function <void(int mapId, int wdtFileId, float x, float y, float z)> openSceneByfdid = nullptr;
+    std::function <void(int WMOFdid)> openWMOSceneByfdid = nullptr;
 
     std::function <void(float &cameraX,float &cameraY,float &cameraZ)> getCameraPos = nullptr;
 
@@ -71,6 +72,7 @@ private:
     bool showCurrentStats = true;
     bool showSelectMap = false;
     bool showSettings = false;
+    bool showQuickLinks = false;
     bool showAboutWindow = false;
 //  c bool showWorldPosTooltip = false;
 
@@ -114,6 +116,7 @@ public:
 
     void setOpenCascStorageCallback(std::function <bool(std::string cascPath)> callback);
     void setOpenSceneByfdidCallback(std::function <void(int mapId, int wdtFileId, float x, float y, float z)> callback);
+    void setOpenWMOSceneByfdidCallback(std::function <void(int wmoFDid)> callback);
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
 
     void setFarPlaneChangeCallback(std::function<void(float farPlane)> callback);
@@ -138,6 +141,7 @@ public:
 
     void showAdtSelectionMinimap();
     void showSettingsDialog();
+    void showQuickLinksDialog();
 };
 
 

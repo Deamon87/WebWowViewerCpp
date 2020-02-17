@@ -70,6 +70,7 @@ void FrontendUI::composeUI() {
 //        ImGui::ShowDemoWindow(&show_demo_window);
 
     showSettingsDialog();
+    showQuickLinksDialog();
 
     showMapSelectionDialog();
 
@@ -352,6 +353,7 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open current stats")) { showCurrentStats = true; }
             ImGui::Separator();
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
+            if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -447,6 +449,21 @@ void FrontendUI::setFarPlaneChangeCallback(std::function<void(float farPlane)> c
 void FrontendUI::setSpeedCallback(std::function<void(float speed)> callback) {
     setMovementSpeed = callback;
 }
+
+void FrontendUI::showQuickLinksDialog() {
+    if (!showQuickLinks) return;
+
+    ImGui::Begin("Quick Links", &showQuickLinks);
+    if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
+        if (openWMOSceneByfdid) {
+            openWMOSceneByfdid(2756726);
+        }
+    }
+
+    ImGui::End();
+}
+
+
 
 void FrontendUI::showSettingsDialog() {
     if(showSettings) {
@@ -604,5 +621,9 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
             }
         }
     }
+}
+
+void FrontendUI::setOpenWMOSceneByfdidCallback(std::function<void(int wmoFDid)> callback) {
+    this->openWMOSceneByfdid = callback;
 }
 
