@@ -31,7 +31,7 @@ struct sceneWideBlockVSPS {
 struct InteriorLightParam {
     mathfu::vec4_packed uInteriorAmbientColorAndApplyInteriorLight;
     mathfu::vec4_packed uInteriorDirectColorAndApplyExteriorLight;
-    mathfu::vec4_packed interiorExteriorBlend;
+
 };
 
 

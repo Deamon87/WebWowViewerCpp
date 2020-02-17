@@ -18,7 +18,6 @@ struct SceneWideParams {
 struct InteriorLightParam {
     vec4 uInteriorAmbientColorAndApplyInteriorLight;
     vec4 uInteriorDirectColorAndApplyExteriorLight;
-    vec4 interiorExteriorBlend;
 };
 
 vec3 calcLight(

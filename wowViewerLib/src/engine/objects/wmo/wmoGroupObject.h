@@ -77,6 +77,7 @@ private:
     int m_groupNumber;
 
     HGUniformBufferChunk vertexModelWideUniformBuffer = nullptr;
+    HGUniformBufferChunk fragmentModelWideUniformBuffer = nullptr;
     std::vector<HGMesh> m_meshArray = {};
     std::vector<HGMesh> m_waterMeshArray = {};
 

@@ -408,7 +408,12 @@ void WmoGroupObject::createMeshes() {
         blockVS.uPlacementMat = *m_modelMatrix;
     });
 
+    fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockPS));
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
+        WMO::modelWideBlockPS &blockVS = self->getObject<WMO::modelWideBlockPS>();
+        blockVS.intLight.uInteriorAmbientColorAndApplyInteriorLight =
 
+    });
 
     MOGP *mogp = m_geom->mogp;
 
