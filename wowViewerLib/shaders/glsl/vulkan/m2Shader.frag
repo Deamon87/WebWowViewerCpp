@@ -39,13 +39,15 @@ layout(std140, set=0, binding=1) uniform modelWideBlockVS {
 //Whole model
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
     InteriorLightParam intLight;
+    LocalLight pc_lights[4];
+    ivec4 lightCount;
 };
 
 //Individual meshes
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
-    ivec4 PixelShader_UnFogged_IsAffectedByLight_LightCount;
+    ivec4 PixelShader_UnFogged_IsAffectedByLight;
     vec4 uFogColorAndAlphaTest;
-    LocalLight pc_lights[4];
+
     vec4 uPcColor;
 };
 
@@ -86,7 +88,7 @@ void main() {
 //    if(meshResColor.a < uAlphaTest)
 //        discard;
     vec3 accumLight;
-    if ((PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1)) {
+    if ((PixelShader_UnFogged_IsAffectedByLight.z == 1)) {
         vec3 vPos3 = vPosition.xyz;
         vec3 vNormal3 = normalize(vNormal.xyz);
         vec3 lightColor = vec3(0.0);
@@ -94,7 +96,7 @@ void main() {
 
         for (int index = 0; index < 4; index++)
         {
-            if (index >= PixelShader_UnFogged_IsAffectedByLight_LightCount.w) break;
+            if (index >= lightCount.x) break;
 
             LocalLight lightRecord = pc_lights[index];
             vec3 vectorToLight = ((scene.uLookAtMat * (uPlacementMat * lightRecord.position)).xyz - vPos3);
@@ -124,7 +126,7 @@ void main() {
     genericParams[1] = vec4( 1.0, 1.0, 1.0, 1.0 );
     genericParams[2] = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-    int uPixelShader = PixelShader_UnFogged_IsAffectedByLight_LightCount.x;
+    int uPixelShader = PixelShader_UnFogged_IsAffectedByLight.x;
 
 
     if ( uPixelShader == 0 ) {//Combiners_Opaque
@@ -320,7 +322,7 @@ void main() {
         calcLight(
             matDiffuse,
             vNormal,
-            PixelShader_UnFogged_IsAffectedByLight_LightCount.z > 0,
+            PixelShader_UnFogged_IsAffectedByLight.z > 0,
             scene,
             intLight,
             accumLight, vec3(0.0)

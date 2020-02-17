@@ -55,13 +55,18 @@ namespace M2 {
         int isSkyBox;
         int padding;
         mathfu::vec4_packed Color_Transparency;
-        mathfu::vec4_packed uInteriorDirectColor;
 
         mathfu::mat4 uTextMat[2];
     };
     //M2 Pixel buffer formats
     struct modelWideBlockPS {
         InteriorLightParam intLight;
+        LocalLight pc_lights[4];
+        int LightCount;
+        int notUsed1;
+        int notUsed2;
+        int notUsed3;
+
     };
 
     struct  meshWideBlockPS {
@@ -71,7 +76,7 @@ namespace M2 {
         int LightCount;
 
         mathfu::vec4_packed uFogColorAndAlphaTest;
-        LocalLight pc_lights[4];
+
         mathfu::vec4_packed uPcColor;
     };
 }

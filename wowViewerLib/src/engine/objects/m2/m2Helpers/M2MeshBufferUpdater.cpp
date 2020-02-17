@@ -73,8 +73,6 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
         meshblockPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
         meshblockPS.UnFogged = ((renderFlag->flags & 0x2) > 0) ? 1 : 0;
         meshblockPS.uFogColorAndAlphaTest = mathfu::vec4(uFogColor, uAlphaTest);
-        //Lights
-        fillLights(m2Object, meshblockPS);
     });
 }
 
@@ -116,7 +114,7 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
     hmesh->setSortDistance(value);
 }
 
-void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, M2::meshWideBlockPS &meshblockPS) {
+void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, M2::modelWideBlockPS &modelBlockPS) {
     bool BCLoginScreenHack = m2Object.m_api->getConfig()->getBCLightHack();
     int lightCount = (int) std::min(m2Object.lights.size(), (size_t) 4);
     for (int j = 0; j < lightCount; j++) {
@@ -130,14 +128,14 @@ void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, M2::meshWideBlock
             attenVec = mathfu::vec4(m2Object.lights[j].attenuation_start, m2Object.lights[j].diffuse_intensity, m2Object.lights[j].attenuation_end, m2Object.lights.size());
         }
 
-        meshblockPS.pc_lights[j].attenuation = attenVec;//;lights[i].diffuse_color);
-        meshblockPS.pc_lights[j].color = m2Object.lights[j].diffuse_color;
+        modelBlockPS.pc_lights[j].attenuation = attenVec;//;lights[i].diffuse_color);
+        modelBlockPS.pc_lights[j].color = m2Object.lights[j].diffuse_color;
 
 
 //        mathfu::vec4 viewPos = modelView * m2Object.lights[j].position;
-        meshblockPS.pc_lights[j].position = m2Object.lights[j].position;
+        modelBlockPS.pc_lights[j].position = m2Object.lights[j].position;
     }
-    meshblockPS.LightCount = lightCount;
+    modelBlockPS.LightCount = lightCount;
 }
 
 void M2MeshBufferUpdater::fillTextureMatrices(const M2Object &m2Object, int batchIndex, M2Data *m2Data,

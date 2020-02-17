@@ -1600,16 +1600,29 @@ void M2Object::createVertexBindings() {
 
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
-        if (m_useLocalDiffuseColor == 1) {
-            localDiffuse = m_localDiffuseColorV;
-        } else {
-            localDiffuse = m_api->getConfig()->getExteriorDirectColor();
-        }
+
 
         M2::modelWideBlockPS &blockPS = self->getObject<M2::modelWideBlockPS>();
 
+        blockPS.intLight.uInteriorAmbientColorAndApplyInteriorLight =
+            mathfu::vec4_packed(mathfu::vec4(
+                m_ambientColorOverride.xyz(),
+                m_useLocalDiffuseColor == 1 ? 1.0 : 0
+            ));
 
-        //TODO: move this calculation to camera
+        blockPS.intLight.uInteriorDirectColorAndApplyExteriorLight =
+            mathfu::vec4_packed(mathfu::vec4(
+                m_localDiffuseColorV.xyz(),
+                m_useLocalDiffuseColor == 1 ? 0.0 : 1
+            ));
+
+        blockPS.intLight.interiorExteriorBlend =
+            mathfu::vec4_packed(mathfu::vec4(
+                (m_useLocalDiffuseColor == 1) ? 1.0 : 0.0,
+                0,0,0));
+
+        //Lights
+        M2MeshBufferUpdater::fillLights(*this, blockPS);
 //        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));
 //        blockPS.uSunDirAndFogStart = mathfu::vec4_packed(mathfu::vec4(getSunDir(), m_api->getGlobalFogStart()));
 //        blockPS.uSunColorAndFogEnd = mathfu::vec4_packed(mathfu::vec4(localDiffuse.xyz(), m_api->getGlobalFogEnd()));

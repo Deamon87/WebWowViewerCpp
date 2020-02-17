@@ -361,10 +361,10 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },{ "m2Shader.frag.spv", {
 {
-{0,4,240},
+{0,4,48},
+{0,3,256},
 {0,0,240},
 {0,1,14144},
-{0,3,48},
 }
 }
 },};
@@ -435,35 +435,9 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
-      3, {
-        {"_1462.intLight.uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
-        {"_1462.intLight.uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
-        {"_1462.intLight.interiorExteriorBlend", true, 32, 1, 4, 0},
-      }
-    },
-    {
       1, {
         {"_133.uPlacementMat", true, 0, 4, 4, 0},
         {"_133.uBoneMatrixes[0]", true, 64, 4, 4, 220},
-      }
-    },
-    {
-      4, {
-        {"_242.PixelShader_UnFogged_IsAffectedByLight_LightCount", false, 0, 1, 4, 0},
-        {"_242.uFogColorAndAlphaTest", true, 16, 1, 4, 0},
-        {"_242.pc_lights[0].color", true, 32, 1, 4, 0},
-        {"_242.pc_lights[0].position", true, 48, 1, 4, 0},
-        {"_242.pc_lights[0].attenuation", true, 64, 1, 4, 0},
-        {"_242.pc_lights[1].color", true, 80, 1, 4, 0},
-        {"_242.pc_lights[1].position", true, 96, 1, 4, 0},
-        {"_242.pc_lights[1].attenuation", true, 112, 1, 4, 0},
-        {"_242.pc_lights[2].color", true, 128, 1, 4, 0},
-        {"_242.pc_lights[2].position", true, 144, 1, 4, 0},
-        {"_242.pc_lights[2].attenuation", true, 160, 1, 4, 0},
-        {"_242.pc_lights[3].color", true, 176, 1, 4, 0},
-        {"_242.pc_lights[3].position", true, 192, 1, 4, 0},
-        {"_242.pc_lights[3].attenuation", true, 208, 1, 4, 0},
-        {"_242.uPcColor", true, 224, 1, 4, 0},
       }
     },
     {
@@ -477,6 +451,33 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_239.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
         {"_239.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
         {"_239.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_239.PixelShader_UnFogged_IsAffectedByLight", false, 0, 1, 4, 0},
+        {"_239.uFogColorAndAlphaTest", true, 16, 1, 4, 0},
+        {"_239.uPcColor", true, 32, 1, 4, 0},
+      }
+    },
+    {
+      3, {
+        {"_264.intLight.uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
+        {"_264.intLight.uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
+        {"_264.intLight.interiorExteriorBlend", true, 32, 1, 4, 0},
+        {"_264.pc_lights[0].color", true, 48, 1, 4, 0},
+        {"_264.pc_lights[0].position", true, 64, 1, 4, 0},
+        {"_264.pc_lights[0].attenuation", true, 80, 1, 4, 0},
+        {"_264.pc_lights[1].color", true, 96, 1, 4, 0},
+        {"_264.pc_lights[1].position", true, 112, 1, 4, 0},
+        {"_264.pc_lights[1].attenuation", true, 128, 1, 4, 0},
+        {"_264.pc_lights[2].color", true, 144, 1, 4, 0},
+        {"_264.pc_lights[2].position", true, 160, 1, 4, 0},
+        {"_264.pc_lights[2].attenuation", true, 176, 1, 4, 0},
+        {"_264.pc_lights[3].color", true, 192, 1, 4, 0},
+        {"_264.pc_lights[3].position", true, 208, 1, 4, 0},
+        {"_264.pc_lights[3].attenuation", true, 224, 1, 4, 0},
+        {"_264.lightCount", false, 240, 1, 4, 0},
       }
     },
   }},
@@ -556,11 +557,11 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       3, {
-        {"_469.uViewUp", true, 0, 1, 4, 0},
-        {"_469.uSunDir_FogStart", true, 16, 1, 4, 0},
-        {"_469.uSunColor_uFogEnd", true, 32, 1, 4, 0},
-        {"_469.uAmbientLight", true, 48, 1, 4, 0},
-        {"_469.FogColor", true, 64, 1, 4, 0},
+        {"_505.uViewUp", true, 0, 1, 4, 0},
+        {"_505.uSunDir_FogStart", true, 16, 1, 4, 0},
+        {"_505.uSunColor_uFogEnd", true, 32, 1, 4, 0},
+        {"_505.uAmbientLight", true, 48, 1, 4, 0},
+        {"_505.FogColor", true, 64, 1, 4, 0},
       }
     },
     {
