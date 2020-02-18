@@ -256,7 +256,7 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
         this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
     }
 
-    drawMeshes(drawStage->meshesToRender->meshes);
+//    drawMeshes(drawStage->meshesToRender->meshes);
 }
 
 void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {

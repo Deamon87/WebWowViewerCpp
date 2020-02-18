@@ -8,6 +8,7 @@
 #include "header/adtFileHeader.h"
 #include "header/wdtFileHeader.h"
 #include "PersistentFile.h"
+#include <array>
 
 struct mcnkStruct_t {
     MCVT *mcvt = nullptr;

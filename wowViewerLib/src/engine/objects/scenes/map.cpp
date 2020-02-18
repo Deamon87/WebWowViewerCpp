@@ -333,8 +333,40 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     }
 
     //Sort and delete duplicates
-    std::sort( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() );
-    m2ObjectsCandidates.erase( unique( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() ), m2ObjectsCandidates.end() );
+    {
+        auto *sortedArrayPtr = &m2ObjectsCandidates[0];
+        std::vector<int> indexArray = std::vector<int>(m2ObjectsCandidates.size());
+        for (int i = 0; i < indexArray.size(); i++) {
+            indexArray[i] = i;
+        }
+        quickSort_parallel(
+            indexArray.data(),
+            indexArray.size(),
+            m_api->getConfig()->getThreadCount(),
+            m_api->getConfig()->getQuickSortCutoff(),
+            [sortedArrayPtr](int indexA, int indexB) {
+                auto *pA = sortedArrayPtr[indexA].get();
+                auto *pB = sortedArrayPtr[indexB].get();
+
+                return pA < pB;
+            });
+
+        if (m2ObjectsCandidates.size() > 1) {
+            std::shared_ptr<M2Object> prevElem = nullptr;
+            std::vector<std::shared_ptr<M2Object>> m2Unique;
+            m2Unique.reserve(indexArray.size());
+            for (int i = 0; i < indexArray.size(); i++) {
+                if (prevElem != m2ObjectsCandidates[indexArray[i]]) {
+                    m2Unique.push_back(m2ObjectsCandidates[indexArray[i]]);
+                    prevElem = m2ObjectsCandidates[indexArray[i]];
+                }
+            }
+            m2ObjectsCandidates = m2Unique;
+        }
+    }
+
+//    std::sort( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() );
+//    m2ObjectsCandidates.erase( unique( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() ), m2ObjectsCandidates.end() );
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {

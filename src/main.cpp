@@ -28,6 +28,7 @@
 #include <iostream>
 #include <cmath>
 #include <csignal>
+#include <exception>
 
 //#include "persistance/ZipRequestProcessor.h"
 #include "persistance/CascRequestProcessor.h"
@@ -303,7 +304,7 @@ int main(){
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);
-    const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
+    //const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
 
     signal(SIGABRT, &my_function_to_handle_aborts);
@@ -379,8 +380,8 @@ int main(){
 //        processor = new HttpZipRequestProcessor(url);
 //        processor = new ZipRequestProcessor(filePath);
 //        processor = new MpqRequestProcessor(filePath);
-        processor = new HttpRequestProcessor(url, urlFileId);
-//        //  processor = new CascRequestProcessor(filePath);
+//        processor = new HttpRequestProcessor(url, urlFileId);
+        processor = new CascRequestProcessor("d:/Games/World of Warcraft Public Test/_ptr_/");
         processor->setThreaded(true);
 //
         apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
