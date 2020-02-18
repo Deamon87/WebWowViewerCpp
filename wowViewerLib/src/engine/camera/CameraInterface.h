@@ -21,6 +21,7 @@ public:
                                               float farPlane) = 0;
 
     virtual void tick(animTime_t timeDelta) = 0;
+    virtual void setMovementSpeed(float value) = 0;
 };
 
 #endif //WOWVIEWERLIB_CAMERAINTERFACE_H

@@ -33,6 +33,7 @@ private:
     IFileRequest *m_fileRequestProcessor;
 public:
     std::mutex accessMutex;
+    std::mutex getFileMutex;
     std::unique_lock<std::mutex> processCacheLock;
     std::unique_lock<std::mutex> provideFileLock;
     std::unordered_map<std::string, std::weak_ptr<T>> m_cache;
@@ -53,7 +54,11 @@ public:
 
 //            std::cout << "Processing file " << it.fileName << std::endl << std::flush;
             if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
-                sharedPtr->process(it.fileContent, it.fileName);
+                if (sharedPtr->getStatus() == FileStatus::FSLoaded) {
+                    std::cout << "sharedPtr->getStatus == FileStatus::FSLoaded" << std::endl;
+                } else {
+                    sharedPtr->process(it.fileContent, it.fileName);
+                }
             }
 //            std::cout << "Processed file " << it.fileName << std::endl << std::flush;
 
@@ -85,6 +90,8 @@ public:
      * Queue load functions
      */
     std::shared_ptr<T> get (std::string fileName) {
+        std::lock_guard<std::mutex> lock(getFileMutex);
+
         fileName = trimmed(fileName);
         std::transform(fileName.begin(), fileName.end(),fileName.begin(), ::toupper);
         std::replace(fileName.begin(), fileName.end(), '\\', '/');
@@ -108,6 +115,8 @@ public:
     }
 
     std::shared_ptr<T> getFileId (int id) {
+        std::lock_guard<std::mutex> lock(getFileMutex);
+
         std::stringstream ss;
         ss << "File" << std::setfill('0') << std::setw(8) << std::hex << id <<".unk";
         std::string fileName = ss.str();

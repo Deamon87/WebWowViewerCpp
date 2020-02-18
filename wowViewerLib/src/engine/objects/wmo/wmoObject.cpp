@@ -72,6 +72,13 @@ void WmoObject::startLoading() {
 std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     int doodadsSet = this->m_doodadSet;
 
+    if (doodadsSet >= this->mainGeom->doodadSetsLen) {
+        doodadsSet = 0;
+    }
+    if (doodadsSet >= this->mainGeom->doodadSetsLen) {
+        return nullptr;
+    }
+
     SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
     if (index < doodadSetDef->firstinstanceindex
         || index > doodadSetDef->firstinstanceindex + doodadSetDef->numDoodads) return nullptr;

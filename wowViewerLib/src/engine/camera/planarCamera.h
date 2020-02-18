@@ -74,7 +74,7 @@ public:
         position[2] = camera.z;
     }
 
-    void setMovementSpeed(float value);
+    void setMovementSpeed(float value) override;
 
 public:
     //Implemented ICamera

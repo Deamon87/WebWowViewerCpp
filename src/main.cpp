@@ -442,6 +442,8 @@ int main(){
     frontendUI->setSpeedCallback([&apiContainer](float movementSpeed) -> void {
         auto conf = apiContainer.getConfig();
         conf->setMovementSpeed(movementSpeed);
+
+        apiContainer.camera->setMovementSpeed(movementSpeed);
     });
     frontendUI->setThreadCountCallback([&apiContainer](int value) -> void {
         auto conf = apiContainer.getConfig();
