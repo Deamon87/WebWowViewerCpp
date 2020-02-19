@@ -94,6 +94,7 @@ public:
     void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
+    void drawStageAndDeps(HDrawStage drawStage) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
     bool getIsVulkanAxisSystem() override {return true;}
 public:
@@ -190,7 +191,7 @@ public:
     };
 
 private:
-    void drawMesh(HGMesh hmesh);
+    void drawMesh(HGMesh &hmesh);
 
     void setupDebugMessenger();
     void pickPhysicalDevice();

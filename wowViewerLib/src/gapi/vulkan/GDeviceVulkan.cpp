@@ -1617,3 +1617,7 @@ GDeviceVLK::createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int 
 
     return newPool->allocate(layout, uniforms, images);
 }
+
+void GDeviceVLK::drawStageAndDeps(HDrawStage) {
+
+}
