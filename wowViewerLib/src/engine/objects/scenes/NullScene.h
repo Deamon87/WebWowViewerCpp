@@ -9,16 +9,18 @@
 
 class NullScene : public IScene {
 public:
-    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
-    void setAnimationId(int animationId) override {};
+    virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
 
-    void checkCulling(WoWFrameData *frameData) override {};
-    void collectMeshes(WoWFrameData *frameData) override {};
+    virtual void setAnimationId(int animationId) override {};
 
-    void doPostLoad(WoWFrameData *frameData) override {};
-    void update(WoWFrameData *frameData) override {};
-    void updateBuffers(WoWFrameData *frameData) override {};
+    virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) override {
+        resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+    };
 
-    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) override {return ; };
+    virtual void checkCulling(HCullStage cullStage) override {};
+
+    virtual void doPostLoad(HCullStage cullStage) override {};
+    virtual void update(HUpdateStage updateStage) override {};
+    virtual void updateBuffers(HCullStage cullStage) override {};
 };
 #endif //AWEBWOWVIEWERCPP_NULLSCENE_H

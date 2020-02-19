@@ -4,10 +4,13 @@ project(WoWWebViewerJs)
 
 include(CheckCXXCompilerFlag)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 message( EMSCRIPTEN_ROOT = emc${EMSCRIPTEN_ROOT})
 
-set(CMAKE_C_COMPILER /home/deamon/Downloads/emsdk-master/upstream/emscripten/emcc)
-set(CMAKE_CXX_COMPILER /home/deamon/Downloads/emsdk-master/upstream/emscripten/em++)
+#set(CMAKE_C_COMPILER /home/deamon/Downloads/emsdk-master/upstream/emscripten/emcc)
+#set(CMAKE_CXX_COMPILER /home/deamon/Downloads/emsdk-master/upstream/emscripten/em++)
+
 
 check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
 if(HAVE_FLAG_STD_CXX17)
@@ -29,16 +32,22 @@ endif()
 
 set(EMSCRIPTEN 1)
 
-add_subdirectory(../wowViewerLib ${CMAKE_CURRENT_BINARY_DIR}/A)
+add_subdirectory(../wowViewerLib ${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib)
 
 set(SOURCE_FILES src/main.cpp
         src/RequestProcessor.cpp
         src/HttpRequestProcessor.cpp
         )
 
-add_library(AWoWWebViewerJs ${SOURCE_FILES})
+add_executable(project ${SOURCE_FILES})
 
-add_dependencies(AWoWWebViewerJs WoWViewerLib)
-target_link_libraries(AWoWWebViewerJs WoWViewerLib)
+add_dependencies(project WoWViewerLib)
+target_link_libraries(project WoWViewerLib)
+target_link_options(project PUBLIC "SHELL: --pre-js ../prejs.js --js-library ../jsLib.js")
+target_link_options(project PUBLIC "SHELL: -s USE_GLFW=3 --preload-file glsl -s ALLOW_MEMORY_GROWTH=1")
+target_link_options(project PUBLIC "SHELL: -s FETCH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1")
 
-INSTALL(TARGETS AWoWWebViewerJs DESTINATION BIN)
+set_target_properties(project
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../"
+        )

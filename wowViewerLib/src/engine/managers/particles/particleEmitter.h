@@ -166,13 +166,13 @@ private:
             mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
                 float texStartY, mathfu::vec2 *texPos);
 
-	typedef struct {
+	struct particleFrame {
 		HGVertexBufferDynamic m_bufferVBO = nullptr;
 
 		HGVertexBufferBindings m_bindings = nullptr;
 		HGParticleMesh m_mesh = nullptr;
 		bool active = false;
-	} particleFrame;
+	} ;
     std::array<particleFrame, 4> frame;
 
     void createMesh();

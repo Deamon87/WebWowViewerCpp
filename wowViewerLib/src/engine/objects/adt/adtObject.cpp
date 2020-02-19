@@ -178,7 +178,7 @@ void AdtObject::loadWater() {
                 }
 
                 //SmallHack
-                if (basetextureFDID == 0) {
+                if (basetextureFDID == 0 && (m_api->databaseHandler != nullptr)) {
                     if (liquidInstance.liquid_object_or_lvf > 42) {
                         std::vector<LiquidMat> liqMats;
                         m_api->databaseHandler->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liqMats);

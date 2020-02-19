@@ -5,11 +5,11 @@
 #ifndef WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 
-#include "../../wowViewerLib/src/include/wowScene.h"
 #include <thread>
 #include <list>
 #include <vector>
 #include <forward_list>
+#include "../../wowViewerLib/src/include/iostuff.h"
 
 class RequestProcessor : public IFileRequest {
 protected:

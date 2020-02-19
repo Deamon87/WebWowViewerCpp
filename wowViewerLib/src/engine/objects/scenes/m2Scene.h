@@ -17,12 +17,11 @@ private:
     mathfu::vec4 m_ambientColorOverride;
     bool doOverride = false;
 
-    M2Object *m_m2Object;
-    bool m_drawModel = false;
+    std::shared_ptr<M2Object> m_m2Object = nullptr;
 
 public:
     M2Scene(ApiContainer *api, std::string m2Model, int cameraView = - 1) : m_api(api), m_m2Model(m2Model), m_cameraView(cameraView){
-        M2Object *m2Object = new M2Object(m_api);
+        auto  m2Object = std::make_shared<M2Object>(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileName(m_m2Model);
         m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
@@ -34,7 +33,7 @@ public:
 
 
     M2Scene(ApiContainer *api, int fileDataId, int cameraView = - 1) : m_api(api), m_cameraView(cameraView){
-        M2Object *m2Object = new M2Object(m_api);
+        auto m2Object = std::make_shared<M2Object>(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileId(fileDataId);
         m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
@@ -44,14 +43,12 @@ public:
         m_m2Object = m2Object;
     };
     ~M2Scene() override {
-        delete m_m2Object;
+
     }
 
     void setAnimationId(int animationId) override {
         m_m2Object->setAnimationId(animationId);
     };
-
-    M2Object * getM2Object() { return m_m2Object; };
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
     void checkCulling(HCullStage cullStage) override;

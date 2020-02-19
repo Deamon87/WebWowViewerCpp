@@ -21,7 +21,9 @@ void M2Scene::checkCulling(HCullStage cullStage) {
 
     std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
 
-    m_drawModel = m_m2Object->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints);
+    if (m_m2Object->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints)) {
+        cullStage->m2Array = {m_m2Object};
+    }
 }
 
 extern "C" {
@@ -48,21 +50,22 @@ void M2Scene::doPostLoad(HCullStage cullStage) {
             );
 
             if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
-//                m_api->setCameraPosition((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+                m_api->camera->setCameraPos((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+
             } else {
-//                m_api->setCameraPosition((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+                m_api->camera->setCameraPos((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
             }
-//            m_api->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
+            m_api->camera->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
         } else {
-//            m_api->setCameraPosition(1.0,0,0);
-//            m_api->setCameraOffset(0,0,0);
+            m_api->camera->setCameraPos(1.0,0,0);
+            m_api->camera->setCameraOffset(0,0,0);
         }
         std::vector <int> availableAnimations;
         m_m2Object->getAvailableAnimation(availableAnimations);
 #ifdef __EMSCRIPTEN__
         supplyPointer(&availableAnimations[0], availableAnimations.size());
 #endif
-    }
+        }
 }
 
 void M2Scene::update(HUpdateStage updateStage) {
@@ -122,12 +125,18 @@ void M2Scene::updateBuffers(HCullStage cullStage) {
 }
 
 void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
-    if (!m_drawModel) return;
+    if (updateStage == nullptr) return;
+    if (resultDrawStage == nullptr) return;
+
+    auto cullStage = updateStage->cullResult;
 
     resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
 
-    m_m2Object->collectMeshes(resultDrawStage->meshesToRender->meshes, 0);
-    m_m2Object->drawParticles(resultDrawStage->meshesToRender->meshes, 0);
+    for (auto m2Object : updateStage->cullResult->m2Array) {
+        m2Object->collectMeshes(resultDrawStage->meshesToRender->meshes, 0);
+        m2Object->drawParticles(resultDrawStage->meshesToRender->meshes, 0);
+    }
+
 
     auto renderMats = resultDrawStage->matricesForRendering;
     auto config = m_api->getConfig();

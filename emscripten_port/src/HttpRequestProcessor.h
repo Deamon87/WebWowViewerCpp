@@ -5,7 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_HTTPREQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_HTTPREQUESTPROCESSOR_H
 
-#include "../../wowViewerLib/src/include/wowScene.h"
 #include "RequestProcessor.h"
 
 class HttpRequestProcessor : public RequestProcessor {

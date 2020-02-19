@@ -260,6 +260,7 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
 }
 
 void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
+    std::cout << "FILE:" << __FILE__ << " line " << __LINE__ << std::endl;
     //Collect meshes into batches and create new array for performace
 //    int meshesSize = meshes.size();
 //    for (int i = 0 ; i < meshesSize - 1; i++) {
@@ -377,6 +378,11 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
             }
         }
     }
+    for (const auto &bufferChunks : additionalChunks) {
+        if (bufferChunks != nullptr) {
+            buffers.push_back(bufferChunks.get());
+        }
+    }
 
 
     std::sort( buffers.begin(), buffers.end());
@@ -486,16 +492,16 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     }
 #else
     for (int i = 0; i < 5; i++) {
-        GUniformBufferChunk33 * uniformChunk = (GUniformBufferChunk33 *) hmesh->m_UniformBuffer[i].get();
-        if (uniformChunk != nullptr) {
-            IUniformBuffer *uniformBuffer = nullptr;
-            if (i == 0) {
-                bufferForUpload = matrixChunk->getUniformBuffer().get();
-            } else {
-                bufferForUpload = uniformChunk->getUniformBuffer().get();
-            }
+        GUniformBufferChunk33 *uniformChunk = nullptr;
+        if (i == 0) {
+            uniformChunk = (GUniformBufferChunk33 *) (matrixChunk.get());
+        } else {
+            uniformChunk = (GUniformBufferChunk33 *)(hmesh->m_UniformBuffer[i].get());
+        }
 
-            bindUniformBuffer(bufferForUpload, i, uniformChunk->getOffset(), uniformChunk->getSize());
+        if (uniformChunk != nullptr) {
+            auto uniformBuffer = uniformChunk->getUniformBuffer().get();
+            bindUniformBuffer(uniformBuffer, i, uniformChunk->getOffset(), uniformChunk->getSize());
         }
     }
 #endif

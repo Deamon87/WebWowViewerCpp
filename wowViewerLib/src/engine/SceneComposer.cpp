@@ -156,17 +156,14 @@ void SceneComposer::DoUpdate() {
     singleUpdateCNT.endMeasurement("single update ");
 
     meshesCollectCNT.beginMeasurement();
-
     std::vector<HGUniformBufferChunk> additionalChunks;
     for (auto &link : frameScenario->drawStageLinks) {
         link.scene->produceDrawStage(link.drawStage, link.updateStage);
-
         additionalChunks.push_back(link.drawStage->sceneWideBlockVSPSChunk);
     }
 
     std::vector<HGMesh> meshes;
     collectMeshes(frameScenario->getDrawStage(), meshes);
-
     meshesCollectCNT.endMeasurement("collectMeshes ");
 
     for (auto cullStage : frameScenario->cullStages) {
@@ -206,7 +203,6 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
 //    }
 
 
-
     m_apiContainer->hDevice->reset();
     int currentFrame = m_apiContainer->hDevice->getDrawFrameNumber();
     auto thisFrameScenario = m_frameScenarios[currentFrame];
@@ -222,14 +218,12 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     if (thisFrameScenario != nullptr) {
         m_apiContainer->hDevice->drawStageAndDeps(thisFrameScenario->getDrawStage());
     }
+
     m_apiContainer->hDevice->commitFrame();
     m_apiContainer->hDevice->reset();
-
     if (!m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
         DoUpdate();
     }
-
-
     if (m_supportThreads) {
         cullingFuture.wait();
         cullingFinished = std::promise<bool>();

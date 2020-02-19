@@ -149,6 +149,11 @@ HCameraMatrices PlanarCamera::getCameraMatrices(float fov,
                                                 float farPlane) {
     HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
     cameraMatrices->cameraPos = mathfu::vec4(camera, 1.0);
+    cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(
+        fov,
+        canvasAspect,
+        nearPlane,
+        farPlane);
     cameraMatrices->lookAtMat = lookAtMat;
 
     cameraMatrices->cameraPos = mathfu::vec4(camera, 1.0);

@@ -112,54 +112,6 @@ void main()
 }
 
 
-#ifdef COMPILING_VS
-/* vertex shader code */
-layout(location = 0) in vec3 aPosition;
-
-layout(std140) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-
-// Whole model
-layout(std140) uniform modelWideBlockVS {
-    mat4 uPlacementMat;
-
-    vec4 uBBScale;
-    vec4 uBBCenter;
-    vec4 uColor;
-};
-
-void main() {
-    vec4 worldPoint = vec4(
-        aPosition.x*uBBScale.x + uBBCenter.x,
-        aPosition.y*uBBScale.y + uBBCenter.y,
-        aPosition.z*uBBScale.z + uBBCenter.z,
-    1);
-
-    gl_Position = uPMatrix * uLookAtMat * uPlacementMat * worldPoint;
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-precision highp float;
-
-layout(std140) uniform modelWideBlockVS {
-    mat4 uPlacementMat;
-
-    vec4 uBBScale;
-    vec4 uBBCenter;
-    vec4 uColor;
-};
-
-out vec4 outColor;
-
-void main() {
-    vec4 finalColor = uColor;
-    outColor = finalColor;
-}
-
-#endif //COMPILING_FS
 #version 330
 
 layout(std140) uniform sceneWideBlockVSPS
@@ -184,6 +136,30 @@ void main()
 
 #version 330
 
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+struct InteriorLightParam
+{
+    vec4 uInteriorAmbientColorAndApplyInteriorLight;
+    vec4 uInteriorDirectColorAndApplyExteriorLight;
+};
+
 struct LocalLight
 {
     vec4 color;
@@ -193,59 +169,60 @@ struct LocalLight
 
 layout(std140) uniform meshWideBlockPS
 {
-    ivec4 PixelShader_UnFogged_IsAffectedByLight_LightCount;
+    ivec4 PixelShader_UnFogged_IsAffectedByLight;
     vec4 uFogColorAndAlphaTest;
-    LocalLight pc_lights[4];
     vec4 uPcColor;
-} _29;
+} _246;
 
 layout(std140) uniform modelWideBlockPS
 {
-    vec4 uViewUp;
-    vec4 uSunDirAndFogStart;
-    vec4 uSunColorAndFogEnd;
-    vec4 uAmbientLight;
-} _49;
+    InteriorLightParam intLight;
+    LocalLight pc_lights[4];
+    ivec4 lightCount;
+    vec4 interiorExteriorBlend;
+} _271;
 
 layout(std140) uniform sceneWideBlockVSPS
 {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-} _239;
+    SceneWideParams scene;
+} _310;
 
 layout(std140) uniform modelWideBlockVS
 {
     mat4 uPlacementMat;
     mat4 uBoneMatrixes[220];
-} _247;
+} _318;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
 uniform sampler2D uTexture4;
 
-in vec3 vNormal;
 in vec2 vTexCoord;
 in vec2 vTexCoord2;
 in vec2 vTexCoord3;
 in vec4 vDiffuseColor;
 in vec3 vPosition;
+in vec3 vNormal;
 layout(location = 0) out vec4 outputColor;
 
-vec3 makeDiffTerm(vec3 matDiffuse, inout vec3 accumLight)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
 {
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0);
-    vec3 currColor;
-    if (_29.PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1)
+    vec3 localDiffuse = accumLight;
+    if (!applyLight)
     {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = clamp(dot(normalizedN, -_49.uSunDirAndFogStart.xyz), 0.0, 1.0);
-        float nDotUp = dot(normalizedN, _49.uViewUp.xyz);
-        vec4 AmbientLight = _49.uAmbientLight;
-        vec3 adjAmbient = AmbientLight.xyz;
-        vec3 adjHorizAmbient = AmbientLight.xyz;
-        vec3 adjGroundAmbient = AmbientLight.xyz;
+        return matDiffuse;
+    }
+    vec3 lDiffuse = vec3(0.0);
+    vec3 normalizedN = normalize(vNormal_1);
+    vec3 currColor;
+    if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+    {
+        float nDotL = clamp(dot(normalizedN, -sceneParams.extLight.uExteriorDirectColorDir.xyz), 0.0, 1.0);
+        float nDotUp = dot(normalizedN, sceneParams.uViewUp.xyz);
+        vec3 adjAmbient = sceneParams.extLight.uExteriorAmbientColor.xyz + precomputedLight;
+        vec3 adjHorizAmbient = sceneParams.extLight.uExteriorHorizontAmbientColor.xyz + precomputedLight;
+        vec3 adjGroundAmbient = sceneParams.extLight.uExteriorGroundAmbientColor.xyz + precomputedLight;
         if (nDotUp >= 0.0)
         {
             currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
@@ -256,18 +233,30 @@ vec3 makeDiffTerm(vec3 matDiffuse, inout vec3 accumLight)
         }
         vec3 skyColor = currColor * 1.10000002384185791015625;
         vec3 groundColor = currColor * 0.699999988079071044921875;
-        lDiffuse = _49.uSunColorAndFogEnd.xyz * nDotL;
+        lDiffuse = sceneParams.extLight.uExteriorDirectColor.xyz * nDotL;
         currColor = mix(groundColor, skyColor, vec3(0.5 + (0.5 * nDotL)));
     }
-    else
+    if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0.0)
     {
-        currColor = vec3(1.0);
-        accumLight = vec3(0.0);
-        mult = 1.0;
+        float nDotL_1 = clamp(dot(normalizedN, -sceneParams.uInteriorSunDir.xyz), 0.0, 1.0);
+        vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL_1;
+        vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
+        if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+        {
+            lDiffuse = mix(lDiffuseInterior, lDiffuse, vec3(interiorExteriorBlend));
+            currColor = mix(interiorAmbient, currColor, vec3(interiorExteriorBlend));
+        }
+        else
+        {
+            lDiffuse = lDiffuseInterior;
+            currColor = interiorAmbient;
+        }
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * accumLight;
-    return sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm);
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
+    vec3 specTerm = vec3(0.0);
+    vec3 emTerm = vec3(0.0);
+    return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
 
 void main()
@@ -284,23 +273,23 @@ void main()
     vec4 finalColor = vec4(0.0);
     vec4 meshResColor = vDiffuseColor;
     vec3 accumLight;
-    if (_29.PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1)
+    if (_246.PixelShader_UnFogged_IsAffectedByLight.z == 1)
     {
         vec3 vPos3 = vPosition;
         vec3 vNormal3 = normalize(vNormal);
         vec3 lightColor = vec3(0.0);
-        int count = int(_29.pc_lights[0].attenuation.w);
+        int count = int(_271.pc_lights[0].attenuation.w);
         LocalLight lightRecord;
         for (int index = 0; index < 4; index++)
         {
-            if (index >= _29.PixelShader_UnFogged_IsAffectedByLight_LightCount.w)
+            if (index >= _271.lightCount.x)
             {
                 break;
             }
-            lightRecord.color = _29.pc_lights[index].color;
-            lightRecord.position = _29.pc_lights[index].position;
-            lightRecord.attenuation = _29.pc_lights[index].attenuation;
-            vec3 vectorToLight = (_239.uLookAtMat * (_247.uPlacementMat * lightRecord.position)).xyz - vPos3;
+            lightRecord.color = _271.pc_lights[index].color;
+            lightRecord.position = _271.pc_lights[index].position;
+            lightRecord.attenuation = _271.pc_lights[index].attenuation;
+            vec3 vectorToLight = (_310.scene.uLookAtMat * (_318.uPlacementMat * lightRecord.position)).xyz - vPos3;
             float distanceToLightSqr = dot(vectorToLight, vectorToLight);
             float distanceToLightInv = inversesqrt(distanceToLightSqr);
             float distanceToLight = distanceToLightSqr * distanceToLightInv;
@@ -310,8 +299,8 @@ void main()
             vec3 attenuatedColor = (lightRecord.color.xyz * attenuation) * attenuationRec.y;
             lightColor += vec3((attenuatedColor * attenuatedColor) * diffuseTerm1);
         }
-        vec3 _319 = clamp(lightColor, vec3(0.0), vec3(1.0));
-        meshResColor = vec4(_319.x, _319.y, _319.z, meshResColor.w);
+        vec3 _389 = clamp(lightColor, vec3(0.0), vec3(1.0));
+        meshResColor = vec4(_389.x, _389.y, _389.z, meshResColor.w);
         accumLight = meshResColor.xyz;
     }
     float finalOpacity = 0.0;
@@ -321,7 +310,7 @@ void main()
     genericParams[0] = vec4(1.0);
     genericParams[1] = vec4(1.0);
     genericParams[2] = vec4(1.0);
-    int uPixelShader = _29.PixelShader_UnFogged_IsAffectedByLight_LightCount.x;
+    int uPixelShader = _246.PixelShader_UnFogged_IsAffectedByLight.x;
     vec3 matDiffuse;
     float opacity;
     #if (FRAGMENTSHADER == 0)
@@ -336,6 +325,7 @@ void main()
     #endif
     #if (FRAGMENTSHADER == 2)
     matDiffuse = ((vDiffuseColor.xyz * 2.0) * tex.xyz) * tex2.xyz;
+    opacity = tex2.w * vDiffuseColor.w;
     opacity = tex2.w * vDiffuseColor.w;
     finalOpacity = opacity * visParams.x;
     #endif
@@ -516,10 +506,25 @@ void main()
     finalOpacity = opacity * visParams.x;
     #endif
     vec3 param = matDiffuse;
-    vec3 param_1 = accumLight;
-    vec3 _1396 = makeDiffTerm(param, param_1);
-    finalColor = vec4(_1396 + specular, finalOpacity);
-    if (finalColor.w < _29.uFogColorAndAlphaTest.w)
+    vec3 param_1 = vNormal;
+    bool param_2 = _246.PixelShader_UnFogged_IsAffectedByLight.z > 0;
+    float param_3 = _271.interiorExteriorBlend.x;
+    SceneWideParams param_4;
+    param_4.uLookAtMat = _310.scene.uLookAtMat;
+    param_4.uPMatrix = _310.scene.uPMatrix;
+    param_4.uViewUp = _310.scene.uViewUp;
+    param_4.uInteriorSunDir = _310.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _310.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _310.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _310.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _310.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _310.scene.extLight.uExteriorDirectColorDir;
+    InteriorLightParam param_5;
+    param_5.uInteriorAmbientColorAndApplyInteriorLight = _271.intLight.uInteriorAmbientColorAndApplyInteriorLight;
+    param_5.uInteriorDirectColorAndApplyExteriorLight = _271.intLight.uInteriorDirectColorAndApplyExteriorLight;
+    vec3 param_6 = accumLight;
+    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0)), finalOpacity);
+    if (finalColor.w < _246.uFogColorAndAlphaTest.w)
     {
         discard;
     }
@@ -540,6 +545,25 @@ in vec4 vPos;
 void main()
 {
     fragColor = vec4(_13.uColor, 1.0);
+}
+
+
+#version 330
+
+layout(std140) uniform meshWideBlockPS
+{
+    vec4 color;
+} _12;
+
+uniform sampler2D uTexture;
+
+layout(location = 0) out vec4 outputColor;
+in vec2 vTextCoords;
+in vec3 vPosition;
+
+void main()
+{
+    outputColor = vec4(_12.color.xyz * texture(uTexture, vTextCoords).xyz, 0.699999988079071044921875);
 }
 
 
@@ -578,389 +602,6 @@ void main()
 }
 
 
-
-#ifdef COMPILING_VS
-/* vertex shader code */
-
-attribute vec3 aPosition;
-
-varying vec4 vPos;
-
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
-uniform mat4 uPlacementMat;
-
-void main() {
-    gl_Position = uPMatrix * uLookAtMat * uPlacementMat * vec4(aPosition.xyz, 1.0);
-    gl_PointSize = 10.0;
-}
-#endif
-
-#ifdef COMPILING_FS
-precision highp float;
-
-varying vec4 vPos;
-
-uniform vec3 uColor;
-
-void main() {
-    gl_FragColor = vec4(uColor.rgb, 1.0);
-}
-
-#endif//https://www.khronos.org/registry/webgl/extensions/WEBGL_draw_buffers/
-//For drawbuffers in glsl of webgl you need to use GL_EXT_draw_buffers instead of WEBGL_draw_buffers
-
-#ifdef COMPILING_VS
-/* vertex shader code */
-precision highp float;
-layout (location = 0) in vec3 aPosition;
-layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec2 aTexCoord;
-layout (location = 3) in vec2 aTexCoord2;
-layout (location = 4) in vec2 aTexCoord3;
-layout (location = 5) in vec4 aColor;
-layout (location = 6) in vec4 aColor2;
-
-layout(std140) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-
-layout(std140) uniform modelWideBlockVS {
-    mat4 uPlacementMat;
-};
-
-layout(std140) uniform meshWideBlockVS {
-    ivec4 VertexShader_UseLitColor;
-};
-
-out vec2 vTexCoord;
-out vec2 vTexCoord2;
-out vec2 vTexCoord3;
-out vec4 vColor;
-out vec4 vColor2;
-out vec4 vPosition;
-out vec3 vNormal;
-
-#include commonFunctions
-
-void main() {
-    vec4 worldPoint = uPlacementMat * vec4(aPosition, 1);
-
-    vec4 cameraPoint = uLookAtMat * worldPoint;
-
-
-    mat4 viewModelMat = uLookAtMat * uPlacementMat;
-    mat3 viewModelMatTransposed = mat3(
-                viewModelMat[0].xyz,
-                viewModelMat[1].xyz,
-                viewModelMat[2].xyz
-            );
-
-    gl_Position = uPMatrix * cameraPoint;
-    vPosition = vec4(cameraPoint.xyz, aColor.w);
-    vNormal = normalize(viewModelMatTransposed * aNormal);
-
-    vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
-    vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
-    int uVertexShader = VertexShader_UseLitColor.x;
-    #if(VERTEXSHADER==-1)
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2;
-        vTexCoord3 = aTexCoord3;
-    #endif
-    #if(VERTEXSHADER==0) //MapObjDiffuse_T1
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2; //not used
-        vTexCoord3 = aTexCoord3; //not used
-    #endif
-    #if(VERTEXSHADER==1) //MapObjDiffuse_T1_Refl
-        vTexCoord = aTexCoord;
-        vTexCoord2 = reflect(normalize(cameraPoint.xyz), vNormal).xy;
-        vTexCoord3 = aTexCoord3; //not used
-    #endif
-    #if(VERTEXSHADER==2) //MapObjDiffuse_T1_Env_T2
-        vTexCoord = aTexCoord;
-        vTexCoord2 = posToTexCoord(vPosition.xyz, vNormal);;
-        vTexCoord3 = aTexCoord3;
-    #endif
-    #if(VERTEXSHADER==3) //MapObjSpecular_T1
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2; //not used
-        vTexCoord3 = aTexCoord3; //not used
-    #endif
-    #if(VERTEXSHADER==4) //MapObjDiffuse_Comp
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2; //not used
-        vTexCoord3 = aTexCoord3; //not used
-    #endif
-    #if(VERTEXSHADER==5) //MapObjDiffuse_Comp_Refl
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2;
-        vTexCoord3 = reflect(normalize(cameraPoint.xyz), vNormal).xy;
-    #endif
-    #if(VERTEXSHADER==6) //MapObjDiffuse_Comp_Terrain
-        vTexCoord = aTexCoord;
-        vTexCoord2 = vPosition.xy * -0.239999995;
-        vTexCoord3 = aTexCoord3; //not used
-    #endif
-    #if(VERTEXSHADER==7) //MapObjDiffuse_CompAlpha
-        vTexCoord = aTexCoord;
-        vTexCoord2 = vPosition.xy * -0.239999995;
-        vTexCoord3 = aTexCoord3; //not used
-    #endif
-    #if(VERTEXSHADER==8) //MapObjParallax
-        vTexCoord = aTexCoord;
-        vTexCoord2 = vPosition.xy * -0.239999995;
-        vTexCoord3 = aTexCoord3; //not used
-    #endif
-
-//
-//    vs_out.vTexCoord = vTexCoord;
-//    vs_out.vTexCoord2 = vTexCoord2;
-//    vs_out.vTexCoord3 = vTexCoord3;
-//    vs_out.vColor = vColor;
-//    vs_out.vColor2 = vColor2;
-//    vs_out.vPosition = vPosition;
-//    vs_out.vNormal = vNormal;
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-
-precision highp float;
-in vec2 vTexCoord;
-in vec2 vTexCoord2;
-in vec2 vTexCoord3;
-in vec4 vColor;
-in vec4 vColor2;
-in vec4 vPosition;
-in vec3 vNormal;
-
-layout(std140) uniform meshWideBlockPS {
-    vec4 uViewUp;
-    vec4 uSunDir_FogStart;
-    vec4 uSunColor_uFogEnd;
-    vec4 uAmbientLight;
-    vec4 uAmbientLight2AndIsBatchA;
-    ivec4 UseLitColor_EnableAlpha_PixelShader;
-    vec4 FogColor_AlphaTest;
-};
-
-uniform sampler2D uTexture;
-uniform sampler2D uTexture2;
-uniform sampler2D uTexture3;
-
-layout (location = 0) out vec4 outputColor;
-
-vec3 makeDiffTerm(vec3 matDiffuse) {
-    vec3 currColor;
-    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (UseLitColor_EnableAlpha_PixelShader.x == 1) {
-        //vec3 viewUp = normalize(vec3(0, 0.9, 0.1));
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -(uSunDir_FogStart.xyz));
-        float nDotUp = dot(normalizedN, uViewUp.xyz);
-
-        vec3 precomputed = vColor2.rgb;
-
-        vec3 ambientColor = uAmbientLight.rgb;
-        if (uAmbientLight2AndIsBatchA.w > 0.0) {
-            ambientColor = mix(uAmbientLight.rgb, uAmbientLight2AndIsBatchA.rgb, vec3(vPosition.w));
-        }
-
-        vec3 adjAmbient = (ambientColor.rgb + precomputed);
-        vec3 adjHorizAmbient = (ambientColor.rgb + precomputed);
-        vec3 adjGroundAmbient = (ambientColor.rgb + precomputed);
-
-        if ((nDotUp >= 0.0))
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-        }
-
-        vec3 skyColor = (currColor * 1.10000002);
-        vec3 groundColor = (currColor* 0.699999988);
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-        lDiffuse = (uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0));
-    } else {
-        currColor = vec3 (1.0, 1.0, 1.0) * uAmbientLight.rgb;
-    }
-
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vec3(0.0);
-    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
-
-//    return matDiffuse * currColor.rgb ;
-}
-
-void main() {
-    vec4 tex = texture(uTexture, vTexCoord).rgba ;
-    vec4 tex2 = texture(uTexture2, vTexCoord2).rgba;
-    vec4 tex3 = texture(uTexture3, vTexCoord3).rgba;
-
-    if (UseLitColor_EnableAlpha_PixelShader.y == 1) {
-        if ((tex.a - 0.501960814) < 0.0) {
-            discard;
-        }
-    }
-
-    int uPixelShader = UseLitColor_EnableAlpha_PixelShader.z;
-    vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
-    #if(FRAGMENTSHADER==-1)
-        finalColor = vec4(makeDiffTerm(tex.rgb * vColor.rgb + tex2.rgb*vColor2.bgr), tex.a);
-    #endif
-    #if(FRAGMENTSHADER==0) //MapObjDiffuse
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==1) //MapObjSpecular
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==2) //MapObjMetal
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==3) //MapObjEnv
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        vec3 env = tex2.rgb * tex.a;
-
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==4) //MapObjOpaque
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==5) //MapObjEnvMetal
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        vec3 env = (tex.rgb * tex.a) * tex2.rgb;
-
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==6) //MapObjTwoLayerDiffuse
-        vec3 layer1 = tex.rgb;
-        vec3 layer2 = mix(layer1, tex2.rgb, tex2.a);
-        vec3 matDiffuse = (vColor.rgb * 2.0) * mix(layer2, layer1, vColor2.a);
-
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), 1.0);
-    #endif
-    #if(FRAGMENTSHADER==7) //MapObjTwoLayerEnvMetal
-        vec4 colorMix = mix(tex2, tex, vColor2.a);
-        vec3 env = (colorMix.rgb * colorMix.a) * tex3.rgb;
-        vec3 matDiffuse = colorMix.rgb * (2.0 * vColor.rgb);
-
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==8) //MapObjTwoLayerTerrain
-        vec3 layer1 = tex.rgb;
-        vec3 layer2 = tex2.rgb;
-
-        vec3 matDiffuse = ((vColor.rgb * 2.0) * mix(layer2, layer1, vColor2.a));
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==9) //MapObjDiffuseEmissive
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        vec3 env = tex2.rgb * tex2.a * vColor2.a;
-
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==10) //MapObjMaskedEnvMetal
-        float mixFactor = clamp((tex3.a * vColor2.a), 0.0, 1.0);
-        vec3 matDiffuse =
-            (vColor.rgb * 2.0) *
-            mix(mix(((tex.rgb * tex2.rgb) * 2.0), tex3.rgb, mixFactor), tex.rgb, tex.a);
-
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==11) //MapObjEnvMetalEmissive
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        vec3 env =
-            (
-                ((tex.rgb * tex.a) * tex2.rgb) +
-                ((tex3.rgb * tex3.a) * vColor2.a)
-            );
-
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==12) //MapObjTwoLayerDiffuseOpaque
-        vec3 matDiffuse =
-            (vColor.rgb * 2.0) *
-            mix(tex2.rgb, tex.rgb, vColor2.a);
-
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==13) //MapObjTwoLayerDiffuseEmissive
-        vec3 t1diffuse = (tex2.rgb * (1.0 - tex2.a));
-
-        vec3 matDiffuse =
-            ((vColor.rgb * 2.0) *
-            mix(t1diffuse, tex.rgb, vColor2.a));
-
-        //TODO: there is env missing here
-        vec3 env = ((tex2.rgb * tex2.a) * (1.0 - vColor2.a));
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse)+env, vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==14) //MapObjAdditiveMaskedEnvMetal
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==15) //MapObjTwoLayerDiffuseMod2x
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==16) //MapObjTwoLayerDiffuseMod2xNA
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==17) //MapObjTwoLayerDiffuseAlpha
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==18) //MapObjLod
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-    #if(FRAGMENTSHADER==19) //MapObjParallax
-        vec3 matDiffuse = tex.rgb * (2.0 * vColor.rgb);
-        finalColor.rgba = vec4(makeDiffTerm(matDiffuse), vColor.a);
-    #endif
-
-    //finalColor.rgb *= 4.0;
-
-    if(finalColor.a < FogColor_AlphaTest.w)
-        discard;
-
-    vec3 fogColor = FogColor_AlphaTest.xyz;
-    float fog_start = uSunDir_FogStart.w;
-    float fog_end = uSunColor_uFogEnd.w;
-    float fog_rate = 1.5;
-    float fog_bias = 0.01;
-
-    //vec4 fogHeightPlane = pc_fog.heightPlane;
-    //float heightRate = pc_fog.color_and_heightRate.w;
-
-    float distanceToCamera = length(vPosition.xyz);
-    float z_depth = (distanceToCamera - fog_bias);
-    float expFog = 1.0 / (exp((max(0.0, (z_depth - fog_start)) * fog_rate)));
-    //float height = (dot(fogHeightPlane.xyz, vPosition.xyz) + fogHeightPlane.w);
-    //float heightFog = clamp((height * heightRate), 0, 1);
-    float heightFog = 1.0;
-    expFog = (expFog + heightFog);
-    float endFadeFog = clamp(((fog_end - distanceToCamera) / (0.699999988 * fog_end)), 0.0, 1.0);
-
-    finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
-
-    finalColor.a = 1.0; //do I really need it now?
-
-    outputColor = finalColor;
-}
-
-#endif //COMPILING_FS
 #version 330
 
 layout(std140) uniform modelWideBlockVS
@@ -979,11 +620,28 @@ void main()
 
 #version 330
 
-layout(std140) uniform sceneWideBlockVSPS
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
 {
     mat4 uLookAtMat;
     mat4 uPMatrix;
-} _41;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+layout(std140) uniform sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+} _43;
 
 layout(location = 0) in vec3 aPosition;
 out vec4 vColor;
@@ -996,1065 +654,8 @@ void main()
     vec4 aPositionVec4 = vec4(aPosition, 1.0);
     vColor = aColor;
     vTexcoord0 = aTexcoord0;
-    gl_Position = (_41.uPMatrix * _41.uLookAtMat) * aPositionVec4;
+    gl_Position = (_43.scene.uPMatrix * _43.scene.uLookAtMat) * aPositionVec4;
 }
-
-
-#ifdef COMPILING_VS
-/* vertex shader code */
-attribute float aHeight;
-attribute float aIndex;
-
-uniform vec3 uPos;
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
-
-varying vec2 vChunkCoords;
-varying vec3 vPosition;
-
-const float UNITSIZE_X =  (1600.0 / 3.0) / 128.0;
-const float UNITSIZE_Y =  (1600.0 / 3.0) / 128.0;
-const float ADTLOD_UNITSIZE = (1600.0 / 3.0) / 128.0;
-
-void main() {
-
-    float stepX = floor(aIndex / (129.0*129.0));
-    float division = 129.0;
-    if (stepX > 0.1)
-        division = 128.0;
-    float offset =stepX*129.0*129.0;
-
-    float iX = mod(aIndex - offset, division) + stepX*0.5;
-    float iY = floor((aIndex - offset)/division) + stepX*0.5;
-
-//    if (stepX < 0.1 && iY > 126) {
-//        iY  = 0;
-//    }
-
-    vec4 worldPoint = vec4(
-        uPos.x - iY * UNITSIZE_Y,
-        uPos.y - iX * UNITSIZE_X,
-        aHeight,
-        1);
-
-
-//
-//    float iX = mod(aIndex, 256.0);
-//    float iY = floor(aIndex/256.0);
-//
-//    if (iX > 128.01) {
-//        iY = iY + 0.5;
-//        iX = iX - 128.5;
-//    }
-//
-//    vec4 worldPoint = vec4(
-//        uPos.x - iX * UNITSIZE_Y,
-//        uPos.y - iY * UNITSIZE_X,
-//        uPos.z + aHeight,
-//        1);
-
-    vChunkCoords = vec2(iX / 128.0, iY / 128.0);
-
-    vPosition = (uLookAtMat * worldPoint).xyz;
-    gl_Position = uPMatrix * uLookAtMat * worldPoint;
-}
-#endif //COMPILING_VS
-
-
-#ifdef COMPILING_FS
-precision highp float;
-
-varying vec2 vChunkCoords;
-varying vec3 vPosition;
-
-uniform int uNewFormula;
-
-uniform sampler2D uDiffuseTexture;
-uniform sampler2D uNormalTexture;
-
-uniform vec3 uViewUp;
-uniform vec3 uSunDir;
-uniform vec3 uSunColor;
-uniform vec4 uAmbientLight;
-
-uniform vec3 uFogColor;
-
-uniform float uFogStart;
-uniform float uFogEnd;
-
-vec3 makeDiffTerm(vec3 matDiffuse, vec3 vNormal) {
-  vec3 currColor;
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (true) {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -(uSunDir.xyz));
-        float nDotUp = dot(normalizedN, uViewUp.xyz);
-
-        vec4 AmbientLight = uAmbientLight;
-
-        vec3 adjAmbient = (AmbientLight.rgb );
-        vec3 adjHorizAmbient = (AmbientLight.rgb );
-        vec3 adjGroundAmbient = (AmbientLight.rgb );
-
-        if ((nDotUp >= 0.0))
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-        }
-
-        vec3 skyColor = (currColor * 1.10000002);
-        vec3 groundColor = (currColor* 0.699999988);
-
-        lDiffuse = (uSunColor * clamp(nDotL, 0.0, 1.0));
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-    } else {
-        currColor = vec3 (1.0, 1.0, 1.0) ;
-        mult = 1.0;
-    }
-
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-//    vec3 linearDiffTerm = (matDiffuse * matDiffuse);
-    vec3 linearDiffTerm = vec3(0.0, 0.0, 0.0);
-    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
-}
-
-
-void main() {
-    vec2 TextureCoords = vec2(vChunkCoords.x, vChunkCoords.y );
-
-
-    vec3 matDiffuse;
-    vec4 finalColor;
-
-    vec4 texDiffuse =  texture2D(uDiffuseTexture, TextureCoords).rgba;
-    matDiffuse.rgb = texDiffuse.rgb;
-    vec3 vNormal = 2.0*texture2D(uNormalTexture, TextureCoords).rgb - 1.0 ;
-    vNormal = vec3(-(vNormal.z), -(vNormal.x), vNormal.y);
-
-
-
-    finalColor.rgba = vec4(makeDiffTerm(matDiffuse, vNormal), 1.0);
-
-    //Spec part
-    float specBlend = texDiffuse.a;
-    vec3 halfVec = -(normalize((uSunDir.xyz + normalize(vPosition))));
-    vec3 lSpecular = ((uSunColor * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
-    vec3 specTerm = (vec3(specBlend) * lSpecular);
-    finalColor.rgb += specTerm;
-
-    // --- Fog start ---
-    vec3 fogColor = uFogColor;
-    float fog_start = uFogStart;
-    float fog_end = uFogEnd;
-    float fog_rate = 1.5;
-    float fog_bias = 0.01;
-
-    //vec4 fogHeightPlane = pc_fog.heightPlane;
-    //float heightRate = pc_fog.color_and_heightRate.w;
-
-    float distanceToCamera = length(vPosition.xyz);
-    float z_depth = (distanceToCamera - fog_bias);
-    float expFog = 1.0 / (exp((max(0.0, (z_depth - fog_start)) * fog_rate)));
-    //float height = (dot(fogHeightPlane.xyz, vPosition.xyz) + fogHeightPlane.w);
-    //float heightFog = clamp((height * heightRate), 0, 1);
-    float heightFog = 1.0;
-    expFog = (expFog + heightFog);
-    float endFadeFog = clamp(((fog_end - distanceToCamera) / (0.699999988 * fog_end)), 0.0, 1.0);
-
-    finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
-    // --- Fog end ---
-
-    finalColor.a = 1.0;
-    gl_FragColor = finalColor;
-}
-
-#endif //COMPILING_FS#ifdef COMPILING_VS
-/* vertex shader code */
-layout(location = 0) in vec3 aHeight;
-layout(location = 1) in vec4 aColor;
-layout(location = 2) in vec4 aVertexLighting;
-layout(location = 3) in vec3 aNormal;
-layout(location = 4) in float aIndex;
-
-layout(std140) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-layout(std140) uniform meshWideBlockVS {
-    vec4 uPos;
-};
-
-mat3 blizzTranspose(mat4 value) {
-    return mat3(
-        value[0].xyz,
-        value[1].xyz,
-        value[2].xyz
-    );
-}
-
-out vec2 vChunkCoords;
-out vec3 vPosition;
-out vec4 vColor;
-out vec3 vNormal;
-out vec3 vVertexLighting;
-
-const float UNITSIZE_X =  (1600.0 / 3.0) / 16.0 / 8.0;
-const float UNITSIZE_Y =  (1600.0 / 3.0) / 16.0 / 8.0;
-
-void main() {
-
-/*
-     Y
-  X  0    1    2    3    4    5    6    7    8
-        9   10   11   12   13   14   15   16
-*/
-    float iX = mod(aIndex, 17.0);
-    float iY = floor(aIndex/17.0);
-
-    if (iX > 8.01) {
-        iY = iY + 0.5;
-        iX = iX - 8.5;
-    }
-
-//    vec4 worldPoint = vec4(
-//        uPos.x - iY * UNITSIZE_Y,
-//        uPos.y - iX * UNITSIZE_X,
-//        uPos.z + aHeight,
-//        1);
-
-    vec4 worldPoint = vec4(aHeight, 1.0);
-
-    vChunkCoords = vec2(iX, iY);
-
-    vPosition = (uLookAtMat * worldPoint).xyz;
-    vColor = aColor;
-    vVertexLighting = aVertexLighting.rgb;
-    vNormal = (uLookAtMat * vec4(aNormal, 0)).xyz;
-
-    gl_Position = uPMatrix * uLookAtMat * worldPoint;
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-precision highp float;
-
-in vec2 vChunkCoords;
-in vec3 vPosition;
-in vec4 vColor;
-in vec3 vNormal;
-in vec3 vVertexLighting;
-
-uniform sampler2D uAlphaTexture;
-uniform sampler2D uLayer0;
-uniform sampler2D uLayer1;
-uniform sampler2D uLayer2;
-uniform sampler2D uLayer3;
-uniform sampler2D uLayerHeight0;
-uniform sampler2D uLayerHeight1;
-uniform sampler2D uLayerHeight2;
-uniform sampler2D uLayerHeight3;
-
-layout(std140) uniform modelWideBlockPS {
-    vec4 uViewUp;
-    vec4 uSunDir_FogStart;
-    vec4 uSunColor_uFogEnd;
-    vec4 uAmbientLight;
-    vec4 FogColor;
-};
-
-layout(std140) uniform meshWideBlockPS {
-    vec4 uHeightScale;
-    vec4 uHeightOffset;
-};
-
-out vec4 outColor;
-
-vec3 makeDiffTerm(vec3 matDiffuse) {
-  vec3 currColor;
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (true) {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -(uSunDir_FogStart.xyz));
-        float nDotUp = dot(normalizedN, uViewUp.xyz);
-
-        vec4 AmbientLight = uAmbientLight;
-
-        vec3 adjAmbient = (AmbientLight.rgb );
-        vec3 adjHorizAmbient = (AmbientLight.rgb );
-        vec3 adjGroundAmbient = (AmbientLight.rgb );
-
-        if ((nDotUp >= 0.0))
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-        }
-
-        vec3 skyColor = (currColor * 1.10000002);
-        vec3 groundColor = (currColor* 0.699999988);
-
-        lDiffuse = (uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0));
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-    } else {
-        currColor = vec3 (1.0, 1.0, 1.0) ;
-        mult = 1.0;
-    }
-    vec3 localDiffuse = vVertexLighting;
-
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
-    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
-}
-
-
-void main() {
-    vec2 vTexCoord = vChunkCoords;
-    const float threshold = 1.5;
-
-    vec2 alphaCoord = vec2(vChunkCoords.x/8.0, vChunkCoords.y/8.0 );
-    vec3 alphaBlend = texture( uAlphaTexture, alphaCoord).gba;
-
-    vec2 tcLayer0 = vTexCoord;
-    vec2 tcLayer1 = vTexCoord;
-    vec2 tcLayer2 = vTexCoord;
-    vec2 tcLayer3 = vTexCoord;
-
-    float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
-    vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
-    float weightedTexture_x = (minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * uHeightScale[0]) + uHeightOffset[0]));
-    float weightedTexture_y = (weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * uHeightScale[1]) + uHeightOffset[1]));
-    float weightedTexture_z = (weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * uHeightScale[2]) + uHeightOffset[2]));
-    float weightedTexture_w = (weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * uHeightScale[3]) + uHeightOffset[3]));
-    vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
-    vec4 weights_temp = (weights * (vec4(1.0) - clamp((vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights), 0.0, 1.0)));
-    vec4 weightsNormalized = (weights_temp / vec4(dot(vec4(1.0), weights_temp)));
-
-    
-    vec4 weightedLayer_0 = (texture(uLayer0, tcLayer0) * weightsNormalized.x);
-    vec3 matDiffuse_0 = weightedLayer_0.xyz;
-    float specBlend_0 = weightedLayer_0.w;
-
-    vec4 weightedLayer_1 = (texture(uLayer1, tcLayer1) * weightsNormalized.y);
-    vec3 matDiffuse_1 = (matDiffuse_0 + weightedLayer_1.xyz);
-    float specBlend_1 = (specBlend_0 + weightedLayer_1.w);
-
-    vec4 weightedLayer_2 = (texture(uLayer2, tcLayer1) * weightsNormalized.z);
-    vec3 matDiffuse_2 = (matDiffuse_1 + weightedLayer_2.xyz);
-    float specBlend_2 = (specBlend_1 + weightedLayer_2.w);
-
-    vec4 weightedLayer_3 = (texture(uLayer3, tcLayer1) * weightsNormalized.w);
-    vec3 matDiffuse_3 = (matDiffuse_2 + weightedLayer_3.xyz);
-    float specBlend_3 = (specBlend_2 + weightedLayer_3.w);
-
-    vec4 final = vec4(matDiffuse_3, specBlend_3);
-
-    vec3 matDiffuse = final.rgb *  vColor.rgb;
-    vec4 finalColor = vec4(makeDiffTerm(matDiffuse), 1.0);
-
-    //Spec part
-    float specBlend = final.a;
-    vec3 halfVec = -(normalize((uSunDir_FogStart.xyz + normalize(vPosition))));
-    vec3 lSpecular = ((uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
-    vec3 specTerm = (vec3(specBlend) * lSpecular);
-    finalColor.rgb += specTerm;
-
-    // --- Fog start ---
-    /*
-    vec3 fogColor = uFogColor;
-    float fog_start = uFogStart;
-    float fog_end = uFogEnd;
-    float fog_rate = 1.5;
-    float fog_bias = 0.01;
-
-    //vec4 fogHeightPlane = pc_fog.heightPlane;
-    //float heightRate = pc_fog.color_and_heightRate.w;
-
-    float distanceToCamera = length(vPosition.xyz);
-    float z_depth = (distanceToCamera - fog_bias);
-    float expFog = 1.0 / (exp((max(0.0, (z_depth - fog_start)) * fog_rate)));
-    //float height = (dot(fogHeightPlane.xyz, vPosition.xyz) + fogHeightPlane.w);
-    //float heightFog = clamp((height * heightRate), 0, 1);
-    float heightFog = 1.0;
-    expFog = (expFog + heightFog);
-    float endFadeFog = clamp(((fog_end - distanceToCamera) / (0.699999988 * fog_end)), 0.0, 1.0);
-
-    finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
-    */
-    // --- Fog end ---
-
-    finalColor.a = 1.0;
-    outColor = finalColor;
-}
-
-#endif //COMPILING_FS//https://www.khronos.org/registry/webgl/extensions/WEBGL_draw_buffers/
-//For drawbuffers in glsl of webgl you need to use GL_EXT_draw_buffers instead of WEBGL_draw_buffers
-
-#ifndef MAX_MATRIX_NUM
-#define MAX_MATRIX_NUM 220
-#endif
-
-#ifdef ENABLE_DEFERRED
-#ifdef GL_EXT_draw_buffers
-    #extension GL_EXT_draw_buffers: require
-    #extension OES_texture_float_linear : enable
-    #define drawBuffersIsSupported 1
-#endif
-#endif
-
-#ifdef COMPILING_VS
-precision highp FLOATDEC
-/* vertex shader code */
-layout(location=0) in vec3 aPosition;
-layout(location=1) in vec3 aNormal;
-layout(location=2) in vec4 bones;
-layout(location=3) in vec4 boneWeights;
-layout(location=4) in vec2 aTexCoord;
-layout(location=5) in vec2 aTexCoord2;
-
-//Whole scene
-layout(std140) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-
-// Whole model
-#ifndef INSTANCED
-layout(std140) uniform modelWideBlockVS {
-    mat4 uPlacementMat;
-    mat4 uBoneMatrixes[MAX_MATRIX_NUM];
-};
-#else
-attribute mat4 aPlacementMat;
-#endif
-
-//Individual meshes
-layout(std140) uniform meshWideBlockVS {
-    ivec4 vertexShader_IsAffectedByLight_IsSkyBox;
-    vec4 color_Transparency;
-    mat4 uTextMat[2];
-};
-
-//Shader output
-out vec2 vTexCoord;
-out vec2 vTexCoord2;
-out vec2 vTexCoord3;
-out vec3 vNormal;
-out vec3 vPosition;
-out vec4 vDiffuseColor;
-
-#ifdef drawBuffersIsSupported
-in float fs_Depth;
-#endif
-
-#include commonFunctions
-
-void main() {
-    vec4 modelPoint = vec4(0,0,0,0);
-
-    vec4 aPositionVec4 = vec4(aPosition, 1);
-    mat4 boneTransformMat = mat4(1.0);
-
-#if BONEINFLUENCES>0
-    boneTransformMat = mat4(0.0);
-    const float inttofloat = (1.0/255.0);
-    boneTransformMat += (boneWeights.x ) * uBoneMatrixes[int(bones.x)];
-#endif
-#if BONEINFLUENCES>1
-    boneTransformMat += (boneWeights.y ) * uBoneMatrixes[int(bones.y)];
-#endif
-#if BONEINFLUENCES>2
-    boneTransformMat += (boneWeights.z ) * uBoneMatrixes[int(bones.z)];
-#endif
-#if BONEINFLUENCES>3
-    boneTransformMat += (boneWeights.w ) * uBoneMatrixes[int(bones.w)];
-#endif
-
-
-
-
-    mat4 placementMat;
-#ifdef INSTANCED
-    placementMat = aPlacementMat;
-#else
-    placementMat = uPlacementMat;
-#endif
-    vec4 lDiffuseColor = color_Transparency;
-
-    mat4 cameraMatrix = uLookAtMat * placementMat  * boneTransformMat ;
-    vec4 cameraPoint = cameraMatrix * aPositionVec4;
-    mat3 viewModelMatTransposed =
-        blizzTranspose(uLookAtMat) *
-        blizzTranspose(placementMat) *
-        blizzTranspose(boneTransformMat);
-
-//    vec3 normal = normalize(mat3(cameraMatrix) * aNormal);
-    vec3 normal = normalize(viewModelMatTransposed * aNormal);
-    vec4 combinedColor = clamp(lDiffuseColor /*+ vc_matEmissive*/, 0.000000, 1.000000);
-    vec4 combinedColorHalved = combinedColor * 0.5;
-    
-    vec2 envCoord = posToTexCoord(cameraPoint.xyz, normal);
-    float edgeScanVal = edgeScan(cameraPoint.xyz, normal);
-
-    vTexCoord2 = vec2(0.0);
-    vTexCoord3 = vec2(0.0);
-
-    int uVertexShader = vertexShader_IsAffectedByLight_IsSkyBox.x;
-    int isSkyBox = vertexShader_IsAffectedByLight_IsSkyBox.z;
-
-    //Diffuse_T1
-    #if VERTEXSHADER== 0 
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-    #endif
-    //Diffuse_Env
-    #if VERTEXSHADER== 1 
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = envCoord;
-    #endif
-    //Diffuse_T1_T2
-    #if VERTEXSHADER== 2
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==3 //Diffuse_T1_Env
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = envCoord;
-    #endif
-    #if VERTEXSHADER==4 //Diffuse_Env_T1
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = envCoord;
-        vTexCoord2 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==5 //Diffuse_Env_Env
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = envCoord;
-        vTexCoord2 = envCoord;
-    #endif
-    #if VERTEXSHADER==6 //Diffuse_T1_Env_T1
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000) ).xy;
-        vTexCoord2 = envCoord;
-        vTexCoord3 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==7 //Diffuse_T1_T1
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==8 //Diffuse_T1_T1_T1
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord3 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==9 //Diffuse_EdgeFade_T1
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a * edgeScanVal);
-        vTexCoord = ((uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy).xy;
-    #endif
-    #if VERTEXSHADER==10 //Diffuse_T2
-
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==11 //Diffuse_T1_Env_T2
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = envCoord;
-        vTexCoord3 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==12 //Diffuse_EdgeFade_T1_T2
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a * edgeScanVal);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==13 //Diffuse_EdgeFade_Env
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a * edgeScanVal);
-        vTexCoord = envCoord;
-    #endif
-    #if VERTEXSHADER==14 //Diffuse_T1_T2_T1
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
-        vTexCoord3 = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==15 //Diffuse_T1_T2_T3
-        vDiffuseColor = vec4(combinedColorHalved.r, combinedColorHalved.g, combinedColorHalved.b, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
-        vTexCoord3 = vTexCoord3;
-    #endif
-    #if VERTEXSHADER==16 //Color_T1_T2_T3
-        vec4 in_col0 = vec4(1.0, 1.0, 1.0, 1.0);
-        vDiffuseColor = vec4((in_col0.rgb * 0.500000).r, (in_col0.rgb * 0.500000).g, (in_col0.rgb * 0.500000).b, in_col0.a);
-        vTexCoord = (uTextMat[1] * vec4(aTexCoord2, 0.000000, 1.000000)).xy;
-        vTexCoord2 = vec2(0.000000, 0.000000);
-        vTexCoord3 = vTexCoord3;
-    #endif
-    #if VERTEXSHADER==17 //BW_Diffuse_T1
-        vDiffuseColor = vec4(combinedColor.rgb * 0.500000, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-    #endif
-    #if VERTEXSHADER==18 //BW_Diffuse_T1_T2
-        vDiffuseColor = vec4(combinedColor.rgb * 0.500000, combinedColor.a);
-        vTexCoord = (uTextMat[0] * vec4(aTexCoord, 0.000000, 1.000000)).xy;
-    #endif
-
-#ifndef drawBuffersIsSupported
-    gl_Position = uPMatrix * cameraPoint;
-    vNormal = normal;
-    vPosition = cameraPoint.xyz;
-#else
-    gl_Position = uPMatrix * cameraPoint;
-    fs_Depth = gl_Position.z / gl_Position.w;
-
-    vNormal = normal;
-    vPosition = cameraPoint.xyz;
-#endif //drawBuffersIsSupported
-
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-//precision mediump float;
-
-precision highp float;
-
-struct LocalLight
-{
-    vec4 color;
-    vec4 position;
-    vec4 attenuation;
-};
-
-in vec3 vNormal;
-in vec2 vTexCoord;
-in vec2 vTexCoord2;
-in vec2 vTexCoord3;
-in vec3 vPosition;
-in vec4 vDiffuseColor;
-
-uniform sampler2D uTexture;
-uniform sampler2D uTexture2;
-uniform sampler2D uTexture3;
-uniform sampler2D uTexture4;
-
-out vec4 outputColor;
-
-layout(std140) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-
-//Whole model
-layout(std140) uniform modelWideBlockPS {
-    vec4 uViewUp;
-    vec4 uSunDirAndFogStart;
-    vec4 uSunColorAndFogEnd;
-    vec4 uAmbientLight;
-};
-
-//Individual meshes
-layout(std140) uniform meshWideBlockPS {
-    ivec4 PixelShader_UnFogged_IsAffectedByLight_LightCount;
-    vec4 uFogColorAndAlphaTest;
-    LocalLight pc_lights[4];
-    vec4 uPcColor;
-};
-
-#ifdef drawBuffersIsSupported
-varying float fs_Depth;
-#endif
-
-vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
-//    return matDiffuse;
-    vec3 currColor;
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1) {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = clamp(dot(normalizedN, -(uSunDirAndFogStart.xyz)), 0.0, 1.0);
-        float nDotUp = dot(normalizedN, uViewUp.xyz);
-
-        vec4 AmbientLight = uAmbientLight;
-
-        vec3 adjAmbient = (AmbientLight.rgb );
-        vec3 adjHorizAmbient = (AmbientLight.rgb );
-        vec3 adjGroundAmbient = (AmbientLight.rgb );
-
-        if ((nDotUp >= 0.0))
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-        }
-
-        vec3 skyColor = (currColor * 1.10000002);
-        vec3 groundColor = (currColor* 0.699999988);
-
-
-        lDiffuse = (uSunColorAndFogEnd.xyz * nDotL);
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-//
-
-    } else {
-        currColor = vec3 (1.0, 1.0, 1.0) ;
-        accumLight = vec3(0,0,0);
-        mult = 1.0;
-    }
-
-
-//    return currColor.rgb * matDiffuse;
-//    return sqrt((matDiffuse*matDiffuse)*0.5 + currColor.rgb*(matDiffuse*matDiffuse));
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * accumLight;
-//    return sqrt((matDiffuse*matDiffuse)*mult + currColor.rgb*(matDiffuse*matDiffuse)) ;
-    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
-}
-
-#include commonFunctions
-
-void main() {
-    /* Animation support */
-    vec2 texCoord = vTexCoord.xy;
-    vec2 texCoord2 = vTexCoord2.xy;
-    vec2 texCoord3 = vTexCoord3.xy;
-
-    /* Get color from texture */
-    vec4 tex = texture(uTexture, texCoord).rgba;
-    vec4 tex2 = texture(uTexture2, texCoord2).rgba;
-    vec4 tex3 = texture(uTexture3, texCoord3).rgba;
-
-    vec4 tex2WithTextCoord1 = texture(uTexture2,texCoord);
-    vec4 tex3WithTextCoord1 = texture(uTexture3,texCoord);
-    vec4 tex4WithTextCoord2 = texture(uTexture4,texCoord2);
-
-    vec4 finalColor = vec4(0);
-    vec4 meshResColor = vDiffuseColor;
-
-//    if(meshResColor.a < uAlphaTest)
-//        discard;
-    vec3 accumLight;
-    if ((PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1)) {
-        vec3 vPos3 = vPosition.xyz;
-        vec3 vNormal3 = normalize(vNormal.xyz);
-        vec3 lightColor = vec3(0.0);
-        int count = int(pc_lights[0].attenuation.w);
-        int index = 0;
-        for (;;)
-        {
-            if ( index >= PixelShader_UnFogged_IsAffectedByLight_LightCount.w) break;
-            LocalLight lightRecord = pc_lights[index];
-            vec3 vectorToLight = ((lightRecord.position).xyz - vPos3);
-            float distanceToLightSqr = dot(vectorToLight, vectorToLight);
-            float distanceToLightInv = inversesqrt(distanceToLightSqr);
-            float distanceToLight = (distanceToLightSqr * distanceToLightInv);
-            float diffuseTerm1 = max((dot(vectorToLight, vNormal3) * distanceToLightInv), 0.0);
-            vec4 attenuationRec = lightRecord.attenuation;
-
-            float attenuation = (1.0 - clamp((distanceToLight - attenuationRec.x) * (1.0 / (attenuationRec.z - attenuationRec.x)), 0.0, 1.0));
-
-            vec3 attenuatedColor = attenuation * lightRecord.color.xyz * attenuationRec.y;
-            lightColor = (lightColor + vec3(attenuatedColor * attenuatedColor * diffuseTerm1 ));
-            index++;
-        }
-        meshResColor.rgb = clamp(lightColor , 0.0, 1.0);
-        accumLight = meshResColor.rgb;
-        //finalColor.rgb =  finalColor.rgb * lightColor;
-    }
-
-    float opacity;
-    float finalOpacity = 0.0;
-    vec3 matDiffuse;
-    vec3 specular = vec3(0.0, 0.0, 0.0);
-    vec3 visParams = vec3(1.0, 1.0, 1.0);
-    vec4 genericParams[3];
-    genericParams[0] = vec4( 1.0, 1.0, 1.0, 1.0 );
-    genericParams[1] = vec4( 1.0, 1.0, 1.0, 1.0 );
-    genericParams[2] = vec4( 1.0, 1.0, 1.0, 1.0 );
-
-    int uPixelShader = PixelShader_UnFogged_IsAffectedByLight_LightCount.x;
-
-    #if(FRAGMENTSHADER==0) //Combiners_Opaque
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==1) //Combiners_Mod
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        opacity = tex.a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==2) //Combiners_Opaque_Mod
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
-        opacity = tex2.a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==3) //Combiners_Opaque_Mod2x
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb * 2.000000;
-        opacity = tex2.a * 2.000000 * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==4) //Combiners_Opaque_Mod2xNA
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb * 2.000000;
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==5) //Combiners_Opaque_Opaque
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==6) //Combiners_Mod_Mod
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
-        opacity = tex.a * tex2.a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==7) //Combiners_Mod_Mod2x
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb * 2.000000;
-        opacity = tex.a * tex2.a * 2.000000 * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==8) //Combiners_Mod_Add
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        opacity = (tex.a + tex2.a) * vDiffuseColor.a;
-        specular = tex2.rgb;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==9) //Combiners_Mod_Mod2xNA
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb * 2.000000;
-        opacity = tex.a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==10) //Combiners_Mod_AddNA
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        opacity = tex.a * vDiffuseColor.a;
-        specular = tex2.rgb;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==11) //Combiners_Mod_Opaque
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
-        opacity = tex.a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==12) //Combiners_Opaque_Mod2xNA_Alpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a));
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==13) //Combiners_Opaque_AddAlpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        specular = tex2.rgb * tex2.a;
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==14) //Combiners_Opaque_AddAlpha_Alpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        specular = tex2.rgb * tex2.a * (1.000000 - tex.a);
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==15) //Combiners_Opaque_Mod2xNA_Alpha_Add
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a));
-        specular = tex3.rgb * tex3.a * genericParams[0].b;
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==16) //Combiners_Mod_AddAlpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        opacity = tex.a * vDiffuseColor.a;
-        specular = tex2.rgb * tex2.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==17) //Combiners_Mod_AddAlpha_Alpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        opacity = (tex.a + tex2.a * (0.300000 * tex2.r + 0.590000 * tex2.g + 0.110000 * tex2.b)) * vDiffuseColor.a;
-        specular = tex2.rgb * tex2.a * (1.000000 - tex.a);
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==18) //Combiners_Opaque_Alpha_Alpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb, tex2.rgb, vec3(tex2.a)), tex.rgb, vec3(tex.a));
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==19) //Combiners_Opaque_Mod2xNA_Alpha_3s
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a));
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==20) //Combiners_Opaque_AddAlpha_Wgt
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        specular = tex2.rgb * tex2.a * genericParams[0].g;
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==21) //Combiners_Mod_Add_Alpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        opacity = (tex.a + tex2.a) * vDiffuseColor.a;
-        specular = tex2.rgb * (1.000000 - tex.a);
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==22) //Combiners_Opaque_ModNA_Alpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb, tex.rgb, vec3(tex.a));
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==23) //Combiners_Mod_AddAlpha_Wgt
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        opacity = tex.a * vDiffuseColor.a;
-        specular = tex2.rgb * tex2.a * genericParams[0].g;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==24) //Combiners_Opaque_Mod_Add_Wgt
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
-        specular = tex.rgb * tex.a * genericParams[0].r;
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==25) //Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
-        float glowOpacity = clamp((tex3.a * genericParams[0].z), 0.0, 1.0);
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a)) * (1.000000 - glowOpacity);
-        specular = tex3.rgb * glowOpacity;
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==26) //Combiners_Mod_Dual_Crossfade
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
-        opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==27) //Combiners_Opaque_Mod2xNA_Alpha_Alpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a)), tex.rgb, vec3(tex.a));
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==28) //Combiners_Mod_Masked_Dual_Crossfade
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
-        opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * tex4WithTextCoord2.a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==29) //Combiners_Opaque_Alpha
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==30) //Guild
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a)), tex3.rgb * genericParams[2].rgb, vec3(tex3.a));
-        opacity = tex.a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==31) //Guild_NoBorder
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a));
-        opacity = tex.a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==32) //Guild_Opaque
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * mix(genericParams[0].rgb, tex2.rgb * genericParams[1].rgb, vec3(tex2.a)), tex3.rgb * genericParams[2].rgb, vec3(tex3.a));
-        opacity = vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==33) //Combiners_Mod_Depth
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        opacity = tex.a * vDiffuseColor.a * visParams.r;
-        finalOpacity = opacity * visParams.r;
-    #endif
-    #if(FRAGMENTSHADER==34)  //Illum
-        finalColor = vec4(1.0,1.0,1.0, 1.0);
-
-        //Unusued
-    #endif
-    #if(FRAGMENTSHADER==35) //Combiners_Mod_Mod_Mod_Const
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * (tex * tex2 * tex3 * genericParams[0]).rgb;
-        opacity = (tex * tex2 * tex3 * genericParams[0]).a * vDiffuseColor.a;
-        finalOpacity = opacity * visParams.r;
-    #endif
-        /*
-            WOTLK DEPRECATED SHADERS!
-        */
-    #if(FRAGMENTSHADER==-1) // Combiners_Decal
-        finalColor.rgb = (meshResColor.rgb - tex.rgb) * meshResColor.a + tex.rgb;
-        finalColor.a = meshResColor.a;
-    #endif
-    #if(FRAGMENTSHADER==-2) // Combiners_Add
-        finalColor.rgba = tex.rgba + meshResColor.rgba;
-    #endif
-    #if(FRAGMENTSHADER==-3) // Combiners_Mod2x
-        finalColor.rgb = tex.rgb * meshResColor.rgb * vec3(2.0);
-        finalColor.a = tex.a * meshResColor.a * 2.0;
-    #endif
-    #if(FRAGMENTSHADER==-4) // Combiners_Fade
-        finalColor.rgb = (tex.rgb - meshResColor.rgb) * meshResColor.a + meshResColor.rgb;
-        finalColor.a = meshResColor.a;
-    #endif
-    #if(FRAGMENTSHADER==-5) // Combiners_Opaque_Add
-        finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
-        finalColor.a = meshResColor.a + tex.a;
-    #endif
-    #if(FRAGMENTSHADER==-6) // Combiners_Opaque_AddNA
-        finalColor.rgb = tex2.rgb + tex.rgb * meshResColor.rgb;
-        finalColor.a = meshResColor.a;
-    #endif
-    #if(FRAGMENTSHADER==-7) // Combiners_Add_Mod
-        finalColor.rgb = (tex.rgb + meshResColor.rgb) * tex2.a;
-        finalColor.a = (tex.a + meshResColor.a) * tex2.a;
-    #endif
-    #if(FRAGMENTSHADER==-8) // Combiners_Mod2x_Mod2x
-        finalColor.rgba = tex.rgba * tex2.rgba * meshResColor.rgba * vec4(4.0);
-    #endif
-
-    finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + specular, finalOpacity);
-
-    if(finalColor.a < uFogColorAndAlphaTest.w)
-        discard;
-
-    /*
-    int uUnFogged = PixelShader_UnFogged_IsAffectedByLight_LightCount.y;
-    float uFogEnd = uSunColorAndFogEnd.z;
-    if (uUnFogged == 0) {
-        vec3 fogColor = uFogColorAndAlphaTest.xyz;
-        float fog_rate = 1.5;
-        float fog_bias = 0.01;
-    
-        //vec4 fogHeightPlane = pc_fog.heightPlane;
-        //float heightRate = pc_fog.color_and_heightRate.w;
-
-        float distanceToCamera = length(vPosition.xyz);
-        float z_depth = (distanceToCamera - fog_bias);
-        float expFog = 1.0 / (exp((max(0.0, (z_depth - uSunDirAndFogStart.z)) * fog_rate)));
-        //float height = (dot(fogHeightPlane.xyz, vPosition.xyz) + fogHeightPlane.w);
-        //float heightFog = clamp((height * heightRate), 0, 1);
-        float heightFog = 1.0;
-        expFog = (expFog + heightFog);
-        float endFadeFog = clamp(((uFogEnd - distanceToCamera) / (0.699999988 * uFogEnd)), 0.0, 1.0);
-        float fog_out = min(expFog, endFadeFog);
-        finalColor.rgba = vec4(mix(fogColor.rgb, finalColor.rgb, vec3(fog_out)), finalColor.a);
-    }*/
-//    finalColor.rgb = finalColor.rgb;
-
-
-    //Forward rendering without lights
-    outputColor = finalColor;
-
-    //Deferred rendering
-    //gl_FragColor = finalColor;
-//    gl_FragData[0] = vec4(vec3(fs_Depth), 1.0);
-//    gl_FragData[1] = vec4(vPosition.xyz,0);
-//    gl_FragData[2] = vec4(vNormal.xyz,0);
-//    gl_FragData[3] = finalColor;
-
-}
-
-#endif //COMPILING_FS
 
 
 #version 330
@@ -2075,74 +676,7 @@ void main()
 }
 
 
-#ifdef COMPILING_VS
-layout(location=0) in vec3 aPosition;
-//layout(location=1) in float aDepth;
-//layout(location=2) in vec2 aTexCoord;
-
-
-layout(std140) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-
-layout(std140) uniform modelWideBlockVS {
-    mat4 uPlacementMat;
-};
-
-
-//out vec2 vTexCoord;
-out vec3 vPosition;
-
-precision highp FLOATDEC
-void main() {
-   vec4 aPositionVec4 = vec4(aPosition, 1);
-   mat4 cameraMatrix = uLookAtMat * uPlacementMat ;
-
-   vec4 cameraPoint = cameraMatrix * aPositionVec4;
-
-   gl_Position = uPMatrix * cameraPoint;
-//   vTexCoord = aTexCoord;
-   vPosition = cameraPoint.xyz;
-}
-#endif
-
-#ifdef COMPILING_FS
-precision highp FLOATDEC
-
-in vec3 vPosition;
-
-uniform sampler2D uTexture;
-
-out vec4 outputColor;
-
-layout(std140) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-
-//Individual meshes
-layout(std140) uniform meshWideBlockPS {
-    int waterType;
-};
-
-void main() {
-    if (waterType == 13) { // LIQUID_WMO_Water
-        outputColor = vec4(0.0, 0, 0.3, 0.5);
-    } else if (waterType == 14) { //LIQUID_WMO_Ocean
-        outputColor = vec4(0, 0, 0.8, 0.8);
-    } else if (waterType == 19) { //LIQUID_WMO_Magma
-        outputColor = vec4(0.3, 0, 0, 0.5);
-    } else if (waterType == 20) { //LIQUID_WMO_Slime
-        outputColor = vec4(0.0, 0.5, 0, 0.5);
-    } else {
-        outputColor = vec4(0.5, 0.5, 0.5, 0.5);
-    }
-
-
-}
-
-#endif#version 330
+#version 330
 #ifdef GL_ARB_shading_language_420pack
 #extension GL_ARB_shading_language_420pack : require
 #endif
@@ -2157,105 +691,7 @@ void main()
 }
 
 
-#ifdef COMPILING_VS
-precision highp float;
-layout(location = 0) in vec3 aPosition;
-layout(location = 1) in vec4 aColor;
-layout(location = 2) in vec2 aTexcoord0;
-layout(location = 3) in vec2 aTexcoord1;
-layout(location = 4) in vec2 aTexcoord2;
-
-
-out vec4 vColor;
-out vec2 vTexcoord0;
-out vec2 vTexcoord1;
-out vec2 vTexcoord2;
-
-layout(std140) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-
-void main() {
-    vec4 aPositionVec4 = vec4(aPosition, 1);
-
-    vColor = aColor;
-    vTexcoord0 = aTexcoord0;
-    vTexcoord1 = aTexcoord1;
-    vTexcoord2 = aTexcoord2;
-    gl_Position = uPMatrix * uLookAtMat * aPositionVec4;
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-precision highp float;
-in vec4 vColor;
-in vec2 vTexcoord0;
-in vec2 vTexcoord1;
-in vec2 vTexcoord2;
-
-//Individual meshes
-layout(std140) uniform meshWideBlockPS {
-    vec4 uAlphaTestv;
-    ivec4 uPixelShaderv;
-};
-
-uniform sampler2D uTexture;
-uniform sampler2D uTexture2;
-uniform sampler2D uTexture3;
-
-out vec4 outputColor;
-
-void main() {
-    vec4 tex = texture(uTexture, vTexcoord0).rgba;
-    vec4 tex2 = texture(uTexture2, vTexcoord1).rgba;
-    vec4 tex3 = texture(uTexture3, vTexcoord2).rgba;
-
-    float uAlphaTest = uAlphaTestv.x;
-
-    if(tex.a < uAlphaTest)
-        discard;
-
-    vec4 finalColor = vec4((tex * vColor ).rgb, tex.a*vColor.a );
-    int uPixelShader = uPixelShaderv.x;
-    if (uPixelShader == 0) { //particle_mod
-        vec3 matDiffuse = vColor.xyz * tex.rgb;
-
-        finalColor = vec4(matDiffuse.rgb, tex.a*vColor.a);
-    } else if (uPixelShader == 1) {//particle_2colortex_3alphatex
-        vec4 textureMod = tex*tex2;
-        float texAlpha = (textureMod.w * tex3.w);
-        float opacity = texAlpha*vColor.a;
-
-
-        vec3 matDiffuse = vColor.xyz * textureMod.rgb;
-        finalColor = vec4(matDiffuse.rgb, opacity);
-    } else if (uPixelShader == 2) { //particle_3colortex_3alphatex
-        vec4 textureMod = tex*tex2*tex3;
-        float texAlpha = (textureMod.w);
-        float opacity = texAlpha*vColor.a;
-
-
-        vec3 matDiffuse = vColor.xyz * textureMod.rgb;
-        finalColor = vec4(matDiffuse.rgb, opacity);
-    } else if (uPixelShader == 3) { //Particle_3ColorTex_3AlphaTex_UV
-        //TODO: incorrect implementation, because the original shader is too complicated
-        vec4 textureMod = tex*tex2*tex3;
-        float texAlpha = (textureMod.w);
-        float opacity = texAlpha*vColor.a;
-
-        vec3 matDiffuse = vColor.xyz * textureMod.rgb;
-        finalColor = vec4(matDiffuse.rgb, opacity);
-    } else if (uPixelShader == 4) { //Refraction
-        //TODO:!
-    }
-
-    if(finalColor.a < uAlphaTest)
-        discard;
-
-    outputColor.rgba = finalColor ;
-}
-#endif //COMPILING_FS#version 330
+#version 330
 
 layout(std140) uniform sceneWideBlockVSPS
 {
@@ -2300,8 +736,8 @@ void main()
 
 layout(std140) uniform meshWideBlockPS
 {
-    int waterType;
-} _9;
+    ivec4 waterTypeV;
+} _12;
 
 uniform sampler2D uTexture;
 
@@ -2310,25 +746,26 @@ in vec3 vPosition;
 
 void main()
 {
-    if (_9.waterType == 13)
+    int waterType = _12.waterTypeV.x;
+    if (waterType == 13)
     {
         outputColor = vec4(0.0, 0.0, 0.300000011920928955078125, 0.5);
     }
     else
     {
-        if (_9.waterType == 14)
+        if (waterType == 14)
         {
             outputColor = vec4(0.0, 0.0, 0.800000011920928955078125, 0.800000011920928955078125);
         }
         else
         {
-            if (_9.waterType == 19)
+            if (waterType == 19)
             {
                 outputColor = vec4(0.300000011920928955078125, 0.0, 0.0, 0.5);
             }
             else
             {
-                if (_9.waterType == 20)
+                if (waterType == 20)
                 {
                     outputColor = vec4(0.0, 0.5, 0.0, 0.5);
                 }
@@ -2342,44 +779,7 @@ void main()
 }
 
 
-#ifdef COMPILING_VS
-precision highp float;
-layout(location = 0) in vec3 aPosition;
-layout(location = 1) in vec4 aColor;
-layout(location = 2) in vec2 aTexcoord0;
-
-layout(std140) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-};
-
-out vec4 vColor;
-out vec2 vTexcoord0;
-
-void main() {
-    vec4 aPositionVec4 = vec4(aPosition, 1);
-
-    vColor = aColor;
-    vTexcoord0 = aTexcoord0;
-    gl_Position = uPMatrix * uLookAtMat * aPositionVec4;
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-precision highp float;
-in vec4 vColor;
-in vec2 vTexcoord0;
-
-uniform sampler2D uTexture;
-
-out vec4 outputColor;
-
-void main() {
-    vec4 tex = texture(uTexture, vTexcoord0).rgba;
-
-    outputColor = vec4((vColor.rgb*tex.rgb), tex.a * vColor.a );
-}
-#endif //COMPILING_FS#version 330
+#version 330
 
 layout(std140) uniform modelWideBlockPS
 {
@@ -2389,7 +789,7 @@ layout(std140) uniform modelWideBlockPS
     vec4 uAmbientLight;
     vec4 FogColor;
     int uNewFormula;
-} _33;
+} _65;
 
 uniform sampler2D uDiffuseTexture;
 uniform sampler2D uNormalTexture;
@@ -2398,43 +798,6 @@ in vec2 vChunkCoords;
 in vec3 vPosition;
 layout(location = 0) out vec4 fragColor;
 
-vec3 makeDiffTerm(vec3 matDiffuse, vec3 vNormal)
-{
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0);
-    vec3 currColor;
-    if (true)
-    {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -_33.uSunDir_FogStart.xyz);
-        float nDotUp = dot(normalizedN, _33.uViewUp.xyz);
-        vec4 AmbientLight = _33.uAmbientLight;
-        vec3 adjAmbient = AmbientLight.xyz;
-        vec3 adjHorizAmbient = AmbientLight.xyz;
-        vec3 adjGroundAmbient = AmbientLight.xyz;
-        if (nDotUp >= 0.0)
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor = mix(adjHorizAmbient, adjGroundAmbient, vec3(-nDotUp));
-        }
-        vec3 skyColor = currColor * 1.10000002384185791015625;
-        vec3 groundColor = currColor * 0.699999988079071044921875;
-        lDiffuse = _33.uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0);
-        currColor = mix(groundColor, skyColor, vec3(0.5 + (0.5 * nDotL)));
-    }
-    else
-    {
-        currColor = vec3(1.0);
-        mult = 1.0;
-    }
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = vec3(0.0);
-    return sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm);
-}
-
 void main()
 {
     vec2 TextureCoords = vec2(vChunkCoords.x, vChunkCoords.y);
@@ -2442,18 +805,10 @@ void main()
     vec3 matDiffuse = texDiffuse.xyz;
     vec3 vNormal = (texture(uNormalTexture, TextureCoords).xyz * 2.0) - vec3(1.0);
     vNormal = vec3(-vNormal.z, -vNormal.x, vNormal.y);
-    vec3 param = matDiffuse;
-    vec3 param_1 = vNormal;
-    vec4 finalColor = vec4(makeDiffTerm(param, param_1), 1.0);
-    float specBlend = texDiffuse.w;
-    vec3 halfVec = -normalize(_33.uSunDir_FogStart.xyz + normalize(vPosition));
-    vec3 lSpecular = _33.uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
-    vec3 specTerm = vec3(specBlend) * lSpecular;
-    vec3 _208 = finalColor.xyz + specTerm;
-    finalColor = vec4(_208.x, _208.y, _208.z, finalColor.w);
-    vec3 fogColor = _33.FogColor.xyz;
-    float fog_start = _33.uSunDir_FogStart.w;
-    float fog_end = _33.uSunColor_uFogEnd.w;
+    vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
+    vec3 fogColor = _65.FogColor.xyz;
+    float fog_start = _65.uSunDir_FogStart.w;
+    float fog_end = _65.uSunColor_uFogEnd.w;
     float fog_rate = 1.5;
     float fog_bias = 0.00999999977648258209228515625;
     float distanceToCamera = length(vPosition);
@@ -2462,8 +817,8 @@ void main()
     float heightFog = 1.0;
     expFog += heightFog;
     float endFadeFog = clamp((fog_end - distanceToCamera) / (0.699999988079071044921875 * fog_end), 0.0, 1.0);
-    vec3 _262 = mix(fogColor, finalColor.xyz, vec3(min(expFog, endFadeFog)));
-    finalColor = vec4(_262.x, _262.y, _262.z, finalColor.w);
+    vec3 _123 = mix(fogColor, finalColor.xyz, vec3(min(expFog, endFadeFog)));
+    finalColor = vec4(_123.x, _123.y, _123.z, finalColor.w);
     finalColor.w = 1.0;
     fragColor = finalColor;
 }
@@ -2524,16 +879,33 @@ void main()
 
 #version 330
 
-layout(std140) uniform sceneWideBlockVSPS
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
 {
     mat4 uLookAtMat;
     mat4 uPMatrix;
-} _53;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+layout(std140) uniform sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+} _55;
 
 layout(std140) uniform meshWideBlockVS
 {
     vec4 uPos;
-} _100;
+} _102;
 
 layout(location = 4) in float aIndex;
 layout(location = 0) in vec3 aHeight;
@@ -2557,71 +929,50 @@ void main()
     }
     vec4 worldPoint = vec4(aHeight, 1.0);
     vChunkCoords = vec2(iX, iY);
-    vPosition = (_53.uLookAtMat * worldPoint).xyz;
+    vPosition = (_55.scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;
     vVertexLighting = aVertexLighting.xyz;
-    vNormal = (_53.uLookAtMat * vec4(aNormal, 0.0)).xyz;
-    gl_Position = (_53.uPMatrix * _53.uLookAtMat) * worldPoint;
+    vNormal = (_55.scene.uLookAtMat * vec4(aNormal, 0.0)).xyz;
+    gl_Position = (_55.scene.uPMatrix * _55.scene.uLookAtMat) * worldPoint;
 }
 
 
-#ifdef COMPILING_VS
-/* vertex shader code */
-attribute vec3 aPosition;
-
-//Whole scene
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
-//Whole model
-uniform mat4 uPlacementMat;
-
-void main() {
-    vec4 worldPoint = vec4(aPosition.xyz, 1);
-
-    gl_Position = uPMatrix * uLookAtMat * uPlacementMat * worldPoint;
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-precision highp float;
-
-//Individual mesh
-uniform vec4 uColor;
-
-void main() {
-    vec4 finalColor = uColor ;
-
-    gl_FragColor = finalColor;
-}
-
-#endif //COMPILING_FS
-#ifdef COMPILING_VS
-/* vertex shader code */
-attribute vec2 aPosition;
-
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
-
-uniform mat4 uInverseViewProjection;
-
-void main() {
-    gl_Position = uPMatrix * uLookAtMat * vec4(aPosition.xy, 0, 1);
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-precision highp float;
-
-uniform vec3 uColor;
-
-void main() {
-    vec4 finalColor = vec4(1.0, 1.0, 0.0, 1.0);
-
-    gl_FragColor = finalColor;
-}
-
-#endif //COMPILING_FS
 #version 330
+
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+struct InteriorLightParam
+{
+    vec4 uInteriorAmbientColorAndApplyInteriorLight;
+    vec4 uInteriorDirectColorAndApplyExteriorLight;
+};
+
+layout(std140) uniform meshWideBlockPS
+{
+    vec4 uHeightScale;
+    vec4 uHeightOffset;
+} _251;
+
+layout(std140) uniform sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+} _427;
 
 layout(std140) uniform modelWideBlockPS
 {
@@ -2630,13 +981,7 @@ layout(std140) uniform modelWideBlockPS
     vec4 uSunColor_uFogEnd;
     vec4 uAmbientLight;
     vec4 FogColor;
-} _33;
-
-layout(std140) uniform meshWideBlockPS
-{
-    vec4 uHeightScale;
-    vec4 uHeightOffset;
-} _184;
+} _514;
 
 uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayerHeight0;
@@ -2648,27 +993,30 @@ uniform sampler2D uLayer1;
 uniform sampler2D uLayer2;
 uniform sampler2D uLayer3;
 
-in vec3 vNormal;
-in vec3 vVertexLighting;
 in vec2 vChunkCoords;
 in vec4 vColor;
+in vec3 vNormal;
+in vec3 vVertexLighting;
 in vec3 vPosition;
 layout(location = 0) out vec4 outColor;
 
-vec3 makeDiffTerm(vec3 matDiffuse)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
 {
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0);
-    vec3 currColor;
-    if (true)
+    vec3 localDiffuse = accumLight;
+    if (!applyLight)
     {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -_33.uSunDir_FogStart.xyz);
-        float nDotUp = dot(normalizedN, _33.uViewUp.xyz);
-        vec4 AmbientLight = _33.uAmbientLight;
-        vec3 adjAmbient = AmbientLight.xyz;
-        vec3 adjHorizAmbient = AmbientLight.xyz;
-        vec3 adjGroundAmbient = AmbientLight.xyz;
+        return matDiffuse;
+    }
+    vec3 lDiffuse = vec3(0.0);
+    vec3 normalizedN = normalize(vNormal_1);
+    vec3 currColor;
+    if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+    {
+        float nDotL = clamp(dot(normalizedN, -sceneParams.extLight.uExteriorDirectColorDir.xyz), 0.0, 1.0);
+        float nDotUp = dot(normalizedN, sceneParams.uViewUp.xyz);
+        vec3 adjAmbient = sceneParams.extLight.uExteriorAmbientColor.xyz + precomputedLight;
+        vec3 adjHorizAmbient = sceneParams.extLight.uExteriorHorizontAmbientColor.xyz + precomputedLight;
+        vec3 adjGroundAmbient = sceneParams.extLight.uExteriorGroundAmbientColor.xyz + precomputedLight;
         if (nDotUp >= 0.0)
         {
             currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
@@ -2679,17 +1027,30 @@ vec3 makeDiffTerm(vec3 matDiffuse)
         }
         vec3 skyColor = currColor * 1.10000002384185791015625;
         vec3 groundColor = currColor * 0.699999988079071044921875;
-        lDiffuse = _33.uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0);
+        lDiffuse = sceneParams.extLight.uExteriorDirectColor.xyz * nDotL;
         currColor = mix(groundColor, skyColor, vec3(0.5 + (0.5 * nDotL)));
     }
-    else
+    if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0.0)
     {
-        currColor = vec3(1.0);
-        mult = 1.0;
+        float nDotL_1 = clamp(dot(normalizedN, -sceneParams.uInteriorSunDir.xyz), 0.0, 1.0);
+        vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL_1;
+        vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
+        if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+        {
+            lDiffuse = mix(lDiffuseInterior, lDiffuse, vec3(interiorExteriorBlend));
+            currColor = mix(interiorAmbient, currColor, vec3(interiorExteriorBlend));
+        }
+        else
+        {
+            lDiffuse = lDiffuseInterior;
+            currColor = interiorAmbient;
+        }
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vVertexLighting;
-    return sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm);
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
+    vec3 specTerm = vec3(0.0);
+    vec3 emTerm = vec3(0.0);
+    return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
 
 void main()
@@ -2703,10 +1064,10 @@ void main()
     vec2 tcLayer3 = vTexCoord;
     float minusAlphaBlendSum = 1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0);
     vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
-    float weightedTexture_x = minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * _184.uHeightScale.x) + _184.uHeightOffset.x);
-    float weightedTexture_y = weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * _184.uHeightScale.y) + _184.uHeightOffset.y);
-    float weightedTexture_z = weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * _184.uHeightScale.z) + _184.uHeightOffset.z);
-    float weightedTexture_w = weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * _184.uHeightScale.w) + _184.uHeightOffset.w);
+    float weightedTexture_x = minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * _251.uHeightScale.x) + _251.uHeightOffset.x);
+    float weightedTexture_y = weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * _251.uHeightScale.y) + _251.uHeightOffset.y);
+    float weightedTexture_z = weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * _251.uHeightScale.z) + _251.uHeightOffset.z);
+    float weightedTexture_w = weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * _251.uHeightScale.w) + _251.uHeightOffset.w);
     vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
     vec4 weights_temp = weights * (vec4(1.0) - clamp(vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights, vec4(0.0), vec4(1.0)));
     vec4 weightsNormalized = weights_temp / vec4(dot(vec4(1.0), weights_temp));
@@ -2725,49 +1086,33 @@ void main()
     vec4 final = vec4(matDiffuse_3, specBlend_3);
     vec3 matDiffuse = final.xyz * vColor.xyz;
     vec3 param = matDiffuse;
-    vec4 finalColor = vec4(makeDiffTerm(param), 1.0);
+    vec3 param_1 = vNormal;
+    bool param_2 = true;
+    float param_3 = 0.0;
+    SceneWideParams param_4;
+    param_4.uLookAtMat = _427.scene.uLookAtMat;
+    param_4.uPMatrix = _427.scene.uPMatrix;
+    param_4.uViewUp = _427.scene.uViewUp;
+    param_4.uInteriorSunDir = _427.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _427.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _427.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _427.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _427.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _427.scene.extLight.uExteriorDirectColorDir;
+    InteriorLightParam param_5 = InteriorLightParam(vec4(0.0), vec4(0.0, 0.0, 0.0, 1.0));
+    vec3 param_6 = vVertexLighting;
+    vec4 finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0)), 1.0);
     float specBlend = final.w;
-    vec3 halfVec = -normalize(_33.uSunDir_FogStart.xyz + normalize(vPosition));
-    vec3 lSpecular = _33.uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
+    vec3 halfVec = -normalize(_427.scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition));
+    vec3 lSpecular = _427.scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
     vec3 specTerm = vec3(specBlend) * lSpecular;
-    vec3 _392 = finalColor.xyz + specTerm;
-    finalColor = vec4(_392.x, _392.y, _392.z, finalColor.w);
+    vec3 _505 = finalColor.xyz + specTerm;
+    finalColor = vec4(_505.x, _505.y, _505.z, finalColor.w);
     finalColor.w = 1.0;
     outColor = finalColor;
 }
 
 
-#ifdef COMPILING_VS
-/* vertex shader code */
-attribute vec3 aPosition;
-
-uniform mat4 uLookAtMat;
-uniform mat4 uPMatrix;
-
-uniform mat4 uInverseViewProjection;
-
-void main() {
-
-    vec4 c_world = uInverseViewProjection * vec4(aPosition, 1);
-    c_world = c_world*1.0/c_world.w;
-
-    gl_Position = uPMatrix * uLookAtMat * vec4(c_world.xyz, 1);
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-precision highp float;
-
-uniform vec3 uColor;
-
-void main() {
-    vec4 finalColor = vec4(1.0, 1.0, 1.0, 1.0);
-
-    finalColor.a = 1.0; //do I really need it now?
-    gl_FragColor = finalColor;
-}
-
-#endif //COMPILING_FS
 #version 330
 
 layout(std140) uniform meshWideBlockPS
@@ -2787,6 +1132,24 @@ void main()
 
 #version 330
 
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
 layout(std140) uniform modelWideBlockVS
 {
     mat4 uPlacementMat;
@@ -2802,9 +1165,8 @@ layout(std140) uniform meshWideBlockVS
 
 layout(std140) uniform sceneWideBlockVSPS
 {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-} _237;
+    SceneWideParams scene;
+} _239;
 
 layout(location = 0) in vec3 aPosition;
 layout(location = 3) in vec4 boneWeights;
@@ -2824,7 +1186,7 @@ mat3 blizzTranspose(mat4 value)
     return mat3(vec3(value[0].xyz), vec3(value[1].xyz), vec3(value[2].xyz));
 }
 
-vec2 posToTexCoord(vec3 cameraPoint, vec3 normal)
+vec2 posToTexCoord(inout vec3 cameraPoint, vec3 normal)
 {
     vec3 normPos_495 = normalize(cameraPoint);
     vec3 temp_500 = normPos_495 - (normal * (2.0 * dot(normPos_495, normal)));
@@ -2832,7 +1194,7 @@ vec2 posToTexCoord(vec3 cameraPoint, vec3 normal)
     return (normalize(temp_657).xy * 0.5) + vec2(0.5);
 }
 
-float edgeScan(vec3 position, vec3 normal)
+float edgeScan(inout vec3 position, vec3 normal)
 {
     float dotProductClamped = clamp(dot(-normalize(position), normal), 0.0, 1.0);
     return clamp(((2.7000000476837158203125 * dotProductClamped) * dotProductClamped) - 0.4000000059604644775390625, 0.0, 1.0);
@@ -2853,9 +1215,9 @@ void main()
     boneTransformMat = mat4(boneTransformMat[0] + _207[0], boneTransformMat[1] + _207[1], boneTransformMat[2] + _207[2], boneTransformMat[3] + _207[3]);
     mat4 placementMat = _133.uPlacementMat;
     vec4 lDiffuseColor = _230.color_Transparency;
-    mat4 cameraMatrix = (_237.uLookAtMat * placementMat) * boneTransformMat;
+    mat4 cameraMatrix = (_239.scene.uLookAtMat * placementMat) * boneTransformMat;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
-    mat4 param = _237.uLookAtMat;
+    mat4 param = _239.scene.uLookAtMat;
     mat4 param_1 = placementMat;
     mat4 param_2 = boneTransformMat;
     mat3 viewModelMatTransposed = (blizzTranspose(param) * blizzTranspose(param_1)) * blizzTranspose(param_2);
@@ -2864,10 +1226,12 @@ void main()
     vec4 combinedColorHalved = combinedColor * 0.5;
     vec3 param_3 = cameraPoint.xyz;
     vec3 param_4 = normal;
-    vec2 envCoord = posToTexCoord(param_3, param_4);
+    vec2 _285 = posToTexCoord(param_3, param_4);
+    vec2 envCoord = _285;
     vec3 param_5 = cameraPoint.xyz;
     vec3 param_6 = normal;
-    float edgeScanVal = edgeScan(param_5, param_6);
+    float _292 = edgeScan(param_5, param_6);
+    float edgeScanVal = _292;
     vTexCoord2 = vec2(0.0);
     vTexCoord3 = vec2(0.0);
     int uVertexShader = _230.vertexShader_IsAffectedByLight.x;
@@ -2966,123 +1330,46 @@ void main()
     vDiffuseColor = vec4(combinedColor.xyz * 0.5, combinedColor.w);
     vTexCoord = (_230.uTextMat[0] * vec4(aTexCoord, 0.0, 1.0)).xy;
     #endif
-    gl_Position = _237.uPMatrix * cameraPoint;
+    gl_Position = _239.scene.uPMatrix * cameraPoint;
     vNormal = normal;
     vPosition = cameraPoint.xyz;
 }
 
 
-#ifdef ENABLE_DEFERRED
-    #extension OES_texture_float_linear : enable
-#endif
+#version 330
 
-#ifdef COMPILING_VS
-attribute vec4 a_position;
-varying vec2 v_texcoord;
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
 
-void main() {
-      gl_Position = a_position;
-      v_texcoord = a_position.xy * 0.5 + 0.5;
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-
-
-precision highp float;
-varying vec2 v_texcoord;
-uniform sampler2D u_sampler;
-uniform sampler2D u_depth;
-
-uniform float gauss_offsets[5];
-uniform float gauss_weights[5];
-
-uniform vec2 uResolution;
-
-void main() {
-   /*
-    vec4 fragmentColor = texture2D(u_sampler, v_texcoord);
-    float sourceDepth = texture2D(u_depth, v_texcoord).x;
-    vec4 final = (fragmentColor * gauss_weights[0]);
-    for (int i = 1; i < 5; i++) {
-
-        float sampleDepth = texture2D(u_depth, (v_texcoord + vec2(0.0, gauss_offsets[i]))).x;
-        float filterDepth = (((sourceDepth - sampleDepth) > 0.0700000003) ? 1.0 : 0.0);
-        //float filterDepth = 1.0;
-        vec4 t = vec4(filterDepth);
-        final = (final + (gauss_weights[i] * mix(texture2D(u_sampler, (v_texcoord + vec2(0.0, gauss_offsets[i]))), fragmentColor, t)));
-    }
-
-    final.a = 1.0;
-    gl_FragColor = final;   */
-    //gl_FragColor = vec4(texture2D(u_sampler, v_texcoord).rgb, 0);
-    //gl_FragColor = apply(u_sampler, v_texcoord, uResolution);
-    float FXAA_SPAN_MAX = 8.0;
-    float FXAA_REDUCE_MUL = 1.0/8.0;
-    float FXAA_REDUCE_MIN = 1.0/128.0;
-
-    vec3 rgbNW=texture2D(u_sampler,v_texcoord+(vec2(-1.0,-1.0)/uResolution)).xyz;
-    vec3 rgbNE=texture2D(u_sampler,v_texcoord+(vec2(1.0,-1.0)/uResolution)).xyz;
-    vec3 rgbSW=texture2D(u_sampler,v_texcoord+(vec2(-1.0,1.0)/uResolution)).xyz;
-    vec3 rgbSE=texture2D(u_sampler,v_texcoord+(vec2(1.0,1.0)/uResolution)).xyz;
-    vec3 rgbM=texture2D(u_sampler,v_texcoord).xyz;
-
-    vec3 luma=vec3(0.299, 0.587, 0.114);
-    float lumaNW = dot(rgbNW, luma);
-    float lumaNE = dot(rgbNE, luma);
-    float lumaSW = dot(rgbSW, luma);
-    float lumaSE = dot(rgbSE, luma);
-    float lumaM  = dot(rgbM,  luma);
-
-    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
-    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
-
-    vec2 dir;
-    dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
-    dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
-
-    float dirReduce = max(
-        (lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL),
-        FXAA_REDUCE_MIN);
-
-    float rcpDirMin = 1.0/(min(abs(dir.x), abs(dir.y)) + dirReduce);
-
-    dir = min(vec2( FXAA_SPAN_MAX,  FXAA_SPAN_MAX),
-          max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
-          dir * rcpDirMin)) / uResolution;
-
-    vec3 rgbA = (1.0/2.0) * (
-        texture2D(u_sampler, v_texcoord.xy + dir * (1.0/3.0 - 0.5)).xyz +
-        texture2D(u_sampler, v_texcoord.xy + dir * (2.0/3.0 - 0.5)).xyz);
-    vec3 rgbB = rgbA * (1.0/2.0) + (1.0/4.0) * (
-        texture2D(u_sampler, v_texcoord.xy + dir * (0.0/3.0 - 0.5)).xyz +
-        texture2D(u_sampler, v_texcoord.xy + dir * (3.0/3.0 - 0.5)).xyz);
-    float lumaB = dot(rgbB, luma);
-
-    if((lumaB < lumaMin) || (lumaB > lumaMax)){
-        gl_FragColor.xyz=rgbA;
-    }else{
-        gl_FragColor.xyz=rgbB;
-    }
-}
-
-#endif //COMPILING_FS#version 330
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
 
 layout(std140) uniform modelWideBlockVS
 {
     mat4 uPlacementMat;
-} _58;
+} _93;
 
 layout(std140) uniform sceneWideBlockVSPS
 {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
-} _75;
+    SceneWideParams scene;
+} _110;
 
 layout(std140) uniform meshWideBlockVS
 {
     ivec4 VertexShader_UseLitColor;
-} _164;
+} _181;
 
 layout(location = 0) in vec3 aPosition;
 out vec4 vPosition;
@@ -3099,7 +1386,12 @@ layout(location = 3) in vec2 aTexCoord2;
 out vec2 vTexCoord3;
 layout(location = 4) in vec2 aTexCoord3;
 
-vec2 posToTexCoord(vec3 cameraPoint, vec3 normal)
+mat3 blizzTranspose(mat4 value)
+{
+    return mat3(vec3(value[0].xyz), vec3(value[1].xyz), vec3(value[2].xyz));
+}
+
+vec2 posToTexCoord(inout vec3 cameraPoint, vec3 normal)
 {
     vec3 normPos_495 = normalize(cameraPoint);
     vec3 temp_500 = normPos_495 - (normal * (2.0 * dot(normPos_495, normal)));
@@ -3109,16 +1401,18 @@ vec2 posToTexCoord(vec3 cameraPoint, vec3 normal)
 
 void main()
 {
-    vec4 worldPoint = _58.uPlacementMat * vec4(aPosition, 1.0);
-    vec4 cameraPoint = _75.uLookAtMat * worldPoint;
-    mat4 viewModelMat = _75.uLookAtMat * _58.uPlacementMat;
-    mat3 viewModelMatTransposed = mat3(vec3(viewModelMat[0].xyz), vec3(viewModelMat[1].xyz), vec3(viewModelMat[2].xyz));
-    gl_Position = _75.uPMatrix * cameraPoint;
+    vec4 worldPoint = _93.uPlacementMat * vec4(aPosition, 1.0);
+    vec4 cameraPoint = _110.scene.uLookAtMat * worldPoint;
+    mat4 viewModelMat = _110.scene.uLookAtMat * _93.uPlacementMat;
+    mat4 param = _110.scene.uLookAtMat;
+    mat4 param_1 = _93.uPlacementMat;
+    mat3 viewModelMatTransposed = blizzTranspose(param) * blizzTranspose(param_1);
+    gl_Position = _110.scene.uPMatrix * cameraPoint;
     vPosition = vec4(cameraPoint.xyz, aColor.w);
     vNormal = normalize(viewModelMatTransposed * aNormal);
     vColor = vec4(0.5, 0.499989986419677734375, 0.5, 1.0);
     vColor2 = vec4(aColor.zyx * 2.0, aColor2.w);
-    int uVertexShader = _164.VertexShader_UseLitColor.x;
+    int uVertexShader = _181.VertexShader_UseLitColor.x;
     #if (VERTEXSHADER == (-1))
     vTexCoord = aTexCoord;
     vTexCoord2 = aTexCoord2;
@@ -3136,9 +1430,10 @@ void main()
     #endif
     #if (VERTEXSHADER == 2)
     vTexCoord = aTexCoord;
-    vec3 param = vPosition.xyz;
-    vec3 param_1 = vNormal;
-    vTexCoord2 = posToTexCoord(param, param_1);
+    vec3 param_2 = vPosition.xyz;
+    vec3 param_3 = vNormal;
+    vec2 _234 = posToTexCoord(param_2, param_3);
+    vTexCoord2 = _234;
     vTexCoord3 = aTexCoord3;
     #endif
     #if (VERTEXSHADER == 3)
@@ -3197,35 +1492,45 @@ void main()
 }
 
 
-#ifdef COMPILING_VS
-attribute vec2 position;
-attribute vec2 texture;
-varying vec2 v_texcoord;
+#version 330
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
-void main() {
-    v_texcoord = texture;
-    gl_Position = vec4(position, 0.0, 1.0);
+uniform sampler2D Texture;
+
+layout(location = 0) out vec4 Out_Color;
+in vec4 Frag_Color;
+in vec2 Frag_UV;
+
+void main()
+{
+    Out_Color = Frag_Color * texture(Texture, Frag_UV);
 }
 
-#endif //COMPILING_VS
 
-#ifdef COMPILING_FS
-precision highp float;
-varying vec2 v_texcoord;
-uniform sampler2D u_sampler;
+#version 330
 
-void main() {
-    float depth = texture2D(u_sampler, v_texcoord).x;
-    float depth65535 = depth * 65535.0;
-    float depth_high = floor(depth65535/256.0) / 255.0;
-    float depth_low = mod(depth65535, 256.0) / 255.0;
+layout(std140) uniform modelWideBlockVS
+{
+    mat4 ProjMtx;
+} _30;
 
-    vec4 color = vec4(depth_high, depth_low, 0 ,0);
+out vec2 Frag_UV;
+layout(location = 1) in vec2 UV;
+out vec4 Frag_Color;
+layout(location = 2) in vec4 Color;
+layout(location = 0) in vec2 Position;
 
-    gl_FragColor = color;
+void main()
+{
+    Frag_UV = UV;
+    Frag_Color = Color;
+    gl_Position = _30.ProjMtx * vec4(Position, 0.0, 1.0);
 }
 
-#endif //COMPILING_FS#version 330
+
+#version 330
 
 layout(std140) uniform sceneWideBlockVSPS
 {
@@ -3288,53 +1593,76 @@ void main()
 
 #version 330
 
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+struct InteriorLightParam
+{
+    vec4 uInteriorAmbientColorAndApplyInteriorLight;
+    vec4 uInteriorDirectColorAndApplyExteriorLight;
+};
+
 layout(std140) uniform meshWideBlockPS
 {
-    vec4 uViewUp;
-    vec4 uSunDir_FogStart;
-    vec4 uSunColor_uFogEnd;
-    vec4 uAmbientLight;
-    vec4 uAmbientLight2AndIsBatchA;
     ivec4 UseLitColor_EnableAlpha_PixelShader;
     vec4 FogColor_AlphaTest;
-} _21;
+} _220;
 
-layout(std140) uniform modelWideBlockVS
+layout(std140) uniform sceneWideBlockVSPS
 {
-    mat4 uPlacementMat;
-} _895;
+    SceneWideParams scene;
+} _688;
+
+layout(std140) uniform modelWideBlockPS
+{
+    InteriorLightParam intLight;
+} _692;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
 
-in vec3 vNormal;
-in vec4 vColor2;
-in vec4 vPosition;
 in vec2 vTexCoord;
 in vec2 vTexCoord2;
 in vec2 vTexCoord3;
 in vec4 vColor;
+in vec4 vColor2;
+in vec3 vNormal;
+in vec4 vPosition;
 layout(location = 0) out vec4 outputColor;
 
-vec3 makeDiffTerm(vec3 matDiffuse)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
 {
-    vec3 lDiffuse = vec3(0.0);
-    vec3 currColor;
-    if (_21.UseLitColor_EnableAlpha_PixelShader.x == 1)
+    vec3 localDiffuse = accumLight;
+    if (!applyLight)
     {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -_21.uSunDir_FogStart.xyz);
-        float nDotUp = dot(normalizedN, _21.uViewUp.xyz);
-        vec3 precomputed = vColor2.xyz;
-        vec3 ambientColor = _21.uAmbientLight.xyz;
-        if (_21.uAmbientLight2AndIsBatchA.w > 0.0)
-        {
-            ambientColor = mix(_21.uAmbientLight.xyz, _21.uAmbientLight2AndIsBatchA.xyz, vec3(vPosition.w));
-        }
-        vec3 adjAmbient = ambientColor + precomputed;
-        vec3 adjHorizAmbient = ambientColor + precomputed;
-        vec3 adjGroundAmbient = ambientColor + precomputed;
+        return matDiffuse;
+    }
+    vec3 lDiffuse = vec3(0.0);
+    vec3 normalizedN = normalize(vNormal_1);
+    vec3 currColor;
+    if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+    {
+        float nDotL = clamp(dot(normalizedN, -sceneParams.extLight.uExteriorDirectColorDir.xyz), 0.0, 1.0);
+        float nDotUp = dot(normalizedN, sceneParams.uViewUp.xyz);
+        vec3 adjAmbient = sceneParams.extLight.uExteriorAmbientColor.xyz + precomputedLight;
+        vec3 adjHorizAmbient = sceneParams.extLight.uExteriorHorizontAmbientColor.xyz + precomputedLight;
+        vec3 adjGroundAmbient = sceneParams.extLight.uExteriorGroundAmbientColor.xyz + precomputedLight;
         if (nDotUp >= 0.0)
         {
             currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
@@ -3345,16 +1673,30 @@ vec3 makeDiffTerm(vec3 matDiffuse)
         }
         vec3 skyColor = currColor * 1.10000002384185791015625;
         vec3 groundColor = currColor * 0.699999988079071044921875;
+        lDiffuse = sceneParams.extLight.uExteriorDirectColor.xyz * nDotL;
         currColor = mix(groundColor, skyColor, vec3(0.5 + (0.5 * nDotL)));
-        lDiffuse = _21.uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0);
     }
-    else
+    if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0.0)
     {
-        currColor = vec3(1.0) * _21.uAmbientLight.xyz;
+        float nDotL_1 = clamp(dot(normalizedN, -sceneParams.uInteriorSunDir.xyz), 0.0, 1.0);
+        vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL_1;
+        vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
+        if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+        {
+            lDiffuse = mix(lDiffuseInterior, lDiffuse, vec3(interiorExteriorBlend));
+            currColor = mix(interiorAmbient, currColor, vec3(interiorExteriorBlend));
+        }
+        else
+        {
+            lDiffuse = lDiffuseInterior;
+            currColor = interiorAmbient;
+        }
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vec3(0.0);
-    return sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm);
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
+    vec3 specTerm = vec3(0.0);
+    vec3 emTerm = vec3(0.0);
+    return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
 
 void main()
@@ -3362,214 +1704,189 @@ void main()
     vec4 tex = texture(uTexture, vTexCoord);
     vec4 tex2 = texture(uTexture2, vTexCoord2);
     vec4 tex3 = texture(uTexture3, vTexCoord3);
-    if (_21.UseLitColor_EnableAlpha_PixelShader.y == 1)
+    if (_220.UseLitColor_EnableAlpha_PixelShader.y == 1)
     {
         if ((tex.w - 0.501960813999176025390625) < 0.0)
         {
             discard;
         }
     }
-    int uPixelShader = _21.UseLitColor_EnableAlpha_PixelShader.z;
+    int uPixelShader = _220.UseLitColor_EnableAlpha_PixelShader.z;
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
+    vec3 matDiffuse = vec3(0.0);
+    vec3 env = vec3(0.0);
+    float finalOpacity = 0.0;
     #if (FRAGMENTSHADER == (-1))
-    vec3 param = (tex.xyz * vColor.xyz) + (tex2.xyz * vColor2.zyx);
-    finalColor = vec4(makeDiffTerm(param), tex.w);
+    matDiffuse = (tex.xyz * vColor.xyz) + (tex2.xyz * vColor2.zyx);
+    finalOpacity = tex.w;
     #endif
     #if (FRAGMENTSHADER == 0)
-    vec3 matDiffuse = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_1 = matDiffuse;
-    finalColor = vec4(makeDiffTerm(param_1), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 1)
-    vec3 matDiffuse_1 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_2 = matDiffuse_1;
-    finalColor = vec4(makeDiffTerm(param_2), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 2)
-    vec3 matDiffuse_2 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_3 = matDiffuse_2;
-    finalColor = vec4(makeDiffTerm(param_3), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 3)
-    vec3 matDiffuse_3 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 env = tex2.xyz * tex.w;
-    vec3 param_4 = matDiffuse_3;
-    finalColor = vec4(makeDiffTerm(param_4) + env, vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    env = tex2.xyz * tex.w;
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 4)
-    vec3 matDiffuse_4 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_5 = matDiffuse_4;
-    finalColor = vec4(makeDiffTerm(param_5), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 5)
-    vec3 matDiffuse_5 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 env_1 = (tex.xyz * tex.w) * tex2.xyz;
-    vec3 param_6 = matDiffuse_5;
-    finalColor = vec4(makeDiffTerm(param_6) + env_1, vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    env = (tex.xyz * tex.w) * tex2.xyz;
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 6)
     vec3 layer1 = tex.xyz;
     vec3 layer2 = mix(layer1, tex2.xyz, vec3(tex2.w));
-    vec3 matDiffuse_6 = (vColor.xyz * 2.0) * mix(layer2, layer1, vec3(vColor2.w));
-    vec3 param_7 = matDiffuse_6;
-    finalColor = vec4(makeDiffTerm(param_7), 1.0);
+    matDiffuse = (vColor.xyz * 2.0) * mix(layer2, layer1, vec3(vColor2.w));
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 7)
     vec4 colorMix = mix(tex2, tex, vec4(vColor2.w));
-    vec3 env_2 = (colorMix.xyz * colorMix.w) * tex3.xyz;
-    vec3 matDiffuse_7 = colorMix.xyz * (vColor.xyz * 2.0);
-    vec3 param_8 = matDiffuse_7;
-    finalColor = vec4(makeDiffTerm(param_8) + env_2, vColor.w);
+    matDiffuse = colorMix.xyz * (vColor.xyz * 2.0);
+    env = (colorMix.xyz * colorMix.w) * tex3.xyz;
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 8)
     vec3 layer1_1 = tex.xyz;
     vec3 layer2_1 = tex2.xyz;
-    vec3 matDiffuse_8 = (vColor.xyz * 2.0) * mix(layer2_1, layer1_1, vec3(vColor2.w));
-    vec3 param_9 = matDiffuse_8;
-    finalColor = vec4(makeDiffTerm(param_9), vColor.w);
+    matDiffuse = (vColor.xyz * 2.0) * mix(layer2_1, layer1_1, vec3(vColor2.w));
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 9)
-    vec3 matDiffuse_9 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 env_3 = (tex2.xyz * tex2.w) * vColor2.w;
-    vec3 param_10 = matDiffuse_9;
-    finalColor = vec4(makeDiffTerm(param_10) + env_3, vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    env = (tex2.xyz * tex2.w) * vColor2.w;
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 10)
     float mixFactor = clamp(tex3.w * vColor2.w, 0.0, 1.0);
-    vec3 matDiffuse_10 = (vColor.xyz * 2.0) * mix(mix((tex.xyz * tex2.xyz) * 2.0, tex3.xyz, vec3(mixFactor)), tex.xyz, vec3(tex.w));
-    vec3 param_11 = matDiffuse_10;
-    finalColor = vec4(makeDiffTerm(param_11), vColor.w);
+    matDiffuse = (vColor.xyz * 2.0) * mix(mix((tex.xyz * tex2.xyz) * 2.0, tex3.xyz, vec3(mixFactor)), tex.xyz, vec3(tex.w));
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 11)
-    vec3 matDiffuse_11 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 env_4 = ((tex.xyz * tex.w) * tex2.xyz) + ((tex3.xyz * tex3.w) * vColor2.w);
-    vec3 param_12 = matDiffuse_11;
-    finalColor = vec4(makeDiffTerm(param_12) + env_4, vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    env = ((tex.xyz * tex.w) * tex2.xyz) + ((tex3.xyz * tex3.w) * vColor2.w);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 12)
-    vec3 matDiffuse_12 = (vColor.xyz * 2.0) * mix(tex2.xyz, tex.xyz, vec3(vColor2.w));
-    vec3 param_13 = matDiffuse_12;
-    finalColor = vec4(makeDiffTerm(param_13), vColor.w);
+    matDiffuse = (vColor.xyz * 2.0) * mix(tex2.xyz, tex.xyz, vec3(vColor2.w));
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 13)
     vec3 t1diffuse = tex2.xyz * (1.0 - tex2.w);
-    vec3 matDiffuse_13 = (vColor.xyz * 2.0) * mix(t1diffuse, tex.xyz, vec3(vColor2.w));
-    vec3 env_5 = (tex2.xyz * tex2.w) * (1.0 - vColor2.w);
-    vec3 param_14 = matDiffuse_13;
-    finalColor = vec4(makeDiffTerm(param_14) + env_5, vColor.w);
+    matDiffuse = (vColor.xyz * 2.0) * mix(t1diffuse, tex.xyz, vec3(vColor2.w));
+    env = (tex2.xyz * tex2.w) * (1.0 - vColor2.w);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 13)
-    vec3 matDiffuse_14 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_15 = matDiffuse_14;
-    finalColor = vec4(makeDiffTerm(param_15), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 14)
-    vec3 matDiffuse_15 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_16 = matDiffuse_15;
-    finalColor = vec4(makeDiffTerm(param_16), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 15)
-    vec3 matDiffuse_16 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_17 = matDiffuse_16;
-    finalColor = vec4(makeDiffTerm(param_17), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 16)
-    vec3 matDiffuse_17 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_18 = matDiffuse_17;
-    finalColor = vec4(makeDiffTerm(param_18), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 17)
-    vec3 matDiffuse_18 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_19 = matDiffuse_18;
-    finalColor = vec4(makeDiffTerm(param_19), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 18)
-    vec3 matDiffuse_19 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_20 = matDiffuse_19;
-    finalColor = vec4(makeDiffTerm(param_20), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 19)
-    vec3 matDiffuse_20 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_21 = matDiffuse_20;
-    finalColor = vec4(makeDiffTerm(param_21), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
-    if (finalColor.w < _21.FogColor_AlphaTest.w)
+    vec3 param = matDiffuse;
+    vec3 param_1 = vNormal;
+    bool param_2 = true;
+    float param_3 = vPosition.w;
+    SceneWideParams param_4;
+    param_4.uLookAtMat = _688.scene.uLookAtMat;
+    param_4.uPMatrix = _688.scene.uPMatrix;
+    param_4.uViewUp = _688.scene.uViewUp;
+    param_4.uInteriorSunDir = _688.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _688.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _688.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _688.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _688.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _688.scene.extLight.uExteriorDirectColorDir;
+    InteriorLightParam param_5;
+    param_5.uInteriorAmbientColorAndApplyInteriorLight = _692.intLight.uInteriorAmbientColorAndApplyInteriorLight;
+    param_5.uInteriorDirectColorAndApplyExteriorLight = _692.intLight.uInteriorDirectColorAndApplyExteriorLight;
+    vec3 param_6 = vec3(0.0);
+    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vColor2.xyz), finalOpacity);
+    if (finalColor.w < _220.FogColor_AlphaTest.w)
     {
         discard;
     }
-    vec3 fogColor = _21.FogColor_AlphaTest.xyz;
-    float fog_start = _21.uSunDir_FogStart.w;
-    float fog_end = _21.uSunColor_uFogEnd.w;
-    float fog_rate = 1.5;
-    float fog_bias = 0.00999999977648258209228515625;
-    float distanceToCamera = length(vPosition.xyz);
-    float z_depth = distanceToCamera - fog_bias;
-    float expFog = 1.0 / exp(max(0.0, z_depth - fog_start) * fog_rate);
-    float heightFog = 1.0;
-    expFog += heightFog;
-    float endFadeFog = clamp((fog_end - distanceToCamera) / (0.699999988079071044921875 * fog_end), 0.0, 1.0);
-    vec3 _885 = mix(fogColor, finalColor.xyz, vec3(min(expFog, endFadeFog)));
-    finalColor = vec4(_885.x, _885.y, _885.z, finalColor.w);
     finalColor.w = 1.0;
     outputColor = finalColor;
 }
 
 
-//Taken from http://media.tojicode.com/webgl-samples/depth-texture.html
+#version 330
 
-#ifdef COMPILING_VS
-attribute vec2 position;
-attribute vec2 texture;
-varying vec2 texCoord;
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
 
-uniform float uWidth;
-uniform float uHeight;
-uniform float uX;
-uniform float uY;
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
 
+layout(std140) uniform sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+} _27;
 
-void main(void) {
-    //texCoord = texture;
-    texCoord = position.xy * 0.5 + 0.5;
+layout(location = 0) in vec4 aPositionTransp;
+out vec2 vTextCoords;
+out vec3 vPosition;
+layout(location = 1) in vec2 aTexCoord;
 
-    //gl_Position = vec4(position, 0.0, 1.0);
-    gl_Position = vec4(
-        (((position.x + 1.0)/2.0) * uWidth + uX)*2.0 - 1.0,
-        (((position.y + 1.0)/2.0) * uHeight + uY)*2.0 - 1.0,
-
-
-        0.0,
-        1.0)  ;
-}
-#endif //COMPILING_VS
-
-#ifdef COMPILING_FS
-
-precision highp float;
-uniform sampler2D diffuse;
-uniform int drawDepth;
-uniform float uFarPlane;
-uniform float uNearPlane;
-
-varying vec2 texCoord;
-
-void main(void) {
-
-    vec4 finalColor;
-    if (drawDepth == 1) {
-        float f = uFarPlane; //far plane
-        float n = uNearPlane; //near plane
-        float z = (2.0 * n) / (f + n - texture2D( diffuse, texCoord ).x * (f - n));
-
-        finalColor = vec4(z,z,z, 255);
-
-    } else {
-        finalColor = vec4(texture2D( diffuse, texCoord ).rgb, 255);
-    }
-    gl_FragColor = finalColor;
+void main()
+{
+    vec4 aPositionVec4 = vec4(aPositionTransp.xyz, 1.0);
+    mat4 cameraMatrix = _27.scene.uLookAtMat;
+    vec4 cameraPoint = cameraMatrix * aPositionVec4;
+    vTextCoords = aPositionVec4.xy / vec2(33.333332061767578125);
+    gl_Position = _27.scene.uPMatrix * cameraPoint;
+    vPosition = cameraPoint.xyz;
 }
 
-#endif //COMPILING_FS#version 330
+
+#version 330
 
 layout(std140) uniform sceneWideBlockVSPS
 {
@@ -3616,44 +1933,12 @@ void main()
 }
 
 
-#ifdef COMPILING_VS
-uniform float x;
-uniform float y;
-uniform float width;
-uniform float height;
-
-attribute vec2 aTextCoord;
-varying vec2 vTextCoords;
-void main() {
-    vTextCoords = aTextCoord;
-
-
-    vec2 pos = vec2(
-        //(x + aTextCoord.x*width)/( (1024.0 - 529.0) /1024.0) - 1.0,
-        (x + aTextCoord.x*width)*2.0 - 1.0,
-        //(y + aTextCoord.y*height)/( (753.0) /1024.0) - 1.0
-        (y + aTextCoord.y*height)*2.0 - 1.0
-    );
-
-    gl_Position = vec4(pos.x, pos.y, 0, 1);
-}
-#endif //COMPILING_VS
-#ifdef COMPILING_FS
-precision highp float;
-
-varying vec2 vTextCoords;
-uniform sampler2D uTexture;
-
-void main() {
-    vec4 alpha = texture2D( uTexture, vTextCoords.xy );
-    gl_FragColor = alpha;
-}
-#endif //COMPILING_FS#version 330
+#version 330
 #ifdef GL_ARB_shading_language_420pack
 #extension GL_ARB_shading_language_420pack : require
 #endif
 
-layout(binding = 5) uniform sampler2D uTexture;
+uniform sampler2D uTexture;
 
 in vec2 vTexcoord0;
 layout(location = 0) out vec4 outputColor;
@@ -3810,6 +2095,30 @@ void main()
 
 #version 100
 
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+struct InteriorLightParam
+{
+    vec4 uInteriorAmbientColorAndApplyInteriorLight;
+    vec4 uInteriorDirectColorAndApplyExteriorLight;
+};
+
 struct LocalLight
 {
     vec4 color;
@@ -3819,31 +2128,29 @@ struct LocalLight
 
 struct meshWideBlockPS
 {
-    ivec4 PixelShader_UnFogged_IsAffectedByLight_LightCount;
+    ivec4 PixelShader_UnFogged_IsAffectedByLight;
     vec4 uFogColorAndAlphaTest;
-    LocalLight pc_lights[4];
     vec4 uPcColor;
 };
 
-uniform meshWideBlockPS _29;
+uniform meshWideBlockPS _246;
 
 struct modelWideBlockPS
 {
-    vec4 uViewUp;
-    vec4 uSunDirAndFogStart;
-    vec4 uSunColorAndFogEnd;
-    vec4 uAmbientLight;
+    InteriorLightParam intLight;
+    LocalLight pc_lights[4];
+    ivec4 lightCount;
+    vec4 interiorExteriorBlend;
 };
 
-uniform modelWideBlockPS _49;
+uniform modelWideBlockPS _271;
 
 struct sceneWideBlockVSPS
 {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
+    SceneWideParams scene;
 };
 
-uniform sceneWideBlockVSPS _239;
+uniform sceneWideBlockVSPS _310;
 
 struct modelWideBlockVS
 {
@@ -3851,34 +2158,37 @@ struct modelWideBlockVS
     mat4 uBoneMatrixes[220];
 };
 
-uniform modelWideBlockVS _247;
+uniform modelWideBlockVS _318;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
 uniform sampler2D uTexture4;
 
-varying vec3 vNormal;
 varying vec2 vTexCoord;
 varying vec2 vTexCoord2;
 varying vec2 vTexCoord3;
 varying vec4 vDiffuseColor;
 varying vec3 vPosition;
+varying vec3 vNormal;
 
-vec3 makeDiffTerm(vec3 matDiffuse, inout vec3 accumLight)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
 {
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0);
-    vec3 currColor;
-    if (_29.PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1)
+    vec3 localDiffuse = accumLight;
+    if (!applyLight)
     {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = clamp(dot(normalizedN, -_49.uSunDirAndFogStart.xyz), 0.0, 1.0);
-        float nDotUp = dot(normalizedN, _49.uViewUp.xyz);
-        vec4 AmbientLight = _49.uAmbientLight;
-        vec3 adjAmbient = AmbientLight.xyz;
-        vec3 adjHorizAmbient = AmbientLight.xyz;
-        vec3 adjGroundAmbient = AmbientLight.xyz;
+        return matDiffuse;
+    }
+    vec3 lDiffuse = vec3(0.0);
+    vec3 normalizedN = normalize(vNormal_1);
+    vec3 currColor;
+    if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+    {
+        float nDotL = clamp(dot(normalizedN, -sceneParams.extLight.uExteriorDirectColorDir.xyz), 0.0, 1.0);
+        float nDotUp = dot(normalizedN, sceneParams.uViewUp.xyz);
+        vec3 adjAmbient = sceneParams.extLight.uExteriorAmbientColor.xyz + precomputedLight;
+        vec3 adjHorizAmbient = sceneParams.extLight.uExteriorHorizontAmbientColor.xyz + precomputedLight;
+        vec3 adjGroundAmbient = sceneParams.extLight.uExteriorGroundAmbientColor.xyz + precomputedLight;
         if (nDotUp >= 0.0)
         {
             currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
@@ -3889,18 +2199,30 @@ vec3 makeDiffTerm(vec3 matDiffuse, inout vec3 accumLight)
         }
         vec3 skyColor = currColor * 1.10000002384185791015625;
         vec3 groundColor = currColor * 0.699999988079071044921875;
-        lDiffuse = _49.uSunColorAndFogEnd.xyz * nDotL;
+        lDiffuse = sceneParams.extLight.uExteriorDirectColor.xyz * nDotL;
         currColor = mix(groundColor, skyColor, vec3(0.5 + (0.5 * nDotL)));
     }
-    else
+    if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0.0)
     {
-        currColor = vec3(1.0);
-        accumLight = vec3(0.0);
-        mult = 1.0;
+        float nDotL_1 = clamp(dot(normalizedN, -sceneParams.uInteriorSunDir.xyz), 0.0, 1.0);
+        vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL_1;
+        vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
+        if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+        {
+            lDiffuse = mix(lDiffuseInterior, lDiffuse, vec3(interiorExteriorBlend));
+            currColor = mix(interiorAmbient, currColor, vec3(interiorExteriorBlend));
+        }
+        else
+        {
+            lDiffuse = lDiffuseInterior;
+            currColor = interiorAmbient;
+        }
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * accumLight;
-    return sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm);
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
+    vec3 specTerm = vec3(0.0);
+    vec3 emTerm = vec3(0.0);
+    return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
 
 void main()
@@ -3917,23 +2239,23 @@ void main()
     vec4 finalColor = vec4(0.0);
     vec4 meshResColor = vDiffuseColor;
     vec3 accumLight;
-    if (_29.PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1)
+    if (_246.PixelShader_UnFogged_IsAffectedByLight.z == 1)
     {
         vec3 vPos3 = vPosition;
         vec3 vNormal3 = normalize(vNormal);
         vec3 lightColor = vec3(0.0);
-        int count = int(_29.pc_lights[0].attenuation.w);
+        int count = int(_271.pc_lights[0].attenuation.w);
         LocalLight lightRecord;
         for (int index = 0; index < 4; index++)
         {
-            if (index >= _29.PixelShader_UnFogged_IsAffectedByLight_LightCount.w)
+            if (index >= _271.lightCount.x)
             {
                 break;
             }
-            lightRecord.color = _29.pc_lights[index].color;
-            lightRecord.position = _29.pc_lights[index].position;
-            lightRecord.attenuation = _29.pc_lights[index].attenuation;
-            vec3 vectorToLight = (_239.uLookAtMat * (_247.uPlacementMat * lightRecord.position)).xyz - vPos3;
+            lightRecord.color = _271.pc_lights[index].color;
+            lightRecord.position = _271.pc_lights[index].position;
+            lightRecord.attenuation = _271.pc_lights[index].attenuation;
+            vec3 vectorToLight = (_310.scene.uLookAtMat * (_318.uPlacementMat * lightRecord.position)).xyz - vPos3;
             float distanceToLightSqr = dot(vectorToLight, vectorToLight);
             float distanceToLightInv = inversesqrt(distanceToLightSqr);
             float distanceToLight = distanceToLightSqr * distanceToLightInv;
@@ -3943,8 +2265,8 @@ void main()
             vec3 attenuatedColor = (lightRecord.color.xyz * attenuation) * attenuationRec.y;
             lightColor += vec3((attenuatedColor * attenuatedColor) * diffuseTerm1);
         }
-        vec3 _319 = clamp(lightColor, vec3(0.0), vec3(1.0));
-        meshResColor = vec4(_319.x, _319.y, _319.z, meshResColor.w);
+        vec3 _389 = clamp(lightColor, vec3(0.0), vec3(1.0));
+        meshResColor = vec4(_389.x, _389.y, _389.z, meshResColor.w);
         accumLight = meshResColor.xyz;
     }
     float finalOpacity = 0.0;
@@ -3954,7 +2276,7 @@ void main()
     genericParams[0] = vec4(1.0);
     genericParams[1] = vec4(1.0);
     genericParams[2] = vec4(1.0);
-    int uPixelShader = _29.PixelShader_UnFogged_IsAffectedByLight_LightCount.x;
+    int uPixelShader = _246.PixelShader_UnFogged_IsAffectedByLight.x;
     vec3 matDiffuse;
     float opacity;
     #if (FRAGMENTSHADER == 0)
@@ -3969,6 +2291,7 @@ void main()
     #endif
     #if (FRAGMENTSHADER == 2)
     matDiffuse = ((vDiffuseColor.xyz * 2.0) * tex.xyz) * tex2.xyz;
+    opacity = tex2.w * vDiffuseColor.w;
     opacity = tex2.w * vDiffuseColor.w;
     finalOpacity = opacity * visParams.x;
     #endif
@@ -4149,10 +2472,25 @@ void main()
     finalOpacity = opacity * visParams.x;
     #endif
     vec3 param = matDiffuse;
-    vec3 param_1 = accumLight;
-    vec3 _1396 = makeDiffTerm(param, param_1);
-    finalColor = vec4(_1396 + specular, finalOpacity);
-    if (finalColor.w < _29.uFogColorAndAlphaTest.w)
+    vec3 param_1 = vNormal;
+    bool param_2 = _246.PixelShader_UnFogged_IsAffectedByLight.z > 0;
+    float param_3 = _271.interiorExteriorBlend.x;
+    SceneWideParams param_4;
+    param_4.uLookAtMat = _310.scene.uLookAtMat;
+    param_4.uPMatrix = _310.scene.uPMatrix;
+    param_4.uViewUp = _310.scene.uViewUp;
+    param_4.uInteriorSunDir = _310.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _310.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _310.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _310.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _310.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _310.scene.extLight.uExteriorDirectColorDir;
+    InteriorLightParam param_5;
+    param_5.uInteriorAmbientColorAndApplyInteriorLight = _271.intLight.uInteriorAmbientColorAndApplyInteriorLight;
+    param_5.uInteriorDirectColorAndApplyExteriorLight = _271.intLight.uInteriorDirectColorAndApplyExteriorLight;
+    vec3 param_6 = accumLight;
+    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0)), finalOpacity);
+    if (finalColor.w < _246.uFogColorAndAlphaTest.w)
     {
         discard;
     }
@@ -4174,6 +2512,26 @@ varying vec4 vPos;
 void main()
 {
     gl_FragData[0] = vec4(_13.uColor, 1.0);
+}
+
+
+#version 100
+
+struct meshWideBlockPS
+{
+    vec4 color;
+};
+
+uniform meshWideBlockPS _12;
+
+uniform sampler2D uTexture;
+
+varying vec2 vTextCoords;
+varying vec3 vPosition;
+
+void main()
+{
+    gl_FragData[0] = vec4(_12.color.xyz * texture2D(uTexture, vTextCoords).xyz, 0.699999988079071044921875);
 }
 
 
@@ -4230,13 +2588,30 @@ void main()
 
 #version 100
 
-struct sceneWideBlockVSPS
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
 {
     mat4 uLookAtMat;
     mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
 };
 
-uniform sceneWideBlockVSPS _41;
+struct sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+};
+
+uniform sceneWideBlockVSPS _43;
 
 attribute vec3 aPosition;
 varying vec4 vColor;
@@ -4249,7 +2624,7 @@ void main()
     vec4 aPositionVec4 = vec4(aPosition, 1.0);
     vColor = aColor;
     vTexcoord0 = aTexcoord0;
-    gl_Position = (_41.uPMatrix * _41.uLookAtMat) * aPositionVec4;
+    gl_Position = (_43.scene.uPMatrix * _43.scene.uLookAtMat) * aPositionVec4;
 }
 
 
@@ -4339,10 +2714,10 @@ void main()
 
 struct meshWideBlockPS
 {
-    int waterType;
+    ivec4 waterTypeV;
 };
 
-uniform meshWideBlockPS _9;
+uniform meshWideBlockPS _12;
 
 uniform sampler2D uTexture;
 
@@ -4350,25 +2725,26 @@ varying vec3 vPosition;
 
 void main()
 {
-    if (_9.waterType == 13)
+    int waterType = _12.waterTypeV.x;
+    if (waterType == 13)
     {
         gl_FragData[0] = vec4(0.0, 0.0, 0.300000011920928955078125, 0.5);
     }
     else
     {
-        if (_9.waterType == 14)
+        if (waterType == 14)
         {
             gl_FragData[0] = vec4(0.0, 0.0, 0.800000011920928955078125, 0.800000011920928955078125);
         }
         else
         {
-            if (_9.waterType == 19)
+            if (waterType == 19)
             {
                 gl_FragData[0] = vec4(0.300000011920928955078125, 0.0, 0.0, 0.5);
             }
             else
             {
-                if (_9.waterType == 20)
+                if (waterType == 20)
                 {
                     gl_FragData[0] = vec4(0.0, 0.5, 0.0, 0.5);
                 }
@@ -4394,50 +2770,13 @@ struct modelWideBlockPS
     int uNewFormula;
 };
 
-uniform modelWideBlockPS _33;
+uniform modelWideBlockPS _65;
 
 uniform sampler2D uDiffuseTexture;
 uniform sampler2D uNormalTexture;
 
 varying vec2 vChunkCoords;
 varying vec3 vPosition;
-
-vec3 makeDiffTerm(vec3 matDiffuse, vec3 vNormal)
-{
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0);
-    vec3 currColor;
-    if (true)
-    {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -_33.uSunDir_FogStart.xyz);
-        float nDotUp = dot(normalizedN, _33.uViewUp.xyz);
-        vec4 AmbientLight = _33.uAmbientLight;
-        vec3 adjAmbient = AmbientLight.xyz;
-        vec3 adjHorizAmbient = AmbientLight.xyz;
-        vec3 adjGroundAmbient = AmbientLight.xyz;
-        if (nDotUp >= 0.0)
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor = mix(adjHorizAmbient, adjGroundAmbient, vec3(-nDotUp));
-        }
-        vec3 skyColor = currColor * 1.10000002384185791015625;
-        vec3 groundColor = currColor * 0.699999988079071044921875;
-        lDiffuse = _33.uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0);
-        currColor = mix(groundColor, skyColor, vec3(0.5 + (0.5 * nDotL)));
-    }
-    else
-    {
-        currColor = vec3(1.0);
-        mult = 1.0;
-    }
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = vec3(0.0);
-    return sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm);
-}
 
 void main()
 {
@@ -4446,18 +2785,10 @@ void main()
     vec3 matDiffuse = texDiffuse.xyz;
     vec3 vNormal = (texture2D(uNormalTexture, TextureCoords).xyz * 2.0) - vec3(1.0);
     vNormal = vec3(-vNormal.z, -vNormal.x, vNormal.y);
-    vec3 param = matDiffuse;
-    vec3 param_1 = vNormal;
-    vec4 finalColor = vec4(makeDiffTerm(param, param_1), 1.0);
-    float specBlend = texDiffuse.w;
-    vec3 halfVec = -normalize(_33.uSunDir_FogStart.xyz + normalize(vPosition));
-    vec3 lSpecular = _33.uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
-    vec3 specTerm = vec3(specBlend) * lSpecular;
-    vec3 _208 = finalColor.xyz + specTerm;
-    finalColor = vec4(_208.x, _208.y, _208.z, finalColor.w);
-    vec3 fogColor = _33.FogColor.xyz;
-    float fog_start = _33.uSunDir_FogStart.w;
-    float fog_end = _33.uSunColor_uFogEnd.w;
+    vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
+    vec3 fogColor = _65.FogColor.xyz;
+    float fog_start = _65.uSunDir_FogStart.w;
+    float fog_end = _65.uSunColor_uFogEnd.w;
     float fog_rate = 1.5;
     float fog_bias = 0.00999999977648258209228515625;
     float distanceToCamera = length(vPosition);
@@ -4466,8 +2797,8 @@ void main()
     float heightFog = 1.0;
     expFog += heightFog;
     float endFadeFog = clamp((fog_end - distanceToCamera) / (0.699999988079071044921875 * fog_end), 0.0, 1.0);
-    vec3 _262 = mix(fogColor, finalColor.xyz, vec3(min(expFog, endFadeFog)));
-    finalColor = vec4(_262.x, _262.y, _262.z, finalColor.w);
+    vec3 _123 = mix(fogColor, finalColor.xyz, vec3(min(expFog, endFadeFog)));
+    finalColor = vec4(_123.x, _123.y, _123.z, finalColor.w);
     finalColor.w = 1.0;
     gl_FragData[0] = finalColor;
 }
@@ -4529,20 +2860,37 @@ void main()
 
 #version 100
 
-struct sceneWideBlockVSPS
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
 {
     mat4 uLookAtMat;
     mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
 };
 
-uniform sceneWideBlockVSPS _53;
+struct sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+};
+
+uniform sceneWideBlockVSPS _55;
 
 struct meshWideBlockVS
 {
     vec4 uPos;
 };
 
-uniform meshWideBlockVS _100;
+uniform meshWideBlockVS _102;
 
 attribute float aIndex;
 attribute vec3 aHeight;
@@ -4566,15 +2914,54 @@ void main()
     }
     vec4 worldPoint = vec4(aHeight, 1.0);
     vChunkCoords = vec2(iX, iY);
-    vPosition = (_53.uLookAtMat * worldPoint).xyz;
+    vPosition = (_55.scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;
     vVertexLighting = aVertexLighting.xyz;
-    vNormal = (_53.uLookAtMat * vec4(aNormal, 0.0)).xyz;
-    gl_Position = (_53.uPMatrix * _53.uLookAtMat) * worldPoint;
+    vNormal = (_55.scene.uLookAtMat * vec4(aNormal, 0.0)).xyz;
+    gl_Position = (_55.scene.uPMatrix * _55.scene.uLookAtMat) * worldPoint;
 }
 
 
 #version 100
+
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+struct InteriorLightParam
+{
+    vec4 uInteriorAmbientColorAndApplyInteriorLight;
+    vec4 uInteriorDirectColorAndApplyExteriorLight;
+};
+
+struct meshWideBlockPS
+{
+    vec4 uHeightScale;
+    vec4 uHeightOffset;
+};
+
+uniform meshWideBlockPS _251;
+
+struct sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+};
+
+uniform sceneWideBlockVSPS _427;
 
 struct modelWideBlockPS
 {
@@ -4585,15 +2972,7 @@ struct modelWideBlockPS
     vec4 FogColor;
 };
 
-uniform modelWideBlockPS _33;
-
-struct meshWideBlockPS
-{
-    vec4 uHeightScale;
-    vec4 uHeightOffset;
-};
-
-uniform meshWideBlockPS _184;
+uniform modelWideBlockPS _514;
 
 uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayerHeight0;
@@ -4605,26 +2984,29 @@ uniform sampler2D uLayer1;
 uniform sampler2D uLayer2;
 uniform sampler2D uLayer3;
 
-varying vec3 vNormal;
-varying vec3 vVertexLighting;
 varying vec2 vChunkCoords;
 varying vec4 vColor;
+varying vec3 vNormal;
+varying vec3 vVertexLighting;
 varying vec3 vPosition;
 
-vec3 makeDiffTerm(vec3 matDiffuse)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
 {
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0);
-    vec3 currColor;
-    if (true)
+    vec3 localDiffuse = accumLight;
+    if (!applyLight)
     {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -_33.uSunDir_FogStart.xyz);
-        float nDotUp = dot(normalizedN, _33.uViewUp.xyz);
-        vec4 AmbientLight = _33.uAmbientLight;
-        vec3 adjAmbient = AmbientLight.xyz;
-        vec3 adjHorizAmbient = AmbientLight.xyz;
-        vec3 adjGroundAmbient = AmbientLight.xyz;
+        return matDiffuse;
+    }
+    vec3 lDiffuse = vec3(0.0);
+    vec3 normalizedN = normalize(vNormal_1);
+    vec3 currColor;
+    if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+    {
+        float nDotL = clamp(dot(normalizedN, -sceneParams.extLight.uExteriorDirectColorDir.xyz), 0.0, 1.0);
+        float nDotUp = dot(normalizedN, sceneParams.uViewUp.xyz);
+        vec3 adjAmbient = sceneParams.extLight.uExteriorAmbientColor.xyz + precomputedLight;
+        vec3 adjHorizAmbient = sceneParams.extLight.uExteriorHorizontAmbientColor.xyz + precomputedLight;
+        vec3 adjGroundAmbient = sceneParams.extLight.uExteriorGroundAmbientColor.xyz + precomputedLight;
         if (nDotUp >= 0.0)
         {
             currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
@@ -4635,17 +3017,30 @@ vec3 makeDiffTerm(vec3 matDiffuse)
         }
         vec3 skyColor = currColor * 1.10000002384185791015625;
         vec3 groundColor = currColor * 0.699999988079071044921875;
-        lDiffuse = _33.uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0);
+        lDiffuse = sceneParams.extLight.uExteriorDirectColor.xyz * nDotL;
         currColor = mix(groundColor, skyColor, vec3(0.5 + (0.5 * nDotL)));
     }
-    else
+    if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0.0)
     {
-        currColor = vec3(1.0);
-        mult = 1.0;
+        float nDotL_1 = clamp(dot(normalizedN, -sceneParams.uInteriorSunDir.xyz), 0.0, 1.0);
+        vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL_1;
+        vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
+        if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+        {
+            lDiffuse = mix(lDiffuseInterior, lDiffuse, vec3(interiorExteriorBlend));
+            currColor = mix(interiorAmbient, currColor, vec3(interiorExteriorBlend));
+        }
+        else
+        {
+            lDiffuse = lDiffuseInterior;
+            currColor = interiorAmbient;
+        }
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vVertexLighting;
-    return sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm);
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
+    vec3 specTerm = vec3(0.0);
+    vec3 emTerm = vec3(0.0);
+    return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
 
 void main()
@@ -4659,10 +3054,10 @@ void main()
     vec2 tcLayer3 = vTexCoord;
     float minusAlphaBlendSum = 1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0);
     vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
-    float weightedTexture_x = minusAlphaBlendSum * ((texture2D(uLayerHeight0, tcLayer0).w * _184.uHeightScale.x) + _184.uHeightOffset.x);
-    float weightedTexture_y = weightsVector.y * ((texture2D(uLayerHeight1, tcLayer1).w * _184.uHeightScale.y) + _184.uHeightOffset.y);
-    float weightedTexture_z = weightsVector.z * ((texture2D(uLayerHeight2, tcLayer2).w * _184.uHeightScale.z) + _184.uHeightOffset.z);
-    float weightedTexture_w = weightsVector.w * ((texture2D(uLayerHeight3, tcLayer3).w * _184.uHeightScale.w) + _184.uHeightOffset.w);
+    float weightedTexture_x = minusAlphaBlendSum * ((texture2D(uLayerHeight0, tcLayer0).w * _251.uHeightScale.x) + _251.uHeightOffset.x);
+    float weightedTexture_y = weightsVector.y * ((texture2D(uLayerHeight1, tcLayer1).w * _251.uHeightScale.y) + _251.uHeightOffset.y);
+    float weightedTexture_z = weightsVector.z * ((texture2D(uLayerHeight2, tcLayer2).w * _251.uHeightScale.z) + _251.uHeightOffset.z);
+    float weightedTexture_w = weightsVector.w * ((texture2D(uLayerHeight3, tcLayer3).w * _251.uHeightScale.w) + _251.uHeightOffset.w);
     vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
     vec4 weights_temp = weights * (vec4(1.0) - clamp(vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights, vec4(0.0), vec4(1.0)));
     vec4 weightsNormalized = weights_temp / vec4(dot(vec4(1.0), weights_temp));
@@ -4681,13 +3076,28 @@ void main()
     vec4 final = vec4(matDiffuse_3, specBlend_3);
     vec3 matDiffuse = final.xyz * vColor.xyz;
     vec3 param = matDiffuse;
-    vec4 finalColor = vec4(makeDiffTerm(param), 1.0);
+    vec3 param_1 = vNormal;
+    bool param_2 = true;
+    float param_3 = 0.0;
+    SceneWideParams param_4;
+    param_4.uLookAtMat = _427.scene.uLookAtMat;
+    param_4.uPMatrix = _427.scene.uPMatrix;
+    param_4.uViewUp = _427.scene.uViewUp;
+    param_4.uInteriorSunDir = _427.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _427.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _427.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _427.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _427.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _427.scene.extLight.uExteriorDirectColorDir;
+    InteriorLightParam param_5 = InteriorLightParam(vec4(0.0), vec4(0.0, 0.0, 0.0, 1.0));
+    vec3 param_6 = vVertexLighting;
+    vec4 finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0)), 1.0);
     float specBlend = final.w;
-    vec3 halfVec = -normalize(_33.uSunDir_FogStart.xyz + normalize(vPosition));
-    vec3 lSpecular = _33.uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
+    vec3 halfVec = -normalize(_427.scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition));
+    vec3 lSpecular = _427.scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
     vec3 specTerm = vec3(specBlend) * lSpecular;
-    vec3 _392 = finalColor.xyz + specTerm;
-    finalColor = vec4(_392.x, _392.y, _392.z, finalColor.w);
+    vec3 _505 = finalColor.xyz + specTerm;
+    finalColor = vec4(_505.x, _505.y, _505.z, finalColor.w);
     finalColor.w = 1.0;
     gl_FragData[0] = finalColor;
 }
@@ -4712,6 +3122,24 @@ void main()
 
 #version 100
 
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
 struct modelWideBlockVS
 {
     mat4 uPlacementMat;
@@ -4731,11 +3159,10 @@ uniform meshWideBlockVS _230;
 
 struct sceneWideBlockVSPS
 {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
+    SceneWideParams scene;
 };
 
-uniform sceneWideBlockVSPS _237;
+uniform sceneWideBlockVSPS _239;
 
 attribute vec3 aPosition;
 attribute vec4 boneWeights;
@@ -4755,7 +3182,7 @@ mat3 blizzTranspose(mat4 value)
     return mat3(vec3(value[0].xyz), vec3(value[1].xyz), vec3(value[2].xyz));
 }
 
-vec2 posToTexCoord(vec3 cameraPoint, vec3 normal)
+vec2 posToTexCoord(inout vec3 cameraPoint, vec3 normal)
 {
     vec3 normPos_495 = normalize(cameraPoint);
     vec3 temp_500 = normPos_495 - (normal * (2.0 * dot(normPos_495, normal)));
@@ -4763,7 +3190,7 @@ vec2 posToTexCoord(vec3 cameraPoint, vec3 normal)
     return (normalize(temp_657).xy * 0.5) + vec2(0.5);
 }
 
-float edgeScan(vec3 position, vec3 normal)
+float edgeScan(inout vec3 position, vec3 normal)
 {
     float dotProductClamped = clamp(dot(-normalize(position), normal), 0.0, 1.0);
     return clamp(((2.7000000476837158203125 * dotProductClamped) * dotProductClamped) - 0.4000000059604644775390625, 0.0, 1.0);
@@ -4784,9 +3211,9 @@ void main()
     boneTransformMat = mat4(boneTransformMat[0] + _207[0], boneTransformMat[1] + _207[1], boneTransformMat[2] + _207[2], boneTransformMat[3] + _207[3]);
     mat4 placementMat = _133.uPlacementMat;
     vec4 lDiffuseColor = _230.color_Transparency;
-    mat4 cameraMatrix = (_237.uLookAtMat * placementMat) * boneTransformMat;
+    mat4 cameraMatrix = (_239.scene.uLookAtMat * placementMat) * boneTransformMat;
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
-    mat4 param = _237.uLookAtMat;
+    mat4 param = _239.scene.uLookAtMat;
     mat4 param_1 = placementMat;
     mat4 param_2 = boneTransformMat;
     mat3 viewModelMatTransposed = (blizzTranspose(param) * blizzTranspose(param_1)) * blizzTranspose(param_2);
@@ -4795,10 +3222,12 @@ void main()
     vec4 combinedColorHalved = combinedColor * 0.5;
     vec3 param_3 = cameraPoint.xyz;
     vec3 param_4 = normal;
-    vec2 envCoord = posToTexCoord(param_3, param_4);
+    vec2 _285 = posToTexCoord(param_3, param_4);
+    vec2 envCoord = _285;
     vec3 param_5 = cameraPoint.xyz;
     vec3 param_6 = normal;
-    float edgeScanVal = edgeScan(param_5, param_6);
+    float _292 = edgeScan(param_5, param_6);
+    float edgeScanVal = _292;
     vTexCoord2 = vec2(0.0);
     vTexCoord3 = vec2(0.0);
     int uVertexShader = _230.vertexShader_IsAffectedByLight.x;
@@ -4897,7 +3326,7 @@ void main()
     vDiffuseColor = vec4(combinedColor.xyz * 0.5, combinedColor.w);
     vTexCoord = (_230.uTextMat[0] * vec4(aTexCoord, 0.0, 1.0)).xy;
     #endif
-    gl_Position = _237.uPMatrix * cameraPoint;
+    gl_Position = _239.scene.uPMatrix * cameraPoint;
     vNormal = normal;
     vPosition = cameraPoint.xyz;
 }
@@ -4905,27 +3334,44 @@ void main()
 
 #version 100
 
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
 struct modelWideBlockVS
 {
     mat4 uPlacementMat;
 };
 
-uniform modelWideBlockVS _58;
+uniform modelWideBlockVS _93;
 
 struct sceneWideBlockVSPS
 {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
+    SceneWideParams scene;
 };
 
-uniform sceneWideBlockVSPS _75;
+uniform sceneWideBlockVSPS _110;
 
 struct meshWideBlockVS
 {
     ivec4 VertexShader_UseLitColor;
 };
 
-uniform meshWideBlockVS _164;
+uniform meshWideBlockVS _181;
 
 attribute vec3 aPosition;
 varying vec4 vPosition;
@@ -4942,7 +3388,12 @@ attribute vec2 aTexCoord2;
 varying vec2 vTexCoord3;
 attribute vec2 aTexCoord3;
 
-vec2 posToTexCoord(vec3 cameraPoint, vec3 normal)
+mat3 blizzTranspose(mat4 value)
+{
+    return mat3(vec3(value[0].xyz), vec3(value[1].xyz), vec3(value[2].xyz));
+}
+
+vec2 posToTexCoord(inout vec3 cameraPoint, vec3 normal)
 {
     vec3 normPos_495 = normalize(cameraPoint);
     vec3 temp_500 = normPos_495 - (normal * (2.0 * dot(normPos_495, normal)));
@@ -4952,16 +3403,18 @@ vec2 posToTexCoord(vec3 cameraPoint, vec3 normal)
 
 void main()
 {
-    vec4 worldPoint = _58.uPlacementMat * vec4(aPosition, 1.0);
-    vec4 cameraPoint = _75.uLookAtMat * worldPoint;
-    mat4 viewModelMat = _75.uLookAtMat * _58.uPlacementMat;
-    mat3 viewModelMatTransposed = mat3(vec3(viewModelMat[0].xyz), vec3(viewModelMat[1].xyz), vec3(viewModelMat[2].xyz));
-    gl_Position = _75.uPMatrix * cameraPoint;
+    vec4 worldPoint = _93.uPlacementMat * vec4(aPosition, 1.0);
+    vec4 cameraPoint = _110.scene.uLookAtMat * worldPoint;
+    mat4 viewModelMat = _110.scene.uLookAtMat * _93.uPlacementMat;
+    mat4 param = _110.scene.uLookAtMat;
+    mat4 param_1 = _93.uPlacementMat;
+    mat3 viewModelMatTransposed = blizzTranspose(param) * blizzTranspose(param_1);
+    gl_Position = _110.scene.uPMatrix * cameraPoint;
     vPosition = vec4(cameraPoint.xyz, aColor.w);
     vNormal = normalize(viewModelMatTransposed * aNormal);
     vColor = vec4(0.5, 0.499989986419677734375, 0.5, 1.0);
     vColor2 = vec4(aColor.zyx * 2.0, aColor2.w);
-    int uVertexShader = _164.VertexShader_UseLitColor.x;
+    int uVertexShader = _181.VertexShader_UseLitColor.x;
     #if (VERTEXSHADER == (-1))
     vTexCoord = aTexCoord;
     vTexCoord2 = aTexCoord2;
@@ -4979,9 +3432,10 @@ void main()
     #endif
     #if (VERTEXSHADER == 2)
     vTexCoord = aTexCoord;
-    vec3 param = vPosition.xyz;
-    vec3 param_1 = vNormal;
-    vTexCoord2 = posToTexCoord(param, param_1);
+    vec3 param_2 = vPosition.xyz;
+    vec3 param_3 = vNormal;
+    vec2 _234 = posToTexCoord(param_2, param_3);
+    vTexCoord2 = _234;
     vTexCoord3 = aTexCoord3;
     #endif
     #if (VERTEXSHADER == 3)
@@ -5041,6 +3495,45 @@ void main()
 {
     gl_Position = ((_19.uPMatrix * _19.uLookAtMat) * _29.uPlacementMat) * vec4(aPosition, 1.0);
     gl_PointSize = 10.0;
+}
+
+
+#version 100
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
+
+uniform sampler2D Texture;
+
+varying vec4 Frag_Color;
+varying vec2 Frag_UV;
+
+void main()
+{
+    gl_FragData[0] = Frag_Color * texture2D(Texture, Frag_UV);
+}
+
+
+#version 100
+
+struct modelWideBlockVS
+{
+    mat4 ProjMtx;
+};
+
+uniform modelWideBlockVS _30;
+
+varying vec2 Frag_UV;
+attribute vec2 UV;
+varying vec4 Frag_Color;
+attribute vec4 Color;
+attribute vec2 Position;
+
+void main()
+{
+    Frag_UV = UV;
+    Frag_Color = Color;
+    gl_Position = _30.ProjMtx * vec4(Position, 0.0, 1.0);
 }
 
 
@@ -5111,56 +3604,81 @@ void main()
 
 #version 100
 
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+struct InteriorLightParam
+{
+    vec4 uInteriorAmbientColorAndApplyInteriorLight;
+    vec4 uInteriorDirectColorAndApplyExteriorLight;
+};
+
 struct meshWideBlockPS
 {
-    vec4 uViewUp;
-    vec4 uSunDir_FogStart;
-    vec4 uSunColor_uFogEnd;
-    vec4 uAmbientLight;
-    vec4 uAmbientLight2AndIsBatchA;
     ivec4 UseLitColor_EnableAlpha_PixelShader;
     vec4 FogColor_AlphaTest;
 };
 
-uniform meshWideBlockPS _21;
+uniform meshWideBlockPS _220;
 
-struct modelWideBlockVS
+struct sceneWideBlockVSPS
 {
-    mat4 uPlacementMat;
+    SceneWideParams scene;
 };
 
-uniform modelWideBlockVS _895;
+uniform sceneWideBlockVSPS _688;
+
+struct modelWideBlockPS
+{
+    InteriorLightParam intLight;
+};
+
+uniform modelWideBlockPS _692;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
 
-varying vec3 vNormal;
-varying vec4 vColor2;
-varying vec4 vPosition;
 varying vec2 vTexCoord;
 varying vec2 vTexCoord2;
 varying vec2 vTexCoord3;
 varying vec4 vColor;
+varying vec4 vColor2;
+varying vec3 vNormal;
+varying vec4 vPosition;
 
-vec3 makeDiffTerm(vec3 matDiffuse)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
 {
-    vec3 lDiffuse = vec3(0.0);
-    vec3 currColor;
-    if (_21.UseLitColor_EnableAlpha_PixelShader.x == 1)
+    vec3 localDiffuse = accumLight;
+    if (!applyLight)
     {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -_21.uSunDir_FogStart.xyz);
-        float nDotUp = dot(normalizedN, _21.uViewUp.xyz);
-        vec3 precomputed = vColor2.xyz;
-        vec3 ambientColor = _21.uAmbientLight.xyz;
-        if (_21.uAmbientLight2AndIsBatchA.w > 0.0)
-        {
-            ambientColor = mix(_21.uAmbientLight.xyz, _21.uAmbientLight2AndIsBatchA.xyz, vec3(vPosition.w));
-        }
-        vec3 adjAmbient = ambientColor + precomputed;
-        vec3 adjHorizAmbient = ambientColor + precomputed;
-        vec3 adjGroundAmbient = ambientColor + precomputed;
+        return matDiffuse;
+    }
+    vec3 lDiffuse = vec3(0.0);
+    vec3 normalizedN = normalize(vNormal_1);
+    vec3 currColor;
+    if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+    {
+        float nDotL = clamp(dot(normalizedN, -sceneParams.extLight.uExteriorDirectColorDir.xyz), 0.0, 1.0);
+        float nDotUp = dot(normalizedN, sceneParams.uViewUp.xyz);
+        vec3 adjAmbient = sceneParams.extLight.uExteriorAmbientColor.xyz + precomputedLight;
+        vec3 adjHorizAmbient = sceneParams.extLight.uExteriorHorizontAmbientColor.xyz + precomputedLight;
+        vec3 adjGroundAmbient = sceneParams.extLight.uExteriorGroundAmbientColor.xyz + precomputedLight;
         if (nDotUp >= 0.0)
         {
             currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
@@ -5171,16 +3689,30 @@ vec3 makeDiffTerm(vec3 matDiffuse)
         }
         vec3 skyColor = currColor * 1.10000002384185791015625;
         vec3 groundColor = currColor * 0.699999988079071044921875;
+        lDiffuse = sceneParams.extLight.uExteriorDirectColor.xyz * nDotL;
         currColor = mix(groundColor, skyColor, vec3(0.5 + (0.5 * nDotL)));
-        lDiffuse = _21.uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0);
     }
-    else
+    if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0.0)
     {
-        currColor = vec3(1.0) * _21.uAmbientLight.xyz;
+        float nDotL_1 = clamp(dot(normalizedN, -sceneParams.uInteriorSunDir.xyz), 0.0, 1.0);
+        vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL_1;
+        vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
+        if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0.0)
+        {
+            lDiffuse = mix(lDiffuseInterior, lDiffuse, vec3(interiorExteriorBlend));
+            currColor = mix(interiorAmbient, currColor, vec3(interiorExteriorBlend));
+        }
+        else
+        {
+            lDiffuse = lDiffuseInterior;
+            currColor = interiorAmbient;
+        }
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vec3(0.0);
-    return sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm);
+    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
+    vec3 specTerm = vec3(0.0);
+    vec3 emTerm = vec3(0.0);
+    return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
 
 void main()
@@ -5188,156 +3720,187 @@ void main()
     vec4 tex = texture2D(uTexture, vTexCoord);
     vec4 tex2 = texture2D(uTexture2, vTexCoord2);
     vec4 tex3 = texture2D(uTexture3, vTexCoord3);
-    if (_21.UseLitColor_EnableAlpha_PixelShader.y == 1)
+    if (_220.UseLitColor_EnableAlpha_PixelShader.y == 1)
     {
         if ((tex.w - 0.501960813999176025390625) < 0.0)
         {
             discard;
         }
     }
-    int uPixelShader = _21.UseLitColor_EnableAlpha_PixelShader.z;
+    int uPixelShader = _220.UseLitColor_EnableAlpha_PixelShader.z;
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
+    vec3 matDiffuse = vec3(0.0);
+    vec3 env = vec3(0.0);
+    float finalOpacity = 0.0;
     #if (FRAGMENTSHADER == (-1))
-    vec3 param = (tex.xyz * vColor.xyz) + (tex2.xyz * vColor2.zyx);
-    finalColor = vec4(makeDiffTerm(param), tex.w);
+    matDiffuse = (tex.xyz * vColor.xyz) + (tex2.xyz * vColor2.zyx);
+    finalOpacity = tex.w;
     #endif
     #if (FRAGMENTSHADER == 0)
-    vec3 matDiffuse = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_1 = matDiffuse;
-    finalColor = vec4(makeDiffTerm(param_1), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 1)
-    vec3 matDiffuse_1 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_2 = matDiffuse_1;
-    finalColor = vec4(makeDiffTerm(param_2), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 2)
-    vec3 matDiffuse_2 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_3 = matDiffuse_2;
-    finalColor = vec4(makeDiffTerm(param_3), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 3)
-    vec3 matDiffuse_3 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 env = tex2.xyz * tex.w;
-    vec3 param_4 = matDiffuse_3;
-    finalColor = vec4(makeDiffTerm(param_4) + env, vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    env = tex2.xyz * tex.w;
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 4)
-    vec3 matDiffuse_4 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_5 = matDiffuse_4;
-    finalColor = vec4(makeDiffTerm(param_5), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 5)
-    vec3 matDiffuse_5 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 env_1 = (tex.xyz * tex.w) * tex2.xyz;
-    vec3 param_6 = matDiffuse_5;
-    finalColor = vec4(makeDiffTerm(param_6) + env_1, vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    env = (tex.xyz * tex.w) * tex2.xyz;
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 6)
     vec3 layer1 = tex.xyz;
     vec3 layer2 = mix(layer1, tex2.xyz, vec3(tex2.w));
-    vec3 matDiffuse_6 = (vColor.xyz * 2.0) * mix(layer2, layer1, vec3(vColor2.w));
-    vec3 param_7 = matDiffuse_6;
-    finalColor = vec4(makeDiffTerm(param_7), 1.0);
+    matDiffuse = (vColor.xyz * 2.0) * mix(layer2, layer1, vec3(vColor2.w));
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 7)
     vec4 colorMix = mix(tex2, tex, vec4(vColor2.w));
-    vec3 env_2 = (colorMix.xyz * colorMix.w) * tex3.xyz;
-    vec3 matDiffuse_7 = colorMix.xyz * (vColor.xyz * 2.0);
-    vec3 param_8 = matDiffuse_7;
-    finalColor = vec4(makeDiffTerm(param_8) + env_2, vColor.w);
+    matDiffuse = colorMix.xyz * (vColor.xyz * 2.0);
+    env = (colorMix.xyz * colorMix.w) * tex3.xyz;
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 8)
     vec3 layer1_1 = tex.xyz;
     vec3 layer2_1 = tex2.xyz;
-    vec3 matDiffuse_8 = (vColor.xyz * 2.0) * mix(layer2_1, layer1_1, vec3(vColor2.w));
-    vec3 param_9 = matDiffuse_8;
-    finalColor = vec4(makeDiffTerm(param_9), vColor.w);
+    matDiffuse = (vColor.xyz * 2.0) * mix(layer2_1, layer1_1, vec3(vColor2.w));
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 9)
-    vec3 matDiffuse_9 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 env_3 = (tex2.xyz * tex2.w) * vColor2.w;
-    vec3 param_10 = matDiffuse_9;
-    finalColor = vec4(makeDiffTerm(param_10) + env_3, vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    env = (tex2.xyz * tex2.w) * vColor2.w;
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 10)
     float mixFactor = clamp(tex3.w * vColor2.w, 0.0, 1.0);
-    vec3 matDiffuse_10 = (vColor.xyz * 2.0) * mix(mix((tex.xyz * tex2.xyz) * 2.0, tex3.xyz, vec3(mixFactor)), tex.xyz, vec3(tex.w));
-    vec3 param_11 = matDiffuse_10;
-    finalColor = vec4(makeDiffTerm(param_11), vColor.w);
+    matDiffuse = (vColor.xyz * 2.0) * mix(mix((tex.xyz * tex2.xyz) * 2.0, tex3.xyz, vec3(mixFactor)), tex.xyz, vec3(tex.w));
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 11)
-    vec3 matDiffuse_11 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 env_4 = ((tex.xyz * tex.w) * tex2.xyz) + ((tex3.xyz * tex3.w) * vColor2.w);
-    vec3 param_12 = matDiffuse_11;
-    finalColor = vec4(makeDiffTerm(param_12) + env_4, vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    env = ((tex.xyz * tex.w) * tex2.xyz) + ((tex3.xyz * tex3.w) * vColor2.w);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 12)
-    vec3 matDiffuse_12 = (vColor.xyz * 2.0) * mix(tex2.xyz, tex.xyz, vec3(vColor2.w));
-    vec3 param_13 = matDiffuse_12;
-    finalColor = vec4(makeDiffTerm(param_13), vColor.w);
+    matDiffuse = (vColor.xyz * 2.0) * mix(tex2.xyz, tex.xyz, vec3(vColor2.w));
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 13)
     vec3 t1diffuse = tex2.xyz * (1.0 - tex2.w);
-    vec3 matDiffuse_13 = (vColor.xyz * 2.0) * mix(t1diffuse, tex.xyz, vec3(vColor2.w));
-    vec3 env_5 = (tex2.xyz * tex2.w) * (1.0 - vColor2.w);
-    vec3 param_14 = matDiffuse_13;
-    finalColor = vec4(makeDiffTerm(param_14) + env_5, vColor.w);
+    matDiffuse = (vColor.xyz * 2.0) * mix(t1diffuse, tex.xyz, vec3(vColor2.w));
+    env = (tex2.xyz * tex2.w) * (1.0 - vColor2.w);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 13)
-    vec3 matDiffuse_14 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_15 = matDiffuse_14;
-    finalColor = vec4(makeDiffTerm(param_15), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 14)
-    vec3 matDiffuse_15 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_16 = matDiffuse_15;
-    finalColor = vec4(makeDiffTerm(param_16), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 15)
-    vec3 matDiffuse_16 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_17 = matDiffuse_16;
-    finalColor = vec4(makeDiffTerm(param_17), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 16)
-    vec3 matDiffuse_17 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_18 = matDiffuse_17;
-    finalColor = vec4(makeDiffTerm(param_18), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 17)
-    vec3 matDiffuse_18 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_19 = matDiffuse_18;
-    finalColor = vec4(makeDiffTerm(param_19), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 18)
-    vec3 matDiffuse_19 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_20 = matDiffuse_19;
-    finalColor = vec4(makeDiffTerm(param_20), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
     #if (FRAGMENTSHADER == 19)
-    vec3 matDiffuse_20 = tex.xyz * (vColor.xyz * 2.0);
-    vec3 param_21 = matDiffuse_20;
-    finalColor = vec4(makeDiffTerm(param_21), vColor.w);
+    matDiffuse = tex.xyz * (vColor.xyz * 2.0);
+    finalOpacity = vColor.w;
     #endif
-    if (finalColor.w < _21.FogColor_AlphaTest.w)
+    vec3 param = matDiffuse;
+    vec3 param_1 = vNormal;
+    bool param_2 = true;
+    float param_3 = vPosition.w;
+    SceneWideParams param_4;
+    param_4.uLookAtMat = _688.scene.uLookAtMat;
+    param_4.uPMatrix = _688.scene.uPMatrix;
+    param_4.uViewUp = _688.scene.uViewUp;
+    param_4.uInteriorSunDir = _688.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _688.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _688.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _688.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _688.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _688.scene.extLight.uExteriorDirectColorDir;
+    InteriorLightParam param_5;
+    param_5.uInteriorAmbientColorAndApplyInteriorLight = _692.intLight.uInteriorAmbientColorAndApplyInteriorLight;
+    param_5.uInteriorDirectColorAndApplyExteriorLight = _692.intLight.uInteriorDirectColorAndApplyExteriorLight;
+    vec3 param_6 = vec3(0.0);
+    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vColor2.xyz), finalOpacity);
+    if (finalColor.w < _220.FogColor_AlphaTest.w)
     {
         discard;
     }
-    vec3 fogColor = _21.FogColor_AlphaTest.xyz;
-    float fog_start = _21.uSunDir_FogStart.w;
-    float fog_end = _21.uSunColor_uFogEnd.w;
-    float fog_rate = 1.5;
-    float fog_bias = 0.00999999977648258209228515625;
-    float distanceToCamera = length(vPosition.xyz);
-    float z_depth = distanceToCamera - fog_bias;
-    float expFog = 1.0 / exp(max(0.0, z_depth - fog_start) * fog_rate);
-    float heightFog = 1.0;
-    expFog += heightFog;
-    float endFadeFog = clamp((fog_end - distanceToCamera) / (0.699999988079071044921875 * fog_end), 0.0, 1.0);
-    vec3 _885 = mix(fogColor, finalColor.xyz, vec3(min(expFog, endFadeFog)));
-    finalColor = vec4(_885.x, _885.y, _885.z, finalColor.w);
     finalColor.w = 1.0;
     gl_FragData[0] = finalColor;
+}
+
+
+#version 100
+
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+struct sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+};
+
+uniform sceneWideBlockVSPS _27;
+
+attribute vec4 aPositionTransp;
+varying vec2 vTextCoords;
+varying vec3 vPosition;
+attribute vec2 aTexCoord;
+
+void main()
+{
+    vec4 aPositionVec4 = vec4(aPositionTransp.xyz, 1.0);
+    mat4 cameraMatrix = _27.scene.uLookAtMat;
+    vec4 cameraPoint = cameraMatrix * aPositionVec4;
+    vTextCoords = aPositionVec4.xy / vec2(33.333332061767578125);
+    gl_Position = _27.scene.uPMatrix * cameraPoint;
+    vPosition = cameraPoint.xyz;
 }
 
 

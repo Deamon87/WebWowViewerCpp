@@ -530,10 +530,12 @@ void Map::update(HUpdateStage updateStage) {
         auto wmoId = updateStage->cullResult->m_currentWMO->getWmoId();
         auto groupId = updateStage->cullResult->m_currentWMO->getWmoGroupId(updateStage->cullResult->m_currentWmoGroup);
 
-        areaName = m_api->databaseHandler->getWmoAreaName(wmoId, nameId, groupId);
+        if (m_api->databaseHandler != nullptr) {
+            areaName = m_api->databaseHandler->getWmoAreaName(wmoId, nameId, groupId);
+        }
     };
     if (areaName == "") {
-        if (updateStage->cullResult->adtAreadId > 0) {
+        if (updateStage->cullResult->adtAreadId > 0 && (m_api->databaseHandler != nullptr)) {
             areaName = m_api->databaseHandler->getAreaName(updateStage->cullResult->adtAreadId);
         } else {
             areaName = "";
@@ -568,34 +570,36 @@ void Map::update(HUpdateStage updateStage) {
             }
         }
 
-        LightResult lightResult;
-        m_api->databaseHandler->getEnvInfo(m_mapId,
-            updateStage->cameraMatrices->cameraPos[0],
-            updateStage->cameraMatrices->cameraPos[1],
-            updateStage->cameraMatrices->cameraPos[2],
-            config->getCurrentTime(),
-            lightResult
-        );
+        if ((m_api->databaseHandler != nullptr)) {
+            LightResult lightResult;
+            m_api->databaseHandler->getEnvInfo(m_mapId,
+                updateStage->cameraMatrices->cameraPos[0],
+                updateStage->cameraMatrices->cameraPos[1],
+                updateStage->cameraMatrices->cameraPos[2],
+                config->getCurrentTime(),
+                lightResult
+            );
 
-        if (m_currentSkyFDID != lightResult.skyBoxFdid) {
-            if (lightResult.skyBoxFdid == 0) {
-                m_exteriorSkyBox = nullptr;
-            } else {
-                m_exteriorSkyBox = std::make_shared<M2Object>(m_api, true);
-                m_exteriorSkyBox->setLoadParams(0, {},{});
+            if (m_currentSkyFDID != lightResult.skyBoxFdid) {
+                if (lightResult.skyBoxFdid == 0) {
+                    m_exteriorSkyBox = nullptr;
+                } else {
+                    m_exteriorSkyBox = std::make_shared<M2Object>(m_api, true);
+                    m_exteriorSkyBox->setLoadParams(0, {},{});
 
-                m_exteriorSkyBox->setModelFileId(lightResult.skyBoxFdid);
+                    m_exteriorSkyBox->setModelFileId(lightResult.skyBoxFdid);
 
-                m_exteriorSkyBox->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
-                m_exteriorSkyBox->calcWorldPosition();
+                    m_exteriorSkyBox->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+                    m_exteriorSkyBox->calcWorldPosition();
+                }
+                m_currentSkyFDID = lightResult.skyBoxFdid;
             }
-            m_currentSkyFDID = lightResult.skyBoxFdid;
-        }
 
-        //Database is in BGRA
-        config->setExteriorAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
-        config->setExteriorDirectColor(lightResult.directColor[2]*3.0, lightResult.directColor[1]*3.0, lightResult.directColor[0]*3.0, 0);
-        config->setCloseRiverColor(lightResult.closeRiverColor[2], lightResult.directColor[1], lightResult.directColor[0], 0);
+            //Database is in BGRA
+            config->setExteriorAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
+            config->setExteriorDirectColor(lightResult.directColor[2]*3.0, lightResult.directColor[1]*3.0, lightResult.directColor[0]*3.0, 0);
+            config->setCloseRiverColor(lightResult.closeRiverColor[2], lightResult.directColor[1], lightResult.directColor[0], 0);
+        }
 
         config->setFogColor(
                 endFogColor.x,

@@ -55,8 +55,8 @@ private:
 
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
 
-    mathfu::vec4 exteriorAmbientColor;
-    mathfu::vec4 exteriorDirectColor;
+    mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
+    mathfu::vec4 exteriorDirectColor = {1,1,1, 1};
     mathfu::vec3 exteriorDirectColorDir;
 
     mathfu::vec4 interiorAmbientColor;

@@ -7,6 +7,7 @@
 
 
 #include <thread>
+#include <future>
 #include "../include/iostuff.h"
 #include "../gapi/interface/IDevice.h"
 #include "SceneScenario.h"
