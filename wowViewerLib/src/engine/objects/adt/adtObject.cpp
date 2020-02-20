@@ -157,6 +157,7 @@ void AdtObject::loadWater() {
         for (int x_chunk = 0; x_chunk < 16; x_chunk++) {
             auto &liquidChunk = m_adtFile->mH2OHeader->chunks[y_chunk*16 + x_chunk];
 
+
             if (liquidChunk.layer_count == 0) continue;
 
             auto *liquidInstPtr =
@@ -171,6 +172,13 @@ void AdtObject::loadWater() {
 
             for (int layerInd = 0; layerInd < liquidChunk.layer_count; layerInd++) {
                 SMLiquidInstance &liquidInstance = liquidInstPtr[layerInd];
+
+                uint64_t infoMask = 0xFFFFFFFFFFFFFFFF; // default = all water
+                if (liquidInstance.offset_exists_bitmap > 0 && liquidInstance.height > 0)
+                {
+                    size_t bitmask_size = static_cast<size_t>(std::ceil(liquidInstance.height * liquidInstance.width / 8.0f));
+                    std::memcpy(&infoMask, &m_adtFile->mH2OBlob[liquidInstance.offset_exists_bitmap - m_adtFile->mH2OblobOffset], bitmask_size);
+                }
 
                 float *heightPtr = nullptr;
                 if (liquidInstance.offset_vertex_data != 0) {
@@ -206,6 +214,7 @@ void AdtObject::loadWater() {
 
                 int baseVertexIndForInst = vertexBuffer.size();
 
+                int bitOffset = 0;
                 for (int y = 0; y < liquidInstance.height + 1; y++) {
                     for (int x = 0; x < liquidInstance.width + 1; x++) {
                         mathfu::vec3 pos =
@@ -231,6 +240,7 @@ void AdtObject::loadWater() {
 
                 for (int y = 0; y < liquidInstance.height; y++) {
                     for (int x = 0; x < liquidInstance.width; x++) {
+                        if (((infoMask >> (bitOffset++)) & 1) == 0) continue;
                         int16_t vertindexes[4] = {
                             (int16_t) (baseVertexIndForInst + y * (liquidInstance.width +1 ) + x),
                             (int16_t) (baseVertexIndForInst + y * (liquidInstance.width + 1) + x + 1),

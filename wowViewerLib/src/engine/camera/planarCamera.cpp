@@ -130,7 +130,7 @@ void PlanarCamera::setCameraOffset(float x, float y, float z) {
     cameraOffset = mathfu::vec3(x,y,z);
 }
 void PlanarCamera::zoomInFromTouch(float val) {
-    m_radius += val;
+    m_radius += val * m_moveSpeed;
     if (m_radius < 0) m_radius = 0;
 }
 

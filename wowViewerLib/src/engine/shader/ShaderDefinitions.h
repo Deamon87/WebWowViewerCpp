@@ -306,7 +306,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {
 {0,4,32},
 {0,0,240},
-{0,3,80},
+{0,3,32},
 }
 }
 },{ "drawDepthShader.vert.spv", {
@@ -631,11 +631,8 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       3, {
-        {"_514.uViewUp", true, 0, 1, 4, 0},
-        {"_514.uSunDir_FogStart", true, 16, 1, 4, 0},
-        {"_514.uSunColor_uFogEnd", true, 32, 1, 4, 0},
-        {"_514.uAmbientLight", true, 48, 1, 4, 0},
-        {"_514.FogColor", true, 64, 1, 4, 0},
+        {"_514.uFogStartAndFogEnd", true, 0, 1, 4, 0},
+        {"_514.uFogColor", true, 16, 1, 4, 0},
       }
     },
     {

@@ -976,11 +976,8 @@ layout(std140) uniform sceneWideBlockVSPS
 
 layout(std140) uniform modelWideBlockPS
 {
-    vec4 uViewUp;
-    vec4 uSunDir_FogStart;
-    vec4 uSunColor_uFogEnd;
-    vec4 uAmbientLight;
-    vec4 FogColor;
+    vec4 uFogStartAndFogEnd;
+    vec4 uFogColor;
 } _514;
 
 uniform sampler2D uAlphaTexture;
@@ -2965,11 +2962,8 @@ uniform sceneWideBlockVSPS _427;
 
 struct modelWideBlockPS
 {
-    vec4 uViewUp;
-    vec4 uSunDir_FogStart;
-    vec4 uSunColor_uFogEnd;
-    vec4 uAmbientLight;
-    vec4 FogColor;
+    vec4 uFogStartAndFogEnd;
+    vec4 uFogColor;
 };
 
 uniform modelWideBlockPS _514;

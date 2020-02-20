@@ -118,7 +118,7 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 controllable->startMovingDown();
                 break;
             case GLFW_KEY_LEFT_SHIFT:
-                apiContainer.getConfig()->setMovementSpeed(3.0f);
+                controllable->setMovementSpeed(3.0f);
                 break;
             default:
                 break;
@@ -157,7 +157,7 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 apiContainer.camera->setCameraPos(0,0,0);
                 break;
             case GLFW_KEY_LEFT_SHIFT:
-                apiContainer.getConfig()->setMovementSpeed(1.0f);
+                controllable->setMovementSpeed(1.0f);
                 break;
             default:
                 break;

@@ -27,11 +27,8 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
 };
 
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
-    vec4 uViewUp;
-    vec4 uSunDir_FogStart;
-    vec4 uSunColor_uFogEnd;
-    vec4 uAmbientLight;
-    vec4 FogColor;
+    vec4 uFogStartAndFogEnd;
+    vec4 uFogColor;
 };
 
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {

@@ -211,6 +211,10 @@ struct SMLiquidInstance {
     // if offset = 0 and liquidType ≠ 2, then let LVF = 2, i.e. some ocean shit
 });
 
+struct mh2o_chunk_attributes {
+
+};
+
 struct MCCV {
     struct MCCVEntry {
         uint8_t blue;                 // these values range from 0x00 to 0xFF with 0x7F being the default.
