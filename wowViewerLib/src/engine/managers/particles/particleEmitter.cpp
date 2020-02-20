@@ -645,8 +645,16 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
 }
 
 int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
+    int coefXInt = (particlePreRenderData.m_ageDependentValues.timedHeadCell &  this->textureColMask);
+    float coefXf;
+    if (coefXInt < 0) {
+        coefXf = (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1)) + (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1));
+    } else {
+        coefXf = coefXInt;
+    }
+
     mathfu::vec2 texScaleVec(
-        (particlePreRenderData.m_ageDependentValues.timedHeadCell &this->textureColMask) * this->texScaleX,
+        coefXf * this->texScaleX,
         (particlePreRenderData.m_ageDependentValues.timedHeadCell  >> this->textureColBits) * this->texScaleY);
 
     float baseSpin = 0;
@@ -786,8 +794,17 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
 }
 
 int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
+    int coefXInt = (particlePreRenderData.m_ageDependentValues.timedTailCell &  this->textureColMask);
+    float coefXf;
+    if (coefXInt < 0) {
+        coefXf = (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1)) + (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1));
+    } else {
+        coefXf = coefXInt;
+    }
+
+
     mathfu::vec2 texScaleVec(
-        (particlePreRenderData.m_ageDependentValues.timedTailCell &  this->textureColMask) * this->texScaleX,
+        (coefXf) * this->texScaleX,
         (particlePreRenderData.m_ageDependentValues.timedTailCell >> this->textureColBits) * this->texScaleY);
 
     // tail cell
