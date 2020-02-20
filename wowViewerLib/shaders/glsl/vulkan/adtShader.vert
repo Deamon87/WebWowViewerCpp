@@ -65,7 +65,7 @@ void main() {
     vPosition = (scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;
     vVertexLighting = aVertexLighting.rgb;
-    vNormal = (scene.uLookAtMat * vec4(aNormal, 0)).xyz;
+    vNormal = blizzTranspose(scene.uLookAtMat) * aNormal;
 
     gl_Position = scene.uPMatrix * scene.uLookAtMat * worldPoint;
 }

@@ -206,10 +206,10 @@ void WmoScene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateS
         blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
         blockPSVS->uViewUp = renderMats->viewUp;
 
-        blockPSVS->extLight.uExteriorAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
+        blockPSVS->extLight.uExteriorAmbientColor = mathfu::vec4(0.8,0.8,0.8,0.8);
         blockPSVS->extLight.uExteriorHorizontAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
         blockPSVS->extLight.uExteriorGroundAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
-        blockPSVS->extLight.uExteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,1.0);
+        blockPSVS->extLight.uExteriorDirectColor = mathfu::vec4(0.3,0.3,0.3,1.3);
         blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(0.0,0.0,0.0,1.0);
     });
 

@@ -900,12 +900,12 @@ struct SceneWideParams
 layout(std140) uniform sceneWideBlockVSPS
 {
     SceneWideParams scene;
-} _55;
+} _90;
 
 layout(std140) uniform meshWideBlockVS
 {
     vec4 uPos;
-} _102;
+} _130;
 
 layout(location = 4) in float aIndex;
 layout(location = 0) in vec3 aHeight;
@@ -918,6 +918,11 @@ layout(location = 2) in vec4 aVertexLighting;
 out vec3 vNormal;
 layout(location = 3) in vec3 aNormal;
 
+mat3 blizzTranspose(mat4 value)
+{
+    return mat3(vec3(value[0].xyz), vec3(value[1].xyz), vec3(value[2].xyz));
+}
+
 void main()
 {
     float iX = mod(aIndex, 17.0);
@@ -929,11 +934,12 @@ void main()
     }
     vec4 worldPoint = vec4(aHeight, 1.0);
     vChunkCoords = vec2(iX, iY);
-    vPosition = (_55.scene.uLookAtMat * worldPoint).xyz;
+    vPosition = (_90.scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;
     vVertexLighting = aVertexLighting.xyz;
-    vNormal = (_55.scene.uLookAtMat * vec4(aNormal, 0.0)).xyz;
-    gl_Position = (_55.scene.uPMatrix * _55.scene.uLookAtMat) * worldPoint;
+    mat4 param = _90.scene.uLookAtMat;
+    vNormal = blizzTranspose(param) * aNormal;
+    gl_Position = (_90.scene.uPMatrix * _90.scene.uLookAtMat) * worldPoint;
 }
 
 
@@ -2880,14 +2886,14 @@ struct sceneWideBlockVSPS
     SceneWideParams scene;
 };
 
-uniform sceneWideBlockVSPS _55;
+uniform sceneWideBlockVSPS _90;
 
 struct meshWideBlockVS
 {
     vec4 uPos;
 };
 
-uniform meshWideBlockVS _102;
+uniform meshWideBlockVS _130;
 
 attribute float aIndex;
 attribute vec3 aHeight;
@@ -2900,6 +2906,11 @@ attribute vec4 aVertexLighting;
 varying vec3 vNormal;
 attribute vec3 aNormal;
 
+mat3 blizzTranspose(mat4 value)
+{
+    return mat3(vec3(value[0].xyz), vec3(value[1].xyz), vec3(value[2].xyz));
+}
+
 void main()
 {
     float iX = mod(aIndex, 17.0);
@@ -2911,11 +2922,12 @@ void main()
     }
     vec4 worldPoint = vec4(aHeight, 1.0);
     vChunkCoords = vec2(iX, iY);
-    vPosition = (_55.scene.uLookAtMat * worldPoint).xyz;
+    vPosition = (_90.scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;
     vVertexLighting = aVertexLighting.xyz;
-    vNormal = (_55.scene.uLookAtMat * vec4(aNormal, 0.0)).xyz;
-    gl_Position = (_55.scene.uPMatrix * _55.scene.uLookAtMat) * worldPoint;
+    mat4 param = _90.scene.uLookAtMat;
+    vNormal = blizzTranspose(param) * aNormal;
+    gl_Position = (_90.scene.uPMatrix * _90.scene.uLookAtMat) * worldPoint;
 }
 
 

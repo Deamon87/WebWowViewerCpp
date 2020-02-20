@@ -459,6 +459,11 @@ void FrontendUI::showQuickLinksDialog() {
             openWMOSceneByfdid(2756726);
         }
     }
+    if (ImGui::Button("Northrend Human Inn", ImVec2(-1, 0))) {
+        if (openWMOSceneByfdid) {
+            openWMOSceneByfdid(114998);
+        }
+    }
     if (ImGui::Button("WMO With Horde Symbol", ImVec2(-1, 0))) {
         if (openWMOSceneByfdid) {
             openWMOSceneByfdid(1846142);

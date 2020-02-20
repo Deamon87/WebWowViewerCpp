@@ -380,9 +380,9 @@ int main(){
 //        processor = new HttpZipRequestProcessor(url);
 //        processor = new ZipRequestProcessor(filePath);
 //        processor = new MpqRequestProcessor(filePath);
-//        processor = new HttpRequestProcessor(url, urlFileId);
-        processor = new CascRequestProcessor("d:/Games/World of Warcraft Public Test/_ptr_/");
-        processor->setThreaded(true);
+        processor = new HttpRequestProcessor(url, urlFileId);
+//        processor = new CascRequestProcessor("d:/Games/World of Warcraft Public Test/_ptr_/");
+//        processor->setThreaded(true);
 //
         apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
         processor->setFileRequester(apiContainer.cacheStorage.get());

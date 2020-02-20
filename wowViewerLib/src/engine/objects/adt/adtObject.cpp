@@ -2,6 +2,7 @@
 // Created by deamon on 10.07.17.
 //
 
+#include <cstring>
 #include "adtObject.h"
 #include "../../shader/ShaderDefinitions.h"
 #include "../../algorithms/mathHelper.h"
