@@ -47,6 +47,7 @@
 #include "../wowViewerLib/src/engine/objects/scenes/map.h"
 #include "../wowViewerLib/src/engine/ApiContainer.h"
 #include "../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
+#include "../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
 
 
 int mleft_pressed = 0;
@@ -380,8 +381,8 @@ int main(){
 //        processor = new HttpZipRequestProcessor(url);
 //        processor = new ZipRequestProcessor(filePath);
 //        processor = new MpqRequestProcessor(filePath);
-        processor = new HttpRequestProcessor(url, urlFileId);
-//        processor = new CascRequestProcessor("d:/Games/World of Warcraft Public Test/_ptr_/");
+//        processor = new HttpRequestProcessor(url, urlFileId);
+        processor = new CascRequestProcessor("d:/Games/World of Warcraft Public Test/_ptr_/");
 //        processor->setThreaded(true);
 //
         apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
@@ -432,6 +433,10 @@ int main(){
     });
     frontendUI->setOpenWMOSceneByfdidCallback([&currentScene, &apiContainer](int wmoFDid) {
         currentScene = std::make_shared<WmoScene>(&apiContainer, wmoFDid);
+        apiContainer.camera->setCameraPos(0, 0, 0);
+    });
+    frontendUI->setOpenM2SceneByfdidCallback([&currentScene, &apiContainer](int m2FDid) {
+        currentScene = std::make_shared<M2Scene>(&apiContainer, m2FDid, -1);
         apiContainer.camera->setCameraPos(0, 0, 0);
     });
 

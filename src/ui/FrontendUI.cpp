@@ -469,6 +469,11 @@ void FrontendUI::showQuickLinksDialog() {
             openWMOSceneByfdid(1846142);
         }
     }
+    if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(1396280);
+        }
+    }
 
     ImGui::End();
 }
@@ -635,5 +640,9 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
 
 void FrontendUI::setOpenWMOSceneByfdidCallback(std::function<void(int wmoFDid)> callback) {
     this->openWMOSceneByfdid = callback;
+}
+
+void FrontendUI::setOpenM2SceneByfdidCallback(std::function<void(int)> callback) {
+    this->openM2SceneByfdid = callback;
 }
 
