@@ -7,6 +7,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 cmake_policy(SET CMP0077 NEW)
 
+
 set(USE_NEON 0)
 if (CMAKE_NDK_BUILD MATCHES 1)
 	include_directories(BEFORE SYSTEM "${NDK_PATH}/include/c++/4.9.x/" "${NDK_PATH}/sysroot/usr/include/")
@@ -38,8 +39,8 @@ if (WIN32 AND MSVC)
  endif()
 
 #set(CMAKE_BUILD_TYPE Release)
-#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -DFUCK ")
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -DFUCK ")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC ")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC  ")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static -femulated-tls ")
@@ -232,11 +233,18 @@ endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp)
 
+add_definitions(-DLINK_VULKAN)
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
+message(ccp WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
+target_include_directories(AWebWoWViewerCpp PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
+target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
+target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
+
 #target_compile_options(AWebWoWViewerCpp PRIVATE "-static")
 target_compile_definitions(AWebWoWViewerCpp PUBLIC -DIMGUI_USER_CONFIG=<imguiCustomConfig.h>)
-
 target_include_directories(AWebWoWViewerCpp PUBLIC src/ui/imguiLib)
+
+
 
 
 add_dependencies(AWebWoWViewerCpp zip)

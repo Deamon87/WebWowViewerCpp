@@ -26,6 +26,12 @@ GMeshVLK::GMeshVLK(IDevice &device,
 
     m_isSkyBox = meshTemplate.skybox;
 
+    m_isScissorsEnabled = meshTemplate.scissorEnabled ? 1 : 0;
+    if (m_isScissorsEnabled) {
+        m_scissorSize = meshTemplate.scissorSize;
+        m_scissorOffset = meshTemplate.scissorOffset;
+    }
+
     m_colorMask = meshTemplate.colorMask;
 
     m_blendMode = meshTemplate.blendMode;
@@ -38,13 +44,12 @@ GMeshVLK::GMeshVLK(IDevice &device,
 
     m_texture = meshTemplate.texture;
 
-    m_vertexUniformBuffer[0] = meshTemplate.vertexBuffers[0];
-    m_vertexUniformBuffer[1] = meshTemplate.vertexBuffers[1];
-    m_vertexUniformBuffer[2] = meshTemplate.vertexBuffers[2];
-
-    m_fragmentUniformBuffer[0] = meshTemplate.fragmentBuffers[0];
-    m_fragmentUniformBuffer[1] = meshTemplate.fragmentBuffers[1];
-    m_fragmentUniformBuffer[2] = meshTemplate.fragmentBuffers[2];
+    m_UniformBuffer[0] = meshTemplate.ubo[0];
+    m_UniformBuffer[1] = meshTemplate.ubo[1];
+    m_UniformBuffer[2] = meshTemplate.ubo[2];
+    m_UniformBuffer[3] = meshTemplate.ubo[3];
+    m_UniformBuffer[4] = meshTemplate.ubo[4];
+    m_UniformBuffer[5] = meshTemplate.ubo[5];
 
 
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(m_shader.get());
@@ -69,27 +74,15 @@ GMeshVLK::GMeshVLK(IDevice &device,
         }
     }
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 5; i++) {
         auto it = shaderLayoutBindings.find(i);
         if (it != shaderLayoutBindings.end()) {
-            if ((m_vertexUniformBuffer[i] == nullptr) || (it->second.size != ((GUniformBufferVLK *)m_vertexUniformBuffer[i].get())->m_size)) {
+            if ((m_UniformBuffer[i] == nullptr) || (it->second.size != (m_UniformBuffer[i]->getSize()))) {
                 std::cout << "buffers missmatch!" << std::endl;
             }
         }
     }
-    for (int i = 3; i < 5; i++) {
-        auto it = shaderLayoutBindings.find(i);
-        if (it != shaderLayoutBindings.end()) {
-            if ((m_fragmentUniformBuffer[i-2] == nullptr) || (it->second.size != ((GUniformBufferVLK *)m_fragmentUniformBuffer[i-2].get())->m_size)) {
-                std::cout << "buffers missmatch!" << std::endl;
-            }
-        }
-    }
-
 }
-
-
-
 
 void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
 
@@ -195,12 +188,8 @@ GMeshVLK::~GMeshVLK() {
 
 }
 
-HGUniformBuffer GMeshVLK::getVertexUniformBuffer(int slot) {
-    return m_vertexUniformBuffer[slot];
-}
-
-HGUniformBuffer GMeshVLK::getFragmentUniformBuffer(int slot) {
-    return m_fragmentUniformBuffer[slot];
+HGUniformBufferChunk GMeshVLK::getUniformBuffer(int slot) {
+    return m_UniformBuffer[slot];
 }
 
 EGxBlendEnum GMeshVLK::getGxBlendMode() { return m_blendMode; }

@@ -43,7 +43,7 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
     drawStage->clearScreen = clearScreen;
     drawStage->clearColor = clearColor;
 
-    drawStage->sceneWideBlockVSPSChunk;
+//    drawStage->sceneWideBlockVSPSChunk;
 
     drawStageLinks.push_back({scene, updateStage, drawStage});
 

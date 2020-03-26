@@ -78,19 +78,6 @@ void GUniformBufferVLK::uploadData(void * data, int length) {
     m_dataUploaded = true;
 }
 
-void GUniformBufferVLK::save(bool initialSave) {
-
-}
-
-void *GUniformBufferVLK::getPointerForUpload() {
-    return m_ptr;
-}
-
-void *GUniformBufferVLK::getPointerForModification() {
-    return m_ptr;
-
-}
-
 void GUniformBufferVLK::uploadFromStaging(int length) {
     VkBufferCopy vbCopyRegion = {};
     vbCopyRegion.srcOffset = 0;
@@ -127,14 +114,5 @@ void GUniformBufferVLK::resize(int newLength) {
         g_buf = VK_NULL_HANDLE;
         g_alloc = VK_NULL_HANDLE;
         createBuffer();
-    }
-}
-
-void GUniformBufferVLK::setUpdateHandler(std::function<void(IUniformBuffer* self)> handler){
-    m_handler = handler;
-}
-void GUniformBufferVLK::update() {
-    if (m_handler) {
-        m_handler(this);
     }
 }

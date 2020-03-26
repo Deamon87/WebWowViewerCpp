@@ -137,6 +137,7 @@ void GShaderPermutationVLK::updateDescriptorSet(int index) {
     std::vector<VkWriteDescriptorSet> descriptorWrites;
 
     auto *uploadBuffer = ((GUniformBufferVLK *) m_device->getUploadBuffer(index).get());
+    if (uploadBuffer == nullptr) return;
 
     for (int i = 0; i < vertShaderMeta->uboBindings.size(); i++) {
         auto &uboVertBinding = vertShaderMeta->uboBindings[i];

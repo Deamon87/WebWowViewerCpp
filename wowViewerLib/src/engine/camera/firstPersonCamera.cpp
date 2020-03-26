@@ -195,7 +195,5 @@ HCameraMatrices FirstPersonCamera::getCameraMatrices(float fov,
     cameraMatrices->interiorDirectLightDir = this->interiorDirectLightDir;
 
 
-
-
     return cameraMatrices;
 }

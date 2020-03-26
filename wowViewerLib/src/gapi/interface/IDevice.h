@@ -50,7 +50,6 @@ typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
 #include "meshes/IMesh.h"
 #include "meshes/IM2Mesh.h"
 #include "IOcclusionQuery.h"
-#include "IDeviceUI.h"
 #include "IShaderPermutation.h"
 #include "buffers/IIndexBuffer.h"
 #include "buffers/IVertexBuffer.h"

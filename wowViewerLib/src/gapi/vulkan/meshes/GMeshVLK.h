@@ -19,8 +19,7 @@ protected:
 
 public:
     ~GMeshVLK() override;
-    HGUniformBuffer getVertexUniformBuffer(int slot) override;
-    HGUniformBuffer getFragmentUniformBuffer(int slot) override;
+    HGUniformBufferChunk getUniformBuffer(int slot) override;
     EGxBlendEnum getGxBlendMode() override;
     bool getIsTransparent() override;
     MeshType getMeshType()  override;
@@ -42,8 +41,7 @@ private:
 
     HGShaderPermutation m_shader;
 
-    HGUniformBuffer m_vertexUniformBuffer[3] = {nullptr, nullptr, nullptr};
-    HGUniformBuffer m_fragmentUniformBuffer[3] = {nullptr, nullptr, nullptr};
+    std::array<HGUniformBufferChunk, 6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;
@@ -51,7 +49,10 @@ private:
     int8_t m_triCCW = 1;
     EGxBlendEnum m_blendMode;
     bool m_isTransparent;
+    int8_t m_isScissorsEnabled = -1;
 
+    std::array<int, 2> m_scissorOffset = {0,0};
+    std::array<int, 2> m_scissorSize = {0,0};
 
     uint8_t m_colorMask = 0;
 

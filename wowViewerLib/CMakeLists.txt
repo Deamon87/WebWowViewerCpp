@@ -3,13 +3,13 @@ project(WoWViewerLib)
 
 include(CheckCXXCompilerFlag)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(LINK_GLEW 1)
 set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)
-set(LINK_VULKAN 0)
+set(LINK_VULKAN 1)
 set(LINK_OPENMP 1)
 set(ENABLE_SIMD 1)
 set(EMSCRIPTEN_SIMD 0)
@@ -53,8 +53,8 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS" )
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
  
-#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize")
 
@@ -224,7 +224,6 @@ set(SOURCE_FILES
         src/engine/objects/ViewsObjects.h
         src/gapi/interface/sortLambda.h
         src/gapi/interface/buffers/IUniformBufferChunk.h
-        src/gapi/interface/IDeviceUI.h
         src/engine/WowFilesCacheStorage.h
         src/engine/WowFilesCacheStorage.cpp
         src/engine/algorithms/quick-sort-omp.h
@@ -377,11 +376,11 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
-            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/include/iostuff.h)
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/include/iostuff.h src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp src/gapi/vulkan/shaders/GImguiShaderPermutation.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
-            find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS ${CMAKE_SOURCE_DIR}/libs/vulkan)
+            find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "$ENV{VULKAN_SDK}/lib")
             IF (Vulkan_LIBRARY)
                 set(Vulkan_FOUND ON)
                 MESSAGE("Using bundled Vulkan library version win32")
@@ -460,7 +459,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (TRUE)
+if (0)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
@@ -471,6 +470,15 @@ if (TRUE)
         add_dependencies(WoWViewerLib ShadersGLSL33)
     endif()
 endif()
+
+set(ext_inDir ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
+
+if (LINK_VULKAN)
+    set(ext_inDir ${ext_inDir} ${Vulkan_INCLUDE_DIR})
+endif()
+set(WoWViewerLib_INCLUDE_DIRS ${ext_inDir} CACHE INTERNAL "")
+
+message(WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
 
 target_include_directories(WoWViewerLib
         PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)

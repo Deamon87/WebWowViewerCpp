@@ -30,7 +30,7 @@ private:
     void DoUpdate();
     void processCaches(int limit);
 
-    std::promise<float> nextDeltaTime = std::promise<float>();
+    std::promise<float> nextDeltaTime;
     std::promise<float> nextDeltaTimeForUpdate;
     std::promise<bool> cullingFinished;
     std::promise<bool> updateFinished;

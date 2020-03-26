@@ -316,8 +316,8 @@ int main(){
     glfwInit();
 
 //    std::string rendererName = "ogl2";
-    std::string rendererName = "ogl3";
-//    std::string rendererName = "vulkan";
+//    std::string rendererName = "ogl3";
+    std::string rendererName = "vulkan";
 
     //FOR OGL
 
@@ -566,6 +566,18 @@ int main(){
 
         auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
         auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+
+        if (hdevice->getIsVulkanAxisSystem() ) {
+            auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
+
+            static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
+                                                                      0, -1, 0, 0,
+                                                                      0, 0, 1.0/2.0, 1/2.0,
+                                                                      0, 0, 0, 1).Transpose();
+
+            perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
+        }
+
 
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
 

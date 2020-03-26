@@ -20,14 +20,7 @@ public:
     explicit GUniformBufferVLK(IDevice &device, size_t size);
     ~GUniformBufferVLK() override;
 
-    void *getPointerForModification() override;
-    void *getPointerForUpload() override;
-
-    void save(bool initialSave = false) override;
     void createBuffer() override;
-
-    void setUpdateHandler(std::function<void(IUniformBuffer* self)>) override;
-    void update() override;
 
     size_t getSize() {return m_size;}
 private:

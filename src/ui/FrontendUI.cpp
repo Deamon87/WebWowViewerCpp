@@ -20,6 +20,8 @@ static const GBufferBinding imguiBindings[3] = {
 };
 
 void FrontendUI::composeUI() {
+    if (this->fontTexture == nullptr)
+        return;
 
     if (fillAdtSelectionminimap && mapCanBeOpened) {
         if (fillAdtSelectionminimap(adtSelectionMinimap, isWmoMap, mapCanBeOpened )) {
@@ -383,23 +385,11 @@ void FrontendUI::initImgui(GLFWwindow *window) {
 }
 
 void FrontendUI::newFrame() {
-
 //    ImGui_ImplOpenGL3_NewFrame();
     //Create Font image
-    if (this->fontTexture == nullptr) {
-        ImGuiIO& io = ImGui::GetIO();
-        unsigned char* pixels;
-        int width, height;
-        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
+    if (this->fontTexture == nullptr)
+        return;
 
-        // Upload texture to graphics system
-
-        this->fontTexture = m_device->createTexture();
-        this->fontTexture->loadData(width, height, pixels);
-
-        // Store our identifier
-        io.Fonts->TexID = this->fontTexture;
-    }
 
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -530,6 +520,22 @@ void FrontendUI::setCurrentTimeChangeCallback(std::function<void(int value)> cal
 }
 
 void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
+    if (this->fontTexture == nullptr) {
+        ImGuiIO& io = ImGui::GetIO();
+        unsigned char* pixels;
+        int width, height;
+        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
+
+        // Upload texture to graphics system
+
+        this->fontTexture = m_device->createTexture();
+        this->fontTexture->loadData(width, height, pixels);
+
+        // Store our identifier
+        io.Fonts->TexID = this->fontTexture;
+        return;
+    }
+
     resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
 
     auto *draw_data = ImGui::GetDrawData();
@@ -557,6 +563,15 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
             { 0.0f,         0.0f,        -1.0f,   0.0f },
             { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
         };
+
+    if (m_device->getIsVulkanAxisSystem()) {
+        static const mathfu::mat4 vulkanMatrixFix1 = mathfu::mat4(1, 0, 0, 0,
+                                                                 0, -1, 0, 0,
+                                                                 0, 0, 1.0/2.0, 1/2.0,
+                                                                 0, 0, 0, 1).Transpose();
+        ortho_projection = vulkanMatrixFix1 * ortho_projection;
+    }
+
     auto uboPart = m_device->createUniformBufferChunk(sizeof(mathfu::mat4));
     uboPart->setUpdateHandler([ortho_projection](IUniformBufferChunk* self) {
         self->getObject<mathfu::mat4>() = ortho_projection;

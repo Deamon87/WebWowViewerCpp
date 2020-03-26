@@ -20,6 +20,7 @@ SceneComposer::SceneComposer(ApiContainer *apiContainer) : m_apiContainer(apiCon
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
 #endif
+    nextDeltaTime = std::promise<float>();
 
     if (m_supportThreads) {
         loadingResourcesThread = std::thread([&]() {
@@ -111,22 +112,18 @@ void SceneComposer::DoCulling() {
         float nearPlane = 1.0;
         float fov = toRadian(45.0);
 
-        auto &perspectiveMatrix = cullStage->matricesForCulling->perspectiveMat;
-
-        if (m_apiContainer->hDevice->getIsVulkanAxisSystem()) {
-            perspectiveMatrix = vulkanMatrixFix * perspectiveMatrix;
-        }
-
         cullStage->scene->checkCulling(cullStage);
     }
 }
 
 void collectMeshes(HDrawStage drawStage, std::vector<HGMesh> &meshes) {
-    std::copy(
-        drawStage->meshesToRender->meshes.begin(),
-        drawStage->meshesToRender->meshes.end(),
-        std::back_inserter(meshes)
-    );
+    if (drawStage->meshesToRender != nullptr) {
+        std::copy(
+            drawStage->meshesToRender->meshes.begin(),
+            drawStage->meshesToRender->meshes.end(),
+            std::back_inserter(meshes)
+        );
+    }
     for (auto deps : drawStage->drawStageDependencies) {
         collectMeshes(deps, meshes);
     }
@@ -176,6 +173,12 @@ void SceneComposer::DoUpdate() {
     }
     device->uploadTextureForMeshes(meshes);
 
+    if (device->getIsVulkanAxisSystem()) {
+        if (frameScenario != nullptr) {
+            m_apiContainer->hDevice->drawStageAndDeps(frameScenario->getDrawStage());
+        }
+    }
+
     device->endUpdateForNextFrame();
     frameCounter.endMeasurement("Update Thread");
 }
@@ -186,9 +189,9 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     if (m_supportThreads) {
         cullingFuture = cullingFinished.get_future();
 
-        nextDeltaTime.set_value(0);
+        nextDeltaTime.set_value(1.0f);
         if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
-            nextDeltaTimeForUpdate.set_value(0);
+            nextDeltaTimeForUpdate.set_value(1.0f);
             updateFuture = updateFinished.get_future();
         }
     }
@@ -215,7 +218,7 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     }
 
     m_apiContainer->hDevice->beginFrame();
-    if (thisFrameScenario != nullptr) {
+    if (thisFrameScenario != nullptr && !m_apiContainer->hDevice->getIsVulkanAxisSystem()) {
         m_apiContainer->hDevice->drawStageAndDeps(thisFrameScenario->getDrawStage());
     }
 

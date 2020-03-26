@@ -33,13 +33,13 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDevice &device) : m_device(dynamic_cast<
 std::shared_ptr<GDescriptorSets> GDescriptorPoolVLK::allocate(VkDescriptorSetLayout layout, int uniforms, int images) {
     if (uniformsAvailable < uniforms || imageAvailable < images || setsAvailable < 1) return nullptr;
 
-    std::vector<VkDescriptorSetLayout> descLAyouts(4, layout);
+    std::array<VkDescriptorSetLayout,4> descLAyouts = {layout,layout,layout,layout};
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.pNext = NULL;
     allocInfo.descriptorPool = m_descriptorPool;
     allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &descLAyouts[0];
+    allocInfo.pSetLayouts = descLAyouts.data();
 
 
     VkDescriptorSet descriptorSet;

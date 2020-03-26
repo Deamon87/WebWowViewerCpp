@@ -28,6 +28,7 @@
 #include "shaders/GAdtShaderPermutationVLK.h"
 #include "shaders/GWMOShaderPermutationVLK.h"
 #include "shaders/GWMOWaterShaderVLK.h"
+#include "shaders/GImguiShaderPermutation.h"
 #include "shaders/GM2RibbonShaderPermutationVLK.h"
 //#include "fastmemcp.h"
 
@@ -35,10 +36,7 @@ const int WIDTH = 1900;
 const int HEIGHT = 1000;
 
 const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation",
-    "VK_LAYER_LUNARG_assistant_layer",
-
-
+    "VK_LAYER_KHRONOS_validation"
 };
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -171,7 +169,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -785,11 +783,6 @@ void GDeviceVLK::createSyncObjects() {
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     semaphoreInfo.pNext = NULL;
 
-    VkFenceCreateInfo fenceInfo = {};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.pNext = NULL;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
@@ -798,6 +791,11 @@ void GDeviceVLK::createSyncObjects() {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
+
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.pNext = NULL;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     inFlightFences.resize(4);
     for (size_t i = 0; i < 4; i++) {
@@ -860,13 +858,6 @@ void GDeviceVLK::bindVertexBuffer(IVertexBuffer *buffer) {
 
 }
 
-void GDeviceVLK::bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) {
-
-}
-
-void GDeviceVLK::bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) {
-
-}
 
 void GDeviceVLK::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
 
@@ -929,7 +920,7 @@ void GDeviceVLK::endUpdateForNextFrame() {
 }
 
 typedef std::shared_ptr<GMeshVLK> HVKMesh;
-void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture();
@@ -945,33 +936,29 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
     std::vector<HVKMesh> &meshes = (std::vector<HVKMesh> &) iMeshes;
 
     //1. Collect buffers
-    std::vector<GUniformBufferVLK *> buffers;
+    std::vector<IUniformBufferChunk *> buffers;
     int renderIndex = 0;
     for (const auto &mesh : meshes) {
-        for (int i = 0; i < 3; i++ ) {
-            GUniformBufferVLK *buffer = (GUniformBufferVLK *) mesh->m_fragmentUniformBuffer[i].get();
+        for (int i = 0; i < 6; i++ ) {
+            IUniformBufferChunk *buffer = (IUniformBufferChunk *) mesh->getUniformBuffer(i).get();
             if (buffer != nullptr) {
                 buffers.push_back(buffer);
-                buffer->m_creationIndex = renderIndex++;
-            }
-        }
-        for (int i = 0; i < 3; i++ ) {
-            GUniformBufferVLK * buffer = (GUniformBufferVLK *)mesh->m_vertexUniformBuffer[i].get();
-            if (buffer != nullptr) {
-                buffers.push_back(buffer);
-                buffer->m_creationIndex = renderIndex++;
             }
         }
     }
+    for (const auto &bufferChunks : additionalChunks) {
+        if (bufferChunks != nullptr) {
+            buffers.push_back(bufferChunks.get());
+        }
+    }
 
-//    std::cout << "buffersBeforeShrink = " << buffers.size() << std::endl;
+
     std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
-//    std::cout << "buffersAfterShrink = " << buffers.size() << std::endl;
 
     int fullSize = 0;
-    for (auto &buffer : buffers) {
-        fullSize += buffer->m_size;
+    for (auto buffer : buffers) {
+        fullSize += buffer->getSize();
         int offsetDiff = fullSize % uniformBufferOffsetAlign;
         if (offsetDiff != 0) {
             int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
@@ -980,6 +967,7 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
         }
     }
 
+
     //2. Create buffers and update them
     int currentSize = 0;
     int buffersIndex = 0;
@@ -987,7 +975,7 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
     HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
 
     if (bufferForUpload == nullptr) {
-        bufferForUpload = createUniformBuffer(10*1024*1024);
+        bufferForUpload = createUniformBuffer(1);
         bufferForUpload->createBuffer();
         m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload = bufferForUpload;
     }
@@ -1001,11 +989,9 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
     }
     char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->stagingUBOBufferAllocInfo.pMappedData);
     for (const auto &buffer : buffers) {
-        if (buffer->m_buffCreated) continue;
-
         buffer->setOffset(currentSize);
         buffer->setPointer(&pointerForUpload[currentSize]);
-        currentSize += buffer->m_size;
+        currentSize += buffer->getSize();
 
         int offsetDiff = currentSize % uniformBufferOffsetAlign;
         if (offsetDiff != 0) {
@@ -1047,11 +1033,8 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
     for (const auto &texture : textures) {
         if (texture == nullptr) continue;
         if (texture->postLoad()) texturesLoaded++;
-        if (texturesLoaded > 4) return;
+        if (texturesLoaded > 4) break;
     }
-
-
-    updateCommandBuffers(meshes);
 }
 
 void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {
@@ -1092,6 +1075,11 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         IShaderPermutation *iPremutation = new GAdtShaderPermutationVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
+    } else if (shaderName == "imguiShader") {
+        IShaderPermutation *iPremutation = new GImguiShaderPermutation(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+        m_shaderPermutCache[hash] = sharedPtr;
     }
 
 
@@ -1291,7 +1279,7 @@ void GDeviceVLK::commitFrame() {
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &uploadSemaphores[currentDrawFrame];
 
-
+        vkResetFences(device, 1, &uploadFences[currentDrawFrame]);
         if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]) != VK_SUCCESS) {
             std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
         }
@@ -1407,163 +1395,6 @@ void GDeviceVLK::setViewPortDimensions(float x, float y, float width, float heig
 
 }
 
-void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
-    int updateFrame = getUpdateFrameNumber();
-
-    VkCommandBufferInheritanceInfo bufferInheritanceInfo;
-    bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-    bufferInheritanceInfo.pNext = nullptr;
-    bufferInheritanceInfo.renderPass = renderPass;
-    bufferInheritanceInfo.subpass = 0;
-    bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
-    bufferInheritanceInfo.occlusionQueryEnable = false;
-    bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
-    bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
-
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-    beginInfo.pNext = NULL;
-    beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
-
-//    std::cout << "updateCommandBuffers: updateFrame = " << updateFrame << std::endl;
-    vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-
-    //Update
-    if (m_shaderDescriptorUpdateNeeded) {
-        for(auto shaderVLKRec : m_shaderPermutCache) {
-            ((GShaderPermutationVLK *) shaderVLKRec.second.get())->updateDescriptorSet(updateFrame);
-        }
-        m_shaderDescriptorUpdateNeeded = false;
-    }
-
-    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
-    if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
-
-
-
-    VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
-    VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
-
-    uint32_t dynamicOffset[7] = {};
-
-    VkViewport usualViewport;
-    usualViewport.width = swapChainExtent.width;
-    usualViewport.height = swapChainExtent.height;
-    usualViewport.x = 0;
-    usualViewport.y = 0;
-    usualViewport.minDepth = 0;
-    usualViewport.maxDepth = 0.990f;
-
-    VkViewport mapAreaViewport = usualViewport;
-    mapAreaViewport.minDepth = 0.991f;
-    mapAreaViewport.maxDepth = 0.996f;
-
-    VkViewport skyBoxViewport = usualViewport;
-    skyBoxViewport.minDepth = 0.997f;
-    skyBoxViewport.maxDepth = 1.0f;
-
-
-    //Set scissors
-    VkRect2D scissor = {};
-    scissor.offset = {0, 0};
-    scissor.extent = swapChainExtent;
-
-    vkCmdSetScissor(commandBufferForFilling, 0, 1, &scissor);
-
-    //Set new viewport
-    enum class ViewportType {vp_usual, vp_mapArea, vp_skyBox};
-    ViewportType lastViewPort = ViewportType::vp_usual;
-    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
-
-    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
-
-    for (auto &mesh: iMeshes) {
-        auto *meshVLK = ((GMeshVLK *)mesh.get());
-        auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
-        auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
-
-        uint32_t uboInd = 0;
-        for (int k = 0; k < 3; k++) {
-            if (shaderVLK->hasBondUBO[k]) {
-                auto *uboB = (GUniformBufferVLK *) (meshVLK->getVertexUniformBuffer(k).get());
-                if (uboB) {
-                    dynamicOffset[uboInd++] = (uboB)->m_offset;
-                }
-            }
-        }
-        for (int k = 1; k < 3; k++) {
-            if (shaderVLK->hasBondUBO[2+k]) {
-                auto *uboB = (GUniformBufferVLK *) (meshVLK->getFragmentUniformBuffer(k).get());
-                if (uboB) {
-                    dynamicOffset[uboInd++] = (uboB)->m_offset;
-                }
-            }
-        }
-
-        if (lastPipeline != meshVLK->hgPipelineVLK) {
-            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              meshVLK->hgPipelineVLK->graphicsPipeline);
-
-            lastPipeline = meshVLK->hgPipelineVLK;
-        }
-
-        ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
-        if (lastViewPort != newViewPort) {
-            switch (newViewPort) {
-                case ViewportType::vp_usual:
-                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
-                    break;
-                case ViewportType::vp_skyBox:
-                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &skyBoxViewport);
-                    break;
-                case ViewportType::vp_mapArea:
-                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &mapAreaViewport);
-                    break;
-            }
-
-            lastViewPort = newViewPort;
-        }
-
-
-        auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
-        auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
-        VkDeviceSize offsets[] = {0};
-
-        if (lastIndexBuffer != indexBuffer) {
-            vkCmdBindIndexBuffer(commandBufferForFilling, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-            lastIndexBuffer = indexBuffer;
-        }
-
-        if (lastVertexBuffer != vertexBuffer) {
-            uint32_t vboBind = 0;
-
-            vkCmdBindVertexBuffers(commandBufferForFilling, vboBind++, 1, &vertexBuffer, offsets);
-            lastVertexBuffer = vertexBuffer;
-        }
-
-        auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
-        auto imageDescSet = meshVLK->imageDescriptorSets[updateFrame]->getDescSet();
-
-        //UBO
-        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
-
-        //Image
-        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                meshVLK->hgPipelineVLK->pipelineLayout, 1, 1, &imageDescSet, 0, 0);
-
-        vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
-    }
-
-
-    if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
-}
-
 HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
                                         HGShaderPermutation shader,
                                         DrawElementMode element,
@@ -1618,6 +1449,190 @@ GDeviceVLK::createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int 
     return newPool->allocate(layout, uniforms, images);
 }
 
-void GDeviceVLK::drawStageAndDeps(HDrawStage) {
+void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
+    //Draw deps
+    for (int i = 0; i < drawStage->drawStageDependencies.size(); i++) {
+        this->internalDrawStageAndDeps(drawStage->drawStageDependencies[i]);
+    }
 
+    if (drawStage->meshesToRender == nullptr)
+        return;
+
+    if (drawStage->clearScreen) {
+        clearColor[0] = drawStage->clearColor[0];
+        clearColor[1] = drawStage->clearColor[1];
+        clearColor[2] = drawStage->clearColor[2];
+    }
+
+    int updateFrame = getUpdateFrameNumber();
+    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
+
+    VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
+    VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
+    bool lastIsScissorsEnabled = false;
+
+    uint32_t dynamicOffset[7] = {};
+
+    VkViewport usualViewport;
+    usualViewport.width = drawStage->viewPortDimensions.maxs[0];
+    usualViewport.height =  drawStage->viewPortDimensions.maxs[1];
+    usualViewport.x = drawStage->viewPortDimensions.mins[0];
+    usualViewport.y =  drawStage->viewPortDimensions.mins[1];
+    usualViewport.minDepth = 0;
+    usualViewport.maxDepth = 0.990f;
+
+    VkViewport mapAreaViewport = usualViewport;
+    mapAreaViewport.minDepth = 0.991f;
+    mapAreaViewport.maxDepth = 0.996f;
+
+    VkViewport skyBoxViewport = usualViewport;
+    skyBoxViewport.minDepth = 0.997f;
+    skyBoxViewport.maxDepth = 1.0f;
+
+
+    //Set scissors
+    VkRect2D defaultScissor = {};
+    defaultScissor.offset = {0, 0};
+    defaultScissor.extent = swapChainExtent;
+
+    vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
+
+    //Set new viewport
+    enum class ViewportType {vp_usual, vp_mapArea, vp_skyBox};
+    ViewportType lastViewPort = ViewportType::vp_usual;
+    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
+
+    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
+
+    auto iMeshes = drawStage->meshesToRender->meshes;
+
+    for (auto &mesh: iMeshes) {
+        auto *meshVLK = ((GMeshVLK *)mesh.get());
+        auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
+        auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
+
+        uint32_t uboInd = 0;
+        auto *uboB = drawStage->sceneWideBlockVSPSChunk.get();
+        if (uboB) {
+            dynamicOffset[uboInd++] = (uboB)->getOffset();
+        }
+
+        for (int k = 1; k < 6; k++) {
+            if (shaderVLK->hasBondUBO[k]) {
+                auto *uboB = (meshVLK->getUniformBuffer(k).get());
+                if (uboB) {
+                    dynamicOffset[uboInd++] = (uboB)->getOffset();
+                }
+            }
+        }
+
+        if (lastPipeline != meshVLK->hgPipelineVLK) {
+            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              meshVLK->hgPipelineVLK->graphicsPipeline);
+
+            lastPipeline = meshVLK->hgPipelineVLK;
+        }
+
+        ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
+        if (lastViewPort != newViewPort) {
+            switch (newViewPort) {
+                case ViewportType::vp_usual:
+                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
+                    break;
+                case ViewportType::vp_skyBox:
+                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &skyBoxViewport);
+                    break;
+                case ViewportType::vp_mapArea:
+                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &mapAreaViewport);
+                    break;
+            }
+
+            lastViewPort = newViewPort;
+        }
+//        if (lastIsScissorsEnabled != meshVLK->m_isScissorsEnabled) {
+//            lastIsScissorsEnabled = meshVLK->m_isScissorsEnabled;
+//        }
+//        if (lastIsScissorsEnabled) {
+//            VkRect2D rect;
+//            rect.offset.x = meshVLK->m_scissorOffset[0];
+//            rect.offset.y = meshVLK->m_scissorOffset[1];
+//            rect.extent.width = meshVLK->m_scissorSize[0];
+//            rect.extent.height = meshVLK->m_scissorSize[1];
+//
+//            vkCmdSetScissor(commandBufferForFilling, 0, 1, &rect);
+//        } else {
+//            vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
+//        }
+
+
+        auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
+        auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
+        VkDeviceSize offsets[] = {0};
+
+        if (lastIndexBuffer != indexBuffer) {
+            vkCmdBindIndexBuffer(commandBufferForFilling, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+            lastIndexBuffer = indexBuffer;
+        }
+
+        if (lastVertexBuffer != vertexBuffer) {
+            uint32_t vboBind = 0;
+
+            vkCmdBindVertexBuffers(commandBufferForFilling, vboBind++, 1, &vertexBuffer, offsets);
+            lastVertexBuffer = vertexBuffer;
+        }
+
+        auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
+        auto imageDescSet = meshVLK->imageDescriptorSets[updateFrame]->getDescSet();
+
+        //UBO
+        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
+
+        //Image
+        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                meshVLK->hgPipelineVLK->pipelineLayout, 1, 1, &imageDescSet, 0, 0);
+
+        vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
+    }
+}
+void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
+    int updateFrame = getUpdateFrameNumber();
+
+    VkCommandBufferInheritanceInfo bufferInheritanceInfo;
+    bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+    bufferInheritanceInfo.pNext = nullptr;
+    bufferInheritanceInfo.renderPass = renderPass;
+    bufferInheritanceInfo.subpass = 0;
+    bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
+    bufferInheritanceInfo.occlusionQueryEnable = false;
+    bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
+    bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+    beginInfo.pNext = NULL;
+    beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
+
+//    std::cout << "updateCommandBuffers: updateFrame = " << updateFrame << std::endl;
+    vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+
+    //Update
+    if (m_shaderDescriptorUpdateNeeded) {
+        for(auto shaderVLKRec : m_shaderPermutCache) {
+            ((GShaderPermutationVLK *) shaderVLKRec.second.get())->updateDescriptorSet(updateFrame);
+        }
+        m_shaderDescriptorUpdateNeeded = false;
+    }
+
+    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
+    if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording command buffer!");
+    }
+
+    internalDrawStageAndDeps(drawStage);
+
+    if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
 }

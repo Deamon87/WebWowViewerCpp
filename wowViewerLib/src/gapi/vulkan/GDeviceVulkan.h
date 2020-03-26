@@ -83,7 +83,7 @@ public:
 
     void bindIndexBuffer(IIndexBuffer *buffer) override;
     void bindVertexBuffer(IVertexBuffer *buffer) override;
-    void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override;
+    void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override {};
     void bindVertexBufferBindings(IVertexBufferBindings *buffer) override;
 
     void bindTexture(ITexture *texture, int slot) override;
@@ -192,6 +192,7 @@ public:
 
 private:
     void drawMesh(HGMesh &hmesh);
+    void internalDrawStageAndDeps(HDrawStage drawStage);
 
     void setupDebugMessenger();
     void pickPhysicalDevice();
@@ -383,6 +384,7 @@ protected:
     int uniformBuffersCreated = 0;
     bool attachmentsReady = false;
 };
+
 
 
 
