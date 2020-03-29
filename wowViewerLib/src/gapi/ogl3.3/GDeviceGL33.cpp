@@ -251,9 +251,10 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
         this->clearScreen();
     }
 
-
-    for (auto hgMesh : drawStage->meshesToRender->meshes) {
-        this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
+    if (drawStage->meshesToRender != nullptr) {
+        for (auto hgMesh : drawStage->meshesToRender->meshes) {
+            this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
+        }
     }
 
 //    drawMeshes(drawStage->meshesToRender->meshes);

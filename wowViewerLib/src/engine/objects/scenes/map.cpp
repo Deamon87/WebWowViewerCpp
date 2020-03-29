@@ -333,6 +333,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     }
 
     //Sort and delete duplicates
+    if (m2ObjectsCandidates.size() > 0)
     {
         auto *sortedArrayPtr = &m2ObjectsCandidates[0];
         std::vector<int> indexArray = std::vector<int>(m2ObjectsCandidates.size());

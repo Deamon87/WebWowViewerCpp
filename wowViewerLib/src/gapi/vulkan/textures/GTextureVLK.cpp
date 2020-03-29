@@ -227,6 +227,8 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
             0, nullptr,
             0, nullptr,
             1, &imageMemoryBarrier);
+
+        m_device.signalTextureTransferCommandRecorded();
     }
 
     // Store current layout for later reuse

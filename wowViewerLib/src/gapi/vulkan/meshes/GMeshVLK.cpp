@@ -77,7 +77,7 @@ GMeshVLK::GMeshVLK(IDevice &device,
     for (int i = 0; i < 5; i++) {
         auto it = shaderLayoutBindings.find(i);
         if (it != shaderLayoutBindings.end()) {
-            if ((m_UniformBuffer[i] == nullptr) || (it->second.size != (m_UniformBuffer[i]->getSize()))) {
+            if ((m_UniformBuffer[i] != nullptr) && (it->second.size != (m_UniformBuffer[i]->getSize()))) {
                 std::cout << "buffers missmatch!" << std::endl;
             }
         }
@@ -128,7 +128,9 @@ void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
             bindIndex++;
         }
 
-        imageDescriptorSets[j]->writeToDescriptorSets(descriptorWrites);
+        if (!descriptorWrites.empty()) {
+            imageDescriptorSets[j]->writeToDescriptorSets(descriptorWrites);
+        }
 //        vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
     }
 }

@@ -302,6 +302,11 @@ double currentFrame;
 double lastFrame;
 
 int main(){
+//    std::ofstream out("log.txt");
+//    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
+//    std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
+//    std::cerr.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
+
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);

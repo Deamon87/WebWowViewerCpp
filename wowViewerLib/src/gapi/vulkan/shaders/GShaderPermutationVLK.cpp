@@ -125,7 +125,7 @@ void GShaderPermutationVLK::createImageDescriptorLayout() {
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = shaderLayoutBindings.size();
-    layoutInfo.pBindings = &shaderLayoutBindings[0];
+    layoutInfo.pBindings = (shaderLayoutBindings.size() > 0) ? &shaderLayoutBindings[0] : nullptr;
 
     if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &imageDescriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");

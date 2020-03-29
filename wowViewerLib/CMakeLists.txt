@@ -376,7 +376,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
-            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/include/iostuff.h src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp src/gapi/vulkan/shaders/GImguiShaderPermutation.h)
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/include/iostuff.h src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp src/gapi/vulkan/shaders/GImguiShaderPermutation.h src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.cpp src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)

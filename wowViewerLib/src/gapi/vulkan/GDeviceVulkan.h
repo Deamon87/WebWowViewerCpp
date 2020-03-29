@@ -70,7 +70,7 @@ public:
         return true;
     }
     bool canUploadInSeparateThread() {
-        return false;//uploadQueue != graphicsQueue;
+        return uploadQueue != graphicsQueue;
     }
 
     HGTexture getBlackPixelTexture() {
@@ -172,6 +172,11 @@ public:
     VkCommandBuffer getTextureTransferCommandBuffer() {
         int uploadFrame = getUpdateFrameNumber();
         return textureTransferCommandBuffers[uploadFrame];
+    }
+
+    void signalTextureTransferCommandRecorded() {
+        int uploadFrame = getUpdateFrameNumber();
+        textureTransferCommandBufferNull[uploadFrame] = false;
     }
 
     QueueFamilyIndices getQueueFamilyIndices() {
@@ -313,14 +318,17 @@ protected:
 
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkCommandBuffer> renderCommandBuffers;
+    std::vector<bool> renderCommandBuffersNull;
     std::vector<VkCommandBuffer> uploadCommandBuffers;
     std::vector<VkCommandBuffer> textureTransferCommandBuffers;
+    std::vector<bool> textureTransferCommandBufferNull;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkSemaphore> textureTransferFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> inFlightTextureTransferFences;
+    std::vector<bool> uploadSemaphoresSubmited;
     std::vector<VkSemaphore> uploadSemaphores;
     std::vector<VkFence> uploadFences;
 
