@@ -63,6 +63,10 @@ void GIndexBufferVLK::uploadData(void * data, int length) {
         ibAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
 
+        if (length == 0) {
+            std::cout << "oops" << std::endl;
+        }
+
         ERR_GUARD_VULKAN(vmaCreateBuffer(m_device.getVMAAllocator(), &ibInfo, &ibAllocCreateInfo, &stagingIndexBuffer,
                                          &stagingIndexBufferAlloc, &stagingIndexBufferAllocInfo));
 

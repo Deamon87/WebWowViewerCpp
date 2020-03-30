@@ -431,22 +431,26 @@ void AdtObject::createVBO() {
     combinedVbo->uploadData(vboArray.data(), vboArray.size()*sizeof(float));
 
     /* 2. Strips */
-    stripVBO = device->createIndexBuffer();
+
     if (m_adtFile->strips.size() > 0) {
-        stripVBO->uploadData(m_adtFile->strips.data(), m_adtFile->strips.size() * sizeof(int16_t));
+        stripIBO = device->createIndexBuffer();
+        stripIBO->uploadData(m_adtFile->strips.data(), m_adtFile->strips.size() * sizeof(int16_t));
+
+        adtVertexBindings = device->createVertexBufferBindings();
+        adtVertexBindings->setIndexBuffer(stripIBO);
+
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = combinedVbo;
+        vertexBinding.bindings = std::vector<GBufferBinding>(&bufferBinding[0], &bufferBinding[5]);
+
+        adtVertexBindings->addVertexBufferBinding(vertexBinding);
+        adtVertexBindings->save();
     } else {
-        stripVBO->uploadData(nullptr, 0);
+        stripIBO = nullptr;
+        adtVertexBindings = nullptr;
     }
 
-    adtVertexBindings = device->createVertexBufferBindings();
-    adtVertexBindings->setIndexBuffer(stripVBO);
 
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = combinedVbo;
-    vertexBinding.bindings = std::vector<GBufferBinding>(&bufferBinding[0], &bufferBinding[5]);
-
-    adtVertexBindings->addVertexBufferBinding(vertexBinding);
-    adtVertexBindings->save();
 
     //Sometimes mvli can be zero, while there is still data in floatDataBlob
     if (m_adtFileLod!= nullptr && m_adtFileLod->getStatus()==FileStatus::FSLoaded && m_adtFileLod->floatDataBlob_len > 0 && m_adtFileLod->mvli_len > 0) {
@@ -534,103 +538,105 @@ void AdtObject::createMeshes() {
             mathfu::vec4(api->getConfig()->getFogColor().xyz(), 0));
     });
 
-    for (int i = 0; i < 256; i++) {
-        //Cant be used only in Wotlk
-        //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
-        bool noLayers = m_adtFileTex->mcnkStructs[i].mcly == nullptr || m_adtFileTex->mcnkStructs[i].mclyCnt <= 0;
+    if (adtVertexBindings != nullptr) {
+        for (int i = 0; i < 256; i++) {
+            //Cant be used only in Wotlk
+            //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
+            bool noLayers = m_adtFileTex->mcnkStructs[i].mcly == nullptr || m_adtFileTex->mcnkStructs[i].mclyCnt <= 0;
 
-        HGShaderPermutation hgShaderPermutation = device->getShader("adtShader", nullptr);
-        gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
+            HGShaderPermutation hgShaderPermutation = device->getShader("adtShader", nullptr);
+            gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
 
-        aTemplate.meshType = MeshType::eAdtMesh;
-        aTemplate.triCCW = 1;
-        aTemplate.depthWrite = 1;
-        aTemplate.depthCulling = 1;
-        aTemplate.backFaceCulling = 1;
-        aTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+            aTemplate.meshType = MeshType::eAdtMesh;
+            aTemplate.triCCW = 1;
+            aTemplate.depthWrite = 1;
+            aTemplate.depthCulling = 1;
+            aTemplate.backFaceCulling = 1;
+            aTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
-        aTemplate.start = m_adtFile->stripOffsets[i] * 2;
-        aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
-        aTemplate.element = DrawElementMode::TRIANGLES;
+            aTemplate.start = m_adtFile->stripOffsets[i] * 2;
+            aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
+            aTemplate.element = DrawElementMode::TRIANGLES;
 
-        aTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-        aTemplate.ubo[1] = nullptr;
-        aTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockVS));
-        aTemplate.ubo[3] = adtWideBlockPS;
-        aTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockPS));
+            aTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
+            aTemplate.ubo[1] = nullptr;
+            aTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockVS));
+            aTemplate.ubo[3] = adtWideBlockPS;
+            aTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockPS));
 
-        aTemplate.textureCount = 9;
+            aTemplate.textureCount = 9;
 
-        aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
+            aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
-        aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBufferChunk *self){
-            auto &blockPS = self->getObject<ADT::meshWideBlockPS>();
-            for (int j = 0; j < 4; j++) {
-                blockPS.uHeightOffset[j] = 0.0f;
-                blockPS.uHeightScale[j] = 1.0f;
-            }
-            if ((adtFileTex->mtxp_len > 0) && !noLayers) {
-                for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                    auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
-
-                    blockPS.uHeightOffset[j] = textureParams.heightOffset;
-                    blockPS.uHeightScale[j] = textureParams.heightScale;
+            aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBufferChunk *self) {
+                auto &blockPS = self->getObject<ADT::meshWideBlockPS>();
+                for (int j = 0; j < 4; j++) {
+                    blockPS.uHeightOffset[j] = 0.0f;
+                    blockPS.uHeightScale[j] = 1.0f;
                 }
-            }
-        });
+                if ((adtFileTex->mtxp_len > 0) && !noLayers) {
+                    for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                        auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
 
-        aTemplate.ubo[2]->setUpdateHandler([this, i](IUniformBufferChunk *self){
-            auto &blockVS = self->getObject<ADT::meshWideBlockVS>();
-            blockVS.uPos = mathfu::vec4(
-                this->m_adtFile->mapTile[i].position.x,
-                this->m_adtFile->mapTile[i].position.y,
-                this->m_adtFile->mapTile[i].position.z,
-                0
-            );
-        });
-
-
-        if (m_adtFileTex->mtxp_len > 0 && !noLayers) {
-            for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
-
-                HGTexture layer_height = nullptr;
-                if (textureParams.flags.do_not_load_specular_or_height_texture_but_use_cubemap == 0) {
-                    if (!feq(textureParams.heightOffset, 1.0f) && !feq(textureParams.heightScale, 0.0)) {
-                        layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+                        blockPS.uHeightOffset[j] = textureParams.heightOffset;
+                        blockPS.uHeightScale[j] = textureParams.heightScale;
                     }
                 }
+            });
 
-                aTemplate.texture[j + 5] = layer_height;
+            aTemplate.ubo[2]->setUpdateHandler([this, i](IUniformBufferChunk *self) {
+                auto &blockVS = self->getObject<ADT::meshWideBlockVS>();
+                blockVS.uPos = mathfu::vec4(
+                    this->m_adtFile->mapTile[i].position.x,
+                    this->m_adtFile->mapTile[i].position.y,
+                    this->m_adtFile->mapTile[i].position.z,
+                    0
+                );
+            });
+
+
+            if (m_adtFileTex->mtxp_len > 0 && !noLayers) {
+                for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                    auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
+
+                    HGTexture layer_height = nullptr;
+                    if (textureParams.flags.do_not_load_specular_or_height_texture_but_use_cubemap == 0) {
+                        if (!feq(textureParams.heightOffset, 1.0f) && !feq(textureParams.heightScale, 0.0)) {
+                            layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+                        }
+                    }
+
+                    aTemplate.texture[j + 5] = layer_height;
+                }
+            } else {
+                for (int j = 0; j < 4; j++) {
+                    aTemplate.texture[j + 5] = device->getWhiteTexturePixel();
+                }
             }
-        } else {
-            for (int j = 0; j < 4; j++) {
-                aTemplate.texture[j + 5] = device->getWhiteTexturePixel();
+
+            if (!noLayers) {
+                aTemplate.texture[4] = alphaTextures[i];
+            } else {
+                aTemplate.texture[4] = device->getBlackTexturePixel();
             }
-        }
 
-        if (!noLayers) {
-            aTemplate.texture[4] = alphaTextures[i];
-        } else {
-            aTemplate.texture[4] = device->getBlackTexturePixel();
-        }
+            if (!noLayers) {
+                for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                    auto &layerDef = m_adtFileTex->mcnkStructs[i].mcly[j];
 
-        if (!noLayers) {
-            for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                auto &layerDef = m_adtFileTex->mcnkStructs[i].mcly[j];
-
-                HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+                    HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
 //            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-                aTemplate.texture[j] = layer_x;
+                    aTemplate.texture[j] = layer_x;
+                }
+            } else {
+                for (int j = 0; j < 4; j++) {
+                    aTemplate.texture[j] = device->getWhiteTexturePixel();
+                }
             }
-        } else {
-            for (int j = 0; j < 4; j++) {
-                aTemplate.texture[j] = device->getWhiteTexturePixel();
-            }
-        }
 
-        HGMesh hgMesh = device->createMesh(aTemplate);
-        adtMeshes.push_back(hgMesh);
+            HGMesh hgMesh = device->createMesh(aTemplate);
+            adtMeshes.push_back(hgMesh);
+        }
     }
 }
 

@@ -100,7 +100,7 @@ private:
     std::vector<LodCommand> lodCommands;
 
     HGVertexBuffer combinedVbo ;
-    HGIndexBuffer stripVBO ;
+    HGIndexBuffer stripIBO ;
     HGVertexBufferBindings adtVertexBindings;
 
     HGVertexBuffer heightVboLod;
