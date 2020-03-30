@@ -24,12 +24,6 @@ public:
 
     size_t getSize() {return m_size;}
 private:
-    void setOffset(size_t offset) {
-        m_offset = offset;
-    }
-    void setPointer(void *ptr) {
-        m_ptr = ptr;
-    }
     void destroyBuffer();
     void bind(int bindingPoint); //Should be called only by GDevice
     void unbind();
@@ -44,14 +38,8 @@ private:
 
 private:
     size_t m_size;
-    size_t m_offset = 0;
-    void *m_ptr = 0;
-
-    void * pFrameOneContent;
     bool m_buffCreated = false;
     bool m_dataUploaded = false;
-
-    int m_creationIndex = 0;
 
     VkBuffer g_buf;
     VmaAllocation g_alloc;
@@ -60,8 +48,6 @@ private:
     VkBuffer stagingUBOBuffer = VK_NULL_HANDLE;
     VmaAllocation stagingUBOBufferAlloc = VK_NULL_HANDLE;
     VmaAllocationInfo stagingUBOBufferAllocInfo = {};
-
-    std::function<void(IUniformBuffer* self)> m_handler;
 };
 
 

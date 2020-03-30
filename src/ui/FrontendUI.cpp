@@ -636,8 +636,14 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
                     meshTemplate.depthCulling = false;
 
                     meshTemplate.scissorEnabled = true;
-                    meshTemplate.scissorOffset = {(int)clip_rect.x, (int)(fb_height - clip_rect.w)};
-                    meshTemplate.scissorSize = {(int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y)};
+                    //Vulkan has different clip offset compared to OGL
+                    if (!m_device->getIsVulkanAxisSystem()) {
+                        meshTemplate.scissorOffset = {(int)clip_rect.x, (int)(fb_height - clip_rect.w)};
+                        meshTemplate.scissorSize = {(int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y)};
+                    } else {
+                        meshTemplate.scissorOffset = {(int)clip_rect.x, (int)(clip_rect.y)};
+                        meshTemplate.scissorSize = {(int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y)};
+                    }
 
                     meshTemplate.ubo[1] = uboPart;
                     meshTemplate.textureCount = 1;

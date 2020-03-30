@@ -8,15 +8,12 @@
 
 GUniformBufferVLK::GUniformBufferVLK(IDevice &device, size_t size) : m_device((GDeviceVLK *) &device){
     m_size = size;
-    pFrameOneContent = new char[size];
 }
 
 GUniformBufferVLK::~GUniformBufferVLK() {
     if (m_buffCreated) {
         destroyBuffer();
     }
-
-    delete (char *)pFrameOneContent;
 }
 
 void GUniformBufferVLK::createBuffer() {
@@ -51,6 +48,21 @@ void GUniformBufferVLK::createBuffer() {
 }
 
 void GUniformBufferVLK::destroyBuffer() {
+    if (m_buffCreated) {
+        auto *l_device = m_device;
+        auto l_stagingUBOBuffer = stagingUBOBuffer;
+        auto l_stagingUBOBufferAlloc = stagingUBOBufferAlloc;
+
+        auto l_hUBOBuffer = g_buf;
+        auto l_hUBOBufferAlloc = g_alloc;
+
+        m_device->addDeallocationRecord(
+            [l_device, l_stagingUBOBuffer, l_stagingUBOBufferAlloc, l_hUBOBuffer, l_hUBOBufferAlloc]() {
+                vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingUBOBuffer, l_stagingUBOBufferAlloc);
+                vmaDestroyBuffer(l_device->getVMAAllocator(), l_hUBOBuffer, l_hUBOBufferAlloc);
+            }
+        );
+    }
 }
 void GUniformBufferVLK::bind(int bindingPoint) { //Should be called only by GDevice
 

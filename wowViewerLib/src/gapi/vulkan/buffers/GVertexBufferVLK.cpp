@@ -21,7 +21,21 @@ void GVertexBufferVLK::createBuffer() {
 }
 
 void GVertexBufferVLK::destroyBuffer() {
+    if (m_dataUploaded) {
+        auto *l_device = &m_device;
+        auto &l_stagingVertexBuffer = stagingVertexBuffer;
+        auto &l_stagingVertexBufferAlloc = stagingVertexBufferAlloc;
 
+        auto &l_hVertexBuffer = g_hVertexBuffer;
+        auto &l_hVertexBufferAlloc = g_hVertexBufferAlloc;
+
+        m_device.addDeallocationRecord(
+            [l_device, l_stagingVertexBuffer, l_stagingVertexBufferAlloc, l_hVertexBuffer, l_hVertexBufferAlloc]() {
+                vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingVertexBuffer, l_stagingVertexBufferAlloc);
+                vmaDestroyBuffer(l_device->getVMAAllocator(), l_hVertexBuffer, l_hVertexBufferAlloc);
+            }
+        );
+    }
 }
 
 static int vbo_uploaded = 0;

@@ -169,7 +169,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -232,6 +232,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = physicalDevice;
     allocatorInfo.device = device;
+    allocatorInfo.instance = vkInstance;
 
 
     vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
@@ -1001,9 +1002,11 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnifo
 
     auto bufferForUploadVLK = ((GUniformBufferVLK *) bufferForUpload.get());
     size_t old_size = bufferForUploadVLK->m_size;
-    bufferForUploadVLK->resize(fullSize);
-    //Buffer identifier was changed, so we need to update shader UBO descriptor
+
+
     if (old_size < fullSize) {
+        bufferForUploadVLK->resize(fullSize);
+        //Buffer identifier was changed, so we need to update shader UBO descriptor
         m_shaderDescriptorUpdateNeeded = true;
     }
     char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->stagingUBOBufferAllocInfo.pMappedData);
@@ -1484,7 +1487,8 @@ GDeviceVLK::createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int 
 
     for (size_t i = 0; i < m_descriptorPools.size(); i++) {
         descriptorSet = m_descriptorPools[i]->allocate(layout, uniforms, images);
-        if (descriptorSet != nullptr) return descriptorSet;
+        if (descriptorSet != nullptr)
+            return descriptorSet;
     }
 
     //2. Create new descriptor set and allocate from it

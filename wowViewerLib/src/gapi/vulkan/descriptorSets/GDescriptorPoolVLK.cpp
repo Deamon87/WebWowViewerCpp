@@ -52,6 +52,15 @@ std::shared_ptr<GDescriptorSets> GDescriptorPoolVLK::allocate(VkDescriptorSetLay
     imageAvailable -= images;
 	setsAvailable -= 1;
 
-    std::shared_ptr<GDescriptorSets> result = std::make_shared<GDescriptorSets>(m_device, descriptorSet);
+    std::shared_ptr<GDescriptorSets> result = std::make_shared<GDescriptorSets>(m_device, descriptorSet, this, uniforms, images);
     return result;
+}
+
+void GDescriptorPoolVLK::deallocate(GDescriptorSets *set) {
+    auto descSet = set->getDescSet();
+    vkFreeDescriptorSets(m_device.getVkDevice(), m_descriptorPool, 1, &descSet);
+
+    imageAvailable+= set->getImageCount();
+    uniformsAvailable+= set->getUniformCount();
+    setsAvailable+=1;
 }
