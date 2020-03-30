@@ -26,7 +26,9 @@ void GUniformBufferVLK::createBuffer() {
     bufCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
     VmaAllocationCreateInfo allocCreateInfo = {};
-    allocCreateInfo.pool = m_device->getUBOPool();
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    allocCreateInfo.flags = 0;
+
 
     ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &bufCreateInfo, &allocCreateInfo, &g_buf, &g_alloc, &g_allocInfo));
 

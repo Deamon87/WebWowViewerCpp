@@ -36,6 +36,14 @@ private:
     void destroyBuffer();
     virtual void bind(); //Should be called only by GDevice
     void unbind();
+
+    VkBuffer stagingBuffer;
+    VmaAllocation stagingBufferAlloc = VK_NULL_HANDLE;
+    VmaAllocationInfo stagingBufferAllocInfo = {};
+
+
+    VmaAllocation imageAllocation = VK_NULL_HANDLE;
+    VmaAllocationInfo imageAllocationInfo = {};
 protected:
     GDeviceVLK &m_device;
 

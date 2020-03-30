@@ -257,23 +257,23 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
 
     // Create pool
-    VkBufferCreateInfo exampleBufCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    exampleBufCreateInfo.size = 65536; // Whatever.
-    exampleBufCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // Change if needed.
-
-    VmaAllocationCreateInfo allocCreateInfo = {};
-    allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; // Change if needed.
-
-    uint32_t memTypeIndex;
-    vmaFindMemoryTypeIndexForBufferInfo(vmaAllocator, &exampleBufCreateInfo, &allocCreateInfo, &memTypeIndex);
-
-    // Create a pool that can have at most 2 blocks, 128 MiB each.
-    VmaPoolCreateInfo poolCreateInfo = {};
-    poolCreateInfo.memoryTypeIndex = memTypeIndex;
-    poolCreateInfo.blockSize = 128ull * 1024 * 1024;
-    poolCreateInfo.maxBlockCount = 10;
-
-    vmaCreatePool(vmaAllocator, &poolCreateInfo, &uboVmaPool);
+//    VkBufferCreateInfo exampleBufCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+//    exampleBufCreateInfo.size = 65536; // Whatever.
+//    exampleBufCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // Change if needed.
+//
+//    VmaAllocationCreateInfo allocCreateInfo = {};
+//    allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; // Change if needed.
+//
+//    uint32_t memTypeIndex;
+//    vmaFindMemoryTypeIndexForBufferInfo(vmaAllocator, &exampleBufCreateInfo, &allocCreateInfo, &memTypeIndex);
+//
+//    // Create a pool that can have at most 2 blocks, 128 MiB each.
+//    VmaPoolCreateInfo poolCreateInfo = {};
+//    poolCreateInfo.memoryTypeIndex = memTypeIndex;
+//    poolCreateInfo.blockSize = 128ull * 1024 * 1024;
+//    poolCreateInfo.maxBlockCount = 10;
+//
+//    vmaCreatePool(vmaAllocator, &poolCreateInfo, &uboVmaPool);
 
 }
 
