@@ -860,7 +860,7 @@ void GDeviceVLK::increaseFrameNumber() {
 }
 
 float GDeviceVLK::getAnisLevel() {
-    return 0;
+    return deviceProperties.limits.maxSamplerAnisotropy;
 }
 
 void GDeviceVLK::bindProgram(IShaderPermutation *program) {
@@ -925,9 +925,11 @@ void GDeviceVLK::endUpdateForNextFrame() {
         submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
         uploadSemaphoresSubmited[uploadFrame] = true;
 
-
-        if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
-            std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        {
+            auto result = vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]);
+            if ( result != VK_SUCCESS) {
+                std::cout << "failed to submit uploadCommandBuffer command buffer! result = " << result << std::endl << std::flush;
+            }
         }
     }
 
@@ -1157,7 +1159,7 @@ HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool
 //    return h_texture;
 
     BlpCacheRecord blpCacheRecord;
-    blpCacheRecord.texture = texture;
+    blpCacheRecord.texture = texture.get();
     blpCacheRecord.wrapX = xWrapTex;
     blpCacheRecord.wrapY = yWrapTex;
 
@@ -1309,8 +1311,11 @@ void GDeviceVLK::commitFrame() {
         uploadSemaphoresSubmited[currentDrawFrame] = true;
 
         vkResetFences(device, 1, &uploadFences[currentDrawFrame]);
-        if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]) != VK_SUCCESS) {
-            std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        {
+            auto result = vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]);
+            if ( result != VK_SUCCESS) {
+                std::cout << "failed to submit uploadCommandBuffer command buffer! result = " << result << std::endl << std::flush;
+            }
         }
     }
 
@@ -1401,9 +1406,12 @@ void GDeviceVLK::commitFrame() {
 
 
 //    if (!renderCommandBuffersNull[currentDrawFrame]) {
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentDrawFrame]) != VK_SUCCESS) {
-            std::cout << "failed to submit draw command buffer!" << std::endl << std::flush;
+    {
+        auto result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentDrawFrame]);
+        if (result != VK_SUCCESS) {
+            std::cout << "failed to submit draw command buffer! result = " << result << std::endl << std::flush;
         }
+    }
 //    }
 
     VkPresentInfoKHR presentInfo = {};
@@ -1664,7 +1672,7 @@ void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
     beginInfo.pNext = NULL;
     beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
 
-//    std::cout << "updateCommandBuffers: updateFrame = " << updateFrame << std::endl;
+//    std::cout << "drawStageAndDeps: updateFrame = " << updateFrame << std::endl;
     vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
     //Update

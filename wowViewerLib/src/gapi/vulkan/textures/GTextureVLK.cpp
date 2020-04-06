@@ -268,9 +268,9 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     sampler.maxLod = (float)vulkanMipMapCount;
     // Enable anisotropic filtering
     // This feature is optional, so we must check if it's supported on the device
-    if (/*m_device.getIsAnisFiltrationSupported()*/ false) {
+    if (m_device.getIsAnisFiltrationSupported()) {
         // Use max. level of anisotropy for this example
-        //sampler.maxAnisotropy = m_device->deviproperties.limits.maxSamplerAnisotropy;
+        sampler.maxAnisotropy = m_device.getAnisLevel();
         sampler.anisotropyEnable = VK_TRUE;
     } else {
         // The device does not support anisotropic filtering
