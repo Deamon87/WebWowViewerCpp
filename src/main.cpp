@@ -321,8 +321,8 @@ int main(){
     glfwInit();
 
 //    std::string rendererName = "ogl2";
-//    std::string rendererName = "ogl3";
-    std::string rendererName = "vulkan";
+    std::string rendererName = "ogl3";
+//    std::string rendererName = "vulkan";
 
     //FOR OGL
 
@@ -381,13 +381,13 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
     {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=3a2cb80017792235b94dc6e43424fbc8&cdnconfig=5f086f2db5fb2aa59d00206e85223e1a&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=3a2cb80017792235b94dc6e43424fbc8&cdnconfig=5f086f2db5fb2aa59d00206e85223e1a&filename=data&filedataid=";
+//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=73819d732878c4352c634c4d40ba5baa&cdnconfig=819e3df384392721acdd4e96ab8e0431&filename=";
+//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=73819d732878c4352c634c4d40ba5baa&cdnconfig=819e3df384392721acdd4e96ab8e0431&filename=data&filedataid=";
 //        processor = new HttpZipRequestProcessor(url);
 //        processor = new ZipRequestProcessor(filePath);
 //        processor = new MpqRequestProcessor(filePath);
 //        processor = new HttpRequestProcessor(url, urlFileId);
-        processor = new CascRequestProcessor("d:/Games/World of Warcraft Public Test/_ptr_/");
+        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
 //        processor->setThreaded(true);
 //
         apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);

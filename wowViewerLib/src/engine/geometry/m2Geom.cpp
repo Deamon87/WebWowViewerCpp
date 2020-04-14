@@ -93,6 +93,16 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
 
                 }
             }
+        },
+        {
+            '3VFW',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered 3VFW");
+                    file.m_wfv3 = 1;
+
+                }
+            }
         }
     }
 };
@@ -320,6 +330,10 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     }
 
     initTracks(nullptr);
+
+    if (m_wfv3 != 0)  {
+        m2Header->textures.size = 4;
+    }
 
     //Step 2: init tracks
     fsStatus = FileStatus::FSLoaded;

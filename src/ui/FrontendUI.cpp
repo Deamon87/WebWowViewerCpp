@@ -464,6 +464,11 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(1396280);
         }
     }
+    if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(3445776);
+        }
+    }
 
     ImGui::End();
 }
@@ -473,7 +478,7 @@ void FrontendUI::showQuickLinksDialog() {
 void FrontendUI::showSettingsDialog() {
     if(showSettings) {
         ImGui::Begin("Settings", &showSettings);
-        if (ImGui::SliderFloat("Far plane", &farPlane, 200, 700)) {
+        if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
             if (setFarPlane){
                 setFarPlane(farPlane);
             }

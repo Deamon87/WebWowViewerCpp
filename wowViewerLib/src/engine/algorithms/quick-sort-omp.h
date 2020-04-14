@@ -10,9 +10,7 @@ void quickSort_parallel_internal(int* array, int left, int right, int cutoff, st
 
 void quickSort_parallel(int* array, int lenArray, int numThreads, int cutoff, std::function<bool(int a, int b)> compare){
     {
-        #pragma omp parallel num_threads(numThreads)
         {
-            #pragma omp single nowait
             {
                 quickSort_parallel_internal(array, 0, lenArray - 1, cutoff, compare);
             }
@@ -64,14 +62,11 @@ void quickSort_parallel_internal(int* array, int left, int right, int cutoff, st
         { quickSort_parallel_internal(array, newPartPoint+1, right, cutoff, compare); }
 
     }else {
-        #pragma omp parallel
         {
-            #pragma omp task shared(array, left, newPartPoint, cutoff, compare)
             {
                 quickSort_parallel_internal(array, left, newPartPoint-1, cutoff, compare);
             }
 
-            #pragma omp task shared(array, right, newPartPoint, cutoff, compare)
             {
                 quickSort_parallel_internal(array, newPartPoint+1, right, cutoff, compare);
             }

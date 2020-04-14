@@ -44,6 +44,7 @@ public:
     std::vector<M2_AFID> animationFileDataIDs;
     M2Array<Exp2Record> *exp2Records = nullptr;
     int m_skid = -1;
+    int m_wfv3 = 0;
 private:
     HFileContent m2File;
 

@@ -1387,7 +1387,7 @@ void M2Object::initParticleEmitters() {
     for (int i = 0; i < m_m2Geom->getM2Data()->particle_emitters.size; i++) {
         ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), this);
         particleEmitters.push_back(emitter);
-        if (m_m2Geom.get()->exp2Records != nullptr) {
+        if (m_m2Geom.get()->exp2Records != nullptr && emitter->getGenerator() != nullptr) {
             emitter->getGenerator()->getAniProp()->zSource = m_m2Geom.get()->exp2Records->getElement(i)->zSource;
         }
     }

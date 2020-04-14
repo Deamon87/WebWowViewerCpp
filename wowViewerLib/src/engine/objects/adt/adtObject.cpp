@@ -392,8 +392,14 @@ void AdtObject::createVBO() {
 //            std::cout << " i = " << i << " j =  " << j << " pos = " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
 
             /* 1.3 Normals */
-            for (int k = 0; k < 3; k++) {
-                vboArray.push_back(m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k] / 127.0f);
+            if (m_adtFile->mcnkStructs[i].mcnr != nullptr) {
+                for (int k = 0; k < 3; k++) {
+                    vboArray.push_back(m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k] / 127.0f);
+                }
+            } else {
+                vboArray.push_back(0.0);
+                vboArray.push_back(0.0);
+                vboArray.push_back(1.0);
             }
             /* 1.4 MCCV */ //Color vertex
             if (m_adtFile->mcnkStructs[i].mccv != nullptr) {
@@ -498,10 +504,12 @@ void AdtObject::calcBoundingBoxes() {
         //Loop over heights
         float minZ = 999999;
         float maxZ = -999999;
-        for (int j = 0; j < 8*8+9*9; j++) {
-            float heightVal = mcnkContent->mcvt->height[j];
-            if (minZ > heightVal) minZ = heightVal;
-            if (maxZ < heightVal) maxZ = heightVal;
+        if (mcnkContent->mcvt != nullptr) {
+            for (int j = 0; j < 8 * 8 + 9 * 9; j++) {
+                float heightVal = mcnkContent->mcvt->height[j];
+                if (minZ > heightVal) minZ = heightVal;
+                if (maxZ < heightVal) maxZ = heightVal;
+            }
         }
 
         float minX = mcnkChunk->position.x - (533.3433333 / 16.0);
