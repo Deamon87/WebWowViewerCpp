@@ -572,14 +572,30 @@ void Map::update(HUpdateStage updateStage) {
         }
 
         if ((m_api->databaseHandler != nullptr)) {
+            //Check zoneLight
             LightResult lightResult;
-            m_api->databaseHandler->getEnvInfo(m_mapId,
-                updateStage->cameraMatrices->cameraPos[0],
-                updateStage->cameraMatrices->cameraPos[1],
-                updateStage->cameraMatrices->cameraPos[2],
-                config->getCurrentTime(),
-                lightResult
-            );
+            bool zoneLightFound = false;
+            int LightId;
+            for (const auto& zoneLight : m_zoneLights) {
+                if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
+                    zoneLightFound = true;
+                    LightId = zoneLight.LightID;
+                    break;
+                }
+            }
+
+
+            if (zoneLightFound) {
+                m_api->databaseHandler->getLightById(LightId, config->getCurrentTime(), lightResult );
+            } else {
+                m_api->databaseHandler->getEnvInfo(m_mapId,
+                                                   updateStage->cameraMatrices->cameraPos[0],
+                                                   updateStage->cameraMatrices->cameraPos[1],
+                                                   updateStage->cameraMatrices->cameraPos[2],
+                                                   config->getCurrentTime(),
+                                                   lightResult
+                );
+            }
 
             if (m_currentSkyFDID != lightResult.skyBoxFdid) {
                 if (lightResult.skyBoxFdid == 0) {
@@ -598,7 +614,7 @@ void Map::update(HUpdateStage updateStage) {
 
             //Database is in BGRA
             config->setExteriorAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
-            config->setExteriorDirectColor(lightResult.directColor[2]*3.0, lightResult.directColor[1]*3.0, lightResult.directColor[0]*3.0, 0);
+            config->setExteriorDirectColor(lightResult.directColor[2]*2, lightResult.directColor[1]*2, lightResult.directColor[0]*2, 0);
             config->setCloseRiverColor(lightResult.closeRiverColor[2], lightResult.directColor[1], lightResult.directColor[0], 0);
         }
 
@@ -849,5 +865,46 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage)
         for (int i = 0; i < renderedThisFramePreSort.size(); i++) {
             resultDrawStage->meshesToRender->meshes.push_back(renderedThisFramePreSort[i]);
         }
+    }
+}
+
+void Map::loadZoneLights() {
+    if (m_api->databaseHandler != nullptr) {
+        std::vector<ZoneLight> zoneLights;
+        m_api->databaseHandler->getZoneLightsForMap(m_mapId, zoneLights);
+
+        for (const auto &zoneLight : zoneLights) {
+            mapInnerZoneLightRecord innerZoneLightRecord;
+            innerZoneLightRecord.ID = zoneLight.ID;
+            innerZoneLightRecord.name = zoneLight.name;
+            innerZoneLightRecord.LightID = zoneLight.LightID;
+//            innerZoneLightRecord.Zmin = zoneLight.Zmin;
+//            innerZoneLightRecord.Zmax = zoneLight.Zmax;
+
+            float minX = 9999; float maxX = -9999;
+            float minY = 9999; float maxY = -9999;
+
+            auto &points = innerZoneLightRecord.points;
+            for (auto &zonePoint : zoneLight.points) {
+                minX = std::min(zonePoint.x, minX); minY = std::min(zonePoint.y, minY);
+                maxX = std::max(zonePoint.x, maxX); maxY = std::max(zonePoint.y, maxY);
+
+                points.push_back(mathfu::vec2(zonePoint.x, zonePoint.y));
+            }
+
+            innerZoneLightRecord.aabb = CAaBox(
+                C3Vector(mathfu::vec3(minX, minY, zoneLight.Zmin)),
+                C3Vector(mathfu::vec3(maxX, maxY, zoneLight.Zmax))
+            );
+
+            auto &lines = innerZoneLightRecord.lines;
+            for (int i = 0; i < (points.size() - 1); i++) {
+                lines.push_back(points[i + 1] - points[i]);
+            }
+            lines.push_back( points[0] - points[points.size() - 1]);
+
+            m_zoneLights.push_back(innerZoneLightRecord);
+        }
+
     }
 }

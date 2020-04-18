@@ -27,4 +27,16 @@ struct LiquidMat {
     float color1[3];
     float color2[3];
 };
+
+struct vec2 {
+    float x; float y;
+};
+struct ZoneLight {
+    int ID;
+    std::string name;
+    int LightID;
+    float Zmin;
+    float Zmax;
+    std::vector<vec2> points;
+};
 #endif //AWEBWOWVIEWERCPP_DBSTRUCTS_H
