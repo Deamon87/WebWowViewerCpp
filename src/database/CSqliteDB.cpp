@@ -28,6 +28,11 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "  ) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0))) "
         "    or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)  "
         "ORDER BY l.ID desc"),
+    getLightByIdStatement(m_sqliteDatabase,
+        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0) from Light l "
+        "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
+        "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
+        " where l.ID = ?"),
     getLightData(m_sqliteDatabase,
         "select ld.AmbientColor, ld.DirectColor, ld.RiverCloseColor, ld.Time from LightData ld "
 
@@ -43,8 +48,13 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
     getLiquidTypeInfo(m_sqliteDatabase,
         "select ltxt.FileDataID from LiquidTypeXTexture ltxt where "
         "ltxt.LiquidTypeID = ? order by ltxt.OrderIndex"
+    ),
+    getZoneLightInfo(m_sqliteDatabase,
+        "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"
+    ),
+    getZoneLightPointsInfo(m_sqliteDatabase,
+        "select Pos_0, Pos_1 from ZoneLightPoint where ZoneLightID = ? order by PointOrder;"
     )
-
 
 
 {
@@ -120,7 +130,30 @@ float getFloatFromInt(int value) {
     }
 }
 
+void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult) {
+    getLightByIdStatement.reset();
 
+    getLightByIdStatement.bind(1, lightId);
+
+    std::vector<InnerLightResult> innerResults;
+
+    while (getLightByIdStatement.executeStep()) {
+        InnerLightResult ilr;
+        ilr.pos[0] = getLightByIdStatement.getColumn(0).getDouble();
+        ilr.pos[1] = getLightByIdStatement.getColumn(1).getDouble();
+        ilr.pos[2] = getLightByIdStatement.getColumn(2).getDouble();
+        ilr.fallbackStart = getLightByIdStatement.getColumn(3).getDouble();
+        ilr.fallbackEnd = getLightByIdStatement.getColumn(4).getDouble();
+        ilr.paramId = getLightByIdStatement.getColumn(5).getInt();
+        ilr.skyBoxFileId = getLightByIdStatement.getColumn(6).getInt();
+
+        ilr.blendAlpha = 1.0f;
+
+        innerResults.push_back(ilr);
+    }
+
+    convertInnerResultsToPublic(time, lightResult, innerResults);
+};
 void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, LightResult &lightResult) {
     getLightStatement.reset();
 
@@ -128,15 +161,6 @@ void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, Ligh
     getLightStatement.bind(2, x);
     getLightStatement.bind(3, y);
     getLightStatement.bind(4, z);
-
-struct InnerLightResult {
-    float pos[3];
-    float fallbackStart;
-    float fallbackEnd;
-    float blendAlpha = 0;
-    int paramId;
-    int skyBoxFileId;
-};
 
     std::vector<InnerLightResult> innerResults;
 
@@ -148,7 +172,7 @@ struct InnerLightResult {
         ilr.pos[2] = getLightStatement.getColumn(2).getDouble();
         ilr.fallbackStart = getLightStatement.getColumn(3).getDouble();
         ilr.fallbackEnd = getLightStatement.getColumn(4).getDouble();
-        ilr.paramId = getLightStatement.getColumn(5).getDouble();
+        ilr.paramId = getLightStatement.getColumn(5).getInt();
         ilr.skyBoxFileId = getLightStatement.getColumn(6).getInt();
 
         bool defaultRec = false;
@@ -176,6 +200,13 @@ struct InnerLightResult {
 
         innerResults.push_back(ilr);
     }
+    convertInnerResultsToPublic(ptime, lightResult, innerResults);
+
+
+}
+
+void CSqliteDB::convertInnerResultsToPublic(int ptime, LightResult &lightResult,
+                                            std::vector<CSqliteDB::InnerLightResult> &innerResults)  {
 
     //From lowest to highest
     std::sort(innerResults.begin(), innerResults.end(), [](const InnerLightResult &a, const InnerLightResult &b) {
@@ -247,19 +278,38 @@ struct InnerLightResult {
                     lightResult.closeRiverColor[2] += getFloatFromInt<2>(currLdRes.closeRiverColor) * innerAlpha;
                 } else {
                     //Blend using time as alpha
-                    float timeAlphaBlend = 1.0f - (((float)currLdRes.time - (float)ptime) / ((float)currLdRes.time - (float)lastLdRes.time));
+                    float timeAlphaBlend = 1.0f - (((float) currLdRes.time - (float) ptime) /
+                                                   ((float) currLdRes.time - (float) lastLdRes.time));
 
-                    lightResult.ambientColor[0] += (getFloatFromInt<0>(currLdRes.ambientLight) * timeAlphaBlend + getFloatFromInt<0>(lastLdRes.ambientLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.ambientColor[1] += (getFloatFromInt<1>(currLdRes.ambientLight) * timeAlphaBlend + getFloatFromInt<1>(lastLdRes.ambientLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.ambientColor[2] += (getFloatFromInt<2>(currLdRes.ambientLight) * timeAlphaBlend + getFloatFromInt<2>(lastLdRes.ambientLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.ambientColor[0] += (getFloatFromInt<0>(currLdRes.ambientLight) * timeAlphaBlend +
+                                                    getFloatFromInt<0>(lastLdRes.ambientLight) *
+                                                    (1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.ambientColor[1] += (getFloatFromInt<1>(currLdRes.ambientLight) * timeAlphaBlend +
+                                                    getFloatFromInt<1>(lastLdRes.ambientLight) *
+                                                    (1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.ambientColor[2] += (getFloatFromInt<2>(currLdRes.ambientLight) * timeAlphaBlend +
+                                                    getFloatFromInt<2>(lastLdRes.ambientLight) *
+                                                    (1.0 - timeAlphaBlend)) * innerAlpha;
 
-                    lightResult.directColor[0] += (getFloatFromInt<0>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<0>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.directColor[1] += (getFloatFromInt<1>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<1>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.directColor[2] += (getFloatFromInt<2>(currLdRes.directLight) * timeAlphaBlend + getFloatFromInt<2>(lastLdRes.directLight)*(1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.directColor[0] += (getFloatFromInt<0>(currLdRes.directLight) * timeAlphaBlend +
+                                                   getFloatFromInt<0>(lastLdRes.directLight) * (1.0 - timeAlphaBlend)) *
+                                                  innerAlpha;
+                    lightResult.directColor[1] += (getFloatFromInt<1>(currLdRes.directLight) * timeAlphaBlend +
+                                                   getFloatFromInt<1>(lastLdRes.directLight) * (1.0 - timeAlphaBlend)) *
+                                                  innerAlpha;
+                    lightResult.directColor[2] += (getFloatFromInt<2>(currLdRes.directLight) * timeAlphaBlend +
+                                                   getFloatFromInt<2>(lastLdRes.directLight) * (1.0 - timeAlphaBlend)) *
+                                                  innerAlpha;
 
-                    lightResult.closeRiverColor[0] += (getFloatFromInt<0>(currLdRes.closeRiverColor) * timeAlphaBlend + getFloatFromInt<0>(lastLdRes.closeRiverColor)*(1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.closeRiverColor[1] += (getFloatFromInt<1>(currLdRes.closeRiverColor) * timeAlphaBlend + getFloatFromInt<1>(lastLdRes.closeRiverColor)*(1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.closeRiverColor[2] += (getFloatFromInt<2>(currLdRes.closeRiverColor) * timeAlphaBlend + getFloatFromInt<2>(lastLdRes.closeRiverColor)*(1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.closeRiverColor[0] += (getFloatFromInt<0>(currLdRes.closeRiverColor) * timeAlphaBlend +
+                                                       getFloatFromInt<0>(lastLdRes.closeRiverColor) *
+                                                       (1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.closeRiverColor[1] += (getFloatFromInt<1>(currLdRes.closeRiverColor) * timeAlphaBlend +
+                                                       getFloatFromInt<1>(lastLdRes.closeRiverColor) *
+                                                       (1.0 - timeAlphaBlend)) * innerAlpha;
+                    lightResult.closeRiverColor[2] += (getFloatFromInt<2>(currLdRes.closeRiverColor) * timeAlphaBlend +
+                                                       getFloatFromInt<2>(lastLdRes.closeRiverColor) *
+                                                       (1.0 - timeAlphaBlend)) * innerAlpha;
                 }
                 break;
             }
@@ -280,9 +330,8 @@ struct InnerLightResult {
             lightResult.closeRiverColor[2] += getFloatFromInt<2>(lastLdRes.closeRiverColor) * innerAlpha;
         }
 
-        totalSummator+= innerResult.blendAlpha;
+        totalSummator += innerResult.blendAlpha;
     }
-
 }
 
 void CSqliteDB::getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &loData) {
@@ -312,4 +361,35 @@ void CSqliteDB::getLiquidTypeData(int liquidTypeId, std::vector<int > &fileDataI
         fileDataIds.push_back(getLiquidTypeInfo.getColumn(0).getInt());
     }
 
+}
+void CSqliteDB::getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) {
+// "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"
+    zoneLights = {};
+    getZoneLightInfo.reset();
+
+    getZoneLightInfo.bind(1, mapId);
+    while (getZoneLightInfo.executeStep()) {
+        ZoneLight zoneLight;
+
+        zoneLight.ID = getZoneLightInfo.getColumn(0).getInt();
+        zoneLight.name = getZoneLightInfo.getColumn(1).getName();
+        zoneLight.LightID = getZoneLightInfo.getColumn(2).getInt();
+        zoneLight.Zmin = getZoneLightInfo.getColumn(3).getDouble();
+        zoneLight.Zmax = getZoneLightInfo.getColumn(4).getDouble();
+
+        zoneLights.push_back(zoneLight);
+    }
+
+    for (auto &zoneLight : zoneLights) {
+        getZoneLightPointsInfo.reset();
+        getZoneLightPointsInfo.bind(1, zoneLight.ID);
+
+        while (getZoneLightPointsInfo.executeStep()) {
+            vec2 pt;
+            pt.x = getZoneLightPointsInfo.getColumn(0).getDouble();
+            pt.y = getZoneLightPointsInfo.getColumn(1).getDouble();
+
+            zoneLight.points.push_back(pt);
+        }
+    }
 }

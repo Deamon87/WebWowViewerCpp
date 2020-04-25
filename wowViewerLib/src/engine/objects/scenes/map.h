@@ -52,6 +52,19 @@ private:
     std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
 
     animTime_t getCurrentSceneTime() override ;
+
+
+
+    struct mapInnerZoneLightRecord {
+        int ID;
+        std::string name;
+        int LightID;
+        CAaBox aabb;
+        std::vector<mathfu::vec2> points;
+        std::vector<mathfu::vec2> lines;
+    };
+    std::vector<mapInnerZoneLightRecord> m_zoneLights;
+    void loadZoneLights();
 public:
     explicit Map(ApiContainer *api, int mapId, std::string mapName) : m_mapId(mapId), m_api(api), mapName(mapName){
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
@@ -60,10 +73,14 @@ public:
         m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
         m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
         m_wdlObject->setMapApi(this);
+
+        loadZoneLights();
     };
 
     explicit Map(ApiContainer *api, int mapId, int wdtFileDataId) : m_mapId(mapId), m_api(api), mapName("") {
         m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
+
+        loadZoneLights();
     };
 
     explicit Map(ApiContainer *api, std::string adtFileName, int i, int j, std::string mapName) : m_mapId(0), m_api(api), mapName(mapName){

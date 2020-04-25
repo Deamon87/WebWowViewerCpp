@@ -381,13 +381,13 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
     {
-//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=73819d732878c4352c634c4d40ba5baa&cdnconfig=819e3df384392721acdd4e96ab8e0431&filename=";
-//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=73819d732878c4352c634c4d40ba5baa&cdnconfig=819e3df384392721acdd4e96ab8e0431&filename=data&filedataid=";
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=e232197b8eb788ab32196da5ba2fb60b&cdnconfig=126b8c6b7b52313ab4bfbdea97c11ae5&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=e232197b8eb788ab32196da5ba2fb60b&cdnconfig=126b8c6b7b52313ab4bfbdea97c11ae5&filename=data&filedataid=";
 //        processor = new HttpZipRequestProcessor(url);
 //        processor = new ZipRequestProcessor(filePath);
 //        processor = new MpqRequestProcessor(filePath);
-//        processor = new HttpRequestProcessor(url, urlFileId);
-        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
+        processor = new HttpRequestProcessor(url, urlFileId);
+//        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
 //        processor->setThreaded(true);
 //
         apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
@@ -440,8 +440,10 @@ int main(){
         currentScene = std::make_shared<WmoScene>(&apiContainer, wmoFDid);
         apiContainer.camera->setCameraPos(0, 0, 0);
     });
-    frontendUI->setOpenM2SceneByfdidCallback([&currentScene, &apiContainer](int m2FDid) {
+    frontendUI->setOpenM2SceneByfdidCallback([&currentScene, &apiContainer](int m2FDid, std::vector<int> &replacementTextureIds) {
         currentScene = std::make_shared<M2Scene>(&apiContainer, m2FDid, -1);
+        currentScene->setReplaceTextureArray(replacementTextureIds);
+
         apiContainer.camera->setCameraPos(0, 0, 0);
     });
 
