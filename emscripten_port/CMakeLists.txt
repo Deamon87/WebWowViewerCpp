@@ -46,6 +46,7 @@ target_link_libraries(project WoWViewerLib)
 target_link_options(project PUBLIC "SHELL: --pre-js ../prejs.js --js-library ../jsLib.js")
 target_link_options(project PUBLIC "SHELL: -s USE_GLFW=3 --preload-file glsl -s ALLOW_MEMORY_GROWTH=1")
 target_link_options(project PUBLIC "SHELL: -s FETCH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1")
+target_link_options(project PUBLIC "SHELL: --emit-symbol-map")
 
 set_target_properties(project
         PROPERTIES
