@@ -459,14 +459,35 @@ void FrontendUI::showQuickLinksDialog() {
             openWMOSceneByfdid(1846142);
         }
     }
+    std::vector<int> replacementTextureFDids = {};
     if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
-            openM2SceneByfdid(1396280);
+            openM2SceneByfdid(1396280, replacementTextureFDids);
         }
     }
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
-            openM2SceneByfdid(3445776);
+            openM2SceneByfdid(3445776, replacementTextureFDids);
+        }
+    }
+
+    if (ImGui::Button("Aggramar", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[11] = 1599776;
+            openM2SceneByfdid(1599045, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("M2 3087468", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[11] = 3087540;
+            openM2SceneByfdid(3087468, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("M2 3572296", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(3572296, replacementTextureFDids);
         }
     }
 
@@ -668,7 +689,7 @@ void FrontendUI::setOpenWMOSceneByfdidCallback(std::function<void(int wmoFDid)> 
     this->openWMOSceneByfdid = callback;
 }
 
-void FrontendUI::setOpenM2SceneByfdidCallback(std::function<void(int)> callback) {
+void FrontendUI::setOpenM2SceneByfdidCallback(std::function<void(int, std::vector<int>&)> callback) {
     this->openM2SceneByfdid = callback;
 }
 

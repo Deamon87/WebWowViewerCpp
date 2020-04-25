@@ -35,7 +35,7 @@ private:
     std::function <bool(std::string cascPath)> openCascCallback = nullptr;
     std::function <void(int mapId, int wdtFileId, float x, float y, float z)> openSceneByfdid = nullptr;
     std::function <void(int WMOFdid)> openWMOSceneByfdid = nullptr;
-    std::function <void(int m2Fdid)> openM2SceneByfdid = nullptr;
+    std::function <void(int m2Fdid, std::vector<int> &replacementTextureIds)> openM2SceneByfdid = nullptr;
 
     std::function <void(float &cameraX,float &cameraY,float &cameraZ)> getCameraPos = nullptr;
 
@@ -118,7 +118,7 @@ public:
     void setOpenCascStorageCallback(std::function <bool(std::string cascPath)> callback);
     void setOpenSceneByfdidCallback(std::function <void(int mapId, int wdtFileId, float x, float y, float z)> callback);
     void setOpenWMOSceneByfdidCallback(std::function <void(int wmoFDid)> callback);
-    void setOpenM2SceneByfdidCallback(std::function <void(int m2FDid)> callback);
+    void setOpenM2SceneByfdidCallback(std::function <void(int m2FDid, std::vector<int> &replacementTextureIds)> callback);
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
 
     void setFarPlaneChangeCallback(std::function<void(float farPlane)> callback);
