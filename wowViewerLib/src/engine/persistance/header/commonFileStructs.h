@@ -192,11 +192,7 @@ template<>
 inline std::string M2Array<char>::toString() {
     char * ptr = this->getElement(0);
     std::string result;
-    try {
-        result = std::string(ptr, ptr+size);
-    } catch(...) {
-        result = "";
-    }
+    result = std::string(ptr, ptr+size);
 
     return result;
 }

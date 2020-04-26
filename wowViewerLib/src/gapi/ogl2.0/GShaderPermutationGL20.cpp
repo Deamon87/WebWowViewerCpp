@@ -354,10 +354,6 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
         delete uniformsIndices;
     }
      */
-
-    if (glGetUniformBlockIndex == nullptr) {
-//        std::cout << "glGetUniformBlockIndex == null";
-    }
 }
 
 void GShaderPermutationGL20::setUnf(const std::string &name, GLuint index)  {
