@@ -17,28 +17,38 @@ struct UserDataForRequest {
 };
 
 void downloadSucceeded(emscripten_fetch_t *fetch) {
-//    printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
+    printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
 
-    HFileContent fileContent = std::make_shared<FileContent>(fetch->numBytes);
-    std::copy(&fetch->data[0], &fetch->data[fetch->numBytes], fileContent->begin());
+    try {
+//        std::cout << "Creating FileContent with " << fetch->numBytes << " bytes" << std::endl;
+        HFileContent fileContent = std::make_shared<FileContent>(fetch->numBytes);
+//        std::cout << "FileContent was created" << std::endl;
+        std::copy(fetch->data, fetch->data + fetch->numBytes, fileContent->begin());
 
 
 //    HFileContent fileContent(&fetch->data[0], &fetch->data[fetch->numBytes]);
-    UserDataForRequest * userDataForRequest = (UserDataForRequest *)fetch->userData;
+        UserDataForRequest *userDataForRequest = (UserDataForRequest *) fetch->userData;
+        fetch->userData = nullptr;
 
-    if (userDataForRequest->holderType != CacheHolderType::CACHE_ANIM && fileContent->size() > 4 && (*(uint32_t *)fileContent->data() == 0)) {
-        std::cout << "Encountered encrypted file " << std::string(fetch->url) << std::endl;
-        return;
+        if (userDataForRequest->holderType != CacheHolderType::CACHE_ANIM && fileContent->size() > 4 &&
+            (*(uint32_t *) fileContent->data() == 0)) {
+            std::cout << "Encountered encrypted file " << std::string(fetch->url) << std::endl;
+            return;
+        }
+
+
+        userDataForRequest->processor->provideResult(userDataForRequest->fileName, fileContent,
+                                                     userDataForRequest->holderType);
+        userDataForRequest->processor->currentlyProcessing--;
+
+
+
+        // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
+        delete userDataForRequest;
+        emscripten_fetch_close(fetch); // Free data associated with the fetch.
+    } catch (...) {
+        printf("Exception on Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
     }
-
-
-    userDataForRequest->processor->provideResult(userDataForRequest->fileName, fileContent, userDataForRequest->holderType);
-    userDataForRequest->processor->currentlyProcessing--;
-
-    // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
-    delete userDataForRequest;
-    emscripten_fetch_close(fetch); // Free data associated with the fetch.
-
 
 }
 
@@ -85,6 +95,8 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 }
 
 void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType) {
+//    std::cout << "processFileRequest : filename = " << fileName << std::endl;
+
     const std::string charsToEscape = " !*'();:@&=+$,/?#[]";
 
     std::string escapedFileName = fileName;

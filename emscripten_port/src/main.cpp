@@ -461,11 +461,11 @@ extern "C" {
 //                                                              true, clearColor);
 //        }
 
-        try {
+//        try {
             sceneComposer->draw(sceneScenario);
-        } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
-        }
+//        } catch (const std::exception &e) {
+//                std::cerr << e.what() << std::endl;
+//        }
         glfwSwapBuffers(window);
 
 

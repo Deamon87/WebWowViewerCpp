@@ -459,10 +459,6 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
     }
      */
 
-    if (glGetUniformBlockIndex == nullptr) {
-//        std::cout << "glGetUniformBlockIndex == null";
-    }
-
     m_uboBlockIndex[0] = glGetUniformBlockIndex(program, "sceneWideBlockVSPS");
     m_uboBlockIndex[1] = glGetUniformBlockIndex(program, "modelWideBlockVS");
     m_uboBlockIndex[2] = glGetUniformBlockIndex(program, "meshWideBlockVS");

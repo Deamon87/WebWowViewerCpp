@@ -24,7 +24,7 @@ SceneComposer::SceneComposer(ApiContainer *apiContainer) : m_apiContainer(apiCon
 
     if (m_supportThreads) {
         loadingResourcesThread = std::thread([&]() {
-            try {
+//            try {
                 using namespace std::chrono_literals;
 
                 while (!this->m_isTerminating) {
@@ -32,17 +32,17 @@ SceneComposer::SceneComposer(ApiContainer *apiContainer) : m_apiContainer(apiCon
 
                     processCaches(1000);
                 }
-            } catch(const std::exception &e) {
-                std::cerr << e.what() << std::endl;
-                throw;
-            } catch (...) {
-                throw;
-            }
+//            } catch(const std::exception &e) {
+//                std::cerr << e.what() << std::endl;
+//                throw;
+//            } catch (...) {
+//                throw;
+//            }
         });
 
 
         cullingThread = std::thread(([&]() {
-            try {
+//            try {
                 using namespace std::chrono_literals;
                 FrameCounter frameCounter;
 
@@ -62,17 +62,17 @@ SceneComposer::SceneComposer(ApiContainer *apiContainer) : m_apiContainer(apiCon
 
                     this->cullingFinished.set_value(true);
                 }
-            } catch(const std::exception &e) {
-                std::cerr << e.what() << std::endl;
-                throw;
-            } catch (...) {
-                throw;
-            }
+//            } catch(const std::exception &e) {
+//                std::cerr << e.what() << std::endl;
+//                throw;
+//            } catch (...) {
+//                throw;
+//            }
         }));
 
         if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
             updateThread = std::thread(([&]() {
-                try {
+//                try {
                     while (!this->m_isTerminating) {
                         auto future = nextDeltaTimeForUpdate.get_future();
                         future.wait();
@@ -81,12 +81,12 @@ SceneComposer::SceneComposer(ApiContainer *apiContainer) : m_apiContainer(apiCon
 
                         updateFinished.set_value(true);
                     }
-                } catch(const std::exception &e) {
-                    std::cerr << e.what() << std::endl;
-                    throw;
-                } catch (...) {
-                    throw;
-                }
+//                } catch(const std::exception &e) {
+//                    std::cerr << e.what() << std::endl;
+//                    throw;
+//                } catch (...) {
+//                    throw;
+//                }
             }));
         }
     }

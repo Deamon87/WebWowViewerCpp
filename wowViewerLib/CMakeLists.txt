@@ -18,6 +18,17 @@ if (CMAKE_NDK_BUILD)
     set(LINK_GLEW 0)
 ENDIF()
 
+if (EMSCRIPTEN)
+    message(This is EMSCRIPTEN)
+    set(LINK_GLEW 0)
+    set(LINK_VULKAN 0)
+    set(LINK_OPENMP 0)
+    set(LINK_OGL4 0)
+    if (NOT EMSCRIPTEN_SIMD)
+        set(ENABLE_SIMD 0)
+    endif()
+ENDIF()
+
 if (LINK_OGL2)
     add_definitions(-DLINK_OGL2)
 endif()
@@ -31,16 +42,7 @@ if (LINK_VULKAN)
     add_definitions(-DLINK_VULKAN)
 endif()
 
-if (EMSCRIPTEN)
-    message(This is EMSCRIPTEN)
-    set(LINK_GLEW 0)
-    set(LINK_VULKAN 0)
-    set(LINK_OPENMP 0)
-    set(LINK_OGL4 0)
-    if (NOT EMSCRIPTEN_SIMD)
-        set(ENABLE_SIMD 0)
-    endif()
-ENDIF()
+
 
 
 

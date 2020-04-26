@@ -45,7 +45,9 @@ add_dependencies(project WoWViewerLib)
 target_link_libraries(project WoWViewerLib)
 target_link_options(project PUBLIC "SHELL: --pre-js ../prejs.js --js-library ../jsLib.js")
 target_link_options(project PUBLIC "SHELL: -s USE_GLFW=3 --preload-file glsl -s ALLOW_MEMORY_GROWTH=1")
+target_link_options(project PUBLIC "SHELL: -s TOTAL_MEMORY=40MB")
 target_link_options(project PUBLIC "SHELL: -s FETCH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1")
+target_link_options(project PUBLIC "SHELL: -fno-rtti --llvm-lto 1")
 
 set_target_properties(project
         PROPERTIES

@@ -41,51 +41,15 @@ struct wmoShader {
     };
 };
 
-struct waterShader {
+struct ribbonShader {
     enum class Attribute {
-        aPosition = 0, waterShaderAttributeEnd
+        aPosition = 0, aColor = 1, aTexcoord0 = 2, ribbonShaderAttributeEnd
     };
 };
 
-struct m2Shader {
+struct m2ParticleShader {
     enum class Attribute {
-        aPosition = 0, aNormal = 1, bones = 2, boneWeights = 3, aTexCoord = 4, aTexCoord2 = 5, m2ShaderAttributeEnd
-    };
-};
-
-struct drawDepthShader {
-    enum class Attribute {
-        position = 0, texture = 1, drawDepthShaderAttributeEnd
-    };
-};
-
-struct drawPoints {
-    enum class Attribute {
-        aPosition = 0, drawPointsAttributeEnd
-    };
-};
-
-struct adtWater {
-    enum class Attribute {
-        aPositionTransp = 0, aTexCoord = 1, adtWaterAttributeEnd
-    };
-};
-
-struct adtLodShader {
-    enum class Attribute {
-        aHeight = 0, aIndex = 1, adtLodShaderAttributeEnd
-    };
-};
-
-struct drawBBShader {
-    enum class Attribute {
-        aPosition = 0, drawBBShaderAttributeEnd
-    };
-};
-
-struct adtShader {
-    enum class Attribute {
-        aHeight = 0, aColor = 1, aVertexLighting = 2, aNormal = 3, aIndex = 4, adtShaderAttributeEnd
+        aPosition = 0, aColor = 1, aTexcoord0 = 2, aTexcoord1 = 3, aTexcoord2 = 4, m2ParticleShaderAttributeEnd
     };
 };
 
@@ -95,21 +59,9 @@ struct drawPortalShader {
     };
 };
 
-struct drawFrustumShader {
+struct waterShader {
     enum class Attribute {
-        aPosition = 0, drawFrustumShaderAttributeEnd
-    };
-};
-
-struct drawLinesShader {
-    enum class Attribute {
-        aPosition = 0, drawLinesShaderAttributeEnd
-    };
-};
-
-struct ribbonShader {
-    enum class Attribute {
-        aPosition = 0, aColor = 1, aTexcoord0 = 2, ribbonShaderAttributeEnd
+        aPosition = 0, waterShaderAttributeEnd
     };
 };
 
@@ -119,15 +71,63 @@ struct renderFrameBufferShader {
     };
 };
 
+struct drawLinesShader {
+    enum class Attribute {
+        aPosition = 0, drawLinesShaderAttributeEnd
+    };
+};
+
+struct drawFrustumShader {
+    enum class Attribute {
+        aPosition = 0, drawFrustumShaderAttributeEnd
+    };
+};
+
 struct imguiShader {
     enum class Attribute {
         Position = 0, UV = 1, Color = 2, imguiShaderAttributeEnd
     };
 };
 
-struct m2ParticleShader {
+struct drawPoints {
     enum class Attribute {
-        aPosition = 0, aColor = 1, aTexcoord0 = 2, aTexcoord1 = 3, aTexcoord2 = 4, m2ParticleShaderAttributeEnd
+        aPosition = 0, drawPointsAttributeEnd
+    };
+};
+
+struct drawBBShader {
+    enum class Attribute {
+        aPosition = 0, drawBBShaderAttributeEnd
+    };
+};
+
+struct adtWater {
+    enum class Attribute {
+        aPositionTransp = 0, aTexCoord = 1, adtWaterAttributeEnd
+    };
+};
+
+struct drawDepthShader {
+    enum class Attribute {
+        position = 0, texture = 1, drawDepthShaderAttributeEnd
+    };
+};
+
+struct m2Shader {
+    enum class Attribute {
+        aPosition = 0, aNormal = 1, bones = 2, boneWeights = 3, aTexCoord = 4, aTexCoord2 = 5, m2ShaderAttributeEnd
+    };
+};
+
+struct adtShader {
+    enum class Attribute {
+        aHeight = 0, aColor = 1, aVertexLighting = 2, aNormal = 3, aIndex = 4, adtShaderAttributeEnd
+    };
+};
+
+struct adtLodShader {
+    enum class Attribute {
+        aHeight = 0, aIndex = 1, adtLodShaderAttributeEnd
     };
 };
 
@@ -142,8 +142,40 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 {"aTexCoord3", 4},
 {"aColor", 5},
 {"aColor2", 6},
+}},{"ribbonShader",  {
+{"aPosition", 0},
+{"aColor", 1},
+{"aTexcoord0", 2},
+}},{"m2ParticleShader",  {
+{"aPosition", 0},
+{"aColor", 1},
+{"aTexcoord0", 2},
+{"aTexcoord1", 3},
+{"aTexcoord2", 4},
+}},{"drawPortalShader",  {
+{"aPosition", 0},
 }},{"waterShader",  {
 {"aPosition", 0},
+}},{"renderFrameBufferShader",  {
+{"a_position", 0},
+}},{"drawLinesShader",  {
+{"aPosition", 0},
+}},{"drawFrustumShader",  {
+{"aPosition", 0},
+}},{"imguiShader",  {
+{"Position", 0},
+{"UV", 1},
+{"Color", 2},
+}},{"drawPoints",  {
+{"aPosition", 0},
+}},{"drawBBShader",  {
+{"aPosition", 0},
+}},{"adtWater",  {
+{"aPositionTransp", 0},
+{"aTexCoord", 1},
+}},{"drawDepthShader",  {
+{"position", 0},
+{"texture", 1},
 }},{"m2Shader",  {
 {"aPosition", 0},
 {"aNormal", 1},
@@ -151,47 +183,15 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 {"boneWeights", 3},
 {"aTexCoord", 4},
 {"aTexCoord2", 5},
-}},{"drawDepthShader",  {
-{"position", 0},
-{"texture", 1},
-}},{"drawPoints",  {
-{"aPosition", 0},
-}},{"adtWater",  {
-{"aPositionTransp", 0},
-{"aTexCoord", 1},
-}},{"adtLodShader",  {
-{"aHeight", 0},
-{"aIndex", 1},
-}},{"drawBBShader",  {
-{"aPosition", 0},
 }},{"adtShader",  {
 {"aHeight", 0},
 {"aColor", 1},
 {"aVertexLighting", 2},
 {"aNormal", 3},
 {"aIndex", 4},
-}},{"drawPortalShader",  {
-{"aPosition", 0},
-}},{"drawFrustumShader",  {
-{"aPosition", 0},
-}},{"drawLinesShader",  {
-{"aPosition", 0},
-}},{"ribbonShader",  {
-{"aPosition", 0},
-{"aColor", 1},
-{"aTexcoord0", 2},
-}},{"renderFrameBufferShader",  {
-{"a_position", 0},
-}},{"imguiShader",  {
-{"Position", 0},
-{"UV", 1},
-{"Color", 2},
-}},{"m2ParticleShader",  {
-{"aPosition", 0},
-{"aColor", 1},
-{"aTexcoord0", 2},
-{"aTexcoord1", 3},
-{"aTexcoord2", 4},
+}},{"adtLodShader",  {
+{"aHeight", 0},
+{"aIndex", 1},
 }},};
 
 const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoShader.vert.spv", {
@@ -201,29 +201,24 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {0,2,16},
 }
 }
-},{ "waterShader.vert.spv", {
+},{ "wmoShader.frag.spv", {
 {
-{0,0,128},
-{0,1,64},
-}
-}
-},{ "waterShader.frag.spv", {
-{
-{0,4,16},
-}
-}
-},{ "ribbonShader.vert.spv", {
-{
+{0,4,32},
 {0,0,240},
+{0,3,32},
 }
 }
 },{ "ribbonShader.frag.spv", {
 {
 }
 }
-},{ "renderFrameBufferShader.frag.spv", {
+},{ "renderFrameBufferShader.vert.spv", {
 {
-{0,2,168},
+}
+}
+},{ "waterShader.frag.spv", {
+{
+{0,4,16},
 }
 }
 },{ "m2Shader.vert.spv", {
@@ -233,14 +228,20 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {0,0,240},
 }
 }
-},{ "drawDepthShader.frag.spv", {
+},{ "drawLinesShader.vert.spv", {
 {
-{0,2,12},
+{0,0,128},
 }
 }
-},{ "adtWater.vert.spv", {
+},{ "adtShader.vert.spv", {
 {
 {0,0,240},
+{0,2,16},
+}
+}
+},{ "m2ParticleShader.vert.spv", {
+{
+{0,0,128},
 }
 }
 },{ "m2ParticleShader.frag.spv", {
@@ -248,10 +249,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {0,4,32},
 }
 }
-},{ "drawBBShader.vert.spv", {
+},{ "imguiShader.frag.spv", {
 {
-{0,1,112},
-{0,0,128},
 }
 }
 },{ "drawFrustumShader.frag.spv", {
@@ -259,14 +258,48 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {0,2,12},
 }
 }
+},{ "drawPoints.vert.spv", {
+{
+{0,0,128},
+{0,1,64},
+}
+}
+},{ "drawPoints.frag.spv", {
+{
+{0,1,12},
+}
+}
+},{ "m2Shader.frag.spv", {
+{
+{0,4,48},
+{0,3,256},
+{0,0,240},
+{0,1,14144},
+}
+}
+},{ "drawLinesShader.frag.spv", {
+{
+{0,1,12},
+}
+}
+},{ "drawFrustumShader.vert.spv", {
+{
+{0,0,128},
+}
+}
+},{ "ribbonShader.vert.spv", {
+{
+{0,0,240},
+}
+}
 },{ "drawBBShader.frag.spv", {
 {
 {0,0,112},
 }
 }
-},{ "adtLodShader.frag.spv", {
+},{ "drawPortalShader.frag.spv", {
 {
-{0,0,84},
+{0,1,16},
 }
 }
 },{ "adtShader.frag.spv", {
@@ -276,62 +309,30 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {0,3,32},
 }
 }
-},{ "adtLodShader.vert.spv", {
-{
-{0,0,144},
-}
-}
-},{ "adtShader.vert.spv", {
-{
-{0,0,240},
-{0,2,16},
-}
-}
-},{ "imguiShader.frag.spv", {
-{
-}
-}
-},{ "adtWater.frag.spv", {
-{
-{0,4,16},
-}
-}
-},{ "wmoShader.frag.spv", {
-{
-{0,4,32},
-{0,0,240},
-{0,3,32},
-}
-}
-},{ "drawLinesShader.vert.spv", {
-{
-{0,0,128},
-}
-}
 },{ "drawDepthShader.vert.spv", {
 {
 {0,2,16},
 }
 }
-},{ "drawLinesShader.frag.spv", {
+},{ "adtLodShader.frag.spv", {
 {
-{0,1,12},
+{0,0,84},
 }
 }
-},{ "drawPoints.frag.spv", {
+},{ "drawBBShader.vert.spv", {
 {
-{0,1,12},
-}
-}
-},{ "drawPoints.vert.spv", {
-{
+{0,1,112},
 {0,0,128},
-{0,1,64},
 }
 }
-},{ "drawPortalShader.frag.spv", {
+},{ "renderFrameBufferShader.frag.spv", {
 {
-{0,1,16},
+{0,2,168},
+}
+}
+},{ "imguiShader.vert.spv", {
+{
+{0,1,64},
 }
 }
 },{ "drawPortalShader.vert.spv", {
@@ -340,31 +341,30 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {0,1,64},
 }
 }
-},{ "drawFrustumShader.vert.spv", {
+},{ "waterShader.vert.spv", {
 {
 {0,0,128},
-}
-}
-},{ "imguiShader.vert.spv", {
-{
 {0,1,64},
 }
 }
-},{ "renderFrameBufferShader.vert.spv", {
+},{ "drawDepthShader.frag.spv", {
 {
+{0,2,12},
 }
 }
-},{ "m2ParticleShader.vert.spv", {
+},{ "adtLodShader.vert.spv", {
 {
-{0,0,128},
+{0,0,144},
 }
 }
-},{ "m2Shader.frag.spv", {
+},{ "adtWater.vert.spv", {
 {
-{0,4,48},
-{0,3,256},
 {0,0,240},
-{0,1,14144},
+}
+}
+},{ "adtWater.frag.spv", {
+{
+{0,4,16},
 }
 }
 },};
@@ -388,12 +388,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
-      4, {
-        {"_220.UseLitColor_EnableAlpha_PixelShader", false, 0, 1, 4, 0},
-        {"_220.FogColor_AlphaTest", true, 16, 1, 4, 0},
-      }
-    },
-    {
       0, {
         {"_110.scene.uLookAtMat", true, 0, 4, 4, 0},
         {"_110.scene.uPMatrix", true, 64, 4, 4, 0},
@@ -406,6 +400,54 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_110.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
       }
     },
+    {
+      4, {
+        {"_220.UseLitColor_EnableAlpha_PixelShader", false, 0, 1, 4, 0},
+        {"_220.FogColor_AlphaTest", true, 16, 1, 4, 0},
+      }
+    },
+  }},
+  {"ribbonShader",  {
+    {
+      0, {
+        {"_43.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_43.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_43.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_43.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_43.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
+      }
+    },
+  }},
+  {"m2ParticleShader",  {
+    {
+      0, {
+        {"_47.uLookAtMat", true, 0, 4, 4, 0},
+        {"_47.uPMatrix", true, 64, 4, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_38.uAlphaTestv", true, 0, 1, 4, 0},
+        {"_38.uPixelShaderv", false, 16, 1, 4, 0},
+      }
+    },
+  }},
+  {"drawPortalShader",  {
+    {
+      0, {
+        {"_30.uLookAtMat", true, 0, 4, 4, 0},
+        {"_30.uPMatrix", true, 64, 4, 4, 0},
+      }
+    },
+    {
+      1, {
+        {"_40.uPlacementMat", true, 0, 4, 4, 0},
+      }
+    },
   }},
   {"waterShader",  {
     {
@@ -414,14 +456,115 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
+      0, {
+        {"_24.uLookAtMat", true, 0, 4, 4, 0},
+        {"_24.uPMatrix", true, 64, 4, 4, 0},
+      }
+    },
+    {
       4, {
         {"_12.waterTypeV", false, 0, 1, 4, 0},
       }
     },
+  }},
+  {"renderFrameBufferShader",  {
+    {
+      2, {
+        {"_34.gauss_offsets[0]", true, 0, 1, 1, 5},
+        {"_34.gauss_weights[0]", true, 80, 1, 1, 5},
+        {"_34.uResolution", true, 160, 1, 2, 0},
+      }
+    },
+  }},
+  {"drawLinesShader",  {
     {
       0, {
-        {"_24.uLookAtMat", true, 0, 4, 4, 0},
-        {"_24.uPMatrix", true, 64, 4, 4, 0},
+        {"_19.uLookAtMat", true, 0, 4, 4, 0},
+        {"_19.uPMatrix", true, 64, 4, 4, 0},
+      }
+    },
+    {
+      1, {
+        {"_19.uColor", true, 0, 1, 3, 0},
+      }
+    },
+  }},
+  {"drawFrustumShader",  {
+    {
+      0, {
+        {"_13.uLookAtMat", true, 0, 4, 4, 0},
+        {"_13.uPMatrix", true, 64, 4, 4, 0},
+      }
+    },
+    {
+      2, {
+        {"_22.uColor", true, 0, 1, 3, 0},
+      }
+    },
+  }},
+  {"imguiShader",  {
+    {
+      1, {
+        {"_30.ProjMtx", true, 0, 4, 4, 0},
+      }
+    },
+  }},
+  {"drawPoints",  {
+    {
+      0, {
+        {"_19.uLookAtMat", true, 0, 4, 4, 0},
+        {"_19.uPMatrix", true, 64, 4, 4, 0},
+      }
+    },
+    {
+      1, {
+        {"_29.uPlacementMat", true, 0, 4, 4, 0},
+      }
+    },
+  }},
+  {"drawBBShader",  {
+    {
+      1, {
+        {"_21.uPlacementMat", true, 0, 4, 4, 0},
+        {"_21.uBBScale", true, 64, 1, 4, 0},
+        {"_21.uBBCenter", true, 80, 1, 4, 0},
+        {"_21.uColor", true, 96, 1, 4, 0},
+      }
+    },
+    {
+      0, {
+        {"_59.uLookAtMat", true, 0, 4, 4, 0},
+        {"_59.uPMatrix", true, 64, 4, 4, 0},
+      }
+    },
+  }},
+  {"adtWater",  {
+    {
+      0, {
+        {"_27.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_27.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_27.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_27.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_27.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_12.color", true, 0, 1, 4, 0},
+      }
+    },
+  }},
+  {"drawDepthShader",  {
+    {
+      2, {
+        {"_36.uWidth", true, 0, 1, 1, 0},
+        {"_36.uHeight", true, 4, 1, 1, 0},
+        {"_36.uX", true, 8, 1, 1, 0},
+        {"_36.uY", true, 12, 1, 1, 0},
       }
     },
   }},
@@ -453,13 +596,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
-      4, {
-        {"_246.PixelShader_UnFogged_IsAffectedByLight", false, 0, 1, 4, 0},
-        {"_246.uFogColorAndAlphaTest", true, 16, 1, 4, 0},
-        {"_246.uPcColor", true, 32, 1, 4, 0},
-      }
-    },
-    {
       3, {
         {"_271.intLight.uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
         {"_271.intLight.uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
@@ -479,72 +615,11 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_271.interiorExteriorBlend", true, 240, 1, 4, 0},
       }
     },
-  }},
-  {"drawDepthShader",  {
-    {
-      2, {
-        {"_36.uWidth", true, 0, 1, 1, 0},
-        {"_36.uHeight", true, 4, 1, 1, 0},
-        {"_36.uX", true, 8, 1, 1, 0},
-        {"_36.uY", true, 12, 1, 1, 0},
-      }
-    },
-  }},
-  {"drawPoints",  {
-    {
-      0, {
-        {"_19.uLookAtMat", true, 0, 4, 4, 0},
-        {"_19.uPMatrix", true, 64, 4, 4, 0},
-      }
-    },
-    {
-      1, {
-        {"_29.uPlacementMat", true, 0, 4, 4, 0},
-      }
-    },
-  }},
-  {"adtWater",  {
-    {
-      0, {
-        {"_27.scene.uLookAtMat", true, 0, 4, 4, 0},
-        {"_27.scene.uPMatrix", true, 64, 4, 4, 0},
-        {"_27.scene.uViewUp", true, 128, 1, 4, 0},
-        {"_27.scene.uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_27.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
-        {"_27.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
-        {"_27.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
-        {"_27.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
-        {"_27.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
-      }
-    },
     {
       4, {
-        {"_12.color", true, 0, 1, 4, 0},
-      }
-    },
-  }},
-  {"adtLodShader",  {
-    {
-      0, {
-        {"_55.uPos", true, 0, 1, 3, 0},
-        {"_55.uLookAtMat", true, 16, 4, 4, 0},
-        {"_55.uPMatrix", true, 80, 4, 4, 0},
-      }
-    },
-  }},
-  {"drawBBShader",  {
-    {
-      1, {
-        {"_21.uPlacementMat", true, 0, 4, 4, 0},
-        {"_21.uBBScale", true, 64, 1, 4, 0},
-        {"_21.uBBCenter", true, 80, 1, 4, 0},
-        {"_21.uColor", true, 96, 1, 4, 0},
-      }
-    },
-    {
-      0, {
-        {"_59.uLookAtMat", true, 0, 4, 4, 0},
-        {"_59.uPMatrix", true, 64, 4, 4, 0},
+        {"_246.PixelShader_UnFogged_IsAffectedByLight", false, 0, 1, 4, 0},
+        {"_246.uFogColorAndAlphaTest", true, 16, 1, 4, 0},
+        {"_246.uPcColor", true, 32, 1, 4, 0},
       }
     },
   }},
@@ -561,12 +636,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
-      4, {
-        {"_251.uHeightScale", true, 0, 1, 4, 0},
-        {"_251.uHeightOffset", true, 16, 1, 4, 0},
-      }
-    },
-    {
       0, {
         {"_90.scene.uLookAtMat", true, 0, 4, 4, 0},
         {"_90.scene.uPMatrix", true, 64, 4, 4, 0},
@@ -579,88 +648,19 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_90.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
       }
     },
-  }},
-  {"drawPortalShader",  {
-    {
-      0, {
-        {"_30.uLookAtMat", true, 0, 4, 4, 0},
-        {"_30.uPMatrix", true, 64, 4, 4, 0},
-      }
-    },
-    {
-      1, {
-        {"_40.uPlacementMat", true, 0, 4, 4, 0},
-      }
-    },
-  }},
-  {"drawFrustumShader",  {
-    {
-      0, {
-        {"_13.uLookAtMat", true, 0, 4, 4, 0},
-        {"_13.uPMatrix", true, 64, 4, 4, 0},
-      }
-    },
-    {
-      2, {
-        {"_22.uColor", true, 0, 1, 3, 0},
-      }
-    },
-  }},
-  {"drawLinesShader",  {
-    {
-      0, {
-        {"_19.uLookAtMat", true, 0, 4, 4, 0},
-        {"_19.uPMatrix", true, 64, 4, 4, 0},
-      }
-    },
-    {
-      1, {
-        {"_19.uColor", true, 0, 1, 3, 0},
-      }
-    },
-  }},
-  {"ribbonShader",  {
-    {
-      0, {
-        {"_43.scene.uLookAtMat", true, 0, 4, 4, 0},
-        {"_43.scene.uPMatrix", true, 64, 4, 4, 0},
-        {"_43.scene.uViewUp", true, 128, 1, 4, 0},
-        {"_43.scene.uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_43.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
-        {"_43.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
-        {"_43.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
-        {"_43.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
-        {"_43.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
-      }
-    },
-  }},
-  {"renderFrameBufferShader",  {
-    {
-      2, {
-        {"_34.gauss_offsets[0]", true, 0, 1, 1, 5},
-        {"_34.gauss_weights[0]", true, 80, 1, 1, 5},
-        {"_34.uResolution", true, 160, 1, 2, 0},
-      }
-    },
-  }},
-  {"imguiShader",  {
-    {
-      1, {
-        {"_30.ProjMtx", true, 0, 4, 4, 0},
-      }
-    },
-  }},
-  {"m2ParticleShader",  {
-    {
-      0, {
-        {"_47.uLookAtMat", true, 0, 4, 4, 0},
-        {"_47.uPMatrix", true, 64, 4, 4, 0},
-      }
-    },
     {
       4, {
-        {"_38.uAlphaTestv", true, 0, 1, 4, 0},
-        {"_38.uPixelShaderv", false, 16, 1, 4, 0},
+        {"_251.uHeightScale", true, 0, 1, 4, 0},
+        {"_251.uHeightOffset", true, 16, 1, 4, 0},
+      }
+    },
+  }},
+  {"adtLodShader",  {
+    {
+      0, {
+        {"_55.uPos", true, 0, 1, 3, 0},
+        {"_55.uLookAtMat", true, 16, 4, 4, 0},
+        {"_55.uPMatrix", true, 80, 4, 4, 0},
       }
     },
   }},
