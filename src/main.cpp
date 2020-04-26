@@ -388,7 +388,7 @@ int main(){
 //        processor = new MpqRequestProcessor(filePath);
         processor = new HttpRequestProcessor(url, urlFileId);
 //        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
-//        processor->setThreaded(true);
+        processor->setThreaded(false);
 //
         apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
         processor->setFileRequester(apiContainer.cacheStorage.get());

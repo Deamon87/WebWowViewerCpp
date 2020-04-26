@@ -459,6 +459,11 @@ void FrontendUI::showQuickLinksDialog() {
             openWMOSceneByfdid(1846142);
         }
     }
+    if (ImGui::Button("WMO 3565693", ImVec2(-1, 0))) {
+        if (openWMOSceneByfdid) {
+            openWMOSceneByfdid(3565693);
+        }
+    }
     std::vector<int> replacementTextureFDids = {};
     if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
@@ -488,6 +493,11 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("M2 3572296", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(3572296, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("M2 3487959", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(3487959, replacementTextureFDids);
         }
     }
 
