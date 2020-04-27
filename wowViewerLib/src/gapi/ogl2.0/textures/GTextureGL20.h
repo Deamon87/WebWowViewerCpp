@@ -19,7 +19,7 @@ public:
     void loadData(int width, int height, void *data) override;
     bool getIsLoaded() override;
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
-        throw "Not Implemented in this class";
+//        throw "Not Implemented in this class";
     }
     bool postLoad() override { return false;};
 private:

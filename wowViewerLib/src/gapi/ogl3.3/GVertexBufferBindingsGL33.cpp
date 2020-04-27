@@ -13,8 +13,8 @@ constexpr GLenum toOGLEnum(GBindingType bindingType) {
             return GL_FLOAT;
         case GBindingType::GUNSIGNED_BYTE:
             return GL_UNSIGNED_BYTE;
-        default:
-            throw std::runtime_error("unknown GBindingType");
+//        default:
+//            throw std::runtime_error("unknown GBindingType");
     }
 }
 

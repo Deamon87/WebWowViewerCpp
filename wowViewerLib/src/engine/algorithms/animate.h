@@ -31,7 +31,7 @@ inline R convertHelper(T &value) {
 //    REGISTER_PARSE_TYPE(T);
 //    template <typename T> struct MyClassTemplate<T*>;
     //static_assert(false, "This function was not meant to be called");
-    throw "This function was not meant to be called";
+//    throw "This function was not meant to be called";
 
 };
 template<>
@@ -157,7 +157,7 @@ int32_t findTimeIndex(
 
 template<typename T>
 inline T lerpHelper(T &value1, T &value2, float percent) {
-    throw "This function was not meant to be called";
+//    throw "This function was not meant to be called";
 };
 template<>
 inline mathfu::vec4 lerpHelper<mathfu::vec4>(mathfu::vec4 &value1, mathfu::vec4 &value2, float percent) {

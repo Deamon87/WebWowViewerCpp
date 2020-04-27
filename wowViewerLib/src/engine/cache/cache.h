@@ -127,7 +127,7 @@ public:
             if (!it->second.expired()) {
                 return it->second.lock();
             } else {
-                std::cout << "getFileId: fileName = " << fileName << " is expired" << std::endl;
+//                std::cout << "getFileId: fileName = " << fileName << " is expired" << std::endl;
                 m_cache.erase(it);
             }
         }

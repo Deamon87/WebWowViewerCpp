@@ -30,6 +30,13 @@ else()
     endif()
 endif()
 
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fno-exceptions" )
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fno-exceptions" )
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-exceptions")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-exceptions")
+
+
+
 set(EMSCRIPTEN 1)
 
 add_subdirectory(../wowViewerLib ${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib)
@@ -47,7 +54,7 @@ target_link_options(project PUBLIC "SHELL: --pre-js ../prejs.js --js-library ../
 target_link_options(project PUBLIC "SHELL: -s USE_GLFW=3 --preload-file glsl -s ALLOW_MEMORY_GROWTH=1")
 target_link_options(project PUBLIC "SHELL: -s TOTAL_MEMORY=40MB")
 target_link_options(project PUBLIC "SHELL: -s FETCH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1")
-target_link_options(project PUBLIC "SHELL: -fno-rtti --llvm-lto 1")
+target_link_options(project PUBLIC "SHELL: -fno-rtti --llvm-lto 1 -fno-exceptions")
 
 set_target_properties(project
         PROPERTIES
