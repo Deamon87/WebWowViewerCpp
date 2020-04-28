@@ -17,9 +17,9 @@ struct UserDataForRequest {
 };
 
 void downloadSucceeded(emscripten_fetch_t *fetch) {
-    printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
-
-    try {
+//    printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
+//
+//    try {
 //        std::cout << "Creating FileContent with " << fetch->numBytes << " bytes" << std::endl;
         HFileContent fileContent = std::make_shared<FileContent>(fetch->numBytes);
 //        std::cout << "FileContent was created" << std::endl;
@@ -46,9 +46,9 @@ void downloadSucceeded(emscripten_fetch_t *fetch) {
         // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
         delete userDataForRequest;
         emscripten_fetch_close(fetch); // Free data associated with the fetch.
-    } catch (...) {
-        printf("Exception on Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
-    }
+//    } catch (...) {
+//        printf("Exception on Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
+//    }
 
 }
 
