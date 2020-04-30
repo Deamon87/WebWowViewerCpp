@@ -409,8 +409,9 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
 
     if (m_lastBlendMode != hmesh->m_blendMode) {
         BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
-        auto &lastBlendMode = blendModes[(char)m_lastBlendMode];
-        if (lastBlendMode.blendModeEnable != selectedBlendMode.blendModeEnable ) {
+
+        if ((m_lastBlendMode == EGxBlendEnum::GxBlend_UNDEFINED) ||
+            (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
             if (selectedBlendMode.blendModeEnable) {
                 glEnable(GL_BLEND);
             } else {
