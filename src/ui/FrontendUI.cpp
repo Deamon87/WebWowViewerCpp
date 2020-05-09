@@ -500,6 +500,20 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(3487959, replacementTextureFDids);
         }
     }
+    if (ImGui::Button("M2 1729717 waterfall", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(1729717, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Maw jailer", ImVec2(-1, 0))) {
+//        3096499,3096495
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[11] = 3096499;
+        replacementTextureFDids[12] = 3096495;
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(3095966, replacementTextureFDids);
+        }
+    }
 
     ImGui::End();
 }

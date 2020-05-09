@@ -96,8 +96,8 @@ void main() {
             scene,
             intLight,
             vVertexLighting.rgb, /* accumLight */
-            vec3(0.0) /*precomputedLight*/
-
+            vec3(0.0), /*precomputedLight*/
+            vec3(0.0) /* specular */
         ),
         1.0
     );

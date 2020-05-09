@@ -380,20 +380,21 @@ int main(){
 
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
-    {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=e232197b8eb788ab32196da5ba2fb60b&cdnconfig=126b8c6b7b52313ab4bfbdea97c11ae5&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=e232197b8eb788ab32196da5ba2fb60b&cdnconfig=126b8c6b7b52313ab4bfbdea97c11ae5&filename=data&filedataid=";
-//        processor = new HttpZipRequestProcessor(url);
-//        processor = new ZipRequestProcessor(filePath);
-//        processor = new MpqRequestProcessor(filePath);
-        processor = new HttpRequestProcessor(url, urlFileId);
-//        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
-        processor->setThreaded(false);
+////    {
+//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=3122f021ed54960df43a84a6239c3827&cdnconfig=5187cdfd6fee12b4a0d53003e8249635&filename=";
+//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=3122f021ed54960df43a84a6239c3827&cdnconfig=5187cdfd6fee12b4a0d53003e8249635&filename=data&filedataid=";
+////        processor = new HttpZipRequestProcessor(url);
+//////        processor = new ZipRequestProcessor(filePath);
+//////        processor = new MpqRequestProcessor(filePath);
+//        processor = new HttpRequestProcessor(url, urlFileId);
+//////        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
+//////        processor->setThreaded(false);
+//////
+//        processor->setThreaded(true);
+//        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+//        processor->setFileRequester(apiContainer.cacheStorage.get());
 //
-        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
-        processor->setFileRequester(apiContainer.cacheStorage.get());
-
-    }
+////    }
     //Create device
     auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
 
@@ -408,6 +409,7 @@ int main(){
     //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
     std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(hdevice);
+//    frontendUI->overrideCascOpened(true)
     frontendUI->setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
         CascRequestProcessor *newProcessor = nullptr;
         std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;

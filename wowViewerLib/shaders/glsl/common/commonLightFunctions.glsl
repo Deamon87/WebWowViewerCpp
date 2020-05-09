@@ -27,7 +27,7 @@ vec3 calcLight(
     float interiorExteriorBlend,
     readonly SceneWideParams sceneParams,
     readonly InteriorLightParam intLight,
-    readonly vec3 accumLight, const vec3 precomputedLight) {
+    readonly vec3 accumLight, const vec3 precomputedLight, const vec3 specular) {
 
     vec3 currColor;
     vec3 localDiffuse = accumLight;
@@ -81,7 +81,7 @@ vec3 calcLight(
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
 
     //Specular term
-    vec3 specTerm = vec3(0,0,0);
+    vec3 specTerm = specular;
     //Emission term
     vec3 emTerm = vec3(0,0,0);
 

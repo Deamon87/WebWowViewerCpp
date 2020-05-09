@@ -61,5 +61,6 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         this->provideResult(fileName, fileContent, holderType);
     } else {
         std::cout << "Could not open file "<< fileName << std::endl << std::flush;
+        this->m_fileRequester->rejectFile(holderType, fileName.c_str());
     }
 }

@@ -231,7 +231,8 @@ void main() {
             scene,
             intLight,
             vec3(0.0) /*accumLight*/,
-            vColor2.rgb
+            vColor2.rgb,
+            vec3(0.0) /* specular */
         ),
         finalOpacity
     );

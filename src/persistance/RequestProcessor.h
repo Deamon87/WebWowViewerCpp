@@ -11,6 +11,7 @@
 #include <list>
 #include <vector>
 #include <forward_list>
+#include <unordered_set>
 
 class RequestProcessor : public IFileRequest {
 protected:
@@ -51,6 +52,7 @@ private:
 
     std::list<RequestStruct> m_requestQueue;
     std::list<ResultStruct> m_resultQueue;
+    std::unordered_set<std::string> currentlyProcessingFnames;
 
     bool m_threaded = false;
 

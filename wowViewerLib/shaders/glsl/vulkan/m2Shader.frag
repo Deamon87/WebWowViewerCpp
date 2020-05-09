@@ -327,8 +327,9 @@ void main() {
             interiorExteriorBlend.x,
             scene,
             intLight,
-            accumLight, vec3(0.0)
-        ),
+            accumLight, vec3(0.0),
+            specular
+        ) ,
         finalOpacity
     );
 

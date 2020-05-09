@@ -77,7 +77,7 @@ private:
     bool showAboutWindow = false;
 //  c bool showWorldPosTooltip = false;
 
-    bool cascOpened = true;
+    bool cascOpened = false;
     bool mapCanBeOpened = true;
 
     float minimapZoom = 1;
@@ -107,6 +107,9 @@ private:
     std::vector<std::vector<std::string>> mapListStringMap = {};
 
 public:
+    void overrideCascOpened(bool value) {
+        cascOpened = value;
+    }
     void initImgui(GLFWwindow* window);
 
     void composeUI();
