@@ -25,6 +25,10 @@ bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu:
         wmoCandidates.push_back(wmoObject);
     }
 
+    for (auto m2Object : skySceneObjects) {
+        m2ObjectsCandidates.push_back(m2Object);
+    }
+
     return false;
 }
 
@@ -43,6 +47,44 @@ void WdlObject::loadM2s() {
             std::cout << "WDL M2 do not have mddf_entry_is_filedata_id flag!!!" << std::endl;
         }
     }
+
+    //LoadSkyObjects
+    if (m_wdlFile->m_msso_len > 0) {
+        for (int i = 0; i < m_wdlFile->m_msso_len; i++) {
+            auto &msso_rec = m_wdlFile->m_msso[i];
+
+
+            auto m2Object = std::make_shared<M2Object>(m_api, false, false);
+            m2Object->setLoadParams(0, {}, {});
+            m2Object->setModelFileId(msso_rec.fileDataID);
+            std::cout << "fileDataID = " << msso_rec.fileDataID << std::endl;
+            std::cout << "translateVec.x = " << msso_rec.translateVec.x << std::endl;
+            std::cout << "translateVec.y = " << msso_rec.translateVec.y << std::endl;
+            std::cout << "translateVec.z = " << msso_rec.translateVec.z << std::endl;
+            std::cout << "rotationInRads.x = " << msso_rec.rotationInRads.x << std::endl;
+            std::cout << "rotationInRads.y = " << msso_rec.rotationInRads.y << std::endl;
+            std::cout << "rotationInRads.z = " << msso_rec.rotationInRads.z << std::endl;
+            std::cout << "scale = " << msso_rec.scale << std::endl;
+
+            auto rotationMatrix = MathHelper::RotationZ(-msso_rec.rotationInRads.z);
+            rotationMatrix *= MathHelper::RotationY(msso_rec.rotationInRads.x);
+            rotationMatrix *= MathHelper::RotationX(msso_rec.rotationInRads.y);
+
+            auto quat = mathfu::quat::FromMatrix(rotationMatrix);
+            auto rotationMatrix1 = quat.ToMatrix4();
+
+            m2Object->createPlacementMatrix(
+                mathfu::vec3(msso_rec.translateVec.x, msso_rec.translateVec.y, msso_rec.translateVec.z),
+                0,
+                mathfu::vec3(msso_rec.scale, msso_rec.scale, msso_rec.scale),
+                &rotationMatrix1);
+            m2Object->calcWorldPosition();
+            m2Object->setAlwaysDraw(true);
+
+            skySceneObjects.push_back(m2Object);
+        }
+    }
+
 }
 
 void WdlObject::loadWmos() {

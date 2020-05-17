@@ -946,12 +946,12 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnifo
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture();
         unsigned int zero = 0;
-        m_blackPixelTexture->loadData(1,1,&zero);
+        m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
     }
     if (!m_whitePixelTexture) {
         m_whitePixelTexture = createTexture();
         unsigned int ff = 0xffffffff;
-        m_whitePixelTexture->loadData(1,1,&ff);
+        m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
     }
 
     std::vector<HVKMesh> &meshes = (std::vector<HVKMesh> &) iMeshes;

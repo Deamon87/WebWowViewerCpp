@@ -37,7 +37,7 @@ bool GTextureGL20::getIsLoaded() {
 }
 
 static int pureTexturesUploaded = 0;
-void GTextureGL20::loadData(int width, int height, void *data) {
+void GTextureGL20::loadData(int width, int height, void *data, ITextureFormat textureFormat) {
 //    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
 
     m_device.bindTexture(this, 0);

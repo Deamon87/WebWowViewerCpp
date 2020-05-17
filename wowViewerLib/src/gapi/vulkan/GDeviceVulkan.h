@@ -114,6 +114,8 @@ public:
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) override;
     HGPUFence createFence() override;
 
+    HFrameBuffer createFrameBuffer(int, int, std::vector<TextureFormat>) override {return nullptr;};
+
     HPipelineVLK createPipeline(HGVertexBufferBindings m_bindings,
                                 HGShaderPermutation shader,
                                 DrawElementMode element,

@@ -26,6 +26,8 @@ public:
     std::vector<std::shared_ptr<M2Object>> m2Objects;
     std::vector<std::shared_ptr<WmoObject>> wmoObjects;
 
+    std::vector<std::shared_ptr<M2Object>> skySceneObjects;
+
 private:
     ApiContainer *m_api;
     IMapApi *m_mapApi;

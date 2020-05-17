@@ -81,6 +81,7 @@ public:
     HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
+    HFrameBuffer createFrameBuffer(int, int, std::vector<TextureFormat>) override {return nullptr;};
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture() override;

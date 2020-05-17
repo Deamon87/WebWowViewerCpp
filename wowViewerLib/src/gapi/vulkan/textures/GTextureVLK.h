@@ -17,7 +17,7 @@ protected:
 public:
     ~GTextureVLK() override;
 
-    void loadData(int width, int height, void *data) override;
+    void loadData(int width, int height, void *data, ITextureFormat textureFormat) override;
     bool getIsLoaded() override;
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
         throw "Not Implemented in this class";

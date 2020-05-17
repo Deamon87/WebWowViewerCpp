@@ -663,7 +663,7 @@ void AdtObject::loadAlphaTextures() {
         std::vector<uint8_t> alphaTextureData;
         m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData);
 
-        alphaTexture->loadData(texWidth, texHeight, &alphaTextureData[0]);
+        alphaTexture->loadData(texWidth, texHeight, &alphaTextureData[0], ITextureFormat::itRGBA);
 
         alphaTextures.push_back(alphaTexture);
     }

@@ -584,7 +584,6 @@ void Map::update(HUpdateStage updateStage) {
                 }
             }
 
-
             if (zoneLightFound) {
                 m_api->databaseHandler->getLightById(LightId, config->getCurrentTime(), lightResult );
             } else {

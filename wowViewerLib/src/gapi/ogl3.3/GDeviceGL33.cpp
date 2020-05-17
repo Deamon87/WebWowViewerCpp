@@ -622,9 +622,10 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 
     if (m_isInSkyBoxDepthMode != hmesh->getIsSkyBox()) {
         if (hmesh->getIsSkyBox()) {
-            glDepthRange(0.998f, 1.0f);
+            glDepthRange(0, 0.002); //default
+
         } else {
-            glDepthRange(0, 0.996f); //default
+            glDepthRange(0.002, 1.0f);
         }
         m_isInSkyBoxDepthMode = hmesh->getIsSkyBox();
     }
@@ -675,6 +676,11 @@ HGVertexBufferBindings GDeviceGL33::createVertexBufferBindings() {
 
     return h_vertexBufferBindings;
 }
+
+HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<TextureFormat> attachments) {
+//    HFrameBuffer h_frameBuffer = std::make_shared<>()
+    return nullptr;
+};
 
 HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size) {
     HGUniformBufferChunk h_uniformBuffer;
@@ -773,10 +779,10 @@ GDeviceGL33::GDeviceGL33() {
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
     m_blackPixelTexture = createTexture();
-    m_blackPixelTexture->loadData(1,1,&zero);
+    m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
 
     m_whitePixelTexture = createTexture();
-    m_whitePixelTexture->loadData(1,1,&ff);
+    m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
 
     m_defaultVao = this->createVertexBufferBindings();
 
@@ -1046,12 +1052,12 @@ float GDeviceGL33::getAnisLevel() {
 
 void GDeviceGL33::clearScreen() {
 #ifndef WITH_GLESv2
-    glClearDepthf(1.0f);
+    glClearDepthf(0.0f);
 #else
     glClearDepthf(1.0f);
 #endif
     glDisable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+    glDepthFunc(GL_GEQUAL);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);

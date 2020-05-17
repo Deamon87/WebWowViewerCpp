@@ -578,10 +578,10 @@ GDeviceGL20::GDeviceGL20() {
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
     m_blackPixelTexture = createTexture();
-    m_blackPixelTexture->loadData(1,1,&zero);
+    m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
 
     m_whitePixelTexture = createTexture();
-    m_whitePixelTexture->loadData(1,1,&ff);
+    m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
 
     m_defaultVao = this->createVertexBufferBindings();
 

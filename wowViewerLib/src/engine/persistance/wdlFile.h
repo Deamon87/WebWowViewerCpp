@@ -11,6 +11,8 @@
 #include "header/adtFileHeader.h"
 #include "../../include/sharedFile.h"
 #include "PersistentFile.h"
+#include "header/wdlHeader.h"
+
 
 class WdlFile : public PersistentFile {
 public:
@@ -26,6 +28,14 @@ public:
     SMMapObjDefObj1 * mapObjDefObj = nullptr;
     int mapObjDefObj_len = 0;
 
+    msso_t *m_msso = nullptr;
+    int m_msso_len = -1;
+
+    mssn_t *m_mssn = nullptr;
+    int m_mssn_len = -1;
+
+    mssc_t *m_mssc = nullptr;
+    int m_mssc_len = -1;
 
 private:
 

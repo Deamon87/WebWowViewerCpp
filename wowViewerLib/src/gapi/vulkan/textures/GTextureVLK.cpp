@@ -49,7 +49,7 @@ bool GTextureVLK::getIsLoaded() {
 }
 
 static int pureTexturesUploaded = 0;
-void GTextureVLK::loadData(int width, int height, void *data) {
+void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat textureFormat) {
 //    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
     std::vector<uint8_t > unifiedBuffer((uint8_t *)data, (uint8_t *)data + (width*height*4));
 

@@ -66,6 +66,18 @@ public:
         return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,0,1)).ToMatrix4();
     };
 
+    static inline mathfu::mat3 mat3RotationX(float angle) {
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix();
+    };
+
+    static inline mathfu::mat3 mat3RotationY(float angle) {
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,1,0)).ToMatrix();
+    };
+
+    static inline mathfu::mat3 mat3RotationZ(float angle) {
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,0,1)).ToMatrix();
+    };
+
     static const mathfu::mat4 &getAdtToWorldMat4() {
         const float TILESIZE = 533.333333333f;
 

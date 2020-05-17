@@ -236,7 +236,7 @@ set(SOURCE_FILES
         src/engine/SceneScenario.h
         src/gapi/interface/IFrameBuffer.h
         src/engine/SceneScenario.cpp
-        src/engine/DrawStage.h src/engine/ApiContainer.cpp src/engine/ApiContainer.h src/engine/CameraMatrices.h)
+        src/engine/DrawStage.h src/engine/ApiContainer.cpp src/engine/ApiContainer.h src/engine/CameraMatrices.h src/engine/persistance/header/wdlHeader.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -312,7 +312,7 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.cpp
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.h
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
-        src/gapi/ogl3.3/GOcclusionQueryGL33.h src/gapi/ogl3.3/buffers/GUnformBufferChunk33.h)
+        src/gapi/ogl3.3/GOcclusionQueryGL33.h src/gapi/ogl3.3/buffers/GUnformBufferChunk33.h src/gapi/ogl3.3/GFrameBufferGL33.cpp src/gapi/ogl3.3/GFrameBufferGL33.h)
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
@@ -461,7 +461,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (1)
+if (0)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)

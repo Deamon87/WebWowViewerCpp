@@ -380,21 +380,21 @@ int main(){
 
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
-////    {
+//    {
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=3122f021ed54960df43a84a6239c3827&cdnconfig=5187cdfd6fee12b4a0d53003e8249635&filename=";
 //        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=3122f021ed54960df43a84a6239c3827&cdnconfig=5187cdfd6fee12b4a0d53003e8249635&filename=data&filedataid=";
-////        processor = new HttpZipRequestProcessor(url);
-//////        processor = new ZipRequestProcessor(filePath);
-//////        processor = new MpqRequestProcessor(filePath);
+//        processor = new HttpZipRequestProcessor(url);
+////        processor = new ZipRequestProcessor(filePath);
+////        processor = new MpqRequestProcessor(filePath);
 //        processor = new HttpRequestProcessor(url, urlFileId);
-//////        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
-//////        processor->setThreaded(false);
-//////
-//        processor->setThreaded(true);
-//        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
-//        processor->setFileRequester(apiContainer.cacheStorage.get());
-//
-////    }
+        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
+////        processor->setThreaded(false);
+////
+        processor->setThreaded(true);
+        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+        processor->setFileRequester(apiContainer.cacheStorage.get());
+
+//    }
     //Create device
     auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
 
@@ -409,7 +409,7 @@ int main(){
     //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
     std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(hdevice);
-//    frontendUI->overrideCascOpened(true)
+    frontendUI->overrideCascOpened(true);
     frontendUI->setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
         CascRequestProcessor *newProcessor = nullptr;
         std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
@@ -575,6 +575,15 @@ int main(){
 
         auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
         auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+        //Frustum matrix with reversed Z
+        {
+            float f = 1.0f / tan(fov / 2.0f);
+            cameraMatricesRendering->perspectiveMat = mathfu::mat4(
+                f / canvasAspect, 0.0f,  0.0f,  0.0f,
+                0.0f,    f,  0.0f,  0.0f,
+                0.0f, 0.0f,  0.0f, -1.0f,
+                0.0f, 0.0f, 0.02,  0.0f);
+        }
 
         if (hdevice->getIsVulkanAxisSystem() ) {
             auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;

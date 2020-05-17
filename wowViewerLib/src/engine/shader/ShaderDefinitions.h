@@ -383,14 +383,14 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       3, {
-        {"_692.intLight.uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
-        {"_692.intLight.uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
+        {"_693.intLight.uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
+        {"_693.intLight.uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
       }
     },
     {
       4, {
-        {"_220.UseLitColor_EnableAlpha_PixelShader", false, 0, 1, 4, 0},
-        {"_220.FogColor_AlphaTest", true, 16, 1, 4, 0},
+        {"_221.UseLitColor_EnableAlpha_PixelShader", false, 0, 1, 4, 0},
+        {"_221.FogColor_AlphaTest", true, 16, 1, 4, 0},
       }
     },
     {
@@ -556,14 +556,14 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       3, {
-        {"_514.uFogStartAndFogEnd", true, 0, 1, 4, 0},
-        {"_514.uFogColor", true, 16, 1, 4, 0},
+        {"_515.uFogStartAndFogEnd", true, 0, 1, 4, 0},
+        {"_515.uFogColor", true, 16, 1, 4, 0},
       }
     },
     {
       4, {
-        {"_251.uHeightScale", true, 0, 1, 4, 0},
-        {"_251.uHeightOffset", true, 16, 1, 4, 0},
+        {"_252.uHeightScale", true, 0, 1, 4, 0},
+        {"_252.uHeightOffset", true, 16, 1, 4, 0},
       }
     },
     {

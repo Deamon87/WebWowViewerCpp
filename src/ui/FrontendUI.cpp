@@ -514,6 +514,17 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(3095966, replacementTextureFDids);
         }
     }
+    if (ImGui::Button("Creature with colors", ImVec2(-1, 0))) {
+//        3096499,3096495
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(1612576, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("IC new sky", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(3159936, replacementTextureFDids);
+        }
+    }
 
     ImGui::End();
 }
@@ -579,7 +590,7 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
         // Upload texture to graphics system
 
         this->fontTexture = m_device->createTexture();
-        this->fontTexture->loadData(width, height, pixels);
+        this->fontTexture->loadData(width, height, pixels, ITextureFormat::itRGBA);
 
         // Store our identifier
         io.Fonts->TexID = this->fontTexture;

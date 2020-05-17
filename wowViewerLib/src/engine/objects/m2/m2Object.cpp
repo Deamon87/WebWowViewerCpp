@@ -927,7 +927,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             0,0,0,1
         );
 
-    if (m_boolSkybox) {
+    if (m_boolSkybox && m_overrideSkyModelMat) {
         m_placementMatrix.GetColumn(3) = mathfu::vec4(cameraPos, 1.0);
         m_placementInvertMatrix = m_placementMatrix.Inverse();
     }
@@ -1026,7 +1026,12 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const s
         return true;
     }
 
-    if (m_boolSkybox) {
+
+    if (m_alwaysDraw) {
+        m_cullResult = true;
+        return true;
+    }
+    if (m_boolSkybox ) {
         return true;
     }
 

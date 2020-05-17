@@ -25,7 +25,9 @@ class M2Object;
 
 class M2Object {
 public:
-    M2Object(ApiContainer *api, bool isSkybox = false) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox) {}
+    M2Object(ApiContainer *api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
+        m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox), m_overrideSkyModelMat(overrideSkyModelMat)
+        {}
 
     ~M2Object();
 
@@ -36,6 +38,8 @@ private:
     void createAABB();
     bool m_loading = false;
     bool m_loaded = false;
+
+    bool m_alwaysDraw = false;
 
 
 
@@ -115,6 +119,7 @@ private:
 
     bool m_interiorAmbientWasSet = false; // For static only
     bool m_boolSkybox = false;
+    bool m_overrideSkyModelMat = true;
 
     void debugDumpAnimationSequences();
 
@@ -139,6 +144,10 @@ private:
     static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> &subMeshColors) ;
     static float getTransparency(M2SkinProfile *skinData, int batchIndex, const std::vector<float> &transparencies) ;
 public:
+
+    void setAlwaysDraw(bool value) {
+        m_alwaysDraw = value;
+    }
 
     bool getInteriorAmbientWasSet() {
         return m_interiorAmbientWasSet;
