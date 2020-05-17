@@ -14,10 +14,13 @@
 #include "shaders/GM2ParticleShaderPermutationGL33.h"
 #include "shaders/GAdtShaderPermutationGL33.h"
 #include "shaders/GWMOShaderPermutationGL33.h"
+#include "shaders/GFFXgauss4.h"
 #include "../../engine/stringTrim.h"
 #include "buffers/GVertexBufferDynamicGL33.h"
 #include "buffers/GUnformBufferChunk33.h"
 #include "../../engine/DrawStage.h"
+#include "GFrameBufferGL33.h"
+#include "shaders/GFFXGlow.h"
 
 namespace GL33 {
     BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -173,6 +176,14 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
         iPremutation = new GM2ParticleShaderPermutationGL33(shaderName, this);
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "fullScreen_ffxgauss4") {
+        iPremutation = new GFFXgauss4(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "fullScreen_quad") {
+        iPremutation = new GFFXGlow(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "wmoShader") {
         WMOShaderCacheRecord *cacheRecord = (WMOShaderCacheRecord * )permutationDescriptor;
         if (cacheRecord != nullptr) {
@@ -236,6 +247,13 @@ HGUniformBuffer GDeviceGL33::createUniformBuffer(size_t size) {
 void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
     for (int i = 0; i < drawStage->drawStageDependencies.size(); i++) {
         this->drawStageAndDeps(drawStage->drawStageDependencies[i]);
+    }
+
+    if (drawStage->target != nullptr) {
+        drawStage->target->bindFrameBuffer();
+        this->clearScreen();
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     this->setViewPortDimensions(
@@ -677,9 +695,10 @@ HGVertexBufferBindings GDeviceGL33::createVertexBufferBindings() {
     return h_vertexBufferBindings;
 }
 
-HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<TextureFormat> attachments) {
-//    HFrameBuffer h_frameBuffer = std::make_shared<>()
-    return nullptr;
+HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment) {
+    HFrameBuffer h_frameBuffer = std::make_shared<GFrameBufferGL33>(*this, attachments, depthAttachment, width, height);
+
+    return h_frameBuffer;
 };
 
 HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size) {

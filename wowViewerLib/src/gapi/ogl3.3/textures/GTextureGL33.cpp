@@ -44,16 +44,36 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
 //    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
 
     m_device.bindTexture(this, 0);
+    if (textureFormat == ITextureFormat::itRGBA) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else if (textureFormat == ITextureFormat::itRGBAFloat32)  {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_FLOAT, data);
+    }else if (textureFormat == ITextureFormat::itDepth32)  {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data);
+    }
+    if (data != nullptr) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glGenerateMipmap(GL_TEXTURE_2D);
+    if (data != nullptr) {
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
 
     m_device.bindTexture(nullptr, 0);
+}
+
+void GTextureGL33::bindToCurrentFrameBufferAsColor(uint8_t attachmentIndex) {
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+attachmentIndex, GL_TEXTURE_2D, this->textureIdentifier, 0);
+}
+void GTextureGL33::bindToCurrentFrameBufferAsDepth() {
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->textureIdentifier, 0);
 }
 
 

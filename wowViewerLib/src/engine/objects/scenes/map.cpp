@@ -14,8 +14,15 @@
 #include "../wowFrameData.h"
 #include "../../algorithms/quick-sort-omp.h"
 #include "../../../gapi/UniformBufferStructures.h"
+#include "../../shader/ShaderDefinitions.h"
 
 //#include "../../algorithms/quicksort-dualpivot.h"
+
+static GBufferBinding fullScreen[1] = {
+    {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
+};
+
+
 
 void Map::checkCulling(HCullStage cullStage) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
@@ -393,15 +400,15 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 }
-void Map::doPostLoad(HCullStage cullStage){
+void Map::doPostLoad(HCullStage cullStage) {
     int processedThisFrame = 0;
     int groupsProcessedThisFrame = 0;
 //    if (m_api->getConfig()->getRenderM2()) {
-        for (int i = 0; i < cullStage->m2Array.size(); i++) {
-            auto m2Object = cullStage->m2Array[i];
-            if (m2Object == nullptr) continue;
-            m2Object->doPostLoad();
-        }
+    for (int i = 0; i < cullStage->m2Array.size(); i++) {
+        auto m2Object = cullStage->m2Array[i];
+        if (m2Object == nullptr) continue;
+        m2Object->doPostLoad();
+    }
 //    }
 
     for (auto &wmoObject : cullStage->wmoArray) {
@@ -411,6 +418,44 @@ void Map::doPostLoad(HCullStage cullStage){
 
     for (auto &adtObject : cullStage->adtArray) {
         adtObject->adtObject->doPostLoad();
+    }
+
+    if (quadBindings == nullptr)
+    {
+        std::array<mathfu::vec2_packed, 4> vertexBuffer = {
+            mathfu::vec2_packed(mathfu::vec2(-1.0f, -1.0f)),
+            mathfu::vec2_packed(mathfu::vec2(-1.0f,  1.0f)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f,  -1.0f)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f,  1.f))
+        };
+        std::vector<uint16_t > indexBuffer = {
+            0, 1, 2,
+            2, 1, 3
+        };
+
+        std::cout << "indexBuffer.size = " << indexBuffer.size() << std::endl;
+
+        auto quadIBO = m_api->hDevice->createIndexBuffer();
+        quadIBO->uploadData(
+            indexBuffer.data(),
+            indexBuffer.size() * sizeof(uint16_t));
+
+        auto quadVBO = m_api->hDevice->createVertexBuffer();
+        quadVBO->uploadData(
+            vertexBuffer.data(),
+            vertexBuffer.size() * sizeof(mathfu::vec2_packed)
+        );
+
+        quadBindings = m_api->hDevice->createVertexBufferBindings();
+        quadBindings->setIndexBuffer(quadIBO);
+
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = quadVBO;
+
+        vertexBinding.bindings = std::vector<GBufferBinding>(&fullScreen[0], &fullScreen[1]);
+
+        quadBindings->addVertexBufferBinding(vertexBinding);
+        quadBindings->save();
     }
 };
 
@@ -762,10 +807,34 @@ animTime_t Map::getCurrentSceneTime() {
     return m_currentTime;
 }
 
-void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
+void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     auto cullStage = updateStage->cullResult;
     auto renderedThisFramePreSort = std::vector<HGMesh>();
 
+    bool frameBufferSupported = true;
+
+    if (quadBindings == nullptr)
+        return;
+
+    HDrawStage origResultDrawStage = resultDrawStage;
+    if (frameBufferSupported) {
+        //Create new drawstage and draw everything there
+        resultDrawStage = std::make_shared<DrawStage>();
+
+        resultDrawStage->drawStageDependencies = origResultDrawStage->drawStageDependencies;
+        resultDrawStage->matricesForRendering = origResultDrawStage->matricesForRendering;
+        resultDrawStage->setViewPort = origResultDrawStage->setViewPort;
+        resultDrawStage->viewPortDimensions = origResultDrawStage->viewPortDimensions;;
+        resultDrawStage->clearScreen = origResultDrawStage->clearScreen;;
+        resultDrawStage->clearColor = origResultDrawStage->clearColor;;
+
+        resultDrawStage->target = m_api->hDevice->createFrameBuffer(
+            resultDrawStage->viewPortDimensions.maxs[0],
+            resultDrawStage->viewPortDimensions.maxs[1],
+            {ITextureFormat::itRGBA},
+            ITextureFormat::itDepth32
+        );
+    }
     //Create scenewide uniform
     auto renderMats = resultDrawStage->matricesForRendering;
 
@@ -785,6 +854,9 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage)
         blockPSVS->extLight.uExteriorDirectColor = config->getExteriorDirectColor();
         blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(config->getExteriorDirectColorDir(), 1.0);
     });
+
+
+    additionalChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
 
     //Create meshes
     resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
@@ -863,6 +935,121 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage)
     } else {
         for (int i = 0; i < renderedThisFramePreSort.size(); i++) {
             resultDrawStage->meshesToRender->meshes.push_back(renderedThisFramePreSort[i]);
+        }
+    }
+
+    if (frameBufferSupported) {
+        ///3 Rounds of ffxgauss4
+        ///With two frameBuffers
+        ///Size for buffers : is 4 times less than current canvas
+        auto frameB1 = m_api->hDevice->createFrameBuffer(
+            resultDrawStage->viewPortDimensions.maxs[0] >> 2,
+            resultDrawStage->viewPortDimensions.maxs[1] >> 2,
+            {ITextureFormat::itRGBA},
+            ITextureFormat::itDepth32
+        );
+        auto frameB2 = m_api->hDevice->createFrameBuffer(
+            resultDrawStage->viewPortDimensions.maxs[0] >> 2,
+            resultDrawStage->viewPortDimensions.maxs[1] >> 2,
+            {ITextureFormat::itRGBA},
+            ITextureFormat::itDepth32
+        );
+
+        auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+        vertexChunk->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
+            meshblockVS.x = 1;
+            meshblockVS.y = 1;
+            meshblockVS.z = 0;
+            meshblockVS.w = 0;
+        });
+
+        auto fragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+        fragmentChunk->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
+            meshblockVS.x = 1;
+            meshblockVS.y = 1;
+            meshblockVS.z = 0; //mix_coeficient
+            meshblockVS.w = 0.800f; //glow multiplier
+        });
+
+        HDrawStage prevStage = resultDrawStage;
+        for (int i = 0; i < 3; i++) {
+            ///1. Create draw stage
+            HDrawStage drawStage = std::make_shared<DrawStage>();
+
+            drawStage->drawStageDependencies = {prevStage};
+            drawStage->matricesForRendering = nullptr;
+            drawStage->setViewPort = true;
+            drawStage->viewPortDimensions = {{0, 0},
+                                             {resultDrawStage->viewPortDimensions.maxs[0] >> 2,
+                                                 resultDrawStage->viewPortDimensions.maxs[1] >> 2}};
+            drawStage->clearScreen = false;
+            drawStage->target = ((i & 1) > 0) ? frameB1 : frameB2;
+
+            ///2. Create mesh
+            auto shader = m_api->hDevice->getShader("fullScreen_ffxgauss4", nullptr);
+            gMeshTemplate meshTemplate(quadBindings, shader);
+            meshTemplate.meshType = MeshType::eGeneralMesh;
+            meshTemplate.depthWrite = false;
+            meshTemplate.depthCulling = false;
+            meshTemplate.backFaceCulling = false;
+
+            meshTemplate.texture.resize(1);
+            meshTemplate.texture[0] = prevStage->target->getAttachment(0);
+
+            meshTemplate.textureCount = 1;
+
+            meshTemplate.ubo[0] = nullptr;
+            meshTemplate.ubo[1] = nullptr;
+            meshTemplate.ubo[2] = vertexChunk;
+
+            meshTemplate.ubo[3] = nullptr;
+            meshTemplate.ubo[4] = fragmentChunk;
+
+            meshTemplate.start = 0;
+            meshTemplate.end = 6;
+
+            //Make mesh
+            HGMesh hmesh =  m_api->hDevice->createMesh(meshTemplate);
+            drawStage->meshesToRender = std::make_shared<MeshesToRender>();
+            drawStage->meshesToRender->meshes.push_back(hmesh);
+
+            ///3. Reassign previous frame
+            prevStage = drawStage;
+        }
+
+        //And the final is ffxglow to screen
+        {
+            auto shader = m_api->hDevice->getShader("fullScreen_quad", nullptr);
+            gMeshTemplate meshTemplate(quadBindings, shader);
+            meshTemplate.meshType = MeshType::eGeneralMesh;
+            meshTemplate.depthWrite = false;
+            meshTemplate.depthCulling = false;
+            meshTemplate.backFaceCulling = false;
+
+            meshTemplate.texture.resize(2);
+            meshTemplate.texture[0] = resultDrawStage->target->getAttachment(0);
+            meshTemplate.texture[1] = prevStage->target->getAttachment(0);
+
+            meshTemplate.textureCount = 2;
+
+
+            meshTemplate.ubo[0] = nullptr;
+            meshTemplate.ubo[1] = nullptr;
+            meshTemplate.ubo[2] = vertexChunk;
+
+            meshTemplate.ubo[3] = nullptr;
+            meshTemplate.ubo[4] = nullptr;
+
+            meshTemplate.start = 0;
+            meshTemplate.end = 6;
+
+            //Make mesh
+            HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
+            origResultDrawStage->drawStageDependencies = {prevStage};
+            origResultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+            origResultDrawStage->meshesToRender->meshes.push_back(hmesh);
         }
     }
 }

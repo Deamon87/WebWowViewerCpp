@@ -9,9 +9,10 @@
 #include "../../../engine/texture/BlpTexture.h"
 
 enum class ITextureFormat {
+    itNone,
     itRGBA,
-    itFLOAT,
-    itDepthStencil
+    itRGBAFloat32,
+    itDepth32
 };
 
 class ITexture {

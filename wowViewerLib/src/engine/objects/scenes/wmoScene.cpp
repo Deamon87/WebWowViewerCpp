@@ -187,7 +187,7 @@ void WmoScene::updateBuffers(HCullStage cullStage) {
 
 }
 
-void WmoScene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
+void WmoScene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     auto cullStage = updateStage->cullResult;
     auto renderedThisFramePreSort = std::vector<HGMesh>();
 

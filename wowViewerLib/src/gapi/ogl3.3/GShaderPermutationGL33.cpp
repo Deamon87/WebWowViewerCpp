@@ -135,20 +135,24 @@ namespace GL33 {
         return s;
     }
 }
-GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, IDevice * device) : m_device(device), m_shaderName(shaderName){
+GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, IDevice * device) : m_device(device),
+    m_shaderNameVert(shaderName), m_shaderNameFrag(shaderName) {
+}
 
+GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderNameVert, std::string &shaderNameFrag, IDevice * device) : m_device(device),
+    m_shaderNameVert(shaderNameVert), m_shaderNameFrag(shaderNameFrag) {
 }
 
 void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
-    std::string shaderVertFile =  m_device->loadShader(m_shaderName, IShaderType::gVertexShader);
-    std::string shaderFragFile =  m_device->loadShader(m_shaderName, IShaderType::gFragmentShader);
+    std::string shaderVertFile =  m_device->loadShader(m_shaderNameVert, IShaderType::gVertexShader);
+    std::string shaderFragFile =  m_device->loadShader(m_shaderNameFrag, IShaderType::gFragmentShader);
     if (shaderVertFile.length() == 0) {
-        std::cout << "shaderVertFile " << m_shaderName << " is empty" << std::endl;
+        std::cout << "shaderVertFile " << m_shaderNameVert << " is empty" << std::endl;
 //        throw;
     }
     if (shaderFragFile.length() == 0) {
-        std::cout << "shaderFragFile " << m_shaderName << " is empty" << std::endl;
+        std::cout << "shaderFragFile " << m_shaderNameFrag << " is empty" << std::endl;
 //        throw;
     }
 
@@ -252,7 +256,7 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
         //The maxLength includes the NULL character
         std::vector<GLchar> infoLog(maxLength);
         glGetShaderInfoLog(vertexShader, maxLength, &maxLength, &infoLog[0]);
-        std::cout << "\nWoW: could not compile vertex shader "<< m_shaderName<<":" << std::endl
+        std::cout << "\nWoW: could not compile vertex shader "<< m_shaderNameVert<<":" << std::endl
                   << vertexShaderConst << std::endl << std::endl
                   << "error: "<<std::string(infoLog.begin(),infoLog.end())<< std::endl <<std::flush;
 
@@ -276,7 +280,7 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
         //The maxLength includes the NULL character
         std::vector<GLchar> infoLog(maxLength);
         glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
-        std::cout << "\nWoW: could not compile fragment shader "<<m_shaderName<<":" << std::endl <<std::flush
+        std::cout << "\nWoW: could not compile fragment shader "<<m_shaderNameFrag<<":" << std::endl <<std::flush
                   << fragmentShaderConst << std::flush << std::endl << std::endl
                   << "error: "<<std::string(infoLog.begin(),infoLog.end())<< std::endl <<std::flush;
 

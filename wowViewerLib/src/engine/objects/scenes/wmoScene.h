@@ -66,7 +66,7 @@ public:
     void doPostLoad(HCullStage cullStage) override;
     void update(HUpdateStage updateStage) override;
     void updateBuffers(HCullStage cullStage) override;
-    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) override;
+    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
 
     void setAnimationId(int animationId) override {
     };

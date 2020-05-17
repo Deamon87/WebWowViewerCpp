@@ -155,8 +155,8 @@ void SceneComposer::DoUpdate() {
     meshesCollectCNT.beginMeasurement();
     std::vector<HGUniformBufferChunk> additionalChunks;
     for (auto &link : frameScenario->drawStageLinks) {
-        link.scene->produceDrawStage(link.drawStage, link.updateStage);
-        additionalChunks.push_back(link.drawStage->sceneWideBlockVSPSChunk);
+        link.scene->produceDrawStage(link.drawStage, link.updateStage, additionalChunks);
+
     }
 
     std::vector<HGMesh> meshes;

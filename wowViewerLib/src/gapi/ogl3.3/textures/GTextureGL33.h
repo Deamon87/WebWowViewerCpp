@@ -22,6 +22,8 @@ public:
 //        throw "Not Implemented in this class";
     }
     bool postLoad() override { return false;};
+    void bindToCurrentFrameBufferAsColor(uint8_t attachmentIndex);
+    void bindToCurrentFrameBufferAsDepth();
 private:
     void createBuffer();
     void destroyBuffer();

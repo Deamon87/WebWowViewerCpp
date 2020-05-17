@@ -40,6 +40,7 @@ private:
 
     int m_viewRenderOrder = 0;
 
+    HGVertexBufferBindings quadBindings;
 
     std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};
     std::unordered_map<int, std::weak_ptr<WmoObject>> m_wmoMapObjects = {};
@@ -116,7 +117,7 @@ public:
 
     void update(HUpdateStage updateStage) override;
     void updateBuffers(HCullStage cullStage) override;
-    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) override;
+    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
 
 //    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
 private:

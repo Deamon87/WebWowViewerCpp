@@ -580,7 +580,7 @@ void FrontendUI::setCurrentTimeChangeCallback(std::function<void(int value)> cal
     setCurrentTime = callback;
 }
 
-void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
+void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     if (this->fontTexture == nullptr) {
         ImGuiIO& io = ImGui::GetIO();
         unsigned char* pixels;

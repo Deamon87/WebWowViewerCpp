@@ -58,7 +58,7 @@ public:
     void update(HUpdateStage updateStage) override;
     void updateBuffers(HCullStage cullStage) override;
 
-    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) override;
+    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
 };
 
 

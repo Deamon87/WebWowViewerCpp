@@ -18,7 +18,7 @@ public:
 
     virtual void setAnimationId(int animationId) = 0;
 
-    virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) = 0;
+    virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) = 0;
 
     virtual void checkCulling(HCullStage cullStage) = 0;
 

@@ -13,8 +13,12 @@ struct CameraMatrices;
 struct CullStage;
 struct UpdateStage;
 
+//Holds dependency graph for different scenes
+class FrameScenario;
+
 typedef std::shared_ptr<CullStage> HCullStage;
 typedef std::shared_ptr<UpdateStage> HUpdateStage;
+typedef std::shared_ptr<FrameScenario> HFrameScenario;
 
 
 
@@ -26,8 +30,7 @@ typedef std::shared_ptr<UpdateStage> HUpdateStage;
 #include "objects/iScene.h"
 #include "camera/CameraInterface.h"
 
-//Holds dependency graph for different scenes
-class FrameScenario;
+
 
 
 
@@ -89,6 +92,6 @@ public:
     HDrawStage getDrawStage();
 };
 
-typedef std::shared_ptr<FrameScenario> HFrameScenario;
+
 
 #endif //AWEBWOWVIEWERCPP_SCENESCENARIO_H

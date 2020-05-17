@@ -185,7 +185,7 @@ class IDevice {
         virtual HGIndexBuffer createIndexBuffer() = 0;
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
 
-        virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<TextureFormat> attachments) = 0;
+        virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment) = 0;
 
         virtual HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
         virtual HGTexture createTexture() = 0;

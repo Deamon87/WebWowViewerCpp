@@ -13,7 +13,7 @@ public:
 
     virtual void setAnimationId(int animationId) override {};
 
-    virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) override {
+    virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override {
         resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
     };
 

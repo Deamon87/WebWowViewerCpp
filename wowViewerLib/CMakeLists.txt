@@ -312,7 +312,7 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.cpp
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.h
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
-        src/gapi/ogl3.3/GOcclusionQueryGL33.h src/gapi/ogl3.3/buffers/GUnformBufferChunk33.h src/gapi/ogl3.3/GFrameBufferGL33.cpp src/gapi/ogl3.3/GFrameBufferGL33.h)
+        src/gapi/ogl3.3/GOcclusionQueryGL33.h src/gapi/ogl3.3/buffers/GUnformBufferChunk33.h src/gapi/ogl3.3/GFrameBufferGL33.cpp src/gapi/ogl3.3/GFrameBufferGL33.h src/gapi/ogl3.3/shaders/GFFXgauss4.cpp src/gapi/ogl3.3/shaders/GFFXgauss4.h src/gapi/ogl3.3/shaders/GFFXGlow.cpp src/gapi/ogl3.3/shaders/GFFXGlow.h)
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
@@ -461,7 +461,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (0)
+if (1)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)

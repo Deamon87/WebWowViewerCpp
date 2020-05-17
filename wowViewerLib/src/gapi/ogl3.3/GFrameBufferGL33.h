@@ -9,16 +9,27 @@
 #include <vector>
 #include "../interface/IFrameBuffer.h"
 #include "../interface/textures/ITexture.h"
-#include "../interface/IDevice.h"
+#include "GDeviceGL33.h"
+#include "../../engine/opengl/header.h"
 
 class GFrameBufferGL33 : public IFrameBuffer {
 public:
-    GFrameBufferGL33(std::vector<ITextureFormat> textureAttachment);
+    GFrameBufferGL33(IDevice &device, std::vector<ITextureFormat> textureAttachments, ITextureFormat depthAttachment, int width, int height);
+    ~GFrameBufferGL33();
 
 
+    HGTexture getAttachment(int index) override;
+    HGTexture getDepthTexture() override;
+    void bindFrameBuffer();
 
 private:
-    std::vector<HGTexture> texture;
+    IDevice &mdevice;
+
+    std::vector<HGTexture> attachmentTextures;
+    HGTexture depthTexture;
+
+
+    GLuint m_fbo;
 };
 
 

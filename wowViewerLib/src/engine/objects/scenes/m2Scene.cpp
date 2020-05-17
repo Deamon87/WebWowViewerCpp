@@ -124,7 +124,7 @@ void M2Scene::updateBuffers(HCullStage cullStage) {
 
 }
 
-void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage) {
+void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     if (updateStage == nullptr) return;
     if (resultDrawStage == nullptr) return;
 
