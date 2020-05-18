@@ -423,10 +423,10 @@ void Map::doPostLoad(HCullStage cullStage) {
     if (quadBindings == nullptr)
     {
         std::array<mathfu::vec2_packed, 4> vertexBuffer = {
-            mathfu::vec2_packed(mathfu::vec2(-1.0f, -1.0f)),
-            mathfu::vec2_packed(mathfu::vec2(-1.0f,  1.0f)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f,  -1.0f)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f,  1.f))
+            mathfu::vec2_packed(mathfu::vec2(-1.0f + 0.001, -1.0f+ 0.001)),
+            mathfu::vec2_packed(mathfu::vec2(-1.0f+ 0.001,  1.0f- 0.001)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f- 0.001,  -1.0f+ 0.001)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f- 0.001,  1.f- 0.001))
         };
         std::vector<uint16_t > indexBuffer = {
             0, 1, 2,
@@ -939,18 +939,21 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
     }
 
     if (frameBufferSupported) {
-        ///3 Rounds of ffxgauss4
+        ///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
         ///With two frameBuffers
         ///Size for buffers : is 4 times less than current canvas
+        int targetWidth = resultDrawStage->viewPortDimensions.maxs[0] >> 2;
+        int targetHeight = resultDrawStage->viewPortDimensions.maxs[1] >> 2;
+
         auto frameB1 = m_api->hDevice->createFrameBuffer(
-            resultDrawStage->viewPortDimensions.maxs[0] >> 2,
-            resultDrawStage->viewPortDimensions.maxs[1] >> 2,
+            targetWidth,
+            targetHeight,
             {ITextureFormat::itRGBA},
             ITextureFormat::itDepth32
         );
         auto frameB2 = m_api->hDevice->createFrameBuffer(
-            resultDrawStage->viewPortDimensions.maxs[0] >> 2,
-            resultDrawStage->viewPortDimensions.maxs[1] >> 2,
+            targetWidth,
+            targetHeight,
             {ITextureFormat::itRGBA},
             ITextureFormat::itDepth32
         );
@@ -964,17 +967,34 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
             meshblockVS.w = 0;
         });
 
-        auto fragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        fragmentChunk->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+        auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+        ffxGlowfragmentChunk->setUpdateHandler([](IUniformBufferChunk *self) -> void {
             auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
             meshblockVS.x = 1;
             meshblockVS.y = 1;
             meshblockVS.z = 0; //mix_coeficient
             meshblockVS.w = 0.800f; //glow multiplier
         });
+        auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+        ffxGaussFrag->setUpdateHandler([targetWidth, targetHeight](IUniformBufferChunk *self) -> void {
+            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
+            meshblockVS.x = 0;
+            meshblockVS.y = 0;
+            meshblockVS.z = 0;
+            meshblockVS.w = 0; //glow multiplier
+        });
+
+        auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+        ffxGaussFrag2->setUpdateHandler([targetWidth, targetHeight](IUniformBufferChunk *self) -> void {
+            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
+            meshblockVS.x = 1;
+            meshblockVS.y = 0;
+            meshblockVS.z = 0;
+            meshblockVS.w = 0; //glow multiplier
+        });
 
         HDrawStage prevStage = resultDrawStage;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             ///1. Create draw stage
             HDrawStage drawStage = std::make_shared<DrawStage>();
 
@@ -994,6 +1014,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
             meshTemplate.depthWrite = false;
             meshTemplate.depthCulling = false;
             meshTemplate.backFaceCulling = false;
+            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
             meshTemplate.texture.resize(1);
             meshTemplate.texture[0] = prevStage->target->getAttachment(0);
@@ -1005,8 +1026,9 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
             meshTemplate.ubo[2] = vertexChunk;
 
             meshTemplate.ubo[3] = nullptr;
-            meshTemplate.ubo[4] = fragmentChunk;
+            meshTemplate.ubo[4] =  ((i & 1) > 0) ? ffxGaussFrag2 : ffxGaussFrag;
 
+            meshTemplate.element = DrawElementMode::TRIANGLES;
             meshTemplate.start = 0;
             meshTemplate.end = 6;
 
@@ -1027,6 +1049,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
             meshTemplate.depthWrite = false;
             meshTemplate.depthCulling = false;
             meshTemplate.backFaceCulling = false;
+            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
             meshTemplate.texture.resize(2);
             meshTemplate.texture[0] = resultDrawStage->target->getAttachment(0);
@@ -1040,8 +1063,9 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
             meshTemplate.ubo[2] = vertexChunk;
 
             meshTemplate.ubo[3] = nullptr;
-            meshTemplate.ubo[4] = nullptr;
+            meshTemplate.ubo[4] = ffxGlowfragmentChunk;
 
+            meshTemplate.element = DrawElementMode::TRIANGLES;
             meshTemplate.start = 0;
             meshTemplate.end = 6;
 

@@ -70,6 +70,10 @@ namespace GL33 {
         if (severity == 37190) {
             std::cout << "lol";
         }
+        if (type == GL_DEBUG_TYPE_ERROR) {
+            std::cout << "lol Error" << std::endl;
+            __debugbreak;
+        }
 
         fflush(stdout);
     }
@@ -251,7 +255,6 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
 
     if (drawStage->target != nullptr) {
         drawStage->target->bindFrameBuffer();
-        this->clearScreen();
     } else {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
@@ -275,6 +278,9 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
         }
     }
 
+    if (drawStage->target != nullptr) {
+        drawStage->target->copyRenderBufferToTexture();
+    }
 //    drawMeshes(drawStage->meshesToRender->meshes);
 }
 
@@ -875,7 +881,7 @@ GDeviceGL33::GDeviceGL33() {
 //    glEnable(GL_DEBUG_OUTPUT);
 //    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 //    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-//    glDebugMessageCallback(debug_func, NULL);
+//    glDebugMessageCallback(GL33::debug_func, NULL);
 }
 
 HGOcclusionQuery GDeviceGL33::createQuery(HGMesh boundingBoxMesh) {

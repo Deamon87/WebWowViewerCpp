@@ -12,6 +12,7 @@ public:
     virtual HGTexture getAttachment(int index) = 0;
     virtual HGTexture getDepthTexture() = 0;
     virtual void bindFrameBuffer() = 0;
+    virtual void copyRenderBufferToTexture() = 0;
 };
 
 #endif //AWEBWOWVIEWERCPP_IFRAMEBUFFER_H

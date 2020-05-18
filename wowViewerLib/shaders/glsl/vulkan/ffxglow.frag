@@ -19,4 +19,5 @@ void main()
     vec3 glow = ((blurred * blurred) * blurAmount.w);
 
     Out_Color = vec4(mixed.rgb + glow, screen.a);
+//    Out_Color = vec4(glow, screen.a);
 }

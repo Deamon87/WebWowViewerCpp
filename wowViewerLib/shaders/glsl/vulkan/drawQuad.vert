@@ -20,6 +20,6 @@ void main(void) {
     gl_Position = vec4(
         (((position.x + 1.0)/2.0) * uWidth + uX)*2.0 - 1.0,
         (((position.y + 1.0)/2.0) * uHeight + uY)*2.0 - 1.0,
-        0.0,
+        0.5,
         1.0)  ;
 }

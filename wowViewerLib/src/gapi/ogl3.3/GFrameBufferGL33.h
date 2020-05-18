@@ -20,7 +20,9 @@ public:
 
     HGTexture getAttachment(int index) override;
     HGTexture getDepthTexture() override;
-    void bindFrameBuffer();
+    void bindFrameBuffer() override;
+    void copyRenderBufferToTexture() override;
+
 
 private:
     IDevice &mdevice;
@@ -29,7 +31,14 @@ private:
     HGTexture depthTexture;
 
 
-    GLuint m_fbo;
+    GLuint m_renderBufFbo;
+    std::vector<GLuint> renderBufferAttachments;
+    GLuint depthBufferAttachment = 0;
+
+    GLuint m_textureFbo;
+
+    int m_width = 0;
+    int m_height = 0;
 };
 
 
