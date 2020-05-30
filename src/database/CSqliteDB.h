@@ -17,7 +17,7 @@ public:
     std::string getAreaName(int areaId) override;
     std::string getWmoAreaName(int wmoId, int nameId, int groupId) override;
 
-    void getEnvInfo(int mapId, float x, float y, float z, int time, LightResult &lightResult) override;
+    void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults) override;
     void getLightById(int lightId, int time, LightResult &lightResult) override;
     void getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &loData) override;
     void getLiquidTypeData(int liquidTypeId, std::vector<int > &fileDataIds) override;
@@ -44,9 +44,11 @@ private:
         float blendAlpha = 0;
         int paramId;
         int skyBoxFileId;
+        float glow;
+        bool isDefault = false;
     };
 
-    void convertInnerResultsToPublic(int ptime, LightResult &lightResult, std::vector<InnerLightResult> &innerResults);
+    void convertInnerResultsToPublic(int ptime, std::vector<LightResult> &lightResults, std::vector<InnerLightResult> &innerResults);
 };
 
 

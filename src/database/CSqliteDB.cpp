@@ -17,7 +17,7 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "select at.AreaName_lang from AreaTable at where at.ID = ?"),
 
     getLightStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0) from Light l "
+        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), lp.Glow from Light l "
         "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
         "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
         " where  "
@@ -29,7 +29,7 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "    or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)  "
         "ORDER BY l.ID desc"),
     getLightByIdStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0) from Light l "
+        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), lp.Glow from Light l "
         "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
         "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
         " where l.ID = ?"),
@@ -137,6 +137,7 @@ void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult) {
 
     std::vector<InnerLightResult> innerResults;
 
+
     while (getLightByIdStatement.executeStep()) {
         InnerLightResult ilr;
         ilr.pos[0] = getLightByIdStatement.getColumn(0).getDouble();
@@ -146,15 +147,20 @@ void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult) {
         ilr.fallbackEnd = getLightByIdStatement.getColumn(4).getDouble();
         ilr.paramId = getLightByIdStatement.getColumn(5).getInt();
         ilr.skyBoxFileId = getLightByIdStatement.getColumn(6).getInt();
+        ilr.glow = getLightByIdStatement.getColumn(7).getDouble();
 
         ilr.blendAlpha = 1.0f;
 
         innerResults.push_back(ilr);
     }
+    std::vector<LightResult> lightResults;
+    convertInnerResultsToPublic(time, lightResults, innerResults);
+    if (lightResults.size() > 0) {
+        lightResult = lightResults[0];
+    }
 
-    convertInnerResultsToPublic(time, lightResult, innerResults);
 };
-void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, LightResult &lightResult) {
+void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, std::vector<LightResult> &lightResults) {
     getLightStatement.reset();
 
     getLightStatement.bind(1, mapId);
@@ -174,6 +180,7 @@ void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, Ligh
         ilr.fallbackEnd = getLightStatement.getColumn(4).getDouble();
         ilr.paramId = getLightStatement.getColumn(5).getInt();
         ilr.skyBoxFileId = getLightStatement.getColumn(6).getInt();
+        ilr.glow = getLightStatement.getColumn(7).getDouble();
 
         bool defaultRec = false;
         if (ilr.pos[0] == 0 && ilr.pos[1] == 0 && ilr.pos[2] == 0 ) {
@@ -194,18 +201,19 @@ void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, Ligh
             totalBlend += ilr.blendAlpha;
         } else {
             ilr.blendAlpha = 1.0f - totalBlend;
+            ilr.isDefault = true;
         }
 
 
 
         innerResults.push_back(ilr);
     }
-    convertInnerResultsToPublic(ptime, lightResult, innerResults);
+    convertInnerResultsToPublic(ptime, lightResults, innerResults);
 
 
 }
 
-void CSqliteDB::convertInnerResultsToPublic(int ptime, LightResult &lightResult,
+void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> &lightResults,
                                             std::vector<CSqliteDB::InnerLightResult> &innerResults)  {
 
     //From lowest to highest
@@ -220,24 +228,26 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, LightResult &lightResult,
         int time;
     };
 
-    lightResult.ambientColor[0] = 0;
-    lightResult.ambientColor[1] = 0;
-    lightResult.ambientColor[2] = 0;
-
-    lightResult.directColor[0] = 0;
-    lightResult.directColor[1] = 0;
-    lightResult.directColor[2] = 0;
-
-    lightResult.closeRiverColor[0] = 0;
-    lightResult.closeRiverColor[1] = 0;
-    lightResult.closeRiverColor[2] = 0;
-
-    lightResult.skyBoxFdid = 0;
-
-
     float totalSummator = 0.0f;
     for (int i = 0; i < innerResults.size() && totalSummator < 1.0f; i++) {
+        LightResult lightResult;
+        lightResult.ambientColor[0] = 0;
+        lightResult.ambientColor[1] = 0;
+        lightResult.ambientColor[2] = 0;
+
+        lightResult.directColor[0] = 0;
+        lightResult.directColor[1] = 0;
+        lightResult.directColor[2] = 0;
+
+        lightResult.closeRiverColor[0] = 0;
+        lightResult.closeRiverColor[1] = 0;
+        lightResult.closeRiverColor[2] = 0;
+
+        lightResult.skyBoxFdid = 0;
+
+
         auto &innerResult = innerResults[i];
+        lightResult.isDefault = innerResult.isDefault;
 
         getLightData.reset();
 
@@ -249,10 +259,12 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, LightResult &lightResult,
         if (totalSummator + innerAlpha > 1.0f) {
             innerAlpha = 1.0f - totalSummator;
         }
+        lightResult.blendCoef = innerAlpha;
 
         if (lightResult.skyBoxFdid == 0) {
             lightResult.skyBoxFdid = innerResult.skyBoxFileId;
         }
+        lightResult.glow = innerResult.glow;
 
         while (getLightData.executeStep()) {
             InnerLightDataRes currLdRes;
@@ -329,6 +341,8 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, LightResult &lightResult,
             lightResult.closeRiverColor[1] += getFloatFromInt<1>(lastLdRes.closeRiverColor) * innerAlpha;
             lightResult.closeRiverColor[2] += getFloatFromInt<2>(lastLdRes.closeRiverColor) * innerAlpha;
         }
+
+        lightResults.push_back(lightResult);
 
         totalSummator += innerResult.blendAlpha;
     }

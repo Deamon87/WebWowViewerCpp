@@ -60,6 +60,9 @@ public:
     bool getIsAsynBuffUploadSupported() override {
         return false;
     }
+    int getMaxSamplesCnt() override {
+        return (m_maxMultiSampling < 8) ? m_maxMultiSampling : 8;
+    }
 
     float getAnisLevel() override;
 
@@ -159,6 +162,7 @@ protected:
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
+    int m_maxMultiSampling = 0;
     bool m_isInSkyBoxDepthMode = false;
     int8_t m_isScissorsEnabled = -1;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;

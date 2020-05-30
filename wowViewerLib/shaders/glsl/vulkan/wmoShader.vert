@@ -96,6 +96,7 @@ void main() {
        vTexCoord3 = aTexCoord3; //not used
    }
 
+
 //
 //    vs_out.vTexCoord = vTexCoord;
 //    vs_out.vTexCoord2 = vTexCoord2;

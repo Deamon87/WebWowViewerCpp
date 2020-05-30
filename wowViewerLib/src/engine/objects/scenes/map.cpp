@@ -156,8 +156,10 @@ void Map::checkCulling(HCullStage cullStage) {
         cullStage->exteriorView.frustumPlanes.push_back(frustumPlanes);
         checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, viewPerspectiveMat, m_viewRenderOrder, cullStage);
     }
-    if (  cullStage->exteriorView.viewCreated && (m_currentSkyFDID != 0)) {
-        cullStage->exteriorView.drawnM2s.push_back(m_exteriorSkyBox);
+    if (  cullStage->exteriorView.viewCreated && (!m_exteriorSkyBoxes.empty())) {
+        for (auto model : m_exteriorSkyBoxes) {
+            cullStage->exteriorView.drawnM2s.push_back(model);
+        }
     }
 
     //Fill M2 objects for views from WmoGroups
@@ -618,7 +620,8 @@ void Map::update(HUpdateStage updateStage) {
 
         if ((m_api->databaseHandler != nullptr)) {
             //Check zoneLight
-            LightResult lightResult;
+            LightResult zoneLightResult;
+            std::vector<LightResult> lightResults;
             bool zoneLightFound = false;
             int LightId;
             for (const auto& zoneLight : m_zoneLights) {
@@ -630,36 +633,93 @@ void Map::update(HUpdateStage updateStage) {
             }
 
             if (zoneLightFound) {
-                m_api->databaseHandler->getLightById(LightId, config->getCurrentTime(), lightResult );
-            } else {
-                m_api->databaseHandler->getEnvInfo(m_mapId,
-                                                   updateStage->cameraMatrices->cameraPos[0],
-                                                   updateStage->cameraMatrices->cameraPos[1],
-                                                   updateStage->cameraMatrices->cameraPos[2],
-                                                   config->getCurrentTime(),
-                                                   lightResult
-                );
+                m_api->databaseHandler->getLightById(LightId, config->getCurrentTime(), zoneLightResult );
             }
 
-            if (m_currentSkyFDID != lightResult.skyBoxFdid) {
-                if (lightResult.skyBoxFdid == 0) {
-                    m_exteriorSkyBox = nullptr;
-                } else {
-                    m_exteriorSkyBox = std::make_shared<M2Object>(m_api, true);
-                    m_exteriorSkyBox->setLoadParams(0, {},{});
+            m_api->databaseHandler->getEnvInfo(m_mapId,
+                                               updateStage->cameraMatrices->cameraPos[0],
+                                               updateStage->cameraMatrices->cameraPos[1],
+                                               updateStage->cameraMatrices->cameraPos[2],
+                                               config->getCurrentTime(),
+                                               lightResults
+            );
 
-                    m_exteriorSkyBox->setModelFileId(lightResult.skyBoxFdid);
+            //Calc final blendcoef for zoneLight;
+            if (zoneLightFound) {
+                float blendCoef = 1.0;
 
-                    m_exteriorSkyBox->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
-                    m_exteriorSkyBox->calcWorldPosition();
+                for (auto &_light : lightResults) {
+                    if (!_light.isDefault) {
+                        blendCoef -= _light.blendCoef;
+                    }
                 }
-                m_currentSkyFDID = lightResult.skyBoxFdid;
+                if (blendCoef > 0) {
+                    zoneLightResult.blendCoef = blendCoef;
+                    lightResults.push_back(zoneLightResult);
+                    //Delete default from results;
+                    auto it = lightResults.begin();
+                    while (it != lightResults.end()) {
+                        if (it->isDefault) {
+                            lightResults.erase(it);
+                            break;
+                        } else
+                            it++;
+                    }
+                }
+            }
+
+            //Delete skyboxes that are not in light array
+            std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
+            auto modelIt = m_exteriorSkyBoxes.begin();
+            while (modelIt != m_exteriorSkyBoxes.end()) {
+                bool found = false;
+                for (auto &_light : lightResults) {
+                    if (_light.skyBoxFdid == (*modelIt)->getModelFileId()) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) {
+                    perFdidMap[(*modelIt)->getModelFileId()] = *modelIt;
+                    modelIt++;
+                } else {
+                    modelIt = m_exteriorSkyBoxes.erase(modelIt);
+                }
+            }
+            for (auto &_light : lightResults) {
+                std::shared_ptr<M2Object> skyBox = nullptr;
+                if (perFdidMap[_light.skyBoxFdid] == nullptr) {
+                    skyBox = std::make_shared<M2Object>(m_api, true);
+                    skyBox->setLoadParams(0, {},{});
+
+                    skyBox->setModelFileId(_light.skyBoxFdid);
+
+                    skyBox->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+                    skyBox->calcWorldPosition();
+                    m_exteriorSkyBoxes.push_back(skyBox);
+                } else {
+                    skyBox = perFdidMap[_light.skyBoxFdid];
+                }
+
+                skyBox->setAlpha(_light.blendCoef);
+            }
+            //Blend glow and ambient
+            mathfu::vec3 ambientColor = {0,0,0};
+            mathfu::vec3 directColor = {0,0,0};
+            mathfu::vec3 closeRiverColor = {0,0,0};
+            m_currentGlow = 0;
+            for (auto &_light : lightResults) {
+                m_currentGlow += _light.glow * _light.blendCoef;
+                ambientColor += mathfu::vec3(_light.ambientColor) * _light.blendCoef;
+                directColor += mathfu::vec3(_light.directColor) * _light.blendCoef;
+                closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
             }
 
             //Database is in BGRA
-            config->setExteriorAmbientColor(lightResult.ambientColor[2], lightResult.ambientColor[1], lightResult.ambientColor[0], 0);
-            config->setExteriorDirectColor(lightResult.directColor[2]*2, lightResult.directColor[1]*2, lightResult.directColor[0]*2, 0);
-            config->setCloseRiverColor(lightResult.closeRiverColor[2], lightResult.directColor[1], lightResult.directColor[0], 0);
+            config->setExteriorAmbientColor(ambientColor[2], ambientColor[1], ambientColor[0], 0);
+            config->setExteriorDirectColor(directColor[2], directColor[1], directColor[0], 0);
+            config->setCloseRiverColor(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
         }
 
         config->setFogColor(
@@ -967,34 +1027,46 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
             meshblockVS.w = 0;
         });
 
-        auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        ffxGlowfragmentChunk->setUpdateHandler([](IUniformBufferChunk *self) -> void {
-            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
-            meshblockVS.x = 1;
-            meshblockVS.y = 1;
-            meshblockVS.z = 0; //mix_coeficient
-            meshblockVS.w = 0.800f; //glow multiplier
-        });
-        auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        ffxGaussFrag->setUpdateHandler([targetWidth, targetHeight](IUniformBufferChunk *self) -> void {
-            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
-            meshblockVS.x = 0;
-            meshblockVS.y = 0;
-            meshblockVS.z = 0;
-            meshblockVS.w = 0; //glow multiplier
+
+        auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
+        ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+            auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
+            static const float s_texOffsetX[4] = {-1, 0, 0, -1};
+            static const float s_texOffsetY[4] = {2, 2, -1, -1};;
+
+            for (int i = 0; i < 4; i++) {
+                meshblockVS.texOffsetX[i] = s_texOffsetX[i];
+                meshblockVS.texOffsetY[i] = s_texOffsetY[i];
+            }
         });
 
-        auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        ffxGaussFrag2->setUpdateHandler([targetWidth, targetHeight](IUniformBufferChunk *self) -> void {
-            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
-            meshblockVS.x = 1;
-            meshblockVS.y = 0;
-            meshblockVS.z = 0;
-            meshblockVS.w = 0; //glow multiplier
+
+        auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
+        ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+            auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
+            static const float s_texOffsetX[4] = {-6, -1, 1, 6};
+            static const float s_texOffsetY[4] = {0, 0, 0, 0};;
+
+            for (int i = 0; i < 4; i++) {
+                meshblockVS.texOffsetX[i] = s_texOffsetX[i];
+                meshblockVS.texOffsetY[i] = s_texOffsetY[i];
+            }
         });
+        auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
+        ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+            auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
+            static const float s_texOffsetX[4] = {0, 0, 0, 0};
+            static const float s_texOffsetY[4] = {10, 2, -2, -10};;
+
+            for (int i = 0; i < 4; i++) {
+                meshblockVS.texOffsetX[i] = s_texOffsetX[i];
+                meshblockVS.texOffsetY[i] = s_texOffsetY[i];
+            }
+        });
+        HGUniformBufferChunk frags[3] = {ffxGaussFrag, ffxGaussFrag2, ffxGaussFrag3};
 
         HDrawStage prevStage = resultDrawStage;
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             ///1. Create draw stage
             HDrawStage drawStage = std::make_shared<DrawStage>();
 
@@ -1026,7 +1098,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
             meshTemplate.ubo[2] = vertexChunk;
 
             meshTemplate.ubo[3] = nullptr;
-            meshTemplate.ubo[4] =  ((i & 1) > 0) ? ffxGaussFrag2 : ffxGaussFrag;
+            meshTemplate.ubo[4] = frags[i];
 
             meshTemplate.element = DrawElementMode::TRIANGLES;
             meshTemplate.start = 0;
@@ -1043,6 +1115,16 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 
         //And the final is ffxglow to screen
         {
+            auto glow = this->m_currentGlow;
+            auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+            ffxGlowfragmentChunk->setUpdateHandler([glow](IUniformBufferChunk *self) -> void {
+                auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
+                meshblockVS.x = 1;
+                meshblockVS.y = 1;
+                meshblockVS.z = 0; //mix_coeficient
+                meshblockVS.w = fminf(0.5f, glow); //glow multiplier
+            });
+
             auto shader = m_api->hDevice->getShader("fullScreen_quad", nullptr);
             gMeshTemplate meshTemplate(quadBindings, shader);
             meshTemplate.meshType = MeshType::eGeneralMesh;

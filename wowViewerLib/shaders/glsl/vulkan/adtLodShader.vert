@@ -61,4 +61,5 @@ void main() {
 
     vPosition = (uLookAtMat * worldPoint).xyz;
     gl_Position = uPMatrix * uLookAtMat * worldPoint;
+
 }

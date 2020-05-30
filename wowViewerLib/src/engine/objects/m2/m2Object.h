@@ -80,6 +80,8 @@ private:
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
 
+    float m_alpha;
+
     mathfu::vec4 m_sunDirOverride;
     bool m_setSunDir = false;
     bool m_modelAsScene = false;
@@ -90,7 +92,7 @@ private:
     std::string m_nameTemplate = "";
 
     bool useFileId = false;
-    int m_modelFileId;
+    int m_modelFileId = 0;
     int m_skinFileId;
 
     std::vector<std::function<void()>> m_postLoadEvents;
@@ -168,10 +170,15 @@ public:
 
     void setReplaceTextures(std::vector<HBlpTexture> &replaceTextures);
     void setModelFileName(std::string modelName);
+    int getModelFileId();
     void setModelFileId(int fileId);
     void setModelAsScene(bool value) {
         m_modelAsScene = value;
     };
+
+    void setAlpha(float alpha) {
+        m_alpha = alpha;
+    }
 
     void setAnimationId(int animationId);
     void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);

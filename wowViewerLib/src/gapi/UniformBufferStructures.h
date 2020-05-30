@@ -124,7 +124,12 @@ namespace ADT {
     };
 }
 
-
+namespace FXGauss {
+    struct meshWideBlockPS {
+        float texOffsetX[4];
+        float texOffsetY[4];
+    };
+}
 
 struct bbModelWideBlockVS {
     mathfu::mat4 uPlacementMat;

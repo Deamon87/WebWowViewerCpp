@@ -18,6 +18,9 @@ struct LightResult {
     float closeRiverColor[3];
     std::string skyBoxName;
     int skyBoxFdid;
+    float glow;
+    float blendCoef;
+    bool isDefault = false;
 };
 
 struct LiquidMat {

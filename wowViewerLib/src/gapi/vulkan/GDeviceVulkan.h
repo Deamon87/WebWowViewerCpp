@@ -69,6 +69,10 @@ public:
     bool getIsAsynBuffUploadSupported() override {
         return true;
     }
+    int getMaxSamplesCnt() override {
+        return 1;
+    }
+
     bool canUploadInSeparateThread() {
         return uploadQueue != graphicsQueue;
     }

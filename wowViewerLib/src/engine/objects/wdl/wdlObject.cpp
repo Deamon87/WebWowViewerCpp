@@ -66,18 +66,18 @@ void WdlObject::loadM2s() {
             std::cout << "rotationInRads.z = " << msso_rec.rotationInRads.z << std::endl;
             std::cout << "scale = " << msso_rec.scale << std::endl;
 
-            auto rotationMatrix = MathHelper::RotationZ(-msso_rec.rotationInRads.z);
+            auto rotationMatrix = MathHelper::RotationZ(msso_rec.rotationInRads.z - M_PI_2);
             rotationMatrix *= MathHelper::RotationY(msso_rec.rotationInRads.x);
             rotationMatrix *= MathHelper::RotationX(msso_rec.rotationInRads.y);
 
-            auto quat = mathfu::quat::FromMatrix(rotationMatrix);
-            auto rotationMatrix1 = quat.ToMatrix4();
+//            auto quat = mathfu::quat::FromMatrix(rotationMatrix);
+//            auto rotationMatrix1 = quat.ToMatrix4();
 
             m2Object->createPlacementMatrix(
                 mathfu::vec3(msso_rec.translateVec.x, msso_rec.translateVec.y, msso_rec.translateVec.z),
                 0,
                 mathfu::vec3(msso_rec.scale, msso_rec.scale, msso_rec.scale),
-                &rotationMatrix1);
+                &rotationMatrix);
             m2Object->calcWorldPosition();
             m2Object->setAlwaysDraw(true);
 

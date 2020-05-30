@@ -22,4 +22,5 @@ void main() {
     vColor = aColor;
     vTexcoord0 = aTexcoord0;
     gl_Position = scene.uPMatrix * scene.uLookAtMat * aPositionVec4;
+
 }

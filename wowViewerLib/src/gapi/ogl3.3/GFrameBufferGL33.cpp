@@ -35,11 +35,11 @@ GFrameBufferGL33::GFrameBufferGL33 (
         glBindRenderbuffer(GL_RENDERBUFFER, renderBufferAttachments[i]);
 
         if (textureAttachments[i] == ITextureFormat::itRGBA) {
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_RGBA8, width, height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device.getMaxSamplesCnt(), GL_RGBA8, width, height);
         } else if (textureAttachments[i] == ITextureFormat::itRGBAFloat32)  {
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_RGBA32F, width, height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device.getMaxSamplesCnt(), GL_RGBA32F, width, height);
         }else if (textureAttachments[i] == ITextureFormat::itDepth32)  {
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8,  GL_DEPTH_COMPONENT32F, width, height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device.getMaxSamplesCnt(),  GL_DEPTH_COMPONENT32F, width, height);
         }
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_RENDERBUFFER, renderBufferAttachments[i]);
     }
@@ -48,7 +48,7 @@ GFrameBufferGL33::GFrameBufferGL33 (
         glBindRenderbuffer(GL_RENDERBUFFER, depthBufferAttachment);
 
         if (depthAttachment == ITextureFormat::itDepth32)  {
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, width, height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device.getMaxSamplesCnt(), GL_DEPTH_COMPONENT32F, width, height);
         }
 
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBufferAttachment);

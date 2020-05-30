@@ -341,7 +341,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },{ "ffxgauss4.frag.spv", {
 {
-{0,4,16},
+{0,4,32},
 }
 }
 },{ "drawPoints.frag.spv", {
@@ -692,7 +692,8 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"ffxgauss4",  {
     {
       4, {
-        {"_38.textureDims", true, 0, 1, 4, 0},
+        {"_33.texOffsetX", true, 0, 1, 4, 0},
+        {"_33.texOffsetY", true, 16, 1, 4, 0},
       }
     },
   }},

@@ -165,6 +165,8 @@ void main() {
     gl_Position = scene.uPMatrix * cameraPoint;
     vNormal = normal;
     vPosition = cameraPoint.xyz;
+
+
 }
 
 

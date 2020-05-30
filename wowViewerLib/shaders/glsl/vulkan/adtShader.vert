@@ -68,4 +68,5 @@ void main() {
     vNormal = blizzTranspose(scene.uLookAtMat) * aNormal;
 
     gl_Position = scene.uPMatrix * scene.uLookAtMat * worldPoint;
+
 }

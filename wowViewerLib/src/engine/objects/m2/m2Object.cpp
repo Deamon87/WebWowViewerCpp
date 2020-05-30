@@ -1452,7 +1452,9 @@ void M2Object::setModelFileName(std::string modelName) {
     this->m_nameTemplate= nameTemplate;
 }
 
-
+int M2Object::getModelFileId() {
+    return m_modelFileId;
+}
 
 void M2Object::setModelFileId(int fileId) {
     useFileId = true;

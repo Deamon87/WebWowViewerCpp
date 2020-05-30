@@ -27,4 +27,5 @@ void main() {
    gl_Position = uPMatrix * cameraPoint;
 //   vTexCoord = aTexCoord;
    vPosition = cameraPoint.xyz;
+
 }

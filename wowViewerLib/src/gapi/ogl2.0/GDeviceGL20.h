@@ -56,6 +56,9 @@ public:
     bool getIsAsynBuffUploadSupported() override {
         return false;
     }
+    int getMaxSamplesCnt() override {
+        return 1;
+    }
 
     float getAnisLevel() override;
 

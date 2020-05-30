@@ -581,8 +581,8 @@ int main(){
             cameraMatricesRendering->perspectiveMat = mathfu::mat4(
                 f / canvasAspect, 0.0f,  0.0f,  0.0f,
                 0.0f,    f,  0.0f,  0.0f,
-                0.0f, 0.0f,  0.0f, -1.0f,
-                0.0f, 0.0f, 0.02,  0.0f);
+                0.0f, 0.0f,  1, -1.0f,
+                0.0f, 0.0f, 1,  0.0f);
         }
 
         if (hdevice->getIsVulkanAxisSystem() ) {

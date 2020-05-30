@@ -817,6 +817,9 @@ GDeviceGL33::GDeviceGL33() {
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_anisotropicLevel);
     }
 
+    glGetIntegerv ( GL_MAX_SAMPLES, &m_maxMultiSampling );
+    std::cout << std::endl << "m_maxMultiSampling = " << m_maxMultiSampling << std::endl;
+
     //From https://en.wikibooks.org/wiki/OpenGL_Programming/Bounding_box
     static const float vertices[] = {
         -1, -1, -1, //0
