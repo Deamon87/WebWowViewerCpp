@@ -66,6 +66,14 @@ private:
     mathfu::vec4 closeRiverColor = {1,1,1,1};
     mathfu::vec4 fogColor;
 
+    mathfu::vec4 SkyTopColor;
+    mathfu::vec4 SkyMiddleColor;
+    mathfu::vec4 SkyBand1Color;
+    mathfu::vec4 SkyBand2Color;
+    mathfu::vec4 SkySmogColor;
+    mathfu::vec4 SkyFogColor;
+
+
     std::string areaName;
 public:
     float getFarPlane() {
@@ -253,6 +261,66 @@ public:
         exteriorDirectColorDir[0] = x;
         exteriorDirectColorDir[1] = y;
         exteriorDirectColorDir[2] = z;
+    }
+
+    mathfu::vec4 getSkyTopColor(){
+        return SkyTopColor;
+    }
+
+    void setSkyTopColor(float x, float y, float z) {
+        SkyTopColor[0] = x;
+        SkyTopColor[1] = y;
+        SkyTopColor[2] = z;
+    }
+
+    mathfu::vec4 getSkyBand1Color(){
+        return SkyBand1Color;
+    }
+
+    void setSkyBand1Color(float x, float y, float z) {
+        SkyBand1Color[0] = x;
+        SkyBand1Color[1] = y;
+        SkyBand1Color[2] = z;
+    }
+
+    mathfu::vec4 getSkyMiddleColor(){
+        return SkyMiddleColor;
+    }
+
+    void setSkyMiddleColor(float x, float y, float z) {
+        SkyMiddleColor[0] = x;
+        SkyMiddleColor[1] = y;
+        SkyMiddleColor[2] = z;
+    }
+
+    mathfu::vec4 getSkyBand2Color(){
+        return SkyBand2Color;
+    }
+
+    void setSkyBand2Color(float x, float y, float z) {
+        SkyBand2Color[0] = x;
+        SkyBand2Color[1] = y;
+        SkyBand2Color[2] = z;
+    }
+
+    mathfu::vec4 getSkySmogColor(){
+        return SkySmogColor;
+    }
+
+    void setSkySmogColor(float x, float y, float z) {
+        SkySmogColor[0] = x;
+        SkySmogColor[1] = y;
+        SkySmogColor[2] = z;
+    }
+
+    mathfu::vec4 getSkyFogColor(){
+        return SkyFogColor;
+    }
+
+    void setSkyFogColor(float x, float y, float z) {
+        SkyFogColor[0] = x;
+        SkyFogColor[1] = y;
+        SkyFogColor[2] = z;
     }
 
     mathfu::vec3 getExteriorDirectColorDir(){

@@ -16,8 +16,18 @@ struct LightResult {
     float ambientColor[3];
     float directColor[3];
     float closeRiverColor[3];
+
+    float SkyTopColor[3];
+    float SkyMiddleColor[3];
+    float SkyBand1Color[3];
+    float SkyBand2Color[3];
+    float SkySmogColor[3];
+    float SkyFogColor[3];
+
+
     std::string skyBoxName;
     int skyBoxFdid;
+    int lightSkyboxId;
     float glow;
     float blendCoef;
     bool isDefault = false;
@@ -41,5 +51,11 @@ struct ZoneLight {
     float Zmin;
     float Zmax;
     std::vector<vec2> points;
+};
+
+struct AreaRecord {
+    std::string areaName = "";
+    int areaId = 0;
+    int parentAreaId = 0;
 };
 #endif //AWEBWOWVIEWERCPP_DBSTRUCTS_H

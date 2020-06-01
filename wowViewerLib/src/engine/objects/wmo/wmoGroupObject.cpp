@@ -396,6 +396,11 @@ void WmoGroupObject::createMeshes() {
     int minBatch = config->getWmoMinBatch();
     int maxBatch = std::min(config->getWmoMaxBatch(), m_geom->batchesLen);
 
+    //In Taanant Jungle in Draenor some WMO has no indicies and crash :D
+    if (m_geom->indicesLen == 0) {
+        return;
+    }
+
     PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
 
     std::shared_ptr<IDevice> device = m_api->hDevice;

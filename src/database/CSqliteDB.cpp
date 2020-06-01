@@ -10,14 +10,14 @@
 CSqliteDB::CSqliteDB(std::string dbFileName) :
     m_sqliteDatabase(dbFileName, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE),
     getWmoAreaAreaName(m_sqliteDatabase,
-        "select wat.AreaName_lang as wmoAreaName, at.AreaName_lang from WMOAreaTable wat "
+        "select wat.AreaName_lang as wmoAreaName, at.AreaName_lang, at.ID, at.ParentAreaID from WMOAreaTable wat "
         "left join AreaTable at on at.id = wat.AreaTableID "
         "where wat.WMOID = ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC"),
     getAreaNameStatement(m_sqliteDatabase,
-        "select at.AreaName_lang from AreaTable at where at.ID = ?"),
+        "select at.AreaName_lang, at.ID, at.ParentAreaID from AreaTable at where at.ID = ?"),
 
     getLightStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), lp.Glow from Light l "
+        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow from Light l "
         "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
         "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
         " where  "
@@ -29,12 +29,14 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "    or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)  "
         "ORDER BY l.ID desc"),
     getLightByIdStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), lp.Glow from Light l "
+        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow from Light l "
         "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
         "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
         " where l.ID = ?"),
     getLightData(m_sqliteDatabase,
-        "select ld.AmbientColor, ld.DirectColor, ld.RiverCloseColor, ld.Time from LightData ld "
+        "select ld.AmbientColor, ld.DirectColor, ld.RiverCloseColor, "
+        "ld.SkyTopColor, ld.SkyMiddleColor, ld.SkyBand1Color, ld.SkyBand2Color, ld.SkySmogColor, ld.SkyFogColor,"
+        "ld.Time from LightData ld "
 
         " where ld.LightParamID = ? ORDER BY Time ASC"
         ),
@@ -82,21 +84,26 @@ void CSqliteDB::getMapArray(std::vector<MapRecord> &mapRecords) {
 
 }
 
-std::string CSqliteDB::getAreaName(int areaId) {
+AreaRecord CSqliteDB::getArea(int areaId) {
+    AreaRecord areaRecord;
     getAreaNameStatement.reset();
 
     getAreaNameStatement.bind(1, areaId);
     while (getAreaNameStatement.executeStep()) {
-        std::string areaName = getAreaNameStatement.getColumn(0);
+        areaRecord.areaName = getAreaNameStatement.getColumn(0).getString();
+        areaRecord.areaId = getAreaNameStatement.getColumn(1).getInt();
+        areaRecord.parentAreaId = getAreaNameStatement.getColumn(2).getInt();
 
-        return areaName;
+        break;
     }
 
 
-    return std::string();
+    return areaRecord;
 }
 
-std::string CSqliteDB::getWmoAreaName(int wmoId, int nameId, int groupId) {
+AreaRecord CSqliteDB::getWmoArea(int wmoId, int nameId, int groupId) {
+    AreaRecord areaRecord;
+
     getWmoAreaAreaName.reset();
 
     getWmoAreaAreaName.bind(1, wmoId);
@@ -107,14 +114,19 @@ std::string CSqliteDB::getWmoAreaName(int wmoId, int nameId, int groupId) {
         std::string wmoAreaName = getWmoAreaAreaName.getColumn(0);
         std::string areaName = getWmoAreaAreaName.getColumn(1);
 
+
         if (wmoAreaName == "") {
-            return areaName;
+            areaRecord.areaName = areaName;
         } else {
-            return wmoAreaName;
+            areaRecord.areaName = wmoAreaName;
         }
+        areaRecord.areaId = getWmoAreaAreaName.getColumn(2).getInt();
+        areaRecord.parentAreaId = getWmoAreaAreaName.getColumn(3).getInt();
+
+        break;
     }
 
-    return "";
+    return areaRecord;
 }
 
 template <int T>
@@ -128,6 +140,29 @@ float getFloatFromInt(int value) {
     if (T == 2) {
         return ((value >> 16) & 0xFF) / 255.0f;
     }
+}
+
+void initWithZeros(float *colorF) {
+    colorF[0] = 0;
+    colorF[1] = 0;
+    colorF[2] = 0;
+}
+void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
+    colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
+                                    getFloatFromInt<0>(lastLdRes) *
+                                    (1.0 - timeAlphaBlend)) * innerAlpha;
+    colorF[1] += (getFloatFromInt<1>(currLdRes) * timeAlphaBlend +
+                                    getFloatFromInt<1>(lastLdRes) *
+                                    (1.0 - timeAlphaBlend)) * innerAlpha;
+    colorF[2] += (getFloatFromInt<2>(currLdRes) * timeAlphaBlend +
+                                    getFloatFromInt<2>(lastLdRes) *
+                                    (1.0 - timeAlphaBlend)) * innerAlpha;
+}
+
+void addOnlyOne(float *colorF, int currLdRes, float innerAlpha) {
+    colorF[0] += getFloatFromInt<0>(currLdRes) * innerAlpha;
+    colorF[1] += getFloatFromInt<1>(currLdRes) * innerAlpha;
+    colorF[2] += getFloatFromInt<2>(currLdRes) * innerAlpha;
 }
 
 void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult) {
@@ -147,7 +182,8 @@ void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult) {
         ilr.fallbackEnd = getLightByIdStatement.getColumn(4).getDouble();
         ilr.paramId = getLightByIdStatement.getColumn(5).getInt();
         ilr.skyBoxFileId = getLightByIdStatement.getColumn(6).getInt();
-        ilr.glow = getLightByIdStatement.getColumn(7).getDouble();
+        ilr.lightSkyboxId = getLightByIdStatement.getColumn(7).getInt();
+        ilr.glow = getLightByIdStatement.getColumn(8).getDouble();
 
         ilr.blendAlpha = 1.0f;
 
@@ -180,7 +216,8 @@ void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, std:
         ilr.fallbackEnd = getLightStatement.getColumn(4).getDouble();
         ilr.paramId = getLightStatement.getColumn(5).getInt();
         ilr.skyBoxFileId = getLightStatement.getColumn(6).getInt();
-        ilr.glow = getLightStatement.getColumn(7).getDouble();
+        ilr.lightSkyboxId = getLightStatement.getColumn(7).getInt();
+        ilr.glow = getLightStatement.getColumn(8).getDouble();
 
         bool defaultRec = false;
         if (ilr.pos[0] == 0 && ilr.pos[1] == 0 && ilr.pos[2] == 0 ) {
@@ -225,25 +262,33 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         int ambientLight;
         int directLight;
         int closeRiverColor;
+
+        int SkyTopColor;
+        int SkyMiddleColor;
+        int SkyBand1Color;
+        int SkyBand2Color;
+        int SkySmogColor;
+        int SkyFogColor;
+        
         int time;
     };
 
     float totalSummator = 0.0f;
     for (int i = 0; i < innerResults.size() && totalSummator < 1.0f; i++) {
         LightResult lightResult;
-        lightResult.ambientColor[0] = 0;
-        lightResult.ambientColor[1] = 0;
-        lightResult.ambientColor[2] = 0;
+        initWithZeros(lightResult.ambientColor);
+        initWithZeros(lightResult.directColor);
+        initWithZeros(lightResult.closeRiverColor);
 
-        lightResult.directColor[0] = 0;
-        lightResult.directColor[1] = 0;
-        lightResult.directColor[2] = 0;
-
-        lightResult.closeRiverColor[0] = 0;
-        lightResult.closeRiverColor[1] = 0;
-        lightResult.closeRiverColor[2] = 0;
+        initWithZeros(lightResult.SkyTopColor);
+        initWithZeros(lightResult.SkyMiddleColor);
+        initWithZeros(lightResult.SkyBand1Color);
+        initWithZeros(lightResult.SkyBand2Color);
+        initWithZeros(lightResult.SkySmogColor);
+        initWithZeros(lightResult.SkyFogColor);
 
         lightResult.skyBoxFdid = 0;
+        lightResult.lightSkyboxId = 0;
 
 
         auto &innerResult = innerResults[i];
@@ -261,9 +306,8 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         }
         lightResult.blendCoef = innerAlpha;
 
-        if (lightResult.skyBoxFdid == 0) {
-            lightResult.skyBoxFdid = innerResult.skyBoxFileId;
-        }
+        lightResult.skyBoxFdid = innerResult.skyBoxFileId;
+        lightResult.lightSkyboxId = innerResult.lightSkyboxId;
         lightResult.glow = innerResult.glow;
 
         while (getLightData.executeStep()) {
@@ -271,57 +315,71 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             currLdRes.ambientLight = getLightData.getColumn(0);
             currLdRes.directLight = getLightData.getColumn(1);
             currLdRes.closeRiverColor = getLightData.getColumn(2);
-            currLdRes.time = getLightData.getColumn(3);
+
+            currLdRes.SkyTopColor = getLightData.getColumn(3);
+            currLdRes.SkyMiddleColor = getLightData.getColumn(4);
+            currLdRes.SkyBand1Color = getLightData.getColumn(5);
+            currLdRes.SkyBand2Color = getLightData.getColumn(6);
+            currLdRes.SkySmogColor = getLightData.getColumn(7);
+            currLdRes.SkyFogColor = getLightData.getColumn(8);
+
+
+            
+            currLdRes.time = getLightData.getColumn(9);
             if (currLdRes.time > ptime) {
                 assigned = true;
 
                 if (lastLdRes.time == -1) {
                     //Set as is
-                    lightResult.ambientColor[0] += getFloatFromInt<0>(currLdRes.ambientLight) * innerAlpha;
-                    lightResult.ambientColor[1] += getFloatFromInt<1>(currLdRes.ambientLight) * innerAlpha;
-                    lightResult.ambientColor[2] += getFloatFromInt<2>(currLdRes.ambientLight) * innerAlpha;
+                    addOnlyOne(lightResult.ambientColor, currLdRes.ambientLight, innerAlpha);
+                    addOnlyOne(lightResult.directColor, currLdRes.directLight, innerAlpha);
+                    addOnlyOne(lightResult.closeRiverColor, currLdRes.closeRiverColor, innerAlpha);
 
-                    lightResult.directColor[0] += getFloatFromInt<0>(currLdRes.directLight) * innerAlpha;
-                    lightResult.directColor[1] += getFloatFromInt<1>(currLdRes.directLight) * innerAlpha;
-                    lightResult.directColor[2] += getFloatFromInt<2>(currLdRes.directLight) * innerAlpha;
+                    addOnlyOne(lightResult.SkyTopColor, currLdRes.SkyTopColor, innerAlpha);
+                    addOnlyOne(lightResult.SkyMiddleColor, currLdRes.SkyMiddleColor, innerAlpha);
+                    addOnlyOne(lightResult.SkyBand1Color, currLdRes.SkyBand1Color, innerAlpha);
+                    addOnlyOne(lightResult.SkyBand2Color, currLdRes.SkyBand2Color, innerAlpha);
+                    addOnlyOne(lightResult.SkySmogColor, currLdRes.SkySmogColor, innerAlpha);
+                    addOnlyOne(lightResult.SkyFogColor, currLdRes.SkyFogColor, innerAlpha);
 
-                    lightResult.closeRiverColor[0] += getFloatFromInt<0>(currLdRes.closeRiverColor) * innerAlpha;
-                    lightResult.closeRiverColor[1] += getFloatFromInt<1>(currLdRes.closeRiverColor) * innerAlpha;
-                    lightResult.closeRiverColor[2] += getFloatFromInt<2>(currLdRes.closeRiverColor) * innerAlpha;
                 } else {
                     //Blend using time as alpha
                     float timeAlphaBlend = 1.0f - (((float) currLdRes.time - (float) ptime) /
                                                    ((float) currLdRes.time - (float) lastLdRes.time));
 
-                    lightResult.ambientColor[0] += (getFloatFromInt<0>(currLdRes.ambientLight) * timeAlphaBlend +
-                                                    getFloatFromInt<0>(lastLdRes.ambientLight) *
-                                                    (1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.ambientColor[1] += (getFloatFromInt<1>(currLdRes.ambientLight) * timeAlphaBlend +
-                                                    getFloatFromInt<1>(lastLdRes.ambientLight) *
-                                                    (1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.ambientColor[2] += (getFloatFromInt<2>(currLdRes.ambientLight) * timeAlphaBlend +
-                                                    getFloatFromInt<2>(lastLdRes.ambientLight) *
-                                                    (1.0 - timeAlphaBlend)) * innerAlpha;
+                    blendTwoAndAdd(lightResult.ambientColor,
+                        currLdRes.ambientLight, lastLdRes.ambientLight,
+                        timeAlphaBlend, innerAlpha);
 
-                    lightResult.directColor[0] += (getFloatFromInt<0>(currLdRes.directLight) * timeAlphaBlend +
-                                                   getFloatFromInt<0>(lastLdRes.directLight) * (1.0 - timeAlphaBlend)) *
-                                                  innerAlpha;
-                    lightResult.directColor[1] += (getFloatFromInt<1>(currLdRes.directLight) * timeAlphaBlend +
-                                                   getFloatFromInt<1>(lastLdRes.directLight) * (1.0 - timeAlphaBlend)) *
-                                                  innerAlpha;
-                    lightResult.directColor[2] += (getFloatFromInt<2>(currLdRes.directLight) * timeAlphaBlend +
-                                                   getFloatFromInt<2>(lastLdRes.directLight) * (1.0 - timeAlphaBlend)) *
-                                                  innerAlpha;
+                    blendTwoAndAdd(lightResult.directColor,
+                        currLdRes.directLight, lastLdRes.directLight,
+                        timeAlphaBlend, innerAlpha);
 
-                    lightResult.closeRiverColor[0] += (getFloatFromInt<0>(currLdRes.closeRiverColor) * timeAlphaBlend +
-                                                       getFloatFromInt<0>(lastLdRes.closeRiverColor) *
-                                                       (1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.closeRiverColor[1] += (getFloatFromInt<1>(currLdRes.closeRiverColor) * timeAlphaBlend +
-                                                       getFloatFromInt<1>(lastLdRes.closeRiverColor) *
-                                                       (1.0 - timeAlphaBlend)) * innerAlpha;
-                    lightResult.closeRiverColor[2] += (getFloatFromInt<2>(currLdRes.closeRiverColor) * timeAlphaBlend +
-                                                       getFloatFromInt<2>(lastLdRes.closeRiverColor) *
-                                                       (1.0 - timeAlphaBlend)) * innerAlpha;
+                    blendTwoAndAdd(lightResult.closeRiverColor,
+                        currLdRes.closeRiverColor, lastLdRes.closeRiverColor,
+                        timeAlphaBlend, innerAlpha);
+
+                    blendTwoAndAdd(lightResult.SkyTopColor,
+                        currLdRes.SkyTopColor, lastLdRes.SkyTopColor,
+                        timeAlphaBlend, innerAlpha);
+
+                    blendTwoAndAdd(lightResult.SkyMiddleColor,
+                        currLdRes.SkyMiddleColor, lastLdRes.SkyMiddleColor,
+                        timeAlphaBlend, innerAlpha);
+                    blendTwoAndAdd(lightResult.SkyBand1Color,
+                        currLdRes.SkyBand1Color, lastLdRes.SkyBand1Color,
+                        timeAlphaBlend, innerAlpha);
+                    blendTwoAndAdd(lightResult.SkyBand2Color,
+                        currLdRes.SkyBand2Color, lastLdRes.SkyBand2Color,
+                        timeAlphaBlend, innerAlpha);
+                    blendTwoAndAdd(lightResult.SkySmogColor,
+                        currLdRes.SkySmogColor, lastLdRes.SkySmogColor,
+                        timeAlphaBlend, innerAlpha);
+                    blendTwoAndAdd(lightResult.SkyFogColor,
+                        currLdRes.SkyFogColor, lastLdRes.SkyFogColor,
+                        timeAlphaBlend, innerAlpha);
+
+
                 }
                 break;
             }
@@ -329,17 +387,16 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         }
 
         if (!assigned) {
-            lightResult.ambientColor[0] += getFloatFromInt<0>(lastLdRes.ambientLight) * innerAlpha;
-            lightResult.ambientColor[1] += getFloatFromInt<1>(lastLdRes.ambientLight) * innerAlpha;
-            lightResult.ambientColor[2] += getFloatFromInt<2>(lastLdRes.ambientLight) * innerAlpha;
+            addOnlyOne(lightResult.ambientColor, lastLdRes.ambientLight, innerAlpha);
+            addOnlyOne(lightResult.directColor, lastLdRes.directLight, innerAlpha);
+            addOnlyOne(lightResult.closeRiverColor, lastLdRes.closeRiverColor, innerAlpha);
 
-            lightResult.directColor[0] += getFloatFromInt<0>(lastLdRes.directLight) * innerAlpha;
-            lightResult.directColor[1] += getFloatFromInt<1>(lastLdRes.directLight) * innerAlpha;
-            lightResult.directColor[2] += getFloatFromInt<2>(lastLdRes.directLight) * innerAlpha;
-
-            lightResult.closeRiverColor[0] += getFloatFromInt<0>(lastLdRes.closeRiverColor) * innerAlpha;
-            lightResult.closeRiverColor[1] += getFloatFromInt<1>(lastLdRes.closeRiverColor) * innerAlpha;
-            lightResult.closeRiverColor[2] += getFloatFromInt<2>(lastLdRes.closeRiverColor) * innerAlpha;
+            addOnlyOne(lightResult.SkyTopColor, lastLdRes.SkyTopColor, innerAlpha);
+            addOnlyOne(lightResult.SkyMiddleColor, lastLdRes.SkyMiddleColor, innerAlpha);
+            addOnlyOne(lightResult.SkyBand1Color, lastLdRes.SkyBand1Color, innerAlpha);
+            addOnlyOne(lightResult.SkyBand2Color, lastLdRes.SkyBand2Color, innerAlpha);
+            addOnlyOne(lightResult.SkySmogColor, lastLdRes.SkySmogColor, innerAlpha);
+            addOnlyOne(lightResult.SkyFogColor, lastLdRes.SkyFogColor, innerAlpha);
         }
 
         lightResults.push_back(lightResult);

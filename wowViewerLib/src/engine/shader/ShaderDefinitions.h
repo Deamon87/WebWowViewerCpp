@@ -47,6 +47,12 @@ struct waterShader {
     };
 };
 
+struct skyConus {
+    enum class Attribute {
+        aPosition = 0, skyConusAttributeEnd
+    };
+};
+
 struct m2Shader {
     enum class Attribute {
         aPosition = 0, aNormal = 1, bones = 2, boneWeights = 3, aTexCoord = 4, aTexCoord2 = 5, m2ShaderAttributeEnd
@@ -144,6 +150,8 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 {"aColor2", 6},
 }},{"waterShader",  {
 {"aPosition", 0},
+}},{"skyConus",  {
+{"aPosition", 0},
 }},{"m2Shader",  {
 {"aPosition", 0},
 {"aNormal", 1},
@@ -209,6 +217,10 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 },{ "waterShader.frag.spv", {
 {
 {0,4,16},
+}
+}
+},{ "skyConus.frag.spv", {
+{
 }
 }
 },{ "ribbonShader.frag.spv", {
@@ -344,6 +356,12 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {0,4,32},
 }
 }
+},{ "skyConus.vert.spv", {
+{
+{0,0,240},
+{0,2,96},
+}
+}
 },{ "drawPoints.frag.spv", {
 {
 {0,1,12},
@@ -431,6 +449,26 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       0, {
         {"_24.uLookAtMat", true, 0, 4, 4, 0},
         {"_24.uPMatrix", true, 64, 4, 4, 0},
+      }
+    },
+  }},
+  {"skyConus",  {
+    {
+      2, {
+        {"_92.skyColor[0]", true, 0, 1, 4, 6},
+      }
+    },
+    {
+      0, {
+        {"_52.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_52.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_52.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_52.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_52.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_52.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_52.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_52.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_52.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
       }
     },
   }},

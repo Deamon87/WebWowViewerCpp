@@ -41,6 +41,7 @@ private:
     int m_viewRenderOrder = 0;
 
     HGVertexBufferBindings quadBindings;
+    HGMesh skyMesh = nullptr;
 
     std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};
     std::unordered_map<int, std::weak_ptr<WmoObject>> m_wmoMapObjects = {};

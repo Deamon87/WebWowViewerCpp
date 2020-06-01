@@ -9,6 +9,12 @@ class IMapApi;
 #include "m2/m2Object.h"
 #include "wmo/wmoObject.h"
 
+struct StateForConditions {
+    int currentAreaId = 0;
+    int currentParentAreaId = 0;
+    std::vector<int> currentSkyboxIds = {};
+};
+
 class IMapApi {
 public:
     virtual std::shared_ptr<M2Object> getM2Object(std::string fileName, SMDoodadDef &doodadDef) = 0;

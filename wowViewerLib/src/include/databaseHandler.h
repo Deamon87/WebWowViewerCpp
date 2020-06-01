@@ -12,8 +12,8 @@
 class IClientDatabase {
 public:
     virtual void getMapArray(std::vector<MapRecord> &mapRecords) = 0;
-    virtual std::string getAreaName(int areaId) = 0;
-    virtual std::string getWmoAreaName(int wmoId, int nameId, int groupId) = 0;
+    virtual AreaRecord getArea(int areaId) = 0;
+    virtual AreaRecord getWmoArea(int wmoId, int nameId, int groupId) = 0;
     virtual void getLightById(int lightId, int time, LightResult &lightResult) = 0;
     virtual void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults) = 0;
     virtual void getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &loData) = 0;

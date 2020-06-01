@@ -26,8 +26,6 @@ public:
     std::vector<std::shared_ptr<M2Object>> m2Objects;
     std::vector<std::shared_ptr<WmoObject>> wmoObjects;
 
-    std::vector<std::shared_ptr<M2Object>> skySceneObjects;
-
 private:
     ApiContainer *m_api;
     IMapApi *m_mapApi;
@@ -38,6 +36,17 @@ private:
     void loadingFinished();
     void loadM2s();
     void loadWmos();
+
+    struct SkyObjectCondition {
+        int conditionType;
+        int conditionValue;
+    };
+    struct SkyObjectScene{
+        std::vector<std::shared_ptr<M2Object>> m2Objects = {};
+        std::vector<SkyObjectCondition> conditions = {};
+    };
+
+    std::vector<SkyObjectScene> skyScenes;
 public:
     bool getIsLoaded() {
         return m_loaded;
@@ -50,6 +59,8 @@ public:
                                         mathfu::mat4 &lookAtMat4,
                                         std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                         std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+
+    void checkSkyScenes(const StateForConditions &state, std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates);
 };
 
 

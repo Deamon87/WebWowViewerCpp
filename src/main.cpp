@@ -526,7 +526,7 @@ int main(){
         sqliteDB->getMapArray(mapList);
     });
 
-    frontendUI->initImgui(window);
+
 
 
 
@@ -537,6 +537,12 @@ int main(){
     glfwSetWindowSizeCallback( window, window_size_callback);
     glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback( window, mouse_button_callback);
+
+    //This has to be called after setting all callbacks specific to this app.
+    //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
+    //Otherwise keys like backspace, delete etc wont work
+
+    frontendUI->initImgui(window);
     glfwSwapInterval(0);
 
 //try {

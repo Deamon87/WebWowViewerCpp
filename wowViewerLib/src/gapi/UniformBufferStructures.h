@@ -131,6 +131,12 @@ namespace FXGauss {
     };
 }
 
+namespace DnSky {
+    struct meshWideBlockVS {
+        mathfu::vec4_packed skyColor[6];
+    };
+}
+
 struct bbModelWideBlockVS {
     mathfu::mat4 uPlacementMat;
 

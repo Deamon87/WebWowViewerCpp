@@ -14,8 +14,8 @@ class CSqliteDB : public IClientDatabase {
 public:
     CSqliteDB(std::string dbFileName);
     void getMapArray(std::vector<MapRecord> &mapRecords) override;
-    std::string getAreaName(int areaId) override;
-    std::string getWmoAreaName(int wmoId, int nameId, int groupId) override;
+    AreaRecord getArea(int areaId) override;
+    AreaRecord getWmoArea(int wmoId, int nameId, int groupId) override;
 
     void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults) override;
     void getLightById(int lightId, int time, LightResult &lightResult) override;
@@ -44,6 +44,7 @@ private:
         float blendAlpha = 0;
         int paramId;
         int skyBoxFileId;
+        int lightSkyboxId;
         float glow;
         bool isDefault = false;
     };
