@@ -10,11 +10,11 @@
 CSqliteDB::CSqliteDB(std::string dbFileName) :
     m_sqliteDatabase(dbFileName, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE),
     getWmoAreaAreaName(m_sqliteDatabase,
-        "select wat.AreaName_lang as wmoAreaName, at.AreaName_lang, at.ID, at.ParentAreaID from WMOAreaTable wat "
+        "select wat.AreaName_lang as wmoAreaName, at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from WMOAreaTable wat "
         "left join AreaTable at on at.id = wat.AreaTableID "
         "where wat.WMOID = ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC"),
     getAreaNameStatement(m_sqliteDatabase,
-        "select at.AreaName_lang, at.ID, at.ParentAreaID from AreaTable at where at.ID = ?"),
+        "select at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from AreaTable at where at.ID = ?"),
 
     getLightStatement(m_sqliteDatabase,
         "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow from Light l "
@@ -34,7 +34,7 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
         " where l.ID = ?"),
     getLightData(m_sqliteDatabase,
-        "select ld.AmbientColor, ld.DirectColor, ld.RiverCloseColor, "
+        "select ld.AmbientColor, ld.HorizonAmbientColor, ld.GroundAmbientColor, ld.DirectColor, ld.RiverCloseColor, "
         "ld.SkyTopColor, ld.SkyMiddleColor, ld.SkyBand1Color, ld.SkyBand2Color, ld.SkySmogColor, ld.SkyFogColor,"
         "ld.Time from LightData ld "
 
@@ -93,6 +93,7 @@ AreaRecord CSqliteDB::getArea(int areaId) {
         areaRecord.areaName = getAreaNameStatement.getColumn(0).getString();
         areaRecord.areaId = getAreaNameStatement.getColumn(1).getInt();
         areaRecord.parentAreaId = getAreaNameStatement.getColumn(2).getInt();
+        areaRecord.ambientMultiplier= getAreaNameStatement.getColumn(3).getDouble();
 
         break;
     }
@@ -122,6 +123,7 @@ AreaRecord CSqliteDB::getWmoArea(int wmoId, int nameId, int groupId) {
         }
         areaRecord.areaId = getWmoAreaAreaName.getColumn(2).getInt();
         areaRecord.parentAreaId = getWmoAreaAreaName.getColumn(3).getInt();
+        areaRecord.ambientMultiplier= getWmoAreaAreaName.getColumn(4).getDouble();
 
         break;
     }
@@ -260,6 +262,9 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
 
     struct InnerLightDataRes {
         int ambientLight;
+        int horizontAmbientColor;
+        int groundAmbientColor;
+
         int directLight;
         int closeRiverColor;
 
@@ -277,6 +282,8 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
     for (int i = 0; i < innerResults.size() && totalSummator < 1.0f; i++) {
         LightResult lightResult;
         initWithZeros(lightResult.ambientColor);
+        initWithZeros(lightResult.horizontAmbientColor);
+        initWithZeros(lightResult.groundAmbientColor);
         initWithZeros(lightResult.directColor);
         initWithZeros(lightResult.closeRiverColor);
 
@@ -313,25 +320,37 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         while (getLightData.executeStep()) {
             InnerLightDataRes currLdRes;
             currLdRes.ambientLight = getLightData.getColumn(0);
-            currLdRes.directLight = getLightData.getColumn(1);
-            currLdRes.closeRiverColor = getLightData.getColumn(2);
+            currLdRes.horizontAmbientColor = getLightData.getColumn(1);
+            if (currLdRes.horizontAmbientColor == 0) {
+                currLdRes.horizontAmbientColor = currLdRes.ambientLight;
+            }
+            currLdRes.groundAmbientColor = getLightData.getColumn(2);
+            if (currLdRes.groundAmbientColor == 0) {
+                currLdRes.groundAmbientColor = currLdRes.ambientLight;
+            }
 
-            currLdRes.SkyTopColor = getLightData.getColumn(3);
-            currLdRes.SkyMiddleColor = getLightData.getColumn(4);
-            currLdRes.SkyBand1Color = getLightData.getColumn(5);
-            currLdRes.SkyBand2Color = getLightData.getColumn(6);
-            currLdRes.SkySmogColor = getLightData.getColumn(7);
-            currLdRes.SkyFogColor = getLightData.getColumn(8);
+            currLdRes.directLight = getLightData.getColumn(3);
+            currLdRes.closeRiverColor = getLightData.getColumn(4);
+
+            currLdRes.SkyTopColor = getLightData.getColumn(5);
+            currLdRes.SkyMiddleColor = getLightData.getColumn(6);
+            currLdRes.SkyBand1Color = getLightData.getColumn(7);
+            currLdRes.SkyBand2Color = getLightData.getColumn(8);
+            currLdRes.SkySmogColor = getLightData.getColumn(9);
+            currLdRes.SkyFogColor = getLightData.getColumn(10);
 
 
             
-            currLdRes.time = getLightData.getColumn(9);
+            currLdRes.time = getLightData.getColumn(11);
             if (currLdRes.time > ptime) {
                 assigned = true;
 
                 if (lastLdRes.time == -1) {
                     //Set as is
                     addOnlyOne(lightResult.ambientColor, currLdRes.ambientLight, innerAlpha);
+                    addOnlyOne(lightResult.horizontAmbientColor, currLdRes.horizontAmbientColor, innerAlpha);
+                    addOnlyOne(lightResult.groundAmbientColor, currLdRes.groundAmbientColor, innerAlpha);
+
                     addOnlyOne(lightResult.directColor, currLdRes.directLight, innerAlpha);
                     addOnlyOne(lightResult.closeRiverColor, currLdRes.closeRiverColor, innerAlpha);
 
@@ -349,6 +368,12 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
 
                     blendTwoAndAdd(lightResult.ambientColor,
                         currLdRes.ambientLight, lastLdRes.ambientLight,
+                        timeAlphaBlend, innerAlpha);
+                    blendTwoAndAdd(lightResult.horizontAmbientColor,
+                        currLdRes.horizontAmbientColor, lastLdRes.horizontAmbientColor,
+                        timeAlphaBlend, innerAlpha);
+                    blendTwoAndAdd(lightResult.groundAmbientColor,
+                        currLdRes.groundAmbientColor, lastLdRes.groundAmbientColor,
                         timeAlphaBlend, innerAlpha);
 
                     blendTwoAndAdd(lightResult.directColor,
@@ -388,6 +413,9 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
 
         if (!assigned) {
             addOnlyOne(lightResult.ambientColor, lastLdRes.ambientLight, innerAlpha);
+            addOnlyOne(lightResult.horizontAmbientColor, lastLdRes.horizontAmbientColor, innerAlpha);
+            addOnlyOne(lightResult.groundAmbientColor, lastLdRes.groundAmbientColor, innerAlpha);
+
             addOnlyOne(lightResult.directColor, lastLdRes.directLight, innerAlpha);
             addOnlyOne(lightResult.closeRiverColor, lastLdRes.closeRiverColor, innerAlpha);
 

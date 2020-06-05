@@ -36,7 +36,7 @@ public:
     void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
 
-    void update();
+    void update(animTime_t deltaTime);
     void uploadGeneratorBuffers(ADTObjRenderRes &adtRes);
     void doPostLoad();
 
@@ -66,6 +66,8 @@ public:
     }
 private:
     animTime_t m_lastTimeOfUpdateOrRefCheck = 0;
+    animTime_t m_lastTimeOfUpdate = 0;
+    animTime_t m_lastDeltaTime = 0;
 
     struct LodCommand {
         int index;
@@ -144,6 +146,16 @@ private:
     HGTexture getAdtTexture(int textureId);
     HGTexture getAdtHeightTexture(int textureId);
     HGTexture getAdtSpecularTexture(int textureId);
+
+    struct AnimTextures {
+        std::array<mathfu::mat4, 4> animTexture;
+    };
+    struct AnimTrans {
+        std::array<mathfu::vec2, 4> transVectors;
+    };
+    std::vector<AnimTextures> texturesPerMCNK;
+
+    std::vector<AnimTrans> animationTranslationPerMCNK;
 
     void calcBoundingBoxes();
     void loadM2s();

@@ -56,6 +56,8 @@ private:
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
 
     mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
+    mathfu::vec4 exteriorHorizontAmbientColor = {1, 1, 1, 1};
+    mathfu::vec4 exteriorGroundAmbientColor = {1, 1, 1, 1};
     mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
     mathfu::vec3 exteriorDirectColorDir;
 
@@ -245,6 +247,28 @@ public:
     mathfu::vec4 getExteriorAmbientColor(){
         return exteriorAmbientColor;
     }
+
+    mathfu::vec4 getExteriorHorizontAmbientColor(){
+        return exteriorHorizontAmbientColor;
+    }
+
+    void setExteriorHorizontAmbientColor(float r, float g, float b, float a) {
+        exteriorHorizontAmbientColor[0] = r;
+        exteriorHorizontAmbientColor[1] = g;
+        exteriorHorizontAmbientColor[2] = b;
+        exteriorHorizontAmbientColor[3] = a;
+    }
+    mathfu::vec4 getExteriorGroundAmbientColor(){
+        return exteriorGroundAmbientColor;
+    }
+
+    void setExteriorGroundAmbientColor(float r, float g, float b, float a) {
+        exteriorGroundAmbientColor[0] = r;
+        exteriorGroundAmbientColor[1] = g;
+        exteriorGroundAmbientColor[2] = b;
+        exteriorGroundAmbientColor[3] = a;
+    }
+
 
     void setExteriorDirectColor(float r, float g, float b, float a) {
         exteriorDirectColor[0] = r;

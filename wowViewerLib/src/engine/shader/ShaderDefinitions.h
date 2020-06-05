@@ -299,7 +299,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },{ "adtShader.frag.spv", {
 {
-{0,4,32},
+{0,4,288},
 {0,0,240},
 {0,3,32},
 }
@@ -455,20 +455,20 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"skyConus",  {
     {
       2, {
-        {"_92.skyColor[0]", true, 0, 1, 4, 6},
+        {"_89.skyColor[0]", true, 0, 1, 4, 6},
       }
     },
     {
       0, {
-        {"_52.scene.uLookAtMat", true, 0, 4, 4, 0},
-        {"_52.scene.uPMatrix", true, 64, 4, 4, 0},
-        {"_52.scene.uViewUp", true, 128, 1, 4, 0},
-        {"_52.scene.uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_52.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
-        {"_52.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
-        {"_52.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
-        {"_52.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
-        {"_52.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
+        {"_50.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_50.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_50.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_50.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_50.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_50.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_50.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_50.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_50.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
       }
     },
   }},
@@ -645,14 +645,15 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       3, {
-        {"_515.uFogStartAndFogEnd", true, 0, 1, 4, 0},
-        {"_515.uFogColor", true, 16, 1, 4, 0},
+        {"_546.uFogStartAndFogEnd", true, 0, 1, 4, 0},
+        {"_546.uFogColor", true, 16, 1, 4, 0},
       }
     },
     {
       4, {
-        {"_252.uHeightScale", true, 0, 1, 4, 0},
-        {"_252.uHeightOffset", true, 16, 1, 4, 0},
+        {"_227.uHeightScale", true, 0, 1, 4, 0},
+        {"_227.uHeightOffset", true, 16, 1, 4, 0},
+        {"_227.animationMat[0]", true, 32, 4, 4, 4},
       }
     },
     {

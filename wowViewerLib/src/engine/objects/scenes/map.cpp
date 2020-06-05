@@ -557,6 +557,8 @@ void Map::checkCulling(HCullStage cullStage) {
         }
         //Blend glow and ambient
         mathfu::vec3 ambientColor = {0,0,0};
+        mathfu::vec3 horizontAmbientColor = {0,0,0};
+        mathfu::vec3 groundAmbientColor = {0,0,0};
         mathfu::vec3 directColor = {0,0,0};
         mathfu::vec3 closeRiverColor = {0,0,0};
 
@@ -571,6 +573,9 @@ void Map::checkCulling(HCullStage cullStage) {
         for (auto &_light : lightResults) {
             m_currentGlow += _light.glow * _light.blendCoef;
             ambientColor += mathfu::vec3(_light.ambientColor) * _light.blendCoef;
+            horizontAmbientColor += mathfu::vec3(_light.horizontAmbientColor) * _light.blendCoef;
+            groundAmbientColor += mathfu::vec3(_light.groundAmbientColor) * _light.blendCoef;
+
             directColor += mathfu::vec3(_light.directColor) * _light.blendCoef;
             closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
 
@@ -583,8 +588,15 @@ void Map::checkCulling(HCullStage cullStage) {
         }
 
         //Database is in BGRA
+        float ambientMult = areaRecord.ambientMultiplier*2.0f + 1;
+        ambientColor *= ambientMult;
+        groundAmbientColor *= ambientMult;
+        horizontAmbientColor *= ambientMult;
+
         config->setExteriorAmbientColor(ambientColor[2], ambientColor[1], ambientColor[0], 0);
-        config->setExteriorDirectColor(1.5*directColor[2], 1.5*directColor[1], 1.5*directColor[0], 0);
+        config->setExteriorGroundAmbientColor(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0], 0);
+        config->setExteriorHorizontAmbientColor(horizontAmbientColor[2], horizontAmbientColor[1], horizontAmbientColor[0], 0);
+        config->setExteriorDirectColor(directColor[2], directColor[1], directColor[0], 0);
         config->setCloseRiverColor(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
 
 
@@ -1039,8 +1051,8 @@ void Map::update(HUpdateStage updateStage) {
         wmoObject->update();
     }
 
-    for (auto &adtObject : updateStage->cullResult->adtArray) {
-        adtObject->adtObject->update();
+    for (auto &adtObjectRes : updateStage->cullResult->adtArray) {
+        adtObjectRes->adtObject->update(deltaTime);
     }
 
     //2. Calc distance every 100 ms
@@ -1251,8 +1263,8 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         blockPSVS->uViewUp = renderMats->viewUp;
 
         blockPSVS->extLight.uExteriorAmbientColor = config->getExteriorAmbientColor();
-        blockPSVS->extLight.uExteriorHorizontAmbientColor = config->getExteriorAmbientColor();
-        blockPSVS->extLight.uExteriorGroundAmbientColor = config->getExteriorAmbientColor();
+        blockPSVS->extLight.uExteriorHorizontAmbientColor = config->getExteriorHorizontAmbientColor();
+        blockPSVS->extLight.uExteriorGroundAmbientColor = config->getExteriorGroundAmbientColor();
         blockPSVS->extLight.uExteriorDirectColor = config->getExteriorDirectColor();
         blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(config->getExteriorDirectColorDir(), 1.0);
     });

@@ -34,6 +34,7 @@ layout(std140, set=0, binding=3) uniform modelWideBlockPS {
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     vec4 uHeightScale;
     vec4 uHeightOffset;
+    mat4 animationMat[4];
 };
 
 layout(location = 0) out vec4 outColor;
@@ -50,10 +51,10 @@ void main() {
     vec2 alphaCoord = vec2(vChunkCoords.x/8.0, vChunkCoords.y/8.0 );
     vec3 alphaBlend = texture( uAlphaTexture, alphaCoord).gba;
 
-    vec2 tcLayer0 = vTexCoord;
-    vec2 tcLayer1 = vTexCoord;
-    vec2 tcLayer2 = vTexCoord;
-    vec2 tcLayer3 = vTexCoord;
+    vec2 tcLayer0 = (animationMat[0]*vec4(vTexCoord, 0, 1)).xy;
+    vec2 tcLayer1 = (animationMat[1]*vec4(vTexCoord, 0, 1)).xy;
+    vec2 tcLayer2 = (animationMat[2]*vec4(vTexCoord, 0, 1)).xy;
+    vec2 tcLayer3 = (animationMat[3]*vec4(vTexCoord, 0, 1)).xy;
 
     float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
     vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);

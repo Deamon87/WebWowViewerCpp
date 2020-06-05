@@ -25,7 +25,7 @@ void main() {
     vec3 inputPos = aPosition.xyz;
 //Correction of conus
     inputPos.xy = inputPos.xy / 0.6875;
-    inputPos.z = inputPos.z > 0 ? (inputPos.z / 0.2928) : inputPos.z / 1.7071068286895752;
+    inputPos.z = inputPos.z > 0 ? (inputPos.z / 0.2928): inputPos.z;
 
 //    inputPos.z = -1.0-inputPos.z;
     vec4 cameraPos = scene.uLookAtMat * vec4(inputPos.xyz, 1.0);

@@ -14,6 +14,8 @@ struct MapRecord {
 
 struct LightResult {
     float ambientColor[3];
+    float horizontAmbientColor[3];
+    float groundAmbientColor[3];
     float directColor[3];
     float closeRiverColor[3];
 
@@ -57,5 +59,6 @@ struct AreaRecord {
     std::string areaName = "";
     int areaId = 0;
     int parentAreaId = 0;
+    float ambientMultiplier = 1;
 };
 #endif //AWEBWOWVIEWERCPP_DBSTRUCTS_H

@@ -33,6 +33,9 @@ static GBufferBinding staticWaterBindings[2] = {
 void AdtObject::loadingFinished() {
 //    std::cout << "AdtObject::loadingFinished finished called";
 
+    texturesPerMCNK = std::vector<AnimTextures>(m_adtFile->mcnkRead+1);
+    animationTranslationPerMCNK = std::vector<AnimTrans>(m_adtFile->mcnkRead+1);
+
     createVBO();
     loadAlphaTextures();
     createMeshes();
@@ -576,19 +579,22 @@ void AdtObject::createMeshes() {
 
             aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
-            aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBufferChunk *self) {
+            aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, i, this](IUniformBufferChunk *self) {
                 auto &blockPS = self->getObject<ADT::meshWideBlockPS>();
+
                 for (int j = 0; j < 4; j++) {
                     blockPS.uHeightOffset[j] = 0.0f;
                     blockPS.uHeightScale[j] = 1.0f;
+                    blockPS.animationMat[j] = mathfu::mat4::Identity();
                 }
-                if ((adtFileTex->mtxp_len > 0) && !noLayers) {
-                    for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                        auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
 
+                for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                    if ((adtFileTex->mtxp_len > 0) && !noLayers) {
+                        auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
                         blockPS.uHeightOffset[j] = textureParams.heightOffset;
                         blockPS.uHeightScale[j] = textureParams.heightScale;
                     }
+                    blockPS.animationMat[j] = this->texturesPerMCNK[i].animTexture[j];
                 }
             });
 
@@ -748,12 +754,69 @@ void AdtObject::doPostLoad() {
         }
     }
 }
-void AdtObject::update() {
+void AdtObject::update(animTime_t deltaTime ) {
     m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
+
+    m_lastDeltaTime = deltaTime;
+    m_lastTimeOfUpdate = m_mapApi->getCurrentSceneTime();
+
 //    std::cout << "AdtObject::update finished called" << std::endl;
     if (!m_loaded) return;
     if (adtWideBlockPS == nullptr) return;
 
+    for (int i = 0; i < 256; i++) {
+
+        for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+            texturesPerMCNK[i].animTexture[j] = mathfu::mat4::Identity();
+            if (m_adtFileTex->mtxp_len > 0) {
+                auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
+
+                if (m_adtFileTex->mcnkStructs[i].mcly[j].flags.unknown_0x800 != 0 || m_adtFileTex->mcnkStructs[i].mcly[j].flags.unknown_0x1000 != 0) {
+                    float scaleFactor = -(1.0 / (float)(1 << textureParams.flags.texture_scale)) * (1.0f / -4.1666665f);
+                    texturesPerMCNK[i].animTexture[j]*=mathfu::mat4::FromScaleVector({scaleFactor, scaleFactor, scaleFactor});
+                }
+            }
+
+            if (m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_enabled != 0) {
+                static const std::array<mathfu::vec2, 8> s_texDir =
+                    {{
+                         {-1.0, 0.0},
+                         {-1.0, 1.0},
+                         {0.0, 1.0},
+                         {1.0, 1.0},
+                         {1.0, 0.0},
+                         {1.0, -1.0},
+                         {0.0, -1.0},
+                         {-1.0, -1.0}
+                     }};
+                static const std::array<float, 8> s_tempTexSpeed = {64.0, 48.0, 32.0, 16.0, 8.0, 4.0, 2.0, 1.0};
+
+                auto &transVector = animationTranslationPerMCNK[i].transVectors[j];
+                transVector += s_texDir[m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_rotation] * ((float) deltaTime * 0.001f);
+                if (transVector.x >= 64.0) {
+                    transVector.x = 0;
+                }
+                if (transVector.x <= -64.0) {
+                    transVector.x = 0;
+                }
+                if (transVector.y >= 64.0) {
+                    transVector.y = 0;
+                }
+                if (transVector.y <= -64.0) {
+                    transVector.y = 0;
+                }
+
+    //                        std::cout << "this->m_lastDeltaTime = " << this->m_lastDeltaTime << std::endl;
+
+                auto finalTransVector = (transVector ) *
+                                   (1.0f / ((1.0f / -4.1666665f) *
+                                            s_tempTexSpeed[m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_speed]));
+                //                        std::cout << "transVector = " << transVector.x << " " << transVector.y << std::endl;
+
+                texturesPerMCNK[i].animTexture[j] *= mathfu::mat4::FromTranslationVector({finalTransVector.y, finalTransVector.x, 0.0f});
+            }
+        }
+    }
 }
 
 void AdtObject::uploadGeneratorBuffers(ADTObjRenderRes &adtRes) {
