@@ -421,6 +421,8 @@ void Map::checkCulling(HCullStage cullStage) {
             if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
                 cullStage->m_currentInteriorGroups.push_back(groupResult);
                 interiorGroupNum = groupResult.groupIndex;
+                cullStage->currentWmoGroupIsExtLit = checkingWmoObj->isGroupWmoExteriorLit(groupResult.groupIndex);
+                cullStage->currentWmoGroupShowExtSkybox = checkingWmoObj->isGroupWmoExtSkybox(groupResult.groupIndex);
             } else {
             }
             bspNodeId = groupResult.nodeId;
@@ -644,7 +646,8 @@ void Map::checkCulling(HCullStage cullStage) {
         cullStage->exteriorView.frustumPlanes.push_back(frustumPlanes);
         checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, viewPerspectiveMat, m_viewRenderOrder, cullStage);
     }
-    if (  cullStage->exteriorView.viewCreated && (!m_exteriorSkyBoxes.empty())) {
+    if (  (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit || cullStage->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
+        cullStage->exteriorView.viewCreated = true;
         m_wdlObject->checkSkyScenes(stateForConditions, cullStage->exteriorView.drawnM2s);
 
         for (auto model : m_exteriorSkyBoxes) {
@@ -1226,7 +1229,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
     if (quadBindings == nullptr)
         return;
 
-    if (  updateStage->cullResult->exteriorView.viewCreated) {
+    if (  cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit) {
         renderedThisFramePreSort.push_back(skyMesh);
     }
 

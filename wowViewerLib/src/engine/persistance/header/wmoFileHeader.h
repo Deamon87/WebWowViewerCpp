@@ -78,7 +78,7 @@ struct SMOGroupFlags {
     // 0x80;
     uint32_t UNREACHABLE : 1;
     // 0x100;
-    uint32_t unused3 : 1;
+    uint32_t SHOW_EXTERIOR_SKYBOX : 1;
     // 0x200;
     uint32_t hasLights : 1; //has MOLR chunk
     // 0x400;

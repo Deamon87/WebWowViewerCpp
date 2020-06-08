@@ -420,7 +420,7 @@ void WmoGroupObject::createMeshes() {
             mathfu::vec4_packed(
                 mathfu::vec4(
                     this->getAmbientColor().xyz(),
-                    this->m_geom->mogp->flags.INTERIOR > 0 ? 1.0f : 0.0f
+                    ((this->m_geom->mogp->flags.INTERIOR > 0) && (!this->m_geom->mogp->flags.EXTERIOR_LIT)) ? 1.0f : 0.0f
                 )
             );
         blockPS.intLight.uInteriorDirectColorAndApplyExteriorLight =

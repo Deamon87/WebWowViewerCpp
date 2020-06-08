@@ -1099,6 +1099,18 @@ bool WmoObject::isGroupWmoInterior(int groupId) {
     return result;
 }
 
+bool WmoObject::isGroupWmoExteriorLit(int groupId) {
+    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    bool result = ((groupInfo->flags.EXTERIOR_LIT) == 1);
+    return result;
+}
+
+bool WmoObject::isGroupWmoExtSkybox(int groupId) {
+    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    bool result = ((groupInfo->flags.SHOW_EXTERIOR_SKYBOX) == 1);
+    return result;
+}
+
 bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroupResult &groupResult) {
         if (this->groupObjects.size() ==0) return false;
 

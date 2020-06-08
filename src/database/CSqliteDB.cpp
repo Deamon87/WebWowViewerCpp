@@ -6,6 +6,7 @@
 #include "CSqliteDB.h"
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
 CSqliteDB::CSqliteDB(std::string dbFileName) :
     m_sqliteDatabase(dbFileName, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE),
@@ -304,6 +305,8 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         getLightData.reset();
 
         getLightData.bind(1, innerResult.paramId);
+
+//        std::cout << "innerResult.paramId = " << innerResult.paramId << std::endl;
 
         InnerLightDataRes lastLdRes = {0, 0, -1};
         bool assigned = false;

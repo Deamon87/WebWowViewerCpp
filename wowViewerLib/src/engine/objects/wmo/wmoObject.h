@@ -180,6 +180,8 @@ public:
     bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
 
     bool isGroupWmoInterior(int groupId);
+    bool isGroupWmoExteriorLit(int groupId);
+    bool isGroupWmoExtSkybox(int groupId);
 
     void drawTransformedPortalPoints();
 

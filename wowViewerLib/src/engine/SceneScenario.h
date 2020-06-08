@@ -43,6 +43,8 @@ struct CullStage {
     int adtAreadId = -1;
 
     std::vector<WmoGroupResult> m_currentInteriorGroups = {};
+    bool currentWmoGroupIsExtLit = false;
+    bool currentWmoGroupShowExtSkybox = false;
     std::shared_ptr<WmoObject> m_currentWMO = nullptr;
     int m_currentWmoGroup = -1;
 

@@ -543,7 +543,7 @@ AnimationManager::calcBoneMatrix(
                 ).Normalized();
 
                 mathfu::vec4 &zAxis = animatedMatrix.GetColumn(2);
-                currentBoneMat.GetColumn(2) = -mathfu::vec4(
+                currentBoneMat.GetColumn(2) = mathfu::vec4(
                     zAxis.y,
                     zAxis.z,
                     -zAxis.x,
@@ -553,7 +553,7 @@ AnimationManager::calcBoneMatrix(
             } else {
                 currentBoneMat.GetColumn(0) = -mathfu::vec4(0, 0, -1, 0);
                 currentBoneMat.GetColumn(1) = -mathfu::vec4(1.0, 0, 0, 0);
-                currentBoneMat.GetColumn(2) = -mathfu::vec4(0, 1.0, 0, 0);
+                currentBoneMat.GetColumn(2) = mathfu::vec4(0, 1.0, 0, 0);
             }
         }
         mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
