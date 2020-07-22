@@ -1489,26 +1489,15 @@ M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {
 
     return result;
 }
-mathfu::vec4 M2Object::getAmbientLight() {
-    if (m_setAmbientColor) {
-        return mathfu::vec4(m_ambientColorOverride.x, m_ambientColorOverride.y, m_ambientColorOverride.z, m_ambientColorOverride.w)
-            + m_ambientAddColor
-            ;
-    }
-
-    mathfu::vec4 ambientColor = m_api->getConfig()->getExteriorAmbientColor();
-    if (m_modelAsScene) {
-        ambientColor = mathfu::vec4(0,0,0,0);
-        for (int i = 0; i < lights.size(); ++i) {
-            if (lights[i].ambient_intensity > 0) {
-                ambientColor += lights[i].ambient_color * lights[i].ambient_intensity;
-            }
+mathfu::vec4 M2Object::getM2SceneAmbientLight() {
+    mathfu::vec4 ambientColor = mathfu::vec4(0,0,0,0);
+    for (int i = 0; i < lights.size(); ++i) {
+        if (lights[i].ambient_intensity > 0) {
+            ambientColor += lights[i].ambient_color * lights[i].ambient_intensity;
         }
-
-        return mathfu::vec4(ambientColor.x, ambientColor.y, ambientColor.z, 1.0) ;
     }
 
-    return ambientColor + m_ambientAddColor;//mathfu::vec4(ambientColor.y, ambientColor.x, ambientColor.z, 1.0) ;
+    return mathfu::vec4(ambientColor.x, ambientColor.y, ambientColor.z, 1.0) ;
 };
 
 mathfu::vec3 M2Object::getSunDir() {
@@ -1619,8 +1608,6 @@ void M2Object::createVertexBindings() {
     });
 
     fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
-        mathfu::vec4 ambientLight = getAmbientLight();
-
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
 

@@ -8,21 +8,33 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/UniformBufferStructures.h"
 
-void M2Scene::checkCulling(HCullStage cullStage) {
-    mathfu::vec4 cameraPos = cullStage->matricesForCulling->cameraPos;
-    mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
-    mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
+void M2Scene::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
+                                  HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
+                                  std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
+                                  std::vector<std::shared_ptr<WmoObject>> &potentialWmo) {
+    potentialM2.push_back(m_m2Object);
+}
 
+void M2Scene::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
+                                   std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
+                                   std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                   std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
+    m2ObjectsCandidates.push_back(m_m2Object);
+}
 
-    mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
+void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
+                              StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
+    Config* config = this->m_api->getConfig();
+    if (config->getUseTimedGloabalLight()) {
+        Map::updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
+    } else if (config->getUseM2AmbientLight()) {
+        auto ambient = m_m2Object->getM2SceneAmbientLight();
 
-    std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
-//    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
-
-    std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
-
-    if (m_m2Object->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints)) {
-        cullStage->m2Array = {m_m2Object};
+        m_api->getConfig()->setExteriorAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
+        m_api->getConfig()->setExteriorHorizontAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
+        m_api->getConfig()->setExteriorGroundAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
+        m_api->getConfig()->setExteriorDirectColor(0.3,0.3,0.3,1.3);
+        m_api->getConfig()->setExteriorDirectColorDir(0.0,0.0,0.0);
     }
 }
 
@@ -66,13 +78,9 @@ void M2Scene::doPostLoad(HCullStage cullStage) {
         supplyPointer(&availableAnimations[0], availableAnimations.size());
 #endif
         }
+    Map::doPostLoad(cullStage);
 }
 
-void M2Scene::update(HUpdateStage updateStage) {
-    auto cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
-    m_m2Object->update(updateStage->delta, cameraVec3, updateStage->cameraMatrices->lookAtMat);
-    m_m2Object->uploadGeneratorBuffers(updateStage->cameraMatrices->lookAtMat);
-}
 
 //mathfu::vec4 M2Scene::getAmbientColor() {
 //    if (doOverride) {
@@ -120,10 +128,8 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
     m_m2Object->setReplaceTextures(replaceTextures);
 }
 
-void M2Scene::updateBuffers(HCullStage cullStage) {
 
-}
-
+/*
 void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     if (updateStage == nullptr) return;
     if (resultDrawStage == nullptr) return;
@@ -150,7 +156,8 @@ void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateSt
         blockPSVS->uViewUp = renderMats->viewUp;
 
 
-        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+//        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+        auto ambient = mathfu::vec4(1.0f, 1.0f, 1.0f, 0);
         blockPSVS->extLight.uExteriorAmbientColor = ambient;
         blockPSVS->extLight.uExteriorHorizontAmbientColor = ambient;
         blockPSVS->extLight.uExteriorGroundAmbientColor = ambient;
@@ -165,3 +172,4 @@ void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateSt
               IDevice::sortMeshes
     );
 }
+*/

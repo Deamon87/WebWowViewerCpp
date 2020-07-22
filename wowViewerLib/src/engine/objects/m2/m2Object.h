@@ -86,7 +86,6 @@ private:
 
     mathfu::vec4 m_sunDirOverride;
     bool m_setSunDir = false;
-    bool m_modelAsScene = false;
 
 
     bool m_hasBillboards = false;
@@ -175,9 +174,6 @@ public:
     void setModelFileName(std::string modelName);
     int getModelFileId();
     void setModelFileId(int fileId);
-    void setModelAsScene(bool value) {
-        m_modelAsScene = value;
-    };
 
     void setAlpha(float alpha) {
         m_alpha = alpha;
@@ -246,7 +242,7 @@ public:
     HGTexture getTexture(int textureInd);
     HBlpTexture getHardCodedTexture(int textureInd);
 
-    mathfu::vec4 getAmbientLight();
+    mathfu::vec4 getM2SceneAmbientLight();
     void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
         m_setAmbientColor = override;
         m_ambientColorOverride = ambientColor;

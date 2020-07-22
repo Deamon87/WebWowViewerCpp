@@ -55,6 +55,9 @@ private:
 
     bool useGaussBlur = false;
 
+    bool useTimedGloabalLight = true;
+    bool useM2AmbientLight = false;
+
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
 
     mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
@@ -423,6 +426,20 @@ public:
     }
     bool getUseGaussBlur() {
         return useGaussBlur;
+    }
+
+    void setUseTimedGloabalLight(bool value) {
+        useTimedGloabalLight = value;
+    };
+    bool getUseTimedGloabalLight() {
+        return useTimedGloabalLight;
+    }
+
+    void setUseM2AmbientLight(bool value) {
+        useM2AmbientLight = value;
+    }
+    bool getUseM2AmbientLight() {
+        return useM2AmbientLight;
     }
 };
 

@@ -446,8 +446,10 @@ int main(){
         currentScene = std::make_shared<M2Scene>(&apiContainer, m2FDid, -1);
         currentScene->setReplaceTextureArray(replacementTextureIds);
 
-        apiContainer.getConfig()->setBCLightHack(true);
 
+
+//        apiContainer.getConfig()->setBCLightHack(true);
+//
         apiContainer.camera->setCameraPos(0, 0, 0);
     });
     frontendUI->setOpenM2SceneByFilenameCallback([&currentScene, &apiContainer](std::string m2FileName, std::vector<int> &replacementTextureIds) {

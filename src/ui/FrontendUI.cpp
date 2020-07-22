@@ -534,6 +534,12 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(131982, replacementTextureFDids);
+            //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+        }
+    }
+    if (ImGui::Button("Wrath login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(236122, replacementTextureFDids);
         }
     }
 

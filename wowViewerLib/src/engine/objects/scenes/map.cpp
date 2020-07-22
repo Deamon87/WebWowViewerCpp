@@ -325,8 +325,6 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
 void Map::checkCulling(HCullStage cullStage) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
 //    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
-    if (m_wdtfile->getStatus() != FileStatus::FSLoaded) return;
-
     Config* config = this->m_api->getConfig();
 
     mathfu::vec4 cameraPos = cullStage->matricesForCulling->cameraPos;
@@ -372,44 +370,8 @@ void Map::checkCulling(HCullStage cullStage) {
     std::vector<std::shared_ptr<WmoObject>> potentialWmo;
     std::vector<std::shared_ptr<M2Object>> potentialM2;
 
-    if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
-        int adt_x = worldCoordinateToAdtIndex(camera4.y);
-        int adt_y = worldCoordinateToAdtIndex(camera4.x);
-        cullStage->adtAreadId = -1;
-        std::shared_ptr<AdtObject> adtObjectCameraAt = this->mapTiles[adt_x][adt_y];
-        if (adtObjectCameraAt != nullptr) {
-            ADTObjRenderRes tempRes;
-            tempRes.adtObject = adtObjectCameraAt;
-            adtObjectCameraAt->checkReferences(
-                tempRes,
-                camera4,
-                frustumPlanes,
-                frustumPoints,
-                lookAtMat4,
-                5,
-                potentialM2,
-                potentialWmo,
-                0,
-                0,
-                16,
-                16
-            );
-
-            int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
-            int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
-
-            cullStage->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
-        }
-    } else {
-        if (wmoMap == nullptr) {
-            wmoMap = std::make_shared<WmoObject>(m_api);
-            wmoMap->setLoadingParam(*m_wdtfile->wmoDef);
-            wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
-        }
-
-        potentialWmo.push_back(wmoMap);
-    }
-
+    getPotentialEntities(cameraPos, potentialM2, cullStage, lookAtMat4, camera4, frustumPlanes, frustumPoints,
+                         potentialWmo);
 
     for (auto &checkingWmoObj : potentialWmo) {
         WmoGroupResult groupResult;
@@ -453,11 +415,108 @@ void Map::checkCulling(HCullStage cullStage) {
     stateForConditions.currentAreaId = areaRecord.areaId;
     stateForConditions.currentParentAreaId = areaRecord.parentAreaId;
 
+    updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
+
     ///-----------------------------------
+
+
+    auto lcurrentWMO = cullStage->m_currentWMO;
+    auto currentWmoGroup = cullStage->m_currentWmoGroup;
+
+    if ((lcurrentWMO != nullptr) && (!cullStage->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
+        lcurrentWMO->resetTraversedWmoGroups();
+        if (lcurrentWMO->startTraversingWMOGroup(
+            cameraPos,
+            viewPerspectiveMat,
+            cullStage->m_currentInteriorGroups[0].groupIndex,
+            0,
+            m_viewRenderOrder,
+            true,
+            cullStage->interiorViews,
+            cullStage->exteriorView)) {
+
+            cullStage->wmoArray.push_back(cullStage->m_currentWMO);
+        }
+
+        if (cullStage->exteriorView.viewCreated) {
+            checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, viewPerspectiveMat, m_viewRenderOrder, cullStage);
+        }
+    } else {
+        //Cull exterior
+        cullStage->exteriorView.viewCreated = true;
+        cullStage->exteriorView.frustumPlanes.push_back(frustumPlanes);
+        checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, viewPerspectiveMat, m_viewRenderOrder, cullStage);
+    }
+    if (  (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit || cullStage->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
+        cullStage->exteriorView.viewCreated = true;
+        if (m_wdlObject != nullptr) {
+            m_wdlObject->checkSkyScenes(
+                stateForConditions,
+                cullStage->exteriorView.drawnM2s,
+                cameraPos,
+                frustumPlanes,
+                frustumPoints);
+        }
+
+        for (auto model : m_exteriorSkyBoxes) {
+            if (model != nullptr) {
+                model->checkFrustumCulling(cameraPos,
+                                           frustumPlanes,
+                                           frustumPoints);
+                cullStage->exteriorView.drawnM2s.push_back(model);
+            }
+        }
+    }
+
+    //Fill M2 objects for views from WmoGroups
+    for (auto &view : cullStage->interiorViews) {
+        view.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
+    }
+    cullStage->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
+    for (auto &adtRes : cullStage->exteriorView.drawnADTs) {
+        adtRes->adtObject->collectMeshes(*adtRes.get(),  cullStage->exteriorView.drawnChunks, cullStage->exteriorView.renderOrder);
+    }
+
+    //Collect M2s for update
+    cullStage->m2Array.clear();
+    auto inserter = std::back_inserter(cullStage->m2Array);
+    for (auto &view : cullStage->interiorViews) {
+        std::copy(view.drawnM2s.begin(), view.drawnM2s.end(), inserter);
+    }
+    std::copy(cullStage->exteriorView.drawnM2s.begin(), cullStage->exteriorView.drawnM2s.end(), inserter);
+
+    //Sort and delete duplicates
+    std::sort( cullStage->m2Array.begin(), cullStage->m2Array.end() );
+    cullStage->m2Array.erase( unique( cullStage->m2Array.begin(), cullStage->m2Array.end() ), cullStage->m2Array.end() );
+    cullStage->m2Array = std::vector<std::shared_ptr<M2Object>>(cullStage->m2Array.begin(), cullStage->m2Array.end());
+
+    std::sort( cullStage->wmoArray.begin(), cullStage->wmoArray.end() );
+    cullStage->wmoArray.erase( unique( cullStage->wmoArray.begin(), cullStage->wmoArray.end() ), cullStage->wmoArray.end() );
+    cullStage->wmoArray = std::vector<std::shared_ptr<WmoObject>>(cullStage->wmoArray.begin(), cullStage->wmoArray.end());
+
+    cullStage->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>(cullStage->adtArray.begin(), cullStage->adtArray.end());
+
+//    //Limit M2 count based on distance/m2 height
+//    for (auto it = this->m2RenderedThisFrameArr.begin();
+//         it != this->m2RenderedThisFrameArr.end();) {
+//        if ((*it)->getCurrentDistance() > ((*it)->getHeight() * 5)) {
+//            it = this->m2RenderedThisFrameArr.erase(it);
+//        } else {
+//            ++it;
+//        }
+//    }
+}
+
+void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
+                                   StateForConditions &stateForConditions, const AreaRecord &areaRecord) {///-----------------------------------
+    Config* config = this->m_api->getConfig();
+
+    if (!config->getUseTimedGloabalLight()) return;
+
     bool fogRecordWasFound = false;
-    mathfu::vec3 ambientColor = mathfu::vec3(0.0,0.0,0.0);
-    mathfu::vec3 directColor = mathfu::vec3(0.0,0.0,0.0);
-    mathfu::vec3 endFogColor = mathfu::vec3(0.0,0.0,0.0);
+    mathfu::vec3 ambientColor = mathfu::vec3(0.0, 0.0, 0.0);
+    mathfu::vec3 directColor = mathfu::vec3(0.0, 0.0, 0.0);
+    mathfu::vec3 endFogColor = mathfu::vec3(0.0, 0.0, 0.0);
 
     if (cullStage->m_currentWMO != nullptr) {
         CImVector sunFogColor;
@@ -465,8 +524,8 @@ void Map::checkCulling(HCullStage cullStage) {
         if (fogRecordWasFound) {
             endFogColor =
                 mathfu::vec3((sunFogColor.r & 0xFF) / 255.0f,
-                             ((sunFogColor.g ) & 0xFF) / 255.0f,
-                             ((sunFogColor.b ) & 0xFF) / 255.0f);
+                             ((sunFogColor.g) & 0xFF) / 255.0f,
+                             ((sunFogColor.b) & 0xFF) / 255.0f);
         }
     }
 
@@ -476,7 +535,7 @@ void Map::checkCulling(HCullStage cullStage) {
         std::vector<LightResult> lightResults;
         bool zoneLightFound = false;
         int LightId;
-        for (const auto& zoneLight : m_zoneLights) {
+        for (const auto &zoneLight : m_zoneLights) {
             if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
                 zoneLightFound = true;
                 LightId = zoneLight.LightID;
@@ -485,7 +544,7 @@ void Map::checkCulling(HCullStage cullStage) {
         }
 
         if (zoneLightFound) {
-            m_api->databaseHandler->getLightById(LightId, config->getCurrentTime(), zoneLightResult );
+            m_api->databaseHandler->getLightById(LightId, config->getCurrentTime(), zoneLightResult);
         }
 
         m_api->databaseHandler->getEnvInfo(m_mapId,
@@ -544,11 +603,11 @@ void Map::checkCulling(HCullStage cullStage) {
             std::shared_ptr<M2Object> skyBox = nullptr;
             if (perFdidMap[_light.skyBoxFdid] == nullptr) {
                 skyBox = std::make_shared<M2Object>(m_api, true);
-                skyBox->setLoadParams(0, {},{});
+                skyBox->setLoadParams(0, {}, {});
 
                 skyBox->setModelFileId(_light.skyBoxFdid);
 
-                skyBox->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+                skyBox->createPlacementMatrix(mathfu::vec3(0, 0, 0), 0, mathfu::vec3(1, 1, 1), nullptr);
                 skyBox->calcWorldPosition();
                 m_exteriorSkyBoxes.push_back(skyBox);
             } else {
@@ -558,18 +617,18 @@ void Map::checkCulling(HCullStage cullStage) {
             skyBox->setAlpha(_light.blendCoef);
         }
         //Blend glow and ambient
-        mathfu::vec3 ambientColor = {0,0,0};
-        mathfu::vec3 horizontAmbientColor = {0,0,0};
-        mathfu::vec3 groundAmbientColor = {0,0,0};
-        mathfu::vec3 directColor = {0,0,0};
-        mathfu::vec3 closeRiverColor = {0,0,0};
+        mathfu::vec3 ambientColor = {0, 0, 0};
+        mathfu::vec3 horizontAmbientColor = {0, 0, 0};
+        mathfu::vec3 groundAmbientColor = {0, 0, 0};
+        mathfu::vec3 directColor = {0, 0, 0};
+        mathfu::vec3 closeRiverColor = {0, 0, 0};
 
-        mathfu::vec3 SkyTopColor= {0,0,0};
-        mathfu::vec3 SkyMiddleColor= {0,0,0};
-        mathfu::vec3 SkyBand1Color= {0,0,0};
-        mathfu::vec3 SkyBand2Color= {0,0,0};
-        mathfu::vec3 SkySmogColor= {0,0,0};
-        mathfu::vec3 SkyFogColor= {0,0,0};
+        mathfu::vec3 SkyTopColor = {0, 0, 0};
+        mathfu::vec3 SkyMiddleColor = {0, 0, 0};
+        mathfu::vec3 SkyBand1Color = {0, 0, 0};
+        mathfu::vec3 SkyBand2Color = {0, 0, 0};
+        mathfu::vec3 SkySmogColor = {0, 0, 0};
+        mathfu::vec3 SkyFogColor = {0, 0, 0};
 
         m_currentGlow = 0;
         for (auto &_light : lightResults) {
@@ -590,14 +649,15 @@ void Map::checkCulling(HCullStage cullStage) {
         }
 
         //Database is in BGRA
-        float ambientMult = areaRecord.ambientMultiplier*2.0f + 1;
+        float ambientMult = areaRecord.ambientMultiplier * 2.0f + 1;
 //        ambientColor *= ambientMult;
 //        groundAmbientColor *= ambientMult;
 //        horizontAmbientColor *= ambientMult;
 
         config->setExteriorAmbientColor(ambientColor[2], ambientColor[1], ambientColor[0], 0);
         config->setExteriorGroundAmbientColor(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0], 0);
-        config->setExteriorHorizontAmbientColor(horizontAmbientColor[2], horizontAmbientColor[1], horizontAmbientColor[0], 0);
+        config->setExteriorHorizontAmbientColor(horizontAmbientColor[2], horizontAmbientColor[1],
+                                                horizontAmbientColor[0], 0);
         config->setExteriorDirectColor(directColor[2], directColor[1], directColor[0], 0);
         config->setCloseRiverColor(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
 
@@ -616,92 +676,51 @@ void Map::checkCulling(HCullStage cullStage) {
         endFogColor.z,
         1.0
     );
-    ///-----------------------------------
+}
 
+void Map::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
+                               HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
+                               std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
+                               std::vector<std::shared_ptr<WmoObject>> &potentialWmo) {
+    if (m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+        if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+            int adt_x = worldCoordinateToAdtIndex(camera4.y);
+            int adt_y = worldCoordinateToAdtIndex(camera4.x);
+            cullStage->adtAreadId = -1;
+            std::shared_ptr<AdtObject> adtObjectCameraAt = mapTiles[adt_x][adt_y];
+            if (adtObjectCameraAt != nullptr) {
+                ADTObjRenderRes tempRes;
+                tempRes.adtObject = adtObjectCameraAt;
+                adtObjectCameraAt->checkReferences(
+                    tempRes,
+                    camera4,
+                    frustumPlanes,
+                    frustumPoints,
+                    lookAtMat4,
+                    5,
+                    potentialM2,
+                    potentialWmo,
+                    0,
+                    0,
+                    16,
+                    16
+                );
 
-    auto lcurrentWMO = cullStage->m_currentWMO;
-    auto currentWmoGroup = cullStage->m_currentWmoGroup;
+                int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
+                int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
 
-    if ((lcurrentWMO != nullptr) && (!cullStage->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
-        lcurrentWMO->resetTraversedWmoGroups();
-        if (lcurrentWMO->startTraversingWMOGroup(
-            cameraPos,
-            viewPerspectiveMat,
-            cullStage->m_currentInteriorGroups[0].groupIndex,
-            0,
-            m_viewRenderOrder,
-            true,
-            cullStage->interiorViews,
-            cullStage->exteriorView)) {
-
-            cullStage->wmoArray.push_back(cullStage->m_currentWMO);
-        }
-
-        if (cullStage->exteriorView.viewCreated) {
-            checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, viewPerspectiveMat, m_viewRenderOrder, cullStage);
-        }
-    } else {
-        //Cull exterior
-        cullStage->exteriorView.viewCreated = true;
-        cullStage->exteriorView.frustumPlanes.push_back(frustumPlanes);
-        checkExterior(cameraPos, frustumPoints, hullines, lookAtMat4, viewPerspectiveMat, m_viewRenderOrder, cullStage);
-    }
-    if (  (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit || cullStage->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
-        cullStage->exteriorView.viewCreated = true;
-        m_wdlObject->checkSkyScenes(
-            stateForConditions,
-            cullStage->exteriorView.drawnM2s,
-            cameraPos,
-            frustumPlanes,
-            frustumPoints);
-
-        for (auto model : m_exteriorSkyBoxes) {
-            if (model != nullptr) {
-                model->checkFrustumCulling(cameraPos,
-                                           frustumPlanes,
-                                           frustumPoints);
-                cullStage->exteriorView.drawnM2s.push_back(model);
+                cullStage->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
             }
+        } else {
+            if (wmoMap == nullptr) {
+                wmoMap = std::make_shared<WmoObject>(m_api);
+                wmoMap->setLoadingParam(*m_wdtfile->wmoDef);
+                wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
+            }
+
+            potentialWmo.push_back(wmoMap);
         }
     }
-
-    //Fill M2 objects for views from WmoGroups
-    for (auto &view : cullStage->interiorViews) {
-        view.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
-    }
-    cullStage->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
-    for (auto &adtRes : cullStage->exteriorView.drawnADTs) {
-        adtRes->adtObject->collectMeshes(*adtRes.get(),  cullStage->exteriorView.drawnChunks, cullStage->exteriorView.renderOrder);
-    }
-
-    //Collect M2s for update
-    cullStage->m2Array.clear();
-    auto inserter = std::back_inserter(cullStage->m2Array);
-    for (auto &view : cullStage->interiorViews) {
-        std::copy(view.drawnM2s.begin(), view.drawnM2s.end(), inserter);
-    }
-    std::copy(cullStage->exteriorView.drawnM2s.begin(), cullStage->exteriorView.drawnM2s.end(), inserter);
-
-    //Sort and delete duplicates
-    std::sort( cullStage->m2Array.begin(), cullStage->m2Array.end() );
-    cullStage->m2Array.erase( unique( cullStage->m2Array.begin(), cullStage->m2Array.end() ), cullStage->m2Array.end() );
-    cullStage->m2Array = std::vector<std::shared_ptr<M2Object>>(cullStage->m2Array.begin(), cullStage->m2Array.end());
-
-    std::sort( cullStage->wmoArray.begin(), cullStage->wmoArray.end() );
-    cullStage->wmoArray.erase( unique( cullStage->wmoArray.begin(), cullStage->wmoArray.end() ), cullStage->wmoArray.end() );
-    cullStage->wmoArray = std::vector<std::shared_ptr<WmoObject>>(cullStage->wmoArray.begin(), cullStage->wmoArray.end());
-
-    cullStage->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>(cullStage->adtArray.begin(), cullStage->adtArray.end());
-
-//    //Limit M2 count based on distance/m2 height
-//    for (auto it = this->m2RenderedThisFrameArr.begin();
-//         it != this->m2RenderedThisFrameArr.end();) {
-//        if ((*it)->getCurrentDistance() > ((*it)->getHeight() * 5)) {
-//            it = this->m2RenderedThisFrameArr.erase(it);
-//        } else {
-//            ++it;
-//        }
-//    }
 }
 
 void Map::checkExterior(mathfu::vec4 &cameraPos,
@@ -713,109 +732,28 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         HCullStage cullStage
 ) {
 //    std::cout << "Map::checkExterior finished called" << std::endl;
-    if (m_wdlObject == nullptr) {
+
+    if (m_wdlObject != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
             m_wdlObject = std::make_shared<WdlObject>(m_api, m_wdtfile->mphd->wdlFileDataID);
             m_wdlObject->setMapApi(this);
         }
-
-        return;
     }
 
 
     std::vector<std::shared_ptr<M2Object>> m2ObjectsCandidates;
     std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
 
-//    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
-//    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
-
-    //Get visible area that should be checked
-    float minx = 99999, maxx = -99999;
-    float miny = 99999, maxy = -99999;
-
-    for (int i = 0; i < frustumPoints.size(); i++) {
-        mathfu::vec3 &frustumPoint = frustumPoints[i];
-
-        minx = std::min(frustumPoint.x, minx);
-        maxx = std::max(frustumPoint.x, maxx);
-        miny = std::min(frustumPoint.y, miny);
-        maxy = std::max(frustumPoint.y, maxy);
+    if (m_wdlObject != nullptr && m_wdlObject->getIsLoaded()) {
+        m_wdlObject->checkFrustumCulling(
+            cameraPos, cullStage->exteriorView.frustumPlanes[0],
+            frustumPoints,
+            hullLines,
+            lookAtMat4, m2ObjectsCandidates, wmoCandidates);
     }
-    int adt_x_min = std::max(worldCoordinateToAdtIndex(maxy), 0);
-    int adt_x_max = std::min(worldCoordinateToAdtIndex(miny), 63);
 
-    int adt_y_min = std::max(worldCoordinateToAdtIndex(maxx), 0);
-    int adt_y_max = std::min(worldCoordinateToAdtIndex(minx), 63);
-
-    int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
-    int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
-
-//    //FOR DEBUG
-//    adt_x_min = worldCoordinateToAdtIndex(cameraPos.y) - 2;
-//    adt_x_max = adt_x_min + 4;
-//    adt_y_min = worldCoordinateToAdtIndex(cameraPos.x) - 2;
-//    adt_y_max = adt_y_min + 4;
-
-//    for (int i = 0; i < 64; i++)
-//        for (int j = 0; j < 64; j++) {
-//            if (this->m_wdtfile->mapTileTable->mainInfo[i][j].Flag_AllWater) {
-//                std::cout << AdtIndexToWorldCoordinate(j) <<" "<<  AdtIndexToWorldCoordinate(i) << std::endl;
-//            }
-//        }
-
-//    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
-
-    m_wdlObject->checkFrustumCulling(
-        cameraPos, cullStage->exteriorView.frustumPlanes[0],
-        frustumPoints,
-        hullLines,
-        lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-
-    if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
-        for (int i = adt_x_min; i <= adt_x_max; i++) {
-            for (int j = adt_y_min; j <= adt_y_max; j++) {
-                if ((i < 0) || (i > 64)) continue;
-                if ((j < 0) || (j > 64)) continue;
-
-                auto adtObject = this->mapTiles[i][j];
-                if (adtObject != nullptr) {
-
-                    std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
-                    adtFrustRes->adtObject = adtObject;
-
-
-                    bool result = adtObject->checkFrustumCulling(
-                        *adtFrustRes.get(),
-                        cameraPos,
-                        adt_global_x,
-                        adt_global_y,
-                        cullStage->exteriorView.frustumPlanes[0], //TODO:!
-                        frustumPoints,
-                        hullLines,
-                        lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-                    if (result) {
-                        cullStage->exteriorView.drawnADTs.push_back(adtFrustRes);
-                        cullStage->adtArray.push_back(adtFrustRes);
-                    }
-                } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
-                    if (m_wdtfile->mphd->flags.wdt_has_maid) {
-                        adtObject = std::make_shared<AdtObject>(m_api, i, j, m_wdtfile->mapFileDataIDs[j * 64 + i],
-                                                                m_wdtfile);
-                    } else {
-                        std::string adtFileTemplate =
-                            "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" + std::to_string(j);
-                        adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
-                    }
-
-
-                    adtObject->setMapApi(this);
-                    this->mapTiles[i][j] = adtObject;
-                }
-            }
-        }
-    } else {
-        wmoCandidates.push_back(wmoMap);
-    }
+    getCandidatesEntities(hullLines, lookAtMat4, cameraPos, frustumPoints, cullStage, m2ObjectsCandidates,
+                          wmoCandidates);
 
     //Sort and delete duplicates
     std::sort( wmoCandidates.begin(), wmoCandidates.end() );
@@ -905,6 +843,103 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 }
+
+void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
+                                std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
+                                std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                std::vector<std::shared_ptr<WmoObject>> &wmoCandidates)  {
+    if (m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+        //Get visible area that should be checked
+        float minx = 99999, maxx = -99999;
+        float miny = 99999, maxy = -99999;
+
+        //    float adt_x = floor((32 - (cameraPos[1] / 533.33333)));
+//    float adt_y = floor((32 - (cameraPos[0] / 533.33333)));
+
+//    //FOR DEBUG
+//    adt_x_min = worldCoordinateToAdtIndex(cameraPos.y) - 2;
+//    adt_x_max = adt_x_min + 4;
+//    adt_y_min = worldCoordinateToAdtIndex(cameraPos.x) - 2;
+//    adt_y_max = adt_y_min + 4;
+
+//    for (int i = 0; i < 64; i++)
+//        for (int j = 0; j < 64; j++) {
+//            if (this->m_wdtfile->mapTileTable->mainInfo[i][j].Flag_AllWater) {
+//                std::cout << AdtIndexToWorldCoordinate(j) <<" "<<  AdtIndexToWorldCoordinate(i) << std::endl;
+//            }
+//        }
+
+//    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
+
+
+
+        for (int i = 0; i < frustumPoints.size(); i++) {
+            mathfu::vec3 &frustumPoint = frustumPoints[i];
+
+            minx = std::min(frustumPoint.x, minx);
+            maxx = std::max(frustumPoint.x, maxx);
+            miny = std::min(frustumPoint.y, miny);
+            maxy = std::max(frustumPoint.y, maxy);
+        }
+
+        int adt_x_min = std::max(worldCoordinateToAdtIndex(maxy), 0);
+        int adt_x_max = std::min(worldCoordinateToAdtIndex(miny), 63);
+
+        int adt_y_min = std::max(worldCoordinateToAdtIndex(maxx), 0);
+        int adt_y_max = std::min(worldCoordinateToAdtIndex(minx), 63);
+
+        int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
+        int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
+
+        if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+            for (int i = adt_x_min; i <= adt_x_max; i++) {
+                for (int j = adt_y_min; j <= adt_y_max; j++) {
+                    if ((i < 0) || (i > 64)) continue;
+                    if ((j < 0) || (j > 64)) continue;
+
+                    auto adtObject = mapTiles[i][j];
+                    if (adtObject != nullptr) {
+
+                        std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
+                        adtFrustRes->adtObject = adtObject;
+
+
+                        bool result = adtObject->checkFrustumCulling(
+                            *adtFrustRes.get(),
+                            cameraPos,
+                            adt_global_x,
+                            adt_global_y,
+                            cullStage->exteriorView.frustumPlanes[0], //TODO:!
+                            frustumPoints,
+                            hullLines,
+                            lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+                        if (result) {
+                            cullStage->exteriorView.drawnADTs.push_back(adtFrustRes);
+                            cullStage->adtArray.push_back(adtFrustRes);
+                        }
+                    } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
+                        if (m_wdtfile->mphd->flags.wdt_has_maid) {
+                            adtObject = std::make_shared<AdtObject>(m_api, i, j, m_wdtfile->mapFileDataIDs[j * 64 + i],
+                                                                    m_wdtfile);
+                        } else {
+                            std::string adtFileTemplate =
+                                "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" +
+                                std::to_string(j);
+                            adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+                        }
+
+
+                        adtObject->setMapApi(this);
+                        mapTiles[i][j] = adtObject;
+                    }
+                }
+            }
+        } else {
+            wmoCandidates.push_back(wmoMap);
+        }
+    }
+}
+
 void Map::doPostLoad(HCullStage cullStage) {
     int processedThisFrame = 0;
     int groupsProcessedThisFrame = 0;
@@ -938,7 +973,7 @@ void Map::doPostLoad(HCullStage cullStage) {
             2, 1, 3
         };
 
-        std::cout << "indexBuffer.size = " << indexBuffer.size() << std::endl;
+//        std::cout << "indexBuffer.size = " << indexBuffer.size() << std::endl;
 
         auto quadIBO = m_api->hDevice->createIndexBuffer();
         quadIBO->uploadData(
@@ -1033,8 +1068,6 @@ mathfu::vec3 calcExteriorColorDir(HCameraMatrices cameraMatrices, int time) {
 }
 
 void Map::update(HUpdateStage updateStage) {
-    if (m_wdtfile->getStatus() != FileStatus::FSLoaded) return;
-
     mathfu::vec3 cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
     mathfu::mat4 &frustumMat = updateStage->cameraMatrices->perspectiveMat;
     mathfu::mat4 &lookAtMat = updateStage->cameraMatrices->lookAtMat;
@@ -1239,7 +1272,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
     if (quadBindings == nullptr)
         return;
 
-    if (  cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit) {
+    if ( !m_suppressDrawingSky && cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit) {
         renderedThisFramePreSort.push_back(skyMesh);
     }
 
@@ -1370,7 +1403,9 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
     }
 }
 
-void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage) const {///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
+void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage) const {
+
+    ///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
     ///With two frameBuffers
     ///Size for buffers : is 4 times less than current canvas
     int targetWidth = resultDrawStage->viewPortDimensions.maxs[0] >> 2;

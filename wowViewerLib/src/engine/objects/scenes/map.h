@@ -17,11 +17,19 @@
 #include "../wowFrameData.h"
 #include "../../SceneScenario.h"
 
+enum class SceneMode {
+   smMap,
+   smM2,
+   smWMO
+};
+
 class Map : public IMapApi, public IScene {
-private:
-    ApiContainer *m_api;
+protected:
+    ApiContainer *m_api = nullptr;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
     std::string mapName;
+
+    SceneMode m_sceneMode = SceneMode::smMap;
 
     float m_currentTime = 0;
     float m_lastTimeLightCheck = 0;
@@ -43,8 +51,21 @@ private:
     HGVertexBufferBindings quadBindings;
     HGMesh skyMesh = nullptr;
 
+    //Map mode
     std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};
     std::unordered_map<int, std::weak_ptr<WmoObject>> m_wmoMapObjects = {};
+
+    //M2 mode
+    std::shared_ptr<M2Object> m_m2Object = nullptr;
+    std::string m_m2Model;
+    int m_cameraView;
+
+    //Wmo mode
+    std::shared_ptr<WmoObject> m_wmoObject = nullptr;
+    std::string m_wmoModel;
+    ///end
+
+    bool m_suppressDrawingSky = false;
 
     std::shared_ptr<M2Object> getM2Object(std::string fileName, SMDoodadDef &doodadDef) override ;
     std::shared_ptr<M2Object> getM2Object(int fileDataId, SMDoodadDef &doodadDef) override ;
@@ -55,7 +76,18 @@ private:
 
     animTime_t getCurrentSceneTime() override ;
 
+    virtual void getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
+                              HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
+                              std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
+                              std::vector<std::shared_ptr<WmoObject>> &potentialWmo);
 
+    virtual void getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
+                                       std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
+                                       std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                       std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+
+    virtual void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
+                                          StateForConditions &stateForConditions, const AreaRecord &areaRecord);
 
     struct mapInnerZoneLightRecord {
         int ID;
@@ -68,7 +100,14 @@ private:
     std::vector<mapInnerZoneLightRecord> m_zoneLights;
     void loadZoneLights();
 public:
-    explicit Map(ApiContainer *api, int mapId, std::string mapName) : m_mapId(mapId), m_api(api), mapName(mapName){
+
+    explicit Map() {
+    }
+
+    explicit Map(ApiContainer *api, int mapId, std::string mapName) {
+        m_mapId = mapId; m_api = api; mapName = mapName;
+        m_sceneMode = SceneMode::smMap;
+
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
@@ -79,13 +118,19 @@ public:
         loadZoneLights();
     };
 
-    explicit Map(ApiContainer *api, int mapId, int wdtFileDataId) : m_mapId(mapId), m_api(api), mapName("") {
+    explicit Map(ApiContainer *api, int mapId, int wdtFileDataId) {
+        m_mapId = mapId; m_api = api; mapName = "";
+        m_sceneMode = SceneMode::smMap;
+
         m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
 
         loadZoneLights();
     };
 
-    explicit Map(ApiContainer *api, std::string adtFileName, int i, int j, std::string mapName) : m_mapId(0), m_api(api), mapName(mapName){
+    explicit Map(ApiContainer *api, std::string adtFileName, int i, int j, std::string mapName) {
+        m_mapId = 0; m_api = api; this->mapName = mapName;
+        m_sceneMode = SceneMode::smMap;
+
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
 
@@ -119,8 +164,6 @@ public:
     void update(HUpdateStage updateStage) override;
     void updateBuffers(HCullStage cullStage) override;
     void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
-
-//    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        std::vector<mathfu::vec3> &frustumPoints,
@@ -131,7 +174,9 @@ private:
                        HCullStage cullStage);
 
     void doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage) const;
-};
 
+
+
+};
 
 #endif //WEBWOWVIEWERCPP_MAP_H
