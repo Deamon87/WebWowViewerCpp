@@ -61,6 +61,9 @@ public:
     void processResults(int limit);
     void processRequests(bool calledFromThread);
 
+    bool getThreaded() {
+        return m_threaded;
+    }
     void setThreaded(bool value) {
         m_threaded = value;
         if (value) {

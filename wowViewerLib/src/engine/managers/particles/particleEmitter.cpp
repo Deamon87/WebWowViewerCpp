@@ -182,7 +182,7 @@ struct meshParticleWideBlockPS {
     float padding2[3];
 });
 
-EGxBlendEnum PaticleBlendingModeToEGxBlendEnum1 [14] =
+std::array<EGxBlendEnum, 8> PaticleBlendingModeToEGxBlendEnum1 =
     {
         EGxBlendEnum::GxBlend_Opaque,
         EGxBlendEnum::GxBlend_AlphaKey,
@@ -194,7 +194,6 @@ EGxBlendEnum PaticleBlendingModeToEGxBlendEnum1 [14] =
         EGxBlendEnum::GxBlend_BlendAdd
     };
 
-extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
 void ParticleEmitter::createMesh() {
     std::shared_ptr<IDevice> device = m_api->hDevice;
 
@@ -242,11 +241,7 @@ void ParticleEmitter::createMesh() {
         meshTemplate.depthCulling = true;
         meshTemplate.backFaceCulling = false;
 
-//        if (blendMode == 4)
-//            blendMode = 3;
-
-        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[blendMode];
-//        meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);//M2BlendingModeToEGxBlendEnum1[blendMode];
+        meshTemplate.blendMode = PaticleBlendingModeToEGxBlendEnum1[blendMode];
 
         meshTemplate.start = 0;
         meshTemplate.end = 0;
@@ -290,7 +285,7 @@ void ParticleEmitter::createMesh() {
 
             int uPixelShader = particleMaterialShader[this->particleType].pixelShader;
 
-            blockPS.uPixelShader = uPixelShader;
+            blockPS.uPixelShader =  uPixelShader;
         });
 
         frame[i].m_mesh = device->createParticleMesh(meshTemplate);

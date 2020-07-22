@@ -215,10 +215,23 @@ void AdtObject::loadWater() {
                     }
                 }
 
-
                 int baseVertexIndForInst = vertexBuffer.size();
 
                 int bitOffset = 0;
+                int i = this->m_adtFile->mcnkMap[y_chunk][x_chunk];
+                auto &waterAaBB = waterTileAabb[i];
+                SMChunk *mcnkChunk = &m_adtFile->mapTile[i];
+
+                float minZ = 999999;
+                float maxZ = -999999;
+
+                float minX = mcnkChunk->position.x - (533.3433333 / 16.0);
+                float maxX = mcnkChunk->position.x;
+                float minY = mcnkChunk->position.y - (533.3433333 / 16.0);
+                float maxY = mcnkChunk->position.y;
+                minZ += mcnkChunk->position.z;
+                maxZ += mcnkChunk->position.z;
+
                 for (int y = 0; y < liquidInstance.height + 1; y++) {
                     for (int x = 0; x < liquidInstance.width + 1; x++) {
                         mathfu::vec3 pos =
@@ -228,6 +241,8 @@ void AdtObject::loadWater() {
                                 UNITSIZE*(x+liquidInstance.x_offset),
                                 -liquidInstance.min_height_level
                             );
+                        if (minZ > pos.z) minZ = pos.z;
+                        if (maxZ < pos.z) maxZ = pos.z;
 
                         bool hackBool = !((liquidInstance.liquid_object_or_lvf == 42) && (liquidInstance.liquid_type == 2));
                         if (liquidInstance.liquid_object_or_lvf != 2 && heightPtr!= nullptr && hackBool) {
@@ -241,6 +256,12 @@ void AdtObject::loadWater() {
                         vertexBuffer.push_back(vertex);
                     }
                 }
+                waterAaBB = CAaBox(
+                    C3Vector(mathfu::vec3(minX, minY, minZ)),
+                    C3Vector(mathfu::vec3(maxX, maxY, maxZ))
+                );
+
+
 
                 for (int y = 0; y < liquidInstance.height; y++) {
                     for (int x = 0; x < liquidInstance.width; x++) {
@@ -324,8 +345,6 @@ void AdtObject::loadWater() {
 
     auto l_liquidType = 0;
     meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color](IUniformBufferChunk* self) -> void {
-//        int (&waterType)[4] = self->getObject<int[4]>();
-
         mathfu::vec4 closeRiverColor = this->m_api->getConfig()->getCloseRiverColor();
         mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
 
@@ -746,6 +765,7 @@ void AdtObject::doPostLoad() {
     if (!m_loaded) {
         if (m_adtFile->getStatus()==FileStatus::FSLoaded &&
             m_adtFileObj->getStatus()==FileStatus::FSLoaded &&
+            m_adtFileObj->getStatus()==FileStatus::FSLoaded &&
             m_adtFileObjLod->getStatus()==FileStatus::FSLoaded &&
             ((m_adtFileLod != nullptr && m_adtFileLod->getStatus()==FileStatus::FSLoaded) || !m_wdtFile->mphd->flags.unk_0x0100) &&
             m_adtFileTex->getStatus()==FileStatus::FSLoaded) {
@@ -1017,30 +1037,56 @@ bool AdtObject::checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::ve
                 continue;
 
             mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
-            CAaBox &aabb = this->tileAabb[i];
-            adtFrustRes.drawChunk[i] = false;
 
-            //1. Check if camera position is inside Bounding Box
-            bool cameraOnChunk =
+            adtFrustRes.drawChunk[i] = false;
+            adtFrustRes.drawWaterChunk[i] = false;
+
+            {
+                CAaBox &aabb = this->tileAabb[i];
+                //1. Check if camera position is inside Bounding Box
+                bool cameraOnChunk =
                     (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
                      cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
-            if (cameraOnChunk &&
-                cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
+                if (cameraOnChunk &&
+                    cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
                     ) {
-                adtFrustRes.drawChunk[i] = true;
-                atLeastOneIsDrawn = true;
+                    adtFrustRes.drawChunk[i] = true;
+                    atLeastOneIsDrawn = true;
+                }
+
+                //2. Check aabb is inside camera frustum
+                bool result = false;
+                adtFrustRes.checkRefs[i] = adtFrustRes.drawChunk[i];
+                if (!adtFrustRes.drawChunk[i]) {
+                    result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+                    bool frustum2DRes = MathHelper::checkFrustum2D(hullLines, aabb);
+                    adtFrustRes.checkRefs[i] = result || frustum2DRes;
+
+                    adtFrustRes.drawChunk[i] = result;
+                    atLeastOneIsDrawn = atLeastOneIsDrawn || result;
+                }
             }
 
-            //2. Check aabb is inside camera frustum
-            bool result = false;
-            adtFrustRes.checkRefs[i] = adtFrustRes.drawChunk[i];
-            if (!adtFrustRes.drawChunk[i]) {
-                result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
-                bool frustum2DRes = MathHelper::checkFrustum2D(hullLines, aabb);
-                adtFrustRes.checkRefs[i] = result || frustum2DRes;
+            //Do the same for Water tile
+            {
+                CAaBox &aabb = this->waterTileAabb[i];
+                bool cameraOnChunk =
+                    (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
+                     cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
+                if (cameraOnChunk &&
+                    cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
+                    ) {
+                    adtFrustRes.drawWaterChunk[i] = true;
+                    atLeastOneIsDrawn = true;
+                }
 
-                adtFrustRes.drawChunk[i] = result;
-                atLeastOneIsDrawn = atLeastOneIsDrawn || result;
+                //2. Check aabb is inside camera frustum
+                bool result = false;
+                if (!adtFrustRes.drawWaterChunk[i]) {
+                    result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+                    adtFrustRes.drawWaterChunk[i] = result;
+                    atLeastOneIsDrawn = atLeastOneIsDrawn || result;
+                }
             }
         }
     }
@@ -1147,6 +1193,7 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
 
     for (int i = 0; i < 256; i++) {
         adtFrustRes.drawChunk[i] = false;
+        adtFrustRes.drawWaterChunk[i] = false;
     }
     lodCommands.clear();
 
@@ -1180,6 +1227,7 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
 AdtObject::AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(), adt_x(adt_x), adt_y(adt_y){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
+    waterTileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);
     globIndexY = std::vector<int>(256);
     adtFileTemplate = adtFileTemplate;
@@ -1205,6 +1253,7 @@ AdtObject::AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::strin
 AdtObject::AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile): adt_x(adt_x), adt_y(adt_y) {
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
+    waterTileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);
     globIndexY = std::vector<int>(256);
 

@@ -27,7 +27,8 @@ class M2Object {
 public:
     M2Object(ApiContainer *api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
         m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox), m_overrideSkyModelMat(overrideSkyModelMat)
-        {}
+        {
+    }
 
     ~M2Object();
 
@@ -38,6 +39,7 @@ private:
     void createAABB();
     bool m_loading = false;
     bool m_loaded = false;
+    bool m_hasAABB = false;
 
     bool m_alwaysDraw = false;
 
@@ -80,7 +82,7 @@ private:
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
 
-    float m_alpha;
+    float m_alpha = 1.0f;
 
     mathfu::vec4 m_sunDirOverride;
     bool m_setSunDir = false;
@@ -103,6 +105,7 @@ private:
     mathfu::vec4 m_sunAddColor = mathfu::vec4(0, 0, 0, 0);
     mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
     int m_useLocalDiffuseColor = -1;
+    bool hasModf0x2Flag = false;
     std::vector<uint8_t> m_meshIds;
     std::vector<HBlpTexture> m_replaceTextures;
     std::vector<mathfu::mat4> bonesMatrices;
@@ -211,6 +214,9 @@ public:
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
 
     bool setUseLocalLighting(bool value) {
+        if (hasModf0x2Flag) {
+            m_useLocalDiffuseColor = 0;
+        }
         if (m_useLocalDiffuseColor == -1) {
             m_useLocalDiffuseColor = value ? 1 : 0;
         }

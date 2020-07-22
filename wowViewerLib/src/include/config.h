@@ -53,6 +53,8 @@ private:
     float fogStart;
     float fogEnd;
 
+    bool useGaussBlur = false;
+
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
 
     mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
@@ -414,6 +416,13 @@ public:
     }
     int getCurrentTime() {
         return currentTime;
+    }
+
+    void setUseGaussBlur(bool value) {
+        useGaussBlur = value;
+    }
+    bool getUseGaussBlur() {
+        return useGaussBlur;
     }
 };
 

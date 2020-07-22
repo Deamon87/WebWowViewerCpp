@@ -591,9 +591,9 @@ void Map::checkCulling(HCullStage cullStage) {
 
         //Database is in BGRA
         float ambientMult = areaRecord.ambientMultiplier*2.0f + 1;
-        ambientColor *= ambientMult;
-        groundAmbientColor *= ambientMult;
-        horizontAmbientColor *= ambientMult;
+//        ambientColor *= ambientMult;
+//        groundAmbientColor *= ambientMult;
+//        horizontAmbientColor *= ambientMult;
 
         config->setExteriorAmbientColor(ambientColor[2], ambientColor[1], ambientColor[0], 0);
         config->setExteriorGroundAmbientColor(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0], 0);
@@ -648,10 +648,20 @@ void Map::checkCulling(HCullStage cullStage) {
     }
     if (  (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit || cullStage->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
         cullStage->exteriorView.viewCreated = true;
-        m_wdlObject->checkSkyScenes(stateForConditions, cullStage->exteriorView.drawnM2s);
+        m_wdlObject->checkSkyScenes(
+            stateForConditions,
+            cullStage->exteriorView.drawnM2s,
+            cameraPos,
+            frustumPlanes,
+            frustumPoints);
 
         for (auto model : m_exteriorSkyBoxes) {
-            cullStage->exteriorView.drawnM2s.push_back(model);
+            if (model != nullptr) {
+                model->checkFrustumCulling(cameraPos,
+                                           frustumPlanes,
+                                           frustumPoints);
+                cullStage->exteriorView.drawnM2s.push_back(model);
+            }
         }
     }
 
@@ -1356,164 +1366,168 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
     }
 
     if (frameBufferSupported) {
-        ///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
-        ///With two frameBuffers
-        ///Size for buffers : is 4 times less than current canvas
-        int targetWidth = resultDrawStage->viewPortDimensions.maxs[0] >> 2;
-        int targetHeight = resultDrawStage->viewPortDimensions.maxs[1] >> 2;
+        doGaussBlur(resultDrawStage, origResultDrawStage);
+    }
+}
 
-        auto frameB1 = m_api->hDevice->createFrameBuffer(
-            targetWidth,
-            targetHeight,
-            {ITextureFormat::itRGBA},
-            ITextureFormat::itDepth32
-        );
-        auto frameB2 = m_api->hDevice->createFrameBuffer(
-            targetWidth,
-            targetHeight,
-            {ITextureFormat::itRGBA},
-            ITextureFormat::itDepth32
-        );
+void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage) const {///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
+    ///With two frameBuffers
+    ///Size for buffers : is 4 times less than current canvas
+    int targetWidth = resultDrawStage->viewPortDimensions.maxs[0] >> 2;
+    int targetHeight = resultDrawStage->viewPortDimensions.maxs[1] >> 2;
 
-        auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        vertexChunk->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+    auto frameB1 = m_api->hDevice->createFrameBuffer(
+        targetWidth,
+        targetHeight,
+        {ITextureFormat::itRGBA},
+        ITextureFormat::itDepth32
+    );
+    auto frameB2 = m_api->hDevice->createFrameBuffer(
+        targetWidth,
+        targetHeight,
+        {ITextureFormat::itRGBA},
+        ITextureFormat::itDepth32
+    );
+
+    auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+    vertexChunk->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+        auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
+        meshblockVS.x = 1;
+        meshblockVS.y = 1;
+        meshblockVS.z = 0;
+        meshblockVS.w = 0;
+    });
+
+
+    auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
+    ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
+        static const float s_texOffsetX[4] = {-1, 0, 0, -1};
+        static const float s_texOffsetY[4] = {2, 2, -1, -1};;
+
+        for (int i = 0; i < 4; i++) {
+            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
+            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
+        }
+    });
+
+
+    auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
+    ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
+        static const float s_texOffsetX[4] = {-6, -1, 1, 6};
+        static const float s_texOffsetY[4] = {0, 0, 0, 0};;
+
+        for (int i = 0; i < 4; i++) {
+            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
+            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
+        }
+    });
+    auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
+    ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
+        static const float s_texOffsetX[4] = {0, 0, 0, 0};
+        static const float s_texOffsetY[4] = {10, 2, -2, -10};;
+
+        for (int i = 0; i < 4; i++) {
+            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
+            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
+        }
+    });
+    HGUniformBufferChunk frags[3] = {ffxGaussFrag, ffxGaussFrag2, ffxGaussFrag3};
+
+    HDrawStage prevStage = resultDrawStage;
+    for (int i = 0; i < 3; i++) {
+        ///1. Create draw stage
+        HDrawStage drawStage = std::make_shared<DrawStage>();
+
+        drawStage->drawStageDependencies = {prevStage};
+        drawStage->matricesForRendering = nullptr;
+        drawStage->setViewPort = true;
+        drawStage->viewPortDimensions = {{0, 0},
+                                         {resultDrawStage->viewPortDimensions.maxs[0] >> 2,
+                                             resultDrawStage->viewPortDimensions.maxs[1] >> 2}};
+        drawStage->clearScreen = false;
+        drawStage->target = ((i & 1) > 0) ? frameB1 : frameB2;
+
+        ///2. Create mesh
+        auto shader = m_api->hDevice->getShader("fullScreen_ffxgauss4", nullptr);
+        gMeshTemplate meshTemplate(quadBindings, shader);
+        meshTemplate.meshType = MeshType::eGeneralMesh;
+        meshTemplate.depthWrite = false;
+        meshTemplate.depthCulling = false;
+        meshTemplate.backFaceCulling = false;
+        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+
+        meshTemplate.texture.resize(1);
+        meshTemplate.texture[0] = prevStage->target->getAttachment(0);
+
+        meshTemplate.textureCount = 1;
+
+        meshTemplate.ubo[0] = nullptr;
+        meshTemplate.ubo[1] = nullptr;
+        meshTemplate.ubo[2] = vertexChunk;
+
+        meshTemplate.ubo[3] = nullptr;
+        meshTemplate.ubo[4] = frags[i];
+
+        meshTemplate.element = DrawElementMode::TRIANGLES;
+        meshTemplate.start = 0;
+        meshTemplate.end = 6;
+
+        //Make mesh
+        HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
+        drawStage->meshesToRender = std::make_shared<MeshesToRender>();
+        drawStage->meshesToRender->meshes.push_back(hmesh);
+
+        ///3. Reassign previous frame
+        prevStage = drawStage;
+    }
+
+    //And the final is ffxglow to screen
+    {
+        auto config = m_api->getConfig();
+        auto glow = m_currentGlow;
+        auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+        ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self) -> void {
             auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
             meshblockVS.x = 1;
             meshblockVS.y = 1;
-            meshblockVS.z = 0;
-            meshblockVS.w = 0;
+            meshblockVS.z = 0; //mix_coeficient
+            meshblockVS.w = config->getUseGaussBlur() ? fminf(0.5f, glow) : 0; //glow multiplier
         });
 
+        auto shader = m_api->hDevice->getShader("fullScreen_quad", nullptr);
+        gMeshTemplate meshTemplate(quadBindings, shader);
+        meshTemplate.meshType = MeshType::eGeneralMesh;
+        meshTemplate.depthWrite = false;
+        meshTemplate.depthCulling = false;
+        meshTemplate.backFaceCulling = false;
+        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
-        auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-        ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self) -> void {
-            auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
-            static const float s_texOffsetX[4] = {-1, 0, 0, -1};
-            static const float s_texOffsetY[4] = {2, 2, -1, -1};;
+        meshTemplate.texture.resize(2);
+        meshTemplate.texture[0] = resultDrawStage->target->getAttachment(0);
+        meshTemplate.texture[1] = prevStage->target->getAttachment(0);
 
-            for (int i = 0; i < 4; i++) {
-                meshblockVS.texOffsetX[i] = s_texOffsetX[i];
-                meshblockVS.texOffsetY[i] = s_texOffsetY[i];
-            }
-        });
-
-
-        auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-        ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self) -> void {
-            auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
-            static const float s_texOffsetX[4] = {-6, -1, 1, 6};
-            static const float s_texOffsetY[4] = {0, 0, 0, 0};;
-
-            for (int i = 0; i < 4; i++) {
-                meshblockVS.texOffsetX[i] = s_texOffsetX[i];
-                meshblockVS.texOffsetY[i] = s_texOffsetY[i];
-            }
-        });
-        auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-        ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self) -> void {
-            auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
-            static const float s_texOffsetX[4] = {0, 0, 0, 0};
-            static const float s_texOffsetY[4] = {10, 2, -2, -10};;
-
-            for (int i = 0; i < 4; i++) {
-                meshblockVS.texOffsetX[i] = s_texOffsetX[i];
-                meshblockVS.texOffsetY[i] = s_texOffsetY[i];
-            }
-        });
-        HGUniformBufferChunk frags[3] = {ffxGaussFrag, ffxGaussFrag2, ffxGaussFrag3};
-
-        HDrawStage prevStage = resultDrawStage;
-        for (int i = 0; i < 3; i++) {
-            ///1. Create draw stage
-            HDrawStage drawStage = std::make_shared<DrawStage>();
-
-            drawStage->drawStageDependencies = {prevStage};
-            drawStage->matricesForRendering = nullptr;
-            drawStage->setViewPort = true;
-            drawStage->viewPortDimensions = {{0, 0},
-                                             {resultDrawStage->viewPortDimensions.maxs[0] >> 2,
-                                                 resultDrawStage->viewPortDimensions.maxs[1] >> 2}};
-            drawStage->clearScreen = false;
-            drawStage->target = ((i & 1) > 0) ? frameB1 : frameB2;
-
-            ///2. Create mesh
-            auto shader = m_api->hDevice->getShader("fullScreen_ffxgauss4", nullptr);
-            gMeshTemplate meshTemplate(quadBindings, shader);
-            meshTemplate.meshType = MeshType::eGeneralMesh;
-            meshTemplate.depthWrite = false;
-            meshTemplate.depthCulling = false;
-            meshTemplate.backFaceCulling = false;
-            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
-
-            meshTemplate.texture.resize(1);
-            meshTemplate.texture[0] = prevStage->target->getAttachment(0);
-
-            meshTemplate.textureCount = 1;
-
-            meshTemplate.ubo[0] = nullptr;
-            meshTemplate.ubo[1] = nullptr;
-            meshTemplate.ubo[2] = vertexChunk;
-
-            meshTemplate.ubo[3] = nullptr;
-            meshTemplate.ubo[4] = frags[i];
-
-            meshTemplate.element = DrawElementMode::TRIANGLES;
-            meshTemplate.start = 0;
-            meshTemplate.end = 6;
-
-            //Make mesh
-            HGMesh hmesh =  m_api->hDevice->createMesh(meshTemplate);
-            drawStage->meshesToRender = std::make_shared<MeshesToRender>();
-            drawStage->meshesToRender->meshes.push_back(hmesh);
-
-            ///3. Reassign previous frame
-            prevStage = drawStage;
-        }
-
-        //And the final is ffxglow to screen
-        {
-            auto glow = this->m_currentGlow;
-            auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-            ffxGlowfragmentChunk->setUpdateHandler([glow](IUniformBufferChunk *self) -> void {
-                auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
-                meshblockVS.x = 1;
-                meshblockVS.y = 1;
-                meshblockVS.z = 0; //mix_coeficient
-                meshblockVS.w = fminf(0.5f, glow); //glow multiplier
-            });
-
-            auto shader = m_api->hDevice->getShader("fullScreen_quad", nullptr);
-            gMeshTemplate meshTemplate(quadBindings, shader);
-            meshTemplate.meshType = MeshType::eGeneralMesh;
-            meshTemplate.depthWrite = false;
-            meshTemplate.depthCulling = false;
-            meshTemplate.backFaceCulling = false;
-            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
-
-            meshTemplate.texture.resize(2);
-            meshTemplate.texture[0] = resultDrawStage->target->getAttachment(0);
-            meshTemplate.texture[1] = prevStage->target->getAttachment(0);
-
-            meshTemplate.textureCount = 2;
+        meshTemplate.textureCount = 2;
 
 
-            meshTemplate.ubo[0] = nullptr;
-            meshTemplate.ubo[1] = nullptr;
-            meshTemplate.ubo[2] = vertexChunk;
+        meshTemplate.ubo[0] = nullptr;
+        meshTemplate.ubo[1] = nullptr;
+        meshTemplate.ubo[2] = vertexChunk;
 
-            meshTemplate.ubo[3] = nullptr;
-            meshTemplate.ubo[4] = ffxGlowfragmentChunk;
+        meshTemplate.ubo[3] = nullptr;
+        meshTemplate.ubo[4] = ffxGlowfragmentChunk;
 
-            meshTemplate.element = DrawElementMode::TRIANGLES;
-            meshTemplate.start = 0;
-            meshTemplate.end = 6;
+        meshTemplate.element = DrawElementMode::TRIANGLES;
+        meshTemplate.start = 0;
+        meshTemplate.end = 6;
 
-            //Make mesh
-            HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
-            origResultDrawStage->drawStageDependencies = {prevStage};
-            origResultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
-            origResultDrawStage->meshesToRender->meshes.push_back(hmesh);
-        }
+        //Make mesh
+        HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
+        origResultDrawStage->drawStageDependencies = {prevStage};
+        origResultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+        origResultDrawStage->meshesToRender->meshes.push_back(hmesh);
     }
 }
 

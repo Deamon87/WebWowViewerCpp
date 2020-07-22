@@ -18,6 +18,7 @@ public:
     std::shared_ptr<AdtObject> adtObject;
     bool wasLoaded = false;
     bool drawChunk[256] = {false};
+    bool drawWaterChunk[256] = {false};
     bool checkRefs[256] = {false};
 };
 

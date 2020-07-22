@@ -284,7 +284,7 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
         CChunkFileReader reader(*this->m2File.get());
         reader.processFile(*this, &M2Geom::m2FileTable);
     } else {
-        M2Data *m2Header = (M2Data *) this->m2File.get();
+        M2Data *m2Header = (M2Data *) this->m2File->data();
         this->m_m2Data = m2Header;
     }
     M2Data *m2Header = this->m_m2Data;

@@ -36,6 +36,7 @@ private:
     std::function <void(int mapId, int wdtFileId, float x, float y, float z)> openSceneByfdid = nullptr;
     std::function <void(int WMOFdid)> openWMOSceneByfdid = nullptr;
     std::function <void(int m2Fdid, std::vector<int> &replacementTextureIds)> openM2SceneByfdid = nullptr;
+    std::function <void(std::string m2FileName, std::vector<int> &replacementTextureIds)> openM2SceneByName = nullptr;
 
     std::function <void(float &cameraX,float &cameraY,float &cameraZ)> getCameraPos = nullptr;
 
@@ -49,6 +50,7 @@ private:
     std::function<void(float farPlane)> setFarPlane;
     std::function<void(int currentTime)> setCurrentTime;
     std::function<void(float farPlane)> setMovementSpeed;
+    std::function<void(bool value)> setUseGaussBlur;
     std::function<void(int value)> setThreadCount;
     std::function<void(int value)> setQuicksortCutoff;
     std::function<void()> unloadScene;
@@ -89,6 +91,7 @@ private:
     float prevMinimapZoom = 1;
     int prevMapId = -1;
     bool isWmoMap = false;
+    bool useGaussBlur = true;
     MapRecord prevMapRec;
 
 
@@ -122,11 +125,14 @@ public:
     void setOpenSceneByfdidCallback(std::function <void(int mapId, int wdtFileId, float x, float y, float z)> callback);
     void setOpenWMOSceneByfdidCallback(std::function <void(int wmoFDid)> callback);
     void setOpenM2SceneByfdidCallback(std::function <void(int m2FDid, std::vector<int> &replacementTextureIds)> callback);
+    void setOpenM2SceneByFilenameCallback(std::function<void(std::string, std::vector<int>&)> callback);
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
 
     void setFarPlaneChangeCallback(std::function<void(float farPlane)> callback);
     void setCurrentTimeChangeCallback(std::function<void(int currentTime)> callback);
     void setSpeedCallback(std::function<void(float speed)> callback);
+
+    void setUseGaussBlurCallback(std::function<void(bool value)> callback);
 
 
     void setThreadCountCallback(std::function<void(int value)> callback);

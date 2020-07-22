@@ -123,6 +123,7 @@ private:
     std::vector<HGMesh> adtLodMeshes;
 
     std::vector<CAaBox> tileAabb;
+    std::vector<CAaBox> waterTileAabb;
     std::vector<int> globIndexX;
     std::vector<int> globIndexY;
 

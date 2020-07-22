@@ -49,8 +49,8 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "where lo.ID = ? "
     ),
     getLiquidTypeInfo(m_sqliteDatabase,
-        "select ltxt.FileDataID from LiquidTypeXTexture ltxt where "
-        "ltxt.LiquidTypeID = ? order by ltxt.OrderIndex"
+        "select ltxt.FileDataID from LiquidTypeXTexture ltxt "
+        "where ltxt.LiquidTypeID = ? order by ltxt.OrderIndex"
     ),
     getZoneLightInfo(m_sqliteDatabase,
         "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"

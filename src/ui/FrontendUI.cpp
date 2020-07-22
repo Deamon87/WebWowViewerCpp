@@ -526,6 +526,17 @@ void FrontendUI::showQuickLinksDialog() {
         }
     }
 
+    if (ImGui::Button("Draenor login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByName) {
+            openM2SceneByName("interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(131982, replacementTextureFDids);
+        }
+    }
+
     ImGui::End();
 }
 
@@ -539,6 +550,13 @@ void FrontendUI::showSettingsDialog() {
                 setFarPlane(farPlane);
             }
         }
+
+        if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
+            if (setUseGaussBlur) {
+                setUseGaussBlur(useGaussBlur);
+            }
+        }
+
         ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
         if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
             if (setCurrentTime){
@@ -552,16 +570,18 @@ void FrontendUI::showSettingsDialog() {
             }
         }
 
-        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
-            if (setThreadCount){
-                setThreadCount(threadCount);
-            }
-        }
-        if (ImGui::SliderInt("QuickSort cutoff", &quickSortCutoff, 1, 1000)) {
-            if (setQuicksortCutoff){
-                setQuicksortCutoff(quickSortCutoff);
-            }
-        }
+//        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
+//            if (setThreadCount){
+//                setThreadCount(threadCount);
+//            }
+//        }
+//        if (ImGui::SliderInt("QuickSort cutoff", &quickSortCutoff, 1, 1000)) {
+//            if (setQuicksortCutoff){
+//                setQuicksortCutoff(quickSortCutoff);
+//            }
+//        }
+
+
 
 
         ImGui::End();
@@ -728,3 +748,9 @@ void FrontendUI::setOpenM2SceneByfdidCallback(std::function<void(int, std::vecto
     this->openM2SceneByfdid = callback;
 }
 
+void FrontendUI::setOpenM2SceneByFilenameCallback(std::function<void(std::string, std::vector<int>&)> callback) {
+    this->openM2SceneByName = callback;
+}
+void FrontendUI::setUseGaussBlurCallback(std::function<void(bool value)> callback) {
+    this->setUseGaussBlur = callback;
+}

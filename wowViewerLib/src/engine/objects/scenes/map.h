@@ -129,6 +129,8 @@ private:
                        mathfu::mat4 &viewPerspectiveMat,
                        int viewRenderOrder,
                        HCullStage cullStage);
+
+    void doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage) const;
 };
 
 

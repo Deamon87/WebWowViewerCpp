@@ -21,7 +21,7 @@ private:
     std::thread updateThread;
     std::thread loadingResourcesThread;
 
-    bool m_supportThreads = true;
+    bool m_supportThreads = false;
     bool m_isTerminating = false;
 
 

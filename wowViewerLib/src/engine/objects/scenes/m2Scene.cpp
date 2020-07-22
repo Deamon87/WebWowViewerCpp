@@ -149,12 +149,16 @@ void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateSt
         blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
         blockPSVS->uViewUp = renderMats->viewUp;
 
-        blockPSVS->extLight.uExteriorAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
-        blockPSVS->extLight.uExteriorHorizontAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
-        blockPSVS->extLight.uExteriorGroundAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
+
+        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+        blockPSVS->extLight.uExteriorAmbientColor = ambient;
+        blockPSVS->extLight.uExteriorHorizontAmbientColor = ambient;
+        blockPSVS->extLight.uExteriorGroundAmbientColor = ambient;
         blockPSVS->extLight.uExteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,1.0);
         blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(0.0,0.0,0.0,1.0);
     });
+
+    additionalChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
 
     std::sort(resultDrawStage->meshesToRender->meshes.begin(),
               resultDrawStage->meshesToRender->meshes.end(),

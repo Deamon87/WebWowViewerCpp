@@ -381,13 +381,13 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
 //    {
-//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=3122f021ed54960df43a84a6239c3827&cdnconfig=5187cdfd6fee12b4a0d53003e8249635&filename=";
-//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=3122f021ed54960df43a84a6239c3827&cdnconfig=5187cdfd6fee12b4a0d53003e8249635&filename=data&filedataid=";
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=679386e82870b537ae98416ec461931a&cdnconfig=2aae82f313c31defc6f0df94f3c1ea00&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=679386e82870b537ae98416ec461931a&cdnconfig=2aae82f313c31defc6f0df94f3c1ea00&filename=data&filedataid=";
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-//        processor = new HttpRequestProcessor(url, urlFileId);
-        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
+        processor = new HttpRequestProcessor(url, urlFileId);
+//        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
 ////        processor->setThreaded(false);
 ////
         processor->setThreaded(true);
@@ -446,6 +446,14 @@ int main(){
         currentScene = std::make_shared<M2Scene>(&apiContainer, m2FDid, -1);
         currentScene->setReplaceTextureArray(replacementTextureIds);
 
+        apiContainer.getConfig()->setBCLightHack(true);
+
+        apiContainer.camera->setCameraPos(0, 0, 0);
+    });
+    frontendUI->setOpenM2SceneByFilenameCallback([&currentScene, &apiContainer](std::string m2FileName, std::vector<int> &replacementTextureIds) {
+        currentScene = std::make_shared<M2Scene>(&apiContainer, m2FileName, -1);
+        currentScene->setReplaceTextureArray(replacementTextureIds);
+
         apiContainer.camera->setCameraPos(0, 0, 0);
     });
 
@@ -464,6 +472,12 @@ int main(){
         auto conf = apiContainer.getConfig();
         conf->setThreadCount(value);
     });
+
+    frontendUI->setUseGaussBlurCallback([&apiContainer](bool value) -> void {
+        auto conf = apiContainer.getConfig();
+        conf->setUseGaussBlur(value);
+    });
+
     frontendUI->setQuicksortCutoffCallback([&apiContainer](int value) -> void {
         auto conf = apiContainer.getConfig();
         conf->setQuickSortCutoff(value);
@@ -559,7 +573,9 @@ int main(){
         double deltaTime = currentFrame - lastFrame;
 
         if (processor) {
-            processor->processRequests(false);
+            if (!processor->getThreaded()) {
+                processor->processRequests(false);
+            }
             processor->processResults(10);
         }
 //        if (windowSizeChanged) {
@@ -608,6 +624,7 @@ int main(){
         std::vector<HDrawStage> uiDependecies = {};
         bool clearOnUi = true;
         auto clearColor = apiContainer.getConfig()->getClearColor();
+
         if (currentScene != nullptr) {
             auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
             auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);

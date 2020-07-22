@@ -60,7 +60,10 @@ public:
                                         std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                         std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 
-    void checkSkyScenes(const StateForConditions &state, std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates);
+    void checkSkyScenes(const StateForConditions &state, std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                        const mathfu::vec4 &cameraPos,
+                        const std::vector<mathfu::vec4> &frustumPlanes,
+                        const std::vector<mathfu::vec3> &frustumPoints);
 };
 
 

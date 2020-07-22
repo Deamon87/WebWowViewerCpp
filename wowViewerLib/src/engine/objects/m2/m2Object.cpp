@@ -144,6 +144,8 @@ static struct {
         { +M2PixelShader::Combiners_Mod_Mod_Mod_Const,                 +M2VertexShader::Color_T1_T2_T3, 2, 2 },
         { +M2PixelShader::Combiners_Opaque,                            +M2VertexShader::Diffuse_T1, 0, 0 },
         { +M2PixelShader::Combiners_Mod_Mod2x,                         +M2VertexShader::Diffuse_EdgeFade_T1_T2, 1, 1 },
+        { +M2PixelShader::Combiners_Mod,                               +M2VertexShader::Diffuse_EdgeFade_T1, 1, 1 },
+        { +M2PixelShader::Combiners_Opaque_Mod_Add_Wgt,                +M2VertexShader::Diffuse_EdgeFade_T1_T2, 1, 1 },
 };
 
 int getVertexShaderId(int textureCount, int16_t shaderId) {
@@ -151,7 +153,7 @@ int getVertexShaderId(int textureCount, int16_t shaderId) {
     if ( shaderId < 0 )
     {
         int vertexShaderId = shaderId & 0x7FFF;
-        if ( (unsigned int)vertexShaderId >= 0x22 ) {
+        if ( (unsigned int)vertexShaderId >= (*(&M2ShaderTable + 1) - M2ShaderTable) ) {
             std::cout << "Wrong shaderId for vertex shader";
             assert(false);
         }
@@ -209,7 +211,7 @@ int getPixelShaderId(int textureCount, int16_t shaderId) {
     if ( shaderId < 0 )
     {
         int pixelShaderId = shaderId & 0x7FFF;
-        if ( (unsigned int)pixelShaderId >= 0x22 ) {
+        if ( (unsigned int)pixelShaderId >= (*(&M2ShaderTable + 1) - M2ShaderTable) ) {
             std::cout << "Wrong shaderId for pixel shader";
             assert(false);
         }
@@ -449,6 +451,7 @@ void M2Object::createAABB() {
         //this.diameter = vec3.distance(worldAABB[0],worldAABB[1]);
         this->colissionAabb = worldAABB;
     }
+    m_hasAABB = true;
 }
 
 
@@ -493,6 +496,8 @@ void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacem
     m_placementInvertMatrix = invertPlacementMatrix;
 
     m_localUpVector = (invertPlacementMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
+
+    hasModf0x2Flag = def.flag_0x2;
 }
 
 void M2Object::createPlacementMatrix(SMDoodadDef &def) {
@@ -855,36 +860,15 @@ void M2Object::debugDumpAnimationSequences() {
 bool M2Object::doPostLoad(){
     //0. If loading procedures were already done - exit
     if (this->m_loaded) return false;
-    if (!this->m_loaded && !this->m_loading) {
-        this->startLoading();
-        return false;
-    }
 
     //1. Check if .m2 files is loaded
     if (m_m2Geom == nullptr) return false;
     if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return false;
+    this->createAABB();
 
-    //2. Check if .skin file is loaded
-    if (m_skinGeom == nullptr) {
-        Cache<SkinGeom> *skinGeomCache = m_api->cacheStorage->getSkinGeomCache();
-        if (m_m2Geom->skinFileDataIDs.size() > 0) {
-            assert(m_m2Geom->skinFileDataIDs.size() > 0);
-            m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
-        } else if (!useFileId){
-            assert(m_nameTemplate.size() > 0);
-            std::string skinFileName = m_nameTemplate + "00.skin";
-            m_skinGeom = skinGeomCache->get(skinFileName);
-        }
+    if (m_skinGeom == nullptr || m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
+    if (m_m2Geom->m_skid > 0 && m_skelGeom->getStatus() != FileStatus::FSLoaded) {
         return false;
-    }
-    if (m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
-    if (m_m2Geom->m_skid > 0) {
-        if (m_skelGeom == nullptr) {
-            auto skelCache = m_api->cacheStorage->getSkelCache();
-            m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
-            return false;
-        }
-        if (m_skelGeom->getStatus() != FileStatus::FSLoaded) return false;
     }
 
     //3. Do post load procedures
@@ -892,7 +876,7 @@ bool M2Object::doPostLoad(){
 
     this->createVertexBindings();
 
-    this->createAABB();
+
     this->createMeshes();
     this->initAnimationManager();
     this->initBoneAnimMatrices();
@@ -1021,11 +1005,17 @@ bool M2Object::getIsInstancable() {
 }
 const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const std::vector<mathfu::vec4> &frustumPlanes, const std::vector<mathfu::vec3> &frustumPoints) {
     m_cullResult = false;
-    if (!m_loaded) {
-        m_cullResult = true;
-        return true;
-    }
 
+    if (!this->m_hasAABB) {
+        if (!this->m_loaded && !this->m_loading) {
+            this->startLoading();
+        }
+        if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return false;
+        if (m_m2Geom != nullptr) {
+            this->createAABB();
+        }
+        return false;
+    }
 
     if (m_alwaysDraw) {
         m_cullResult = true;
@@ -1329,6 +1319,32 @@ void M2Object::createMeshes() {
 }
 
 void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
+    //2. Check if .skin file is loaded
+    if (m_m2Geom == nullptr) {
+        return;
+    }
+
+    if (m_skinGeom == nullptr) {
+        Cache<SkinGeom> *skinGeomCache = m_api->cacheStorage->getSkinGeomCache();
+        if (m_m2Geom->skinFileDataIDs.size() > 0) {
+            assert(m_m2Geom->skinFileDataIDs.size() > 0);
+            m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
+        } else if (!useFileId){
+            assert(m_nameTemplate.size() > 0);
+            std::string skinFileName = m_nameTemplate + "00.skin";
+            m_skinGeom = skinGeomCache->get(skinFileName);
+        }
+        return;
+    }
+
+    if (m_m2Geom->m_skid > 0) {
+        if (m_skelGeom == nullptr) {
+            auto skelCache = m_api->cacheStorage->getSkelCache();
+            m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
+            return;
+        }
+    }
+
     if (!m_loaded) return;
 
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
