@@ -66,6 +66,7 @@ enum class M2PixelShader : int {
     Combiners_Mod_Depth = 33,
     Illum = 34,
     Combiners_Mod_Mod_Mod_Const = 35,
+    NewUnkCombiner = 36
 };
 
 enum class M2VertexShader : int {
@@ -105,11 +106,12 @@ EGxBlendEnum M2BlendingModeToEGxBlendEnum [8] =
         EGxBlendEnum::GxBlend_BlendAdd
     };
 
-static struct {
+struct M2Shaders{
     unsigned int pixel;
     unsigned int vertex;
     unsigned int hull;
-    unsigned int domain;} M2ShaderTable[] = {
+    unsigned int domain;};
+static std::array<M2Shaders, 36> M2ShaderTable = {{
         { +M2PixelShader::Combiners_Opaque_Mod2xNA_Alpha,              +M2VertexShader::Diffuse_T1_Env, 1, 1 },
         { +M2PixelShader::Combiners_Opaque_AddAlpha,                   +M2VertexShader::Diffuse_T1_Env, 1, 1 },
         { +M2PixelShader::Combiners_Opaque_AddAlpha_Alpha,             +M2VertexShader::Diffuse_T1_Env, 1, 1 },
@@ -145,15 +147,15 @@ static struct {
         { +M2PixelShader::Combiners_Opaque,                            +M2VertexShader::Diffuse_T1, 0, 0 },
         { +M2PixelShader::Combiners_Mod_Mod2x,                         +M2VertexShader::Diffuse_EdgeFade_T1_T2, 1, 1 },
         { +M2PixelShader::Combiners_Mod,                               +M2VertexShader::Diffuse_EdgeFade_T1, 1, 1 },
-        { +M2PixelShader::Combiners_Opaque_Mod_Add_Wgt,                +M2VertexShader::Diffuse_EdgeFade_T1_T2, 1, 1 },
-};
+        { +M2PixelShader::NewUnkCombiner,                              +M2VertexShader::Diffuse_EdgeFade_T1_T2, 1, 1 },
+}};
 
 int getVertexShaderId(int textureCount, int16_t shaderId) {
     int result;
     if ( shaderId < 0 )
     {
         int vertexShaderId = shaderId & 0x7FFF;
-        if ( (unsigned int)vertexShaderId >= (*(&M2ShaderTable + 1) - M2ShaderTable) ) {
+        if ( (unsigned int)vertexShaderId >= M2ShaderTable.size()) {
             std::cout << "Wrong shaderId for vertex shader";
             assert(false);
         }
@@ -186,7 +188,7 @@ int getVertexShaderId(int textureCount, int16_t shaderId) {
 }
 
 int getPixelShaderId(int textureCount, int16_t shaderId) {
-    static const uint32_t array1[] = {
+    static const std::array<uint32_t, 8> array1 = {
             +M2PixelShader::Combiners_Mod_Mod2x,
             +M2PixelShader::Combiners_Mod_Mod,
             +M2PixelShader::Combiners_Mod_Mod2xNA,
@@ -196,7 +198,7 @@ int getPixelShaderId(int textureCount, int16_t shaderId) {
             +M2PixelShader::Combiners_Mod_Mod,
             +M2PixelShader::Combiners_Mod_Add
     };
-    static const uint32_t array2[] = {
+    static const std::array<uint32_t, 8> array2 = {
             +M2PixelShader::Combiners_Opaque_Mod2x,
             +M2PixelShader::Combiners_Opaque_Mod,
             +M2PixelShader::Combiners_Opaque_Mod2xNA,
@@ -211,7 +213,7 @@ int getPixelShaderId(int textureCount, int16_t shaderId) {
     if ( shaderId < 0 )
     {
         int pixelShaderId = shaderId & 0x7FFF;
-        if ( (unsigned int)pixelShaderId >= (*(&M2ShaderTable + 1) - M2ShaderTable) ) {
+        if ( (unsigned int)pixelShaderId >= M2ShaderTable.size()) {
             std::cout << "Wrong shaderId for pixel shader";
             assert(false);
         }
@@ -223,11 +225,54 @@ int getPixelShaderId(int textureCount, int16_t shaderId) {
     }
     else
     {
-        const uint32_t * arrayPointer = &array2[0];
-        if ( shaderId & 0x70 )
-            arrayPointer = &array1[0];
+        /*
+         * //For future reference. The arrays are these cases, with inbetween filled with default value
+           if ( shaderId & 0x70 ) {
+            switch (shaderId & 7) {
+                case 3 :
+                    result = +M2PixelShader::Combiners_Mod_Add;
+                    break;
+                case 4 :
+                    result = +M2PixelShader::Combiners_Mod_Mod2x;
+                    break;
 
-        result = arrayPointer[((uint8_t)shaderId ^ 4) & 7];
+                case 6 :
+                    result = +M2PixelShader::Combiners_Mod_Mod2xNA;
+                    break;
+                case 7 :
+                    result = +M2PixelShader::Combiners_Mod_AddNA;
+                    break;
+
+                default:
+                    result = +M2PixelShader::Combiners_Mod_Mod;
+                    break;
+            }
+        } else {
+            switch (shaderId & 7) {
+                case 0 :
+                    result = +M2PixelShader::Combiners_Opaque_Opaque;
+                    break;
+                case 3:
+                case 7:
+                    result = +M2PixelShader::Combiners_Opaque_AddAlpha;
+                    break;
+                case 4:
+                    result = +M2PixelShader::Combiners_Opaque_Mod2x;
+                    break;
+                case 6:
+                    result = +M2PixelShader::Combiners_Opaque_Mod2xNA;
+                    break;
+                default:
+                    result = +M2PixelShader::Combiners_Opaque_Mod;
+                    break;
+            }
+        }
+        */
+
+        result = array2[(shaderId) & 7];
+        if ( shaderId & 0x70 ) {
+            result = array1[(shaderId) & 7];
+        }
     }
     return result;
 }

@@ -67,6 +67,9 @@ public:
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
     void doPostLoad(HCullStage cullStage) override;
+
+    int getCameraNum() override ;
+    std::shared_ptr<ICamera> createCamera(int cameraNum);
 };
 
 

@@ -74,6 +74,9 @@ protected:
     std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) override ;
     std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
 
+    int getCameraNum() override {return 0;};
+    std::shared_ptr<ICamera> createCamera(int cameraNum) { return nullptr;};
+
     animTime_t getCurrentSceneTime() override ;
 
     virtual void getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,

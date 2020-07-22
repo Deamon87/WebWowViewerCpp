@@ -7,6 +7,7 @@
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/UniformBufferStructures.h"
+#include "../../camera/m2TiedCamera.h"
 
 void M2Scene::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
                                   HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
@@ -29,6 +30,9 @@ void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3
         Map::updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
     } else if (config->getUseM2AmbientLight()) {
         auto ambient = m_m2Object->getM2SceneAmbientLight();
+
+        if (ambient.Length() < 0.0001)
+            ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
         m_api->getConfig()->setExteriorAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
         m_api->getConfig()->setExteriorHorizontAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
@@ -126,6 +130,18 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
     }
 
     m_m2Object->setReplaceTextures(replaceTextures);
+}
+
+int M2Scene::getCameraNum() {
+    return m_m2Object->getCameraNum();
+}
+
+std::shared_ptr<ICamera> M2Scene::createCamera(int cameraNum) {
+    if (cameraNum < 0 || cameraNum >= getCameraNum()) {
+        return nullptr;
+    }
+
+    return std::make_shared<m2TiedCamera>(m_m2Object, cameraNum);
 }
 
 

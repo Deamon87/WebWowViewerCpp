@@ -258,6 +258,11 @@ public:
     void createVertexBindings();
 
     mathfu::vec3 getSunDir();
+    int getCameraNum() {
+        if (!getGetIsLoaded()) return 0;
+
+        return m_m2Geom->m_m2Data->cameras.size;
+    }
 };
 
 

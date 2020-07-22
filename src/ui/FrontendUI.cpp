@@ -20,12 +20,17 @@ static const GBufferBinding imguiBindings[3] = {
 };
 
 void FrontendUI::composeUI() {
+    m_api->getConfig()->setUseTimedGloabalLight(useTimedGlobalLight);
+    m_api->getConfig()->setUseM2AmbientLight(useM2AmbientLight);
+    m_api->getConfig()->setUseGaussBlur(useGaussBlur);
+
     if (this->fontTexture == nullptr)
         return;
 
-    if (fillAdtSelectionminimap && mapCanBeOpened) {
-        if (fillAdtSelectionminimap(adtSelectionMinimap, isWmoMap, mapCanBeOpened )) {
-            fillAdtSelectionminimap = nullptr;
+    if (mapCanBeOpened) {
+        if (!adtMinimapFilled && fillAdtSelectionminimap(adtSelectionMinimap, isWmoMap, mapCanBeOpened )) {
+//            fillAdtSelectionminimap = nullptr;
+            adtMinimapFilled = true;
         }
     }
 
@@ -94,9 +99,9 @@ void FrontendUI::composeUI() {
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
                         ImGui::GetIO().Framerate);
-            if(getCurrentAreaName) {
-                ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
-            }
+//            if(getCurrentAreaName) {
+            ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
+//            }
             ImGui::End();
         }
     }
@@ -143,7 +148,7 @@ void FrontendUI::filterMapList(std::string text) {
 
 void FrontendUI::showMapSelectionDialog() {
     if (showSelectMap) {
-        if (mapList.size() == 0 && getMapList) {
+        if (mapList.size() == 0) {
             getMapList(mapList);
             refilterIsNeeded = true;
 
@@ -198,12 +203,13 @@ void FrontendUI::showMapSelectionDialog() {
                     if (ImGui::Selectable(mapListStringMap[i][0].c_str(), selected == i, ImGuiSelectableFlags_SpanAllColumns)) {
                         if (mapRec.ID != prevMapId) {
                             mapCanBeOpened = true;
+                            adtMinimapFilled = false;
                             prevMapRec = mapRec;
-                            if (getAdtSelectionMinimap) {
-                                isWmoMap = false;
-                                adtSelectionMinimap = {};
-                                getAdtSelectionMinimap(mapRec.WdtFileID);
-                            }
+
+                            isWmoMap = false;
+                            adtSelectionMinimap = {};
+                            getAdtSelectionMinimap(mapRec.WdtFileID);
+
                         }
                         prevMapId = mapRec.ID;
                         selected = i;
@@ -417,28 +423,6 @@ void FrontendUI::setGetCameraPos(std::function<void(float &cameraX, float &camer
     getCameraPos = callback;
 }
 
-void FrontendUI::setGetAdtSelectionMinimap(std::function<void(int wdtFileDataId)> callback) {
-    getAdtSelectionMinimap = callback;
-}
-
-void FrontendUI::setFillAdtSelectionMinimap(std::function<bool (std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists)> callback) {
-    fillAdtSelectionminimap = callback;
-}
-
-void FrontendUI::setGetMapList(std::function<void(std::vector<MapRecord> &mapList)> callback) {
-    getMapList = callback;
-}
-
-void FrontendUI::setGetCurrentAreaName( std::function <std::string()> callback) {
-    getCurrentAreaName = callback;
-}
-
-void FrontendUI::setFarPlaneChangeCallback(std::function<void(float farPlane)> callback) {
-    setFarPlane = callback;
-}
-void FrontendUI::setSpeedCallback(std::function<void(float speed)> callback) {
-    setMovementSpeed = callback;
-}
 
 void FrontendUI::showQuickLinksDialog() {
     if (!showQuickLinks) return;
@@ -535,6 +519,8 @@ void FrontendUI::showQuickLinksDialog() {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(131982, replacementTextureFDids);
             //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+            m_api->getConfig()->setBCLightHack(true);
+
         }
     }
     if (ImGui::Button("Wrath login screen", ImVec2(-1, 0))) {
@@ -552,29 +538,138 @@ void FrontendUI::showSettingsDialog() {
     if(showSettings) {
         ImGui::Begin("Settings", &showSettings);
         if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
-            if (setFarPlane){
-                setFarPlane(farPlane);
-            }
+            m_api->getConfig()->setFarPlane(farPlane);
         }
 
         if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
-            if (setUseGaussBlur) {
-                setUseGaussBlur(useGaussBlur);
-            }
+            m_api->getConfig()->setUseGaussBlur(useGaussBlur);
         }
 
         ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
         if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
-            if (setCurrentTime){
-                setCurrentTime(currentTime);
+            m_api->getConfig()->setCurrentTime(currentTime);
+        }
+
+
+        {
+            std::string currentCamera;
+            if (currentCameraNum == -1) {
+                currentCamera = "First person";
+            } else {
+                currentCamera = "Camera Num " + std::to_string(currentCameraNum);
+            }
+
+
+            ImGui::Text("Camera selection");
+            ImGui::SameLine();
+            if (ImGui::BeginCombo("##combo", currentCamera.c_str())) // The second parameter is the label previewed before opening the combo.
+            {
+                int cameraNum = getCameraNumCallback();
+
+                {
+                    std::string caption = "First person";
+                    if (ImGui::Selectable(currentCamera.c_str(), currentCameraNum == -1)) {
+                        setNewCameraCallback(-1);
+                        currentCameraNum = -1;
+                    }
+                }
+
+                for (int n = 0; n < cameraNum; n++)
+                {
+                    bool is_selected = (currentCameraNum == n); // You can store your selection however you want, outside or inside your objects
+                    std::string caption = "Camera Num " + std::to_string(currentCameraNum);
+                    if (ImGui::Selectable(caption.c_str(), is_selected)) {
+                        if (setNewCameraCallback(n)) {
+                            currentCameraNum = n;
+                        }
+                    }
+
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+                }
+                ImGui::EndCombo();
             }
         }
 
         if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 10)) {
-            if (setMovementSpeed){
-                setMovementSpeed(movementSpeed);
+            m_api->getConfig()->setMovementSpeed(movementSpeed);
+        }
+
+        if (ImGui::Checkbox("Use global timed light", &useTimedGlobalLight)) {
+            m_api->getConfig()->setUseTimedGloabalLight(useTimedGlobalLight);
+            if (useTimedGlobalLight) {
+                useM2AmbientLight = false;
+                m_api->getConfig()->setUseM2AmbientLight(useM2AmbientLight);
             }
         }
+
+        if (ImGui::Checkbox("Use ambient light from M2  (only for M2 scenes)", &useM2AmbientLight)) {
+            m_api->getConfig()->setUseM2AmbientLight(useM2AmbientLight);
+            if (useM2AmbientLight) {
+                useTimedGlobalLight = false;
+                m_api->getConfig()->setUseTimedGloabalLight(useTimedGlobalLight);
+            }
+        }
+        if (!useTimedGlobalLight && !useM2AmbientLight) {
+            {
+                auto ambient = m_api->getConfig()->getExteriorAmbientColor();
+                exteriorAmbientColor = {ambient.x, ambient.y, ambient.z};
+                ImVec4 col = ImVec4(ambient.x, ambient.y, ambient.z, 1.0);
+                if (ImGui::ColorButton("ExteriorAmbientColor##3b", col)) {
+                    ImGui::OpenPopup("Exterior Ambient picker");
+                }
+                ImGui::SameLine();
+                ImGui::Text("Exterior Ambient");
+
+                if (ImGui::BeginPopup("Exterior Ambient picker")) {
+                    if (ImGui::ColorPicker3("Exterior Ambient", exteriorAmbientColor.data())) {
+                        m_api->getConfig()->setExteriorAmbientColor(
+                            exteriorAmbientColor[0], exteriorAmbientColor[1], exteriorAmbientColor[2], 1.0);
+                    }
+                    ImGui::EndPopup();
+                }
+            }
+
+            {
+                auto horizontAmbient = m_api->getConfig()->getExteriorHorizontAmbientColor();
+                exteriorHorizontAmbientColor = {horizontAmbient.x, horizontAmbient.y, horizontAmbient.z};
+                ImVec4 col = ImVec4(horizontAmbient.x, horizontAmbient.y, horizontAmbient.z, 1.0);
+                if (ImGui::ColorButton("ExteriorHorizontAmbientColor##3b", col)) {
+                    ImGui::OpenPopup("Exterior Horizont Ambient picker");
+                }
+                ImGui::SameLine();
+                ImGui::Text("Exterior Horizont Ambient");
+
+                if (ImGui::BeginPopup("Exterior Horizont Ambient picker")) {
+                    if (ImGui::ColorPicker3("Exterior Horizont Ambient", exteriorHorizontAmbientColor.data())) {
+                        m_api->getConfig()->setExteriorHorizontAmbientColor(
+                            exteriorHorizontAmbientColor[0],
+                            exteriorHorizontAmbientColor[1], exteriorHorizontAmbientColor[2], 1.0);
+                    }
+                    ImGui::EndPopup();
+                }
+            }
+            {
+                auto groundAmbient = m_api->getConfig()->getExteriorGroundAmbientColor();
+                exteriorGroundAmbientColor = {groundAmbient.x, groundAmbient.y, groundAmbient.z};
+                ImVec4 col = ImVec4(groundAmbient.x, groundAmbient.y, groundAmbient.z, 1.0);
+
+                if (ImGui::ColorButton("ExteriorGroundAmbientColor##3b", col)) {
+                    ImGui::OpenPopup("Exterior Ground Ambient picker");
+                }
+                ImGui::SameLine();
+                ImGui::Text("Exterior Ground Ambient");
+
+                if (ImGui::BeginPopup("Exterior Ground Ambient picker")) {
+                    if (ImGui::ColorPicker3("Exterior Ground Ambient", exteriorGroundAmbientColor.data())) {
+                        m_api->getConfig()->setExteriorGroundAmbientColor(
+                            exteriorGroundAmbientColor[0],
+                            exteriorGroundAmbientColor[1], exteriorGroundAmbientColor[2], 1.0);
+                    }
+                }
+            }
+        }
+
 
 //        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
 //            if (setThreadCount){
@@ -594,19 +689,10 @@ void FrontendUI::showSettingsDialog() {
     }
 }
 
-void FrontendUI::setThreadCountCallback(std::function<void(int value)> callback) {
-    setThreadCount = callback;
-}
-
-void FrontendUI::setQuicksortCutoffCallback(std::function<void(int value)> callback) {
-    setQuicksortCutoff = callback;
-}
-
-void FrontendUI::setCurrentTimeChangeCallback(std::function<void(int value)> callback) {
-    setCurrentTime = callback;
-}
 
 void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
+    auto m_device = m_api->hDevice;
+
     if (this->fontTexture == nullptr) {
         ImGuiIO& io = ImGui::GetIO();
         unsigned char* pixels;
@@ -757,6 +843,48 @@ void FrontendUI::setOpenM2SceneByfdidCallback(std::function<void(int, std::vecto
 void FrontendUI::setOpenM2SceneByFilenameCallback(std::function<void(std::string, std::vector<int>&)> callback) {
     this->openM2SceneByName = callback;
 }
-void FrontendUI::setUseGaussBlurCallback(std::function<void(bool value)> callback) {
-    this->setUseGaussBlur = callback;
+
+void FrontendUI::getMapList(std::vector<MapRecord> &mapList) {
+    if (m_api->databaseHandler == nullptr)  return;
+
+    m_api->databaseHandler->getMapArray(mapList);
+}
+
+void FrontendUI::setGetCameraNum(std::function <int()> callback) {
+    getCameraNumCallback = callback;
+}
+void FrontendUI::setSelectNewCamera(std::function <bool(int cameraNum)> callback) {
+    setNewCameraCallback = callback;
+}
+
+bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap,
+                                         bool &wdtFileExists) {
+    if (m_wdtFile == nullptr) return false;
+
+    if (m_wdtFile->getStatus() == FileStatus::FSRejected) {
+        wdtFileExists = false;
+        isWMOMap = false;
+        return false;
+    }
+
+    if (m_wdtFile->getStatus() != FileStatus::FSLoaded) return false;
+
+    isWMOMap = m_wdtFile->mphd->flags.wdt_uses_global_map_obj != 0;
+
+    for (int i = 0; i < 64; i++) {
+        for (int j = 0; j < 64; j++) {
+            if (m_wdtFile->mapFileDataIDs[i*64 + j].minimapTexture > 0) {
+                auto texture = m_api->cacheStorage->getTextureCache()->getFileId(m_wdtFile->mapFileDataIDs[i*64 + j].minimapTexture);
+                minimap[i][j] = m_api->hDevice->createBlpTexture(texture, false, false);
+            } else {
+                minimap[i][j] = nullptr;
+            }
+        }
+    }
+    return true;
+}
+
+std::string FrontendUI::getCurrentAreaName() {
+    auto conf = m_api->getConfig();
+    return conf->getAreaName();
 }

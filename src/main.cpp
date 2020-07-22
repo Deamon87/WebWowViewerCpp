@@ -408,7 +408,7 @@ int main(){
 
     //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
-    std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(hdevice);
+    std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(&apiContainer);
     frontendUI->overrideCascOpened(true);
     frontendUI->setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
         CascRequestProcessor *newProcessor = nullptr;
@@ -448,7 +448,7 @@ int main(){
 
 
 
-//        apiContainer.getConfig()->setBCLightHack(true);
+        apiContainer.getConfig()->setBCLightHack(false);
 //
         apiContainer.camera->setCameraPos(0, 0, 0);
     });
@@ -459,35 +459,7 @@ int main(){
         apiContainer.camera->setCameraPos(0, 0, 0);
     });
 
-    frontendUI->setFarPlaneChangeCallback([&apiContainer](float farPlane) -> void {
-        auto conf = apiContainer.getConfig();
-        conf->setFarPlane(farPlane);
-        conf->setFarPlaneForCulling(farPlane+50);
-    });
-    frontendUI->setSpeedCallback([&apiContainer](float movementSpeed) -> void {
-        auto conf = apiContainer.getConfig();
-        conf->setMovementSpeed(movementSpeed);
 
-        apiContainer.camera->setMovementSpeed(movementSpeed);
-    });
-    frontendUI->setThreadCountCallback([&apiContainer](int value) -> void {
-        auto conf = apiContainer.getConfig();
-        conf->setThreadCount(value);
-    });
-
-    frontendUI->setUseGaussBlurCallback([&apiContainer](bool value) -> void {
-        auto conf = apiContainer.getConfig();
-        conf->setUseGaussBlur(value);
-    });
-
-    frontendUI->setQuicksortCutoffCallback([&apiContainer](int value) -> void {
-        auto conf = apiContainer.getConfig();
-        conf->setQuickSortCutoff(value);
-    });
-    frontendUI->setGetCurrentAreaName([&apiContainer]()->std::string {
-        auto conf = apiContainer.getConfig();
-        return conf->getAreaName();
-    });
     frontendUI->setUnloadScene([&apiContainer, &currentScene]()->void {
         if (apiContainer.cacheStorage) {
             apiContainer.cacheStorage->actuallDropCache();
@@ -496,10 +468,26 @@ int main(){
         //scene->setSceneWithFileDataId(-1, 0, -1);
     });
 
-    frontendUI->setCurrentTimeChangeCallback([&apiContainer](int value) -> void {
-        auto conf = apiContainer.getConfig();
-        conf->setCurrentTime(value);
+    frontendUI->setGetCameraNum([&apiContainer, &currentScene]()-> int {
+        if (currentScene != nullptr) {
+            return currentScene->getCameraNum();
+        }
+
+        return 0;
     });
+    frontendUI->setSelectNewCamera([&apiContainer, &currentScene](int cameraNum)-> bool {
+        if (currentScene == nullptr) return false;
+
+        auto newCamera = currentScene->createCamera(cameraNum);
+        if (newCamera == nullptr) {
+            apiContainer.camera = std::make_shared<FirstPersonCamera>();
+            return false;
+        }
+
+        apiContainer.camera = newCamera;
+        return true;
+    });
+
 
     frontendUI->setGetCameraPos([&apiContainer](float &cameraX,float &cameraY,float &cameraZ) -> void {
         float currentCameraPos[4] = {0,0,0,0};
@@ -508,42 +496,6 @@ int main(){
         cameraY = currentCameraPos[1];
         cameraZ = currentCameraPos[2];
     });
-    frontendUI->setGetAdtSelectionMinimap([&frontendUI, &apiContainer](int wdtFileDataId) {
-        auto wdtFile = apiContainer.cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
-
-
-        frontendUI->setFillAdtSelectionMinimap([&frontendUI, wdtFile, &apiContainer](std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists) -> bool {
-            if (wdtFile->getStatus() == FileStatus::FSRejected) {
-                wdtFileExists = false;
-                isWMOMap = false;
-                return false;
-            }
-
-            if (wdtFile->getStatus() != FileStatus::FSLoaded) return false;
-
-            isWMOMap = wdtFile->mphd->flags.wdt_uses_global_map_obj != 0;
-
-            for (int i = 0; i < 64; i++) {
-                for (int j = 0; j < 64; j++) {
-                    if (wdtFile->mapFileDataIDs[i*64 + j].minimapTexture > 0) {
-                        auto texture = apiContainer.cacheStorage->getTextureCache()->getFileId(wdtFile->mapFileDataIDs[i*64 + j].minimapTexture);
-                        minimap[i][j] = apiContainer.hDevice->createBlpTexture(texture, false, false);
-                    } else {
-                        minimap[i][j] = nullptr;
-                    }
-                }
-            }
-            return true;
-        });
-    });
-    frontendUI->setGetMapList([&sqliteDB](std::vector<MapRecord> &mapList) -> void {
-        if (sqliteDB == nullptr)  return;
-
-        sqliteDB->getMapArray(mapList);
-    });
-
-
-
 
 
     glfwSetWindowUserPointer(window, &apiContainer);

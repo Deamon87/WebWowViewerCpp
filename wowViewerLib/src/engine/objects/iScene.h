@@ -25,5 +25,8 @@ public:
     virtual void doPostLoad(HCullStage cullStage) = 0;
     virtual void update(HUpdateStage updateStage) = 0;
     virtual void updateBuffers(HCullStage cullStage) = 0;
+
+    virtual int getCameraNum() = 0;
+    virtual std::shared_ptr<ICamera> createCamera(int cameraNum) = 0;
 };
 #endif //WEBWOWVIEWERCPP_IINNERSCENEAPI_H
