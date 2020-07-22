@@ -568,7 +568,7 @@ void FrontendUI::showSettingsDialog() {
 
                 {
                     std::string caption = "First person";
-                    if (ImGui::Selectable(currentCamera.c_str(), currentCameraNum == -1)) {
+                    if (ImGui::Selectable(caption.c_str(), currentCameraNum == -1)) {
                         setNewCameraCallback(-1);
                         currentCameraNum = -1;
                     }
@@ -577,7 +577,7 @@ void FrontendUI::showSettingsDialog() {
                 for (int n = 0; n < cameraNum; n++)
                 {
                     bool is_selected = (currentCameraNum == n); // You can store your selection however you want, outside or inside your objects
-                    std::string caption = "Camera Num " + std::to_string(currentCameraNum);
+                    std::string caption = "Camera Num " + std::to_string(n);
                     if (ImGui::Selectable(caption.c_str(), is_selected)) {
                         if (setNewCameraCallback(n)) {
                             currentCameraNum = n;

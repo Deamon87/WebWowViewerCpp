@@ -33,7 +33,8 @@ HCameraMatrices m2TiedCamera::getCameraMatrices(float fov, float canvasAspect, f
     farPlane = m_lastCameraResult.far_clip;
     nearPlane = m_lastCameraResult.near_clip;
 
-    fov = m_lastCameraResult.diagFov/ sqrt(1 + canvasAspect*canvasAspect);
+//    canvasAspect = 1.0f / canvasAspect;
+    fov = m_lastCameraResult.diagFov / sqrt(1.0f + canvasAspect*canvasAspect);
 
     HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
     cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(

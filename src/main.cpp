@@ -552,6 +552,10 @@ int main(){
         auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
         auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
         //Frustum matrix with reversed Z
+
+        bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+        apiContainer.hDevice->setInvertZ(isInfZSupported);
+        if (isInfZSupported)
         {
             float f = 1.0f / tan(fov / 2.0f);
             cameraMatricesRendering->perspectiveMat = mathfu::mat4(

@@ -107,7 +107,7 @@ public:
     void beginFrame() override ;
     void commitFrame() override ;
     void setViewPortDimensions(float x, float y, float width, float height) override;
-
+    void setInvertZ(bool value) override {m_isInvertZ = value;};
     void shrinkData() override;
 private:
     void drawMesh(HGMesh &hmesh);
@@ -145,6 +145,7 @@ protected:
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
     bool m_isInSkyBoxDepthMode = false;
+    bool m_isInvertZ = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL20 *m_lastBindIndexBuffer = nullptr;
 	IVertexBuffer* m_lastBindVertexBuffer = nullptr;

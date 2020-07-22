@@ -225,8 +225,8 @@ int getPixelShaderId(int textureCount, int16_t shaderId) {
     }
     else
     {
-        /*
-         * //For future reference. The arrays are these cases, with inbetween filled with default value
+
+         //For future reference. The arrays are these cases, with inbetween filled with default value
            if ( shaderId & 0x70 ) {
             switch (shaderId & 7) {
                 case 3 :
@@ -267,12 +267,12 @@ int getPixelShaderId(int textureCount, int16_t shaderId) {
                     break;
             }
         }
-        */
 
-        result = array2[(shaderId) & 7];
-        if ( shaderId & 0x70 ) {
-            result = array1[(shaderId) & 7];
-        }
+
+//        result = array2[(shaderId) & 7];
+//        if ( shaderId & 0x70 ) {
+//            result = array1[(shaderId) & 7];
+//        }
     }
     return result;
 }

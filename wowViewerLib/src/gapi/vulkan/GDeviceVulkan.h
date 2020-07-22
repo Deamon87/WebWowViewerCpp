@@ -142,6 +142,7 @@ public:
 
     virtual void setClearScreenColor(float r, float g, float b) override;
     virtual void setViewPortDimensions(float x, float y, float width, float height) override;
+    void setInvertZ(bool value) override {m_isInvertZ = value;};
 
 
     std::shared_ptr<GDescriptorSets> createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int images);
@@ -360,6 +361,7 @@ protected:
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
+    bool m_isInvertZ = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferVLK *m_lastBindIndexBuffer = nullptr;
     GVertexBufferVLK *m_lastBindVertexBuffer = nullptr;

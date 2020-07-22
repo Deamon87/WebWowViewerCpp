@@ -666,8 +666,30 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
         ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
+#ifndef __EMSCRIPTEN__
+    std::string debugMess =
+        "Drawing mesh "
+        " meshType = " + std::to_string((int)hmesh->getMeshType()) +
+        " priorityPlane = " + std::to_string(hmesh->priorityPlane()) +
+        " sortDistance = " + std::to_string(hmesh->getSortDistance()) +
+        " layer = " + std::to_string(hmesh->layer()) +
+        " blendMode = " + std::to_string((int)hmesh->getGxBlendMode());
+
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, (GLsizei)((uint64_t)this&0xfffffff), GLsizei(debugMess.size()), debugMess.c_str());
+
+    glDebugMessageInsert( GL_DEBUG_SOURCE_APPLICATION,
+                          GL_DEBUG_TYPE_MARKER, 1,
+                          GL_DEBUG_SEVERITY_LOW,
+                          GLsizei(debugMess.size()),
+                          debugMess.c_str()
+    );
+#endif
+
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 
+#ifndef __EMSCRIPTEN__
+    glPopDebugGroup();
+#endif
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
         ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->endConditionalRendering();
     }
@@ -1085,12 +1107,20 @@ float GDeviceGL33::getAnisLevel() {
 
 void GDeviceGL33::clearScreen() {
 #ifndef WITH_GLESv2
-    glClearDepthf(0.0f);
+    if (m_isInvertZ) {
+        glClearDepthf(0.0f);
+    } else {
+        glClearDepthf(1.0f);
+    }
 #else
     glClearDepthf(1.0f);
 #endif
     glDisable(GL_DEPTH_TEST);
-    glDepthFunc(GL_GEQUAL);
+    if (m_isInvertZ) {
+        glDepthFunc(GL_GEQUAL);
+    } else {
+        glDepthFunc(GL_LEQUAL);
+    }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);

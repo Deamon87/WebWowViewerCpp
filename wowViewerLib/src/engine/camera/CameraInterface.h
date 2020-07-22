@@ -23,6 +23,10 @@ public:
     virtual void tick(animTime_t timeDelta) = 0;
     virtual void setMovementSpeed(float value) = 0;
     virtual void setCameraOffset(float x, float y, float z) {};
+
+    virtual bool isCompatibleWithInfiniteZ() {
+        return true;
+    }
 };
 
 #endif //WOWVIEWERLIB_CAMERAINTERFACE_H

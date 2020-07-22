@@ -113,6 +113,7 @@ public:
     void beginFrame() override ;
     void commitFrame() override ;
     void setViewPortDimensions(float x, float y, float width, float height) override;
+    void setInvertZ(bool value) override {m_isInvertZ = value;};
 
     void shrinkData() override;
 
@@ -165,6 +166,7 @@ protected:
     int m_maxMultiSampling = 0;
     bool m_isInSkyBoxDepthMode = false;
     int8_t m_isScissorsEnabled = -1;
+    bool m_isInvertZ = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
 	IVertexBuffer* m_lastBindVertexBuffer = nullptr;
