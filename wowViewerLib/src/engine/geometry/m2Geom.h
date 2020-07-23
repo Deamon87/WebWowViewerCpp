@@ -12,6 +12,7 @@
 #include "../../gapi/interface/IDevice.h"
 #include "../persistance/helper/ChunkFileReader.h"
 #include "../ApiContainer.h"
+#include "../persistance/header/skinFileHeader.h"
 
 
 class M2Geom : public PersistentFile {
@@ -32,6 +33,7 @@ public:
     void process(HFileContent m2File, const std::string &fileName) override;
     HGVertexBuffer getVBO(IDevice &device);
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
+    HGVertexBufferBindings createDynamicVao(IDevice &device, SkinGeom *skinGeom, M2SkinSection *mesh);
 
     int findAnimationIndex(uint32_t anim_id);
     void loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t subAnimationId);

@@ -1280,7 +1280,21 @@ void M2Object::createBoundingBoxMesh() {
     boundingBoxMesh = m_api->hDevice->createMesh(meshTemplate);
 
     occlusionQuery = m_api->hDevice->createQuery(boundingBoxMesh);
+}
 
+bool M2Object::checkifBonesAreInRange(M2SkinSection *mesh) {
+    int minBone = 9999;
+    int maxBone = 0;
+
+    auto m2File = this->m_m2Geom->getM2Data();
+    for (int j = mesh->boneComboIndex; j < (mesh->boneComboIndex + mesh->boneCount); j++) {
+        auto boneIdx = *m2File->bone_lookup_table[j];
+        minBone = std::min<int>(minBone, boneIdx);
+        maxBone = std::max<int>(maxBone, boneIdx);
+    }
+
+    if (maxBone >= MAX_MATRIX_NUM)
+        return false;
 }
 
 void M2Object::createMeshes() {
@@ -1319,7 +1333,13 @@ void M2Object::createMeshes() {
             cacheRecord.boneInfluences = mesh->boneCount > 0 ? 1 : 0;
         }
         HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("m2Shader", &cacheRecord);
-        gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
+
+        auto finalBufferBindings = bufferBindings;
+        if (checkifBonesAreInRange(mesh)) {
+
+        }
+
+        gMeshTemplate meshTemplate(finalBufferBindings, shaderPermutation);
 
         int renderFlagIndex = textMaterial->materialIndex;
         auto renderFlag = m_m2Data->materials[renderFlagIndex];

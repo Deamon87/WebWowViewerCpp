@@ -452,6 +452,7 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(1396280, replacementTextureFDids);
+
         }
     }
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
@@ -537,19 +538,6 @@ void FrontendUI::showQuickLinksDialog() {
 void FrontendUI::showSettingsDialog() {
     if(showSettings) {
         ImGui::Begin("Settings", &showSettings);
-        if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
-            m_api->getConfig()->setFarPlane(farPlane);
-        }
-
-        if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
-            m_api->getConfig()->setUseGaussBlur(useGaussBlur);
-        }
-
-        ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
-        if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
-            m_api->getConfig()->setCurrentTime(currentTime);
-        }
-
 
         {
             std::string currentCamera;
@@ -590,6 +578,23 @@ void FrontendUI::showSettingsDialog() {
                 ImGui::EndCombo();
             }
         }
+        ImGui::Separator();
+
+        if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
+            m_api->getConfig()->setFarPlane(farPlane);
+        }
+
+        if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
+            m_api->getConfig()->setUseGaussBlur(useGaussBlur);
+        }
+
+        ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
+        if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
+            m_api->getConfig()->setCurrentTime(currentTime);
+        }
+
+
+
 
         if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 10)) {
             m_api->getConfig()->setMovementSpeed(movementSpeed);

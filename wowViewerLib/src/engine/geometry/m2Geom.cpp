@@ -370,6 +370,25 @@ HGVertexBuffer M2Geom::getVBO(IDevice &device) {
     return vertexVbo;
 }
 
+HGVertexBufferBindings M2Geom::createDynamicVao(IDevice &device, SkinGeom *skinGeom, M2SkinSection *mesh) {
+    std::vector<uint16_t > indicies(mesh->indexCount);
+
+    for (int i = 0; i < mesh->indexCount; i++) {
+        int index = mesh->indexStart + i;
+        indicies[i] = *skinGeom->getSkinData()->vertices.getElement(*skinGeom->getSkinData()->indices.getElement(index));
+    }
+
+    auto indexVbo = device.createIndexBuffer();
+    indexVbo->uploadData(
+        &indicies[0],
+        indicies.size() * sizeof(uint16_t));
+
+
+    std::vector<M2Vertex> vertexes(mesh->indexCount);
+
+    return nullptr;
+}
+
 HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {
     HGVertexBufferBindings bufferBindings = nullptr;
     if (vaoMap.find(skinGeom) != vaoMap.end()) {

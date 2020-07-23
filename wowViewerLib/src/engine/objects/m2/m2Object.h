@@ -141,6 +141,8 @@ private:
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &modelViewMat);
     bool checkIfHasBillboarded();
+    bool checkifBonesAreInRange(M2SkinSection *mesh);
+
 
     void createMeshes();
     void createBoundingBoxMesh();

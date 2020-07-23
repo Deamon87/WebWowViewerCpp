@@ -126,6 +126,11 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
 
         meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[material.blending_mode];
 
+        //Let's assume ribbons are always at least transparent
+        if (meshTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
+            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+        }
+
 
         meshTemplate.start = 0;
         meshTemplate.end = 0;
