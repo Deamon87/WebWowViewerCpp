@@ -527,7 +527,7 @@ AnimationManager::calcBoneMatrix(
         } else if ( boneBillboardFlags == 0x8 ){
             if (isAnimated) {
                 mathfu::vec4 &xAxis = animatedMatrix.GetColumn(0);
-                currentBoneMat.GetColumn(0) = -mathfu::vec4(
+                currentBoneMat.GetColumn(0) = mathfu::vec4(
                     xAxis.y,
                     xAxis.z,
                     -xAxis.x,
@@ -535,7 +535,7 @@ AnimationManager::calcBoneMatrix(
                 ).Normalized();
 
                 mathfu::vec4 &yAxis = animatedMatrix.GetColumn(1);
-                currentBoneMat.GetColumn(1) = -mathfu::vec4(
+                currentBoneMat.GetColumn(1) = mathfu::vec4(
                     yAxis.y,
                     yAxis.z,
                     -yAxis.x,
@@ -551,7 +551,7 @@ AnimationManager::calcBoneMatrix(
                 ).Normalized();
 
             } else {
-                currentBoneMat.GetColumn(0) = -mathfu::vec4(0, 0, -1, 0);
+                currentBoneMat.GetColumn(0) = mathfu::vec4(0, 0, -1, 0);
                 currentBoneMat.GetColumn(1) = -mathfu::vec4(1.0, 0, 0, 0);
                 currentBoneMat.GetColumn(2) = mathfu::vec4(0, 1.0, 0, 0);
             }

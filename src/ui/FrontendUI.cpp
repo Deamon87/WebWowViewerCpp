@@ -529,6 +529,30 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(236122, replacementTextureFDids);
         }
     }
+    ImGui::Separator();
+    ImGui::Text("Models for billbozrd checking");
+    ImGui::NewLine();
+    if (ImGui::Button("Dalaran dome", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(203598, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Gift of Nzoth", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(2432705, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Plagueheart Shoulderpad", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(143343, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Dalaran eye", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(243044, replacementTextureFDids);
+        }
+    }
+
 
     ImGui::End();
 }
