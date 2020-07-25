@@ -449,12 +449,48 @@ void FrontendUI::showQuickLinksDialog() {
         }
     }
     std::vector<int> replacementTextureFDids = {};
+
+    if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(131982, replacementTextureFDids);
+            //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+            m_api->getConfig()->setBCLightHack(true);
+
+        }
+    }
+    if (ImGui::Button("Wrath login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(236122, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Cataclysm login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(466614, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Panda login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(631713, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Draenor login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByName) {
+            openM2SceneByName("interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", replacementTextureFDids);
+        }
+    }
     if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(1396280, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
         }
     }
+    if (ImGui::Button("BfA login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(2021650, replacementTextureFDids);
+//            m_api->getConfig()->setBCLightHack(true);
+        }
+    }
+
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(3445776, replacementTextureFDids);
@@ -511,24 +547,7 @@ void FrontendUI::showQuickLinksDialog() {
         }
     }
 
-    if (ImGui::Button("Draenor login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByName) {
-            openM2SceneByName("interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", replacementTextureFDids);
-        }
-    }
-    if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
-            openM2SceneByfdid(131982, replacementTextureFDids);
-            //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
-            m_api->getConfig()->setBCLightHack(true);
 
-        }
-    }
-    if (ImGui::Button("Wrath login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
-            openM2SceneByfdid(236122, replacementTextureFDids);
-        }
-    }
     if (ImGui::Button("vampire candle", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(3184581, replacementTextureFDids);

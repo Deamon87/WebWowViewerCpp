@@ -733,7 +733,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 ) {
 //    std::cout << "Map::checkExterior finished called" << std::endl;
 
-    if (m_wdlObject != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+    if (m_wdlObject == nullptr && m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
             m_wdlObject = std::make_shared<WdlObject>(m_api, m_wdtfile->mphd->wdlFileDataID);
             m_wdlObject->setMapApi(this);
@@ -744,7 +744,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     std::vector<std::shared_ptr<M2Object>> m2ObjectsCandidates;
     std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
 
-    if (m_wdlObject != nullptr && m_wdlObject->getIsLoaded()) {
+    if (m_wdlObject != nullptr) {
         m_wdlObject->checkFrustumCulling(
             cameraPos, cullStage->exteriorView.frustumPlanes[0],
             frustumPoints,

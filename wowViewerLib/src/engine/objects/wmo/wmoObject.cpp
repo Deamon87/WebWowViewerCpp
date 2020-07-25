@@ -961,11 +961,11 @@ void WmoObject::transverseGroupWMO(
     int numItems = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprCount;
 
     if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.showSkyBox) {
+        skyBox->checkFrustumCulling(cameraVec4,
+                                    {},
+                                    {});
         allInteriorViews[groupId].drawnM2s.push_back(skyBox);
     }
-
-
-
 
     for (int j = moprIndex; j < moprIndex+numItems; j++) {
         SMOPortalRef * relation = &mainGeom->portalReferences[j];

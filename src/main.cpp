@@ -435,6 +435,7 @@ int main(){
         }
 
         currentScene = std::make_shared<Map>(&apiContainer, mapId, wdtFileId);
+        apiContainer.camera = std::make_shared<FirstPersonCamera>();
         apiContainer.camera->setCameraPos(x, y, z);
 //        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
     });
@@ -447,7 +448,7 @@ int main(){
         currentScene->setReplaceTextureArray(replacementTextureIds);
 
 
-
+        apiContainer.camera = std::make_shared<FirstPersonCamera>();
         apiContainer.getConfig()->setBCLightHack(false);
 //
         apiContainer.camera->setCameraPos(0, 0, 0);
@@ -456,6 +457,7 @@ int main(){
         currentScene = std::make_shared<M2Scene>(&apiContainer, m2FileName, -1);
         currentScene->setReplaceTextureArray(replacementTextureIds);
 
+        apiContainer.camera = std::make_shared<FirstPersonCamera>();
         apiContainer.camera->setCameraPos(0, 0, 0);
     });
 
