@@ -79,7 +79,7 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
     bool useDXT3Decoding = !m_device.getIsCompressedTexturesSupported();
     bool useDXT5Decoding = !m_device.getIsCompressedTexturesSupported();
 
-//    useDXT1Decoding = true;
+    useDXT1Decoding = true;
 //    useDXT3Decoding = true;
 //    useDXT5Decoding = true;
 

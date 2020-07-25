@@ -381,8 +381,8 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
 //    {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=679386e82870b537ae98416ec461931a&cdnconfig=2aae82f313c31defc6f0df94f3c1ea00&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=679386e82870b537ae98416ec461931a&cdnconfig=2aae82f313c31defc6f0df94f3c1ea00&filename=data&filedataid=";
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=data&filedataid=";
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
@@ -592,6 +592,7 @@ int main(){
 
             clearOnUi = false;
             uiDependecies.push_back(sceneDrawStage);
+//            sceneDrawStage->target->
         }
 
         auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);

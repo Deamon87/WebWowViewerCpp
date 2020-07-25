@@ -1295,6 +1295,8 @@ bool M2Object::checkifBonesAreInRange(M2SkinSection *mesh) {
 
     if (maxBone >= MAX_MATRIX_NUM)
         return false;
+
+    return true;
 }
 
 void M2Object::createMeshes() {

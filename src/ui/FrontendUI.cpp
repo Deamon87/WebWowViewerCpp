@@ -452,7 +452,7 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(1396280, replacementTextureFDids);
-
+//            m_api->getConfig()->setBCLightHack(true);
         }
     }
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
@@ -529,8 +529,24 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(236122, replacementTextureFDids);
         }
     }
+    if (ImGui::Button("vampire candle", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(3184581, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Bog Creature", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[11] = 3732358;
+            replacementTextureFDids[12] = 3732360;
+            replacementTextureFDids[13] = 3732368;
+
+            openM2SceneByfdid(3732303, replacementTextureFDids);
+        }
+    }
+
     ImGui::Separator();
-    ImGui::Text("Models for billbozrd checking");
+    ImGui::Text("Models for billboard checking");
     ImGui::NewLine();
     if (ImGui::Button("Dalaran dome", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
@@ -552,6 +568,7 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(243044, replacementTextureFDids);
         }
     }
+
 
 
     ImGui::End();
@@ -604,8 +621,31 @@ void FrontendUI::showSettingsDialog() {
         }
         ImGui::Separator();
 
+        {
+            std::string currentMode = std::to_string(m_api->getConfig()->diffuseColorHack);
+            ImGui::Text("Diffuse hack selection");
+            ImGui::SameLine();
+            if (ImGui::BeginCombo("##diffuseCombo", currentMode.c_str())) // The second parameter is the label previewed before opening the combo.
+            {
+
+                for (int n = 0; n < 6; n++)
+                {
+                    bool is_selected = (m_api->getConfig()->diffuseColorHack == n); // You can store your selection however you want, outside or inside your objects
+                    std::string caption =std::to_string(n);
+                    if (ImGui::Selectable(caption.c_str(), is_selected)) {
+                        m_api->getConfig()->diffuseColorHack = n;
+                    }
+
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+                }
+                ImGui::EndCombo();
+            }
+        }
+
         if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
             m_api->getConfig()->setFarPlane(farPlane);
+            m_api->getConfig()->setFarPlaneForCulling(farPlane+50);
         }
 
         if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
@@ -619,9 +659,10 @@ void FrontendUI::showSettingsDialog() {
 
 
 
-
+        movementSpeed =m_api->getConfig()->getMovementSpeed();
         if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 10)) {
             m_api->getConfig()->setMovementSpeed(movementSpeed);
+            m_api->camera->setMovementSpeed(movementSpeed);
         }
 
         if (ImGui::Checkbox("Use global timed light", &useTimedGlobalLight)) {
@@ -695,6 +736,7 @@ void FrontendUI::showSettingsDialog() {
                             exteriorGroundAmbientColor[0],
                             exteriorGroundAmbientColor[1], exteriorGroundAmbientColor[2], 1.0);
                     }
+                    ImGui::EndPopup();
                 }
             }
         }

@@ -872,11 +872,33 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                 defaultVector
             ), 1.0);
 
+
+        switch (m_api->getConfig()->diffuseColorHack) {
+            case 0:
+                diffuse_color = mathfu::vec4(diffuse_color.x, diffuse_color.y, diffuse_color.z, diffuse_color.w);
+                break;
+            case 1:
+                diffuse_color = mathfu::vec4(diffuse_color.x, diffuse_color.z, diffuse_color.y, diffuse_color.w);
+                break;
+            case 2:
+                diffuse_color = mathfu::vec4(diffuse_color.y, diffuse_color.x, diffuse_color.z, diffuse_color.w);
+                break;
+            case 3:
+                diffuse_color = mathfu::vec4(diffuse_color.y, diffuse_color.z, diffuse_color.x, diffuse_color.w);
+                break;
+            case 4:
+                diffuse_color = mathfu::vec4(diffuse_color.z, diffuse_color.x, diffuse_color.y, diffuse_color.w);
+                break;
+            case 5:
+                diffuse_color = mathfu::vec4(diffuse_color.z, diffuse_color.y, diffuse_color.x, diffuse_color.w);
+                break;
+        }
+
 //        if (i == 1) {
 //            diffuse_color = mathfu::vec4(diffuse_color.x, diffuse_color.z, diffuse_color.y, diffuse_color.w);
 //        }
 //        if (i == 0) {
-////            diffuse_color = mathfu::vec4(diffuse_color.y, diffuse_color.y, diffuse_color.z, diffuse_color.w);
+
 //        }
 
 

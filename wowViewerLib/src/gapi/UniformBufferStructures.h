@@ -63,7 +63,7 @@ namespace M2 {
         InteriorLightParam intLight;
         LocalLight pc_lights[4];
         int LightCount;
-        int notUsed1;
+        int bcHack;
         int notUsed2;
         int notUsed3;
         mathfu::vec4_packed interiorExteriorBlend;

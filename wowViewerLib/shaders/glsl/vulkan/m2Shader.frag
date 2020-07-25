@@ -40,7 +40,7 @@ layout(std140, set=0, binding=1) uniform modelWideBlockVS {
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
     InteriorLightParam intLight;
     LocalLight pc_lights[4];
-    ivec4 lightCount;
+    ivec4 lightCountAndBcHack;
     vec4 interiorExteriorBlend;
 };
 
@@ -97,7 +97,7 @@ void main() {
 
         for (int index = 0; index < 4; index++)
         {
-            if (index >= lightCount.x) break;
+            if (index >= lightCountAndBcHack.x) break;
 
             LocalLight lightRecord = pc_lights[index];
             vec3 vectorToLight = ((scene.uLookAtMat * (uPlacementMat * lightRecord.position)).xyz - vPos3);
@@ -109,11 +109,12 @@ void main() {
 
             float attenuation = (1.0 - clamp((distanceToLight - attenuationRec.x) * (1.0 / (attenuationRec.z - attenuationRec.x)), 0.0, 1.0));
 
-            vec3 attenuatedColor = attenuation * lightRecord.color.xyz * attenuationRec.y;
+            vec3 attenuatedColor = attenuation * lightRecord.color.xyz;
             lightColor = (lightColor + vec3(attenuatedColor * attenuatedColor * diffuseTerm1 ));
         }
+
         meshResColor.rgb = clamp(lightColor , 0.0, 1.0);
-        accumLight = meshResColor.rgb;
+        accumLight = mix(lightColor.rgb, meshResColor.rgb, lightCountAndBcHack.y);
         //finalColor.rgb =  finalColor.rgb * lightColor;
     }
 

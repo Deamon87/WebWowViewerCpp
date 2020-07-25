@@ -522,7 +522,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_272.pc_lights[3].color", true, 176, 1, 4, 0},
         {"_272.pc_lights[3].position", true, 192, 1, 4, 0},
         {"_272.pc_lights[3].attenuation", true, 208, 1, 4, 0},
-        {"_272.lightCount", false, 224, 1, 4, 0},
+        {"_272.lightCountAndBcHack", false, 224, 1, 4, 0},
         {"_272.interiorExteriorBlend", true, 240, 1, 4, 0},
       }
     },

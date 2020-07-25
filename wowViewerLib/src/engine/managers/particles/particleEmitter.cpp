@@ -108,6 +108,11 @@ ParticleEmitter::ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Obje
         default:
             this->generator = nullptr;
             std::cout << "Found unimplemented generator " << (int)m_data->old.emitterType << std::endl;
+
+            auto tex0 = m2Object->getBlpTextureData(this->m_data->old.texture_0);
+            if (tex0) {
+                std::cout << "Using " << tex0->getTextureName() << " texture" << std::endl;
+            }
             return;
             break;
     }

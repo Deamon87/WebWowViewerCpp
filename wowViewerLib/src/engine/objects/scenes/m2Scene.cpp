@@ -37,7 +37,7 @@ void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3
         m_api->getConfig()->setExteriorAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
         m_api->getConfig()->setExteriorHorizontAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
         m_api->getConfig()->setExteriorGroundAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
-        m_api->getConfig()->setExteriorDirectColor(0.3,0.3,0.3,1.3);
+        m_api->getConfig()->setExteriorDirectColor(0.0,0.0,0.0,0.0);
         m_api->getConfig()->setExteriorDirectColorDir(0.0,0.0,0.0);
     }
 }

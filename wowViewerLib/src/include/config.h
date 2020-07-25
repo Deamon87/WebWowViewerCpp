@@ -441,6 +441,8 @@ public:
     bool getUseM2AmbientLight() {
         return useM2AmbientLight;
     }
+
+    int diffuseColorHack = 0;
 };
 
 

@@ -123,22 +123,23 @@ void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, M2::modelWideBloc
     for (int j = 0; j < lightCount; j++) {
         std::string uniformName;
         mathfu::vec4 attenVec;
-        if (BCLoginScreenHack) {
-            attenVec = mathfu::vec4(m2Object.lights[j].attenuation_start, 1.0, m2Object.lights[j].attenuation_end, m2Object.lights.size());
-        } else {
-//            if ((lights[i].attenuation_end - lights[i].attenuation_start < 0.1)) continue;
-//            attenVec = mathfu::vec4(lights[i].attenuation_start, 1.0, lights[i].attenuation_end, lights.size());
-            attenVec = mathfu::vec4(m2Object.lights[j].attenuation_start, m2Object.lights[j].diffuse_intensity, m2Object.lights[j].attenuation_end, m2Object.lights.size());
-        }
+
+        attenVec = mathfu::vec4(m2Object.lights[j].attenuation_start, m2Object.lights[j].diffuse_intensity, m2Object.lights[j].attenuation_end, m2Object.lights.size());
+
 
         modelBlockPS.pc_lights[j].attenuation = attenVec;//;lights[i].diffuse_color);
-        modelBlockPS.pc_lights[j].color = m2Object.lights[j].diffuse_color;
 
+        if (BCLoginScreenHack) {
+            modelBlockPS.pc_lights[j].color = m2Object.lights[j].diffuse_color ;
+        } else {
+            modelBlockPS.pc_lights[j].color = m2Object.lights[j].diffuse_color * m2Object.lights[j].diffuse_intensity;
+        }
 
 //        mathfu::vec4 viewPos = modelView * m2Object.lights[j].position;
         modelBlockPS.pc_lights[j].position = m2Object.lights[j].position;
     }
     modelBlockPS.LightCount = lightCount;
+    modelBlockPS.bcHack = BCLoginScreenHack ? 1 : 0;
 }
 
 void M2MeshBufferUpdater::fillTextureMatrices(const M2Object &m2Object, int batchIndex, M2Data *m2Data,
