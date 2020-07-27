@@ -290,6 +290,10 @@ void main() {
         matDiffuse = vDiffuseColor.rgb * 2.000000 * (tex * tex2 * tex3 * genericParams[0]).rgb;
         opacity = (tex * tex2 * tex3 * genericParams[0]).a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
+    } else if ( uPixelShader == 36 ) {//unk shader combiner
+        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
+        opacity = tex.a * tex2.a * vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     /*
         WOTLK DEPRECATED SHADERS!
     */
