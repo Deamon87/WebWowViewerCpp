@@ -1473,7 +1473,12 @@ void M2Object::initParticleEmitters() {
     particleEmitters = std::vector<ParticleEmitter *>();
 //    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->particle_emitters.size; i++) {
-        ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), this);
+        int txacVal = 0;
+        if (m_m2Geom->txacMParticle.size() > 0) {
+            txacVal = m_m2Geom->txacMParticle[i].value;
+        }
+
+        ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), this, m_m2Geom, txacVal);
         particleEmitters.push_back(emitter);
         if (m_m2Geom.get()->exp2Records != nullptr && emitter->getGenerator() != nullptr) {
             emitter->getGenerator()->getAniProp()->zSource = m_m2Geom.get()->exp2Records->getElement(i)->zSource;
@@ -1548,6 +1553,11 @@ void M2Object::setAnimationId(int animationId) {
     if (!m_loaded) return;
 
     m_animationManager->setAnimationId(animationId, false);
+}
+void M2Object::resetCurrentAnimation() {
+    if (!m_loaded) return;
+
+    m_animationManager->resetCurrentAnimation();
 }
 
 M2CameraResult M2Object::updateCamera(double deltaTime, int cameraId) {

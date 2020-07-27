@@ -170,6 +170,7 @@ class IDevice {
         virtual bool getIsAnisFiltrationSupported();
         virtual float getAnisLevel() = 0;
         virtual bool getIsVulkanAxisSystem() {return false;}
+        virtual bool getIsRenderbufferSupported() {return false;}
     public:
         virtual HGShaderPermutation getShader(std::string shaderName, void *permutationDescriptor) = 0;
 

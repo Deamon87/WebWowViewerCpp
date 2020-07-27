@@ -33,7 +33,7 @@ public:
 
     int getCameraNum() override {return 0;};
     std::shared_ptr<ICamera> createCamera(int cameraNum) {return nullptr;};
-
+    void resetAnimation() override {}
 private:
     std::function <bool(std::string cascPath)> openCascCallback = nullptr;
 
@@ -55,6 +55,7 @@ private:
     std::function<void()> unloadScene;
     std::function<int()> getCameraNumCallback;
     std::function<bool(int cameraNum)> setNewCameraCallback;
+    std::function<void()> resetAnimationCallback;
 
     std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimap;
 
@@ -147,6 +148,7 @@ public:
 
     void setGetCameraNum(std::function <int()> callback);
     void setSelectNewCamera(std::function <bool(int cameraNum)> callback);
+    void setResetAnimation(std::function <void()> callback);
     void showMainMenu();
 
     void showMapSelectionDialog();

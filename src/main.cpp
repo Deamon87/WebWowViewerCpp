@@ -489,7 +489,9 @@ int main(){
         apiContainer.camera = newCamera;
         return true;
     });
-
+    frontendUI->setResetAnimation([&currentScene]() -> void {
+        currentScene->resetAnimation();
+    });
 
     frontendUI->setGetCameraPos([&apiContainer](float &cameraX,float &cameraY,float &cameraZ) -> void {
         float currentCameraPos[4] = {0,0,0,0};

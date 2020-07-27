@@ -38,13 +38,30 @@ struct ParticleBuffStructQuad {
     ParticleBuffStruct particle[4];
 };
 
+struct CParticleMaterialFlags {
+    union {
+        struct{
+            uint8_t _0x01 : 1;
+            uint8_t _0x02 : 1;
+            uint8_t _0x04 : 1;
+            uint8_t _0x08 : 1;
+            uint8_t _0x10 : 1;
+            uint8_t _0x20 : 1;
+            uint8_t _0x40 : 1;
+            uint8_t _0x80 : 1;
+        } flags;
+        uint8_t rawFlags;
+    };
+};
+
 class ParticleEmitter {
 public:
-    ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Object *m2Object);
+    ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw);
     ~ParticleEmitter() {
         delete generator;
     }
 
+    void selectShaderId();
     void Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix);
     void prepearBuffers(mathfu::mat4 &viewMatrix);
     CParticleGenerator * getGenerator(){
@@ -54,6 +71,7 @@ public:
     void updateBuffers();
 
     int flags = 6;
+    CParticleMaterialFlags materialFlags;
     bool emittingLastFrame = false;
     bool isEnabled = false;
 
@@ -87,8 +105,10 @@ private:
 
     std::vector<CParticle2> particles;
 
-    int particleType = 0;
+    int m_particleType = 0;
+    int shaderId = 0;
     bool m_depthWrite = true;
+    TXAC txac_particles_value;
 
     float followMult;
     float followBase;

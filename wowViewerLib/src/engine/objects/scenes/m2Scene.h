@@ -64,6 +64,9 @@ public:
     void setAnimationId(int animationId) override {
         m_m2Object->setAnimationId(animationId);
     };
+    void resetAnimation() override {
+        m_m2Object->resetCurrentAnimation();
+    }
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
     void doPostLoad(HCullStage cullStage) override;

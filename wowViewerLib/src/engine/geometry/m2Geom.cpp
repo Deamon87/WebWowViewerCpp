@@ -95,6 +95,25 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
             }
         },
         {
+            'CAXT',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered CAXT");
+                    file.txacMesh = std::vector<TXAC>(file.m_m2Data->materials.size);
+                    file.txacMParticle = std::vector<TXAC>(file.m_m2Data->materials.size);
+
+                    for (int i = 0; i < file.txacMesh.size(); i++) {
+                        chunkData.readValue(file.txacMesh[i]);
+                    }
+
+                    for (int i = 0; i < file.txacMParticle.size(); i++) {
+                        chunkData.readValue(file.txacMParticle[i]);
+                    }
+
+                }
+            }
+        },
+        {
             '3VFW',
             {
                 [](M2Geom &file, ChunkData &chunkData) {

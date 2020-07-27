@@ -160,6 +160,9 @@ public:
     void setAnimationId(int animationId) override {
 
     };
+    void resetAnimation() override {
+
+    }
 
 
     void doPostLoad(HCullStage cullStage) override;

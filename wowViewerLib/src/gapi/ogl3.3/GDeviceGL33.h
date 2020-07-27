@@ -63,6 +63,7 @@ public:
     int getMaxSamplesCnt() override {
         return (m_maxMultiSampling < 8) ? m_maxMultiSampling : 8;
     }
+    virtual bool getIsRenderbufferSupported() {return true;}
 
     float getAnisLevel() override;
 

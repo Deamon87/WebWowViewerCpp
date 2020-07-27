@@ -92,6 +92,14 @@ void AnimationManager::calculateBoneTree() {
     }
 }
 
+void AnimationManager::resetCurrentAnimation() {
+    this->animationInfo.currentAnimation.animationTime = 0;
+
+    for (auto &a : globalSequenceTimes) {
+        a = 0;
+    }
+}
+
 bool AnimationManager::setAnimationId(int animationId, bool reset) {
     int animationIndex = -1;
 

@@ -1267,7 +1267,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
     auto cullStage = updateStage->cullResult;
     auto renderedThisFramePreSort = std::vector<HGMesh>();
 
-    bool frameBufferSupported = true;
+    bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
 
     if (quadBindings == nullptr)
         return;

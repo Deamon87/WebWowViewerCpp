@@ -588,12 +588,8 @@ void FrontendUI::showQuickLinksDialog() {
         }
     }
 
-
-
     ImGui::End();
 }
-
-
 
 void FrontendUI::showSettingsDialog() {
     if(showSettings) {
@@ -640,27 +636,27 @@ void FrontendUI::showSettingsDialog() {
         }
         ImGui::Separator();
 
-        {
-            std::string currentMode = std::to_string(m_api->getConfig()->diffuseColorHack);
-            ImGui::Text("Diffuse hack selection");
-            ImGui::SameLine();
-            if (ImGui::BeginCombo("##diffuseCombo", currentMode.c_str())) // The second parameter is the label previewed before opening the combo.
-            {
-
-                for (int n = 0; n < 6; n++)
-                {
-                    bool is_selected = (m_api->getConfig()->diffuseColorHack == n); // You can store your selection however you want, outside or inside your objects
-                    std::string caption =std::to_string(n);
-                    if (ImGui::Selectable(caption.c_str(), is_selected)) {
-                        m_api->getConfig()->diffuseColorHack = n;
-                    }
-
-                    if (is_selected)
-                        ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
-                }
-                ImGui::EndCombo();
-            }
-        }
+//        {
+//            std::string currentMode = std::to_string(m_api->getConfig()->diffuseColorHack);
+//            ImGui::Text("Diffuse hack selection");
+//            ImGui::SameLine();
+//            if (ImGui::BeginCombo("##diffuseCombo", currentMode.c_str())) // The second parameter is the label previewed before opening the combo.
+//            {
+//
+//                for (int n = 0; n < 6; n++)
+//                {
+//                    bool is_selected = (m_api->getConfig()->diffuseColorHack == n); // You can store your selection however you want, outside or inside your objects
+//                    std::string caption =std::to_string(n);
+//                    if (ImGui::Selectable(caption.c_str(), is_selected)) {
+//                        m_api->getConfig()->diffuseColorHack = n;
+//                    }
+//
+//                    if (is_selected)
+//                        ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+//                }
+//                ImGui::EndCombo();
+//            }
+//        }
 
         if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
             m_api->getConfig()->setFarPlane(farPlane);
@@ -669,6 +665,12 @@ void FrontendUI::showSettingsDialog() {
 
         if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
             m_api->getConfig()->setUseGaussBlur(useGaussBlur);
+        }
+
+        if (ImGui::Button("Reset Animation")) {
+            if (resetAnimationCallback) {
+                resetAnimationCallback();
+            }
         }
 
         ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
@@ -945,6 +947,9 @@ void FrontendUI::setGetCameraNum(std::function <int()> callback) {
 }
 void FrontendUI::setSelectNewCamera(std::function <bool(int cameraNum)> callback) {
     setNewCameraCallback = callback;
+}
+void FrontendUI::setResetAnimation(std::function <void()> callback) {
+    resetAnimationCallback = callback;
 }
 
 bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap,

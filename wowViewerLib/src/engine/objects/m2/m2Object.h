@@ -182,6 +182,7 @@ public:
     }
 
     void setAnimationId(int animationId);
+    void resetCurrentAnimation();
     void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);
     void createPlacementMatrix(SMDoodadDef &def);
     void createPlacementMatrix(mathfu::vec3 pos, float f, mathfu::vec3 scaleVec,

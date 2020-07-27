@@ -46,6 +46,8 @@ private:
 
 public:
     AnimationManager(ApiContainer *api, HM2Geom m2File);
+
+    void resetCurrentAnimation();
     bool setAnimationId(int animationId, bool reset);
     void update (
         animTime_t deltaTime,

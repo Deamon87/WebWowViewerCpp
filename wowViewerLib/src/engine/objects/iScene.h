@@ -17,6 +17,7 @@ public:
     virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) = 0;
 
     virtual void setAnimationId(int animationId) = 0;
+    virtual void resetAnimation() = 0;
 
     virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) = 0;
 

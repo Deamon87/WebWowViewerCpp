@@ -403,6 +403,13 @@ struct M2_AFID {
     uint32_t file_id;
 };
 
+struct TXAC {
+    union {
+        uint16_t value;
+        uint8_t perByte[2];
+    };
+};
+
 struct Exp2Record
 {
     float zSource;
