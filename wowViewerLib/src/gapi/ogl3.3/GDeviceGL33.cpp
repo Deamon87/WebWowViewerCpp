@@ -60,24 +60,24 @@ namespace GL33 {
     //}
 
 
-    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
-                    const void *userParam) {
-        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-                source,
-                type,
-                id,
-                severity,
-                std::string(message, message + length).c_str());
-        if (severity == 37190) {
-            std::cout << "lol";
-        }
-        if (type == GL_DEBUG_TYPE_ERROR) {
-            std::cout << "lol Error" << std::endl;
-            __debugbreak;
-        }
-
-        fflush(stdout);
-    }
+//    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+//                    const void *userParam) {
+//        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+//                source,
+//                type,
+//                id,
+//                severity,
+//                std::string(message, message + length).c_str());
+//        if (severity == 37190) {
+//            std::cout << "lol";
+//        }
+//        if (type == GL_DEBUG_TYPE_ERROR) {
+//            std::cout << "lol Error" << std::endl;
+//            __debugbreak;
+//        }
+//
+//        fflush(stdout);
+//    }
 }
 
 void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {

@@ -103,7 +103,7 @@ void GFrameBufferGL33::bindFrameBuffer(){
 }
 
 void GFrameBufferGL33::copyRenderBufferToTexture(){
-    glBindFramebuffer(GL_READ_FRAMEBUFFER_EXT, m_renderBufFbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER_EXT, m_textureFbo);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderBufFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_textureFbo);
     glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }

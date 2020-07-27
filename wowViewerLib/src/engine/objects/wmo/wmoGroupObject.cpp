@@ -825,7 +825,7 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, s
 
     if ((nodes[nodeId].planeType & 0x4)) {
         bspLeafIdList.push_back(nodeId);
-    } else if ((nodes[nodeId].planeType == 0)) {
+    } else if (nodes[nodeId].planeType == 0) {
         bool leftSide = MathHelper::checkFrustum({mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}, bbox, {});
         bool rightSide = MathHelper::checkFrustum({mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}, bbox, {});
 
@@ -835,7 +835,7 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, s
         if (rightSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
-    } else if ((nodes[nodeId].planeType == 1)) {
+    } else if (nodes[nodeId].planeType == 1) {
         bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}, bbox, {});
         bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}, bbox, {});
 
@@ -845,7 +845,7 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, s
         if (rightSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
-    } else if ((nodes[nodeId].planeType == 2)) {
+    } else if (nodes[nodeId].planeType == 2) {
         bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}, bbox, {});
         bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}, bbox, {});
 
@@ -1109,19 +1109,19 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
         //5. The object(camera) is inside WMO group. Get the actual nodeId
         while (nodeId >= 0 && ((nodes[nodeId].planeType & 0x4) == 0)) {
             int prevNodeId = nodeId;
-            if ((nodes[nodeId].planeType == 0)) {
+            if (nodes[nodeId].planeType == 0) {
                 if (cameraLocal[0] < nodes[nodeId].fDist) {
                     nodeId = nodes[nodeId].children[0];
                 } else {
                     nodeId = nodes[nodeId].children[1];
                 }
-            } else if ((nodes[nodeId].planeType == 1)) {
+            } else if (nodes[nodeId].planeType == 1) {
                 if (cameraLocal[1] < nodes[nodeId].fDist) {
                     nodeId = nodes[nodeId].children[0];
                 } else {
                     nodeId = nodes[nodeId].children[1];
                 }
-            } else if ((nodes[nodeId].planeType == 2)) {
+            } else if (nodes[nodeId].planeType == 2) {
                 if (cameraLocal[2] < nodes[nodeId].fDist) {
                     nodeId = nodes[nodeId].children[0];
                 } else {
