@@ -15,7 +15,7 @@
 class GFrameBufferGL33 : public IFrameBuffer {
 public:
     GFrameBufferGL33(IDevice &device, std::vector<ITextureFormat> textureAttachments, ITextureFormat depthAttachment, int width, int height);
-    ~GFrameBufferGL33();
+    ~GFrameBufferGL33() override;
 
 
     HGTexture getAttachment(int index) override;
@@ -32,6 +32,7 @@ private:
 
 
     GLuint m_renderBufFbo;
+    ITextureFormat m_depthAttachment;
     std::vector<GLuint> renderBufferAttachments;
     GLuint depthBufferAttachment = 0;
 
