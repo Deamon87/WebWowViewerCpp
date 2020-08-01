@@ -1381,7 +1381,7 @@ void M2Object::createMeshes() {
         this->m_meshArray.push_back(hmesh);
         this->m_materialArray.push_back(material);
 
-        M2MeshBufferUpdater::assignUpdateEvents(hmesh, *this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinData);
+        M2MeshBufferUpdater::assignUpdateEvents(hmesh, this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinData);
     }
 }
 

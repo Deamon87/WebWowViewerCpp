@@ -79,7 +79,7 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
     bool useDXT3Decoding = !m_device.getIsCompressedTexturesSupported();
     bool useDXT5Decoding = !m_device.getIsCompressedTexturesSupported();
 
-    useDXT1Decoding = true;
+//    useDXT1Decoding = true; // Note: manual DXT1 decompression loses alpha channel for S3TC_RGBA_DXT1 textures
 //    useDXT3Decoding = true;
 //    useDXT5Decoding = true;
 

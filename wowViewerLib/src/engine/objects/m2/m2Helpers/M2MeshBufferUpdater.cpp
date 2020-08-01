@@ -20,20 +20,20 @@ float M2MeshBufferUpdater::calcFinalTransparency(const M2Object &m2Object, int b
 	return finalTransparency;
 }
 
-void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
+void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
     auto blendMode = hmesh->getGxBlendMode();
     int batchIndex = materialData.texUnitTexIndex;
     auto vertexShader = materialData.vertexShader;
 
-    hmesh->getUniformBuffer(2)->setUpdateHandler([&m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self){
-        auto m2Data = m2Object.m_m2Geom->getM2Data();
+    hmesh->getUniformBuffer(2)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self){
+        auto m2Data = m2Object->m_m2Geom->getM2Data();
 
         auto textMaterial = m2SkinProfile->batches[batchIndex];
         int renderFlagIndex = textMaterial->materialIndex;
         auto renderFlag = m2Data->materials[renderFlagIndex];
 
-        mathfu::vec4 meshColor = M2Object::getCombinedColor(m2SkinProfile, batchIndex, m2Object.subMeshColors);
-        float transparency = M2Object::getTransparency(m2SkinProfile, batchIndex, m2Object.transparencies);
+        mathfu::vec4 meshColor = M2Object::getCombinedColor(m2SkinProfile, batchIndex, m2Object->subMeshColors);
+        float transparency = M2Object::getTransparency(m2SkinProfile, batchIndex, m2Object->transparencies);
         float finalTransparency = meshColor.w;
         if ( textMaterial->textureCount && !(textMaterial->flags & 0x40)) {
             finalTransparency *= transparency;
@@ -41,24 +41,24 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
 
         auto &meshblockVS = self->getObject<M2::meshWideBlockVS>();
         meshblockVS.Color_Transparency = mathfu::vec4_packed(mathfu::vec4(meshColor.x, meshColor.y, meshColor.z, finalTransparency));
-        meshblockVS.isSkyBox = m2Object.m_boolSkybox ? 1 : 0;
+        meshblockVS.isSkyBox = m2Object->m_boolSkybox ? 1 : 0;
         meshblockVS.VertexShader = vertexShader;
         meshblockVS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
 
-        fillTextureMatrices(m2Object, batchIndex, m2Data, m2SkinProfile, meshblockVS.uTextMat);
+        fillTextureMatrices(*m2Object, batchIndex, m2Data, m2SkinProfile, meshblockVS.uTextMat);
 
     });
 
     //3. Update individual PS buffer
     auto pixelShader = materialData.pixelShader;
-    hmesh->getUniformBuffer(4)->setUpdateHandler([&m2Object, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self) {
-        auto m2Data = m2Object.m_m2Geom->getM2Data();
+    hmesh->getUniformBuffer(4)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self) {
+        auto m2Data = m2Object->m_m2Geom->getM2Data();
 
         auto textMaterial = m2SkinProfile->batches[batchIndex];
         int renderFlagIndex = textMaterial->materialIndex;
         auto renderFlag = m2Data->materials[renderFlagIndex];
 
-        float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(m2Object, batchIndex, m2SkinProfile);
+        float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*m2Object, batchIndex, m2SkinProfile);
 
         float uAlphaTest;
         if (blendMode == EGxBlendEnum::GxBlend_AlphaKey) {
@@ -67,7 +67,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object
             uAlphaTest = 1.0f/255.0f;
         }
 
-        mathfu::vec3 uGlobalFogColor = m2Object.m_api->getConfig()->getFogColor().xyz();
+        mathfu::vec3 uGlobalFogColor = m2Object->m_api->getConfig()->getFogColor().xyz();
         mathfu::vec3 uFogColor = getFogColor(blendMode, uGlobalFogColor);
 
         //Fill values into buffer

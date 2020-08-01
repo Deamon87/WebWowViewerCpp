@@ -497,6 +497,27 @@ void FrontendUI::showQuickLinksDialog() {
         }
     }
 
+    if (ImGui::Button("Pink serpent", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+
+            replacementTextureFDids[11] = 2905480;
+            replacementTextureFDids[12] = 2905481;
+            replacementTextureFDids[13] = 577442;
+            openM2SceneByfdid(577443, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Wolf", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+
+            replacementTextureFDids[11] = 126494;
+            replacementTextureFDids[12] = 126495;
+            replacementTextureFDids[13] = 0;
+            openM2SceneByfdid(126487, replacementTextureFDids);
+        }
+    }
+
     if (ImGui::Button("Aggramar", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);

@@ -16,7 +16,7 @@
 class M2MeshBufferUpdater {
 public:
     static float calcFinalTransparency(const M2Object &m2Object, int batchIndex, M2SkinProfile * m2SkinProfile);
-    static void assignUpdateEvents(HGM2Mesh &hmesh, M2Object &m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile);
+    static void assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile);
 
     static void fillLights(const M2Object &m2Object, M2::modelWideBlockPS &modelBlockPS);
 

@@ -32,7 +32,6 @@ void main() {
     cameraPos.xyz = cameraPos.xyz - scene.uLookAtMat[3].xyz;
     cameraPos.z = cameraPos.z ;
 
-    int vColorInd = int(aPosition.w);
-    vColor = vec4(skyColor[vColorInd].xyz, 1.0);
+    vColor = vec4(skyColor[int(aPosition.w)].xyz, 1.0);
 	gl_Position = scene.uPMatrix * cameraPos;
 }
