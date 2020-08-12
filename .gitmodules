@@ -41,3 +41,6 @@
 [submodule "3rdparty/SQLiteCpp"]
 	path = 3rdparty/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
+[submodule "3rdparty/libpng"]
+	path = 3rdparty/libpng
+	url = https://github.com/glennrp/libpng.git
