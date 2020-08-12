@@ -79,7 +79,7 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
     bool useDXT3Decoding = !m_device.getIsCompressedTexturesSupported();
     bool useDXT5Decoding = !m_device.getIsCompressedTexturesSupported();
 
-//    useDXT1Decoding = true; // Note: manual DXT1 decompression loses alpha channel for S3TC_RGBA_DXT1 textures
+    useDXT1Decoding = true; // Note: manual DXT1 decompression loses alpha channel for S3TC_RGBA_DXT1 textures
 //    useDXT3Decoding = true;
 //    useDXT5Decoding = true;
 
@@ -95,7 +95,8 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
 
             for (int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT1Decoding) {
-                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
+                    bool hasAlpha = (textureFormat == TextureFormat::S3TC_RGBA_DXT1);
+                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult, hasAlpha);
                     glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
                                  GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {

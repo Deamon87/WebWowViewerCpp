@@ -80,7 +80,8 @@ void GBlpTextureGL20::createGlTexture(TextureFormat textureFormat, const Mipmaps
 
             for (int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT1Decoding) {
-                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
+                    bool hasAlpha = (textureFormat == TextureFormat::S3TC_RGBA_DXT1);
+                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult, hasAlpha);
                     glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
                                  GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {

@@ -16,6 +16,8 @@ constexpr GLenum toOGLEnum(GBindingType bindingType) {
 //        default:
 //            throw std::runtime_error("unknown GBindingType");
     }
+    __debugbreak();
+    return 0;
 }
 
 GVertexBufferBindingsGL33::GVertexBufferBindingsGL33(IDevice &m_device) : m_device(

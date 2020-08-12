@@ -92,6 +92,11 @@ if (MSVC)
 	set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/3rdparty/zlib)
 endif()
 
+#libpng
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
+include_directories(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libpng)
+
 #Zlib
 #ExternalProject_Add("LibZip"
 #		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
@@ -287,6 +292,10 @@ endif()
 target_link_libraries(AWebWoWViewerCpp cpr)
 #target_link_libraries(AWebWoWViewerCpp storm)
 target_link_libraries(AWebWoWViewerCpp casc_static)
+
+target_link_libraries(AWebWoWViewerCpp png_static)
+
+
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")

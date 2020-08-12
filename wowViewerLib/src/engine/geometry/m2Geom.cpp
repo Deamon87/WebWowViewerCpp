@@ -338,6 +338,29 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     m2Header->ribbon_emitters.initM2Array(m2Header);
     m2Header->particle_emitters.initM2Array(m2Header);
 
+    if (m2Header->lights.size > 0) {
+        int directLights = 0;
+        int pointLights = 0;
+
+        for (int i = 0; i < m2Header->lights.size; i++) {
+            switch(m2Header->lights.getElement(i)->type) {
+                case 0 : {
+                    directLights++;
+                    break;
+                }
+                case 1 : {
+                    pointLights++;
+                    break;
+                }
+                default:
+                    std::cout << "Found unk light type " << m2Header->lights.getElement(i)->type << std::endl;
+                    break;
+            }
+        }
+
+        std::cout << "Found " << directLights << " direct lights and " << pointLights << " point lights" << std::endl;
+    }
+
     if (m2Header->global_flags.flag_has_blend_maps) {
         m2Header->blend_map_overrides.initM2Array(m2Header);
     }

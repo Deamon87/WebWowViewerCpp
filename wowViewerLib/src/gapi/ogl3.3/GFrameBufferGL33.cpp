@@ -107,3 +107,15 @@ void GFrameBufferGL33::copyRenderBufferToTexture(){
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER_EXT, m_textureFbo);
     glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
+
+void GFrameBufferGL33::readRGBAPixels(int x, int y, int width, int height, void *data) {
+    //Cant use m_renderBufFbo cause it uses multisampling
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_textureFbo);
+
+//    ((GTextureGL33 *)attachmentTextures[0].get())->bindToCurrentFrameBufferAsDepth()
+
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glReadPixels( x,y,  width, height,  GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+}

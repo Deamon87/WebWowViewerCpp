@@ -48,6 +48,7 @@
 #include "../wowViewerLib/src/engine/ApiContainer.h"
 #include "../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
 #include "../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
+#include <png.h>
 
 
 int mleft_pressed = 0;
@@ -57,6 +58,14 @@ double m_y = 0.0;
 
 bool stopMouse = false;
 bool stopKeyboard = false;
+
+std::string screenshotFileName = "";
+int screenshotWidth = 100;
+int screenshotHeight = 100;
+bool needToMakeScreenshot = false;
+int screenshotFrame = -1;
+HDrawStage screenshotDS = nullptr;
+
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     if (stopMouse) return;
@@ -259,6 +268,65 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
 void beforeCrash(void);
 
+HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
+                                ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene) {
+    float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
+    float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
+
+    float nearPlane = 1.0;
+    float fov = toRadian(45.0);
+
+    float canvasAspect = (float)width / (float)height;
+
+    auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+    //Frustum matrix with reversed Z
+
+    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+    apiContainer.hDevice->setInvertZ(isInfZSupported);
+    if (isInfZSupported)
+    {
+        float f = 1.0f / tan(fov / 2.0f);
+        cameraMatricesRendering->perspectiveMat = mathfu::mat4(
+            f / canvasAspect, 0.0f,  0.0f,  0.0f,
+            0.0f,    f,  0.0f,  0.0f,
+            0.0f, 0.0f,  1, -1.0f,
+            0.0f, 0.0f, 1,  0.0f);
+    }
+
+    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
+        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
+
+        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
+                                                                  0, -1, 0, 0,
+                                                                  0, 0, 1.0/2.0, 1/2.0,
+                                                                  0, 0, 0, 1).Transpose();
+
+        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
+    }
+
+    auto clearColor = apiContainer.getConfig()->getClearColor();
+
+    if (currentScene != nullptr) {
+        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
+
+        HFrameBuffer fb = nullptr;
+        if (isScreenshot) {
+            fb = apiContainer.hDevice->createFrameBuffer(width, height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32);
+        }
+
+        auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
+        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
+        auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
+                                                          {{0, 0}, {width, height}},
+                                                          true, clearColor, fb);
+
+        return sceneDrawStage;
+    }
+
+    return nullptr;
+}
+
 
 extern "C" void my_function_to_handle_aborts(int signal_number)
 {
@@ -277,7 +345,7 @@ extern "C" void my_function_to_handle_aborts(int signal_number)
 #ifdef _WIN32
 void beforeCrash() {
     std::cout << "HELLO" << std::endl;
-    //__asm("int3");
+    __debugbreak();
 }
 
 static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
@@ -297,6 +365,64 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 	return 0;
 }
 #endif
+
+void saveScreenshot(const std::string& name, int width, int height, std::vector<uint8_t> &rgbaBuff) {
+    FILE *fp = fopen(name.c_str(), "wb");
+    if (!fp) {
+        return;
+    }
+
+    png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png_ptr) {
+        fclose(fp);
+        return;
+    }
+
+    png_infop png_info;
+    if (!(png_info = png_create_info_struct(png_ptr))) {
+        png_destroy_write_struct(&png_ptr, nullptr);
+        return;
+    }
+
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_write_struct(&png_ptr, nullptr);
+        return;
+    }
+
+    png_init_io(png_ptr, fp);
+
+    png_set_IHDR(png_ptr, png_info, width, height, 8, PNG_COLOR_TYPE_RGB,
+                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+                 PNG_FILTER_TYPE_DEFAULT);
+
+    std::vector<uint8_t> data = std::vector<uint8_t>(width*height*3);
+    std::vector<uint8_t*> rows = std::vector<uint8_t*>(height);
+
+    for (int i = 0; i < height; ++i) {
+        rows[height - i - 1] = data.data() + (i*width*3);
+        for (int j = 0; j < width; ++j) {
+            int i1 = (i*width+j)*3;
+            int i2 = (i*width+j)*4;
+
+            char r = rgbaBuff[++i2];
+            char g = rgbaBuff[++i2];
+            char b = rgbaBuff[++i2];
+            char a = rgbaBuff[++i2];
+
+            data[i1++] = a;
+            data[i1++] = r;
+            data[i1++] = g;
+        }
+    }
+    png_set_rows(png_ptr, png_info, rows.data());
+    png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
+    png_write_end(png_ptr, png_info);
+
+
+    png_destroy_write_struct(&png_ptr, nullptr);
+    fclose(fp);
+}
+
 
 double currentFrame;
 double lastFrame;
@@ -381,8 +507,12 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
 //    {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=data&filedataid=";
+//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=";
+//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=data&filedataid=";
+//
+//Classics
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
@@ -501,6 +631,14 @@ int main(){
         cameraZ = currentCameraPos[2];
     });
 
+    frontendUI->setMakeScreenshotCallback([&apiContainer](std::string fileName, int width, int height) -> void {
+        screenshotWidth  = width;
+        screenshotHeight = height;
+        screenshotFileName = fileName;
+
+        needToMakeScreenshot = true;
+    });
+
 
     glfwSetWindowUserPointer(window, &apiContainer);
     glfwSetKeyCallback(window, onKey);
@@ -544,69 +682,59 @@ int main(){
 //        scene->draw((deltaTime*(1000.0f))); //miliseconds
 
         apiContainer.camera->tick(deltaTime*(1000.0f));
-        float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
-        float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
 
-        float nearPlane = 1.0;
-        float fov = toRadian(45.0);
+        if (screenshotDS != nullptr) {
+            if (screenshotFrame + 5 <= apiContainer.hDevice->getFrameNumber()) {
+                std::vector<uint8_t> buffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4);
 
-        float canvasAspect = (float)canvWidth / (float)canvHeight;
+                screenshotDS->target->readRGBAPixels( 0, 0, screenshotWidth, screenshotHeight, buffer.data());
+                saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
 
 
-        auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-        auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-        //Frustum matrix with reversed Z
-
-        bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
-        apiContainer.hDevice->setInvertZ(isInfZSupported);
-        if (isInfZSupported)
-        {
-            float f = 1.0f / tan(fov / 2.0f);
-            cameraMatricesRendering->perspectiveMat = mathfu::mat4(
-                f / canvasAspect, 0.0f,  0.0f,  0.0f,
-                0.0f,    f,  0.0f,  0.0f,
-                0.0f, 0.0f,  1, -1.0f,
-                0.0f, 0.0f, 1,  0.0f);
+                screenshotDS = nullptr;
+            }
         }
-
-        if (hdevice->getIsVulkanAxisSystem() ) {
-            auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
-
-            static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
-                                                                      0, -1, 0, 0,
-                                                                      0, 0, 1.0/2.0, 1/2.0,
-                                                                      0, 0, 0, 1).Transpose();
-
-            perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
-        }
-
 
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
-
         std::vector<HDrawStage> uiDependecies = {};
-        bool clearOnUi = true;
-        auto clearColor = apiContainer.getConfig()->getClearColor();
 
-        if (currentScene != nullptr) {
-            auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
-            auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
-            auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
-                {{0, 0}, {canvWidth, canvHeight}},
-                true, clearColor);
-
-            clearOnUi = false;
-            uiDependecies.push_back(sceneDrawStage);
-//            sceneDrawStage->target->
+        //DrawStage for screenshot
+//        needToMakeScreenshot = true;
+        if (needToMakeScreenshot)
+        {
+            auto drawStage = createSceneDrawStage(sceneScenario, screenshotWidth, screenshotHeight, deltaTime, true, apiContainer,
+                                                  currentScene);
+            if (drawStage != nullptr) {
+                uiDependecies.push_back(drawStage);
+                screenshotDS = drawStage;
+                screenshotFrame = apiContainer.hDevice->getFrameNumber();
+            }
+            needToMakeScreenshot = false;
         }
 
-        auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
-        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime*(1000.0f), nullptr);
-        auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies, true, {
-            {0,0}, {canvWidth, canvHeight}
-        }, clearOnUi, clearColor);
+        //DrawStage for current frame
+        bool clearOnUi = true;
+        {
+            auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime, false, apiContainer,
+                                                  currentScene);
+            if (drawStage != nullptr) {
+                uiDependecies.push_back(drawStage);
+                clearOnUi = false;
+            }
+        }
+        //DrawStage for UI
+        {
+            auto clearColor = apiContainer.getConfig()->getClearColor();
 
-
-//        auto updateResult = scene->cull(camera)->update(camera);
+            auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
+            auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
+            auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies, true,
+                {
+                    {0,     0},
+                    {canvWidth, canvHeight}
+                }, clearOnUi, clearColor, nullptr);
+        }
+        //        auto updateResult = scene->cull(camera)->update(camera);
 //        SceneComposer::All({
 //            updateResult->render(camera)->toFB(frameBuffer, viewPortDims),
 //            updateResult->render(cameraDebug)->toFB(frameBuffer, viewPortDims);
@@ -642,3 +770,5 @@ int main(){
 
     return 0;
 }
+
+

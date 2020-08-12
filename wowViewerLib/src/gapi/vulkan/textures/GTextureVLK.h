@@ -17,6 +17,7 @@ protected:
 public:
     ~GTextureVLK() override;
 
+    void readData(std::vector<uint8_t> &buff) override {};
     void loadData(int width, int height, void *data, ITextureFormat textureFormat) override;
     bool getIsLoaded() override;
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {

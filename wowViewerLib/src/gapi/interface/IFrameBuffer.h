@@ -13,6 +13,8 @@ public:
     virtual HGTexture getDepthTexture() = 0;
     virtual void bindFrameBuffer() = 0;
     virtual void copyRenderBufferToTexture() = 0;
+
+    virtual void readRGBAPixels(int x, int y, int width, int height, void *data) = 0;
 };
 
 #endif //AWEBWOWVIEWERCPP_IFRAMEBUFFER_H

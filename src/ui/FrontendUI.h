@@ -43,6 +43,7 @@ private:
     std::function <void(std::string m2FileName, std::vector<int> &replacementTextureIds)> openM2SceneByName = nullptr;
 
     std::function <void(float &cameraX,float &cameraY,float &cameraZ)> getCameraPos = nullptr;
+    std::function <void(std::string fileName, int width, int height)> makeScreenshotCallback = nullptr;
 
     void getAdtSelectionMinimap(int wdtFileDataId) {
         m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
@@ -73,11 +74,13 @@ private:
     void filterMapList(std::string text);
 
     ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory);
+    ImGui::FileBrowser createFileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);
 
     bool show_demo_window = true;
     bool show_another_window = true;
     bool showCurrentStats = true;
     bool showSelectMap = false;
+    bool showMakeScreenshot = false;
     bool showSettings = false;
     bool showQuickLinks = false;
     bool showAboutWindow = false;
@@ -123,6 +126,9 @@ private:
     std::vector<MapRecord> filteredMapList = {};
     std::vector<std::vector<std::string>> mapListStringMap = {};
 
+    int screenShotWidth = 100;
+    int screenShotHeight = 100;
+
 public:
     void overrideCascOpened(bool value) {
         cascOpened = value;
@@ -141,6 +147,7 @@ public:
     void setOpenM2SceneByfdidCallback(std::function <void(int m2FDid, std::vector<int> &replacementTextureIds)> callback);
     void setOpenM2SceneByFilenameCallback(std::function<void(std::string, std::vector<int>&)> callback);
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
+    void setMakeScreenshotCallback( std::function <void(std::string fileName, int width, int height)> callback);
 
     void setUnloadScene( std::function <void()> callback) {
         unloadScene = callback;
@@ -152,10 +159,13 @@ public:
     void showMainMenu();
 
     void showMapSelectionDialog();
+    void showMakeScreenshotDialog();
 
     void showAdtSelectionMinimap();
     void showSettingsDialog();
     void showQuickLinksDialog();
+
+    void showCurrentStatsDialog();
 };
 
 

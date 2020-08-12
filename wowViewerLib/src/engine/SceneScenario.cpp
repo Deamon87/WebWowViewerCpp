@@ -33,7 +33,7 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
     std::vector<HDrawStage> drawStageDependencies,
     bool setViewPort,
     ViewPortDimensions viewPortDimensions,
-    bool clearScreen, mathfu::vec4 clearColor) {
+    bool clearScreen, mathfu::vec4 clearColor, HFrameBuffer fbTarget) {
     HDrawStage drawStage = std::make_shared<DrawStage>();
 
     drawStage->drawStageDependencies = drawStageDependencies;
@@ -42,6 +42,7 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
     drawStage->viewPortDimensions = viewPortDimensions;
     drawStage->clearScreen = clearScreen;
     drawStage->clearColor = clearColor;
+    drawStage->target = fbTarget;
 
 //    drawStage->sceneWideBlockVSPSChunk;
 

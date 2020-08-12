@@ -42,6 +42,9 @@ bool GTextureGL33::getIsLoaded() {
 static int pureTexturesUploaded = 0;
 void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat textureFormat) {
 //    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
+    this->width = width;
+    this->height = height;
+
 
     m_device.bindTexture(this, 0);
     if (textureFormat == ITextureFormat::itRGBA) {
@@ -65,6 +68,18 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
     if (data != nullptr) {
         glGenerateMipmap(GL_TEXTURE_2D);
     }
+
+    m_device.bindTexture(nullptr, 0);
+}
+void GTextureGL33::readData(std::vector<uint8_t> &buff) {
+    if (buff.size() < width*height*4) {
+        __debugbreak();
+    }
+
+    m_device.bindTexture(this, 0);
+
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_BYTE, buff.data());
+
 
     m_device.bindTexture(nullptr, 0);
 }

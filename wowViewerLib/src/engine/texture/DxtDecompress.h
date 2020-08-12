@@ -32,7 +32,7 @@ void DecompressBlockBC3 (uint32_t x, uint32_t y, uint32_t stride,
 void DecompressBlockBC5 (uint32_t x, uint32_t y, uint32_t stride, enum BC5Mode mode,
                          const uint8_t* blockStorage, unsigned char* image);
 
-void DecompressBC1(uint32_t width, uint32_t height, const uint8_t* blockStorage, unsigned char* image);
+void DecompressBC1(uint32_t width, uint32_t height, const uint8_t* blockStorage, unsigned char* image, bool hasAlpha);
 
 void DecompressBC2(uint32_t width, uint32_t height, const uint8_t* blockStorage, unsigned char* image);
 void DecompressBC3(uint32_t width, uint32_t height, const uint8_t* blockStorage, unsigned char* image);

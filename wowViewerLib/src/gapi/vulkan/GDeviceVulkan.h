@@ -60,6 +60,7 @@ public:
 
     void reset() override;
 
+    unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() override;
     unsigned int getCullingFrameNumber() override;
     unsigned int getDrawFrameNumber() override;

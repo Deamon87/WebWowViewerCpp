@@ -115,7 +115,7 @@ static void Decompress16x3bitIndices (const uint8_t* packed, uint8_t* unpacked)
 }
 
 static void DecompressBlockBC1Internal (const uint8_t* block,
-                                        unsigned char* output, uint32_t outputStride, const uint8_t* alphaValues)
+                                        unsigned char* output, uint32_t outputStride, const uint8_t* alphaValues, bool isDxtWithAlpha)
 {
     uint32_t temp, code;
 
@@ -194,7 +194,7 @@ static void DecompressBlockBC1Internal (const uint8_t* block,
                         finalColor = PackRGBA((r0+r1)/2, (g0+g1)/2, (b0+b1)/2, alpha);
                         break;
                     case 3:
-                        finalColor = PackRGBA(0, 0, 0, alpha);
+                        finalColor = PackRGBA(0, 0, 0, isDxtWithAlpha ? 0 : alpha);
                         break;
                 }
 
@@ -214,7 +214,7 @@ const uint8_t* blockStorage:	pointer to the block to decompress.
 uint32_t* image:				pointer to image where the decompressed pixel data should be stored.
 */
 void DecompressBlockBC1 (uint32_t x, uint32_t y, uint32_t stride,
-                         const uint8_t* blockStorage, unsigned char* image)
+                         const uint8_t* blockStorage, unsigned char* image, bool isDxtWithAlpha)
 {
     static const uint8_t const_alpha [] = {
         255, 255, 255, 255,
@@ -224,7 +224,7 @@ void DecompressBlockBC1 (uint32_t x, uint32_t y, uint32_t stride,
     };
 
     DecompressBlockBC1Internal (blockStorage,
-                                image + x * sizeof (uint32_t) + (y * stride), stride, const_alpha);
+                                image + x * sizeof (uint32_t) + (y * stride), stride, const_alpha, isDxtWithAlpha);
 }
 
 /*
@@ -352,7 +352,7 @@ void DecompressBlockBC2 (uint32_t x, uint32_t y, uint32_t stride,
     }
 
     DecompressBlockBC1Internal (blockStorage,
-                                image + x * sizeof (uint32_t) + (y * stride), stride, alphaValues);
+                                image + x * sizeof (uint32_t) + (y * stride), stride, alphaValues, false);
 }
 
 
@@ -478,14 +478,14 @@ void DecompressBlockBC5 (uint32_t x, uint32_t y, uint32_t stride, enum BC5Mode m
 }
 
 
-void DecompressBC1(uint32_t width, uint32_t height, const uint8_t* blockStorage, unsigned char* image) {
+void DecompressBC1(uint32_t width, uint32_t height, const uint8_t* blockStorage, unsigned char* image, bool hasAlpha) {
     const uint32_t stride = width * 4;
 
     for( uint32_t y = 0; y < height; y += 4 )
     {
         for( uint32_t x = 0; x < width; x += 4 )
         {
-            DecompressBlockBC1( x, y, stride, blockStorage, image );
+            DecompressBlockBC1( x, y, stride, blockStorage, image, hasAlpha );
             blockStorage += 8;
         }
     }

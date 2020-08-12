@@ -58,6 +58,7 @@ void FrontendUI::composeUI() {
 
     //Show filePicker
     fileDialog.Display();
+    createFileDialog.Display();
 
     if (fileDialog.HasSelected()) {
         std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
@@ -72,6 +73,13 @@ void FrontendUI::composeUI() {
         }
         fileDialog.ClearSelected();
     }
+    if (createFileDialog.HasSelected()) {
+        if (makeScreenshotCallback) {
+            makeScreenshotCallback(createFileDialog.GetSelected().string(), screenShotWidth, screenShotHeight);
+        }
+        createFileDialog.ClearSelected();
+    }
+
 
 //    if (show_demo_window)
 //        ImGui::ShowDemoWindow(&show_demo_window);
@@ -80,34 +88,36 @@ void FrontendUI::composeUI() {
     showQuickLinksDialog();
 
     showMapSelectionDialog();
-
-    {
-        static float f = 0.0f;
-        static int counter = 0;
-
-        if (showCurrentStats) {
-            ImGui::Begin("Current stats",
-                         &showCurrentStats);                          // Create a window called "Hello, world!" and append into it.
-
-            static float cameraPosition[3] = {0, 0, 0};
-            if (getCameraPos) {
-                getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
-            }
-
-            ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
-                        cameraPosition[2]);               // Display some text (you can use a format strings too)
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-                        ImGui::GetIO().Framerate);
-//            if(getCurrentAreaName) {
-            ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
-//            }
-            ImGui::End();
-        }
-    }
+    showMakeScreenshotDialog();
+    showCurrentStatsDialog();
 
     // Rendering
     ImGui::Render();
+}
+
+void FrontendUI::showCurrentStatsDialog() {
+    static float f = 0.0f;
+    static int counter = 0;
+
+    if (showCurrentStats) {
+        ImGui::Begin("Current stats",
+                     &showCurrentStats);                          // Create a window called "Hello, world!" and append into it.
+
+        static float cameraPosition[3] = {0, 0, 0};
+        if (getCameraPos) {
+            getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+        }
+
+        ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
+                    cameraPosition[2]);               // Display some text (you can use a format strings too)
+
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
+                    ImGui::GetIO().Framerate);
+//            if(getCurrentAreaName) {
+        ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
+//            }
+        ImGui::End();
+    }
 }
 
 // templated version of my_equal so it could work with both char and wchar_t
@@ -362,6 +372,8 @@ void FrontendUI::showMainMenu() {
             ImGui::Separator();
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
+            ImGui::Separator();
+            if (ImGui::MenuItem("Make screenshot")) {showMakeScreenshot = true;}
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -1003,4 +1015,39 @@ bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 6
 std::string FrontendUI::getCurrentAreaName() {
     auto conf = m_api->getConfig();
     return conf->getAreaName();
+}
+
+void FrontendUI::setMakeScreenshotCallback(std::function<void(std::string fileName, int, int)> callback) {
+    makeScreenshotCallback = callback;
+}
+
+void FrontendUI::showMakeScreenshotDialog() {
+   if (showMakeScreenshot) {
+       ImGui::Begin("Make screenshot", &showMakeScreenshot);
+       {
+           ImGui::Text("Width:  ");
+           ImGui::SameLine();
+           if (ImGui::InputInt("##width", &screenShotWidth)) {
+                if (screenShotWidth < 0) {
+                    screenShotWidth = 0;
+                }
+           }
+
+           ImGui::Text("Height: ");
+           ImGui::SameLine();
+           if (ImGui::InputInt("##height", &screenShotHeight)) {
+               if (screenShotHeight < 0) {
+                   screenShotHeight = 0;
+               }
+           }
+
+           if (ImGui::Button("Make screenshot", ImVec2(-1, 23))) {
+               createFileDialog.Open();
+           }
+           ImGui::NewLine();
+
+           ImGui::End();
+       }
+
+   }
 }
