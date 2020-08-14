@@ -412,23 +412,60 @@ HGVertexBuffer M2Geom::getVBO(IDevice &device) {
     return vertexVbo;
 }
 
-HGVertexBufferBindings M2Geom::createDynamicVao(IDevice &device, SkinGeom *skinGeom, M2SkinSection *mesh) {
-    std::vector<uint16_t > indicies(mesh->indexCount);
+std::array<HGVertexBufferBindings, 4> M2Geom::createDynamicVao(
+    IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
+    SkinGeom *skinGeom, M2SkinSection *skinSection) {
+    //1. Create index buffer
+    std::vector<uint16_t > indicies(skinSection->indexCount);
 
-    for (int i = 0; i < mesh->indexCount; i++) {
-        int index = mesh->indexStart + i;
-        indicies[i] = *skinGeom->getSkinData()->vertices.getElement(*skinGeom->getSkinData()->indices.getElement(index));
+
+    int minIndex = 9999999;
+    int maxIndex = 0;
+    for (int i = 0; i < skinSection->indexCount; i++) {
+        int index = skinSection->indexStart + (skinSection->Level << 16) + i;
+        indicies[i] =
+            *skinGeom->getSkinData()->vertices.getElement(*skinGeom->getSkinData()->indices.getElement(index))
+            - skinSection->vertexStart;
+
+        minIndex = std::min<int>(minIndex, indicies[i]);
+        maxIndex = std::max<int>(maxIndex, indicies[i]);
     }
 
-    auto indexVbo = device.createIndexBuffer();
-    indexVbo->uploadData(
+//    std::cout
+//        << " indexCount = " << skinSection->indexCount
+//        << " minIndex = " << minIndex
+//        << " maxIndex = " << maxIndex
+//        << " vertexStart = " << skinSection->vertexStart
+//        << " vertexCount = " << skinSection->vertexCount
+//        << std::endl;
+
+
+    auto indexIbo = device.createIndexBuffer();
+    indexIbo->uploadData(
         &indicies[0],
         indicies.size() * sizeof(uint16_t));
 
+    std::array<HGVertexBufferBindings, 4> result;
+    for (int i = 0 ; i < 4; i ++) {
+        //2.1. Create vertex buffer
+        auto vertexVboDyn = device.createVertexBufferDynamic(skinSection->vertexCount * sizeof(M2Vertex));
+        dynVBOs[i] = vertexVboDyn;
 
-    std::vector<M2Vertex> vertexes(mesh->indexCount);
+        //2.2 Create VAO
+        HGVertexBufferBindings bufferBindings = device.createVertexBufferBindings();
+        bufferBindings->setIndexBuffer(indexIbo);
 
-    return nullptr;
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = vertexVboDyn;
+        vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[6]);
+
+        bufferBindings->addVertexBufferBinding(vertexBinding);
+        bufferBindings->save();
+
+        result[i] = bufferBindings;
+    }
+
+    return result;
 }
 
 HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {

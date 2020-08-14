@@ -461,7 +461,7 @@ int main(){
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
     } else if ( rendererName == "ogl2") {
         glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2); // We want OpenGL 3.3
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2); // We want OpenGL 2.0
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 //    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
@@ -507,12 +507,12 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
 //    {
-//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=";
-//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=data&filedataid=";
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=data&filedataid=";
 //
 //Classics
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
+//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
+//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);

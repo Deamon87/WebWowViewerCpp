@@ -22,7 +22,7 @@ float M2MeshBufferUpdater::calcFinalTransparency(const M2Object &m2Object, int b
 
 void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object, M2MaterialInst &materialData, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
     auto blendMode = hmesh->getGxBlendMode();
-    int batchIndex = materialData.texUnitTexIndex;
+    int batchIndex = materialData.batchIndex;
     auto vertexShader = materialData.vertexShader;
 
     hmesh->getUniformBuffer(2)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self){
@@ -82,8 +82,8 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
 void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, M2MaterialInst &materialData,
                                          const M2Data * m2File, const M2SkinProfile *m2SkinProfile, mathfu::mat4 &modelViewMat) {
 
-    M2Batch *textMaterial = m2SkinProfile->batches.getElement(materialData.texUnitTexIndex);
-    M2SkinSection *submesh = m2SkinProfile->submeshes.getElement(textMaterial->skinSectionIndex);
+    M2Batch *textMaterial = m2SkinProfile->batches.getElement(materialData.batchIndex);
+    M2SkinSection *submesh = m2SkinProfile->skinSections.getElement(textMaterial->skinSectionIndex);
 
     mathfu::vec4 centerBB = mathfu::vec4(mathfu::vec3(submesh->sortCenterPosition), 1.0);
 

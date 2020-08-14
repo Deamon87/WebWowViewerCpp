@@ -373,7 +373,12 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
             ImGui::Separator();
-            if (ImGui::MenuItem("Make screenshot")) {showMakeScreenshot = true;}
+            if (ImGui::MenuItem("Make screenshot")) {
+                showMakeScreenshot = true;
+                screenShotWidth = lastWidth;
+                screenShotHeight = lastHeight;
+
+            }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -833,6 +838,9 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
         io.Fonts->TexID = this->fontTexture;
         return;
     }
+
+    lastWidth = resultDrawStage->viewPortDimensions.maxs[0];
+    lastHeight = resultDrawStage->viewPortDimensions.maxs[1];
 
     resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
 

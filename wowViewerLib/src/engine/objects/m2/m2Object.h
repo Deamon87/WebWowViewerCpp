@@ -53,6 +53,13 @@ private:
         this->setModelFileName(modelName);
     }
 
+    struct dynamicVaoMeshFrame {
+        int batchIndex = -1;
+        HGVertexBufferDynamic m_bufferVBO = nullptr;
+        HGVertexBufferBindings m_bindings = nullptr;
+        HGParticleMesh m_mesh = nullptr;
+    };
+
 private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
     mathfu::mat4 m_placementInvertMatrix;
@@ -118,6 +125,7 @@ private:
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
     std::vector<HGM2Mesh> m_meshArray;
+    std::vector<std::array<dynamicVaoMeshFrame, 4>> dynamicMeshes;
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
 
@@ -141,7 +149,7 @@ private:
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &modelViewMat);
     bool checkIfHasBillboarded();
-    bool checkifBonesAreInRange(M2SkinSection *mesh);
+    bool checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *mesh);
 
 
     void createMeshes();
@@ -266,6 +274,11 @@ public:
 
         return m_m2Geom->m_m2Data->cameras.size;
     }
+
+    HGM2Mesh createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
+                              const M2SkinSection *skinSection, M2MaterialInst &material);
+
+    void updateDynamicMeshes();
 };
 
 

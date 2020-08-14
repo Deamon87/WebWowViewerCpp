@@ -126,6 +126,9 @@ private:
     std::vector<MapRecord> filteredMapList = {};
     std::vector<std::vector<std::string>> mapListStringMap = {};
 
+    int lastWidth = 100;
+    int lastHeight = 100;
+
     int screenShotWidth = 100;
     int screenShotHeight = 100;
 

@@ -16,7 +16,7 @@ void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
     skinHeader->vertices.initM2Array(skinHeader);
     skinHeader->indices.initM2Array(skinHeader);
     skinHeader->bones.initM2Array(skinHeader);
-    skinHeader->submeshes.initM2Array(skinHeader);
+    skinHeader->skinSections.initM2Array(skinHeader);
     skinHeader->batches.initM2Array(skinHeader);
 
     fsStatus = FileStatus::FSLoaded;

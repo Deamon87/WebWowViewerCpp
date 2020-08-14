@@ -33,7 +33,8 @@ public:
     void process(HFileContent m2File, const std::string &fileName) override;
     HGVertexBuffer getVBO(IDevice &device);
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
-    HGVertexBufferBindings createDynamicVao(IDevice &device, SkinGeom *skinGeom, M2SkinSection *mesh);
+    std::array<HGVertexBufferBindings, 4> createDynamicVao(IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
+                                                               SkinGeom *skinGeom, M2SkinSection *skinSection);
 
     int findAnimationIndex(uint32_t anim_id);
     void loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t subAnimationId);

@@ -514,8 +514,6 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
     if (!config->getUseTimedGloabalLight()) return;
 
     bool fogRecordWasFound = false;
-    mathfu::vec3 ambientColor = mathfu::vec3(0.0, 0.0, 0.0);
-    mathfu::vec3 directColor = mathfu::vec3(0.0, 0.0, 0.0);
     mathfu::vec3 endFogColor = mathfu::vec3(0.0, 0.0, 0.0);
 
     if (cullStage->m_currentWMO != nullptr) {

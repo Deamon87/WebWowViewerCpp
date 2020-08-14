@@ -180,7 +180,7 @@ struct M2Array {
         return &((T* )offset)[index];
 #endif
     }
-    T* operator[](int index) {
+    T* operator[](int index) const {
         return getElement(index);
     }
     inline std::string toString(){
