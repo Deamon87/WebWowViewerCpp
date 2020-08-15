@@ -1765,6 +1765,8 @@ void M2Object::createVertexBindings() {
 }
 
 void M2Object::updateDynamicMeshes() {
+    auto rootMatInverse = bonesMatrices[0].Inverse();
+
     for (auto &dynamicMesh: dynamicMeshes) {
         auto frameNum = m_api->hDevice->getUpdateFrameNumber();
         auto &dynMeshData = dynamicMesh[frameNum];
@@ -1793,7 +1795,7 @@ void M2Object::updateDynamicMeshes() {
                 }
             }
             overrideVert.pos =
-                mathfu::vec3_packed(bonesMatrices[0].Inverse() * matrix * mathfu::vec4(mathfu::vec3(overrideVert.pos), 1.0).xyz());
+                mathfu::vec3_packed(rootMatInverse * matrix * mathfu::vec4(mathfu::vec3(overrideVert.pos), 1.0).xyz());
 
 
             overrideVert.bone_indices[0] = 0;
@@ -1801,6 +1803,10 @@ void M2Object::updateDynamicMeshes() {
             overrideVert.bone_indices[2] = 0;
             overrideVert.bone_indices[3] = 0;
 
+//            overrideVert.bone_weights[0] = 1;
+//            overrideVert.bone_weights[1] = 0;
+//            overrideVert.bone_weights[2] = 0;
+//            overrideVert.bone_weights[3] = 0;
         }
 
         dynMeshData.m_bufferVBO->save(skinSection->vertexCount*sizeof(M2Vertex));

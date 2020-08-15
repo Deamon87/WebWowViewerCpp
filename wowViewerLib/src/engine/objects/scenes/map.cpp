@@ -597,6 +597,8 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             }
         }
         for (auto &_light : lightResults) {
+            if (_light.skyBoxFdid == 0 || _light.lightSkyboxId == 0) continue;
+
             stateForConditions.currentSkyboxIds.push_back(_light.lightSkyboxId);
             std::shared_ptr<M2Object> skyBox = nullptr;
             if (perFdidMap[_light.skyBoxFdid] == nullptr) {
@@ -917,8 +919,14 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
                         }
                     } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
                         if (m_wdtfile->mphd->flags.wdt_has_maid) {
-                            adtObject = std::make_shared<AdtObject>(m_api, i, j, m_wdtfile->mapFileDataIDs[j * 64 + i],
-                                                                    m_wdtfile);
+                            auto &mapFileIds = m_wdtfile->mapFileDataIDs[j * 64 + i];
+                            if (mapFileIds.rootADT >= 0) {
+                                adtObject = std::make_shared<AdtObject>(m_api, i, j,
+                                                                        m_wdtfile->mapFileDataIDs[j * 64 + i],
+                                                                        m_wdtfile);
+                            } else {
+                                continue;
+                            }
                         } else {
                             std::string adtFileTemplate =
                                 "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" +

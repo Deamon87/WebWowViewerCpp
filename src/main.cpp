@@ -395,11 +395,11 @@ void saveScreenshot(const std::string& name, int width, int height, std::vector<
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                  PNG_FILTER_TYPE_DEFAULT);
 
-    std::vector<uint8_t> data = std::vector<uint8_t>(width*height*3);
-    std::vector<uint8_t*> rows = std::vector<uint8_t*>(height);
+    std::shared_ptr<std::vector<uint8_t>> data = std::make_shared<std::vector<uint8_t>>(width*height*3);
+    std::shared_ptr<std::vector<uint8_t*>> rows = std::make_shared<std::vector<uint8_t*>>(height);
 
     for (int i = 0; i < height; ++i) {
-        rows[height - i - 1] = data.data() + (i*width*3);
+        (*rows)[height - i - 1] = data->data() + (i*width*3);
         for (int j = 0; j < width; ++j) {
             int i1 = (i*width+j)*3;
             int i2 = (i*width+j)*4;
@@ -409,12 +409,12 @@ void saveScreenshot(const std::string& name, int width, int height, std::vector<
             char b = rgbaBuff[++i2];
             char a = rgbaBuff[++i2];
 
-            data[i1++] = a;
-            data[i1++] = r;
-            data[i1++] = g;
+            (*data)[i1++] = a;
+            (*data)[i1++] = r;
+            (*data)[i1++] = g;
         }
     }
-    png_set_rows(png_ptr, png_info, rows.data());
+    png_set_rows(png_ptr, png_info, rows->data());
     png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
     png_write_end(png_ptr, png_info);
 
@@ -685,7 +685,7 @@ int main(){
 
         if (screenshotDS != nullptr) {
             if (screenshotFrame + 5 <= apiContainer.hDevice->getFrameNumber()) {
-                std::vector<uint8_t> buffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4);
+                std::vector<uint8_t> buffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4+1);
 
                 screenshotDS->target->readRGBAPixels( 0, 0, screenshotWidth, screenshotHeight, buffer.data());
                 saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);

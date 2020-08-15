@@ -85,7 +85,7 @@ void main() {
 
     vec4 final = vec4(matDiffuse_3, specBlend_3);
 
-    vec3 matDiffuse = final.rgb * vColor.rgb;
+    vec3 matDiffuse = final.rgb * 2.0 * vColor.rgb;
 
 
     vec4 finalColor = vec4(

@@ -615,7 +615,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"skyConus",  {
     {
       2, {
-        {"_89.skyColor[0]", true, 0, 1, 4, 6},
+        {"_82.skyColor[0]", true, 0, 1, 4, 6},
       }
     },
     {
@@ -702,8 +702,8 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       3, {
-        {"_546.uFogStartAndFogEnd", true, 0, 1, 4, 0},
-        {"_546.uFogColor", true, 16, 1, 4, 0},
+        {"_548.uFogStartAndFogEnd", true, 0, 1, 4, 0},
+        {"_548.uFogColor", true, 16, 1, 4, 0},
       }
     },
     {

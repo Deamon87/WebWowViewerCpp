@@ -116,6 +116,11 @@ public:
     }
 
     std::shared_ptr<T> getFileId (int id) {
+        if (id == 0) {
+//            __debugbreak();
+            return nullptr;
+        }
+
         std::lock_guard<std::mutex> lock(getFileMutex);
 
         std::stringstream ss;

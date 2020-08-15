@@ -43,10 +43,22 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DE
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC  ")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	message("This is clang")
 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static -femulated-tls ")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -femulated-tls -std=c++1z")
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -static -femulated-tls ")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -femulated-tls -std=c++1z")
+
+
+
+	#set(_GLIBCXX_USE_C99_CHECK 0)
+	#set(_GLIBCXX_USE_C99_DYNAMIC 0)
+	#set(_GLIBCXX_USE_C99_LONG_LONG_CHECK 0)
+	#set(_GLIBCXX_USE_C99_LONG_LONG_DYNAMIC 0)
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
+
 endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	link_libraries(stdc++fs)
@@ -274,7 +286,7 @@ target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
 	target_link_libraries(AWebWoWViewerCpp ssp)
 endif()
- if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
 	target_link_libraries(AWebWoWViewerCpp ssp)
 endif()
 target_link_libraries(AWebWoWViewerCpp WoWViewerLib)
