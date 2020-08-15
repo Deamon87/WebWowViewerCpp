@@ -9,6 +9,7 @@
 
 class IFrameBuffer {
 public:
+    virtual ~IFrameBuffer(){};
     virtual HGTexture getAttachment(int index) = 0;
     virtual HGTexture getDepthTexture() = 0;
     virtual void bindFrameBuffer() = 0;

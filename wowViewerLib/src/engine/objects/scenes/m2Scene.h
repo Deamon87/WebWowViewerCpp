@@ -72,7 +72,7 @@ public:
     void doPostLoad(HCullStage cullStage) override;
 
     int getCameraNum() override ;
-    std::shared_ptr<ICamera> createCamera(int cameraNum);
+    std::shared_ptr<ICamera> createCamera(int cameraNum) override;
 };
 
 

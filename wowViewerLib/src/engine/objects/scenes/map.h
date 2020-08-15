@@ -41,7 +41,7 @@ protected:
     HWdtFile m_wdtfile = nullptr;
     std::shared_ptr<WmoObject> wmoMap = nullptr;
 
-    float m_currentGlow = 0;
+
     std::vector<std::shared_ptr<M2Object>> m_exteriorSkyBoxes;
 
     std::shared_ptr<WdlObject> m_wdlObject = nullptr;
@@ -75,7 +75,7 @@ protected:
     std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
 
     int getCameraNum() override {return 0;};
-    std::shared_ptr<ICamera> createCamera(int cameraNum) { return nullptr;};
+    std::shared_ptr<ICamera> createCamera(int cameraNum) override { return nullptr;};
 
     animTime_t getCurrentSceneTime() override ;
 

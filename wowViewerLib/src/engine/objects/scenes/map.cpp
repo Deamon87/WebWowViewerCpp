@@ -628,9 +628,9 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         mathfu::vec3 SkySmogColor = {0, 0, 0};
         mathfu::vec3 SkyFogColor = {0, 0, 0};
 
-        m_currentGlow = 0;
+        config->currentGlow = 0;
         for (auto &_light : lightResults) {
-            m_currentGlow += _light.glow * _light.blendCoef;
+            config->currentGlow += _light.glow * _light.blendCoef;
             ambientColor += mathfu::vec3(_light.ambientColor) * _light.blendCoef;
             horizontAmbientColor += mathfu::vec3(_light.horizontAmbientColor) * _light.blendCoef;
             groundAmbientColor += mathfu::vec3(_light.groundAmbientColor) * _light.blendCoef;
@@ -1520,7 +1520,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
     //And the final is ffxglow to screen
     {
         auto config = m_api->getConfig();
-        auto glow = m_currentGlow;
+        auto glow = config->currentGlow;
         auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
         ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self) -> void {
             auto &meshblockVS = self->getObject<mathfu::vec4_packed>();

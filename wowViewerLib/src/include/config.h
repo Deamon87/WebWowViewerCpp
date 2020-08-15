@@ -53,7 +53,8 @@ private:
     float fogStart;
     float fogEnd;
 
-    bool useGaussBlur = false;
+
+    bool useGaussBlur = true;
 
     bool useTimedGloabalLight = true;
     bool useM2AmbientLight = false;
@@ -443,6 +444,7 @@ public:
     }
 
     int diffuseColorHack = 0;
+    float currentGlow = 0;
 };
 
 

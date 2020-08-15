@@ -137,15 +137,15 @@ ParticleEmitter::ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Obje
             this->generator = new CSphereGenerator(this->m_seed, particle, 0 != (m_data->old.flags & 0x100));
             break;
         default:
-            this->generator = new CPlaneGenerator(this->m_seed, particle);
-//            this->generator = nullptr;
+//            this->generator = new CPlaneGenerator(this->m_seed, particle);
+            this->generator = nullptr;
             std::cout << "Found unimplemented generator " << (int)m_data->old.emitterType << std::endl;
 
 //            auto tex0 = m2Object->getBlpTextureData(this->m_data->old.texture_0);
 //            if (tex0) {
 //                std::cout << "Using " << tex0->getTextureName() << " texture" << std::endl;
 //            }
-//            return;
+            return;
             break;
     }
 

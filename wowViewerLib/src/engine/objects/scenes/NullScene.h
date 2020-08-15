@@ -22,5 +22,8 @@ public:
     virtual void doPostLoad(HCullStage cullStage) override {};
     virtual void update(HUpdateStage updateStage) override {};
     virtual void updateBuffers(HCullStage cullStage) override {};
+    virtual void resetAnimation() override {};
+    virtual int getCameraNum() override {};
+    virtual std::shared_ptr<ICamera> createCamera(int cameraNum) override {};
 };
 #endif //AWEBWOWVIEWERCPP_NULLSCENE_H

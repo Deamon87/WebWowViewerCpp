@@ -172,26 +172,26 @@ layout(std140) uniform meshWideBlockPS
     ivec4 PixelShader_UnFogged_IsAffectedByLight;
     vec4 uFogColorAndAlphaTest;
     vec4 uPcColor;
-} _246;
+} _247;
 
 layout(std140) uniform modelWideBlockPS
 {
     InteriorLightParam intLight;
     LocalLight pc_lights[4];
-    ivec4 lightCount;
+    ivec4 lightCountAndBcHack;
     vec4 interiorExteriorBlend;
-} _271;
+} _272;
 
 layout(std140) uniform sceneWideBlockVSPS
 {
     SceneWideParams scene;
-} _310;
+} _311;
 
 layout(std140) uniform modelWideBlockVS
 {
     mat4 uPlacementMat;
     mat4 uBoneMatrixes[220];
-} _318;
+} _319;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
@@ -206,7 +206,7 @@ in vec3 vPosition;
 in vec3 vNormal;
 layout(location = 0) out vec4 outputColor;
 
-vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight, vec3 specular)
 {
     vec3 localDiffuse = accumLight;
     if (!applyLight)
@@ -254,7 +254,7 @@ vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorE
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
-    vec3 specTerm = vec3(0.0);
+    vec3 specTerm = specular;
     vec3 emTerm = vec3(0.0);
     return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
@@ -273,35 +273,35 @@ void main()
     vec4 finalColor = vec4(0.0);
     vec4 meshResColor = vDiffuseColor;
     vec3 accumLight;
-    if (_246.PixelShader_UnFogged_IsAffectedByLight.z == 1)
+    if (_247.PixelShader_UnFogged_IsAffectedByLight.z == 1)
     {
         vec3 vPos3 = vPosition;
         vec3 vNormal3 = normalize(vNormal);
         vec3 lightColor = vec3(0.0);
-        int count = int(_271.pc_lights[0].attenuation.w);
+        int count = int(_272.pc_lights[0].attenuation.w);
         LocalLight lightRecord;
         for (int index = 0; index < 4; index++)
         {
-            if (index >= _271.lightCount.x)
+            if (index >= _272.lightCountAndBcHack.x)
             {
                 break;
             }
-            lightRecord.color = _271.pc_lights[index].color;
-            lightRecord.position = _271.pc_lights[index].position;
-            lightRecord.attenuation = _271.pc_lights[index].attenuation;
-            vec3 vectorToLight = (_310.scene.uLookAtMat * (_318.uPlacementMat * lightRecord.position)).xyz - vPos3;
+            lightRecord.color = _272.pc_lights[index].color;
+            lightRecord.position = _272.pc_lights[index].position;
+            lightRecord.attenuation = _272.pc_lights[index].attenuation;
+            vec3 vectorToLight = (_311.scene.uLookAtMat * (_319.uPlacementMat * lightRecord.position)).xyz - vPos3;
             float distanceToLightSqr = dot(vectorToLight, vectorToLight);
             float distanceToLightInv = inversesqrt(distanceToLightSqr);
             float distanceToLight = distanceToLightSqr * distanceToLightInv;
             float diffuseTerm1 = max(dot(vectorToLight, vNormal3) * distanceToLightInv, 0.0);
             vec4 attenuationRec = lightRecord.attenuation;
             float attenuation = 1.0 - clamp((distanceToLight - attenuationRec.x) * (1.0 / (attenuationRec.z - attenuationRec.x)), 0.0, 1.0);
-            vec3 attenuatedColor = (lightRecord.color.xyz * attenuation) * attenuationRec.y;
+            vec3 attenuatedColor = lightRecord.color.xyz * attenuation;
             lightColor += vec3((attenuatedColor * attenuatedColor) * diffuseTerm1);
         }
-        vec3 _389 = clamp(lightColor, vec3(0.0), vec3(1.0));
-        meshResColor = vec4(_389.x, _389.y, _389.z, meshResColor.w);
-        accumLight = meshResColor.xyz;
+        vec3 _386 = clamp(lightColor, vec3(0.0), vec3(1.0));
+        meshResColor = vec4(_386.x, _386.y, _386.z, meshResColor.w);
+        accumLight = mix(lightColor, meshResColor.xyz, vec3(float(_272.lightCountAndBcHack.y)));
     }
     float finalOpacity = 0.0;
     vec3 specular = vec3(0.0);
@@ -310,7 +310,7 @@ void main()
     genericParams[0] = vec4(1.0);
     genericParams[1] = vec4(1.0);
     genericParams[2] = vec4(1.0);
-    int uPixelShader = _246.PixelShader_UnFogged_IsAffectedByLight.x;
+    int uPixelShader = _247.PixelShader_UnFogged_IsAffectedByLight.x;
     vec3 matDiffuse;
     float opacity;
     #if (FRAGMENTSHADER == 0)
@@ -505,30 +505,93 @@ void main()
     opacity = (((tex * tex2) * tex3) * genericParams[0]).w * vDiffuseColor.w;
     finalOpacity = opacity * visParams.x;
     #endif
+    #if (FRAGMENTSHADER == 36)
+    matDiffuse = ((vDiffuseColor.xyz * 2.0) * tex.xyz) * tex2.xyz;
+    opacity = (tex.w * tex2.w) * vDiffuseColor.w;
+    finalOpacity = opacity * visParams.x;
+    #endif
     vec3 param = matDiffuse;
     vec3 param_1 = vNormal;
-    bool param_2 = _246.PixelShader_UnFogged_IsAffectedByLight.z > 0;
-    float param_3 = _271.interiorExteriorBlend.x;
+    bool param_2 = _247.PixelShader_UnFogged_IsAffectedByLight.z > 0;
+    float param_3 = _272.interiorExteriorBlend.x;
     SceneWideParams param_4;
-    param_4.uLookAtMat = _310.scene.uLookAtMat;
-    param_4.uPMatrix = _310.scene.uPMatrix;
-    param_4.uViewUp = _310.scene.uViewUp;
-    param_4.uInteriorSunDir = _310.scene.uInteriorSunDir;
-    param_4.extLight.uExteriorAmbientColor = _310.scene.extLight.uExteriorAmbientColor;
-    param_4.extLight.uExteriorHorizontAmbientColor = _310.scene.extLight.uExteriorHorizontAmbientColor;
-    param_4.extLight.uExteriorGroundAmbientColor = _310.scene.extLight.uExteriorGroundAmbientColor;
-    param_4.extLight.uExteriorDirectColor = _310.scene.extLight.uExteriorDirectColor;
-    param_4.extLight.uExteriorDirectColorDir = _310.scene.extLight.uExteriorDirectColorDir;
+    param_4.uLookAtMat = _311.scene.uLookAtMat;
+    param_4.uPMatrix = _311.scene.uPMatrix;
+    param_4.uViewUp = _311.scene.uViewUp;
+    param_4.uInteriorSunDir = _311.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _311.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _311.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _311.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _311.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _311.scene.extLight.uExteriorDirectColorDir;
     InteriorLightParam param_5;
-    param_5.uInteriorAmbientColorAndApplyInteriorLight = _271.intLight.uInteriorAmbientColorAndApplyInteriorLight;
-    param_5.uInteriorDirectColorAndApplyExteriorLight = _271.intLight.uInteriorDirectColorAndApplyExteriorLight;
+    param_5.uInteriorAmbientColorAndApplyInteriorLight = _272.intLight.uInteriorAmbientColorAndApplyInteriorLight;
+    param_5.uInteriorDirectColorAndApplyExteriorLight = _272.intLight.uInteriorDirectColorAndApplyExteriorLight;
     vec3 param_6 = accumLight;
-    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0)), finalOpacity);
-    if (finalColor.w < _246.uFogColorAndAlphaTest.w)
+    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0), specular), finalOpacity);
+    if (finalColor.w < _247.uFogColorAndAlphaTest.w)
     {
         discard;
     }
     outputColor = finalColor;
+}
+
+
+#version 330
+
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+layout(std140) uniform sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+} _50;
+
+layout(std140) uniform meshWideBlockVS
+{
+    vec4 skyColor[6];
+} _89;
+
+layout(location = 0) in vec4 aPosition;
+out vec4 vColor;
+
+void main()
+{
+    vec3 inputPos = aPosition.xyz;
+    vec2 _20 = inputPos.xy / vec2(0.6875);
+    inputPos = vec3(_20.x, _20.y, inputPos.z);
+    float _31;
+    if (inputPos.z > 0.0)
+    {
+        _31 = inputPos.z / 0.292800009250640869140625;
+    }
+    else
+    {
+        _31 = inputPos.z;
+    }
+    inputPos.z = _31;
+    vec4 cameraPos = _50.scene.uLookAtMat * vec4(inputPos, 1.0);
+    vec3 _70 = cameraPos.xyz - _50.scene.uLookAtMat[3].xyz;
+    cameraPos = vec4(_70.x, _70.y, _70.z, cameraPos.w);
+    cameraPos.z = cameraPos.z;
+    int vColorInd = int(aPosition.w);
+    vColor = vec4(_89.skyColor[vColorInd].xyz, 1.0);
+    gl_Position = _50.scene.uPMatrix * cameraPos;
 }
 
 
@@ -659,6 +722,30 @@ void main()
 
 
 #version 330
+
+layout(std140) uniform meshWideBlockVS
+{
+    float uWidth;
+    float uHeight;
+    float uX;
+    float uY;
+} _36;
+
+out vec2 texCoord;
+layout(location = 0) in vec2 position;
+
+
+void main() {
+    //texCoord = texture;
+    texCoord = position.xy * 0.5 + 0.5;
+
+    //gl_Position = vec4(position, 0.0, 1.0);
+    gl_Position = vec4(
+        (((position.x + 1.0)/2.0) * _36.uWidth + _36.uX)*2.0 - 1.0,
+        (((position.y + 1.0)/2.0) * _36.uHeight + _36.uY)*2.0 - 1.0,
+        0.5,
+        1.0);
+}#version 330
 
 layout(std140) uniform sceneWideBlockVSPS
 {
@@ -828,6 +915,32 @@ void main()
 
 layout(std140) uniform meshWideBlockPS
 {
+    vec4 texOffsetX;
+    vec4 texOffsetY;
+} _33;
+
+uniform sampler2D texture0;
+
+in vec2 texCoord;
+layout(location = 0) out vec4 out_result;
+
+void main()
+{
+    vec2 tex_offset = vec2(0.001000000047497451305389404296875);
+    vec3 result = texture(texture0, texCoord).xyz * 0.0;
+    result = vec3(0.0);
+    result += (texture(texture0, texCoord + vec2(_33.texOffsetX.x * tex_offset.x, _33.texOffsetY.x * tex_offset.y)).xyz * 0.125);
+    result += (texture(texture0, texCoord + vec2(_33.texOffsetX.y * tex_offset.x, _33.texOffsetY.y * tex_offset.y)).xyz * 0.375);
+    result += (texture(texture0, texCoord + vec2(_33.texOffsetX.z * tex_offset.x, _33.texOffsetY.z * tex_offset.y)).xyz * 0.375);
+    result += (texture(texture0, texCoord + vec2(_33.texOffsetX.w * tex_offset.x, _33.texOffsetY.w * tex_offset.y)).xyz * 0.125);
+    out_result = vec4(result, 1.0);
+}
+
+
+#version 330
+
+layout(std140) uniform meshWideBlockPS
+{
     float gauss_offsets[5];
     float gauss_weights[5];
     vec2 uResolution;
@@ -973,18 +1086,19 @@ layout(std140) uniform meshWideBlockPS
 {
     vec4 uHeightScale;
     vec4 uHeightOffset;
-} _251;
+    mat4 animationMat[4];
+} _227;
 
 layout(std140) uniform sceneWideBlockVSPS
 {
     SceneWideParams scene;
-} _427;
+} _459;
 
 layout(std140) uniform modelWideBlockPS
 {
     vec4 uFogStartAndFogEnd;
     vec4 uFogColor;
-} _514;
+} _546;
 
 uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayerHeight0;
@@ -1003,7 +1117,7 @@ in vec3 vVertexLighting;
 in vec3 vPosition;
 layout(location = 0) out vec4 outColor;
 
-vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight, vec3 specular)
 {
     vec3 localDiffuse = accumLight;
     if (!applyLight)
@@ -1051,7 +1165,7 @@ vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorE
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
-    vec3 specTerm = vec3(0.0);
+    vec3 specTerm = specular;
     vec3 emTerm = vec3(0.0);
     return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
@@ -1061,16 +1175,16 @@ void main()
     vec2 vTexCoord = vChunkCoords;
     vec2 alphaCoord = vec2(vChunkCoords.x / 8.0, vChunkCoords.y / 8.0);
     vec3 alphaBlend = texture(uAlphaTexture, alphaCoord).yzw;
-    vec2 tcLayer0 = vTexCoord;
-    vec2 tcLayer1 = vTexCoord;
-    vec2 tcLayer2 = vTexCoord;
-    vec2 tcLayer3 = vTexCoord;
+    vec2 tcLayer0 = (_227.animationMat[0] * vec4(vTexCoord, 0.0, 1.0)).xy;
+    vec2 tcLayer1 = (_227.animationMat[1] * vec4(vTexCoord, 0.0, 1.0)).xy;
+    vec2 tcLayer2 = (_227.animationMat[2] * vec4(vTexCoord, 0.0, 1.0)).xy;
+    vec2 tcLayer3 = (_227.animationMat[3] * vec4(vTexCoord, 0.0, 1.0)).xy;
     float minusAlphaBlendSum = 1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0);
     vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
-    float weightedTexture_x = minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * _251.uHeightScale.x) + _251.uHeightOffset.x);
-    float weightedTexture_y = weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * _251.uHeightScale.y) + _251.uHeightOffset.y);
-    float weightedTexture_z = weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * _251.uHeightScale.z) + _251.uHeightOffset.z);
-    float weightedTexture_w = weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * _251.uHeightScale.w) + _251.uHeightOffset.w);
+    float weightedTexture_x = minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * _227.uHeightScale.x) + _227.uHeightOffset.x);
+    float weightedTexture_y = weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * _227.uHeightScale.y) + _227.uHeightOffset.y);
+    float weightedTexture_z = weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * _227.uHeightScale.z) + _227.uHeightOffset.z);
+    float weightedTexture_w = weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * _227.uHeightScale.w) + _227.uHeightOffset.w);
     vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
     vec4 weights_temp = weights * (vec4(1.0) - clamp(vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights, vec4(0.0), vec4(1.0)));
     vec4 weightsNormalized = weights_temp / vec4(dot(vec4(1.0), weights_temp));
@@ -1093,24 +1207,24 @@ void main()
     bool param_2 = true;
     float param_3 = 0.0;
     SceneWideParams param_4;
-    param_4.uLookAtMat = _427.scene.uLookAtMat;
-    param_4.uPMatrix = _427.scene.uPMatrix;
-    param_4.uViewUp = _427.scene.uViewUp;
-    param_4.uInteriorSunDir = _427.scene.uInteriorSunDir;
-    param_4.extLight.uExteriorAmbientColor = _427.scene.extLight.uExteriorAmbientColor;
-    param_4.extLight.uExteriorHorizontAmbientColor = _427.scene.extLight.uExteriorHorizontAmbientColor;
-    param_4.extLight.uExteriorGroundAmbientColor = _427.scene.extLight.uExteriorGroundAmbientColor;
-    param_4.extLight.uExteriorDirectColor = _427.scene.extLight.uExteriorDirectColor;
-    param_4.extLight.uExteriorDirectColorDir = _427.scene.extLight.uExteriorDirectColorDir;
+    param_4.uLookAtMat = _459.scene.uLookAtMat;
+    param_4.uPMatrix = _459.scene.uPMatrix;
+    param_4.uViewUp = _459.scene.uViewUp;
+    param_4.uInteriorSunDir = _459.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _459.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _459.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _459.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _459.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _459.scene.extLight.uExteriorDirectColorDir;
     InteriorLightParam param_5 = InteriorLightParam(vec4(0.0), vec4(0.0, 0.0, 0.0, 1.0));
     vec3 param_6 = vVertexLighting;
-    vec4 finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0)), 1.0);
+    vec4 finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0), vec3(0.0)), 1.0);
     float specBlend = final.w;
-    vec3 halfVec = -normalize(_427.scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition));
-    vec3 lSpecular = _427.scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
+    vec3 halfVec = -normalize(_459.scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition));
+    vec3 lSpecular = _459.scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
     vec3 specTerm = vec3(specBlend) * lSpecular;
-    vec3 _505 = finalColor.xyz + specTerm;
-    finalColor = vec4(_505.x, _505.y, _505.z, finalColor.w);
+    vec3 _537 = finalColor.xyz + specTerm;
+    finalColor = vec4(_537.x, _537.y, _537.z, finalColor.w);
     finalColor.w = 1.0;
     outColor = finalColor;
 }
@@ -1564,6 +1678,29 @@ void main()
 
 #version 330
 
+layout(std140) uniform meshWideBlockPS
+{
+    vec4 blurAmount;
+} _34;
+
+uniform sampler2D screenTex;
+uniform sampler2D blurTex;
+
+in vec2 texCoord;
+layout(location = 0) out vec4 Out_Color;
+
+void main()
+{
+    vec4 screen = texture(screenTex, texCoord);
+    vec3 blurred = texture(blurTex, texCoord).xyz;
+    vec3 mixed = mix(screen.xyz, blurred, vec3(_34.blurAmount.z));
+    vec3 glow = (blurred * blurred) * _34.blurAmount.w;
+    Out_Color = vec4(mixed + glow, screen.w);
+}
+
+
+#version 330
+
 layout(std140) uniform modelWideBlockVS
 {
     vec3 uPos;
@@ -1591,6 +1728,20 @@ void main()
     vChunkCoords = vec2(iX / 128.0, iY / 128.0);
     vPosition = (_55.uLookAtMat * worldPoint).xyz;
     gl_Position = (_55.uPMatrix * _55.uLookAtMat) * worldPoint;
+}
+
+
+#version 330
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
+
+layout(location = 0) out vec4 outputColor;
+in vec4 vColor;
+
+void main()
+{
+    outputColor = vec4(vColor.xyz, 1.0);
 }
 
 
@@ -1624,17 +1775,17 @@ layout(std140) uniform meshWideBlockPS
 {
     ivec4 UseLitColor_EnableAlpha_PixelShader;
     vec4 FogColor_AlphaTest;
-} _220;
+} _221;
 
 layout(std140) uniform sceneWideBlockVSPS
 {
     SceneWideParams scene;
-} _688;
+} _689;
 
 layout(std140) uniform modelWideBlockPS
 {
     InteriorLightParam intLight;
-} _692;
+} _693;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
@@ -1649,7 +1800,7 @@ in vec3 vNormal;
 in vec4 vPosition;
 layout(location = 0) out vec4 outputColor;
 
-vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight, vec3 specular)
 {
     vec3 localDiffuse = accumLight;
     if (!applyLight)
@@ -1697,7 +1848,7 @@ vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorE
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
-    vec3 specTerm = vec3(0.0);
+    vec3 specTerm = specular;
     vec3 emTerm = vec3(0.0);
     return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
@@ -1707,14 +1858,14 @@ void main()
     vec4 tex = texture(uTexture, vTexCoord);
     vec4 tex2 = texture(uTexture2, vTexCoord2);
     vec4 tex3 = texture(uTexture3, vTexCoord3);
-    if (_220.UseLitColor_EnableAlpha_PixelShader.y == 1)
+    if (_221.UseLitColor_EnableAlpha_PixelShader.y == 1)
     {
         if ((tex.w - 0.501960813999176025390625) < 0.0)
         {
             discard;
         }
     }
-    int uPixelShader = _220.UseLitColor_EnableAlpha_PixelShader.z;
+    int uPixelShader = _221.UseLitColor_EnableAlpha_PixelShader.z;
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
     vec3 matDiffuse = vec3(0.0);
     vec3 env = vec3(0.0);
@@ -1825,21 +1976,21 @@ void main()
     bool param_2 = true;
     float param_3 = vPosition.w;
     SceneWideParams param_4;
-    param_4.uLookAtMat = _688.scene.uLookAtMat;
-    param_4.uPMatrix = _688.scene.uPMatrix;
-    param_4.uViewUp = _688.scene.uViewUp;
-    param_4.uInteriorSunDir = _688.scene.uInteriorSunDir;
-    param_4.extLight.uExteriorAmbientColor = _688.scene.extLight.uExteriorAmbientColor;
-    param_4.extLight.uExteriorHorizontAmbientColor = _688.scene.extLight.uExteriorHorizontAmbientColor;
-    param_4.extLight.uExteriorGroundAmbientColor = _688.scene.extLight.uExteriorGroundAmbientColor;
-    param_4.extLight.uExteriorDirectColor = _688.scene.extLight.uExteriorDirectColor;
-    param_4.extLight.uExteriorDirectColorDir = _688.scene.extLight.uExteriorDirectColorDir;
+    param_4.uLookAtMat = _689.scene.uLookAtMat;
+    param_4.uPMatrix = _689.scene.uPMatrix;
+    param_4.uViewUp = _689.scene.uViewUp;
+    param_4.uInteriorSunDir = _689.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _689.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _689.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _689.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _689.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _689.scene.extLight.uExteriorDirectColorDir;
     InteriorLightParam param_5;
-    param_5.uInteriorAmbientColorAndApplyInteriorLight = _692.intLight.uInteriorAmbientColorAndApplyInteriorLight;
-    param_5.uInteriorDirectColorAndApplyExteriorLight = _692.intLight.uInteriorDirectColorAndApplyExteriorLight;
+    param_5.uInteriorAmbientColorAndApplyInteriorLight = _693.intLight.uInteriorAmbientColorAndApplyInteriorLight;
+    param_5.uInteriorDirectColorAndApplyExteriorLight = _693.intLight.uInteriorDirectColorAndApplyExteriorLight;
     vec3 param_6 = vec3(0.0);
-    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vColor2.xyz), finalOpacity);
-    if (finalColor.w < _220.FogColor_AlphaTest.w)
+    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vColor2.xyz, vec3(0.0)), finalOpacity);
+    if (finalColor.w < _221.FogColor_AlphaTest.w)
     {
         discard;
     }
@@ -2136,24 +2287,24 @@ struct meshWideBlockPS
     vec4 uPcColor;
 };
 
-uniform meshWideBlockPS _246;
+uniform meshWideBlockPS _247;
 
 struct modelWideBlockPS
 {
     InteriorLightParam intLight;
     LocalLight pc_lights[4];
-    ivec4 lightCount;
+    ivec4 lightCountAndBcHack;
     vec4 interiorExteriorBlend;
 };
 
-uniform modelWideBlockPS _271;
+uniform modelWideBlockPS _272;
 
 struct sceneWideBlockVSPS
 {
     SceneWideParams scene;
 };
 
-uniform sceneWideBlockVSPS _310;
+uniform sceneWideBlockVSPS _311;
 
 struct modelWideBlockVS
 {
@@ -2161,7 +2312,7 @@ struct modelWideBlockVS
     mat4 uBoneMatrixes[220];
 };
 
-uniform modelWideBlockVS _318;
+uniform modelWideBlockVS _319;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
@@ -2175,7 +2326,7 @@ varying vec4 vDiffuseColor;
 varying vec3 vPosition;
 varying vec3 vNormal;
 
-vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight, vec3 specular)
 {
     vec3 localDiffuse = accumLight;
     if (!applyLight)
@@ -2223,7 +2374,7 @@ vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorE
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
-    vec3 specTerm = vec3(0.0);
+    vec3 specTerm = specular;
     vec3 emTerm = vec3(0.0);
     return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
@@ -2242,35 +2393,35 @@ void main()
     vec4 finalColor = vec4(0.0);
     vec4 meshResColor = vDiffuseColor;
     vec3 accumLight;
-    if (_246.PixelShader_UnFogged_IsAffectedByLight.z == 1)
+    if (_247.PixelShader_UnFogged_IsAffectedByLight.z == 1)
     {
         vec3 vPos3 = vPosition;
         vec3 vNormal3 = normalize(vNormal);
         vec3 lightColor = vec3(0.0);
-        int count = int(_271.pc_lights[0].attenuation.w);
+        int count = int(_272.pc_lights[0].attenuation.w);
         LocalLight lightRecord;
         for (int index = 0; index < 4; index++)
         {
-            if (index >= _271.lightCount.x)
+            if (index >= _272.lightCountAndBcHack.x)
             {
                 break;
             }
-            lightRecord.color = _271.pc_lights[index].color;
-            lightRecord.position = _271.pc_lights[index].position;
-            lightRecord.attenuation = _271.pc_lights[index].attenuation;
-            vec3 vectorToLight = (_310.scene.uLookAtMat * (_318.uPlacementMat * lightRecord.position)).xyz - vPos3;
+            lightRecord.color = _272.pc_lights[index].color;
+            lightRecord.position = _272.pc_lights[index].position;
+            lightRecord.attenuation = _272.pc_lights[index].attenuation;
+            vec3 vectorToLight = (_311.scene.uLookAtMat * (_319.uPlacementMat * lightRecord.position)).xyz - vPos3;
             float distanceToLightSqr = dot(vectorToLight, vectorToLight);
             float distanceToLightInv = inversesqrt(distanceToLightSqr);
             float distanceToLight = distanceToLightSqr * distanceToLightInv;
             float diffuseTerm1 = max(dot(vectorToLight, vNormal3) * distanceToLightInv, 0.0);
             vec4 attenuationRec = lightRecord.attenuation;
             float attenuation = 1.0 - clamp((distanceToLight - attenuationRec.x) * (1.0 / (attenuationRec.z - attenuationRec.x)), 0.0, 1.0);
-            vec3 attenuatedColor = (lightRecord.color.xyz * attenuation) * attenuationRec.y;
+            vec3 attenuatedColor = lightRecord.color.xyz * attenuation;
             lightColor += vec3((attenuatedColor * attenuatedColor) * diffuseTerm1);
         }
-        vec3 _389 = clamp(lightColor, vec3(0.0), vec3(1.0));
-        meshResColor = vec4(_389.x, _389.y, _389.z, meshResColor.w);
-        accumLight = meshResColor.xyz;
+        vec3 _386 = clamp(lightColor, vec3(0.0), vec3(1.0));
+        meshResColor = vec4(_386.x, _386.y, _386.z, meshResColor.w);
+        accumLight = mix(lightColor, meshResColor.xyz, vec3(float(_272.lightCountAndBcHack.y)));
     }
     float finalOpacity = 0.0;
     vec3 specular = vec3(0.0);
@@ -2279,7 +2430,7 @@ void main()
     genericParams[0] = vec4(1.0);
     genericParams[1] = vec4(1.0);
     genericParams[2] = vec4(1.0);
-    int uPixelShader = _246.PixelShader_UnFogged_IsAffectedByLight.x;
+    int uPixelShader = _247.PixelShader_UnFogged_IsAffectedByLight.x;
     vec3 matDiffuse;
     float opacity;
     #if (FRAGMENTSHADER == 0)
@@ -2474,30 +2625,97 @@ void main()
     opacity = (((tex * tex2) * tex3) * genericParams[0]).w * vDiffuseColor.w;
     finalOpacity = opacity * visParams.x;
     #endif
+    #if (FRAGMENTSHADER == 36)
+    matDiffuse = ((vDiffuseColor.xyz * 2.0) * tex.xyz) * tex2.xyz;
+    opacity = (tex.w * tex2.w) * vDiffuseColor.w;
+    finalOpacity = opacity * visParams.x;
+    #endif
     vec3 param = matDiffuse;
     vec3 param_1 = vNormal;
-    bool param_2 = _246.PixelShader_UnFogged_IsAffectedByLight.z > 0;
-    float param_3 = _271.interiorExteriorBlend.x;
+    bool param_2 = _247.PixelShader_UnFogged_IsAffectedByLight.z > 0;
+    float param_3 = _272.interiorExteriorBlend.x;
     SceneWideParams param_4;
-    param_4.uLookAtMat = _310.scene.uLookAtMat;
-    param_4.uPMatrix = _310.scene.uPMatrix;
-    param_4.uViewUp = _310.scene.uViewUp;
-    param_4.uInteriorSunDir = _310.scene.uInteriorSunDir;
-    param_4.extLight.uExteriorAmbientColor = _310.scene.extLight.uExteriorAmbientColor;
-    param_4.extLight.uExteriorHorizontAmbientColor = _310.scene.extLight.uExteriorHorizontAmbientColor;
-    param_4.extLight.uExteriorGroundAmbientColor = _310.scene.extLight.uExteriorGroundAmbientColor;
-    param_4.extLight.uExteriorDirectColor = _310.scene.extLight.uExteriorDirectColor;
-    param_4.extLight.uExteriorDirectColorDir = _310.scene.extLight.uExteriorDirectColorDir;
+    param_4.uLookAtMat = _311.scene.uLookAtMat;
+    param_4.uPMatrix = _311.scene.uPMatrix;
+    param_4.uViewUp = _311.scene.uViewUp;
+    param_4.uInteriorSunDir = _311.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _311.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _311.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _311.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _311.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _311.scene.extLight.uExteriorDirectColorDir;
     InteriorLightParam param_5;
-    param_5.uInteriorAmbientColorAndApplyInteriorLight = _271.intLight.uInteriorAmbientColorAndApplyInteriorLight;
-    param_5.uInteriorDirectColorAndApplyExteriorLight = _271.intLight.uInteriorDirectColorAndApplyExteriorLight;
+    param_5.uInteriorAmbientColorAndApplyInteriorLight = _272.intLight.uInteriorAmbientColorAndApplyInteriorLight;
+    param_5.uInteriorDirectColorAndApplyExteriorLight = _272.intLight.uInteriorDirectColorAndApplyExteriorLight;
     vec3 param_6 = accumLight;
-    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0)), finalOpacity);
-    if (finalColor.w < _246.uFogColorAndAlphaTest.w)
+    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0), specular), finalOpacity);
+    if (finalColor.w < _247.uFogColorAndAlphaTest.w)
     {
         discard;
     }
     gl_FragData[0] = finalColor;
+}
+
+
+#version 100
+
+struct SceneExteriorLight
+{
+    vec4 uExteriorAmbientColor;
+    vec4 uExteriorHorizontAmbientColor;
+    vec4 uExteriorGroundAmbientColor;
+    vec4 uExteriorDirectColor;
+    vec4 uExteriorDirectColorDir;
+};
+
+struct SceneWideParams
+{
+    mat4 uLookAtMat;
+    mat4 uPMatrix;
+    vec4 uViewUp;
+    vec4 uInteriorSunDir;
+    SceneExteriorLight extLight;
+};
+
+struct sceneWideBlockVSPS
+{
+    SceneWideParams scene;
+};
+
+uniform sceneWideBlockVSPS _50;
+
+struct meshWideBlockVS
+{
+    vec4 skyColor[6];
+};
+
+uniform meshWideBlockVS _89;
+
+attribute vec4 aPosition;
+varying vec4 vColor;
+
+void main()
+{
+    vec3 inputPos = aPosition.xyz;
+    vec2 _20 = inputPos.xy / vec2(0.6875);
+    inputPos = vec3(_20.x, _20.y, inputPos.z);
+    float _31;
+    if (inputPos.z > 0.0)
+    {
+        _31 = inputPos.z / 0.292800009250640869140625;
+    }
+    else
+    {
+        _31 = inputPos.z;
+    }
+    inputPos.z = _31;
+    vec4 cameraPos = _50.scene.uLookAtMat * vec4(inputPos, 1.0);
+    vec3 _70 = cameraPos.xyz - _50.scene.uLookAtMat[3].xyz;
+    cameraPos = vec4(_70.x, _70.y, _70.z, cameraPos.w);
+    cameraPos.z = cameraPos.z;
+    int vColorInd = int(aPosition.w);
+    vColor = vec4(_89.skyColor[vColorInd].xyz, 1.0);
+    gl_Position = _50.scene.uPMatrix * cameraPos;
 }
 
 
@@ -2632,6 +2850,33 @@ void main()
 
 
 #version 100
+
+struct meshWideBlockVS
+{
+    float uWidth;
+    float uHeight;
+    float uX;
+    float uY;
+};
+
+uniform meshWideBlockVS _36;
+
+varying vec2 texCoord;
+attribute vec2 position;
+
+
+
+void main() {
+    //texCoord = texture;
+    texCoord = position.xy * 0.5 + 0.5;
+
+    //gl_Position = vec4(position, 0.0, 1.0);
+    gl_Position = vec4(
+        (((position.x + 1.0)/2.0) * _36.uWidth + _36.uX)*2.0 - 1.0,
+        (((position.y + 1.0)/2.0) * _36.uHeight + _36.uY)*2.0 - 1.0,
+        0.5,
+        1.0);
+}#version 100
 
 struct sceneWideBlockVSPS
 {
@@ -2811,6 +3056,33 @@ void main()
 
 struct meshWideBlockPS
 {
+    vec4 texOffsetX;
+    vec4 texOffsetY;
+};
+
+uniform meshWideBlockPS _33;
+
+uniform sampler2D texture0;
+
+varying vec2 texCoord;
+
+void main()
+{
+    vec2 tex_offset = vec2(0.001000000047497451305389404296875);
+    vec3 result = texture2D(texture0, texCoord).xyz * 0.0;
+    result = vec3(0.0);
+    result += (texture2D(texture0, texCoord + vec2(_33.texOffsetX.x * tex_offset.x, _33.texOffsetY.x * tex_offset.y)).xyz * 0.125);
+    result += (texture2D(texture0, texCoord + vec2(_33.texOffsetX.y * tex_offset.x, _33.texOffsetY.y * tex_offset.y)).xyz * 0.375);
+    result += (texture2D(texture0, texCoord + vec2(_33.texOffsetX.z * tex_offset.x, _33.texOffsetY.z * tex_offset.y)).xyz * 0.375);
+    result += (texture2D(texture0, texCoord + vec2(_33.texOffsetX.w * tex_offset.x, _33.texOffsetY.w * tex_offset.y)).xyz * 0.125);
+    gl_FragData[0] = vec4(result, 1.0);
+}
+
+
+#version 100
+
+struct meshWideBlockPS
+{
     float gauss_offsets[5];
     float gauss_weights[5];
     vec2 uResolution;
@@ -2961,16 +3233,17 @@ struct meshWideBlockPS
 {
     vec4 uHeightScale;
     vec4 uHeightOffset;
+    mat4 animationMat[4];
 };
 
-uniform meshWideBlockPS _251;
+uniform meshWideBlockPS _227;
 
 struct sceneWideBlockVSPS
 {
     SceneWideParams scene;
 };
 
-uniform sceneWideBlockVSPS _427;
+uniform sceneWideBlockVSPS _459;
 
 struct modelWideBlockPS
 {
@@ -2978,7 +3251,7 @@ struct modelWideBlockPS
     vec4 uFogColor;
 };
 
-uniform modelWideBlockPS _514;
+uniform modelWideBlockPS _546;
 
 uniform sampler2D uAlphaTexture;
 uniform sampler2D uLayerHeight0;
@@ -2996,7 +3269,7 @@ varying vec3 vNormal;
 varying vec3 vVertexLighting;
 varying vec3 vPosition;
 
-vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight, vec3 specular)
 {
     vec3 localDiffuse = accumLight;
     if (!applyLight)
@@ -3044,7 +3317,7 @@ vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorE
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
-    vec3 specTerm = vec3(0.0);
+    vec3 specTerm = specular;
     vec3 emTerm = vec3(0.0);
     return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
@@ -3054,16 +3327,16 @@ void main()
     vec2 vTexCoord = vChunkCoords;
     vec2 alphaCoord = vec2(vChunkCoords.x / 8.0, vChunkCoords.y / 8.0);
     vec3 alphaBlend = texture2D(uAlphaTexture, alphaCoord).yzw;
-    vec2 tcLayer0 = vTexCoord;
-    vec2 tcLayer1 = vTexCoord;
-    vec2 tcLayer2 = vTexCoord;
-    vec2 tcLayer3 = vTexCoord;
+    vec2 tcLayer0 = (_227.animationMat[0] * vec4(vTexCoord, 0.0, 1.0)).xy;
+    vec2 tcLayer1 = (_227.animationMat[1] * vec4(vTexCoord, 0.0, 1.0)).xy;
+    vec2 tcLayer2 = (_227.animationMat[2] * vec4(vTexCoord, 0.0, 1.0)).xy;
+    vec2 tcLayer3 = (_227.animationMat[3] * vec4(vTexCoord, 0.0, 1.0)).xy;
     float minusAlphaBlendSum = 1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0);
     vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
-    float weightedTexture_x = minusAlphaBlendSum * ((texture2D(uLayerHeight0, tcLayer0).w * _251.uHeightScale.x) + _251.uHeightOffset.x);
-    float weightedTexture_y = weightsVector.y * ((texture2D(uLayerHeight1, tcLayer1).w * _251.uHeightScale.y) + _251.uHeightOffset.y);
-    float weightedTexture_z = weightsVector.z * ((texture2D(uLayerHeight2, tcLayer2).w * _251.uHeightScale.z) + _251.uHeightOffset.z);
-    float weightedTexture_w = weightsVector.w * ((texture2D(uLayerHeight3, tcLayer3).w * _251.uHeightScale.w) + _251.uHeightOffset.w);
+    float weightedTexture_x = minusAlphaBlendSum * ((texture2D(uLayerHeight0, tcLayer0).w * _227.uHeightScale.x) + _227.uHeightOffset.x);
+    float weightedTexture_y = weightsVector.y * ((texture2D(uLayerHeight1, tcLayer1).w * _227.uHeightScale.y) + _227.uHeightOffset.y);
+    float weightedTexture_z = weightsVector.z * ((texture2D(uLayerHeight2, tcLayer2).w * _227.uHeightScale.z) + _227.uHeightOffset.z);
+    float weightedTexture_w = weightsVector.w * ((texture2D(uLayerHeight3, tcLayer3).w * _227.uHeightScale.w) + _227.uHeightOffset.w);
     vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
     vec4 weights_temp = weights * (vec4(1.0) - clamp(vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights, vec4(0.0), vec4(1.0)));
     vec4 weightsNormalized = weights_temp / vec4(dot(vec4(1.0), weights_temp));
@@ -3086,24 +3359,24 @@ void main()
     bool param_2 = true;
     float param_3 = 0.0;
     SceneWideParams param_4;
-    param_4.uLookAtMat = _427.scene.uLookAtMat;
-    param_4.uPMatrix = _427.scene.uPMatrix;
-    param_4.uViewUp = _427.scene.uViewUp;
-    param_4.uInteriorSunDir = _427.scene.uInteriorSunDir;
-    param_4.extLight.uExteriorAmbientColor = _427.scene.extLight.uExteriorAmbientColor;
-    param_4.extLight.uExteriorHorizontAmbientColor = _427.scene.extLight.uExteriorHorizontAmbientColor;
-    param_4.extLight.uExteriorGroundAmbientColor = _427.scene.extLight.uExteriorGroundAmbientColor;
-    param_4.extLight.uExteriorDirectColor = _427.scene.extLight.uExteriorDirectColor;
-    param_4.extLight.uExteriorDirectColorDir = _427.scene.extLight.uExteriorDirectColorDir;
+    param_4.uLookAtMat = _459.scene.uLookAtMat;
+    param_4.uPMatrix = _459.scene.uPMatrix;
+    param_4.uViewUp = _459.scene.uViewUp;
+    param_4.uInteriorSunDir = _459.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _459.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _459.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _459.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _459.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _459.scene.extLight.uExteriorDirectColorDir;
     InteriorLightParam param_5 = InteriorLightParam(vec4(0.0), vec4(0.0, 0.0, 0.0, 1.0));
     vec3 param_6 = vVertexLighting;
-    vec4 finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0)), 1.0);
+    vec4 finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0), vec3(0.0)), 1.0);
     float specBlend = final.w;
-    vec3 halfVec = -normalize(_427.scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition));
-    vec3 lSpecular = _427.scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
+    vec3 halfVec = -normalize(_459.scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition));
+    vec3 lSpecular = _459.scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0);
     vec3 specTerm = vec3(specBlend) * lSpecular;
-    vec3 _505 = finalColor.xyz + specTerm;
-    finalColor = vec4(_505.x, _505.y, _505.z, finalColor.w);
+    vec3 _537 = finalColor.xyz + specTerm;
+    finalColor = vec4(_537.x, _537.y, _537.z, finalColor.w);
     finalColor.w = 1.0;
     gl_FragData[0] = finalColor;
 }
@@ -3576,6 +3849,30 @@ void main()
 
 #version 100
 
+struct meshWideBlockPS
+{
+    vec4 blurAmount;
+};
+
+uniform meshWideBlockPS _34;
+
+uniform sampler2D screenTex;
+uniform sampler2D blurTex;
+
+varying vec2 texCoord;
+
+void main()
+{
+    vec4 screen = texture2D(screenTex, texCoord);
+    vec3 blurred = texture2D(blurTex, texCoord).xyz;
+    vec3 mixed = mix(screen.xyz, blurred, vec3(_34.blurAmount.z));
+    vec3 glow = (blurred * blurred) * _34.blurAmount.w;
+    gl_FragData[0] = vec4(mixed + glow, screen.w);
+}
+
+
+#version 100
+
 struct modelWideBlockVS
 {
     vec3 uPos;
@@ -3605,6 +3902,19 @@ void main()
     vChunkCoords = vec2(iX / 128.0, iY / 128.0);
     vPosition = (_55.uLookAtMat * worldPoint).xyz;
     gl_Position = (_55.uPMatrix * _55.uLookAtMat) * worldPoint;
+}
+
+
+#version 100
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
+
+varying vec4 vColor;
+
+void main()
+{
+    gl_FragData[0] = vec4(vColor.xyz, 1.0);
 }
 
 
@@ -3640,21 +3950,21 @@ struct meshWideBlockPS
     vec4 FogColor_AlphaTest;
 };
 
-uniform meshWideBlockPS _220;
+uniform meshWideBlockPS _221;
 
 struct sceneWideBlockVSPS
 {
     SceneWideParams scene;
 };
 
-uniform sceneWideBlockVSPS _688;
+uniform sceneWideBlockVSPS _689;
 
 struct modelWideBlockPS
 {
     InteriorLightParam intLight;
 };
 
-uniform modelWideBlockPS _692;
+uniform modelWideBlockPS _693;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
@@ -3668,7 +3978,7 @@ varying vec4 vColor2;
 varying vec3 vNormal;
 varying vec4 vPosition;
 
-vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight)
+vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorExteriorBlend, SceneWideParams sceneParams, InteriorLightParam intLight, vec3 accumLight, vec3 precomputedLight, vec3 specular)
 {
     vec3 localDiffuse = accumLight;
     if (!applyLight)
@@ -3716,7 +4026,7 @@ vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorE
     }
     vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
     vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
-    vec3 specTerm = vec3(0.0);
+    vec3 specTerm = specular;
     vec3 emTerm = vec3(0.0);
     return (sqrt((gammaDiffTerm * gammaDiffTerm) + linearDiffTerm) + specTerm) + emTerm;
 }
@@ -3726,14 +4036,14 @@ void main()
     vec4 tex = texture2D(uTexture, vTexCoord);
     vec4 tex2 = texture2D(uTexture2, vTexCoord2);
     vec4 tex3 = texture2D(uTexture3, vTexCoord3);
-    if (_220.UseLitColor_EnableAlpha_PixelShader.y == 1)
+    if (_221.UseLitColor_EnableAlpha_PixelShader.y == 1)
     {
         if ((tex.w - 0.501960813999176025390625) < 0.0)
         {
             discard;
         }
     }
-    int uPixelShader = _220.UseLitColor_EnableAlpha_PixelShader.z;
+    int uPixelShader = _221.UseLitColor_EnableAlpha_PixelShader.z;
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
     vec3 matDiffuse = vec3(0.0);
     vec3 env = vec3(0.0);
@@ -3844,21 +4154,21 @@ void main()
     bool param_2 = true;
     float param_3 = vPosition.w;
     SceneWideParams param_4;
-    param_4.uLookAtMat = _688.scene.uLookAtMat;
-    param_4.uPMatrix = _688.scene.uPMatrix;
-    param_4.uViewUp = _688.scene.uViewUp;
-    param_4.uInteriorSunDir = _688.scene.uInteriorSunDir;
-    param_4.extLight.uExteriorAmbientColor = _688.scene.extLight.uExteriorAmbientColor;
-    param_4.extLight.uExteriorHorizontAmbientColor = _688.scene.extLight.uExteriorHorizontAmbientColor;
-    param_4.extLight.uExteriorGroundAmbientColor = _688.scene.extLight.uExteriorGroundAmbientColor;
-    param_4.extLight.uExteriorDirectColor = _688.scene.extLight.uExteriorDirectColor;
-    param_4.extLight.uExteriorDirectColorDir = _688.scene.extLight.uExteriorDirectColorDir;
+    param_4.uLookAtMat = _689.scene.uLookAtMat;
+    param_4.uPMatrix = _689.scene.uPMatrix;
+    param_4.uViewUp = _689.scene.uViewUp;
+    param_4.uInteriorSunDir = _689.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _689.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _689.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _689.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _689.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _689.scene.extLight.uExteriorDirectColorDir;
     InteriorLightParam param_5;
-    param_5.uInteriorAmbientColorAndApplyInteriorLight = _692.intLight.uInteriorAmbientColorAndApplyInteriorLight;
-    param_5.uInteriorDirectColorAndApplyExteriorLight = _692.intLight.uInteriorDirectColorAndApplyExteriorLight;
+    param_5.uInteriorAmbientColorAndApplyInteriorLight = _693.intLight.uInteriorAmbientColorAndApplyInteriorLight;
+    param_5.uInteriorDirectColorAndApplyExteriorLight = _693.intLight.uInteriorDirectColorAndApplyExteriorLight;
     vec3 param_6 = vec3(0.0);
-    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vColor2.xyz), finalOpacity);
-    if (finalColor.w < _220.FogColor_AlphaTest.w)
+    finalColor = vec4(calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vColor2.xyz, vec3(0.0)), finalOpacity);
+    if (finalColor.w < _221.FogColor_AlphaTest.w)
     {
         discard;
     }
