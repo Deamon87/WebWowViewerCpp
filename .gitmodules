@@ -13,9 +13,6 @@
 [submodule "3rdparty/zlib"]
 	path = 3rdparty/zlib
 	url = https://github.com/madler/zlib
-[submodule "3rdparty/curl"]
-	path = 3rdparty/curl
-	url = https://github.com/curl/curl
 [submodule "3rdparty/libzip"]
 	path = 3rdparty/libzip
 	url = https://github.com/nih-at/libzip.git
@@ -28,9 +25,6 @@
 [submodule "3rdparty/casclib"]
 	path = 3rdparty/casclib
 	url = https://github.com/ladislav-zezula/CascLib.git
-[submodule "3rdparty/cpr"]
-	path = 3rdparty/cpr
-	url = https://github.com/whoshuu/cpr.git
 [submodule "wowViewerLib/shaders/3rdparty/glsllang"]
 	path = wowViewerLib/shaders/3rdparty/glsllang
 	url = https://github.com/KhronosGroup/glslang.git
@@ -44,3 +38,6 @@
 [submodule "3rdparty/libpng"]
 	path = 3rdparty/libpng
 	url = https://github.com/glennrp/libpng.git
+[submodule "3rdparty/cpprestsdk"]
+	path = 3rdparty/cpprestsdk
+	url = https://github.com/microsoft/cpprestsdk.git
