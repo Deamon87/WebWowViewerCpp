@@ -10,6 +10,7 @@
 precision highp float;
 
 #include "../common/commonLightFunctions.glsl"
+#include "../common/commonFogFunctions.glsl"
 
 struct LocalLight
 {
@@ -29,6 +30,7 @@ layout(location=0) out vec4 outputColor;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
+    PSFog fogData;
 };
 
 layout(std140, set=0, binding=1) uniform modelWideBlockVS {
@@ -341,28 +343,18 @@ void main() {
     if(finalColor.a < uFogColorAndAlphaTest.w)
         discard;
 
-    /*
-    int uUnFogged = PixelShader_UnFogged_IsAffectedByLight_LightCount.y;
-    float uFogEnd = uSunColorAndFogEnd.z;
+    int uUnFogged = PixelShader_UnFogged_IsAffectedByLight.y;
     if (uUnFogged == 0) {
-        vec3 fogColor = uFogColorAndAlphaTest.xyz;
-        float fog_rate = 1.5;
-        float fog_bias = 0.01;
+        vec3 sunDir =
+            mix(
+                scene.uInteriorSunDir,
+                scene.extLight.uExteriorDirectColorDir,
+                interiorExteriorBlend.x
+            )
+            .xyz;
 
-        //vec4 fogHeightPlane = pc_fog.heightPlane;
-        //float heightRate = pc_fog.color_and_heightRate.w;
-
-        float distanceToCamera = length(vPosition.xyz);
-        float z_depth = (distanceToCamera - fog_bias);
-        float expFog = 1.0 / (exp((max(0.0, (z_depth - uSunDirAndFogStart.z)) * fog_rate)));
-        //float height = (dot(fogHeightPlane.xyz, vPosition.xyz) + fogHeightPlane.w);
-        //float heightFog = clamp((height * heightRate), 0, 1);
-        float heightFog = 1.0;
-        expFog = (expFog + heightFog);
-        float endFadeFog = clamp(((uFogEnd - distanceToCamera) / (0.699999988 * uFogEnd)), 0.0, 1.0);
-        float fog_out = min(expFog, endFadeFog);
-        finalColor.rgba = vec4(mix(fogColor.rgb, finalColor.rgb, vec3(fog_out)), finalColor.a);
-    }*/
+        finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz);
+    }
 //    finalColor.rgb = finalColor.rgb;
 
 

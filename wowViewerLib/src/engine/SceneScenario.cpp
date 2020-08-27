@@ -27,13 +27,14 @@ FrameScenario::addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCamer
     return newUpdateStage;
 }
 
-HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
-    HScene scene,
-    HCameraMatrices matricesForDrawing,
-    std::vector<HDrawStage> drawStageDependencies,
-    bool setViewPort,
-    ViewPortDimensions viewPortDimensions,
-    bool clearScreen, mathfu::vec4 clearColor, HFrameBuffer fbTarget) {
+HDrawStage FrameScenario::getDrawStage() {
+    return lastDrawStage;
+}
+
+HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage, HScene scene, HCameraMatrices matricesForDrawing,
+                                       std::vector<HDrawStage> drawStageDependencies, bool setViewPort,
+                                       ViewPortDimensions &viewPortDimensions, bool clearScreen,
+                                       mathfu::vec4 &clearColor, HFrameBuffer fbTarget) {
     HDrawStage drawStage = std::make_shared<DrawStage>();
 
     drawStage->drawStageDependencies = drawStageDependencies;
@@ -51,8 +52,4 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage,
     this->lastDrawStage = drawStage;
 
     return drawStage;
-}
-
-HDrawStage FrameScenario::getDrawStage() {
-    return lastDrawStage;
 }

@@ -26,9 +26,25 @@ struct LightResult {
     float SkySmogColor[3];
     float SkyFogColor[3];
 
+    //Fog
+    float FogEnd;
+    float FogScaler;
+    float FogDensity;
+    float FogHeight;
+    float FogHeightScaler;
+    float FogHeightDensity;
+    float SunFogAngle;
+    float EndFogColor[3];
+    float EndFogColorDistance;
+    float SunFogColor[3];
+    float SunFogStrength;
+    float FogHeightColor[3];
+    float FogHeightCoefficients[4];
+
 
     std::string skyBoxName;
     int skyBoxFdid;
+    int skyBoxFlags;
     int lightSkyboxId;
     float glow;
     float blendCoef;

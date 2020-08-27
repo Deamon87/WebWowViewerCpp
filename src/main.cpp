@@ -312,13 +312,13 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
 
         HFrameBuffer fb = nullptr;
         if (isScreenshot) {
-            fb = apiContainer.hDevice->createFrameBuffer(width, height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32);
+            fb = apiContainer.hDevice->createFrameBuffer(width, height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32, 4);
         }
 
         auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
         auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
-        auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
-                                                          {{0, 0}, {width, height}},
+        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
+                                                          dimensions,
                                                           true, clearColor, fb);
 
         return sceneDrawStage;
@@ -516,8 +516,8 @@ int main(){
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-        processor = new HttpRequestProcessor(url, urlFileId);
-//        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
+//        processor = new HttpRequestProcessor(url, urlFileId);
+        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
 ////        processor->setThreaded(false);
 ////
         processor->setThreaded(true);
@@ -724,15 +724,16 @@ int main(){
         }
         //DrawStage for UI
         {
+            ViewPortDimensions dimension = {
+                {0,     0},
+                {canvWidth, canvHeight}
+            };
             auto clearColor = apiContainer.getConfig()->getClearColor();
 
             auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
             auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
-            auto frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies, true,
-                {
-                    {0,     0},
-                    {canvWidth, canvHeight}
-                }, clearOnUi, clearColor, nullptr);
+            HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies, true,
+                dimension, clearOnUi, clearColor, nullptr);
         }
         //        auto updateResult = scene->cull(camera)->update(camera);
 //        SceneComposer::All({

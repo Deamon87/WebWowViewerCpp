@@ -1,10 +1,21 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
 precision highp float;
-layout(location = 0) in vec4 vColor;
-layout(location = 1) in vec2 vTexcoord0;
-layout(location = 2) in vec2 vTexcoord1;
-layout(location = 3) in vec2 vTexcoord2;
+layout(location = 0) in vec3 vPosition;
+layout(location = 1) in vec4 vColor;
+layout(location = 2) in vec2 vTexcoord0;
+layout(location = 3) in vec2 vTexcoord1;
+layout(location = 4) in vec2 vTexcoord2;
+
+#include "../common/commonLightFunctions.glsl"
+#include "../common/commonFogFunctions.glsl"
+
+layout(std140, binding=0) uniform sceneWideBlockVSPS {
+    SceneWideParams scene;
+    PSFog fogData;
+};
 
 //Individual meshes
 layout(std140, binding=4) uniform meshWideBlockPS {
@@ -64,6 +75,17 @@ void main() {
 
     if(finalColor.a < uAlphaTest)
         discard;
+
+//    vec3 sunDir =
+//        mix(
+//            scene.uInteriorSunDir,
+//            scene.extLight.uExteriorDirectColorDir,
+//            interiorExteriorBlend.x
+//        )
+//        .xyz;
+    vec3 sunDir =scene.extLight.uExteriorDirectColorDir.xyz;
+
+    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz);
 
     outputColor.rgba = finalColor ;
 }

@@ -28,33 +28,8 @@ private:
                              StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;
 
 public:
-    explicit M2Scene(ApiContainer *api, std::string m2Model, int cameraView = - 1) {
-        m_api = api; m_m2Model = m2Model; m_cameraView = cameraView;
-        m_sceneMode = SceneMode::smM2;
-        m_suppressDrawingSky = true;
-
-        auto  m2Object = std::make_shared<M2Object>(m_api);
-        m2Object->setLoadParams(0, {}, {});
-        m2Object->setModelFileName(m_m2Model);
-        m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
-
-        m2Object->calcWorldPosition();
-
-        m_m2Object = m2Object;
-    }
-    explicit M2Scene(ApiContainer *api, int fileDataId, int cameraView = - 1) {
-        m_api = api; m_cameraView = cameraView;
-        m_sceneMode = SceneMode::smM2;
-        m_suppressDrawingSky = true;
-
-        auto m2Object = std::make_shared<M2Object>(m_api);
-        m2Object->setLoadParams(0, {}, {});
-        m2Object->setModelFileId(fileDataId);
-        m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
-        m2Object->calcWorldPosition();
-
-        m_m2Object = m2Object;
-    };
+    explicit M2Scene(ApiContainer *api, std::string m2Model, int cameraView = - 1);
+    explicit M2Scene(ApiContainer *api, int fileDataId, int cameraView = - 1);
 
 
     ~M2Scene() override {

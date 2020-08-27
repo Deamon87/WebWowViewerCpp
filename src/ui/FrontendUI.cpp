@@ -443,11 +443,23 @@ void FrontendUI::setGetCameraPos(std::function<void(float &cameraX, float &camer
 
 void FrontendUI::showQuickLinksDialog() {
     if (!showQuickLinks) return;
+    std::vector<int> replacementTextureFDids = {};
 
     ImGui::Begin("Quick Links", &showQuickLinks);
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
         if (openWMOSceneByfdid) {
             openWMOSceneByfdid(2756726);
+        }
+    }
+
+    if (ImGui::Button("Some item", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[1] = 528801;
+            for (auto &fdid: replacementTextureFDids) {
+                fdid = 1029337;
+            }
+            openM2SceneByfdid(1029334, replacementTextureFDids);
         }
     }
     if (ImGui::Button("Northrend Human Inn", ImVec2(-1, 0))) {
@@ -465,7 +477,6 @@ void FrontendUI::showQuickLinksDialog() {
             openWMOSceneByfdid(3565693);
         }
     }
-    std::vector<int> replacementTextureFDids = {};
 
     if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
@@ -480,6 +491,7 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(236122, replacementTextureFDids);
         }
     }
+
     if (ImGui::Button("Cataclysm login screen", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(466614, replacementTextureFDids);
@@ -623,6 +635,16 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Dalaran eye", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(243044, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Hand weapon", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[1] = 528801;
+            for (auto &fdid: replacementTextureFDids) {
+                fdid = 528801;
+            }
+            openM2SceneByfdid(528797, replacementTextureFDids);
         }
     }
 

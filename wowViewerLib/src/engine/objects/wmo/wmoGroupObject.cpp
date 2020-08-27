@@ -535,7 +535,7 @@ void WmoGroupObject::createMeshes() {
             blockPS.PixelShader = pixelShader;
 
             blockPS.uFogColor_AlphaTest = mathfu::vec4_packed(
-                mathfu::vec4(m_api->getConfig()->getFogColor().xyz(), alphaTest));
+                mathfu::vec4(0,0,0, alphaTest));
         });
     }
 }

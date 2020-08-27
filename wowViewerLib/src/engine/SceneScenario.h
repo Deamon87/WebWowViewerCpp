@@ -88,8 +88,8 @@ public:
                             HCameraMatrices matricesForDrawing,
                             std::vector<HDrawStage> drawStageDependencies,
                             bool setViewPort,
-                            ViewPortDimensions viewPortDimensions,
-                            bool clearScreen, mathfu::vec4 clearColor, HFrameBuffer fbTarget);
+                            ViewPortDimensions &viewPortDimensions,
+                            bool clearScreen, mathfu::vec4 &clearColor, HFrameBuffer fbTarget);
 
     HDrawStage getDrawStage();
 };

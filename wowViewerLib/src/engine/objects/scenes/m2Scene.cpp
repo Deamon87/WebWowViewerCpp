@@ -144,6 +144,39 @@ std::shared_ptr<ICamera> M2Scene::createCamera(int cameraNum) {
     return std::make_shared<m2TiedCamera>(m_m2Object, cameraNum);
 }
 
+M2Scene::M2Scene(ApiContainer *api, std::string m2Model, int cameraView) {
+    m_api = api; m_m2Model = m2Model; m_cameraView = cameraView;
+    m_sceneMode = SceneMode::smM2;
+    m_suppressDrawingSky = true;
+
+    auto  m2Object = std::make_shared<M2Object>(m_api);
+    std::vector<HBlpTexture> replaceTextures = {};
+    std::vector<uint8_t> meshIds = {};
+    m2Object->setLoadParams(0, meshIds, replaceTextures);
+    m2Object->setModelFileName(m_m2Model);
+    m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+
+    m2Object->calcWorldPosition();
+
+    m_m2Object = m2Object;
+}
+
+M2Scene::M2Scene(ApiContainer *api, int fileDataId, int cameraView) {
+    m_api = api; m_cameraView = cameraView;
+    m_sceneMode = SceneMode::smM2;
+    m_suppressDrawingSky = true;
+
+    auto m2Object = std::make_shared<M2Object>(m_api);
+    std::vector<HBlpTexture> replaceTextures = {};
+    std::vector<uint8_t> meshIds = {};
+    m2Object->setLoadParams(0, meshIds, replaceTextures);
+    m2Object->setModelFileId(fileDataId);
+    m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+    m2Object->calcWorldPosition();
+
+    m_m2Object = m2Object;
+}
+
 
 /*
 void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {

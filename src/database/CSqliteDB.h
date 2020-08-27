@@ -46,10 +46,52 @@ private:
         int skyBoxFileId;
         int lightSkyboxId;
         float glow;
+        int skyBoxFlags ;
         bool isDefault = false;
     };
 
+    struct InnerLightDataRes {
+        int ambientLight;
+        int horizontAmbientColor;
+        int groundAmbientColor;
+
+        int directLight;
+        int closeRiverColor;
+
+        int SkyTopColor;
+        int SkyMiddleColor;
+        int SkyBand1Color;
+        int SkyBand2Color;
+        int SkySmogColor;
+        int SkyFogColor;
+
+        float FogEnd;
+        float FogScaler;
+        float FogDensity;
+        float FogHeight;
+        float FogHeightScaler;
+        float FogHeightDensity;
+        float SunFogAngle;
+        int EndFogColor;
+        float EndFogColorDistance;
+        int SunFogColor;
+        float SunFogStrength;
+        int FogHeightColor;
+        float FogHeightCoefficients[4];
+
+        int time;
+    };
+
     void convertInnerResultsToPublic(int ptime, std::vector<LightResult> &lightResults, std::vector<InnerLightResult> &innerResults);
+
+    void
+    addOnlyOne(LightResult &lightResult, const CSqliteDB::InnerLightDataRes &currLdRes,
+               float innerAlpha) const;
+
+    void
+    blendTwoAndAdd(LightResult &lightResult, const InnerLightDataRes &lastLdRes,
+                   const InnerLightDataRes &currLdRes,
+                   float timeAlphaBlend, float innerAlpha) const;
 };
 
 

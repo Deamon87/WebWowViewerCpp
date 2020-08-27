@@ -50,10 +50,6 @@ private:
     float farPlane = 1000;
     float farPlaneForCulling = 400;
 
-    float fogStart;
-    float fogEnd;
-
-
     bool useGaussBlur = true;
 
     bool useTimedGloabalLight = true;
@@ -72,7 +68,6 @@ private:
     mathfu::vec3 interiorSunDir;
 
     mathfu::vec4 closeRiverColor = {1,1,1,1};
-    mathfu::vec4 fogColor;
 
     mathfu::vec4 SkyTopColor;
     mathfu::vec4 SkyMiddleColor;
@@ -81,6 +76,19 @@ private:
     mathfu::vec4 SkySmogColor;
     mathfu::vec4 SkyFogColor;
 
+    float FogEnd;
+    float FogScaler;
+    float FogDensity;
+    float FogHeight;
+    float FogHeightScaler;
+    float FogHeightDensity;
+    float SunFogAngle;
+    mathfu::vec3 EndFogColor;
+    float EndFogColorDistance;
+    mathfu::vec3 SunFogColor;
+    float SunFogStrength;
+    mathfu::vec3 FogHeightColor;
+    mathfu::vec4 FogHeightCoefficients;
 
     std::string areaName;
 public:
@@ -368,31 +376,6 @@ public:
         return closeRiverColor;
     }
 
-    void setFogStart(float value) {
-        fogStart = value;
-    }
-    float getFogStart() {
-        return fogStart;
-    };
-
-    void setFogEnd(float value) {
-        fogEnd = value;
-    }
-    float getFogEnd() {
-        return fogEnd;
-    }
-
-    void setFogColor(float r, float g, float b, float a) {
-        fogColor[0] = r;
-        fogColor[1] = g;
-        fogColor[2] = b;
-        fogColor[3] = a;
-    }
-
-    mathfu::vec4 getFogColor(){
-        return fogColor;
-    }
-
     void setAreaName(std::string a) {
         areaName = a;
     }
@@ -441,6 +424,90 @@ public:
     }
     bool getUseM2AmbientLight() {
         return useM2AmbientLight;
+    }
+
+    float getFogEnd() {
+        return FogEnd;
+    }
+    void setFogEnd(float value) {
+        FogEnd = value;
+    }
+    float getFogScaler() {
+        return FogScaler;
+    }
+    void setFogScaler(float value) {
+        FogScaler = value;
+    }
+    float getFogDensity() {
+        return FogDensity;
+    }
+    void setFogDensity(float value) {
+        FogDensity = value;
+    }
+    float getFogHeight() {
+        return FogHeight;
+    }
+    void setFogHeight(float value ) {
+        FogHeight = value;
+    }
+    float getFogHeightScaler() {
+        return FogHeightScaler;
+    }
+    void setFogHeightScaler(float value) {
+        FogHeightScaler = value;
+    }
+    float getFogHeightDensity() {
+        return FogHeightDensity;
+    }
+    void setFogHeightDensity(float value) {
+        FogHeightDensity = value;
+    }
+    float getSunFogAngle() {
+        return SunFogAngle;
+    }
+    void setSunFogAngle(float value) {
+        SunFogAngle = value;
+    }
+
+    mathfu::vec3 getEndFogColor() {
+        return EndFogColor;
+    }
+    void setEndFogColor(float r, float g, float b) {
+        EndFogColor = mathfu::vec3(r, g, b);
+    }
+    float getEndFogColorDistance() {
+        return EndFogColorDistance;
+    };
+    void setEndFogColorDistance(float value) {
+        EndFogColorDistance = value;
+    }
+
+    mathfu::vec3 getSunFogColor() {
+        return SunFogColor;
+    }
+    void setSunFogColor(float r, float g, float b) {
+        SunFogColor = mathfu::vec3(r, g, b);
+    }
+
+    float getSunFogStrength() {
+        return SunFogStrength;
+    };
+    void setSunFogStrength(float value) {
+        SunFogStrength = value;
+    }
+
+    mathfu::vec3 getFogHeightColor() {
+        return FogHeightColor;
+    }
+    void setFogHeightColor(float r, float g, float b) {
+        FogHeightColor = mathfu::vec3(r, g, b);
+    }
+
+    mathfu::vec4 getFogHeightCoefficients() {
+        return FogHeightCoefficients;
+    }
+    void setFogHeightCoefficients(float x, float y, float z, float w) {
+        FogHeightCoefficients = mathfu::vec4(x, y, z, w);
     }
 
     int diffuseColorHack = 0;

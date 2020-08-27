@@ -76,7 +76,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     TARGET SPIRV_EXTRACT_META
                     PRE_BUILD
-                    DEPENDS ${SPIRV})
+                    DEPENDS ${SPIRV_NonOpt})
 
             list(APPEND SPIRV_BINARY_FILES_NON_OPT ${SPIRV_NonOpt})
             list(APPEND SPIRV_BINARY_FILES_OPT ${SPIRVOpt})
@@ -127,7 +127,7 @@ add_custom_command(
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
         VERBATIM)
 
-add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator)
+add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator ${SPIRV_NonOpt})
 
 add_custom_target(
         ShadersGLSL20

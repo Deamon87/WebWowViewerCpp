@@ -3,9 +3,16 @@ cmake_minimum_required(VERSION 3.6)
 project(AWebWoWViewerCpp)
 include(ExternalProject)
 
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+enable_language( C CXX ASM )
 
-cmake_policy(SET CMP0077 NEW)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+if(POLICY CMP0077)
+	cmake_policy(SET CMP0077 NEW)
+endif()
+if(COMMAND cmake_policy)
+	cmake_policy(SET CMP0003 NEW)
+endif(COMMAND cmake_policy)
 
 
 set(USE_NEON 0)
@@ -37,10 +44,10 @@ if (WIN32 AND MSVC)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /DWIN64")
     endif()
  endif()
-
+message(CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE})
 #set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC ")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC  ")
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC ")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC  ")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	message("This is clang")
@@ -55,19 +62,17 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	#set(_GLIBCXX_USE_C99_DYNAMIC 0)
 	#set(_GLIBCXX_USE_C99_LONG_LONG_CHECK 0)
 	#set(_GLIBCXX_USE_C99_LONG_LONG_DYNAMIC 0)
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
-
+#	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
+#	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
+#	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
 endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	link_libraries(stdc++fs)
+#	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread")
+#	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread ")
+#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 endif()
 
-#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread ")
 
 if(WIN32)
 	link_libraries(wsock32 ws2_32)
@@ -78,25 +83,15 @@ endif()
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -pthread")
 
-if (WIN32) 
-	SET(zlibLib zlibstaticd) 
-	SET(extra_libraries "") 
-else() 
-	SET(zlibLib libzlibstatic.a)
-	SET(extra_libraries stdc++fs)
-endif()
-
-
-
 #ZLib library
-
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/zlib)
 set(BUILD_SHARED_LIBS OFF)
 if (MSVC)
 	set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/zlib ${CMAKE_BINARY_DIR}/3rdparty/zlib)
-	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
-	if (CMAKE_BUILD_TYPE EQUAL "DEBUG")
+#	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
+	if (CMAKE_BUILD_TYPE EQUAL "Debug")
 		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.lib")
 	else()
 		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.lib")
@@ -105,18 +100,16 @@ if (MSVC)
 endif()
 
 #libpng
+if (MSVC)
+	set(PNG_BUILD_ZLIB ON)
+else()
+	set(PNG_BUILD_ZLIB OFF)
+endif()
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
 include_directories(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
+include_directories(${CMAKE_SOURCE_DIR}/3rdparty/SQLiteCpp/sqlite3)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libpng)
-
-#Zlib
-#ExternalProject_Add("LibZip"
-#		SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/libzip"
-#		CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR} -DEXTRA_LIBS=${extra_libraries}
-#		)
-set(BUILD_SHARED_LIBS OFF)
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libzip)
-include_directories("lib/libzip/include")
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	set(BUILD_SHARED_LIBS OFF)
@@ -126,22 +119,9 @@ endif()
 #bz2renderFlag
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(3rdparty/bzip)
- 
-#CPR
-if (WIN32)
-set(ENV{USE_SYSTEM_CURL} OFF)
-set(ENV{CURL_FOUND} ON)
-else()
-set(ENV{USE_SYSTEM_CURL} ON)
-endif()
 
-set(ENV{BUILD_CPR_TESTS} OFF)
-set(ENV{CMAKE_USE_OPENSSL} ON)
-set(ENV{CURL_DISABLE_LDAP} ON)
-set(CMAKE_USE_OPENSSL ON)
-set(BUILD_SHARED_LIBS OFF)
-add_subdirectory(3rdparty/cpr)
-include_directories(${CPR_INCLUDE_DIRS})
+
+
 
 #PolyM
 #add_subdirectory(3rdparty/PolyM) 
@@ -180,18 +160,18 @@ include_directories(${GLEW_INCLUDE_DIRS})
 
 
 set(SOURCE_FILES
-		src/persistance/httpFile/httpFile.cpp
-		src/persistance/httpFile/httpFile.h
+#		src/persistance/httpFile/httpFile.cpp
+#		src/persistance/httpFile/httpFile.h
 		src/persistance/RequestProcessor.cpp
 		src/persistance/RequestProcessor.h
 		src/persistance/ZipRequestProcessor.cpp
 		src/persistance/ZipRequestProcessor.h
-		src/persistance/HttpZipRequestProcessor.cpp
-		src/persistance/HttpZipRequestProcessor.h
+#		src/persistance/HttpZipRequestProcessor.cpp
+#		src/persistance/HttpZipRequestProcessor.h
 		src/persistance/CascRequestProcessor.cpp
 		src/persistance/CascRequestProcessor.h
-		src/persistance/HttpRequestProcessor.cpp
-		src/persistance/HttpRequestProcessor.h
+#		src/persistance/HttpRequestProcessor.cpp
+#		src/persistance/HttpRequestProcessor.h
 
 		src/ui/imguiLib/imgui.cpp
 		src/ui/imguiLib/imgui_demo.cpp
@@ -243,14 +223,14 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package( Threads REQUIRED )
 
-if(CMAKE_USE_PTHREADS_INIT)
-    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-pthread")
-endif()
+#if(CMAKE_USE_PTHREADS_INIT)
+#    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-pthread")
+#endif()
 
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp)
 
-add_definitions(-DLINK_VULKAN)
+#add_definitions(-DLINK_VULKAN)
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
 message(ccp WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(AWebWoWViewerCpp PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
@@ -261,11 +241,6 @@ target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWView
 target_compile_definitions(AWebWoWViewerCpp PUBLIC -DIMGUI_USER_CONFIG=<imguiCustomConfig.h>)
 target_include_directories(AWebWoWViewerCpp PUBLIC src/ui/imguiLib)
 
-
-
-
-add_dependencies(AWebWoWViewerCpp zip)
-add_dependencies(AWebWoWViewerCpp zlib)
 add_dependencies(AWebWoWViewerCpp WoWViewerLib)
 #add_dependencies(AWebWoWViewerCpp storm)
 add_dependencies(AWebWoWViewerCpp casc_static)
@@ -277,11 +252,10 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 endif()
 
 link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
-target_link_libraries(AWebWoWViewerCpp ${CURL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
-#target_link_libraries(AWebWoWViewerCpp zip)
-target_link_libraries(AWebWoWViewerCpp zlib)
+target_link_libraries(AWebWoWViewerCpp zlibstatic)
+
 target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
 	target_link_libraries(AWebWoWViewerCpp ssp)
@@ -301,7 +275,6 @@ else()
 	target_link_libraries(AWebWoWViewerCpp log)
 endif()
 #target_link_libraries(AWebWoWViewerCpp polym)
-target_link_libraries(AWebWoWViewerCpp cpr)
 #target_link_libraries(AWebWoWViewerCpp storm)
 target_link_libraries(AWebWoWViewerCpp casc_static)
 
@@ -312,7 +285,6 @@ target_link_libraries(AWebWoWViewerCpp ${glew_lib})
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	include_directories(AWebWoWViewerCpp "./wowViewerLib/src/opengl")
-	target_link_libraries(AWebWoWViewerCpp zlibstatic)
 	target_link_libraries(AWebWoWViewerCpp opengl32)
 	target_link_libraries(AWebWoWViewerCpp -lm)
 	target_link_libraries(AWebWoWViewerCpp -lwininet)
@@ -320,6 +292,7 @@ else()
 	target_link_libraries(AWebWoWViewerCpp GL)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
+#Link OPENSSL only for MSVC
 
 
 INSTALL(TARGETS AWebWoWViewerCpp DESTINATION BIN)

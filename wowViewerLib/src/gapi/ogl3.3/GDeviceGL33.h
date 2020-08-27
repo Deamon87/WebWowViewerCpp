@@ -42,7 +42,7 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 #include "meshes/GMeshGL33.h"
 #include "../interface/IDevice.h"
 
-
+#define OPENGL_DGB_MESSAGE 1
 
 class GDeviceGL33 : public IDevice {
 public:
@@ -91,7 +91,8 @@ public:
     HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
-    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment) override;
+    //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
+    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override;
     HGUniformBufferChunk createUniformBufferChunk(size_t size) override;
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
@@ -229,6 +230,14 @@ protected:
     };
 #endif
 
+    struct FramebufAvalabilityStruct {
+        int width; int height;
+        std::vector<ITextureFormat> attachments;
+        ITextureFormat depthAttachment;
+        HFrameBuffer frameBuffer;
+        int frame;
+    };
+    std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 
     std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
 

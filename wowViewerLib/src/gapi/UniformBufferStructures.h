@@ -11,6 +11,17 @@
 
 #define MAX_MATRIX_NUM 220
 
+struct PSFog
+{
+    mathfu::vec4_packed densityParams;
+    mathfu::vec4_packed heightPlane;
+    mathfu::vec4_packed color_and_heightRate;
+    mathfu::vec4_packed heightDensity_and_endColor;
+    mathfu::vec4_packed sunAngle_and_sunColor;
+    mathfu::vec4_packed heightColor_and_endFogDistance;
+    mathfu::vec4_packed sunPercentage;
+};
+
 struct SceneExteriorLight {
     mathfu::vec4_packed uExteriorAmbientColor;
     mathfu::vec4_packed uExteriorHorizontAmbientColor;
@@ -26,15 +37,13 @@ struct sceneWideBlockVSPS {
     mathfu::vec4_packed uInteriorSunDir;
 
     SceneExteriorLight extLight;
+    PSFog fogData;
 };
 
 struct InteriorLightParam {
     mathfu::vec4_packed uInteriorAmbientColorAndApplyInteriorLight;
     mathfu::vec4_packed uInteriorDirectColorAndApplyExteriorLight;
-
 };
-
-
 
 struct LocalLight
 {

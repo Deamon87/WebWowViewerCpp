@@ -5,6 +5,7 @@
 precision highp float;
 
 #include "../common/commonLightFunctions.glsl"
+#include "../common/commonFogFunctions.glsl"
 
 layout(location = 0) in vec2 vChunkCoords;
 layout(location = 1) in vec3 vPosition;
@@ -24,6 +25,7 @@ layout(set=1, binding=13) uniform sampler2D uLayerHeight3;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
+    PSFog fogData;
 };
 
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
@@ -110,29 +112,7 @@ void main() {
     vec3 specTerm = (vec3(specBlend) * lSpecular);
     finalColor.rgb += specTerm;
 
-    // --- Fog start ---
-    /*
-    vec3 fogColor = uFogColor;
-    float fog_start = uFogStart;
-    float fog_end = uFogEnd;
-    float fog_rate = 1.5;
-    float fog_bias = 0.01;
-
-    //vec4 fogHeightPlane = pc_fog.heightPlane;
-    //float heightRate = pc_fog.color_and_heightRate.w;
-
-    float distanceToCamera = length(vPosition.xyz);
-    float z_depth = (distanceToCamera - fog_bias);
-    float expFog = 1.0 / (exp((max(0.0, (z_depth - fog_start)) * fog_rate)));
-    //float height = (dot(fogHeightPlane.xyz, vPosition.xyz) + fogHeightPlane.w);
-    //float heightFog = clamp((height * heightRate), 0, 1);
-    float heightFog = 1.0;
-    expFog = (expFog + heightFog);
-    float endFadeFog = clamp(((fog_end - distanceToCamera) / (0.699999988 * fog_end)), 0.0, 1.0);
-
-    finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
-    */
-    // --- Fog end ---
+    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz);
 
     finalColor.a = 1.0;
     outColor = finalColor;

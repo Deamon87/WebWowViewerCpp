@@ -41,3 +41,6 @@
 [submodule "3rdparty/cpprestsdk"]
 	path = 3rdparty/cpprestsdk
 	url = https://github.com/microsoft/cpprestsdk.git
+[submodule "3rdparty/cppnetlib"]
+	path = 3rdparty/cppnetlib
+	url = https://github.com/cpp-netlib/cpp-netlib.git

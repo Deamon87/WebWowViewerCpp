@@ -666,7 +666,7 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
         ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
-#ifndef __EMSCRIPTEN__
+#if OPENGL_DGB_MESSAGE
     std::string debugMess =
         "Drawing mesh "
         " meshType = " + std::to_string((int)hmesh->getMeshType()) +
@@ -687,7 +687,7 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 
-#ifndef __EMSCRIPTEN__
+#if OPENGL_DGB_MESSAGE
     glPopDebugGroup();
 #endif
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
@@ -728,8 +728,43 @@ HGVertexBufferBindings GDeviceGL33::createVertexBufferBindings() {
     return h_vertexBufferBindings;
 }
 
-HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment) {
+HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) {
+    if (frameNumber > -1) {
+        for (auto &framebufAvalability : m_createdFrameBuffers) {
+            if (framebufAvalability.frame >= m_frameNumber &&
+                framebufAvalability.attachments.size() == attachments.size() &&
+                framebufAvalability.width == width &&
+                framebufAvalability.height == height
+            ) {
+                //Check frame definition
+                bool notEqual = false;
+                for (int i = 0; i < attachments.size(); i++) {
+                    if (attachments[i] != framebufAvalability.attachments[i]) {
+                        notEqual = true;
+                        break;
+                    }
+                }
+                if (!notEqual) {
+                    framebufAvalability.frame = m_frameNumber + frameNumber;
+                    return framebufAvalability.frameBuffer;
+                }
+            }
+        }
+    }
+
     HFrameBuffer h_frameBuffer = std::make_shared<GFrameBufferGL33>(*this, attachments, depthAttachment, width, height);
+
+    if (frameNumber > -1) {
+        FramebufAvalabilityStruct avalabilityStruct;
+        avalabilityStruct.frameBuffer = h_frameBuffer;
+        avalabilityStruct.height = height;
+        avalabilityStruct.width = width;
+        avalabilityStruct.frame = m_frameNumber + frameNumber;
+        avalabilityStruct.attachments = attachments;
+        avalabilityStruct.depthAttachment = depthAttachment;
+
+        m_createdFrameBuffers.push_back(avalabilityStruct);
+    }
 
     return h_frameBuffer;
 };

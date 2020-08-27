@@ -49,8 +49,10 @@ public:
 
     void resetCurrentAnimation();
     bool setAnimationId(int animationId, bool reset);
+    void setAnimationPercent(float percent);
     void update (
         animTime_t deltaTime,
+        animTime_t deltaTimeForGS,
         mathfu::vec3 &cameraPosInLocal,
         mathfu::vec3 &localUpVector,
         mathfu::vec3 &localRightVector,

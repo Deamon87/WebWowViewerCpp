@@ -9,7 +9,7 @@ set(LINK_GLEW 1)
 set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)
-set(LINK_VULKAN 1)
+set(LINK_VULKAN 0)
 set(LINK_OPENMP 1)
 set(ENABLE_SIMD 1)
 set(EMSCRIPTEN_SIMD 0)
@@ -159,7 +159,6 @@ set(SOURCE_FILES
         src/engine/objects/iMapApi.h
         src/engine/objects/iScene.h
         src/engine/objects/scenes/m2Scene.cpp
-        src/engine/objects/scenes/m2Scene.h
 #        src/engine/objects/scenes/creatureScene.cpp
 #        src/engine/objects/scenes/creatureScene.h
         src/engine/algorithms/PortalCullingAlgo.cpp
@@ -174,7 +173,6 @@ set(SOURCE_FILES
         src/engine/managers/particles/particleEmitter.cpp
         src/engine/managers/particles/particleEmitter.h
         src/engine/managers/particles/generators/CParticleGenerator.cpp src/engine/managers/particles/generators/CParticleGenerator.h src/engine/managers/particles/generators/CSphereGenerator.cpp src/engine/managers/particles/generators/CSphereGenerator.h src/engine/managers/particles/particle.cpp src/engine/managers/particles/particle.h src/engine/managers/particles/generators/CSplineGenerator.cpp src/engine/managers/particles/generators/CSplineGenerator.h src/engine/managers/particles/generators/CBoneGenerator.cpp src/engine/managers/particles/generators/CBoneGenerator.h
-        src/engine/persistance/wdlFile.cpp
         src/engine/persistance/wdlFile.cpp
         src/engine/persistance/wdlFile.h
         src/engine/objects/wdl/wdlObject.cpp
@@ -236,7 +234,10 @@ set(SOURCE_FILES
         src/engine/SceneScenario.h
         src/gapi/interface/IFrameBuffer.h
         src/engine/SceneScenario.cpp
-        src/engine/DrawStage.h src/engine/ApiContainer.cpp src/engine/ApiContainer.h src/engine/CameraMatrices.h src/engine/persistance/header/wdlHeader.h src/engine/camera/m2TiedCamera.cpp src/engine/camera/m2TiedCamera.h)
+        src/engine/DrawStage.h
+        src/include/iostuff.h
+        src/engine/ApiContainer.cpp
+        src/engine/ApiContainer.h src/engine/CameraMatrices.h src/engine/persistance/header/wdlHeader.h src/engine/camera/m2TiedCamera.cpp src/engine/camera/m2TiedCamera.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -386,7 +387,11 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
-            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/include/iostuff.h src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp src/gapi/vulkan/shaders/GImguiShaderPermutation.h src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.cpp src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.h)
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.h
+            src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp
+            src/gapi/vulkan/shaders/GImguiShaderPermutation.h
+            src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.cpp
+            src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
@@ -469,7 +474,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (1)
+if (0)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)

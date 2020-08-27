@@ -963,7 +963,14 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 //
 //    /* 2. Update animation values */
     mathfu::mat4 modelViewMat = viewMat * m_placementMatrix;
+
+    float animDeltaTime = deltaTime;
+    if (animationOverrideActive) {
+        animDeltaTime = 0;
+        this->m_animationManager->setAnimationPercent(animationOverridePercent);
+    }
     this->m_animationManager->update(
+        animDeltaTime,
         deltaTime,
         cameraInlocalPos,
         this->m_localUpVector,
@@ -1395,6 +1402,7 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     meshTemplate.depthWrite = !(renderFlag->flags & 0x10);
     meshTemplate.depthCulling = !(renderFlag->flags & 0x8);
     meshTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
+    meshTemplate.triCCW = 1;
 
     meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
 
@@ -1571,13 +1579,7 @@ void M2Object::initRibbonEmitters() {
         emitter->SetDataEnabled(0);
     }
 }
-void M2Object::setReplaceTextures(std::vector<HBlpTexture> &replaceTextures) {
-    m_replaceTextures = replaceTextures;
 
-    if (m_loaded) {
-        createMeshes(); // recreate meshes
-    }
-}
 void M2Object::setModelFileName(std::string modelName) {
 
     std::string delimiter = ".";
@@ -1811,5 +1813,12 @@ void M2Object::updateDynamicMeshes() {
 
         dynMeshData.m_bufferVBO->save(skinSection->vertexCount*sizeof(M2Vertex));
 //        std::cout << "Saved " << skinSection->vertexCount << " vertices " << "at update frame =" << frameNum << std::endl;
+    }
+}
+void M2Object::setReplaceTextures(std::vector<HBlpTexture> &replaceTextures) {
+    m_replaceTextures = replaceTextures;
+
+    if (m_loaded) {
+        createMeshes(); // recreate meshes
     }
 }

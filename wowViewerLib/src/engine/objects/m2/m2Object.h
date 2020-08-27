@@ -91,6 +91,9 @@ private:
 
     float m_alpha = 1.0f;
 
+    bool animationOverrideActive = false;
+    float animationOverridePercent = 0;
+
     mathfu::vec4 m_sunDirOverride;
     bool m_setSunDir = false;
 
@@ -187,6 +190,10 @@ public:
 
     void setAlpha(float alpha) {
         m_alpha = alpha;
+    }
+    void setOverrideAnimationPerc(float percent, bool active) {
+        animationOverrideActive = active;
+        animationOverridePercent = percent;
     }
 
     void setAnimationId(int animationId);

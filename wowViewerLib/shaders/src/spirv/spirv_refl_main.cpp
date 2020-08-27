@@ -13,6 +13,7 @@
 #include <spirv.h>
 #include <map>
 #include <csignal>
+#include <exception>
 
 extern "C" void my_function_to_handle_aborts(int signal_number)
 {
@@ -58,7 +59,7 @@ int main(int argc, char **argv)
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);
-    const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
+//    const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
     signal(SIGABRT, &my_function_to_handle_aborts);
 

@@ -562,10 +562,7 @@ void AdtObject::createMeshes() {
     auto api = m_api;
     adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self){
         auto *adtWideblockPS = &self->getObject<ADT::modelWideBlockPS>();
-        adtWideblockPS->uFogStartAndFogEnd = mathfu::vec4_packed(
-            mathfu::vec4(api->getConfig()->getFogStart(), api->getConfig()->getFogEnd(), 0, 0));
-        adtWideblockPS->uFogColor = mathfu::vec4_packed(
-            mathfu::vec4(api->getConfig()->getFogColor().xyz(), 0));
+
     });
 
     if (adtVertexBindings != nullptr) {
