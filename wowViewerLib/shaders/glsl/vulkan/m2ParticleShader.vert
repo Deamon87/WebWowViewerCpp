@@ -1,4 +1,5 @@
 #version 450
+#extension GL_GOOGLE_include_directive: require
 
 precision highp float;
 layout(location = 0) in vec3 aPosition;
@@ -8,14 +9,19 @@ layout(location = 3) in vec2 aTexcoord1;
 layout(location = 4) in vec2 aTexcoord2;
 
 
-layout(location = 0) out vec4 vColor;
-layout(location = 1) out vec2 vTexcoord0;
-layout(location = 2) out vec2 vTexcoord1;
-layout(location = 3) out vec2 vTexcoord2;
+layout(location = 0) out vec3 vPosition;
+layout(location = 1) out vec4 vColor;
+layout(location = 2) out vec2 vTexcoord0;
+layout(location = 3) out vec2 vTexcoord1;
+layout(location = 4) out vec2 vTexcoord2;
+
+#include "../common/commonLightFunctions.glsl"
+#include "../common/commonFogFunctions.glsl"
+
 
 layout(std140, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
+    SceneWideParams scene;
+    PSFog fogData;
 };
 
 void main() {
@@ -25,5 +31,10 @@ void main() {
     vTexcoord0 = aTexcoord0;
     vTexcoord1 = aTexcoord1;
     vTexcoord2 = aTexcoord2;
-    gl_Position = uPMatrix * uLookAtMat * aPositionVec4;
+
+    vec4 vertexViewSpace = (scene.uLookAtMat * aPositionVec4);
+
+    vPosition = vertexViewSpace.xyz;
+
+    gl_Position = scene.uPMatrix * vertexViewSpace;
 }

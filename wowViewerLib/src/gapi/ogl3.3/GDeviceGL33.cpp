@@ -14,9 +14,14 @@
 #include "shaders/GM2ParticleShaderPermutationGL33.h"
 #include "shaders/GAdtShaderPermutationGL33.h"
 #include "shaders/GWMOShaderPermutationGL33.h"
+#include "shaders/GFFXgauss4.h"
 #include "../../engine/stringTrim.h"
 #include "buffers/GVertexBufferDynamicGL33.h"
 #include "buffers/GUnformBufferChunk33.h"
+#include "../../engine/DrawStage.h"
+#include "GFrameBufferGL33.h"
+#include "shaders/GFFXGlow.h"
+#include "shaders/GSkyConus.h"
 
 namespace GL33 {
     BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -55,20 +60,24 @@ namespace GL33 {
     //}
 
 
-    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
-                    const void *userParam) {
-        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-                source,
-                type,
-                id,
-                severity,
-                std::string(message, message + length).c_str());
-        if (severity == 37190) {
-            std::cout << "lol";
-        }
-
-        fflush(stdout);
-    }
+//    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+//                    const void *userParam) {
+//        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+//                source,
+//                type,
+//                id,
+//                severity,
+//                std::string(message, message + length).c_str());
+//        if (severity == 37190) {
+//            std::cout << "lol";
+//        }
+//        if (type == GL_DEBUG_TYPE_ERROR) {
+//            std::cout << "lol Error" << std::endl;
+//            __debugbreak;
+//        }
+//
+//        fflush(stdout);
+//    }
 }
 
 void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {
@@ -172,6 +181,18 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
         iPremutation = new GM2ParticleShaderPermutationGL33(shaderName, this);
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "fullScreen_ffxgauss4") {
+        iPremutation = new GFFXgauss4(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "skyConus") {
+        iPremutation = new GSkyConus(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "fullScreen_quad") {
+        iPremutation = new GFFXGlow(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "wmoShader") {
         WMOShaderCacheRecord *cacheRecord = (WMOShaderCacheRecord * )permutationDescriptor;
         if (cacheRecord != nullptr) {
@@ -232,7 +253,44 @@ HGUniformBuffer GDeviceGL33::createUniformBuffer(size_t size) {
     return h_uniformBuffer;
 }
 
+void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
+    for (int i = 0; i < drawStage->drawStageDependencies.size(); i++) {
+        this->drawStageAndDeps(drawStage->drawStageDependencies[i]);
+    }
+
+    if (drawStage->target != nullptr) {
+        drawStage->target->bindFrameBuffer();
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    this->setViewPortDimensions(
+        drawStage->viewPortDimensions.mins[0],
+        drawStage->viewPortDimensions.mins[1],
+        drawStage->viewPortDimensions.maxs[0],
+        drawStage->viewPortDimensions.maxs[1]
+    );
+    if (drawStage->clearScreen) {
+        clearColor[0] = drawStage->clearColor[0];
+        clearColor[1] = drawStage->clearColor[1];
+        clearColor[2] = drawStage->clearColor[2];
+        this->clearScreen();
+    }
+
+    if (drawStage->meshesToRender != nullptr) {
+        for (auto hgMesh : drawStage->meshesToRender->meshes) {
+            this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
+        }
+    }
+
+    if (drawStage->target != nullptr) {
+        drawStage->target->copyRenderBufferToTexture();
+    }
+//    drawMeshes(drawStage->meshesToRender->meshes);
+}
+
 void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
+    std::cout << "FILE:" << __FILE__ << " line " << __LINE__ << std::endl;
     //Collect meshes into batches and create new array for performace
 //    int meshesSize = meshes.size();
 //    for (int i = 0 ; i < meshesSize - 1; i++) {
@@ -251,13 +309,13 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 
     int j = 0;
     for (auto hgMesh : meshes) {
-        this->drawMesh(hgMesh);
+        this->drawMesh(hgMesh, nullptr);
         j++;
     }
 }
 
 #ifdef SINGLE_BUFFER_UPLOAD
-void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
     std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
 
     //1. Collect buffers
@@ -269,6 +327,11 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
             if (buffer != nullptr) {
                 buffers.push_back(buffer);
             }
+        }
+    }
+    for (const auto &bufferChunks : additionalChunks) {
+        if (bufferChunks != nullptr) {
+            buffers.push_back(bufferChunks.get());
         }
     }
 
@@ -330,7 +393,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
 }
 #else
 
-void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
     std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
@@ -343,6 +406,11 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
             if (buffer != nullptr) {
                 buffers.push_back(buffer);
             }
+        }
+    }
+    for (const auto &bufferChunks : additionalChunks) {
+        if (bufferChunks != nullptr) {
+            buffers.push_back(bufferChunks.get());
         }
     }
 
@@ -417,7 +485,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes) {
 }
 #endif
 
-void GDeviceGL33::drawMesh(HGMesh hIMesh) {
+void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     GMeshGL33 * hmesh = (GMeshGL33 *) hIMesh.get();
     if (hmesh->m_end <= 0) return;
 
@@ -440,18 +508,30 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh) {
 
 #ifndef __EMSCRIPTEN__
     for (int i = 0; i < 5; i++) {
-        auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
+
+        IUniformBufferChunk *uniformChunk = nullptr;
+        if (i == 0) {
+            uniformChunk = matrixChunk.get();
+        } else {
+            uniformChunk = hmesh->m_UniformBuffer[i].get();
+        }
+
         if (uniformChunk != nullptr) {
             bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
         }
     }
 #else
     for (int i = 0; i < 5; i++) {
-        GUniformBufferChunk33 * uniformChunk = (GUniformBufferChunk33 *) hmesh->m_UniformBuffer[i].get();
-        if (uniformChunk != nullptr) {
-            auto bufferForUpload = uniformChunk->getUniformBuffer().get();
+        GUniformBufferChunk33 *uniformChunk = nullptr;
+        if (i == 0) {
+            uniformChunk = (GUniformBufferChunk33 *) (matrixChunk.get());
+        } else {
+            uniformChunk = (GUniformBufferChunk33 *)(hmesh->m_UniformBuffer[i].get());
+        }
 
-            bindUniformBuffer(bufferForUpload, i, uniformChunk->getOffset(), uniformChunk->getSize());
+        if (uniformChunk != nullptr) {
+            auto uniformBuffer = uniformChunk->getUniformBuffer().get();
+            bindUniformBuffer(uniformBuffer, i, uniformChunk->getOffset(), uniformChunk->getSize());
         }
     }
 #endif
@@ -530,10 +610,29 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh) {
         m_lastColorMask = hmesh->m_colorMask;
     }
 
+    if (m_isScissorsEnabled != hmesh->m_isScissorsEnabled) {
+        if (hmesh->m_isScissorsEnabled) {
+            glEnable(GL_SCISSOR_TEST);
+        } else {
+            glDisable(GL_SCISSOR_TEST);
+        }
+
+        m_isScissorsEnabled = hmesh->m_isScissorsEnabled;
+    }
+    if (hmesh->m_isScissorsEnabled) {
+        glScissor(
+            hmesh->m_scissorOffset[0],
+            hmesh->m_scissorOffset[1],
+            hmesh->m_scissorSize[0],
+            hmesh->m_scissorSize[1]
+        );
+    }
+
     if (m_lastBlendMode != hmesh->m_blendMode) {
         BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
-        auto &lastBlendMode = blendModes[(char)m_lastBlendMode];
-        if (lastBlendMode.blendModeEnable != selectedBlendMode.blendModeEnable ) {
+
+        if ((m_lastBlendMode == EGxBlendEnum::GxBlend_UNDEFINED) ||
+            (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
             if (selectedBlendMode.blendModeEnable) {
                 glEnable(GL_BLEND);
             } else {
@@ -552,9 +651,10 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh) {
 
     if (m_isInSkyBoxDepthMode != hmesh->getIsSkyBox()) {
         if (hmesh->getIsSkyBox()) {
-            glDepthRange(0.998f, 1.0f);
+            glDepthRange(0, 0.002); //default
+
         } else {
-            glDepthRange(0, 0.996f); //default
+            glDepthRange(0.002, 1.0f);
         }
         m_isInSkyBoxDepthMode = hmesh->getIsSkyBox();
     }
@@ -566,8 +666,30 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh) {
         ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
+#if OPENGL_DGB_MESSAGE
+    std::string debugMess =
+        "Drawing mesh "
+        " meshType = " + std::to_string((int)hmesh->getMeshType()) +
+        " priorityPlane = " + std::to_string(hmesh->priorityPlane()) +
+        " sortDistance = " + std::to_string(hmesh->getSortDistance()) +
+        " layer = " + std::to_string(hmesh->layer()) +
+        " blendMode = " + std::to_string((int)hmesh->getGxBlendMode());
+
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, (GLsizei)((uint64_t)this&0xfffffff), GLsizei(debugMess.size()), debugMess.c_str());
+
+    glDebugMessageInsert( GL_DEBUG_SOURCE_APPLICATION,
+                          GL_DEBUG_TYPE_MARKER, 1,
+                          GL_DEBUG_SEVERITY_LOW,
+                          GLsizei(debugMess.size()),
+                          debugMess.c_str()
+    );
+#endif
+
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
 
+#if OPENGL_DGB_MESSAGE
+    glPopDebugGroup();
+#endif
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
         ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->endConditionalRendering();
     }
@@ -605,6 +727,47 @@ HGVertexBufferBindings GDeviceGL33::createVertexBufferBindings() {
 
     return h_vertexBufferBindings;
 }
+
+HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) {
+    if (frameNumber > -1) {
+        for (auto &framebufAvalability : m_createdFrameBuffers) {
+            if (framebufAvalability.frame >= m_frameNumber &&
+                framebufAvalability.attachments.size() == attachments.size() &&
+                framebufAvalability.width == width &&
+                framebufAvalability.height == height
+            ) {
+                //Check frame definition
+                bool notEqual = false;
+                for (int i = 0; i < attachments.size(); i++) {
+                    if (attachments[i] != framebufAvalability.attachments[i]) {
+                        notEqual = true;
+                        break;
+                    }
+                }
+                if (!notEqual) {
+                    framebufAvalability.frame = m_frameNumber + frameNumber;
+                    return framebufAvalability.frameBuffer;
+                }
+            }
+        }
+    }
+
+    HFrameBuffer h_frameBuffer = std::make_shared<GFrameBufferGL33>(*this, attachments, depthAttachment, width, height);
+
+    if (frameNumber > -1) {
+        FramebufAvalabilityStruct avalabilityStruct;
+        avalabilityStruct.frameBuffer = h_frameBuffer;
+        avalabilityStruct.height = height;
+        avalabilityStruct.width = width;
+        avalabilityStruct.frame = m_frameNumber + frameNumber;
+        avalabilityStruct.attachments = attachments;
+        avalabilityStruct.depthAttachment = depthAttachment;
+
+        m_createdFrameBuffers.push_back(avalabilityStruct);
+    }
+
+    return h_frameBuffer;
+};
 
 HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size) {
     HGUniformBufferChunk h_uniformBuffer;
@@ -703,10 +866,10 @@ GDeviceGL33::GDeviceGL33() {
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
     m_blackPixelTexture = createTexture();
-    m_blackPixelTexture->loadData(1,1,&zero);
+    m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
 
     m_whitePixelTexture = createTexture();
-    m_whitePixelTexture->loadData(1,1,&ff);
+    m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
 
     m_defaultVao = this->createVertexBufferBindings();
 
@@ -715,6 +878,9 @@ GDeviceGL33::GDeviceGL33() {
     if (getIsAnisFiltrationSupported()) {
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_anisotropicLevel);
     }
+
+    glGetIntegerv ( GL_MAX_SAMPLES, &m_maxMultiSampling );
+    std::cout << std::endl << "m_maxMultiSampling = " << m_maxMultiSampling << std::endl;
 
     //From https://en.wikibooks.org/wiki/OpenGL_Programming/Bounding_box
     static const float vertices[] = {
@@ -780,7 +946,7 @@ GDeviceGL33::GDeviceGL33() {
 //    glEnable(GL_DEBUG_OUTPUT);
 //    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 //    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-//    glDebugMessageCallback(debug_func, NULL);
+//    glDebugMessageCallback(GL33::debug_func, NULL);
 }
 
 HGOcclusionQuery GDeviceGL33::createQuery(HGMesh boundingBoxMesh) {
@@ -795,6 +961,7 @@ void GDeviceGL33::reset() {
     m_lastDepthWrite = -1;
     m_lastDepthCulling = -1;
     m_backFaceCulling = -1;
+    m_isScissorsEnabled = -1;
     m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     m_lastBindIndexBuffer = nullptr;
     m_lastBindVertexBuffer = nullptr;
@@ -864,12 +1031,6 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         GMeshGL33 * mesh = (GMeshGL33 *) hmesh.get();
         for (int i = 0; i < mesh->m_textureCount; i++) {
             textures.push_back(mesh->m_texture[i]);
-        }
-    }
-
-    for (auto &deviceUI : deviceUIs) {
-        for (auto &texture: deviceUI->requiredTextures) {
-            textures.push_back(texture);
         }
     }
 
@@ -981,12 +1142,20 @@ float GDeviceGL33::getAnisLevel() {
 
 void GDeviceGL33::clearScreen() {
 #ifndef WITH_GLESv2
-    glClearDepthf(1.0f);
+    if (m_isInvertZ) {
+        glClearDepthf(0.0f);
+    } else {
+        glClearDepthf(1.0f);
+    }
 #else
     glClearDepthf(1.0f);
 #endif
     glDisable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    if (m_isInvertZ) {
+        glDepthFunc(GL_GEQUAL);
+    } else {
+        glDepthFunc(GL_LEQUAL);
+    }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -1012,11 +1181,6 @@ void GDeviceGL33::beginFrame() {
 }
 
 void GDeviceGL33::commitFrame() {
-    for (auto &deviceUI: deviceUIs) {
-        if (deviceUI != nullptr)
-            deviceUI->renderUI();
-    }
-
     //Release resources
     while ((!listOfDeallocators.empty())&&(listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
         listOfDeallocators.front().callback();
@@ -1036,3 +1200,5 @@ void GDeviceGL33::shrinkData()  {
 
     aggregationBufferForUpload = {};
 }
+
+

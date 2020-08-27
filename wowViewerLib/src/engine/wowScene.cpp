@@ -6,7 +6,6 @@
 
 #include "mathfu/glsl_mappings.h"
 #include "./../gapi/UniformBufferStructures.h"
-#include "objects/GlobalThreads.h"
 #include "../gapi/IDeviceFactory.h"
 #include "algorithms/FrameCounter.h"
 //#include "objects/scenes/creatureScene.h"
@@ -93,20 +92,20 @@ void WoWSceneImpl::DoCulling() {
 //        this->m_secondCamera.tick(frameParam->deltaTime);
 //    }
 
-    if ( currentScene->getCameraSettings(cameraResult)) {
+    if ( /*currentScene->getCameraSettings(cameraResult)*/ false) {
 //        farPlane = cameraResult.far_clip * 100;
-        farPlane = 300;
-        nearPlane = cameraResult.near_clip;
-
-        fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
-
-        lookAtMat4 =
-                mathfu::mat4::LookAt(
-                        -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
-                        mathfu::vec3(0,0,0),
-                        upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
-        cameraVec4 = cameraResult.position;
-        frameParam->m_lookAtMat4 = lookAtMat4;
+//        farPlane = 300;
+//        nearPlane = cameraResult.near_clip;
+//
+//        fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
+//
+//        lookAtMat4 =
+//                mathfu::mat4::LookAt(
+//                        -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
+//                        mathfu::vec3(0,0,0),
+//                        upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
+//        cameraVec4 = cameraResult.position;
+//        frameParam->m_lookAtMat4 = lookAtMat4;
 
     } else {
 
@@ -661,78 +660,6 @@ WoWSceneImpl::WoWSceneImpl(Config *config, WoWFilesCacheStorage * woWFilesCacheS
 //    setwthFileDataId(0, 1269330, -1); //nightbornemale creature
 
 
-    if (m_supportThreads) {
-        g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
-            try {
-                using namespace std::chrono_literals;
-
-                while (!this->m_isTerminating) {
-                    std::this_thread::sleep_for(1ms);
-
-                    processCaches(1000);
-                }
-            } catch(const std::exception &e) {
-                std::cerr << e.what() << std::endl;
-                throw;
-            } catch (...) {
-                throw;
-            }
-        });
-
-
-        g_globalThreadsSingleton.cullingThread = std::thread(([&]() {
-            try {
-                using namespace std::chrono_literals;
-                FrameCounter frameCounter;
-
-                while (!this->m_isTerminating) {
-                    auto future = nextDeltaTime.get_future();
-                    future.wait();
-
-    //                std::cout << "update frame = " << getDevice()->getUpdateFrameNumber() << std::endl;
-
-                    int currentFrame = m_gdevice->getCullingFrameNumber();
-                    WoWFrameData *frameParam = &m_FrameParams[currentFrame];
-                    frameParam->deltaTime = future.get();
-                    nextDeltaTime = std::promise<float>();
-
-                    frameCounter.beginMeasurement();
-                    DoCulling();
-
-                    frameCounter.endMeasurement("Culling thread ");
-
-                    this->cullingFinished.set_value(true);
-                }
-            } catch(const std::exception &e) {
-                std::cerr << e.what() << std::endl;
-                throw;
-            } catch (...) {
-                throw;
-            }
-        }));
-
-        if (device->getIsAsynBuffUploadSupported()) {
-            g_globalThreadsSingleton.updateThread = std::thread(([&]() {
-                try {
-
-
-                    while (!this->m_isTerminating) {
-                        auto future = nextDeltaTimeForUpdate.get_future();
-                        future.wait();
-                        nextDeltaTimeForUpdate = std::promise<float>();
-                        DoUpdate();
-
-                        updateFinished.set_value(true);
-                    }
-                } catch(const std::exception &e) {
-                    std::cerr << e.what() << std::endl;
-                    throw;
-                } catch (...) {
-                    throw;
-                }
-            }));
-        }
-    }
 }
 
 void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
@@ -741,35 +668,6 @@ void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
     this->canvAspect = (float)canvWidth / (float)canvHeight;
 }
 
-/* Shaders stuff */
-//
-//void WoWSceneImpl::drawTexturedQuad(GLuint texture,
-//                                    float x,
-//                                    float y,
-//                                    float width,
-//                                    float height,
-//                                    float canv_width,
-//                                    float canv_height,
-//                                    bool drawDepth) {
-//    /*
-//    glDisable(GL_DEPTH_TEST);
-//    glBindBuffer(GL_ARRAY_BUFFER, this->vertBuffer);
-//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-//
-//    glEnableVertexAttribArray(+drawDepthShader::Attribute::position);
-//    glVertexAttribPointer(+drawDepthShader::Attribute::position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-//
-//    glUniform1f(this->drawDepthBuffer->getUnf("uWidth"), width/canv_width);
-//    glUniform1f(this->drawDepthBuffer->getUnf("uHeight"), height/canv_height);
-//    glUniform1f(this->drawDepthBuffer->getUnf("uX"), x/canv_width);
-//    glUniform1f(this->drawDepthBuffer->getUnf("uY"), y/canv_height);
-//    glUniform1i(this->drawDepthBuffer->getUnf("drawDepth"), (drawDepth) ? 1 : 0);
-//
-//    glBindTexture(GL_TEXTURE_2D, texture);
-//    glDrawArrays(GL_TRIANGLES, 0, 6);
-//    glEnable(GL_DEPTH_TEST);
-//    */
-//}
 /****************/
 
 void WoWSceneImpl::drawCamera () {
@@ -817,10 +715,6 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
         }
     }
 
-//    std::cout << "draw frame = " << getDevice()->getDrawFrameNumber() << std::endl;
-
-
-
     if (currentScene == nullptr) return;
 
     if (needToDropCache) {
@@ -848,81 +742,10 @@ void WoWSceneImpl::draw(animTime_t deltaTime) {
     device->setViewPortDimensions(0,0,this->canvWidth, this->canvHeight);
     device->beginFrame();
 
-    mathfu::mat4 mainLookAtMat4 = frameParam->m_lookAtMat4;
-
-    if (this->m_config->getDoubleCameraDebug()) {
-        //Draw static camera
-        m_isDebugCamera = true;
-        frameParam->m_lookAtMat4 = frameParam->m_secondLookAtMat;
-        currentScene->draw(frameParam);
-        m_isDebugCamera = false;
-
-        if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
-            /*
-            //Draw real camera into square at bottom of screen
-            this->activateRenderDepthShader();
-            glEnableVertexAttribArray(0);
-            glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
-            glUniform1f(drawDepthBuffer->getUnf("uNearPlane"), nearPlane);
-
-            this->drawTexturedQuad(this->frameBufferDepthTexture,
-                                   this->canvWidth * 0.60f,
-                                   0,//this.canvas.height * 0.75,
-                                   this->canvWidth * 0.40f,
-                                   this->canvHeight * 0.40f,
-                                   this->canvWidth,
-                                   this->canvHeight, true);
-           */
-        } else {
-            //Render real camera
-//            glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
-//            glClearScreen(/*this.fogColor*/);
-//            glDepthMask(GL_TRUE);
-//
-//            this->m_lookAtMat4 = lookAtMat4;
-//            currentScene->draw();
-//            glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
-//
-//            this->activateRenderDepthShader();
-//            this->drawTexturedQuad(this->frameBufferColorTexture,
-//                                   this->canvWidth * 0.60f,
-//                                   0,//this.canvas.height * 0.75,
-//                                   this->canvWidth * 0.40f,
-//                                   this->canvHeight * 0.40f,
-//                                   this->canvWidth,
-//                                   this->canvHeight, false);
+    device->drawMeshes(frameParam->renderedThisFrame);
+    m_isDebugCamera = false;
 
 
-        }
-    } else {
-        //Render real camera
-        frameParam->m_lookAtMat4 = mainLookAtMat4;
-        currentScene->draw(frameParam);
-
-        if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
-            //Draw real camera into square at bottom of screen
-            /*
-            this->activateRenderDepthShader();
-            glEnableVertexAttribArray(0);
-            glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
-            glUniform1f(drawDepthBuffer->getUnf("uNearPlane"), nearPlane);
-
-            this->drawTexturedQuad(this->frameBufferDepthTexture,
-                                   this->canvWidth * 0.60f,
-                                   0,//this.canvas.height * 0.75,
-                                   this->canvWidth * 0.40f,
-                                   this->canvHeight * 0.40f,
-                                   this->canvWidth,
-                                   this->canvHeight, true);
-           */
-        }
-    }
-//    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateEnd);
-
-//    print_timediff("rendering", renderingAndUpdateStart, renderingAndUpdateEnd);
-
-
-//    nextDeltaTime = deltaTime;
     device->commitFrame();
     device->reset();
 
@@ -1004,20 +827,6 @@ void WoWSceneImpl::SetDirection(WoWFrameData &frameParamHolder) {
 
 WoWSceneImpl::~WoWSceneImpl() {
     m_isTerminating = true;
-    g_globalThreadsSingleton.cullingThread.detach();
-    if (g_globalThreadsSingleton.cullingThread.joinable()) {
-        g_globalThreadsSingleton.cullingThread.join();
-    }
-
-    g_globalThreadsSingleton.updateThread.detach();
-    if (g_globalThreadsSingleton.updateThread.joinable()) {
-        g_globalThreadsSingleton.updateThread.join();
-    }
-
-    g_globalThreadsSingleton.loadingResourcesThread.detach();
-    if (g_globalThreadsSingleton.loadingResourcesThread.joinable()) {
-        g_globalThreadsSingleton.loadingResourcesThread.join();
-    }
 }
 
 WoWScene *createWoWScene(Config *config, WoWFilesCacheStorage * cacheStorage, IClientDatabase * clientDatabase, IDevice *device, int canvWidth, int canvHeight) {

@@ -58,17 +58,9 @@ void PlanarCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
 
-mathfu::vec3 PlanarCamera::getCameraPosition(){
-    return camera;
-}
-mathfu::vec3 PlanarCamera::getCameraLookAt(){
-    return lookAt;
-}
-
 void PlanarCamera::setMovementSpeed(float value) {
     this->m_moveSpeed = value;
 };
-
 
 
 void PlanarCamera::tick (animTime_t timeDelta) {
@@ -103,6 +95,16 @@ void PlanarCamera::tick (animTime_t timeDelta) {
 
     this->camera = (lookAtMat.Inverse() * mathfu::vec4(0,0,0,1)).xyz();
     this->lookAt = (lookAtMat * mathfu::vec4(0,1,0,1)).xyz();
+
+    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
+    interiorSunDir = lookAtMat.Transpose().Inverse() * interiorSunDir;
+    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
+
+    this->interiorDirectLightDir = interiorSunDir;
+
+    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
+    this->upVector = (lookAtRotation * upVector.xyz());
 }
 void PlanarCamera::setCameraPos (float x, float y, float z) {
     //Reset camera
@@ -128,7 +130,7 @@ void PlanarCamera::setCameraOffset(float x, float y, float z) {
     cameraOffset = mathfu::vec3(x,y,z);
 }
 void PlanarCamera::zoomInFromTouch(float val) {
-    m_radius += val;
+    m_radius += val * m_moveSpeed;
     if (m_radius < 0) m_radius = 0;
 }
 
@@ -139,4 +141,25 @@ void PlanarCamera::zoomInFromMouseScroll(float val) {
 
 void PlanarCamera::addCameraViewOffset(float x, float y) {
     cameraViewOffset += mathfu::vec2(x, y);
+}
+
+HCameraMatrices PlanarCamera::getCameraMatrices(float fov,
+                                                float canvasAspect,
+                                                float nearPlane,
+                                                float farPlane) {
+    HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
+    cameraMatrices->cameraPos = mathfu::vec4(camera, 1.0);
+    cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(
+        fov,
+        canvasAspect,
+        nearPlane,
+        farPlane);
+    cameraMatrices->lookAtMat = lookAtMat;
+
+    cameraMatrices->cameraPos = mathfu::vec4(camera, 1.0);
+    cameraMatrices->viewUp = mathfu::vec4(upVector, 0);
+    cameraMatrices->interiorDirectLightDir = this->interiorDirectLightDir;
+
+
+    return cameraMatrices;
 }

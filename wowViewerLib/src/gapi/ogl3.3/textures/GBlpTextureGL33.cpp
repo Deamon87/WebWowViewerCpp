@@ -19,7 +19,22 @@ GBlpTextureGL33::~GBlpTextureGL33() {
 }
 
 void GBlpTextureGL33::bind() {
+#if OPENGL_DGB_MESSAGE
+    std::string debugMess = "Binding Texture "+m_texture->getTextureName();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, (GLsizei)((uint64_t)this&0xfffffff), GLsizei(debugMess.size()), debugMess.c_str());
+
+        glDebugMessageInsert( GL_DEBUG_SOURCE_APPLICATION,
+                              GL_DEBUG_TYPE_MARKER, 1,
+                              GL_DEBUG_SEVERITY_LOW,
+                              GLsizei(debugMess.size()),
+                              debugMess.c_str()
+        );
+#endif
+
     glBindTexture(GL_TEXTURE_2D, textureIdentifier);
+#if OPENGL_DGB_MESSAGE
+    glPopDebugGroup();
+#endif
 }
 
 void GBlpTextureGL33::unbind() {
@@ -64,7 +79,7 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
     bool useDXT3Decoding = !m_device.getIsCompressedTexturesSupported();
     bool useDXT5Decoding = !m_device.getIsCompressedTexturesSupported();
 
-//    useDXT1Decoding = true;
+    useDXT1Decoding = true; // Note: manual DXT1 decompression loses alpha channel for S3TC_RGBA_DXT1 textures
 //    useDXT3Decoding = true;
 //    useDXT5Decoding = true;
 
@@ -80,7 +95,8 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
 
             for (int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT1Decoding) {
-                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
+                    bool hasAlpha = (textureFormat == TextureFormat::S3TC_RGBA_DXT1);
+                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult, hasAlpha);
                     glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
                                  GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {
@@ -147,6 +163,13 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
                              &mipmaps[k].texture[0]);
             }
             break;
+        case TextureFormat::None:
+        case TextureFormat::RGBA:
+        case TextureFormat::PalARGB1555DitherFloydSteinberg:
+        case TextureFormat::PalARGB4444DitherFloydSteinberg:
+        case TextureFormat::PalARGB2565DitherFloydSteinberg:
+            std::cout << "Detected unhandled texture format" << std::endl;
+        break;
     }
 #ifndef WITH_GLESv2
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) mipmaps.size()-1);

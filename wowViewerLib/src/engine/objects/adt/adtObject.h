@@ -5,7 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_ADTOBJECT_H
 #define WEBWOWVIEWERCPP_ADTOBJECT_H
 
-class IWoWInnerApi;
 class AdtObject;
 class M2Object;
 
@@ -14,7 +13,6 @@ class M2Object;
 #include <set>
 
 #include "../../persistance/header/adtFileHeader.h"
-#include "../../wowInnerApi.h"
 
 #include "../../persistance/adtFile.h"
 #include "../../persistance/wdtFile.h"
@@ -26,8 +24,8 @@ class M2Object;
 
 class AdtObject {
 public:
-    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
-    AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
+    AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
+    AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
     ~AdtObject() = default;
 
     void setMapApi(IMapApi *api) {
@@ -38,7 +36,7 @@ public:
     void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
 
-    void update();
+    void update(animTime_t deltaTime);
     void uploadGeneratorBuffers(ADTObjRenderRes &adtRes);
     void doPostLoad();
 
@@ -68,6 +66,8 @@ public:
     }
 private:
     animTime_t m_lastTimeOfUpdateOrRefCheck = 0;
+    animTime_t m_lastTimeOfUpdate = 0;
+    animTime_t m_lastDeltaTime = 0;
 
     struct LodCommand {
         int index;
@@ -79,7 +79,7 @@ private:
     void createMeshes();
     void loadAlphaTextures();
 
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
     IMapApi *m_mapApi;
     HWdtFile m_wdtFile= nullptr;
 
@@ -102,7 +102,7 @@ private:
     std::vector<LodCommand> lodCommands;
 
     HGVertexBuffer combinedVbo ;
-    HGIndexBuffer stripVBO ;
+    HGIndexBuffer stripIBO ;
     HGVertexBufferBindings adtVertexBindings;
 
     HGVertexBuffer heightVboLod;
@@ -123,6 +123,7 @@ private:
     std::vector<HGMesh> adtLodMeshes;
 
     std::vector<CAaBox> tileAabb;
+    std::vector<CAaBox> waterTileAabb;
     std::vector<int> globIndexX;
     std::vector<int> globIndexY;
 
@@ -146,6 +147,16 @@ private:
     HGTexture getAdtTexture(int textureId);
     HGTexture getAdtHeightTexture(int textureId);
     HGTexture getAdtSpecularTexture(int textureId);
+
+    struct AnimTextures {
+        std::array<mathfu::mat4, 4> animTexture;
+    };
+    struct AnimTrans {
+        std::array<mathfu::vec2, 4> transVectors;
+    };
+    std::vector<AnimTextures> texturesPerMCNK;
+
+    std::vector<AnimTrans> animationTranslationPerMCNK;
 
     void calcBoundingBoxes();
     void loadM2s();

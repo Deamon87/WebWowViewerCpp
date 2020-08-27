@@ -16,13 +16,13 @@ protected:
 public:
     ~GTextureGL20() override;
 
-    void loadData(int width, int height, void *data) override;
+    void loadData(int width, int height, void *data, ITextureFormat textureFormat) override;
+    void readData(std::vector<uint8_t> &buff) override {};
     bool getIsLoaded() override;
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
-        throw "Not Implemented in this class";
+//        throw "Not Implemented in this class";
     }
     bool postLoad() override { return false;};
-    void* getIdent() override { return reinterpret_cast<void *>(textureIdentifier); };
 private:
     void createBuffer();
     void destroyBuffer();

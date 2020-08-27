@@ -6,34 +6,47 @@
 #include "../../algorithms/mathHelper.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
+#include "../../../gapi/UniformBufferStructures.h"
+#include "../../camera/m2TiedCamera.h"
 
-void M2Scene::checkCulling(WoWFrameData *frameData) {
-    mathfu::vec4 cameraPos = mathfu::vec4(frameData->m_cameraVec3, 1.0);
-    mathfu::mat4 &frustumMat = frameData->m_perspectiveMatrixForCulling;
-    mathfu::mat4 &lookAtMat4 = frameData->m_lookAtMat4;
-
-
-    mathfu::mat4 projectionModelMat = frustumMat*lookAtMat4;
-
-    std::vector<mathfu::vec4> frustumPlanes = MathHelper::getFrustumClipsFromMatrix(projectionModelMat);
-//    MathHelper::fixNearPlane(frustumPlanes, cameraPos);
-
-    std::vector<mathfu::vec3> frustumPoints = MathHelper::calculateFrustumPointsFromMat(projectionModelMat);
-
-    m_drawModel = m_m2Object->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints);
+void M2Scene::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
+                                  HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
+                                  std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
+                                  std::vector<std::shared_ptr<WmoObject>> &potentialWmo) {
+    potentialM2.push_back(m_m2Object);
 }
 
-void M2Scene::draw(WoWFrameData *frameData) {
-    if (!m_drawModel) return;
+void M2Scene::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
+                                   std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
+                                   std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                   std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
+    m2ObjectsCandidates.push_back(m_m2Object);
+}
 
-    m_api->getDevice()->drawMeshes(frameData->renderedThisFrame);
+void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
+                              StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
+    Config* config = this->m_api->getConfig();
+    if (config->getUseTimedGloabalLight()) {
+        Map::updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
+    } else if (config->getUseM2AmbientLight()) {
+        auto ambient = m_m2Object->getM2SceneAmbientLight();
+
+        if (ambient.Length() < 0.0001)
+            ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
+
+        m_api->getConfig()->setExteriorAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
+        m_api->getConfig()->setExteriorHorizontAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
+        m_api->getConfig()->setExteriorGroundAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
+        m_api->getConfig()->setExteriorDirectColor(0.0,0.0,0.0,0.0);
+        m_api->getConfig()->setExteriorDirectColorDir(0.0,0.0,0.0);
+    }
 }
 
 extern "C" {
     extern void supplyPointer(int *availablePointer, int length);
 }
 
-void M2Scene::doPostLoad(WoWFrameData *frameData) {
+void M2Scene::doPostLoad(HCullStage cullStage) {
     if (m_m2Object->doPostLoad()) {
 
         CAaBox aabb = m_m2Object->getColissionAABB();
@@ -53,70 +66,56 @@ void M2Scene::doPostLoad(WoWFrameData *frameData) {
             );
 
             if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
-                m_api->setCameraPosition((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+                m_api->camera->setCameraPos((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+
             } else {
-                m_api->setCameraPosition((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+                m_api->camera->setCameraPos((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
             }
-            m_api->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
+            m_api->camera->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
         } else {
-            m_api->setCameraPosition(1.0,0,0);
-            m_api->setCameraOffset(0,0,0);
+            m_api->camera->setCameraPos(1.0,0,0);
+            m_api->camera->setCameraOffset(0,0,0);
         }
         std::vector <int> availableAnimations;
         m_m2Object->getAvailableAnimation(availableAnimations);
 #ifdef __EMSCRIPTEN__
         supplyPointer(&availableAnimations[0], availableAnimations.size());
 #endif
-    }
+        }
+    Map::doPostLoad(cullStage);
 }
 
-void M2Scene::update(WoWFrameData *frameData) {
-    m_m2Object->update(frameData->deltaTime, frameData->m_cameraVec3, frameData->m_lookAtMat4);
-    m_m2Object->uploadGeneratorBuffers(frameData->m_lookAtMat4);
-}
 
-mathfu::vec4 M2Scene::getAmbientColor() {
-    if (doOverride) {
-        return m_ambientColorOverride;
-    } else {
-        return m_m2Object->getAmbientLight();
-    }
-}
+//mathfu::vec4 M2Scene::getAmbientColor() {
+//    if (doOverride) {
+//        return m_ambientColorOverride;
+//    } else {
+//        return m_m2Object->getAmbientLight();
+//    }
+//}
+//
+//bool M2Scene::getCameraSettings(M2CameraResult &result) {
+//    if (m_cameraView > -1 && m_m2Object->getGetIsLoaded()) {
+//        result = m_m2Object->updateCamera(0, m_cameraView);
+//        return true;
+//    }
+//    return false;
+//}
+//
+//void M2Scene::setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
+//    doOverride = override;
+//    m_ambientColorOverride = ambientColor;
+//
+//    m_m2Object->setAmbientColorOverride(ambientColor, override);
+//}
 
-bool M2Scene::getCameraSettings(M2CameraResult &result) {
-    if (m_cameraView > -1 && m_m2Object->getGetIsLoaded()) {
-        result = m_m2Object->updateCamera(0, m_cameraView);
-        return true;
-    }
-    return false;
-}
-
-void M2Scene::setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
-    doOverride = override;
-    m_ambientColorOverride = ambientColor;
-
-    m_m2Object->setAmbientColorOverride(ambientColor, override);
-}
-
-void M2Scene::collectMeshes(WoWFrameData * frameData) {
-    frameData->renderedThisFrame = std::vector<HGMesh>();
-
-    m_m2Object->collectMeshes(frameData->renderedThisFrame, 0);
-    m_m2Object->drawParticles(frameData->renderedThisFrame, 0);
-
-    std::sort(frameData->renderedThisFrame.begin(),
-              frameData->renderedThisFrame.end(),
-              IDevice::sortMeshes
-    );
-
-}
 
 void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
     //std::cout << "replaceTextureArray.size == " << replaceTextureArray.size() << std::endl;
     //std::cout << "m_m2Object == " << m_m2Object << std::endl;
     if (m_m2Object == nullptr) return;
 
-    auto textureCache = m_api->getTextureCache();
+    auto textureCache = m_api->cacheStorage->getTextureCache();
     std::vector<HBlpTexture> replaceTextures;
     replaceTextures.reserve(replaceTextureArray.size());
 
@@ -132,3 +131,94 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
 
     m_m2Object->setReplaceTextures(replaceTextures);
 }
+
+int M2Scene::getCameraNum() {
+    return m_m2Object->getCameraNum();
+}
+
+std::shared_ptr<ICamera> M2Scene::createCamera(int cameraNum) {
+    if (cameraNum < 0 || cameraNum >= getCameraNum()) {
+        return nullptr;
+    }
+
+    return std::make_shared<m2TiedCamera>(m_m2Object, cameraNum);
+}
+
+M2Scene::M2Scene(ApiContainer *api, std::string m2Model, int cameraView) {
+    m_api = api; m_m2Model = m2Model; m_cameraView = cameraView;
+    m_sceneMode = SceneMode::smM2;
+    m_suppressDrawingSky = true;
+
+    auto  m2Object = std::make_shared<M2Object>(m_api);
+    std::vector<HBlpTexture> replaceTextures = {};
+    std::vector<uint8_t> meshIds = {};
+    m2Object->setLoadParams(0, meshIds, replaceTextures);
+    m2Object->setModelFileName(m_m2Model);
+    m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+
+    m2Object->calcWorldPosition();
+
+    m_m2Object = m2Object;
+}
+
+M2Scene::M2Scene(ApiContainer *api, int fileDataId, int cameraView) {
+    m_api = api; m_cameraView = cameraView;
+    m_sceneMode = SceneMode::smM2;
+    m_suppressDrawingSky = true;
+
+    auto m2Object = std::make_shared<M2Object>(m_api);
+    std::vector<HBlpTexture> replaceTextures = {};
+    std::vector<uint8_t> meshIds = {};
+    m2Object->setLoadParams(0, meshIds, replaceTextures);
+    m2Object->setModelFileId(fileDataId);
+    m2Object->createPlacementMatrix(mathfu::vec3(0,0,0), 0, mathfu::vec3(1,1,1), nullptr);
+    m2Object->calcWorldPosition();
+
+    m_m2Object = m2Object;
+}
+
+
+/*
+void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
+    if (updateStage == nullptr) return;
+    if (resultDrawStage == nullptr) return;
+
+    auto cullStage = updateStage->cullResult;
+
+    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+
+    for (auto m2Object : updateStage->cullResult->m2Array) {
+        m2Object->collectMeshes(resultDrawStage->meshesToRender->meshes, 0);
+        m2Object->drawParticles(resultDrawStage->meshesToRender->meshes, 0);
+    }
+
+
+    auto renderMats = resultDrawStage->matricesForRendering;
+    auto config = m_api->getConfig();
+
+    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk) -> void {
+        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
+        blockPSVS->uLookAtMat = renderMats->lookAtMat;
+        blockPSVS->uPMatrix = renderMats->perspectiveMat;
+        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
+        blockPSVS->uViewUp = renderMats->viewUp;
+
+
+//        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+        auto ambient = mathfu::vec4(1.0f, 1.0f, 1.0f, 0);
+        blockPSVS->extLight.uExteriorAmbientColor = ambient;
+        blockPSVS->extLight.uExteriorHorizontAmbientColor = ambient;
+        blockPSVS->extLight.uExteriorGroundAmbientColor = ambient;
+        blockPSVS->extLight.uExteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,1.0);
+        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(0.0,0.0,0.0,1.0);
+    });
+
+    additionalChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
+
+    std::sort(resultDrawStage->meshesToRender->meshes.begin(),
+              resultDrawStage->meshesToRender->meshes.end(),
+              IDevice::sortMeshes
+    );
+}
+*/

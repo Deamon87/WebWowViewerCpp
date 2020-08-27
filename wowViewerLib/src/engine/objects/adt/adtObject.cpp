@@ -2,6 +2,7 @@
 // Created by deamon on 10.07.17.
 //
 
+#include <cstring>
 #include "adtObject.h"
 #include "../../shader/ShaderDefinitions.h"
 #include "../../algorithms/mathHelper.h"
@@ -31,6 +32,9 @@ static GBufferBinding staticWaterBindings[2] = {
 
 void AdtObject::loadingFinished() {
 //    std::cout << "AdtObject::loadingFinished finished called";
+
+    texturesPerMCNK = std::vector<AnimTextures>(m_adtFile->mcnkRead+1);
+    animationTranslationPerMCNK = std::vector<AnimTrans>(m_adtFile->mcnkRead+1);
 
     createVBO();
     loadAlphaTextures();
@@ -157,6 +161,7 @@ void AdtObject::loadWater() {
         for (int x_chunk = 0; x_chunk < 16; x_chunk++) {
             auto &liquidChunk = m_adtFile->mH2OHeader->chunks[y_chunk*16 + x_chunk];
 
+
             if (liquidChunk.layer_count == 0) continue;
 
             auto *liquidInstPtr =
@@ -172,16 +177,23 @@ void AdtObject::loadWater() {
             for (int layerInd = 0; layerInd < liquidChunk.layer_count; layerInd++) {
                 SMLiquidInstance &liquidInstance = liquidInstPtr[layerInd];
 
+                uint64_t infoMask = 0xFFFFFFFFFFFFFFFF; // default = all water
+                if (liquidInstance.offset_exists_bitmap > 0 && liquidInstance.height > 0)
+                {
+                    size_t bitmask_size = static_cast<size_t>(std::ceil(liquidInstance.height * liquidInstance.width / 8.0f));
+                    std::memcpy(&infoMask, &m_adtFile->mH2OBlob[liquidInstance.offset_exists_bitmap - m_adtFile->mH2OblobOffset], bitmask_size);
+                }
+
                 float *heightPtr = nullptr;
                 if (liquidInstance.offset_vertex_data != 0) {
                     heightPtr = ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data - m_adtFile->mH2OblobOffset]));
                 }
 
                 //SmallHack
-                if (basetextureFDID == 0) {
+                if (basetextureFDID == 0 && (m_api->databaseHandler != nullptr)) {
                     if (liquidInstance.liquid_object_or_lvf > 42) {
                         std::vector<LiquidMat> liqMats;
-                        m_api->getDatabaseHandler()->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liqMats);
+                        m_api->databaseHandler->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liqMats);
                         for (auto &liqMat : liqMats) {
                             if (liqMat.FileDataId != 0) {
                                 basetextureFDID = liqMat.FileDataId;
@@ -193,7 +205,7 @@ void AdtObject::loadWater() {
                         }
                     } else {
                         std::vector<int> fileDataIds;
-                        m_api->getDatabaseHandler()->getLiquidTypeData(liquidInstance.liquid_type, fileDataIds);
+                        m_api->databaseHandler->getLiquidTypeData(liquidInstance.liquid_type, fileDataIds);
                         for (auto fdid: fileDataIds) {
                             if (fdid != 0) {
                                 basetextureFDID = fdid;
@@ -203,8 +215,22 @@ void AdtObject::loadWater() {
                     }
                 }
 
-
                 int baseVertexIndForInst = vertexBuffer.size();
+
+                int bitOffset = 0;
+                int i = this->m_adtFile->mcnkMap[y_chunk][x_chunk];
+                auto &waterAaBB = waterTileAabb[i];
+                SMChunk *mcnkChunk = &m_adtFile->mapTile[i];
+
+                float minZ = 999999;
+                float maxZ = -999999;
+
+                float minX = mcnkChunk->position.x - (533.3433333 / 16.0);
+                float maxX = mcnkChunk->position.x;
+                float minY = mcnkChunk->position.y - (533.3433333 / 16.0);
+                float maxY = mcnkChunk->position.y;
+                minZ += mcnkChunk->position.z;
+                maxZ += mcnkChunk->position.z;
 
                 for (int y = 0; y < liquidInstance.height + 1; y++) {
                     for (int x = 0; x < liquidInstance.width + 1; x++) {
@@ -215,6 +241,8 @@ void AdtObject::loadWater() {
                                 UNITSIZE*(x+liquidInstance.x_offset),
                                 -liquidInstance.min_height_level
                             );
+                        if (minZ > pos.z) minZ = pos.z;
+                        if (maxZ < pos.z) maxZ = pos.z;
 
                         bool hackBool = !((liquidInstance.liquid_object_or_lvf == 42) && (liquidInstance.liquid_type == 2));
                         if (liquidInstance.liquid_object_or_lvf != 2 && heightPtr!= nullptr && hackBool) {
@@ -228,9 +256,16 @@ void AdtObject::loadWater() {
                         vertexBuffer.push_back(vertex);
                     }
                 }
+                waterAaBB = CAaBox(
+                    C3Vector(mathfu::vec3(minX, minY, minZ)),
+                    C3Vector(mathfu::vec3(maxX, maxY, maxZ))
+                );
+
+
 
                 for (int y = 0; y < liquidInstance.height; y++) {
                     for (int x = 0; x < liquidInstance.width; x++) {
+                        if (((infoMask >> (bitOffset++)) & 1) == 0) continue;
                         int16_t vertindexes[4] = {
                             (int16_t) (baseVertexIndForInst + y * (liquidInstance.width +1 ) + x),
                             (int16_t) (baseVertexIndForInst + y * (liquidInstance.width + 1) + x + 1),
@@ -251,7 +286,7 @@ void AdtObject::loadWater() {
         }
     }
 
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
 
     waterIBO = device->createIndexBuffer();
     waterIBO->uploadData(
@@ -277,7 +312,7 @@ void AdtObject::loadWater() {
 
 
 //Create mesh(es)
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("adtWater", nullptr);
+    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("adtWater", nullptr);
 
     gMeshTemplate meshTemplate(vertexWaterBufferBindings, shaderPermutation);
 
@@ -291,13 +326,13 @@ void AdtObject::loadWater() {
     meshTemplate.textureCount = 1;
     if (basetextureFDID != 0) {
 
-        auto htext = m_api->getTextureCache()->getFileId(basetextureFDID);
-        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(htext, true, true);
+        auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);
+        meshTemplate.texture[0] = m_api->hDevice->createBlpTexture(htext, true, true);
     } else {
-        meshTemplate.texture[0] = m_api->getDevice()->getBlackTexturePixel();
+        meshTemplate.texture[0] = m_api->hDevice->getBlackTexturePixel();
     }
 
-    meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+    meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
     meshTemplate.ubo[1] = nullptr;
     meshTemplate.ubo[2] = nullptr;
 
@@ -310,16 +345,14 @@ void AdtObject::loadWater() {
 
     auto l_liquidType = 0;
     meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color](IUniformBufferChunk* self) -> void {
-//        int (&waterType)[4] = self->getObject<int[4]>();
-        float closeRiverColor[4];
-        this->m_api->getConfig()->getCloseRiverColor(closeRiverColor);
+        mathfu::vec4 closeRiverColor = this->m_api->getConfig()->getCloseRiverColor();
         mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
 
-        color_ = mathfu::vec4(closeRiverColor[0], closeRiverColor[1], closeRiverColor[2], 0.7);
+        color_ = mathfu::vec4(closeRiverColor.xyz(), 0.7);
     });
 
 
-    waterMesh = m_api->getDevice()->createMesh(meshTemplate);
+    waterMesh = m_api->hDevice->createMesh(meshTemplate);
 
 
 }
@@ -381,8 +414,14 @@ void AdtObject::createVBO() {
 //            std::cout << " i = " << i << " j =  " << j << " pos = " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
 
             /* 1.3 Normals */
-            for (int k = 0; k < 3; k++) {
-                vboArray.push_back(m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k] / 127.0f);
+            if (m_adtFile->mcnkStructs[i].mcnr != nullptr) {
+                for (int k = 0; k < 3; k++) {
+                    vboArray.push_back(m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k] / 127.0f);
+                }
+            } else {
+                vboArray.push_back(0.0);
+                vboArray.push_back(0.0);
+                vboArray.push_back(1.0);
             }
             /* 1.4 MCCV */ //Color vertex
             if (m_adtFile->mcnkStructs[i].mccv != nullptr) {
@@ -415,27 +454,31 @@ void AdtObject::createVBO() {
     }
 
     /* 1.3 Make combinedVbo */
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
     combinedVbo = device->createVertexBuffer();
     combinedVbo->uploadData(vboArray.data(), vboArray.size()*sizeof(float));
 
     /* 2. Strips */
-    stripVBO = device->createIndexBuffer();
+
     if (m_adtFile->strips.size() > 0) {
-        stripVBO->uploadData(m_adtFile->strips.data(), m_adtFile->strips.size() * sizeof(int16_t));
+        stripIBO = device->createIndexBuffer();
+        stripIBO->uploadData(m_adtFile->strips.data(), m_adtFile->strips.size() * sizeof(int16_t));
+
+        adtVertexBindings = device->createVertexBufferBindings();
+        adtVertexBindings->setIndexBuffer(stripIBO);
+
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = combinedVbo;
+        vertexBinding.bindings = std::vector<GBufferBinding>(&bufferBinding[0], &bufferBinding[5]);
+
+        adtVertexBindings->addVertexBufferBinding(vertexBinding);
+        adtVertexBindings->save();
     } else {
-        stripVBO->uploadData(nullptr, 0);
+        stripIBO = nullptr;
+        adtVertexBindings = nullptr;
     }
 
-    adtVertexBindings = device->createVertexBufferBindings();
-    adtVertexBindings->setIndexBuffer(stripVBO);
 
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = combinedVbo;
-    vertexBinding.bindings = std::vector<GBufferBinding>(&bufferBinding[0], &bufferBinding[5]);
-
-    adtVertexBindings->addVertexBufferBinding(vertexBinding);
-    adtVertexBindings->save();
 
     //Sometimes mvli can be zero, while there is still data in floatDataBlob
     if (m_adtFileLod!= nullptr && m_adtFileLod->getStatus()==FileStatus::FSLoaded && m_adtFileLod->floatDataBlob_len > 0 && m_adtFileLod->mvli_len > 0) {
@@ -483,10 +526,12 @@ void AdtObject::calcBoundingBoxes() {
         //Loop over heights
         float minZ = 999999;
         float maxZ = -999999;
-        for (int j = 0; j < 8*8+9*9; j++) {
-            float heightVal = mcnkContent->mcvt->height[j];
-            if (minZ > heightVal) minZ = heightVal;
-            if (maxZ < heightVal) maxZ = heightVal;
+        if (mcnkContent->mcvt != nullptr) {
+            for (int j = 0; j < 8 * 8 + 9 * 9; j++) {
+                float heightVal = mcnkContent->mcvt->height[j];
+                if (minZ > heightVal) minZ = heightVal;
+                if (maxZ < heightVal) maxZ = heightVal;
+            }
         }
 
         float minX = mcnkChunk->position.x - (533.3433333 / 16.0);
@@ -507,122 +552,121 @@ void AdtObject::calcBoundingBoxes() {
 }
 
 void AdtObject::createMeshes() {
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
 
     auto adtFileTex = m_adtFileTex;
     auto adtFile = m_adtFile;
 
-    adtWideBlockPS = m_api->getDevice()->createUniformBufferChunk(sizeof(adtModelWideBlockPS));
+    adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::modelWideBlockPS));
 
     auto api = m_api;
     adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self){
-        auto *adtWideblockPS = &self->getObject<adtModelWideBlockPS>();
-        adtWideblockPS->uViewUp = mathfu::vec4_packed(mathfu::vec4(api->getViewUp(), 0.0));;
-        adtWideblockPS->uSunDir_FogStart = mathfu::vec4_packed(
-            mathfu::vec4(api->getGlobalSunDir(), api->getGlobalFogStart()));
-        adtWideblockPS->uSunColor_uFogEnd = mathfu::vec4_packed(
-            mathfu::vec4(api->getGlobalSunColor().xyz(), api->getGlobalFogEnd()));
-        adtWideblockPS->uAmbientLight = api->getGlobalAmbientColor();
-        adtWideblockPS->FogColor = mathfu::vec4_packed(mathfu::vec4(api->getGlobalFogColor().xyz(), 0));
+        auto *adtWideblockPS = &self->getObject<ADT::modelWideBlockPS>();
+
     });
 
-    for (int i = 0; i < 256; i++) {
-        //Cant be used only in Wotlk
-        //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
-        bool noLayers = m_adtFileTex->mcnkStructs[i].mcly == nullptr || m_adtFileTex->mcnkStructs[i].mclyCnt <= 0;
+    if (adtVertexBindings != nullptr) {
+        for (int i = 0; i < 256; i++) {
+            //Cant be used only in Wotlk
+            //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
+            bool noLayers = m_adtFileTex->mcnkStructs[i].mcly == nullptr || m_adtFileTex->mcnkStructs[i].mclyCnt <= 0;
 
-        HGShaderPermutation hgShaderPermutation = device->getShader("adtShader", nullptr);
-        gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
+            HGShaderPermutation hgShaderPermutation = device->getShader("adtShader", nullptr);
+            gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
 
-        aTemplate.meshType = MeshType::eAdtMesh;
-        aTemplate.triCCW = 1;
-        aTemplate.depthWrite = 1;
-        aTemplate.depthCulling = 1;
-        aTemplate.backFaceCulling = 1;
-        aTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+            aTemplate.meshType = MeshType::eAdtMesh;
+            aTemplate.triCCW = 1;
+            aTemplate.depthWrite = 1;
+            aTemplate.depthCulling = 1;
+            aTemplate.backFaceCulling = 1;
+            aTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
-        aTemplate.start = m_adtFile->stripOffsets[i] * 2;
-        aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
-        aTemplate.element = DrawElementMode::TRIANGLES;
+            aTemplate.start = m_adtFile->stripOffsets[i] * 2;
+            aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
+            aTemplate.element = DrawElementMode::TRIANGLES;
 
-        aTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
-        aTemplate.ubo[1] = nullptr;
-        aTemplate.ubo[2] = m_api->getDevice()->createUniformBufferChunk(sizeof(adtMeshWideBlockVS));
-        aTemplate.ubo[3] = adtWideBlockPS;
-        aTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(adtMeshWideBlockPS));
+            aTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
+            aTemplate.ubo[1] = nullptr;
+            aTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockVS));
+            aTemplate.ubo[3] = adtWideBlockPS;
+            aTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockPS));
 
-        aTemplate.textureCount = 9;
+            aTemplate.textureCount = 9;
 
-        aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
+            aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
-        aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, i](IUniformBufferChunk *self){
-            auto &blockPS = self->getObject<adtMeshWideBlockPS>();
-            for (int j = 0; j < 4; j++) {
-                blockPS.uHeightOffset[j] = 0.0f;
-                blockPS.uHeightScale[j] = 1.0f;
-            }
-            if ((adtFileTex->mtxp_len > 0) && !noLayers) {
+            aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, i, this](IUniformBufferChunk *self) {
+                auto &blockPS = self->getObject<ADT::meshWideBlockPS>();
+
+                for (int j = 0; j < 4; j++) {
+                    blockPS.uHeightOffset[j] = 0.0f;
+                    blockPS.uHeightScale[j] = 1.0f;
+                    blockPS.animationMat[j] = mathfu::mat4::Identity();
+                }
+
                 for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                    auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
-
-                    blockPS.uHeightOffset[j] = textureParams.heightOffset;
-                    blockPS.uHeightScale[j] = textureParams.heightScale;
-                }
-            }
-        });
-
-        aTemplate.ubo[2]->setUpdateHandler([this, i](IUniformBufferChunk *self){
-            auto &blockVS = self->getObject<adtMeshWideBlockVS>();
-            blockVS.uPos = mathfu::vec4(
-                this->m_adtFile->mapTile[i].position.x,
-                this->m_adtFile->mapTile[i].position.y,
-                this->m_adtFile->mapTile[i].position.z,
-                0
-            );
-        });
-
-
-        if (m_adtFileTex->mtxp_len > 0 && !noLayers) {
-            for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
-
-                HGTexture layer_height = nullptr;
-                if (textureParams.flags.do_not_load_specular_or_height_texture_but_use_cubemap == 0) {
-                    if (!feq(textureParams.heightOffset, 1.0f) && !feq(textureParams.heightScale, 0.0)) {
-                        layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+                    if ((adtFileTex->mtxp_len > 0) && !noLayers) {
+                        auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
+                        blockPS.uHeightOffset[j] = textureParams.heightOffset;
+                        blockPS.uHeightScale[j] = textureParams.heightScale;
                     }
+                    blockPS.animationMat[j] = this->texturesPerMCNK[i].animTexture[j];
                 }
+            });
 
-                aTemplate.texture[j + 5] = layer_height;
+            aTemplate.ubo[2]->setUpdateHandler([this, i](IUniformBufferChunk *self) {
+                auto &blockVS = self->getObject<ADT::meshWideBlockVS>();
+                blockVS.uPos = mathfu::vec4(
+                    this->m_adtFile->mapTile[i].position.x,
+                    this->m_adtFile->mapTile[i].position.y,
+                    this->m_adtFile->mapTile[i].position.z,
+                    0
+                );
+            });
+
+
+            if (m_adtFileTex->mtxp_len > 0 && !noLayers) {
+                for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                    auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
+
+                    HGTexture layer_height = nullptr;
+                    if (textureParams.flags.do_not_load_specular_or_height_texture_but_use_cubemap == 0) {
+                        if (!feq(textureParams.heightOffset, 1.0f) && !feq(textureParams.heightScale, 0.0)) {
+                            layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+                        }
+                    }
+
+                    aTemplate.texture[j + 5] = layer_height;
+                }
+            } else {
+                for (int j = 0; j < 4; j++) {
+                    aTemplate.texture[j + 5] = device->getWhiteTexturePixel();
+                }
             }
-        } else {
-            for (int j = 0; j < 4; j++) {
-                aTemplate.texture[j + 5] = device->getWhiteTexturePixel();
+
+            if (!noLayers) {
+                aTemplate.texture[4] = alphaTextures[i];
+            } else {
+                aTemplate.texture[4] = device->getBlackTexturePixel();
             }
-        }
 
-        if (!noLayers) {
-            aTemplate.texture[4] = alphaTextures[i];
-        } else {
-            aTemplate.texture[4] = device->getBlackTexturePixel();
-        }
+            if (!noLayers) {
+                for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                    auto &layerDef = m_adtFileTex->mcnkStructs[i].mcly[j];
 
-        if (!noLayers) {
-            for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
-                auto &layerDef = m_adtFileTex->mcnkStructs[i].mcly[j];
-
-                HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+                    HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
 //            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-                aTemplate.texture[j] = layer_x;
+                    aTemplate.texture[j] = layer_x;
+                }
+            } else {
+                for (int j = 0; j < 4; j++) {
+                    aTemplate.texture[j] = device->getWhiteTexturePixel();
+                }
             }
-        } else {
-            for (int j = 0; j < 4; j++) {
-                aTemplate.texture[j] = device->getWhiteTexturePixel();
-            }
-        }
 
-        HGMesh hgMesh = device->createMesh(aTemplate);
-        adtMeshes.push_back(hgMesh);
+            HGMesh hgMesh = device->createMesh(aTemplate);
+            adtMeshes.push_back(hgMesh);
+        }
     }
 }
 
@@ -637,11 +681,11 @@ void AdtObject::loadAlphaTextures() {
 
     int createdThisRun = 0;
     for (int i = 0; i < chunkCount; i++) {
-        HGTexture alphaTexture = m_api->getDevice()->createTexture();
+        HGTexture alphaTexture = m_api->hDevice->createTexture();
         std::vector<uint8_t> alphaTextureData;
         m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData);
 
-        alphaTexture->loadData(texWidth, texHeight, &alphaTextureData[0]);
+        alphaTexture->loadData(texWidth, texHeight, &alphaTextureData[0], ITextureFormat::itRGBA);
 
         alphaTextures.push_back(alphaTexture);
     }
@@ -718,6 +762,7 @@ void AdtObject::doPostLoad() {
     if (!m_loaded) {
         if (m_adtFile->getStatus()==FileStatus::FSLoaded &&
             m_adtFileObj->getStatus()==FileStatus::FSLoaded &&
+            m_adtFileObj->getStatus()==FileStatus::FSLoaded &&
             m_adtFileObjLod->getStatus()==FileStatus::FSLoaded &&
             ((m_adtFileLod != nullptr && m_adtFileLod->getStatus()==FileStatus::FSLoaded) || !m_wdtFile->mphd->flags.unk_0x0100) &&
             m_adtFileTex->getStatus()==FileStatus::FSLoaded) {
@@ -726,12 +771,69 @@ void AdtObject::doPostLoad() {
         }
     }
 }
-void AdtObject::update() {
+void AdtObject::update(animTime_t deltaTime ) {
     m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
+
+    m_lastDeltaTime = deltaTime;
+    m_lastTimeOfUpdate = m_mapApi->getCurrentSceneTime();
+
 //    std::cout << "AdtObject::update finished called" << std::endl;
     if (!m_loaded) return;
     if (adtWideBlockPS == nullptr) return;
 
+    for (int i = 0; i < 256; i++) {
+
+        for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+            texturesPerMCNK[i].animTexture[j] = mathfu::mat4::Identity();
+            if (m_adtFileTex->mtxp_len > 0) {
+                auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
+
+                if (m_adtFileTex->mcnkStructs[i].mcly[j].flags.unknown_0x800 != 0 || m_adtFileTex->mcnkStructs[i].mcly[j].flags.unknown_0x1000 != 0) {
+                    float scaleFactor = -(1.0 / (float)(1 << textureParams.flags.texture_scale)) * (1.0f / -4.1666665f);
+                    texturesPerMCNK[i].animTexture[j]*=mathfu::mat4::FromScaleVector({scaleFactor, scaleFactor, scaleFactor});
+                }
+            }
+
+            if (m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_enabled != 0) {
+                static const std::array<mathfu::vec2, 8> s_texDir =
+                    {{
+                         {-1.0, 0.0},
+                         {-1.0, 1.0},
+                         {0.0, 1.0},
+                         {1.0, 1.0},
+                         {1.0, 0.0},
+                         {1.0, -1.0},
+                         {0.0, -1.0},
+                         {-1.0, -1.0}
+                     }};
+                static const std::array<float, 8> s_tempTexSpeed = {64.0, 48.0, 32.0, 16.0, 8.0, 4.0, 2.0, 1.0};
+
+                auto &transVector = animationTranslationPerMCNK[i].transVectors[j];
+                transVector += s_texDir[m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_rotation] * ((float) deltaTime * 0.001f);
+                if (transVector.x >= 64.0) {
+                    transVector.x = 0;
+                }
+                if (transVector.x <= -64.0) {
+                    transVector.x = 0;
+                }
+                if (transVector.y >= 64.0) {
+                    transVector.y = 0;
+                }
+                if (transVector.y <= -64.0) {
+                    transVector.y = 0;
+                }
+
+    //                        std::cout << "this->m_lastDeltaTime = " << this->m_lastDeltaTime << std::endl;
+
+                auto finalTransVector = (transVector ) *
+                                   (1.0f / ((1.0f / -4.1666665f) *
+                                            s_tempTexSpeed[m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_speed]));
+                //                        std::cout << "transVector = " << transVector.x << " " << transVector.y << std::endl;
+
+                texturesPerMCNK[i].animTexture[j] *= mathfu::mat4::FromTranslationVector({finalTransVector.y, finalTransVector.x, 0.0f});
+            }
+        }
+    }
 }
 
 void AdtObject::uploadGeneratorBuffers(ADTObjRenderRes &adtRes) {
@@ -760,13 +862,13 @@ HGTexture AdtObject::getAdtTexture(int textureId) {
     HBlpTexture texture;
     if (m_adtFileTex->textureNames.size() != 0) {
         std::string &materialTexture = m_adtFileTex->textureNames[textureId];
-        texture = m_api->getTextureCache()->get(materialTexture);
+        texture = m_api->cacheStorage->getTextureCache()->get(materialTexture);
     } else if (textureId < m_adtFileTex->mdid_len) {
         uint32_t filedataId = m_adtFileTex->mdid[textureId];
-        texture = m_api->getTextureCache()->getFileId(filedataId);
+        texture = m_api->cacheStorage->getTextureCache()->getFileId(filedataId);
     }
 
-    HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
+    HGTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     m_requestedTextures[textureId] = h_gblpTexture;
 
     return h_gblpTexture;
@@ -783,13 +885,13 @@ HGTexture AdtObject::getAdtHeightTexture(int textureId) {
         std::string &materialTexture = m_adtFileTex->textureNames[textureId];
         std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_h.blp";
 
-        texture = m_api->getTextureCache()->get(matHeightText);
+        texture = m_api->cacheStorage->getTextureCache()->get(matHeightText);
     } else if (textureId < m_adtFileTex->mhid_len) {
         uint32_t filedataId = m_adtFileTex->mhid[textureId];
-        texture = m_api->getTextureCache()->getFileId(filedataId);
+        texture = m_api->cacheStorage->getTextureCache()->getFileId(filedataId);
     }
 
-    HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
+    HGTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     m_requestedTexturesHeight[textureId] = h_gblpTexture;
 
     return h_gblpTexture;
@@ -805,8 +907,8 @@ HGTexture AdtObject::getAdtSpecularTexture(int textureId) {
 
     std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_s.blp";
 
-    HBlpTexture texture = m_api->getTextureCache()->get(matHeightText);
-    HGTexture h_gblpTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
+    HBlpTexture texture = m_api->cacheStorage->getTextureCache()->get(matHeightText);
+    HGTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     m_requestedTexturesSpec[textureId] = h_gblpTexture;
 
     return h_gblpTexture;
@@ -932,30 +1034,56 @@ bool AdtObject::checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::ve
                 continue;
 
             mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
-            CAaBox &aabb = this->tileAabb[i];
-            adtFrustRes.drawChunk[i] = false;
 
-            //1. Check if camera position is inside Bounding Box
-            bool cameraOnChunk =
+            adtFrustRes.drawChunk[i] = false;
+            adtFrustRes.drawWaterChunk[i] = false;
+
+            {
+                CAaBox &aabb = this->tileAabb[i];
+                //1. Check if camera position is inside Bounding Box
+                bool cameraOnChunk =
                     (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
                      cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
-            if (cameraOnChunk &&
-                cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
+                if (cameraOnChunk &&
+                    cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
                     ) {
-                adtFrustRes.drawChunk[i] = true;
-                atLeastOneIsDrawn = true;
+                    adtFrustRes.drawChunk[i] = true;
+                    atLeastOneIsDrawn = true;
+                }
+
+                //2. Check aabb is inside camera frustum
+                bool result = false;
+                adtFrustRes.checkRefs[i] = adtFrustRes.drawChunk[i];
+                if (!adtFrustRes.drawChunk[i]) {
+                    result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+                    bool frustum2DRes = MathHelper::checkFrustum2D(hullLines, aabb);
+                    adtFrustRes.checkRefs[i] = result || frustum2DRes;
+
+                    adtFrustRes.drawChunk[i] = result;
+                    atLeastOneIsDrawn = atLeastOneIsDrawn || result;
+                }
             }
 
-            //2. Check aabb is inside camera frustum
-            bool result = false;
-            adtFrustRes.checkRefs[i] = adtFrustRes.drawChunk[i];
-            if (!adtFrustRes.drawChunk[i]) {
-                result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
-                bool frustum2DRes = MathHelper::checkFrustum2D(hullLines, aabb);
-                adtFrustRes.checkRefs[i] = result || frustum2DRes;
+            //Do the same for Water tile
+            {
+                CAaBox &aabb = this->waterTileAabb[i];
+                bool cameraOnChunk =
+                    (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
+                     cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
+                if (cameraOnChunk &&
+                    cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
+                    ) {
+                    adtFrustRes.drawWaterChunk[i] = true;
+                    atLeastOneIsDrawn = true;
+                }
 
-                adtFrustRes.drawChunk[i] = result;
-                atLeastOneIsDrawn = atLeastOneIsDrawn || result;
+                //2. Check aabb is inside camera frustum
+                bool result = false;
+                if (!adtFrustRes.drawWaterChunk[i]) {
+                    result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+                    adtFrustRes.drawWaterChunk[i] = result;
+                    atLeastOneIsDrawn = atLeastOneIsDrawn || result;
+                }
             }
         }
     }
@@ -980,6 +1108,8 @@ bool AdtObject::checkReferences(
     for (int k = x; k < x+x_len; k++) {
         for (int l = y; l < y + y_len; l++) {
             int i = this->m_adtFile->mcnkMap[k][l];
+
+            if (i < 0) continue;
 
             bool wotlk = false;
             float chunkDist = 1.0;
@@ -1060,6 +1190,7 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
 
     for (int i = 0; i < 256; i++) {
         adtFrustRes.drawChunk[i] = false;
+        adtFrustRes.drawWaterChunk[i] = false;
     }
     lodCommands.clear();
 
@@ -1090,50 +1221,54 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
     return atLeastOneIsDrawn;
 }
 
-AdtObject::AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(), adt_x(adt_x), adt_y(adt_y){
+AdtObject::AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(), adt_x(adt_x), adt_y(adt_y){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
+    waterTileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);
     globIndexY = std::vector<int>(256);
     adtFileTemplate = adtFileTemplate;
 
     m_wdtFile = wdtFile;
 
-    m_adtFile = m_api->getAdtGeomCache()->get(adtFileTemplate+".adt");
-    m_adtFile->setIsMain(true);
-    m_adtFileTex = m_api->getAdtGeomCache()->get(adtFileTemplate+"_tex"+std::to_string(0)+".adt");
-    m_adtFileObj = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt");
-    m_adtFileObjLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_obj"+std::to_string(1)+".adt");
-    m_adtFileLod = m_api->getAdtGeomCache()->get(adtFileTemplate+"_lod.adt");
+    auto adtGeomCache = m_api->cacheStorage->getAdtGeomCache();
 
-    lodDiffuseTexture = m_api->getTextureCache()->get("world/maptextures/"+mapname+"/"
+    m_adtFile =         adtGeomCache->get(adtFileTemplate+".adt");
+    m_adtFile->setIsMain(true);
+    m_adtFileTex =      adtGeomCache->get(adtFileTemplate+"_tex"+std::to_string(0)+".adt");
+    m_adtFileObj =      adtGeomCache->get(adtFileTemplate+"_obj"+std::to_string(0)+".adt");
+    m_adtFileObjLod =   adtGeomCache->get(adtFileTemplate+"_obj"+std::to_string(1)+".adt");
+    m_adtFileLod =      adtGeomCache->get(adtFileTemplate+"_lod.adt");
+
+    lodDiffuseTexture = m_api->cacheStorage->getTextureCache()->get("world/maptextures/"+mapname+"/"
         +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+".blp");
-    lodNormalTexture = m_api->getTextureCache()->get("world/maptextures/"+mapname+"/"
+    lodNormalTexture = m_api->cacheStorage->getTextureCache()->get("world/maptextures/"+mapname+"/"
         +mapname+"_"+std::to_string(adt_x)+"_"+std::to_string(adt_y)+"_n.blp");
 
 }
 
-AdtObject::AdtObject(IWoWInnerApi *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile): adt_x(adt_x), adt_y(adt_y) {
+AdtObject::AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile): adt_x(adt_x), adt_y(adt_y) {
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
+    waterTileAabb = std::vector<CAaBox>(256);
     globIndexX = std::vector<int>(256);
     globIndexY = std::vector<int>(256);
 
     m_wdtFile = wdtFile;
 
-    m_adtFile = m_api->getAdtGeomCache()->getFileId(fileDataIDs.rootADT);
+    m_adtFile = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.rootADT);
     m_adtFile->setIsMain(true);
-    m_adtFileTex = m_api->getAdtGeomCache()->getFileId(fileDataIDs.tex0ADT);
-    m_adtFileObj = m_api->getAdtGeomCache()->getFileId(fileDataIDs.obj0ADT);
-    m_adtFileObjLod = m_api->getAdtGeomCache()->getFileId(fileDataIDs.obj1ADT);
+    m_adtFileTex = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.tex0ADT);
+    m_adtFileObj = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.obj0ADT);
+    m_adtFileObjLod = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.obj1ADT);
     if (fileDataIDs.lodADT != 0) {
-        m_adtFileLod = m_api->getAdtGeomCache()->getFileId(fileDataIDs.lodADT);
+        m_adtFileLod = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.lodADT);
     } else {
         m_adtFileLod = nullptr;
     }
 
-    lodDiffuseTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTexture);
-    lodNormalTexture = m_api->getTextureCache()->getFileId(fileDataIDs.mapTextureN);
+    lodDiffuseTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataIDs.mapTexture);
+    lodNormalTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataIDs.mapTextureN);
 }
 
 int AdtObject::getAreaId(int mcnk_x, int mcnk_y) {

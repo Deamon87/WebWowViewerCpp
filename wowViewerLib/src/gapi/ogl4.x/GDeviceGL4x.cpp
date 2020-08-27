@@ -218,7 +218,7 @@ void GDeviceGL4x::drawMeshes(std::vector<HGMesh> &meshes) {
 //    m_uniformUploadFence->setGpuFence();
 }
 
-void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
     std::vector<HGLMesh> &meshes = (std::vector<HGLMesh> &) iMeshes;
@@ -416,7 +416,8 @@ void GDeviceGL4x::drawMesh(HGMesh hIMesh) {
 
     if (m_lastBlendMode != hmesh->m_blendMode) {
         BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
-        if (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable ) {
+        if ((m_lastBlendMode == EGxBlendEnum::GxBlend_UNDEFINED) ||
+            (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
             if (selectedBlendMode.blendModeEnable) {
                 glEnable(GL_BLEND);
             } else {
@@ -738,7 +739,7 @@ void GDeviceGL4x::clearScreen() {
     glClearDepthf(1.0f);
 #endif
     glDisable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);

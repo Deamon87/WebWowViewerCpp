@@ -2,7 +2,7 @@
 // Created by deamon on 11.01.18.
 //
 #include "wdlFile.h"
-#include "../../include/wowScene.h"
+
 
 chunkDef<WdlFile> WdlFile::wdlFileTable = {
     [](WdlFile &file, ChunkData &chunkData) {},
@@ -29,6 +29,41 @@ chunkDef<WdlFile> WdlFile::wdlFileTable = {
                 }
             }
         },
+        {
+            'MSSO',
+            {
+                [](WdlFile& file, ChunkData& chunkData){
+                    debuglog("Entered MSSO");
+
+                    file.m_msso_len = chunkData.chunkLen / sizeof(msso_t);
+
+                    chunkData.readValues(file.m_msso, file.m_msso_len);
+                }
+            }
+        },
+        {
+            'MSSN',
+            {
+                [](WdlFile& file, ChunkData& chunkData){
+                    debuglog("Entered MSSN");
+
+                    file.m_mssn_len = chunkData.chunkLen / sizeof(mssn_t);
+
+                    chunkData.readValues(file.m_mssn, file.m_mssn_len);
+                }
+            }
+        }, {
+            'MSSC',
+            {
+                [](WdlFile& file, ChunkData& chunkData){
+                    debuglog("Entered MSSC");
+
+                    file.m_mssc_len = chunkData.chunkLen / sizeof(mssc_t);
+
+                    chunkData.readValues(file.m_mssc, file.m_mssc_len);
+                }
+            }
+        }
     }
 };
 

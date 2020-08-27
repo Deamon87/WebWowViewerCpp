@@ -9,7 +9,7 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "mathfu/glsl_mappings.h"
 
-AnimationManager::AnimationManager(IWoWInnerApi *api, HM2Geom m2Geom) {
+AnimationManager::AnimationManager(ApiContainer *api, HM2Geom m2Geom) {
     this->m_api = api;
     this->m_m2Geom = m2Geom;
     this->m_m2File = m2Geom->getM2Data();
@@ -89,6 +89,14 @@ void AnimationManager::calculateBoneTree() {
                 childBonesLookup[i].push_back(j);
             }
         }
+    }
+}
+
+void AnimationManager::resetCurrentAnimation() {
+    this->animationInfo.currentAnimation.animationTime = 0;
+
+    for (auto &a : globalSequenceTimes) {
+        a = 0;
     }
 }
 
@@ -460,7 +468,7 @@ AnimationManager::calcBoneMatrix(
     }
 
 
-    int boneBillboardFlags = boneDefinition->flags_raw & 0x78;
+    int boneBillboardFlags = boneDefinition->flags_raw & 0x4000078;
     if (boneBillboardFlags) {
         mathfu::mat4 &currentBoneMat = boneMatrices[boneIndex];
         mathfu::mat4 currentBoneMatCopy = currentBoneMat;
@@ -470,26 +478,74 @@ AnimationManager::calcBoneMatrix(
             currentBoneMat.GetColumn(2).Length()
         );
 
-        if (boneBillboardFlags == 0x10) {
-            float xAxisLen = currentBoneMat.GetColumn(0).Length();
-            currentBoneMat.GetColumn(0) = currentBoneMat.GetColumn(0) * (1.0f /xAxisLen);
+        switch (boneBillboardFlags) {
+            case 0x8: {
+                if (isAnimated) {
+                    mathfu::vec4 &xAxis = animatedMatrix.GetColumn(0);
+                    currentBoneMat.GetColumn(0) = mathfu::vec4(
+                        xAxis.y,
+                        xAxis.z,
+                        -xAxis.x,
+                        0
+                    ).Normalized();
 
-            mathfu::vec4 newYAxis = mathfu::vec4(
-                currentBoneMat(1, 0),
-                -currentBoneMat(0, 0),
-                0.0f,
-                0
-            );
-            currentBoneMat.GetColumn(1) = newYAxis.Normalized();
-            currentBoneMat.GetColumn(2) = mathfu::vec4(
-                mathfu::CrossProductHelper(
-                    currentBoneMat.GetColumn(1).xyz(),
-                    currentBoneMat.GetColumn(0).xyz()
-                ),
-                0.0f
-            );
-        } else if ( boneBillboardFlags > 0x10 ) {
-            if ( boneBillboardFlags == 0x20 ) {
+                    mathfu::vec4 &yAxis = animatedMatrix.GetColumn(1);
+                    if (m_m2Geom->m_m2Data->global_flags.flag_unk_0x2000 == 1) {
+                        currentBoneMat.GetColumn(1) = mathfu::vec4(
+                            -yAxis.y,
+                            -yAxis.z,
+                            yAxis.x,
+                            0
+                        ).Normalized();
+                    } else {
+                        currentBoneMat.GetColumn(1) = mathfu::vec4(
+                            yAxis.y,
+                            yAxis.z,
+                            -yAxis.x,
+                            0
+                        ).Normalized();
+                    }
+
+                    mathfu::vec4 &zAxis = animatedMatrix.GetColumn(2);
+                    currentBoneMat.GetColumn(2) = mathfu::vec4(
+                        zAxis.y,
+                        zAxis.z,
+                        -zAxis.x,
+                        0
+                    ).Normalized();
+                } else {
+                    currentBoneMat.GetColumn(0) = mathfu::vec4(0, 0, -1, 0);
+
+                    if (m_m2Geom->m_m2Data->global_flags.flag_unk_0x2000 == 1) {
+                        currentBoneMat.GetColumn(1) = mathfu::vec4(-1.0, 0, 0, 0);
+                    } else {
+                        currentBoneMat.GetColumn(1) = mathfu::vec4(1.0, 0, 0, 0);
+                    }
+
+                    currentBoneMat.GetColumn(2) = mathfu::vec4(0, 1.0, 0, 0);
+                }
+                break;
+            }
+            case 0x10: {
+                currentBoneMat.GetColumn(0) = currentBoneMat.GetColumn(0).Normalized();
+
+                mathfu::vec4 newYAxis = mathfu::vec4(
+                    currentBoneMat(1, 0),
+                    -currentBoneMat(0, 0),
+                    0.0f,
+                    0
+                );
+                currentBoneMat.GetColumn(1) = newYAxis.Normalized();
+                currentBoneMat.GetColumn(2) = mathfu::vec4(
+                    mathfu::CrossProductHelper(
+                        currentBoneMat.GetColumn(1).xyz(),
+                        currentBoneMat.GetColumn(0).xyz()
+                    ),
+                    0.0f
+                );
+                break;
+            }
+            case 0x20: {
                 float yAxisLen = currentBoneMat.GetColumn(1).Length();
                 currentBoneMat.GetColumn(1) = currentBoneMat.GetColumn(1) * (1.0f /yAxisLen);
 
@@ -507,7 +563,9 @@ AnimationManager::calcBoneMatrix(
                     ),
                     0.0f
                 );
-            } else if ( boneBillboardFlags == 0x40 ) {
+                break;
+            }
+            case 0x40: {
                 currentBoneMat.GetColumn(2) = currentBoneMat.GetColumn(2).Normalized();
                 mathfu::vec4 newYAxis = mathfu::vec4(
                     currentBoneMat.GetColumn(2).y,
@@ -523,39 +581,31 @@ AnimationManager::calcBoneMatrix(
                     ),
                     0.0f
                 );
+                break;
             }
-        } else if ( boneBillboardFlags == 0x8 ){
-            if (isAnimated) {
-                mathfu::vec4 &xAxis = animatedMatrix.GetColumn(0);
-                currentBoneMat.GetColumn(0) = mathfu::vec4(
-                    xAxis.y,
-                    xAxis.z,
-                    -xAxis.x,
-                    0
-                ).Normalized();
+            case 0x4000000: {
+                mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
+                auto transfVec = currentBoneMatCopy * pivotVec4;
 
-                mathfu::vec4 &yAxis = animatedMatrix.GetColumn(1);
+                currentBoneMat.GetColumn(0) = mathfu::vec4(-transfVec.x, -transfVec.y, -transfVec.z, 0).Normalized();
                 currentBoneMat.GetColumn(1) = mathfu::vec4(
-                    yAxis.y,
-                    yAxis.z,
-                    -yAxis.x,
-                    0
-                ).Normalized();
-
-                mathfu::vec4 &zAxis = animatedMatrix.GetColumn(2);
+                    -currentBoneMat.GetColumn(0).z,
+                    0,
+                    0,
+                    0).Normalized();
                 currentBoneMat.GetColumn(2) = mathfu::vec4(
-                    zAxis.y,
-                    zAxis.z,
-                    -zAxis.x,
-                    0
-                ).Normalized();
+                    mathfu::CrossProductHelper(
+                        currentBoneMat.GetColumn(1).xyz(),
+                        currentBoneMat.GetColumn(0).xyz()
+                        ),
+                    0.0f
+                );
 
-            } else {
-                currentBoneMat.GetColumn(0) = mathfu::vec4(0, 0, -1, 0);
-                currentBoneMat.GetColumn(1) = mathfu::vec4(1.0, 0, 0, 0);
-                currentBoneMat.GetColumn(2) = mathfu::vec4(0, 1.0, 0, 0);
+                break;
             }
+
         }
+
         mathfu::vec4 pivotVec4 = mathfu::vec4(mathfu::vec3(boneDefinition->pivot), 1.0);
         mathfu::vec4 pivotVec3 = pivotVec4; pivotVec3.w = 0.0;
 
@@ -647,6 +697,7 @@ static bool dump = false;
 
 void AnimationManager::update(
     animTime_t deltaTime,
+    animTime_t deltaTimeForGS,
     mathfu::vec3 &cameraPosInLocal,
     mathfu::vec3 &localUpVector,
     mathfu::vec3 &localRightVector,
@@ -673,7 +724,7 @@ void AnimationManager::update(
 //    int maxGlobal = 1;
 
     for (int i = minGlobal; i < maxGlobal; i++) {
-        this->globalSequenceTimes[i] += deltaTime ;
+        this->globalSequenceTimes[i] += deltaTimeForGS;
         if (m_m2File->global_loops[i]->timestamp > 0) { // Global sequence values can be 0's
             this->globalSequenceTimes[i] = fmodf(this->globalSequenceTimes[i], (float)m_m2File->global_loops[i]->timestamp);
         }
@@ -872,11 +923,33 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                 defaultVector
             ), 1.0);
 
+
+        switch (m_api->getConfig()->diffuseColorHack) {
+            case 0:
+                diffuse_color = mathfu::vec4(diffuse_color.x, diffuse_color.y, diffuse_color.z, diffuse_color.w);
+                break;
+            case 1:
+                diffuse_color = mathfu::vec4(diffuse_color.x, diffuse_color.z, diffuse_color.y, diffuse_color.w);
+                break;
+            case 2:
+                diffuse_color = mathfu::vec4(diffuse_color.y, diffuse_color.x, diffuse_color.z, diffuse_color.w);
+                break;
+            case 3:
+                diffuse_color = mathfu::vec4(diffuse_color.y, diffuse_color.z, diffuse_color.x, diffuse_color.w);
+                break;
+            case 4:
+                diffuse_color = mathfu::vec4(diffuse_color.z, diffuse_color.x, diffuse_color.y, diffuse_color.w);
+                break;
+            case 5:
+                diffuse_color = mathfu::vec4(diffuse_color.z, diffuse_color.y, diffuse_color.x, diffuse_color.w);
+                break;
+        }
+
 //        if (i == 1) {
 //            diffuse_color = mathfu::vec4(diffuse_color.x, diffuse_color.z, diffuse_color.y, diffuse_color.w);
 //        }
 //        if (i == 0) {
-////            diffuse_color = mathfu::vec4(diffuse_color.y, diffuse_color.y, diffuse_color.z, diffuse_color.w);
+
 //        }
 
 
@@ -1217,5 +1290,12 @@ void AnimationManager::calcRibbonEmitters(std::vector<CRibbonEmitter *> &ribbonE
             );
         ribbonEmitter->SetDataEnabled(dataEnabled);
 
+    }
+}
+
+void AnimationManager::setAnimationPercent(float percent) {
+    if (animationInfo.currentAnimation.animationRecord != nullptr) {
+        animationInfo.currentAnimation.animationTime =
+            animationInfo.currentAnimation.animationRecord->duration  * percent;
     }
 }

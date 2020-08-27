@@ -87,7 +87,7 @@ static const struct {
 };
 
 
-ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Object *m2Object) : m_seed(rand()), m_api(api), m2Object(m2Object) {
+ParticleEmitter::ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
         for (int i = 0; i < 128; i++) {
@@ -98,6 +98,37 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
 
     m_data = particle;
 
+    txac_particles_value.value = txac_val_raw;
+
+    materialFlags.rawFlags = m_data->old.blendingType <= 1 ? 7 : 3;
+
+    //& 0xF5 is the same as unset 0x2 and 0x8
+    //    materialFlags = materialFlags & 0xF5;
+    materialFlags.flags._0x02 = 0;
+    materialFlags.flags._0x08 = 0;
+
+    materialFlags.flags._0x08 = geom->m_m2Data->global_flags.flag_unk_0x1000;
+    materialFlags.flags._0x02 = (particle->old.flags & 0x8) == 0;
+
+    //check flag 0x1C = 28
+    if (particle->old.flags_per_number.hex_10000000) {
+        //&= 0xFEu == unset 1
+        materialFlags.flags._0x01 = 0;
+        // & 0xEE == unset 1 and 16
+        materialFlags.flags._0x10 = 0;
+
+        materialFlags.flags._0x10 = particle->old.flags_per_number.hex_20000000;
+        materialFlags.flags._0x20 |= particle->old.flags_per_number.hex_40000000;
+    } else {
+        if (particle->old.flags_per_number.hex_100000) {
+            //&= 0xFEu == unset 1
+            materialFlags.flags._0x01 = 0;
+        } else {
+            materialFlags.flags._0x01 = !particle->old.flags_per_number.hex_1;
+        }
+    }
+
+
     switch (m_data->old.emitterType) {
         case 1:
             this->generator = new CPlaneGenerator(this->m_seed, particle);
@@ -106,8 +137,14 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
             this->generator = new CSphereGenerator(this->m_seed, particle, 0 != (m_data->old.flags & 0x100));
             break;
         default:
+//            this->generator = new CPlaneGenerator(this->m_seed, particle);
             this->generator = nullptr;
             std::cout << "Found unimplemented generator " << (int)m_data->old.emitterType << std::endl;
+
+//            auto tex0 = m2Object->getBlpTextureData(this->m_data->old.texture_0);
+//            if (tex0) {
+//                std::cout << "Using " << tex0->getTextureName() << " texture" << std::endl;
+//            }
             return;
             break;
     }
@@ -160,20 +197,57 @@ ParticleEmitter::ParticleEmitter(IWoWInnerApi *api, M2Particle *particle, M2Obje
     this->texScaleX = 1.0f / cols;
     this->texScaleY = 1.0f / rows;
 
-    if ((m_data->old.flags & 0x10100000) > 0) {
+    //TODO: particle selection is not entirely proper because of strange freaking flag
+    if ( (m_data->old.flags & 0x10100000) == 0) {
+        //if particle emitter is a model one - type is 1, otherwise it's 0
+        this->m_particleType = 0;
+    } else {
         const bool isMultitex = (0 != (1 & (m_data->old.flags >> 0x1c)));
         if (isMultitex) {
-            this->particleType = 2;
+            this->m_particleType = 2;
         }
         else {
-            this->particleType = 3;
+            this->m_particleType = 3;
         }
-    } else {
-        this->particleType = 0;
     }
 
+    selectShaderId();
     createMesh();
 }
+
+void ParticleEmitter::selectShaderId() {
+    bool multiTex = m_data->old.flags_per_number.hex_10000000;
+
+//    v4 = v3->m_particleType;
+    if ( (m_particleType == 2 || (m_particleType == 4 && multiTex))
+         && (txac_particles_value.value != 0) )
+    {
+        if ( materialFlags.flags._0x20)
+        {
+            shaderId = 4;
+        }
+        else
+        {
+            shaderId = -1;
+            throw "Incompatible situation";
+        }
+    }
+    else if ( m_particleType == 2 || (m_particleType == 4 && multiTex ))
+    {
+        //0x60 >> 5 = 3
+        //0x40 >> 5 = 2
+        shaderId = materialFlags.flags._0x20 ? 3 : 2;
+    }
+    else if ( m_particleType == 3 )
+    {
+        shaderId = 5;
+    }
+    else
+    {
+        shaderId = materialFlags.flags._0x01;
+    }
+}
+
 PACK(
 struct meshParticleWideBlockPS {
     float uAlphaTest;
@@ -182,7 +256,7 @@ struct meshParticleWideBlockPS {
     float padding2[3];
 });
 
-EGxBlendEnum PaticleBlendingModeToEGxBlendEnum1 [14] =
+std::array<EGxBlendEnum, 8> PaticleBlendingModeToEGxBlendEnum1 =
     {
         EGxBlendEnum::GxBlend_Opaque,
         EGxBlendEnum::GxBlend_AlphaKey,
@@ -194,9 +268,8 @@ EGxBlendEnum PaticleBlendingModeToEGxBlendEnum1 [14] =
         EGxBlendEnum::GxBlend_BlendAdd
     };
 
-extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
 void ParticleEmitter::createMesh() {
-    IDevice *device = m_api->getDevice();
+    std::shared_ptr<IDevice> device = m_api->hDevice;
 
     if (m_indexVBO == nullptr) {
         m_indexVBO = device->createIndexBuffer();
@@ -230,7 +303,7 @@ void ParticleEmitter::createMesh() {
 
 
         //Get shader
-        HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("m2ParticleShader", nullptr);
+        HGShaderPermutation shaderPermutation = device->getShader("m2ParticleShader", nullptr);
 
         //Create mesh
         gMeshTemplate meshTemplate(frame[i].m_bindings, shaderPermutation);
@@ -242,40 +315,39 @@ void ParticleEmitter::createMesh() {
         meshTemplate.depthCulling = true;
         meshTemplate.backFaceCulling = false;
 
-//        if (blendMode == 4)
-//            blendMode = 3;
-
-        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[blendMode];
-//        meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);//M2BlendingModeToEGxBlendEnum1[blendMode];
+        meshTemplate.blendMode =
+            blendMode < PaticleBlendingModeToEGxBlendEnum1.size() ?
+            PaticleBlendingModeToEGxBlendEnum1[blendMode] :
+            EGxBlendEnum::GxBlend_Opaque;
 
         meshTemplate.start = 0;
         meshTemplate.end = 0;
         meshTemplate.element =  DrawElementMode::TRIANGLES;
 
-        bool multitex = this->particleType >= 2;
+        bool multitex = m_data->old.flags_per_number.hex_10000000 > 0;
         HBlpTexture tex0 = nullptr;
         if (multitex) {
             tex0 = m2Object->getBlpTextureData(this->m_data->old.texture_0);
         } else {
             tex0 = m2Object->getBlpTextureData(this->m_data->old.texture);
         }
-        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(tex0, true, true);
+        meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
         if (multitex) {
             HBlpTexture tex1 = m2Object->getBlpTextureData(this->m_data->old.texture_1);
             HBlpTexture tex2 = m2Object->getBlpTextureData(this->m_data->old.texture_2);
 
-            meshTemplate.texture[1] = m_api->getDevice()->createBlpTexture(tex1, true, true);
-            meshTemplate.texture[2] = m_api->getDevice()->createBlpTexture(tex2, true, true);
+            meshTemplate.texture[1] = device->createBlpTexture(tex1, true, true);
+            meshTemplate.texture[2] = device->createBlpTexture(tex2, true, true);
         }
         meshTemplate.texture.resize(3);
         meshTemplate.textureCount = (multitex) ? 3 : 1;
 
-        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
         meshTemplate.ubo[1] = nullptr;
         meshTemplate.ubo[2] = nullptr;
 
         meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
 
         meshTemplate.ubo[4]->setUpdateHandler([this](IUniformBufferChunk *self) {
             meshParticleWideBlockPS &blockPS = self->getObject<meshParticleWideBlockPS>();
@@ -288,12 +360,12 @@ void ParticleEmitter::createMesh() {
                 blockPS.uAlphaTest = 0.0039215689f;
             }
 
-            int uPixelShader = particleMaterialShader[this->particleType].pixelShader;
+            int uPixelShader = particleMaterialShader[this->shaderId].pixelShader;
 
-            blockPS.uPixelShader = uPixelShader;
+            blockPS.uPixelShader =  uPixelShader;
         });
 
-        frame[i].m_mesh = m_api->getDevice()->createParticleMesh(meshTemplate);
+        frame[i].m_mesh = device->createParticleMesh(meshTemplate);
 
     }
 }
@@ -497,7 +569,7 @@ void ParticleEmitter::CreateParticle(animTime_t delta) {
         mathfu::vec3 r0 = this->burstVec * speedMul;
         p.velocity += r0;
     }
-    if (this->particleType >= 2) {
+    if (m_data->old.flags_per_number.hex_10000000) {
         for (int i = 0; i < 2; i++) {
             p.texPos[i].x = this->m_seed.UniformPos();
             p.texPos[i].y = this->m_seed.UniformPos();
@@ -521,7 +593,7 @@ void ParticleEmitter:: CalculateForces(ParticleForces &forces, animTime_t delta)
 
 bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleForces &forces) {
 
-    if (this->particleType >= 2) {
+    if (m_data->old.flags_per_number.hex_10000000) {
         for (int i = 0; i < 2; i++) {
             // s = frac(s + v * dt)
              float val = (float) (p.texPos[i].x + delta * p.texVel[i].x);
@@ -597,7 +669,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
 
 
-    auto vboBufferDynamic = frame[m_api->getDevice()->getUpdateFrameNumber()].m_bufferVBO;
+    auto vboBufferDynamic = frame[m_api->hDevice->getUpdateFrameNumber()].m_bufferVBO;
     size_t maxFutureSize = particles.size() * sizeof(ParticleBuffStructQuad);
     if ((m_data->old.flags & 0x60000) == 0x60000) {
         maxFutureSize *= 2;
@@ -645,8 +717,16 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
 }
 
 int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
+    int coefXInt = (particlePreRenderData.m_ageDependentValues.timedHeadCell &  this->textureColMask);
+    float coefXf;
+    if (coefXInt < 0) {
+        coefXf = (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1)) + (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1));
+    } else {
+        coefXf = coefXInt;
+    }
+
     mathfu::vec2 texScaleVec(
-        (particlePreRenderData.m_ageDependentValues.timedHeadCell &this->textureColMask) * this->texScaleX,
+        coefXf * this->texScaleX,
         (particlePreRenderData.m_ageDependentValues.timedHeadCell  >> this->textureColBits) * this->texScaleY);
 
     float baseSpin = 0;
@@ -716,8 +796,8 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
             }
         }
 
-        if (particleType == 4) {
-
+        if (m_particleType == 4) {
+            //Projection particles
         }
 
         m0 = transformedQuadToViewMat.GetColumn(0) * v39;
@@ -731,8 +811,8 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
             }
 
             mathfu::vec3 zAxis = p_quadToViewZVector;
-            if (particleType == 4) {
-
+            if (m_particleType == 4) {
+                //Projection particle
             }
 
             mathfu::mat3 rotMat = mathfu::quat::FromAngleAxis(theta, zAxis).ToMatrix();
@@ -786,8 +866,17 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
 }
 
 int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
+    int coefXInt = (particlePreRenderData.m_ageDependentValues.timedTailCell &  this->textureColMask);
+    float coefXf;
+    if (coefXInt < 0) {
+        coefXf = (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1)) + (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1));
+    } else {
+        coefXf = coefXInt;
+    }
+
+
     mathfu::vec2 texScaleVec(
-        (particlePreRenderData.m_ageDependentValues.timedTailCell &  this->textureColMask) * this->texScaleX,
+        (coefXf) * this->texScaleX,
         (particlePreRenderData.m_ageDependentValues.timedTailCell >> this->textureColBits) * this->texScaleY);
 
     // tail cell
@@ -995,11 +1084,11 @@ ParticleEmitter::BuildQuadT3(
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
     if (getGenerator() == nullptr) return;
 
-    auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
     if (!currentFrame.active)
         return;
 
-    HGParticleMesh mesh = frame[m_api->getDevice()->getUpdateFrameNumber()].m_mesh;
+    HGParticleMesh mesh = frame[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
     mesh->setRenderOrder(renderOrder);
     meshes.push_back(mesh);
 }
@@ -1007,7 +1096,7 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 void ParticleEmitter::updateBuffers() {
     if (getGenerator() == nullptr) return;
 
-    auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
     currentFrame.active = szVertexCnt > 0;
 
     if (!currentFrame.active)
@@ -1021,3 +1110,4 @@ void ParticleEmitter::updateBuffers() {
     currentFrame.m_mesh->setPriorityPlane(m_data->old.textureTileRotation);
 
 }
+

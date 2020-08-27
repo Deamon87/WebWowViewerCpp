@@ -13,9 +13,11 @@ constexpr GLenum toOGLEnum(GBindingType bindingType) {
             return GL_FLOAT;
         case GBindingType::GUNSIGNED_BYTE:
             return GL_UNSIGNED_BYTE;
-        default:
-            throw std::runtime_error("unknown GBindingType");
+//        default:
+//            throw std::runtime_error("unknown GBindingType");
     }
+    __debugbreak();
+    return 0;
 }
 
 GVertexBufferBindingsGL33::GVertexBufferBindingsGL33(IDevice &m_device) : m_device(

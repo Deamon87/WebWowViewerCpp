@@ -9,6 +9,9 @@ message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
 add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/spirv-cross)
 set(BUILD_EXTERNAL OFF)
 add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/glsllang)
+if(EMSCRIPTEN)
+    target_link_options(glslangValidator PUBLIC -s NODERAWFS=1)
+endif()
 set(BUILD_EXTERNAL OFF)
 
 set(SPIRV_REF_SOURCES
@@ -26,7 +29,9 @@ add_executable(spirv_reflection ${SPIRV_REF_SOURCES})
 set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 target_link_libraries(spirv_reflection spirv-cross-c)
 target_include_directories(spirv_reflection PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross/)
-
+if(EMSCRIPTEN)
+    target_link_options(spirv_reflection PUBLIC -s NODERAWFS=1)
+endif()
 
 macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
     message(STATUS "Configuring directory ${destDir}")
@@ -71,7 +76,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     TARGET SPIRV_EXTRACT_META
                     PRE_BUILD
-                    DEPENDS ${SPIRV})
+                    DEPENDS ${SPIRV_NonOpt})
 
             list(APPEND SPIRV_BINARY_FILES_NON_OPT ${SPIRV_NonOpt})
             list(APPEND SPIRV_BINARY_FILES_OPT ${SPIRVOpt})
@@ -122,7 +127,7 @@ add_custom_command(
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
         VERBATIM)
 
-add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator)
+add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator ${SPIRV_NonOpt})
 
 add_custom_target(
         ShadersGLSL20

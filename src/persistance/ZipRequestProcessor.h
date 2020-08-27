@@ -7,12 +7,12 @@
 
 
 //#include <zip.h>
-#include "../../../wowViewerLib/src/include/wowScene.h"
 #include <ios>
 #include <fstream>
 #include <regex>
 #include <functional>
 #include <vector>
+#include "../../wowViewerLib/src/include/iostuff.h"
 
 
 using namespace std::placeholders;

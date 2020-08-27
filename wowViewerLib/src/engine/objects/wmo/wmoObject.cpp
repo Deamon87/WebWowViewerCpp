@@ -59,7 +59,7 @@ void WmoObject::startLoading() {
         m_loading = true;
 
 
-        Cache<WmoMainGeom> *wmoGeomCache = m_api->getWmoMainCache();
+        Cache<WmoMainGeom> *wmoGeomCache = m_api->cacheStorage->getWmoMainCache();
         if (!useFileId) {
             mainGeom = wmoGeomCache->get(m_modelName);
         } else {
@@ -71,6 +71,13 @@ void WmoObject::startLoading() {
 
 std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     int doodadsSet = this->m_doodadSet;
+
+    if (doodadsSet >= this->mainGeom->doodadSetsLen) {
+        doodadsSet = 0;
+    }
+    if (doodadsSet >= this->mainGeom->doodadSetsLen) {
+        return nullptr;
+    }
 
     SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
     if (index < doodadSetDef->firstinstanceindex
@@ -671,12 +678,12 @@ HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
             materialTexture = materialTexture.substr(0, materialTexture.length() - 4) + "_s.blp";
         }
 
-        texture = m_api->getTextureCache()->get(materialTexture);
+        texture = m_api->cacheStorage->getTextureCache()->get(materialTexture);
     } else {
-        texture = m_api->getTextureCache()->getFileId(textureId);
+        texture = m_api->cacheStorage->getTextureCache()->getFileId(textureId);
     }
 
-    HGTexture hgTexture = m_api->getDevice()->createBlpTexture(texture, true, true);
+    HGTexture hgTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     textureCache[textureId] = hgTexture;
 
     return hgTexture;
@@ -954,11 +961,11 @@ void WmoObject::transverseGroupWMO(
     int numItems = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprCount;
 
     if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.showSkyBox) {
+        skyBox->checkFrustumCulling(cameraVec4,
+                                    {},
+                                    {});
         allInteriorViews[groupId].drawnM2s.push_back(skyBox);
     }
-
-
-
 
     for (int j = moprIndex; j < moprIndex+numItems; j++) {
         SMOPortalRef * relation = &mainGeom->portalReferences[j];
@@ -1089,6 +1096,18 @@ void WmoObject::transverseGroupWMO(
 bool WmoObject::isGroupWmoInterior(int groupId) {
     SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
     bool result = ((groupInfo->flags.EXTERIOR) == 0);
+    return result;
+}
+
+bool WmoObject::isGroupWmoExteriorLit(int groupId) {
+    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    bool result = ((groupInfo->flags.EXTERIOR_LIT) == 1);
+    return result;
+}
+
+bool WmoObject::isGroupWmoExtSkybox(int groupId) {
+    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    bool result = ((groupInfo->flags.SHOW_EXTERIOR_SKYBOX) == 1);
     return result;
 }
 

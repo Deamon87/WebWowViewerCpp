@@ -6,7 +6,6 @@
 #include "skinGeom.h"
 #include "../shader/ShaderDefinitions.h"
 #include "../../gapi/interface/IDevice.h"
-#include "../../include/wowScene.h"
 
 chunkDef<M2Geom> M2Geom::m2FileTable = {
     [](M2Geom& file, ChunkData& chunkData){},
@@ -82,6 +81,45 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
                     for (int i = 0; i < file.animationFileDataIDs.size(); i++) {
                         chunkData.readValue(file.animationFileDataIDs[i]);
                     }
+                }
+            }
+        },
+        {
+            'DIPR',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered RPID");
+
+
+                }
+            }
+        },
+        {
+            'CAXT',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered CAXT");
+                    file.txacMesh = std::vector<TXAC>(file.m_m2Data->materials.size);
+                    file.txacMParticle = std::vector<TXAC>(file.m_m2Data->particle_emitters.size);
+
+                    for (int i = 0; i < file.txacMesh.size(); i++) {
+                        chunkData.readValue(file.txacMesh[i]);
+                    }
+
+                    for (int i = 0; i < file.txacMParticle.size(); i++) {
+                        chunkData.readValue(file.txacMParticle[i]);
+                    }
+
+                }
+            }
+        },
+        {
+            '3VFW',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered 3VFW");
+                    file.m_wfv3 = 1;
+
                 }
             }
         }
@@ -265,7 +303,7 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
         CChunkFileReader reader(*this->m2File.get());
         reader.processFile(*this, &M2Geom::m2FileTable);
     } else {
-        M2Data *m2Header = (M2Data *) this->m2File.get();
+        M2Data *m2Header = (M2Data *) this->m2File->data();
         this->m_m2Data = m2Header;
     }
     M2Data *m2Header = this->m_m2Data;
@@ -300,6 +338,29 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     m2Header->ribbon_emitters.initM2Array(m2Header);
     m2Header->particle_emitters.initM2Array(m2Header);
 
+    if (m2Header->lights.size > 0) {
+        int directLights = 0;
+        int pointLights = 0;
+
+        for (int i = 0; i < m2Header->lights.size; i++) {
+            switch(m2Header->lights.getElement(i)->type) {
+                case 0 : {
+                    directLights++;
+                    break;
+                }
+                case 1 : {
+                    pointLights++;
+                    break;
+                }
+                default:
+                    std::cout << "Found unk light type " << m2Header->lights.getElement(i)->type << std::endl;
+                    break;
+            }
+        }
+
+        std::cout << "Found " << directLights << " direct lights and " << pointLights << " point lights" << std::endl;
+    }
+
     if (m2Header->global_flags.flag_has_blend_maps) {
         m2Header->blend_map_overrides.initM2Array(m2Header);
     }
@@ -311,6 +372,10 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     }
 
     initTracks(nullptr);
+
+    if (m_wfv3 != 0)  {
+        m2Header->textures.size = 4;
+    }
 
     //Step 2: init tracks
     fsStatus = FileStatus::FSLoaded;
@@ -345,6 +410,62 @@ HGVertexBuffer M2Geom::getVBO(IDevice &device) {
     }
 
     return vertexVbo;
+}
+
+std::array<HGVertexBufferBindings, 4> M2Geom::createDynamicVao(
+    IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
+    SkinGeom *skinGeom, M2SkinSection *skinSection) {
+    //1. Create index buffer
+    std::vector<uint16_t > indicies(skinSection->indexCount);
+
+
+    int minIndex = 9999999;
+    int maxIndex = 0;
+    for (int i = 0; i < skinSection->indexCount; i++) {
+        int index = skinSection->indexStart + (skinSection->Level << 16) + i;
+        indicies[i] =
+            *skinGeom->getSkinData()->vertices.getElement(*skinGeom->getSkinData()->indices.getElement(index))
+            - skinSection->vertexStart;
+
+        minIndex = std::min<int>(minIndex, indicies[i]);
+        maxIndex = std::max<int>(maxIndex, indicies[i]);
+    }
+
+//    std::cout
+//        << " indexCount = " << skinSection->indexCount
+//        << " minIndex = " << minIndex
+//        << " maxIndex = " << maxIndex
+//        << " vertexStart = " << skinSection->vertexStart
+//        << " vertexCount = " << skinSection->vertexCount
+//        << std::endl;
+
+
+    auto indexIbo = device.createIndexBuffer();
+    indexIbo->uploadData(
+        &indicies[0],
+        indicies.size() * sizeof(uint16_t));
+
+    std::array<HGVertexBufferBindings, 4> result;
+    for (int i = 0 ; i < 4; i ++) {
+        //2.1. Create vertex buffer
+        auto vertexVboDyn = device.createVertexBufferDynamic(skinSection->vertexCount * sizeof(M2Vertex));
+        dynVBOs[i] = vertexVboDyn;
+
+        //2.2 Create VAO
+        HGVertexBufferBindings bufferBindings = device.createVertexBufferBindings();
+        bufferBindings->setIndexBuffer(indexIbo);
+
+        GVertexBufferBinding vertexBinding;
+        vertexBinding.vertexBuffer = vertexVboDyn;
+        vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[6]);
+
+        bufferBindings->addVertexBufferBinding(vertexBinding);
+        bufferBindings->save();
+
+        result[i] = bufferBindings;
+    }
+
+    return result;
 }
 
 HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {
@@ -399,7 +520,7 @@ int M2Geom::findAnimationIndex(uint32_t anim_id) {
     }
 }
 
-void M2Geom::loadLowPriority(IWoWInnerApi *m_api, uint32_t animationId, uint32_t variationId) {
+void M2Geom::loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t variationId) {
     int animationIndex = findAnimationIndex(animationId);
     if (animationIndex < 0) return;
 
@@ -428,12 +549,12 @@ void M2Geom::loadLowPriority(IWoWInnerApi *m_api, uint32_t animationId, uint32_t
     }
     std::shared_ptr<AnimFile> animFile = nullptr;
     if (animationFileDataId != 0) {
-        animFile = m_api->getAnimCache()->getFileId(animationFileDataId);
+        animFile = m_api->cacheStorage->getAnimCache()->getFileId(animationFileDataId);
     } else if (!useFileId) {
         char buffer[1024];
         std::snprintf(buffer, 1024, "%s%04d-%02d.anim", m_nameTemplate.c_str(), animationId, variationId);
 
-        animFile = m_api->getAnimCache()->get(buffer);
+        animFile = m_api->cacheStorage->getAnimCache()->get(buffer);
     }
     if (animFile == nullptr) return;
 

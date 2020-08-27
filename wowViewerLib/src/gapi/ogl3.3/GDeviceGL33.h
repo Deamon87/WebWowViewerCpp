@@ -42,7 +42,7 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 #include "meshes/GMeshGL33.h"
 #include "../interface/IDevice.h"
 
-
+#define OPENGL_DGB_MESSAGE 1
 
 class GDeviceGL33 : public IDevice {
 public:
@@ -51,6 +51,7 @@ public:
 
     void reset() override;
 
+    unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() override;
     unsigned int getCullingFrameNumber() override;
     unsigned int getDrawFrameNumber() override;
@@ -60,6 +61,10 @@ public:
     bool getIsAsynBuffUploadSupported() override {
         return false;
     }
+    int getMaxSamplesCnt() override {
+        return (m_maxMultiSampling < 8) ? m_maxMultiSampling : 8;
+    }
+    virtual bool getIsRenderbufferSupported() override {return true;}
 
     float getAnisLevel() override;
 
@@ -73,10 +78,10 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes) override;
-    void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) override {};
+    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
+    void drawStageAndDeps(HDrawStage drawStage) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
     std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void *permutationDescriptor) override;
@@ -86,6 +91,8 @@ public:
     HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
+    //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
+    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override;
     HGUniformBufferChunk createUniformBufferChunk(size_t size) override;
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
@@ -109,6 +116,7 @@ public:
     void beginFrame() override ;
     void commitFrame() override ;
     void setViewPortDimensions(float x, float y, float width, float height) override;
+    void setInvertZ(bool value) override {m_isInvertZ = value;};
 
     void shrinkData() override;
 
@@ -124,7 +132,7 @@ public:
         listOfDeallocators.push_back(dr);
     };
 private:
-    void drawMesh(HGMesh hmesh);
+    void drawMesh(HGMesh hmesh, HGUniformBufferChunk matrixChunk);
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {
@@ -158,7 +166,10 @@ protected:
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
+    int m_maxMultiSampling = 0;
     bool m_isInSkyBoxDepthMode = false;
+    int8_t m_isScissorsEnabled = -1;
+    bool m_isInvertZ = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
 	IVertexBuffer* m_lastBindVertexBuffer = nullptr;
@@ -219,6 +230,14 @@ protected:
     };
 #endif
 
+    struct FramebufAvalabilityStruct {
+        int width; int height;
+        std::vector<ITextureFormat> attachments;
+        ITextureFormat depthAttachment;
+        HFrameBuffer frameBuffer;
+        int frame;
+    };
+    std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 
     std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
 

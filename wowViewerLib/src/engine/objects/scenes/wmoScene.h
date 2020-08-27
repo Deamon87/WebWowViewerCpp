@@ -5,25 +5,39 @@
 #ifndef WEBWOWVIEWERCPP_WMOSCENE_H
 #define WEBWOWVIEWERCPP_WMOSCENE_H
 
-#include "../iInnerSceneApi.h"
+#include "map.h"
 #include "../wmo/wmoObject.h"
 #include "../objectCache.h"
 
-class WmoScene : public iInnerSceneApi {
+class WmoScene : public Map {
 private:
-    IWoWInnerApi *m_api;
     std::string m_wmoModel;
 
     std::shared_ptr<WmoObject> m_wmoObject;
 
-    float m_currentTime = 0;
-    float m_lastTimeSort = 0;
-    float m_lastTimeDistanceCalc = 0;
-    int m_viewRenderOrder = 0;
+    void getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
+                                        HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
+                                        std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
+                                        std::vector<std::shared_ptr<WmoObject>> &potentialWmo) override;
 
-    std::shared_ptr<WmoObject> m_currentWMO = nullptr;
+    void getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
+                               std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
+                               std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                               std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) override;
 public:
-    WmoScene(IWoWInnerApi *api, std::string wmoModel) : m_api (api), m_wmoModel(wmoModel) {
+    void setDefaultLightParams(ApiContainer *api) {
+        api->getConfig()->setExteriorAmbientColor(0.8,0.8,0.8,0.8);
+        api->getConfig()->setExteriorHorizontAmbientColor(1.0,1.0,1.0,1.0);
+        api->getConfig()->setExteriorGroundAmbientColor(1.0,1.0,1.0,1.0);
+        api->getConfig()->setExteriorDirectColor(0.3,0.3,0.3,1.3);
+        api->getConfig()->setExteriorDirectColorDir(0.0,0.0,0.0);
+    }
+
+    explicit WmoScene(ApiContainer *api, std::string wmoModel) {
+        m_api = api; m_wmoModel = wmoModel;
+        m_sceneMode = SceneMode::smWMO;
+        m_suppressDrawingSky = true;
+
         SMMapObjDef mapObjDef;
         mapObjDef.position = C3Vector(mathfu::vec3(17064.6621f, 0, 17066.6738f));
         mapObjDef.rotation = C3Vector(mathfu::vec3(0,0,0));
@@ -37,9 +51,15 @@ public:
         wmoObject->setModelFileName(m_wmoModel);
 
         m_wmoObject = wmoObject;
+
+        this->setDefaultLightParams(api);
     };
 
-    WmoScene(IWoWInnerApi *api, int fileDataId) : m_api (api) {
+    explicit WmoScene(ApiContainer *api, int fileDataId) {
+        m_api = api;
+        m_sceneMode = SceneMode::smWMO;
+        m_suppressDrawingSky = true;
+
         SMMapObjDef mapObjDef;
         mapObjDef.position = C3Vector(mathfu::vec3(17064.6621f, 0, 17066.6738f));
         mapObjDef.rotation = C3Vector(mathfu::vec3(0,0,0));
@@ -53,43 +73,30 @@ public:
         wmoObject->setModelFileId(fileDataId);
 
         m_wmoObject = wmoObject;
+
+        this->setDefaultLightParams(api);
     };
 
     ~WmoScene() override {
 
     }
 
-    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
 
-    void checkCulling(WoWFrameData *frameData) override;
-    void collectMeshes(WoWFrameData*) override ;
-    void draw(WoWFrameData *frameData) override;
-
-    void doPostLoad(WoWFrameData *frameData) override;
-    void update(WoWFrameData *frameData) override;
-    void updateBuffers(WoWFrameData *frameData) override;
-
-    void setAnimationId(int animationId) override {
-    };
-
-
-    mathfu::vec4 getAmbientColor() override {
-//        if (m_wmoObject->isLoaded()) {
-//            return mathfu::vec4(m_wmoObject->getAmbientLight(), 0.0);
-//        } else
-//        return mathfu::vec4(0.0, 0.0, 0.0, 0.0);
-        return m_api->getGlobalAmbientColor();
-    };
-
-    bool getCameraSettings(M2CameraResult&) override {
-        return false;
-    }
-
-    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {
-
-    };
-
-    void cullExterior(WoWFrameData *frameData, int viewRenderOrder);
+//    mathfu::vec4 getAmbientColor() override {
+////        if (m_wmoObject->isLoaded()) {
+////            return mathfu::vec4(m_wmoObject->getAmbientLight(), 0.0);
+////        } else
+////        return mathfu::vec4(0.0, 0.0, 0.0, 0.0);
+//        return m_api->getGlobalAmbientColor();
+//    };
+//
+//    bool getCameraSettings(M2CameraResult&) override {
+//        return false;
+//    }
+//
+//    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {
+//
+//    };
 };
 
 

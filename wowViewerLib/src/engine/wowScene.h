@@ -35,7 +35,7 @@
 
 class WoWSceneImpl: public WoWScene, public IWoWInnerApi {
 private:
-    WoWFilesCacheStorage * cacheStorage = nullptr;
+    HWoWFilesCacheStorage cacheStorage = nullptr;
 public:
     WoWSceneImpl(Config *config, WoWFilesCacheStorage * cacheStorage, IClientDatabase * clientDatabase, IDevice * device, int canvWidth, int canvHeight);
     ~WoWSceneImpl() override;
@@ -64,10 +64,6 @@ public:
         }
     }
 public:
-    virtual IDevice * getDevice() override {
-        return m_gdevice.get();
-    }
-
     virtual HGUniformBufferChunk getSceneWideUniformBuffer() override {
         return m_sceneWideUniformBuffer;
     }
@@ -157,7 +153,7 @@ private:
     bool m_isTerminating = false;
     Config * m_config;
     IClientDatabase * m_clientDatabase;
-    std::unique_ptr<IDevice> m_gdevice;
+
     HGUniformBufferChunk m_sceneWideUniformBuffer;
 
     WoWFrameData m_FrameParams[4];
@@ -176,17 +172,10 @@ private:
     bool m_isDebugCamera = false;
 
 
-    iInnerSceneApi *currentScene = new NullScene();
-    iInnerSceneApi *newScene = nullptr;
+    IScene *currentScene = new NullScene();
+    IScene *newScene = nullptr;
 
     bool needToDropCache = false;
-    std::promise<float> nextDeltaTime = std::promise<float>();
-    std::promise<float> nextDeltaTimeForUpdate;
-    std::promise<bool> cullingFinished;
-    std::promise<bool> updateFinished;
-
-//    void drawTexturedQuad(GLuint texture, float x, float y, float width, float height, float canv_width, float canv_height,
-//                          bool drawDepth);
 
     void drawCamera() override ;
     bool getIsDebugCamera() override {

@@ -4,12 +4,13 @@
 
 #ifndef AWEBWOWVIEWERCPP_CRIBBONEMITTER_H
 #define AWEBWOWVIEWERCPP_CRIBBONEMITTER_H
-
+class CRibbonEmitter;
 
 #include <cstdint>
 #include <vector>
 #include "../persistance/header/commonFileStructs.h"
-#include "../wowInnerApi.h"
+#include "../ApiContainer.h"
+#include "../objects/m2/m2Object.h"
 
 struct CRibbonVertex
 {
@@ -71,7 +72,7 @@ class CRibbonEmitter {
     int m_priority;
 
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
 
     struct RibbonFrame {
         HGIndexBuffer m_indexVBO;
@@ -87,7 +88,7 @@ private:
     void createMesh(M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
 
 public:
-    CRibbonEmitter(IWoWInnerApi *m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
+    CRibbonEmitter(ApiContainer *m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
     void SetDataEnabled(char a2);
     void SetUserEnabled(char a2);
     CRibbonEmitter *SetGravity(float a2);

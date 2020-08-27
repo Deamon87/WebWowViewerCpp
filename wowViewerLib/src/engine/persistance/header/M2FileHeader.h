@@ -50,11 +50,13 @@ struct M2CompBone                 // probably M2Bone  ≤ Vanilla
     C3Vector pivot;                 // The pivot point of that bone.
 };
 
+const int MAX_BONES_PER_VERTEX = 4;
+
 struct M2Vertex
 {
     C3Vector pos;
-    uint8_t bone_weights[4];
-    uint8_t bone_indices[4];
+    uint8_t bone_weights[MAX_BONES_PER_VERTEX];
+    uint8_t bone_indices[MAX_BONES_PER_VERTEX];
     C3Vector normal;
     C2Vector tex_coords[2];  // two textures, depending on shader used
 };
@@ -401,6 +403,13 @@ struct M2_AFID {
     uint16_t anim_id;
     uint16_t sub_anim_id;
     uint32_t file_id;
+};
+
+struct TXAC {
+    union {
+        uint16_t value;
+        uint8_t perByte[2];
+    };
 };
 
 struct Exp2Record

@@ -3,6 +3,8 @@ project(WoWViewerLib)
 
 include(CheckCXXCompilerFlag)
 
+#set(CMAKE_VERBOSE_MAKEFILE ON)
+
 set(LINK_GLEW 1)
 set(LINK_OGL2 1)
 set(LINK_OGL3 1)
@@ -14,6 +16,17 @@ set(EMSCRIPTEN_SIMD 0)
 
 if (CMAKE_NDK_BUILD)
     set(LINK_GLEW 0)
+ENDIF()
+
+if (EMSCRIPTEN)
+    message(This is EMSCRIPTEN)
+    set(LINK_GLEW 0)
+    set(LINK_VULKAN 0)
+    set(LINK_OPENMP 0)
+    set(LINK_OGL4 0)
+    if (NOT EMSCRIPTEN_SIMD)
+        set(ENABLE_SIMD 0)
+    endif()
 ENDIF()
 
 if (LINK_OGL2)
@@ -29,16 +42,7 @@ if (LINK_VULKAN)
     add_definitions(-DLINK_VULKAN)
 endif()
 
-if (EMSCRIPTEN)
-    message(This is EMSCRIPTEN)
-    set(LINK_GLEW 0)
-    set(LINK_VULKAN 0)
-    set(LINK_OPENMP 0)
-    set(LINK_OGL4 0)
-    if (NOT EMSCRIPTEN_SIMD)
-        set(ENABLE_SIMD 0)
-    endif()
-ENDIF()
+
 
 
 
@@ -51,8 +55,8 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS" )
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
  
-#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize")
 
@@ -108,7 +112,7 @@ endif(LINK_GLEW)
 
 
 
-set(SOURCE_FILES src/engine/wowScene.cpp
+set(SOURCE_FILES
         src/engine/wowScene.h
         src/engine/shader/ShaderRuntimeData.cpp
         src/engine/shader/ShaderRuntimeData.h
@@ -129,7 +133,6 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/geometry/skinGeom.h src/engine/persistance/header/skinFileHeader.h
         src/engine/objects/m2/m2Object.cpp src/engine/objects/m2/m2Object.h
         src/engine/algorithms/mathHelper.cpp src/engine/algorithms/mathHelper.h
-        src/engine/wowInnerApi.h
         src/engine/objects/m2/m2Helpers/M2MaterialInst.cpp
         src/engine/objects/m2/m2Helpers/M2MaterialInst.h
         src/engine/managers/animationManager.cpp
@@ -154,9 +157,8 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/algorithms/grahamScan.cpp
         src/engine/algorithms/grahamScan.h
         src/engine/objects/iMapApi.h
-        src/engine/objects/iInnerSceneApi.h
+        src/engine/objects/iScene.h
         src/engine/objects/scenes/m2Scene.cpp
-        src/engine/objects/scenes/m2Scene.h
 #        src/engine/objects/scenes/creatureScene.cpp
 #        src/engine/objects/scenes/creatureScene.h
         src/engine/algorithms/PortalCullingAlgo.cpp
@@ -171,7 +173,6 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/managers/particles/particleEmitter.cpp
         src/engine/managers/particles/particleEmitter.h
         src/engine/managers/particles/generators/CParticleGenerator.cpp src/engine/managers/particles/generators/CParticleGenerator.h src/engine/managers/particles/generators/CSphereGenerator.cpp src/engine/managers/particles/generators/CSphereGenerator.h src/engine/managers/particles/particle.cpp src/engine/managers/particles/particle.h src/engine/managers/particles/generators/CSplineGenerator.cpp src/engine/managers/particles/generators/CSplineGenerator.h src/engine/managers/particles/generators/CBoneGenerator.cpp src/engine/managers/particles/generators/CBoneGenerator.h
-        src/engine/persistance/wdlFile.cpp
         src/engine/persistance/wdlFile.cpp
         src/engine/persistance/wdlFile.h
         src/engine/objects/wdl/wdlObject.cpp
@@ -191,8 +192,6 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.h
         src/engine/wowCommonClasses.h
         src/engine/shader/ShaderDefinitions.cpp
-        src/engine/objects/GlobalThreads.cpp
-        src/engine/objects/GlobalThreads.h
         src/engine/persistance/animFile.cpp
         src/engine/persistance/animFile.h
         src/engine/persistance/m2File.cpp
@@ -220,7 +219,25 @@ set(SOURCE_FILES src/engine/wowScene.cpp
         src/engine/persistance/skelFile.cpp
         src/engine/persistance/skelFile.h
         src/engine/algorithms/FrameCounter.cpp
-        src/engine/algorithms/FrameCounter.h src/engine/objects/ViewsObjects.cpp src/engine/objects/ViewsObjects.h src/gapi/interface/sortLambda.h src/gapi/interface/buffers/IUniformBufferChunk.h src/gapi/interface/IDeviceUI.h src/engine/WowFilesCacheStorage.h src/engine/WowFilesCacheStorage.cpp src/engine/algorithms/quick-sort-omp.h src/include/databaseHandler.h src/engine/persistance/PersistentFile.h)
+        src/engine/algorithms/FrameCounter.h
+        src/engine/objects/ViewsObjects.cpp
+        src/engine/objects/ViewsObjects.h
+        src/gapi/interface/sortLambda.h
+        src/gapi/interface/buffers/IUniformBufferChunk.h
+        src/engine/WowFilesCacheStorage.h
+        src/engine/WowFilesCacheStorage.cpp
+        src/engine/algorithms/quick-sort-omp.h
+        src/include/databaseHandler.h
+        src/engine/persistance/PersistentFile.h
+        src/engine/SceneComposer.cpp
+        src/engine/SceneComposer.h
+        src/engine/SceneScenario.h
+        src/gapi/interface/IFrameBuffer.h
+        src/engine/SceneScenario.cpp
+        src/engine/DrawStage.h
+        src/include/iostuff.h
+        src/engine/ApiContainer.cpp
+        src/engine/ApiContainer.h src/engine/CameraMatrices.h src/engine/persistance/header/wdlHeader.h src/engine/camera/m2TiedCamera.cpp src/engine/camera/m2TiedCamera.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -296,7 +313,15 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.cpp
         src/gapi/ogl3.3/shaders/GAdtShaderPermutationGL33.h
         src/gapi/ogl3.3/GOcclusionQueryGL33.cpp
-        src/gapi/ogl3.3/GOcclusionQueryGL33.h src/gapi/ogl3.3/buffers/GUnformBufferChunk33.h)
+        src/gapi/ogl3.3/GOcclusionQueryGL33.h
+        src/gapi/ogl3.3/buffers/GUnformBufferChunk33.h
+        src/gapi/ogl3.3/GFrameBufferGL33.cpp
+        src/gapi/ogl3.3/GFrameBufferGL33.h
+        src/gapi/ogl3.3/shaders/GFFXgauss4.cpp
+        src/gapi/ogl3.3/shaders/GSkyConus.cpp
+        src/gapi/ogl3.3/shaders/GFFXgauss4.h
+        src/gapi/ogl3.3/shaders/GFFXGlow.cpp
+        src/gapi/ogl3.3/shaders/GFFXGlow.h)
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
@@ -362,11 +387,15 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
-            src/gapi/vulkan/descriptorSets/GDescriptorSet.h src/include/iostuff.h)
+            src/gapi/vulkan/descriptorSets/GDescriptorSet.h
+            src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp
+            src/gapi/vulkan/shaders/GImguiShaderPermutation.h
+            src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.cpp
+            src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
-            find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS ${CMAKE_SOURCE_DIR}/libs/vulkan)
+            find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "$ENV{VULKAN_SDK}/lib")
             IF (Vulkan_LIBRARY)
                 set(Vulkan_FOUND ON)
                 MESSAGE("Using bundled Vulkan library version win32")
@@ -389,15 +418,15 @@ check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
 if(HAVE_FLAG_STD_CXX17)
     # Have -std=c++17, use it
     message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++17" )
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++17" )
+#    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++17" )
+#    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++17" )
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17" )
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17" )
 else()
     check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
     if(HAVE_FLAG_STD_CXX1Z)
-        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
-        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
+#        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
+#        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
     else()
@@ -445,7 +474,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (NOT EMSCRIPTEN)
+if (0)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
@@ -456,6 +485,15 @@ if (NOT EMSCRIPTEN)
         add_dependencies(WoWViewerLib ShadersGLSL33)
     endif()
 endif()
+
+set(ext_inDir ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
+
+if (LINK_VULKAN)
+    set(ext_inDir ${ext_inDir} ${Vulkan_INCLUDE_DIR})
+endif()
+set(WoWViewerLib_INCLUDE_DIRS ${ext_inDir} CACHE INTERNAL "")
+
+message(WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
 
 target_include_directories(WoWViewerLib
         PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)

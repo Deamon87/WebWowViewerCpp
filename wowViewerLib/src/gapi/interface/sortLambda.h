@@ -12,7 +12,7 @@
     }
     if (pA->getIsTransparent() < pB->getIsTransparent()) {
         return true;
-    }
+}
 
     if (pA->getMeshType() > pB->getMeshType()) {
         return false;
@@ -21,11 +21,11 @@
         return true;
     }
 
-//    if (pA->renderOrder() != pB->renderOrder() ) {
-//        if (!pA->getIsTransparent() && !pB->getIsTransparent()) {
-//            return pA->renderOrder() < pB->renderOrder();
+//    if (pA->m_renderOrder != pB->m_renderOrder ) {
+//        if (!pA->getIsTransparent()) {
+//            return pA->m_renderOrder < pB->m_renderOrder;
 //        } else {
-//            return pA->renderOrder() > pB->renderOrder();
+//            return pA->m_renderOrder > pB->m_renderOrder;
 //        }
 //    }
 
@@ -39,10 +39,6 @@
     if (pA->getMeshType() == MeshType::eM2Mesh && pA->getIsTransparent() && pB->getIsTransparent()) {
         if (pA->priorityPlane() != pB->priorityPlane()) {
             return pB->priorityPlane() > pA->priorityPlane();
-        }
-
-        if (pB->layer() != pA->layer()) {
-            return pB->layer() < pA->layer();
         }
 
         if (pA->getSortDistance() > pB->getSortDistance()) {
@@ -59,8 +55,9 @@
 //            return false;
 //        }
 
-
-
+        if (pB->layer() != pA->layer()) {
+            return !(pB->layer() < pA->layer());
+        }
     }
 
     if (pA->getMeshType() == MeshType::eParticleMesh && pB->getMeshType() == MeshType::eParticleMesh) {
@@ -68,10 +65,10 @@
             return pB->priorityPlane() > pA->priorityPlane();
         }
 
-        if (pA->sortDistance() > pB->sortDistance()) {
+        if (pA->getSortDistance() > pB->getSortDistance()) {
             return true;
         }
-        if (pA->sortDistance() < pB->sortDistance()) {
+        if (pA->getSortDistance() < pB->getSortDistance()) {
             return false;
         }
     }
@@ -84,7 +81,7 @@
         return pA->getGxBlendMode() < pB->getGxBlendMode();
     }
 
-    int minTextureCount = std::min(pA->textureCount(), pB->textureCount());
+    int minTextureCount = pA->textureCount() < pB->textureCount() ? pA->textureCount() : pB->textureCount();
     for (int i = 0; i < minTextureCount; i++) {
         if (pA->texture()[i] != pB->texture()[i]) {
             return pA->texture()[i] < pB->texture()[i];
@@ -103,5 +100,5 @@
     }
 
 
-    return (pA) >= (pB);
+    return pA > pB;
 }

@@ -8,7 +8,6 @@
 class WmoObject;
 class WmoGroupObject;
 
-#include "../../wowInnerApi.h"
 #include "../../persistance/header/wmoFileHeader.h"
 #include "wmoObject.h"
 #include "../iWmoApi.h"
@@ -16,7 +15,7 @@ class WmoGroupObject;
 
 class WmoGroupObject {
 public:
-    WmoGroupObject(mathfu::mat4 &modelMatrix, IWoWInnerApi *api, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
+    WmoGroupObject(mathfu::mat4 &modelMatrix, ApiContainer *api, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
         m_modelMatrix = &modelMatrix;
         m_groupNumber = groupNumber;
         m_main_groupInfo = &groupInfo;
@@ -63,7 +62,7 @@ public:
                             PointerChecker<SMOPortalRef> &portalRels,
                             std::vector<WmoGroupResult> &candidateGroups);
 private:
-    IWoWInnerApi *m_api = nullptr;
+    ApiContainer *m_api = nullptr;
     IWmoApi *m_wmoApi = nullptr;
     HWmoGroupGeom m_geom = nullptr;
 
@@ -78,6 +77,7 @@ private:
     int m_groupNumber;
 
     HGUniformBufferChunk vertexModelWideUniformBuffer = nullptr;
+    HGUniformBufferChunk fragmentModelWideUniformBuffer = nullptr;
     std::vector<HGMesh> m_meshArray = {};
     std::vector<HGMesh> m_waterMeshArray = {};
 

@@ -13,7 +13,7 @@ static GBufferBinding staticRibbonBindings[3] = {
 };
 
 //----- (00A19710) --------------------------------------------------------
-CRibbonEmitter::CRibbonEmitter(IWoWInnerApi *api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) : m_api(api)
+CRibbonEmitter::CRibbonEmitter(ApiContainer *api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) : m_api(api)
 {
   this->m_refCount = 1;
   this->m_prevPos.x = 0.0;
@@ -92,7 +92,7 @@ PACK(
 
 extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
 void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) {
-  IDevice *device = m_api->getDevice();
+  auto device = m_api->hDevice;
 
   //Create Buffers
   for (int k = 0; k < 4; k++) {
@@ -115,7 +115,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         auto &material = materials[i];
         auto &textureIndex = textureIndicies[i];
 
-        HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("ribbonShader", nullptr);
+        HGShaderPermutation shaderPermutation = device->getShader("ribbonShader", nullptr);
 
         //Create mesh
         gMeshTemplate meshTemplate(frame[k].m_bindings, shaderPermutation);
@@ -126,6 +126,11 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
 
         meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[material.blending_mode];
 
+        //Let's assume ribbons are always at least transparent
+        if (meshTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
+            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+        }
+
 
         meshTemplate.start = 0;
         meshTemplate.end = 0;
@@ -135,14 +140,14 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         meshTemplate.textureCount = 1;
         meshTemplate.texture = std::vector<HGTexture>(1, nullptr);
         HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
-        meshTemplate.texture[0] = m_api->getDevice()->createBlpTexture(tex0, true, true);
+        meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
 
-        meshTemplate.ubo[0] = m_api->getSceneWideUniformBuffer();
+        meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
         meshTemplate.ubo[1] = nullptr;
         meshTemplate.ubo[2] = nullptr;
 
         meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = m_api->getDevice()->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
 
         meshTemplate.ubo[4]->setUpdateHandler([](IUniformBufferChunk *self) {
             meshParticleWideBlockPS& blockPS = self->getObject<meshParticleWideBlockPS>();
@@ -152,7 +157,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         });
 
         
-        frame[k].m_meshes.push_back(m_api->getDevice()->createParticleMesh(meshTemplate));
+        frame[k].m_meshes.push_back(device->createParticleMesh(meshTemplate));
     }
   }
 }
@@ -846,7 +851,7 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
 
 void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
 
-    auto &currFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+    auto &currFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
     if (currFrame.isDead) return;
 
     for (int i = 0; i < currFrame.m_meshes.size(); i++) {
@@ -860,7 +865,7 @@ void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder)
 void CRibbonEmitter::updateBuffers() {
 //    return;
 
-  auto &currentFrame = frame[m_api->getDevice()->getUpdateFrameNumber()];
+  auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
   currentFrame.isDead = this->IsDead();
   if (currentFrame.isDead) return;
 

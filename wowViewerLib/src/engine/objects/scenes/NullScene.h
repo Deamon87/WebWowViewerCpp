@@ -5,22 +5,25 @@
 #ifndef AWEBWOWVIEWERCPP_NULLSCENE_H
 #define AWEBWOWVIEWERCPP_NULLSCENE_H
 
-#include "../iInnerSceneApi.h"
+#include "../iScene.h"
 
-class NullScene : public iInnerSceneApi {
+class NullScene : public IScene {
 public:
-    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
-    void setAnimationId(int animationId) override {};
+    virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
 
-    void checkCulling(WoWFrameData *frameData) override {};
-    void collectMeshes(WoWFrameData *frameData) override {};
-    void draw(WoWFrameData *frameData) override {};
+    virtual void setAnimationId(int animationId) override {};
 
-    void doPostLoad(WoWFrameData *frameData) override {};
-    void update(WoWFrameData *frameData) override {};
-    void updateBuffers(WoWFrameData *frameData) override {};
-    mathfu::vec4 getAmbientColor() override {return mathfu::vec4(1,1,1,1);};
-    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {};
-    bool getCameraSettings(M2CameraResult &cameraResult) override {return false;};
+    virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override {
+        resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+    };
+
+    virtual void checkCulling(HCullStage cullStage) override {};
+
+    virtual void doPostLoad(HCullStage cullStage) override {};
+    virtual void update(HUpdateStage updateStage) override {};
+    virtual void updateBuffers(HCullStage cullStage) override {};
+    virtual void resetAnimation() override {};
+    virtual int getCameraNum() override {};
+    virtual std::shared_ptr<ICamera> createCamera(int cameraNum) override {};
 };
 #endif //AWEBWOWVIEWERCPP_NULLSCENE_H

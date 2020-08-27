@@ -9,7 +9,8 @@
 #include <vector>
 #include "../persistance/header/wmoFileHeader.h"
 #include "../persistance/helper/ChunkFileReader.h"
-#include "../wowInnerApi.h"
+#include "../../include/sharedFile.h"
+#include "../../gapi/interface/IDevice.h"
 
 class WmoGroupGeom : public PersistentFile {
 public:

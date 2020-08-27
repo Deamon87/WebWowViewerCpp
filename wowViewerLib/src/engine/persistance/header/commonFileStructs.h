@@ -180,7 +180,7 @@ struct M2Array {
         return &((T* )offset)[index];
 #endif
     }
-    T* operator[](int index) {
+    T* operator[](int index) const {
         return getElement(index);
     }
     inline std::string toString(){
@@ -192,11 +192,7 @@ template<>
 inline std::string M2Array<char>::toString() {
     char * ptr = this->getElement(0);
     std::string result;
-    try {
-        result = std::string(ptr, ptr+size);
-    } catch(...) {
-        result = "";
-    }
+    result = std::string(ptr, ptr+size);
 
     return result;
 }

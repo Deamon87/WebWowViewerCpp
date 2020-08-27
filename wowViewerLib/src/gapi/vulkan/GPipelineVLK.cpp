@@ -200,7 +200,7 @@ void GPipelineVLK::createPipeline(
     depthStencil.flags = 0;
     depthStencil.depthTestEnable = m_depthCulling ? VK_TRUE : VK_FALSE;
     depthStencil.depthWriteEnable = m_depthWrite ? VK_TRUE : VK_FALSE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 

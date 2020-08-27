@@ -94,11 +94,11 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
     std::string shaderFragFile =  m_device->loadShader(m_shaderName, IShaderType::gFragmentShader);
     if (shaderVertFile.length() == 0) {
         std::cout << "shaderVertFile " << m_shaderName << " is empty" << std::endl;
-        throw;
+//        throw;
     }
     if (shaderFragFile.length() == 0) {
         std::cout << "shaderFragFile " << m_shaderName << " is empty" << std::endl;
-        throw;
+//        throw;
     }
 
     std::string vertShaderString = shaderVertFile;
@@ -180,7 +180,7 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
                   << vertexShaderConst << std::endl << std::endl
                   << "error: "<<std::string(infoLog.begin(),infoLog.end())<< std::endl <<std::flush;
 
-        throw "" ;
+//        throw "" ;
     }
 
     /* 1.2 Compile fragment shader */
@@ -204,7 +204,7 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
                   << fragmentShaderConst << std::flush << std::endl << std::endl
                   << "error: "<<std::string(infoLog.begin(),infoLog.end())<< std::endl <<std::flush;
 
-        throw "" ;
+//        throw "" ;
     }
 
 
@@ -232,7 +232,7 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
         int loglen;
         glGetProgramInfoLog(program, sizeof(logbuffer), &loglen, logbuffer);
         std::cout << "OpenGL Program Linker Error: " << logbuffer << std::endl << std::flush;
-        throw "could not compile shader:" ;
+//        throw "could not compile shader:" ;
     }
 
     //Get Uniforms
@@ -354,10 +354,6 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
         delete uniformsIndices;
     }
      */
-
-    if (glGetUniformBlockIndex == nullptr) {
-//        std::cout << "glGetUniformBlockIndex == null";
-    }
 }
 
 void GShaderPermutationGL20::setUnf(const std::string &name, GLuint index)  {

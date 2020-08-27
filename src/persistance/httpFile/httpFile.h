@@ -5,7 +5,7 @@
 #include <vector>
 #include <functional>
 //curl
-#include "cpr/cpr.h"
+
 #include "../../../wowViewerLib/src/include/sharedFile.h"
 
 class HttpFile;

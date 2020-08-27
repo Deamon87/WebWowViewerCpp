@@ -60,6 +60,7 @@ public:
 
     void reset() override;
 
+    unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() override;
     unsigned int getCullingFrameNumber() override;
     unsigned int getDrawFrameNumber() override;
@@ -69,8 +70,12 @@ public:
     bool getIsAsynBuffUploadSupported() override {
         return true;
     }
+    int getMaxSamplesCnt() override {
+        return 1;
+    }
+
     bool canUploadInSeparateThread() {
-        return false;//uploadQueue != graphicsQueue;
+        return uploadQueue != graphicsQueue;
     }
 
     HGTexture getBlackPixelTexture() {
@@ -83,7 +88,7 @@ public:
 
     void bindIndexBuffer(IIndexBuffer *buffer) override;
     void bindVertexBuffer(IVertexBuffer *buffer) override;
-    void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override;
+    void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override {};
     void bindVertexBufferBindings(IVertexBufferBindings *buffer) override;
 
     void bindTexture(ITexture *texture, int slot) override;
@@ -91,10 +96,10 @@ public:
     void startUpdateForNextFrame() override;
     void endUpdateForNextFrame() override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes) override;
-    void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) override;
+    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
+    void drawStageAndDeps(HDrawStage drawStage) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
     bool getIsVulkanAxisSystem() override {return true;}
 public:
@@ -113,6 +118,8 @@ public:
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) override;
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) override;
     HGPUFence createFence() override;
+
+    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override {return nullptr;};
 
     HPipelineVLK createPipeline(HGVertexBufferBindings m_bindings,
                                 HGShaderPermutation shader,
@@ -136,6 +143,7 @@ public:
 
     virtual void setClearScreenColor(float r, float g, float b) override;
     virtual void setViewPortDimensions(float x, float y, float width, float height) override;
+    void setInvertZ(bool value) override {m_isInvertZ = value;};
 
 
     std::shared_ptr<GDescriptorSets> createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int images);
@@ -174,6 +182,11 @@ public:
         return textureTransferCommandBuffers[uploadFrame];
     }
 
+    void signalTextureTransferCommandRecorded() {
+        int uploadFrame = getUpdateFrameNumber();
+        textureTransferCommandBufferNull[uploadFrame] = false;
+    }
+
     QueueFamilyIndices getQueueFamilyIndices() {
         return indices;
     }
@@ -191,7 +204,8 @@ public:
     };
 
 private:
-    void drawMesh(HGMesh hmesh);
+    void drawMesh(HGMesh &hmesh);
+    void internalDrawStageAndDeps(HDrawStage drawStage);
 
     void setupDebugMessenger();
     void pickPhysicalDevice();
@@ -219,11 +233,9 @@ private:
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
-    void updateCommandBuffers(std::vector<HGMesh> &iMeshes);
-
 protected:
     struct BlpCacheRecord {
-        HBlpTexture texture;
+        BlpTexture* texture;
         bool wrapX;
         bool wrapY;
 
@@ -238,7 +250,7 @@ protected:
     struct BlpCacheRecordHasher {
         std::size_t operator()(const BlpCacheRecord& k) const {
             using std::hash;
-            return hash<void*>{}(k.texture.get()) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
+            return hash<void*>{}(k.texture) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureVLK>, BlpCacheRecordHasher> loadedTextureCache;
@@ -312,14 +324,17 @@ protected:
 
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkCommandBuffer> renderCommandBuffers;
+    std::vector<bool> renderCommandBuffersNull;
     std::vector<VkCommandBuffer> uploadCommandBuffers;
     std::vector<VkCommandBuffer> textureTransferCommandBuffers;
+    std::vector<bool> textureTransferCommandBufferNull;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkSemaphore> textureTransferFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> inFlightTextureTransferFences;
+    std::vector<bool> uploadSemaphoresSubmited;
     std::vector<VkSemaphore> uploadSemaphores;
     std::vector<VkFence> uploadFences;
 
@@ -347,6 +362,7 @@ protected:
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
+    bool m_isInvertZ = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferVLK *m_lastBindIndexBuffer = nullptr;
     GVertexBufferVLK *m_lastBindVertexBuffer = nullptr;
@@ -383,6 +399,7 @@ protected:
     int uniformBuffersCreated = 0;
     bool attachmentsReady = false;
 };
+
 
 
 

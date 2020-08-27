@@ -33,13 +33,13 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDevice &device) : m_device(dynamic_cast<
 std::shared_ptr<GDescriptorSets> GDescriptorPoolVLK::allocate(VkDescriptorSetLayout layout, int uniforms, int images) {
     if (uniformsAvailable < uniforms || imageAvailable < images || setsAvailable < 1) return nullptr;
 
-    std::vector<VkDescriptorSetLayout> descLAyouts(4, layout);
+    std::array<VkDescriptorSetLayout,4> descLAyouts = {layout,layout,layout,layout};
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.pNext = NULL;
     allocInfo.descriptorPool = m_descriptorPool;
     allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &descLAyouts[0];
+    allocInfo.pSetLayouts = descLAyouts.data();
 
 
     VkDescriptorSet descriptorSet;
@@ -52,6 +52,15 @@ std::shared_ptr<GDescriptorSets> GDescriptorPoolVLK::allocate(VkDescriptorSetLay
     imageAvailable -= images;
 	setsAvailable -= 1;
 
-    std::shared_ptr<GDescriptorSets> result = std::make_shared<GDescriptorSets>(m_device, descriptorSet);
+    std::shared_ptr<GDescriptorSets> result = std::make_shared<GDescriptorSets>(m_device, descriptorSet, this, uniforms, images);
     return result;
+}
+
+void GDescriptorPoolVLK::deallocate(GDescriptorSets *set) {
+    auto descSet = set->getDescSet();
+    vkFreeDescriptorSets(m_device.getVkDevice(), m_descriptorPool, 1, &descSet);
+
+    imageAvailable+= set->getImageCount();
+    uniformsAvailable+= set->getUniformCount();
+    setsAvailable+=1;
 }

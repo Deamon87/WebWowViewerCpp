@@ -17,7 +17,8 @@ protected:
 public:
     ~GTextureVLK() override;
 
-    void loadData(int width, int height, void *data) override;
+    void readData(std::vector<uint8_t> &buff) override {};
+    void loadData(int width, int height, void *data, ITextureFormat textureFormat) override;
     bool getIsLoaded() override;
     void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
         throw "Not Implemented in this class";
@@ -36,6 +37,14 @@ private:
     void destroyBuffer();
     virtual void bind(); //Should be called only by GDevice
     void unbind();
+
+    VkBuffer stagingBuffer;
+    VmaAllocation stagingBufferAlloc = VK_NULL_HANDLE;
+    VmaAllocationInfo stagingBufferAllocInfo = {};
+
+
+    VmaAllocation imageAllocation = VK_NULL_HANDLE;
+    VmaAllocationInfo imageAllocationInfo = {};
 protected:
     GDeviceVLK &m_device;
 

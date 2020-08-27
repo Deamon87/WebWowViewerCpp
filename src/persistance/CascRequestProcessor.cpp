@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <sstream>
 #include "CascRequestProcessor.h"
 
 void CascRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType) {
@@ -46,7 +47,10 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
                 DWORD dwBytesRead = 0;
 
 
-                CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1 - totalBytesRead, &dwBytesRead);
+                if (!CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1 - totalBytesRead, &dwBytesRead)) {
+                    std::cout << "Could read from file "<< fileName << std::endl << std::flush;
+                    return;
+                }
 
                 totalBytesRead += dwBytesRead;
             }
@@ -57,5 +61,6 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         this->provideResult(fileName, fileContent, holderType);
     } else {
         std::cout << "Could not open file "<< fileName << std::endl << std::flush;
+        this->m_fileRequester->rejectFile(holderType, fileName.c_str());
     }
 }

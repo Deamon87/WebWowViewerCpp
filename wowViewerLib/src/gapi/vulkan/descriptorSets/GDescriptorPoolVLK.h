@@ -17,6 +17,7 @@ public:
     explicit GDescriptorPoolVLK(IDevice &device);
 
     std::shared_ptr<GDescriptorSets> allocate(VkDescriptorSetLayout layout, int uniforms, int images);
+    void deallocate(GDescriptorSets *set);
 
 private:
     GDeviceVLK &m_device;

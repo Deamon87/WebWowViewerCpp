@@ -5,11 +5,13 @@
 #ifndef WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 
-#include "../../wowViewerLib/src/include/wowScene.h"
+#include "../../wowViewerLib/src/include/sharedFile.h"
+#include "../../wowViewerLib/src/include/iostuff.h"
 #include <thread>
 #include <list>
 #include <vector>
 #include <forward_list>
+#include <unordered_set>
 
 class RequestProcessor : public IFileRequest {
 protected:
@@ -27,7 +29,8 @@ public:
     }
 
 private:
-    struct RequestStruct {
+    class RequestStruct {
+    public:
         std::string fileName;
         CacheHolderType holderType;
     };
@@ -49,13 +52,13 @@ private:
 
     std::list<RequestStruct> m_requestQueue;
     std::list<ResultStruct> m_resultQueue;
+    std::unordered_set<std::string> currentlyProcessingFnames;
 
     bool m_threaded = false;
 
 public:
     void processResults(int limit);
     void processRequests(bool calledFromThread);
-    void provideResult(std::string &fileName, HFileContent &content, CacheHolderType holderType);
 
     void setThreaded(bool value) {
         m_threaded = value;
@@ -66,6 +69,7 @@ public:
         }
     }
     int currentlyProcessing = 0;
+    void provideResult(std::string &fileName, HFileContent content, CacheHolderType holderType);
 protected:
     void addRequest (std::string &fileName, CacheHolderType holderType);
 

@@ -28,12 +28,12 @@ public:
     void setStart(int start) override;
     void setEnd(int end) override;
 public:
-    void setM2Object(void * m2Object) override { throw "Not Implemented";};
-    void setLayer(int layer) override { throw "Not Implemented";};
-    void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
-    void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
-    void setSortDistance(float distance) override { throw "Not Implemented";};
-    float getSortDistance() override { throw "Not Implemented";};
+    void setM2Object(void * m2Object) override { /*  throw "Not Implemented"; */};
+    void setLayer(int layer) override { /*  throw "Not Implemented"; */};
+    void setPriorityPlane(int priorityPlane) override { /*  throw "Not Implemented"; */};
+    void setQuery(const HGOcclusionQuery &query) override { /*  throw "Not Implemented"; */};
+    void setSortDistance(float distance) override { /*  throw "Not Implemented"; */};
+    float getSortDistance() override { /*  throw "Not Implemented"; */ return 0; };
 
 protected:
     MeshType m_meshType;

@@ -5,10 +5,10 @@
 #ifndef WOWVIEWERLIB_M2OBJECT_H
 #define WOWVIEWERLIB_M2OBJECT_H
 
+class M2Object;
 
 #include <cstdint>
 #include "mathfu/glsl_mappings.h"
-#include "../../wowInnerApi.h"
 #include "../../managers/particles/particleEmitter.h"
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../../geometry/m2Geom.h"
@@ -21,10 +21,14 @@
 
 #include "mathfu/internal/vector_4.h"
 #include "../../managers/CRibbonEmitter.h"
+#include "../../ApiContainer.h"
 
 class M2Object {
 public:
-    M2Object(IWoWInnerApi *api, bool isSkybox = false) : m_api(api), m_m2Geom(nullptr), m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox) {}
+    M2Object(ApiContainer *api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
+        m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox), m_overrideSkyModelMat(overrideSkyModelMat)
+        {
+    }
 
     ~M2Object();
 
@@ -35,6 +39,9 @@ private:
     void createAABB();
     bool m_loading = false;
     bool m_loaded = false;
+    bool m_hasAABB = false;
+
+    bool m_alwaysDraw = false;
 
 
 
@@ -45,6 +52,13 @@ private:
         this->setLoadParams(0, {}, {});
         this->setModelFileName(modelName);
     }
+
+    struct dynamicVaoMeshFrame {
+        int batchIndex = -1;
+        HGVertexBufferDynamic m_bufferVBO = nullptr;
+        HGVertexBufferBindings m_bindings = nullptr;
+        HGParticleMesh m_mesh = nullptr;
+    };
 
 private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
@@ -59,7 +73,7 @@ private:
     CAaBox aabb;
     CAaBox colissionAabb;
 
-    IWoWInnerApi *m_api = nullptr;
+    ApiContainer *m_api = nullptr;
 
     HM2Geom m_m2Geom = nullptr;
     HSkinGeom m_skinGeom = nullptr;
@@ -75,9 +89,13 @@ private:
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
 
+    float m_alpha = 1.0f;
+
+    bool animationOverrideActive = false;
+    float animationOverridePercent = 0;
+
     mathfu::vec4 m_sunDirOverride;
     bool m_setSunDir = false;
-    bool m_modelAsScene = false;
 
 
     bool m_hasBillboards = false;
@@ -85,7 +103,7 @@ private:
     std::string m_nameTemplate = "";
 
     bool useFileId = false;
-    int m_modelFileId;
+    int m_modelFileId = 0;
     int m_skinFileId;
 
     std::vector<std::function<void()>> m_postLoadEvents;
@@ -96,6 +114,7 @@ private:
     mathfu::vec4 m_sunAddColor = mathfu::vec4(0, 0, 0, 0);
     mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
     int m_useLocalDiffuseColor = -1;
+    bool hasModf0x2Flag = false;
     std::vector<uint8_t> m_meshIds;
     std::vector<HBlpTexture> m_replaceTextures;
     std::vector<mathfu::mat4> bonesMatrices;
@@ -109,11 +128,13 @@ private:
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
     std::vector<HGM2Mesh> m_meshArray;
+    std::vector<std::array<dynamicVaoMeshFrame, 4>> dynamicMeshes;
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
 
     bool m_interiorAmbientWasSet = false; // For static only
     bool m_boolSkybox = false;
+    bool m_overrideSkyModelMat = true;
 
     void debugDumpAnimationSequences();
 
@@ -131,6 +152,8 @@ private:
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &modelViewMat);
     bool checkIfHasBillboarded();
+    bool checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *mesh);
+
 
     void createMeshes();
     void createBoundingBoxMesh();
@@ -138,6 +161,10 @@ private:
     static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> &subMeshColors) ;
     static float getTransparency(M2SkinProfile *skinData, int batchIndex, const std::vector<float> &transparencies) ;
 public:
+
+    void setAlwaysDraw(bool value) {
+        m_alwaysDraw = value;
+    }
 
     bool getInteriorAmbientWasSet() {
         return m_interiorAmbientWasSet;
@@ -158,12 +185,19 @@ public:
 
     void setReplaceTextures(std::vector<HBlpTexture> &replaceTextures);
     void setModelFileName(std::string modelName);
+    int getModelFileId();
     void setModelFileId(int fileId);
-    void setModelAsScene(bool value) {
-        m_modelAsScene = value;
-    };
+
+    void setAlpha(float alpha) {
+        m_alpha = alpha;
+    }
+    void setOverrideAnimationPerc(float percent, bool active) {
+        animationOverrideActive = active;
+        animationOverridePercent = percent;
+    }
 
     void setAnimationId(int animationId);
+    void resetCurrentAnimation();
     void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);
     void createPlacementMatrix(SMDoodadDef &def);
     void createPlacementMatrix(mathfu::vec3 pos, float f, mathfu::vec3 scaleVec,
@@ -194,6 +228,9 @@ public:
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
 
     bool setUseLocalLighting(bool value) {
+        if (hasModf0x2Flag) {
+            m_useLocalDiffuseColor = 0;
+        }
         if (m_useLocalDiffuseColor == -1) {
             m_useLocalDiffuseColor = value ? 1 : 0;
         }
@@ -223,7 +260,7 @@ public:
     HGTexture getTexture(int textureInd);
     HBlpTexture getHardCodedTexture(int textureInd);
 
-    mathfu::vec4 getAmbientLight();
+    mathfu::vec4 getM2SceneAmbientLight();
     void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
         m_setAmbientColor = override;
         m_ambientColorOverride = ambientColor;
@@ -239,6 +276,16 @@ public:
     void createVertexBindings();
 
     mathfu::vec3 getSunDir();
+    int getCameraNum() {
+        if (!getGetIsLoaded()) return 0;
+
+        return m_m2Geom->m_m2Data->cameras.size;
+    }
+
+    HGM2Mesh createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
+                              const M2SkinSection *skinSection, M2MaterialInst &material);
+
+    void updateDynamicMeshes();
 };
 
 

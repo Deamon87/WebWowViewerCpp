@@ -15,9 +15,9 @@ class CascRequestProcessor : public RequestProcessor {
 public:
     CascRequestProcessor(const char *path) : m_cascDir(path){
         if (CascOpenStorage(path, 0xFFFFFFFF, &this->m_storage)) {
-            std::cout << "Opened CascStorage at "<< path;
+            std::cout << "Opened CascStorage at "<< path << std::endl;
         } else {
-            std::cout << "Could not open CascStorage at "<< path;
+            std::cout << "Could not open CascStorage at "<< path << std::endl;
             throw  "Could not open CascStorage";
         }
     }

@@ -5,7 +5,6 @@
 #ifndef AWEBWOWVIEWERCPP_ENGINECLASSLIST_H
 #define AWEBWOWVIEWERCPP_ENGINECLASSLIST_H
 
-class IWoWInnerApi;
 class AdtObject;
 class M2Object;
 class WmoObject;

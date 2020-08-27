@@ -234,7 +234,7 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
     }
 }
 
-void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
     std::vector<HGL20Mesh> &meshes = (std::vector<HGL20Mesh> &) iMeshes;
 
     //1. Collect buffers
@@ -409,8 +409,9 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
 
     if (m_lastBlendMode != hmesh->m_blendMode) {
         BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
-        auto &lastBlendMode = blendModes[(char)m_lastBlendMode];
-        if (lastBlendMode.blendModeEnable != selectedBlendMode.blendModeEnable ) {
+
+        if ((m_lastBlendMode == EGxBlendEnum::GxBlend_UNDEFINED) ||
+            (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
             if (selectedBlendMode.blendModeEnable) {
                 glEnable(GL_BLEND);
             } else {
@@ -577,10 +578,10 @@ GDeviceGL20::GDeviceGL20() {
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
     m_blackPixelTexture = createTexture();
-    m_blackPixelTexture->loadData(1,1,&zero);
+    m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
 
     m_whitePixelTexture = createTexture();
-    m_whitePixelTexture->loadData(1,1,&ff);
+    m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
 
     m_defaultVao = this->createVertexBufferBindings();
 
@@ -916,7 +917,7 @@ void GDeviceGL20::clearScreen() {
     glClearDepthf(1.0f);
 #endif
     glDisable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -942,10 +943,7 @@ void GDeviceGL20::beginFrame() {
 }
 
 void GDeviceGL20::commitFrame() {
-    for (auto &deviceUI: deviceUIs) {
-        if (deviceUI != nullptr)
-            deviceUI->renderUI();
-    }
+
 }
 
 void GDeviceGL20::setViewPortDimensions(float x, float y, float width, float height) {

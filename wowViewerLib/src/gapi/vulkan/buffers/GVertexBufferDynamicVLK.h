@@ -26,7 +26,7 @@ private:
     void createBuffer();
     void destroyBuffer();
     void bind() override; //Should be called only by GDevice
-    void unbind();
+    void unbind() override;
 
 public:
     void uploadData(void *, int length) override;

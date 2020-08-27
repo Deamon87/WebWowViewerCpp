@@ -46,6 +46,7 @@ public:
 
     void reset() override;
 
+    unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() override;
     unsigned int getCullingFrameNumber() override;
     unsigned int getDrawFrameNumber() override;
@@ -53,6 +54,9 @@ public:
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
         return true;
+    }
+    int getMaxSamplesCnt() override {
+        return 1;
     }
 
     void bindProgram(IShaderPermutation *program) override;
@@ -64,8 +68,7 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes) override;
-    void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) override {};
+    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:

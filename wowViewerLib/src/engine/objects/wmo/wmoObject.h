@@ -11,11 +11,12 @@ class WmoGroupObject;
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
+#include "../../geometry/wmoMainGeom.h"
+
 #include "../../persistance/header/adtFileHeader.h"
 #include "mathfu/glsl_mappings.h"
 #include "wmoGroupObject.h"
 #include "../m2/m2Object.h"
-#include "../../geometry/wmoMainGeom.h"
 #include "../iWmoApi.h"
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../ViewsObjects.h"
@@ -32,12 +33,12 @@ struct WmoGroupResult {
 class WmoObject : public IWmoApi {
 
 public:
-    WmoObject(IWoWInnerApi *api) : m_api(api) {
+    WmoObject(ApiContainer *api) : m_api(api) {
     }
 
 	~WmoObject();
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
 
     HWmoMainGeom mainGeom = nullptr;
     bool m_loading = false;
@@ -179,6 +180,8 @@ public:
     bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
 
     bool isGroupWmoInterior(int groupId);
+    bool isGroupWmoExteriorLit(int groupId);
+    bool isGroupWmoExtSkybox(int groupId);
 
     void drawTransformedPortalPoints();
 

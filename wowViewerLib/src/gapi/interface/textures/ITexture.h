@@ -8,14 +8,23 @@
 #include "../../../engine/wowCommonClasses.h"
 #include "../../../engine/texture/BlpTexture.h"
 
+enum class ITextureFormat {
+    itNone,
+    itRGBA,
+    itRGBAFloat32,
+    itDepth32
+};
+
 class ITexture {
 public:
     virtual ~ITexture() {};
 
-    virtual void loadData(int width, int height, void *data) = 0;
+    virtual void loadData(int width, int height, void *data, ITextureFormat textureFormat) = 0;
+    virtual void readData(std::vector<uint8_t> &buff) = 0;
+
     virtual bool getIsLoaded() = 0;
     virtual bool postLoad() = 0;
-    virtual void* getIdent() = 0;
+
 
 
     virtual void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) = 0;

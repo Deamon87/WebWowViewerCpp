@@ -7,15 +7,17 @@
 
 #include <vector>
 #include <set>
+#include "../iMapApi.h"
 #include "mathfu/glsl_mappings.h"
+#include "../wmo/wmoObject.h"
 #include "../m2/m2Object.h"
 #include "../../persistance/wdlFile.h"
 
 class WdlObject {
 
 public:
-    explicit WdlObject(IWoWInnerApi *api, std::string &wdlFileName);
-    explicit WdlObject(IWoWInnerApi *api, int wdlFileDataId);
+    explicit WdlObject(ApiContainer *api, std::string &wdlFileName);
+    explicit WdlObject(ApiContainer *api, int wdlFileDataId);
 
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
@@ -25,7 +27,7 @@ public:
     std::vector<std::shared_ptr<WmoObject>> wmoObjects;
 
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
     IMapApi *m_mapApi;
 
     HWdlFile m_wdlFile;
@@ -34,6 +36,17 @@ private:
     void loadingFinished();
     void loadM2s();
     void loadWmos();
+
+    struct SkyObjectCondition {
+        int conditionType;
+        int conditionValue;
+    };
+    struct SkyObjectScene{
+        std::vector<std::shared_ptr<M2Object>> m2Objects = {};
+        std::vector<SkyObjectCondition> conditions = {};
+    };
+
+    std::vector<SkyObjectScene> skyScenes;
 public:
     bool getIsLoaded() {
         return m_loaded;
@@ -46,6 +59,11 @@ public:
                                         mathfu::mat4 &lookAtMat4,
                                         std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                         std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+
+    void checkSkyScenes(const StateForConditions &state, std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                        const mathfu::vec4 &cameraPos,
+                        const std::vector<mathfu::vec4> &frustumPlanes,
+                        const std::vector<mathfu::vec3> &frustumPoints);
 };
 
 

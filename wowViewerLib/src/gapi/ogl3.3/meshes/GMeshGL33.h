@@ -30,12 +30,12 @@ public:
     void setStart(int start) override;
     void setEnd(int end) override;
 public:
-    void setM2Object(void * m2Object) override { throw "Not Implemented";};
-    void setLayer(int layer) override { throw "Not Implemented";};
-    void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
-    void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
-    void setSortDistance(float distance) override { throw "Not Implemented";};
-    float getSortDistance() override { throw "Not Implemented";};
+    void setM2Object(void * m2Object) override { /*  throw "Not Implemented"; */};
+    void setLayer(int layer) override { /*  throw "Not Implemented"; */};
+    void setPriorityPlane(int priorityPlane) override { /*  throw "Not Implemented"; */};
+    void setQuery(const HGOcclusionQuery &query) override { /*  throw "Not Implemented"; */};
+    void setSortDistance(float distance) override { /*  throw "Not Implemented"; */};
+    float getSortDistance() override { /*  throw "Not Implemented"; */ return 0;};
 
 protected:
     MeshType m_meshType;
@@ -49,6 +49,10 @@ private:
     int8_t m_depthCulling;
     int8_t m_backFaceCulling;
     int8_t m_triCCW = 1;
+    int8_t m_isScissorsEnabled = -1;
+    std::array<int, 2> m_scissorOffset = {0,0};
+    std::array<int, 2> m_scissorSize = {0,0};
+
     EGxBlendEnum m_blendMode;
     bool m_isTransparent;
 

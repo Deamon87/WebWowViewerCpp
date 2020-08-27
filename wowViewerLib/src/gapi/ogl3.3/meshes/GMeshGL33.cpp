@@ -20,6 +20,12 @@ GMeshGL33::GMeshGL33(IDevice &device,
 
     m_colorMask = meshTemplate.colorMask;
 
+    m_isScissorsEnabled = meshTemplate.scissorEnabled ? 1 : 0;
+    if (m_isScissorsEnabled) {
+        m_scissorSize = meshTemplate.scissorSize;
+        m_scissorOffset = meshTemplate.scissorOffset;
+    }
+
     m_blendMode = meshTemplate.blendMode;
     m_isTransparent = m_blendMode > EGxBlendEnum::GxBlend_AlphaKey || !m_depthWrite ;
 
@@ -32,8 +38,8 @@ GMeshGL33::GMeshGL33(IDevice &device,
         case DrawElementMode::TRIANGLE_STRIP:
             m_element = GL_TRIANGLE_STRIP;
             break;
-        default:
-            throw new std::runtime_error("unknown DrawElementMode");
+//        default:
+//            throw new std::runtime_error("unknown DrawElementMode");
     }
 
     m_textureCount = meshTemplate.textureCount;

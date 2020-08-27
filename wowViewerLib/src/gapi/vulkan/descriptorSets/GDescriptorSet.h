@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_GDESCRIPTORSET_H
 
 class GDeviceVLK;
+class GDescriptorPoolVLK;
 
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -16,14 +17,20 @@ class GDeviceVLK;
 
 class GDescriptorSets {
 public:
-    explicit GDescriptorSets(IDevice &device, VkDescriptorSet descriptorSet);
+    explicit GDescriptorSets(IDevice &device, VkDescriptorSet descriptorSet, GDescriptorPoolVLK* parentPool, int uniforms, int images);
+    ~GDescriptorSets();
 
     void writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites);
 
     VkDescriptorSet getDescSet() {return m_descriptorSet;}
+    int getUniformCount() {return m_uniforms;}
+    int getImageCount() {return m_images;}
 private:
     GDeviceVLK &m_device;
     VkDescriptorSet m_descriptorSet;
+    GDescriptorPoolVLK *m_parentPool;
+    int m_uniforms = 0;
+    int m_images = 0;
 };
 
 

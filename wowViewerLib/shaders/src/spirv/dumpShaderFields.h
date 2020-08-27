@@ -51,13 +51,21 @@ void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &f
     bool isStruct = memberType.basetype == spirv_cross::SPIRType::Struct;
 
     if (isStruct) {
-        auto submemberType = glsl.get_type(memberType.parent_type);
-        int structSize = submemberType.vecsize * submemberType.columns*(submemberType.width/8);
+        auto parentTypeId = memberType.parent_type;
+        if (parentTypeId == spirv_cross::TypeID(0)) {
+            parentTypeId = memberType.type_alias;
+        }
+        if (parentTypeId == spirv_cross::TypeID(0)) {
+            parentTypeId = memberType.self;
+        }
+//
+//        auto submemberType = glsl.get_type(submemberTypeId);
+//        int structSize = submemberType.vecsize * submemberType.columns*(submemberType.width/8);
 
         if (arrayLiteral) {
             for (int j = 0; j < arraySize; j++) {
                 for (int k = 0; k < memberType.member_types.size(); k++) {
-                    auto memberName = glsl.get_member_name(memberType.parent_type, k);
+                    auto memberName = glsl.get_member_name(parentTypeId, k);
                     auto memberOffset = glsl.type_struct_member_offset(memberType, k);
                     auto memberSize = glsl.get_declared_struct_member_size(memberType, k);
 
@@ -67,7 +75,7 @@ void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &f
             }
         } else {
             for (int k = 0; k < memberType.member_types.size(); k++) {
-                auto memberName = glsl.get_member_name(memberType.parent_type, k);
+                auto memberName = glsl.get_member_name(parentTypeId, k);
                 auto memberSize = glsl.get_declared_struct_member_size(memberType, k);
                 auto memberOffset = glsl.type_struct_member_offset(memberType, k);
                 dumpMembers(glsl, fieldDefines, memberType.member_types[k], namePrefix + "." + memberName, offset+memberOffset, memberSize);

@@ -9,7 +9,6 @@
 #include "../persistance/header/skinFileHeader.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "../../gapi/interface/IDevice.h"
-#include "../../include/wowScene.h"
 
 class SkinGeom : public PersistentFile {
 public:

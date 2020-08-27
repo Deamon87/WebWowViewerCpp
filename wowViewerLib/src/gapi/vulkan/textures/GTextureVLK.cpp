@@ -18,6 +18,23 @@ void GTextureVLK::createBuffer() {
 }
 
 void GTextureVLK::destroyBuffer() {
+    if (!m_uploaded) return;
+
+    auto *l_device = &m_device;
+    auto &l_texture = texture;
+
+    auto &l_imageAllocation = imageAllocation;
+    auto &l_stagingBuffer = stagingBuffer;
+    auto &l_stagingBufferAlloc = stagingBufferAlloc;
+
+    m_device.addDeallocationRecord(
+        [l_device, l_texture, l_imageAllocation, l_stagingBuffer, l_stagingBufferAlloc]() {
+            vkDestroyImageView(l_device->getVkDevice(), l_texture.view, nullptr);
+            vkDestroySampler(l_device->getVkDevice(), l_texture.sampler, nullptr);
+
+            vmaDestroyImage(l_device->getVMAAllocator(), l_texture.image, l_imageAllocation);
+            vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingBuffer, l_stagingBufferAlloc);
+    });
 }
 
 void GTextureVLK::bind() {
@@ -32,7 +49,7 @@ bool GTextureVLK::getIsLoaded() {
 }
 
 static int pureTexturesUploaded = 0;
-void GTextureVLK::loadData(int width, int height, void *data) {
+void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat textureFormat) {
 //    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
     std::vector<uint8_t > unifiedBuffer((uint8_t *)data, (uint8_t *)data + (width*height*4));
 
@@ -58,8 +75,6 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     // Create a host-visible staging buffer that contains the raw image data
     // This buffer will be the data source for copying texture data to the optimal tiled image on the device
     ///1. Create staging buffer for copy from CPU to GPU
-    VkBuffer stagingBuffer;
-
     VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     createInfo.size = unitedBuffer.size();
     createInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -69,9 +84,6 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
     allocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-    VmaAllocation stagingBufferAlloc = VK_NULL_HANDLE;
-
-    VmaAllocationInfo stagingBufferAllocInfo = {};
     ERR_GUARD_VULKAN(vmaCreateBuffer(m_device.getVMAAllocator(), &createInfo, &allocCreateInfo, &stagingBuffer,
                                      &stagingBufferAlloc, &stagingBufferAllocInfo));
 
@@ -136,8 +148,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     VmaAllocationCreateInfo allocImageCreateInfo = {};
     allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-    VmaAllocation imageAllocation = VK_NULL_HANDLE;
-    VmaAllocationInfo imageAllocationInfo = {};
+
 
     vmaCreateImage(m_device.getVMAAllocator(), &imageCreateInfo, &allocImageCreateInfo, &texture.image,
                    &imageAllocation, &imageAllocationInfo);
@@ -227,6 +238,8 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
             0, nullptr,
             0, nullptr,
             1, &imageMemoryBarrier);
+
+        m_device.signalTextureTransferCommandRecorded();
     }
 
     // Store current layout for later reuse
@@ -255,9 +268,9 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     sampler.maxLod = (float)vulkanMipMapCount;
     // Enable anisotropic filtering
     // This feature is optional, so we must check if it's supported on the device
-    if (/*m_device.getIsAnisFiltrationSupported()*/ false) {
+    if (m_device.getIsAnisFiltrationSupported()) {
         // Use max. level of anisotropy for this example
-        //sampler.maxAnisotropy = m_device->deviproperties.limits.maxSamplerAnisotropy;
+        sampler.maxAnisotropy = m_device.getAnisLevel();
         sampler.anisotropyEnable = VK_TRUE;
     } else {
         // The device does not support anisotropic filtering

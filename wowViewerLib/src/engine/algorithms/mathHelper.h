@@ -66,6 +66,18 @@ public:
         return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,0,1)).ToMatrix4();
     };
 
+    static inline mathfu::mat3 mat3RotationX(float angle) {
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix();
+    };
+
+    static inline mathfu::mat3 mat3RotationY(float angle) {
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,1,0)).ToMatrix();
+    };
+
+    static inline mathfu::mat3 mat3RotationZ(float angle) {
+        return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,0,1)).ToMatrix();
+    };
+
     static const mathfu::mat4 &getAdtToWorldMat4() {
         const float TILESIZE = 533.333333333f;
 
@@ -97,6 +109,8 @@ public:
 
     static bool isPointInsideAABB(const CAaBox &aabb, mathfu::vec3 &p);
     static bool isPointInsideAABB(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
+
+    static bool isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, const std::vector<mathfu::vec2> &points);
 
     static mathfu::vec3 getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &c);
 

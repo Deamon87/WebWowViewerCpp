@@ -58,6 +58,8 @@ VkFormat gBindingToVkFormat(GBindingType gType, uint32_t size, bool normalized )
                 }
             }
     }
+    throw std::runtime_error("unknown gBindingFormat");
+    return VK_FORMAT_UNDEFINED;
 }
 
 

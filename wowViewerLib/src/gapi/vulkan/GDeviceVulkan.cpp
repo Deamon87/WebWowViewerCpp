@@ -28,6 +28,7 @@
 #include "shaders/GAdtShaderPermutationVLK.h"
 #include "shaders/GWMOShaderPermutationVLK.h"
 #include "shaders/GWMOWaterShaderVLK.h"
+#include "shaders/GImguiShaderPermutation.h"
 #include "shaders/GM2RibbonShaderPermutationVLK.h"
 //#include "fastmemcp.h"
 
@@ -35,10 +36,7 @@ const int WIDTH = 1900;
 const int HEIGHT = 1000;
 
 const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation",
-    "VK_LAYER_LUNARG_assistant_layer",
-
-
+    "VK_LAYER_KHRONOS_validation"
 };
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -234,6 +232,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = physicalDevice;
     allocatorInfo.device = device;
+    allocatorInfo.instance = vkInstance;
 
 
     vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
@@ -258,23 +257,23 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
 
     // Create pool
-    VkBufferCreateInfo exampleBufCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    exampleBufCreateInfo.size = 65536; // Whatever.
-    exampleBufCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // Change if needed.
-
-    VmaAllocationCreateInfo allocCreateInfo = {};
-    allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; // Change if needed.
-
-    uint32_t memTypeIndex;
-    vmaFindMemoryTypeIndexForBufferInfo(vmaAllocator, &exampleBufCreateInfo, &allocCreateInfo, &memTypeIndex);
-
-    // Create a pool that can have at most 2 blocks, 128 MiB each.
-    VmaPoolCreateInfo poolCreateInfo = {};
-    poolCreateInfo.memoryTypeIndex = memTypeIndex;
-    poolCreateInfo.blockSize = 128ull * 1024 * 1024;
-    poolCreateInfo.maxBlockCount = 10;
-
-    vmaCreatePool(vmaAllocator, &poolCreateInfo, &uboVmaPool);
+//    VkBufferCreateInfo exampleBufCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+//    exampleBufCreateInfo.size = 65536; // Whatever.
+//    exampleBufCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // Change if needed.
+//
+//    VmaAllocationCreateInfo allocCreateInfo = {};
+//    allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; // Change if needed.
+//
+//    uint32_t memTypeIndex;
+//    vmaFindMemoryTypeIndexForBufferInfo(vmaAllocator, &exampleBufCreateInfo, &allocCreateInfo, &memTypeIndex);
+//
+//    // Create a pool that can have at most 2 blocks, 128 MiB each.
+//    VmaPoolCreateInfo poolCreateInfo = {};
+//    poolCreateInfo.memoryTypeIndex = memTypeIndex;
+//    poolCreateInfo.blockSize = 128ull * 1024 * 1024;
+//    poolCreateInfo.maxBlockCount = 10;
+//
+//    vmaCreatePool(vmaAllocator, &poolCreateInfo, &uboVmaPool);
 
 }
 
@@ -329,13 +328,13 @@ void GDeviceVLK::createSwapChain() {
     indices = findQueueFamilies(physicalDevice);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
-    if (indices.graphicsFamily != indices.presentFamily) {
-        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    } else {
+//    if (indices.graphicsFamily != indices.presentFamily) {
+//        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+//        createInfo.queueFamilyIndexCount = 2;
+//        createInfo.pQueueFamilyIndices = queueFamilyIndices;
+//    } else {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    }
+//    }
 
     createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
@@ -511,7 +510,9 @@ VkImageView GDeviceVLK::createImageView(VkImage image, VkFormat format, VkImageA
 }
 
 
-void GDeviceVLK::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout) {
+void GDeviceVLK::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples,
+    VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
+    VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout) {
     VkImageCreateInfo imageInfo = {};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -522,10 +523,15 @@ void GDeviceVLK::createImage(uint32_t width, uint32_t height, uint32_t mipLevels
     imageInfo.arrayLayers = 1;
     imageInfo.format = format;
     imageInfo.tiling = tiling;
-    imageInfo.initialLayout = vkLaylout;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage;
     imageInfo.samples = numSamples;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+//    if (indices.graphicsFamily != indices.presentFamily) {
+//        imageInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+//    } else {
+//        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+//    }
 
     if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
@@ -549,7 +555,9 @@ void GDeviceVLK::createImage(uint32_t width, uint32_t height, uint32_t mipLevels
 void GDeviceVLK::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 //
-    createImage(swapChainExtent.width, swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    createImage(swapChainExtent.width, swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, depthFormat,
+        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        depthImage, depthImageMemory, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
     depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
 //    transitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
@@ -730,6 +738,7 @@ void GDeviceVLK::createCommandPool() {
 void GDeviceVLK::createCommandBuffers() {
     commandBuffers.resize(4);
 
+
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = commandPool;
@@ -741,6 +750,8 @@ void GDeviceVLK::createCommandBuffers() {
     }
 
     renderCommandBuffers.resize(4);
+    renderCommandBuffersNull.resize(4);
+    for (int i = 0; i < 4; i++) renderCommandBuffersNull[i] = true;
     allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = renderCommandPool;
@@ -765,6 +776,8 @@ void GDeviceVLK::createCommandBuffers() {
     }
 
     textureTransferCommandBuffers.resize(4);
+    textureTransferCommandBufferNull.resize(4);
+    for (int i = 0; i < 4; i++) textureTransferCommandBufferNull[i] = true;
     VkCommandBufferAllocateInfo texttrAllocInfoUpload = {};
     texttrAllocInfoUpload.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     texttrAllocInfoUpload.commandPool = commandPool;
@@ -785,11 +798,6 @@ void GDeviceVLK::createSyncObjects() {
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     semaphoreInfo.pNext = NULL;
 
-    VkFenceCreateInfo fenceInfo = {};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.pNext = NULL;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
@@ -798,6 +806,11 @@ void GDeviceVLK::createSyncObjects() {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
+
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.pNext = NULL;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     inFlightFences.resize(4);
     for (size_t i = 0; i < 4; i++) {
@@ -820,9 +833,11 @@ void GDeviceVLK::createSyncObjects() {
 
     uploadSemaphores.resize(4);
     uploadFences.resize(4);
+    uploadSemaphoresSubmited.resize(4);
     for (size_t i = 0; i < 4; i++) {
         vkCreateSemaphore(device, &semaphoreInfo, nullptr, &uploadSemaphores[i]);
         vkCreateFence(device, &uploadFenceInfo, nullptr, &uploadFences[i]);
+        uploadSemaphoresSubmited[i] = false;
     }
 
 }
@@ -845,7 +860,7 @@ void GDeviceVLK::increaseFrameNumber() {
 }
 
 float GDeviceVLK::getAnisLevel() {
-    return 0;
+    return deviceProperties.limits.maxSamplerAnisotropy;
 }
 
 void GDeviceVLK::bindProgram(IShaderPermutation *program) {
@@ -860,13 +875,6 @@ void GDeviceVLK::bindVertexBuffer(IVertexBuffer *buffer) {
 
 }
 
-void GDeviceVLK::bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) {
-
-}
-
-void GDeviceVLK::bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) {
-
-}
 
 void GDeviceVLK::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
 
@@ -894,6 +902,7 @@ void GDeviceVLK::startUpdateForNextFrame() {
         std::cout << "failed to begin recording uploadCommandBuffer command buffer!" << std::endl;
     }
 
+    textureTransferCommandBufferNull[uploadFrame] = true;
 //    vkWaitForFences(device, 1, &inFlightTextureTransferFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     if (vkBeginCommandBuffer(textureTransferCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
         std::cout << "failed to begin recording textureTransferCommandBuffers command buffer!"  << std::endl;
@@ -914,10 +923,13 @@ void GDeviceVLK::endUpdateForNextFrame() {
         submitInfo.pCommandBuffers = &uploadCommandBuffers[uploadFrame];
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
+        uploadSemaphoresSubmited[uploadFrame] = true;
 
-
-        if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]) != VK_SUCCESS) {
-            std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        {
+            auto result = vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]);
+            if ( result != VK_SUCCESS) {
+                std::cout << "failed to submit uploadCommandBuffer command buffer! result = " << result << std::endl << std::flush;
+            }
         }
     }
 
@@ -929,50 +941,45 @@ void GDeviceVLK::endUpdateForNextFrame() {
 }
 
 typedef std::shared_ptr<GMeshVLK> HVKMesh;
-void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
+//    aggregationBufferForUpload.resize(maxUniformBufferSize);
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture();
         unsigned int zero = 0;
-        m_blackPixelTexture->loadData(1,1,&zero);
+        m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
     }
     if (!m_whitePixelTexture) {
         m_whitePixelTexture = createTexture();
         unsigned int ff = 0xffffffff;
-        m_whitePixelTexture->loadData(1,1,&ff);
+        m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
     }
-
-//    aggregationBufferForUpload.resize(maxUniformBufferSize);
 
     std::vector<HVKMesh> &meshes = (std::vector<HVKMesh> &) iMeshes;
 
     //1. Collect buffers
-    std::vector<GUniformBufferVLK *> buffers;
+    std::vector<IUniformBufferChunk *> buffers;
     int renderIndex = 0;
     for (const auto &mesh : meshes) {
-        for (int i = 0; i < 3; i++ ) {
-            GUniformBufferVLK *buffer = (GUniformBufferVLK *) mesh->m_fragmentUniformBuffer[i].get();
+        for (int i = 0; i < 6; i++ ) {
+            IUniformBufferChunk *buffer = (IUniformBufferChunk *) mesh->getUniformBuffer(i).get();
             if (buffer != nullptr) {
                 buffers.push_back(buffer);
-                buffer->m_creationIndex = renderIndex++;
-            }
-        }
-        for (int i = 0; i < 3; i++ ) {
-            GUniformBufferVLK * buffer = (GUniformBufferVLK *)mesh->m_vertexUniformBuffer[i].get();
-            if (buffer != nullptr) {
-                buffers.push_back(buffer);
-                buffer->m_creationIndex = renderIndex++;
             }
         }
     }
+    for (const auto &bufferChunks : additionalChunks) {
+        if (bufferChunks != nullptr) {
+            buffers.push_back(bufferChunks.get());
+        }
+    }
 
-//    std::cout << "buffersBeforeShrink = " << buffers.size() << std::endl;
+
     std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
-//    std::cout << "buffersAfterShrink = " << buffers.size() << std::endl;
 
     int fullSize = 0;
-    for (auto &buffer : buffers) {
-        fullSize += buffer->m_size;
+    for (auto buffer : buffers) {
+        fullSize += buffer->getSize();
         int offsetDiff = fullSize % uniformBufferOffsetAlign;
         if (offsetDiff != 0) {
             int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
@@ -981,6 +988,7 @@ void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
         }
     }
 
+
     //2. Create buffers and update them
     int currentSize = 0;
     int buffersIndex = 0;
@@ -988,25 +996,26 @@ void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
     HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
 
     if (bufferForUpload == nullptr) {
-        bufferForUpload = createUniformBuffer(10*1024*1024);
+        bufferForUpload = createUniformBuffer(1000);
         bufferForUpload->createBuffer();
         m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload = bufferForUpload;
+        m_shaderDescriptorUpdateNeeded = true;
     }
 
     auto bufferForUploadVLK = ((GUniformBufferVLK *) bufferForUpload.get());
     size_t old_size = bufferForUploadVLK->m_size;
-    bufferForUploadVLK->resize(fullSize);
-    //Buffer identifier was changed, so we need to update shader UBO descriptor
+
+
     if (old_size < fullSize) {
+        bufferForUploadVLK->resize(fullSize);
+        //Buffer identifier was changed, so we need to update shader UBO descriptor
         m_shaderDescriptorUpdateNeeded = true;
     }
     char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->stagingUBOBufferAllocInfo.pMappedData);
     for (const auto &buffer : buffers) {
-        if (buffer->m_buffCreated) continue;
-
         buffer->setOffset(currentSize);
         buffer->setPointer(&pointerForUpload[currentSize]);
-        currentSize += buffer->m_size;
+        currentSize += buffer->getSize();
 
         int offsetDiff = currentSize % uniformBufferOffsetAlign;
         if (offsetDiff != 0) {
@@ -1021,21 +1030,6 @@ void GDeviceVLK::prepearMemoryForBuffers(std::vector<HGMesh> &iMeshes) {
 
     if (currentSize > 0) {
         bufferForUploadVLK->uploadFromStaging(currentSize);
-    }
-}
-
-
-void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes) {
-//    aggregationBufferForUpload.resize(maxUniformBufferSize);
-    if (!m_blackPixelTexture) {
-        m_blackPixelTexture = createTexture();
-        unsigned int zero = 0;
-        m_blackPixelTexture->loadData(1,1,&zero);
-    }
-    if (!m_whitePixelTexture) {
-        m_whitePixelTexture = createTexture();
-        unsigned int ff = 0xffffffff;
-        m_whitePixelTexture->loadData(1,1,&ff);
     }
 
 
@@ -1063,11 +1057,8 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
     for (const auto &texture : textures) {
         if (texture == nullptr) continue;
         if (texture->postLoad()) texturesLoaded++;
-        if (texturesLoaded > 4) return;
+        if (texturesLoaded > 4) break;
     }
-
-
-    updateCommandBuffers(meshes);
 }
 
 void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {
@@ -1108,6 +1099,15 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         IShaderPermutation *iPremutation = new GAdtShaderPermutationVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
+    } else if (shaderName == "adtWater"){
+        IShaderPermutation *iPremutation = new GAdtShaderPermutationVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+    } else if (shaderName == "imguiShader") {
+        IShaderPermutation *iPremutation = new GImguiShaderPermutation(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+        m_shaderPermutCache[hash] = sharedPtr;
     }
 
 
@@ -1159,7 +1159,7 @@ HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool
 //    return h_texture;
 
     BlpCacheRecord blpCacheRecord;
-    blpCacheRecord.texture = texture;
+    blpCacheRecord.texture = texture.get();
     blpCacheRecord.wrapX = xWrapTex;
     blpCacheRecord.wrapY = yWrapTex;
 
@@ -1277,6 +1277,8 @@ void GDeviceVLK::commitFrame() {
             submitInfo.pCommandBuffers = &uploadCommandBuffers[currentDrawFrame];
             submitInfo.signalSemaphoreCount = 1;
             submitInfo.pSignalSemaphores = &uploadSemaphores[currentDrawFrame];
+            uploadSemaphoresSubmited[currentDrawFrame] = true;
+
 
 
             if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]) != VK_SUCCESS) {
@@ -1306,10 +1308,14 @@ void GDeviceVLK::commitFrame() {
         submitInfo.pCommandBuffers = &uploadCommandBuffers[currentDrawFrame];
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &uploadSemaphores[currentDrawFrame];
+        uploadSemaphoresSubmited[currentDrawFrame] = true;
 
-
-        if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]) != VK_SUCCESS) {
-            std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
+        vkResetFences(device, 1, &uploadFences[currentDrawFrame]);
+        {
+            auto result = vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]);
+            if ( result != VK_SUCCESS) {
+                std::cout << "failed to submit uploadCommandBuffer command buffer! result = " << result << std::endl << std::flush;
+            }
         }
     }
 
@@ -1320,6 +1326,7 @@ void GDeviceVLK::commitFrame() {
 
     //Fill command buffer
     auto commandBufferForFilling = commandBuffers[currentDrawFrame];
+
     {
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1347,7 +1354,9 @@ void GDeviceVLK::commitFrame() {
 
         vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-        vkCmdExecuteCommands(commandBufferForFilling, 1, &renderCommandBuffers[currentDrawFrame]);
+        if (!renderCommandBuffersNull[currentDrawFrame]) {
+            vkCmdExecuteCommands(commandBufferForFilling, 1, &renderCommandBuffers[currentDrawFrame]);
+        }
 
         vkCmdEndRenderPass(commandBufferForFilling);
 
@@ -1366,36 +1375,55 @@ void GDeviceVLK::commitFrame() {
 
     waitSemaphores[0] = imageAvailableSemaphores[currentDrawFrame];
     waitStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    if (uploadSemaphoresSubmited[currentDrawFrame]) {
+        waitSemaphores[1] = uploadSemaphores[currentDrawFrame];
+        waitStages[1] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        submitInfo.waitSemaphoreCount = 2;
+    } else {
+        submitInfo.waitSemaphoreCount = 1;
+    }
 
-    waitSemaphores[1] = uploadSemaphores[currentDrawFrame];
-    waitStages[1] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
 
-    submitInfo.waitSemaphoreCount = 2;
+
     submitInfo.pWaitSemaphores = &waitSemaphores[0];
     submitInfo.pWaitDstStageMask = &waitStages[0];
 
-    std::array<VkCommandBuffer, 2> grCommandBuffers = {textureTransferCommandBuffers[currentDrawFrame], commandBufferForFilling};
+    std::array<VkCommandBuffer, 2> grCommandBuffers;
+    if (!textureTransferCommandBufferNull[currentDrawFrame]) {
+        grCommandBuffers = {textureTransferCommandBuffers[currentDrawFrame], commandBufferForFilling};
 
-    submitInfo.commandBufferCount = 2;
+        submitInfo.commandBufferCount = 2;
+    } else {
+        grCommandBuffers = {commandBufferForFilling};
+
+        submitInfo.commandBufferCount = 1;
+    }
     submitInfo.pCommandBuffers = &grCommandBuffers[0];
 
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderFinishedSemaphores[currentDrawFrame];
 
 
-
-
-    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentDrawFrame]) != VK_SUCCESS) {
-        std::cout << "failed to submit draw command buffer!" << std::endl << std::flush;
+//    if (!renderCommandBuffersNull[currentDrawFrame]) {
+    {
+        auto result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentDrawFrame]);
+        if (result != VK_SUCCESS) {
+            std::cout << "failed to submit draw command buffer! result = " << result << std::endl << std::flush;
+        }
     }
+//    }
 
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.pNext = NULL;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &renderFinishedSemaphores[currentDrawFrame];
+//    if (!renderCommandBuffersNull[currentDrawFrame]) {
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = &renderFinishedSemaphores[currentDrawFrame];
 
+//    } else {
+//        presentInfo.waitSemaphoreCount = 0;
+//    }
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &swapChain;
     presentInfo.pImageIndices = &imageIndex;
@@ -1421,163 +1449,6 @@ void GDeviceVLK::setClearScreenColor(float r, float g, float b) {
 
 void GDeviceVLK::setViewPortDimensions(float x, float y, float width, float height) {
 
-}
-
-void GDeviceVLK::updateCommandBuffers(std::vector<HGMesh> &iMeshes) {
-    int updateFrame = getUpdateFrameNumber();
-
-    VkCommandBufferInheritanceInfo bufferInheritanceInfo;
-    bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-    bufferInheritanceInfo.pNext = nullptr;
-    bufferInheritanceInfo.renderPass = renderPass;
-    bufferInheritanceInfo.subpass = 0;
-    bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
-    bufferInheritanceInfo.occlusionQueryEnable = false;
-    bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
-    bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
-
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-    beginInfo.pNext = NULL;
-    beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
-
-//    std::cout << "updateCommandBuffers: updateFrame = " << updateFrame << std::endl;
-    vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-
-    //Update
-    if (m_shaderDescriptorUpdateNeeded) {
-        for(auto shaderVLKRec : m_shaderPermutCache) {
-            ((GShaderPermutationVLK *) shaderVLKRec.second.get())->updateDescriptorSet(updateFrame);
-        }
-        m_shaderDescriptorUpdateNeeded = false;
-    }
-
-    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
-    if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
-
-
-
-    VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
-    VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
-
-    uint32_t dynamicOffset[7] = {};
-
-    VkViewport usualViewport;
-    usualViewport.width = swapChainExtent.width;
-    usualViewport.height = swapChainExtent.height;
-    usualViewport.x = 0;
-    usualViewport.y = 0;
-    usualViewport.minDepth = 0;
-    usualViewport.maxDepth = 0.990f;
-
-    VkViewport mapAreaViewport = usualViewport;
-    mapAreaViewport.minDepth = 0.991f;
-    mapAreaViewport.maxDepth = 0.996f;
-
-    VkViewport skyBoxViewport = usualViewport;
-    skyBoxViewport.minDepth = 0.997f;
-    skyBoxViewport.maxDepth = 1.0f;
-
-
-    //Set scissors
-    VkRect2D scissor = {};
-    scissor.offset = {0, 0};
-    scissor.extent = swapChainExtent;
-
-    vkCmdSetScissor(commandBufferForFilling, 0, 1, &scissor);
-
-    //Set new viewport
-    enum class ViewportType {vp_usual, vp_mapArea, vp_skyBox};
-    ViewportType lastViewPort = ViewportType::vp_usual;
-    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
-
-    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
-
-    for (auto &mesh: iMeshes) {
-        auto *meshVLK = ((GMeshVLK *)mesh.get());
-        auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
-        auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
-
-        uint32_t uboInd = 0;
-        for (int k = 0; k < 3; k++) {
-            if (shaderVLK->hasBondUBO[k]) {
-                auto *uboB = (GUniformBufferVLK *) (meshVLK->getVertexUniformBuffer(k).get());
-                if (uboB) {
-                    dynamicOffset[uboInd++] = (uboB)->m_offset;
-                }
-            }
-        }
-        for (int k = 1; k < 3; k++) {
-            if (shaderVLK->hasBondUBO[2+k]) {
-                auto *uboB = (GUniformBufferVLK *) (meshVLK->getFragmentUniformBuffer(k).get());
-                if (uboB) {
-                    dynamicOffset[uboInd++] = (uboB)->m_offset;
-                }
-            }
-        }
-
-        if (lastPipeline != meshVLK->hgPipelineVLK) {
-            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              meshVLK->hgPipelineVLK->graphicsPipeline);
-
-            lastPipeline = meshVLK->hgPipelineVLK;
-        }
-
-        ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
-        if (lastViewPort != newViewPort) {
-            switch (newViewPort) {
-                case ViewportType::vp_usual:
-                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
-                    break;
-                case ViewportType::vp_skyBox:
-                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &skyBoxViewport);
-                    break;
-                case ViewportType::vp_mapArea:
-                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &mapAreaViewport);
-                    break;
-            }
-
-            lastViewPort = newViewPort;
-        }
-
-
-        auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
-        auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
-        VkDeviceSize offsets[] = {0};
-
-        if (lastIndexBuffer != indexBuffer) {
-            vkCmdBindIndexBuffer(commandBufferForFilling, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-            lastIndexBuffer = indexBuffer;
-        }
-
-        if (lastVertexBuffer != vertexBuffer) {
-            uint32_t vboBind = 0;
-
-            vkCmdBindVertexBuffers(commandBufferForFilling, vboBind++, 1, &vertexBuffer, offsets);
-            lastVertexBuffer = vertexBuffer;
-        }
-
-        auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
-        auto imageDescSet = meshVLK->imageDescriptorSets[updateFrame]->getDescSet();
-
-        //UBO
-        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
-
-        //Image
-        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                meshVLK->hgPipelineVLK->pipelineLayout, 1, 1, &imageDescSet, 0, 0);
-
-        vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
-    }
-
-
-    if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
 }
 
 HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
@@ -1624,7 +1495,8 @@ GDeviceVLK::createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int 
 
     for (size_t i = 0; i < m_descriptorPools.size(); i++) {
         descriptorSet = m_descriptorPools[i]->allocate(layout, uniforms, images);
-        if (descriptorSet != nullptr) return descriptorSet;
+        if (descriptorSet != nullptr)
+            return descriptorSet;
     }
 
     //2. Create new descriptor set and allocate from it
@@ -1632,4 +1504,194 @@ GDeviceVLK::createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int 
     m_descriptorPools.push_back(newPool);
 
     return newPool->allocate(layout, uniforms, images);
+}
+
+void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
+    //Draw deps
+    for (int i = 0; i < drawStage->drawStageDependencies.size(); i++) {
+        this->internalDrawStageAndDeps(drawStage->drawStageDependencies[i]);
+    }
+
+    if (drawStage->meshesToRender == nullptr)
+        return;
+
+    if (drawStage->clearScreen) {
+        clearColor[0] = drawStage->clearColor[0];
+        clearColor[1] = drawStage->clearColor[1];
+        clearColor[2] = drawStage->clearColor[2];
+    }
+
+    int updateFrame = getUpdateFrameNumber();
+    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
+
+    VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
+    VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
+    int8_t lastIsScissorsEnabled = -1;
+
+    uint32_t dynamicOffset[7] = {};
+
+    VkViewport usualViewport;
+    usualViewport.width = drawStage->viewPortDimensions.maxs[0];
+    usualViewport.height =  drawStage->viewPortDimensions.maxs[1];
+    usualViewport.x = drawStage->viewPortDimensions.mins[0];
+    usualViewport.y =  drawStage->viewPortDimensions.mins[1];
+    usualViewport.minDepth = 0;
+    usualViewport.maxDepth = 0.990f;
+
+    VkViewport mapAreaViewport = usualViewport;
+    mapAreaViewport.minDepth = 0.991f;
+    mapAreaViewport.maxDepth = 0.996f;
+
+    VkViewport skyBoxViewport = usualViewport;
+    skyBoxViewport.minDepth = 0.997f;
+    skyBoxViewport.maxDepth = 1.0f;
+
+
+    //Set scissors
+    VkRect2D defaultScissor = {};
+    defaultScissor.offset = {0, 0};
+    defaultScissor.extent = swapChainExtent;
+
+    vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
+
+    //Set new viewport
+    enum class ViewportType {vp_usual, vp_mapArea, vp_skyBox};
+    ViewportType lastViewPort = ViewportType::vp_usual;
+    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
+
+    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
+
+    auto iMeshes = drawStage->meshesToRender->meshes;
+
+    for (auto &mesh: iMeshes) {
+        auto *meshVLK = ((GMeshVLK *)mesh.get());
+        auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
+        auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
+
+        uint32_t uboInd = 0;
+        auto *uboB = drawStage->sceneWideBlockVSPSChunk.get();
+        if (uboB) {
+            dynamicOffset[uboInd++] = (uboB)->getOffset();
+        }
+
+        for (int k = 1; k < 6; k++) {
+            if (shaderVLK->hasBondUBO[k]) {
+                auto *uboB = (meshVLK->getUniformBuffer(k).get());
+                if (uboB) {
+                    dynamicOffset[uboInd++] = (uboB)->getOffset();
+                }
+            }
+        }
+
+        if (lastPipeline != meshVLK->hgPipelineVLK) {
+            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              meshVLK->hgPipelineVLK->graphicsPipeline);
+
+            lastPipeline = meshVLK->hgPipelineVLK;
+        }
+
+        ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
+        if (lastViewPort != newViewPort) {
+            switch (newViewPort) {
+                case ViewportType::vp_usual:
+                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
+                    break;
+                case ViewportType::vp_skyBox:
+                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &skyBoxViewport);
+                    break;
+                case ViewportType::vp_mapArea:
+                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &mapAreaViewport);
+                    break;
+            }
+
+            lastViewPort = newViewPort;
+        }
+
+
+        if (meshVLK->m_isScissorsEnabled > 0) {
+            VkRect2D rect;
+            rect.offset.x = meshVLK->m_scissorOffset[0];
+            rect.offset.y = meshVLK->m_scissorOffset[1];
+            rect.extent.width = meshVLK->m_scissorSize[0];
+            rect.extent.height = meshVLK->m_scissorSize[1];
+
+            vkCmdSetScissor(commandBufferForFilling, 0, 1, &rect);
+        } else if (lastIsScissorsEnabled != meshVLK->m_isScissorsEnabled) {
+            vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
+        }
+        lastIsScissorsEnabled = meshVLK->m_isScissorsEnabled;
+
+
+        auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
+        auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
+        VkDeviceSize offsets[] = {0};
+
+        if (lastIndexBuffer != indexBuffer) {
+            vkCmdBindIndexBuffer(commandBufferForFilling, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+            lastIndexBuffer = indexBuffer;
+        }
+
+        if (lastVertexBuffer != vertexBuffer) {
+            uint32_t vboBind = 0;
+
+            vkCmdBindVertexBuffers(commandBufferForFilling, vboBind++, 1, &vertexBuffer, offsets);
+            lastVertexBuffer = vertexBuffer;
+        }
+
+        auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
+        auto imageDescSet = meshVLK->imageDescriptorSets[updateFrame]->getDescSet();
+
+        renderCommandBuffersNull[updateFrame] = false;
+        //UBO
+        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
+
+        //Image
+        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                meshVLK->hgPipelineVLK->pipelineLayout, 1, 1, &imageDescSet, 0, 0);
+
+        vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
+    }
+}
+void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
+    int updateFrame = getUpdateFrameNumber();
+
+    VkCommandBufferInheritanceInfo bufferInheritanceInfo;
+    bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+    bufferInheritanceInfo.pNext = nullptr;
+    bufferInheritanceInfo.renderPass = renderPass;
+    bufferInheritanceInfo.subpass = 0;
+    bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
+    bufferInheritanceInfo.occlusionQueryEnable = false;
+    bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
+    bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+    beginInfo.pNext = NULL;
+    beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
+
+//    std::cout << "drawStageAndDeps: updateFrame = " << updateFrame << std::endl;
+    vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+
+    //Update
+    if (m_shaderDescriptorUpdateNeeded) {
+        for(auto shaderVLKRec : m_shaderPermutCache) {
+            ((GShaderPermutationVLK *) shaderVLKRec.second.get())->updateDescriptorSet(updateFrame);
+        }
+        m_shaderDescriptorUpdateNeeded = false;
+    }
+
+    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
+    renderCommandBuffersNull[updateFrame] = true;
+    if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording command buffer!");
+    }
+
+    internalDrawStageAndDeps(drawStage);
+
+    if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
 }

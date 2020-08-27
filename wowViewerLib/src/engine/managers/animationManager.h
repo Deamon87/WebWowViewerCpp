@@ -5,10 +5,9 @@
 #ifndef WEBWOWVIEWERCPP_ANIMATIONMANAGER_H
 #define WEBWOWVIEWERCPP_ANIMATIONMANAGER_H
 
-class CRibbonEmitter;
+class AnimationManager;
 
 #include <vector>
-#include "../../include/wowScene.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "particles/particleEmitter.h"
 #include "CRibbonEmitter.h"
@@ -16,7 +15,7 @@ class CRibbonEmitter;
 
 class AnimationManager {
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
     HM2Geom m_m2Geom;
     M2Data *m_m2File;
 
@@ -46,10 +45,14 @@ private:
     void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices);
 
 public:
-    AnimationManager(IWoWInnerApi *api, HM2Geom m2File);
+    AnimationManager(ApiContainer *api, HM2Geom m2File);
+
+    void resetCurrentAnimation();
     bool setAnimationId(int animationId, bool reset);
+    void setAnimationPercent(float percent);
     void update (
         animTime_t deltaTime,
+        animTime_t deltaTimeForGS,
         mathfu::vec3 &cameraPosInLocal,
         mathfu::vec3 &localUpVector,
         mathfu::vec3 &localRightVector,

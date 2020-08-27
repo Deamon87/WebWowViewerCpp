@@ -47,6 +47,7 @@ public:
 
     void reset() override;
 
+    unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() override;
     unsigned int getCullingFrameNumber() override;
     unsigned int getDrawFrameNumber() override;
@@ -55,6 +56,9 @@ public:
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
         return false;
+    }
+    int getMaxSamplesCnt() override {
+        return 1;
     }
 
     float getAnisLevel() override;
@@ -68,10 +72,10 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes) override;
-    void prepearMemoryForBuffers(std::vector<HGMesh> &meshes) override {};
+    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
+    void drawStageAndDeps(HDrawStage drawStage) override {};
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
     std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void *permutationDescriptor) override;
@@ -81,6 +85,7 @@ public:
     HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
+    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override {return nullptr;};
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture() override;
@@ -103,7 +108,7 @@ public:
     void beginFrame() override ;
     void commitFrame() override ;
     void setViewPortDimensions(float x, float y, float width, float height) override;
-
+    void setInvertZ(bool value) override {m_isInvertZ = value;};
     void shrinkData() override;
 private:
     void drawMesh(HGMesh &hmesh);
@@ -141,6 +146,7 @@ protected:
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
     bool m_isInSkyBoxDepthMode = false;
+    bool m_isInvertZ = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL20 *m_lastBindIndexBuffer = nullptr;
 	IVertexBuffer* m_lastBindVertexBuffer = nullptr;

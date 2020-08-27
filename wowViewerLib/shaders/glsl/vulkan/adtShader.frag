@@ -1,13 +1,17 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
 precision highp float;
+
+#include "../common/commonLightFunctions.glsl"
+#include "../common/commonFogFunctions.glsl"
 
 layout(location = 0) in vec2 vChunkCoords;
 layout(location = 1) in vec3 vPosition;
 layout(location = 2) in vec4 vColor;
 layout(location = 3) in vec3 vNormal;
 layout(location = 4) in vec3 vVertexLighting;
-
 
 layout(set=1, binding=5) uniform sampler2D uLayer0;
 layout(set=1, binding=6) uniform sampler2D uLayer1;
@@ -19,60 +23,28 @@ layout(set=1, binding=11) uniform sampler2D uLayerHeight1;
 layout(set=1, binding=12) uniform sampler2D uLayerHeight2;
 layout(set=1, binding=13) uniform sampler2D uLayerHeight3;
 
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
+    SceneWideParams scene;
+    PSFog fogData;
+};
+
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
-    vec4 uViewUp;
-    vec4 uSunDir_FogStart;
-    vec4 uSunColor_uFogEnd;
-    vec4 uAmbientLight;
-    vec4 FogColor;
+    vec4 uFogStartAndFogEnd;
+    vec4 uFogColor;
 };
 
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     vec4 uHeightScale;
     vec4 uHeightOffset;
+    mat4 animationMat[4];
 };
 
 layout(location = 0) out vec4 outColor;
 
-vec3 makeDiffTerm(vec3 matDiffuse) {
-  vec3 currColor;
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (true) {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = dot(normalizedN, -(uSunDir_FogStart.xyz));
-        float nDotUp = dot(normalizedN, uViewUp.xyz);
-
-        vec4 AmbientLight = uAmbientLight;
-
-        vec3 adjAmbient = (AmbientLight.rgb );
-        vec3 adjHorizAmbient = (AmbientLight.rgb );
-        vec3 adjGroundAmbient = (AmbientLight.rgb );
-
-        if ((nDotUp >= 0.0))
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-        }
-
-        vec3 skyColor = (currColor * 1.10000002);
-        vec3 groundColor = (currColor* 0.699999988);
-
-        lDiffuse = (uSunColor_uFogEnd.xyz * clamp(nDotL, 0.0, 1.0));
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-    } else {
-        currColor = vec3 (1.0, 1.0, 1.0) ;
-        mult = 1.0;
-    }
-
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * vVertexLighting;
-    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
-}
-
+const InteriorLightParam intLight = {
+    vec4(0,0,0,0),
+    vec4(0,0,0,1)
+};
 
 void main() {
     vec2 vTexCoord = vChunkCoords;
@@ -81,10 +53,10 @@ void main() {
     vec2 alphaCoord = vec2(vChunkCoords.x/8.0, vChunkCoords.y/8.0 );
     vec3 alphaBlend = texture( uAlphaTexture, alphaCoord).gba;
 
-    vec2 tcLayer0 = vTexCoord;
-    vec2 tcLayer1 = vTexCoord;
-    vec2 tcLayer2 = vTexCoord;
-    vec2 tcLayer3 = vTexCoord;
+    vec2 tcLayer0 = (animationMat[0]*vec4(vTexCoord, 0, 1)).xy;
+    vec2 tcLayer1 = (animationMat[1]*vec4(vTexCoord, 0, 1)).xy;
+    vec2 tcLayer2 = (animationMat[2]*vec4(vTexCoord, 0, 1)).xy;
+    vec2 tcLayer3 = (animationMat[3]*vec4(vTexCoord, 0, 1)).xy;
 
     float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
     vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
@@ -115,39 +87,32 @@ void main() {
 
     vec4 final = vec4(matDiffuse_3, specBlend_3);
 
-    vec3 matDiffuse = final.rgb * vColor.rgb;
-    vec4 finalColor = vec4(makeDiffTerm(matDiffuse), 1.0);
+    vec3 matDiffuse = final.rgb * 2.0 * vColor.rgb;
+
+
+    vec4 finalColor = vec4(
+        calcLight(
+            matDiffuse,
+            vNormal,
+            true,
+            0.0,
+            scene,
+            intLight,
+            vVertexLighting.rgb, /* accumLight */
+            vec3(0.0), /*precomputedLight*/
+            vec3(0.0) /* specular */
+        ),
+        1.0
+    );
 
     //Spec part
     float specBlend = final.a;
-    vec3 halfVec = -(normalize((uSunDir_FogStart.xyz + normalize(vPosition))));
-    vec3 lSpecular = ((uSunColor_uFogEnd.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
+    vec3 halfVec = -(normalize((scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition))));
+    vec3 lSpecular = ((scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
     vec3 specTerm = (vec3(specBlend) * lSpecular);
     finalColor.rgb += specTerm;
 
-    // --- Fog start ---
-    /*
-    vec3 fogColor = uFogColor;
-    float fog_start = uFogStart;
-    float fog_end = uFogEnd;
-    float fog_rate = 1.5;
-    float fog_bias = 0.01;
-
-    //vec4 fogHeightPlane = pc_fog.heightPlane;
-    //float heightRate = pc_fog.color_and_heightRate.w;
-
-    float distanceToCamera = length(vPosition.xyz);
-    float z_depth = (distanceToCamera - fog_bias);
-    float expFog = 1.0 / (exp((max(0.0, (z_depth - fog_start)) * fog_rate)));
-    //float height = (dot(fogHeightPlane.xyz, vPosition.xyz) + fogHeightPlane.w);
-    //float heightFog = clamp((height * heightRate), 0, 1);
-    float heightFog = 1.0;
-    expFog = (expFog + heightFog);
-    float endFadeFog = clamp(((fog_end - distanceToCamera) / (0.699999988 * fog_end)), 0.0, 1.0);
-
-    finalColor.rgb = mix(fogColor.rgb, finalColor.rgb, vec3(min(expFog, endFadeFog)));
-    */
-    // --- Fog end ---
+    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz);
 
     finalColor.a = 1.0;
     outColor = finalColor;

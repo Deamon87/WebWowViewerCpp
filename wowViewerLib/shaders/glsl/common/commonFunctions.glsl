@@ -24,4 +24,3 @@ mat3 blizzTranspose(mat4 value) {
     );
 }
 
-

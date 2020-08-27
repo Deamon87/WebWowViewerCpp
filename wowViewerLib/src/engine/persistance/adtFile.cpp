@@ -214,6 +214,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                     debuglog("Entered MCNK");
 
                     file.mcnkRead++;
+                    if (file.mcnkRead >= 256) {
+                        std::cout << "ALARM!"<< std::endl;
+                    }
 
                     SMChunk &chunk = file.mapTile[file.mcnkRead];
                     chunkDef<AdtFile> *def = &AdtFile::adtFileTable.subChunks['MCNK'];

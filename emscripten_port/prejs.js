@@ -14,7 +14,7 @@ Module['hammerJsAssignControl'] = function () {
     var isPitchGoingOn = false;
     var isCameraMoving = false;
 
-    var lastTouchStart = new Date();
+    var lastTouchStart = new Date(); 
     function touchStart(event) {
         event.preventDefault();
         if (isPitchGoingOn) return;
@@ -34,8 +34,8 @@ Module['hammerJsAssignControl'] = function () {
     function touchMove(event) {
         event.preventDefault();
         if (isPitchGoingOn) return;
-        var x = event.touches[0].pageX; // Собираем данные
-        var y = event.touches[0].pageY; // и еще
+        var x = event.touches[0].pageX;
+        var y = event.touches[0].pageY;
 
         if (mleft_pressed === 1) {
             Module['_addHorizontalViewDir']((x - m_x) / 4.0);

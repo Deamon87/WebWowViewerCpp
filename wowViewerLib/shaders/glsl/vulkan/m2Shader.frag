@@ -9,6 +9,9 @@
 
 precision highp float;
 
+#include "../common/commonLightFunctions.glsl"
+#include "../common/commonFogFunctions.glsl"
+
 struct LocalLight
 {
     vec4 color;
@@ -26,8 +29,8 @@ layout(location=5) in vec4 vDiffuseColor;
 layout(location=0) out vec4 outputColor;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
+    SceneWideParams scene;
+    PSFog fogData;
 };
 
 layout(std140, set=0, binding=1) uniform modelWideBlockVS {
@@ -37,17 +40,17 @@ layout(std140, set=0, binding=1) uniform modelWideBlockVS {
 
 //Whole model
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
-    vec4 uViewUp;
-    vec4 uSunDirAndFogStart;
-    vec4 uSunColorAndFogEnd;
-    vec4 uAmbientLight;
+    InteriorLightParam intLight;
+    LocalLight pc_lights[4];
+    ivec4 lightCountAndBcHack;
+    vec4 interiorExteriorBlend;
 };
 
 //Individual meshes
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
-    ivec4 PixelShader_UnFogged_IsAffectedByLight_LightCount;
+    ivec4 PixelShader_UnFogged_IsAffectedByLight;
     vec4 uFogColorAndAlphaTest;
-    LocalLight pc_lights[4];
+
     vec4 uPcColor;
 };
 
@@ -57,55 +60,7 @@ layout(set=1,binding=7) uniform sampler2D uTexture3;
 layout(set=1,binding=8) uniform sampler2D uTexture4;
 
 
-vec3 makeDiffTerm(vec3 matDiffuse, vec3 accumLight) {
-//    return matDiffuse;
-    vec3 currColor;
-    float mult = 1.0;
-    vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
-    if (PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1) {
-        vec3 normalizedN = normalize(vNormal);
-        float nDotL = clamp(dot(normalizedN, -(uSunDirAndFogStart.xyz)), 0.0, 1.0);
-        float nDotUp = dot(normalizedN, uViewUp.xyz);
 
-        vec4 AmbientLight = uAmbientLight;
-
-        vec3 adjAmbient = (AmbientLight.rgb );
-        vec3 adjHorizAmbient = (AmbientLight.rgb );
-        vec3 adjGroundAmbient = (AmbientLight.rgb );
-
-        if ((nDotUp >= 0.0))
-        {
-            currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-        }
-        else
-        {
-            currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-        }
-
-        vec3 skyColor = (currColor * 1.10000002);
-        vec3 groundColor = (currColor* 0.699999988);
-
-
-        lDiffuse = (uSunColorAndFogEnd.xyz * nDotL);
-        currColor = mix(groundColor, skyColor, vec3((0.5 + (0.5 * nDotL))));
-//
-
-    } else {
-        currColor = vec3 (1.0, 1.0, 1.0) ;
-        accumLight = vec3(0,0,0);
-        mult = 1.0;
-    }
-
-
-//    return currColor.rgb * matDiffuse;
-//    return sqrt((matDiffuse*matDiffuse)*0.5 + currColor.rgb*(matDiffuse*matDiffuse));
-    vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-    vec3 linearDiffTerm = (matDiffuse * matDiffuse) * accumLight;
-//    return sqrt((matDiffuse*matDiffuse)*mult + currColor.rgb*(matDiffuse*matDiffuse)) ;
-    return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) ;
-}
-
-#include "../common/commonFunctions.glsl"
 
 void main() {
     /* Animation support */
@@ -136,7 +91,7 @@ void main() {
 //    if(meshResColor.a < uAlphaTest)
 //        discard;
     vec3 accumLight;
-    if ((PixelShader_UnFogged_IsAffectedByLight_LightCount.z == 1)) {
+    if ((PixelShader_UnFogged_IsAffectedByLight.z == 1)) {
         vec3 vPos3 = vPosition.xyz;
         vec3 vNormal3 = normalize(vNormal.xyz);
         vec3 lightColor = vec3(0.0);
@@ -144,10 +99,10 @@ void main() {
 
         for (int index = 0; index < 4; index++)
         {
-            if (index >= PixelShader_UnFogged_IsAffectedByLight_LightCount.w) break;
+            if (index >= lightCountAndBcHack.x) break;
 
             LocalLight lightRecord = pc_lights[index];
-            vec3 vectorToLight = ((uLookAtMat * (uPlacementMat * lightRecord.position)).xyz - vPos3);
+            vec3 vectorToLight = ((scene.uLookAtMat * (uPlacementMat * lightRecord.position)).xyz - vPos3);
             float distanceToLightSqr = dot(vectorToLight, vectorToLight);
             float distanceToLightInv = inversesqrt(distanceToLightSqr);
             float distanceToLight = (distanceToLightSqr * distanceToLightInv);
@@ -156,11 +111,12 @@ void main() {
 
             float attenuation = (1.0 - clamp((distanceToLight - attenuationRec.x) * (1.0 / (attenuationRec.z - attenuationRec.x)), 0.0, 1.0));
 
-            vec3 attenuatedColor = attenuation * lightRecord.color.xyz * attenuationRec.y;
+            vec3 attenuatedColor = attenuation * lightRecord.color.xyz;
             lightColor = (lightColor + vec3(attenuatedColor * attenuatedColor * diffuseTerm1 ));
         }
+
         meshResColor.rgb = clamp(lightColor , 0.0, 1.0);
-        accumLight = meshResColor.rgb;
+        accumLight = mix(lightColor.rgb, meshResColor.rgb, lightCountAndBcHack.y);
         //finalColor.rgb =  finalColor.rgb * lightColor;
     }
 
@@ -174,7 +130,7 @@ void main() {
     genericParams[1] = vec4( 1.0, 1.0, 1.0, 1.0 );
     genericParams[2] = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-    int uPixelShader = PixelShader_UnFogged_IsAffectedByLight_LightCount.x;
+    int uPixelShader = PixelShader_UnFogged_IsAffectedByLight.x;
 
 
     if ( uPixelShader == 0 ) {//Combiners_Opaque
@@ -188,6 +144,7 @@ void main() {
 
     } else if ( uPixelShader == 2 ) {//Combiners_Opaque_Mod
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
+        opacity = tex2.a * vDiffuseColor.a;
         opacity = tex2.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 3 ) {//Combiners_Opaque_Mod2x
@@ -335,6 +292,10 @@ void main() {
         matDiffuse = vDiffuseColor.rgb * 2.000000 * (tex * tex2 * tex3 * genericParams[0]).rgb;
         opacity = (tex * tex2 * tex3 * genericParams[0]).a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
+    } else if ( uPixelShader == 36 ) {//unk shader combiner
+        matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
+        opacity = tex.a * tex2.a * vDiffuseColor.a;
+        finalOpacity = opacity * visParams.r;
     /*
         WOTLK DEPRECATED SHADERS!
     */
@@ -365,33 +326,35 @@ void main() {
     }
 
 
-    finalColor = vec4(makeDiffTerm(matDiffuse, accumLight) + specular, finalOpacity);
+    finalColor = vec4(
+        calcLight(
+            matDiffuse,
+            vNormal,
+            PixelShader_UnFogged_IsAffectedByLight.z > 0,
+            interiorExteriorBlend.x,
+            scene,
+            intLight,
+            accumLight, vec3(0.0),
+            specular
+        ) ,
+        finalOpacity
+    );
 
     if(finalColor.a < uFogColorAndAlphaTest.w)
         discard;
 
-    /*
-    int uUnFogged = PixelShader_UnFogged_IsAffectedByLight_LightCount.y;
-    float uFogEnd = uSunColorAndFogEnd.z;
+    int uUnFogged = PixelShader_UnFogged_IsAffectedByLight.y;
     if (uUnFogged == 0) {
-        vec3 fogColor = uFogColorAndAlphaTest.xyz;
-        float fog_rate = 1.5;
-        float fog_bias = 0.01;
+        vec3 sunDir =
+            mix(
+                scene.uInteriorSunDir,
+                scene.extLight.uExteriorDirectColorDir,
+                interiorExteriorBlend.x
+            )
+            .xyz;
 
-        //vec4 fogHeightPlane = pc_fog.heightPlane;
-        //float heightRate = pc_fog.color_and_heightRate.w;
-
-        float distanceToCamera = length(vPosition.xyz);
-        float z_depth = (distanceToCamera - fog_bias);
-        float expFog = 1.0 / (exp((max(0.0, (z_depth - uSunDirAndFogStart.z)) * fog_rate)));
-        //float height = (dot(fogHeightPlane.xyz, vPosition.xyz) + fogHeightPlane.w);
-        //float heightFog = clamp((height * heightRate), 0, 1);
-        float heightFog = 1.0;
-        expFog = (expFog + heightFog);
-        float endFadeFog = clamp(((uFogEnd - distanceToCamera) / (0.699999988 * uFogEnd)), 0.0, 1.0);
-        float fog_out = min(expFog, endFadeFog);
-        finalColor.rgba = vec4(mix(fogColor.rgb, finalColor.rgb, vec3(fog_out)), finalColor.a);
-    }*/
+        finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz);
+    }
 //    finalColor.rgb = finalColor.rgb;
 
 
