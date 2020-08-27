@@ -11,6 +11,14 @@ class GParticleMeshGL33 : public GMeshGL33 {
     friend class GDeviceGL33;
 protected:
     GParticleMeshGL33(IDevice &device, const gMeshTemplate &meshTemplate);
+public:
+    float getSortDistance() override {
+        return m_sortDistance;
+    }
+    void setSortDistance(float val) override {m_sortDistance = val;}
+    void setPriorityPlane(int priorityPlane) override {
+        m_priorityPlane = priorityPlane;
+    }
 };
 
 

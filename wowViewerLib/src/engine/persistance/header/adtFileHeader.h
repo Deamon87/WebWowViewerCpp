@@ -77,7 +77,7 @@ struct SMMapObjDef {
         uint16_t modf_destroyable : 1;         // set for destroyable buildings like the tower in DeathknightStart. This makes it a server-controllable game object.
         uint16_t modf_use_lod : 1;             // WoD(?)+: also load _LOD1.WMO for use dependent on distance
         uint16_t modf_unk_4 : 1;               // Legion(?)+: unknown
-        uint16_t modf_unk_8 : 1;               // Legion(?)+: unknown
+        uint16_t modf_entry_is_filedata_id : 1;               // Legion(?)+: unknown
         uint16_t unused : 12;
     } flags;               // values from enum MODFFlags.
     uint16_t doodadSet;           // which WMO doodad set is used.
@@ -179,6 +179,40 @@ struct MCVT {
 
 struct MCLV {
     CArgb values[9*9 + 8*8]; // or rgba?
+};
+
+struct M2HOHeader { ;
+    PACK(struct SMLiquidChunk {
+        uint32_t offset_instances;       // points to SMLiquidInstance[layer_count]
+        uint32_t layer_count;            // 0 if the chunk has no liquids. If > 1, the offsets will point to arrays.
+        uint32_t offset_attributes;      // points to mh2o_chunk_attributes, can be ommitted for all-0
+    }) chunks[16 * 16];
+};
+
+PACK(
+struct SMLiquidInstance {
+    uint16_t liquid_type;
+//#if ≤ Wrath
+//    uint16_t LVF;                    // LiquidVertexFormat, used in ADT/v18#instance_vertex_data
+//#else
+    uint16_t liquid_object_or_lvf;        // if >= 42, look up via LiquidObjectRec::LiquidTypeID => LiquidTypeRec::MaterialID => LiquidMaterialRec::LVF, otherwise LVF
+    // also see below for offset_vertex_data: if that's 0 and lt ≠ 2 → lvf = 2
+//#endif
+    float min_height_level;          // used as height if no heightmap given and cullingᵘ
+    float max_height_level;          // ≥ WoD ignores value and assumes to both be 0.0 for LVF = 2!ᵘ
+    uint8_t x_offset;                // The X offset of the liquid square (0-7)
+    uint8_t y_offset;                // The Y offset of the liquid square (0-7)
+    uint8_t width;                   // The width of the liquid square (1-8)
+    uint8_t height;                  // The height of the liquid square (1-8)
+    // The above four members are only used if liquid_object_or_lvf <= 41. Otherwise they are assumed 0, 0, 8, 8. (18179)
+    uint32_t offset_exists_bitmap;   // not all tiles in the instances need to be filled. always (width * height + 7) / 8 bytes.
+    // offset can be 0 for all-exist. also see (and extend) Talk:ADT/v18#SMLiquidInstance
+    uint32_t offset_vertex_data;     // actual data format defined by LiquidMaterialRec::m_LVF via LiquidTypeRec::m_materialID
+    // if offset = 0 and liquidType ≠ 2, then let LVF = 2, i.e. some ocean shit
+});
+
+struct mh2o_chunk_attributes {
+
 };
 
 struct MCCV {

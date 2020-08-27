@@ -15,6 +15,7 @@ class CRndSeed {
 public:
     CRndSeed(uint32_t seed) {
         this->seed = seed;
+        this->state = state ^ seed;
     }
 
     float Uniform();

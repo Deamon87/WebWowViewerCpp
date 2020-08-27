@@ -5,7 +5,7 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
-#include "../opengl/header.h"
+#include <assert.h>
 
 #include "BlpTexture.h"
 #include "DxtDecompress.h"
@@ -24,6 +24,10 @@ TextureFormat getTextureType(BlpFile *blpFile) {
         case 1:
             textureFormat = TextureFormat::S3TC_RGBA_DXT3;
             break;
+        case 2:
+            textureFormat = TextureFormat::BGRA;
+            break;
+
         case 3:
             textureFormat = TextureFormat::BGRA;
             break;
@@ -115,21 +119,22 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
     }
 }
 
-void BlpTexture::process(std::vector<unsigned char> &blpFile, std::string &fileName) {
+void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
-    BlpFile *pBlpFile = (BlpFile *) &blpFile[0];
+    BlpFile *pBlpFile = (BlpFile *) &(*blpFile.get())[0];
     if (pBlpFile->fileIdent != '2PLB') {
-
         std::cout << pBlpFile->fileIdent;
     }
     this->m_textureFormat = getTextureType(pBlpFile);
 
     /* Load texture by mipmaps */
+    assert(this->m_textureFormat != TextureFormat::None);
     parseMipmaps(pBlpFile, m_textureFormat, m_mipmaps);
 
 //    /* Load texture into GL memory */
 //    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
-    this->m_isLoaded = true;
+    this->fsStatus = FileStatus ::FSLoaded;
+    this->m_textureName = fileName;
 }
 

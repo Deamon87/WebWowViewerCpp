@@ -9,32 +9,26 @@
 #include <vector>
 #include "../persistance/header/wmoFileHeader.h"
 #include "../persistance/helper/ChunkFileReader.h"
-#include "../opengl/header.h"
-#include "../wowInnerApi.h"
+#include "../../include/sharedFile.h"
+#include "../../gapi/interface/IDevice.h"
 
-class WmoGroupGeom {
+class WmoGroupGeom : public PersistentFile {
 public:
-    WmoGroupGeom() : indicesLen(0), verticesLen(0),
-        normalsLen(0), textureCoordsLen(0), cvLen(0), doodadRefsLen(0),
-        batchesLen(0), nodesLen(0), bpsIndiciesLen(0) {
+    WmoGroupGeom(std::string fileName){};
+    WmoGroupGeom(int fileDataId){};
 
-    }
-
-    void process(std::vector<unsigned char> &wmoGroupFile, std::string &fileName);
+    void process(HFileContent wmoGroupFile, const std::string &fileName) override;
 
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 
     void setMOHD(SMOHeader *mohd) {this->mohd = mohd; };
     void setAttenuateFunction(std::function<void (WmoGroupGeom& wmoGroupGeom)> attenuateFunc) {this->m_attenuateFunc = attenuateFunc; };
-    bool isLoaded() const { return m_loaded; };
-    void createIndexVBO();
+    bool hasWater() const {return m_mliq != nullptr; };
 
-    HGVertexBuffer getVBO(IDevice &device);
-    HGIndexBuffer getIBO(IDevice &device);
+
     HGVertexBufferBindings getVertexBindings(IDevice &device);
+    HGVertexBufferBindings getWaterVertexBindings(IDevice &device);
 private:
-    bool m_loaded = false;
-
     int normalOffset = 0;
     int textOffset = 0;
     int textOffset2 = 0;
@@ -43,70 +37,90 @@ private:
     int colorOffset2 = 0;
 
     std::function<void (WmoGroupGeom& wmoGroupGeom)> m_attenuateFunc;
+
+    int getLegacyWaterType(int a);
+    HGVertexBuffer getVBO(IDevice &device);
+    HGIndexBuffer getIBO(IDevice &device);
 public:
-    std::vector<uint8_t> m_wmoGroupFile;
+    HFileContent m_wmoGroupFile;
 
     SMOHeader *mohd = nullptr;
 
-    MOGP *mogp;
+    MOGP *mogp = nullptr;
 
-    uint16_t *indicies = nullptr;
+    PointerChecker<uint16_t> indicies = PointerChecker<uint16_t>(indicesLen);
     int indicesLen = 0;
 
-    SMOPoly *mopy = nullptr;
+    PointerChecker<uint16_t> mopy = (mopyLen);
     int mopyLen = 0;
 
-    C3Vector *verticles = nullptr;
+    PointerChecker<C3Vector> verticles = (verticesLen);
     int verticesLen;
 
-    C3Vector *normals = nullptr;
+    PointerChecker<C3Vector> normals = (normalsLen);
     int normalsLen = 0;
 
     int textureCoordsRead = 0;
-    C2Vector *textCoords = nullptr;
+    PointerChecker<C2Vector> textCoords = (textureCoordsLen);
     int textureCoordsLen = 0;
 
-    C2Vector *textCoords2 = nullptr;
+    PointerChecker<C2Vector> textCoords2 = (textureCoordsLen2);
     int textureCoordsLen2 = 0;
 
-    C2Vector *textCoords3 = nullptr;
+    PointerChecker<C2Vector> textCoords3 = (textureCoordsLen3);
     int textureCoordsLen3 = 0;
 
-    CImVector *colorArray = nullptr;
+    PointerChecker<CImVector> colorArray = cvLen;
     int cvLen = 0;
 
-    CImVector *colorArray2 = nullptr;
+    PointerChecker<CImVector> colorArray2 = cvLen2;
     int cvLen2 = 0;
     int mocvRead = 0;
 
-    uint16_t *doodadRefs = nullptr;
+    PointerChecker<uint16_t> doodadRefs = (doodadRefsLen);
     int doodadRefsLen = 0;
 
-    uint16_t * lightRefList = nullptr;
+    PointerChecker<uint16_t> lightRefList = (lightRefListLen);
     int lightRefListLen = 0;
 
-    SMOBatch *batches = nullptr;
+    PointerChecker<SMOBatch> batches = (batchesLen);
     int batchesLen = 0;
 
-    SMOBatch *prePassbatches = nullptr;
+    PointerChecker<SMOBatch> prePassbatches = (prePassBatchesLen);
     int prePassBatchesLen = 0;
 
 
-    t_BSP_NODE * bsp_nodes = nullptr;
+    PointerChecker<t_BSP_NODE> bsp_nodes = (nodesLen);
     int nodesLen = 0;
 
-    uint16_t *bpsIndicies = nullptr;
+
+    PointerChecker<uint16_t> bpsIndicies = (bpsIndiciesLen);
     int bpsIndiciesLen = 0;
 
     int use_replacement_for_header_color = 0;
     CArgb replacement_for_header_color = {};
 
-    MOLP *molp = nullptr;
+    PointerChecker<MOLP> molp = (molpCnt);
     int molpCnt = 0;
+
+    MLIQ *m_mliq = nullptr;
+
+    PointerChecker<SMOLVert> m_liquidVerticles = (m_liquidVerticles_len);
+    int m_liquidVerticles_len = -1;
+
+    PointerChecker<SMOLTile> m_liquidTiles = (m_liquidTiles_len);
+    int m_liquidTiles_len = -1;
 
     HGVertexBuffer combinedVBO;
     HGIndexBuffer indexVBO;
     HGVertexBufferBindings vertexBufferBindings;
+    HGVertexBufferBindings vertexWaterBufferBindings;
+    int waterIndexSize = 0;
+
+    int liquidType = -1;
+
+    HGVertexBuffer waterVBO;
+    HGIndexBuffer waterIBO;
 
 private:
     void fixColorVertexAlpha(SMOHeader *mohd);

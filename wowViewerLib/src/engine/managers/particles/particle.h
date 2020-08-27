@@ -7,17 +7,18 @@
 
 
 #include "../../persistance/header/commonFileStructs.h"
-#include "../../../include/wowScene.h"
+#include "../../../include/iostuff.h"
 
 class CParticle2 {
 public:
     mathfu::vec3 position;
     animTime_t age;
     mathfu::vec3 velocity;
-    float lifespan;
+    int16_t state;
     uint16_t seed;
-    mathfu::vec2 texPos[2];
+    mathfu::vec2 texPos[2] = {{0,0}, {0,0}};
     mathfu::vec2 texVel[2];
+    bool isDead = false;
 };
 
 

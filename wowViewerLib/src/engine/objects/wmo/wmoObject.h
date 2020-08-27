@@ -11,13 +11,15 @@ class WmoGroupObject;
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
+#include "../../geometry/wmoMainGeom.h"
+
 #include "../../persistance/header/adtFileHeader.h"
 #include "mathfu/glsl_mappings.h"
 #include "wmoGroupObject.h"
 #include "../m2/m2Object.h"
-#include "../../geometry/wmoMainGeom.h"
 #include "../iWmoApi.h"
 #include "../../persistance/header/wmoFileHeader.h"
+#include "../ViewsObjects.h"
 
 
 struct WmoGroupResult {
@@ -28,45 +30,15 @@ struct WmoGroupResult {
     int nodeId;
 };
 
-class GeneralView {
-public:
-    bool viewCreated = false;
-    std::vector<WmoGroupObject *> drawnWmos;
-    std::vector<M2Object *> drawnM2s;
-    //Support several frustum planes because of how portal culling works
-    std::vector<std::vector<mathfu::vec3>> portalVertices;
-    std::vector<std::vector<mathfu::vec4>> frustumPlanes;
-    int level = -1;
-    int renderOrder = -1;
-
-    virtual void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
-    virtual void setM2Lights(M2Object * m2Object){};
-    void addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
-};
-
-class InteriorView : public GeneralView {
-public:
-    int portalIndex;
-    void setM2Lights(M2Object * m2Object) override;;
-};
-
-class ExteriorView : public GeneralView {
-public:
-    std::vector<AdtObject *> drawnADTs;
-    std::vector<HGMesh> drawnChunks;
-
-public:
-    void collectMeshes(std::vector<HGMesh> &renderedThisFrame) override;
-};
-
-
 class WmoObject : public IWmoApi {
 
 public:
-    WmoObject(IWoWInnerApi *api) : m_api(api) {
+    WmoObject(ApiContainer *api) : m_api(api) {
     }
+
+	~WmoObject();
 private:
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
 
     HWmoMainGeom mainGeom = nullptr;
     bool m_loading = false;
@@ -85,22 +57,25 @@ private:
     bool useFileId = false;
     int m_modelFileId;
 
-    std::vector<WmoGroupObject*> groupObjects = std::vector<WmoGroupObject*>(0);
-    std::vector<WmoGroupObject*> groupObjectsLod1 = std::vector<WmoGroupObject*>(0);
-    std::vector<WmoGroupObject*> groupObjectsLod2 = std::vector<WmoGroupObject*>(0);
+    std::vector<std::shared_ptr<WmoGroupObject>> groupObjects = std::vector<std::shared_ptr<WmoGroupObject>>(0);
+    std::vector<std::shared_ptr<WmoGroupObject>> groupObjectsLod1 = std::vector<std::shared_ptr<WmoGroupObject>>(0);
+    std::vector<std::shared_ptr<WmoGroupObject>> groupObjectsLod2 = std::vector<std::shared_ptr<WmoGroupObject>>(0);
     std::vector<BlpTexture> blpTextures;
 
     std::vector<bool> drawGroupWMO;
     std::vector<int> lodGroupLevelWMO;
-    std::vector<M2Object*> m_doodadsArray;
+    std::vector<std::shared_ptr<M2Object>> m_doodadsArray;
+
+    std::shared_ptr<M2Object> skyBox = nullptr;
 
     std::unordered_map<int, HGTexture> diffuseTextures;
     std::unordered_map<int, HGTexture> specularTextures;
 
     // Portal culling stuff begin
     std::vector<bool> transverseVisitedPortals;
-    std::vector<int> collectedM2s;
     // Portal culling stuff end
+
+    HGMesh transformedAntiPortals;
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
@@ -109,7 +84,7 @@ private:
     void fillLodGroup(mathfu::vec3 &cameraLocal);
     friend void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom);
 public:
-    M2Object *getDoodad(int index) override ;
+    std::shared_ptr<M2Object> getDoodad(int index) override ;
     HGTexture getTexture(int materialId, bool isSpec) override;
     void setLoadingParam( SMMapObjDef &mapObjDef);
     void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
@@ -123,16 +98,25 @@ public:
     int getNameSet() {
         return m_nameSet;
     }
+    int getWmoId() {
+        if (m_loaded) {
+            return mainGeom->header->wmoID;
+        }
+        return 0;
+    }
+    int getWmoGroupId (int groupNum);
 
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
     virtual SMOHeader *getWmoHeader() override;
 
-    virtual SMOMaterial *getMaterials() override;
+    virtual PointerChecker<SMOMaterial> &getMaterials() override;
 
-    virtual SMOLight *getLightArray() override;
+    virtual PointerChecker<SMOLight> &getLightArray() override;
     virtual std::vector<PortalInfo_t> &getPortalInfos() override {
         return geometryPerPortal;
     };
+
+    std::shared_ptr<M2Object> getSkyBoxForGroup (int groupNum);;
 
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 
@@ -141,8 +125,9 @@ public:
 
     bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor);
 
-    void doPostLoad();
+    bool doPostLoad(int &processedThisFrame);
     void update();
+    void uploadGeneratorBuffers();
 
     void createM2Array();
     void updateBB() override ;
@@ -176,7 +161,7 @@ public:
         int groupId,
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
-        std::vector<M2Object*> &m2Candidates);
+        std::vector<std::shared_ptr<M2Object>> &m2Candidates);
 
     void transverseGroupWMO (
         int groupId,
@@ -195,6 +180,8 @@ public:
     bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
 
     bool isGroupWmoInterior(int groupId);
+    bool isGroupWmoExteriorLit(int groupId);
+    bool isGroupWmoExtSkybox(int groupId);
 
     void drawTransformedPortalPoints();
 
@@ -202,7 +189,8 @@ public:
 
     void createWorldPortals();
 
-    void drawTransformedAntiPortalPoints();
+    void createTransformedAntiPortalMesh();
+    void updateTransformedAntiPortalPoints();
 };
 
 

@@ -1,96 +1,126 @@
-#define _X86_ 1
+#define _AMD64_ 1
 
+//#define NOWINBASEINTERLOCK
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
 #ifdef _WIN32
-#include <errhandlingapi.h>
+ #include <errhandlingapi.h>
 #endif
 
 // Include GLEW. Always include it before gl.h and glfw.h, since it's a bit magic.
-#define NKC_IMPLEMENTATION
-#define NKCD NKC_GLFW
-#define NKC_USE_OPENGL 3
 #define GLFW_INCLUDE_GLCOREARB
-
+ 
 //#define __EMSCRIPTEN__
 #include "engine/HeadersGL.h"
-#include <nuklear_cross.h>
 
-
-
+#ifdef LINK_VULKAN
+#define GLFW_INCLUDE_VULKAN
+#include "../wowViewerLib/src/include/vulkancontext.h"
+#else
 #undef GLFW_INCLUDE_VULKAN
+#endif
+
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
 #include <cmath>
-#include "../wowViewerLib/src/include/wowScene.h"
+#include <csignal>
+#include <exception>
+
 //#include "persistance/ZipRequestProcessor.h"
 #include "persistance/CascRequestProcessor.h"
 #include "persistance/HttpZipRequestProcessor.h"
-#include "persistance/MpqRequestProcessor.h"
+//#include "persistance/MpqRequestProcessor.h"
 #include "persistance/HttpRequestProcessor.h"
 
 
+#include "../wowViewerLib/src/gapi/interface/IDevice.h"
+#include "../wowViewerLib/src/gapi/IDeviceFactory.h"
+#include "ui/FrontendUI.h"
+#include "database/CSqliteDB.h"
+#include "../wowViewerLib/src/engine/WowFilesCacheStorage.h"
+#include "../wowViewerLib/src/engine/SceneComposer.h"
+#include "../wowViewerLib/src/engine/camera/firstPersonCamera.h"
+#include "../wowViewerLib/src/engine/objects/scenes/map.h"
+#include "../wowViewerLib/src/engine/ApiContainer.h"
+#include "../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
+#include "../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
+#include <png.h>
 
 
 int mleft_pressed = 0;
+int mright_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
 
-bool stopInputs = true;
+bool stopMouse = false;
+bool stopKeyboard = false;
+
+std::string screenshotFileName = "";
+int screenshotWidth = 100;
+int screenshotHeight = 100;
+bool needToMakeScreenshot = false;
+int screenshotFrame = -1;
+HDrawStage screenshotDS = nullptr;
+
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
-    if (stopInputs) return;
-    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
-    IControllable* controllable = scene->getCurrentCamera();
+    if (stopMouse) return;
+    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    auto controllable = apiContainer->camera;
 
 //    if (!pointerIsLocked) {
         if (mleft_pressed == 1) {
-            controllable->addHorizontalViewDir((xpos - m_x) / 4.0);
-            controllable->addVerticalViewDir((ypos - m_y) / 4.0);
+            controllable->addHorizontalViewDir((xpos - m_x) / 4.0f);
+            controllable->addVerticalViewDir((ypos - m_y) / 4.0f);
+
+            m_x = xpos;
+            m_y = ypos;
+        } else if (mright_pressed == 1) {
+            controllable->addCameraViewOffset((xpos - m_x) / 8.0f, -(ypos - m_y) / 8.0f);
 
             m_x = xpos;
             m_y = ypos;
         }
-//    } else {
-//        var delta_x = event.movementX ||
-//                      event.mozMovementX          ||
-//                      event.webkitMovementX       ||
-//                      0;
-//        var delta_y = event.movementY ||
-//                      event.mozMovementY      ||
-//                      event.webkitMovementY   ||
-//                      0;
-//
-//        camera.addHorizontalViewDir((delta_x) / 4.0);
-//        camera.addVerticalViewDir((delta_y) / 4.0);
-//    }
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    if (stopInputs) return;
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        mleft_pressed = 1;
+//    addCameraViewOffset
+    if (stopMouse) return;
+
+    if (action == GLFW_PRESS) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            mleft_pressed = 1;
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            mright_pressed = 1;
+        }
+
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
         m_x = xpos;
         m_y = ypos;
+//        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-        mleft_pressed = 0;
+    if (action == GLFW_RELEASE) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            mleft_pressed = 0;
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            mright_pressed = 0;
+        }
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 }
 
-Config *testConf;
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (stopInputs) return;
-    WoWScene * scene = (WoWScene *)glfwGetWindowUserPointer(window);
-    IControllable* controllable = scene->getCurrentCamera();
+    if (stopKeyboard) return;
+    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    auto controllable = apiContainer->camera;
+
     if ( action == GLFW_PRESS) {
         switch (key) {
             case 'W' :
@@ -136,19 +166,31 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 controllable->stopMovingDown();
                 break;
             case 'H':
-                scene->switchCameras();
+//                scene->switchCameras();
+//                scene->setScene(0, "trash", 0);
+//                scene->setAnimationId(159);
                 break;
             case 'J':
-                testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
+//                scene->setAnimationId(0);
+//                testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
                 break;
             case 'K':
-                testConf->setRenderPortals(!testConf->getRenderPortals());
+//                testConf->setRenderPortals(!testConf->getRenderPortals());
                 break;
             default:
                 break;
         }
     }
+}
 
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    if (stopMouse) return;
+
+    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    auto controllable = apiContainer->camera;
+
+    controllable->zoomInFromMouseScroll(-yoffset/2.0f);
 }
 
 double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string windowTitle = "NONE")
@@ -184,6 +226,7 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
     {
         // Calculate the FPS as the number of frames divided by the duration in seconds
         fps = frameCount / duration;
+        std::cout << "fps = " << fps << std::endl;
 
         // If the user specified a window title to append the FPS value to...
         if (windowTitle != "NONE")
@@ -225,11 +268,84 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
 void beforeCrash(void);
 
-#ifdef _WIN32
-static const bool SET_TERMINATE = std::set_terminate(beforeCrash);
+HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
+                                ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene) {
+    float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
+    float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
 
+    float nearPlane = 1.0;
+    float fov = toRadian(45.0);
+
+    float canvasAspect = (float)width / (float)height;
+
+    auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+    //Frustum matrix with reversed Z
+
+    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+    apiContainer.hDevice->setInvertZ(isInfZSupported);
+    if (isInfZSupported)
+    {
+        float f = 1.0f / tan(fov / 2.0f);
+        cameraMatricesRendering->perspectiveMat = mathfu::mat4(
+            f / canvasAspect, 0.0f,  0.0f,  0.0f,
+            0.0f,    f,  0.0f,  0.0f,
+            0.0f, 0.0f,  1, -1.0f,
+            0.0f, 0.0f, 1,  0.0f);
+    }
+
+    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
+        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
+
+        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
+                                                                  0, -1, 0, 0,
+                                                                  0, 0, 1.0/2.0, 1/2.0,
+                                                                  0, 0, 0, 1).Transpose();
+
+        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
+    }
+
+    auto clearColor = apiContainer.getConfig()->getClearColor();
+
+    if (currentScene != nullptr) {
+        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
+
+        HFrameBuffer fb = nullptr;
+        if (isScreenshot) {
+            fb = apiContainer.hDevice->createFrameBuffer(width, height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32, 4);
+        }
+
+        auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
+        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
+        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
+                                                          dimensions,
+                                                          true, clearColor, fb);
+
+        return sceneDrawStage;
+    }
+
+    return nullptr;
+}
+
+
+extern "C" void my_function_to_handle_aborts(int signal_number)
+{
+    /*Your code goes here. You can output debugging info.
+      If you return from this function, and it was called
+      because abort() was called, your program will exit or crash anyway
+      (with a dialog box on Windows).
+     */
+
+    std::cout << "HELLO" << std::endl;
+}
+
+/*Do this early in your program's initialization */
+
+
+#ifdef _WIN32
 void beforeCrash() {
-    //__asm("int3");
+    std::cout << "HELLO" << std::endl;
+    __debugbreak();
 }
 
 static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
@@ -250,487 +366,410 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 }
 #endif
 
+void saveScreenshot(const std::string& name, int width, int height, std::vector<uint8_t> &rgbaBuff) {
+    FILE *fp = fopen(name.c_str(), "wb");
+    if (!fp) {
+        return;
+    }
 
-enum radioOptions {
-    EASY,
-    HARD
-};
+    png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png_ptr) {
+        fclose(fp);
+        return;
+    }
 
-struct my_nkc_app {
-    struct nkc* nkcHandle;
+    png_infop png_info;
+    if (!(png_info = png_create_info_struct(png_ptr))) {
+        png_destroy_write_struct(&png_ptr, nullptr);
+        return;
+    }
 
-    /* some user data */
-    float movementSpeed = 1.0;
-    bool drawM2AABB = false;
-    bool drawWMOAABB = false;
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_write_struct(&png_ptr, nullptr);
+        return;
+    }
 
-    int wmoMinBatch = 0;
-    int wmoMaxBatch = 9999;
+    png_init_io(png_ptr, fp);
 
-    int m2MinBatch = 0;
-    int m2MaxBatch = 9999;
+    png_set_IHDR(png_ptr, png_info, width, height, 8, PNG_COLOR_TYPE_RGB,
+                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+                 PNG_FILTER_TYPE_DEFAULT);
 
-    int minParticle = 0;
-    int maxParticle = 9999;
+    std::shared_ptr<std::vector<uint8_t>> data = std::make_shared<std::vector<uint8_t>>(width*height*3);
+    std::shared_ptr<std::vector<uint8_t*>> rows = std::make_shared<std::vector<uint8_t*>>(height);
 
-    WoWScene *scene;
-    RequestProcessor *processor;
+    for (int i = 0; i < height; ++i) {
+        (*rows)[height - i - 1] = data->data() + (i*width*3);
+        for (int j = 0; j < width; ++j) {
+            int i1 = (i*width+j)*3;
+            int i2 = (i*width+j)*4;
 
-    double currentFrame;
-    double lastFrame;
+            char r = rgbaBuff[++i2];
+            char g = rgbaBuff[++i2];
+            char b = rgbaBuff[++i2];
+            char a = rgbaBuff[++i2];
 
-    struct nk_color ambientColor;
-    float ambientIntensity = 1.0;
-    struct nk_color sunColor;
-};
+            (*data)[i1++] = a;
+            (*data)[i1++] = r;
+            (*data)[i1++] = g;
+        }
+    }
+    png_set_rows(png_ptr, png_info, rows->data());
+    png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
+    png_write_end(png_ptr, png_info);
 
-inline void CopyAndNullTerminate( const std::string& source,
-                                  char* dest,
-                                  size_t dest_size )
-{
-    dest[source.copy(dest, dest_size-1)] = 0;
+
+    png_destroy_write_struct(&png_ptr, nullptr);
+    fclose(fp);
 }
 
-void mainLoop(void* loopArg){
-    struct my_nkc_app* myapp = (struct my_nkc_app*)loopArg;
-    struct nk_context *ctx = nkc_get_ctx(myapp->nkcHandle);
 
-    union nkc_event e = nkc_poll_events(myapp->nkcHandle);
-    if( (e.type == NKC_EWINDOW) && (e.window.param == NKC_EQUIT) ){
-        nkc_stop_main_loop(myapp->nkcHandle);
-    }
-
-    // Render scene
-    myapp->currentFrame = glfwGetTime();
-    double deltaTime = myapp->currentFrame - myapp->lastFrame;
-    myapp->lastFrame = myapp->currentFrame;
-
-    double fps = calcFPS(nullptr, 2.0);
-
-    myapp->processor->processRequests(false);
-    myapp->processor->processResults(10);
-
-    if (windowSizeChanged) {
-        myapp->scene->setScreenSize(canvWidth, canvHeight);
-        windowSizeChanged = false;
-    }
-
-    myapp->scene->draw((deltaTime*1000));
-
-    stopInputs = false;
-    /* Nuklear GUI code */
-    if (nk_begin(ctx, "Show", nk_rect(50, 50, 300, 300),
-                 NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
-        /* fixed widget pixel width */
-//        nk_layout_row_static(ctx, 30, 80, 1);
-//        if (nk_button_label(ctx, "button")) {
-//            /* event handling */
-//            printf("Button pressed\n");
-//        }
-
-        //        //MENU
-//        {
-//            /* menubar */
-//            enum menu_states {MENU_DEFAULT, MENU_WINDOWS};
-//            static nk_size mprog = 60;
-//            static int mslider = 10;
-//            static int mcheck = nk_true;
-//            nk_menubar_begin(ctx);
-//
-//            /* menu #1 */
-//            nk_layout_row_begin(ctx, NK_STATIC, 25, 5);
-//            nk_layout_row_push(ctx, 45);
-//            if (nk_menu_begin_label(ctx, "MENU", NK_TEXT_LEFT, nk_vec2(120, 200)))
-//            {
-//                static size_t prog = 40;
-//                static int slider = 10;
-//                static int check = nk_true;
-//                nk_layout_row_dynamic(ctx, 25, 1);
-////                if (nk_menu_item_label(ctx, "Hide", NK_TEXT_LEFT))
-////                    show_menu = nk_false;
-////                if (nk_menu_item_label(ctx, "About", NK_TEXT_LEFT))
-////                    show_app_about = nk_true;
-//                nk_progress(ctx, &prog, 100, NK_MODIFIABLE);
-//                nk_slider_int(ctx, 0, &slider, 16, 1);
-//                nk_checkbox_label(ctx, "check", &check);
-//                nk_menu_end(ctx);
-//            }
-//            /* menu #2 */
-//            nk_layout_row_push(ctx, 60);
-//            if (nk_menu_begin_label(ctx, "ADVANCED", NK_TEXT_LEFT, nk_vec2(200, 600)))
-//            {
-//                enum menu_state {MENU_NONE,MENU_FILE, MENU_EDIT,MENU_VIEW,MENU_CHART};
-//                static enum menu_state menu_state = MENU_NONE;
-//                enum nk_collapse_states state;
-//
-//                state = (menu_state == MENU_FILE) ? NK_MAXIMIZED: NK_MINIMIZED;
-//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "FILE", &state)) {
-//                    menu_state = MENU_FILE;
-//                    nk_menu_item_label(ctx, "New", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Open", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Save", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Close", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Exit", NK_TEXT_LEFT);
-//                    nk_tree_pop(ctx);
-//                } else menu_state = (menu_state == MENU_FILE) ? MENU_NONE: menu_state;
-//
-//                state = (menu_state == MENU_EDIT) ? NK_MAXIMIZED: NK_MINIMIZED;
-//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "EDIT", &state)) {
-//                    menu_state = MENU_EDIT;
-//                    nk_menu_item_label(ctx, "Copy", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Delete", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Cut", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Paste", NK_TEXT_LEFT);
-//                    nk_tree_pop(ctx);
-//                } else menu_state = (menu_state == MENU_EDIT) ? MENU_NONE: menu_state;
-//
-//                state = (menu_state == MENU_VIEW) ? NK_MAXIMIZED: NK_MINIMIZED;
-//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "VIEW", &state)) {
-//                    menu_state = MENU_VIEW;
-//                    nk_menu_item_label(ctx, "About", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Options", NK_TEXT_LEFT);
-//                    nk_menu_item_label(ctx, "Customize", NK_TEXT_LEFT);
-//                    nk_tree_pop(ctx);
-//                } else menu_state = (menu_state == MENU_VIEW) ? MENU_NONE: menu_state;
-//
-//                state = (menu_state == MENU_CHART) ? NK_MAXIMIZED: NK_MINIMIZED;
-//                if (nk_tree_state_push(ctx, NK_TREE_TAB, "CHART", &state)) {
-//                    size_t i = 0;
-//                    const float values[]={26.0f,13.0f,30.0f,15.0f,25.0f,10.0f,20.0f,40.0f,12.0f,8.0f,22.0f,28.0f};
-//                    menu_state = MENU_CHART;
-//                    nk_layout_row_dynamic(ctx, 150, 1);
-//                    nk_chart_begin(ctx, NK_CHART_COLUMN, NK_LEN(values), 0, 50);
-//                    for (i = 0; i < NK_LEN(values); ++i)
-//                    nk_chart_push(ctx, values[i]);
-//                    nk_chart_end(ctx);
-//                    nk_tree_pop(ctx);
-//                } else menu_state = (menu_state == MENU_CHART) ? MENU_NONE: menu_state;
-//                nk_menu_end(ctx);
-//            }
-//            /* menu widgets */
-//            nk_layout_row_push(ctx, 70);
-//            nk_progress(ctx, &mprog, 100, NK_MODIFIABLE);
-//            nk_slider_int(ctx, 0, &mslider, 16, 1);
-//            nk_checkbox_label(ctx, "check", &mcheck);
-//            nk_menubar_end(ctx);
-//        }
-
-
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
-        {
-            nk_layout_row_push(ctx, 250);
-            std::string areaName = "AreaName: " + testConf->getAreaName();
-            nk_label(ctx, areaName.c_str(), NK_TEXT_LEFT);
-        }
-        nk_layout_row_end(ctx);
-        /* fixed widget window ratio width */
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 1);
-        {
-            nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "Draw M2:", NK_TEXT_LEFT);
-        }
-        nk_layout_row_end(ctx);
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-        {
-            nk_layout_row_push(ctx, 50);
-            if (nk_option_label(ctx, "on", myapp->drawM2AABB)) myapp->drawM2AABB = true;
-            if (nk_option_label(ctx, "off", !myapp->drawM2AABB)) myapp->drawM2AABB = false;
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_push(ctx, 50);
-        nk_label(ctx, "Draw WMO:", NK_TEXT_LEFT);
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-        {
-            nk_layout_row_push(ctx, 50);
-            if (nk_option_label(ctx, "on", myapp->drawWMOAABB)) myapp->drawWMOAABB = true;
-            if (nk_option_label(ctx, "off", !myapp->drawWMOAABB)) myapp->drawWMOAABB = false;
-        }
-        nk_layout_row_end(ctx);
-
-
-        testConf->setRenderM2(myapp->drawM2AABB);
-        testConf->setRenderWMO(myapp->drawWMOAABB);
-
-
-        nk_layout_row_push(ctx, 50);
-        nk_label(ctx, "AmbientColor:", NK_TEXT_LEFT);
-        nk_layout_row_dynamic(ctx, 25, 1);
-        if (nk_combo_begin_color(ctx, myapp->ambientColor, nk_vec2(nk_widget_width(ctx),400))) {
-
-            nk_layout_row_dynamic(ctx, 120, 1);
-            myapp->ambientColor = nk_color_picker(ctx, myapp->ambientColor, NK_RGBA);
-            nk_layout_row_dynamic(ctx, 25, 1);
-            myapp->ambientColor.r = (nk_byte)nk_propertyi(ctx, "#R:", 0, myapp->ambientColor.r, 255, 1,1);
-            myapp->ambientColor.g = (nk_byte)nk_propertyi(ctx, "#G:", 0, myapp->ambientColor.g, 255, 1,1);
-            myapp->ambientColor.b = (nk_byte)nk_propertyi(ctx, "#B:", 0, myapp->ambientColor.b, 255, 1,1);
-            myapp->ambientColor.a = (nk_byte)nk_propertyi(ctx, "#A:", 0, myapp->ambientColor.a, 255, 1,1);
-            nk_combo_end(ctx);
-
-            testConf->setAmbientColor(
-                myapp->ambientColor.r / 255.0f,
-                myapp->ambientColor.g / 255.0f,
-                myapp->ambientColor.b / 255.0f,
-                myapp->ambientColor.a / 255.0f
-            );
-            stopInputs = true;
-        }
-
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-        {
-            nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "Ambient intensity:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 110);
-            if (nk_slider_float(ctx, 0, &(myapp->ambientIntensity), 1.0f, 0.1f)) {
-                stopInputs = true;
-            }
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_push(ctx, 50);
-        nk_label(ctx, "SunColor:", NK_TEXT_LEFT);
-        nk_layout_row_dynamic(ctx, 25, 1);
-        if (nk_combo_begin_color(ctx, myapp->sunColor, nk_vec2(nk_widget_width(ctx),400))) {
-
-            nk_layout_row_dynamic(ctx, 120, 1);
-            myapp->sunColor = nk_color_picker(ctx, myapp->sunColor, NK_RGBA);
-            nk_layout_row_dynamic(ctx, 25, 1);
-            myapp->sunColor.r = (nk_byte)nk_propertyi(ctx, "#R:", 0, myapp->sunColor.r, 255, 1,1);
-            myapp->sunColor.g = (nk_byte)nk_propertyi(ctx, "#G:", 0, myapp->sunColor.g, 255, 1,1);
-            myapp->sunColor.b = (nk_byte)nk_propertyi(ctx, "#B:", 0, myapp->sunColor.b, 255, 1,1);
-            myapp->sunColor.a = (nk_byte)nk_propertyi(ctx, "#A:", 0, myapp->sunColor.a, 255, 1,1);
-            nk_combo_end(ctx);
-
-            testConf->setSunColor(
-                myapp->sunColor.r / 255.0f,
-                myapp->sunColor.g / 255.0f,
-                myapp->sunColor.b / 255.0f,
-                myapp->sunColor.a / 255.0f
-            );
-            stopInputs = true;
-        }
-
-        //Debug batch stuff
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 3);
-        {
-            nk_layout_row_push(ctx, 120);
-            nk_label(ctx, "Wmo batch limiter:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
-
-            char buffer[10];
-            CopyAndNullTerminate(std::to_string(myapp->wmoMinBatch), buffer, 10);
-            nk_layout_row_push(ctx, 50);
-            nk_flags event = nk_edit_string_zero_terminated(ctx,
-                                                            NK_EDIT_BOX |
-                                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                                            buffer, sizeof(buffer),
-                                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->wmoMinBatch = std::stoi(buffer);
-            } catch(...) {
-                myapp->wmoMinBatch = 0;
-            }
-            nk_layout_row_push(ctx, 50);
-            CopyAndNullTerminate(std::to_string(myapp->wmoMaxBatch), buffer, 10);
-            nk_edit_string_zero_terminated(ctx,
-                                           NK_EDIT_BOX |
-                                           NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                           buffer, sizeof(buffer),
-                                           nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->wmoMaxBatch = std::stoi(buffer);
-            } catch(...) {
-                myapp->wmoMaxBatch = 9999;
-            }
-
-            testConf->setWmoMinBatch(myapp->wmoMinBatch);
-            testConf->setWmoMaxBatch(myapp->wmoMaxBatch);
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 3);
-        {
-            nk_layout_row_push(ctx, 120);
-            nk_label(ctx, "M2 batch limiter:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
-
-            char buffer[10];
-            CopyAndNullTerminate(std::to_string(myapp->m2MinBatch), buffer, 10);
-            nk_layout_row_push(ctx, 50);
-            nk_flags event = nk_edit_string_zero_terminated(ctx,
-                                                            NK_EDIT_BOX |
-                                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                                            buffer, sizeof(buffer),
-                                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->m2MinBatch = std::stoi(buffer);
-            } catch(...) {
-                myapp->m2MinBatch = 0;
-            }
-            nk_layout_row_push(ctx, 50);
-            CopyAndNullTerminate(std::to_string(myapp->m2MaxBatch), buffer, 10);
-            nk_edit_string_zero_terminated(ctx,
-                                           NK_EDIT_BOX |
-                                           NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                           buffer, sizeof(buffer),
-                                           nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->m2MaxBatch = std::stoi(buffer);
-            } catch(...) {
-                myapp->m2MaxBatch = 9999;
-            }
-
-            testConf->setM2MinBatch(myapp->m2MinBatch);
-            testConf->setM2MaxBatch(myapp->m2MaxBatch);
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 3);
-        {
-            nk_layout_row_push(ctx, 120);
-            nk_label(ctx, "Particle limiter:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 50);
-
-            char buffer[10];
-            CopyAndNullTerminate(std::to_string(myapp->minParticle), buffer, 10);
-            nk_flags event = nk_edit_string_zero_terminated(ctx,
-                                                            NK_EDIT_BOX |
-                                                            NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                                            buffer, sizeof(buffer),
-                                                            nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->minParticle = std::stoi(buffer);
-            } catch(...) {
-                myapp->minParticle = 0;
-            }
-            CopyAndNullTerminate(std::to_string(myapp->maxParticle), buffer, 10);
-            nk_edit_string_zero_terminated(ctx,
-                                           NK_EDIT_BOX |
-                                           NK_EDIT_AUTO_SELECT, //fcous will auto select all text (NK_EDIT_BOX not sure)
-                                           buffer, sizeof(buffer),
-                                           nk_filter_ascii);//nk_filter_ascii Text Edit accepts text types.
-
-            try {
-                myapp->maxParticle = std::stoi(buffer);
-            } catch(...) {
-                myapp->maxParticle = 9999;
-            }
-
-            testConf->setMinParticle(myapp->minParticle);
-            testConf->setMaxParticle(myapp->maxParticle);
-        }
-        nk_layout_row_end(ctx);
-//
-        /* custom widget pixel width */
-        nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-        {
-            nk_layout_row_push(ctx, 120);
-            nk_label(ctx, "Movement Speed:", NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 110);
-            nk_slider_float(ctx, 0, &(myapp->movementSpeed), 20.0f, 0.1f);
-            testConf->setMovementSpeed(myapp->movementSpeed);
-        }
-        nk_layout_row_end(ctx);
-
-        nk_layout_row_push(ctx, 80);
-        nk_label(ctx, "Coordinates :", NK_TEXT_LEFT);
-
-        nk_layout_row_begin(ctx, NK_STATIC, 15, 3);
-        {
-
-
-            float cameraPos[4];
-            myapp->scene->getCurrentCamera()->getCameraPosition(cameraPos);
-
-            nk_layout_row_push(ctx, 80);
-            nk_label(ctx, std::to_string(cameraPos[0]).c_str(), NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 80);
-            nk_label(ctx, std::to_string(cameraPos[1]).c_str(), NK_TEXT_LEFT);
-            nk_layout_row_push(ctx, 80);
-            nk_label(ctx, std::to_string(cameraPos[2]).c_str(), NK_TEXT_LEFT);
-        }
-        nk_layout_row_end(ctx);
-        nk_layout_row_begin(ctx, NK_STATIC, 15, 2);
-        {
-            nk_layout_row_push(ctx, 50);
-            nk_label(ctx, "FPS :", NK_TEXT_LEFT);
-            nk_label(ctx, std::to_string(fps).c_str(), NK_TEXT_LEFT);
-        }
-
-    }
-    nk_end(ctx);
-    /* End Nuklear GUI */
-
-    nkc_render_gui(myapp->nkcHandle);
-}
-
+double currentFrame;
+double lastFrame;
 
 int main(){
-    struct my_nkc_app myapp;
-    struct nkc nkcx; /* Allocate memory for Nuklear+ handle */
-    myapp.nkcHandle = &nkcx;
-
+//    std::ofstream out("log.txt");
+//    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
+//    std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
+//    std::cerr.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
 
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
+    const bool SET_TERMINATE = std::set_terminate(beforeCrash);
+    //const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
 
-
-//    const char *url = "http://deamon87.github.io/WoWFiles/shattrath.zip\0";
-//    const char *url = "http://deamon87.github.io/WoWFiles/ironforge.zip\0";
-//    const char *filePath = "D:\\shattrath (1).zip\0";
-//    const char *filePath = "D:\\ironforge.zip\0";
-    const char * url = "http://178.165.92.24:40001/get/";
-    const char * urlFileId = "http://178.165.92.24:40001/get_file_id/";
-//    const char *filePath = "d:\\Games\\WoW_3.3.5._uwow.biz_EU\\Data\\\0";
-    const char *filePath = "d:\\Games\\WoWLimitedUS\\World of Warcraft\\\0";
-//     const char *url = "http://localhost:8084/get/";
-
-    testConf = new Config();
-
-//    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+    signal(SIGABRT, &my_function_to_handle_aborts);
 
 
-    if( nkc_init( myapp.nkcHandle, "WowViewer", 640, 480, NKC_WIN_NORMAL) ){
-        printf("Successfull init. Starting 'infinite' main loop...\n");
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-        //    HttpZipRequestProcessor *processor = new HttpZipRequestProcessor(url);
-        //    ZipRequestProcessor *processor = new ZipRequestProcessor(filePath);
-        //    MpqRequestProcessor *processor = new MpqRequestProcessor(filePath);
-        HttpRequestProcessor *processor = new HttpRequestProcessor(url, urlFileId);
-//        CascRequestProcessor *processor = new CascRequestProcessor(filePath);
-        processor->setThreaded(true);
+    glfwInit();
 
-        WoWScene *scene = createWoWScene(testConf, processor, canvWidth, canvHeight);
-        processor->setFileRequester(scene);
-        testConf->setDrawM2BB(false);
-        //testConf->setUsePortalCulling(false);
+//    std::string rendererName = "ogl2";
+    std::string rendererName = "ogl3";
+//    std::string rendererName = "vulkan";
 
-        myapp.scene = scene;
-        myapp.processor = processor;
-        myapp.currentFrame = glfwGetTime();
-        myapp.lastFrame = myapp.currentFrame;
+    //FOR OGL
 
-        glfwSetWindowUserPointer(myapp.nkcHandle->window, scene);
-        glfwSetKeyCallback(myapp.nkcHandle->window, onKey);
-        glfwSetCursorPosCallback( myapp.nkcHandle->window, cursor_position_callback);
-        glfwSetWindowSizeCallback( myapp.nkcHandle->window, window_size_callback);
-        glfwSetWindowSizeLimits( myapp.nkcHandle->window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
-        glfwSetMouseButtonCallback( myapp.nkcHandle->window, mouse_button_callback);
-        glfwSwapInterval(0);
-
-        nkc_set_main_loop(myapp.nkcHandle, mainLoop, (void*)&myapp );
-    } else {
-        printf("Can't init NKC\n");
+    if (rendererName == "ogl3") {
+        glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
+    } else if ( rendererName == "ogl2") {
+        glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2); // We want OpenGL 2.0
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
+    } else if (rendererName == "vulkan"){
+        //For Vulkan
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     }
-    nkc_shutdown( myapp.nkcHandle );
 
-    delete myapp.scene;
+    auto window = glfwCreateWindow(canvWidth, canvHeight, "WowMapViewer", nullptr, nullptr);
+
+#ifdef LINK_VULKAN
+    vkCallInitCallback callback;
+    callback.createSurface = [&](VkInstance vkInstance) {
+        VkSurfaceKHR surface;
+
+        if (glfwCreateWindowSurface(vkInstance, window, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
+
+        return surface;
+    };
+    callback.getRequiredExtensions = [](char** &extensionNames, int &extensionCnt) {
+        uint32_t count;
+        extensionNames = const_cast<char **>(glfwGetRequiredInstanceExtensions(&count));
+        extensionCnt = count;
+    };
+#else
+    void *callback = nullptr;
+#endif
+
+    //For OGL
+    if (rendererName == "ogl3" || rendererName == "ogl2")
+    {
+        glfwMakeContextCurrent(window);
+    }
+
+    //Open Sql storage
+	
+    CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
+
+
+    ApiContainer apiContainer;
+    RequestProcessor *processor = nullptr;
+//    {
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=data&filedataid=";
+//
+//Classics
+//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
+//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
+//        processor = new HttpZipRequestProcessor(url);
+////        processor = new ZipRequestProcessor(filePath);
+////        processor = new MpqRequestProcessor(filePath);
+//        processor = new HttpRequestProcessor(url, urlFileId);
+        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
+////        processor->setThreaded(false);
+////
+        processor->setThreaded(true);
+        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+        processor->setFileRequester(apiContainer.cacheStorage.get());
+
+//    }
+    //Create device
+    auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
+
+    std::shared_ptr<IScene> currentScene = nullptr;
+
+    apiContainer.databaseHandler = sqliteDB;
+    apiContainer.hDevice = hdevice;
+    apiContainer.camera = std::make_shared<FirstPersonCamera>();
+
+    SceneComposer sceneComposer = SceneComposer(&apiContainer);
+
+    //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
+
+    std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(&apiContainer);
+    frontendUI->overrideCascOpened(true);
+    frontendUI->setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
+        CascRequestProcessor *newProcessor = nullptr;
+        std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
+        try {
+            newProcessor = new CascRequestProcessor(cascPath.c_str());
+            newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor);
+            newProcessor->setThreaded(true);
+            newProcessor->setFileRequester(newStorage.get());
+        } catch (...){
+            delete newProcessor;
+            return false;
+        };
+
+        apiContainer.cacheStorage = newStorage;
+        processor = newProcessor;
+
+        return true;
+    });
+    frontendUI->setOpenSceneByfdidCallback([&currentScene, &apiContainer](int mapId, int wdtFileId, float x, float y, float z) {
+//        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
+        if (apiContainer.cacheStorage) {
+//            storage->actuallDropCache();
+        }
+
+        currentScene = std::make_shared<Map>(&apiContainer, mapId, wdtFileId);
+        apiContainer.camera = std::make_shared<FirstPersonCamera>();
+        apiContainer.camera->setCameraPos(x, y, z);
+//        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
+    });
+    frontendUI->setOpenWMOSceneByfdidCallback([&currentScene, &apiContainer](int wmoFDid) {
+        currentScene = std::make_shared<WmoScene>(&apiContainer, wmoFDid);
+        apiContainer.camera->setCameraPos(0, 0, 0);
+    });
+    frontendUI->setOpenM2SceneByfdidCallback([&currentScene, &apiContainer](int m2FDid, std::vector<int> &replacementTextureIds) {
+        currentScene = std::make_shared<M2Scene>(&apiContainer, m2FDid, -1);
+        currentScene->setReplaceTextureArray(replacementTextureIds);
+
+
+        apiContainer.camera = std::make_shared<FirstPersonCamera>();
+        apiContainer.getConfig()->setBCLightHack(false);
+//
+        apiContainer.camera->setCameraPos(0, 0, 0);
+    });
+    frontendUI->setOpenM2SceneByFilenameCallback([&currentScene, &apiContainer](std::string m2FileName, std::vector<int> &replacementTextureIds) {
+        currentScene = std::make_shared<M2Scene>(&apiContainer, m2FileName, -1);
+        currentScene->setReplaceTextureArray(replacementTextureIds);
+
+        apiContainer.camera = std::make_shared<FirstPersonCamera>();
+        apiContainer.camera->setCameraPos(0, 0, 0);
+    });
+
+
+    frontendUI->setUnloadScene([&apiContainer, &currentScene]()->void {
+        if (apiContainer.cacheStorage) {
+            apiContainer.cacheStorage->actuallDropCache();
+        }
+        currentScene = nullptr;
+        //scene->setSceneWithFileDataId(-1, 0, -1);
+    });
+
+    frontendUI->setGetCameraNum([&apiContainer, &currentScene]()-> int {
+        if (currentScene != nullptr) {
+            return currentScene->getCameraNum();
+        }
+
+        return 0;
+    });
+    frontendUI->setSelectNewCamera([&apiContainer, &currentScene](int cameraNum)-> bool {
+        if (currentScene == nullptr) return false;
+
+        auto newCamera = currentScene->createCamera(cameraNum);
+        if (newCamera == nullptr) {
+            apiContainer.camera = std::make_shared<FirstPersonCamera>();
+            return false;
+        }
+
+        apiContainer.camera = newCamera;
+        return true;
+    });
+    frontendUI->setResetAnimation([&currentScene]() -> void {
+        currentScene->resetAnimation();
+    });
+
+    frontendUI->setGetCameraPos([&apiContainer](float &cameraX,float &cameraY,float &cameraZ) -> void {
+        float currentCameraPos[4] = {0,0,0,0};
+        apiContainer.camera->getCameraPosition(&currentCameraPos[0]);
+        cameraX = currentCameraPos[0];
+        cameraY = currentCameraPos[1];
+        cameraZ = currentCameraPos[2];
+    });
+
+    frontendUI->setMakeScreenshotCallback([&apiContainer](std::string fileName, int width, int height) -> void {
+        screenshotWidth  = width;
+        screenshotHeight = height;
+        screenshotFileName = fileName;
+
+        needToMakeScreenshot = true;
+    });
+
+
+    glfwSetWindowUserPointer(window, &apiContainer);
+    glfwSetKeyCallback(window, onKey);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetCursorPosCallback( window, cursor_position_callback);
+    glfwSetWindowSizeCallback( window, window_size_callback);
+    glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    glfwSetMouseButtonCallback( window, mouse_button_callback);
+
+    //This has to be called after setting all callbacks specific to this app.
+    //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
+    //Otherwise keys like backspace, delete etc wont work
+
+    frontendUI->initImgui(window);
+    glfwSwapInterval(0);
+
+//try {
+    while (!glfwWindowShouldClose(window)) {
+        frontendUI->newFrame();
+        stopMouse = frontendUI->getStopMouse();
+        stopKeyboard = frontendUI->getStopKeyboard();
+        glfwPollEvents();
+
+        frontendUI->composeUI();
+
+        // Render scene
+        currentFrame = glfwGetTime(); // seconds
+        double deltaTime = currentFrame - lastFrame;
+
+        if (processor) {
+            if (!processor->getThreaded()) {
+                processor->processRequests(false);
+            }
+            processor->processResults(10);
+        }
+//        if (windowSizeChanged) {
+//            scene->setScreenSize(canvWidth, canvHeight);
+//            windowSizeChanged = false;
+//        }
+
+//        scene->draw((deltaTime*(1000.0f))); //miliseconds
+
+        apiContainer.camera->tick(deltaTime*(1000.0f));
+
+        if (screenshotDS != nullptr) {
+            if (screenshotFrame + 5 <= apiContainer.hDevice->getFrameNumber()) {
+                std::vector<uint8_t> buffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4+1);
+
+                screenshotDS->target->readRGBAPixels( 0, 0, screenshotWidth, screenshotHeight, buffer.data());
+                saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
+
+
+                screenshotDS = nullptr;
+            }
+        }
+
+        HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
+        std::vector<HDrawStage> uiDependecies = {};
+
+        //DrawStage for screenshot
+//        needToMakeScreenshot = true;
+        if (needToMakeScreenshot)
+        {
+            auto drawStage = createSceneDrawStage(sceneScenario, screenshotWidth, screenshotHeight, deltaTime, true, apiContainer,
+                                                  currentScene);
+            if (drawStage != nullptr) {
+                uiDependecies.push_back(drawStage);
+                screenshotDS = drawStage;
+                screenshotFrame = apiContainer.hDevice->getFrameNumber();
+            }
+            needToMakeScreenshot = false;
+        }
+
+        //DrawStage for current frame
+        bool clearOnUi = true;
+        {
+            auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime, false, apiContainer,
+                                                  currentScene);
+            if (drawStage != nullptr) {
+                uiDependecies.push_back(drawStage);
+                clearOnUi = false;
+            }
+        }
+        //DrawStage for UI
+        {
+            ViewPortDimensions dimension = {
+                {0,     0},
+                {canvWidth, canvHeight}
+            };
+            auto clearColor = apiContainer.getConfig()->getClearColor();
+
+            auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
+            auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
+            HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies, true,
+                dimension, clearOnUi, clearColor, nullptr);
+        }
+        //        auto updateResult = scene->cull(camera)->update(camera);
+//        SceneComposer::All({
+//            updateResult->render(camera)->toFB(frameBuffer, viewPortDims),
+//            updateResult->render(cameraDebug)->toFB(frameBuffer, viewPortDims);
+//        }).then([]{
+//            frontendUI->bind("", frameBuffer.getTexture())
+//            SceneComposer.renderToScreen()
+//        });
+
+        sceneComposer.draw(sceneScenario);
+
+        double currentDeltaAfterDraw = (glfwGetTime() - lastFrame)*(1000.0f);
+        lastFrame = currentFrame;
+        if (currentDeltaAfterDraw < 5.0) {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(std::chrono::milliseconds((int)(5.0 - currentDeltaAfterDraw)));
+        }
+
+        if (rendererName == "ogl3" || rendererName == "ogl2") {
+            glfwSwapBuffers(window);
+        }
+    }
+//} catch(const std::exception &e){
+//    std::cerr << e.what() << std::endl;
+//    throw;
+//} catch(...) {
+//    std::cout << "something happened" << std::endl;
+//}
+
+    std::cout << "program ended" << std::endl;
+    //        while (1) {
+    //            mainLoop(&myapp);
+    //        }
 
     return 0;
 }
+
+

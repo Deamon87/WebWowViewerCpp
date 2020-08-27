@@ -9,7 +9,8 @@
 
 class GM2MeshGL33 : public GMeshGL33 {
     friend class GDeviceGL33;
-protected:
+
+public:
     GM2MeshGL33(IDevice &device, const gMeshTemplate &meshTemplate);
 
 public:
@@ -18,7 +19,7 @@ public:
     void setPriorityPlane(int priorityPlane) override;
     void setQuery(const HGOcclusionQuery &query) override;
     void setSortDistance(float distance) override;
-
+    float getSortDistance() override;
 private:
     HGOcclusionQuery m_query = nullptr;
 

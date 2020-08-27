@@ -1,1 +1,5 @@
 .idea
+cache
+cache__
+cache_old
+cmake-build-*

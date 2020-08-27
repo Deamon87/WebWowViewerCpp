@@ -3,27 +3,20 @@
 //
 
 #include <iostream>
+#include "../algorithms/mathHelper.h"
 #include "firstPersonCamera.h"
 #include "math.h"
-#include "../algorithms/mathHelper.h"
 
 void FirstPersonCamera::addForwardDiff(float val) {
     this->depthDiff = this->depthDiff + val;
 }
 
 void FirstPersonCamera::addHorizontalViewDir(float val) {
-    this->ah = ah + val;
+    delta_x += val;
+//    this->ah = ah + val;
 }
 void FirstPersonCamera::addVerticalViewDir(float val) {
-    float av = this->av;
-    av += val;
-
-    if (av < -89.99999f) {
-        av = -89.99999f;
-    } else if (av > 89.99999f) {
-        av = 89.99999f;
-    }
-    this->av = av;
+    delta_y += val;
 }
 
 void FirstPersonCamera::startMovingForward(){
@@ -65,29 +58,41 @@ void FirstPersonCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
 
-mathfu::vec3 FirstPersonCamera::getCameraPosition(){
-    return camera;
-}
-mathfu::vec3 FirstPersonCamera::getCameraLookAt(){
-    return lookAt;
-}
-
 void FirstPersonCamera::setMovementSpeed(float value) {
     this->m_moveSpeed = value;
 };
 
+float springiness = 300; // tweak to taste.
 
 void FirstPersonCamera::tick (animTime_t timeDelta) {
+    double d = 1.0f-exp(log(0.5f)*springiness*timeDelta);
+
+    ah += delta_x*d;
+    av += delta_y*d;
+
+    delta_x = 0;
+    delta_y = 0;
+
+
+    if (av < -89.99999f) {
+        av = -89.99999f;
+    } else if (av > 89.99999f) {
+        av = 89.99999f;
+    }
+
+
     mathfu::vec3 dir = {1, 0, 0};
     mathfu::vec3 up = {0, 0, 1};
     float moveSpeed = m_moveSpeed * 1.0f / 30.0f;
-    mathfu::vec3 camera = this->camera;
+    mathfu::vec3 camera = this->camera.xyz();
 
     double dTime = timeDelta;
 
     float horizontalDiff = (float) (dTime * moveSpeed * (this->MDHorizontalPlus - this->MDHorizontalMinus));
     float depthDiff      = (float) (dTime * moveSpeed * (this->MDDepthPlus - this->MDDepthMinus) + this->depthDiff);
     float verticalDiff   = (float) (dTime * moveSpeed * (this->MDVerticalPlus - this->MDVerticalMinus));
+
+
 
     this->depthDiff = 0;
 
@@ -122,7 +127,6 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
         camera[2] = camera[2] + verticalDiff;
     }
 
-    this->camera = camera;
     this->lookAt = camera + dir;
 
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
@@ -132,14 +136,21 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
         right_move.z, up.z, -dir.z, 0.0f,
         0,0,0,1.0f //translation
     );
-
-
-
     lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
 
+    this->camera = mathfu::vec4(camera, 1.0);//(lookAtMat.Inverse() * mathfu::vec4(0,0,0,1.0)).xyz();
 
     //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
 
+    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
+    interiorSunDir = lookAtMat.Transpose().Inverse() * interiorSunDir;
+    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
+
+    this->interiorDirectLightDir = interiorSunDir;
+
+    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
+    this->upVector = (lookAtRotation * upVector.xyz());
 }
 void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera
@@ -153,4 +164,36 @@ void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
 
     this->av = 0;
     this->ah = 0;
+}
+
+void FirstPersonCamera::zoomInFromTouch(float val) {
+    addForwardDiff(val);
+}
+
+void FirstPersonCamera::zoomInFromMouseScroll(float val) {
+
+}
+
+void FirstPersonCamera::addCameraViewOffset(float x, float y) {
+
+}
+
+HCameraMatrices FirstPersonCamera::getCameraMatrices(float fov,
+                                                     float canvasAspect,
+                                                     float nearPlane,
+                                                     float farPlane) {
+    HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
+    cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(
+        fov,
+        canvasAspect,
+        nearPlane,
+        farPlane);
+    cameraMatrices->lookAtMat = lookAtMat;
+
+    cameraMatrices->cameraPos = camera;
+    cameraMatrices->viewUp = mathfu::vec4(upVector, 0);
+    cameraMatrices->interiorDirectLightDir = this->interiorDirectLightDir;
+
+
+    return cameraMatrices;
 }

@@ -5,8 +5,9 @@
 #ifndef WOWVIEWERLIB_BLPTEXTURE_H
 #define WOWVIEWERLIB_BLPTEXTURE_H
 
-#include "../opengl/header.h"
 #include "../persistance/header/blpFileHeader.h"
+#include "../../include/sharedFile.h"
+#include "../persistance/PersistentFile.h"
 #include <vector>
 enum class TextureFormat {
     None,
@@ -15,6 +16,7 @@ enum class TextureFormat {
     S3TC_RGBA_DXT3,
     S3TC_RGBA_DXT5,
     BGRA,
+    RGBA,
     PalARGB1555DitherFloydSteinberg,
     PalARGB4444DitherFloydSteinberg,
     PalARGB2565DitherFloydSteinberg
@@ -27,10 +29,13 @@ struct mipmapStruct_t {
 };
 typedef std::vector<mipmapStruct_t> MipmapsVector;
 
-class BlpTexture {
+class BlpTexture : public PersistentFile{
 public:
-    void process(std::vector<unsigned char> &blpFile, std::string &fileName);
-    bool getIsLoaded() { return m_isLoaded; };
+    BlpTexture(std::string fileName){};
+    BlpTexture(int fileDataId){};
+
+    std::string getTextureName() { return m_textureName; };
+    void process(HFileContent blpFile, const std::string &fileName) override;
     const MipmapsVector& getMipmapsVector() {
         return m_mipmaps;
     }
@@ -39,10 +44,10 @@ public:
         return m_textureFormat;
     }
 private:
-    bool m_isLoaded = false;
+    std::string m_textureName;
 
     MipmapsVector m_mipmaps;
-    TextureFormat m_textureFormat;
+    TextureFormat m_textureFormat = TextureFormat::None;
 };
 
 

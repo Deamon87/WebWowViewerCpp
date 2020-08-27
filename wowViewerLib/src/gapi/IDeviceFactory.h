@@ -8,9 +8,12 @@
 #include <string>
 #include "interface/IDevice.h"
 
+
+
 class IDeviceFactory {
 public:
-    static IDevice *createDevice(std::string gapiName);
+    static std::shared_ptr<IDevice> createDevice(std::string gapiName, void* data);
+
 };
 
 

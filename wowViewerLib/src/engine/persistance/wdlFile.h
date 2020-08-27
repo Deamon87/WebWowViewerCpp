@@ -9,25 +9,37 @@
 #include <string>
 #include "helper/ChunkFileReader.h"
 #include "header/adtFileHeader.h"
+#include "../../include/sharedFile.h"
+#include "PersistentFile.h"
+#include "header/wdlHeader.h"
 
-class WdlFile {
+
+class WdlFile : public PersistentFile {
 public:
-   WdlFile() {};
+    WdlFile(std::string fileName){};
+    WdlFile(int fileDataId){};
 
-    void process(std::vector<unsigned char> &wdlFile, std::string &fileName);
-    bool getIsLoaded() { return m_loaded; };
+    void process(HFileContent wdlFile, const std::string &fileName) override;
+
 public:
     SMDoodadDef * doodadDefObj = nullptr;
-    int doodadDefObj_len = -1;
+    int doodadDefObj_len = 0;
 
     SMMapObjDefObj1 * mapObjDefObj = nullptr;
-    int mapObjDefObj_len = -1;
+    int mapObjDefObj_len = 0;
 
+    msso_t *m_msso = nullptr;
+    int m_msso_len = -1;
+
+    mssn_t *m_mssn = nullptr;
+    int m_mssn_len = -1;
+
+    mssc_t *m_mssc = nullptr;
+    int m_mssc_len = -1;
 
 private:
-    bool m_loaded = false;
 
-    std::vector<unsigned char> m_wdlFile;
+    HFileContent m_wdlFile;
     static chunkDef<WdlFile> wdlFileTable;
 };
 

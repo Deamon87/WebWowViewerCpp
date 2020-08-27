@@ -22,6 +22,17 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
             },
         },
         {
+            'MAID',
+            {
+                [](WdtFile &file, ChunkData &chunkData) {
+                    debuglog("Entered MAID");
+                    for (int i =0; i < 64*64; i++) {
+                        chunkData.readValue(file.mapFileDataIDs[i]);
+                    }
+                }
+            }
+        },
+        {
             'MWMO',
             {
                 [](WdtFile &file, ChunkData &chunkData) {
@@ -44,10 +55,10 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
     }
 };
 
-void WdtFile::process(std::vector<unsigned char> &wdtFile, std::string &fileName) {
-    m_wdtFile = std::vector<uint8_t>(wdtFile);
-    CChunkFileReader reader(m_wdtFile);
+void WdtFile::process(HFileContent wdtFile, const std::string &fileName) {
+    m_wdtFile = wdtFile;
+    CChunkFileReader reader(*m_wdtFile.get());
     reader.processFile(*this, &WdtFile::wdtFileTable);
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }

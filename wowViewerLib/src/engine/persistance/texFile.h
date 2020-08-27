@@ -8,12 +8,14 @@
 #include <vector>
 #include "helper/ChunkFileReader.h"
 #include "header/texFileHeader.h"
+#include "PersistentFile.h"
 
-class TexFile {
+class TexFile : public PersistentFile {
 public:
-    TexFile() {};
-    void process(std::vector<unsigned char> &wdlFile, std::string &fileName);
-    bool getIsLoaded() { return m_loaded; };
+    TexFile(std::string fileName){};
+    TexFile(int fileDataId){};
+
+    void process(HFileContent fileContent, const std::string &fileName) override;
 public:
     SBlobTexture * entries = nullptr;
     int entriesNum = -1;
@@ -24,8 +26,6 @@ public:
     char * textureData = nullptr;
     int textureData_len = -1;
 private:
-    bool m_loaded = false;
-
     std::vector<unsigned char> m_texFile;
     static chunkDef<TexFile> texFileTable;
 };

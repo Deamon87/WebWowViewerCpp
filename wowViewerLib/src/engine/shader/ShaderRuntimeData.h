@@ -24,8 +24,7 @@ public:
     GLuint getUnfHash(size_t hash);
     GLuint getProgram();
     void setUnf(const std::string &name, GLuint index);
-    void setProgram(GLuint program);
-private:
+    void setProgram(GLuint program);private:
     std::unordered_map<size_t, GLuint> m_uniformMap;
     GLuint m_program;
 };

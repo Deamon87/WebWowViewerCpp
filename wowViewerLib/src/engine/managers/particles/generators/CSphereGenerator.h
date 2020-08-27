@@ -13,6 +13,7 @@ public:
     CSphereGenerator(CRndSeed &seed, M2Particle *particle, bool particlesGoUp) : CParticleGenerator(seed, particle), particlesGoUp(particlesGoUp) {
 
     }
+    ~CSphereGenerator() override {} ;
 
     void CreateParticle(CParticle2 &p, animTime_t delta) override;
 

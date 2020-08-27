@@ -9,6 +9,8 @@
 #include "wmo/wmoObject.h"
 #include <vector>
 
+
+
 class WoWFrameData {
 public:
     animTime_t deltaTime = 0.0;
@@ -31,21 +33,27 @@ public:
     mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
 
     //Frustum culling results
-    ExteriorView exteriorView;
-    std::vector<InteriorView> interiorViews;
+	std::vector<WmoGroupResult> m_currentInteriorGroups = {};
+    std::shared_ptr<WmoObject> m_currentWMO = nullptr;
+    int m_currentWmoGroup = -1;
 
-    std::vector<AdtObject*> adtArray;
-    std::vector<M2Object*> m2Array;
-    std::vector<WmoObject*> wmoArray;
+    int adtAreadId = -1;
+
+    ExteriorView exteriorView = ExteriorView();
+    std::vector<InteriorView> interiorViews = {};
+
+    std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
+	std::vector<std::shared_ptr<M2Object>> m2Array = {};
+    std::vector<std::shared_ptr<WmoObject>> wmoArray = {};
 
     //Occlusion culling params
-    std::vector<HGOcclusionQuery> occlusionMeshes;
+    std::vector<HGOcclusionQuery> renderedThisFrame = {};
 
     //Occlusion culling results
-    int *occlusionResults;
+    int *occlusionResults = 0;
 
     //Rendering params
-    std::vector<HGMesh> renderedThisFrame;
+    std::vector<HGMesh> meshes = {};
 };
 
 #endif //AWEBWOWVIEWERCPP_WOWFRAMEDATA_H

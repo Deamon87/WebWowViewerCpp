@@ -36,17 +36,21 @@ typedef std::shared_ptr<GMeshGL4x> HGLMesh;
 //        return "INVALID_SOURCE_ENUM";
 //    }
 //}
+namespace GDeviceGL4xNS {
+    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+                    const void * /*userParam*/) {
+        assert(severity != 37190);
 
-//void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* /*userParam*/) {
-//    fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-//            source,
-//            type,
-//            id,
-//            severity,
-//            std::string(message, message+length).c_str());
-//    fflush(stdout);
-//}
 
+        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+                source,
+                type,
+                id,
+                severity,
+                std::string(message, message + length).c_str());
+        fflush(stdout);
+    }
+}
 void GDeviceGL4x::bindIndexBuffer(IIndexBuffer *buffer) {
     GIndexBufferGL4x * gBuffer = (GIndexBufferGL4x *) buffer;
     if (gBuffer == nullptr ) {
@@ -130,7 +134,7 @@ void GDeviceGL4x::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
     }
 }
 
-std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderName) {
+std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderName, void *permutationParam) {
     const char * cstr = shaderName.c_str();
     size_t hash = CalculateFNV(cstr);
     if (m_shaderPermutCache.count(hash) > 0) {
@@ -158,16 +162,20 @@ std::shared_ptr<IShaderPermutation> GDeviceGL4x::getShader(std::string shaderNam
 
     GShaderPermutationGL4x * gShaderPermutation = (GShaderPermutationGL4x *)sharedPtr.get();
 
-    gShaderPermutation->compileShader();
+    gShaderPermutation->compileShader("", "");
     m_shaderPermutCache[hash] = sharedPtr;
 
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[0], 0);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[1], 1);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[2], 2);
 
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[0], 3+0);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[1], 3+1);
-    glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[2], 3+2);
+    for (int i = 0; i < 3; i++) {
+        if (gShaderPermutation->m_uboVertexBlockIndex[i] > -1) {
+            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboVertexBlockIndex[i], i);
+        }
+        if (gShaderPermutation->m_uboFragmentBlockIndex[i] > -1) {
+            glUniformBlockBinding(gShaderPermutation->m_programBuffer, gShaderPermutation->m_uboFragmentBlockIndex[i], 3 + i);
+        }
+    }
+
+
 
     return m_shaderPermutCache[hash];
 }
@@ -211,7 +219,7 @@ void GDeviceGL4x::drawMeshes(std::vector<HGMesh> &meshes) {
 //    m_uniformUploadFence->setGpuFence();
 }
 
-void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
+void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
     std::vector<HGLMesh> &meshes = (std::vector<HGLMesh> &) iMeshes;
@@ -236,16 +244,14 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
         }
     }
 
-    std::sort( buffers.begin(), buffers.end(), [](const GUniformBufferGL4x *a, const GUniformBufferGL4x * b) -> bool {
-        return a->m_creationIndex > b->m_creationIndex;
-    });
+    std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
 
     //2. Create buffers and update them
     int currentSize = 0;
     int buffersIndex = 0;
 
-    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[(getFrameNumber() + 1) & 3].m_uniformBuffersForUpload;
+    std::vector<HGUniformBuffer> *m_unfiormBuffersForUpload = &m_UBOFrames[getUpdateFrameNumber()].m_uniformBuffersForUpload;
     HGUniformBuffer bufferForUpload = m_unfiormBuffersForUpload->at(buffersIndex);
 
     for (const auto &buffer : buffers) {
@@ -311,7 +317,7 @@ void GDeviceGL4x::updateBuffers(std::vector<HGMesh> &iMeshes) {
     }
 }
 
-void GDeviceGL4x::drawMesh(HGMesh &hIMesh) {
+void GDeviceGL4x::drawMesh(HGMesh hIMesh) {
     GMeshGL4x * hmesh = (GMeshGL4x *) hIMesh.get();
     if (hmesh->m_end <= 0) return;
 
@@ -411,7 +417,8 @@ void GDeviceGL4x::drawMesh(HGMesh &hIMesh) {
 
     if (m_lastBlendMode != hmesh->m_blendMode) {
         BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
-        if (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable ) {
+        if ((m_lastBlendMode == EGxBlendEnum::GxBlend_UNDEFINED) ||
+            (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
             if (selectedBlendMode.blendModeEnable) {
                 glEnable(GL_BLEND);
             } else {
@@ -600,7 +607,7 @@ GDeviceGL4x::GDeviceGL4x() {
     HGIndexBuffer vertexIndexBuffer = this->createIndexBuffer();
     vertexIndexBuffer->uploadData((void *) &vertexElements[0], sizeof(vertexElements));
 
-    GBufferBinding bufferBinding = {0, 3, GL_FLOAT, false, 0, 0 };
+    GBufferBinding bufferBinding = {0, 3, GBindingType::GFLOAT, false, 0, 0 };
 
     GVertexBufferBinding binding={};
     binding.bindings.push_back(bufferBinding);
@@ -625,8 +632,8 @@ GDeviceGL4x::GDeviceGL4x() {
 
 //    glEnable(GL_DEBUG_OUTPUT);
 //    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
-//    glDebugMessageCallback(debug_func, NULL);
+//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_TRUE);
+//    glDebugMessageCallback(GDeviceGL4xNS::debug_func, NULL);
 //
 
     m_uniformUploadFence = createFence();
@@ -696,9 +703,16 @@ void GDeviceGL4x::reset() {
     m_shaderPermutation = nullptr;
 }
 
-int GDeviceGL4x::getFrameNumber() {
-    return m_frameNumber;
+unsigned int GDeviceGL4x::getUpdateFrameNumber() {
+    return (m_frameNumber + 1) & 3;
 }
+unsigned int GDeviceGL4x::getCullingFrameNumber() {
+    return (m_frameNumber + 3) & 3;
+}
+unsigned int GDeviceGL4x::getDrawFrameNumber() {
+    return (m_frameNumber) & 3;
+}
+
 
 void GDeviceGL4x::increaseFrameNumber() {
     m_frameNumber++;
@@ -717,5 +731,26 @@ HGPUFence GDeviceGL4x::createFence() {
     hGPUFence.reset(new GPUFenceGL44());
 
     return hGPUFence;
+}
+
+void GDeviceGL4x::clearScreen() {
+#ifndef WITH_GLESv2
+    glClearDepthf(1.0f);
+#else
+    glClearDepthf(1.0f);
+#endif
+    glDisable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+//    glClearColor(0.0, 0.0, 0.0, 0.0);
+//    glClearColor(0.25, 0.06, 0.015, 0.0);
+    glClearColor(0.117647, 0.207843, 0.392157, 1);
+    //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
+//    glClearColor(0,0,0,1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    glDisable(GL_SCISSOR_TEST);
 }
 

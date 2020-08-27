@@ -6,8 +6,8 @@
 GM2ParticleShaderPermutationGL4x::GM2ParticleShaderPermutationGL4x(std::string &shaderName, IDevice *device) : GShaderPermutationGL4x(shaderName,
                                                                                                           device) {}
 
-void GM2ParticleShaderPermutationGL4x::compileShader() {
-    GShaderPermutationGL4x::compileShader();
+void GM2ParticleShaderPermutationGL4x::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
+    GShaderPermutationGL4x::compileShader("", "");
 
     //Init newly created shader
     glUseProgram(this->m_programBuffer);

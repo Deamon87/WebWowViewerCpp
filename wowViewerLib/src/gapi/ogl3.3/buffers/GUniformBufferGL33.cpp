@@ -2,44 +2,38 @@
 // Created by Deamon on 6/30/2018.
 //
 #include <memory.h>
+#include <iostream>
 #include "../../../engine/opengl/header.h"
 #include "GUniformBufferGL33.h"
 #include "../../interface/IDevice.h"
 
-GUniformBufferGL33::GUniformBufferGL33(IDevice &device, size_t size) : m_device(device){
+GUniformBufferGL33::GUniformBufferGL33(IDevice &device, size_t size) : m_device(dynamic_cast<GDeviceGL33 &>(device)){
     m_size = size;
-    pIdentifierBuffer = new GLuint;
-    pFrameOneContent = new char[size];
-    pFrameTwoContent = new char[size];
-//    createBuffer();
+    createBuffer();
 }
 
 GUniformBufferGL33::~GUniformBufferGL33() {
     if (m_buffCreated) {
         destroyBuffer();
     }
-    delete (GLuint *)pIdentifierBuffer;
-    delete (char *)pFrameOneContent;
-    delete (char *)pFrameTwoContent;
 }
 
 void GUniformBufferGL33::createBuffer() {
-    glGenBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    glGenBuffers(1, (GLuint *) &glBuffId);
     m_buffCreated = true;
-
 }
-
 
 void GUniformBufferGL33::destroyBuffer() {
-    glDeleteBuffers(1, (GLuint *)this->pIdentifierBuffer);
+    const GLuint indent = glBuffId;
+    m_device.addDeallocationRecord([indent]() -> void {
+        glDeleteBuffers(1, &indent);
+    });
 }
-void GUniformBufferGL33::bind(int bindingPoint) { //Should be called only by GDevice
-    if (m_buffCreated && bindingPoint == -1) {
-        glBindBuffer(GL_UNIFORM_BUFFER, *(GLuint *) this->pIdentifierBuffer);
-    } else if (m_buffCreated) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer);
+void GUniformBufferGL33::bind(int bindingPoint, int offset, int length) { //Should be called only by GDevice
+    if (bindingPoint == 0 && offset == 0 && length == 0) {
+        glBindBuffer(GL_UNIFORM_BUFFER, glBuffId);
     } else {
-        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, *(GLuint *) this->pIdentifierBuffer, m_offset, m_size);
+        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, glBuffId, offset, length);
     }
 }
 void GUniformBufferGL33::unbind() {
@@ -47,57 +41,19 @@ void GUniformBufferGL33::unbind() {
 }
 
 void GUniformBufferGL33::uploadData(void * data, int length) {
-    m_device.bindVertexUniformBuffer(this, -1);
+    m_device.bindUniformBuffer(this, 0, 0, 0);
 
     assert(m_buffCreated);
+#ifdef __EMSCRIPTEN__
+    assert(length > 0 && length <= 65536);
+#endif
 
-    if (!m_dataUploaded || length > m_size) {
-        glBufferData(GL_UNIFORM_BUFFER, length, data, GL_STREAM_DRAW);
-
+    if (!m_dataUploaded || m_size < length) {
+        glBufferData(GL_UNIFORM_BUFFER, length, data, GL_DYNAMIC_DRAW);
         m_size = (size_t) length;
     } else {
-        glBufferData(GL_UNIFORM_BUFFER, length, nullptr, GL_STREAM_DRAW);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, length, data);
-
-//        void * mapped = glMapBufferRange(GL_UNIFORM_BUFFER, 0, length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-//        memcpy(mapped, data, length);
-//        glUnmapBuffer(GL_UNIFORM_BUFFER);
-
     }
 
     m_dataUploaded = true;
-    m_needsUpdate = false;
 }
-
-void GUniformBufferGL33::save(bool initialSave) {
-//    if (memcmp(pPreviousContent, pContent, m_size) != 0) {
-        //1. Copy new to prev
-        if (initialSave) {
-            memcpy(getPointerForUpload(), getPointerForModification(), m_size);
-        }
-        m_needsUpdate = true;
-
-//        2. Update UBO
-        void * data = getPointerForModification();
-        if (m_buffCreated) {
-            this->uploadData(data, m_size);
-        }
-//    }
-}
-
-void *GUniformBufferGL33::getPointerForUpload() {
-//    if (!m_device.getIsEvenFrame()) {
-//        return pFrameTwoContent;
-//    } else {
-        return pFrameOneContent;
-//    }
-}
-
-void *GUniformBufferGL33::getPointerForModification() {
-//    if (m_device.getIsEvenFrame()) {
-//        return pFrameTwoContent;
-//    } else {
-        return pFrameOneContent;
-//    }
-}
-

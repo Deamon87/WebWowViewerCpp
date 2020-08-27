@@ -8,5 +8,9 @@ class IVertexBuffer {
 public:
     virtual ~IVertexBuffer() {};
     virtual void uploadData(void *, int length) = 0;
+
+    virtual void bind() = 0;
+    virtual void unbind() = 0;
+
 };
 #endif //AWEBWOWVIEWERCPP_IVERTEXBUFFER_H

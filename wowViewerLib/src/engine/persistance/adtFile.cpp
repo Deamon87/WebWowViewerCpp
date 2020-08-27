@@ -32,6 +32,26 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             }
         },
         {
+            'MDID',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MDID");
+                    file.mdid_len = chunkData.chunkLen / 4;
+                    chunkData.readValues(file.mdid, file.mdid_len);
+                }
+            }
+        },
+        {
+            'MHID',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MDID");
+                    file.mhid_len = chunkData.chunkLen / 4;
+                    chunkData.readValues(file.mhid, file.mhid_len);
+                }
+            }
+        },
+        {
             'MTEX',
             {
                 [](AdtFile& file, ChunkData& chunkData){
@@ -55,6 +75,9 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                     debuglog("Entered MTXP");
                     file.mtxp_len = chunkData.chunkLen / sizeof(SMTextureParams);
                     chunkData.readValues(file.mtxp, file.mtxp_len);
+//                    for (int i = 0; i < file.mtxp_len; i++) {
+//                        std::cout << "file.mtxp[" << i << "].padding = " << file.mtxp[i].padding << std::endl;
+//                    }
                 }
             }
         },
@@ -169,12 +192,31 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             }
         },
         {
+            'MH2O',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MH2O");
+
+                    chunkData.readValue(file.mH2OHeader);
+                    //Read the remaining into blob and parse in ADTObject
+                    file.mH2OblobOffset = chunkData.bytesRead;
+                    int byteSize = chunkData.chunkLen - chunkData.bytesRead;
+                    file.mH2OBlob_len = byteSize;
+                    chunkData.readValues(file.mH2OBlob, byteSize);
+
+                }
+            }
+        },
+        {
             'MCNK',
             {
                 [](AdtFile& file, ChunkData& chunkData){
                     debuglog("Entered MCNK");
 
                     file.mcnkRead++;
+                    if (file.mcnkRead >= 256) {
+                        std::cout << "ALARM!"<< std::endl;
+                    }
 
                     SMChunk &chunk = file.mapTile[file.mcnkRead];
                     chunkDef<AdtFile> *def = &AdtFile::adtFileTable.subChunks['MCNK'];
@@ -323,6 +365,22 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                                 chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcal);
                             }
                         }
+                    },
+                    {
+                        'MCLQ',
+                        {
+                            [](AdtFile& file, ChunkData& chunkData){
+                                debuglog("Entered MCQL");
+                                std::cout << "Entered MCQL" << std::endl;
+
+
+                                file.mcnkStructs[file.mcnkRead].mcqlLen = chunkData.chunkLen;
+                                chunkData.readValues(
+                                    file.mcnkStructs[file.mcnkRead].mcql,
+                                    file.mcnkStructs[file.mcnkRead].mcqlLen
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -385,18 +443,16 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
     }
 };
 
-
-
-std::vector<uint8_t> AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i) {
+void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, std::vector<uint8_t> &currentLayer) {
     mcnkStruct_t &mcnkObj = mcnkStructs[i];
     uint8_t* alphaArray = mcnkObj.mcal;
-    SMLayer* layers = mcnkObj.mcly;
+    PointerChecker<SMLayer> &layers = mcnkObj.mcly;
 
-    std::vector<uint8_t> currentLayer = std::vector<uint8_t>((64*4) * 64, 0);
-    if (layers == nullptr || alphaArray == nullptr) return currentLayer;
+    currentLayer = std::vector<uint8_t>((64*4) * 64, 0);
+    if (layers == nullptr || alphaArray == nullptr) return;
 
 //    for (int j = 0; j < mapTile[i].nLayers; j++ ) {
-    for (int j = 0; j < mcnkStructs[i].mclyCnt; j++ ) {
+    for (int j = 0; j <mcnkObj.mclyCnt; j++ ) {
         int alphaOffs = layers[j].offsetInMCAL;
         int offO = j;
         int readForThisLayer = 0;
@@ -462,7 +518,6 @@ std::vector<uint8_t> AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i
 //            }
 //        }
     }
-    return currentLayer;
 }
 
 static bool isHoleLowRes(int hole, int i, int j) {
@@ -481,12 +536,25 @@ static bool isHoleHighRes(uint64_t hole, int i, int j) {
 //    return ((hole >> ((7-j) * 8  + i)) & 1) > 0;
 }
 
+const int stripLenght = 9;
+const int vertCountPerMCNK= 9 * 9 + 8 * 8;
+static uint8_t squareIndsStrip[stripLenght] = {17, 0, 9, 1, 18, 18, 9, 17, 17};
+const int triangleLength = 12;
+//static uint8_t squareIndsTriangle[triangleLength] = {17, 9, 0, 0, 9, 1, 1, 9, 18, 18, 9, 17};
+static uint8_t squareIndsTriangle[triangleLength] = {9, 0, 17, 9, 1, 0, 9, 18, 1, 9, 17, 18};
+
+
+inline void addSquare(int offset, int x, int y, std::vector<int16_t> &strips) {
+    for (int k = 0; k < triangleLength; k++) {
+        strips.push_back(offset + squareIndsTriangle[k] + 17 * y + x);
+    }
+}
+
 void AdtFile::createTriangleStrip() {
     if (mcnkRead < 0) return;
 
-    const int stripLenght = 9;
-    const int vertCountPerMCNK= 9 * 9 + 8 * 8;
-    static uint8_t squareIndsStrip[stripLenght] = {17, 0, 9, 1, 18, 18, 9, 17, 17};
+//    strips = std::vector<int16_t>();
+//    stripOffsets = std::vector<int>();
 
     for (int i = 0; i <= mcnkRead; i++) {
         SMChunk &mcnkObj = mapTile[i];
@@ -505,13 +573,16 @@ void AdtFile::createTriangleStrip() {
                 if (!isHole) {
                     //There are 8 squares in width and 8 square in height.
                     //Each square is 4 triangles
-                    if (!first) {
-                        strips.push_back((i * vertCountPerMCNK) + squareIndsStrip[0] + 17 * y + x);
-                    }
-                    first = false;
-                    for (int k = 0; k < stripLenght; k++) {
-                        strips.push_back((i* vertCountPerMCNK) + squareIndsStrip[k] + 17 * y + x);
-                    }
+//
+//
+//                    if (!first) {
+//                        strips.push_back((i * vertCountPerMCNK) + squareIndsStrip[0] + 17 * y + x);
+//                    }
+//                    first = false;
+//                    for (int k = 0; k < stripLenght; k++) {
+//                        strips.push_back((i* vertCountPerMCNK) + squareIndsStrip[k] + 17 * y + x);
+//                    }
+                    addSquare(i * vertCountPerMCNK, x, y, strips);
                 }
             }
         }
@@ -519,12 +590,12 @@ void AdtFile::createTriangleStrip() {
     stripOffsets.push_back(strips.size());
 }
 
-void AdtFile::process(std::vector<unsigned char> &adtFile, std::string &fileName) {
-    m_adtFile = std::vector<uint8_t>(adtFile);
-    CChunkFileReader reader(m_adtFile);
+void AdtFile::process(HFileContent adtFile, const std::string &fileName) {
+    m_adtFile = adtFile;
+    CChunkFileReader reader(*m_adtFile.get());
     reader.processFile(*this, &AdtFile::adtFileTable);
 
     createTriangleStrip();
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }

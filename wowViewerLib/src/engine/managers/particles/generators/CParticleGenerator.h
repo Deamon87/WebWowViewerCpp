@@ -18,6 +18,7 @@ public:
         this->seed = seed;
         this->m_particleData = particle;
     }
+    virtual ~CParticleGenerator() {};
 
 public:
     virtual float GetEmissionRate();
@@ -36,7 +37,7 @@ public:
 
     float GetMaxLifeSpan();
 
-    float GetLifeSpan(float m);
+    float GetLifeSpan(int16_t state);
     mathfu::vec3 GetGravity();
 
     float CalcVelocity( );

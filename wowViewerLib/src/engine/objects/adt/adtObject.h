@@ -5,37 +5,45 @@
 #ifndef WEBWOWVIEWERCPP_ADTOBJECT_H
 #define WEBWOWVIEWERCPP_ADTOBJECT_H
 
-class IWoWInnerApi;
 class AdtObject;
 class M2Object;
 
+#include <array>
 #include <vector>
 #include <set>
 
 #include "../../persistance/header/adtFileHeader.h"
-#include "../../opengl/header.h"
-#include "../../wowInnerApi.h"
 
 #include "../../persistance/adtFile.h"
 #include "../../persistance/wdtFile.h"
 #include "../m2/m2Object.h"
 #include "../wmo/wmoObject.h"
 #include "../iMapApi.h"
+#include "../ViewsObjects.h"
+
 
 class AdtObject {
 public:
-    AdtObject(IWoWInnerApi *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
+    AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
+    AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
+    ~AdtObject() = default;
+
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
+        m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
     }
 
-
-    void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
+    void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
-    void update();
+
+    void update(animTime_t deltaTime);
+    void uploadGeneratorBuffers(ADTObjRenderRes &adtRes);
     void doPostLoad();
 
+    int getAreaId(int mcnk_x, int mcnk_y);
+
     bool checkFrustumCulling(
+            ADTObjRenderRes &adtFrustRes,
             mathfu::vec4 &cameraPos,
             int adt_glob_x,
             int adt_glob_y,
@@ -43,17 +51,24 @@ public:
             std::vector<mathfu::vec3> &frustumPoints,
             std::vector<mathfu::vec3> &hullLines,
             mathfu::mat4 &lookAtMat4,
-            std::vector<M2Object*> &m2ObjectsCandidates,
-            std::vector<WmoObject*> &wmoCandidates);
+            std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+            std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 
     bool
-    checkReferences(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
+    checkReferences(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
                     mathfu::mat4 &lookAtMat4,
                     int lodLevel,
-                    std::vector<M2Object *> &m2ObjectsCandidates, std::vector<WmoObject *> &wmoCandidates,
+                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates, std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
                     int x, int y, int x_len, int y_len);
 
+    animTime_t getLastTimeOfUpdate() {
+        return m_lastTimeOfUpdateOrRefCheck;
+    }
 private:
+    animTime_t m_lastTimeOfUpdateOrRefCheck = 0;
+    animTime_t m_lastTimeOfUpdate = 0;
+    animTime_t m_lastDeltaTime = 0;
+
     struct LodCommand {
         int index;
         int length;
@@ -64,24 +79,18 @@ private:
     void createMeshes();
     void loadAlphaTextures();
 
-    IWoWInnerApi *m_api;
+    ApiContainer *m_api;
     IMapApi *m_mapApi;
-    HWdtFile m_wdtFile;
+    HWdtFile m_wdtFile= nullptr;
 
-    HAdtFile m_adtFile;
-    HAdtFile m_adtFileTex;
-    HAdtFile m_adtFileObj;
-    HAdtFile m_adtFileObjLod;
-    HAdtFile m_adtFileLod;
+    HAdtFile m_adtFile = nullptr;
+    HAdtFile m_adtFileTex = nullptr;
+    HAdtFile m_adtFileObj = nullptr;
+    HAdtFile m_adtFileObjLod = nullptr;
+    HAdtFile m_adtFileLod = nullptr;
 
     int alphaTexturesLoaded = 0;
     bool m_loaded = false;
-
-    uint32_t indexOffset = 0;
-	uint32_t heightOffset = 0;
-	uint32_t normalOffset = 0;
-	uint32_t colorOffset = 0;
-	uint32_t lightingOffset = 0;
 
     int mostDetailedLod = 0; // 0 = most detailed LOD, 5 = least detailed lod
     int leastDetiledLod = 0;
@@ -93,7 +102,7 @@ private:
     std::vector<LodCommand> lodCommands;
 
     HGVertexBuffer combinedVbo ;
-    HGIndexBuffer stripVBO ;
+    HGIndexBuffer stripIBO ;
     HGVertexBufferBindings adtVertexBindings;
 
     HGVertexBuffer heightVboLod;
@@ -101,7 +110,7 @@ private:
 
     HGVertexBufferBindings lodVertexBindings;
 
-    HGUniformBuffer adtWideBlockPS;
+    HGUniformBufferChunk adtWideBlockPS;
 
 
 
@@ -110,10 +119,11 @@ private:
     HBlpTexture lodDiffuseTexture  = nullptr;
     HBlpTexture lodNormalTexture  = nullptr;
 
-    std::vector<HGMesh> adtMeshes;
+    std::vector<HGMesh> adtMeshes = {};
     std::vector<HGMesh> adtLodMeshes;
 
     std::vector<CAaBox> tileAabb;
+    std::vector<CAaBox> waterTileAabb;
     std::vector<int> globIndexX;
     std::vector<int> globIndexY;
 
@@ -123,34 +133,48 @@ private:
 
     std::string m_adtFileTemplate;
 
-    bool drawChunk[256] = {};
-    bool checkRefs[256] = {};
+    HGVertexBuffer waterVBO;
+    HGIndexBuffer waterIBO;
+    HGVertexBufferBindings vertexWaterBufferBindings;
+    HGMesh waterMesh = nullptr;
 
-    struct {
-        std::vector<M2Object *> m2Objects;
-        std::vector<WmoObject *> wmoObjects;
-    } objectLods[2];
+    struct lodLevels {
+        std::vector<std::shared_ptr<M2Object>> m2Objects;
+        std::vector<std::shared_ptr<WmoObject>> wmoObjects;
+    };
+    std::array<lodLevels, 2> objectLods;
 
     HGTexture getAdtTexture(int textureId);
     HGTexture getAdtHeightTexture(int textureId);
     HGTexture getAdtSpecularTexture(int textureId);
 
+    struct AnimTextures {
+        std::array<mathfu::mat4, 4> animTexture;
+    };
+    struct AnimTrans {
+        std::array<mathfu::vec2, 4> transVectors;
+    };
+    std::vector<AnimTextures> texturesPerMCNK;
+
+    std::vector<AnimTrans> animationTranslationPerMCNK;
+
     void calcBoundingBoxes();
     void loadM2s();
     void loadWmos();
+    void loadWater();
 
-    bool checkNonLodChunkCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
+    bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                                  std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines, int x,
                                  int y, int x_len, int y_len);
 
     bool
-    iterateQuadTree(mathfu::vec4 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len,
+    iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len,
                     int curentLod, int lastFoundLod,
-                    const MLND *quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
+                    const PointerChecker<MLND> &quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
                     mathfu::mat4 &lookAtMat4,
-                    std::vector<M2Object *> &m2ObjectsCandidates,
-                    std::vector<WmoObject *> &wmoCandidates);
+                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                    std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 };
 
 

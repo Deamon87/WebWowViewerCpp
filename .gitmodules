@@ -13,15 +13,9 @@
 [submodule "3rdparty/zlib"]
 	path = 3rdparty/zlib
 	url = https://github.com/madler/zlib
-[submodule "3rdparty/curl"]
-	path = 3rdparty/curl
-	url = https://github.com/curl/curl
 [submodule "3rdparty/libzip"]
 	path = 3rdparty/libzip
 	url = https://github.com/nih-at/libzip.git
-[submodule "cpr"]
-	path = cpr
-	url = https://github.com/whoshuu/cpr.git
 [submodule "3rdparty/PolyM"]
 	path = 3rdparty/PolyM
 	url = https://github.com/khuttun/PolyM
@@ -31,15 +25,22 @@
 [submodule "3rdparty/casclib"]
 	path = 3rdparty/casclib
 	url = https://github.com/ladislav-zezula/CascLib.git
-[submodule "3rdparty/nuklear_cross"]
-	path = 3rdparty/nuklear_cross
-	url = https://github.com/DeXP/nuklear_cross.git
-[submodule "wowViewerLib/3rdparty/RTree"]
-	path = wowViewerLib/3rdparty/RTree
-	url = https://github.com/nushoin/RTree
-[submodule "wowViewerLib/ecst"]
-	path = wowViewerLib/ecst
-	url = https://github.com/SuperV1234/ecst
-[submodule "wowViewerLib/extlibs/vrm_cmake"]
-	path = wowViewerLib/extlibs/vrm_cmake
-	url = https://github.com/SuperV1234/vrm_cmake.git
+[submodule "wowViewerLib/shaders/3rdparty/glsllang"]
+	path = wowViewerLib/shaders/3rdparty/glsllang
+	url = https://github.com/KhronosGroup/glslang.git
+	branch = SPIR-V_1.5
+[submodule "wowViewerLib/shaders/3rdparty/spirv-cross"]
+	path = wowViewerLib/shaders/3rdparty/spirv-cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "3rdparty/SQLiteCpp"]
+	path = 3rdparty/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp.git
+[submodule "3rdparty/libpng"]
+	path = 3rdparty/libpng
+	url = https://github.com/glennrp/libpng.git
+[submodule "3rdparty/cpprestsdk"]
+	path = 3rdparty/cpprestsdk
+	url = https://github.com/microsoft/cpprestsdk.git
+[submodule "3rdparty/cppnetlib"]
+	path = 3rdparty/cppnetlib
+	url = https://github.com/cpp-netlib/cpp-netlib.git

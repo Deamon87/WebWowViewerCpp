@@ -12,6 +12,8 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                     'MVER', {
                         [](WmoMainGeom &object, ChunkData &chunkData) {
                             debuglog("Entered MVER");
+                            int version;
+                            chunkData.readValue(version);
                         }
                     }
                 },
@@ -50,6 +52,15 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                             debuglog("Entered MOGI");
                             object.groupsLen = chunkData.chunkLen / sizeof(SMOGroupInfo);
                             chunkData.readValues(object.groups, object.groupsLen);
+                        }
+                    }
+                },
+                {
+                    'MODI', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MODI");
+                            object.doodadFileDataIdsLen = chunkData.chunkLen / sizeof(int);
+                            chunkData.readValues(object.doodadFileDataIds, object.doodadFileDataIdsLen);
                         }
                     }
                 },
@@ -150,22 +161,37 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                         }
                     }
                 },
+                {
+                    'MOSB', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MOSB");
+                            object.skyBoxM2FileNameLen = chunkData.chunkLen;
+                            chunkData.readValues(object.skyBoxM2FileName, object.skyBoxM2FileNameLen);
+                        }
+                    }
+
+                },
+                {
+                    'MOSI', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MOSI");
+                            chunkData.readValue(object.skyboxM2FileId);
+                        }
+                    }
+
+                },
+
         }
 };
 
 
 
-void WmoMainGeom::process(std::vector<unsigned char> &wmoMainFile, std::string &fileName) {
+void WmoMainGeom::process(HFileContent wmoMainFile, const std::string &fileName) {
     m_wmoMainFile = wmoMainFile;
 
-    CChunkFileReader reader(m_wmoMainFile);
+    CChunkFileReader reader(*m_wmoMainFile.get());
     reader.processFile(*this, &WmoMainGeom::wmoMainTable);
 
-    m_loaded = true;
+    fsStatus = FileStatus::FSLoaded;
 }
-
-bool WmoMainGeom::getIsLoaded() {
-    return m_loaded;
-}
-
 

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="project.js"></script>
+</head>
+<body>
+    <script>
+        window.createscene = function () {
+            Module["canvas"] = document.getElementById("wowcanvas");
+
+            // Create a pointer using the 'Glue' method and the String value
+
+            var url = "http://178.165.92.24:40001/get/";
+            var urlFileId = "http://178.165.92.24:40001/get_file_id/";
+            // var name = "world/wmo/brokenisles/dalaran2.wmo";
+
+            var ptrUrl  = allocate(intArrayFromString(url), 'i8', ALLOC_NORMAL);
+            var ptrUrlFileDataId  = allocate(intArrayFromString(urlFileId), 'i8', ALLOC_NORMAL);
+            var ptrName = allocate(intArrayFromString(name), 'i8', ALLOC_NORMAL);
+
+            Module._createWebJsScene(640, 640, ptrUrl, ptrUrlFileDataId);
+            //First parameter :
+            //0 = M2
+            //1 = WMO
+            //Third parameter for M2 - cameraNum. For UI screens setting it to 0 will make camera data be taken from
+            //camera array. Otherwise should be -1.
+            //
+            Module._setScene(1, ptrName, -1);
+
+            Module._setSceneFileDataId(1, 113992, -1); //same, but with fileDataId as second param
+
+            _free(ptrUrl);
+            _free(ptrUrlFileDataId);
+            _free(ptrName);
+
+            var lastTimeStamp = new Date().getTime();
+
+            var renderfunc = function(){
+                var currentTimeStamp = new Date().getTime();
+                var timeDelta = 0;
+                if (lastTimeStamp !== undefined) {
+                    timeDelta = currentTimeStamp - lastTimeStamp;
+                }
+                lastTimeStamp = currentTimeStamp;
+
+
+                Module._gameloop(timeDelta / 1000.0);
+                //scope.$digest();
+
+                window.requestAnimationFrame(renderfunc);
+            };
+
+            window.requestAnimationFrame(renderfunc);
+        }
+    </script>
+<canvas id="wowcanvas" height="640" width="640"></canvas>
+</body>
+</html>

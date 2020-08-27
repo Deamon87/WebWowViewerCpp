@@ -15,9 +15,10 @@ class CascRequestProcessor : public RequestProcessor {
 public:
     CascRequestProcessor(const char *path) : m_cascDir(path){
         if (CascOpenStorage(path, 0xFFFFFFFF, &this->m_storage)) {
-            std::cout << "Opened CascStorage at "<< path;
+            std::cout << "Opened CascStorage at "<< path << std::endl;
         } else {
-            std::cout << "Could not open CascStorage at "<< path;
+            std::cout << "Could not open CascStorage at "<< path << std::endl;
+            throw  "Could not open CascStorage";
         }
     }
 private:
@@ -25,10 +26,10 @@ private:
 
     void* m_storage;
 protected:
-    void processFileRequest(std::string &fileName) override;
+    void processFileRequest(std::string &fileName, CacheHolderType holderType) override;
 
 public:
-    void requestFile(const char* fileName) override;
+    void requestFile(const char* fileName, CacheHolderType holderType) override;
 };
 
 

@@ -15,7 +15,7 @@ public:
 protected:
     explicit GM2ShaderPermutationGL4x(std::string &shaderName, IDevice *device);
 
-    void compileShader() override;
+    void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
 
 };
 

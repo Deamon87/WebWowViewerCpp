@@ -15,18 +15,36 @@ GBlpTextureGL33::GBlpTextureGL33(IDevice &device, HBlpTexture texture, bool xWra
 }
 
 GBlpTextureGL33::~GBlpTextureGL33() {
-
+//    std::cout << "error!" << std::endl;
 }
 
 void GBlpTextureGL33::bind() {
-    glBindTexture(GL_TEXTURE_2D, *(GLuint *) pIdentifierBuffer);
+#if OPENGL_DGB_MESSAGE
+    std::string debugMess = "Binding Texture "+m_texture->getTextureName();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, (GLsizei)((uint64_t)this&0xfffffff), GLsizei(debugMess.size()), debugMess.c_str());
+
+        glDebugMessageInsert( GL_DEBUG_SOURCE_APPLICATION,
+                              GL_DEBUG_TYPE_MARKER, 1,
+                              GL_DEBUG_SEVERITY_LOW,
+                              GLsizei(debugMess.size()),
+                              debugMess.c_str()
+        );
+#endif
+
+    glBindTexture(GL_TEXTURE_2D, textureIdentifier);
+#if OPENGL_DGB_MESSAGE
+    glPopDebugGroup();
+#endif
 }
 
 void GBlpTextureGL33::unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+static int texturesUploaded = 0;
 void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+//    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
+
     GLuint textureGPUFormat = 0;
 //     if (ext) {
     switch (textureFormat) {
@@ -57,9 +75,13 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
 //    }
 
     /* S3TC is not supported on mobile platforms */
-    bool useDXT1Decoding = false;
-    bool useDXT3Decoding = false;
-    bool useDXT5Decoding = false;
+    bool useDXT1Decoding = !m_device.getIsCompressedTexturesSupported();
+    bool useDXT3Decoding = !m_device.getIsCompressedTexturesSupported();
+    bool useDXT5Decoding = !m_device.getIsCompressedTexturesSupported();
+
+    useDXT1Decoding = true; // Note: manual DXT1 decompression loses alpha channel for S3TC_RGBA_DXT1 textures
+//    useDXT3Decoding = true;
+//    useDXT5Decoding = true;
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
@@ -73,7 +95,8 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
 
             for (int k = 0; k < mipmaps.size(); k++) {
                 if (useDXT1Decoding) {
-                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult);
+                    bool hasAlpha = (textureFormat == TextureFormat::S3TC_RGBA_DXT1);
+                    DecompressBC1( mipmaps[k].width, mipmaps[k].height, &mipmaps[k].texture[0], decodedResult, hasAlpha);
                     glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0,
                                  GL_RGBA, GL_UNSIGNED_BYTE, decodedResult);
                 } else {
@@ -140,6 +163,13 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
                              &mipmaps[k].texture[0]);
             }
             break;
+        case TextureFormat::None:
+        case TextureFormat::RGBA:
+        case TextureFormat::PalARGB1555DitherFloydSteinberg:
+        case TextureFormat::PalARGB4444DitherFloydSteinberg:
+        case TextureFormat::PalARGB2565DitherFloydSteinberg:
+            std::cout << "Detected unhandled texture format" << std::endl;
+        break;
     }
 #ifndef WITH_GLESv2
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) mipmaps.size()-1);
@@ -158,27 +188,32 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
     }
     bool anisFilterExt = true;
 #ifndef WITH_GLESv2
-    if (anisFilterExt) {
-        float aniso = 0.0f;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+    if (m_device.getIsAnisFiltrationSupported()) {
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_device.getAnisLevel());
     }
-
+#ifndef __EMSCRIPTEN__
     glGenerateMipmap(GL_TEXTURE_2D);
+#endif
 #endif
 
 
 }
 
 bool GBlpTextureGL33::getIsLoaded() {
-    if (!m_loaded && m_texture != nullptr && m_texture->getIsLoaded()) {
-        m_device.bindTexture(this, 0);
-        this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
-        m_device.bindTexture(nullptr, 0);
-
-        m_loaded = true;
-    }
     return m_loaded;
+}
+
+bool GBlpTextureGL33::postLoad() {
+    if (m_loaded) return false;
+    if (m_texture == nullptr) return false;
+    if (m_texture->getStatus() != FileStatus::FSLoaded) return false;
+
+    m_device.bindTexture(this, 0);
+    this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
+    m_device.bindTexture(nullptr, 0);
+
+    m_loaded = true;
+    return true;
 }
 
 

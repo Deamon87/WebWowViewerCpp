@@ -6,20 +6,11 @@
 #define AWEBWOWVIEWERCPP_IUNIFORMBUFFER_H
 
 class IUniformBuffer {
+private:
+    void bind(int bindingPoint, int offset, int length); //Should be called only by GDevice
+
 public:
     virtual ~IUniformBuffer() {};
-
-    template<typename T>
-    T &getObject() {
-//        assert((sizeof(T) < this->getSize()));
-        return *(T *) getPointerForModification();
-    }
-
-//    virtual int getSize() = 0;
-    virtual void *getPointerForModification() = 0;
-    virtual void *getPointerForUpload() = 0;
-
-    virtual void save(bool initialSave = false) = 0;
     virtual void createBuffer() = 0;
 };
 

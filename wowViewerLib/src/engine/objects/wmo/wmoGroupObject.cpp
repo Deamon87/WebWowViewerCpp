@@ -4,9 +4,9 @@
 
 #include "wmoGroupObject.h"
 #include "../../algorithms/mathHelper.h"
-#include "../../shader/ShaderDefinitions.h"
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/UniformBufferStructures.h"
+#include "../../persistance/header/wmoFileHeader.h"
 #include <algorithm>
 
 /*
@@ -288,17 +288,20 @@ static const struct {
 };
 
 
-void WmoGroupObject::doPostLoad() {
-    if (!this->m_loaded) {
-        if (m_geom != nullptr && m_geom->isLoaded() && m_wmoApi->isLoaded()) {
-            this->postLoad();
-            this->m_loaded = true;
-            this->m_loading = false;
-            return;
-        }
+bool WmoGroupObject::doPostLoad() {
+    if (this->m_loaded) return false;
 
+    if (!this->m_loading) {
         this->startLoading();
+        return false;
     }
+
+    if ((m_geom == nullptr) || (m_geom->getStatus() != FileStatus::FSLoaded) || (!m_wmoApi->isLoaded())) return false;
+
+    this->postLoad();
+    this->m_loaded = true;
+    this->m_loading = false;
+    return true;
 }
 
 void WmoGroupObject::update() {
@@ -308,41 +311,9 @@ void WmoGroupObject::update() {
         this->updateWorldGroupBBWithM2();
         m_recalcBoundries = false;
     }
+}
 
-    int minBatch = m_api->getConfig()->getWmoMinBatch();
-    int maxBatch = std::min(m_api->getConfig()->getWmoMaxBatch(), m_geom->batchesLen);
-    MOGP *mogp = m_geom->mogp;
-
-    for (int j = minBatch; j < maxBatch; j++) {
-        SMOBatch &renderBatch = m_geom->batches[j];
-        mathfu::vec4 ambientColor;
-        bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
-        bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));
-
-        if (isBatchC) {
-            ambientColor = m_api->getGlobalAmbientColor();
-        } else {
-            ambientColor = this->getAmbientColor();
-        }
-
-        HGUniformBuffer buffer = this->m_meshArray[j]->getFragmentUniformBuffer(2);
-
-        wmoMeshWideBlockPS &blockPS = buffer->getObject<wmoMeshWideBlockPS>();
-        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-        blockPS.uSunDir_FogStart = mathfu::vec4_packed(
-            mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-        blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(
-            mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
-        blockPS.uAmbientLight = ambientColor;
-        if (isBatchA) {
-            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);
-        } else {
-            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0, 0, 0, 0);
-        }
-        blockPS.FogColor_AlphaTest = mathfu::vec4_packed(
-            mathfu::vec4(m_api->getGlobalFogColor().xyz(), blockPS.FogColor_AlphaTest.w));
-        buffer->save();
-    }
+void WmoGroupObject::uploadGeneratorBuffers()  {
 }
 
 void WmoGroupObject::drawDebugLights() {
@@ -399,9 +370,9 @@ void WmoGroupObject::startLoading() {
         this->m_loading = true;
 
         if (useFileId) {
-            m_geom = m_api->getWmoGroupGeomCache()->getFileId(m_modelFileId);
+            m_geom = m_api->cacheStorage->getWmoGroupGeomCache()->getFileId(m_modelFileId);
         } else {
-            m_geom = m_api->getWmoGroupGeomCache()->get(m_fileName);
+            m_geom = m_api->cacheStorage->getWmoGroupGeomCache()->get(m_fileName);
         }
         m_geom->setMOHD(this->m_wmoApi->getWmoHeader());
         m_geom->setAttenuateFunction(this->m_wmoApi->getAttenFunction());
@@ -410,38 +381,60 @@ void WmoGroupObject::startLoading() {
 
 void WmoGroupObject::postLoad() {
 
-    this->m_dontUseLocalLightingForM2 =
-        ((m_geom->mogp->flags.EXTERIOR_LIT) > 0) || ((m_geom->mogp->flags.EXTERIOR) > 0);
+    this->m_useLocalLightingForM2 =
+        ((m_geom->mogp->flags.INTERIOR) > 0) && ((m_geom->mogp->flags.EXTERIOR_LIT) == 0);
     m_localGroupBorder = m_geom->mogp->boundingBox;
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
     this->loadDoodads();
     this->createMeshes();
+    this->createWaterMeshes();
 }
 
 void WmoGroupObject::createMeshes() {
     Config *config = m_api->getConfig();
-    HGShaderPermutation shaderPermutation = m_api->getDevice()->getShader("wmoShader");
 
     int minBatch = config->getWmoMinBatch();
     int maxBatch = std::min(config->getWmoMaxBatch(), m_geom->batchesLen);
 
-    SMOMaterial *materials = m_wmoApi->getMaterials();
+    //In Taanant Jungle in Draenor some WMO has no indicies and crash :D
+    if (m_geom->indicesLen == 0) {
+        return;
+    }
 
-    IDevice *device = m_api->getDevice();
+    PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
+
+    std::shared_ptr<IDevice> device = m_api->hDevice;
     HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
 
-    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(wmoModelWideBlockVS));
+    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockVS));
 
-    wmoModelWideBlockVS &blockVS = vertexModelWideUniformBuffer->getObject<wmoModelWideBlockVS>();
-    blockVS.uPlacementMat = *m_modelMatrix;
-    vertexModelWideUniformBuffer->save(true);
+    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
+        WMO::modelWideBlockVS &blockVS = self->getObject<WMO::modelWideBlockVS>();
+        blockVS.uPlacementMat = *m_modelMatrix;
+    });
+
+    fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockPS));
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
+        WMO::modelWideBlockPS &blockPS = self->getObject<WMO::modelWideBlockPS>();
+        blockPS.intLight.uInteriorAmbientColorAndApplyInteriorLight =
+            mathfu::vec4_packed(
+                mathfu::vec4(
+                    this->getAmbientColor().xyz(),
+                    ((this->m_geom->mogp->flags.INTERIOR > 0) && (!this->m_geom->mogp->flags.EXTERIOR_LIT)) ? 1.0f : 0.0f
+                )
+            );
+        blockPS.intLight.uInteriorDirectColorAndApplyExteriorLight =
+            mathfu::vec4_packed(
+                mathfu::vec4(
+                    0, 0, 0, 1.0f
+                )
+            );
+    });
 
     MOGP *mogp = m_geom->mogp;
 
     for (int j = minBatch; j < maxBatch; j++) {
         SMOBatch &renderBatch = m_geom->batches[j];
-
-        gMeshTemplate meshTemplate(binding, shaderPermutation);
 
         int texIndex;
         if (renderBatch.flag_use_material_id_large) {
@@ -459,18 +452,22 @@ void WmoGroupObject::createMeshes() {
         int pixelShader = wmoMaterialShader[shaderId].pixelShader;
         int vertexShader = wmoMaterialShader[shaderId].vertexShader;
 
+        WMOShaderCacheRecord cacheRecord{};
+        cacheRecord.vertexShader = vertexShader;
+        cacheRecord.pixelShader  = pixelShader;
+        cacheRecord.unlit = true;
+        cacheRecord.alphaTestOn = true;
+        cacheRecord.unFogged = true;
+        cacheRecord.unShadowed = true;
+
+        HGShaderPermutation shaderPermutation = device->getShader("wmoShader", &cacheRecord);
+
+        gMeshTemplate meshTemplate(binding, shaderPermutation);
+
         bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
         bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));
 
-        mathfu::vec4 ambientColor;
-        if (isBatchC) {
-            ambientColor = m_api->getGlobalAmbientColor();
-        } else {
-            ambientColor = this->getAmbientColor();
-        }
-
         auto blendMode = material.blendMode;
-        float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
         meshTemplate.meshType = MeshType::eWmoMesh;
         meshTemplate.depthWrite = blendMode <= 1;
         meshTemplate.depthCulling = true;
@@ -480,7 +477,7 @@ void WmoGroupObject::createMeshes() {
 
         meshTemplate.start = renderBatch.first_index * 2;
         meshTemplate.end = renderBatch.num_indices;
-        meshTemplate.element = GL_TRIANGLES;
+        meshTemplate.element = DrawElementMode::TRIANGLES;
 
         bool isSecondTextSpec = material.shader == 8;
 
@@ -488,58 +485,184 @@ void WmoGroupObject::createMeshes() {
         HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, isSecondTextSpec);
         HGTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
 
+        meshTemplate.texture.resize(3);
         meshTemplate.texture[0] = texture1;
         meshTemplate.texture[1] = texture2;
         meshTemplate.texture[2] = texture3;
 
         meshTemplate.textureCount = 3;
 
-        meshTemplate.vertexBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.vertexBuffers[1] = vertexModelWideUniformBuffer;
-        meshTemplate.vertexBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(wmoMeshWideBlockVS));
+        meshTemplate.ubo[0] = nullptr;
+        meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
+        meshTemplate.ubo[2] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockVS));
 
-        meshTemplate.fragmentBuffers[0] = m_api->getSceneWideUniformBuffer();
-        meshTemplate.fragmentBuffers[1] = nullptr;
-        meshTemplate.fragmentBuffers[2] = m_api->getDevice()->createUniformBuffer(sizeof(wmoMeshWideBlockPS));
-
-
-        //Fill buffers
-        wmoMeshWideBlockVS &blockVS = meshTemplate.vertexBuffers[2]->getObject<wmoMeshWideBlockVS>();
-        blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
-        blockVS.VertexShader = vertexShader;
-        meshTemplate.vertexBuffers[2]->save(true);
-
-        wmoMeshWideBlockPS &blockPS = meshTemplate.fragmentBuffers[2]->getObject<wmoMeshWideBlockPS>();
-        blockPS.uViewUp = mathfu::vec4_packed(mathfu::vec4(m_api->getViewUp(), 0.0));;
-        blockPS.uSunDir_FogStart = mathfu::vec4_packed(
-            mathfu::vec4(m_api->getGlobalSunDir(), m_api->getGlobalFogStart()));
-        blockPS.uSunColor_uFogEnd = mathfu::vec4_packed(
-            mathfu::vec4(m_api->getGlobalSunColor().xyz(), m_api->getGlobalFogEnd()));
-        blockPS.uAmbientLight = ambientColor;
-        if (isBatchA) {
-            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(m_api->getGlobalAmbientColor().xyz(), 1.0);
-        } else {
-            blockPS.uAmbientLight2AndIsBatchA = mathfu::vec4(0, 0, 0, 0);
-        }
-
-        blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
-        blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
-        blockPS.PixelShader = pixelShader;
-        blockPS.FogColor_AlphaTest = mathfu::vec4_packed(mathfu::vec4(m_api->getGlobalFogColor().xyz(), alphaTest));
-
-        meshTemplate.fragmentBuffers[2]->save(true);
+        meshTemplate.ubo[3] = fragmentModelWideUniformBuffer;
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockPS));
 
         //Make mesh
-        HGMesh hmesh = m_api->getDevice()->createMesh(meshTemplate);
+        HGMesh hmesh = device->createMesh(meshTemplate);
         this->m_meshArray.push_back(hmesh);
+
+        hmesh->getUniformBuffer(2)->setUpdateHandler([this, &material, vertexShader](IUniformBufferChunk *self){
+            WMO::meshWideBlockVS &blockVS = self->getObject<WMO::meshWideBlockVS>();
+            blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+            blockVS.VertexShader = vertexShader;
+        });
+
+        hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self) {
+//            mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
+            mathfu::vec4 localambientColor = this->getAmbientColor();
+            mathfu::vec3 directLight = mathfu::vec3(0,0,0);
+
+            mathfu::vec4 ambientColor = localambientColor;
+            //TODO: check ironforge entrance. There must be something wrong with it
+            if (isBatchC || isBatchA || (this->m_geom->mogp->flags.EXTERIOR > 0)) {
+//                ambientColor = globalAmbientColor;
+//                directLight = m_api->getGlobalSunColor().xyz();
+            }
+            float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
+
+            auto &blockPS = self->getObject<WMO::meshWideBlockPS>();
+//            blockPS.uFogStartAndFogEndAndIsBatchA = mathfu::vec4_packed(
+//                mathfu::vec4(
+//                    m_api->getConfig()->getFogStart(),
+//                    m_api->getConfig()->getFogEnd(),
+//                    isBatchA ? 1.0 : 0.0,
+//                    0.0));
+
+            blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+            blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
+            blockPS.PixelShader = pixelShader;
+
+            blockPS.uFogColor_AlphaTest = mathfu::vec4_packed(
+                mathfu::vec4(0,0,0, alphaTest));
+        });
     }
+}
+
+
+int WmoGroupObject::to_wmo_liquid (int x) {
+    liquid_basic_types const basic (static_cast<liquid_basic_types>(x & liquid_basic_types_MASK));
+    switch (basic)
+    {
+        case liquid_basic_types_water:
+            return (m_geom->mogp->flags.is_not_water_but_ocean) ? LIQUID_WMO_Ocean : LIQUID_WMO_Water;
+        case liquid_basic_types_ocean:
+            return LIQUID_WMO_Ocean;
+        case liquid_basic_types_magma:
+            return LIQUID_WMO_Magma;
+        case liquid_basic_types_slime:
+            return LIQUID_WMO_Slime;
+    }
+
+    return -1;
+}
+
+void WmoGroupObject::setLiquidType() {
+
+    if ( getWmoApi()->getWmoHeader()->flags.flag_use_liquid_type_dbc_id)
+    {
+        if ( m_geom->mogp->liquidType < LIQUID_FIRST_NONBASIC_LIQUID_TYPE )
+        {
+            this->liquid_type = to_wmo_liquid (m_geom->mogp->liquidType - 1);
+        }
+        else
+        {
+            this->liquid_type = m_geom->mogp->liquidType;
+        }
+    }
+    else
+    {
+        if ( m_geom->mogp->liquidType == LIQUID_Green_Lava )
+        {
+            this->liquid_type = 0;
+        }
+        else
+        {
+            int const liquidType (m_geom->mogp->liquidType + 1);
+            int const tmp (m_geom->mogp->liquidType);
+            if ( m_geom->mogp->liquidType < LIQUID_END_BASIC_LIQUIDS )
+            {
+                this->liquid_type = to_wmo_liquid (m_geom->mogp->liquidType);
+            }
+            else
+            {
+                this->liquid_type = m_geom->mogp->liquidType + 1;
+            }
+            assert (!liquidType || !(m_geom->mogp->flags.LIQUIDSURFACE));
+        }
+    }
+}
+
+void WmoGroupObject::createWaterMeshes() {
+
+    std::shared_ptr<IDevice> device = m_api->hDevice;
+    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(*device);
+    if (binding == nullptr)
+        return;
+
+    //Get Liquid with new method
+    setLiquidType();
+    //
+    auto &materials = m_wmoApi->getMaterials();
+    const SMOMaterial &material = materials[m_geom->m_mliq->materialId];
+    assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
+    auto shaderId = material.shader;
+    if (shaderId >= MAX_WMO_SHADERS) {
+        shaderId = 0;
+    }
+
+    HGShaderPermutation shaderPermutation = device->getShader("waterShader", nullptr);
+
+    gMeshTemplate meshTemplate(binding, shaderPermutation);
+
+    auto blendMode = material.blendMode;
+    float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
+    meshTemplate.meshType = MeshType::eWmoMesh;
+    meshTemplate.depthWrite = false;
+    meshTemplate.depthCulling = true;
+    meshTemplate.backFaceCulling = false;
+
+    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+
+    HGTexture texture1 = m_wmoApi->getTexture(material.diffuseNameIndex, false);
+    HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, false);
+    HGTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
+
+    meshTemplate.textureCount = 0;
+
+    meshTemplate.texture[0] = texture1;
+    meshTemplate.texture[1] = texture2;
+    meshTemplate.texture[2] = texture3;
+
+    meshTemplate.ubo[0] = nullptr;//m_api->getSceneWideUniformBuffer();
+    meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
+    meshTemplate.ubo[2] = nullptr;
+
+    meshTemplate.ubo[3] = nullptr;
+    meshTemplate.ubo[4] = device->createUniformBufferChunk(16);
+
+    meshTemplate.start = 0;
+    meshTemplate.end = m_geom->waterIndexSize;
+    meshTemplate.element = DrawElementMode::TRIANGLES;
+
+    auto l_liquidType = liquid_type;
+    meshTemplate.ubo[4]->setUpdateHandler([l_liquidType](IUniformBufferChunk* self) -> void {
+        int (&waterType)[4] = self->getObject<int[4]>();
+
+        waterType[0] = l_liquidType;
+    });
+
+
+    HGMesh hmesh = device->createMesh(meshTemplate);
+    m_waterMeshArray.push_back(hmesh);
 }
 
 void WmoGroupObject::loadDoodads() {
     if (this->m_geom->doodadRefsLen <= 0) return;
     if (m_wmoApi == nullptr) return;
 
-    m_doodads = std::vector<M2Object *>(this->m_geom->doodadRefsLen, nullptr);
+    m_doodads = std::vector<std::shared_ptr<M2Object>>(this->m_geom->doodadRefsLen, nullptr);
 
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
@@ -584,7 +707,7 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 //    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
 //
     for (int j = 0; j < this->m_doodads.size(); j++) {
-        M2Object *m2Object = this->m_doodads[j];
+        std::shared_ptr<M2Object> m2Object = this->m_doodads[j];
         if (m2Object == nullptr || !m2Object->getGetIsLoaded()) continue; //corrupted :(
 
         CAaBox m2AAbb = m2Object->getAABB();
@@ -630,8 +753,8 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
 }
 
 bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
-                                          const SMOPortal *portalInfos,
-                                          const SMOPortalRef *portalRels) {
+                                          const PointerChecker<SMOPortal> &portalInfos,
+                                          const PointerChecker<SMOPortalRef> &portalRels) {
     int moprIndex = this->m_geom->mogp->moprIndex;
     int numItems = this->m_geom->mogp->moprCount;
 
@@ -639,17 +762,17 @@ bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
 
     bool insidePortals = true;
     for (int j = moprIndex; j < moprIndex + numItems; j++) {
-        const SMOPortalRef *relation = &portalRels[j];
-        const SMOPortal *portalInfo = &portalInfos[relation->portal_index];
+        const SMOPortalRef &relation = portalRels[j];
+        const SMOPortal &portalInfo = portalInfos[relation.portal_index];
 
-        int nextGroup = relation->group_index;
-        C4Plane plane = portalInfo->plane;
+        int nextGroup = relation.group_index;
+        C4Plane plane = portalInfo.plane;
 
-        CAaBox &aaBox = portalGeoms[relation->portal_index].aaBox;
+        CAaBox &aaBox = portalGeoms[relation.portal_index].aaBox;
         float distanceToBB = MathHelper::distanceFromAABBToPoint(aaBox, point);
 
         float dotResult = mathfu::vec3::DotProduct(mathfu::vec4(plane.planeVector).xyz(), point) + plane.planeVector.w;
-        bool isInsidePortalThis = (relation->side < 0) ? (dotResult <= 0) : (dotResult >= 0);
+        bool isInsidePortalThis = (relation.side < 0) ? (dotResult <= 0) : (dotResult >= 0);
         if (!isInsidePortalThis && (abs(dotResult) < 0.01) && (abs(distanceToBB) < 0.01)) {
             insidePortals = false;
             break;
@@ -659,7 +782,7 @@ bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
     return insidePortals;
 }
 
-void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList) {
+void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP_NODE> &nodes, std::vector<int> &bspLeafIdList) {
     if (nodeId == -1) return;
 
     if ((nodes[nodeId].planeType & 0x4)) {
@@ -697,10 +820,48 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, s
     }
 }
 
+void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList) {
+    if (nodeId == -1) return;
+
+    if ((nodes[nodeId].planeType & 0x4)) {
+        bspLeafIdList.push_back(nodeId);
+    } else if (nodes[nodeId].planeType == 0) {
+        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}, bbox, {});
+        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}, bbox, {});
+
+        if (leftSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
+        }
+        if (rightSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
+        }
+    } else if (nodes[nodeId].planeType == 1) {
+        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}, bbox, {});
+        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}, bbox, {});
+
+        if (leftSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
+        }
+        if (rightSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
+        }
+    } else if (nodes[nodeId].planeType == 2) {
+        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}, bbox, {});
+        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}, bbox, {});
+
+        if (leftSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
+        }
+        if (rightSide) {
+            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
+        }
+    }
+}
+
 bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
     mathfu::vec4 &cameraLocal,
-    SMOPortal *portalInfos,
-    SMOPortalRef *portalRels,
+    PointerChecker<SMOPortal> &portalInfos,
+    PointerChecker<SMOPortalRef> &portalRels,
     std::vector<int> &bspLeafList,
     M2Range &result) {
 
@@ -774,14 +935,17 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
     return true;
 }
 
-void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos, const SMOPortalRef *portalRels,
-                                                    const std::vector<int> &bspLeafList, mathfu::vec4 &cameraLocal,
-                                                    float &topZ, float &bottomZ,
-                                                    mathfu::vec4 &colorUnderneath,
-                                                    bool checkPortals) {
+void WmoGroupObject::getBottomVertexesFromBspResult(
+            const PointerChecker<SMOPortal> &portalInfos,
+            const PointerChecker<SMOPortalRef> &portalRels,
+            const std::vector<int> &bspLeafList, mathfu::vec4 &cameraLocal,
+            float &topZ, float &bottomZ,
+            mathfu::vec4 &colorUnderneath,
+            bool checkPortals) {
+
     topZ = -999999;
     bottomZ = 999999;
-    t_BSP_NODE *nodes = m_geom->bsp_nodes;
+    auto &nodes = m_geom->bsp_nodes;
     float minPositiveDistanceToCamera = 99999;
 
     //1. Loop through bsp results
@@ -843,7 +1007,7 @@ void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos
                 if ((distanceToCamera > 0) && (distanceToCamera < minPositiveDistanceToCamera)) {
                     bottomZ = z;
                     if (m_geom->colorArray != nullptr) {
-                        CImVector *colorArr = m_geom->colorArray;
+                        auto &colorArr = m_geom->colorArray;
                         colorUnderneath = mathfu::vec4(
                             bary[0] * colorArr[vertexInd1].r + bary[1] * colorArr[vertexInd1].r +
                             bary[2] * colorArr[vertexInd1].r,
@@ -866,9 +1030,9 @@ void WmoGroupObject::getBottomVertexesFromBspResult(const SMOPortal *portalInfos
 
 bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                                         mathfu::vec4 &cameraLocal,
-                                        C3Vector *portalVerticles,
-                                        SMOPortal *portalInfos,
-                                        SMOPortalRef *portalRels,
+                                        PointerChecker<C3Vector> &portalVerticles,
+                                        PointerChecker<SMOPortal> &portalInfos,
+                                        PointerChecker<SMOPortalRef> &portalRels,
                                         std::vector<WmoGroupResult> &candidateGroups) {
 
     CAaBox &bbArray = this->m_volumeWorldGroupBorder;
@@ -924,7 +1088,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
     mathfu::vec3 cameraBBMax(cameraLocal[0] + epsilon, cameraLocal[1] + epsilon, groupInfo->boundingBox.max.z);
 
     int nodeId = 0;
-    t_BSP_NODE *nodes = this->m_geom->bsp_nodes;
+    auto &nodes = this->m_geom->bsp_nodes;
     std::vector<int> bspLeafList;
 
     M2Range topBottom;
@@ -945,19 +1109,19 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
         //5. The object(camera) is inside WMO group. Get the actual nodeId
         while (nodeId >= 0 && ((nodes[nodeId].planeType & 0x4) == 0)) {
             int prevNodeId = nodeId;
-            if ((nodes[nodeId].planeType == 0)) {
+            if (nodes[nodeId].planeType == 0) {
                 if (cameraLocal[0] < nodes[nodeId].fDist) {
                     nodeId = nodes[nodeId].children[0];
                 } else {
                     nodeId = nodes[nodeId].children[1];
                 }
-            } else if ((nodes[nodeId].planeType == 1)) {
+            } else if (nodes[nodeId].planeType == 1) {
                 if (cameraLocal[1] < nodes[nodeId].fDist) {
                     nodeId = nodes[nodeId].children[0];
                 } else {
                     nodeId = nodes[nodeId].children[1];
                 }
-            } else if ((nodes[nodeId].planeType == 2)) {
+            } else if (nodes[nodeId].planeType == 2) {
                 if (cameraLocal[2] < nodes[nodeId].fDist) {
                     nodeId = nodes[nodeId].children[0];
                 } else {
@@ -982,7 +1146,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 }
 
 
-void WmoGroupObject::checkDoodads(std::vector<M2Object *> &wmoM2Candidates) {
+void WmoGroupObject::checkDoodads(std::vector<std::shared_ptr<M2Object>> &wmoM2Candidates) {
     if (!m_loaded) return;
 
     mathfu::vec4 ambientColor = getAmbientColor();
@@ -990,7 +1154,7 @@ void WmoGroupObject::checkDoodads(std::vector<M2Object *> &wmoM2Candidates) {
 
     for (int i = 0; i < this->m_doodads.size(); i++) {
         if (this->m_doodads[i] != nullptr) {
-            if (this->m_dontUseLocalLightingForM2) {
+            if (this->getDontUseLocalLightingForM2()) {
                 this->m_doodads[i]->setUseLocalLighting(false);
             } else {
                 this->m_doodads[i]->setUseLocalLighting(true);
@@ -1016,14 +1180,19 @@ void WmoGroupObject::setModelFileId(int fileId) {
 }
 
 void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
-    for (int i = 0; i < this->m_meshArray.size(); i++) {
-        this->m_meshArray[i]->setRenderOrder(renderOrder);
-        renderedThisFrame.push_back(this->m_meshArray[i]);
+    if (!m_loaded) return;
+    for (auto &i : this->m_meshArray) {
+        i->setRenderOrder(renderOrder);
+        renderedThisFrame.push_back(i);
+    }
+
+    for (auto &i : this->m_waterMeshArray) {
+        i->setRenderOrder(renderOrder);
+        renderedThisFrame.push_back(i);
     }
 }
 
 mathfu::vec4 WmoGroupObject::getAmbientColor() {
-
     if (!m_geom->mogp->flags.EXTERIOR && !m_geom->mogp->flags.EXTERIOR_LIT) {
         mathfu::vec4 ambColor;
         ambColor = mathfu::vec4(
@@ -1043,51 +1212,56 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
         }
 
         return ambColor;
-    } else {
-        return m_api->getGlobalAmbientColor();
     }
+    return mathfu::vec4(0,0,0,0);
 }
 
-void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
+void WmoGroupObject::assignInteriorParams(std::shared_ptr<M2Object> m2Object) {
     mathfu::vec4 ambientColor = getAmbientColor();
 
+    if (!m2Object->setUseLocalLighting(true)) return;
 
-    if (m_geom->colorArray != nullptr) {
-        int nodeId = 0;
-        t_BSP_NODE *nodes = this->m_geom->bsp_nodes;
-        MOGP *groupInfo = this->m_geom->mogp;
-        std::vector<int> bspLeafList;
+    if (!m2Object->getInteriorAmbientWasSet()) {
+        if (m_geom->colorArray != nullptr) {
+            int nodeId = 0;
+            auto &nodes = this->m_geom->bsp_nodes;
+            MOGP *groupInfo = this->m_geom->mogp;
+            std::vector<int> bspLeafList;
 
-        float epsilon = 1;
-        mathfu::vec4 cameraLocal = mathfu::vec4(m2Object->getLocalPosition(), 0);
-        mathfu::vec3 cameraBBMin(cameraLocal[0] - epsilon, cameraLocal[1] - epsilon, groupInfo->boundingBox.min.z);
-        mathfu::vec3 cameraBBMax(cameraLocal[0] + epsilon, cameraLocal[1] + epsilon, groupInfo->boundingBox.max.z);
+            float epsilon = 1;
+            mathfu::vec4 cameraLocal = mathfu::vec4(m2Object->getLocalPosition(), 0);
+            mathfu::vec3 cameraBBMin(cameraLocal[0] - epsilon, cameraLocal[1] - epsilon, groupInfo->boundingBox.min.z);
+            mathfu::vec3 cameraBBMax(cameraLocal[0] + epsilon, cameraLocal[1] + epsilon, groupInfo->boundingBox.max.z);
 
-        CAaBox cameraBB;
-        cameraBB.max = cameraBBMax;
-        cameraBB.min = cameraBBMin;
+            CAaBox cameraBB;
+            cameraBB.max = cameraBBMax;
+            cameraBB.min = cameraBBMin;
 
-        float topZ;
-        float bottomZ;
+            float topZ;
+            float bottomZ;
 
-        mathfu::vec4 mocvColor (0,0,0,0);
-        WmoGroupObject::queryBspTree(cameraBB, nodeId, nodes, bspLeafList);
-        WmoGroupObject::getBottomVertexesFromBspResult(
-            nullptr, nullptr, bspLeafList, cameraLocal, topZ, bottomZ, mocvColor, false);
+            int initLen = -1;
+            PointerChecker<SMOPortalRef> temp = PointerChecker<SMOPortalRef>(initLen);
+            PointerChecker<SMOPortal> temp2 = initLen;
 
-        if (bottomZ < 99999) {
-            mocvColor = mathfu::vec4(mocvColor.z, mocvColor.y, mocvColor.x, 0);
-            ambientColor += mocvColor;
+            mathfu::vec4 mocvColor(0, 0, 0, 0);
+            WmoGroupObject::queryBspTree(cameraBB, nodeId, nodes, bspLeafList);
+            WmoGroupObject::getBottomVertexesFromBspResult(
+                temp2, temp, bspLeafList, cameraLocal, topZ, bottomZ, mocvColor, false);
+
+            if (bottomZ < 99999) {
+                mocvColor = mathfu::vec4(mocvColor.z, mocvColor.y, mocvColor.x, 0);
+                ambientColor += mocvColor;
+            }
         }
+
+        m2Object->setAmbientColorOverride(ambientColor, true);
+        m2Object->setInteriorAmbientWasSet(true);
     }
 
-    m2Object->setUseLocalLighting(true);
-    m2Object->setAmbientColorOverride(ambientColor, true);
-
-
-    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
-    mathfu::mat4 transformMatrix = m_api->getViewMat();
-    interiorSunDir = transformMatrix.Transpose().Inverse() * interiorSunDir;
-    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
-    m2Object->setSunDirOverride(interiorSunDir, true);
+//    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
+//    mathfu::mat4 transformMatrix = m_api->getViewMat();
+//    interiorSunDir = transformMatrix.Transpose().Inverse() * interiorSunDir;
+//    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
+//    m2Object->setSunDirOverride(interiorSunDir, true);
 }

@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_COMMONFILESTRUCTS_H
 #include <cstdint>
 #include <string>
-#include "mathfu/glsl_mappings.h"
+#include <mathfu/glsl_mappings.h>
 
 // Check windows
 #if _WIN32 || _WIN64
@@ -38,6 +38,66 @@
 #include <stdint.h>
 #endif
 
+#define DEBUGPOINTER 0
+
+template<class T>
+struct PointerChecker {
+private:
+#ifdef DEBUGPOINTER
+    int &maxLenPtr;
+#endif
+    T *elementOffset = nullptr;
+
+    PointerChecker() = default;
+//    T& operator=(int index) {
+//        assert(true);
+//    }
+public:
+#ifdef DEBUGPOINTER
+    PointerChecker(int &maxLen) : maxLenPtr(maxLen) {
+    }
+#else
+    PointerChecker(int &maxLen){
+    }
+#endif
+
+    inline T* operator=(T* other) {
+        this->elementOffset = other;
+        return other;
+    }
+    inline  T* operator->() {
+#ifdef DEBUGPOINTER
+        assert(elementOffset != nullptr);
+#endif
+        return this->elementOffset;
+    }
+
+    inline T& operator[](size_t index) {
+#ifdef DEBUGPOINTER
+        if (index >= maxLenPtr) {
+            assert(index < maxLenPtr);
+        }
+#endif
+        return elementOffset[index];
+    }
+    inline T& operator[](size_t index) const {
+#ifdef DEBUGPOINTER
+        if (index >= maxLenPtr) {
+            assert(index < maxLenPtr);
+        }
+#endif
+        return elementOffset[index];
+    }
+    inline bool operator==(T* other) const{
+        return elementOffset == other;
+    }
+    inline bool operator!=(T* other) const{
+        return elementOffset != other;
+    }
+};
+
+
+
 
 using fixed16 = int16_t;
 typedef mathfu::vec4_packed C4Vector;
@@ -62,8 +122,9 @@ struct CAaBox
 {
 public:
     CAaBox(){};
-    CAaBox(C3Vector min, C3Vector max) : min(min), max(max) {
-
+    CAaBox(C3Vector pmin, C3Vector pmax) {
+		this->min = pmin;
+        this->max = pmax;
     }
 
 //    CAaBox operator=(CAaBox &a) {
@@ -74,6 +135,13 @@ public:
 
     C3Vector min;
     C3Vector max;
+};
+struct CRect
+{
+    float miny;
+    float minx;
+    float maxy;
+    float maxx;
 };
 
 
@@ -95,7 +163,7 @@ struct M2Array {
     int32_t offset; // pointer to T, relative to begin of m2 data block (i.e. MD21 chunk content or begin of file)
 
     void initM2Array(void * m2File) {
-        static_assert(std::is_pod<M2Array<T>>::value, "M2Array<> is not POD");
+        static_assert(std::is_pod<M2Array<T> >::value, "M2Array<> is not POD");
 #ifdef ENVIRONMENT64
         offset = (uint32_t) (((uint64_t)m2File)+(uint64_t)offset - (uint64_t)this);
 #else
@@ -112,7 +180,7 @@ struct M2Array {
         return &((T* )offset)[index];
 #endif
     }
-    T* operator[](int index) {
+    T* operator[](int index) const {
         return getElement(index);
     }
     inline std::string toString(){
@@ -123,26 +191,60 @@ struct M2Array {
 template<>
 inline std::string M2Array<char>::toString() {
     char * ptr = this->getElement(0);
-    return std::string(ptr, ptr+size);
+    std::string result;
+    result = std::string(ptr, ptr+size);
+
+    return result;
 }
 
+struct CM2SequenceLoad {
+    int animationIndex;
+    uint8_t *animFileDataBlob;
+};
+
+struct M2Sequence {
+    uint16_t id;                   // Animation id in AnimationData.dbc
+    uint16_t variationIndex;       // Sub-animation id: Which number in a row of animations this one is.
+
+    uint32_t duration;             // The length (timestamps) of the animation. I believe this actually the length of the animation in milliseconds.
+    float movespeed;               // This is the speed the character moves with in this animation.
+    uint32_t flags;                // See below.
+    int16_t frequency;             // This is used to determine how often the animation is played. For all animations of the same type, this adds up to 0x7FFF (32767).
+    uint16_t _padding;
+    M2Range replay;                // May both be 0 to not repeat. Client will pick a random number of repetitions within bounds if given.
+    uint32_t blendtime;            // The client blends (lerp) animation states between animations where the end and start values differ. This specifies how long that blending takes. Values: 0, 50, 100, 150, 200, 250, 300, 350, 500.
+    M2Bounds bounds;
+    int16_t variationNext;         // id of the following animation of this AnimationID, points to an Index or is -1 if none.
+    uint16_t aliasNext;            // id in the list of animations. Used to find actual animation if this sequence is an alias (flags & 0x40)
+};
+
 template <typename T>
-void initM2M2Array(M2Array<M2Array<T>> &array2D, void *m2File){
-    static_assert(std::is_pod<M2Array<M2Array<T>>>::value, "M2Array<M2Array<T>> array2D is not POD");
-    array2D.initM2Array(m2File);
-    int count = array2D.size;
-    for (int i = 0; i < count; i++){
-        M2Array<T> *array1D = array2D.getElement(i);
-        array1D->initM2Array(m2File);
+void initAnimationArray(M2Array<M2Array<T> > &array2D, void *m2File, M2Array<M2Sequence> &sequences, CM2SequenceLoad *cm2SequenceLoad){
+    static_assert(std::is_pod<M2Array<M2Array<T> > >::value, "M2Array<M2Array<T>> array2D is not POD");
+    if (cm2SequenceLoad == nullptr) {
+        array2D.initM2Array(m2File);
+        int count = array2D.size;
+        for (int i = 0; i < count; i++) {
+            if ((sequences.size > 0) && (sequences.getElement(i)->flags & 0x20) == 0) continue;
+
+            M2Array<T> *array1D = array2D.getElement(i);
+            array1D->initM2Array(m2File);
+        }
+    } else {
+        if (cm2SequenceLoad->animationIndex >= array2D.size)
+            return;
+
+        M2Array<T> *array1D = array2D.getElement(cm2SequenceLoad->animationIndex);
+        array1D->initM2Array(cm2SequenceLoad->animFileDataBlob);
     }
 }
 
 struct M2TrackBase {
     uint16_t interpolation_type;
     uint16_t global_sequence;
-    M2Array<M2Array<uint32_t>> timestamps;
-    void initTrackBase(void * m2File) {
-        initM2M2Array(timestamps, m2File);
+    M2Array<M2Array<uint32_t> > timestamps;
+    void initTrackBase(void * m2File, M2Array<M2Sequence> &sequences, CM2SequenceLoad *cm2SequenceLoad) {
+        initAnimationArray(timestamps, m2File, sequences, cm2SequenceLoad);
     }
 };
 
@@ -161,11 +263,11 @@ struct M2Track
 {
     uint16_t interpolation_type;
     int16_t global_sequence;
-    M2Array<M2Array<uint32_t>> timestamps;
-    M2Array<M2Array<T>> values;
-    void initTrack(void * m2File){
-        initM2M2Array(timestamps, m2File);
-        initM2M2Array(values, m2File);
+    M2Array<M2Array<uint32_t> > timestamps;
+    M2Array<M2Array<T> > values;
+    void initTrack(void * m2File, M2Array<M2Sequence> &sequences, CM2SequenceLoad *cm2SequenceLoad){
+        initAnimationArray(timestamps, m2File, sequences, cm2SequenceLoad);
+        initAnimationArray(values, m2File, sequences, cm2SequenceLoad);
     };
 };
 

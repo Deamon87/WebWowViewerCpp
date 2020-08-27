@@ -6,13 +6,13 @@
 #define WEBWOWVIEWERCPP_ZIPHTTPREQUESTPROCESSOR_H
 
 
-#include <zip.h>
-#include <../../wowViewerLib/src/include/wowScene.h>
+//#include <zip.h>
 #include <ios>
 #include <fstream>
 #include <regex>
 #include <functional>
 #include <vector>
+#include "../../wowViewerLib/src/include/iostuff.h"
 
 
 using namespace std::placeholders;
@@ -31,7 +31,7 @@ public:
         this->loadingFinished(&m_file);
     }
 private:
-    zip_t *zipArchive = nullptr;
+    //zip_t *zipArchive = nullptr;
     std::vector<unsigned char> m_file;
     IFileRequester *m_fileRequester = nullptr;
 
@@ -40,7 +40,7 @@ public:
         m_fileRequester = fileRequester;
     }
     void loadingFinished(std::vector<unsigned char> * file);
-    void requestFile(const char* fileName) override;
+    void requestFile(const char* fileName, CacheHolderType holderType) override;
 };
 
 

@@ -27,10 +27,10 @@ public:
     void uploadData(void *, int length) override;
 
 private:
-    IDevice &m_device;
+    GDeviceGL33 &m_device;
 
 private:
-    void * buffer = nullptr;
+    std::vector<char> buffer = {};
 
     bool m_buffCreated = true;
     size_t m_size;

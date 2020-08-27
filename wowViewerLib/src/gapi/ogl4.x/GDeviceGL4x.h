@@ -24,6 +24,7 @@ class gMeshTemplate;
 
 #include <unordered_set>
 #include <list>
+#include <unordered_map>
 #include "GVertexBufferBindingsGL4x.h"
 #include "buffers/GIndexBufferGL4x.h"
 #include "buffers/GVertexBufferGL4x.h"
@@ -33,6 +34,8 @@ class gMeshTemplate;
 #include "GShaderPermutationGL4x.h"
 #include "meshes/GMeshGL4x.h"
 #include "../interface/IDevice.h"
+#include "../../engine/opengl/header.h"
+
 
 
 
@@ -43,28 +46,33 @@ public:
 
     void reset() override;
 
-    int getFrameNumber() override;
+    unsigned int getFrameNumber() override { return m_frameNumber; };
+    unsigned int getUpdateFrameNumber() override;
+    unsigned int getCullingFrameNumber() override;
+    unsigned int getDrawFrameNumber() override;
 
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
-        return false;
+        return true;
+    }
+    int getMaxSamplesCnt() override {
+        return 1;
     }
 
     void bindProgram(IShaderPermutation *program) override;
 
     void bindIndexBuffer(IIndexBuffer *buffer) override;
     void bindVertexBuffer(IVertexBuffer *buffer) override;
-    void bindVertexUniformBuffer(IUniformBuffer *buffer, int slot) override;
-    void bindFragmentUniformBuffer(IUniformBuffer *buffer, int slot) override;
+    void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override;
     void bindVertexBufferBindings(IVertexBufferBindings *buffer) override;
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes) override;
+    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
-    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName) override;
+    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void * permutationParam) override;
 
     HGPUFence createFence() override;
 
@@ -83,9 +91,10 @@ public:
 
     HGVertexBufferBindings getBBVertexBinding() override;
     HGVertexBufferBindings getBBLinearBinding() override;
+    virtual void clearScreen() override;
 
 private:
-    void drawMesh(HGMesh &hmesh);
+    void drawMesh(HGMesh hmesh);
 
 protected:
     struct BlpCacheRecord {
@@ -109,7 +118,7 @@ protected:
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL4x>, BlpCacheRecordHasher> loadedTextureCache;
 
-    int m_frameNumber = 0;
+    unsigned int m_frameNumber = 0;
 
     uint8_t m_lastColorMask = 0xFF;
     int8_t m_lastDepthWrite = -1;

@@ -55,18 +55,10 @@ void FirstPersonOrthoCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
 
-mathfu::vec3 FirstPersonOrthoCamera::getCameraPosition(){
-    return camera;
-}
-mathfu::vec3 FirstPersonOrthoCamera::getCameraLookAt(){
-    return lookAt;
-}
-
-
 void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
     float moveSpeed = 1.0f / 10.0f;
-    mathfu::vec3 camera = this->camera;
+    mathfu::vec3 camera = this->camera.xyz();
 
     double dTime = timeDelta;
 
@@ -109,7 +101,7 @@ void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
         camera[2] = camera[2] + verticalDiff;
     }
 
-    this->camera = camera;
+    this->camera = mathfu::vec4(camera, 1.0);
     this->lookAt = camera + dir;
 
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
@@ -121,6 +113,16 @@ void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
     );
 
     lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
+
+    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
+    interiorSunDir = lookAtMat.Transpose().Inverse() * interiorSunDir;
+    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
+
+    this->interiorDirectLightDir = interiorSunDir;
+
+    mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
+    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
+    this->upVector = (lookAtRotation * upVector.xyz());
 }
 void FirstPersonOrthoCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera
@@ -134,4 +136,23 @@ void FirstPersonOrthoCamera :: setCameraPos (float x, float y, float z) {
 
     this->av = 0;
     this->ah = 0;
+}
+
+HCameraMatrices FirstPersonOrthoCamera::getCameraMatrices(float fov,
+                                                          float canvasAspect,
+                                                          float nearPlane,
+                                                          float farPlane) {
+    HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
+    cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(
+        fov,
+        canvasAspect,
+        nearPlane,
+        farPlane);
+    cameraMatrices->lookAtMat = lookAtMat;
+
+    cameraMatrices->cameraPos = camera;
+    cameraMatrices->viewUp = mathfu::vec4(upVector, 0);
+    cameraMatrices->interiorDirectLightDir = this->interiorDirectLightDir;
+
+    return cameraMatrices;
 }

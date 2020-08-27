@@ -56,3 +56,4 @@ float CRndSeed::UniformPos() {
     assert(result > 0.0 || result < 1.0);
     return result;
 }
+

@@ -7,10 +7,15 @@
 
 #include "IDevice.h"
 
+enum class GBindingType {
+    GFLOAT,
+    GUNSIGNED_BYTE
+};
+
 struct GBufferBinding{
     uint32_t position;
     uint32_t size;
-    uint32_t type;
+    GBindingType type;
     bool normalized;
     uint32_t stride;
     uint32_t offset;

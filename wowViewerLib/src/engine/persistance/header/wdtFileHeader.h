@@ -27,7 +27,7 @@ struct MPHDFlags {
     //0x100
     uint32_t unk_0x0100 : 1; //implicitly sets 0x8000
     //0x200
-    uint32_t unk_0x0200 : 1;
+    uint32_t wdt_has_maid : 1;
     //0x400
     uint32_t unk_0x0400 : 1;
     //0x800
@@ -45,8 +45,13 @@ struct MPHDFlags {
 
 struct MPHD {
     MPHDFlags flags;
-    uint32_t something;
-    uint32_t unused[6];
+    uint32_t lgtFileDataID;
+    uint32_t occFileDataID;
+    uint32_t fogsFileDataID;
+    uint32_t mpvFileDataID;
+    uint32_t texFileDataID;
+    uint32_t wdlFileDataID;
+    uint32_t pd4FileDataID;
 };
 
 struct MAIN {

@@ -19,21 +19,21 @@ protected:
 
 private:
     void setInDirectPointer (void * ptr) {
-        m_indirectPointer[(m_device.getFrameNumber() + 1) & 1] = ptr;
+        m_indirectPointer[m_device.getUpdateFrameNumber()] = ptr;
     }
     void * getIndirectPointer() {
-        return m_indirectPointer[m_device.getFrameNumber()  & 1];
+        return m_indirectPointer[m_device.getDrawFrameNumber()];
     }
 
 public:
     ~GMeshGL4x() override;
-    HGUniformBuffer getVertexUniformBuffer(int slot) override;
-    HGUniformBuffer getFragmentUniformBuffer(int slot) override;
+    HGUniformBufferChunk getUniformBuffer(int slot) override;
     EGxBlendEnum getGxBlendMode() override;
     bool getIsTransparent() override;
     MeshType getMeshType()  override;
     void setRenderOrder(int renderOrder) override;
 
+    void setStart(int start) override { m_start = start;};
     void setEnd(int end) override;
 public:
     void setM2Object(void * m2Object) override { throw "Not Implemented";};
@@ -41,7 +41,7 @@ public:
     void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
     void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
     void setSortDistance(float distance) override { throw "Not Implemented";};
-
+    float getSortDistance() override { return m_sortDistance; };
 protected:
     MeshType m_meshType;
 private:

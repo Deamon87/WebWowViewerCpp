@@ -18,36 +18,28 @@ public:
     explicit GUniformBufferGL33(IDevice &device, size_t size);
     ~GUniformBufferGL33() override;
 
-    void *getPointerForModification() override;
-    void *getPointerForUpload() override;
-
-    void save(bool initialSave = false) override;
     void createBuffer() override;
 private:
 
     void destroyBuffer();
-    void bind(int bindingPoint); //Should be called only by GDevice
+    void bind(int bindingPoint, int offset, int length); //Should be called only by GDevice
     void unbind();
 
 private:
     void uploadData(void * data, int length);
 
 private:
-    IDevice &m_device;
+    GDeviceGL33 &m_device;
 
 private:
     size_t m_size;
-    size_t m_offset = 0;
-    void * pIdentifierBuffer;
+    GLuint glBuffId;
 
-    void * pFrameOneContent;
-    void * pFrameTwoContent;
     bool m_buffCreated = false;
     bool m_dataUploaded = false;
 
-    int m_creationIndex = 0;
 
-    bool m_needsUpdate = false;
+    std::function<void(IUniformBuffer* self)> m_handler;
 };
 
 

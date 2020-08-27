@@ -89,7 +89,7 @@ GShaderPermutationGL4x::GShaderPermutationGL4x(std::string &shaderName, IDevice 
 
 }
 
-void GShaderPermutationGL4x::compileShader() {
+void GShaderPermutationGL4x::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
     std::string vertShaderString = loadShader(m_shaderName);
     std::string fragmentShaderString = vertShaderString;

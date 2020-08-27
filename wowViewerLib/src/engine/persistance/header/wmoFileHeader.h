@@ -78,7 +78,7 @@ struct SMOGroupFlags {
     // 0x80;
     uint32_t UNREACHABLE : 1;
     // 0x100;
-    uint32_t unused3 : 1;
+    uint32_t SHOW_EXTERIOR_SKYBOX : 1;
     // 0x200;
     uint32_t hasLights : 1; //has MOLR chunk
     // 0x400;
@@ -302,7 +302,45 @@ struct MOLP {
     float unk3;
     unsigned int unk4;
     CArgb unk5;
+};
+#pragma pack(push, 1)
+struct MLIQ {
+    uint32_t xverts;
+    uint32_t yverts;
+    uint32_t xtiles;
+    uint32_t ytiles;
+    C3Vector basePos;
+    uint16_t materialId;
+};
+#pragma pack(pop)
 
+struct SMOLVert
+{
+    union
+    {
+        struct {
+            uint8_t flow1;
+            uint8_t flow2;
+            uint8_t flow1Pct;
+            uint8_t filler;
+            float height;
+        }  waterVert;
+        struct
+        {
+            int16_t s;
+            int16_t t;
+            float height;
+        } magmaVert;
+    };
+};
+struct SMOLTile
+{
+    uint8_t legacyLiquidType : 4;
+    uint8_t flag_16 : 1;
+    uint8_t flag_32 : 1;
+    uint8_t flag_64 : 1;
+    uint8_t flag_128 : 1;
+    ;
 };
 
 #endif //WOWVIEWERLIB_WMOFILEHEADER_H

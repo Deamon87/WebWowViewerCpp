@@ -1,31 +1,83 @@
 #include "wowScene.h"
-#include "shader/ShaderRuntimeData.h"
 #include "algorithms/mathHelper.h"
 #include "objects/scenes/m2Scene.h"
 #include "objects/scenes/wmoScene.h"
 #include "androidLogSupport.h"
 
 #include "mathfu/glsl_mappings.h"
-#include "persistance/db2/DB2Light.h"
-#include "persistance/db2/DB2WmoAreaTable.h"
-#include "shader/ShaderDefinitions.h"
 #include "./../gapi/UniformBufferStructures.h"
-#include "objects/GlobalThreads.h"
 #include "../gapi/IDeviceFactory.h"
+#include "algorithms/FrameCounter.h"
+//#include "objects/scenes/creatureScene.h"
 #include <iostream>
 #include <cmath>
 #include <thread>
 #include <chrono>
+#include <future>
+#include <fstream>
 
+
+
+void WoWSceneImpl::processCaches(int limit) {
+//    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
+//    std::cout << "this->adtObjectCache.m_cache.size() = " << this->adtObjectCache.m_cache.size()<< std::endl;
+    if (cacheStorage) {
+        cacheStorage->processCaches(limit);
+    }
+}
+void WoWSceneImpl::DoUpdate() {
+    FrameCounter frameCounter;
+
+    FrameCounter singleUpdateCNT;
+    FrameCounter meshesCollectCNT;
+
+    frameCounter.beginMeasurement();
+
+    IDevice *device = getDevice();
+    int updateObjFrame = device->getUpdateFrameNumber();
+    WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
+    updateFrameIndex = updateObjFrame;
+
+    device->startUpdateForNextFrame();
+
+    singleUpdateCNT.beginMeasurement();
+    currentScene->update(objFrameParam);
+    singleUpdateCNT.endMeasurement("single update ");
+
+    meshesCollectCNT.beginMeasurement();
+    currentScene->collectMeshes(objFrameParam);
+    meshesCollectCNT.endMeasurement("collectMeshes ");
+
+    device->prepearMemoryForBuffers(objFrameParam->renderedThisFrame);
+    m_sceneWideUniformBuffer->setUpdateHandler([objFrameParam](IUniformBufferChunk *chunk) -> void {
+        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
+        blockPSVS->uLookAtMat = objFrameParam->m_lookAtMat4;
+        blockPSVS->uPMatrix = objFrameParam->m_perspectiveMatrix;
+    });
+
+    currentScene->updateBuffers(objFrameParam);
+    device->updateBuffers(objFrameParam->renderedThisFrame);
+
+    currentScene->doPostLoad(objFrameParam); //Do post load after rendering is done!
+    device->uploadTextureForMeshes(objFrameParam->renderedThisFrame);
+
+    device->endUpdateForNextFrame();
+    frameCounter.endMeasurement("Update Thread");
+
+}
 void WoWSceneImpl::DoCulling() {
-    float farPlane = 3000;
-    float nearPlane = 1;
+	if (currentScene == nullptr) {
+		return;
+	}
+
+    float farPlane = m_config->getFarPlane();
+    float nearPlane = 1.0;
     float fov = toRadian(45.0);
 
     static const mathfu::vec3 upVector(0,0,1);
 
     IDevice *device = getDevice();
-    int currentFrame = (device->getFrameNumber() + 3) % 4;
+    int currentFrame = device->getCullingFrameNumber();
     WoWFrameData *frameParam = &m_FrameParams[currentFrame];
 
     M2CameraResult cameraResult;
@@ -33,31 +85,33 @@ void WoWSceneImpl::DoCulling() {
     mathfu::vec4 cameraVec4;
 
     m_firstCamera.setMovementSpeed(m_config->getMovementSpeed());
+    if (controllable == nullptr) return;
+//    if (!m_config->getUseSecondCamera()){
+    ((ICamera *)this->controllable)->tick(frameParam->deltaTime);
+//    } else {
+//        this->m_secondCamera.tick(frameParam->deltaTime);
+//    }
 
-    if (!m_config->getUseSecondCamera()){
-        this->m_firstCamera.tick(frameParam->deltaTime);
-    } else {
-        this->m_secondCamera.tick(frameParam->deltaTime);
-    }
-
-    if ( currentScene->getCameraSettings(cameraResult)) {
+    if ( /*currentScene->getCameraSettings(cameraResult)*/ false) {
 //        farPlane = cameraResult.far_clip * 100;
-        farPlane = 300;
-        nearPlane = cameraResult.near_clip;
-
-        fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
-
-        lookAtMat4 =
-                mathfu::mat4::LookAt(
-                        -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
-                        mathfu::vec3(0,0,0),
-                        upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
-        cameraVec4 = cameraResult.position;
-        frameParam->m_lookAtMat4 = lookAtMat4;
+//        farPlane = 300;
+//        nearPlane = cameraResult.near_clip;
+//
+//        fov = cameraResult.diagFov/ sqrt(1 + canvAspect*canvAspect);
+//
+//        lookAtMat4 =
+//                mathfu::mat4::LookAt(
+//                        -cameraResult.target_position.xyz()+cameraResult.position.xyz(),
+//                        mathfu::vec3(0,0,0),
+//                        upVector) * mathfu::mat4::FromTranslationVector(-cameraResult.position.xyz());
+//        cameraVec4 = cameraResult.position;
+//        frameParam->m_lookAtMat4 = lookAtMat4;
 
     } else {
-        cameraVec4 = mathfu::vec4(m_firstCamera.getCameraPosition(), 1);
-        lookAtMat4 = this->m_firstCamera.getLookatMat();
+
+        cameraVec4 = mathfu::vec4(((ICamera *)controllable)->getCameraPosition(), 1);
+        lookAtMat4 = ((ICamera *)this->controllable)->getLookatMat();
+
         frameParam->m_lookAtMat4 = lookAtMat4;
     }
 
@@ -66,7 +120,7 @@ void WoWSceneImpl::DoCulling() {
                     fov,
                     this->canvAspect,
                     nearPlane,
-                    500);
+                    m_config->getFarPlaneForCulling());
     //Camera for rendering
     mathfu::mat4 perspectiveMatrixForCameraRender =
             mathfu::mat4::Perspective(fov,
@@ -76,7 +130,6 @@ void WoWSceneImpl::DoCulling() {
     mathfu::mat4 viewCameraForRender =
             perspectiveMatrixForCameraRender * lookAtMat4;
 
-
     frameParam->m_secondLookAtMat =
             mathfu::mat4::LookAt(
                     this->m_secondCamera.getCameraPosition(),
@@ -84,11 +137,21 @@ void WoWSceneImpl::DoCulling() {
                     upVector);
 
     mathfu::mat4 perspectiveMatrix =
-            mathfu::mat4::Perspective(
+         mathfu::mat4::Perspective(
                     fov,
                     this->canvAspect,
                     nearPlane,
                     farPlane);
+
+    static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1, 0, 0, 0,
+                     0, -1, 0, 0,
+                     0, 0, 1.0/2.0, 1/2.0,
+                     0, 0, 0, 1).Transpose();
+
+     if (device->getIsVulkanAxisSystem()) {
+        perspectiveMatrix = vulkanMatrixFix * perspectiveMatrix;
+     }
+
     frameParam->m_perspectiveMatrix = perspectiveMatrix;
 
     frameParam->m_viewCameraForRender = viewCameraForRender;
@@ -116,43 +179,119 @@ void WoWSceneImpl::DoCulling() {
 
     this->SetDirection(*frameParam);
 
+
     currentScene->checkCulling(frameParam);
+}
 
-    //Upload buffers if supported
-    if (device->getIsAsynBuffUploadSupported()) {
+void WoWSceneImpl::setScene(int sceneType, std::string name, int cameraNum) {
+    if (sceneType == -1) {
+        newScene = new NullScene();
+    } else if (sceneType == 0) {
+        m_usePlanarCamera = cameraNum == -1;
+        if (m_usePlanarCamera) {
+            controllable = &m_planarCamera;
+        }
+        newScene = new M2Scene(this, name , cameraNum);
+    } else if (sceneType == 1) {
+        controllable = &m_firstCamera;
+        m_usePlanarCamera = false;
+        newScene = new WmoScene(this, name);
+    } else if (sceneType == 2) {
+        std::string &adtFileName = name;
 
-        int updateObjFrame = (device->getFrameNumber() + 1) % 4;
-        WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
-        currentScene->update(objFrameParam);
-        currentScene->collectMeshes(objFrameParam);
-        device->updateBuffers(objFrameParam->renderedThisFrame);
+        size_t lastSlashPos = adtFileName.find_last_of("/");
+        size_t underscorePosFirst = adtFileName.find_last_of("_");
+        size_t underscorePosSecond = adtFileName.find_last_of("_", underscorePosFirst-1);
+        std::string mapName = adtFileName.substr(lastSlashPos+1, underscorePosSecond-lastSlashPos-1);
+
+        int i = std::stoi(adtFileName.substr(underscorePosSecond+1, underscorePosFirst-underscorePosSecond-1));
+        int j = std::stoi(adtFileName.substr(underscorePosFirst+1, adtFileName.size()-underscorePosFirst-5));
+
+        float adt_x_min = AdtIndexToWorldCoordinate(j);
+        float adt_x_max = AdtIndexToWorldCoordinate(j+1);
+
+        float adt_y_min = AdtIndexToWorldCoordinate(i);
+        float adt_y_max = AdtIndexToWorldCoordinate(i+1);
+
+        m_firstCamera.setCameraPos(
+            (adt_x_min+adt_x_max) / 2.0,
+            (adt_y_min+adt_y_max) / 2.0,
+            200
+        );
+
+        controllable = &m_firstCamera;
+        m_usePlanarCamera = false;
+
+        newScene = new Map(this, adtFileName, i, j, mapName);
     }
 }
 
-WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight)
-        :
-        wmoMainCache(requestProcessor),
-        wdtCache(requestProcessor),
-        wdlCache(requestProcessor),
-        wmoGeomCache(requestProcessor),
-        m2GeomCache(requestProcessor),
-        skinGeomCache(requestProcessor),
-        textureCache(requestProcessor),
-        adtObjectCache(requestProcessor),
-        db2Cache(requestProcessor){
-//    m_gdevice.reset(IDeviceFactory::createDevice("ogl3"));
-    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
+void WoWSceneImpl::setMap(int mapId, int wdtFileId, float x, float y, float z) {
+    controllable = &m_firstCamera;
+    m_usePlanarCamera = false;
+
+    m_firstCamera.setCameraPos(
+        x,
+        y,
+        z
+    );
+
+    controllable = &m_firstCamera;
+    m_usePlanarCamera = false;
+
+    newScene = new Map(this, mapId, wdtFileId);
+}
+
+
+void WoWSceneImpl::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
+    if (newScene != nullptr) {
+        newScene->setReplaceTextureArray(replaceTextureArray);
+    } else {
+        currentScene->setReplaceTextureArray(replaceTextureArray);
+    }
+}
+
+void WoWSceneImpl::setAnimationId(int animationId) {
+    if (newScene != nullptr) {
+        newScene->setAnimationId(animationId);
+    } else {
+        currentScene->setAnimationId(animationId);
+    }
+}
+
+void WoWSceneImpl::setSceneWithFileDataId(int sceneType, int fileDataId, int cameraNum) {
+    if (sceneType == -1) {
+        newScene = new NullScene();
+    } else if (sceneType == 0) {
+        m_usePlanarCamera = cameraNum == -1;
+        if (m_usePlanarCamera) {
+            controllable = &m_planarCamera;
+        }
+        newScene = new M2Scene(this, fileDataId , cameraNum);
+    } else if (sceneType == 1) {
+        controllable = &m_firstCamera;
+        m_usePlanarCamera = false;
+        newScene = new WmoScene(this, fileDataId);
+    }
+}
+
+WoWSceneImpl::WoWSceneImpl(Config *config, WoWFilesCacheStorage * woWFilesCacheStorage, IClientDatabase * clientDatabase, IDevice * device, int canvWidth, int canvHeight) :
+    cacheStorage(woWFilesCacheStorage), m_clientDatabase(clientDatabase)
+{
+    m_gdevice.reset(device);
+//    m_gdevice.reset(IDeviceFactory::createDevice("ogl4"));
+
+#ifdef __EMSCRIPTEN__
+    m_supportThreads = false;
+#endif
 
 //    std::ofstream *out = new std::ofstream("log_output.txt");
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
 //    std::cout.rdbuf(out->rdbuf()); //redirect std::cout to out.txt!
-
-    m_sceneWideUniformBuffer = m_gdevice->createUniformBuffer(sizeof(sceneWideBlockVSPS));
-//    m_sceneWideUniformBuffer->createBuffer();
+//
+    m_sceneWideUniformBuffer = m_gdevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
 
     this->m_config = config;
-
-    renderLockNextMeshes = std::unique_lock<std::mutex>(m_lockNextMeshes,std::defer_lock);
 
     this->canvWidth = canvWidth;
     this->canvHeight = canvHeight;
@@ -163,13 +302,13 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
     //Test scene 1: Shattrath
 //    m_firstCamera.setCameraPos(-1663, 5098, 27); //Shattrath
 //    m_firstCamera.setCameraPos(-241, 1176, 256); //Dark Portal
-//
+
 //    currentScene = new Map(this, 530, "Expansion01");
 //    m_firstCamera.setCameraPos(972, 2083, 0); //Lost isles template
 //    m_firstCamera.setCameraPos(-834, 4500, 0); //Dalaran 2
 //    m_firstCamera.setCameraPos(-719, 2772, 317); //Near the black tower
-    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
-    currentScene = new Map(this, 1220, "Troll Raid");
+//    m_firstCamera.setCameraPos( 4054, 7370, 27); // Druid class hall
+//    currentScene = new Map(this, 1220, "Troll Raid");
 //    currentScene = new Map(this, 0, "BrokenShoreBattleshipFinale");
 
 //    m_firstCamera.setCameraPos(-1663, 5098, 27);
@@ -194,8 +333,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos( 2290,  -9.475f, 470); // Ulduar Raid
 //    currentScene = new Map(this, 603, "UlduarRaid");
 //
-//   m_firstCamera.setCameraPos(  1252, 3095, 200); // Ulduar Raid
-//    currentScene = new Map(this, 1803, "AzeriteBG1");
+//   m_firstCamera.setCameraPos(  -8192, -4819, 200); // Ulduar Raid
+//    currentScene = new Map(this, 1803, "Kalimdor");
 //
 //    m_firstCamera.setCameraPos(  2843, 847, 200); // Ulduar Raid
 //    currentScene = new Map(this, "Islands_7VR_Swamp_Prototype2");
@@ -220,14 +359,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new Map(this, 571, "Northrend");
 //
 //    m_firstCamera.setCameraPos(-8517, 1104, 200); //Stormwind
+//    m_firstCamera.setCameraPos(0, 0, 200); //Stormwind
 //    currentScene = new Map(this, 0, "Azeroth");
 //
 //   m_firstCamera.setCameraPos(-5025, -807, 500); //Ironforge
-//   m_firstCamera.setCameraPos(0, 0, 200);
-//    currentScene = new Map(this, 0, "Azeroth");
+//   m_firstCamera.setCameraPos(-921, 767, 200);
+//    currentScene = new Map(this, 0, "Zandalar");
 //
-//    m_firstCamera.setCameraPos(-876, 775, 200); //Zaldalar
-//    currentScene = new Map(this, 1642, "Zandalar");
+//    m_firstCamera.setCameraPos(0, 0, 200); //Zaldalar
+//    currentScene = new Map(this, 1642, "test_01");
 //
 //
 //    m_firstCamera.setCameraPos(570, 979, 200); //Maelstorm Shaman
@@ -250,7 +390,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(2979, 3525, 200); //Field of the Eternal Hunt
 //    currentScene = new Map(this, 1477, "Valhallas");
 //
-//    m_firstCamera.setCameraPos(2902, 2525, 200); //Field of the Eternal Hunt
+//    m_firstCamera.setCameraPos(2902, 2525, 200db); //Field of the Eternal Hunt
 //    m_firstCamera.setCameraPos(3993, 2302, 1043); //Field of the Eternal Hunt
 //    currentScene = new Map(this, "NagaDungeon");
 //    m_firstCamera.setCameraPos(829, -296, 200 ); //Field of the Eternal Hunt
@@ -265,8 +405,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    m_firstCamera.setCameraPos(-12886, -165, 200); // Pandaria
 //    currentScene = new Map(this, "Azeroth");
 //
-//   m_firstCamera.setCameraPos(0, 0, 0); // Pandaria
-//    currentScene = new Map(this, "Ulduar80");
+//   m_firstCamera.setCameraPos(-12017, 3100, 200); // Pandaria
+//    currentScene = new Map(this, 0, "Kalimdor");
 //
 //    m_firstCamera.setCameraPos( -8517, 1104, 200);
 //    currentScene = new Map(this, 0, "escapefromstockades");
@@ -304,7 +444,8 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
-//        "WORLD\\EXPANSION02\\DOODADS\\CRYSTALSONGFOREST\\BUBBLE\\CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
+//        "creature/lorthemar/lorthemar.m2");
+    m_usePlanarCamera = false;
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new M2Scene(this,
@@ -363,10 +504,24 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world/khazmodan/ironforge/passivedoodads/throne/dwarventhrone01.m2");
 //
 //   currentScene = new M2Scene(this,
+//        "creature/murloc/murloc.m2");
+//
+//
+// currentScene = new M2Scene(this,
 //        "WORLD\\EXPANSION02\\DOODADS\\GENERIC\\SCOURGE\\SC_EYEOFACHERUS_02.m2");
 
-//    currentScene = new M2Scene(this,
-//        "character/bloodelf/female/bloodelffemale_hd.m2", 0);
+// currentScene = new M2Scene(this,
+//        "world/lordaeron/alteracmountains/passivedoodads/dalaran/dalarandome.m2");
+
+// currentScene = new M2Scene(this,
+//        "WORLD/EXPANSION02/DOODADS/CRYSTALSONGFOREST/BUBBLE/CAMOUFLAGEBUBBLE_CRYSTALSONG.m2");
+
+//    m_usePlanarCamera = true;
+//    if (m_usePlanarCamera) {
+//        controllable = &m_planarCamera;
+//    }
+
+//    currentScene = new M2Scene(this, 2200968, 0);
 
     //Test scene 3: Ironforge
 //    m_firstCamera.setCameraPos(1.78252912f,  33.4062042f, -126.937592f); //Room under dalaran
@@ -374,16 +529,14 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world\\wmo\\brokenisles\\dalaran2.wmo");
 //    currentScene = new WmoScene(this,
-//        "world/wmo/kultiras/nightelf/8ne_nightelf_inn01.wmo");
-//    currentScene = new WmoScene(this,
-//        "world\\wmo\\northrend\\dalaran\\nd_dalaran.wmo");
+//        "World\\wmo\\Dungeon\\test\\test.wmo");
 
 
 
 //   m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
-//        "WORLD\\WMO\\NORTHREND\\BUILDINGS\\HUMAN\\ND_HUMAN_INN\\ND_HUMAN_INN.WMO");
-//
+//        "WORLD/WMO/NORTHREND/BUILDINGS/HUMAN/ND_HUMAN_INN/ND_HUMAN_INN.WMO");
+
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //    "World\\wmo\\BrokenIsles\\Suramar\\7SR_SuramarCity_Single_B_Core_C.wmo");
@@ -410,9 +563,15 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 
 
 //    currentScene = new WmoScene(this,
-//        "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
+ //       "World/wmo/Dungeon/AZ_Subway/Subway.wmo");
 //    currentScene = new WmoScene(this,
-//        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
+//                                "world/wmo/azeroth/buildings/stranglethorn_bootybay/bootybay.wmo"); //bootybay
+//                                2324175);
+//
+//   currentScene = new WmoScene(this,
+//                               2198682);
+//   currentScene = new WmoScene(this,
+//                               "world/wmo/kultiras/nightelf/8ne_nightelf_dockbroken01.wmo");
 
 
 //    m_firstCamera.setCameraPos(136.784775,-42.097565,33.5634689);
@@ -428,7 +587,7 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //        "world\\wmo\\draenor\\tanaanjungle\\6tj_darkportal_antiportal.wmo");
 //
 //    currentScene = new WmoScene(this,
-//        "world\\wmo\\azeroth\\buildings\\stormwind\\stormwind2.WMO");
+//        "world\\wmo\\azeroth\\buildings\\stormwind\\stormwind.WMO");
 
 //    m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
@@ -446,6 +605,11 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //    currentScene = new WmoScene(this,
 //        "world/wmo/brokenisles/brokenshore/7bs_tombofsargerasfx_01_wmo.wmo");
 //
+//  currentScene = new WmoScene(this,
+//        "world/wmo/brokenisles/brokenshore/7bs_tombofsargeras.wmo");
+//
+
+
 //  m_firstCamera.setCameraPos(0, 0, 0);
 //    currentScene = new WmoScene(this,
 //        "world/wmo/azeroth/buildings/worldtree/theworldtreehyjal.wmo");
@@ -457,46 +621,44 @@ WoWSceneImpl::WoWSceneImpl(Config *config, IFileRequest * requestProcessor, int 
 //   currentScene = new WmoScene(this,
 //        "world/wmo/lorderon/undercity/8xp_undercity.wmo");
 
-    db2Light = new DB2Light(db2Cache.get("dbfilesclient/light.db2"));
-    db2LightData = new DB2LightData(db2Cache.get("dbfilesclient/LightData.db2"));
-    db2WmoAreaTable = new DB2WmoAreaTable(db2Cache.get("dbfilesclient/WmoAreaTable.db2"));
+//   currentScene = new WmoScene(this,
+//        "world/wmo/zuldazar/forsaken/8fk_forsaken_shiplarge01.wmo");
+
+//   currentScene = new WmoScene(this,
+//        "world/wmo/dungeon/ulduar/ulduar_raid.wmo");
+
+//    setScene(2, "world/maps/ahnqiraj/ahnqiraj_26_46.adt", -1);
+//    setScene(2, "WORLD/MAPTEXTURES/MAELSTROMDEATHWINGFIGHT/MAELSTROMDEATHWINGFIGHT_32_32.adt", -1);
+//    setScene(2, "WORLD/MAPTEXTURES/Expansion01/Expansion01_44_8.adt", -1);
+//    setSceneWithFileDataId(1, 1846142, -1); // wmo with horde symbol
+//    setSceneWithFileDataId(1, 324981, -1);
+//    setSceneWithFileDataId(1, 1120838, -1);
+//    setSceneWithFileDataId(1, 1699872, -1);
+//    setScene(2, "world/maps/nzoth/nzoth_32_27.adt", -1);
+//    setScene(2, "world/maps/Kalimdor/Kalimdor_41_47.adt", -1);
+//    setScene(0, "interface/glues/models/ui_mainmenu_northrend/ui_mainmenu_northrend.m2", 0);
+//    setMap(1, 782779, -8183, -4708, 200);
+//    setMap(530, 828395, -1663, 5098, 27); //Sharrath
+//    setScene(2, "world/maps/SilithusPhase01/SilithusPhase01_30_45.adt", -1);
+//    setSceneWithFileDataId(1, 113992, -1); //Ironforge
+//    setSceneWithFileDataId(1, 108803, -1);
+//    setSceneWithFileDataId(0, 352511, -1); // arthas souls
+//    setSceneWithFileDataId(0, 3180291, -1); // arthas souls
+//    setSceneWithFileDataId(0, 125407, -1); // phoneix
+//    setSceneWithFileDataId(0, 2500382, -1); // galliwix mount
+//    setSceneWithFileDataId(0, 125995, -1); //portal
+//    setSceneWithFileDataId(0, 418699, -1); //turtle
+//    setSceneWithFileDataId(0, 1612576, -1); //portal
+//    setSceneWithFileDataId(1, 108803, -1); //caverns of time in Tanaris
+
+//    setSceneWithFileDataId(0, 1100087, -1); //bloodelfMale_hd
+//    setSceneWithFileDataId(0, 1416430, -1); //illidan crystal
+//    setSceneWithFileDataId(0, 341893, -1); //bone spike
 
 
-    g_globalThreadsSingleton.loadingResourcesThread = std::thread([&]() {
-        using namespace std::chrono_literals;
+//    setSceneWithFileDataId(0, 1814471, -1); //nightbornemale
+//    setwthFileDataId(0, 1269330, -1); //nightbornemale creature
 
-        while (!this->m_isTerminating) {
-            std::this_thread::sleep_for(1ms);
-            this->adtObjectCache.processCacheQueue(1000);
-            this->wdtCache.processCacheQueue(1000);
-            this->wdlCache.processCacheQueue(1000);
-            this->wmoGeomCache.processCacheQueue(1000);
-            this->wmoMainCache.processCacheQueue(100);
-            this->m2GeomCache.processCacheQueue(1000);
-            this->skinGeomCache.processCacheQueue(1000);
-            this->textureCache.processCacheQueue(1000);
-            this->db2Cache.processCacheQueue(1000);
-        }
-    });
-
-
-
-    g_globalThreadsSingleton.cullingAndUpdateThread = std::thread(([&](){
-        using namespace std::chrono_literals;
-        std::unique_lock<std::mutex> localLockNextMeshes (m_lockNextMeshes,std::defer_lock);
-
-        while (!this->m_isTerminating) {
-            if (!deltaTimeUpdate) {
-                std::this_thread::sleep_for(500us);
-                continue;
-            }
-
-            localLockNextMeshes.lock();
-            deltaTimeUpdate = false;
-            DoCulling();
-            localLockNextMeshes.unlock();
-        }
-    }));
 
 }
 
@@ -506,56 +668,19 @@ void WoWSceneImpl::setScreenSize(int canvWidth, int canvHeight) {
     this->canvAspect = (float)canvWidth / (float)canvHeight;
 }
 
-/* Shaders stuff */
-
-void WoWSceneImpl::drawTexturedQuad(GLuint texture,
-                                    float x,
-                                    float y,
-                                    float width,
-                                    float height,
-                                    float canv_width,
-                                    float canv_height,
-                                    bool drawDepth) {
-    /*
-    glDisable(GL_DEPTH_TEST);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vertBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    glEnableVertexAttribArray(+drawDepthShader::Attribute::position);
-    glVertexAttribPointer(+drawDepthShader::Attribute::position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glUniform1f(this->drawDepthBuffer->getUnf("uWidth"), width/canv_width);
-    glUniform1f(this->drawDepthBuffer->getUnf("uHeight"), height/canv_height);
-    glUniform1f(this->drawDepthBuffer->getUnf("uX"), x/canv_width);
-    glUniform1f(this->drawDepthBuffer->getUnf("uY"), y/canv_height);
-    glUniform1i(this->drawDepthBuffer->getUnf("drawDepth"), (drawDepth) ? 1 : 0);
-
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glEnable(GL_DEPTH_TEST);
-    */
-}
 /****************/
 
-void glClearScreen() {
-#ifndef WITH_GLESv2
-    glClearDepthf(1.0f);
-#else
-    glClearDepthf(1.0f);
-#endif
+void WoWSceneImpl::drawCamera () {
+    /*
     glDisable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-//    glClearColor(0.0, 0.0, 0.0, 0.0);
-//    glClearColor(0.25, 0.06, 0.015, 0.0);
-    glClearColor(0.117647, 0.207843, 0.392157, 1);
-    //glClearColor(fogColor[0], fogColor[1], fogColor[2], 1);
-//    glClearColor(0,0,0,1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    glDisable(GL_CULL_FACE);
-    glDepthMask(GL_FALSE);
-    glDisable(GL_SCISSOR_TEST);
+
+    mathfu::mat4 invViewFrustum = this->m_viewCameraForRender.Inverse();
+
+    glUniformMatrix4fv(drawFrustumShader->getUnf("uInverseViewProjection"), 1, GL_FALSE, &invViewFrustum[0]);
+
+    glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
+    glEnable(GL_DEPTH_TEST);
+    */
 }
 
 void print_timediff(const char* prefix, const struct timespec& start, const
@@ -566,122 +691,81 @@ struct timespec& end)
 }
 
 void WoWSceneImpl::draw(animTime_t deltaTime) {
-    struct timespec renderingAndUpdateStart, renderingAndUpdateEnd;
-//    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateStart);
+    //Replace the scene
+    if (newScene != nullptr) {
+        if (currentScene != nullptr) delete currentScene;
+		for (int i = 0; i < 4; i++) {
+			m_FrameParams[i] = WoWFrameData();
+		}
+        getDevice()->shrinkData();
+
+        currentScene = newScene;
+        newScene = nullptr;
+    }
+
+    std::future<bool> cullingFuture;
+    std::future<bool> updateFuture;
+    if (m_supportThreads) {
+        cullingFuture = cullingFinished.get_future();
+
+        nextDeltaTime.set_value(deltaTime);
+        if (getDevice()->getIsAsynBuffUploadSupported()) {
+            nextDeltaTimeForUpdate.set_value(deltaTime);
+            updateFuture = updateFinished.get_future();
+        }
+    }
+
+    if (currentScene == nullptr) return;
+
+    if (needToDropCache) {
+        if (cacheStorage) {
+            cacheStorage->actuallDropCache();
+        }
+        needToDropCache = false;
+    }
+
 
     IDevice *device = getDevice();
     device->reset();
-    int currentFrame = device->getFrameNumber() % 4;
+    int currentFrame = device->getDrawFrameNumber();
     WoWFrameData *frameParam = &m_FrameParams[currentFrame];
 
+    if (!m_supportThreads) {
+        processCaches(10);
+        frameParam->deltaTime = deltaTime;
+        DoCulling();
+    }
+
+    float clearColor[4];
+    m_config->getClearColor(clearColor);
+    device->setClearScreenColor(clearColor[0], clearColor[1], clearColor[2]);
+    device->setViewPortDimensions(0,0,this->canvWidth, this->canvHeight);
+    device->beginFrame();
+
+    device->drawMeshes(frameParam->renderedThisFrame);
+    m_isDebugCamera = false;
+
+
+    device->commitFrame();
+    device->reset();
+
     if (!device->getIsAsynBuffUploadSupported()) {
-        int updateObjFrame = (device->getFrameNumber() + 1) % 4;
-        WoWFrameData *objFrameParam = &m_FrameParams[updateObjFrame];
-        currentScene->update(objFrameParam);
-        currentScene->collectMeshes(objFrameParam);
-        device->updateBuffers(objFrameParam->renderedThisFrame);
+        DoUpdate();
     }
 
-    glClearScreen();
 
-    glViewport(0,0,this->canvWidth, this->canvHeight);
+    if (m_supportThreads) {
+        cullingFuture.wait();
+        cullingFinished = std::promise<bool>();
 
-    sceneWideBlockVSPS &blockPSVS = m_sceneWideUniformBuffer->getObject<sceneWideBlockVSPS>();
-    blockPSVS.uLookAtMat = frameParam->m_lookAtMat4;
-    blockPSVS.uPMatrix = frameParam->m_perspectiveMatrix;
-
-    m_sceneWideUniformBuffer->save();
-
-    mathfu::mat4 mainLookAtMat4 = frameParam->m_lookAtMat4;
-
-    if (this->m_config->getDoubleCameraDebug()) {
-        //Draw static camera
-        m_isDebugCamera = true;
-        frameParam->m_lookAtMat4 = frameParam->m_secondLookAtMat;
-        currentScene->draw(frameParam);
-        m_isDebugCamera = false;
-
-        if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
-            /*
-            //Draw real camera into square at bottom of screen
-            this->activateRenderDepthShader();
-            glEnableVertexAttribArray(0);
-            glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
-            glUniform1f(drawDepthBuffer->getUnf("uNearPlane"), nearPlane);
-
-            this->drawTexturedQuad(this->frameBufferDepthTexture,
-                                   this->canvWidth * 0.60f,
-                                   0,//this.canvas.height * 0.75,
-                                   this->canvWidth * 0.40f,
-                                   this->canvHeight * 0.40f,
-                                   this->canvWidth,
-                                   this->canvHeight, true);
-           */
-        } else {
-            //Render real camera
-//            glBindFramebuffer(GL_FRAMEBUFFER, this->frameBuffer);
-//            glClearScreen(/*this.fogColor*/);
-//            glDepthMask(GL_TRUE);
-//
-//            this->m_lookAtMat4 = lookAtMat4;
-//            currentScene->draw();
-//            glBindFramebuffer(GL_FRAMEBUFFER, GL_ZERO);
-//
-//            this->activateRenderDepthShader();
-//            this->drawTexturedQuad(this->frameBufferColorTexture,
-//                                   this->canvWidth * 0.60f,
-//                                   0,//this.canvas.height * 0.75,
-//                                   this->canvWidth * 0.40f,
-//                                   this->canvHeight * 0.40f,
-//                                   this->canvWidth,
-//                                   this->canvHeight, false);
-
-
-        }
-    } else {
-        //Render real camera
-        frameParam->m_lookAtMat4 = mainLookAtMat4;
-        currentScene->draw(frameParam);
-
-        if (this->m_config->getDrawDepthBuffer() /*&& this.depth_texture_ext*/) {
-            //Draw real camera into square at bottom of screen
-            /*
-            this->activateRenderDepthShader();
-            glEnableVertexAttribArray(0);
-            glUniform1f(drawDepthBuffer->getUnf("uFarPlane"), farPlane);
-            glUniform1f(drawDepthBuffer->getUnf("uNearPlane"), nearPlane);
-
-            this->drawTexturedQuad(this->frameBufferDepthTexture,
-                                   this->canvWidth * 0.60f,
-                                   0,//this.canvas.height * 0.75,
-                                   this->canvWidth * 0.40f,
-                                   this->canvHeight * 0.40f,
-                                   this->canvWidth,
-                                   this->canvHeight, true);
-           */
+        if (device->getIsAsynBuffUploadSupported()) {
+            updateFuture.wait();
+            updateFinished = std::promise<bool>();
         }
     }
-//    clock_gettime(CLOCK_MONOTONIC, &renderingAndUpdateEnd);
-
-//    print_timediff("rendering", renderingAndUpdateStart, renderingAndUpdateEnd);
 
 
-//    nextDeltaTime = deltaTime;
-
-    currentScene->doPostLoad(frameParam); //Do post load after rendering is done!
-
-    struct timespec cullingAndUpdateStart, cullingAndUpdateEnd;
-    renderLockNextMeshes.lock();
-
-    frameParam->deltaTime = deltaTime;
-    deltaTimeUpdate = true;
-    m_gdevice->increaseFrameNumber();
-//    glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
-
-//    glFlush();
-    renderLockNextMeshes.unlock();
-
-
+    device->increaseFrameNumber();
 }
 mathfu::mat3 blizzTranspose(mathfu::mat4 &value) {
 
@@ -743,26 +827,24 @@ void WoWSceneImpl::SetDirection(WoWFrameData &frameParamHolder) {
 
 WoWSceneImpl::~WoWSceneImpl() {
     m_isTerminating = true;
-    if (g_globalThreadsSingleton.cullingAndUpdateThread.joinable()) {
-        g_globalThreadsSingleton.cullingAndUpdateThread.join();
-    }
-
-    if (g_globalThreadsSingleton.loadingResourcesThread.joinable()) {
-        g_globalThreadsSingleton.loadingResourcesThread.join();
-    }
 }
 
-WoWScene * createWoWScene(Config *config, IFileRequest * requestProcessor, int canvWidth, int canvHeight){
-#ifdef _WIN32
-    glewExperimental = true; // Needed in core profile
-	if (glewInit() != GLEW_OK) {
-		fprintf(stderr, "Failed to initialize GLEW\n");
-		return nullptr;
-	}
-#endif
+WoWScene *createWoWScene(Config *config, WoWFilesCacheStorage * cacheStorage, IClientDatabase * clientDatabase, IDevice *device, int canvWidth, int canvHeight) {
 #ifdef __ANDROID_API__
-     std::cout.rdbuf(new androidbuf());
+    std::cout.rdbuf(new androidbuf());
 #endif
 
-    return new WoWSceneImpl(config, requestProcessor, canvWidth, canvHeight);
+    return new WoWSceneImpl(config, cacheStorage, clientDatabase, device, canvWidth, canvHeight);
 }
+
+void WoWSceneImpl::clearCache() {
+//    std::cout << "Called " << __PRETTY_FUNCTION__ << std::endl;
+//    needToDropCache = true;
+    if (cacheStorage) {
+        cacheStorage->actuallDropCache();
+    };
+}
+
+
+
+
