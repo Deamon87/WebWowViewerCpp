@@ -15,6 +15,8 @@ class IScene {
 public:
     virtual ~IScene() = default;
     virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) = 0;
+    virtual void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {};
+    virtual void resetReplaceParticleColor() {};
 
     virtual void setAnimationId(int animationId) = 0;
     virtual void resetAnimation() = 0;

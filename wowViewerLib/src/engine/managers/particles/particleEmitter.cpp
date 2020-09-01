@@ -998,7 +998,49 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
 
     auto &ageDependentValues = particlePreRenderData.m_ageDependentValues;
 
-    ageDependentValues.m_timedColor = animatePartTrack<C3Vector, mathfu::vec3>(percentTime, &m_data->old.colorTrack, defaultColor) / 255.0f;
+    bool colorReplProvided = false;
+    if (this->m_data->old.particleColorIndex >= 11 && this->m_data->old.particleColorIndex <= 13) {
+        std::array<std::array<mathfu::vec4, 3>, 3> colorRepl3Tracks;
+        colorReplProvided = m2Object->getReplaceParticleColors(colorRepl3Tracks);
+
+
+        if (colorReplProvided) {
+//            for (int i = 0; i < 3; i++) {
+//                for (int j = 0; j < 3; j++) {
+//                    std::cout << "colorRepl3Tracks["<<i<<"]["<<j<<"] = "
+//                              << "{ "
+//                              << colorRepl3Tracks[i][j][0] << ", "
+//                              << colorRepl3Tracks[i][j][1] << ", "
+//                              << colorRepl3Tracks[i][j][2]
+//                              << "};" << std::endl;
+//                }
+//            }
+//            emscripten_run_script("debugger;");
+            auto partColorInd = this->m_data->old.particleColorIndex - 11;
+            auto colorRepl1Track = colorRepl3Tracks[partColorInd];
+            mathfu::vec4 timedValue = {0,0,0,0};
+            if (percentTime < *m_data->old.colorTrack.timestamps[1]) {
+                float alpha =
+                    (percentTime  - (*m_data->old.colorTrack.timestamps[0]/32767.0f)) /
+                    (*m_data->old.colorTrack.timestamps[0]/32767.0f - *m_data->old.colorTrack.timestamps[1]/32767.0f);
+
+                timedValue = (colorRepl1Track[1]-colorRepl1Track[0]) * alpha + colorRepl1Track[0];
+            } else {
+                float alpha =
+                    (percentTime  - (*m_data->old.colorTrack.timestamps[1]/32767.0f)) /
+                    (*m_data->old.colorTrack.timestamps[2]/32767.0f - *m_data->old.colorTrack.timestamps[1]/32767.0f);
+
+                timedValue = (colorRepl1Track[1]-colorRepl1Track[0]) * alpha + colorRepl1Track[0];
+            }
+
+            ageDependentValues.m_timedColor = timedValue.xyz();
+        }
+    }
+
+    if (!colorReplProvided) {
+        ageDependentValues.m_timedColor = animatePartTrack<C3Vector, mathfu::vec3>(percentTime, &m_data->old.colorTrack, defaultColor) / 255.0f;
+    }
+
     ageDependentValues.m_particleScale = animatePartTrack<C2Vector, mathfu::vec2>(percentTime, &m_data->old.scaleTrack, defaultScale);
     ageDependentValues.m_alpha = animatePartTrack<fixed16, float>(percentTime, &m_data->old.alphaTrack, defaultAlpha);
 

@@ -57,9 +57,11 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
  
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize" )
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize")
-
+if (EMSCRIPTEN)
+else()
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize" )
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize")
+endif()
 
 if (EMSCRIPTEN_SIMD)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
@@ -435,7 +437,7 @@ else()
 endif()
 
 add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
-
+target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
 target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 
@@ -474,7 +476,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (0)
+if (1)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)

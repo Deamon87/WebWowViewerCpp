@@ -117,6 +117,10 @@ private:
     bool hasModf0x2Flag = false;
     std::vector<uint8_t> m_meshIds;
     std::vector<HBlpTexture> m_replaceTextures;
+    bool particleColorReplacementIsSet = false;
+    std::array<std::array<mathfu::vec4, 3>, 3> m_particleColorReplacement;
+
+
     std::vector<mathfu::mat4> bonesMatrices;
     std::vector<mathfu::mat4> textAnimMatrices;
     std::vector<mathfu::vec4> subMeshColors;
@@ -184,6 +188,9 @@ public:
                        std::vector<HBlpTexture> replaceTextures);
 
     void setReplaceTextures(std::vector<HBlpTexture> &replaceTextures);
+    void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);
+    void resetReplaceParticleColor();
+    bool getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);
     void setModelFileName(std::string modelName);
     int getModelFileId();
     void setModelFileId(int fileId);

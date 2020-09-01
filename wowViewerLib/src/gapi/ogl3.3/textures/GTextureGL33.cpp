@@ -70,7 +70,9 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
 }
 
 void GTextureGL33::readData(std::vector<uint8_t> &buff) {
+#ifndef __EMSCRIPTEN__
     if (buff.size() < width*height*4) {
+
         __debugbreak();
     }
 
@@ -80,6 +82,17 @@ void GTextureGL33::readData(std::vector<uint8_t> &buff) {
 
 
     m_device.bindTexture(nullptr, 0);
+#else
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->textureIdentifier, 0);
+
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buff.data());
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDeleteFramebuffers(1, &fbo);
+#endif
 }
 
 void GTextureGL33::bindToCurrentFrameBufferAsColor(uint8_t attachmentIndex) {

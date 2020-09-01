@@ -2,7 +2,6 @@
 #include <iostream>
 #include <iomanip>
 
-
 std::string url_encode(const std::string &value) {
     std::ostringstream escaped;
 
@@ -42,66 +41,18 @@ void HttpFile::setCallback(HTTPReadyCallback callback) {
 }
 
 void HttpFile::startDownloading() {
-//    CURL * curl = curl_easy_init();
-//    this->curlInstance = curl;
-//
-//
-//    if (curl) {
-//        curl_easy_cleanup(curl);
-//        curl = curl_easy_init();
-//        std::string escaped_url = url_encode(m_httpUrl);
-//
-//        curl_easy_setopt(curl, CURLOPT_URL, escaped_url.c_str());
-//
-//        curl_easy_setopt(curl, CURLOPT_HEADER, 0);
-//        curl_easy_setopt(curl, CURLOPT_NOBODY, 0);
-//        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-//        curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
-//        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5000);
-//        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 5000);
-//        CURLcode res = curl_easy_perform(curl);
-//
-//        long httpCode;
-//        curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &httpCode);
-//
-//        if (httpCode == 200 && res == CURLE_OK) {
-//            if (this->m_fileBuffer->size() == 0) {
-//                std::cout << "File "<< this->m_httpUrl.c_str() << " is empty" << std::endl <<
-//                    escaped_url << std::endl << std::flush;
-//            } else if (this->m_callback != nullptr) {
-//                m_callback(this->m_fileBuffer);
-//            }
-//        } else {
-//            std::cout << "Could not download file "<<this->m_httpUrl.c_str() << std::endl <<
-//                escaped_url << std::endl << std::flush;
-//        }
-//        /* always cleanup */
-//        curl_easy_cleanup(curl);
+    httplib::Client cli(m_httpUrl, 80);
+
+    httplib::ContentReceiver contentReceiver = [](const char *data, size_t data_length) -> bool {
+        return true;
+    };
+
+    auto res = cli.Get("/hi");
+
+//    if (res) {
+        std::cout << res->status << std::endl;
+        std::cout << res->body << std::endl;
 //    }
-
-//    std::string escaped_url = url_encode(m_httpUrl);
-
-    std::string escaped_url = m_httpUrl;
-    auto verSSL = cpr::VerifySsl{false};
-
-    auto r = cpr::Get(cpr::Url{escaped_url}, verSSL );
-    if (r.status_code == 200) {
-        this->m_fileBuffer = std::make_shared<FileContent>(FileContent(r.text.begin(), r.text.end()));
-
-
-
-        if (this->m_fileBuffer->size() == 0) {
-            std::cout << "File " << this->m_httpUrl.c_str() << " is empty" << std::endl <<
-                      escaped_url << std::endl << std::flush;
-            m_failCallback({});
-        } else if (this->m_callback != nullptr) {
-            m_callback(this->m_fileBuffer);
-        }
-    } else {
-        std::cout << "Could not download file " << this->m_httpUrl.c_str() << std::endl <<
-                  escaped_url << std::endl << std::flush;
-        m_failCallback({});
-    }
 }
 
 void HttpFile::setFailCallback(HTTPReadyCallback callback) {

@@ -1822,3 +1822,22 @@ void M2Object::setReplaceTextures(std::vector<HBlpTexture> &replaceTextures) {
         createMeshes(); // recreate meshes
     }
 }
+
+void M2Object::setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {
+    m_particleColorReplacement = particleColorReplacement;
+    particleColorReplacementIsSet = true;
+    std::cout << "particleColorReplacementIsSet = " << particleColorReplacementIsSet << std::endl;
+}
+
+bool M2Object::getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {
+    if (particleColorReplacementIsSet) {
+        particleColorReplacement = m_particleColorReplacement;
+        return true;
+    }
+
+    return false;
+}
+
+void M2Object::resetReplaceParticleColor() {
+    particleColorReplacementIsSet = false;
+}

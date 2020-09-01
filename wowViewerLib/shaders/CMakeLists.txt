@@ -4,6 +4,11 @@ else()
     set(GLSL_TARGET_FOLDER ${CMAKE_BINARY_DIR})
 endif()
 
+set(APP_RUN_PREFIX "")
+if (EMSCRIPTEN)
+    set(APP_RUN_PREFIX node )
+endif()
+
 message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/spirv-cross)
@@ -20,10 +25,9 @@ set(SPIRV_REF_SOURCES
         src/spirv/webGLSLCompiler.h
         src/spirv/dumpShaderFields.h src/spirv/dumpShaderMetaData.h src/spirv/dumpGLSLShader.h)
 set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/engine/shader/ShaderDefinitions.h)
+set_target_properties(glslangValidator PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_custom_target(SPIRV_EXTRACT_META ALL)
-
-
 
 add_executable(spirv_reflection ${SPIRV_REF_SOURCES})
 set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
@@ -32,6 +36,7 @@ target_include_directories(spirv_reflection PUBLIC ${PROJECT_SOURCE_DIR}/3rdpart
 if(EMSCRIPTEN)
     target_link_options(spirv_reflection PUBLIC -s NODERAWFS=1)
 endif()
+set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
     message(STATUS "Configuring directory ${destDir}")
@@ -50,7 +55,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     OUTPUT ${SPIRV_NonOpt}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                    COMMAND glslangValidator -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
+                    COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/glslangValidator${CMAKE_EXECUTABLE_SUFFIX} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
                     DEPENDS ${srcTemplatePath})
 
 #            if(SPIRV_OPT_APP)
@@ -91,7 +96,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     OUTPUT ${GLSL20_FILE}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL20}"
-                    COMMAND spirv_reflection -glsl100 ${SPIRV_NonOpt} > ${GLSL20_FILE_FULLPATH}
+                    COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX} -glsl100 ${SPIRV_NonOpt} > ${GLSL20_FILE_FULLPATH}
                     DEPENDS ${SPIRV_NonOpt})
 
             list(APPEND GLSL20Files ${GLSL20_FILE})
@@ -103,7 +108,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     OUTPUT ${GLSL33_FILE}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL33}"
-                    COMMAND spirv_reflection -glsl330 ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
+                    COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX} -glsl330 ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
                     DEPENDS ${SPIRV_NonOpt})
 
             list(APPEND GLSL30Files ${GLSL33_FILE})
@@ -123,7 +128,7 @@ configure_filesVLK(${PROJECT_SOURCE_DIR}/shaders/glsl/vulkan ${GLSL_TARGET_FOLDE
 
 add_custom_command(
         TARGET SPIRV_EXTRACT_META
-        COMMAND spirv_reflection -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
+        COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX} -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
         VERBATIM)
 

@@ -177,6 +177,14 @@ M2Scene::M2Scene(ApiContainer *api, int fileDataId, int cameraView) {
     m_m2Object = m2Object;
 }
 
+void M2Scene::setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {
+    m_m2Object->setReplaceParticleColors(particleColorReplacement);
+}
+
+void M2Scene::resetReplaceParticleColor() {
+    m_m2Object->resetReplaceParticleColor();
+}
+
 
 /*
 void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {

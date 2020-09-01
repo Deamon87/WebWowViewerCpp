@@ -16,23 +16,13 @@ struct UpdateStage;
 //Holds dependency graph for different scenes
 class FrameScenario;
 
-typedef std::shared_ptr<CullStage> HCullStage;
-typedef std::shared_ptr<UpdateStage> HUpdateStage;
-typedef std::shared_ptr<FrameScenario> HFrameScenario;
-
-
-
 
 #include <vector>
 #include "../gapi/interface/IDevice.h"
 #include "../gapi/interface/meshes/IMesh.h"
 #include "objects/ViewsObjects.h"
-#include "objects/iScene.h"
 #include "camera/CameraInterface.h"
-
-
-
-
+#include "DrawStage.h"
 
 struct CullStage {
 //Input:
@@ -55,6 +45,7 @@ struct CullStage {
     std::vector<std::shared_ptr<M2Object>> m2Array = {};
     std::vector<std::shared_ptr<WmoObject>> wmoArray = {};
 };
+typedef std::shared_ptr<CullStage> HCullStage;
 
 struct UpdateStage {
 //input
@@ -62,8 +53,12 @@ struct UpdateStage {
     animTime_t delta;
     HCameraMatrices cameraMatrices;
 };
+typedef std::shared_ptr<UpdateStage> HUpdateStage;
+
 
 class SceneComposer;
+
+#include "objects/iScene.h"
 
 class FrameScenario {
     friend class SceneComposer;
@@ -86,14 +81,15 @@ public:
     HDrawStage addDrawStage(HUpdateStage updateStage,
                             HScene scene,
                             HCameraMatrices matricesForDrawing,
-                            std::vector<HDrawStage> drawStageDependencies,
+                            const std::vector<HDrawStage> &drawStageDependencies,
                             bool setViewPort,
-                            ViewPortDimensions &viewPortDimensions,
-                            bool clearScreen, mathfu::vec4 &clearColor, HFrameBuffer fbTarget);
+                            const ViewPortDimensions &viewPortDimensions,
+                            bool clearScreen,
+                            const mathfu::vec4 &clearColor, HFrameBuffer fbTarget);
 
     HDrawStage getDrawStage();
 };
-
+typedef std::shared_ptr<FrameScenario> HFrameScenario;
 
 
 #endif //AWEBWOWVIEWERCPP_SCENESCENARIO_H

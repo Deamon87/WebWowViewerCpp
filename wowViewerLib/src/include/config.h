@@ -91,6 +91,7 @@ private:
     mathfu::vec4 FogHeightCoefficients;
 
     std::string areaName;
+
 public:
     float getFarPlane() {
         return farPlane;

@@ -278,8 +278,8 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
 
     float canvasAspect = (float)width / (float)height;
 
-    auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-    auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    HCameraMatrices cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
     //Frustum matrix with reversed Z
 
     bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();

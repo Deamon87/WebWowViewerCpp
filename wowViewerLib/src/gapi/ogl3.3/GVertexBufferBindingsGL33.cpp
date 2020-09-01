@@ -16,7 +16,6 @@ constexpr GLenum toOGLEnum(GBindingType bindingType) {
 //        default:
 //            throw std::runtime_error("unknown GBindingType");
     }
-    __debugbreak();
     return 0;
 }
 

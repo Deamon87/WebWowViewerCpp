@@ -5,6 +5,11 @@ project(WoWWebViewerJs)
 include(CheckCXXCompilerFlag)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_EXECUTABLE_SUFFIX .js)
+
+add_link_options("SHELL: -s ALLOW_MEMORY_GROWTH=1")
+add_link_options("SHELL: -s DISABLE_EXCEPTION_CATCHING=0")
+add_link_options("SHELL: -s TOTAL_MEMORY=40MB")
 
 message( EMSCRIPTEN_ROOT = emc${EMSCRIPTEN_ROOT})
 

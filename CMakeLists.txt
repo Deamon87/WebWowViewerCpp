@@ -99,6 +99,7 @@ if (MSVC)
 	set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/3rdparty/zlib)
 endif()
 
+
 #libpng
 if (MSVC)
 	set(PNG_BUILD_ZLIB ON)

@@ -41,5 +41,6 @@ struct DrawStage {
 
     HFrameBuffer target;
 };
+typedef std::shared_ptr<DrawStage> HDrawStage;
 
 #endif //AWEBWOWVIEWERCPP_DRAWSTAGE_H

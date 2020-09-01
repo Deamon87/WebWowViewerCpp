@@ -37,6 +37,43 @@ double m_y = 0.0;
 
 GLFWwindow * window;
 
+template <int T>
+float getFloatFromInt(int value) {
+    if (T == 0) {
+        return (value & 0xFF) / 255.0f;
+    }
+    if (T == 1) {
+        return ((value >> 8) & 0xFF) / 255.0f;
+    }
+    if (T == 2) {
+        return ((value >> 16) & 0xFF) / 255.0f;
+    }
+    if (T == 3) {
+        return ((value >> 24) & 0xFF) / 255.0f;
+    }
+}
+void convertColors(int index, int start, int mid, int end, std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {
+    particleColorReplacement[index][0] = mathfu::vec4(
+        getFloatFromInt<2>(start),
+        getFloatFromInt<1>(start),
+        getFloatFromInt<0>(start),
+        getFloatFromInt<3>(start)
+    );
+    particleColorReplacement[index][1] = mathfu::vec4(
+        getFloatFromInt<2>(mid),
+        getFloatFromInt<1>(mid),
+        getFloatFromInt<0>(mid),
+        getFloatFromInt<3>(mid)
+    );
+    particleColorReplacement[index][2] = mathfu::vec4(
+        getFloatFromInt<2>(end),
+        getFloatFromInt<1>(end),
+        getFloatFromInt<0>(end),
+        getFloatFromInt<3>(end)
+    );
+}
+
+
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     auto controllable = apiContainer.camera;
 
@@ -221,6 +258,7 @@ void setScene(int sceneType, std::string name, int cameraNum) {
     }
 }
 
+
 extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void createWebJsScene(int p_canvWidth, int p_canvHeight, char *url, char *urlFileId) {
@@ -296,9 +334,7 @@ extern "C" {
         glfwSetWindowSizeCallback(window, window_size_callback);
         glfwSetMouseButtonCallback(window, mouse_button_callback);
     }
-}
 
-extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void setNewUrls(char *url, char *urlFileId) {
         processor->setUrls(url, urlFileId);
@@ -401,6 +437,34 @@ extern "C" {
             currentScene->setAnimationId(animationId);
         }
     }
+    EMSCRIPTEN_KEEPALIVE
+    void setReplaceParticleColors(
+        int start0, int start1, int start2,
+        int mid0, int mid1, int mid2,
+        int end0, int end1, int end2
+    ) {
+        std::array<std::array<mathfu::vec4, 3>, 3> particleColorReplacement;
+        //0
+        convertColors(0, start0, mid0, end0, particleColorReplacement);
+        convertColors(1, start1, mid1, end1, particleColorReplacement);
+        convertColors(2, start2, mid2, end2, particleColorReplacement);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                std::cout << "particleColorReplacement["<<i<<"]["<<j<<"] = "
+                << "{ "
+                << particleColorReplacement[i][j][0] << ", "
+                << particleColorReplacement[i][j][1] << ", "
+                << particleColorReplacement[i][j][2]
+                << "};" << std::endl;
+            }
+        }
+
+        currentScene->setReplaceParticleColors(particleColorReplacement);
+    }
+    EMSCRIPTEN_KEEPALIVE
+    void resetReplaceParticleColor() {
+        currentScene->resetReplaceParticleColor();
+    }
 
     EMSCRIPTEN_KEEPALIVE
     void setTextures(int *fileDataIdsBuff, int elementsCount) {
@@ -418,9 +482,6 @@ extern "C" {
         controllable->setCameraPos(x,y,z);
     }
 
-}
-
-extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void gameloop(double deltaTime) {
         if (sceneComposer == nullptr) return;
@@ -450,9 +511,9 @@ extern "C" {
 //        if (currentScene != nullptr) {
         auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
         auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
+        ViewPortDimensions dimensions = {{0, 0}, {canvWidth, canvHeight}};
         auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
-                                                              {{0, 0}, {canvWidth, canvHeight}},
-                                                              true, clearColor);
+                                    dimensions, true, clearColor, nullptr);
         clearOnUi = false;
 //        }
 //        else {
@@ -472,6 +533,7 @@ extern "C" {
 //        std::cout << "testConf->getRenderWMO() " << testConf->getRenderWMO() << std::endl;
     }
 }
+
 
 
 

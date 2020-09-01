@@ -16,6 +16,14 @@ struct UserDataForRequest {
     HttpRequestProcessor *processor;
 };
 
+//void downloadProgress(emscripten_fetch_t *fetch) {
+//    UserDataForRequest *userDataForRequest = (UserDataForRequest *) fetch->userData;
+//    if (userDataForRequest->fileContent == nullptr) {
+//        userDataForRequest->fileContent = std::make_shared<FileContent>(fetch->numBytes);
+//    }
+//
+//
+//}
 void downloadSucceeded(emscripten_fetch_t *fetch) {
 //    printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
 //
