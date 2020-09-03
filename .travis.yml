@@ -1,9 +1,31 @@
+dist: bionic
+sudo:     required
+
 language: c++
+
+os:
+  - linux
+#  - windows
+
+compiler:
+  - gcc
+  - clang
+
+env:
+  - TARGET_CPU=amd64 BUILD_CONFIGURATION=Debug
+  - TARGET_CPU=amd64 BUILD_CONFIGURATION=Release
+  - TARGET_CPU=x86 BUILD_CONFIGURATION=Debug
+  - TARGET_CPU=x86 BUILD_CONFIGURATION=Release
+
+script:
+  - mkdir build
+  - cd build
+  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION -DTARGET_CPU=$TARGET_CPU
+  - cmake --build .
+
+git:
+  submodules: true
 
 branches:
   only:
     - master
-env:
-  global:
-    - ENCRYPTION_LABEL: "eb269827b609"
-    - COMMIT_AUTHOR_EMAIL: "Deamon87@travis.com"
