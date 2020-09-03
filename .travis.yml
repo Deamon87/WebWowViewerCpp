@@ -3,19 +3,26 @@ sudo:     required
 
 language: c++
 
+addons:
+  apt:
+    packages:
+      - libxinerama-dev
+      - libxcursor-dev
+      - xorg-dev
+
 os:
   - linux
 #  - windows
 
 compiler:
   - gcc
-  - clang
+#  - clang
 
 env:
-  - TARGET_CPU=amd64 BUILD_CONFIGURATION=Debug
+#  - TARGET_CPU=amd64 BUILD_CONFIGURATION=Debug
   - TARGET_CPU=amd64 BUILD_CONFIGURATION=Release
-  - TARGET_CPU=x86 BUILD_CONFIGURATION=Debug
-  - TARGET_CPU=x86 BUILD_CONFIGURATION=Release
+#  - TARGET_CPU=x86 BUILD_CONFIGURATION=Debug
+#  - TARGET_CPU=x86 BUILD_CONFIGURATION=Release
 
 script:
   - mkdir build
