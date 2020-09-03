@@ -1,0 +1,9 @@
+language: c++
+
+branches:
+  only:
+    - master
+env:
+  global:
+    - ENCRYPTION_LABEL: "eb269827b609"
+    - COMMIT_AUTHOR_EMAIL: "Deamon87@travis.com"
