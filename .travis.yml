@@ -29,6 +29,9 @@ before_install:
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo apt-get -q update
   - sudo apt-get -y install gcc-10
+  - sudo apt-get -y install g++-10
+  - gcc-10 -v
+  - g++-10 -v
 
 install:
 - if [ "$CXX" = "g++" ]; then
