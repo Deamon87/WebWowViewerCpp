@@ -10,6 +10,8 @@ addons:
       - libxcursor-dev
       - xorg-dev
       - libglew-dev
+      - gcc-10
+      - g++-10
 
 os:
   - linux
@@ -24,6 +26,16 @@ env:
   - TARGET_CPU=amd64 BUILD_CONFIGURATION=Release
 #  - TARGET_CPU=x86 BUILD_CONFIGURATION=Debug
 #  - TARGET_CPU=x86 BUILD_CONFIGURATION=Release
+
+install:
+- if [ "$CXX" = "g++" ]; then
+    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+        export CXX="g++-9" CC="gcc-9";
+      else
+        export CXX="g++-10" CC="gcc-10";
+    fi;
+  fi
+
 before_script:
   - sudo rm /usr/bin/python
   - sudo cp /usr/bin/python3 /usr/bin/python
