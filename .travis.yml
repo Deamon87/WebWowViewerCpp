@@ -1,7 +1,7 @@
-dist: bionic
-sudo:     required
+sudo: required
 
 language: c++
+dist: bionic
 
 addons:
   apt:
@@ -10,8 +10,8 @@ addons:
       - libxcursor-dev
       - xorg-dev
       - libglew-dev
-      - gcc-10
-      - g++-10
+      - gcc-9
+      - g++-9
 
 os:
   - linux
