@@ -132,8 +132,7 @@ add_subdirectory(3rdparty/bzip)
 #add_subdirectory(3rdparty/stormlib)
 
 #CascLib
-set(CASC_BUILD_STATIC_LIB 1)
-set(CASC_BUILD_SHARED_LIB 0)
+
 add_definitions(-DCASCLIB_NO_AUTO_LINK_LIBRARY)
 
 if (CMAKE_NDK_BUILD MATCHES 1)
@@ -144,10 +143,10 @@ endif()
 if (WIN32)
 	set(WITH_LIBTOMCRYPT true)
 endif()
-set(BUILD_SHARED_LIBS OFF)
-set(CASC_BUILD_STATIC_LIB ON)
+option(CASC_BUILD_STATIC_LIB "" ON)
+option(CASC_BUILD_SHARED_LIB "" OFF)
 add_subdirectory(3rdparty/casclib)
-set(CASC_BUILD_STATIC_LIB ON)
+
 
 if (CMAKE_NDK_BUILD MATCHES 1)
 	target_compile_definitions(casc PUBLIC -DCMAKE_SYSTEM_NAME=Linux)

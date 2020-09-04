@@ -56,7 +56,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
                     OUTPUT ${SPIRV_NonOpt}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
                     COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/glslangValidator${CMAKE_EXECUTABLE_SUFFIX} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
-                    DEPENDS ${srcTemplatePath})
+                    DEPENDS ${srcTemplatePath} glslangValidator)
 
 #            if(SPIRV_OPT_APP)
 #                add_custom_command(
