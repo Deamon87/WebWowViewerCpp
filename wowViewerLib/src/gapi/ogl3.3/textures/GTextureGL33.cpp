@@ -72,8 +72,6 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
 void GTextureGL33::readData(std::vector<uint8_t> &buff) {
 #ifndef __EMSCRIPTEN__
     if (buff.size() < width*height*4) {
-
-        __debugbreak();
     }
 
     m_device.bindTexture(this, 0);
