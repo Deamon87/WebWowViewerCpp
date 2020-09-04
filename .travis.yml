@@ -9,6 +9,7 @@ addons:
       - libxinerama-dev
       - libxcursor-dev
       - xorg-dev
+      - libglew-dev
 
 os:
   - linux
