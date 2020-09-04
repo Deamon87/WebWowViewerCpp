@@ -24,6 +24,9 @@ env:
   - TARGET_CPU=amd64 BUILD_CONFIGURATION=Release
 #  - TARGET_CPU=x86 BUILD_CONFIGURATION=Debug
 #  - TARGET_CPU=x86 BUILD_CONFIGURATION=Release
+before_script:
+  - sudo rm /usr/bin/python
+  - sudo cp /usr/bin/python3 /usr/bin/python
 
 script:
   - mkdir build
