@@ -52,12 +52,13 @@ jobs:
     #Compile for emscripten
     - name: "Emscripten version"
       install:
-        - git clone https://github.com/juj/emsdk.git
+        - git clone https://github.com/emscripten-core/emsdk.git
         - cd emsdk
-        - ./emsdk update
+        - git pull
         - ./emsdk install latest
         - ./emsdk activate latest
         - source ./emsdk_env.sh
+        - cd ..
       script:
         - mkdir build
         - cd build
