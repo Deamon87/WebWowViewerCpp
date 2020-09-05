@@ -28,7 +28,8 @@ env:
 jobs:
   include:
     #Compile for desktop app
-    - install:
+    - name: "Desktop app"
+      install:
       - if [ "$CXX" = "g++" ]; then
           if [ "$TRAVIS_OS_NAME" = "osx" ]; then
               export CXX="g++-9" CC="gcc-9";
@@ -49,16 +50,18 @@ jobs:
         - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION -DTARGET_CPU=$TARGET_CPU
         - cmake --build . --target AWebWoWViewerCpp
     #Compile for emscripten
-    - install:
+    - name: "Emscripten version"
+      install:
         - git clone https://github.com/juj/emsdk.git
-        - (cd emsdk & ./emsdk update)
+        - cd emsdk
+        - ./emsdk update)
         - ./emsdk install latest
         - ./emsdk activate latest
         - source ./emsdk_env.sh
       script:
         - mkdir build
         - cd build
-        - cmake ../emscripten_port -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION -DTARGET_CPU=$TARGET_CPU
+        - cmake ../emscripten_port -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION
         - cmake --build . --target project
 
 
