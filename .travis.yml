@@ -53,6 +53,7 @@ jobs:
     #Compile for emscripten
     - name: "Emscripten version"
       install:
+        - sudo apt-get remove cmake
         - sudo apt-get purge cmake
         - sudo snap install cmake --classic
         - cmake --version
