@@ -58,8 +58,7 @@ jobs:
         - curl -sSL https://cmake.org/files/v3.18/cmake-3.18.2-Linux-x86_64.sh -o ${CMAKE_INSTALLER}
         - chmod +x ${CMAKE_INSTALLER}
         - sudo ./${CMAKE_INSTALLER} --prefix=/opt/cmake --skip-license
-        - sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
-        - cmake --version
+        - /opt/cmake/bin/cmake --version
         - git clone https://github.com/emscripten-core/emsdk.git
         - cd emsdk
         - git pull
@@ -78,8 +77,8 @@ jobs:
       script:
         - mkdir build
         - cd build
-        - /usr/local/cmake/bin/cmake ../emscripten_port -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION
-        - /usr/local/cmake/bin/cmake --build . --target project
+        - /opt/cmake/bin/cmake ../emscripten_port -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION
+        - /opt/cmake/bin/cmake --build . --target project
 
 
 before_script:
