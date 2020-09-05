@@ -77,8 +77,8 @@ jobs:
       script:
         - mkdir build
         - cd build
-        - emconfigure /opt/cmake/bin/cmake ../emscripten_port -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION
-        - emconfigure /opt/cmake/bin/cmake --build . --target project
+        - emcmake /opt/cmake/bin/cmake ../emscripten_port -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION
+        - emcmake /opt/cmake/bin/cmake --build . --target project
 
 
 before_script:
