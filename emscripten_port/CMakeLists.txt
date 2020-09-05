@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.17)
 
 project(WoWWebViewerJs)
 
@@ -55,7 +55,7 @@ add_executable(project ${SOURCE_FILES})
 
 add_dependencies(project WoWViewerLib)
 target_link_libraries(project WoWViewerLib)
-target_link_options(project PUBLIC "SHELL: --pre-js ../prejs.js --js-library ../jsLib.js")
+target_link_options(project PUBLIC "SHELL: --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/prejs.js --js-library ${CMAKE_CURRENT_SOURCE_DIR}/jsLib.js")
 target_link_options(project PUBLIC "SHELL: -s USE_GLFW=3 --preload-file glsl -s ALLOW_MEMORY_GROWTH=1")
 target_link_options(project PUBLIC "SHELL: -s TOTAL_MEMORY=40MB")
 target_link_options(project PUBLIC "SHELL: -s FETCH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1")

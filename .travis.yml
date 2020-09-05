@@ -28,28 +28,28 @@ env:
 
 jobs:
   include:
-#    #Compile for desktop app
-#    - name: "Desktop app"
-#      install:
-#      - if [ "$CXX" = "g++" ]; then
-#          if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-#              export CXX="g++-9" CC="gcc-9";
-#            else
-#              export CXX="g++-10" CC="gcc-10";
-#          fi;
-#        fi
-#      before_install:
-#        - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-#        - sudo apt-get -q update
-#        - sudo apt-get -y install gcc-10
-#        - sudo apt-get -y install g++-10
-#        - gcc-10 -v
-#        - g++-10 -v
-#      script:
-#        - mkdir build
-#        - cd build
-#        - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION -DTARGET_CPU=$TARGET_CPU
-#        - cmake --build . --target AWebWoWViewerCpp
+    #Compile for desktop app
+    - name: "Desktop app"
+      install:
+      - if [ "$CXX" = "g++" ]; then
+          if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+              export CXX="g++-9" CC="gcc-9";
+            else
+              export CXX="g++-10" CC="gcc-10";
+          fi;
+        fi
+      before_install:
+        - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+        - sudo apt-get -q update
+        - sudo apt-get -y install gcc-10
+        - sudo apt-get -y install g++-10
+        - gcc-10 -v
+        - g++-10 -v
+      script:
+        - mkdir build
+        - cd build
+        - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION -DTARGET_CPU=$TARGET_CPU
+        - cmake --build . --target AWebWoWViewerCpp
     #Compile for emscripten
     - name: "Emscripten version"
       install:
