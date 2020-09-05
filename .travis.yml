@@ -25,32 +25,48 @@ env:
 #  - TARGET_CPU=x86 BUILD_CONFIGURATION=Debug
 #  - TARGET_CPU=x86 BUILD_CONFIGURATION=Release
 
-before_install:
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo apt-get -q update
-  - sudo apt-get -y install gcc-10
-  - sudo apt-get -y install g++-10
-  - gcc-10 -v
-  - g++-10 -v
+jobs:
+  include:
+    #Compile for desktop app
+    - install:
+      - if [ "$CXX" = "g++" ]; then
+          if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+              export CXX="g++-9" CC="gcc-9";
+            else
+              export CXX="g++-10" CC="gcc-10";
+          fi;
+        fi
+      before_install:
+        - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+        - sudo apt-get -q update
+        - sudo apt-get -y install gcc-10
+        - sudo apt-get -y install g++-10
+        - gcc-10 -v
+        - g++-10 -v
+      script:
+        - mkdir build
+        - cd build
+        - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION -DTARGET_CPU=$TARGET_CPU
+        - cmake --build . --target AWebWoWViewerCpp
+    #Compile for emscripten
+    - install:
+        - git clone https://github.com/juj/emsdk.git
+        - (cd emsdk & ./emsdk update)
+        - ./emsdk install latest
+        - ./emsdk activate latest
+        - source ./emsdk_env.sh
+      script:
+        - mkdir build
+        - cd build
+        - cmake ../emscripten_port -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION -DTARGET_CPU=$TARGET_CPU
+        - cmake --build . --target project
 
-install:
-- if [ "$CXX" = "g++" ]; then
-    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-        export CXX="g++-9" CC="gcc-9";
-      else
-        export CXX="g++-10" CC="gcc-10";
-    fi;
-  fi
 
 before_script:
   - sudo rm /usr/bin/python
   - sudo cp /usr/bin/python3 /usr/bin/python
 
-script:
-  - mkdir build
-  - cd build
-  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION -DTARGET_CPU=$TARGET_CPU
-  - cmake --build . --target AWebWoWViewerCpp
+
 
 git:
   submodules: true
