@@ -10,7 +10,7 @@ addons:
       - libxcursor-dev
       - xorg-dev
       - libglew-dev
-      - cmake
+
 
 os:
   - linux
@@ -53,6 +53,7 @@ jobs:
     #Compile for emscripten
     - name: "Emscripten version"
       install:
+        - sudo snap install cmake
         - git clone https://github.com/emscripten-core/emsdk.git
         - cd emsdk
         - git pull
