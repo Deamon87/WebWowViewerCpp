@@ -53,7 +53,7 @@ jobs:
     #Compile for emscripten
     - name: "Emscripten version"
       install:
-        - sudo snap install cmake
+        - sudo snap install cmake --classic
         - git clone https://github.com/emscripten-core/emsdk.git
         - cd emsdk
         - git pull
