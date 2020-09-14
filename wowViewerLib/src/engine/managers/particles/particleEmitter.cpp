@@ -12,6 +12,7 @@
 #include "generators/CPlaneGenerator.h"
 #include "../../../gapi/interface/IDevice.h"
 #include "../../persistance/header/M2FileHeader.h"
+#include "../../../gapi/UniformBufferStructures.h"
 
 
 HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
@@ -248,14 +249,6 @@ void ParticleEmitter::selectShaderId() {
     }
 }
 
-PACK(
-struct meshParticleWideBlockPS {
-    float uAlphaTest;
-    float padding[3]; // according to std140
-    int uPixelShader;
-    float padding2[3];
-});
-
 std::array<EGxBlendEnum, 8> PaticleBlendingModeToEGxBlendEnum1 =
     {
         EGxBlendEnum::GxBlend_Opaque,
@@ -347,10 +340,11 @@ void ParticleEmitter::createMesh() {
         meshTemplate.ubo[2] = nullptr;
 
         meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
 
-        meshTemplate.ubo[4]->setUpdateHandler([this](IUniformBufferChunk *self) {
-            meshParticleWideBlockPS &blockPS = self->getObject<meshParticleWideBlockPS>();
+        auto l_blendMode = meshTemplate.blendMode;
+        meshTemplate.ubo[4]->setUpdateHandler([this, l_blendMode](IUniformBufferChunk *self) {
+            Particle::meshParticleWideBlockPS &blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
             uint8_t blendMode = m_data->old.blendingType;
             if (blendMode == 0) {
                 blockPS.uAlphaTest = -1.0f;
@@ -363,6 +357,7 @@ void ParticleEmitter::createMesh() {
             int uPixelShader = particleMaterialShader[this->shaderId].pixelShader;
 
             blockPS.uPixelShader =  uPixelShader;
+            blockPS.uBlendMode = static_cast<int>(l_blendMode);
         });
 
         frame[i].m_mesh = device->createParticleMesh(meshTemplate);

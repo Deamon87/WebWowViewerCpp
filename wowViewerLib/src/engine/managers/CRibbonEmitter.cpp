@@ -4,6 +4,7 @@
 #include "../../gapi/interface/IVertexBufferBindings.h"
 #include "../shader/ShaderDefinitions.h"
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
+#include "../../gapi/UniformBufferStructures.h"
 
 static GBufferBinding staticRibbonBindings[3] = {
     {+ribbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 24, 0 }, // 0
@@ -82,13 +83,6 @@ CRibbonEmitter::CRibbonEmitter(ApiContainer *api, M2Object *object, std::vector<
 
   createMesh(object, materials, textureIndicies);
 }
-PACK(
-    struct meshParticleWideBlockPS {
-        float uAlphaTest;
-        float padding[3]; // according to std140
-        int uPixelShader;
-        float padding2[3];
-    });
 
 extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
 void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) {
@@ -147,13 +141,15 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         meshTemplate.ubo[2] = nullptr;
 
         meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
 
-        meshTemplate.ubo[4]->setUpdateHandler([](IUniformBufferChunk *self) {
-            meshParticleWideBlockPS& blockPS = self->getObject<meshParticleWideBlockPS>();
+        auto blendMode = meshTemplate.blendMode;
+        meshTemplate.ubo[4]->setUpdateHandler([blendMode](IUniformBufferChunk *self) {
+            Particle::meshParticleWideBlockPS& blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
 
             blockPS.uAlphaTest = -1.0f;
             blockPS.uPixelShader = 0;
+            blockPS.uBlendMode = static_cast<int>(blendMode);
         });
 
         

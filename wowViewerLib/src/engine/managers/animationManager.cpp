@@ -25,6 +25,8 @@ AnimationManager::AnimationManager(ApiContainer *api, HM2Geom m2Geom) {
     this->animationInfo.nextSubAnimation.animationTime = 0;
     this->animationInfo.nextSubAnimation.animationRecord = nullptr;
 
+    this->animationInfo.blendFactor = 0;
+
     this->firstCalc = true;
 
     this->initBonesIsCalc();
@@ -290,7 +292,6 @@ void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatr
            m_m2File,
            animationInfo
         );
-        this->isAnimated = isAnimated ? isAnimated : this->isAnimated;
     }
 }
 

@@ -52,6 +52,8 @@ private:
 
     bool useGaussBlur = true;
 
+    bool pauseAnimation = false;
+
     bool useTimedGloabalLight = true;
     bool useM2AmbientLight = false;
 
@@ -411,6 +413,13 @@ public:
     }
     bool getUseGaussBlur() {
         return useGaussBlur;
+    }
+
+    void setPauseAnimation(bool value) {
+        pauseAnimation = value;
+    }
+    bool getPauseAnimation() {
+        return pauseAnimation;
     }
 
     void setUseTimedGloabalLight(bool value) {

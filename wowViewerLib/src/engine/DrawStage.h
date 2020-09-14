@@ -12,6 +12,9 @@ struct ViewPortDimensions;
 typedef std::shared_ptr<DrawStage> HDrawStage;
 
 #include <memory>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #include <mathfu/glsl_mappings.h>
 #include "../gapi/interface/IDevice.h"
 #include "CameraMatrices.h"
@@ -32,6 +35,7 @@ struct DrawStage {
     HMeshesToRender meshesToRender;
     std::vector<HDrawStage> drawStageDependencies;
 
+    bool invertedZ = false;
 
     bool setViewPort = false;
     ViewPortDimensions viewPortDimensions;

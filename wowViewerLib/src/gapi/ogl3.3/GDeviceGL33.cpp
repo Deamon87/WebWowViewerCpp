@@ -8,6 +8,7 @@
 #include "GDeviceGL33.h"
 #include "../../engine/algorithms/hashString.h"
 #include "shaders/GM2ShaderPermutationGL33.h"
+#include "shaders/GWaterShaderGL33.h"
 #include "meshes/GM2MeshGL33.h"
 #include "GOcclusionQueryGL33.h"
 #include "meshes/GParticleMeshGL33.h"
@@ -217,6 +218,10 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
         iPremutation = new GAdtShaderPermutationGL33(shaderName, this);
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "waterShader") {
+        iPremutation = new GWaterShaderGL33(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
     } else {
         iPremutation = new GShaderPermutationGL33(shaderName, this);
         sharedPtr.reset(iPremutation);
@@ -270,6 +275,8 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
         drawStage->viewPortDimensions.maxs[0],
         drawStage->viewPortDimensions.maxs[1]
     );
+    this->setInvertZ(drawStage->invertedZ);
+
     if (drawStage->clearScreen) {
         clearColor[0] = drawStage->clearColor[0];
         clearColor[1] = drawStage->clearColor[1];
@@ -353,6 +360,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
         aggregationBufferForUpload.resize(fullSize);
     }
 
+    uploadAmountInBytes = 0;
     //2. Create buffers and update them
     int currentSize = 0;
     int buffersIndex = 0;
@@ -388,6 +396,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
 
         if (currentSize > 0) {
             bufferForUploadGL->uploadData(pointerForUpload, currentSize);
+            uploadAmountInBytes+= currentSize;
         }
     }
 }
@@ -418,6 +427,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
     std::sort( buffers.begin(), buffers.end());
     buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
 
+    uploadAmountInBytes = 0;
     //2. Create buffers and update them
     int currentSize = 0;
     int buffersIndex = 0;
@@ -447,6 +457,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
 
             lastUploadIndx = i;
             ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(&aggregationBufferForUpload[0], maxUniformBufferSize);
+            uploadAmountInBytes+= maxUniformBufferSize;
 
             buffersIndex++;
             currentSize = 0;
@@ -481,6 +492,7 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
         }
 
         ((GUniformBufferGL33 *) bufferForUpload.get())->uploadData(pointerForUpload, currentSize);
+        uploadAmountInBytes+= currentSize;
     }
 }
 #endif
@@ -1158,6 +1170,7 @@ void GDeviceGL33::clearScreen() {
     }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
+    glDisable(GL_SCISSOR_TEST);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);
 //    glClearColor(0.25, 0.06, 0.015, 0.0);
     glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
@@ -1177,7 +1190,7 @@ void GDeviceGL33::setClearScreenColor(float r, float g, float b) {
 }
 
 void GDeviceGL33::beginFrame() {
-    this->clearScreen();
+
 }
 
 void GDeviceGL33::commitFrame() {

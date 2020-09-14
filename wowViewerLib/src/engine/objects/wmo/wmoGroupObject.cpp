@@ -533,6 +533,7 @@ void WmoGroupObject::createMeshes() {
             blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
             blockPS.PixelShader = pixelShader;
+            blockPS.BlendMode = blendMode;
 
             blockPS.uFogColor_AlphaTest = mathfu::vec4_packed(
                 mathfu::vec4(0,0,0, alphaTest));
@@ -625,15 +626,22 @@ void WmoGroupObject::createWaterMeshes() {
 
     meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
-    HGTexture texture1 = m_wmoApi->getTexture(material.diffuseNameIndex, false);
-    HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, false);
-    HGTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
-
-    meshTemplate.textureCount = 0;
-
-    meshTemplate.texture[0] = texture1;
-    meshTemplate.texture[1] = texture2;
-    meshTemplate.texture[2] = texture3;
+    std::vector<int> fileDataIds;
+    int basetextureFDID = 0;
+    m_api->databaseHandler->getLiquidTypeData(this->liquid_type, fileDataIds);
+    for (auto fdid: fileDataIds) {
+        if (fdid != 0) {
+            basetextureFDID = fdid;
+            break;
+        }
+    }
+    meshTemplate.textureCount = 1;
+    if (basetextureFDID != 0) {
+        auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);
+        meshTemplate.texture[0] = m_api->hDevice->createBlpTexture(htext, true, true);
+    } else {
+        meshTemplate.texture[0] = m_api->hDevice->getBlackTexturePixel();
+    }
 
     meshTemplate.ubo[0] = nullptr;//m_api->getSceneWideUniformBuffer();
     meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
@@ -647,12 +655,12 @@ void WmoGroupObject::createWaterMeshes() {
     meshTemplate.element = DrawElementMode::TRIANGLES;
 
     auto l_liquidType = liquid_type;
-    meshTemplate.ubo[4]->setUpdateHandler([l_liquidType](IUniformBufferChunk* self) -> void {
-        int (&waterType)[4] = self->getObject<int[4]>();
 
-        waterType[0] = l_liquidType;
+
+    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType](IUniformBufferChunk* self) -> void {
+        mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
+        color_ = mathfu::vec4(1.0, 1.0,1.0,0.7);
     });
-
 
     HGMesh hmesh = device->createMesh(meshTemplate);
     m_waterMeshArray.push_back(hmesh);
@@ -787,7 +795,7 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP
 
     if ((nodes[nodeId].planeType & 0x4)) {
         bspLeafIdList.push_back(nodeId);
-    } else if ((nodes[nodeId].planeType == 0)) {
+    } else if (nodes[nodeId].planeType == 0) {
         bool leftSide = MathHelper::checkFrustum({mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}, bbox, {});
         bool rightSide = MathHelper::checkFrustum({mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}, bbox, {});
 
@@ -797,7 +805,7 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP
         if (rightSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
-    } else if ((nodes[nodeId].planeType == 1)) {
+    } else if (nodes[nodeId].planeType == 1) {
         bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}, bbox, {});
         bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}, bbox, {});
 
@@ -807,7 +815,7 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP
         if (rightSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
-    } else if ((nodes[nodeId].planeType == 2)) {
+    } else if (nodes[nodeId].planeType == 2) {
         bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}, bbox, {});
         bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}, bbox, {});
 

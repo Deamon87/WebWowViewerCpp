@@ -44,7 +44,7 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "where ld.LightParamID = ? ORDER BY Time ASC"
         ),
     getLiquidObjectInfo(m_sqliteDatabase,
-        "select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.MinimapStaticCol from LiquidObject lo "
+        "select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.Color_0 from LiquidObject lo "
         "left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lo.LiquidTypeID "
         "left join LiquidType lt on lt.ID = lo.LiquidTypeID "
         "left join LiquidMaterial lm on lt.MaterialID = lm.ID "
@@ -387,7 +387,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         initWithZeros(lightResult.SunFogColor);
         initWithZeros(lightResult.FogHeightColor);
         initWithZeros(lightResult.FogHeightCoefficients);
-        lightResult.FogHeightCoefficients[4] = 0;
+        lightResult.FogHeightCoefficients[3] = 0;
 
         lightResult.skyBoxFdid = 0;
         lightResult.lightSkyboxId = 0;

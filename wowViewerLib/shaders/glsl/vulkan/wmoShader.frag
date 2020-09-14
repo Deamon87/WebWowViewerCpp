@@ -25,7 +25,7 @@ layout(std140, set=0, binding=3) uniform modelWideBlockPS {
 };
 
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
-    ivec4 UseLitColor_EnableAlpha_PixelShader;
+    ivec4 UseLitColor_EnableAlpha_PixelShader_BlendMode;
     vec4 FogColor_AlphaTest;
 };
 
@@ -90,13 +90,13 @@ void main() {
     vec4 tex3 = texture(uTexture3, vTexCoord3).rgba;
 
 
-    if (UseLitColor_EnableAlpha_PixelShader.y == 1) {
+    if (UseLitColor_EnableAlpha_PixelShader_BlendMode.y == 1) {
         if ((tex.a - 0.501960814) < 0.0) {
             discard;
         }
     }
 
-    int uPixelShader = UseLitColor_EnableAlpha_PixelShader.z;
+    int uPixelShader = UseLitColor_EnableAlpha_PixelShader_BlendMode.z;
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
     vec3 matDiffuse = vec3(0.0);
     vec3 env = vec3(0.0);
@@ -243,7 +243,7 @@ void main() {
     if(finalColor.a < FogColor_AlphaTest.w)
         discard;
 
-    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz);
+    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, UseLitColor_EnableAlpha_PixelShader_BlendMode.w);
 
     finalColor.a = 1.0; //do I really need it now?
 

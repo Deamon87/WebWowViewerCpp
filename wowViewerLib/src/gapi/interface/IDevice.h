@@ -147,6 +147,7 @@ class IDevice {
 
         virtual bool getIsAsynBuffUploadSupported() = 0;
         virtual int getMaxSamplesCnt() = 0;
+        virtual int getUploadSize() {return 0;};
 
         virtual void increaseFrameNumber() = 0;
 

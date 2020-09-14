@@ -74,6 +74,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
         meshblockPS.PixelShader = pixelShader;
         meshblockPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
         meshblockPS.UnFogged = ((renderFlag->flags & 0x2) > 0) ? 1 : 0;
+        meshblockPS.BlendMode = static_cast<int>(blendMode);
         meshblockPS.uFogColorAndAlphaTest = mathfu::vec4(mathfu::vec3(0,0,0), uAlphaTest);
     });
 }

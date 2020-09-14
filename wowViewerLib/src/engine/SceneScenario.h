@@ -81,11 +81,11 @@ public:
     HDrawStage addDrawStage(HUpdateStage updateStage,
                             HScene scene,
                             HCameraMatrices matricesForDrawing,
-                            const std::vector<HDrawStage> &drawStageDependencies,
+                            std::vector<HDrawStage> const &drawStageDependencies,
                             bool setViewPort,
-                            const ViewPortDimensions &viewPortDimensions,
-                            bool clearScreen,
-                            const mathfu::vec4 &clearColor, HFrameBuffer fbTarget);
+                            ViewPortDimensions const &viewPortDimensions,
+                            bool clearScreen, bool invertedZ,
+                            mathfu::vec4 const &clearColor, HFrameBuffer fbTarget);
 
     HDrawStage getDrawStage();
 };

@@ -1335,12 +1335,8 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         //Create new drawstage and draw everything there
         resultDrawStage = std::make_shared<DrawStage>();
 
-        resultDrawStage->drawStageDependencies = origResultDrawStage->drawStageDependencies;
-        resultDrawStage->matricesForRendering = origResultDrawStage->matricesForRendering;
-        resultDrawStage->setViewPort = origResultDrawStage->setViewPort;
-        resultDrawStage->viewPortDimensions = origResultDrawStage->viewPortDimensions;;
-        resultDrawStage->clearScreen = origResultDrawStage->clearScreen;;
-        resultDrawStage->clearColor = origResultDrawStage->clearColor;;
+        *resultDrawStage = *origResultDrawStage;
+
 
         resultDrawStage->target = m_api->hDevice->createFrameBuffer(
             resultDrawStage->viewPortDimensions.maxs[0],
@@ -1369,9 +1365,13 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         blockPSVS->extLight.uExteriorDirectColor = config->getExteriorDirectColor();
         blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(config->getExteriorDirectColorDir(), 1.0);
 
+        float fogStart = std::max<float>(config->getFarPlane() - 50, 0);
+        float fogEnd = config->getFarPlane();
+
+
         blockPSVS->fogData.densityParams = mathfu::vec4(
-            (config->getFarPlane() - 30) * config->getFogScaler(),
-            (config->getFarPlane() - 30),
+            config->getFogScaler() * fogStart,
+            fogEnd ,
             config->getFogDensity() / 1000,
          0);
         blockPSVS->fogData.heightPlane = mathfu::vec4(0,0,0,0);

@@ -31,10 +31,12 @@ HDrawStage FrameScenario::getDrawStage() {
     return lastDrawStage;
 }
 
+//FrameScenario::addDrawStage(std::shared_ptr<UpdateStage>, std::shared_ptr<IScene>, std::shared_ptr<CameraMatrices>, std::vector<std::shared_ptr<DrawStage>, std::allocator<std::shared_ptr<DrawStage>>> const&, bool, ViewPortDimensions const&, bool, mathfu::Vector<float, 4> const&, std::shared_ptr<IFrameBuffer>)
+//FrameScenario::addDrawStage(std::shared_ptr<UpdateStage>, std::shared_ptr<IScene>, std::shared_ptr<CameraMatrices>, std::__debug::vector<std::shared_ptr<DrawStage>, std::allocator<std::shared_ptr<DrawStage>>> const&, bool, ViewPortDimensions const&, bool, mathfu::Vector<float, 4> const&, std::shared_ptr<IFrameBuffer>)
 HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage, HScene scene, HCameraMatrices matricesForDrawing,
-                                       const std::vector<HDrawStage> &drawStageDependencies, bool setViewPort,
-                                       const ViewPortDimensions &viewPortDimensions, bool clearScreen,
-                                       const mathfu::vec4 &clearColor, HFrameBuffer fbTarget) {
+                                       std::vector<HDrawStage> const &drawStageDependencies, bool setViewPort,
+                                        ViewPortDimensions const &viewPortDimensions, bool clearScreen, bool invertedZ,
+                                        mathfu::vec4 const &clearColor, HFrameBuffer fbTarget) {
     HDrawStage drawStage = std::make_shared<DrawStage>();
 
     drawStage->drawStageDependencies = drawStageDependencies;
@@ -43,6 +45,7 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage, HScene scene, H
     drawStage->viewPortDimensions = viewPortDimensions;
     drawStage->clearScreen = clearScreen;
     drawStage->clearColor = clearColor;
+    drawStage->invertedZ = invertedZ;
     drawStage->target = fbTarget;
 
 //    drawStage->sceneWideBlockVSPSChunk;

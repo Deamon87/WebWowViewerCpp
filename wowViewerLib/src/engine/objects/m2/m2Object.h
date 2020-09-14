@@ -228,8 +228,6 @@ public:
     bool getHasBillboarded() {
         return m_hasBillboards;
     }
-    bool getIsInstancable();
-
 
     bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);

@@ -77,11 +77,11 @@ void main() {
     vec3 matDiffuse_1 = (matDiffuse_0 + weightedLayer_1.xyz);
     float specBlend_1 = (specBlend_0 + weightedLayer_1.w);
 
-    vec4 weightedLayer_2 = (texture(uLayer2, tcLayer1) * weightsNormalized.z);
+    vec4 weightedLayer_2 = (texture(uLayer2, tcLayer2) * weightsNormalized.z);
     vec3 matDiffuse_2 = (matDiffuse_1 + weightedLayer_2.xyz);
     float specBlend_2 = (specBlend_1 + weightedLayer_2.w);
 
-    vec4 weightedLayer_3 = (texture(uLayer3, tcLayer1) * weightsNormalized.w);
+    vec4 weightedLayer_3 = (texture(uLayer3, tcLayer3) * weightsNormalized.w);
     vec3 matDiffuse_3 = (matDiffuse_2 + weightedLayer_3.xyz);
     float specBlend_3 = (specBlend_2 + weightedLayer_3.w);
 
@@ -112,7 +112,7 @@ void main() {
     vec3 specTerm = (vec3(specBlend) * lSpecular);
     finalColor.rgb += specTerm;
 
-    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz);
+    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, 0);
 
     finalColor.a = 1.0;
     outColor = finalColor;

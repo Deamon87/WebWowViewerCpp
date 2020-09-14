@@ -42,7 +42,9 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 #include "meshes/GMeshGL33.h"
 #include "../interface/IDevice.h"
 
-#define OPENGL_DGB_MESSAGE 1
+
+
+#define OPENGL_DGB_MESSAGE 0
 
 #ifdef __EMSCRIPTEN__
 #define OPENGL_DGB_MESSAGE 0
@@ -68,6 +70,7 @@ public:
     int getMaxSamplesCnt() override {
         return (m_maxMultiSampling < 8) ? m_maxMultiSampling : 8;
     }
+    int getUploadSize() override {return uploadAmountInBytes;};
     virtual bool getIsRenderbufferSupported() override {return true;}
 
     float getAnisLevel() override;
@@ -174,6 +177,7 @@ protected:
     bool m_isInSkyBoxDepthMode = false;
     int8_t m_isScissorsEnabled = -1;
     bool m_isInvertZ = false;
+    int uploadAmountInBytes  = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
 	IVertexBuffer* m_lastBindVertexBuffer = nullptr;
@@ -252,8 +256,6 @@ protected:
     int uniformBuffersCreated = 0;
     std::list<DeallocationRecord> listOfDeallocators;
 };
-
-
 
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H

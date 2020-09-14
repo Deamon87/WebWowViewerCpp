@@ -258,9 +258,9 @@ struct SMLayer
 struct SMTextureFlags
 {
     uint32_t do_not_load_specular_or_height_texture_but_use_cubemap : 1; // probably just 'disable_all_shading'
-    uint32_t : 3;                                                        // no non-zero values in 20490
+    uint32_t unk1: 3;                                                        // no non-zero values in 20490
     uint32_t texture_scale : 4;
-    uint32_t : 24;
+    uint32_t unk2: 24;
 };
 
 struct SMTextureParams {

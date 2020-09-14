@@ -83,11 +83,20 @@ namespace M2 {
         int PixelShader;
         int UnFogged;
         int IsAffectedByLight;
-        int LightCount;
+        int BlendMode;
 
         mathfu::vec4_packed uFogColorAndAlphaTest;
 
         mathfu::vec4_packed uPcColor;
+    };
+}
+namespace Particle {
+    struct meshParticleWideBlockPS {
+        float uAlphaTest;
+        float padding[3]; // according to std140
+        int uPixelShader;
+        int uBlendMode;
+        int padding2[2];
     };
 }
 
@@ -100,7 +109,8 @@ namespace WMO {
     struct meshWideBlockVS {
         int VertexShader;
         int UseLitColor;
-        int padding[2];
+
+        int padding[1];
     };
 
     struct modelWideBlockPS {
@@ -112,7 +122,7 @@ namespace WMO {
         int UseLitColor;
         int EnableAlpha;
         int PixelShader;
-        int padding;
+        int BlendMode;
         mathfu::vec4_packed uFogColor_AlphaTest;
 //    )}
     };

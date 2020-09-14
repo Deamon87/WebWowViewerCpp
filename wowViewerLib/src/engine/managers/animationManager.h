@@ -23,8 +23,7 @@ private:
     int mainAnimationIndex = -1;
     FullAnimationInfo animationInfo;
 
-    bool firstCalc;
-    bool isAnimated;
+    bool firstCalc = true;
     bool deferredLoadingStarted = false;
 
     int leftHandClosed = 0;
@@ -79,9 +78,6 @@ public:
 
     bool getIsFirstCalc() {
         return firstCalc;
-    }
-    bool getIsAnimated() {
-        return isAnimated;
     }
 
     void calcLights(std::vector<M2LightResult> &lights,

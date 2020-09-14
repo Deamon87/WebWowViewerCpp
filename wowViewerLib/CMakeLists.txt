@@ -55,8 +55,8 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS" )
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
  
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
 if (EMSCRIPTEN)
 else()
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize" )
@@ -323,7 +323,7 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GSkyConus.cpp
         src/gapi/ogl3.3/shaders/GFFXgauss4.h
         src/gapi/ogl3.3/shaders/GFFXGlow.cpp
-        src/gapi/ogl3.3/shaders/GFFXGlow.h)
+        src/gapi/ogl3.3/shaders/GFFXGlow.h src/gapi/ogl3.3/shaders/GWaterShaderGL33.cpp src/gapi/ogl3.3/shaders/GWaterShaderGL33.h)
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp

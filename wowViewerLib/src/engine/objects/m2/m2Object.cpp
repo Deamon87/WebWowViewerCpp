@@ -543,8 +543,6 @@ void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacem
 }
 
 void M2Object::createPlacementMatrix(SMDoodadDef &def) {
-    const float TILESIZE = 533.333333333;
-
     float posx = def.position.x;
     float posy = def.position.y;
     float posz = def.position.z;
@@ -1052,11 +1050,6 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat) {
     }
 }
 
-bool M2Object::getIsInstancable() {
-    if (!m_loaded || this->m_animationManager == nullptr) return false;
-
-    return !(this->m_animationManager->getIsFirstCalc()|| this->m_animationManager->getIsAnimated());
-}
 const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const std::vector<mathfu::vec4> &frustumPlanes, const std::vector<mathfu::vec3> &frustumPoints) {
     m_cullResult = false;
 

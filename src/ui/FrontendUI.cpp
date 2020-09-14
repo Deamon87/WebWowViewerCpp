@@ -115,6 +115,7 @@ void FrontendUI::showCurrentStatsDialog() {
                     ImGui::GetIO().Framerate);
 //            if(getCurrentAreaName) {
         ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
+        ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
 //            }
         ImGui::End();
     }
@@ -300,8 +301,8 @@ void FrontendUI::showAdtSelectionMinimap() {
                     mousePos.x = ((mousePos.x / minimapZoom) / defaultImageDimension);
                     mousePos.y = ((mousePos.y / minimapZoom) / defaultImageDimension);
 
-                    mousePos.x = (32.0f - mousePos.x) * 533.33333f;
-                    mousePos.y = (32.0f - mousePos.y) * 533.33333f;
+                    mousePos.x = (32.0f - mousePos.x) * MathHelper::TILESIZE;
+                    mousePos.y = (32.0f - mousePos.y) * MathHelper::TILESIZE;
 
                     worldPosX = mousePos.y;
                     worldPosY = mousePos.x;
@@ -519,6 +520,12 @@ void FrontendUI::showQuickLinksDialog() {
 //            m_api->getConfig()->setBCLightHack(true);
         }
     }
+    if (ImGui::Button("Shadowlands login screen", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            openM2SceneByfdid(3846560, replacementTextureFDids);
+//            m_api->getConfig()->setBCLightHack(true);
+        }
+    }
 
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
@@ -725,6 +732,11 @@ void FrontendUI::showSettingsDialog() {
 
         if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
             m_api->getConfig()->setUseGaussBlur(useGaussBlur);
+        }
+
+        pauseAnimation = m_api->getConfig()->getPauseAnimation();
+        if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
+            m_api->getConfig()->setPauseAnimation(pauseAnimation);
         }
 
         if (ImGui::Button("Reset Animation")) {

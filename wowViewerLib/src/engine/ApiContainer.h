@@ -7,6 +7,7 @@
 
 class ApiContainer;
 
+#include <memory>
 #include "WowFilesCacheStorage.h"
 #include "camera/CameraInterface.h"
 #include "../include/config.h"

@@ -12,27 +12,12 @@
 #include <thread>
 
 #define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
-const float ROUNDING_ERROR_f32 = 0.001f;
-inline bool feq(const float a, const float b, const float tolerance = ROUNDING_ERROR_f32)
-{
-    return (a + tolerance >= b) && (a - tolerance <= b);
-}
-
-
-inline int worldCoordinateToAdtIndex(float x) {
-    return floor((32.0f - (x / 533.33333f)));
-}
-
-inline int worldCoordinateToGlobalAdtChunk(float x) {
-    return floor(( (32.0f*16.0f) - (x / (533.33333f / 16.0f)   )));
-}
-
-inline float AdtIndexToWorldCoordinate(int x) {
-    return (32.0f - x) * 533.33333f;
-}
 
 class MathHelper {
 public:
+    static constexpr float TILESIZE =  1600.0f/3.0f ;
+    static constexpr float CHUNKSIZE = TILESIZE / 16.0f;
+    static constexpr float UNITSIZE =  CHUNKSIZE / 8.0f;
 
     static float fp69ToFloat(uint16_t x);
 
@@ -79,7 +64,6 @@ public:
     };
 
     static const mathfu::mat4 &getAdtToWorldMat4() {
-        const float TILESIZE = 533.333333333f;
 
 //        mathfu::mat4 adtToWorldMat4 = mathfu::mat4::Identity();
 //        adtToWorldMat4 *= MathHelper::RotationX(toRadian(90));
@@ -122,5 +106,23 @@ public:
     static float distanceFromAABBToPoint2DSquared(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
 };
 
+const float ROUNDING_ERROR_f32 = 0.001f;
+inline bool feq(const float a, const float b, const float tolerance = ROUNDING_ERROR_f32)
+{
+    return (a + tolerance >= b) && (a - tolerance <= b);
+}
+
+
+inline int worldCoordinateToAdtIndex(float x) {
+    return floor((32.0f - (x / MathHelper::TILESIZE)));
+}
+
+inline int worldCoordinateToGlobalAdtChunk(float x) {
+    return floor(( (32.0f*16.0f) - (x / (MathHelper::CHUNKSIZE)   )));
+}
+
+inline float AdtIndexToWorldCoordinate(int x) {
+    return (32.0f - x) * MathHelper::TILESIZE;
+}
 
 #endif //WOWVIEWERLIB_MATHHELPER_H

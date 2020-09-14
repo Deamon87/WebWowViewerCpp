@@ -48,7 +48,7 @@ layout(std140, set=0, binding=3) uniform modelWideBlockPS {
 
 //Individual meshes
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
-    ivec4 PixelShader_UnFogged_IsAffectedByLight;
+    ivec4 PixelShader_UnFogged_IsAffectedByLight_blendMode;
     vec4 uFogColorAndAlphaTest;
 
     vec4 uPcColor;
@@ -91,7 +91,7 @@ void main() {
 //    if(meshResColor.a < uAlphaTest)
 //        discard;
     vec3 accumLight;
-    if ((PixelShader_UnFogged_IsAffectedByLight.z == 1)) {
+    if ((PixelShader_UnFogged_IsAffectedByLight_blendMode.z == 1)) {
         vec3 vPos3 = vPosition.xyz;
         vec3 vNormal3 = normalize(vNormal.xyz);
         vec3 lightColor = vec3(0.0);
@@ -130,7 +130,7 @@ void main() {
     genericParams[1] = vec4( 1.0, 1.0, 1.0, 1.0 );
     genericParams[2] = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-    int uPixelShader = PixelShader_UnFogged_IsAffectedByLight.x;
+    int uPixelShader = PixelShader_UnFogged_IsAffectedByLight_blendMode.x;
 
 
     if ( uPixelShader == 0 ) {//Combiners_Opaque
@@ -330,7 +330,7 @@ void main() {
         calcLight(
             matDiffuse,
             vNormal,
-            PixelShader_UnFogged_IsAffectedByLight.z > 0,
+            PixelShader_UnFogged_IsAffectedByLight_blendMode.z > 0,
             interiorExteriorBlend.x,
             scene,
             intLight,
@@ -343,7 +343,7 @@ void main() {
     if(finalColor.a < uFogColorAndAlphaTest.w)
         discard;
 
-    int uUnFogged = PixelShader_UnFogged_IsAffectedByLight.y;
+    int uUnFogged = PixelShader_UnFogged_IsAffectedByLight_blendMode.y;
     if (uUnFogged == 0) {
         vec3 sunDir =
             mix(
@@ -353,7 +353,7 @@ void main() {
             )
             .xyz;
 
-        finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz);
+        finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz, PixelShader_UnFogged_IsAffectedByLight_blendMode.w);
     }
 //    finalColor.rgb = finalColor.rgb;
 

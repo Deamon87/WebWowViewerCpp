@@ -23,13 +23,14 @@
 #undef GLFW_INCLUDE_VULKAN
 #endif
 
-#include <GLFW/glfw3.h>
+
+#include <cmath>
+#include <vector>
 #include <string>
 #include <iostream>
-#include <cmath>
 #include <csignal>
 #include <exception>
-
+#include <GLFW/glfw3.h>
 //#include "persistance/ZipRequestProcessor.h"
 #include "persistance/CascRequestProcessor.h"
 #include "persistance/HttpZipRequestProcessor.h"
@@ -48,7 +49,8 @@
 #include "../wowViewerLib/src/engine/ApiContainer.h"
 #include "../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
 #include "../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
-#include <png.h>
+#include "screenshots/screenshotMaker.h"
+
 
 
 int mleft_pressed = 0;
@@ -283,7 +285,6 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
     //Frustum matrix with reversed Z
 
     bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
-    apiContainer.hDevice->setInvertZ(isInfZSupported);
     if (isInfZSupported)
     {
         float f = 1.0f / tan(fov / 2.0f);
@@ -317,9 +318,10 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
 
         auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
         auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
-        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
+        std::vector<HDrawStage> drawStageDependencies = {};
+        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, drawStageDependencies, true,
                                                           dimensions,
-                                                          true, clearColor, fb);
+                                                          true, isInfZSupported, clearColor, fb);
 
         return sceneDrawStage;
     }
@@ -366,62 +368,6 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 }
 #endif
 
-void saveScreenshot(const std::string& name, int width, int height, std::vector<uint8_t> &rgbaBuff) {
-    FILE *fp = fopen(name.c_str(), "wb");
-    if (!fp) {
-        return;
-    }
-
-    png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (!png_ptr) {
-        fclose(fp);
-        return;
-    }
-
-    png_infop png_info;
-    if (!(png_info = png_create_info_struct(png_ptr))) {
-        png_destroy_write_struct(&png_ptr, nullptr);
-        return;
-    }
-
-    if (setjmp(png_jmpbuf(png_ptr))) {
-        png_destroy_write_struct(&png_ptr, nullptr);
-        return;
-    }
-
-    png_init_io(png_ptr, fp);
-
-    png_set_IHDR(png_ptr, png_info, width, height, 8, PNG_COLOR_TYPE_RGB,
-                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
-                 PNG_FILTER_TYPE_DEFAULT);
-
-    std::shared_ptr<std::vector<uint8_t>> data = std::make_shared<std::vector<uint8_t>>(width*height*3);
-    std::shared_ptr<std::vector<uint8_t*>> rows = std::make_shared<std::vector<uint8_t*>>(height);
-
-    for (int i = 0; i < height; ++i) {
-        (*rows)[height - i - 1] = data->data() + (i*width*3);
-        for (int j = 0; j < width; ++j) {
-            int i1 = (i*width+j)*3;
-            int i2 = (i*width+j)*4;
-
-            char r = rgbaBuff[++i2];
-            char g = rgbaBuff[++i2];
-            char b = rgbaBuff[++i2];
-            char a = rgbaBuff[++i2];
-
-            (*data)[i1++] = a;
-            (*data)[i1++] = r;
-            (*data)[i1++] = g;
-        }
-    }
-    png_set_rows(png_ptr, png_info, rows->data());
-    png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
-    png_write_end(png_ptr, png_info);
-
-
-    png_destroy_write_struct(&png_ptr, nullptr);
-    fclose(fp);
-}
 
 
 double currentFrame;
@@ -507,8 +453,8 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
 //    {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=data&filedataid=";
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=81345e9f0c12583dd8c6e45e31d6a0c2&cdnconfig=351b01520795ba0a074cf9823143809d&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=81345e9f0c12583dd8c6e45e31d6a0c2&cdnconfig=351b01520795ba0a074cf9823143809d&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
@@ -667,6 +613,9 @@ int main(){
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
+        if (apiContainer.getConfig()->getPauseAnimation()) {
+            deltaTime = 0.0;
+        }
 
         if (processor) {
             if (!processor->getThreaded()) {
@@ -687,9 +636,7 @@ int main(){
             if (screenshotFrame + 5 <= apiContainer.hDevice->getFrameNumber()) {
                 std::vector<uint8_t> buffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4+1);
 
-                screenshotDS->target->readRGBAPixels( 0, 0, screenshotWidth, screenshotHeight, buffer.data());
-                saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
-
+                saveDataFromDrawStage(screenshotDS->target, screenshotFileName, screenshotWidth, screenshotHeight, buffer);
 
                 screenshotDS = nullptr;
             }
@@ -732,17 +679,9 @@ int main(){
 
             auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
             auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
-            HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies, true,
-                dimension, clearOnUi, clearColor, nullptr);
+            HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies,
+              true, dimension, clearOnUi, false, clearColor, nullptr);
         }
-        //        auto updateResult = scene->cull(camera)->update(camera);
-//        SceneComposer::All({
-//            updateResult->render(camera)->toFB(frameBuffer, viewPortDims),
-//            updateResult->render(cameraDebug)->toFB(frameBuffer, viewPortDims);
-//        }).then([]{
-//            frontendUI->bind("", frameBuffer.getTexture())
-//            SceneComposer.renderToScreen()
-//        });
 
         sceneComposer.draw(sceneScenario);
 

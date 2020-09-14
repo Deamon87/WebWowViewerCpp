@@ -32,7 +32,7 @@ public:
     void updateBuffers(HCullStage cullStage) override {};
 
     int getCameraNum() override {return 0;};
-    std::shared_ptr<ICamera> createCamera(int cameraNum) {return nullptr;};
+    std::shared_ptr<ICamera> createCamera(int cameraNum) override {return nullptr;};
     void resetAnimation() override {}
 private:
     std::function <bool(std::string cascPath)> openCascCallback = nullptr;
@@ -100,6 +100,7 @@ private:
     int prevMapId = -1;
     bool isWmoMap = false;
     bool useGaussBlur = true;
+    bool pauseAnimation = true;
 
     bool useTimedGlobalLight = true;
     bool useM2AmbientLight = false;

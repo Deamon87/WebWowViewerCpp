@@ -65,6 +65,12 @@ public:
     PointerChecker<SMTextureParams> mtxp = mtxp_len;
     int mtxp_len = 0;
 
+    PointerChecker<SMTextureFlags> mtxf = mtxf_len;
+    int mtxf_len = 0;
+
+    PointerChecker<char> mamp = mamp_len;
+    int mamp_len = 0;
+
     PointerChecker<SMDoodadDef> doodadDef = doodadDef_len;
     int doodadDef_len = 0;
 

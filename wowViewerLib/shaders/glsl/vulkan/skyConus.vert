@@ -3,11 +3,13 @@
 #extension GL_GOOGLE_include_directive: require
 
 #include "../common/commonLightFunctions.glsl"
+#include "../common/commonFogFunctions.glsl"
 
 precision highp float;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
+    PSFog fogData;
 };
 layout(std140, set=0, binding=2) uniform meshWideBlockVS {
     vec4 skyColor[6];

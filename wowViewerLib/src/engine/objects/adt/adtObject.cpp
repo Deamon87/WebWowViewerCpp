@@ -21,8 +21,8 @@ static GBufferBinding bufferBinding[5] = {
 };
 
 static GBufferBinding staticWaterBindings[2] = {
-    {+adtWater::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, 24, 0},
-    {+adtWater::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 16},
+    {+waterShader::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, 24, 0},
+    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 16},
 //    {+waterShader::Attribute::aDepth, 1, GBindingType::GFLOAT, false, 24, 0 },
 //    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 4},
 
@@ -149,9 +149,7 @@ void AdtObject::loadWater() {
     std::vector<LiquidVertexFormat> vertexBuffer;
     std::vector<uint16_t > indexBuffer;
 
-    const float TILESIZE =  533.3433333f ;
-    const float CHUNKSIZE = TILESIZE / 16.0f;
-    const float UNITSIZE =  CHUNKSIZE / 8.0f;
+
 
     mathfu::vec3 adtBasePos = mathfu::vec3(AdtIndexToWorldCoordinate(adt_y), AdtIndexToWorldCoordinate(adt_x), 0);
 
@@ -170,8 +168,8 @@ void AdtObject::loadWater() {
             mathfu::vec3 liquidBasePos =
                 adtBasePos -
                 mathfu::vec3(
-                    CHUNKSIZE*y_chunk,
-                    CHUNKSIZE*x_chunk,
+                    MathHelper::CHUNKSIZE*y_chunk,
+                    MathHelper::CHUNKSIZE*x_chunk,
                 0);
 
             for (int layerInd = 0; layerInd < liquidChunk.layer_count; layerInd++) {
@@ -225,9 +223,9 @@ void AdtObject::loadWater() {
                 float minZ = 999999;
                 float maxZ = -999999;
 
-                float minX = mcnkChunk->position.x - (533.3433333 / 16.0);
+                float minX = mcnkChunk->position.x - (MathHelper::CHUNKSIZE);
                 float maxX = mcnkChunk->position.x;
-                float minY = mcnkChunk->position.y - (533.3433333 / 16.0);
+                float minY = mcnkChunk->position.y - (MathHelper::CHUNKSIZE);
                 float maxY = mcnkChunk->position.y;
                 minZ += mcnkChunk->position.z;
                 maxZ += mcnkChunk->position.z;
@@ -237,8 +235,8 @@ void AdtObject::loadWater() {
                         mathfu::vec3 pos =
                             liquidBasePos -
                             mathfu::vec3(
-                                UNITSIZE*(y+liquidInstance.y_offset),
-                                UNITSIZE*(x+liquidInstance.x_offset),
+                                MathHelper::UNITSIZE*(y+liquidInstance.y_offset),
+                                MathHelper::UNITSIZE*(x+liquidInstance.x_offset),
                                 -liquidInstance.min_height_level
                             );
                         if (minZ > pos.z) minZ = pos.z;
@@ -312,7 +310,7 @@ void AdtObject::loadWater() {
 
 
 //Create mesh(es)
-    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("adtWater", nullptr);
+    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("waterShader", nullptr);
 
     gMeshTemplate meshTemplate(vertexWaterBufferBindings, shaderPermutation);
 
@@ -333,7 +331,7 @@ void AdtObject::loadWater() {
     }
 
     meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-    meshTemplate.ubo[1] = nullptr;
+    meshTemplate.ubo[1] = device->createUniformBufferChunk(sizeof(mathfu::mat4));
     meshTemplate.ubo[2] = nullptr;
 
     meshTemplate.ubo[3] = nullptr;
@@ -344,11 +342,20 @@ void AdtObject::loadWater() {
     meshTemplate.element = DrawElementMode::TRIANGLES;
 
     auto l_liquidType = 0;
+    meshTemplate.ubo[1]->setUpdateHandler([](IUniformBufferChunk* self) -> void {
+        mathfu::mat4 &placementMat = self->getObject<mathfu::mat4>();
+        placementMat = mathfu::mat4::Identity();
+    });
     meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color](IUniformBufferChunk* self) -> void {
-        mathfu::vec4 closeRiverColor = this->m_api->getConfig()->getCloseRiverColor();
         mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
 
-        color_ = mathfu::vec4(closeRiverColor.xyz(), 0.7);
+        if (color.LengthSquared() < 2.99f) {
+            mathfu::vec4 closeRiverColor = this->m_api->getConfig()->getCloseRiverColor();
+
+            color_ = mathfu::vec4(closeRiverColor.xyz(), 0.7);
+        } else {
+            color_ = mathfu::vec4(color, 0.7);
+        }
     });
 
 
@@ -534,9 +541,9 @@ void AdtObject::calcBoundingBoxes() {
             }
         }
 
-        float minX = mcnkChunk->position.x - (533.3433333 / 16.0);
+        float minX = mcnkChunk->position.x - (MathHelper::CHUNKSIZE);
         float maxX = mcnkChunk->position.x;
-        float minY = mcnkChunk->position.y - (533.3433333 / 16.0);
+        float minY = mcnkChunk->position.y - (MathHelper::CHUNKSIZE);
         float maxY = mcnkChunk->position.y;
         minZ += mcnkChunk->position.z;
         maxZ += mcnkChunk->position.z;
@@ -595,7 +602,8 @@ void AdtObject::createMeshes() {
 
             aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
-            aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, i, this](IUniformBufferChunk *self) {
+            int chunkIndex = i;
+            aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, chunkIndex, this](IUniformBufferChunk *self) {
                 auto &blockPS = self->getObject<ADT::meshWideBlockPS>();
 
                 for (int j = 0; j < 4; j++) {
@@ -604,13 +612,13 @@ void AdtObject::createMeshes() {
                     blockPS.animationMat[j] = mathfu::mat4::Identity();
                 }
 
-                for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                for (int j = 0; j < adtFileTex->mcnkStructs[chunkIndex].mclyCnt; j++) {
                     if ((adtFileTex->mtxp_len > 0) && !noLayers) {
-                        auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
+                        auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[chunkIndex].mcly[j].textureId];
                         blockPS.uHeightOffset[j] = textureParams.heightOffset;
                         blockPS.uHeightScale[j] = textureParams.heightScale;
                     }
-                    blockPS.animationMat[j] = this->texturesPerMCNK[i].animTexture[j];
+                    blockPS.animationMat[j] = this->texturesPerMCNK[chunkIndex].animTexture[j];
                 }
             });
 
@@ -631,7 +639,7 @@ void AdtObject::createMeshes() {
 
                     HGTexture layer_height = nullptr;
                     if (textureParams.flags.do_not_load_specular_or_height_texture_but_use_cubemap == 0) {
-                        if (!feq(textureParams.heightOffset, 1.0f) && !feq(textureParams.heightScale, 0.0)) {
+                        if (!feq(textureParams.heightScale, 0.0)) {
                             layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
                         }
                     }
@@ -788,10 +796,11 @@ void AdtObject::update(animTime_t deltaTime ) {
             if (m_adtFileTex->mtxp_len > 0) {
                 auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
 
-                if (m_adtFileTex->mcnkStructs[i].mcly[j].flags.unknown_0x800 != 0 || m_adtFileTex->mcnkStructs[i].mcly[j].flags.unknown_0x1000 != 0) {
-                    float scaleFactor = -(1.0 / (float)(1 << textureParams.flags.texture_scale)) * (1.0f / -4.1666665f);
+//                if (m_adtFileTex->mcnkStructs[i].mcly[j].flags.unknown_0x800 != 0 || m_adtFileTex->mcnkStructs[i].mcly[j].flags.unknown_0x1000 != 0) {
+                    float scaleFactor = (1.0f / (float)(1u << (textureParams.flags.texture_scale )));
+//                    float scaleFactor = ((float)(1u << (textureParams.flags.texture_scale )) / 4.0f);
                     texturesPerMCNK[i].animTexture[j]*=mathfu::mat4::FromScaleVector({scaleFactor, scaleFactor, scaleFactor});
-                }
+//                }
             }
 
             if (m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_enabled != 0) {
@@ -943,8 +952,8 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &came
 
     if (quadTree == nullptr || quadTreeInd == -1 || curentLod == 4) {
         mathfu::vec2 aabb2D[2];
-        aabb2D[0] = pos.xy() - mathfu::vec2(533.3333f * (x_offset + cell_len), 533.3333f*(y_offset + cell_len));
-        aabb2D[1] = pos.xy() -  mathfu::vec2(533.3333f *x_offset, 533.3333f*y_offset);
+        aabb2D[0] = pos.xy() - mathfu::vec2(MathHelper::TILESIZE * (x_offset + cell_len), MathHelper::TILESIZE*(y_offset + cell_len));
+        aabb2D[1] = pos.xy() -  mathfu::vec2(MathHelper::TILESIZE *x_offset, MathHelper::TILESIZE*y_offset);
         mathfu::vec2 point = camera.xy();
 
         //General frustum cull!

@@ -14,6 +14,10 @@ layout(std140, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
 };
+layout(std140, binding=4) uniform meshWideBlockPS {
+    vec4 uAlphaTestv;
+    ivec4 uPixelShaderv;
+};
 
 layout(set=1, binding=5) uniform sampler2D uTexture;
 
@@ -22,7 +26,7 @@ layout(location = 0) out vec4 outputColor;
 void main() {
     vec4 tex = texture(uTexture, vTexcoord0).rgba;
 
-    vec4 finalColor = vec4((vColor.rgb*tex.rgb), tex.a * vColor.a );
+    vec4 finalColor = vec4((vColor.rgb*tex.rgb), tex.a * vColor.a);
 
 
 //    vec3 sunDir =
@@ -34,7 +38,7 @@ void main() {
 //        .xyz;
     vec3 sunDir =scene.extLight.uExteriorDirectColorDir.xyz;
 
-    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz);
+    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz, uPixelShaderv.y);
 
     outputColor = finalColor;
 }

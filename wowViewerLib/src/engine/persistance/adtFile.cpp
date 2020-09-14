@@ -82,6 +82,28 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             }
         },
         {
+            'MTXF',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MTXF");
+                    std::cout << "Found MTXF" << std::endl;
+                    file.mtxf_len = chunkData.chunkLen / sizeof(SMTextureFlags);
+                    chunkData.readValues(file.mtxf, file.mtxf_len);
+                }
+            }
+        },
+        {
+            'MAMP',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MTXF");
+//                    std::cout << "Found MAMP" << std::endl;
+                    file.mamp_len = chunkData.chunkLen / sizeof(char);
+                    chunkData.readValues(file.mamp, file.mamp_len);
+                }
+            }
+        },
+        {
             'MMDX',
             {
                 [](AdtFile& file, ChunkData& chunkData){

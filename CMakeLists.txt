@@ -121,7 +121,10 @@ endif()
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(3rdparty/bzip)
 
-
+#cpr
+include(FetchContent)
+FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG c8d33915dbd88ad6c92b258869b03aba06587ff9) # the commit hash for 1.5.0
+FetchContent_MakeAvailable(cpr)
 
 
 #PolyM
@@ -160,8 +163,8 @@ include_directories(${GLEW_INCLUDE_DIRS})
 
 
 set(SOURCE_FILES
-#		src/persistance/httpFile/httpFile.cpp
-#		src/persistance/httpFile/httpFile.h
+		src/persistance/httpFile/httpFile.cpp
+		src/persistance/httpFile/httpFile.h
 		src/persistance/RequestProcessor.cpp
 		src/persistance/RequestProcessor.h
 		src/persistance/ZipRequestProcessor.cpp
@@ -170,8 +173,8 @@ set(SOURCE_FILES
 #		src/persistance/HttpZipRequestProcessor.h
 		src/persistance/CascRequestProcessor.cpp
 		src/persistance/CascRequestProcessor.h
-#		src/persistance/HttpRequestProcessor.cpp
-#		src/persistance/HttpRequestProcessor.h
+		src/persistance/HttpRequestProcessor.cpp
+		src/persistance/HttpRequestProcessor.h
 
 		src/ui/imguiLib/imgui.cpp
 		src/ui/imguiLib/imgui_demo.cpp
@@ -180,7 +183,8 @@ set(SOURCE_FILES
 		src/ui/imguiLib/imguiImpl/imgui_impl_glfw.cpp
 		src/ui/FrontendUI.cpp src/ui/FrontendUI.h
 		src/database/CSqliteDB.cpp src/database/CSqliteDB.h
-)
+		src/minimapGenerator/minimapGenerator.cpp
+		src/screenshots/screenshotMaker.h src/screenshots/screenshotMaker.cpp)
 
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
@@ -246,9 +250,25 @@ add_dependencies(AWebWoWViewerCpp WoWViewerLib)
 add_dependencies(AWebWoWViewerCpp casc_static)
 
 #TODO: platform dependant!!
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-	add_dependencies(AWebWoWViewerCpp glfw)
-	set_property(TARGET AWebWoWViewerCpp PROPERTY CXX_STANDARD 17)
+add_dependencies(AWebWoWViewerCpp glfw)
+check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
+if(HAVE_FLAG_STD_CXX17)
+	# Have -std=c++17, use it
+	message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
+	#    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++17" )
+	#    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++17" )
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17" )
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17" )
+else()
+	check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
+	if(HAVE_FLAG_STD_CXX1Z)
+		#        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
+		#        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
+	else()
+		message(ERROR "No supported flags")
+	endif()
 endif()
 
 link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
@@ -279,7 +299,7 @@ endif()
 target_link_libraries(AWebWoWViewerCpp casc_static)
 
 target_link_libraries(AWebWoWViewerCpp png_static)
-
+target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})
 
