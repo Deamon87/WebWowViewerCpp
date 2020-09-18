@@ -155,6 +155,7 @@ public:
 	} ;
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
+    void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
     void checkCulling(HCullStage cullStage) override;
 
 

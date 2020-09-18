@@ -116,6 +116,10 @@ struct M2Range {
     float min;
     float max;
 };
+struct M2RangeInt {
+    uint32_t min;
+    uint32_t max;
+};
 typedef M2Range CRange;
 
 struct CAaBox
@@ -202,6 +206,13 @@ struct CM2SequenceLoad {
     uint8_t *animFileDataBlob;
 };
 
+struct CSkelSequenceLoad {
+    int animationIndex;
+    uint8_t *animFileDataBlob;
+    uint8_t *animFileBoneDataBlob;
+    uint8_t *animFileAttDataBlob;
+};
+
 struct M2Sequence {
     uint16_t id;                   // Animation id in AnimationData.dbc
     uint16_t variationIndex;       // Sub-animation id: Which number in a row of animations this one is.
@@ -211,7 +222,7 @@ struct M2Sequence {
     uint32_t flags;                // See below.
     int16_t frequency;             // This is used to determine how often the animation is played. For all animations of the same type, this adds up to 0x7FFF (32767).
     uint16_t _padding;
-    M2Range replay;                // May both be 0 to not repeat. Client will pick a random number of repetitions within bounds if given.
+    M2RangeInt replay;                // May both be 0 to not repeat. Client will pick a random number of repetitions within bounds if given.
     uint32_t blendtime;            // The client blends (lerp) animation states between animations where the end and start values differ. This specifies how long that blending takes. Values: 0, 50, 100, 150, 200, 250, 300, 350, 500.
     M2Bounds bounds;
     int16_t variationNext;         // id of the following animation of this AnimationID, points to an Index or is -1 if none.
@@ -219,13 +230,15 @@ struct M2Sequence {
 };
 
 template <typename T>
-void initAnimationArray(M2Array<M2Array<T> > &array2D, void *m2File, M2Array<M2Sequence> &sequences, CM2SequenceLoad *cm2SequenceLoad){
+void initAnimationArray(M2Array<M2Array<T> > &array2D, void *m2File, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad){
     static_assert(std::is_pod<M2Array<M2Array<T> > >::value, "M2Array<M2Array<T>> array2D is not POD");
     if (cm2SequenceLoad == nullptr) {
         array2D.initM2Array(m2File);
         int count = array2D.size;
         for (int i = 0; i < count; i++) {
-            if ((sequences.size > 0) && (sequences.getElement(i)->flags & 0x20) == 0) continue;
+            if (sequences != nullptr) {
+                if ((sequences->size > 0) && (sequences->getElement(i)->flags & 0x20) == 0) continue;
+            }
 
             M2Array<T> *array1D = array2D.getElement(i);
             array1D->initM2Array(m2File);
@@ -243,7 +256,7 @@ struct M2TrackBase {
     uint16_t interpolation_type;
     uint16_t global_sequence;
     M2Array<M2Array<uint32_t> > timestamps;
-    void initTrackBase(void * m2File, M2Array<M2Sequence> &sequences, CM2SequenceLoad *cm2SequenceLoad) {
+    void initTrackBase(void * m2File, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad) {
         initAnimationArray(timestamps, m2File, sequences, cm2SequenceLoad);
     }
 };
@@ -265,11 +278,12 @@ struct M2Track
     int16_t global_sequence;
     M2Array<M2Array<uint32_t> > timestamps;
     M2Array<M2Array<T> > values;
-    void initTrack(void * m2File, M2Array<M2Sequence> &sequences, CM2SequenceLoad *cm2SequenceLoad){
+    void initTrack(void * m2File, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad){
         initAnimationArray(timestamps, m2File, sequences, cm2SequenceLoad);
         initAnimationArray(values, m2File, sequences, cm2SequenceLoad);
     };
 };
+
 
 
 

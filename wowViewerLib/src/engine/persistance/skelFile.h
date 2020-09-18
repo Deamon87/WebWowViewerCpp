@@ -9,7 +9,10 @@
 #include "header/skelFileHeader.h"
 #include "../../include/sharedFile.h"
 #include "PersistentFile.h"
+#include "animFile.h"
 #include <vector>
+#include <unordered_map>
+#include "../ApiContainer.h"
 
 class SkelFile : public PersistentFile {
 public:
@@ -37,11 +40,37 @@ public:
     skeleton_parent_data *m_skpd = 0;
     int m_skpd_len = -1;
 
+
+    std::vector<M2_AFID> animationFileDataIDs;
+
+    void loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t variationId);
 private:
     HFileContent m_skelFile;
     static chunkDef<SkelFile> skelFileTable;
 
     std::function<void ()> m_postLoadFunction = nullptr;
+
+
+
+    void initTracks(CSkelSequenceLoad *cm2SequenceLoad);
+    struct AnimCacheRecord {
+        uint32_t animationId;
+        uint32_t variationId;
+
+        bool operator==(const AnimCacheRecord &other) const {
+            return
+                (animationId == other.animationId) &&
+                (variationId == other.variationId);
+        };
+    };
+    struct AnimCacheRecordHasher {
+        std::size_t operator()(const AnimCacheRecord& k) const {
+            using std::hash;
+            return hash<uint32_t >{}(k.animationId) ^ (hash<uint32_t>{}(k.variationId) << 8);
+        };
+    };
+
+    std::unordered_map<AnimCacheRecord, std::shared_ptr<AnimFile>, AnimCacheRecordHasher> loadedAnimationMap;
 };
 
 

@@ -910,14 +910,21 @@ bool M2Object::doPostLoad(){
     if (m_m2Geom->m_skid > 0 && m_skelGeom->getStatus() != FileStatus::FSLoaded) {
         return false;
     }
+    if (m_m2Geom->m_skid > 0 && m_skelGeom->getStatus() == FileStatus::FSLoaded &&
+        m_skelGeom->m_skpd!= nullptr && m_skelGeom->m_skpd->parent_skel_file_id != 0 && (
+            m_parentSkelGeom == nullptr || m_parentSkelGeom->getStatus() != FileStatus::FSLoaded
+        )) {
+        return false;
+    }
 
     //3. Do post load procedures
     m_skinGeom->fixData(m_m2Geom->getM2Data());
 
     this->createVertexBindings();
-
-
     this->createMeshes();
+
+    m_boneMasterData = std::make_shared<CBoneMasterData>(m_m2Geom, m_skelGeom, m_parentSkelGeom);
+
     this->initAnimationManager();
     this->initBoneAnimMatrices();
     this->initTextAnimMatrices();
@@ -926,7 +933,6 @@ bool M2Object::doPostLoad(){
     this->initLights();
     this->initParticleEmitters();
     this->initRibbonEmitters();
-    m_hasBillboards = checkIfHasBillboarded();
 
 
     this->m_loaded = true;
@@ -1181,9 +1187,13 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int batchIndex) {
     M2Batch* m2Batch = batches->getElement(batchIndex);
     auto skinSection = skinSections[m2Batch->skinSectionIndex];
 
-    if ((this->m_meshIds.size() > 0) && (skinSection->skinSectionId > 0) &&
-        (m_meshIds[(skinSection->skinSectionId / 100)] != (skinSection->skinSectionId % 100))) {
-        return false;
+
+    {
+        auto meshGroup = (skinSection->skinSectionId / 100);
+        if ((meshGroup < this->m_meshIds.size()) && (skinSection->skinSectionId > 0) &&
+            (m_meshIds[meshGroup] != (skinSection->skinSectionId % 100))) {
+            return false;
+        }
     }
 //        materialArray.push(materialData);
 
@@ -1330,6 +1340,8 @@ void M2Object::createMeshes() {
         M2MaterialInst material;
         HGM2Mesh hmesh = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, material);
 
+        if (hmesh == nullptr)
+            continue;
         //hmesh->m_query = occlusionQuery;
 
         this->m_meshArray.push_back(hmesh);
@@ -1348,6 +1360,12 @@ void M2Object::createMeshes() {
         auto dynVaos = m_m2Geom->createDynamicVao(*m_api->hDevice, dynVBOs, m_skinGeom.get(), skinSection);
 
         std::array<dynamicVaoMeshFrame, 4> dynamicMeshData;
+
+        //Try to create mesh
+        M2MaterialInst testMaterial;
+        auto testMesh = createSingleMesh(m_m2Data, i, 0, dynVaos[0], m2Batch, skinSection, testMaterial);
+        if (testMesh == nullptr)
+            continue;
 
         for (int k = 0; k < 4; k++) {
             dynamicMeshData[k].batchIndex = i;
@@ -1370,7 +1388,7 @@ HGM2Mesh
 M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
                            const M2SkinSection *skinSection, M2MaterialInst &material) {
 
-    prepearMatrial(material, i);
+    if (!prepearMatrial(material, i)) return nullptr;
 
 
     M2ShaderCacheRecord cacheRecord{};
@@ -1447,10 +1465,16 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
     }
 
     if (m_m2Geom->m_skid > 0) {
+        auto skelCache = m_api->cacheStorage->getSkelCache();
         if (m_skelGeom == nullptr) {
             auto skelCache = m_api->cacheStorage->getSkelCache();
             m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
             return;
+        }
+        if (m_skelGeom->getStatus() == FileStatus::FSLoaded && m_parentSkelGeom == nullptr) {
+            if (m_skelGeom->m_skpd != nullptr && m_skelGeom->m_skpd->parent_skel_file_id != 0) {
+                m_parentSkelGeom = skelCache->getFileId(m_skelGeom->m_skpd->parent_skel_file_id);
+            }
         }
     }
 
@@ -1480,27 +1504,13 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
 }
 
 void M2Object::initAnimationManager() {
-    this->m_animationManager = new AnimationManager(m_api, m_m2Geom);
-}
 
-bool M2Object::checkIfHasBillboarded() {
-    M2Data * m2File = this->m_m2Geom->getM2Data();
-    for (int i = 0; i < m2File->bones.size; i++) {
-        M2CompBone * boneDefinition = m2File->bones.getElement(i);
-        if ((
-            boneDefinition->flags.cylindrical_billboard_lock_x &
-            boneDefinition->flags.cylindrical_billboard_lock_y &
-            boneDefinition->flags.cylindrical_billboard_lock_z &
-            boneDefinition->flags.spherical_billboard) > 0) {
-            return true;
-        }
-    }
-
-    return false;
+    this->m_animationManager = new AnimationManager(m_api, m_boneMasterData, m_m2Geom->exp2 != nullptr);
 }
 
 void M2Object::initBoneAnimMatrices() {
-    this->bonesMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->bones.size, mathfu::mat4::Identity());;
+    auto &bones = *m_boneMasterData->getSkelData()->m_m2CompBones;
+    this->bonesMatrices = std::vector<mathfu::mat4>(bones.size, mathfu::mat4::Identity());;
 }
 void M2Object::initTextAnimMatrices() {
     textAnimMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->texture_transforms.size, mathfu::mat4::Identity());;
@@ -1529,8 +1539,8 @@ void M2Object::initParticleEmitters() {
 
         ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), this, m_m2Geom, txacVal);
         particleEmitters.push_back(emitter);
-        if (m_m2Geom.get()->exp2Records != nullptr && emitter->getGenerator() != nullptr) {
-            emitter->getGenerator()->getAniProp()->zSource = m_m2Geom.get()->exp2Records->getElement(i)->zSource;
+        if (m_m2Geom->exp2 != nullptr && emitter->getGenerator() != nullptr) {
+            emitter->getGenerator()->getAniProp()->zSource = m_m2Geom->exp2->content.getElement(i)->zSource;
         }
     }
 }
@@ -1628,10 +1638,30 @@ mathfu::vec3 M2Object::getSunDir() {
     return m_api->getConfig()->getExteriorDirectColorDir();
 }
 void M2Object::getAvailableAnimation(std::vector<int> &allAnimationList) {
-    allAnimationList.reserve(m_m2Geom->m_m2Data->sequences.size);
-    for (int i = 0; i < m_m2Geom->m_m2Data->sequences.size; i++) {
-        allAnimationList.push_back(m_m2Geom->m_m2Data->sequences[i]->id);
+    auto &sequences = *m_boneMasterData->getSkelData()->m_sequences;
+
+    allAnimationList.resize(0);
+    for (int i = 0; i < sequences.size; i++) {
+        allAnimationList.push_back(sequences[i]->id);
     }
+    if (m_parentSkelGeom != nullptr) {
+        auto &bannedAnims = m_m2Geom->blackListAnimations;
+        auto &sequences = *m_boneMasterData->getParentSkelData()->m_sequences;
+
+        for (int i = 0; i < sequences.size; i++) {
+            bool animationIsBanned = false;
+            for (auto const a : bannedAnims) {
+                if (a == sequences[i]->id) {
+                    animationIsBanned = true;
+                    break;
+                }
+            }
+            if (!animationIsBanned) {
+                allAnimationList.push_back(sequences[i]->id);
+            }
+        }
+    }
+
     std::sort( allAnimationList.begin(), allAnimationList.end());
     allAnimationList.erase( unique( allAnimationList.begin(), allAnimationList.end() ), allAnimationList.end());
 }
@@ -1810,6 +1840,13 @@ void M2Object::updateDynamicMeshes() {
 }
 void M2Object::setReplaceTextures(std::vector<HBlpTexture> &replaceTextures) {
     m_replaceTextures = replaceTextures;
+
+    if (m_loaded) {
+        createMeshes(); // recreate meshes
+    }
+}
+void M2Object::setMeshIds(std::vector<uint8_t> &meshIds) {
+    m_meshIds = meshIds;
 
     if (m_loaded) {
         createMeshes(); // recreate meshes

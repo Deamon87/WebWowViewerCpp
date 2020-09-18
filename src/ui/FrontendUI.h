@@ -20,6 +20,7 @@ public:
     }
     ~FrontendUI() override {};
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
+    void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
     void setAnimationId(int animationId) override {};
 
     void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;

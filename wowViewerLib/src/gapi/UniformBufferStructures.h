@@ -110,7 +110,7 @@ namespace WMO {
         int VertexShader;
         int UseLitColor;
 
-        int padding[1];
+        int padding[2];
     };
 
     struct modelWideBlockPS {

@@ -239,7 +239,7 @@ set(SOURCE_FILES
         src/engine/DrawStage.h
         src/include/iostuff.h
         src/engine/ApiContainer.cpp
-        src/engine/ApiContainer.h src/engine/CameraMatrices.h src/engine/persistance/header/wdlHeader.h src/engine/camera/m2TiedCamera.cpp src/engine/camera/m2TiedCamera.h)
+        src/engine/ApiContainer.h src/engine/CameraMatrices.h src/engine/persistance/header/wdlHeader.h src/engine/camera/m2TiedCamera.cpp src/engine/camera/m2TiedCamera.h src/engine/persistance/header/M2FileHeader.cpp src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp src/engine/objects/m2/m2Helpers/CBoneMasterData.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp

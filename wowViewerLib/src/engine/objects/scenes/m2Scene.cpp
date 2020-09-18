@@ -131,6 +131,11 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
 
     m_m2Object->setReplaceTextures(replaceTextures);
 }
+void M2Scene::setMeshIdArray(std::vector<uint8_t> &meshIds) {
+    m_m2Object->setMeshIds(meshIds);
+}
+
+
 
 int M2Scene::getCameraNum() {
     return m_m2Object->getCameraNum();

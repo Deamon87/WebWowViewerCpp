@@ -425,7 +425,23 @@ struct EXP2
     M2Array<Exp2Record> content;
 };
 
+void initEXP2(EXP2 *exp2);
 
+void initM2Textures(void* sectionStart, M2Array<M2Texture> &textures);
+
+void initCompBones(void* sectionStart, M2Array<M2CompBone> *bones, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Color(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2TextureWeight(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2TextureTransform(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Attachment(void* sectionStart, M2Array<M2Attachment> *attachments, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Event(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Light(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Particle(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Ribbon(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Camera(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2ParticlePartTracks(M2Data *m2Header);
+
+int findAnimationIndex(uint32_t anim_id, M2Array<int16_t> *sequence_lookups, M2Array<M2Sequence> *sequences);
 
 template <typename ToCheck, std::size_t ExpectedSize, std::size_t RealSize = sizeof(ToCheck)>
 void check_size() {

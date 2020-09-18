@@ -22,6 +22,7 @@ class M2Object;
 #include "mathfu/internal/vector_4.h"
 #include "../../managers/CRibbonEmitter.h"
 #include "../../ApiContainer.h"
+#include "m2Helpers/CBoneMasterData.h"
 
 class M2Object {
 public:
@@ -78,6 +79,8 @@ private:
     HM2Geom m_m2Geom = nullptr;
     HSkinGeom m_skinGeom = nullptr;
     HSkelGeom m_skelGeom = nullptr;
+    HSkelGeom m_parentSkelGeom = nullptr;
+    std::shared_ptr<CBoneMasterData> m_boneMasterData = nullptr;
 
     HGVertexBufferBindings bufferBindings = nullptr;
     HGUniformBufferChunk vertexModelWideUniformBuffer = nullptr;
@@ -97,8 +100,6 @@ private:
     mathfu::vec4 m_sunDirOverride;
     bool m_setSunDir = false;
 
-
-    bool m_hasBillboards = false;
     std::string m_modelName;
     std::string m_nameTemplate = "";
 
@@ -155,7 +156,6 @@ private:
     void initRibbonEmitters();
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &modelViewMat);
-    bool checkIfHasBillboarded();
     bool checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *mesh);
 
 
@@ -188,6 +188,7 @@ public:
                        std::vector<HBlpTexture> replaceTextures);
 
     void setReplaceTextures(std::vector<HBlpTexture> &replaceTextures);
+    void setMeshIds(std::vector<uint8_t> &meshIds);
     void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);
     void resetReplaceParticleColor();
     bool getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);
@@ -225,9 +226,6 @@ public:
     void getAvailableAnimation(std::vector<int> &allAnimationList);
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
-    bool getHasBillboarded() {
-        return m_hasBillboards;
-    }
 
     bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);

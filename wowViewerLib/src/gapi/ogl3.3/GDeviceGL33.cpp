@@ -543,6 +543,10 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 
         if (uniformChunk != nullptr) {
             auto uniformBuffer = uniformChunk->getUniformBuffer().get();
+//            std::cout << "Binding to " << i <<
+//                " chunk with offset = " << uniformChunk->getOffset() << "and size " << uniformChunk->getSize()
+////                " mbuffer size is "<< uniformBuffer->size()
+//                << std::endl;
             bindUniformBuffer(uniformBuffer, i, uniformChunk->getOffset(), uniformChunk->getSize());
         }
     }
@@ -698,6 +702,22 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 #endif
 
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
+    if (glGetError() != 0) {
+#ifdef __EMSCRIPTEN__
+//        std::string debugMess =
+//            "Drawing mesh "
+//            " meshType = " + std::to_string((int)hmesh->getMeshType()) +
+//            " priorityPlane = " + std::to_string(hmesh->priorityPlane()) +
+//            " sortDistance = " + std::to_string(hmesh->getSortDistance()) +
+//            " layer = " + std::to_string(hmesh->layer()) +
+//            " blendMode = " + std::to_string((int)hmesh->getGxBlendMode());
+//        std::cout << debugMess << std::endl;
+//        EM_ASM(
+//
+//            debugger;
+//        );
+#endif
+    }
 
 #if OPENGL_DGB_MESSAGE
     glPopDebugGroup();
@@ -887,6 +907,8 @@ GDeviceGL33::GDeviceGL33() {
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferOffsetAlign);
+    std::cout << std::endl << "uniformBufferOffsetAlign = " << uniformBufferOffsetAlign << std::endl;
+
     if (getIsAnisFiltrationSupported()) {
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_anisotropicLevel);
     }
@@ -1153,15 +1175,12 @@ float GDeviceGL33::getAnisLevel() {
 }
 
 void GDeviceGL33::clearScreen() {
-#ifndef WITH_GLESv2
     if (m_isInvertZ) {
         glClearDepthf(0.0f);
     } else {
         glClearDepthf(1.0f);
     }
-#else
-    glClearDepthf(1.0f);
-#endif
+
     glDisable(GL_DEPTH_TEST);
     if (m_isInvertZ) {
         glDepthFunc(GL_GEQUAL);
@@ -1180,7 +1199,6 @@ void GDeviceGL33::clearScreen() {
     glDisable(GL_CULL_FACE);
     glDepthMask(GL_FALSE);
     glDisable(GL_SCISSOR_TEST);
-
 }
 
 void GDeviceGL33::setClearScreenColor(float r, float g, float b) {

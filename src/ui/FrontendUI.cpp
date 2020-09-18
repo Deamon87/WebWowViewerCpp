@@ -468,6 +468,28 @@ void FrontendUI::showQuickLinksDialog() {
             openWMOSceneByfdid(114998);
         }
     }
+    if (ImGui::Button("Flyingsprite", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+
+            replacementTextureFDids[11] = 3059000;
+            openM2SceneByfdid(3024835, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Upright Orc", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[1] = 3844710;
+            openM2SceneByfdid(1968587, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("quillboarbrute.m2", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[11] = 1786107;
+            openM2SceneByfdid(1784020, replacementTextureFDids);
+        }
+    }
     if (ImGui::Button("WMO With Horde Symbol", ImVec2(-1, 0))) {
         if (openWMOSceneByfdid) {
             openWMOSceneByfdid(1846142);

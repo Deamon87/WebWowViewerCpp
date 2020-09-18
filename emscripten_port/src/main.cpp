@@ -504,23 +504,30 @@ extern "C" {
         auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
         auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
 
+        bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+        if (isInfZSupported)
+        {
+            float f = 1.0f / tan(fov / 2.0f);
+            cameraMatricesRendering->perspectiveMat = mathfu::mat4(
+                f / canvasAspect, 0.0f,  0.0f,  0.0f,
+                0.0f,    f,  0.0f,  0.0f,
+                0.0f, 0.0f,  1, -1.0f,
+                0.0f, 0.0f, 1,  0.0f);
+        }
+
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
 
         bool clearOnUi = true;
         auto clearColor = apiContainer.getConfig()->getClearColor();
-//        if (currentScene != nullptr) {
+
         auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
         auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
         ViewPortDimensions dimensions = {{0, 0}, {canvWidth, canvHeight}};
         auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
-                                    dimensions, true, clearColor, nullptr);
-        clearOnUi = false;
-//        }
-//        else {
-//            auto sceneDrawStage = sceneScenario->addDrawStage(nullptr, nullptr, cameraMatricesRendering, {}, true,
-//                                                              {{0, 0}, {canvWidth, canvHeight}},
-//                                                              true, clearColor);
-//        }
+                                    dimensions, true, isInfZSupported, clearColor, nullptr);
+
+
+
 
 //        try {
             sceneComposer->draw(sceneScenario);

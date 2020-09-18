@@ -44,6 +44,7 @@ public:
     }
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
+    void setMeshIdArray(std::vector<uint8_t> &meshIds) override ;
     void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) override;
     void resetReplaceParticleColor() override;
     void doPostLoad(HCullStage cullStage) override;

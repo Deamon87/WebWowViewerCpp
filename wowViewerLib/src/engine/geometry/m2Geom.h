@@ -35,8 +35,6 @@ public:
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
     std::array<HGVertexBufferBindings, 4> createDynamicVao(IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
                                                                SkinGeom *skinGeom, M2SkinSection *skinSection);
-
-    int findAnimationIndex(uint32_t anim_id);
     void loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t subAnimationId);
 
     M2Data * getM2Data(){ if (fsStatus == FileStatus::FSLoaded) {return m_m2Data;} else {return nullptr;}};
@@ -45,7 +43,10 @@ public:
     std::vector<uint32_t> skinFileDataIDs;
     std::vector<uint32_t> textureFileDataIDs;
     std::vector<M2_AFID> animationFileDataIDs;
-    M2Array<Exp2Record> *exp2Records = nullptr;
+
+    std::vector<uint16_t> blackListAnimations;
+
+    EXP2 *exp2 = nullptr;
     std::vector<TXAC> txacMesh = {};
     std::vector<TXAC> txacMParticle = {};
 
