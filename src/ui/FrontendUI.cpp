@@ -115,7 +115,12 @@ void FrontendUI::showCurrentStatsDialog() {
                     ImGui::GetIO().Framerate);
 //            if(getCurrentAreaName) {
         ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
+
         ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
+
+
+        ImGui::Text("Current Fog scaler: %f", m_api->getConfig()->getFogScaler());
+        ImGui::Text("Current Fog density: %f", m_api->getConfig()->getFogDensity());
 //            }
         ImGui::End();
     }
@@ -468,12 +473,31 @@ void FrontendUI::showQuickLinksDialog() {
             openWMOSceneByfdid(114998);
         }
     }
+    if (ImGui::Button("Strange WMO", ImVec2(-1, 0))) {
+        if (openWMOSceneByfdid) {
+            openWMOSceneByfdid(2342637);
+        }
+    }
     if (ImGui::Button("Flyingsprite", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
 
             replacementTextureFDids[11] = 3059000;
             openM2SceneByfdid(3024835, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("maldraxxusflyer", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[11] = 3196375;
+            openM2SceneByfdid(3196372, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("ridingphoenix", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+
+            openM2SceneByfdid(125644, replacementTextureFDids);
         }
     }
     if (ImGui::Button("Upright Orc", ImVec2(-1, 0))) {

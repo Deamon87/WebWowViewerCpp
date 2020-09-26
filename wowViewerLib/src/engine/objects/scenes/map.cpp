@@ -516,21 +516,15 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
     bool fogRecordWasFound = false;
     mathfu::vec3 endFogColor = mathfu::vec3(0.0, 0.0, 0.0);
 
+    std::vector<LightResult> wmoFogs = {};
     if (cullStage->m_currentWMO != nullptr) {
-        CImVector sunFogColor;
-        fogRecordWasFound = cullStage->m_currentWMO->checkFog(cameraVec3, sunFogColor);
-        if (fogRecordWasFound) {
-            endFogColor =
-                mathfu::vec3((sunFogColor.r & 0xFF) / 255.0f,
-                             ((sunFogColor.g) & 0xFF) / 255.0f,
-                             ((sunFogColor.b) & 0xFF) / 255.0f);
-        }
+        cullStage->m_currentWMO->checkFog(cameraVec3, wmoFogs);
     }
+    std::vector<LightResult> lightResults;
 
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
         LightResult zoneLightResult;
-        std::vector<LightResult> lightResults;
         bool zoneLightFound = false;
         int LightId;
         for (const auto &zoneLight : m_zoneLights) {
@@ -626,7 +620,6 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             }
         }
 
-
         //Blend glow and ambient
         mathfu::vec3 ambientColor = {0, 0, 0};
         mathfu::vec3 horizontAmbientColor = {0, 0, 0};
@@ -641,19 +634,6 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         mathfu::vec3 SkySmogColor = {0, 0, 0};
         mathfu::vec3 SkyFogColor = {0, 0, 0};
 
-        float FogEnd = 0;
-        float FogScaler = 0;
-        float FogDensity = 0;
-        float FogHeight = 0;
-        float FogHeightScaler = 0;
-        float FogHeightDensity = 0;
-        float SunFogAngle = 0;
-        mathfu::vec3 EndFogColor = {0, 0, 0};
-        float EndFogColorDistance = 0;
-        mathfu::vec3 SunFogColor = {0, 0, 0};
-        float SunFogStrength = 0;
-        mathfu::vec3 FogHeightColor = {0, 0, 0};
-        mathfu::vec4 FogHeightCoefficients = {0, 0, 0, 0};
 
         config->currentGlow = 0;
         for (auto &_light : lightResults) {
@@ -665,26 +645,12 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             directColor += mathfu::vec3(_light.directColor) * _light.blendCoef;
             closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
 
-            SkyTopColor += mathfu::vec3(_light.SkyTopColor) * _light.blendCoef;
+            SkyTopColor += mathfu::vec3(_light.SkyTopColor.data()) * _light.blendCoef;
             SkyMiddleColor += mathfu::vec3(_light.SkyMiddleColor) * _light.blendCoef;
             SkyBand1Color += mathfu::vec3(_light.SkyBand1Color) * _light.blendCoef;
             SkyBand2Color += mathfu::vec3(_light.SkyBand2Color) * _light.blendCoef;
             SkySmogColor += mathfu::vec3(_light.SkySmogColor) * _light.blendCoef;
-            SkyFogColor += mathfu::vec3(_light.SkyFogColor) * _light.blendCoef;
-
-            FogEnd += _light.FogEnd * _light.blendCoef;
-            FogScaler += _light.FogScaler * _light.blendCoef;
-            FogDensity += _light.FogDensity * _light.blendCoef;
-            FogHeight += _light.FogHeight * _light.blendCoef;
-            FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
-            FogHeightDensity += _light.FogHeightScaler * _light.blendCoef;
-            SunFogAngle += _light.SunFogAngle * _light.blendCoef;
-            EndFogColor += mathfu::vec3(_light.EndFogColor) * _light.blendCoef;
-            EndFogColorDistance += _light.EndFogColorDistance * _light.blendCoef;
-            SunFogColor += mathfu::vec3(_light.SunFogColor) * _light.blendCoef;
-            SunFogStrength += _light.SunFogStrength * _light.blendCoef;
-            FogHeightColor += mathfu::vec3(_light.FogHeightColor) * _light.blendCoef;
-            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients) * _light.blendCoef;
+            SkyFogColor += mathfu::vec3(_light.SkyFogColor.data()) * _light.blendCoef;
         }
 
         //Database is in BGRA
@@ -700,13 +666,113 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         config->setExteriorDirectColor(directColor[2], directColor[1], directColor[0], 0);
         config->setCloseRiverColor(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
 
-
         config->setSkyTopColor(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0]);
         config->setSkyMiddleColor(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0]);
         config->setSkyBand1Color(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0]);
         config->setSkyBand2Color(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0]);
         config->setSkySmogColor(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0]);
         config->setSkyFogColor(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0]);
+    }
+
+    //Handle fog
+    {
+        float FogEnd = 0;
+        float FogScaler = 0;
+        float FogDensity = 0;
+        float FogHeight = 0;
+        float FogHeightScaler = 0;
+        float FogHeightDensity = 0;
+        float SunFogAngle = 0;
+        mathfu::vec3 FogColor = {0, 0, 0};
+        mathfu::vec3 EndFogColor = {0, 0, 0};
+        float EndFogColorDistance = 0;
+        mathfu::vec3 SunFogColor = {0, 0, 0};
+        float SunFogStrength = 0;
+        mathfu::vec3 FogHeightColor = {0, 0, 0};
+        mathfu::vec4 FogHeightCoefficients = {0, 0, 0, 0};
+
+        std::vector<LightResult> combinedResults = {};
+        std::sort(combinedResults.begin(), combinedResults.end(), [](const LightResult &a, const LightResult &b) -> bool {
+            return a.blendCoef > b.blendCoef;
+        });
+        float totalSummator = 0.0;
+
+        //Apply fog from WMO
+        {
+            bool fogDefaultExist = false;
+            int fogDefaultIndex = -1;
+            for (int i = 0; i < wmoFogs.size() && totalSummator < 1.0f; i++) {
+                auto &fogRec = wmoFogs[i];
+                if (fogRec.isDefault) {
+                    fogDefaultExist = true;
+                    fogDefaultIndex = i;
+                    continue;
+                }
+                if (totalSummator + fogRec.blendCoef > 1.0f) {
+                    fogRec.blendCoef = 1.0f - totalSummator;
+                    totalSummator = 1.0f;
+                } else {
+                    totalSummator += fogRec.blendCoef;
+                }
+                combinedResults.push_back(fogRec);
+            }
+
+            if (fogDefaultExist && totalSummator < 1.0f) {
+                wmoFogs[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
+                totalSummator = 1.0f;
+                combinedResults.push_back(wmoFogs[fogDefaultIndex]);
+            }
+        }
+
+        //Apply fogs from lights
+        if (totalSummator < 1.0) {
+            bool fogDefaultExist = false;
+            int fogDefaultIndex = -1;
+
+            for (int i = 0; i < lightResults.size() && totalSummator < 1.0f; i++)  {
+                auto &fogRec = lightResults[i];
+                if (fogRec.isDefault) {
+                    fogDefaultExist = true;
+                    fogDefaultIndex = i;
+                    continue;
+                }
+                if (totalSummator + fogRec.blendCoef > 1.0f) {
+                    fogRec.blendCoef = 1.0f - totalSummator;
+                    totalSummator = 1.0f;
+                } else {
+                    totalSummator += fogRec.blendCoef;
+                }
+                combinedResults.push_back(fogRec);
+            }
+            if (fogDefaultExist && totalSummator < 1.0f) {
+                lightResults[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
+                totalSummator = 1.0f;
+                combinedResults.push_back(lightResults[fogDefaultIndex]);
+            }
+        }
+        //Rebalance blendCoefs
+        if (totalSummator < 1.0f) {
+            for (auto &_light : combinedResults) {
+                _light.blendCoef = _light.blendCoef / totalSummator;
+            }
+        }
+
+        for (auto &_light : combinedResults) {
+            FogEnd += _light.FogEnd * _light.blendCoef;
+            FogScaler += _light.FogScaler * _light.blendCoef;
+            FogDensity += _light.FogDensity * _light.blendCoef;
+            FogHeight += _light.FogHeight * _light.blendCoef;
+            FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
+            FogHeightDensity += _light.FogHeightScaler * _light.blendCoef;
+            SunFogAngle += _light.SunFogAngle * _light.blendCoef;
+            FogColor += mathfu::vec3(_light.FogColor.data()) * _light.blendCoef;
+            EndFogColor += mathfu::vec3(_light.EndFogColor.data()) * _light.blendCoef;
+            EndFogColorDistance += _light.EndFogColorDistance * _light.blendCoef;
+            SunFogColor += mathfu::vec3(_light.SunFogColor.data()) * _light.blendCoef;
+            SunFogStrength += _light.SunFogStrength * _light.blendCoef;
+            FogHeightColor += mathfu::vec3(_light.FogHeightColor.data()) * _light.blendCoef;
+            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients) * _light.blendCoef;
+        }
 
         config->setFogEnd(FogEnd);
         config->setFogScaler(FogScaler);
@@ -715,6 +781,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         config->setFogHeightScaler(FogHeightScaler);
         config->setFogHeightDensity(FogHeightDensity);
         config->setSunFogAngle(SunFogAngle);
+        config->setFogColor(FogColor[2], FogColor[1], FogColor[0]);
         config->setEndFogColor(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
         config->setEndFogColorDistance(EndFogColorDistance);
         config->setSunFogColor(SunFogColor[2], SunFogColor[1], SunFogColor[0]);
@@ -787,7 +854,6 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             m_wdlObject->setMapApi(this);
         }
     }
-
 
     std::vector<std::shared_ptr<M2Object>> m2ObjectsCandidates;
     std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
@@ -1365,17 +1431,18 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         blockPSVS->extLight.uExteriorDirectColor = config->getExteriorDirectColor();
         blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(config->getExteriorDirectColorDir(), 1.0);
 
-        float fogStart = std::max<float>(config->getFarPlane() - 50, 0);
-        float fogEnd = config->getFarPlane();
+        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
+        float fogStart = std::max<float>(config->getFarPlane() - 250, 0);
+        fogStart = std::max<float>(fogEnd - config->getFogScaler() * (fogEnd - fogStart), 0);
 
 
         blockPSVS->fogData.densityParams = mathfu::vec4(
-            config->getFogScaler() * fogStart,
+            fogStart,
             fogEnd ,
             config->getFogDensity() / 1000,
          0);
         blockPSVS->fogData.heightPlane = mathfu::vec4(0,0,0,0);
-        blockPSVS->fogData.color_and_heightRate = mathfu::vec4(config->getSkyFogColor().xyz(),config->getFogHeightScaler());
+        blockPSVS->fogData.color_and_heightRate = mathfu::vec4(config->getFogColor(),config->getFogHeightScaler());
         blockPSVS->fogData.heightDensity_and_endColor = mathfu::vec4(
             config->getFogHeightDensity(),
             config->getEndFogColor().x,

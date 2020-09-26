@@ -44,7 +44,7 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 
 
 
-#define OPENGL_DGB_MESSAGE 0
+#define OPENGL_DGB_MESSAGE 1
 
 #ifdef __EMSCRIPTEN__
 #define OPENGL_DGB_MESSAGE 0

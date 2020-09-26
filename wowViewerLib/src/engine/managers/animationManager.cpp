@@ -807,7 +807,9 @@ void AnimationManager::update(
             currentSubAnimIndex = subAnimRecord->variationNext;
             subAnimRecord = (*sequences)[currentSubAnimIndex];
 
-            calcProb += subAnimRecord->frequency;
+            if (this->animationInfo.currentAnimation.animationIndex != currentSubAnimIndex) {
+                calcProb += subAnimRecord->frequency;
+            }
         }
 
         this->animationInfo.nextSubAnimation.animationIndex = currentSubAnimIndex;

@@ -19,12 +19,12 @@ struct LightResult {
     float directColor[3];
     float closeRiverColor[3];
 
-    float SkyTopColor[3];
+    std::array<float, 3> SkyTopColor;
     float SkyMiddleColor[3];
     float SkyBand1Color[3];
     float SkyBand2Color[3];
     float SkySmogColor[3];
-    float SkyFogColor[3];
+    std::array<float, 3> SkyFogColor;
 
     //Fog
     float FogEnd;
@@ -34,11 +34,12 @@ struct LightResult {
     float FogHeightScaler;
     float FogHeightDensity;
     float SunFogAngle;
-    float EndFogColor[3];
+    std::array<float, 3> FogColor;
+    std::array<float, 3> EndFogColor;
     float EndFogColorDistance;
-    float SunFogColor[3];
+    std::array<float, 3> SunFogColor;
     float SunFogStrength;
-    float FogHeightColor[3];
+    std::array<float, 3> FogHeightColor;
     float FogHeightCoefficients[4];
 
 

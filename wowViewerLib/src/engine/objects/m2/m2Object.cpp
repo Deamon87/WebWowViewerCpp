@@ -1651,7 +1651,7 @@ void M2Object::getAvailableAnimation(std::vector<int> &allAnimationList) {
         for (int i = 0; i < sequences.size; i++) {
             bool animationIsBanned = false;
             for (auto const a : bannedAnims) {
-                if (a == sequences[i]->id) {
+                if (a != 0 && a == sequences[i]->id) {
                     animationIsBanned = true;
                     break;
                 }

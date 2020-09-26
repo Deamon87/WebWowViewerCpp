@@ -123,7 +123,7 @@ public:
     void createGroupObjects();
 
 
-    bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor);
+    void checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults);
 
     bool doPostLoad(int &processedThisFrame);
     void update();

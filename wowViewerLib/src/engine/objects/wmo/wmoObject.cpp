@@ -1294,26 +1294,42 @@ std::function<void(WmoGroupGeom &wmoGroupGeom)> WmoObject::getAttenFunction() {
     } ;
 }
 
-bool WmoObject::checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor) {
+void WmoObject::checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults) {
     mathfu::vec3 cameraLocal = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1.0)).xyz();
     for (int i = mainGeom->fogsLen-1; i >= 0; i--) {
         SMOFog &fogRecord = mainGeom->fogs[i];
         mathfu::vec3 fogPosVec = mathfu::vec3(fogRecord.pos);
 
         float distanceToFog = (fogPosVec - cameraLocal).Length();
-        if ((distanceToFog < fogRecord.larger_radius) /*|| fogRecord.larger_radius == 0*/) {
+        if ((distanceToFog < fogRecord.larger_radius) || fogRecord.flag_infinite_radius) {
+            LightResult wmoFog;
+            wmoFog.FogScaler = fogRecord.fog.start_scalar;
+            wmoFog.FogEnd = fogRecord.fog.end;
+            wmoFog.FogDensity = 0.18f;
 
-            fogColor.r = fogRecord.fog.color.r;
-            fogColor.g = fogRecord.fog.color.g;
-            fogColor.b = fogRecord.fog.color.b;
-//                this.sceneApi.setFogColor(fogRecord.fog_colorF);
-            //this.sceneApi.setFogStart(wmoFile.mfog.fog_end);
-//                this.sceneApi.setFogEnd(fogRecord.fog_end);
-            return true;
+            wmoFog.FogHeightScaler = 0;
+            wmoFog.FogHeightDensity = 0;
+            wmoFog.SunFogAngle = 0;
+            wmoFog.EndFogColorDistance = 0;
+            wmoFog.SunFogStrength = 0;
+            if (fogRecord.flag_infinite_radius) {
+                wmoFog.blendCoef = 1.0;
+                wmoFog.isDefault = true;
+            } else {
+                wmoFog.blendCoef = std::min(
+                    (fogRecord.larger_radius - distanceToFog) / (fogRecord.larger_radius - fogRecord.smaller_radius),
+                    1.0f);
+                wmoFog.isDefault = false;
+            }
+            std::array<float, 3> fogColor = {fogRecord.fog.color.b/255.0f, fogRecord.fog.color.g/255.0f,  fogRecord.fog.color.r/255.0f};
+            wmoFog.FogColor = fogColor;
+            wmoFog.EndFogColor = fogColor;
+            wmoFog.SunFogColor = fogColor;
+            wmoFog.FogHeightColor = fogColor;
+
+            fogResults.push_back(wmoFog);
         }
     }
-
-    return false;
 }
 
 bool WmoObject::hasPortals() {

@@ -85,6 +85,7 @@ private:
     float FogHeightScaler;
     float FogHeightDensity;
     float SunFogAngle;
+    mathfu::vec3 FogColor;
     mathfu::vec3 EndFogColor;
     float EndFogColorDistance;
     mathfu::vec3 SunFogColor;
@@ -477,6 +478,13 @@ public:
     }
     void setSunFogAngle(float value) {
         SunFogAngle = value;
+    }
+
+    mathfu::vec3 getFogColor() {
+        return FogColor;
+    }
+    void setFogColor(float r, float g, float b) {
+        FogColor = mathfu::vec3(r, g, b);
     }
 
     mathfu::vec3 getEndFogColor() {

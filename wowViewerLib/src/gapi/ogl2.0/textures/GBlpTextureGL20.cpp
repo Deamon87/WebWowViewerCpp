@@ -148,6 +148,13 @@ void GBlpTextureGL20::createGlTexture(TextureFormat textureFormat, const Mipmaps
                              &mipmaps[k].texture[0]);
             }
             break;
+        case TextureFormat::None:
+        case TextureFormat::RGBA:
+        case TextureFormat::PalARGB1555DitherFloydSteinberg:
+        case TextureFormat::PalARGB4444DitherFloydSteinberg:
+        case TextureFormat::PalARGB2565DitherFloydSteinberg:
+            std::cout << "Detected unhandled texture format" << std::endl;
+        break;
     }
 #ifndef WITH_GLESv2
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) mipmaps.size()-1);

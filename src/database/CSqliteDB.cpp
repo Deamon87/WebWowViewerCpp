@@ -154,6 +154,11 @@ void initWithZeros(float *colorF) {
     colorF[1] = 0;
     colorF[2] = 0;
 }
+void initWithZeros(std::array<float, 3> &colorF) {
+    colorF[0] = 0;
+    colorF[1] = 0;
+    colorF[2] = 0;
+}
 void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
     colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
                                     getFloatFromInt<0>(lastLdRes) *
@@ -165,11 +170,28 @@ void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlpha
                                     getFloatFromInt<2>(lastLdRes) *
                                     (1.0 - timeAlphaBlend)) * innerAlpha;
 }
+void blendTwoAndAdd(std::array<float, 3> &colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
+    colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
+                  getFloatFromInt<0>(lastLdRes) *
+                  (1.0 - timeAlphaBlend)) * innerAlpha;
+    colorF[1] += (getFloatFromInt<1>(currLdRes) * timeAlphaBlend +
+                  getFloatFromInt<1>(lastLdRes) *
+                  (1.0 - timeAlphaBlend)) * innerAlpha;
+    colorF[2] += (getFloatFromInt<2>(currLdRes) * timeAlphaBlend +
+                  getFloatFromInt<2>(lastLdRes) *
+                  (1.0 - timeAlphaBlend)) * innerAlpha;
+}
 void blendTwoAndAdd(float &colorF, float currLdRes, float lastLdRes, float timeAlphaBlend, float innerAlpha) {
     colorF += (currLdRes * timeAlphaBlend + lastLdRes * (1.0 - timeAlphaBlend)) * innerAlpha;
 }
 
 void addOnlyOne(float *colorF, int currLdRes, float innerAlpha) {
+    colorF[0] += getFloatFromInt<0>(currLdRes) * innerAlpha;
+    colorF[1] += getFloatFromInt<1>(currLdRes) * innerAlpha;
+    colorF[2] += getFloatFromInt<2>(currLdRes) * innerAlpha;
+}
+
+void addOnlyOne(std::array<float, 3> &colorF, int currLdRes, float innerAlpha) {
     colorF[0] += getFloatFromInt<0>(currLdRes) * innerAlpha;
     colorF[1] += getFloatFromInt<1>(currLdRes) * innerAlpha;
     colorF[2] += getFloatFromInt<2>(currLdRes) * innerAlpha;
@@ -488,6 +510,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             addOnlyOne(lightResult, lastLdRes, innerAlpha);
         }
 
+        lightResult.FogColor = lightResult.SkyFogColor;
         lightResults.push_back(lightResult);
 
         totalSummator += innerResult.blendAlpha;
