@@ -6,7 +6,7 @@ endif()
 
 set(APP_RUN_PREFIX "")
 if (EMSCRIPTEN)
-    set(APP_RUN_PREFIX node )
+    set(APP_RUN_PREFIX node --experimental-wasm-simd)
 endif()
 
 message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
@@ -26,8 +26,6 @@ set(SPIRV_REF_SOURCES
         src/spirv/dumpShaderFields.h src/spirv/dumpShaderMetaData.h src/spirv/dumpGLSLShader.h)
 set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/engine/shader/ShaderDefinitions.h)
 set_target_properties(glslangValidator PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-add_custom_target(SPIRV_EXTRACT_META ALL)
 
 add_executable(spirv_reflection ${SPIRV_REF_SOURCES})
 set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
@@ -78,11 +76,6 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
 #                        DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
 #            endif()
 
-            add_custom_command(
-                    TARGET SPIRV_EXTRACT_META
-                    PRE_BUILD
-                    DEPENDS ${SPIRV_NonOpt})
-
             list(APPEND SPIRV_BINARY_FILES_NON_OPT ${SPIRV_NonOpt})
             list(APPEND SPIRV_BINARY_FILES_OPT ${SPIRVOpt})
 
@@ -126,13 +119,12 @@ endmacro(configure_filesVLK)
 configure_filesVLK(${PROJECT_SOURCE_DIR}/shaders/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv
         ${GLSL_TARGET_FOLDER}/glsl/glsl20/ ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
 
-add_custom_command(
-        TARGET SPIRV_EXTRACT_META
+add_custom_target(
+        SPIRV_EXTRACT_META
         COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX} -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
         VERBATIM)
 
-add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator ${SPIRV_NonOpt})
 
 add_custom_target(
         ShadersGLSL20
@@ -146,6 +138,8 @@ add_custom_target(
         DEPENDS ${GLSL30Files}
 )
 add_dependencies(ShadersGLSL33 spirv_reflection)
+
+add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator ${SPIRV_NonOpt})
 
 add_custom_target(
     GenerateForWebgl

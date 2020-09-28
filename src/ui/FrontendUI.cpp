@@ -457,6 +457,11 @@ void FrontendUI::showQuickLinksDialog() {
             openWMOSceneByfdid(2756726);
         }
     }
+    if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
+        if (openWMOSceneByfdid) {
+            openWMOSceneByfdid(1247268);
+        }
+    }
 
     if (ImGui::Button("Some item", ImVec2(-1, 0))) {
         if (openM2SceneByfdid) {
@@ -466,6 +471,14 @@ void FrontendUI::showQuickLinksDialog() {
                 fdid = 1029337;
             }
             openM2SceneByfdid(1029334, replacementTextureFDids);
+        }
+    }
+    if (ImGui::Button("Fox", ImVec2(-1, 0))) {
+        if (openM2SceneByfdid) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[11] = 3071379;
+
+            openM2SceneByfdid(3071370, replacementTextureFDids);
         }
     }
     if (ImGui::Button("Northrend Human Inn", ImVec2(-1, 0))) {

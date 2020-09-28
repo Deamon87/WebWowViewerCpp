@@ -19,6 +19,9 @@ private:
     bool usePortalCulling = true;
     bool useInstancing = false;
 
+    bool disableFog = false;
+    bool fogDataFound = false;
+
     bool drawWmoBB = false;
     bool drawM2BB = true;
     bool secondCamera = false;
@@ -96,6 +99,19 @@ private:
     std::string areaName;
 
 public:
+    void setDisableFog(bool value) {
+        disableFog = value;
+    }
+    bool getDisableFog() {
+        return disableFog;
+    }
+    void setFogDataFound(bool value) {
+        fogDataFound = value;
+    }
+    bool getFogDataFound() {
+        return fogDataFound;
+    }
+
     float getFarPlane() {
         return farPlane;
     }

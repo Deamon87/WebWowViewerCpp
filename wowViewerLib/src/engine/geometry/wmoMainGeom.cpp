@@ -178,7 +178,15 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                             chunkData.readValue(object.skyboxM2FileId);
                         }
                     }
-
+                },
+                {
+                    'MAVG', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MAVG");
+                            object.mavgsLen = chunkData.chunkLen / sizeof(MAVG);
+                            chunkData.readValues(object.mavgs, object.mavgsLen);
+                        }
+                    }
                 },
 
         }

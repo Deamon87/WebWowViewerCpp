@@ -230,6 +230,18 @@ struct MOGP {
     uint32_t 		unused2;//(UNUSED: 20740)
 };
 
+struct MAVG {
+    /*000h*/ C3Vector pos;
+    /*00Ch*/ float start;
+    /*010h*/ float end;
+    /*014h*/ CImVector color1;
+    /*018h*/ CImVector color2;
+    /*01Ch*/ CImVector color3;
+    /*020h*/ uint32_t flags;    // &1: use color1 and color3
+    /*024h*/ uint16_t doodadSetID;
+    /*026h*/ char _0x26[10];
+};
+
 struct SMOPoly
 {
     struct

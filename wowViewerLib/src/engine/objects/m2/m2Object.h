@@ -231,9 +231,9 @@ public:
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
 
     bool setUseLocalLighting(bool value) {
-        if (hasModf0x2Flag) {
-            m_useLocalDiffuseColor = 0;
-        }
+//        if (hasModf0x2Flag) {
+//            m_useLocalDiffuseColor = 0;
+//        }
         if (m_useLocalDiffuseColor == -1) {
             m_useLocalDiffuseColor = value ? 1 : 0;
         }

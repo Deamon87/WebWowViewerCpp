@@ -1366,3 +1366,29 @@ int WmoObject::getWmoGroupId(int groupNum) {
 
     return groupObjects[groupNum]->getWmoGroupGeom()->mogp->wmoGroupID;
 }
+
+mathfu::vec3 WmoObject::getAmbientColor() {
+    CImVector ambientColor = mainGeom->header->ambColor;
+    if (mainGeom->mavgs != nullptr) {
+        int recordIndex = 0;
+        for (int i = 0; i < mainGeom->mavgsLen; i++) {
+            if (mainGeom->mavgs[i].doodadSetID == m_doodadSet) {
+                recordIndex = i;
+                break;
+            }
+        }
+        auto &record = mainGeom->mavgs[recordIndex];
+        if (record.flags & 1) {
+            ambientColor = record.color3;
+        } else {
+            ambientColor = record.color1;
+        }
+    }
+    mathfu::vec3 ambColor = mathfu::vec3(
+        ((float) ambientColor.r / 255.0f),
+        ((float) ambientColor.g / 255.0f),
+        ((float) ambientColor.b / 255.0f)
+    );
+
+    return ambColor;
+}

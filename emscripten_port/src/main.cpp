@@ -485,6 +485,7 @@ extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void gameloop(double deltaTime) {
         if (sceneComposer == nullptr) return;
+        if (apiContainer.hDevice == nullptr) return;
 
         glfwPollEvents();
 

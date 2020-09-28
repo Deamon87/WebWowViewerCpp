@@ -15,7 +15,7 @@
 
 class SceneComposer {
 private:
-    ApiContainer *m_apiContainer;
+    ApiContainer *m_apiContainer = nullptr;
 private:
     std::thread cullingThread;
     std::thread updateThread;

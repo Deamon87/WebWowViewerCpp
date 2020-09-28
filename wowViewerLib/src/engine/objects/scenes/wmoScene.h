@@ -53,6 +53,7 @@ public:
         m_wmoObject = wmoObject;
 
         this->setDefaultLightParams(api);
+        api->getConfig()->setDisableFog(false);
     };
 
     explicit WmoScene(ApiContainer *api, int fileDataId) {
@@ -75,6 +76,7 @@ public:
         m_wmoObject = wmoObject;
 
         this->setDefaultLightParams(api);
+        api->getConfig()->setDisableFog(false);
     };
 
     ~WmoScene() override {

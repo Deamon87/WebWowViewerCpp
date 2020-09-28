@@ -626,9 +626,11 @@ void WmoGroupObject::createWaterMeshes() {
 
     meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
-    std::vector<int> fileDataIds;
+    std::vector<int> fileDataIds = {};
     int basetextureFDID = 0;
-    m_api->databaseHandler->getLiquidTypeData(this->liquid_type, fileDataIds);
+    if (m_api->databaseHandler != nullptr) {
+        m_api->databaseHandler->getLiquidTypeData(this->liquid_type, fileDataIds);
+    }
     for (auto fdid: fileDataIds) {
         if (fdid != 0) {
             basetextureFDID = fdid;
@@ -674,9 +676,11 @@ void WmoGroupObject::loadDoodads() {
 
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
-        m_doodads[i] = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
-        std::function<void()> event = [&]() -> void {
+        auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
+        m_doodads[i] = newDoodad;
+        std::function<void()> event = [&, newDoodad]() -> void {
             this->m_recalcBoundries = true;
+
         };
         if (m_doodads[i] != nullptr) {
             m_doodads[i]->addPostLoadEvent(event);
@@ -1203,13 +1207,8 @@ void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int r
 mathfu::vec4 WmoGroupObject::getAmbientColor() {
     if (!m_geom->mogp->flags.EXTERIOR && !m_geom->mogp->flags.EXTERIOR_LIT) {
         mathfu::vec4 ambColor;
-        ambColor = mathfu::vec4(
-            ((float) m_geom->mohd->ambColor.r / 255.0f),
-            ((float) m_geom->mohd->ambColor.g / 255.0f),
-            ((float) m_geom->mohd->ambColor.b / 255.0f),
-            ((float) m_geom->mohd->ambColor.a / 255.0f)
-        );
 
+        ambColor = mathfu::vec4(m_wmoApi->getAmbientColor(), 1.0);
         if ((m_geom->use_replacement_for_header_color == 1) && (*(int *) &m_geom->replacement_for_header_color != -1)) {
             ambColor = mathfu::vec4(
                 ((float) m_geom->replacement_for_header_color.r / 255.0f),

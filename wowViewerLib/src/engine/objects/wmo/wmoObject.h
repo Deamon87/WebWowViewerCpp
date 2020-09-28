@@ -108,6 +108,7 @@ public:
 
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
     virtual SMOHeader *getWmoHeader() override;
+    mathfu::vec3 getAmbientColor() override;
 
     virtual PointerChecker<SMOMaterial> &getMaterials() override;
 

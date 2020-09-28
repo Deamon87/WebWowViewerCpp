@@ -21,6 +21,7 @@ class IWmoApi {
 public:
     virtual std::shared_ptr<M2Object> getDoodad(int index) = 0;
     virtual SMOHeader *getWmoHeader() = 0;
+    virtual mathfu::vec3 getAmbientColor() = 0;
     virtual PointerChecker<SMOMaterial> &getMaterials() = 0;
     virtual bool isLoaded() = 0;
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() = 0;

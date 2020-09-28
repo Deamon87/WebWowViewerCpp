@@ -13,9 +13,13 @@ add_link_options("SHELL: -s TOTAL_MEMORY=40MB")
 
 message( EMSCRIPTEN_ROOT = emc${EMSCRIPTEN_ROOT})
 
-#set(CMAKE_C_COMPILER /home/deamon/Downloads/emsdk-master/upstream/emscripten/emcc)
-#set(CMAKE_CXX_COMPILER /home/deamon/Downloads/emsdk-master/upstream/emscripten/em++)
+option(COMPILE_WITH_SIMD "Compile with experimental WASM SIMD support" OFF)
+message(COMPILE_WITH_SIMD = ${COMPILE_WITH_SIMD})
 
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} --emit-symbol-map" )
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} --emit-symbol-map" )
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --emit-symbol-map")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} --emit-symbol-map")
 
 check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
 if(HAVE_FLAG_STD_CXX17)
@@ -40,9 +44,13 @@ endif()
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-exceptions")
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-exceptions")
 
-
-
 set(EMSCRIPTEN 1)
+
+set(OUTPUTDIR "")
+if (COMPILE_WITH_SIMD)
+    set(OUTPUTDIR "simd_version/")
+    set(EMSCRIPTEN_SIMD 1)
+endif()
 
 add_subdirectory(../wowViewerLib ${CMAKE_CURRENT_BINARY_DIR}/wowViewerLib)
 
@@ -61,7 +69,9 @@ target_link_options(project PUBLIC "SHELL: -s TOTAL_MEMORY=40MB")
 target_link_options(project PUBLIC "SHELL: -s FETCH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1")
 target_link_options(project PUBLIC "SHELL: -fno-rtti --llvm-lto 1")
 
+
+
 set_target_properties(project
         PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../${OUTPUTDIR}"
         )

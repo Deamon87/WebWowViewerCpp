@@ -184,6 +184,9 @@ void SceneComposer::DoUpdate() {
 }
 
 void SceneComposer::draw(HFrameScenario frameScenario) {
+//    std::cout << __FILE__ << ":" << __LINE__<< "m_apiContainer == nullptr :" << ((m_apiContainer == nullptr) ? "true" : "false") << std::endl;
+//    std::cout << __FILE__ << ":" << __LINE__<< "hdevice == nullptr :" << ((m_apiContainer->hDevice == nullptr) ? "true" : "false") << std::endl;
+
     std::future<bool> cullingFuture;
     std::future<bool> updateFuture;
     if (m_supportThreads) {

@@ -12,7 +12,7 @@ set(LINK_OGL4 0)
 set(LINK_VULKAN 0)
 set(LINK_OPENMP 1)
 set(ENABLE_SIMD 1)
-set(EMSCRIPTEN_SIMD 0)
+option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
 
 if (CMAKE_NDK_BUILD)
     set(LINK_GLEW 0)
@@ -42,9 +42,10 @@ if (LINK_VULKAN)
     add_definitions(-DLINK_VULKAN)
 endif()
 
+set(My_Vectorize_Compile_Options "")
 
 
-
+message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
@@ -58,18 +59,18 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 #set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
 if (EMSCRIPTEN)
+    message("EMSCRIPTEN ENABLE_SIMD = ${ENABLE_SIMD}")
+    if (ENABLE_SIMD)
+        set(My_Vectorize_Compile_Options "${My_Vectorize_Compile_Options};-msimd128;-msse2;-msse;-ftree-vectorize")
+    endif()
 else()
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize" )
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize")
+    set(My_Vectorize_Compile_Options "${My_Vectorize_Compile_Options};-msse3;-mavx2;-ftree-vectorize")
+
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3" )
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3")
 endif()
 
-if (EMSCRIPTEN_SIMD)
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
 
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -msimd128" )
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -msimd128")
-endif()
 
 
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
@@ -438,6 +439,9 @@ endif()
 
 add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
 target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
+foreach(X IN LISTS My_Vectorize_Compile_Options)
+    target_compile_options(WoWViewerLib PRIVATE ${X})
+endforeach()
 target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 

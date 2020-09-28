@@ -774,6 +774,9 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients) * _light.blendCoef;
         }
 
+        //In case of no data -> disable the fog
+        config->setFogDataFound(combinedResults.size() > 0);
+
         config->setFogEnd(FogEnd);
         config->setFogScaler(FogScaler);
         config->setFogDensity(FogDensity);
@@ -1431,7 +1434,12 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         blockPSVS->extLight.uExteriorDirectColor = config->getExteriorDirectColor();
         blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(config->getExteriorDirectColorDir(), 1.0);
 
-        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
+//        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
+        float fogEnd = config->getFarPlane();
+        if (config->getDisableFog() || !config->getFogDataFound()) {
+            fogEnd = 100000000.0f;
+        }
+
         float fogStart = std::max<float>(config->getFarPlane() - 250, 0);
         fogStart = std::max<float>(fogEnd - config->getFogScaler() * (fogEnd - fogStart), 0);
 

@@ -799,6 +799,10 @@ void M2Object::setDiffuseColor(CImVector& value) {
             value.b / 255.0f,
             value.a / 255.0f);
 
+    if (value.a != 255) {
+//        std::cout << "Found index into MOLT = " << (int)value.a << std::endl;
+    }
+
     /*
     uint8_t result = miniLogic(&value);
     if (result < 0xA8) {

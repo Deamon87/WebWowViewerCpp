@@ -453,8 +453,8 @@ int main(){
     ApiContainer apiContainer;
     RequestProcessor *processor = nullptr;
 //    {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=81345e9f0c12583dd8c6e45e31d6a0c2&cdnconfig=351b01520795ba0a074cf9823143809d&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=81345e9f0c12583dd8c6e45e31d6a0c2&cdnconfig=351b01520795ba0a074cf9823143809d&filename=data&filedataid=";
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";

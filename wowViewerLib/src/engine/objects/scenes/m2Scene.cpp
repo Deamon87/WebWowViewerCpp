@@ -164,6 +164,8 @@ M2Scene::M2Scene(ApiContainer *api, std::string m2Model, int cameraView) {
     m2Object->calcWorldPosition();
 
     m_m2Object = m2Object;
+
+    api->getConfig()->setDisableFog(true);
 }
 
 M2Scene::M2Scene(ApiContainer *api, int fileDataId, int cameraView) {
@@ -180,6 +182,8 @@ M2Scene::M2Scene(ApiContainer *api, int fileDataId, int cameraView) {
     m2Object->calcWorldPosition();
 
     m_m2Object = m2Object;
+
+    api->getConfig()->setDisableFog(true);
 }
 
 void M2Scene::setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {

@@ -67,6 +67,9 @@ public:
     PointerChecker<char> skyBoxM2FileName = (skyBoxM2FileNameLen);
     int skyBoxM2FileNameLen = 0;
 
+    PointerChecker<MAVG> mavgs = (mavgsLen);
+    int mavgsLen = 0;
+
     int skyboxM2FileId = 0;
 };
 

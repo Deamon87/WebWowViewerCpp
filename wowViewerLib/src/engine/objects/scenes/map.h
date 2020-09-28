@@ -119,6 +119,8 @@ public:
         m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
         m_wdlObject->setMapApi(this);
 
+        api->getConfig()->setDisableFog(false);
+
         loadZoneLights();
     };
 
@@ -127,6 +129,8 @@ public:
         m_sceneMode = SceneMode::smMap;
 
         m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
+
+        api->getConfig()->setDisableFog(false);
 
         loadZoneLights();
     };
@@ -148,6 +152,8 @@ public:
 
         adtObject->setMapApi(this);
         this->mapTiles[i][j] = adtObject;
+
+        api->getConfig()->setDisableFog(false);
     };
 
     ~Map() override {
