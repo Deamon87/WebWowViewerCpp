@@ -252,20 +252,7 @@ inline void calcTextureAnimationTransform(
     M2Track<C3Vector> &scaleTrack,
     const FullAnimationInfo &animationInfo
 ) {
-    tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
-//
-    if (scaleTrack.values.size > 0) {
-        mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,1);
-        mathfu::vec4 scaleResult = animateTrackWithBlend<C3Vector, mathfu::vec4>(
-            animationInfo,
-            scaleTrack,
-            global_loops,
-            globalSequenceTimes,
-            defaultValue);
 
-        tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
-        isAnimated = true;
-    }
     if (rotationTrack.values.size > 0) {
         mathfu::quat defaultValue = mathfu::quat(1,0,0,0);
         mathfu::quat quaternionResult = animateTrackWithBlend<T, mathfu::quat>(
@@ -275,9 +262,26 @@ inline void calcTextureAnimationTransform(
             globalSequenceTimes,
             defaultValue);
 
+        tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
         tranformMat = tranformMat * quaternionResult.ToMatrix4();
+        tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(negatePivotPoint.xyz());
         isAnimated = true;
     }
+    if (scaleTrack.values.size > 0) {
+        mathfu::vec4 defaultValue = mathfu::vec4(1,1,1,1);
+        mathfu::vec4 scaleResult = animateTrackWithBlend<C3Vector, mathfu::vec4>(
+            animationInfo,
+            scaleTrack,
+            global_loops,
+            globalSequenceTimes,
+            defaultValue);
+
+        tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
+        tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
+        tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(negatePivotPoint.xyz());
+        isAnimated = true;
+    }
+
     if (translationTrack.values.size > 0) {
         mathfu::vec4 defaultValue = mathfu::vec4(0,0,0,0);
         mathfu::vec4 transVec = animateTrackWithBlend<C3Vector, mathfu::vec4>(
@@ -291,8 +295,6 @@ inline void calcTextureAnimationTransform(
         tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(transVec.xyz());
         isAnimated = true;
     }
-
-    tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(negatePivotPoint.xyz());
 }
 
 

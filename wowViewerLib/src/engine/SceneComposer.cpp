@@ -7,6 +7,9 @@
 #include "SceneComposer.h"
 #include "algorithms/FrameCounter.h"
 #include "../gapi/UniformBufferStructures.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 void SceneComposer::processCaches(int limit) {
 //    std::cout << "WoWSceneImpl::processCaches called " << std::endl;
@@ -19,6 +22,7 @@ void SceneComposer::processCaches(int limit) {
 SceneComposer::SceneComposer(ApiContainer *apiContainer) : m_apiContainer(apiContainer) {
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
+//    m_supportThreads = emscripten_run_script_int("(SharedArrayBuffer != null) ? 1 : 0") == 1;
 #endif
     nextDeltaTime = std::promise<float>();
 
@@ -108,7 +112,7 @@ void SceneComposer::DoCulling() {
         auto cullStage = frameScenario->cullStages[i];
         auto config = m_apiContainer->getConfig();
 
-        float farPlane = config->getFarPlane();
+        float farPlane = config->farPlane;
         float nearPlane = 1.0;
         float fov = toRadian(45.0);
 
@@ -117,10 +121,17 @@ void SceneComposer::DoCulling() {
 }
 
 void collectMeshes(HDrawStage drawStage, std::vector<HGMesh> &meshes) {
-    if (drawStage->meshesToRender != nullptr) {
+    if (drawStage->opaqueMeshes != nullptr) {
         std::copy(
-            drawStage->meshesToRender->meshes.begin(),
-            drawStage->meshesToRender->meshes.end(),
+            drawStage->opaqueMeshes->meshes.begin(),
+            drawStage->opaqueMeshes->meshes.end(),
+            std::back_inserter(meshes)
+        );
+    }
+    if (drawStage->transparentMeshes != nullptr) {
+        std::copy(
+            drawStage->transparentMeshes->meshes.begin(),
+            drawStage->transparentMeshes->meshes.end(),
             std::back_inserter(meshes)
         );
     }
@@ -148,25 +159,33 @@ void SceneComposer::DoUpdate() {
 
     singleUpdateCNT.beginMeasurement();
     for (auto updateStage : frameScenario->updateStages) {
-        updateStage->cullResult->scene->update(updateStage);
+        updateStage->cullResult->scene->produceUpdateStage(updateStage);
     }
     singleUpdateCNT.endMeasurement("single update ");
 
     meshesCollectCNT.beginMeasurement();
     std::vector<HGUniformBufferChunk> additionalChunks;
+
+
     for (auto &link : frameScenario->drawStageLinks) {
         link.scene->produceDrawStage(link.drawStage, link.updateStage, additionalChunks);
-
     }
 
     std::vector<HGMesh> meshes;
     collectMeshes(frameScenario->getDrawStage(), meshes);
     meshesCollectCNT.endMeasurement("collectMeshes ");
 
-    for (auto cullStage : frameScenario->cullStages) {
-        cullStage->scene->updateBuffers(cullStage);
+    for (auto updateStage : frameScenario->updateStages) {
+        updateStage->cullResult->scene->updateBuffers(updateStage);
     }
-    device->updateBuffers(meshes, additionalChunks);
+
+    std::vector<HFrameDepedantData> frameDepDataVec = {};
+    std::vector<std::vector<IUniformBufferChunk*>*> uniformChunkVec = {};
+    for (auto updateStage : frameScenario->updateStages) {
+        frameDepDataVec.push_back(updateStage->cullResult->frameDepedantData);
+        uniformChunkVec.push_back(&updateStage->uniformBufferChunks);
+    }
+    device->updateBuffers(uniformChunkVec, frameDepDataVec);
 
     for (auto cullStage : frameScenario->cullStages) {
         cullStage->scene->doPostLoad(cullStage); //Do post load after rendering is done!
@@ -230,6 +249,7 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     if (!m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
         DoUpdate();
     }
+
     if (m_supportThreads) {
         cullingFuture.wait();
         cullingFinished = std::promise<bool>();

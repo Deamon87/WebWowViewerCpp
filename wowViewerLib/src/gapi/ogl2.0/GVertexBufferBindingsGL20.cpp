@@ -45,6 +45,8 @@ void GVertexBufferBindingsGL20::bind() {
 
         for (GBufferBinding &bufferBinding : binding.bindings) {
             glEnableVertexAttribArray(bufferBinding.position);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
             glVertexAttribPointer(
                 bufferBinding.position,
                 bufferBinding.size,
@@ -53,6 +55,7 @@ void GVertexBufferBindingsGL20::bind() {
                 bufferBinding.stride,
                 (const void *) bufferBinding.offset
             );
+#pragma clang diagnostic pop
         }
     }
 }

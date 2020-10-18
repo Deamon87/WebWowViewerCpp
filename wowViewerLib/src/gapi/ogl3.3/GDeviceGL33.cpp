@@ -61,24 +61,24 @@ namespace GL33 {
     //}
 
 
-//    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
-//                    const void *userParam) {
-//        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-//                source,
-//                type,
-//                id,
-//                severity,
-//                std::string(message, message + length).c_str());
-//        if (severity == 37190) {
-//            std::cout << "lol";
-//        }
-//        if (type == GL_DEBUG_TYPE_ERROR) {
-//            std::cout << "lol Error" << std::endl;
-//            __debugbreak;
-//        }
-//
-//        fflush(stdout);
-//    }
+    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+                    const void *userParam) {
+        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+                source,
+                type,
+                id,
+                severity,
+                std::string(message, message + length).c_str());
+        if (severity == 37190) {
+            std::cout << "lol";
+        }
+        if (type == GL_DEBUG_TYPE_ERROR) {
+            std::cout << "lol Error" << std::endl;
+            __debugbreak;
+        }
+
+        fflush(stdout);
+    }
 }
 
 void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {
@@ -284,8 +284,13 @@ void GDeviceGL33::drawStageAndDeps(HDrawStage drawStage) {
         this->clearScreen();
     }
 
-    if (drawStage->meshesToRender != nullptr) {
-        for (auto hgMesh : drawStage->meshesToRender->meshes) {
+    if (drawStage->opaqueMeshes != nullptr) {
+        for (auto hgMesh : drawStage->opaqueMeshes->meshes) {
+            this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
+        }
+    }
+    if (drawStage->transparentMeshes != nullptr) {
+        for (auto hgMesh : drawStage->transparentMeshes->meshes) {
             this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
         }
     }
@@ -322,38 +327,18 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 #ifdef SINGLE_BUFFER_UPLOAD
-void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
-    std::vector<HGL33Mesh> &meshes = (std::vector<HGL33Mesh> &) iMeshes;
-
-    //1. Collect buffers
-    std::vector<IUniformBufferChunk *> buffers;
-    int renderIndex = 0;
-    for (const auto &mesh : meshes) {
-        for (int i = 0; i < 5; i++ ) {
-            IUniformBufferChunk *buffer = (IUniformBufferChunk *) mesh->m_UniformBuffer[i].get();
-            if (buffer != nullptr) {
-                buffers.push_back(buffer);
-            }
-        }
-    }
-    for (const auto &bufferChunks : additionalChunks) {
-        if (bufferChunks != nullptr) {
-            buffers.push_back(bufferChunks.get());
-        }
-    }
-
-
-    std::sort( buffers.begin(), buffers.end());
-    buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
-
+void GDeviceGL33::updateBuffers(std::vector<std::vector<IUniformBufferChunk*>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
     int fullSize = 0;
-    for (auto &buffer : buffers) {
-        fullSize += buffer->getSize();
-        int offsetDiff = fullSize % uniformBufferOffsetAlign;
-        if (offsetDiff != 0) {
-            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        for (auto &buffer : *bufferVec) {
+            fullSize += buffer->getSize();
+            int offsetDiff = fullSize % uniformBufferOffsetAlign;
+            if (offsetDiff != 0) {
+                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-            fullSize += bytesToAdd;
+                fullSize += bytesToAdd;
+            }
         }
     }
     if (fullSize > aggregationBufferForUpload.size()) {
@@ -376,22 +361,30 @@ void GDeviceGL33::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
     //Buffer identifier was changed, so we need to update shader UBO descriptor
     if (fullSize > 0) {
         char *pointerForUpload = static_cast<char *>(&aggregationBufferForUpload[0]);
-        for (const auto &buffer : buffers) {
-            buffer->setOffset(currentSize);
-            buffer->setPointer(&pointerForUpload[currentSize]);
-            currentSize += buffer->getSize();
+        for (int i = 0; i < bufferChunks.size(); i++) {
+            auto &bufferVec = bufferChunks[i];
+            for (auto &buffer : *bufferVec) {
+                buffer->setOffset(currentSize);
+                buffer->setPointer(&pointerForUpload[currentSize]);
+                currentSize += buffer->getSize();
 
-            int offsetDiff = currentSize % uniformBufferOffsetAlign;
-            if (offsetDiff != 0) {
-                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+                int offsetDiff = currentSize % uniformBufferOffsetAlign;
+                if (offsetDiff != 0) {
+                    int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-                currentSize += bytesToAdd;
+                    currentSize += bytesToAdd;
+                }
             }
         }
         assert(currentSize == fullSize);
 
-        for (auto &buffer : buffers) {
-            buffer->update();
+        for (int i = 0; i < bufferChunks.size(); i++) {
+            auto &bufferVec = bufferChunks[i];
+            auto frameDepData = frameDepedantDataVec[i];
+
+            for (auto &buffer : *bufferVec) {
+                buffer->update(frameDepData);
+            }
         }
 
         if (currentSize > 0) {
@@ -701,9 +694,13 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     );
 #endif
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
-    if (glGetError() != 0) {
+#pragma clang diagnostic pop
+
 #ifdef __EMSCRIPTEN__
+//if (glGetError() != 0) {
 //        std::string debugMess =
 //            "Drawing mesh "
 //            " meshType = " + std::to_string((int)hmesh->getMeshType()) +
@@ -716,8 +713,9 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 //
 //            debugger;
 //        );
+//}
 #endif
-    }
+
 
 #if OPENGL_DGB_MESSAGE
     glPopDebugGroup();

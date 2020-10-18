@@ -23,12 +23,12 @@ public:
     virtual void resetAnimation() = 0;
 
     virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) = 0;
+    virtual void produceUpdateStage(HUpdateStage updateStage) = 0;
 
     virtual void checkCulling(HCullStage cullStage) = 0;
 
     virtual void doPostLoad(HCullStage cullStage) = 0;
-    virtual void update(HUpdateStage updateStage) = 0;
-    virtual void updateBuffers(HCullStage cullStage) = 0;
+    virtual void updateBuffers(HUpdateStage updateStage) = 0;
 
     virtual int getCameraNum() = 0;
     virtual std::shared_ptr<ICamera> createCamera(int cameraNum) = 0;

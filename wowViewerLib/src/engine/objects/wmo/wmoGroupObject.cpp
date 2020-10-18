@@ -393,8 +393,8 @@ void WmoGroupObject::postLoad() {
 void WmoGroupObject::createMeshes() {
     Config *config = m_api->getConfig();
 
-    int minBatch = config->getWmoMinBatch();
-    int maxBatch = std::min(config->getWmoMaxBatch(), m_geom->batchesLen);
+    int minBatch = config->wmoMinBatch;
+    int maxBatch = std::min(config->wmoMaxBatch, m_geom->batchesLen);
 
     //In Taanant Jungle in Draenor some WMO has no indicies and crash :D
     if (m_geom->indicesLen == 0) {
@@ -408,13 +408,13 @@ void WmoGroupObject::createMeshes() {
 
     vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockVS));
 
-    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
+    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         WMO::modelWideBlockVS &blockVS = self->getObject<WMO::modelWideBlockVS>();
         blockVS.uPlacementMat = *m_modelMatrix;
     });
 
     fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockPS));
-    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         WMO::modelWideBlockPS &blockPS = self->getObject<WMO::modelWideBlockPS>();
         blockPS.intLight.uInteriorAmbientColorAndApplyInteriorLight =
             mathfu::vec4_packed(
@@ -503,13 +503,13 @@ void WmoGroupObject::createMeshes() {
         HGMesh hmesh = device->createMesh(meshTemplate);
         this->m_meshArray.push_back(hmesh);
 
-        hmesh->getUniformBuffer(2)->setUpdateHandler([this, &material, vertexShader](IUniformBufferChunk *self){
+        hmesh->getUniformBuffer(2)->setUpdateHandler([this, &material, vertexShader](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
             WMO::meshWideBlockVS &blockVS = self->getObject<WMO::meshWideBlockVS>();
             blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockVS.VertexShader = vertexShader;
         });
 
-        hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self) {
+        hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
 //            mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
             mathfu::vec4 localambientColor = this->getAmbientColor();
             mathfu::vec3 directLight = mathfu::vec3(0,0,0);
@@ -659,7 +659,7 @@ void WmoGroupObject::createWaterMeshes() {
     auto l_liquidType = liquid_type;
 
 
-    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType](IUniformBufferChunk* self) -> void {
+    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) -> void {
         mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
         color_ = mathfu::vec4(1.0, 1.0,1.0,0.7);
     });
@@ -1191,16 +1191,20 @@ void WmoGroupObject::setModelFileId(int fileId) {
     m_modelFileId = fileId;
 }
 
-void WmoGroupObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
+void WmoGroupObject::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
     if (!m_loaded) return;
     for (auto &i : this->m_meshArray) {
         i->setRenderOrder(renderOrder);
-        renderedThisFrame.push_back(i);
+        if (i->getIsTransparent()) {
+            opaqueMeshes.push_back(i);
+        } else {
+            transparentMeshes.push_back(i);
+        }
     }
 
     for (auto &i : this->m_waterMeshArray) {
         i->setRenderOrder(renderOrder);
-        renderedThisFrame.push_back(i);
+        transparentMeshes.push_back(i);
     }
 }
 

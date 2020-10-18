@@ -25,7 +25,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
     int batchIndex = materialData.batchIndex;
     auto vertexShader = materialData.vertexShader;
 
-    hmesh->getUniformBuffer(2)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self){
+    hmesh->getUniformBuffer(2)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         auto m2Data = m2Object->m_m2Geom->getM2Data();
 
         auto textMaterial = m2SkinProfile->batches[batchIndex];
@@ -51,7 +51,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
 
     //3. Update individual PS buffer
     auto pixelShader = materialData.pixelShader;
-    hmesh->getUniformBuffer(4)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self) {
+    hmesh->getUniformBuffer(4)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
         auto m2Data = m2Object->m_m2Geom->getM2Data();
 
         auto textMaterial = m2SkinProfile->batches[batchIndex];
@@ -118,7 +118,7 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
 }
 
 void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, M2::modelWideBlockPS &modelBlockPS) {
-    bool BCLoginScreenHack = m2Object.m_api->getConfig()->getBCLightHack();
+    bool BCLoginScreenHack = m2Object.m_api->getConfig()->BCLightHack;
     int lightCount = (int) std::min(m2Object.lights.size(), (size_t) 4);
     for (int j = 0; j < lightCount; j++) {
         std::string uniformName;
@@ -142,27 +142,33 @@ void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, M2::modelWideBloc
     modelBlockPS.bcHack = BCLoginScreenHack ? 1 : 0;
 }
 
+mathfu::mat4 M2MeshBufferUpdater::getTextureMatrix(const M2Object &m2Object, int textureMatIndex,  M2Data *m2Data) {
+    if (textureMatIndex < 0)
+        return mathfu::mat4::Identity();
+
+    if (textureMatIndex >= m2Object.textAnimMatrices.size())
+        return mathfu::mat4::Identity();
+
+    return m2Object.textAnimMatrices[textureMatIndex];
+}
+
 void M2MeshBufferUpdater::fillTextureMatrices(const M2Object &m2Object, int batchIndex, M2Data *m2Data,
                                 M2SkinProfile *m2SkinProfile, mathfu::mat4 *uTextMat) {
 
     const auto textureAnim = m2SkinProfile->batches[batchIndex]->textureTransformComboIndex;
-    int16_t textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
-    if (textureMatIndex >= 0 && textureMatIndex < m2Object.textAnimMatrices.size()) {
-        uTextMat[0] = m2Object.textAnimMatrices[textureMatIndex];
-    } else {
-        uTextMat[0] = mathfu::mat4::Identity();
-    }
-    if (textureAnim+1 < m2Data->texture_transforms_lookup_table.size) {
-        int textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
-        if (textureMatIndex >= 0 && textureMatIndex < m2Object.textAnimMatrices.size()) {
-            uTextMat[1] =m2Object.textAnimMatrices[textureMatIndex];
-        } else {
-            uTextMat[1] = mathfu::mat4::Identity();
-        }
-    } else {
-        uTextMat[1] = mathfu::mat4::Identity();
-    }
-};
+
+    int16_t textureMatIndex = -1;
+    if (textureAnim < m2Data->texture_transforms_lookup_table.size)
+        textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
+
+    uTextMat[0] = M2MeshBufferUpdater::getTextureMatrix(m2Object, textureMatIndex, m2Data);
+
+    textureMatIndex = -1;
+    if (textureAnim+1 < m2Data->texture_transforms_lookup_table.size)
+        textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
+
+    uTextMat[1] = M2MeshBufferUpdater::getTextureMatrix(m2Object, textureMatIndex, m2Data);
+}
 
 mathfu::vec3 &M2MeshBufferUpdater::getFogColor(EGxBlendEnum blendMode, mathfu::vec3 &originalFogColor) {
 

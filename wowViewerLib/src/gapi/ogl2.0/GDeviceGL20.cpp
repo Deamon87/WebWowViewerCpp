@@ -234,34 +234,20 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
     }
 }
 
-void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
-    std::vector<HGL20Mesh> &meshes = (std::vector<HGL20Mesh> &) iMeshes;
-
-    //1. Collect buffers
-    std::vector<IUniformBufferChunk *> buffers;
-    int renderIndex = 0;
-    for (const auto &mesh : meshes) {
-        for (int i = 0; i < 5; i++ ) {
-            IUniformBufferChunk * buffer = (IUniformBufferChunk *)mesh->m_UniformBuffer[i].get();
-            if (buffer != nullptr) {
-                buffers.push_back(buffer);
-
-            }
-        }
-    }
-
-    std::sort( buffers.begin(), buffers.end());
-    buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
-
+void GDeviceGL20::updateBuffers(std::vector<std::vector<IUniformBufferChunk*>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
     int fullSize = 0;
-    for (auto &buffer : buffers) {
-        fullSize += buffer->getSize();
-        if (uniformBufferOffsetAlign > 0) {
-            int offsetDiff = fullSize % uniformBufferOffsetAlign;
-            if (offsetDiff != 0) {
-                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-                fullSize += bytesToAdd;
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        for (auto &bufferChunk : *bufferVec) {
+            fullSize += bufferChunk->getSize();
+            if (uniformBufferOffsetAlign > 0) {
+                int offsetDiff = fullSize % uniformBufferOffsetAlign;
+                if (offsetDiff != 0) {
+                    int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+                    fullSize += bytesToAdd;
+                }
             }
         }
     }
@@ -284,23 +270,30 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
     //Buffer identifier was changed, so we need to update shader UBO descriptor
 
     char *pointerForUpload = static_cast<char *>(&aggregationBufferForUpload[0]);
-    for (const auto &bufferChunk : buffers) {
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        for (const auto &bufferChunk : *bufferVec) {
+            bufferChunk->setOffset(currentSize);
+            bufferChunk->setPointer(&pointerForUpload[currentSize]);
+            currentSize += bufferChunk->getSize();
 
-        bufferChunk->setOffset(currentSize);
-        bufferChunk->setPointer(&pointerForUpload[currentSize]);
-        currentSize += bufferChunk->getSize();
+            if (uniformBufferOffsetAlign > 0) {
+                int offsetDiff = currentSize % uniformBufferOffsetAlign;
+                if (offsetDiff != 0) {
+                    int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-        if (uniformBufferOffsetAlign > 0) {
-            int offsetDiff = currentSize % uniformBufferOffsetAlign;
-            if (offsetDiff != 0) {
-                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
-
-                currentSize += bytesToAdd;
+                    currentSize += bytesToAdd;
+                }
             }
         }
     }
-    for (auto &buffer : buffers) {
-        buffer->update();
+
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        auto frameDepData = frameDepedantDataVec[i];
+        for (const auto &bufferChunk : *bufferVec) {
+            bufferChunk->update(frameDepData);
+        }
     }
 
     if (currentSize > 0) {
@@ -444,7 +437,10 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
         ((GOcclusionQueryGL20 *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
+#pragma clang diagnostic pop
 
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
         ((GOcclusionQueryGL20 *)gm2Mesh->m_query.get())->endConditionalRendering();

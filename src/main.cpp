@@ -272,8 +272,8 @@ void beforeCrash(void);
 
 HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
                                 ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene) {
-    float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
-    float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
+    float farPlaneRendering = apiContainer.getConfig()->farPlane;
+    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
 
     float nearPlane = 1.0;
     float fov = toRadian(45.0);
@@ -306,7 +306,7 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
         perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
     }
 
-    auto clearColor = apiContainer.getConfig()->getClearColor();
+    auto clearColor = apiContainer.getConfig()->clearColor;
 
     if (currentScene != nullptr) {
         ViewPortDimensions dimensions = {{0, 0}, {width, height}};
@@ -525,7 +525,7 @@ int main(){
 
 
         apiContainer.camera = std::make_shared<FirstPersonCamera>();
-        apiContainer.getConfig()->setBCLightHack(false);
+        apiContainer.getConfig()->BCLightHack = false;
 //
         apiContainer.camera->setCameraPos(0, 0, 0);
     });
@@ -613,7 +613,7 @@ int main(){
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
-        if (apiContainer.getConfig()->getPauseAnimation()) {
+        if (apiContainer.getConfig()->pauseAnimation) {
             deltaTime = 0.0;
         }
 
@@ -675,7 +675,7 @@ int main(){
                 {0,     0},
                 {canvWidth, canvHeight}
             };
-            auto clearColor = apiContainer.getConfig()->getClearColor();
+            auto clearColor = apiContainer.getConfig()->clearColor;
 
             auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
             auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);

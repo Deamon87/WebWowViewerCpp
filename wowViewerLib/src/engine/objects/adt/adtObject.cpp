@@ -137,167 +137,147 @@ void AdtObject::loadWmos() {
         }
     }
 }
-void AdtObject::loadWater() {
-    if (m_adtFile->mH2OHeader == nullptr) return;
 
-    //Parse the blob
-    PACK(
-    struct LiquidVertexFormat {
-        mathfu::vec4_packed pos_transp;
-        mathfu::vec2_packed uv;
-    });
-    std::vector<LiquidVertexFormat> vertexBuffer;
-    std::vector<uint16_t > indexBuffer;
+HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos) {
 
+    uint64_t infoMask = 0xFFFFFFFFFFFFFFFF; // default = all water
+    if (liquidInstance.offset_exists_bitmap > 0 && liquidInstance.height > 0)
+    {
+        size_t bitmask_size = static_cast<size_t>(std::ceil(liquidInstance.height * liquidInstance.width / 8.0f));
+        std::memcpy(&infoMask, &m_adtFile->mH2OBlob[liquidInstance.offset_exists_bitmap - m_adtFile->mH2OblobOffset], bitmask_size);
+    }
 
-
-    mathfu::vec3 adtBasePos = mathfu::vec3(AdtIndexToWorldCoordinate(adt_y), AdtIndexToWorldCoordinate(adt_x), 0);
+    float *heightPtr = nullptr;
+    if (liquidInstance.offset_vertex_data != 0) {
+        heightPtr = ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data - m_adtFile->mH2OblobOffset]));
+    }
 
     int basetextureFDID = 0;
     mathfu::vec3 color = mathfu::vec3(1,1,1);
-    for (int y_chunk = 0; y_chunk < 16; y_chunk++) {
-        for (int x_chunk = 0; x_chunk < 16; x_chunk++) {
-            auto &liquidChunk = m_adtFile->mH2OHeader->chunks[y_chunk*16 + x_chunk];
 
-
-            if (liquidChunk.layer_count == 0) continue;
-
-            auto *liquidInstPtr =
-                ((SMLiquidInstance *)(&m_adtFile->mH2OBlob[liquidChunk.offset_instances - m_adtFile->mH2OblobOffset]));
-
-            mathfu::vec3 liquidBasePos =
-                adtBasePos -
-                mathfu::vec3(
-                    MathHelper::CHUNKSIZE*y_chunk,
-                    MathHelper::CHUNKSIZE*x_chunk,
-                0);
-
-            for (int layerInd = 0; layerInd < liquidChunk.layer_count; layerInd++) {
-                SMLiquidInstance &liquidInstance = liquidInstPtr[layerInd];
-
-                uint64_t infoMask = 0xFFFFFFFFFFFFFFFF; // default = all water
-                if (liquidInstance.offset_exists_bitmap > 0 && liquidInstance.height > 0)
-                {
-                    size_t bitmask_size = static_cast<size_t>(std::ceil(liquidInstance.height * liquidInstance.width / 8.0f));
-                    std::memcpy(&infoMask, &m_adtFile->mH2OBlob[liquidInstance.offset_exists_bitmap - m_adtFile->mH2OblobOffset], bitmask_size);
-                }
-
-                float *heightPtr = nullptr;
-                if (liquidInstance.offset_vertex_data != 0) {
-                    heightPtr = ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data - m_adtFile->mH2OblobOffset]));
-                }
-
-                //SmallHack
-                if (basetextureFDID == 0 && (m_api->databaseHandler != nullptr)) {
-                    if (liquidInstance.liquid_object_or_lvf > 42) {
-                        std::vector<LiquidMat> liqMats;
-                        m_api->databaseHandler->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liqMats);
-                        for (auto &liqMat : liqMats) {
-                            if (liqMat.FileDataId != 0) {
-                                basetextureFDID = liqMat.FileDataId;
-                                if (liqMat.color1[0] > 0 || liqMat.color1[1] > 0 || liqMat.color1[2] > 0) {
-                                    color = mathfu::vec3(liqMat.color1[0], liqMat.color1[1], liqMat.color1[2]);
-                                }
-                                break;
-                            }
-                        }
-                    } else {
-                        std::vector<int> fileDataIds;
-                        m_api->databaseHandler->getLiquidTypeData(liquidInstance.liquid_type, fileDataIds);
-                        for (auto fdid: fileDataIds) {
-                            if (fdid != 0) {
-                                basetextureFDID = fdid;
-                                break;
-                            }
-                        }
+    //SmallHack
+    if (basetextureFDID == 0 && (m_api->databaseHandler != nullptr)) {
+        if (liquidInstance.liquid_object_or_lvf > 42) {
+            std::vector<LiquidMat> liqMats;
+            m_api->databaseHandler->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liqMats);
+            for (auto &liqMat : liqMats) {
+                if (liqMat.FileDataId != 0) {
+                    basetextureFDID = liqMat.FileDataId;
+                    if (liqMat.color1[0] > 0 || liqMat.color1[1] > 0 || liqMat.color1[2] > 0) {
+                        color = mathfu::vec3(liqMat.color1[0], liqMat.color1[1], liqMat.color1[2]);
                     }
+                    break;
                 }
-
-                int baseVertexIndForInst = vertexBuffer.size();
-
-                int bitOffset = 0;
-                int i = this->m_adtFile->mcnkMap[y_chunk][x_chunk];
-                auto &waterAaBB = waterTileAabb[i];
-                SMChunk *mcnkChunk = &m_adtFile->mapTile[i];
-
-                float minZ = 999999;
-                float maxZ = -999999;
-
-                float minX = mcnkChunk->position.x - (MathHelper::CHUNKSIZE);
-                float maxX = mcnkChunk->position.x;
-                float minY = mcnkChunk->position.y - (MathHelper::CHUNKSIZE);
-                float maxY = mcnkChunk->position.y;
-                minZ += mcnkChunk->position.z;
-                maxZ += mcnkChunk->position.z;
-
-                for (int y = 0; y < liquidInstance.height + 1; y++) {
-                    for (int x = 0; x < liquidInstance.width + 1; x++) {
-                        mathfu::vec3 pos =
-                            liquidBasePos -
-                            mathfu::vec3(
-                                MathHelper::UNITSIZE*(y+liquidInstance.y_offset),
-                                MathHelper::UNITSIZE*(x+liquidInstance.x_offset),
-                                -liquidInstance.min_height_level
-                            );
-                        if (minZ > pos.z) minZ = pos.z;
-                        if (maxZ < pos.z) maxZ = pos.z;
-
-                        bool hackBool = !((liquidInstance.liquid_object_or_lvf == 42) && (liquidInstance.liquid_type == 2));
-                        if (liquidInstance.liquid_object_or_lvf != 2 && heightPtr!= nullptr && hackBool) {
-                            pos.z = heightPtr[y * (liquidInstance.width + 1) + x];
-                        }
-
-                        LiquidVertexFormat vertex;
-                        vertex.pos_transp = mathfu::vec4(pos, 1.0);
-                        vertex.uv = mathfu::vec2(0,0);
-
-                        vertexBuffer.push_back(vertex);
-                    }
-                }
-                waterAaBB = CAaBox(
-                    C3Vector(mathfu::vec3(minX, minY, minZ)),
-                    C3Vector(mathfu::vec3(maxX, maxY, maxZ))
-                );
-
-
-
-                for (int y = 0; y < liquidInstance.height; y++) {
-                    for (int x = 0; x < liquidInstance.width; x++) {
-                        if (((infoMask >> (bitOffset++)) & 1) == 0) continue;
-                        int16_t vertindexes[4] = {
-                            (int16_t) (baseVertexIndForInst + y * (liquidInstance.width +1 ) + x),
-                            (int16_t) (baseVertexIndForInst + y * (liquidInstance.width + 1) + x + 1),
-                            (int16_t) (baseVertexIndForInst + (y + 1) * (liquidInstance.width + 1) + x),
-                            (int16_t) (baseVertexIndForInst + (y + 1) * (liquidInstance.width + 1) + x + 1),
-                        };
-
-                        indexBuffer.push_back (vertindexes[0]);
-                        indexBuffer.push_back (vertindexes[1]);
-                        indexBuffer.push_back (vertindexes[2]);
-
-                        indexBuffer.push_back (vertindexes[1]);
-                        indexBuffer.push_back (vertindexes[3]);
-                        indexBuffer.push_back (vertindexes[2]);
-                    }
+            }
+        } else {
+            std::vector<int> fileDataIds;
+            m_api->databaseHandler->getLiquidTypeData(liquidInstance.liquid_type, fileDataIds);
+            for (auto fdid: fileDataIds) {
+                if (fdid != 0) {
+                    basetextureFDID = fdid;
+                    break;
                 }
             }
         }
     }
 
+//    int baseVertexIndForInst = vertexBuffer.size();
+    int baseVertexIndForInst = 0;
+
+    int bitOffset = 0;
+    int i = this->m_adtFile->mcnkMap[x_chunk][y_chunk];
+    auto &waterAaBB = waterTileAabb[i];
+    SMChunk *mcnkChunk = &m_adtFile->mapTile[i];
+//
+
+//
+//    float minX = mcnkChunk->position.x - (MathHelper::CHUNKSIZE);
+//    float maxX = mcnkChunk->position.x;
+//    float minY = mcnkChunk->position.y - (MathHelper::CHUNKSIZE);
+//    float maxY = mcnkChunk->position.y;
+
+    float minX = 999999;     float maxX = -999999;
+    float minY = 999999;     float maxY = -999999;
+    float minZ = 999999;     float maxZ = -999999;
+
+    minX = std::min(minX, waterAaBB.min.x);  maxX = std::max(maxX, waterAaBB.max.x);
+    minY = std::min(minY, waterAaBB.min.y);  maxY = std::max(maxY, waterAaBB.max.y);
+    minZ = std::min(minZ, waterAaBB.min.z);  maxZ = std::max(maxZ, waterAaBB.max.z);
+
+    //Parse the blob
+    PACK(
+        struct LiquidVertexFormat {
+            mathfu::vec4_packed pos_transp;
+            mathfu::vec2_packed uv;
+        });
+    std::vector<LiquidVertexFormat> vertexBuffer;
+    std::vector<uint16_t > indexBuffer;
+
+    for (int y = 0; y < liquidInstance.height + 1; y++) {
+        for (int x = 0; x < liquidInstance.width + 1; x++) {
+            mathfu::vec3 pos =
+                liquidBasePos -
+                mathfu::vec3(
+                    MathHelper::UNITSIZE*(y+liquidInstance.y_offset),
+                    MathHelper::UNITSIZE*(x+liquidInstance.x_offset),
+                    -liquidInstance.min_height_level
+                );
+
+            bool hackBool = !((liquidInstance.liquid_object_or_lvf == 42) && (liquidInstance.liquid_type == 2));
+            if (liquidInstance.liquid_object_or_lvf != 2 && heightPtr!= nullptr && hackBool) {
+                pos.z = heightPtr[y * (liquidInstance.width + 1) + x];
+            }
+
+            minX = std::min(minX, pos.x);  maxX = std::max(maxX, pos.x);
+            minY = std::min(minY, pos.y);  maxY = std::max(maxY, pos.y);
+            minZ = std::min(minZ, pos.z);  maxZ = std::max(maxZ, pos.z);
+
+            LiquidVertexFormat vertex;
+            vertex.pos_transp = mathfu::vec4(pos, 1.0);
+            vertex.uv = mathfu::vec2(0,0);
+
+            vertexBuffer.push_back(vertex);
+        }
+    }
+    waterAaBB = CAaBox(
+        C3Vector(mathfu::vec3(minX, minY, minZ)),
+        C3Vector(mathfu::vec3(maxX, maxY, maxZ))
+    );
+
+    for (int y = 0; y < liquidInstance.height; y++) {
+        for (int x = 0; x < liquidInstance.width; x++) {
+            if (((infoMask >> (bitOffset++)) & 1) == 0) continue;
+            int16_t vertindexes[4] = {
+                (int16_t) (baseVertexIndForInst + y * (liquidInstance.width +1 ) + x),
+                (int16_t) (baseVertexIndForInst + y * (liquidInstance.width + 1) + x + 1),
+                (int16_t) (baseVertexIndForInst + (y + 1) * (liquidInstance.width + 1) + x),
+                (int16_t) (baseVertexIndForInst + (y + 1) * (liquidInstance.width + 1) + x + 1),
+            };
+
+            indexBuffer.push_back (vertindexes[0]);
+            indexBuffer.push_back (vertindexes[1]);
+            indexBuffer.push_back (vertindexes[2]);
+
+            indexBuffer.push_back (vertindexes[1]);
+            indexBuffer.push_back (vertindexes[3]);
+            indexBuffer.push_back (vertindexes[2]);
+        }
+    }
+
     std::shared_ptr<IDevice> device = m_api->hDevice;
 
-    waterIBO = device->createIndexBuffer();
+    auto waterIBO = device->createIndexBuffer();
     waterIBO->uploadData(
         indexBuffer.data(),
         indexBuffer.size() * sizeof(uint16_t));
 
-    waterVBO = device->createVertexBuffer();
+    auto waterVBO = device->createVertexBuffer();
     waterVBO->uploadData(
         vertexBuffer.data(),
         vertexBuffer.size() * sizeof(LiquidVertexFormat)
     );
 
-    vertexWaterBufferBindings = device->createVertexBufferBindings();
+    auto vertexWaterBufferBindings = device->createVertexBufferBindings();
     vertexWaterBufferBindings->setIndexBuffer(waterIBO);
 
     GVertexBufferBinding vertexBinding;
@@ -323,7 +303,6 @@ void AdtObject::loadWater() {
 
     meshTemplate.textureCount = 1;
     if (basetextureFDID != 0) {
-
         auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);
         meshTemplate.texture[0] = m_api->hDevice->createBlpTexture(htext, true, true);
     } else {
@@ -342,15 +321,15 @@ void AdtObject::loadWater() {
     meshTemplate.element = DrawElementMode::TRIANGLES;
 
     auto l_liquidType = 0;
-    meshTemplate.ubo[1]->setUpdateHandler([](IUniformBufferChunk* self) -> void {
+    meshTemplate.ubo[1]->setUpdateHandler([](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData ) -> void {
         mathfu::mat4 &placementMat = self->getObject<mathfu::mat4>();
         placementMat = mathfu::mat4::Identity();
     });
-    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color](IUniformBufferChunk* self) -> void {
+    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) -> void {
         mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
 
         if (color.LengthSquared() < 2.99f) {
-            mathfu::vec4 closeRiverColor = this->m_api->getConfig()->getCloseRiverColor();
+            mathfu::vec4 closeRiverColor = frameDepedantData->closeRiverColor;
 
             color_ = mathfu::vec4(closeRiverColor.xyz(), 0.7);
         } else {
@@ -358,8 +337,43 @@ void AdtObject::loadWater() {
         }
     });
 
+    return m_api->hDevice->createMesh(meshTemplate);
+}
+void AdtObject::loadWater() {
+    if (m_adtFile->mH2OHeader == nullptr) return;
 
-    waterMesh = m_api->hDevice->createMesh(meshTemplate);
+    mathfu::vec3 adtBasePos = mathfu::vec3(AdtIndexToWorldCoordinate(adt_y), AdtIndexToWorldCoordinate(adt_x), 0);
+
+    for (int y_chunk = 0; y_chunk < 16; y_chunk++) {
+        for (int x_chunk = 0; x_chunk < 16; x_chunk++) {
+            auto &liquidChunk = m_adtFile->mH2OHeader->chunks[y_chunk*16 + x_chunk];
+            if (liquidChunk.layer_count == 0) continue;
+
+            auto *liquidInstPtr =
+                ((SMLiquidInstance *)(&m_adtFile->mH2OBlob[liquidChunk.offset_instances - m_adtFile->mH2OblobOffset]));
+
+            mathfu::vec3 liquidBasePos =
+                adtBasePos -
+                mathfu::vec3(
+                    MathHelper::CHUNKSIZE*y_chunk,
+                    MathHelper::CHUNKSIZE*x_chunk,
+                0);
+
+            int i = this->m_adtFile->mcnkMap[x_chunk][y_chunk];
+            auto &waterAaBB = waterTileAabb[i];
+            waterAaBB.min = mathfu::vec3(99999,99999,99999);
+            waterAaBB.max = mathfu::vec3(-99999,-99999,-99999);
+
+            for (int layerInd = 0; layerInd < liquidChunk.layer_count; layerInd++) {
+                SMLiquidInstance &liquidInstance = liquidInstPtr[layerInd];
+
+                waterMeshes[i].push_back(createWaterMeshFromInstance(x_chunk,y_chunk,liquidInstance,liquidBasePos));
+            }
+        }
+    }
+
+
+
 
 
 }
@@ -567,7 +581,7 @@ void AdtObject::createMeshes() {
     adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::modelWideBlockPS));
 
     auto api = m_api;
-    adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self){
+    adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         auto *adtWideblockPS = &self->getObject<ADT::modelWideBlockPS>();
 
     });
@@ -603,7 +617,7 @@ void AdtObject::createMeshes() {
             aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
 
             int chunkIndex = i;
-            aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, chunkIndex, this](IUniformBufferChunk *self) {
+            aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, chunkIndex, this](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
                 auto &blockPS = self->getObject<ADT::meshWideBlockPS>();
 
                 for (int j = 0; j < 4; j++) {
@@ -622,7 +636,7 @@ void AdtObject::createMeshes() {
                 }
             });
 
-            aTemplate.ubo[2]->setUpdateHandler([this, i](IUniformBufferChunk *self) {
+            aTemplate.ubo[2]->setUpdateHandler([this, i](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
                 auto &blockVS = self->getObject<ADT::meshWideBlockVS>();
                 blockVS.uPos = mathfu::vec4(
                     this->m_adtFile->mapTile[i].position.x,
@@ -673,7 +687,7 @@ void AdtObject::createMeshes() {
             }
 
             HGMesh hgMesh = device->createMesh(aTemplate);
-            adtMeshes.push_back(hgMesh);
+            adtMeshes[i] = hgMesh;
         }
     }
 }
@@ -702,7 +716,7 @@ void AdtObject::loadAlphaTextures() {
 
 
 
-void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
+void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
     m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
 
     if (!m_loaded) return;
@@ -711,12 +725,15 @@ void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &rend
 
     size_t meshCount = adtMeshes.size();
     for (int i = 0; i < meshCount; i++) {
-        if (!adtRes.drawChunk[i]) continue;
-        adtMeshes[i]->setRenderOrder(renderOrder);
-        renderedThisFrame.push_back(adtMeshes[i]);
-    }
-    if (waterMesh!= nullptr) {
-        renderedThisFrame.push_back(waterMesh);
+        if (adtRes.drawChunk[i]) {
+            adtMeshes[i]->setRenderOrder(renderOrder);
+            opaqueMeshes.push_back(adtMeshes[i]);
+        }
+        if (adtRes.drawWaterChunk[i]) {
+            for (auto const &waterMesh : waterMeshes[i]) {
+                transparentMeshes.push_back(waterMesh);
+            }
+        }
     }
 }
 void AdtObject::collectMeshesLod(std::vector<HGMesh> &renderedThisFrame) {

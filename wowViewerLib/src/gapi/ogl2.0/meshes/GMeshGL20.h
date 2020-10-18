@@ -38,10 +38,7 @@ public:
 protected:
     MeshType m_meshType;
 private:
-
     HGShaderPermutation m_shader;
-
-    std::array<HGUniformBufferChunk,6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;
@@ -50,14 +47,9 @@ private:
     EGxBlendEnum m_blendMode;
     bool m_isTransparent;
 
-
-
     uint8_t m_colorMask = 0;
 
     int m_element;
-
-
-
 private:
     IDevice &m_device;
 };

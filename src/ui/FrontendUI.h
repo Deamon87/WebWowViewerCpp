@@ -10,6 +10,7 @@
 #include <fileBrowser/imfilebrowser.h>
 #include "../../wowViewerLib/src/include/database/dbStructs.h"
 #include "../../wowViewerLib/src/engine/objects/iScene.h"
+#include "childWindow/mapConstructionWindow.h"
 
 
 class FrontendUI : public IScene {
@@ -24,13 +25,16 @@ public:
     void setAnimationId(int animationId) override {};
 
     void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void produceUpdateStage(HUpdateStage updateStage) override;
 
     void checkCulling(HCullStage cullStage) override {};
 
 
     void doPostLoad(HCullStage cullStage) override {};
-    void update(HUpdateStage updateStage) override {};
-    void updateBuffers(HCullStage cullStage) override {};
+
+    void update(HUpdateStage updateStage) {};
+    void updateBuffers(HUpdateStage updateStage) override {};
+
 
     int getCameraNum() override {return 0;};
     std::shared_ptr<ICamera> createCamera(int cameraNum) override {return nullptr;};
@@ -87,6 +91,8 @@ private:
     bool showAboutWindow = false;
 //  c bool showWorldPosTooltip = false;
 
+    bool showMapConstruction = false;
+
     bool cascOpened = false;
     bool mapCanBeOpened = true;
     bool adtMinimapFilled = false;
@@ -103,8 +109,7 @@ private:
     bool useGaussBlur = true;
     bool pauseAnimation = true;
 
-    bool useTimedGlobalLight = true;
-    bool useM2AmbientLight = false;
+    int lightSource = 0;
 
     int currentCameraNum = -1;
 
@@ -133,6 +138,8 @@ private:
 
     int screenShotWidth = 100;
     int screenShotHeight = 100;
+
+   std::shared_ptr<MapConstructionWindow> m_mapConstructionWindow = nullptr;
 
 public:
     void overrideCascOpened(bool value) {
@@ -164,6 +171,7 @@ public:
     void showMainMenu();
 
     void showMapSelectionDialog();
+    void showMapConstructionDialog();
     void showMakeScreenshotDialog();
 
     void showAdtSelectionMinimap();

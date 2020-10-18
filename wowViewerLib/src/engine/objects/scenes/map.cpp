@@ -11,7 +11,6 @@
 #include "../../persistance/wdtFile.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
-#include "../wowFrameData.h"
 #include "../../algorithms/quick-sort-omp.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "../../shader/ShaderDefinitions.h"
@@ -280,14 +279,14 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
     skyBindings->save();
 
     auto skyVs = device->createUniformBufferChunk(sizeof(DnSky::meshWideBlockVS));
-    skyVs->setUpdateHandler([config](IUniformBufferChunk *self) -> void {
+    skyVs->setUpdateHandler([config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<DnSky::meshWideBlockVS>();
-        meshblockVS.skyColor[0] = config->getSkyTopColor();
-        meshblockVS.skyColor[1] = config->getSkyMiddleColor();
-        meshblockVS.skyColor[2] = config->getSkyBand1Color();
-        meshblockVS.skyColor[3] = config->getSkyBand2Color();
-        meshblockVS.skyColor[4] = config->getSkySmogColor();
-        meshblockVS.skyColor[5] = config->getSkyFogColor();
+        meshblockVS.skyColor[0] = frameDepedantData->SkyTopColor;
+        meshblockVS.skyColor[1] = frameDepedantData->SkyMiddleColor;
+        meshblockVS.skyColor[2] = frameDepedantData->SkyBand1Color;
+        meshblockVS.skyColor[3] = frameDepedantData->SkyBand2Color;
+        meshblockVS.skyColor[4] = frameDepedantData->SkySmogColor;
+        meshblockVS.skyColor[5] = frameDepedantData->SkyFogColor;
     });
 
     //TODO: Pass m_skyConeAlpha to fragment shader
@@ -320,6 +319,71 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
     //Make mesh
     HGMesh hmesh =  device->createMesh(meshTemplate);
     return hmesh;
+}
+
+mathfu::vec3 calcExteriorColorDir(HCameraMatrices cameraMatrices, int time) {
+    // Phi Table
+    static const std::array<std::array<float, 2>, 4> phiTable = {
+        {
+            { 0.0f,  2.2165682f },
+            { 0.25f, 1.9198623f },
+            { 0.5f,  2.2165682f },
+            { 0.75f, 1.9198623f }
+        }
+    };
+
+    // Theta Table
+
+
+    static const std::array<std::array<float, 2>, 4> thetaTable = {
+        {
+            {0.0f, 3.926991f},
+            {0.25f, 3.926991f},
+            { 0.5f,  3.926991f },
+            { 0.75f, 3.926991f }
+        }
+    };
+
+//    float phi = DayNight::InterpTable(&DayNight::phiTable, 4u, DayNight::g_dnInfo.dayProgression);
+//    float theta = DayNight::InterpTable(&DayNight::thetaTable, 4u, DayNight::g_dnInfo.dayProgression);
+
+    float phi = phiTable[0][1];
+    float theta = thetaTable[0][1];
+
+    //Find Index
+    float timeF = time / 2880.0f;
+    int firstIndex = -1;
+    for (int i = 0; i < 4; i++) {
+        if (timeF < phiTable[i][0]) {
+            firstIndex = i;
+            break;
+        }
+    }
+    if (firstIndex == -1) {
+        firstIndex = 3;
+    }
+    {
+        float alpha =  (phiTable[firstIndex][0] -  timeF) / (thetaTable[firstIndex][0] - thetaTable[firstIndex-1][0]);
+        phi = phiTable[firstIndex][1]*(1.0 - alpha) + phiTable[firstIndex - 1][1]*alpha;
+    }
+
+
+    // Convert from spherical coordinates to XYZ
+    // x = rho * sin(phi) * cos(theta)
+    // y = rho * sin(phi) * sin(theta)
+    // z = rho * cos(phi)
+
+    float sinPhi = (float) sin(phi);
+    float cosPhi = (float) cos(phi);
+
+    float sinTheta = (float) sin(theta);
+    float cosTheta = (float) cos(theta);
+
+    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(cameraMatrices->lookAtMat);
+
+    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
+//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
+    return (lookAtRotation * sunDirWorld.xyz());
 }
 
 void Map::checkCulling(HCullStage cullStage) {
@@ -411,7 +475,7 @@ void Map::checkCulling(HCullStage cullStage) {
             areaRecord = m_api->databaseHandler->getArea(cullStage->adtAreadId);
         }
     }
-    m_api->getConfig()->setAreaName(areaRecord.areaName);
+    m_api->getConfig()->areaName = areaRecord.areaName;
     stateForConditions.currentAreaId = areaRecord.areaId;
     stateForConditions.currentParentAreaId = areaRecord.parentAreaId;
 
@@ -474,7 +538,7 @@ void Map::checkCulling(HCullStage cullStage) {
     }
     cullStage->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
     for (auto &adtRes : cullStage->exteriorView.drawnADTs) {
-        adtRes->adtObject->collectMeshes(*adtRes.get(),  cullStage->exteriorView.drawnChunks, cullStage->exteriorView.renderOrder);
+        adtRes->adtObject->collectMeshes(*adtRes,  cullStage->exteriorView.m_opaqueMeshes, cullStage->exteriorView.m_transparentMeshes, cullStage->exteriorView.renderOrder);
     }
 
     //Collect M2s for update
@@ -511,8 +575,6 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
                                    StateForConditions &stateForConditions, const AreaRecord &areaRecord) {///-----------------------------------
     Config* config = this->m_api->getConfig();
 
-    if (!config->getUseTimedGloabalLight()) return;
-
     bool fogRecordWasFound = false;
     mathfu::vec3 endFogColor = mathfu::vec3(0.0, 0.0, 0.0);
 
@@ -536,14 +598,14 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         }
 
         if (zoneLightFound) {
-            m_api->databaseHandler->getLightById(LightId, config->getCurrentTime(), zoneLightResult);
+            m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
         }
 
         m_api->databaseHandler->getEnvInfo(m_mapId,
                                            cameraVec3.x,
                                            cameraVec3.y,
                                            cameraVec3.z,
-                                           config->getCurrentTime(),
+                                           config->currentTime,
                                            lightResults
         );
 
@@ -616,7 +678,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             }
             
             if (_light.skyBoxFlags & 1) {
-                skyBox->setOverrideAnimationPerc(config->getCurrentTime() / 2880.0, true);
+                skyBox->setOverrideAnimationPerc(config->currentTime / 2880.0, true);
             }
         }
 
@@ -659,19 +721,34 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 //        groundAmbientColor *= ambientMult;
 //        horizontAmbientColor *= ambientMult;
 
-        config->setExteriorAmbientColor(ambientColor[2], ambientColor[1], ambientColor[0], 0);
-        config->setExteriorGroundAmbientColor(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0], 0);
-        config->setExteriorHorizontAmbientColor(horizontAmbientColor[2], horizontAmbientColor[1],
-                                                horizontAmbientColor[0], 0);
-        config->setExteriorDirectColor(directColor[2], directColor[1], directColor[0], 0);
-        config->setCloseRiverColor(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
 
-        config->setSkyTopColor(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0]);
-        config->setSkyMiddleColor(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0]);
-        config->setSkyBand1Color(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0]);
-        config->setSkyBand2Color(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0]);
-        config->setSkySmogColor(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0]);
-        config->setSkyFogColor(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0]);
+        if (config->globalLighting == EParameterSource::eDatabase) {
+            auto fdd = cullStage->frameDepedantData;
+
+            fdd->exteriorAmbientColor = mathfu::vec4(ambientColor[2], ambientColor[1], ambientColor[0], 0);
+            fdd->exteriorGroundAmbientColor = mathfu::vec4(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0],
+                                                  0);
+            fdd->exteriorHorizontAmbientColor = mathfu::vec4(horizontAmbientColor[2], horizontAmbientColor[1],
+                                                    horizontAmbientColor[0], 0);
+            fdd->exteriorDirectColor = mathfu::vec4(directColor[2], directColor[1], directColor[0], 0);
+            auto extDir = calcExteriorColorDir(
+                cullStage->matricesForCulling,
+                m_api->getConfig()->currentTime
+            );
+            fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
+        }
+
+        {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->closeRiverColor =  mathfu::vec4(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
+
+            fdd->SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 0);
+            fdd->SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 0);
+            fdd->SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 0);
+            fdd->SkyBand2Color =    mathfu::vec4(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0], 0);
+            fdd->SkySmogColor =     mathfu::vec4(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0], 0);
+            fdd->SkyFogColor =      mathfu::vec4(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0], 0);
+        }
     }
 
     //Handle fog
@@ -726,28 +803,51 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 
         //Apply fogs from lights
         if (totalSummator < 1.0) {
-            bool fogDefaultExist = false;
-            int fogDefaultIndex = -1;
+            if (config->globalFog == EParameterSource::eDatabase) {
+                bool fogDefaultExist = false;
+                int fogDefaultIndex = -1;
 
-            for (int i = 0; i < lightResults.size() && totalSummator < 1.0f; i++)  {
-                auto &fogRec = lightResults[i];
-                if (fogRec.isDefault) {
-                    fogDefaultExist = true;
-                    fogDefaultIndex = i;
-                    continue;
+                for (int i = 0; i < lightResults.size() && totalSummator < 1.0f; i++) {
+                    auto &fogRec = lightResults[i];
+                    if (fogRec.isDefault) {
+                        fogDefaultExist = true;
+                        fogDefaultIndex = i;
+                        continue;
+                    }
+                    if (totalSummator + fogRec.blendCoef > 1.0f) {
+                        fogRec.blendCoef = 1.0f - totalSummator;
+                        totalSummator = 1.0f;
+                    } else {
+                        totalSummator += fogRec.blendCoef;
+                    }
+                    combinedResults.push_back(fogRec);
                 }
-                if (totalSummator + fogRec.blendCoef > 1.0f) {
-                    fogRec.blendCoef = 1.0f - totalSummator;
+                if (fogDefaultExist && totalSummator < 1.0f) {
+                    lightResults[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
                     totalSummator = 1.0f;
-                } else {
-                    totalSummator += fogRec.blendCoef;
+                    combinedResults.push_back(lightResults[fogDefaultIndex]);
                 }
-                combinedResults.push_back(fogRec);
-            }
-            if (fogDefaultExist && totalSummator < 1.0f) {
-                lightResults[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
-                totalSummator = 1.0f;
-                combinedResults.push_back(lightResults[fogDefaultIndex]);
+            } else if (config->globalFog == EParameterSource::eConfig) {
+                LightResult globalFog;
+                globalFog.FogScaler = config->FogScaler;
+                globalFog.FogEnd = config->FogEnd;
+                globalFog.FogDensity = config->FogDensity;
+
+                globalFog.FogHeightScaler = config->FogHeightScaler;
+                globalFog.FogHeightDensity = config->FogHeightDensity;
+                globalFog.SunFogAngle = config->SunFogAngle;
+                globalFog.EndFogColorDistance = config->EndFogColorDistance;
+                globalFog.SunFogStrength = config->SunFogStrength;
+
+                globalFog.blendCoef = 1.0 - totalSummator;
+                globalFog.isDefault = true;
+
+                globalFog.FogColor = {config->FogColor.z, config->FogColor.y, config->FogColor.x};
+                globalFog.EndFogColor = {config->EndFogColor.z, config->EndFogColor.y, config->EndFogColor.x};
+                globalFog.SunFogColor = {config->SunFogColor.z, config->SunFogColor.y, config->SunFogColor.x};
+                globalFog.FogHeightColor = {config->FogHeightColor.z, config->FogHeightColor.y, config->FogHeightColor.x};
+
+                combinedResults.push_back(globalFog);
             }
         }
         //Rebalance blendCoefs
@@ -775,22 +875,25 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         }
 
         //In case of no data -> disable the fog
-        config->setFogDataFound(combinedResults.size() > 0);
-
-        config->setFogEnd(FogEnd);
-        config->setFogScaler(FogScaler);
-        config->setFogDensity(FogDensity);
-        config->setFogHeight(FogHeight);
-        config->setFogHeightScaler(FogHeightScaler);
-        config->setFogHeightDensity(FogHeightDensity);
-        config->setSunFogAngle(SunFogAngle);
-        config->setFogColor(FogColor[2], FogColor[1], FogColor[0]);
-        config->setEndFogColor(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
-        config->setEndFogColorDistance(EndFogColorDistance);
-        config->setSunFogColor(SunFogColor[2], SunFogColor[1], SunFogColor[0]);
-        config->setSunFogStrength(SunFogStrength);
-        config->setFogHeightColor(FogHeightColor[2], FogHeightColor[1], FogHeightColor[0]);
-        config->setFogHeightCoefficients(FogHeightCoefficients[0],FogHeightCoefficients[1],FogHeightCoefficients[2],FogHeightCoefficients[3]);
+        {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->FogDataFound = combinedResults.size() > 0;
+            fdd->FogEnd = FogEnd;
+            fdd->FogScaler = FogScaler;
+            fdd->FogDensity = FogDensity;
+            fdd->FogHeight = FogHeight;
+            fdd->FogHeightScaler = FogHeightScaler;
+            fdd->FogHeightDensity = FogHeightDensity;
+            fdd->SunFogAngle = SunFogAngle;
+            fdd->FogColor = mathfu::vec3(FogColor[2], FogColor[1], FogColor[0]);
+            fdd->EndFogColor = mathfu::vec3(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
+            fdd->EndFogColorDistance = EndFogColorDistance;
+            fdd->SunFogColor = mathfu::vec3(SunFogColor[2], SunFogColor[1], SunFogColor[0]);
+            fdd->SunFogStrength = SunFogStrength;
+            fdd->FogHeightColor = mathfu::vec3(FogHeightColor[2], FogHeightColor[1], FogHeightColor[0]);
+            fdd->FogHeightCoefficients = mathfu::vec4(FogHeightCoefficients[0], FogHeightCoefficients[1],
+                                             FogHeightCoefficients[2], FogHeightCoefficients[3]);
+        }
     }
 
 //    this->m_api->getConfig()->setClearColor(0,0,0,0);
@@ -910,8 +1013,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         quickSort_parallel(
             indexArray.data(),
             indexArray.size(),
-            m_api->getConfig()->getThreadCount(),
-            m_api->getConfig()->getQuickSortCutoff(),
+            m_api->getConfig()->threadCount,
+            m_api->getConfig()->quickSortCutoff,
             [sortedArrayPtr](int indexA, int indexB) {
                 auto *pA = sortedArrayPtr[indexA].get();
                 auto *pB = sortedArrayPtr[indexB].get();
@@ -938,7 +1041,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {
-        int numThreads = m_api->getConfig()->getThreadCount();
+        int numThreads = m_api->getConfig()->threadCount;
 
         #pragma omp parallel for num_threads(numThreads)
         for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
@@ -1125,70 +1228,7 @@ void Map::doPostLoad(HCullStage cullStage) {
     }
 };
 
-mathfu::vec3 calcExteriorColorDir(HCameraMatrices cameraMatrices, int time) {
-    // Phi Table
-    static const std::array<std::array<float, 2>, 4> phiTable = {
-        {
-            { 0.0f,  2.2165682f },
-            { 0.25f, 1.9198623f },
-            { 0.5f,  2.2165682f },
-            { 0.75f, 1.9198623f }
-        }
-    };
 
-    // Theta Table
-
-
-    static const std::array<std::array<float, 2>, 4> thetaTable = {
-        {
-            {0.0f, 3.926991f},
-            {0.25f, 3.926991f},
-            { 0.5f,  3.926991f },
-            { 0.75f, 3.926991f }
-        }
-    };
-
-//    float phi = DayNight::InterpTable(&DayNight::phiTable, 4u, DayNight::g_dnInfo.dayProgression);
-//    float theta = DayNight::InterpTable(&DayNight::thetaTable, 4u, DayNight::g_dnInfo.dayProgression);
-
-    float phi = phiTable[0][1];
-    float theta = thetaTable[0][1];
-
-    //Find Index
-    float timeF = time / 2880.0f;
-    int firstIndex = -1;
-    for (int i = 0; i < 4; i++) {
-        if (timeF < phiTable[i][0]) {
-            firstIndex = i;
-            break;
-        }
-    }
-    if (firstIndex == -1) {
-        firstIndex = 3;
-    }
-    {
-        float alpha =  (phiTable[firstIndex][0] -  timeF) / (thetaTable[firstIndex][0] - thetaTable[firstIndex-1][0]);
-        phi = phiTable[firstIndex][1]*(1.0 - alpha) + phiTable[firstIndex - 1][1]*alpha;
-    }
-
-
-    // Convert from spherical coordinates to XYZ
-    // x = rho * sin(phi) * cos(theta)
-    // y = rho * sin(phi) * sin(theta)
-    // z = rho * cos(phi)
-
-    float sinPhi = (float) sin(phi);
-    float cosPhi = (float) cos(phi);
-
-    float sinTheta = (float) sin(theta);
-    float cosTheta = (float) cos(theta);
-
-    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(cameraMatrices->lookAtMat);
-
-    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
-    return (lookAtRotation * sunDirWorld.xyz());
-}
 
 void Map::update(HUpdateStage updateStage) {
     mathfu::vec3 cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
@@ -1201,11 +1241,10 @@ void Map::update(HUpdateStage updateStage) {
 //        std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
 
 //    #pragma
-    int numThreads = m_api->getConfig()->getThreadCount();
+    int numThreads = m_api->getConfig()->threadCount;
     {
         #pragma omp parallel for num_threads(numThreads) schedule(dynamic, 4)
-        for (int i = 0; i < updateStage->cullResult->m2Array.size(); i++) {
-            auto m2Object = updateStage->cullResult->m2Array[i];
+        for (const auto& m2Object : updateStage->cullResult->m2Array) {
             if (m2Object != nullptr) {
                 m2Object->update(deltaTime, cameraVec3, lookAtMat);
             }
@@ -1215,41 +1254,21 @@ void Map::update(HUpdateStage updateStage) {
 //        });
 //    }
 
-    for (auto &wmoObject : updateStage->cullResult->wmoArray) {
+    for (const auto &wmoObject : updateStage->cullResult->wmoArray) {
         if (wmoObject == nullptr) continue;
         wmoObject->update();
     }
 
-    for (auto &adtObjectRes : updateStage->cullResult->adtArray) {
+    for (const auto &adtObjectRes : updateStage->cullResult->adtArray) {
         adtObjectRes->adtObject->update(deltaTime);
     }
 
     //2. Calc distance every 100 ms
 //    #pragma omp parallel for
-    for (int i = 0; i < updateStage->cullResult->m2Array.size(); i++) {
-        auto m2Object = updateStage->cullResult->m2Array[i];
+    for (const auto& m2Object : updateStage->cullResult->m2Array) {
         if (m2Object == nullptr) continue;
         m2Object->calcDistance(cameraVec3);
     };
-
-
-
-
-    //Calc exteriorDirectColorDir
-    auto extDir = calcExteriorColorDir(
-        updateStage->cameraMatrices,
-        m_api->getConfig()->getCurrentTime()
-    );
-    m_api->getConfig()->setExteriorDirectColorDir(
-        extDir.x, extDir.y, extDir.z
-    );
-
-    //8. Check fog color every 2 seconds
-    if (this->m_currentTime + updateStage->delta - this->m_lastTimeLightCheck > 30) {
-
-
-        this->m_lastTimeLightCheck = this->m_currentTime;
-    }
 
     //Cleanup ADT every 10 seconds
     if (this->m_currentTime + updateStage->delta- this->m_lastTimeAdtCleanup > 10000) {
@@ -1266,9 +1285,13 @@ void Map::update(HUpdateStage updateStage) {
         this->m_lastTimeAdtCleanup = this->m_currentTime;
     }
     this->m_currentTime += updateStage->delta;
+
+    //Collect meshes
 }
 
-void Map::updateBuffers(HCullStage cullStage) {
+void Map::updateBuffers(HUpdateStage updateStage) {
+    auto cullStage = updateStage->cullResult;
+
     for (int i = 0; i < cullStage->m2Array.size(); i++) {
         auto m2Object = cullStage->m2Array[i];
         if (m2Object != nullptr) {
@@ -1385,101 +1408,22 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
 animTime_t Map::getCurrentSceneTime() {
     return m_currentTime;
 }
-
-void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
-    auto cullStage = updateStage->cullResult;
-    auto renderedThisFramePreSort = std::vector<HGMesh>();
-
-    bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
-
-    if (quadBindings == nullptr)
-        return;
-
-    if ( !m_suppressDrawingSky && (m_skyConeAlpha > 0) && (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit)) {
-        renderedThisFramePreSort.push_back(skyMesh);
-    }
-
-    HDrawStage origResultDrawStage = resultDrawStage;
-    if (frameBufferSupported) {
-        //Create new drawstage and draw everything there
-        resultDrawStage = std::make_shared<DrawStage>();
-
-        *resultDrawStage = *origResultDrawStage;
-
-
-        resultDrawStage->target = m_api->hDevice->createFrameBuffer(
-            resultDrawStage->viewPortDimensions.maxs[0],
-            resultDrawStage->viewPortDimensions.maxs[1],
-            {ITextureFormat::itRGBA},
-            ITextureFormat::itDepth32,
-            2
-        );
-    }
-    //Create scenewide uniform
-    auto renderMats = resultDrawStage->matricesForRendering;
-
-    auto config = m_api->getConfig();
-    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
-    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk) -> void {
-        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
-
-        blockPSVS->uLookAtMat = renderMats->lookAtMat;
-        blockPSVS->uPMatrix = renderMats->perspectiveMat;
-        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
-        blockPSVS->uViewUp = renderMats->viewUp;
-
-        blockPSVS->extLight.uExteriorAmbientColor = config->getExteriorAmbientColor();
-        blockPSVS->extLight.uExteriorHorizontAmbientColor = config->getExteriorHorizontAmbientColor();
-        blockPSVS->extLight.uExteriorGroundAmbientColor = config->getExteriorGroundAmbientColor();
-        blockPSVS->extLight.uExteriorDirectColor = config->getExteriorDirectColor();
-        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(config->getExteriorDirectColorDir(), 1.0);
-
-//        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
-        float fogEnd = config->getFarPlane();
-        if (config->getDisableFog() || !config->getFogDataFound()) {
-            fogEnd = 100000000.0f;
-        }
-
-        float fogStart = std::max<float>(config->getFarPlane() - 250, 0);
-        fogStart = std::max<float>(fogEnd - config->getFogScaler() * (fogEnd - fogStart), 0);
-
-
-        blockPSVS->fogData.densityParams = mathfu::vec4(
-            fogStart,
-            fogEnd ,
-            config->getFogDensity() / 1000,
-         0);
-        blockPSVS->fogData.heightPlane = mathfu::vec4(0,0,0,0);
-        blockPSVS->fogData.color_and_heightRate = mathfu::vec4(config->getFogColor(),config->getFogHeightScaler());
-        blockPSVS->fogData.heightDensity_and_endColor = mathfu::vec4(
-            config->getFogHeightDensity(),
-            config->getEndFogColor().x,
-            config->getEndFogColor().y,
-            config->getEndFogColor().z
-        );
-        blockPSVS->fogData.sunAngle_and_sunColor = mathfu::vec4(
-            config->getSunFogAngle(),
-            config->getSunFogColor().x * config->getSunFogStrength(),
-            config->getSunFogColor().y * config->getSunFogStrength(),
-            config->getSunFogColor().z * config->getSunFogStrength()
-        );
-        blockPSVS->fogData.heightColor_and_endFogDistance = mathfu::vec4(
-            config->getFogHeightColor(),
-            (config->getEndFogColorDistance() > 0) ?
-                config->getEndFogColorDistance() :
-                1000.0f
-        );
-        blockPSVS->fogData.sunPercentage = mathfu::vec4(
-            (config->getSunFogColor().Length() > 0) ? 0.5f : 0.0f
-            , 0, 0, 0);
-
-    });
-
-
-    additionalChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
+void Map::produceUpdateStage(HUpdateStage updateStage) {
+    this->update(updateStage);
 
     //Create meshes
-    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+    updateStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+    updateStage->transparentMeshes = std::make_shared<MeshesToRender>();
+
+    auto &opaqueMeshes = updateStage->opaqueMeshes->meshes;
+    auto transparentMeshes = std::vector<HGMesh>();
+
+    auto cullStage = updateStage->cullResult;
+
+    if ( !m_suppressDrawingSky && (m_skyConeAlpha > 0) && (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit)) {
+        opaqueMeshes.push_back(skyMesh);
+    }
+
 
 
     // Put everything into one array and sort
@@ -1495,7 +1439,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 
 //    if (m_api->getConfig()->getRenderWMO()) {
     for (auto &view : vector) {
-        view->collectMeshes(renderedThisFramePreSort);
+        view->collectMeshes(opaqueMeshes, transparentMeshes);
     }
 //    }
 
@@ -1515,15 +1459,15 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 //    if (m_api->getConfig()->getRenderM2()) {
     for (auto &m2Object : m2ObjectsRendered) {
         if (m2Object == nullptr) continue;
-        m2Object->collectMeshes(renderedThisFramePreSort, m_viewRenderOrder);
-        m2Object->drawParticles(renderedThisFramePreSort, m_viewRenderOrder);
+        m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
+        m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
     }
 //    }
 
     //No need to sort array which has only one element
-    if (renderedThisFramePreSort.size() > 1) {
-        auto *sortedArrayPtr = &renderedThisFramePreSort[0];
-        std::vector<int> indexArray = std::vector<int>(renderedThisFramePreSort.size());
+    if (transparentMeshes.size() > 1) {
+        auto *sortedArrayPtr = &transparentMeshes[0];
+        std::vector<int> indexArray = std::vector<int>(transparentMeshes.size());
         for (int i = 0; i < indexArray.size(); i++) {
             indexArray[i] = i;
         }
@@ -1534,8 +1478,8 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         quickSort_parallel(
             indexArray.data(),
             indexArray.size(),
-            config->getThreadCount(),
-            config->getQuickSortCutoff(),
+            config->threadCount,
+            config->quickSortCutoff,
 #include "../../../gapi/interface/sortLambda.h"
         );
 //        } else {
@@ -1548,22 +1492,154 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 //            );
 //        }
 
-        resultDrawStage->meshesToRender->meshes.reserve(indexArray.size());
+        auto &targetTranspMeshes = updateStage->transparentMeshes->meshes;
+        targetTranspMeshes.reserve(indexArray.size());
         for (int i = 0; i < indexArray.size(); i++) {
-            resultDrawStage->meshesToRender->meshes.push_back(renderedThisFramePreSort[indexArray[i]]);
+            targetTranspMeshes.push_back(transparentMeshes[indexArray[i]]);
         }
     } else {
-        for (int i = 0; i < renderedThisFramePreSort.size(); i++) {
-            resultDrawStage->meshesToRender->meshes.push_back(renderedThisFramePreSort[i]);
+        auto &targetTranspMeshes = updateStage->transparentMeshes->meshes;
+        for (int i = 0; i < transparentMeshes.size(); i++) {
+            targetTranspMeshes.push_back(transparentMeshes[i]);
         }
     }
 
+    opaqueMeshes.erase(
+        std::remove_if(
+            opaqueMeshes.begin(),
+            opaqueMeshes.end(),
+            [](const HGMesh& item) { return item == nullptr;}),
+        opaqueMeshes.end());
+
+    updateStage->transparentMeshes->meshes.erase(
+        std::remove_if(
+            updateStage->transparentMeshes->meshes.begin(),
+            updateStage->transparentMeshes->meshes.end(),
+            [](const HGMesh& item) { return item == nullptr;}),
+        updateStage->transparentMeshes->meshes.end());
+
+    //1. Collect buffers
+    std::vector<IUniformBufferChunk *> &bufferChunks = updateStage->uniformBufferChunks;
+    int renderIndex = 0;
+    for (const auto &mesh : opaqueMeshes) {
+        for (int i = 0; i < 5; i++ ) {
+            auto bufferChunk = mesh->getUniformBuffer(i);
+
+            if (bufferChunk != nullptr) {
+                bufferChunks.push_back(bufferChunk.get());
+            }
+        }
+    }
+    for (const auto &mesh : transparentMeshes) {
+        for (int i = 0; i < 5; i++ ) {
+            auto bufferChunk = mesh->getUniformBuffer(i);
+
+            if (bufferChunk != nullptr) {
+                bufferChunks.push_back(bufferChunk.get());
+            }
+        }
+    }
+
+    std::sort( bufferChunks.begin(), bufferChunks.end());
+    bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
+}
+void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
+    auto cullStage = updateStage->cullResult;
+
+    //Create scenewide uniform
+    resultDrawStage->frameDepedantData = updateStage->cullResult->frameDepedantData;
+    auto renderMats = resultDrawStage->matricesForRendering;
+
+    resultDrawStage->opaqueMeshes = updateStage->opaqueMeshes;
+    resultDrawStage->transparentMeshes = updateStage->transparentMeshes;
+
+    HDrawStage origResultDrawStage = resultDrawStage;
+    bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
     if (frameBufferSupported) {
-        doGaussBlur(resultDrawStage, origResultDrawStage);
+        //Create new drawstage and draw everything there
+        resultDrawStage = std::make_shared<DrawStage>();
+
+        *resultDrawStage = *origResultDrawStage;
+
+        origResultDrawStage->opaqueMeshes = nullptr;
+        origResultDrawStage->transparentMeshes = nullptr;
+
+        resultDrawStage->target = m_api->hDevice->createFrameBuffer(
+            resultDrawStage->viewPortDimensions.maxs[0],
+            resultDrawStage->viewPortDimensions.maxs[1],
+            {ITextureFormat::itRGBA},
+            ITextureFormat::itDepth32,
+            2
+        );
+    }
+
+    auto config = m_api->getConfig();
+    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk, const HFrameDepedantData &fdd) -> void {
+        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
+
+        blockPSVS->uLookAtMat = renderMats->lookAtMat;
+        blockPSVS->uPMatrix = renderMats->perspectiveMat;
+        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
+        blockPSVS->uViewUp = renderMats->viewUp;
+
+        blockPSVS->extLight.uExteriorAmbientColor = fdd->exteriorAmbientColor;
+        blockPSVS->extLight.uExteriorHorizontAmbientColor = fdd->exteriorHorizontAmbientColor;
+        blockPSVS->extLight.uExteriorGroundAmbientColor = fdd->exteriorGroundAmbientColor;
+        blockPSVS->extLight.uExteriorDirectColor = fdd->exteriorDirectColor;
+        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
+
+//        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
+        float fogEnd = config->farPlane;
+        if (config->disableFog || !config->fogDataFound) {
+            fogEnd = 100000000.0f;
+        }
+
+        float fogStart = std::max<float>(config->farPlane - 250, 0);
+        fogStart = std::max<float>(fogEnd - fdd->FogScaler * (fogEnd - fogStart), 0);
+
+
+        blockPSVS->fogData.densityParams = mathfu::vec4(
+            fogStart,
+            fogEnd ,
+            fdd->FogDensity / 1000,
+            0);
+        blockPSVS->fogData.heightPlane = mathfu::vec4(0,0,0,0);
+        blockPSVS->fogData.color_and_heightRate = mathfu::vec4(fdd->FogColor,fdd->FogHeightScaler);
+        blockPSVS->fogData.heightDensity_and_endColor = mathfu::vec4(
+            fdd->FogHeightDensity,
+            fdd->EndFogColor.x,
+            fdd->EndFogColor.y,
+            fdd->EndFogColor.z
+        );
+        blockPSVS->fogData.sunAngle_and_sunColor = mathfu::vec4(
+            fdd->SunFogAngle,
+            fdd->SunFogColor.x * fdd->SunFogStrength,
+            fdd->SunFogColor.y * fdd->SunFogStrength,
+            fdd->SunFogColor.z * fdd->SunFogStrength
+        );
+        blockPSVS->fogData.heightColor_and_endFogDistance = mathfu::vec4(
+            fdd->FogHeightColor,
+            (fdd->EndFogColorDistance > 0) ?
+            fdd->EndFogColorDistance :
+            1000.0f
+        );
+        blockPSVS->fogData.sunPercentage = mathfu::vec4(
+            (fdd->SunFogColor.Length() > 0) ? 0.5f : 0.0f
+            , 0, 0, 0);
+
+    });
+
+    updateStage->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk.get());
+
+    if (frameBufferSupported) {
+        doGaussBlur(resultDrawStage, origResultDrawStage, updateStage);
     }
 }
 
-void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage) const {
+void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage, HUpdateStage &updateStage) const {
+    if (quadBindings == nullptr)
+        return;
 
     ///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
     ///With two frameBuffers
@@ -1587,7 +1663,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
     );
 
     auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-    vertexChunk->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+    updateStage->uniformBufferChunks.push_back(vertexChunk.get());
+    vertexChunk->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
         meshblockVS.x = 1;
         meshblockVS.y = 1;
@@ -1597,7 +1674,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
 
     auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+    updateStage->uniformBufferChunks.push_back(ffxGaussFrag.get());
+    ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {-1, 0, 0, -1};
         static const float s_texOffsetY[4] = {2, 2, -1, -1};;
@@ -1610,7 +1688,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
 
     auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+    updateStage->uniformBufferChunks.push_back(ffxGaussFrag2.get());
+    ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {-6, -1, 1, 6};
         static const float s_texOffsetY[4] = {0, 0, 0, 0};;
@@ -1621,7 +1700,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         }
     });
     auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+    updateStage->uniformBufferChunks.push_back(ffxGaussFrag3.get());
+    ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {0, 0, 0, 0};
         static const float s_texOffsetY[4] = {10, 2, -2, -10};;
@@ -1674,8 +1754,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
         //Make mesh
         HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
-        drawStage->meshesToRender = std::make_shared<MeshesToRender>();
-        drawStage->meshesToRender->meshes.push_back(hmesh);
+        drawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+        drawStage->opaqueMeshes->meshes.push_back(hmesh);
 
         ///3. Reassign previous frame
         prevStage = drawStage;
@@ -1683,15 +1763,16 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
     //And the final is ffxglow to screen
     {
-        auto config = m_api->getConfig();
-        auto glow = config->currentGlow;
+        auto config = m_api->getConfig();;
+
+        auto glow = origResultDrawStage->frameDepedantData->currentGlow;
         auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self) -> void {
+        ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
             auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
             meshblockVS.x = 1;
             meshblockVS.y = 1;
             meshblockVS.z = 0; //mix_coeficient
-            meshblockVS.w = config->getUseGaussBlur() ? fminf(0.5f, glow) : 0; //glow multiplier
+            meshblockVS.w = config->useGaussBlur ? fminf(0.5f, glow) : 0; //glow multiplier
         });
 
         auto shader = m_api->hDevice->getShader("fullScreen_quad", nullptr);
@@ -1723,8 +1804,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         //Make mesh
         HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
         origResultDrawStage->drawStageDependencies = {prevStage};
-        origResultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
-        origResultDrawStage->meshesToRender->meshes.push_back(hmesh);
+        origResultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+        origResultDrawStage->opaqueMeshes->meshes.push_back(hmesh);
     }
 }
 

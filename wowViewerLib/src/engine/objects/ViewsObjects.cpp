@@ -4,17 +4,24 @@
 
 #include "ViewsObjects.h"
 
-void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
-    auto inserter = std::back_inserter(renderedThisFrame);
-    std::copy(drawnChunks.begin(), drawnChunks.end(), inserter);
+void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
+    {
+        auto inserter = std::back_inserter(opaqueMeshes);
+        std::copy(this->m_opaqueMeshes.begin(), this->m_opaqueMeshes.end(), inserter);
+    }
 
-    GeneralView::collectMeshes(renderedThisFrame);
+    {
+        auto inserter = std::back_inserter(transparentMeshes);
+        std::copy(this->m_transparentMeshes.begin(), this->m_transparentMeshes.end(), inserter);
+    }
+
+    GeneralView::collectMeshes(opaqueMeshes, transparentMeshes);
 }
 
 
-void GeneralView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
+void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
     for (auto& wmoGroup : drawnWmos) {
-        wmoGroup->collectMeshes(renderedThisFrame, renderOrder);
+        wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
 //    for (auto& m2 : drawnM2s) {
 //        m2->collectMeshes(renderedThisFrame, renderOrder);

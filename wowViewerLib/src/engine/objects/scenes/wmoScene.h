@@ -25,13 +25,6 @@ private:
                                std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) override;
 public:
-    void setDefaultLightParams(ApiContainer *api) {
-        api->getConfig()->setExteriorAmbientColor(0.8,0.8,0.8,0.8);
-        api->getConfig()->setExteriorHorizontAmbientColor(1.0,1.0,1.0,1.0);
-        api->getConfig()->setExteriorGroundAmbientColor(1.0,1.0,1.0,1.0);
-        api->getConfig()->setExteriorDirectColor(0.3,0.3,0.3,1.3);
-        api->getConfig()->setExteriorDirectColorDir(0.0,0.0,0.0);
-    }
 
     explicit WmoScene(ApiContainer *api, std::string wmoModel) {
         m_api = api; m_wmoModel = wmoModel;
@@ -51,9 +44,6 @@ public:
         wmoObject->setModelFileName(m_wmoModel);
 
         m_wmoObject = wmoObject;
-
-        this->setDefaultLightParams(api);
-        api->getConfig()->setDisableFog(false);
     };
 
     explicit WmoScene(ApiContainer *api, int fileDataId) {
@@ -74,9 +64,6 @@ public:
         wmoObject->setModelFileId(fileDataId);
 
         m_wmoObject = wmoObject;
-
-        this->setDefaultLightParams(api);
-        api->getConfig()->setDisableFog(false);
     };
 
     ~WmoScene() override {

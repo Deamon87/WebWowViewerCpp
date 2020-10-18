@@ -28,9 +28,7 @@ public:
     mathfu::vec4 m_globalAmbientColor;
     mathfu::vec4 m_globalSunColor;
 
-    float uFogStart = -1;
-    float uFogEnd = -1;
-    mathfu::vec4 m_fogColor = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
+
 
     //Frustum culling results
 	std::vector<WmoGroupResult> m_currentInteriorGroups = {};

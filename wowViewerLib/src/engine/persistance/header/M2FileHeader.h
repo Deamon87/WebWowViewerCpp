@@ -334,7 +334,7 @@ struct M2Data {
         uint32_t flag_camera_related : 1;                   // TODO: verify version
         uint32_t flag_new_particle_record : 1;              // In CATA: new version of ParticleEmitters. By default, length of M2ParticleOld is 476.
         uint32_t flag_unk_0x400 : 1;
-        uint32_t flag_unk_0x800 : 1;
+        uint32_t flag_texture_transforms_use_bone_sequences  : 1;
         uint32_t flag_unk_0x1000 : 1;
         uint32_t flag_unk_0x2000 : 1;                       // seen in UI_MainMenu_Legion
         uint32_t flag_unk_0x4000 : 1;

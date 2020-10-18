@@ -32,7 +32,6 @@ protected:
     SceneMode m_sceneMode = SceneMode::smMap;
 
     float m_currentTime = 0;
-    float m_lastTimeLightCheck = 0;
     float m_lastTimeAdtCleanup = 0;
 
     bool m_lockedMap = false;
@@ -119,8 +118,6 @@ public:
         m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
         m_wdlObject->setMapApi(this);
 
-        api->getConfig()->setDisableFog(false);
-
         loadZoneLights();
     };
 
@@ -129,8 +126,6 @@ public:
         m_sceneMode = SceneMode::smMap;
 
         m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
-
-        api->getConfig()->setDisableFog(false);
 
         loadZoneLights();
     };
@@ -152,8 +147,6 @@ public:
 
         adtObject->setMapApi(this);
         this->mapTiles[i][j] = adtObject;
-
-        api->getConfig()->setDisableFog(false);
     };
 
     ~Map() override {
@@ -175,8 +168,9 @@ public:
 
     void doPostLoad(HCullStage cullStage) override;
 
-    void update(HUpdateStage updateStage) override;
-    void updateBuffers(HCullStage cullStage) override;
+    void update(HUpdateStage updateStage);
+    void updateBuffers(HUpdateStage updateStage) override;
+    void produceUpdateStage(HUpdateStage updateStage) override;
     void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
@@ -187,7 +181,7 @@ private:
                        int viewRenderOrder,
                        HCullStage cullStage);
 
-    void doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage) const;
+    void doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage, HUpdateStage &updateStage) const;
 
 
 

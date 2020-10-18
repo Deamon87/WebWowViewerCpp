@@ -144,7 +144,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
 
         auto blendMode = meshTemplate.blendMode;
-        meshTemplate.ubo[4]->setUpdateHandler([blendMode](IUniformBufferChunk *self) {
+        meshTemplate.ubo[4]->setUpdateHandler([blendMode](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
             Particle::meshParticleWideBlockPS& blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
 
             blockPS.uAlphaTest = -1.0f;
@@ -845,7 +845,7 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   this->m_ribbonEmitterflags.m_initialized = 1;
 }
 
-void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
+void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
 
     auto &currFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
     if (currFrame.isDead) return;
@@ -854,7 +854,11 @@ void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder)
         auto mesh = currFrame.m_meshes[i];
 
         mesh->setRenderOrder(renderOrder);
-        meshes.push_back(mesh);
+        if (mesh->getIsTransparent()) {
+            transparentMeshes.push_back(mesh);
+        } else {
+            opaqueMeshes.push_back(mesh);
+        }
     }
 }
 

@@ -11,6 +11,7 @@
 #include "imguiLib/imguiImpl/imgui_impl_glfw.h"
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
+#include "childWindow/mapConstructionWindow.h"
 
 
 static const GBufferBinding imguiBindings[3] = {
@@ -20,10 +21,6 @@ static const GBufferBinding imguiBindings[3] = {
 };
 
 void FrontendUI::composeUI() {
-    m_api->getConfig()->setUseTimedGloabalLight(useTimedGlobalLight);
-    m_api->getConfig()->setUseM2AmbientLight(useM2AmbientLight);
-    m_api->getConfig()->setUseGaussBlur(useGaussBlur);
-
     if (this->fontTexture == nullptr)
         return;
 
@@ -87,6 +84,7 @@ void FrontendUI::composeUI() {
     showSettingsDialog();
     showQuickLinksDialog();
 
+    showMapConstructionDialog();
     showMapSelectionDialog();
     showMakeScreenshotDialog();
     showCurrentStatsDialog();
@@ -119,8 +117,8 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
 
 
-        ImGui::Text("Current Fog scaler: %f", m_api->getConfig()->getFogScaler());
-        ImGui::Text("Current Fog density: %f", m_api->getConfig()->getFogDensity());
+//        ImGui::Text("Current Fog scaler: %f", m_api->getConfig()->getFogScaler());
+//        ImGui::Text("Current Fog density: %f", m_api->getConfig()->getFogDensity());
 //            }
         ImGui::End();
     }
@@ -161,13 +159,20 @@ void FrontendUI::filterMapList(std::string text) {
         }
     }
 }
+void FrontendUI::showMapConstructionDialog() {
+    if (!showMapConstruction) return;
 
+    if (m_mapConstructionWindow == nullptr)
+        m_mapConstructionWindow = std::make_shared<MapConstructionWindow>(m_api);
+
+    showMapConstruction = m_mapConstructionWindow->render();
+
+}
 void FrontendUI::showMapSelectionDialog() {
     if (showSelectMap) {
         if (mapList.size() == 0) {
             getMapList(mapList);
             refilterIsNeeded = true;
-
         }
         if (refilterIsNeeded) {
             filterMapList(std::string(&filterText[0]));
@@ -232,13 +237,13 @@ void FrontendUI::showMapSelectionDialog() {
                     }
                     bool hovered = ImGui::IsItemHovered();
                     ImGui::NextColumn();
-                    ImGui::Text(mapListStringMap[i][1].c_str());
+                    ImGui::Text("%s", mapListStringMap[i][1].c_str());
                     ImGui::NextColumn();
-                    ImGui::Text(mapListStringMap[i][2].c_str());
+                    ImGui::Text("%s", mapListStringMap[i][2].c_str());
                     ImGui::NextColumn();
-                    ImGui::Text(mapListStringMap[i][3].c_str());
+                    ImGui::Text("%s", mapListStringMap[i][3].c_str());
                     ImGui::NextColumn();
-                    ImGui::Text(mapListStringMap[i][4].c_str());
+                    ImGui::Text("%s", mapListStringMap[i][4].c_str());
                     ImGui::NextColumn();
                 }
                 ImGui::Columns(1);
@@ -378,6 +383,7 @@ void FrontendUI::showMainMenu() {
             ImGui::Separator();
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
+            if (ImGui::MenuItem("Open MapConstruction")) {showMapConstruction = true;}
             ImGui::Separator();
             if (ImGui::MenuItem("Make screenshot")) {
                 showMakeScreenshot = true;
@@ -542,7 +548,7 @@ void FrontendUI::showQuickLinksDialog() {
         if (openM2SceneByfdid) {
             openM2SceneByfdid(131982, replacementTextureFDids);
             //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
-            m_api->getConfig()->setBCLightHack(true);
+            m_api->getConfig()->BCLightHack = true;
 
         }
     }
@@ -785,17 +791,17 @@ void FrontendUI::showSettingsDialog() {
 //        }
 
         if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
-            m_api->getConfig()->setFarPlane(farPlane);
-            m_api->getConfig()->setFarPlaneForCulling(farPlane+50);
+            m_api->getConfig()->farPlane = farPlane;
+            m_api->getConfig()->farPlaneForCulling = farPlane+50;
         }
 
         if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
-            m_api->getConfig()->setUseGaussBlur(useGaussBlur);
+            m_api->getConfig()->useGaussBlur = useGaussBlur;
         }
 
-        pauseAnimation = m_api->getConfig()->getPauseAnimation();
+        pauseAnimation = m_api->getConfig()->pauseAnimation;
         if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
-            m_api->getConfig()->setPauseAnimation(pauseAnimation);
+            m_api->getConfig()->pauseAnimation = pauseAnimation;
         }
 
         if (ImGui::Button("Reset Animation")) {
@@ -806,35 +812,41 @@ void FrontendUI::showSettingsDialog() {
 
         ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
         if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
-            m_api->getConfig()->setCurrentTime(currentTime);
+            m_api->getConfig()->currentTime = currentTime;
         }
 
-
-
-        movementSpeed =m_api->getConfig()->getMovementSpeed();
         if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 10)) {
-            m_api->getConfig()->setMovementSpeed(movementSpeed);
             m_api->camera->setMovementSpeed(movementSpeed);
         }
 
-        if (ImGui::Checkbox("Use global timed light", &useTimedGlobalLight)) {
-            m_api->getConfig()->setUseTimedGloabalLight(useTimedGlobalLight);
-            if (useTimedGlobalLight) {
-                useM2AmbientLight = false;
-                m_api->getConfig()->setUseM2AmbientLight(useM2AmbientLight);
+        switch(m_api->getConfig()->globalLighting) {
+            case EParameterSource::eDatabase: {
+                lightSource = 0;
+                break;
+            }
+            case EParameterSource::eM2: {
+                lightSource = 1;
+                break;
+            }
+            case EParameterSource::eConfig: {
+                lightSource = 2;
+                break;
             }
         }
 
-        if (ImGui::Checkbox("Use ambient light from M2  (only for M2 scenes)", &useM2AmbientLight)) {
-            m_api->getConfig()->setUseM2AmbientLight(useM2AmbientLight);
-            if (useM2AmbientLight) {
-                useTimedGlobalLight = false;
-                m_api->getConfig()->setUseTimedGloabalLight(useTimedGlobalLight);
-            }
+        if (ImGui::RadioButton("Use global timed light", &lightSource, 0)) {
+            m_api->getConfig()->globalLighting = EParameterSource::eDatabase;
         }
-        if (!useTimedGlobalLight && !useM2AmbientLight) {
+        if (ImGui::RadioButton("Use ambient light from M2  (only for M2 scenes)", &lightSource, 1)) {
+            m_api->getConfig()->globalLighting = EParameterSource::eM2;
+        }
+        if (ImGui::RadioButton("Manual light", &lightSource, 2)) {
+            m_api->getConfig()->globalLighting = EParameterSource::eConfig;
+        }
+
+        if (m_api->getConfig()->globalLighting == EParameterSource::eConfig) {
             {
-                auto ambient = m_api->getConfig()->getExteriorAmbientColor();
+                auto ambient = m_api->getConfig()->exteriorAmbientColor;
                 exteriorAmbientColor = {ambient.x, ambient.y, ambient.z};
                 ImVec4 col = ImVec4(ambient.x, ambient.y, ambient.z, 1.0);
                 if (ImGui::ColorButton("ExteriorAmbientColor##3b", col)) {
@@ -845,7 +857,7 @@ void FrontendUI::showSettingsDialog() {
 
                 if (ImGui::BeginPopup("Exterior Ambient picker")) {
                     if (ImGui::ColorPicker3("Exterior Ambient", exteriorAmbientColor.data())) {
-                        m_api->getConfig()->setExteriorAmbientColor(
+                        m_api->getConfig()->exteriorAmbientColor = mathfu::vec4(
                             exteriorAmbientColor[0], exteriorAmbientColor[1], exteriorAmbientColor[2], 1.0);
                     }
                     ImGui::EndPopup();
@@ -853,7 +865,7 @@ void FrontendUI::showSettingsDialog() {
             }
 
             {
-                auto horizontAmbient = m_api->getConfig()->getExteriorHorizontAmbientColor();
+                auto horizontAmbient = m_api->getConfig()->exteriorHorizontAmbientColor;
                 exteriorHorizontAmbientColor = {horizontAmbient.x, horizontAmbient.y, horizontAmbient.z};
                 ImVec4 col = ImVec4(horizontAmbient.x, horizontAmbient.y, horizontAmbient.z, 1.0);
                 if (ImGui::ColorButton("ExteriorHorizontAmbientColor##3b", col)) {
@@ -864,7 +876,7 @@ void FrontendUI::showSettingsDialog() {
 
                 if (ImGui::BeginPopup("Exterior Horizont Ambient picker")) {
                     if (ImGui::ColorPicker3("Exterior Horizont Ambient", exteriorHorizontAmbientColor.data())) {
-                        m_api->getConfig()->setExteriorHorizontAmbientColor(
+                        m_api->getConfig()->exteriorHorizontAmbientColor = mathfu::vec4 (
                             exteriorHorizontAmbientColor[0],
                             exteriorHorizontAmbientColor[1], exteriorHorizontAmbientColor[2], 1.0);
                     }
@@ -872,7 +884,7 @@ void FrontendUI::showSettingsDialog() {
                 }
             }
             {
-                auto groundAmbient = m_api->getConfig()->getExteriorGroundAmbientColor();
+                auto groundAmbient = m_api->getConfig()->exteriorGroundAmbientColor;
                 exteriorGroundAmbientColor = {groundAmbient.x, groundAmbient.y, groundAmbient.z};
                 ImVec4 col = ImVec4(groundAmbient.x, groundAmbient.y, groundAmbient.z, 1.0);
 
@@ -884,7 +896,7 @@ void FrontendUI::showSettingsDialog() {
 
                 if (ImGui::BeginPopup("Exterior Ground Ambient picker")) {
                     if (ImGui::ColorPicker3("Exterior Ground Ambient", exteriorGroundAmbientColor.data())) {
-                        m_api->getConfig()->setExteriorGroundAmbientColor(
+                        m_api->getConfig()->exteriorGroundAmbientColor = mathfu::vec4(
                             exteriorGroundAmbientColor[0],
                             exteriorGroundAmbientColor[1], exteriorGroundAmbientColor[2], 1.0);
                     }
@@ -935,7 +947,7 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
     lastWidth = resultDrawStage->viewPortDimensions.maxs[0];
     lastHeight = resultDrawStage->viewPortDimensions.maxs[1];
 
-    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+    resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
 
     auto *draw_data = ImGui::GetDrawData();
 
@@ -972,7 +984,7 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
     }
 
     auto uboPart = m_device->createUniformBufferChunk(sizeof(mathfu::mat4));
-    uboPart->setUpdateHandler([ortho_projection](IUniformBufferChunk* self) {
+    uboPart->setUpdateHandler([ortho_projection](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) {
         self->getObject<mathfu::mat4>() = ortho_projection;
     });
 
@@ -1051,11 +1063,29 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
                     meshTemplate.start = pcmd->IdxOffset * 2;
                     meshTemplate.end = pcmd->ElemCount;
 
-                    resultDrawStage->meshesToRender->meshes.push_back(m_device->createMesh(meshTemplate));
+                    resultDrawStage->opaqueMeshes->meshes.push_back(m_device->createMesh(meshTemplate));
                 }
             }
         }
     }
+
+    //1. Collect buffers
+    auto &bufferChunks = updateStage->uniformBufferChunks;
+    int renderIndex = 0;
+    for (const auto &mesh : resultDrawStage->opaqueMeshes->meshes) {
+        for (int i = 0; i < 5; i++ ) {
+            auto bufferChunk = mesh->getUniformBuffer(i);
+
+            if (bufferChunk != nullptr) {
+                bufferChunks.push_back(bufferChunk.get());
+            }
+        }
+    }
+
+    std::sort( bufferChunks.begin(), bufferChunks.end());
+    bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
+
+
 }
 
 void FrontendUI::setOpenWMOSceneByfdidCallback(std::function<void(int wmoFDid)> callback) {
@@ -1115,7 +1145,7 @@ bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 6
 
 std::string FrontendUI::getCurrentAreaName() {
     auto conf = m_api->getConfig();
-    return conf->getAreaName();
+    return conf->areaName;
 }
 
 void FrontendUI::setMakeScreenshotCallback(std::function<void(std::string fileName, int, int)> callback) {
@@ -1151,4 +1181,10 @@ void FrontendUI::showMakeScreenshotDialog() {
        }
 
    }
+}
+
+void FrontendUI::produceUpdateStage(HUpdateStage updateStage) {
+    this->update(updateStage);
+
+
 }

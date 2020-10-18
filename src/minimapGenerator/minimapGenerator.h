@@ -18,7 +18,7 @@ private:
     int m_width = 1024;
     int m_height = 1024;
 public:
-    MinimapGenerator(ApiContainer &apiContainer);
+    MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice);
 
     void startScenario(int scenarioId);
 

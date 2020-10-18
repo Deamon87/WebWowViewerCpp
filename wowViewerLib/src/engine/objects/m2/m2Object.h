@@ -97,9 +97,6 @@ private:
     bool animationOverrideActive = false;
     float animationOverridePercent = 0;
 
-    mathfu::vec4 m_sunDirOverride;
-    bool m_setSunDir = false;
-
     std::string m_modelName;
     std::string m_nameTemplate = "";
 
@@ -227,8 +224,8 @@ public:
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
 
-    bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
-    void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
+    bool prepearMaterial(M2MaterialInst &materialData, int materialIndex);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
 
     bool setUseLocalLighting(bool value) {
 //        if (hasModf0x2Flag) {
@@ -269,16 +266,10 @@ public:
         m_ambientColorOverride = ambientColor;
     }
 
-    void setSunDirOverride(mathfu::vec4 &sunDir, bool override) {
-        m_setSunDir = override;
-        m_sunDirOverride = sunDir;
-    }
-
-    void drawParticles(std::vector<HGMesh> &meshes, int renderOrder);
+    void drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes,  int renderOrder);
 
     void createVertexBindings();
 
-    mathfu::vec3 getSunDir();
     int getCameraNum() {
         if (!getGetIsLoaded()) return 0;
 

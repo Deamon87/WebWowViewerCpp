@@ -996,8 +996,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
 
 
-    int minParticle = m_api->getConfig()->getMinParticle();
-    int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
+    int minParticle = m_api->getConfig()->minParticle;
+    int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
     mathfu::mat4 viewMatInv = viewMat.Inverse();
 
@@ -1048,8 +1048,8 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat) {
     //Manually update vertices for dynamics
     updateDynamicMeshes();
 
-    int minParticle = m_api->getConfig()->getMinParticle();
-    int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
+    int minParticle = m_api->getConfig()->minParticle;
+    int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
     for (int i = minParticle; i < maxParticle; i++) {
         particleEmitters[i]->updateBuffers();
@@ -1182,7 +1182,7 @@ void M2Object::drawBB(mathfu::vec3 &color) {
 
 }
 
-bool M2Object::prepearMatrial(M2MaterialInst &materialData, int batchIndex) {
+bool M2Object::prepearMaterial(M2MaterialInst &materialData, int batchIndex) {
     auto &skinSections = m_skinGeom->getSkinData()->skinSections;
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
 
@@ -1215,7 +1215,7 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int batchIndex) {
     materialData.flags = m2Batch->flags;
     materialData.priorityPlane = m2Batch->priorityPlane;
 
-    if (m_api->getConfig()->getUseWotlkLogic()) {
+    if (m_api->getConfig()->useWotlkLogic) {
         std::string vertexShader;
         std::string pixelShader;
         getShaderNames(m2Batch, vertexShader, pixelShader);
@@ -1392,7 +1392,7 @@ HGM2Mesh
 M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
                            const M2SkinSection *skinSection, M2MaterialInst &material) {
 
-    if (!prepearMatrial(material, i)) return nullptr;
+    if (!prepearMaterial(material, i)) return nullptr;
 
 
     M2ShaderCacheRecord cacheRecord{};
@@ -1449,7 +1449,7 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     return hmesh;
 }
 
-void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
+void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
     //2. Check if .skin file is loaded
     if (m_m2Geom == nullptr) {
         return;
@@ -1486,21 +1486,29 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
 
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
-    int minBatch = m_api->getConfig()->getM2MinBatch();
-    int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());
+    int minBatch = m_api->getConfig()->m2MinBatch;
+    int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshArray.size());
 
     for (int i = minBatch; i < maxBatch; i++) {
         float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, i, skinData);
         if ((finalTransparency < 0.0001) ) continue;
 
         this->m_meshArray[i]->setRenderOrder(renderOrder);
-        renderedThisFrame.push_back(this->m_meshArray[i]);
+        if (this->m_meshArray[i]->getIsTransparent()) {
+            transparentMeshes.push_back(this->m_meshArray[i]);
+        } else {
+            opaqueMeshes.push_back(this->m_meshArray[i]);
+        }
     }
 
     for (auto &dynMesh : dynamicMeshes) {
         HGParticleMesh mesh = dynMesh[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
         mesh->setRenderOrder(renderOrder);
-        renderedThisFrame.push_back(mesh);
+        if (mesh->getIsTransparent()) {
+            transparentMeshes.push_back(mesh);
+        } else {
+            opaqueMeshes.push_back(mesh);
+        }
     }
 //    std::cout << "Collected meshes at update frame =" << m_api->hDevice->getUpdateFrameNumber() << std::endl;
 
@@ -1634,13 +1642,6 @@ mathfu::vec4 M2Object::getM2SceneAmbientLight() {
     return mathfu::vec4(ambientColor.x, ambientColor.y, ambientColor.z, 1.0) ;
 };
 
-mathfu::vec3 M2Object::getSunDir() {
-    if (m_setSunDir && getUseLocalLighting()) {
-        return mathfu::vec3(m_sunDirOverride.x, m_sunDirOverride.y, m_sunDirOverride.z);
-    }
-
-    return m_api->getConfig()->getExteriorDirectColorDir();
-}
 void M2Object::getAvailableAnimation(std::vector<int> &allAnimationList) {
     auto &sequences = *m_boneMasterData->getSkelData()->m_sequences;
 
@@ -1671,21 +1672,21 @@ void M2Object::getAvailableAnimation(std::vector<int> &allAnimationList) {
 }
 
 
-void M2Object::drawParticles(std::vector<HGMesh> &meshes, int renderOrder) {
+void M2Object::drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
 //    return;
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
-    int minParticle = m_api->getConfig()->getMinParticle();
-    int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
+    int minParticle = m_api->getConfig()->minParticle;
+    int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 //    int maxBatch = particleEmitters.size();
 
 
     for (int i = minParticle; i < maxParticle; i++) {
 //    for (int i = 0; i< particleEmitters.size(); i++) {
-        particleEmitters[i]->collectMeshes(meshes, renderOrder);
+        particleEmitters[i]->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
 
     for (int i = 0; i < ribbonEmitters.size(); i++) {
-        ribbonEmitters[i]->collectMeshes(meshes, renderOrder);
+        ribbonEmitters[i]->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
 }
 
@@ -1753,7 +1754,7 @@ void M2Object::createVertexBindings() {
     vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockVS));
     fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockPS));
 
-    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
+    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         auto &blockVS = self->getObject<M2::modelWideBlockVS>();
 
         blockVS.uPlacementMat = m_placementMatrix;
@@ -1761,7 +1762,7 @@ void M2Object::createVertexBindings() {
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
     });
 
-    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
 

@@ -114,7 +114,7 @@ public:
     //CTexture **SetTexture(unsigned int a2, CTexture *a3);
     //int ReplaceTexture(unsigned int a2, CTexture *a3);
 
-    void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
 
     void updateBuffers();
 };

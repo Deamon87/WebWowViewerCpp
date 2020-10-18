@@ -33,7 +33,7 @@ public:
     int level = -1;
     int renderOrder = -1;
 
-    virtual void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
+    virtual void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
     virtual void setM2Lights(std::shared_ptr<M2Object> m2Object);;
     void addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
 };
@@ -47,10 +47,11 @@ public:
 class ExteriorView : public GeneralView {
 public:
 	std::vector<std::shared_ptr<ADTObjRenderRes>> drawnADTs = {};
-    std::vector<HGMesh> drawnChunks = {};
+    std::vector<HGMesh> m_opaqueMeshes = {};
+    std::vector<HGMesh> m_transparentMeshes = {};
 
 public:
-    void collectMeshes(std::vector<HGMesh> &renderedThisFrame) override;
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) override;
 };
 
 

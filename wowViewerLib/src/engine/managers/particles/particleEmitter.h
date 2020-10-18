@@ -67,7 +67,7 @@ public:
     CParticleGenerator * getGenerator(){
         return generator;
     }
-    void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
     void updateBuffers();
 
     int flags = 6;

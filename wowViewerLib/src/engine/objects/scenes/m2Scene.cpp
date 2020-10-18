@@ -26,19 +26,20 @@ void M2Scene::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu
 void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                               StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
     Config* config = this->m_api->getConfig();
-    if (config->getUseTimedGloabalLight()) {
-        Map::updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
-    } else if (config->getUseM2AmbientLight()) {
+    Map::updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
+    if (config->globalLighting == EParameterSource::eM2) {
         auto ambient = m_m2Object->getM2SceneAmbientLight();
 
         if (ambient.Length() < 0.0001)
             ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
-        m_api->getConfig()->setExteriorAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
-        m_api->getConfig()->setExteriorHorizontAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
-        m_api->getConfig()->setExteriorGroundAmbientColor(ambient.x, ambient.y, ambient.z, 1.0);
-        m_api->getConfig()->setExteriorDirectColor(0.0,0.0,0.0,0.0);
-        m_api->getConfig()->setExteriorDirectColorDir(0.0,0.0,0.0);
+        auto frameDepedantData = cullStage->frameDepedantData;
+
+        frameDepedantData->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        frameDepedantData->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        frameDepedantData->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        frameDepedantData->exteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,0.0);
+        frameDepedantData->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
     }
 }
 
@@ -165,7 +166,7 @@ M2Scene::M2Scene(ApiContainer *api, std::string m2Model, int cameraView) {
 
     m_m2Object = m2Object;
 
-    api->getConfig()->setDisableFog(true);
+    api->getConfig()->globalFog = EParameterSource::eConfig;
 }
 
 M2Scene::M2Scene(ApiContainer *api, int fileDataId, int cameraView) {
@@ -183,7 +184,7 @@ M2Scene::M2Scene(ApiContainer *api, int fileDataId, int cameraView) {
 
     m_m2Object = m2Object;
 
-    api->getConfig()->setDisableFog(true);
+    api->getConfig()->globalFog = EParameterSource::eConfig;
 }
 
 void M2Scene::setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {

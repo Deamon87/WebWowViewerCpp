@@ -7,8 +7,11 @@
 #include "../../wowViewerLib/src/engine/objects/scenes/map.h"
 
 
-MinimapGenerator::MinimapGenerator(ApiContainer &apiContainer) : m_apiContainer(apiContainer) {
+MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice) {
+    m_apiContainer.hDevice = hDevice;
+    m_apiContainer.cacheStorage = cacheStorage;
 
+//    m_apiContainer.getConfig()->setDisableFog()
 }
 
 void MinimapGenerator::startScenario(int scenarioId) {
@@ -20,8 +23,8 @@ void MinimapGenerator::startScenario(int scenarioId) {
 }
 
 HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) {
-    float farPlaneRendering = m_apiContainer.getConfig()->getFarPlane();
-    float farPlaneCulling = m_apiContainer.getConfig()->getFarPlaneForCulling();
+    float farPlaneRendering = m_apiContainer.getConfig()->farPlane;
+    float farPlaneCulling = m_apiContainer.getConfig()->farPlaneForCulling;
 
     float nearPlane = 1.0;
     float fov = toRadian(45.0);
@@ -52,7 +55,7 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
         perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
     }
 
-    mathfu::vec4 clearColor = m_apiContainer.getConfig()->getClearColor();
+    mathfu::vec4 clearColor = m_apiContainer.getConfig()->clearColor;
 
     if (m_currentScene != nullptr) {
         ViewPortDimensions dimensions = {{0, 0}, {m_width, m_height}};

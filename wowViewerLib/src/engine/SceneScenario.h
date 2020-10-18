@@ -41,6 +41,8 @@ struct CullStage {
     ExteriorView exteriorView = ExteriorView();
     std::vector<InteriorView> interiorViews = {};
 
+    HFrameDepedantData frameDepedantData = std::make_shared<FrameDepedantData>();
+
     std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
     std::vector<std::shared_ptr<M2Object>> m2Array = {};
     std::vector<std::shared_ptr<WmoObject>> wmoArray = {};
@@ -52,6 +54,13 @@ struct UpdateStage {
     HCullStage cullResult;
     animTime_t delta;
     HCameraMatrices cameraMatrices;
+
+//Output
+    HMeshesToRender opaqueMeshes;
+    HMeshesToRender transparentMeshes;
+
+    std::vector<IUniformBufferChunk *> uniformBufferChunks;
+    //
 };
 typedef std::shared_ptr<UpdateStage> HUpdateStage;
 

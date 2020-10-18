@@ -117,6 +117,8 @@ protected:
     std::vector<HGTexture> m_texture;
     int m_textureCount;
 
+    std::array<HGUniformBufferChunk,6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+
 public:
     virtual ~IMesh(){
 //        std::cout << "Mesh destroyed" << std::endl;

@@ -184,7 +184,7 @@ set(SOURCE_FILES
 		src/ui/FrontendUI.cpp src/ui/FrontendUI.h
 		src/database/CSqliteDB.cpp src/database/CSqliteDB.h
 		src/minimapGenerator/minimapGenerator.cpp
-		src/screenshots/screenshotMaker.h src/screenshots/screenshotMaker.cpp)
+		src/screenshots/screenshotMaker.h src/screenshots/screenshotMaker.cpp src/ui/childWindow/mapConstructionWindow.cpp src/ui/childWindow/mapConstructionWindow.h)
 
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)

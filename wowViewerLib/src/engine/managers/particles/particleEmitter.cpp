@@ -343,7 +343,7 @@ void ParticleEmitter::createMesh() {
         meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
 
         auto l_blendMode = meshTemplate.blendMode;
-        meshTemplate.ubo[4]->setUpdateHandler([this, l_blendMode](IUniformBufferChunk *self) {
+        meshTemplate.ubo[4]->setUpdateHandler([this, l_blendMode](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
             Particle::meshParticleWideBlockPS &blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
             uint8_t blendMode = m_data->old.blendingType;
             if (blendMode == 0) {
@@ -503,7 +503,7 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
 
     std::list<int> listForDeletion;
 
-    int numThreads = m_api->getConfig()->getThreadCount();
+    int numThreads = m_api->getConfig()->threadCount;
 
     #pragma omp parallel for schedule(dynamic, 4) num_threads(numThreads)
     for (int i = 0; i < this->particles.size(); i++) {
@@ -1091,7 +1091,7 @@ ParticleEmitter::BuildQuadT3(
     ParticleBuffStructQuad &record = szVertexBuf[szVertexCnt++];
 
 //    mathfu::mat4 inverseLookAt = mathfu::mat4::Identity();
-    mathfu::mat4 inverseLookAt = this->inverseViewMatrix;
+    mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
 
     for (int i = 0; i < 4; i++) {
 
@@ -1118,7 +1118,7 @@ ParticleEmitter::BuildQuadT3(
 
 }
 
-void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
+void ParticleEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
     if (getGenerator() == nullptr) return;
 
     auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
@@ -1127,7 +1127,11 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 
     HGParticleMesh mesh = frame[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
     mesh->setRenderOrder(renderOrder);
-    meshes.push_back(mesh);
+    if (mesh->getIsTransparent()) {
+        transparentMeshes.push_back(mesh);
+    } else {
+        opaqueMeshes.push_back(mesh);
+    }
 }
 
 void ParticleEmitter::updateBuffers() {
