@@ -725,7 +725,7 @@ void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaq
 
     size_t meshCount = adtMeshes.size();
     for (int i = 0; i < meshCount; i++) {
-        if (adtRes.drawChunk[i]) {
+        if (adtRes.drawChunk[i] && (adtMeshes[i] != nullptr)) {
             adtMeshes[i]->setRenderOrder(renderOrder);
             opaqueMeshes.push_back(adtMeshes[i]);
         }

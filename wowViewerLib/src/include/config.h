@@ -108,11 +108,9 @@ public:
     std::string areaName;
 
     int diffuseColorHack = 0;
+
+    EParameterSource glowSource = EParameterSource::eDatabase;
     float currentGlow = 0;
-
-
-
-
 
 };
 

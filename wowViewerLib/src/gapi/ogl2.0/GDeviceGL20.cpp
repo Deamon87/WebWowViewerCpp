@@ -234,7 +234,7 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
     }
 }
 
-void GDeviceGL20::updateBuffers(std::vector<std::vector<IUniformBufferChunk*>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
+void GDeviceGL20::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
     int fullSize = 0;
 
     for (int i = 0; i < bufferChunks.size(); i++) {

@@ -61,6 +61,10 @@ public:
     void processResults(int limit);
     void processRequests(bool calledFromThread);
 
+    bool queuesNotEmpty() {
+        return (!m_requestQueue.empty()) || (!m_resultQueue.empty());
+    };
+
     bool getThreaded() {
         return m_threaded;
     }
@@ -77,7 +81,8 @@ protected:
     void addRequest (std::string &fileName, CacheHolderType holderType);
 
     void provideResult(std::string &fileName, HFileContent content, CacheHolderType holderType);
-
 };
+
+typedef std::shared_ptr<RequestProcessor> HRequestProcessor;
 
 #endif //WEBWOWVIEWERCPP_REQUESTPROCESSOR_H

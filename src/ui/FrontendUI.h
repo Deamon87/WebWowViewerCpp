@@ -11,6 +11,7 @@
 #include "../../wowViewerLib/src/include/database/dbStructs.h"
 #include "../../wowViewerLib/src/engine/objects/iScene.h"
 #include "childWindow/mapConstructionWindow.h"
+#include "../minimapGenerator/minimapGenerator.h"
 
 
 class FrontendUI : public IScene {
@@ -49,6 +50,7 @@ private:
 
     std::function <void(float &cameraX,float &cameraY,float &cameraZ)> getCameraPos = nullptr;
     std::function <void(std::string fileName, int width, int height)> makeScreenshotCallback = nullptr;
+    std::function <void()> startExperimentCallback = nullptr;
 
     void getAdtSelectionMinimap(int wdtFileDataId) {
         m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
@@ -141,6 +143,7 @@ private:
 
    std::shared_ptr<MapConstructionWindow> m_mapConstructionWindow = nullptr;
 
+
 public:
     void overrideCascOpened(bool value) {
         cascOpened = value;
@@ -160,6 +163,8 @@ public:
     void setOpenM2SceneByFilenameCallback(std::function<void(std::string, std::vector<int>&)> callback);
     void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
     void setMakeScreenshotCallback( std::function <void(std::string fileName, int width, int height)> callback);
+
+    void setExperimentCallback(std::function <void()> callback);
 
     void setUnloadScene( std::function <void()> callback) {
         unloadScene = callback;

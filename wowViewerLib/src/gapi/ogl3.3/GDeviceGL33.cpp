@@ -327,7 +327,7 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 #ifdef SINGLE_BUFFER_UPLOAD
-void GDeviceGL33::updateBuffers(std::vector<std::vector<IUniformBufferChunk*>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
+void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
     int fullSize = 0;
     for (int i = 0; i < bufferChunks.size(); i++) {
         auto &bufferVec = bufferChunks[i];

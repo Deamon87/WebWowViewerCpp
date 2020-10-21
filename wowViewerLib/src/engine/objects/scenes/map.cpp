@@ -697,9 +697,9 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         mathfu::vec3 SkyFogColor = {0, 0, 0};
 
 
-        config->currentGlow = 0;
+        float currentGlow = 0;
         for (auto &_light : lightResults) {
-            config->currentGlow += _light.glow * _light.blendCoef;
+            currentGlow += _light.glow * _light.blendCoef;
             ambientColor += mathfu::vec3(_light.ambientColor) * _light.blendCoef;
             horizontAmbientColor += mathfu::vec3(_light.horizontAmbientColor) * _light.blendCoef;
             groundAmbientColor += mathfu::vec3(_light.groundAmbientColor) * _light.blendCoef;
@@ -720,6 +720,14 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 //        ambientColor *= ambientMult;
 //        groundAmbientColor *= ambientMult;
 //        horizontAmbientColor *= ambientMult;
+
+        if (config->glowSource == EParameterSource::eDatabase) {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->currentGlow = currentGlow;
+        } else if (config->glowSource == EParameterSource::eConfig) {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->currentGlow = config->currentGlow;
+        }
 
 
         if (config->globalLighting == EParameterSource::eDatabase) {
@@ -1421,7 +1429,8 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
     auto cullStage = updateStage->cullResult;
 
     if ( !m_suppressDrawingSky && (m_skyConeAlpha > 0) && (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit)) {
-        opaqueMeshes.push_back(skyMesh);
+        if (skyMesh != nullptr)
+            opaqueMeshes.push_back(skyMesh);
     }
 
 
@@ -1504,38 +1513,38 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
         }
     }
 
-    opaqueMeshes.erase(
-        std::remove_if(
-            opaqueMeshes.begin(),
-            opaqueMeshes.end(),
-            [](const HGMesh& item) { return item == nullptr;}),
-        opaqueMeshes.end());
-
-    updateStage->transparentMeshes->meshes.erase(
-        std::remove_if(
-            updateStage->transparentMeshes->meshes.begin(),
-            updateStage->transparentMeshes->meshes.end(),
-            [](const HGMesh& item) { return item == nullptr;}),
-        updateStage->transparentMeshes->meshes.end());
+//    opaqueMeshes.erase(
+//        std::remove_if(
+//            opaqueMeshes.begin(),
+//            opaqueMeshes.end(),
+//            [](const HGMesh& item) { return item == nullptr;}),
+//        opaqueMeshes.end());
+//
+//    updateStage->transparentMeshes->meshes.erase(
+//        std::remove_if(
+//            updateStage->transparentMeshes->meshes.begin(),
+//            updateStage->transparentMeshes->meshes.end(),
+//            [](const HGMesh& item) { return item == nullptr;}),
+//        updateStage->transparentMeshes->meshes.end());
 
     //1. Collect buffers
-    std::vector<IUniformBufferChunk *> &bufferChunks = updateStage->uniformBufferChunks;
+    std::vector<HGUniformBufferChunk> &bufferChunks = updateStage->uniformBufferChunks;
     int renderIndex = 0;
     for (const auto &mesh : opaqueMeshes) {
         for (int i = 0; i < 5; i++ ) {
             auto bufferChunk = mesh->getUniformBuffer(i);
 
             if (bufferChunk != nullptr) {
-                bufferChunks.push_back(bufferChunk.get());
+                bufferChunks.push_back(bufferChunk);
             }
         }
     }
-    for (const auto &mesh : transparentMeshes) {
+    for (const auto &mesh : updateStage->transparentMeshes->meshes) {
         for (int i = 0; i < 5; i++ ) {
             auto bufferChunk = mesh->getUniformBuffer(i);
 
             if (bufferChunk != nullptr) {
-                bufferChunks.push_back(bufferChunk.get());
+                bufferChunks.push_back(bufferChunk);
             }
         }
     }
@@ -1630,7 +1639,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 
     });
 
-    updateStage->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk.get());
+    updateStage->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
 
     if (frameBufferSupported) {
         doGaussBlur(resultDrawStage, origResultDrawStage, updateStage);
@@ -1663,7 +1672,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
     );
 
     auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-    updateStage->uniformBufferChunks.push_back(vertexChunk.get());
+    updateStage->uniformBufferChunks.push_back(vertexChunk);
     vertexChunk->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
         meshblockVS.x = 1;
@@ -1674,7 +1683,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
 
     auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    updateStage->uniformBufferChunks.push_back(ffxGaussFrag.get());
+    updateStage->uniformBufferChunks.push_back(ffxGaussFrag);
     ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {-1, 0, 0, -1};
@@ -1688,7 +1697,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
 
     auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    updateStage->uniformBufferChunks.push_back(ffxGaussFrag2.get());
+    updateStage->uniformBufferChunks.push_back(ffxGaussFrag2);
     ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {-6, -1, 1, 6};
@@ -1700,7 +1709,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         }
     });
     auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    updateStage->uniformBufferChunks.push_back(ffxGaussFrag3.get());
+    updateStage->uniformBufferChunks.push_back(ffxGaussFrag3);
     ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {0, 0, 0, 0};
@@ -1767,6 +1776,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
         auto glow = origResultDrawStage->frameDepedantData->currentGlow;
         auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+        updateStage->uniformBufferChunks.push_back(ffxGlowfragmentChunk);
         ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
             auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
             meshblockVS.x = 1;
@@ -1774,6 +1784,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
             meshblockVS.z = 0; //mix_coeficient
             meshblockVS.w = config->useGaussBlur ? fminf(0.5f, glow) : 0; //glow multiplier
         });
+
 
         auto shader = m_api->hDevice->getShader("fullScreen_quad", nullptr);
         gMeshTemplate meshTemplate(quadBindings, shader);

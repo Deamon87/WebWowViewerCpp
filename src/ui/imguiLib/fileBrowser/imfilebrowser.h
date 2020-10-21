@@ -2,7 +2,9 @@
 
 #include <array>
 #include <cstring>
+#include <iostream>
 #include <filesystem>
+#include <fstream>
 #include <functional>
 #include <memory>
 #include <string>
@@ -10,6 +12,7 @@
 #ifndef IMGUI_VERSION
 #   error "include imgui.h before this header"
 #endif
+
 
 using ImGuiFileBrowserFlags = int;
 

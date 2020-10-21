@@ -51,7 +51,9 @@
 #include "../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
 #include "screenshots/screenshotMaker.h"
 
-
+//TODO: Consider using dedicated buffers for uniform data for OGL in update thread, fill them up there
+//Anb upload these buffers from main thread just before drawing
+//Reason: void SceneComposer::DoUpdate takes 25% of time with OGL backend
 
 int mleft_pressed = 0;
 int mright_pressed = 0;
@@ -451,7 +453,7 @@ int main(){
 
 
     ApiContainer apiContainer;
-    RequestProcessor *processor = nullptr;
+    HRequestProcessor processor = nullptr;
 //    {
         const char * url = "https://wow.tools/casc/file/fname?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=";
         const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=data&filedataid=";
@@ -463,11 +465,11 @@ int main(){
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
 //        processor = new HttpRequestProcessor(url, urlFileId);
-        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
+        processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
 ////        processor->setThreaded(false);
 ////
         processor->setThreaded(true);
-        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor.get());
         processor->setFileRequester(apiContainer.cacheStorage.get());
 
 //    }
@@ -487,15 +489,14 @@ int main(){
     std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(&apiContainer);
     frontendUI->overrideCascOpened(true);
     frontendUI->setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
-        CascRequestProcessor *newProcessor = nullptr;
+        HRequestProcessor newProcessor = nullptr;
         std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
         try {
-            newProcessor = new CascRequestProcessor(cascPath.c_str());
-            newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor);
+            newProcessor = std::make_shared<CascRequestProcessor>(cascPath.c_str());
+            newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
             newProcessor->setThreaded(true);
             newProcessor->setFileRequester(newStorage.get());
         } catch (...){
-            delete newProcessor;
             return false;
         };
 
@@ -584,6 +585,15 @@ int main(){
 
         needToMakeScreenshot = true;
     });
+    HMinimapGenerator minimapGenerator;
+    frontendUI->setExperimentCallback([&apiContainer, &minimapGenerator, processor]() -> void {
+        minimapGenerator = std::make_shared<MinimapGenerator>(
+            apiContainer.cacheStorage,
+            apiContainer.hDevice,
+            processor
+        );
+        minimapGenerator->startScenario(0);
+    });
 
 
     glfwSetWindowUserPointer(window, &apiContainer);
@@ -623,12 +633,13 @@ int main(){
             }
             processor->processResults(10);
         }
-//        if (windowSizeChanged) {
-//            scene->setScreenSize(canvWidth, canvHeight);
-//            windowSizeChanged = false;
-//        }
 
-//        scene->draw((deltaTime*(1000.0f))); //miliseconds
+        if ((minimapGenerator != nullptr) && (minimapGenerator->isDone()))
+            minimapGenerator = nullptr;
+
+        if (minimapGenerator != nullptr) {
+            minimapGenerator->process();
+        }
 
         apiContainer.camera->tick(deltaTime*(1000.0f));
 
@@ -657,6 +668,9 @@ int main(){
                 screenshotFrame = apiContainer.hDevice->getFrameNumber();
             }
             needToMakeScreenshot = false;
+        }
+        if (minimapGenerator != nullptr) {
+            uiDependecies.push_back(minimapGenerator->createSceneDrawStage(sceneScenario));
         }
 
         //DrawStage for current frame

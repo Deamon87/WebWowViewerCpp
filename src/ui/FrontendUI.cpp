@@ -384,6 +384,11 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
             if (ImGui::MenuItem("Open MapConstruction")) {showMapConstruction = true;}
+            if (ImGui::MenuItem("Start experiment")) {
+                if (startExperimentCallback != nullptr) {
+                    startExperimentCallback();
+                }
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Make screenshot")) {
                 showMakeScreenshot = true;
@@ -944,6 +949,7 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
         return;
     }
 
+
     lastWidth = resultDrawStage->viewPortDimensions.maxs[0];
     lastHeight = resultDrawStage->viewPortDimensions.maxs[1];
 
@@ -956,7 +962,6 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
     if (fb_width <= 0 || fb_height <= 0) {
         return;
     }
-
 
     ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
     ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
@@ -1077,15 +1082,13 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
             auto bufferChunk = mesh->getUniformBuffer(i);
 
             if (bufferChunk != nullptr) {
-                bufferChunks.push_back(bufferChunk.get());
+                bufferChunks.push_back(bufferChunk);
             }
         }
     }
 
     std::sort( bufferChunks.begin(), bufferChunks.end());
     bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
-
-
 }
 
 void FrontendUI::setOpenWMOSceneByfdidCallback(std::function<void(int wmoFDid)> callback) {
@@ -1187,4 +1190,8 @@ void FrontendUI::produceUpdateStage(HUpdateStage updateStage) {
     this->update(updateStage);
 
 
+}
+
+void FrontendUI::setExperimentCallback(std::function<void()> callback) {
+    startExperimentCallback = callback;
 }

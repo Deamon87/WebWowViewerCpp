@@ -92,7 +92,7 @@ if (MSVC)
 	set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/zlib ${CMAKE_BINARY_DIR}/3rdparty/zlib)
 #	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 	if (CMAKE_BUILD_TYPE EQUAL "Debug")
-		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.lib")
+#		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.lib")
 	else()
 		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.lib")
 	endif()
@@ -102,7 +102,8 @@ endif()
 
 #libpng
 if (MSVC)
-	set(PNG_BUILD_ZLIB ON)
+	#set(PNG_BUILD_ZLIB ON)
+	set(PNG_BUILD_ZLIB OFF)
 else()
 	set(PNG_BUILD_ZLIB OFF)
 endif()
@@ -146,10 +147,10 @@ endif()
 if (WIN32)
 	set(WITH_LIBTOMCRYPT true)
 endif()
-option(CASC_BUILD_STATIC_LIB "" ON)
+set(CASC_BUILD_STATIC_LIB  1)
 option(CASC_BUILD_SHARED_LIB "" OFF)
 add_subdirectory(3rdparty/casclib)
-
+option(CASC_BUILD_STATIC_LIB "" 1)
 
 if (CMAKE_NDK_BUILD MATCHES 1)
 	target_compile_definitions(casc PUBLIC -DCMAKE_SYSTEM_NAME=Linux)
@@ -184,7 +185,10 @@ set(SOURCE_FILES
 		src/ui/FrontendUI.cpp src/ui/FrontendUI.h
 		src/database/CSqliteDB.cpp src/database/CSqliteDB.h
 		src/minimapGenerator/minimapGenerator.cpp
-		src/screenshots/screenshotMaker.h src/screenshots/screenshotMaker.cpp src/ui/childWindow/mapConstructionWindow.cpp src/ui/childWindow/mapConstructionWindow.h)
+		src/screenshots/screenshotMaker.h
+		src/screenshots/screenshotMaker.cpp
+		src/ui/childWindow/mapConstructionWindow.cpp
+		src/ui/childWindow/mapConstructionWindow.h)
 
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
@@ -251,7 +255,7 @@ add_dependencies(AWebWoWViewerCpp casc_static)
 
 #TODO: platform dependant!!
 add_dependencies(AWebWoWViewerCpp glfw)
-check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
+check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17) 
 if(HAVE_FLAG_STD_CXX17)
 	# Have -std=c++17, use it
 	message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
@@ -268,6 +272,20 @@ else()
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
 	else()
 		message(ERROR "No supported flags")
+	endif()
+endif() 
+
+if (MSVC)
+	include(CheckCXXCompilerFlag)
+	CHECK_CXX_COMPILER_FLAG("/std:c++17" _cpp_17_flag_supported)
+	message("MSVC Is on")
+	if (_cpp_17_flag_supported)
+		message("/std:c++17 is supported")
+		#target_compile_options(AWebWoWViewerCpp "/std:c++17")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++17")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++17")
+		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++17")
+		#target_compile_options(AWebWoWViewerCpp /std:c++17)
 	endif()
 endif()
 

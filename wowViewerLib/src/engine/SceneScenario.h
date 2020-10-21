@@ -59,7 +59,7 @@ struct UpdateStage {
     HMeshesToRender opaqueMeshes;
     HMeshesToRender transparentMeshes;
 
-    std::vector<IUniformBufferChunk *> uniformBufferChunks;
+    std::vector<HGUniformBufferChunk> uniformBufferChunks;
     //
 };
 typedef std::shared_ptr<UpdateStage> HUpdateStage;

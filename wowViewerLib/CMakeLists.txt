@@ -124,6 +124,8 @@ set(SOURCE_FILES
         src/engine/camera/firstPersonCamera.h
         src/engine/camera/firstPersonOrthoCamera.cpp
         src/engine/camera/firstPersonOrthoCamera.h
+        src/engine/camera/firstPersonOrthoStaticCamera.cpp
+        src/engine/camera/firstPersonOrthoStaticCamera.h
         src/include/config.h
         src/engine/camera/CameraInterface.h
         src/engine/persistance/header/commonFileStructs.h
@@ -240,7 +242,14 @@ set(SOURCE_FILES
         src/engine/DrawStage.h
         src/include/iostuff.h
         src/engine/ApiContainer.cpp
-        src/engine/ApiContainer.h src/engine/CameraMatrices.h src/engine/persistance/header/wdlHeader.h src/engine/camera/m2TiedCamera.cpp src/engine/camera/m2TiedCamera.h src/engine/persistance/header/M2FileHeader.cpp src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp src/engine/objects/m2/m2Helpers/CBoneMasterData.h)
+        src/engine/ApiContainer.h
+        src/engine/CameraMatrices.h
+        src/engine/persistance/header/wdlHeader.h
+        src/engine/camera/m2TiedCamera.cpp
+        src/engine/camera/m2TiedCamera.h
+        src/engine/persistance/header/M2FileHeader.cpp
+        src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp
+        src/engine/objects/m2/m2Helpers/CBoneMasterData.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -438,7 +447,9 @@ else()
 endif()
 
 add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
-target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
+if (NOT MSVC)
+    target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
+endif()
 foreach(X IN LISTS My_Vectorize_Compile_Options)
     target_compile_options(WoWViewerLib PRIVATE ${X})
 endforeach()
@@ -480,7 +491,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (1)
+if (0)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)

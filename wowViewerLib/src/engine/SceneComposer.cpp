@@ -110,11 +110,6 @@ void SceneComposer::DoCulling() {
 
     for (int i = 0; i < frameScenario->cullStages.size(); i++) {
         auto cullStage = frameScenario->cullStages[i];
-        auto config = m_apiContainer->getConfig();
-
-        float farPlane = config->farPlane;
-        float nearPlane = 1.0;
-        float fov = toRadian(45.0);
 
         cullStage->scene->checkCulling(cullStage);
     }
@@ -180,7 +175,7 @@ void SceneComposer::DoUpdate() {
     }
 
     std::vector<HFrameDepedantData> frameDepDataVec = {};
-    std::vector<std::vector<IUniformBufferChunk*>*> uniformChunkVec = {};
+    std::vector<std::vector<HGUniformBufferChunk>*> uniformChunkVec = {};
     for (auto updateStage : frameScenario->updateStages) {
         frameDepDataVec.push_back(updateStage->cullResult->frameDepedantData);
         uniformChunkVec.push_back(&updateStage->uniformBufferChunks);

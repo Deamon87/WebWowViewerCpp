@@ -2,6 +2,8 @@
 // Created by deamon on 24.12.19.
 //
 
+#include <array>
+
 #ifndef AWEBWOWVIEWERCPP_DBSTRUCTS_H
 #define AWEBWOWVIEWERCPP_DBSTRUCTS_H
 struct MapRecord {
@@ -47,7 +49,7 @@ struct LightResult {
     int skyBoxFdid;
     int skyBoxFlags;
     int lightSkyboxId;
-    float glow;
+    float glow = 0;
     float blendCoef;
     bool isDefault = false;
 };
