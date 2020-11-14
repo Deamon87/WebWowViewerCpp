@@ -9,7 +9,7 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "mathfu/glsl_mappings.h"
 
-AnimationManager::AnimationManager(ApiContainer *api, std::shared_ptr<CBoneMasterData> boneMasterData, bool hasExp2) {
+AnimationManager::AnimationManager(HApiContainer api, std::shared_ptr<CBoneMasterData> boneMasterData, bool hasExp2) {
     this->m_api = api;
     this->boneMasterData = boneMasterData;
 

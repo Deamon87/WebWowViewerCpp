@@ -15,7 +15,7 @@ class WmoGroupObject;
 
 class WmoGroupObject {
 public:
-    WmoGroupObject(mathfu::mat4 &modelMatrix, ApiContainer *api, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
+    WmoGroupObject(mathfu::mat4 &modelMatrix, HApiContainer api, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
         m_modelMatrix = &modelMatrix;
         m_groupNumber = groupNumber;
         m_main_groupInfo = &groupInfo;
@@ -62,7 +62,7 @@ public:
                             PointerChecker<SMOPortalRef> &portalRels,
                             std::vector<WmoGroupResult> &candidateGroups);
 private:
-    ApiContainer *m_api = nullptr;
+    HApiContainer m_api = nullptr;
     IWmoApi *m_wmoApi = nullptr;
     HWmoGroupGeom m_geom = nullptr;
 

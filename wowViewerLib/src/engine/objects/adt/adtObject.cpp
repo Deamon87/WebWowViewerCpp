@@ -1127,9 +1127,9 @@ bool AdtObject::checkReferences(
                           std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                           std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
                           int x, int y, int x_len, int y_len) {
-    m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
-
     if (!m_loaded) return false;
+
+    m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
 
     for (int k = x; k < x+x_len; k++) {
         for (int l = y; l < y + y_len; l++) {
@@ -1247,7 +1247,7 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
     return atLeastOneIsDrawn;
 }
 
-AdtObject::AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(), adt_x(adt_x), adt_y(adt_y){
+AdtObject::AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(), adt_x(adt_x), adt_y(adt_y){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     waterTileAabb = std::vector<CAaBox>(256);
@@ -1273,7 +1273,7 @@ AdtObject::AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::strin
 
 }
 
-AdtObject::AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile): adt_x(adt_x), adt_y(adt_y) {
+AdtObject::AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtFile): adt_x(adt_x), adt_y(adt_y) {
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     waterTileAabb = std::vector<CAaBox>(256);
@@ -1298,6 +1298,9 @@ AdtObject::AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDa
 }
 
 int AdtObject::getAreaId(int mcnk_x, int mcnk_y) {
+    if (!m_loaded) {
+        return 0;
+    }
     auto index = m_adtFile->mcnkMap[mcnk_x][mcnk_y];
     if (index > -1) {
         return m_adtFile->mapTile[index].areaid;

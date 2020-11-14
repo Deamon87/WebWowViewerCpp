@@ -35,7 +35,7 @@ public:
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
     std::array<HGVertexBufferBindings, 4> createDynamicVao(IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
                                                                SkinGeom *skinGeom, M2SkinSection *skinSection);
-    void loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t subAnimationId);
+    void loadLowPriority(HApiContainer m_api, uint32_t animationId, uint32_t subAnimationId);
 
     M2Data * getM2Data(){ if (fsStatus == FileStatus::FSLoaded) {return m_m2Data;} else {return nullptr;}};
 

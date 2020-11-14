@@ -26,6 +26,7 @@ public:
     bool useInstancing = false;
 
     bool disableFog = false;
+    bool renderSkyDom = true;
     bool fogDataFound = false;
 
     bool drawWmoBB = false;
@@ -89,21 +90,21 @@ public:
     mathfu::vec4 SkyFogColor;
 
     EParameterSource globalFog = EParameterSource::eDatabase;
-    mathfu::vec4 actualFogColor;
-    float FogEnd;
-    float FogScaler;
-    float FogDensity;
-    float FogHeight;
-    float FogHeightScaler;
-    float FogHeightDensity;
-    float SunFogAngle;
-    mathfu::vec3 FogColor;
-    mathfu::vec3 EndFogColor;
-    float EndFogColorDistance;
-    mathfu::vec3 SunFogColor;
-    float SunFogStrength;
-    mathfu::vec3 FogHeightColor;
-    mathfu::vec4 FogHeightCoefficients;
+    mathfu::vec4 actualFogColor = mathfu::vec4(1,1,1, 1);
+    float FogEnd = 0;
+    float FogScaler = 0;
+    float FogDensity = 0;
+    float FogHeight = 0;
+    float FogHeightScaler = 0;
+    float FogHeightDensity = 0;
+    float SunFogAngle = 0;
+    mathfu::vec3 FogColor = mathfu::vec3(0,0,0);
+    mathfu::vec3 EndFogColor = mathfu::vec3(0,0,0);
+    float EndFogColorDistance = 0;
+    mathfu::vec3 SunFogColor = mathfu::vec3(0,0,0);
+    float SunFogStrength = 0;
+    mathfu::vec3 FogHeightColor = mathfu::vec3(0,0,0);
+    mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0,0,0,0);
 
     std::string areaName;
 

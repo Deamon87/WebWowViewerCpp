@@ -12,6 +12,12 @@
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
 #include "childWindow/mapConstructionWindow.h"
+#include "../persistance/CascRequestProcessor.h"
+#include "../../wowViewerLib/src/engine/objects/scenes/map.h"
+#include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
+#include "../../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
+#include "../../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
+#include "../screenshots/screenshotMaker.h"
 
 
 static const GBufferBinding imguiBindings[3] = {
@@ -59,21 +65,20 @@ void FrontendUI::composeUI() {
 
     if (fileDialog.HasSelected()) {
         std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
-        if (openCascCallback) {
-            if (!openCascCallback(fileDialog.GetSelected().string())) {
-                ImGui::OpenPopup("Casc failed");
-                cascOpened = false;
-            } else {
-                ImGui::OpenPopup("Casc succesed");
-                cascOpened = true;
-            }
+
+        if (!openCascCallback(fileDialog.GetSelected().string())) {
+            ImGui::OpenPopup("Casc failed");
+            cascOpened = false;
+        } else {
+            ImGui::OpenPopup("Casc succesed");
+            cascOpened = true;
         }
         fileDialog.ClearSelected();
     }
     if (createFileDialog.HasSelected()) {
-        if (makeScreenshotCallback) {
-            makeScreenshotCallback(createFileDialog.GetSelected().string(), screenShotWidth, screenShotHeight);
-        }
+        screenshotFilename = createFileDialog.GetSelected().string();
+        needToMakeScreenshot = true;
+
         createFileDialog.ClearSelected();
     }
 
@@ -102,9 +107,7 @@ void FrontendUI::showCurrentStatsDialog() {
                      &showCurrentStats);                          // Create a window called "Hello, world!" and append into it.
 
         static float cameraPosition[3] = {0, 0, 0};
-        if (getCameraPos) {
-            getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
-        }
+        getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
 
         ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
                     cameraPosition[2]);               // Display some text (you can use a format strings too)
@@ -338,10 +341,10 @@ void FrontendUI::showAdtSelectionMinimap() {
     if (ImGui::BeginPopup("AdtWorldCoordsTest", ImGuiWindowFlags_NoMove)) {
         ImGui::Text("Pos: (%.2f,%.2f,200)", worldPosX, worldPosY);
         if (ImGui::Button("Go")) {
-            if (openSceneByfdid) {
-                openSceneByfdid(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
-                showSelectMap = false;
-            }
+
+            openSceneByfdid(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+            showSelectMap = false;
+
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -371,9 +374,7 @@ void FrontendUI::showMainMenu() {
                 showSelectMap = true;
             }
             if (ImGui::MenuItem("Unload scene", "", false, cascOpened)) {
-                if (unloadScene) {
-                    unloadScene();
-                }
+                unloadScene();
             }
             ImGui::EndMenu();
         }
@@ -385,9 +386,7 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
             if (ImGui::MenuItem("Open MapConstruction")) {showMapConstruction = true;}
             if (ImGui::MenuItem("Start experiment")) {
-                if (startExperimentCallback != nullptr) {
-                    startExperimentCallback();
-                }
+                startExperimentCallback();
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Make screenshot")) {
@@ -445,17 +444,6 @@ bool FrontendUI::getStopKeyboard() {
     return io.WantCaptureKeyboard;
 }
 
-void FrontendUI::setOpenCascStorageCallback(std::function<bool(std::string cascPath)> callback) {
-    openCascCallback = callback;
-}
-
-void FrontendUI::setOpenSceneByfdidCallback(std::function<void(int mapId, int wdtFileId, float x, float y, float z)> callback) {
-    openSceneByfdid = callback;
-}
-
-void FrontendUI::setGetCameraPos(std::function<void(float &cameraX, float &cameraY, float &cameraZ)> callback) {
-    getCameraPos = callback;
-}
 
 
 void FrontendUI::showQuickLinksDialog() {
@@ -464,265 +452,186 @@ void FrontendUI::showQuickLinksDialog() {
 
     ImGui::Begin("Quick Links", &showQuickLinks);
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
-            openWMOSceneByfdid(2756726);
-        }
+        openWMOSceneByfdid(2756726);
     }
     if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
-            openWMOSceneByfdid(1247268);
-        }
+        openWMOSceneByfdid(1247268);
     }
 
     if (ImGui::Button("Some item", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[1] = 528801;
             for (auto &fdid: replacementTextureFDids) {
                 fdid = 1029337;
             }
             openM2SceneByfdid(1029334, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Fox", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3071379;
 
             openM2SceneByfdid(3071370, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Northrend Human Inn", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
             openWMOSceneByfdid(114998);
-        }
     }
     if (ImGui::Button("Strange WMO", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
             openWMOSceneByfdid(2342637);
-        }
     }
     if (ImGui::Button("Flyingsprite", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
 
             replacementTextureFDids[11] = 3059000;
             openM2SceneByfdid(3024835, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("maldraxxusflyer", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3196375;
             openM2SceneByfdid(3196372, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("ridingphoenix", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
 
             openM2SceneByfdid(125644, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Upright Orc", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[1] = 3844710;
             openM2SceneByfdid(1968587, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("quillboarbrute.m2", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 1786107;
             openM2SceneByfdid(1784020, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("WMO With Horde Symbol", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
             openWMOSceneByfdid(1846142);
-        }
     }
     if (ImGui::Button("WMO 3565693", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
             openWMOSceneByfdid(3565693);
-        }
     }
 
     if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(131982, replacementTextureFDids);
             //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
             m_api->getConfig()->BCLightHack = true;
-
-        }
     }
     if (ImGui::Button("Wrath login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(236122, replacementTextureFDids);
-        }
     }
 
     if (ImGui::Button("Cataclysm login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(466614, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Panda login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(631713, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Draenor login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByName) {
             openM2SceneByName("interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(1396280, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
-        }
     }
     if (ImGui::Button("BfA login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(2021650, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
-        }
     }
     if (ImGui::Button("Shadowlands login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3846560, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
-        }
     }
 
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3445776, replacementTextureFDids);
-        }
     }
 
     if (ImGui::Button("Pink serpent", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
 
             replacementTextureFDids[11] = 2905480;
             replacementTextureFDids[12] = 2905481;
             replacementTextureFDids[13] = 577442;
             openM2SceneByfdid(577443, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Wolf", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
 
             replacementTextureFDids[11] = 126494;
             replacementTextureFDids[12] = 126495;
             replacementTextureFDids[13] = 0;
             openM2SceneByfdid(126487, replacementTextureFDids);
-        }
     }
 
     if (ImGui::Button("Aggramar", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 1599776;
             openM2SceneByfdid(1599045, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("M2 3087468", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3087540;
             openM2SceneByfdid(3087468, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("M2 3572296", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3572296, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("M2 3487959", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3487959, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("M2 1729717 waterfall", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(1729717, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Maw jailer", ImVec2(-1, 0))) {
 //        3096499,3096495
         replacementTextureFDids = std::vector<int>(17);
         replacementTextureFDids[11] = 3096499;
         replacementTextureFDids[12] = 3096495;
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3095966, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Creature with colors", ImVec2(-1, 0))) {
 //        3096499,3096495
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(1612576, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("IC new sky", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3159936, replacementTextureFDids);
-        }
     }
 
 
     if (ImGui::Button("vampire candle", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3184581, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Bog Creature", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3732358;
             replacementTextureFDids[12] = 3732360;
             replacementTextureFDids[13] = 3732368;
 
             openM2SceneByfdid(3732303, replacementTextureFDids);
-        }
     }
 
     ImGui::Separator();
     ImGui::Text("Models for billboard checking");
     ImGui::NewLine();
     if (ImGui::Button("Dalaran dome", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(203598, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Gift of Nzoth", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(2432705, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Plagueheart Shoulderpad", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(143343, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Dalaran eye", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(243044, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Hand weapon", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[1] = 528801;
             for (auto &fdid: replacementTextureFDids) {
                 fdid = 528801;
             }
             openM2SceneByfdid(528797, replacementTextureFDids);
-        }
     }
 
     ImGui::End();
@@ -804,15 +713,17 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->useGaussBlur = useGaussBlur;
         }
 
+        if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
+            m_api->getConfig()->useGaussBlur = useGaussBlur;
+        }
+
         pauseAnimation = m_api->getConfig()->pauseAnimation;
         if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
             m_api->getConfig()->pauseAnimation = pauseAnimation;
         }
 
         if (ImGui::Button("Reset Animation")) {
-            if (resetAnimationCallback) {
                 resetAnimationCallback();
-            }
         }
 
         ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
@@ -820,7 +731,7 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->currentTime = currentTime;
         }
 
-        if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 10)) {
+        if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 100)) {
             m_api->camera->setMovementSpeed(movementSpeed);
         }
 
@@ -1091,32 +1002,11 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
     bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
 }
 
-void FrontendUI::setOpenWMOSceneByfdidCallback(std::function<void(int wmoFDid)> callback) {
-    this->openWMOSceneByfdid = callback;
-}
-
-void FrontendUI::setOpenM2SceneByfdidCallback(std::function<void(int, std::vector<int>&)> callback) {
-    this->openM2SceneByfdid = callback;
-}
-
-void FrontendUI::setOpenM2SceneByFilenameCallback(std::function<void(std::string, std::vector<int>&)> callback) {
-    this->openM2SceneByName = callback;
-}
 
 void FrontendUI::getMapList(std::vector<MapRecord> &mapList) {
     if (m_api->databaseHandler == nullptr)  return;
 
     m_api->databaseHandler->getMapArray(mapList);
-}
-
-void FrontendUI::setGetCameraNum(std::function <int()> callback) {
-    getCameraNumCallback = callback;
-}
-void FrontendUI::setSelectNewCamera(std::function <bool(int cameraNum)> callback) {
-    setNewCameraCallback = callback;
-}
-void FrontendUI::setResetAnimation(std::function <void()> callback) {
-    resetAnimationCallback = callback;
 }
 
 bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap,
@@ -1149,10 +1039,6 @@ bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 6
 std::string FrontendUI::getCurrentAreaName() {
     auto conf = m_api->getConfig();
     return conf->areaName;
-}
-
-void FrontendUI::setMakeScreenshotCallback(std::function<void(std::string fileName, int, int)> callback) {
-    makeScreenshotCallback = callback;
 }
 
 void FrontendUI::showMakeScreenshotDialog() {
@@ -1192,6 +1078,252 @@ void FrontendUI::produceUpdateStage(HUpdateStage updateStage) {
 
 }
 
-void FrontendUI::setExperimentCallback(std::function<void()> callback) {
-    startExperimentCallback = callback;
+HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
+                                ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene) {
+    float farPlaneRendering = apiContainer.getConfig()->farPlane;
+    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
+
+    float nearPlane = 1.0;
+    float fov = toRadian(45.0);
+
+    float canvasAspect = (float)width / (float)height;
+
+    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    HCameraMatrices cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+    //Frustum matrix with reversed Z
+
+    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+    if (isInfZSupported)
+    {
+        float f = 1.0f / tan(fov / 2.0f);
+        cameraMatricesRendering->perspectiveMat = mathfu::mat4(
+            f / canvasAspect, 0.0f,  0.0f,  0.0f,
+            0.0f,    f,  0.0f,  0.0f,
+            0.0f, 0.0f,  1, -1.0f,
+            0.0f, 0.0f, 1,  0.0f);
+    }
+
+    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
+        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
+
+        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
+                                                                  0, -1, 0, 0,
+                                                                  0, 0, 1.0/2.0, 1/2.0,
+                                                                  0, 0, 0, 1).Transpose();
+
+        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
+    }
+
+    auto clearColor = apiContainer.getConfig()->clearColor;
+
+    if (currentScene != nullptr) {
+        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
+
+        HFrameBuffer fb = nullptr;
+        if (isScreenshot) {
+            fb = apiContainer.hDevice->createFrameBuffer(width, height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32, 4);
+        }
+
+        auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
+        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
+        std::vector<HDrawStage> drawStageDependencies = {};
+        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, drawStageDependencies, true,
+                                                                dimensions,
+                                                                true, isInfZSupported, clearColor, fb);
+
+        return sceneDrawStage;
+    }
+
+    return nullptr;
+}
+
+HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, double deltaTime) {
+    if ((minimapGenerator != nullptr) && (minimapGenerator->isDone()))
+        minimapGenerator = nullptr;
+
+    if (minimapGenerator != nullptr) {
+        minimapGenerator->process();
+    }
+
+    if (screenshotDS != nullptr) {
+        if (screenshotFrame + 5 <= m_api->hDevice->getFrameNumber()) {
+            std::vector<uint8_t> buffer = std::vector<uint8_t>(screenShotWidth*screenShotHeight*4+1);
+
+            saveDataFromDrawStage(screenshotDS->target, screenshotFilename, screenShotWidth, screenShotHeight, buffer);
+
+            screenshotDS = nullptr;
+        }
+    }
+
+
+    HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
+    std::vector<HDrawStage> uiDependecies = {};
+
+    if (needToMakeScreenshot)
+    {
+        auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true, *m_api,
+                                              currentScene);
+        if (drawStage != nullptr) {
+            uiDependecies.push_back(drawStage);
+            screenshotDS = drawStage;
+            screenshotFrame = m_api->hDevice->getFrameNumber();
+        }
+        needToMakeScreenshot = false;
+    }
+    if (minimapGenerator != nullptr) {
+        uiDependecies.push_back(minimapGenerator->createSceneDrawStage(sceneScenario));
+    }
+
+    //DrawStage for current frame
+    bool clearOnUi = true;
+    if (currentScene != nullptr && m_api->camera != nullptr)
+    {
+        auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime, false, *m_api,
+                                              currentScene);
+        if (drawStage != nullptr) {
+            uiDependecies.push_back(drawStage);
+            clearOnUi = false;
+        }
+    }
+    //DrawStage for UI
+    {
+        ViewPortDimensions dimension = {
+            {0,     0},
+            {canvWidth, canvHeight}
+        };
+        auto clearColor = m_api->getConfig()->clearColor;
+
+        auto uiCullStage = sceneScenario->addCullStage(nullptr, getShared());
+        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
+        HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, getShared(), nullptr, uiDependecies,
+                                                                  true, dimension, clearOnUi, false, clearColor, nullptr);
+    }
+
+    return sceneScenario;
+}
+
+bool FrontendUI::openCascCallback(std::string cascPath) {
+    HRequestProcessor newProcessor = nullptr;
+    std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
+    try {
+        newProcessor = std::make_shared<CascRequestProcessor>(cascPath.c_str());
+        newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
+        newProcessor->setThreaded(true);
+        newProcessor->setFileRequester(newStorage.get());
+    } catch (...){
+        return false;
+    };
+
+    m_api->cacheStorage = newStorage;
+    m_processor = newProcessor;
+
+    return true;
+}
+
+void FrontendUI::openSceneByfdid(int mapId, int wdtFileId, float x, float y, float z) {
+    if (m_api->cacheStorage) {
+//            storage->actuallDropCache();
+    }
+
+    currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
+    m_api->camera = std::make_shared<FirstPersonCamera>();
+    m_api->camera->setCameraPos(x, y, z);
+}
+
+void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
+    currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
+    m_api->camera->setCameraPos(0, 0, 0);
+}
+
+void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
+    currentScene = std::make_shared<M2Scene>(m_api, m2Fdid, -1);
+    currentScene->setReplaceTextureArray(replacementTextureIds);
+
+
+    m_api->camera = std::make_shared<FirstPersonCamera>();
+    m_api->getConfig()->BCLightHack = false;
+//
+    m_api->camera->setCameraPos(0, 0, 0);
+}
+
+void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds) {
+    currentScene = std::make_shared<M2Scene>(m_api, m2FileName, -1);
+    currentScene->setReplaceTextureArray(replacementTextureIds);
+
+    m_api->camera = std::make_shared<FirstPersonCamera>();
+    m_api->camera->setCameraPos(0, 0, 0);
+}
+
+void FrontendUI::unloadScene() {
+    if (m_api->cacheStorage) {
+        m_api->cacheStorage->actuallDropCache();
+    }
+    currentScene = nullptr;
+}
+
+int FrontendUI::getCameraNumCallback() {
+    if (currentScene != nullptr) {
+        return currentScene->getCameraNum();
+    }
+
+    return 0;
+}
+
+bool FrontendUI::setNewCameraCallback(int cameraNum) {
+    if (currentScene == nullptr) return false;
+
+    auto newCamera = currentScene->createCamera(cameraNum);
+    if (newCamera == nullptr) {
+        m_api->camera = std::make_shared<FirstPersonCamera>();
+        return false;
+    }
+
+    m_api->camera = newCamera;
+    return true;
+}
+
+void FrontendUI::resetAnimationCallback() {
+    currentScene->resetAnimation();
+}
+
+void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
+    if (m_api->camera == nullptr) {
+        cameraX = 0; cameraY = 0; cameraZ = 0;
+        return;
+    }
+    float currentCameraPos[4] = {0,0,0,0};
+    m_api->camera->getCameraPosition(&currentCameraPos[0]);
+    cameraX = currentCameraPos[0];
+    cameraY = currentCameraPos[1];
+    cameraZ = currentCameraPos[2];
+}
+
+void FrontendUI::startExperimentCallback() {
+    minimapGenerator = std::make_shared<MinimapGenerator>(
+        m_api->cacheStorage,
+        m_api->hDevice,
+        m_processor,
+        m_api->databaseHandler
+    );
+    minimapGenerator->startScenario(0);
+}
+
+void FrontendUI::createDefaultprocessor() {
+
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=data&filedataid=";
+//
+//Classics
+//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
+//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
+//        processor = new HttpZipRequestProcessor(url);
+////        processor = new ZipRequestProcessor(filePath);
+////        processor = new MpqRequestProcessor(filePath);
+//        processor = new HttpRequestProcessor(url, urlFileId);
+    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
+////        processor->setThreaded(false);
+////
+    m_processor->setThreaded(true);
+    m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_processor.get());
+    m_processor->setFileRequester(m_api->cacheStorage.get());
 }

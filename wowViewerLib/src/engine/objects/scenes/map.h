@@ -24,8 +24,16 @@ enum class SceneMode {
 };
 
 class Map : public IMapApi, public IScene {
+private:
+    void initMapTiles() {
+        for (auto &x : mapTiles) {
+            for (auto &y : x) {
+                y = nullptr;
+            }
+        }
+    }
 protected:
-    ApiContainer *m_api = nullptr;
+    HApiContainer m_api = nullptr;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
     std::string mapName;
 
@@ -102,12 +110,15 @@ protected:
     };
     std::vector<mapInnerZoneLightRecord> m_zoneLights;
     void loadZoneLights();
+
 public:
 
     explicit Map() {
     }
 
-    explicit Map(ApiContainer *api, int mapId, std::string mapName) {
+    explicit Map(HApiContainer api, int mapId, std::string mapName) {
+        initMapTiles();
+
         m_mapId = mapId; m_api = api; mapName = mapName;
         m_sceneMode = SceneMode::smMap;
 
@@ -121,7 +132,9 @@ public:
         loadZoneLights();
     };
 
-    explicit Map(ApiContainer *api, int mapId, int wdtFileDataId) {
+    explicit Map(HApiContainer api, int mapId, int wdtFileDataId) {
+        initMapTiles();
+
         m_mapId = mapId; m_api = api; mapName = "";
         m_sceneMode = SceneMode::smMap;
 
@@ -130,7 +143,9 @@ public:
         loadZoneLights();
     };
 
-    explicit Map(ApiContainer *api, std::string adtFileName, int i, int j, std::string mapName) {
+    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) {
+        initMapTiles();
+
         m_mapId = 0; m_api = api; this->mapName = mapName;
         m_sceneMode = SceneMode::smMap;
 

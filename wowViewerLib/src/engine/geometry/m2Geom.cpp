@@ -362,7 +362,7 @@ HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {
 
 
 
-void M2Geom::loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t variationId) {
+void M2Geom::loadLowPriority(HApiContainer m_api, uint32_t animationId, uint32_t variationId) {
     int animationIndex = findAnimationIndex(animationId, &m_m2Data->sequence_lookups, &m_m2Data->sequences);
     if (animationIndex < 0) return;
 

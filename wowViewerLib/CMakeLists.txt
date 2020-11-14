@@ -116,7 +116,6 @@ endif(LINK_GLEW)
 
 
 set(SOURCE_FILES
-        src/engine/wowScene.h
         src/engine/shader/ShaderRuntimeData.cpp
         src/engine/shader/ShaderRuntimeData.h
         src/engine/opengl/header.h

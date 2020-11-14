@@ -15,7 +15,7 @@
 
 class SceneComposer {
 private:
-    ApiContainer *m_apiContainer = nullptr;
+    HApiContainer m_apiContainer = nullptr;
 private:
     std::thread cullingThread;
     std::thread updateThread;
@@ -37,7 +37,7 @@ private:
 
     std::array<HFrameScenario, 4> m_frameScenarios;
 public:
-    SceneComposer(ApiContainer *apiContainer);
+    SceneComposer(HApiContainer apiContainer);
 
 
     void draw(HFrameScenario frameScenario);

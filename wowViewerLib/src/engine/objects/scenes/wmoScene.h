@@ -26,7 +26,7 @@ private:
                                std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) override;
 public:
 
-    explicit WmoScene(ApiContainer *api, std::string wmoModel) {
+    explicit WmoScene(HApiContainer api, std::string wmoModel) {
         m_api = api; m_wmoModel = wmoModel;
         m_sceneMode = SceneMode::smWMO;
         m_suppressDrawingSky = true;
@@ -46,7 +46,7 @@ public:
         m_wmoObject = wmoObject;
     };
 
-    explicit WmoScene(ApiContainer *api, int fileDataId) {
+    explicit WmoScene(HApiContainer api, int fileDataId) {
         m_api = api;
         m_sceneMode = SceneMode::smWMO;
         m_suppressDrawingSky = true;

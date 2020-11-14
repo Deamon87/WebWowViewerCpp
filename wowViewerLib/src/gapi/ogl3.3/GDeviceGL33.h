@@ -50,6 +50,13 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 #define OPENGL_DGB_MESSAGE 0
 #endif
 
+//#define logGLError { \
+//  auto currentOGLError = glGetError(); \
+//  if (currentOGLError != 0)            \
+//    std::cout << "OGL Error at "<<__FUNCTION__<<" line " << __LINE__ << " error " << currentOGLError << " " << std::endl;\
+//}
+#define logGLError
+
 class GDeviceGL33 : public IDevice {
 public:
     GDeviceGL33();

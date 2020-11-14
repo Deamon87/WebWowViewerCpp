@@ -26,7 +26,7 @@ class M2Object;
 
 class M2Object {
 public:
-    M2Object(ApiContainer *api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
+    M2Object(HApiContainer api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
         m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox), m_overrideSkyModelMat(overrideSkyModelMat)
         {
     }
@@ -74,7 +74,7 @@ private:
     CAaBox aabb;
     CAaBox colissionAabb;
 
-    ApiContainer *m_api = nullptr;
+    HApiContainer m_api = nullptr;
 
     HM2Geom m_m2Geom = nullptr;
     HSkinGeom m_skinGeom = nullptr;

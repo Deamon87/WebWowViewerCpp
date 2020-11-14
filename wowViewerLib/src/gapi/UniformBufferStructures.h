@@ -9,7 +9,7 @@
 #include <mathfu/glsl_mappings.h>
 #include "mathfu/glsl_mappings.h"
 
-#define MAX_MATRIX_NUM 220
+#define MAX_MATRIX_NUM 110
 
 struct PSFog
 {

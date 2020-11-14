@@ -12,7 +12,7 @@
 
 class MinimapGenerator {
 private:
-    ApiContainer m_apiContainer;
+    HApiContainer m_apiContainer;
     HRequestProcessor m_processor;
     int currentScenario = -1;
 
@@ -24,19 +24,29 @@ private:
     int m_x = 0;
     int m_y = 0;
 
+    float XToYCoef = 0;
+    bool XToYCoefCalculated = false;
 
+    int m_chunkStartX = -32;
+    int m_chunkStartY= -32;
+    int m_chunkWidth = 64;
+    int m_chunkHeight = 64;
 
     std::list<HDrawStage> drawStageStack = {};
     int framesReady = 0;
+
+    mathfu::mat4 getOrthoMatrix();
 public:
 
-    MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice, HRequestProcessor processor);
+    MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice, HRequestProcessor processor, IClientDatabase*);
 
     void startScenario(int scenarioId);
     void process();
     bool isDone();
     void setupCameraData();
     HDrawStage createSceneDrawStage(HFrameScenario sceneScenario);
+
+    float GetOrthoDimension();
 };
 
 typedef std::shared_ptr<MinimapGenerator> HMinimapGenerator;

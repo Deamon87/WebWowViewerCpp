@@ -24,8 +24,8 @@ class M2Object;
 
 class AdtObject {
 public:
-    AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
-    AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
+    AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
+    AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
     ~AdtObject() = default;
 
     void setMapApi(IMapApi *api) {
@@ -79,7 +79,7 @@ private:
     void createMeshes();
     void loadAlphaTextures();
 
-    ApiContainer *m_api;
+    HApiContainer m_api;
     IMapApi *m_mapApi;
     HWdtFile m_wdtFile= nullptr;
 

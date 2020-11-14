@@ -123,12 +123,12 @@ void WdlObject::loadingFinished() {
     this->loadWmos();
 }
 
-WdlObject::WdlObject(ApiContainer *api, std::string &wdlFileName) {
+WdlObject::WdlObject(HApiContainer api, std::string &wdlFileName) {
     m_api = api;
     m_wdlFile = m_api->cacheStorage->getWdlFileCache()->get(wdlFileName);
 }
 
-WdlObject::WdlObject(ApiContainer *api, int wdlFileDataId) {
+WdlObject::WdlObject(HApiContainer api, int wdlFileDataId) {
     m_api = api;
     m_wdlFile = m_api->cacheStorage->getWdlFileCache()->getFileId(wdlFileDataId);
 }

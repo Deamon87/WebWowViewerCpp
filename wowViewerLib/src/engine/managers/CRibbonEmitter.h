@@ -72,7 +72,7 @@ class CRibbonEmitter {
     int m_priority;
 
 private:
-    ApiContainer *m_api;
+    HApiContainer m_api;
 
     struct RibbonFrame {
         HGIndexBuffer m_indexVBO;
@@ -88,7 +88,7 @@ private:
     void createMesh(M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
 
 public:
-    CRibbonEmitter(ApiContainer *m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
+    CRibbonEmitter(HApiContainer m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
     void SetDataEnabled(char a2);
     void SetUserEnabled(char a2);
     CRibbonEmitter *SetGravity(float a2);

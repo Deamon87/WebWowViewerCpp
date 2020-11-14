@@ -14,7 +14,7 @@ static GBufferBinding staticRibbonBindings[3] = {
 };
 
 //----- (00A19710) --------------------------------------------------------
-CRibbonEmitter::CRibbonEmitter(ApiContainer *api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) : m_api(api)
+CRibbonEmitter::CRibbonEmitter(HApiContainer api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) : m_api(api)
 {
   this->m_refCount = 1;
   this->m_prevPos.x = 0.0;

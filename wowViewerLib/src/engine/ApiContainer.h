@@ -5,7 +5,9 @@
 #ifndef AWEBWOWVIEWERCPP_APICONTAINER_H
 #define AWEBWOWVIEWERCPP_APICONTAINER_H
 
+#include <memory>
 class ApiContainer;
+typedef std::shared_ptr<ApiContainer> HApiContainer;
 
 #include <memory>
 #include "WowFilesCacheStorage.h"
@@ -28,9 +30,9 @@ public:
     Config *getConfig() {
         return &config;
     }
-
-
 };
+
+typedef std::shared_ptr<ApiContainer> HApiContainer;
 
 
 #endif //AWEBWOWVIEWERCPP_APICONTAINER_H

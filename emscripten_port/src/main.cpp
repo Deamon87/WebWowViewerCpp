@@ -271,6 +271,15 @@ extern "C" {
 
 
         apiContainer.camera = firstPersonCamera;
+        apiContainer.getConfig()->globalLighting = EParameterSource::eConfig;
+
+        auto ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
+
+        apiContainer.getConfig()->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        apiContainer.getConfig()->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        apiContainer.getConfig()->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        apiContainer.getConfig()->exteriorDirectColor = mathfu::vec4(0.3,0.3,0.3,0.3);
+        apiContainer.getConfig()->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
 
         emscripten_run_script("Module['hammerJsAssignControl']()");
 
@@ -420,15 +429,15 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     void setClearColor(float r, float g, float b) {
-        apiContainer.getConfig()->setClearColor(r,g,b,0.0);
+        apiContainer.getConfig()->clearColor = mathfu::vec4(r,g,b,0.0);
     }
     EMSCRIPTEN_KEEPALIVE
     void setFarPlane(float value) {
-        apiContainer.getConfig()->setFarPlane(value);
+        apiContainer.getConfig()->farPlane = value;
     }
     EMSCRIPTEN_KEEPALIVE
     void setFarPlaneForCulling(float value) {
-        apiContainer.getConfig()->setFarPlaneForCulling(value);
+        apiContainer.getConfig()->farPlaneForCulling = value;
     }
 
     EMSCRIPTEN_KEEPALIVE
@@ -494,8 +503,8 @@ extern "C" {
 
         apiContainer.camera->tick(deltaTime*(1000.0f));
 
-        float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
-        float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
+        float farPlaneRendering = apiContainer.getConfig()->farPlane;
+        float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
 
         float nearPlane = 1.0;
         float fov = toRadian(45.0);
@@ -519,7 +528,7 @@ extern "C" {
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
 
         bool clearOnUi = true;
-        auto clearColor = apiContainer.getConfig()->getClearColor();
+        auto clearColor = apiContainer.getConfig()->clearColor;
 
         auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
         auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);

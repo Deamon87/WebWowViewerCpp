@@ -33,12 +33,12 @@ struct WmoGroupResult {
 class WmoObject : public IWmoApi {
 
 public:
-    WmoObject(ApiContainer *api) : m_api(api) {
+    WmoObject(HApiContainer api) : m_api(api) {
     }
 
 	~WmoObject();
 private:
-    ApiContainer *m_api;
+    HApiContainer m_api;
 
     HWmoMainGeom mainGeom = nullptr;
     bool m_loading = false;

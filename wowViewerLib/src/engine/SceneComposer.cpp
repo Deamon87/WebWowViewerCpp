@@ -19,7 +19,7 @@ void SceneComposer::processCaches(int limit) {
     }
 }
 
-SceneComposer::SceneComposer(ApiContainer *apiContainer) : m_apiContainer(apiContainer) {
+SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiContainer) {
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
 //    m_supportThreads = emscripten_run_script_int("(SharedArrayBuffer != null) ? 1 : 0") == 1;

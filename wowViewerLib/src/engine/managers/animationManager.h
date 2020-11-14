@@ -16,7 +16,7 @@ class AnimationManager;
 
 class AnimationManager {
 private:
-    ApiContainer *m_api;
+    HApiContainer m_api;
     std::shared_ptr<CBoneMasterData> boneMasterData;
 
     FullAnimationInfo animationInfo;
@@ -45,7 +45,7 @@ private:
 
     void calcAnimRepetition(AnimationStruct &animationStruct);
 public:
-    AnimationManager(ApiContainer *api, std::shared_ptr<CBoneMasterData> boneMasterData, bool hasExp2);
+    AnimationManager(HApiContainer api, std::shared_ptr<CBoneMasterData> boneMasterData, bool hasExp2);
 
     void resetCurrentAnimation();
     bool setAnimationId(int animationId, bool reset);

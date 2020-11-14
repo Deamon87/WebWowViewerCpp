@@ -43,7 +43,7 @@ public:
 
     std::vector<M2_AFID> animationFileDataIDs;
 
-    void loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t variationId);
+    void loadLowPriority(HApiContainer m_api, uint32_t animationId, uint32_t variationId);
 private:
     HFileContent m_skelFile;
     static chunkDef<SkelFile> skelFileTable;

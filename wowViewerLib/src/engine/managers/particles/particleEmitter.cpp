@@ -88,7 +88,7 @@ static const struct {
 };
 
 
-ParticleEmitter::ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
+ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
         for (int i = 0; i < 128; i++) {

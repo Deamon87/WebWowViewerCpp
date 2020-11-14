@@ -145,6 +145,7 @@ GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderNameVert, std:
 
 void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
+    logGLError
     std::string shaderVertFile =  m_device->loadShader(m_shaderNameVert, IShaderType::gVertexShader);
     std::string shaderFragFile =  m_device->loadShader(m_shaderNameFrag, IShaderType::gFragmentShader);
     if (shaderVertFile.length() == 0) {
@@ -271,7 +272,9 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 
     // Check if it compiled
     success = 0;
+    logGLError
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    logGLError
     if (!success) {
         // Something went wrong during compilation; get the error
         GLint maxLength = 0;
@@ -320,21 +323,28 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 
 
     /* 1.3 Link the program */
+    logGLError
     GLuint program = glCreateProgram();
+    logGLError
     glAttachShader(program, vertexShader);
+    logGLError
     glAttachShader(program, fragmentShader);
-    if (geomShaderExists)
-        glAttachShader(program, geometryShader);
+    logGLError
+//    if (geomShaderExists)
+//        glAttachShader(program, geometryShader);
 
 //    for (int i = 0; i < shaderDefinition1->attributesNum; i++) {
 //        glBindAttribLocation(program, shaderDefinition1->attributes[i].number, shaderDefinition1->attributes[i].variableName);
 //    }
 
     // link the program.
+    logGLError
     glLinkProgram(program);
-
+    logGLError
     GLint status;
+    logGLError
     glGetProgramiv(program, GL_LINK_STATUS, &status);
+    logGLError
     if (!status) {
         char logbuffer[1000];
         int loglen;
@@ -348,22 +358,32 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 
     //Get uniforms data
     GLint count;
+    logGLError
     glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &count);
+    logGLError
 //    printf("Active Uniforms: %d\n", count);
     for (GLint i = 0; i < count; i++)
     {
-        const GLsizei bufSize = 32; // maximum name length
-        GLchar name[bufSize]; // variable name in GLSL
+        const GLsizei bufSize = 256; // maximum name length
+        GLchar name[bufSize+1]; // variable name in GLSL
         GLsizei length; // name length
         GLint size; // size of the variable
         GLenum type; // type of the variable (float, vec3 or mat4, etc)
 
+        logGLError
         glGetActiveUniform(program, (GLuint)i, bufSize, &length, &size, &type, name);
+        logGLError
+        if (length <= bufSize)
+            name[length] = '\0';
+
+        logGLError
         GLint location = glGetUniformLocation(program, name);
+        logGLError
 
         this->setUnf(std::string(name), location);
 //        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
+//    if (!shaderName.compare("m2Shader")) {
 //    if (!shaderName.compare("m2Shader")) {
 //        std::cout << fragmentShaderString << std::endl << std::flush;
 //    }

@@ -48,7 +48,7 @@ public:
         return m_m2Geom;
     }
 
-    void loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t variationId, bool foundInParentAnim) {
+    void loadLowPriority(HApiContainer m_api, uint32_t animationId, uint32_t variationId, bool foundInParentAnim) {
         if (foundInParentAnim && m_parentSkelGeom != nullptr) {
             m_parentSkelGeom->loadLowPriority(m_api, animationId, variationId);
         } else if (m_skelGeom != nullptr) {

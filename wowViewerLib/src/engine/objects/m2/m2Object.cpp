@@ -187,7 +187,7 @@ int getVertexShaderId(int textureCount, int16_t shaderId) {
     return result;
 }
 
-int getPixelShaderId(int textureCount, int16_t shaderId) {
+int getPixelShaderId(int textureCount, uint16_t shaderId) {
     static const std::array<uint32_t, 8> array1 = {
             +M2PixelShader::Combiners_Mod_Mod2x,
             +M2PixelShader::Combiners_Mod_Mod,
@@ -210,7 +210,7 @@ int getPixelShaderId(int textureCount, int16_t shaderId) {
     };
 
     int result;
-    if ( shaderId < 0 )
+    if ( (shaderId & 0x8000) > 0 )
     {
         int pixelShaderId = shaderId & 0x7FFF;
         if ( (unsigned int)pixelShaderId >= M2ShaderTable.size()) {

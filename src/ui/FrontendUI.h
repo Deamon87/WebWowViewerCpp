@@ -12,15 +12,32 @@
 #include "../../wowViewerLib/src/engine/objects/iScene.h"
 #include "childWindow/mapConstructionWindow.h"
 #include "../minimapGenerator/minimapGenerator.h"
+#include "../persistance/CascRequestProcessor.h"
 
 
-class FrontendUI : public IScene {
+class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
 //Implementation of iInnerSceneApi
 public:
-    FrontendUI(ApiContainer *api) {
+    void createDefaultprocessor();
+
+    FrontendUI(HApiContainer api, HRequestProcessor processor) {
         m_api = api;
+        m_processor = processor;
+
+
+        this->createDefaultprocessor();
+
     }
     ~FrontendUI() override {};
+    std::shared_ptr<FrontendUI> getShared()
+    {
+        return shared_from_this();
+    }
+
+    HRequestProcessor getProcessor() {
+        return m_processor;
+    }
+
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
     void setAnimationId(int animationId) override {};
@@ -39,18 +56,24 @@ public:
 
     int getCameraNum() override {return 0;};
     std::shared_ptr<ICamera> createCamera(int cameraNum) override {return nullptr;};
-    void resetAnimation() override {}
+    void resetAnimation() override {};
+
+    HFrameScenario createFrameScenario(int canvWidth, int canvHeight, double deltaTime);
 private:
-    std::function <bool(std::string cascPath)> openCascCallback = nullptr;
 
-    std::function <void(int mapId, int wdtFileId, float x, float y, float z)> openSceneByfdid = nullptr;
-    std::function <void(int WMOFdid)> openWMOSceneByfdid = nullptr;
-    std::function <void(int m2Fdid, std::vector<int> &replacementTextureIds)> openM2SceneByfdid = nullptr;
-    std::function <void(std::string m2FileName, std::vector<int> &replacementTextureIds)> openM2SceneByName = nullptr;
+    HMinimapGenerator minimapGenerator;
+    std::shared_ptr<IScene> currentScene = nullptr;
 
-    std::function <void(float &cameraX,float &cameraY,float &cameraZ)> getCameraPos = nullptr;
-    std::function <void(std::string fileName, int width, int height)> makeScreenshotCallback = nullptr;
-    std::function <void()> startExperimentCallback = nullptr;
+    bool openCascCallback(std::string cascPath);
+
+    void openSceneByfdid(int mapId, int wdtFileId, float x, float y, float z);
+    void openWMOSceneByfdid(int WMOFdid);
+    void openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds);
+    void openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds);
+
+    void getCameraPos(float &cameraX,float &cameraY,float &cameraZ);
+    void makeScreenshotCallback(std::string fileName, int width, int height);
+    void startExperimentCallback();
 
     void getAdtSelectionMinimap(int wdtFileDataId) {
         m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
@@ -60,10 +83,10 @@ private:
     bool fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists);
 
 
-    std::function<void()> unloadScene;
-    std::function<int()> getCameraNumCallback;
-    std::function<bool(int cameraNum)> setNewCameraCallback;
-    std::function<void()> resetAnimationCallback;
+    void unloadScene();
+    int getCameraNumCallback();
+    bool setNewCameraCallback(int cameraNum);
+    void resetAnimationCallback();
 
     std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimap;
 
@@ -126,7 +149,8 @@ private:
     float worldPosY = 0;
     float worldPosZ = 0;
 
-    ApiContainer * m_api;
+    HApiContainer m_api;
+    HRequestProcessor m_processor;
     HGTexture fontTexture;
 
     HWdtFile m_wdtFile = nullptr;
@@ -138,8 +162,13 @@ private:
     int lastWidth = 100;
     int lastHeight = 100;
 
+    bool needToMakeScreenshot = false;
+    std::string screenshotFilename = "";
+    HDrawStage screenshotDS = nullptr;
     int screenShotWidth = 100;
     int screenShotHeight = 100;
+    int screenshotFrame = -1;
+
 
    std::shared_ptr<MapConstructionWindow> m_mapConstructionWindow = nullptr;
 
@@ -156,23 +185,7 @@ public:
     bool getStopMouse();
     bool getStopKeyboard();
 
-    void setOpenCascStorageCallback(std::function <bool(std::string cascPath)> callback);
-    void setOpenSceneByfdidCallback(std::function <void(int mapId, int wdtFileId, float x, float y, float z)> callback);
-    void setOpenWMOSceneByfdidCallback(std::function <void(int wmoFDid)> callback);
-    void setOpenM2SceneByfdidCallback(std::function <void(int m2FDid, std::vector<int> &replacementTextureIds)> callback);
-    void setOpenM2SceneByFilenameCallback(std::function<void(std::string, std::vector<int>&)> callback);
-    void setGetCameraPos( std::function <void(float &cameraX,float &cameraY,float &cameraZ)> callback);
-    void setMakeScreenshotCallback( std::function <void(std::string fileName, int width, int height)> callback);
-
     void setExperimentCallback(std::function <void()> callback);
-
-    void setUnloadScene( std::function <void()> callback) {
-        unloadScene = callback;
-    };
-
-    void setGetCameraNum(std::function <int()> callback);
-    void setSelectNewCamera(std::function <bool(int cameraNum)> callback);
-    void setResetAnimation(std::function <void()> callback);
     void showMainMenu();
 
     void showMapSelectionDialog();

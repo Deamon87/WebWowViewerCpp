@@ -150,7 +150,7 @@ std::shared_ptr<ICamera> M2Scene::createCamera(int cameraNum) {
     return std::make_shared<m2TiedCamera>(m_m2Object, cameraNum);
 }
 
-M2Scene::M2Scene(ApiContainer *api, std::string m2Model, int cameraView) {
+M2Scene::M2Scene(HApiContainer api, std::string m2Model, int cameraView) {
     m_api = api; m_m2Model = m2Model; m_cameraView = cameraView;
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;
@@ -169,7 +169,7 @@ M2Scene::M2Scene(ApiContainer *api, std::string m2Model, int cameraView) {
     api->getConfig()->globalFog = EParameterSource::eConfig;
 }
 
-M2Scene::M2Scene(ApiContainer *api, int fileDataId, int cameraView) {
+M2Scene::M2Scene(HApiContainer api, int fileDataId, int cameraView) {
     m_api = api; m_cameraView = cameraView;
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;

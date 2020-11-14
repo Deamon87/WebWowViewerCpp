@@ -67,13 +67,13 @@ std::string screenshotFileName = "";
 int screenshotWidth = 100;
 int screenshotHeight = 100;
 bool needToMakeScreenshot = false;
-int screenshotFrame = -1;
-HDrawStage screenshotDS = nullptr;
+
+
 
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     if (stopMouse) return;
-    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
 
 //    if (!pointerIsLocked) {
@@ -272,64 +272,7 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
 void beforeCrash(void);
 
-HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
-                                ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene) {
-    float farPlaneRendering = apiContainer.getConfig()->farPlane;
-    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
 
-    float nearPlane = 1.0;
-    float fov = toRadian(45.0);
-
-    float canvasAspect = (float)width / (float)height;
-
-    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-    HCameraMatrices cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-    //Frustum matrix with reversed Z
-
-    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
-    if (isInfZSupported)
-    {
-        float f = 1.0f / tan(fov / 2.0f);
-        cameraMatricesRendering->perspectiveMat = mathfu::mat4(
-            f / canvasAspect, 0.0f,  0.0f,  0.0f,
-            0.0f,    f,  0.0f,  0.0f,
-            0.0f, 0.0f,  1, -1.0f,
-            0.0f, 0.0f, 1,  0.0f);
-    }
-
-    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
-        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
-
-        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
-                                                                  0, -1, 0, 0,
-                                                                  0, 0, 1.0/2.0, 1/2.0,
-                                                                  0, 0, 0, 1).Transpose();
-
-        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
-    }
-
-    auto clearColor = apiContainer.getConfig()->clearColor;
-
-    if (currentScene != nullptr) {
-        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
-
-        HFrameBuffer fb = nullptr;
-        if (isScreenshot) {
-            fb = apiContainer.hDevice->createFrameBuffer(width, height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32, 4);
-        }
-
-        auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
-        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
-        std::vector<HDrawStage> drawStageDependencies = {};
-        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, drawStageDependencies, true,
-                                                          dimensions,
-                                                          true, isInfZSupported, clearColor, fb);
-
-        return sceneDrawStage;
-    }
-
-    return nullptr;
-}
 
 
 extern "C" void my_function_to_handle_aborts(int signal_number)
@@ -452,149 +395,20 @@ int main(){
     CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
 
 
-    ApiContainer apiContainer;
-    HRequestProcessor processor = nullptr;
-//    {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=data&filedataid=";
-//
-//Classics
-//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
-//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
-//        processor = new HttpZipRequestProcessor(url);
-////        processor = new ZipRequestProcessor(filePath);
-////        processor = new MpqRequestProcessor(filePath);
-//        processor = new HttpRequestProcessor(url, urlFileId);
-        processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
-////        processor->setThreaded(false);
-////
-        processor->setThreaded(true);
-        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor.get());
-        processor->setFileRequester(apiContainer.cacheStorage.get());
+    HApiContainer apiContainer = std::make_shared<ApiContainer>();
 
-//    }
     //Create device
     auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
+    apiContainer->databaseHandler = sqliteDB;
+    apiContainer->hDevice = hdevice;
+    apiContainer->camera = std::make_shared<FirstPersonCamera>();
 
-    std::shared_ptr<IScene> currentScene = nullptr;
-
-    apiContainer.databaseHandler = sqliteDB;
-    apiContainer.hDevice = hdevice;
-    apiContainer.camera = std::make_shared<FirstPersonCamera>();
-
-    SceneComposer sceneComposer = SceneComposer(&apiContainer);
+    SceneComposer sceneComposer = SceneComposer(apiContainer);
 
     //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
-    std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(&apiContainer);
+    std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(apiContainer, nullptr);
     frontendUI->overrideCascOpened(true);
-    frontendUI->setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
-        HRequestProcessor newProcessor = nullptr;
-        std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
-        try {
-            newProcessor = std::make_shared<CascRequestProcessor>(cascPath.c_str());
-            newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
-            newProcessor->setThreaded(true);
-            newProcessor->setFileRequester(newStorage.get());
-        } catch (...){
-            return false;
-        };
-
-        apiContainer.cacheStorage = newStorage;
-        processor = newProcessor;
-
-        return true;
-    });
-    frontendUI->setOpenSceneByfdidCallback([&currentScene, &apiContainer](int mapId, int wdtFileId, float x, float y, float z) {
-//        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
-        if (apiContainer.cacheStorage) {
-//            storage->actuallDropCache();
-        }
-
-        currentScene = std::make_shared<Map>(&apiContainer, mapId, wdtFileId);
-        apiContainer.camera = std::make_shared<FirstPersonCamera>();
-        apiContainer.camera->setCameraPos(x, y, z);
-//        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
-    });
-    frontendUI->setOpenWMOSceneByfdidCallback([&currentScene, &apiContainer](int wmoFDid) {
-        currentScene = std::make_shared<WmoScene>(&apiContainer, wmoFDid);
-        apiContainer.camera->setCameraPos(0, 0, 0);
-    });
-    frontendUI->setOpenM2SceneByfdidCallback([&currentScene, &apiContainer](int m2FDid, std::vector<int> &replacementTextureIds) {
-        currentScene = std::make_shared<M2Scene>(&apiContainer, m2FDid, -1);
-        currentScene->setReplaceTextureArray(replacementTextureIds);
-
-
-        apiContainer.camera = std::make_shared<FirstPersonCamera>();
-        apiContainer.getConfig()->BCLightHack = false;
-//
-        apiContainer.camera->setCameraPos(0, 0, 0);
-    });
-    frontendUI->setOpenM2SceneByFilenameCallback([&currentScene, &apiContainer](std::string m2FileName, std::vector<int> &replacementTextureIds) {
-        currentScene = std::make_shared<M2Scene>(&apiContainer, m2FileName, -1);
-        currentScene->setReplaceTextureArray(replacementTextureIds);
-
-        apiContainer.camera = std::make_shared<FirstPersonCamera>();
-        apiContainer.camera->setCameraPos(0, 0, 0);
-    });
-
-
-    frontendUI->setUnloadScene([&apiContainer, &currentScene]()->void {
-        if (apiContainer.cacheStorage) {
-            apiContainer.cacheStorage->actuallDropCache();
-        }
-        currentScene = nullptr;
-        //scene->setSceneWithFileDataId(-1, 0, -1);
-    });
-
-    frontendUI->setGetCameraNum([&apiContainer, &currentScene]()-> int {
-        if (currentScene != nullptr) {
-            return currentScene->getCameraNum();
-        }
-
-        return 0;
-    });
-    frontendUI->setSelectNewCamera([&apiContainer, &currentScene](int cameraNum)-> bool {
-        if (currentScene == nullptr) return false;
-
-        auto newCamera = currentScene->createCamera(cameraNum);
-        if (newCamera == nullptr) {
-            apiContainer.camera = std::make_shared<FirstPersonCamera>();
-            return false;
-        }
-
-        apiContainer.camera = newCamera;
-        return true;
-    });
-    frontendUI->setResetAnimation([&currentScene]() -> void {
-        currentScene->resetAnimation();
-    });
-
-    frontendUI->setGetCameraPos([&apiContainer](float &cameraX,float &cameraY,float &cameraZ) -> void {
-        float currentCameraPos[4] = {0,0,0,0};
-        apiContainer.camera->getCameraPosition(&currentCameraPos[0]);
-        cameraX = currentCameraPos[0];
-        cameraY = currentCameraPos[1];
-        cameraZ = currentCameraPos[2];
-    });
-
-    frontendUI->setMakeScreenshotCallback([&apiContainer](std::string fileName, int width, int height) -> void {
-        screenshotWidth  = width;
-        screenshotHeight = height;
-        screenshotFileName = fileName;
-
-        needToMakeScreenshot = true;
-    });
-    HMinimapGenerator minimapGenerator;
-    frontendUI->setExperimentCallback([&apiContainer, &minimapGenerator, processor]() -> void {
-        minimapGenerator = std::make_shared<MinimapGenerator>(
-            apiContainer.cacheStorage,
-            apiContainer.hDevice,
-            processor
-        );
-        minimapGenerator->startScenario(0);
-    });
-
 
     glfwSetWindowUserPointer(window, &apiContainer);
     glfwSetKeyCallback(window, onKey);
@@ -623,79 +437,26 @@ int main(){
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
-        if (apiContainer.getConfig()->pauseAnimation) {
+        if (apiContainer->getConfig()->pauseAnimation) {
             deltaTime = 0.0;
         }
 
-        if (processor) {
-            if (!processor->getThreaded()) {
-                processor->processRequests(false);
-            }
-            processor->processResults(10);
-        }
+        {
+            auto processor = frontendUI->getProcessor();
+            if (frontendUI->getProcessor()) {
 
-        if ((minimapGenerator != nullptr) && (minimapGenerator->isDone()))
-            minimapGenerator = nullptr;
-
-        if (minimapGenerator != nullptr) {
-            minimapGenerator->process();
-        }
-
-        apiContainer.camera->tick(deltaTime*(1000.0f));
-
-        if (screenshotDS != nullptr) {
-            if (screenshotFrame + 5 <= apiContainer.hDevice->getFrameNumber()) {
-                std::vector<uint8_t> buffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4+1);
-
-                saveDataFromDrawStage(screenshotDS->target, screenshotFileName, screenshotWidth, screenshotHeight, buffer);
-
-                screenshotDS = nullptr;
+                if (!processor->getThreaded()) {
+                    processor->processRequests(false);
+                }
+                processor->processResults(10);
             }
         }
 
-        HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
-        std::vector<HDrawStage> uiDependecies = {};
+        apiContainer->camera->tick(deltaTime*(1000.0f));
 
         //DrawStage for screenshot
 //        needToMakeScreenshot = true;
-        if (needToMakeScreenshot)
-        {
-            auto drawStage = createSceneDrawStage(sceneScenario, screenshotWidth, screenshotHeight, deltaTime, true, apiContainer,
-                                                  currentScene);
-            if (drawStage != nullptr) {
-                uiDependecies.push_back(drawStage);
-                screenshotDS = drawStage;
-                screenshotFrame = apiContainer.hDevice->getFrameNumber();
-            }
-            needToMakeScreenshot = false;
-        }
-        if (minimapGenerator != nullptr) {
-            uiDependecies.push_back(minimapGenerator->createSceneDrawStage(sceneScenario));
-        }
-
-        //DrawStage for current frame
-        bool clearOnUi = true;
-        {
-            auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime, false, apiContainer,
-                                                  currentScene);
-            if (drawStage != nullptr) {
-                uiDependecies.push_back(drawStage);
-                clearOnUi = false;
-            }
-        }
-        //DrawStage for UI
-        {
-            ViewPortDimensions dimension = {
-                {0,     0},
-                {canvWidth, canvHeight}
-            };
-            auto clearColor = apiContainer.getConfig()->clearColor;
-
-            auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
-            auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
-            HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies,
-              true, dimension, clearOnUi, false, clearColor, nullptr);
-        }
+        auto sceneScenario = frontendUI->createFrameScenario(canvWidth, canvHeight, deltaTime);
 
         sceneComposer.draw(sceneScenario);
 

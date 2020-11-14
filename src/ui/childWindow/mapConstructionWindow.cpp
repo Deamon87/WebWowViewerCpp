@@ -7,7 +7,7 @@
 #include "mapConstructionWindow.h"
 #include "../../../wowViewerLib/src/engine/algorithms/mathHelper.h"
 
-MapConstructionWindow::MapConstructionWindow(ApiContainer *mApi) : m_api(mApi) {}
+MapConstructionWindow::MapConstructionWindow(HApiContainer mApi) : m_api(mApi) {}
 
 bool MapConstructionWindow::render() {
     bool isNotClosed = true;

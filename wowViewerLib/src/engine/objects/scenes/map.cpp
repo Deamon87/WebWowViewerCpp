@@ -522,12 +522,14 @@ void Map::checkCulling(HCullStage cullStage) {
                 frustumPoints);
         }
 
-        for (auto model : m_exteriorSkyBoxes) {
-            if (model != nullptr) {
-                model->checkFrustumCulling(cameraPos,
-                                           frustumPlanes,
-                                           frustumPoints);
-                cullStage->exteriorView.drawnM2s.push_back(model);
+        if (config->renderSkyDom) {
+            for (auto model : m_exteriorSkyBoxes) {
+                if (model != nullptr) {
+                    model->checkFrustumCulling(cameraPos,
+                                               frustumPlanes,
+                                               frustumPoints);
+                    cullStage->exteriorView.drawnM2s.push_back(model);
+                }
             }
         }
     }
@@ -744,7 +746,20 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
                 m_api->getConfig()->currentTime
             );
             fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
+        } else if (config->globalLighting == EParameterSource::eConfig) {
+            auto fdd = cullStage->frameDepedantData;
+
+            fdd->exteriorAmbientColor = config->exteriorAmbientColor;
+            fdd->exteriorGroundAmbientColor = config->exteriorGroundAmbientColor;
+            fdd->exteriorHorizontAmbientColor = config->exteriorHorizontAmbientColor;
+            fdd->exteriorDirectColor = config->exteriorDirectColor;
+            auto extDir = calcExteriorColorDir(
+                cullStage->matricesForCulling,
+                m_api->getConfig()->currentTime
+            );
+            fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
         }
+
 
         {
             auto fdd = cullStage->frameDepedantData;
@@ -859,7 +874,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             }
         }
         //Rebalance blendCoefs
-        if (totalSummator < 1.0f) {
+        if (totalSummator < 1.0f && totalSummator > 0.0f) {
             for (auto &_light : combinedResults) {
                 _light.blendCoef = _light.blendCoef / totalSummator;
             }
@@ -915,8 +930,12 @@ void Map::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::s
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
             int adt_x = worldCoordinateToAdtIndex(camera4.y);
             int adt_y = worldCoordinateToAdtIndex(camera4.x);
+            if ((adt_x >= 64) || (adt_x < 0)) return;
+            if ((adt_y >= 64) || (adt_y < 0)) return;
+
             cullStage->adtAreadId = -1;
-            std::shared_ptr<AdtObject> adtObjectCameraAt = mapTiles[adt_x][adt_y];
+            auto &adtObjectCameraAt = mapTiles[adt_x][adt_y];
+
             if (adtObjectCameraAt != nullptr) {
                 ADTObjRenderRes tempRes;
                 tempRes.adtObject = adtObjectCameraAt;
@@ -1564,6 +1583,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 
     HDrawStage origResultDrawStage = resultDrawStage;
     bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
+    frameBufferSupported = false;
     if (frameBufferSupported) {
         //Create new drawstage and draw everything there
         resultDrawStage = std::make_shared<DrawStage>();
@@ -1602,6 +1622,8 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         float fogEnd = config->farPlane;
         if (config->disableFog || !config->fogDataFound) {
             fogEnd = 100000000.0f;
+            fdd->FogScaler = 0;
+            fdd->FogDensity = 0;
         }
 
         float fogStart = std::max<float>(config->farPlane - 250, 0);
@@ -1641,7 +1663,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 
     updateStage->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
 
-    if (frameBufferSupported) {
+    if (frameBufferSupported ) {
         doGaussBlur(resultDrawStage, origResultDrawStage, updateStage);
     }
 }
@@ -1782,7 +1804,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
             meshblockVS.x = 1;
             meshblockVS.y = 1;
             meshblockVS.z = 0; //mix_coeficient
-            meshblockVS.w = config->useGaussBlur ? fminf(0.5f, glow) : 0; //glow multiplier
+            meshblockVS.w = glow; //glow multiplier
         });
 
 

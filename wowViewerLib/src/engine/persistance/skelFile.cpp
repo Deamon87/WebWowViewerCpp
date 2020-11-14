@@ -140,7 +140,7 @@ void SkelFile:: initTracks(CSkelSequenceLoad *cSkelSequenceLoad) {
 }
 
 
-void SkelFile::loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t variationId) {
+void SkelFile::loadLowPriority(HApiContainer m_api, uint32_t animationId, uint32_t variationId) {
     int animationIndex = findAnimationIndex(animationId, &m_sks1->sequence_lookups, &m_sks1->sequences);
     if (animationIndex < 0) return;
 

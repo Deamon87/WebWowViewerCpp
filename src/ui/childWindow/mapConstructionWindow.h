@@ -10,7 +10,7 @@
 
 class MapConstructionWindow {
 private:
-    ApiContainer * m_api;
+    HApiContainer m_api;
 
     std::vector<MapRecord> mapList = {};
     std::vector<MapRecord> filteredMapList = {};
@@ -39,7 +39,7 @@ private:
     bool fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists);
     void showAdtSelectionMinimap();
 public:
-    MapConstructionWindow(ApiContainer *mApi);
+    MapConstructionWindow(HApiContainer mApi);
 
     bool render();
 };
