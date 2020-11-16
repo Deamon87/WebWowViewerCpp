@@ -122,7 +122,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (stopKeyboard) return;
-    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
 
     if ( action == GLFW_PRESS) {
@@ -191,7 +191,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     if (stopMouse) return;
 
-    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
 
     controllable->zoomInFromMouseScroll(-yoffset/2.0f);

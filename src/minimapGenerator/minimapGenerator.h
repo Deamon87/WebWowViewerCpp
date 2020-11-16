@@ -47,6 +47,8 @@ public:
     HDrawStage createSceneDrawStage(HFrameScenario sceneScenario);
 
     float GetOrthoDimension();
+
+    void calcXtoYCoef();
 };
 
 typedef std::shared_ptr<MinimapGenerator> HMinimapGenerator;

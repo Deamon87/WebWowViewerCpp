@@ -40,8 +40,12 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
 }
 
 void MinimapGenerator::startScenario(int scenarioId) {
+    XToYCoefCalculated = false;
+    calcXtoYCoef();
+
     if (scenarioId == 0) {
-        m_currentScene = std::make_shared<Map>(m_apiContainer, 0, 775971);
+//        m_currentScene = std::make_shared<Map>(m_apiContainer, 0, 775971);
+        m_currentScene = std::make_shared<Map>(m_apiContainer, 1, 782779);
 //        m_currentScene = std::make_shared<Map>(&m_apiContainer, 30, 790112); // Alterac Valley
 //        m_currentScene = std::make_shared<Map>(&m_apiContainer, 2106, 2205463); // warsong 2
 //        m_currentScene = std::make_shared<Map>(&m_apiContainer, 2107, 	2205417); // arathi 2
@@ -52,21 +56,55 @@ void MinimapGenerator::startScenario(int scenarioId) {
 //        m_chunkStartY = -32*4;
 //        m_chunkHeight = 64*4;
 
-        m_chunkStartX = 0;
-        m_chunkWidth = 2;
-        m_chunkStartY = 0;
-        m_chunkHeight = 2;
+//        mathfu::vec2 minWowWorldCoord = {-10534, 766 };
+//        mathfu::vec2 maxWowWorldCoord = {-8284, 2979};
+//        mathfu::vec2 minWowWorldCoord = {3558, -4688 };
+//        mathfu::vec2 maxWowWorldCoord = { 5804,-1063};
 
-        setupCameraData();
+        mathfu::vec2 minWowWorldCoord = {-12150, -9000};
+        mathfu::vec2 maxWowWorldCoord = {11900, 5100};
+
+        mathfu::vec2 minWowWorldCoordTransf =
+            (MathHelper::RotationZ(M_PI/4).Inverse() * mathfu::vec4(minWowWorldCoord.x, minWowWorldCoord.y, 0, 1.0)).xy();
+        mathfu::vec2 minMaxWowWorldCoordTransf =
+            (MathHelper::RotationZ(M_PI/4).Inverse() * mathfu::vec4(minWowWorldCoord.x, maxWowWorldCoord.y, 0, 1.0)).xy();
+        mathfu::vec2 maxMinWowWorldCoordTransf =
+            (MathHelper::RotationZ(M_PI/4).Inverse() * mathfu::vec4(maxWowWorldCoord.x, minWowWorldCoord.y, 0, 1.0)).xy();
+        mathfu::vec2 maxWowWorldCoordTransf =
+            (MathHelper::RotationZ(M_PI/4).Inverse() * mathfu::vec4(maxWowWorldCoord.x, maxWowWorldCoord.y, 0, 1.0)).xy();
+
+        mathfu::vec2 minOrthoMapCoord = mathfu::vec2(
+            std::min(std::min(minWowWorldCoordTransf.x, maxWowWorldCoordTransf.x), std::min(minMaxWowWorldCoordTransf.x, maxMinWowWorldCoordTransf.x)),
+            std::min(std::min(minWowWorldCoordTransf.y, maxWowWorldCoordTransf.y), std::min(minMaxWowWorldCoordTransf.y, maxMinWowWorldCoordTransf.y))
+        );
+        mathfu::vec2 maxOrthoMapCoord = mathfu::vec2(
+            std::max(std::max(minWowWorldCoordTransf.x, maxWowWorldCoordTransf.x), std::max(minMaxWowWorldCoordTransf.x, maxMinWowWorldCoordTransf.x)),
+            std::max(std::max(minWowWorldCoordTransf.y, maxWowWorldCoordTransf.y), std::max(minMaxWowWorldCoordTransf.y, maxMinWowWorldCoordTransf.y))
+        );
+
+        std::cout << "XToYCoef = " << XToYCoef << std::endl;
+
+        m_chunkStartX = std::floor(((minOrthoMapCoord.y) / (2.0f*GetOrthoDimension()))) ;
+        m_chunkWidth = std::floor(((maxOrthoMapCoord.y-minOrthoMapCoord.y) / (2.0f*GetOrthoDimension())) + 0.99 ) + 1;
+        m_chunkStartY = std::floor(((minOrthoMapCoord.x) / (2.0f*GetOrthoDimension()*XToYCoef))) +1 ; //Y goes in reverse, that's why there is - here instead of +
+        m_chunkHeight = std::floor(((maxOrthoMapCoord.x-minOrthoMapCoord.x) /(2.0f*GetOrthoDimension()*XToYCoef))+ 0.99) +1;
+
+        std::cout << "m_chunkStartX = " << m_chunkStartX << " m_chunkWidth = " << m_chunkWidth
+            << " m_chunkStartY = " << m_chunkStartY << " m_chunkHeight = " << m_chunkHeight << std::endl;
     }
 
     m_x = m_chunkStartX;
     m_y = m_chunkStartY;
 
+//    m_x = -8;
+//    m_y = -1;
+
     currentScenario = scenarioId;
-    XToYCoefCalculated = false;
+
+    setupCameraData();
 }
-void MinimapGenerator::setupCameraData() {
+
+void MinimapGenerator::calcXtoYCoef() {
 
     //Code that tries to calc the step on y and x
     if (!XToYCoefCalculated)
@@ -211,17 +249,30 @@ void MinimapGenerator::setupCameraData() {
     }
 
 
-    mathfu::vec3 point = mathfu::vec3(GetOrthoDimension() * 2.0f *XToYCoef* m_y,
-                                      GetOrthoDimension() * 2.0f * m_x,
-                                      2000);
+}
 
-    point = MathHelper::RotationZ(M_PI/4) * point;
+void MinimapGenerator::setupCameraData() {
+    mathfu::vec3 lookAtPoint = mathfu::vec3(GetOrthoDimension() * 2.0f *XToYCoef* m_y,
+                                      GetOrthoDimension() * 2.0f * m_x,
+                                      1);
+
+    lookAtPoint = MathHelper::RotationZ(M_PI/4) * lookAtPoint;
+
+
+    std::cout << "lookAtPoint = (" << lookAtPoint.x << ", " << lookAtPoint.y << ", " << lookAtPoint.z << ") " << std::endl;
+
+
+    mathfu::vec3 lookAtVec3 = {1,1,-1};
+    lookAtPoint -= (4000.0f*lookAtVec3);
+    mathfu::vec3 cameraPos = lookAtPoint-(2000.0f*lookAtVec3);
+
+    std::cout << "cameraPos = (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ") " << std::endl;
 
     m_apiContainer->camera->setCameraPos(
-        point.x, point.y, point.z
+        cameraPos.x, cameraPos.y, cameraPos.z
     );
     ((FirstPersonOrthoStaticCamera*)m_apiContainer->camera.get())->setCameraLookAt(
-        point.x + 1, point.y + 1, point.z - 1
+        lookAtPoint.x, lookAtPoint.y, lookAtPoint.z
     );
     m_apiContainer->camera->tick(0);
 }
@@ -245,16 +296,18 @@ void MinimapGenerator::process() {
     framesReady = 0;
 
     //Make screenshot out of this drawStage
-    std::string fileName = "testMinimap\\test_"+std::to_string(-m_x+(m_chunkWidth/2))+"_"+std::to_string(-m_y+(m_chunkHeight/2))+".png";
+    std::string fileName = "testMinimap\\test_"+std::to_string(m_y-m_chunkStartY)+"_"+std::to_string((m_x-m_chunkStartX))+".png";
 
     std::vector<uint8_t> buffer = std::vector<uint8_t>(m_width*m_height*4+1);
     saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
+
 
     m_x++;
     if (m_x >= m_chunkWidth + m_chunkStartX)  {
         m_y++;
         m_x = m_chunkStartX;
     }
+    std::cout << "m_x = " << m_x << " out of (" << m_chunkStartX+m_chunkWidth << ") m_y = " << m_y << " out of (" << m_chunkStartY+m_chunkHeight << ")" << std::endl;
 
     setupCameraData();
 }
@@ -318,14 +371,15 @@ bool MinimapGenerator::isDone() {
 }
 
 float MinimapGenerator::GetOrthoDimension() {
-    return MathHelper::TILESIZE*0.25*0.5f;
+//    return MathHelper::TILESIZE*0.25*0.5f;
+    return MathHelper::TILESIZE*0.25;
 }
 
 mathfu::mat4 MinimapGenerator::getOrthoMatrix() {
     return mathfu::mat4::Ortho(
         -GetOrthoDimension(),GetOrthoDimension(),
         -GetOrthoDimension(),GetOrthoDimension(),
-        1,5000
+        1,8000
     );
 }
 
