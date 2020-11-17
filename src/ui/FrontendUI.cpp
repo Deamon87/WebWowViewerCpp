@@ -1305,7 +1305,46 @@ void FrontendUI::startExperimentCallback() {
         m_processor,
         m_api->databaseHandler
     );
-    minimapGenerator->startScenario(0);
+
+    std::vector<ScenarioDef> scenarios = {
+//        {
+//            1,
+//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+//            mathfu::vec2(3491, -4667 ),
+//            mathfu::vec2(6016, -901),
+//            ScenarioOrientation::so45DegreeTick0,
+//            "kalimdor/rotation0"
+//        },
+        {
+            1,
+            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+            mathfu::vec2(3491, -4667 ),
+            mathfu::vec2(6016, -901),
+            ScenarioOrientation::so45DegreeTick1,
+            "kalimdor/rotation1"
+        },
+        {
+            1,
+            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+            mathfu::vec2(3491, -4667 ),
+            mathfu::vec2(6016, -901),
+            ScenarioOrientation::so45DegreeTick2,
+            "kalimdor/rotation2"
+        },
+        {
+            1,
+            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+            mathfu::vec2(3491, -4667 ),
+            mathfu::vec2(6016, -901),
+            ScenarioOrientation::so45DegreeTick3,
+            "kalimdor/rotation3"
+        },
+    };
+    minimapGenerator->startScenarios(scenarios);
 }
 
 void FrontendUI::createDefaultprocessor() {

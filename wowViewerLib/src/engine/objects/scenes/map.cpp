@@ -690,6 +690,9 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         mathfu::vec3 groundAmbientColor = {0, 0, 0};
         mathfu::vec3 directColor = {0, 0, 0};
         mathfu::vec3 closeRiverColor = {0, 0, 0};
+        mathfu::vec3 farRiverColor = {0, 0, 0};
+        mathfu::vec3 closeOceanColor = {0, 0, 0};
+        mathfu::vec3 farOceanColor = {0, 0, 0};
 
         mathfu::vec3 SkyTopColor = {0, 0, 0};
         mathfu::vec3 SkyMiddleColor = {0, 0, 0};
@@ -708,6 +711,9 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 
             directColor += mathfu::vec3(_light.directColor) * _light.blendCoef;
             closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
+            farRiverColor += mathfu::vec3(_light.farRiverColor) * _light.blendCoef;
+            closeOceanColor += mathfu::vec3(_light.closeOceanColor) * _light.blendCoef;
+            farOceanColor += mathfu::vec3(_light.farOceanColor) * _light.blendCoef;
 
             SkyTopColor += mathfu::vec3(_light.SkyTopColor.data()) * _light.blendCoef;
             SkyMiddleColor += mathfu::vec3(_light.SkyMiddleColor) * _light.blendCoef;
@@ -761,10 +767,22 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         }
 
 
+        if (config->waterColorParams == EParameterSource::eDatabase)
         {
             auto fdd = cullStage->frameDepedantData;
-            fdd->closeRiverColor =  mathfu::vec4(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
-
+            fdd->closeRiverColor = mathfu::vec4(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
+            fdd->farRiverColor = mathfu::vec4(farRiverColor[2], farRiverColor[1], farRiverColor[0], 0);
+            fdd->closeOceanColor = mathfu::vec4(closeOceanColor[2], closeOceanColor[1], closeOceanColor[0], 0);
+            fdd->farOceanColor = mathfu::vec4(farOceanColor[2], farOceanColor[1], farOceanColor[0], 0);
+        } else if (config->waterColorParams == EParameterSource::eConfig) {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->closeRiverColor = config->closeRiverColor;
+            fdd->farRiverColor = config->farRiverColor;
+            fdd->closeOceanColor = config->closeOceanColor;
+            fdd->farOceanColor = config->farOceanColor;
+        }
+        if (config->skyParams == EParameterSource::eDatabase) {
+            auto fdd = cullStage->frameDepedantData;
             fdd->SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 0);
             fdd->SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 0);
             fdd->SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 0);

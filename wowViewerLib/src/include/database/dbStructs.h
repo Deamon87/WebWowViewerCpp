@@ -20,6 +20,9 @@ struct LightResult {
     float groundAmbientColor[3];
     float directColor[3];
     float closeRiverColor[3];
+    float farRiverColor[3];
+    float closeOceanColor[3];
+    float farOceanColor[3];
 
     std::array<float, 3> SkyTopColor;
     float SkyMiddleColor[3];
@@ -60,6 +63,14 @@ struct LiquidMat {
     int OrderIndex;
     float color1[3];
     float color2[3];
+    int flags;
+};
+
+struct LiquidTypeData {
+    int FileDataId;
+    float color1[3];
+    float color2[3];
+    int flags;
 };
 
 struct vec2 {

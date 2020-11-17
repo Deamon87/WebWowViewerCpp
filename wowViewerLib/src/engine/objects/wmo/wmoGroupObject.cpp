@@ -626,14 +626,22 @@ void WmoGroupObject::createWaterMeshes() {
 
     meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
-    std::vector<int> fileDataIds = {};
+    std::vector<LiquidTypeData> liquidTypeData;
     int basetextureFDID = 0;
     if (m_api->databaseHandler != nullptr) {
-        m_api->databaseHandler->getLiquidTypeData(this->liquid_type, fileDataIds);
+        m_api->databaseHandler->getLiquidTypeData(this->liquid_type, liquidTypeData);
     }
-    for (auto fdid: fileDataIds) {
-        if (fdid != 0) {
-            basetextureFDID = fdid;
+    mathfu::vec3 color = mathfu::vec3(0,0,0);
+    int liquidFlags = 0;
+
+    for (auto ltd: liquidTypeData) {
+        if (ltd.FileDataId != 0) {
+            basetextureFDID = ltd.FileDataId;
+
+            if (ltd.color1[0] > 0 || ltd.color1[1] > 0 || ltd.color1[2] > 0) {
+                color = mathfu::vec3(ltd.color1[0], ltd.color1[1], ltd.color1[2]);
+            }
+            liquidFlags = ltd.flags;
             break;
         }
     }
@@ -659,9 +667,15 @@ void WmoGroupObject::createWaterMeshes() {
     auto l_liquidType = liquid_type;
 
 
-    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) -> void {
+    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, liquidFlags, color](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) -> void {
         mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
-        color_ = mathfu::vec4(1.0, 1.0,1.0,0.7);
+        if ((liquidFlags & 1024) > 0) {// Ocean
+            color_ = frameDepedantData->closeOceanColor;
+        } else if (liquidFlags == 15) { //River/Lake
+            color_ = frameDepedantData->closeRiverColor;
+        } else {
+            color_ = mathfu::vec4(color, 0.7);
+        }
     });
 
     HGMesh hmesh = device->createMesh(meshTemplate);

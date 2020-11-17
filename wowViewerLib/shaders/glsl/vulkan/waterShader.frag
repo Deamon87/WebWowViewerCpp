@@ -26,20 +26,7 @@ layout(std140, binding=4) uniform meshWideBlockPS {
 };
 
 void main() {
-    //    int waterType = int(waterTypeV.x);
-    //    if (waterType == 13) { // LIQUID_WMO_Water
-    //        outputColor = vec4(0.0, 0, 0.3, 0.5);
-    //    } else if (waterType == 14) { //LIQUID_WMO_Ocean
-    //        outputColor = vec4(0, 0, 0.8, 0.8);
-    //    } else if (waterType == 19) { //LIQUID_WMO_Magma
-    //        outputColor = vec4(0.3, 0, 0, 0.5);
-    //    } else if (waterType == 20) { //LIQUID_WMO_Slime
-    //        outputColor = vec4(0.0, 0.5, 0, 0.5);
-    //    } else {
-    //        outputColor = vec4(0.5, 0.5, 0.5, 0.5);
-    //    }
-
-    vec3 finalColor = color.rgb*texture(uTexture, vTextCoords).rgb;
+    vec3 finalColor = color.rgb+texture(uTexture, vTextCoords).rgb;
 
     vec3 sunDir =scene.extLight.uExteriorDirectColorDir.xyz;
 

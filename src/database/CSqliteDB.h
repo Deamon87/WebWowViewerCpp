@@ -14,13 +14,14 @@ class CSqliteDB : public IClientDatabase {
 public:
     CSqliteDB(std::string dbFileName);
     void getMapArray(std::vector<MapRecord> &mapRecords) override;
+    bool getMapById(int mapId, MapRecord &mapRecord) override;
     AreaRecord getArea(int areaId) override;
     AreaRecord getWmoArea(int wmoId, int nameId, int groupId) override;
 
     void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults) override;
     void getLightById(int lightId, int time, LightResult &lightResult) override;
     void getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &loData) override;
-    void getLiquidTypeData(int liquidTypeId, std::vector<int > &fileDataIds) override;
+    void getLiquidTypeData(int liquidTypeId,  std::vector<LiquidTypeData > &liquidTypeData) override;
     void getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) override;
 private:
     SQLite::Database m_sqliteDatabase;
@@ -35,6 +36,8 @@ private:
 
     SQLite::Statement getZoneLightInfo;
     SQLite::Statement getZoneLightPointsInfo;
+    SQLite::Statement getMapList;
+    SQLite::Statement getMapByIdStatement;
 
 
     struct InnerLightResult {
@@ -57,6 +60,9 @@ private:
 
         int directLight;
         int closeRiverColor;
+        int farRiverColor;
+        int closeOceanColor;
+        int farOceanColor;
 
         int SkyTopColor;
         int SkyMiddleColor;

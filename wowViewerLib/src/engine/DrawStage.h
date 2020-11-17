@@ -72,6 +72,9 @@ struct FrameDepedantData {
 //Water params
     mathfu::vec4 closeRiverColor = mathfu::vec4(0,0,0,0);
     mathfu::vec4 farRiverColor = mathfu::vec4(0,0,0,0);
+
+    mathfu::vec4 closeOceanColor = mathfu::vec4(0,0,0,0);
+    mathfu::vec4 farOceanColor = mathfu::vec4(0,0,0,0);
 };
 typedef std::shared_ptr<FrameDepedantData> HFrameDepedantData;
 

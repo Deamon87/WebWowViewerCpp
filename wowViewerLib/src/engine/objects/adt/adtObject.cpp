@@ -153,9 +153,10 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
     }
 
     int basetextureFDID = 0;
-    mathfu::vec3 color = mathfu::vec3(1,1,1);
+    mathfu::vec3 color = mathfu::vec3(0,0,0);
 
     //SmallHack
+    int liquidFlags = 0;
     if (basetextureFDID == 0 && (m_api->databaseHandler != nullptr)) {
         if (liquidInstance.liquid_object_or_lvf > 42) {
             std::vector<LiquidMat> liqMats;
@@ -166,15 +167,21 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
                     if (liqMat.color1[0] > 0 || liqMat.color1[1] > 0 || liqMat.color1[2] > 0) {
                         color = mathfu::vec3(liqMat.color1[0], liqMat.color1[1], liqMat.color1[2]);
                     }
+                    liquidFlags = liqMat.flags;
                     break;
                 }
             }
         } else {
-            std::vector<int> fileDataIds;
-            m_api->databaseHandler->getLiquidTypeData(liquidInstance.liquid_type, fileDataIds);
-            for (auto fdid: fileDataIds) {
-                if (fdid != 0) {
-                    basetextureFDID = fdid;
+            std::vector<LiquidTypeData> liquidTypeData;
+            m_api->databaseHandler->getLiquidTypeData(liquidInstance.liquid_type, liquidTypeData);
+            for (auto ltd: liquidTypeData) {
+                if (ltd.FileDataId != 0) {
+                    basetextureFDID = ltd.FileDataId;
+
+                    if (ltd.color1[0] > 0 || ltd.color1[1] > 0 || ltd.color1[2] > 0) {
+                        color = mathfu::vec3(ltd.color1[0], ltd.color1[1], ltd.color1[2]);
+                    }
+                    liquidFlags = ltd.flags;
                     break;
                 }
             }
@@ -325,13 +332,13 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
         mathfu::mat4 &placementMat = self->getObject<mathfu::mat4>();
         placementMat = mathfu::mat4::Identity();
     });
-    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) -> void {
+    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color, liquidFlags](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) -> void {
         mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
 
-        if (color.LengthSquared() < 2.99f) {
-            mathfu::vec4 closeRiverColor = frameDepedantData->closeRiverColor;
-
-            color_ = mathfu::vec4(closeRiverColor.xyz(), 0.7);
+        if ((liquidFlags & 1024) > 0) {// Ocean
+            color_ = frameDepedantData->closeOceanColor;
+        } else if (liquidFlags == 15) { //River/Lake
+            color_ = frameDepedantData->closeRiverColor;
         } else {
             color_ = mathfu::vec4(color, 0.7);
         }
@@ -563,8 +570,8 @@ void AdtObject::calcBoundingBoxes() {
         maxZ += mcnkChunk->position.z;
 
         this->tileAabb[i] = CAaBox(
-            C3Vector(mathfu::vec3(minX, minY, minZ)),
-            C3Vector(mathfu::vec3(maxX, maxY, maxZ))
+            C3Vector(mathfu::vec3(minX, minY, minZ-10)),
+            C3Vector(mathfu::vec3(maxX, maxY, maxZ+10))
         );
 
         this->globIndexY[i] = worldCoordinateToGlobalAdtChunk((minX + maxX) / 2.0f);

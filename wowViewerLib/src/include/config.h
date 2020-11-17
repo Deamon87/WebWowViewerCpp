@@ -79,7 +79,11 @@ public:
     mathfu::vec4 interiorSunColor;
     mathfu::vec3 interiorSunDir;
 
+    EParameterSource waterColorParams = EParameterSource::eDatabase;
     mathfu::vec4 closeRiverColor = {1,1,1,1};
+    mathfu::vec4 farRiverColor = {1,1,1,1};
+    mathfu::vec4 closeOceanColor = {1,1,1,1};
+    mathfu::vec4 farOceanColor = {1,1,1,1};
 
     EParameterSource skyParams = EParameterSource::eDatabase;
     mathfu::vec4 SkyTopColor;
