@@ -125,6 +125,8 @@ set(SOURCE_FILES
         src/engine/camera/firstPersonOrthoCamera.h
         src/engine/camera/firstPersonOrthoStaticCamera.cpp
         src/engine/camera/firstPersonOrthoStaticCamera.h
+        src/engine/camera/firstPersonOrthoStaticTopDownCamera.cpp
+        src/engine/camera/firstPersonOrthoStaticTopDownCamera.h
         src/include/config.h
         src/engine/camera/CameraInterface.h
         src/engine/persistance/header/commonFileStructs.h

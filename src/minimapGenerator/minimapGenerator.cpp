@@ -9,6 +9,7 @@
 #include "../persistance/RequestProcessor.h"
 #include "../screenshots/screenshotMaker.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonOrthoStaticCamera.h"
+#include "../../wowViewerLib/src/engine/camera/firstPersonOrthoStaticTopDownCamera.h"
 
 
 MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice, HRequestProcessor processor, IClientDatabase* dbhandler ) {
@@ -63,6 +64,11 @@ void MinimapGenerator::startNextScenario() {
         return;
     }
 
+    if (currentScenario.orientation == ScenarioOrientation::soTopDownOrtho) {
+        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticTopDownCamera>();
+    } else {
+        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
+    }
 
     m_currentScene = std::make_shared<Map>(m_apiContainer, mapRecord.ID, mapRecord.WdtFileID);
 
@@ -100,16 +106,12 @@ MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, c
         std::max(std::max(minWowWorldCoordTransf.y, maxWowWorldCoordTransf.y), std::max(minMaxWowWorldCoordTransf.y, maxMinWowWorldCoordTransf.y))
     );
 
-    std::cout << "XToYCoef = " << XToYCoef << std::endl;
+    std::cout <<"Orient = " << (int)currentScenario.orientation << " XToYCoef = " << XToYCoef << std::endl;
 
     m_chunkStartX = std::floor(((minOrthoMapCoord.y) / getXScreenSpaceDimension())) ;
     m_chunkWidth = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y) / getXScreenSpaceDimension()) + 0.99 ) ;
     m_chunkStartY = std::floor(((minOrthoMapCoord.x) / getYScreenSpaceDimension())) ; //Y goes in reverse, that's why there is - here instead of +
     m_chunkHeight = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x) / getYScreenSpaceDimension()) + 0.99);
-
-    //hack
-    m_chunkWidth = 2;
-    m_chunkHeight = 2;
 
     std::cout << "m_chunkStartX = " << m_chunkStartX << " m_chunkWidth = " << m_chunkWidth
               << " m_chunkStartY = " << m_chunkStartY << " m_chunkHeight = " << m_chunkHeight << std::endl;
@@ -153,6 +155,7 @@ void MinimapGenerator::calcXtoYCoef() {
             HCameraMatrices cameraMatricesRendering = m_apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
 
 
+
             auto viewProj = cameraMatricesRendering->lookAtMat * orthoProjection;
 //        auto viewProj =  cameraMatrices->lookAtMat * orthoProjection;
 
@@ -184,7 +187,6 @@ void MinimapGenerator::calcXtoYCoef() {
 
             XToYCoef = (maxY - minY) / (maxX - minX);
             XToYCoefCalculated = true;
-
 
             std::cout << "vec4TopTrans1 = (" << vec4TopTrans[0] << " " << vec4TopTrans[1] << " " << vec4TopTrans[2]
                       << std::endl;
@@ -261,16 +263,33 @@ void MinimapGenerator::calcXtoYCoef() {
 }
 
 float MinimapGenerator::getYScreenSpaceDimension() {
-    return XToYCoef > 1.0f ?
-        (GetOrthoDimension() * 2.0f *XToYCoef) :
-        (GetOrthoDimension() * 2.0f )
-    ;
+    switch (currentScenario.orientation) {
+        case ScenarioOrientation::soTopDownOrtho:
+            return GetOrthoDimension() * 2.0f;
+        case ScenarioOrientation::so45DegreeTick0:
+            return GetOrthoDimension() * 2.0f * XToYCoef;
+        case ScenarioOrientation::so45DegreeTick1:
+            return GetOrthoDimension() * 2.0f * (1.0f/XToYCoef);
+        case ScenarioOrientation::so45DegreeTick2:
+            return GetOrthoDimension() * 2.0f * XToYCoef;
+        case ScenarioOrientation::so45DegreeTick3:
+            return GetOrthoDimension() * 2.0f * (1.0f/XToYCoef);
+    }
+
 }
 float MinimapGenerator::getXScreenSpaceDimension() {
-    return XToYCoef < 1.0f ?
-           (GetOrthoDimension() * 2.0f ) :
-           (GetOrthoDimension() * 2.0f * (1.0f / XToYCoef) );
-        ;
+    switch (currentScenario.orientation) {
+        case ScenarioOrientation::soTopDownOrtho:
+            return GetOrthoDimension() * 2.0f;
+        case ScenarioOrientation::so45DegreeTick0:
+            return GetOrthoDimension() * 2.0f;
+        case ScenarioOrientation::so45DegreeTick1:
+            return GetOrthoDimension() * 2.0;
+        case ScenarioOrientation::so45DegreeTick2:
+            return GetOrthoDimension() * 2.0;
+        case ScenarioOrientation::so45DegreeTick3:
+            return GetOrthoDimension() * 2.0f;
+    }
 }
 
 
@@ -306,10 +325,12 @@ void MinimapGenerator::process() {
         framesReady++;
     } else {
         framesReady = 0;
+        drawStageStack.clear();
+        return;
     }
 
-    if (framesReady < 8) {
-        if (drawStageStack.size() > 8)
+    if (framesReady < 15) {
+        if (drawStageStack.size() > 15)
             drawStageStack.pop_back();
         return;
     }
@@ -324,23 +345,23 @@ void MinimapGenerator::process() {
     }
 
     std::string fileName = currentScenario.folderToSave+"/map_"+std::to_string(
-        (YNumbering() < 0) ? (m_y-m_chunkStartY) : (m_chunkHeight - (m_y-m_chunkStartY))
+        (XNumbering() > 0) ? (m_x-m_chunkStartX) : ((m_chunkWidth-1) - (m_x-m_chunkStartX))
     )+"_"+std::to_string(
-        (XNumbering() < 0) ? (m_x-m_chunkStartX) : (m_chunkWidth - (m_x-m_chunkStartX))
+        (YNumbering() > 0) ? (m_y-m_chunkStartY) : ((m_chunkHeight-1) - (m_y-m_chunkStartY))
     )+".png";
 
     std::vector<uint8_t> buffer = std::vector<uint8_t>(m_width*m_height*4+1);
     saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
+    std::cout << "Saved "<<fileName << ": opaqueMeshes (" <<lastFrameIt->opaqueMeshes->meshes.size() << ") " << std::endl;
 
-
-    m_x++;
-    if (m_x >= m_chunkWidth + m_chunkStartX)  {
-        m_y++;
-        m_x = m_chunkStartX;
+    m_y++;
+    if (m_y >= m_chunkHeight + m_chunkStartY)  {
+        m_x++;
+        m_y = m_chunkStartY;
     }
     std::cout << "m_x = " << m_x << " out of (" << m_chunkStartX+m_chunkWidth << ") m_y = " << m_y << " out of (" << m_chunkStartY+m_chunkHeight << ")" << std::endl;
 
-    if (m_y >= (m_chunkHeight + m_chunkStartY)) {
+    if (m_x >= (m_chunkWidth + m_chunkStartX)) {
         startNextScenario();
     } else {
         setupCameraData();
@@ -402,12 +423,12 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
 }
 
 bool MinimapGenerator::isDone() {
-    return (m_y >= (m_chunkHeight + m_chunkStartY) && scenarioListToProcess.size() == 0 );
+    return (m_x >= (m_chunkWidth + m_chunkStartX) && scenarioListToProcess.size() == 0 );
 }
 
 float MinimapGenerator::GetOrthoDimension() {
 //    return MathHelper::TILESIZE*0.25*0.5f;
-    return MathHelper::TILESIZE;
+    return MathHelper::TILESIZE*0.25;
 }
 
 mathfu::mat4 MinimapGenerator::getOrthoMatrix() {
@@ -448,7 +469,7 @@ mathfu::vec3 MinimapGenerator::getLookAtVec3() {
 int MinimapGenerator::YNumbering() {
     switch (currentScenario.orientation) {
         case ScenarioOrientation::soTopDownOrtho:
-            return 1;
+            return -1;
         case ScenarioOrientation::so45DegreeTick0:
             return -1;
         case ScenarioOrientation::so45DegreeTick1:
@@ -464,7 +485,7 @@ int MinimapGenerator::YNumbering() {
 int MinimapGenerator::XNumbering() {
     switch (currentScenario.orientation) {
         case ScenarioOrientation::soTopDownOrtho:
-            return 1;
+            return -1;
         case ScenarioOrientation::so45DegreeTick0:
             return -1;
         case ScenarioOrientation::so45DegreeTick1:
