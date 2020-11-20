@@ -133,8 +133,7 @@ namespace ADT {
     };
 
     struct modelWideBlockPS {
-        mathfu::vec4_packed uFogStartAndFogEnd;
-        mathfu::vec4_packed uFogColor;
+        int useHeightMixFormula[4];
     };
 
     struct meshWideBlockPS {

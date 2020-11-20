@@ -109,9 +109,9 @@ MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, c
     std::cout <<"Orient = " << (int)currentScenario.orientation << " XToYCoef = " << XToYCoef << std::endl;
 
     m_chunkStartX = std::floor(((minOrthoMapCoord.y) / getXScreenSpaceDimension())) ;
-    m_chunkWidth = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y) / getXScreenSpaceDimension()) + 0.99 ) ;
+    m_chunkWidth = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y) / getXScreenSpaceDimension()) + 0.99 ) + 1;
     m_chunkStartY = std::floor(((minOrthoMapCoord.x) / getYScreenSpaceDimension())) ; //Y goes in reverse, that's why there is - here instead of +
-    m_chunkHeight = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x) / getYScreenSpaceDimension()) + 0.99);
+    m_chunkHeight = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x) / getYScreenSpaceDimension()) + 0.99) + 1;
 
     std::cout << "m_chunkStartX = " << m_chunkStartX << " m_chunkWidth = " << m_chunkWidth
               << " m_chunkStartY = " << m_chunkStartY << " m_chunkHeight = " << m_chunkHeight << std::endl;
@@ -428,7 +428,8 @@ bool MinimapGenerator::isDone() {
 
 float MinimapGenerator::GetOrthoDimension() {
 //    return MathHelper::TILESIZE*0.25*0.5f;
-    return MathHelper::TILESIZE*0.25;
+//    return MathHelper::TILESIZE*0.25;
+    return MathHelper::TILESIZE;
 }
 
 mathfu::mat4 MinimapGenerator::getOrthoMatrix() {

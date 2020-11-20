@@ -1308,14 +1308,23 @@ void FrontendUI::startExperimentCallback() {
 
     std::vector<ScenarioDef> scenarios = {
         {
-            0,
+            530,
             mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
             mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-            mathfu::vec2(-9081, -20),
-            mathfu::vec2(-8507, 1296),
+            mathfu::vec2(-5817, -1175),
+            mathfu::vec2(1758, 10491),
             ScenarioOrientation::soTopDownOrtho,
-            "azeroth/topDown"
+            "outland/topDown"
         }
+//        {
+//            0,
+//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+//            mathfu::vec2(-9081, -20),
+//            mathfu::vec2(-8507, 1296),
+//            ScenarioOrientation::soTopDownOrtho,
+//            "azeroth/topDown"
+//        }
     };
 
 //        std::vector<ScenarioDef> scenarios = {

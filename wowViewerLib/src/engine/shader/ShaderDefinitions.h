@@ -286,8 +286,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 },{ "adtShader.frag.spv", {
 {
 {0,4,288},
+{0,3,16},
 {0,0,352},
-{0,3,32},
 }
 }
 },{ "drawLinesShader.frag.spv", {
@@ -627,19 +627,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
-      3, {
-        {"_793.uFogStartAndFogEnd", true, 0, 1, 4, 0},
-        {"_793.uFogColor", true, 16, 1, 4, 0},
-      }
-    },
-    {
-      4, {
-        {"_439.uHeightScale", true, 0, 1, 4, 0},
-        {"_439.uHeightOffset", true, 16, 1, 4, 0},
-        {"_439.animationMat[0]", true, 32, 4, 4, 4},
-      }
-    },
-    {
       0, {
         {"_91.scene.uLookAtMat", true, 0, 4, 4, 0},
         {"_91.scene.uPMatrix", true, 64, 4, 4, 0},
@@ -657,6 +644,18 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_91.fogData.sunAngle_and_sunColor", true, 304, 1, 4, 0},
         {"_91.fogData.heightColor_and_endFogDistance", true, 320, 1, 4, 0},
         {"_91.fogData.sunPercentage", true, 336, 1, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_454.uHeightScale", true, 0, 1, 4, 0},
+        {"_454.uHeightOffset", true, 16, 1, 4, 0},
+        {"_454.animationMat[0]", true, 32, 4, 4, 4},
+      }
+    },
+    {
+      3, {
+        {"_494.uUseHeightMixFormula", false, 0, 1, 4, 0},
       }
     },
   }},

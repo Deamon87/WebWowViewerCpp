@@ -29,8 +29,8 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
 };
 
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
-    vec4 uFogStartAndFogEnd;
-    vec4 uFogColor;
+    ivec4 uUseHeightMixFormula;
+
 };
 
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
@@ -46,6 +46,10 @@ const InteriorLightParam intLight = {
     vec4(0,0,0,1)
 };
 
+vec3 mixTextures(vec3 tex0, vec3 tex1, float alpha) {
+    return  (alpha*(tex1.rgb-tex0.rgb)+tex0.rgb);
+}
+
 void main() {
     vec2 vTexCoord = vChunkCoords;
     const float threshold = 1.5;
@@ -58,34 +62,44 @@ void main() {
     vec2 tcLayer2 = (animationMat[2]*vec4(vTexCoord, 0, 1)).xy;
     vec2 tcLayer3 = (animationMat[3]*vec4(vTexCoord, 0, 1)).xy;
 
-    float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
-    vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
-    float weightedTexture_x = (minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * uHeightScale[0]) + uHeightOffset[0]));
-    float weightedTexture_y = (weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * uHeightScale[1]) + uHeightOffset[1]));
-    float weightedTexture_z = (weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * uHeightScale[2]) + uHeightOffset[2]));
-    float weightedTexture_w = (weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * uHeightScale[3]) + uHeightOffset[3]));
-    vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
-    vec4 weights_temp = (weights * (vec4(1.0) - clamp((vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights), 0.0, 1.0)));
-    vec4 weightsNormalized = (weights_temp / vec4(dot(vec4(1.0), weights_temp)));
-    
-    
-    vec4 weightedLayer_0 = (texture(uLayer0, tcLayer0) * weightsNormalized.x);
-    vec3 matDiffuse_0 = weightedLayer_0.xyz;
-    float specBlend_0 = weightedLayer_0.w;
+    vec4 final;
+    if (uUseHeightMixFormula.r > 0) {
+        float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
+        vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
+        float weightedTexture_x = (minusAlphaBlendSum * ((texture(uLayerHeight0, tcLayer0).w * uHeightScale[0]) + uHeightOffset[0]));
+        float weightedTexture_y = (weightsVector.y * ((texture(uLayerHeight1, tcLayer1).w * uHeightScale[1]) + uHeightOffset[1]));
+        float weightedTexture_z = (weightsVector.z * ((texture(uLayerHeight2, tcLayer2).w * uHeightScale[2]) + uHeightOffset[2]));
+        float weightedTexture_w = (weightsVector.w * ((texture(uLayerHeight3, tcLayer3).w * uHeightScale[3]) + uHeightOffset[3]));
+        vec4 weights = vec4(weightedTexture_x, weightedTexture_y, weightedTexture_z, weightedTexture_w);
+        vec4 weights_temp = (weights * (vec4(1.0) - clamp((vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights), 0.0, 1.0)));
+        vec4 weightsNormalized = (weights_temp / vec4(dot(vec4(1.0), weights_temp)));
 
-    vec4 weightedLayer_1 = (texture(uLayer1, tcLayer1) * weightsNormalized.y);
-    vec3 matDiffuse_1 = (matDiffuse_0 + weightedLayer_1.xyz);
-    float specBlend_1 = (specBlend_0 + weightedLayer_1.w);
 
-    vec4 weightedLayer_2 = (texture(uLayer2, tcLayer2) * weightsNormalized.z);
-    vec3 matDiffuse_2 = (matDiffuse_1 + weightedLayer_2.xyz);
-    float specBlend_2 = (specBlend_1 + weightedLayer_2.w);
+        vec4 weightedLayer_0 = (texture(uLayer0, tcLayer0) * weightsNormalized.x);
+        vec3 matDiffuse_0 = weightedLayer_0.xyz;
+        float specBlend_0 = weightedLayer_0.w;
 
-    vec4 weightedLayer_3 = (texture(uLayer3, tcLayer3) * weightsNormalized.w);
-    vec3 matDiffuse_3 = (matDiffuse_2 + weightedLayer_3.xyz);
-    float specBlend_3 = (specBlend_2 + weightedLayer_3.w);
+        vec4 weightedLayer_1 = (texture(uLayer1, tcLayer1) * weightsNormalized.y);
+        vec3 matDiffuse_1 = (matDiffuse_0 + weightedLayer_1.xyz);
+        float specBlend_1 = (specBlend_0 + weightedLayer_1.w);
 
-    vec4 final = vec4(matDiffuse_3, specBlend_3);
+        vec4 weightedLayer_2 = (texture(uLayer2, tcLayer2) * weightsNormalized.z);
+        vec3 matDiffuse_2 = (matDiffuse_1 + weightedLayer_2.xyz);
+        float specBlend_2 = (specBlend_1 + weightedLayer_2.w);
+
+        vec4 weightedLayer_3 = (texture(uLayer3, tcLayer3) * weightsNormalized.w);
+        vec3 matDiffuse_3 = (matDiffuse_2 + weightedLayer_3.xyz);
+        float specBlend_3 = (specBlend_2 + weightedLayer_3.w);
+
+        final = vec4(matDiffuse_3, specBlend_3);
+    } else {
+        vec3 tex1 = texture(uLayer0, tcLayer0).rgb;
+        vec3 tex2 = texture(uLayer1, tcLayer1).rgb;
+        vec3 tex3 = texture(uLayer2, tcLayer2).rgb;
+        vec3 tex4 = texture(uLayer3, tcLayer3).rgb;
+
+        final = vec4(mixTextures(mixTextures(mixTextures(tex1, tex2, alphaBlend.r), tex3, alphaBlend.g), tex4, alphaBlend.b), 1);
+    }
 
     vec3 matDiffuse = final.rgb * 2.0 * vColor.rgb;
 

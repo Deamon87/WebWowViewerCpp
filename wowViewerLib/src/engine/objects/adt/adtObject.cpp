@@ -587,10 +587,11 @@ void AdtObject::createMeshes() {
 
     adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::modelWideBlockPS));
 
+    int useHeightMixFormula = m_wdtFile->mphd->flags.adt_has_height_texturing > 0;
     auto api = m_api;
-    adtWideBlockPS->setUpdateHandler([api](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+    adtWideBlockPS->setUpdateHandler([api, useHeightMixFormula](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         auto *adtWideblockPS = &self->getObject<ADT::modelWideBlockPS>();
-
+        adtWideblockPS->useHeightMixFormula[0] = useHeightMixFormula;
     });
 
     if (adtVertexBindings != nullptr) {
