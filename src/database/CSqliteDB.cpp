@@ -45,14 +45,14 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "where ld.LightParamID = ? ORDER BY Time ASC"
         ),
     getLiquidObjectInfo(m_sqliteDatabase,
-        "select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.Color_0, lt.Color_1, lt.Flags from LiquidObject lo "
+        "select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidObject lo "
         "left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lo.LiquidTypeID "
         "left join LiquidType lt on lt.ID = lo.LiquidTypeID "
         "left join LiquidMaterial lm on lt.MaterialID = lm.ID "
         "where lo.ID = ? "
     ),
     getLiquidTypeInfo(m_sqliteDatabase,
-        "select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags from LiquidType lt "
+        "select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidType lt "
         " left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lt.ID "
         " where lt.ID = ? order by ltxt.OrderIndex"
     ),
@@ -565,6 +565,10 @@ void CSqliteDB::getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &
         lm.color2[1] = getFloatFromInt<1>(color2);
         lm.color2[2] = getFloatFromInt<2>(color2);
         lm.flags = getLiquidObjectInfo.getColumn(5).getInt();
+        int minimapStaticCol = getLiquidObjectInfo.getColumn(6).getInt();
+        lm.minimapStaticCol[0] = getFloatFromInt<0>(minimapStaticCol);
+        lm.minimapStaticCol[1] = getFloatFromInt<1>(minimapStaticCol);
+        lm.minimapStaticCol[2] = getFloatFromInt<2>(minimapStaticCol);
 
 
         loData.push_back(lm);
@@ -587,6 +591,10 @@ void CSqliteDB::getLiquidTypeData(int liquidTypeId, std::vector<LiquidTypeData >
         ltd.color2[1] = getFloatFromInt<1>(color2);
         ltd.color2[2] = getFloatFromInt<2>(color2);
         ltd.flags = getLiquidTypeInfo.getColumn(3).getInt();
+        int minimapStaticCol = getLiquidTypeInfo.getColumn(4).getInt();
+        ltd.minimapStaticCol[0] = getFloatFromInt<0>(minimapStaticCol);
+        ltd.minimapStaticCol[1] = getFloatFromInt<1>(minimapStaticCol);
+        ltd.minimapStaticCol[2] = getFloatFromInt<2>(minimapStaticCol);
 
         liquidTypeData.push_back(ltd);
     }

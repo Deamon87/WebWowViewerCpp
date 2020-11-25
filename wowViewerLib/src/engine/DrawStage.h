@@ -70,6 +70,8 @@ struct FrameDepedantData {
     mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0,0,0,0);
 
 //Water params
+    bool useMinimapWaterColor;
+    bool useCloseRiverColorForDB;
     mathfu::vec4 closeRiverColor = mathfu::vec4(0,0,0,0);
     mathfu::vec4 farRiverColor = mathfu::vec4(0,0,0,0);
 

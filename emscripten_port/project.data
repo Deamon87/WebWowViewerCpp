@@ -4491,7 +4491,7 @@ struct PSFog
 layout(std140) uniform modelWideBlockVS
 {
     mat4 uPlacementMat;
-    mat4 uBoneMatrixes[220];
+    mat4 uBoneMatrixes[100];
 } _133;
 
 layout(std140) uniform meshWideBlockVS

@@ -46,8 +46,8 @@ const InteriorLightParam intLight = {
     vec4(0,0,0,1)
 };
 
-vec3 mixTextures(vec3 tex0, vec3 tex1, float alpha) {
-    return  (alpha*(tex1.rgb-tex0.rgb)+tex0.rgb);
+vec4 mixTextures(vec4 tex0, vec4 tex1, float alpha) {
+    return  (alpha*(tex1-tex0)+tex0);
 }
 
 void main() {
@@ -93,12 +93,12 @@ void main() {
 
         final = vec4(matDiffuse_3, specBlend_3);
     } else {
-        vec3 tex1 = texture(uLayer0, tcLayer0).rgb;
-        vec3 tex2 = texture(uLayer1, tcLayer1).rgb;
-        vec3 tex3 = texture(uLayer2, tcLayer2).rgb;
-        vec3 tex4 = texture(uLayer3, tcLayer3).rgb;
+        vec4 tex1 = texture(uLayer0, tcLayer0).rgba;
+        vec4 tex2 = texture(uLayer1, tcLayer1).rgba;
+        vec4 tex3 = texture(uLayer2, tcLayer2).rgba;
+        vec4 tex4 = texture(uLayer3, tcLayer3).rgba;
 
-        final = vec4(mixTextures(mixTextures(mixTextures(tex1, tex2, alphaBlend.r), tex3, alphaBlend.g), tex4, alphaBlend.b), 1);
+        final = mixTextures(mixTextures(mixTextures(tex1, tex2, alphaBlend.r), tex3, alphaBlend.g), tex4, alphaBlend.b);
     }
 
     vec3 matDiffuse = final.rgb * 2.0 * vColor.rgb;

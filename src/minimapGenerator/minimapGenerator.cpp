@@ -27,7 +27,8 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
     config->skyParams = EParameterSource::eConfig;
     config->globalLighting = EParameterSource::eConfig;
     config->waterColorParams = EParameterSource::eConfig;
-
+    config->useMinimapWaterColor = false;
+    config->useCloseRiverColorForDB = true;
 
 
     mathfu::vec4 ambient = mathfu::vec4(0.7,0.7,0.7,1.0);
@@ -80,6 +81,7 @@ void MinimapGenerator::startNextScenario() {
 
     m_x = m_chunkStartX;
     m_y = m_chunkStartY;
+
 
     setupCameraData();
 }

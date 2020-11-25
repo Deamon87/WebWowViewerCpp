@@ -3,7 +3,7 @@
 //
 
 #include <iostream>
-#include "FirstPersonOrthoStaticTopDownCamera.h"
+#include "firstPersonOrthoStaticTopDownCamera.h"
 #include "m2TiedCamera.h"
 
 void FirstPersonOrthoStaticTopDownCamera::addForwardDiff(float val) {}

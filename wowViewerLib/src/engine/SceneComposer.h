@@ -16,7 +16,10 @@
 class SceneComposer {
 private:
     HApiContainer m_apiContainer = nullptr;
+
 private:
+
+
     std::thread cullingThread;
     std::thread updateThread;
     std::thread loadingResourcesThread;
@@ -38,7 +41,23 @@ private:
     std::array<HFrameScenario, 4> m_frameScenarios;
 public:
     SceneComposer(HApiContainer apiContainer);
+    ~SceneComposer() {
+        m_isTerminating = true;
+        try {
+            nextDeltaTime.set_value(1.0f);
+        } catch (...) {}
 
+        cullingThread.join();
+
+        if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
+            try {
+                nextDeltaTimeForUpdate.set_value(1.0f);
+            } catch (...) {}
+            updateThread.join();
+        }
+
+        loadingResourcesThread.join();
+    }
 
     void draw(HFrameScenario frameScenario);
 };

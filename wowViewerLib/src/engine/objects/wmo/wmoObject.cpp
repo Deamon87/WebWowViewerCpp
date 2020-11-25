@@ -79,14 +79,22 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
         return nullptr;
     }
 
+    SMODoodadSet *defaultDooodadSetDef = &this->mainGeom->doodadSets[0];
     SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
-    if (index < doodadSetDef->firstinstanceindex
-        || index > doodadSetDef->firstinstanceindex + doodadSetDef->numDoodads) return nullptr;
 
-    int doodadIndex = index - doodadSetDef->firstinstanceindex;
+    bool isInDefaultDoodadSetDef =
+        (index >= defaultDooodadSetDef->firstinstanceindex) &&
+        (index < defaultDooodadSetDef->firstinstanceindex + doodadSetDef->numDoodads);
 
-    auto doodadObject = this->m_doodadsArray[doodadIndex];
-    if (doodadObject != nullptr) return doodadObject;
+    bool isInCurrentDoodadSetDef =
+        (index >= doodadSetDef->firstinstanceindex) &&
+        (index < doodadSetDef->firstinstanceindex + doodadSetDef->numDoodads);
+
+    if (!isInCurrentDoodadSetDef && !isInDefaultDoodadSetDef) return nullptr;
+
+    auto iterator = this->m_doodadsUnorderedMap.find(index);
+    if (iterator != this->m_doodadsUnorderedMap.end())
+        return iterator->second;
 
     SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
 
@@ -115,7 +123,7 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
 
-    this->m_doodadsArray[doodadIndex] = m2Object;
+    this->m_doodadsUnorderedMap[index] = m2Object;
 
     return m2Object;
 }
@@ -732,7 +740,6 @@ void WmoObject::updateBB() {
 }
 
 void WmoObject::createM2Array() {
-    this->m_doodadsArray = std::vector<std::shared_ptr<M2Object>>(this->mainGeom->doodadDefsLen, nullptr);
 }
 
 void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {

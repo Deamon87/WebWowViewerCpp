@@ -119,7 +119,7 @@ public:
     explicit Map(HApiContainer api, int mapId, std::string mapName) {
         initMapTiles();
 
-        m_mapId = mapId; m_api = api; mapName = mapName;
+        m_mapId = mapId; m_api = api; this->mapName = mapName;
         m_sceneMode = SceneMode::smMap;
 
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
@@ -199,7 +199,7 @@ private:
     void doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage, HUpdateStage &updateStage) const;
 
 
-
+    void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults) override;
 };
 
 #endif //WEBWOWVIEWERCPP_MAP_H

@@ -1694,12 +1694,10 @@ HBlpTexture M2Object::getBlpTextureData(int textureInd) {
     M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
     //TODO:! Example of exception: "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\BURNINGBOOKS\\BOOKSONFIRE.m2"
     HBlpTexture blpData = nullptr;
-    if (textureDefinition == nullptr) {
-        return nullptr;
-    }
-    if (textureDefinition->type == 0) {
+
+    if ((textureDefinition== nullptr) || textureDefinition->type == 0) {
         blpData = getHardCodedTexture(textureInd);
-    } else if ( (textureDefinition->type < this->m_replaceTextures.size()) ){
+    } else if ((textureDefinition != nullptr) && (textureDefinition->type < this->m_replaceTextures.size()) ){
         blpData = this->m_replaceTextures[textureDefinition->type];
     }
 
@@ -1717,8 +1715,8 @@ HGTexture M2Object::getTexture(int textureInd) {
 
     HGTexture hgTexture = m_api->hDevice->createBlpTexture(
         blpData,
-        (textureDefinition->flags & 1) > 0,
-        (textureDefinition->flags & 2) > 0
+        textureDefinition!= nullptr ? ( (textureDefinition->flags & 1) > 0 ) : false,
+        textureDefinition!= nullptr ? ( (textureDefinition->flags & 2) > 0 ) : false
     );
 
     return hgTexture;
@@ -1728,7 +1726,7 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
     M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
     auto textureCache = m_api->cacheStorage->getTextureCache();
     HBlpTexture texture;
-    if (textureDefinition->filename.size > 0) {
+    if (textureDefinition != nullptr && textureDefinition->filename.size > 0) {
         std::string fileName = textureDefinition->filename.toString();
         texture = textureCache->get(fileName);
     } else if (textureInd < m_m2Geom->textureFileDataIDs.size()) {

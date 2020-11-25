@@ -18,6 +18,7 @@
 #include "../../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
 #include "../screenshots/screenshotMaker.h"
+#include "../persistance/HttpRequestProcessor.h"
 
 
 static const GBufferBinding imguiBindings[3] = {
@@ -451,9 +452,15 @@ void FrontendUI::showQuickLinksDialog() {
     std::vector<int> replacementTextureFDids = {};
 
     ImGui::Begin("Quick Links", &showQuickLinks);
+
+
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
         openWMOSceneByfdid(2756726);
     }
+
+//    if (ImGui::Button("Azeroth map: Lion's Rest (Legion)", ImVec2(-1, 0))) {
+//        openMapByIdAndFilename(0, "azeroth", -8739, 944, 200);
+//    }
     if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
         openWMOSceneByfdid(1247268);
     }
@@ -572,6 +579,9 @@ void FrontendUI::showQuickLinksDialog() {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3087540;
             openM2SceneByfdid(3087468, replacementTextureFDids);
+    }
+    if (ImGui::Button("3445776 PBR cloud sky in Maw", ImVec2(-1, 0))) {
+            openM2SceneByfdid(3445776, replacementTextureFDids);
     }
     if (ImGui::Button("M2 3572296", ImVec2(-1, 0))) {
             openM2SceneByfdid(3572296, replacementTextureFDids);
@@ -1228,11 +1238,17 @@ void FrontendUI::openSceneByfdid(int mapId, int wdtFileId, float x, float y, flo
     currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
     m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(x, y, z);
+    m_api->camera->setMovementSpeed(movementSpeed);
 }
 
 void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
     currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
     m_api->camera->setCameraPos(0, 0, 0);
+}
+
+void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z) {
+    currentScene = std::make_shared<Map>(m_api, mapId, mapName);
+    m_api->camera->setCameraPos(x,y,z);
 }
 
 void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
@@ -1241,6 +1257,7 @@ void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementText
 
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
+    m_api->camera->setMovementSpeed(movementSpeed);
     m_api->getConfig()->BCLightHack = false;
 //
     m_api->camera->setCameraPos(0, 0, 0);
@@ -1252,6 +1269,7 @@ void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &rep
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(0, 0, 0);
+    m_api->camera->setMovementSpeed(movementSpeed);
 }
 
 void FrontendUI::unloadScene() {
@@ -1275,6 +1293,7 @@ bool FrontendUI::setNewCameraCallback(int cameraNum) {
     auto newCamera = currentScene->createCamera(cameraNum);
     if (newCamera == nullptr) {
         m_api->camera = std::make_shared<FirstPersonCamera>();
+        m_api->camera->setMovementSpeed(movementSpeed);
         return false;
     }
 
@@ -1307,15 +1326,33 @@ void FrontendUI::startExperimentCallback() {
     );
 
     std::vector<ScenarioDef> scenarios = {
-        {
-            530,
-            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-            mathfu::vec2(-5817, -1175),
-            mathfu::vec2(1758, 10491),
-            ScenarioOrientation::soTopDownOrtho,
-            "outland/topDown"
-        }
+//        {
+//            2222,
+//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+//            mathfu::vec2(-9750, -8001   ),
+//            mathfu::vec2(8333, 9500 ),
+//            ScenarioOrientation::so45DegreeTick0,
+//            "shadowlands/orient0"
+//        }
+//        {
+//            1643,
+//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+//            mathfu::vec2(291 , 647 ),
+//            mathfu::vec2(2550, 2895),
+//            ScenarioOrientation::so45DegreeTick0,
+//            "kultiras/orient0"
+//        }
+//        {
+//            530,
+//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+//            mathfu::vec2(-5817, -1175),
+//            mathfu::vec2(1758, 10491),
+//            ScenarioOrientation::so45DegreeTick0,
+//            "outland/topDown1"
+//        }
 //        {
 //            0,
 //            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
@@ -1325,7 +1362,7 @@ void FrontendUI::startExperimentCallback() {
 //            ScenarioOrientation::soTopDownOrtho,
 //            "azeroth/topDown"
 //        }
-    };
+//    };
 
 //        std::vector<ScenarioDef> scenarios = {
 //        {
@@ -1337,15 +1374,16 @@ void FrontendUI::startExperimentCallback() {
 //            ScenarioOrientation::so45DegreeTick0,
 //            "kalimdor/rotation0"
 //        },
-//        {
-//            1,
-//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-//            mathfu::vec2(-12182, -8803 ),
-//            mathfu::vec2(12058, 4291),
-//            ScenarioOrientation::so45DegreeTick1,
-//            "kalimdor/rotation1"
-//        },
+        {
+            1,
+            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+            mathfu::vec2(-12182, -8803),
+            mathfu::vec2(12058, 4291),
+            ScenarioOrientation::so45DegreeTick1,
+            "kalimdor/rotation1_new"
+        }
+    };
 //        {
 //            1,
 //            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
@@ -1370,8 +1408,8 @@ void FrontendUI::startExperimentCallback() {
 
 void FrontendUI::createDefaultprocessor() {
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=140a9305a89f6418c084de0c6a07788f&cdnconfig=38cef2dbf3d2705b367485f8c36b5311&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=2cbcbba39f2e60b17d89742ca575c730&cdnconfig=eee453d9035886d03a1308de041de88c&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=2cbcbba39f2e60b17d89742ca575c730&cdnconfig=eee453d9035886d03a1308de041de88c&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
@@ -1379,7 +1417,7 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-//        processor = new HttpRequestProcessor(url, urlFileId);
+//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
     m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
 ////        processor->setThreaded(false);
 ////

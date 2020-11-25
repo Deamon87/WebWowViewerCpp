@@ -573,6 +573,10 @@ void Map::checkCulling(HCullStage cullStage) {
 //    }
 }
 
+mathfu::vec3 blendV3(mathfu::vec3 a, mathfu::vec3 b, float alpha) {
+    return (a - b) * alpha + a;
+}
+
 void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                                    StateForConditions &stateForConditions, const AreaRecord &areaRecord) {///-----------------------------------
     Config* config = this->m_api->getConfig();
@@ -588,52 +592,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
-        LightResult zoneLightResult;
-        bool zoneLightFound = false;
-        int LightId;
-        for (const auto &zoneLight : m_zoneLights) {
-            if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
-                zoneLightFound = true;
-                LightId = zoneLight.LightID;
-                break;
-            }
-        }
-
-        if (zoneLightFound) {
-            m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
-        }
-
-        m_api->databaseHandler->getEnvInfo(m_mapId,
-                                           cameraVec3.x,
-                                           cameraVec3.y,
-                                           cameraVec3.z,
-                                           config->currentTime,
-                                           lightResults
-        );
-
-        //Calc final blendcoef for zoneLight;
-        if (zoneLightFound) {
-            float blendCoef = 1.0;
-
-            for (auto &_light : lightResults) {
-                if (!_light.isDefault) {
-                    blendCoef -= _light.blendCoef;
-                }
-            }
-            if (blendCoef > 0) {
-                zoneLightResult.blendCoef = blendCoef;
-                lightResults.push_back(zoneLightResult);
-                //Delete default from results;
-                auto it = lightResults.begin();
-                while (it != lightResults.end()) {
-                    if (it->isDefault) {
-                        lightResults.erase(it);
-                        break;
-                    } else
-                        it++;
-                }
-            }
-        }
+        getLightResultsFromDB(cameraVec3, config, lightResults);
 
         //Delete skyboxes that are not in light array
         std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
@@ -700,16 +659,16 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         mathfu::vec3 SkyBand2Color = {0, 0, 0};
         mathfu::vec3 SkySmogColor = {0, 0, 0};
         mathfu::vec3 SkyFogColor = {0, 0, 0};
-
-
         float currentGlow = 0;
+
         for (auto &_light : lightResults) {
             currentGlow += _light.glow * _light.blendCoef;
+
             ambientColor += mathfu::vec3(_light.ambientColor) * _light.blendCoef;
             horizontAmbientColor += mathfu::vec3(_light.horizontAmbientColor) * _light.blendCoef;
             groundAmbientColor += mathfu::vec3(_light.groundAmbientColor) * _light.blendCoef;
-
             directColor += mathfu::vec3(_light.directColor) * _light.blendCoef;
+
             closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
             farRiverColor += mathfu::vec3(_light.farRiverColor) * _light.blendCoef;
             closeOceanColor += mathfu::vec3(_light.closeOceanColor) * _light.blendCoef;
@@ -766,7 +725,11 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
         }
 
-
+        {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->useMinimapWaterColor = config->useMinimapWaterColor;
+            fdd->useCloseRiverColorForDB = config->useCloseRiverColorForDB;
+        }
         if (config->waterColorParams == EParameterSource::eDatabase)
         {
             auto fdd = cullStage->frameDepedantData;
@@ -938,6 +901,63 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
     }
 
 //    this->m_api->getConfig()->setClearColor(0,0,0,0);
+}
+
+void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults) {
+    if (m_api->databaseHandler == nullptr)
+        return ;
+
+    LightResult zoneLightResult;
+
+    bool zoneLightFound = false;
+    int LightId;
+    for (const auto &zoneLight : m_zoneLights) {
+        CAaBox laabb = zoneLight.aabb;
+        auto const vec50 = mathfu::vec3(50.0f,50.0f,0);
+        laabb.min = (mathfu::vec3(laabb.min) - vec50);
+        laabb.max = (mathfu::vec3(laabb.max) + vec50);
+        if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
+            zoneLightFound = true;
+            LightId = zoneLight.LightID;
+            break;
+        }
+    }
+
+    if (zoneLightFound) {
+        m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
+    }
+
+    m_api->databaseHandler->getEnvInfo(m_mapId,
+                                       cameraVec3.x,
+                                       cameraVec3.y,
+                                       cameraVec3.z,
+                                       config->currentTime,
+                                       lightResults
+    );
+
+    //Calc final blendcoef for zoneLight;
+    if (zoneLightFound) {
+        float blendCoef = 1.0;
+
+        for (auto &_light : lightResults) {
+            if (!_light.isDefault) {
+                blendCoef -= _light.blendCoef;
+            }
+        }
+        if (blendCoef > 0) {
+            zoneLightResult.blendCoef = blendCoef;
+            lightResults.push_back(zoneLightResult);
+            //Delete default from results;
+            auto it = lightResults.begin();
+            while (it != lightResults.end()) {
+                if (it->isDefault) {
+                    lightResults.erase(it);
+                    break;
+                } else
+                    it++;
+            }
+        }
+    }
 }
 
 void Map::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
@@ -1638,7 +1658,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 
 //        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
         float fogEnd = config->farPlane;
-        if (config->disableFog || !config->fogDataFound) {
+        if (config->disableFog || !fdd->FogDataFound) {
             fogEnd = 100000000.0f;
             fdd->FogScaler = 0;
             fdd->FogDensity = 0;

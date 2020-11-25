@@ -64,7 +64,7 @@ private:
 
     std::vector<bool> drawGroupWMO;
     std::vector<int> lodGroupLevelWMO;
-    std::vector<std::shared_ptr<M2Object>> m_doodadsArray;
+    std::unordered_map<int, std::shared_ptr<M2Object>> m_doodadsUnorderedMap;
 
     std::shared_ptr<M2Object> skyBox = nullptr;
 

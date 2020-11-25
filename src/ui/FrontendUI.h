@@ -197,6 +197,8 @@ public:
     void showQuickLinksDialog();
 
     void showCurrentStatsDialog();
+
+    void openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z);
 };
 
 

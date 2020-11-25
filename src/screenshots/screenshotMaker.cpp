@@ -2,6 +2,7 @@
 // Created by Deamon on 9/8/2020.
 //
 #include "screenshotMaker.h"
+#include "lodepng/lodepng.h"
 
 void saveScreenshot(const std::string &name, int width, int height, std::vector <uint8_t> &rgbaBuff) {
     FILE *fp = fopen(name.c_str(), "wb");
@@ -36,19 +37,19 @@ void saveScreenshot(const std::string &name, int width, int height, std::vector 
     std::shared_ptr<std::vector<uint8_t*>> rows = std::make_shared<std::vector<uint8_t*>>(height);
 
     for (int i = 0; i < height; ++i) {
-        (*rows)[height - i - 1] = data->data() + (i*width*3);
+        (*rows)[i] = data->data() + (i*width*3);
         for (int j = 0; j < width; ++j) {
             int i1 = (i*width+j)*3;
             int i2 = (i*width+j)*4;
 
-            char r = rgbaBuff[++i2];
-            char g = rgbaBuff[++i2];
-            char b = rgbaBuff[++i2];
-            char a = rgbaBuff[++i2];
+            char r = rgbaBuff[i2++];
+            char g = rgbaBuff[i2++];
+            char b = rgbaBuff[i2++];
+            char a = rgbaBuff[i2++];
 
-            (*data)[i1++] = a;
             (*data)[i1++] = r;
             (*data)[i1++] = g;
+            (*data)[i1++] = b;
         }
     }
     png_set_rows(png_ptr, png_info, rows->data());
@@ -59,6 +60,28 @@ void saveScreenshot(const std::string &name, int width, int height, std::vector 
     png_destroy_write_struct(&png_ptr, nullptr);
     fclose(fp);
 }
+
+//Lodepng part
+void saveScreenshotLodePng(const std::string &name, int width, int height, std::vector <uint8_t> &rgbaBuff){
+    unsigned char* png;
+    size_t pngsize;
+
+    unsigned error = lodepng_encode32(&png, &pngsize, rgbaBuff.data(), width, height);
+    if(!error) {
+        FILE* imageFile = fopen(name.c_str(), "wb");
+
+        fwrite(png, 1, pngsize, imageFile);
+
+        fclose(imageFile);
+    }
+
+    /*if there's an error, display it*/
+    if(error) printf("error %u: %s\n", error, lodepng_error_text(error));
+
+    free(png);
+}
+
+
 
 //BMP part
 const int bytesPerPixel = 4; /// red, green, blue
@@ -152,8 +175,42 @@ void saveDataFromDrawStage(const HFrameBuffer& fb,
     if (fb == nullptr)
         return;
 
-    fb->readRGBAPixels( 0, 0, screenshotWidth, screenshotHeight, buffer.data());
-    generateBitmapImage((unsigned char*) buffer.data(), screenshotHeight, screenshotWidth, screenshotWidth*4, (screenshotFileName+".bmp").c_str());
+    std::vector <uint8_t> internalBuffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4);
+    fb->readRGBAPixels( 0, 0, screenshotWidth, screenshotHeight, internalBuffer.data());
+
+    //In internalbuffer rn image is in bgra format. Let's turn it into RGBA and make alpha 256
+    for (int j = 0; j < screenshotHeight; j++) {
+        for (int i = 0; i < screenshotWidth; i++) {
+            std::array<int,4> ind =
+            {
+                screenshotWidth * 4 * (screenshotHeight - 1 - j) + (i * 4) + 0,
+                screenshotWidth * 4 * (screenshotHeight - 1 - j) + (i * 4) + 1,
+                screenshotWidth * 4 * (screenshotHeight - 1 - j) + (i * 4) + 2,
+                screenshotWidth * 4 * (screenshotHeight - 1 - j) + (i * 4) + 3,
+            };
+            std::array<int,4> ind2 =
+                {
+                    screenshotWidth * 4 * (j) + (i * 4) + 0,
+                    screenshotWidth * 4 * (j) + (i * 4) + 1,
+                    screenshotWidth * 4 * (j) + (i * 4) + 2,
+                    screenshotWidth * 4 * (j) + (i * 4) + 3,
+                };
+
+
+            auto b = internalBuffer[ind[0]];
+            auto g = internalBuffer[ind[1]];
+            auto r = internalBuffer[ind[2]];
+            auto a = internalBuffer[ind[3]];
+
+            buffer[ind2[0]] = b;
+            buffer[ind2[1]] = g;
+            buffer[ind2[2]] = r;
+            buffer[ind2[3]] = 255;
+        }
+    }
+
+//    generateBitmapImage((unsigned char*) buffer.data(), screenshotHeight, screenshotWidth, screenshotWidth*4, (screenshotFileName+".bmp").c_str());
     saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
+//    saveScreenshotLodePng(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
 
 }

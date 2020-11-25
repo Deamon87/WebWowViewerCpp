@@ -64,6 +64,7 @@ struct LiquidMat {
     float color1[3];
     float color2[3];
     int flags;
+    std::array<float,3> minimapStaticCol;
 };
 
 struct LiquidTypeData {
@@ -71,6 +72,7 @@ struct LiquidTypeData {
     float color1[3];
     float color2[3];
     int flags;
+    float minimapStaticCol[3];
 };
 
 struct vec2 {

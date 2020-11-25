@@ -41,6 +41,8 @@ void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3
         frameDepedantData->exteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,0.0);
         frameDepedantData->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
     }
+    auto frameDepedantData = cullStage->frameDepedantData;
+    frameDepedantData->FogDataFound = false;
 }
 
 extern "C" {

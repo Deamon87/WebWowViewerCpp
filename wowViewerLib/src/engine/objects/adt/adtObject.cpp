@@ -154,9 +154,12 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
 
     int basetextureFDID = 0;
     mathfu::vec3 color = mathfu::vec3(0,0,0);
-
+    mathfu::vec3 minimapStaticCol = {0,0,0};
     //SmallHack
     int liquidFlags = 0;
+    int l_liquidType = liquidInstance.liquid_type;
+    int l_liquidObjectType = liquidInstance.liquid_object_or_lvf;
+
     if (basetextureFDID == 0 && (m_api->databaseHandler != nullptr)) {
         if (liquidInstance.liquid_object_or_lvf > 42) {
             std::vector<LiquidMat> liqMats;
@@ -165,13 +168,16 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
                 if (liqMat.FileDataId != 0) {
                     basetextureFDID = liqMat.FileDataId;
                     if (liqMat.color1[0] > 0 || liqMat.color1[1] > 0 || liqMat.color1[2] > 0) {
-                        color = mathfu::vec3(liqMat.color1[0], liqMat.color1[1], liqMat.color1[2]);
+                        color = mathfu::vec3(liqMat.color1[2], liqMat.color1[1], liqMat.color1[0]);
                     }
+                    minimapStaticCol = mathfu::vec3(liqMat.minimapStaticCol[2], liqMat.minimapStaticCol[1], liqMat.minimapStaticCol[0]);
+
                     liquidFlags = liqMat.flags;
                     break;
                 }
             }
         } else {
+
             std::vector<LiquidTypeData> liquidTypeData;
             m_api->databaseHandler->getLiquidTypeData(liquidInstance.liquid_type, liquidTypeData);
             for (auto ltd: liquidTypeData) {
@@ -181,6 +187,7 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
                     if (ltd.color1[0] > 0 || ltd.color1[1] > 0 || ltd.color1[2] > 0) {
                         color = mathfu::vec3(ltd.color1[0], ltd.color1[1], ltd.color1[2]);
                     }
+                    minimapStaticCol = mathfu::vec3(ltd.minimapStaticCol[2], ltd.minimapStaticCol[1], ltd.minimapStaticCol[0]);
                     liquidFlags = ltd.flags;
                     break;
                 }
@@ -271,6 +278,19 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
         }
     }
 
+    //Query river color
+    mathfu::vec3 closeRiverColor = {0, 0, 0};
+    if (m_api->getConfig()->useCloseRiverColorForDB) {
+        mathfu::vec3 waterPos = (mathfu::vec3(waterAaBB.max) + mathfu::vec3(waterAaBB.min)) / 2.0f;
+        std::vector<LightResult> lightResults = {};
+        this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults);
+        for (auto &_light : lightResults) {
+            closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
+        }
+        closeRiverColor = mathfu::vec3(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0]);
+    }
+
+
     std::shared_ptr<IDevice> device = m_api->hDevice;
 
     auto waterIBO = device->createIndexBuffer();
@@ -327,21 +347,28 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
     meshTemplate.end = indexBuffer.size();
     meshTemplate.element = DrawElementMode::TRIANGLES;
 
-    auto l_liquidType = 0;
+
     meshTemplate.ubo[1]->setUpdateHandler([](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData ) -> void {
         mathfu::mat4 &placementMat = self->getObject<mathfu::mat4>();
         placementMat = mathfu::mat4::Identity();
     });
-    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, color, liquidFlags](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) -> void {
+    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, l_liquidObjectType, color, liquidFlags, minimapStaticCol, closeRiverColor](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) -> void {
         mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
-
-        if ((liquidFlags & 1024) > 0) {// Ocean
-            color_ = frameDepedantData->closeOceanColor;
-        } else if (liquidFlags == 15) { //River/Lake
-            color_ = frameDepedantData->closeRiverColor;
+        if (!frameDepedantData->useMinimapWaterColor) {
+            if ((liquidFlags & 1024) > 0) {// Ocean
+                color_ = frameDepedantData->closeOceanColor;
+            } else if (liquidFlags == 15) { //River/Lake
+                if (frameDepedantData->useCloseRiverColorForDB) {
+                    color_ = mathfu::vec4(closeRiverColor,0.7);
+                } else {
+                    color_ = frameDepedantData->closeRiverColor;
+                }
+            } else {
+                color_ = mathfu::vec4(color, 0.7);
+            }
         } else {
-            color_ = mathfu::vec4(color, 0.7);
-        }
+            color_ = mathfu::vec4(minimapStaticCol, 0.7);
+        };
     });
 
     return m_api->hDevice->createMesh(meshTemplate);
@@ -588,6 +615,7 @@ void AdtObject::createMeshes() {
     adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::modelWideBlockPS));
 
     int useHeightMixFormula = m_wdtFile->mphd->flags.adt_has_height_texturing > 0;
+//    int useHeightMixFormula = 1;
     auto api = m_api;
     adtWideBlockPS->setUpdateHandler([api, useHeightMixFormula](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         auto *adtWideblockPS = &self->getObject<ADT::modelWideBlockPS>();
@@ -659,7 +687,7 @@ void AdtObject::createMeshes() {
                 for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
                     auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
 
-                    HGTexture layer_height = nullptr;
+                    HGTexture layer_height = device->getWhiteTexturePixel();
                     if (textureParams.flags.do_not_load_specular_or_height_texture_but_use_cubemap == 0) {
                         if (!feq(textureParams.heightScale, 0.0)) {
                             layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);

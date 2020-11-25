@@ -187,6 +187,9 @@ set(SOURCE_FILES
 		src/minimapGenerator/minimapGenerator.cpp
 		src/screenshots/screenshotMaker.h
 		src/screenshots/screenshotMaker.cpp
+		src/screenshots/lodepng/lodepng.cpp
+		src/screenshots/lodepng/lodepng.h
+
 		src/ui/childWindow/mapConstructionWindow.cpp
 		src/ui/childWindow/mapConstructionWindow.h)
 
