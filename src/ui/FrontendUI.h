@@ -60,6 +60,7 @@ public:
 
     HFrameScenario createFrameScenario(int canvWidth, int canvHeight, double deltaTime);
 private:
+    std::array<HCullStage, 4> m_cullstages;
 
     HMinimapGenerator minimapGenerator;
     std::shared_ptr<IScene> currentScene = nullptr;

@@ -77,6 +77,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
         if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
             updateThread = std::thread(([&]() {
 //                try {
+                    this->m_apiContainer->hDevice->initUploadThread();
                     while (!this->m_isTerminating) {
                         auto future = nextDeltaTimeForUpdate.get_future();
                         future.wait();

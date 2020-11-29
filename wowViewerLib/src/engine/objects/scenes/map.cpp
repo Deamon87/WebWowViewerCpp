@@ -1519,8 +1519,13 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 //        s.insert(i);
 //    m2ObjectsRendered.assign( s.begin(), s.end() );
 
-    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
-    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
+    std::set<std::shared_ptr<M2Object>> s;
+    unsigned size = m2ObjectsRendered.size();
+    for( unsigned i = 0; i < size; ++i ) s.insert( m2ObjectsRendered[i] );
+    m2ObjectsRendered.assign( s.begin(), s.end() );
+
+//    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
+//    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
 
 //    if (m_api->getConfig()->getRenderM2()) {
     for (auto &m2Object : m2ObjectsRendered) {
@@ -1606,8 +1611,15 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
         }
     }
 
-    std::sort( bufferChunks.begin(), bufferChunks.end());
-    bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
+    {
+        std::set<HGUniformBufferChunk> s;
+        unsigned size = bufferChunks.size();
+        for (unsigned i = 0; i < size; ++i) s.insert(bufferChunks[i]);
+        bufferChunks.assign(s.begin(), s.end());
+    }
+
+//    std::sort( bufferChunks.begin(), bufferChunks.end());
+//    bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
 }
 void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     auto cullStage = updateStage->cullResult;

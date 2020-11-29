@@ -174,6 +174,9 @@ class IDevice {
         virtual float getAnisLevel() = 0;
         virtual bool getIsVulkanAxisSystem() {return false;}
         virtual bool getIsRenderbufferSupported() {return false;}
+
+        virtual void initUploadThread(){}
+
     public:
         virtual HGShaderPermutation getShader(std::string shaderName, void *permutationDescriptor) = 0;
 

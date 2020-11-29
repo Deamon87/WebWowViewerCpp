@@ -9,7 +9,7 @@ set(LINK_GLEW 1)
 set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)
-set(LINK_VULKAN 0)
+set(LINK_VULKAN 1)
 set(LINK_OPENMP 1)
 set(ENABLE_SIMD 1)
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
@@ -386,7 +386,6 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
             src/gapi/vulkan/shaders/GM2ParticleShaderPermutationVLK.cpp
             src/gapi/vulkan/shaders/GM2RibbonShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GWMOWaterShaderVLK.cpp
             src/gapi/vulkan/shaders/GWMOShaderPermutationVLK.cpp
             src/gapi/vulkan/meshes/GM2MeshVLK.cpp
             src/gapi/vulkan/meshes/GMeshVLK.cpp
@@ -403,15 +402,17 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorSet.h
             src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp
             src/gapi/vulkan/shaders/GImguiShaderPermutation.h
-            src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.cpp
-            src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.h)
+            src/gapi/vulkan/shaders/GWaterShaderPermutation.cpp
+            src/gapi/vulkan/shaders/GWaterShaderPermutation.h
+            src/gapi/vulkan/shaders/GSkyConusShaderVLK.cpp
+            src/gapi/vulkan/shaders/GSkyConusShaderVLK.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
             find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "$ENV{VULKAN_SDK}/lib")
             IF (Vulkan_LIBRARY)
                 set(Vulkan_FOUND ON)
-                MESSAGE("Using bundled Vulkan library version win32")
+                MESSAGE("Using bundled Vulkan library version win32, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
             ENDIF()
         ENDIF()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
@@ -480,13 +481,9 @@ else()
 endif()
 
 if (LINK_VULKAN)
-    #Vulkan stuff
-    add_custom_target(
-            Shaders
-            DEPENDS ${SPIRV_BINARY_FILES}
-    )
-    add_dependencies(WoWViewerLib Shaders)
-    target_include_directories(WoWViewerLib INTERFACE ${Vulkan_INCLUDE_DIR})
+    message("Include vulkan include dir ${Vulkan_INCLUDE_DIR}")
+    target_include_directories(WoWViewerLib PUBLIC ${Vulkan_INCLUDE_DIR})
+    target_compile_definitions(WoWViewerLib PUBLIC -DLINK_VULKAN)
     #Vulkan stuff end
 else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)

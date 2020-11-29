@@ -24,6 +24,8 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDevice &device) : m_device(dynamic_cast<
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = setsAvailable;
+    poolInfo.pNext = nullptr;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT ;
 
     if (vkCreateDescriptorPool(m_device.getVkDevice(), &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
@@ -58,9 +60,15 @@ std::shared_ptr<GDescriptorSets> GDescriptorPoolVLK::allocate(VkDescriptorSetLay
 
 void GDescriptorPoolVLK::deallocate(GDescriptorSets *set) {
     auto descSet = set->getDescSet();
-    vkFreeDescriptorSets(m_device.getVkDevice(), m_descriptorPool, 1, &descSet);
+    auto imgCnt = set->getImageCount();
+    auto uniformCnt = set->getImageCount();
 
-    imageAvailable+= set->getImageCount();
-    uniformsAvailable+= set->getUniformCount();
-    setsAvailable+=1;
+    m_device.addDeallocationRecord([this, imgCnt, uniformCnt, descSet]() {
+        vkFreeDescriptorSets(m_device.getVkDevice(), m_descriptorPool, 1, &descSet);
+
+        imageAvailable+= imgCnt;
+        uniformsAvailable+= uniformCnt;
+        setsAvailable+=1;
+    });
+
 }

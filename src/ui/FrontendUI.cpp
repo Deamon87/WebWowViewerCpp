@@ -117,9 +117,16 @@ void FrontendUI::showCurrentStatsDialog() {
                     ImGui::GetIO().Framerate);
 //            if(getCurrentAreaName) {
         ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
-
         ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
 
+        int currentFrame = m_api->hDevice->getDrawFrameNumber();
+        auto &cullStageData = m_cullstages[currentFrame];
+
+        int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.size() : 0;
+        int wmoObjectsDrawn = cullStageData!= nullptr ? cullStageData->wmoArray.size() : 0;
+
+        ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
+        ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
 
 //        ImGui::Text("Current Fog scaler: %f", m_api->getConfig()->getFogScaler());
 //        ImGui::Text("Current Fog density: %f", m_api->getConfig()->getFogDensity());
@@ -1089,7 +1096,7 @@ void FrontendUI::produceUpdateStage(HUpdateStage updateStage) {
 }
 
 HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
-                                ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene) {
+                                ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene, HCullStage &cullStage) {
     float farPlaneRendering = apiContainer.getConfig()->farPlane;
     float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
 
@@ -1134,7 +1141,7 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
             fb = apiContainer.hDevice->createFrameBuffer(width, height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32, 4);
         }
 
-        auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
+        cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
         auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
         std::vector<HDrawStage> drawStageDependencies = {};
         HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, drawStageDependencies, true,
@@ -1171,8 +1178,9 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
     if (needToMakeScreenshot)
     {
+        HCullStage temp = nullptr;
         auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true, *m_api,
-                                              currentScene);
+                                              currentScene,temp);
         if (drawStage != nullptr) {
             uiDependecies.push_back(drawStage);
             screenshotDS = drawStage;
@@ -1188,8 +1196,12 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     bool clearOnUi = true;
     if (currentScene != nullptr && m_api->camera != nullptr)
     {
+        int currentFrame = m_api->hDevice->getDrawFrameNumber();
+        auto &cullStageData = m_cullstages[currentFrame];
+        cullStageData = nullptr;
+
         auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime, false, *m_api,
-                                              currentScene);
+                                              currentScene, cullStageData);
         if (drawStage != nullptr) {
             uiDependecies.push_back(drawStage);
             clearOnUi = false;

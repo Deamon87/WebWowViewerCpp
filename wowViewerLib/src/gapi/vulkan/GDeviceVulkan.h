@@ -55,6 +55,8 @@ class GDeviceVLK : public IDevice {
     };
 
 public:
+    enum class ViewportType {vp_usual = 0, vp_mapArea = 1, vp_skyBox = 2, vp_MAX = 3};
+
     explicit GDeviceVLK(vkCallInitCallback * callBacks);
     ~GDeviceVLK() override = default;;
 
@@ -96,12 +98,14 @@ public:
     void startUpdateForNextFrame() override;
     void endUpdateForNextFrame() override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
+    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantData) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     void drawStageAndDeps(HDrawStage drawStage) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
     bool getIsVulkanAxisSystem() override {return true;}
+
+    void initUploadThread() override;
 public:
     std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void *permutationDescriptor) override;
 
@@ -143,7 +147,8 @@ public:
 
     virtual void setClearScreenColor(float r, float g, float b) override;
     virtual void setViewPortDimensions(float x, float y, float width, float height) override;
-    void setInvertZ(bool value) override {m_isInvertZ = value;};
+    void setInvertZ(bool value) override {m_isInvertZ = true;};
+    bool getInvertZ()  { return m_isInvertZ;};
 
 
     std::shared_ptr<GDescriptorSets> createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int images);
@@ -221,7 +226,9 @@ private:
     void recreateSwapChain();
 
     void createCommandPool();
+    void createCommandPoolForUpload();
     void createCommandBuffers();
+    void createCommandBuffersForUpload();
     void createSyncObjects();
 
     void createColorResources();
@@ -232,6 +239,11 @@ private:
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+
+    void drawMeshesInternal(    const HDrawStage &drawStage,
+                                const HMeshesToRender &iMeshes,
+                            const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
+                            VkRect2D &defaultScissor);
 
 protected:
     struct BlpCacheRecord {
@@ -315,6 +327,7 @@ protected:
 
 
     VkCommandPool commandPool;
+    VkCommandPool commandPoolForImageTransfer;
     VkCommandPool renderCommandPool;
     VkCommandPool uploadCommandPool;
 
@@ -398,6 +411,8 @@ protected:
 
     int uniformBuffersCreated = 0;
     bool attachmentsReady = false;
+
+
 };
 
 

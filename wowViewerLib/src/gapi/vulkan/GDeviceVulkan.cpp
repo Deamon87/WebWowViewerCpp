@@ -27,9 +27,10 @@
 #include "../../engine/algorithms/hashString.h"
 #include "shaders/GAdtShaderPermutationVLK.h"
 #include "shaders/GWMOShaderPermutationVLK.h"
-#include "shaders/GWMOWaterShaderVLK.h"
+#include "shaders/GWaterShaderPermutation.h"
 #include "shaders/GImguiShaderPermutation.h"
 #include "shaders/GM2RibbonShaderPermutationVLK.h"
+#include "shaders/GSkyConusShaderVLK.h"
 //#include "fastmemcp.h"
 
 const int WIDTH = 1900;
@@ -162,9 +163,11 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.pNext = NULL;
+    createInfo.flags = NULL;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
+    createInfo.pUserData = 0;
 }
 
 
@@ -631,6 +634,7 @@ void GDeviceVLK::createLogicalDevice() {
     }
 
     VkPhysicalDeviceFeatures deviceFeatures = {};
+    deviceFeatures.samplerAnisotropy = true;
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -715,6 +719,13 @@ void GDeviceVLK::createCommandPool() {
         throw std::runtime_error("failed to create graphics command pool!");
     }
 
+    if (!getIsAsynBuffUploadSupported()) {
+        createCommandPoolForUpload();
+    }
+}
+void GDeviceVLK::createCommandPoolForUpload(){
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+
     VkCommandPoolCreateInfo renderPoolInfo = {};
     renderPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     renderPoolInfo.pNext = NULL;
@@ -734,7 +745,18 @@ void GDeviceVLK::createCommandPool() {
     if (vkCreateCommandPool(device, &uploadPoolInfo, nullptr, &uploadCommandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics command pool!");
     }
+
+    VkCommandPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.pNext = NULL;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPoolForImageTransfer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create graphics command pool!");
+    }
 }
+
 void GDeviceVLK::createCommandBuffers() {
     commandBuffers.resize(4);
 
@@ -749,10 +771,15 @@ void GDeviceVLK::createCommandBuffers() {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
+    if (!getIsAsynBuffUploadSupported()) {
+        createCommandBuffersForUpload();
+    }
+}
+void GDeviceVLK::createCommandBuffersForUpload() {
     renderCommandBuffers.resize(4);
     renderCommandBuffersNull.resize(4);
     for (int i = 0; i < 4; i++) renderCommandBuffersNull[i] = true;
-    allocInfo = {};
+    VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = renderCommandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
@@ -761,8 +788,6 @@ void GDeviceVLK::createCommandBuffers() {
     if (vkAllocateCommandBuffers(device, &allocInfo, renderCommandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
-
-
 
     uploadCommandBuffers.resize(4);
     VkCommandBufferAllocateInfo allocInfoUpload = {};
@@ -780,7 +805,7 @@ void GDeviceVLK::createCommandBuffers() {
     for (int i = 0; i < 4; i++) textureTransferCommandBufferNull[i] = true;
     VkCommandBufferAllocateInfo texttrAllocInfoUpload = {};
     texttrAllocInfoUpload.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    texttrAllocInfoUpload.commandPool = commandPool;
+    texttrAllocInfoUpload.commandPool = commandPoolForImageTransfer;
     texttrAllocInfoUpload.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     texttrAllocInfoUpload.commandBufferCount = (uint32_t) textureTransferCommandBuffers.size();
 
@@ -788,6 +813,7 @@ void GDeviceVLK::createCommandBuffers() {
         throw std::runtime_error("failed to allocate upload command buffers!");
     }
 }
+
 void GDeviceVLK::createSyncObjects() {
     imageAvailableSemaphores.resize(commandBuffers.size());
     renderFinishedSemaphores.resize(commandBuffers.size());
@@ -941,7 +967,7 @@ void GDeviceVLK::endUpdateForNextFrame() {
 }
 
 typedef std::shared_ptr<GMeshVLK> HVKMesh;
-void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
+void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantData) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture();
@@ -954,40 +980,19 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnifo
         m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
     }
 
-    std::vector<HVKMesh> &meshes = (std::vector<HVKMesh> &) iMeshes;
+    int fullSize = 0;
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        for (auto &buffer : *bufferVec) {
+            fullSize += buffer->getSize();
+            int offsetDiff = fullSize % uniformBufferOffsetAlign;
+            if (offsetDiff != 0) {
+                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-    //1. Collect buffers
-    std::vector<IUniformBufferChunk *> buffers;
-    int renderIndex = 0;
-    for (const auto &mesh : meshes) {
-        for (int i = 0; i < 6; i++ ) {
-            IUniformBufferChunk *buffer = (IUniformBufferChunk *) mesh->getUniformBuffer(i).get();
-            if (buffer != nullptr) {
-                buffers.push_back(buffer);
+                fullSize += bytesToAdd;
             }
         }
     }
-    for (const auto &bufferChunks : additionalChunks) {
-        if (bufferChunks != nullptr) {
-            buffers.push_back(bufferChunks.get());
-        }
-    }
-
-
-    std::sort( buffers.begin(), buffers.end());
-    buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
-
-    int fullSize = 0;
-    for (auto buffer : buffers) {
-        fullSize += buffer->getSize();
-        int offsetDiff = fullSize % uniformBufferOffsetAlign;
-        if (offsetDiff != 0) {
-            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
-
-            fullSize += bytesToAdd;
-        }
-    }
-
 
     //2. Create buffers and update them
     int currentSize = 0;
@@ -1011,28 +1016,38 @@ void GDeviceVLK::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnifo
         //Buffer identifier was changed, so we need to update shader UBO descriptor
         m_shaderDescriptorUpdateNeeded = true;
     }
-    char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->stagingUBOBufferAllocInfo.pMappedData);
-    for (const auto &buffer : buffers) {
-        buffer->setOffset(currentSize);
-        buffer->setPointer(&pointerForUpload[currentSize]);
-        currentSize += buffer->getSize();
 
-        int offsetDiff = currentSize % uniformBufferOffsetAlign;
-        if (offsetDiff != 0) {
-            int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+    if (fullSize > 0) {
+        char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->stagingUBOBufferAllocInfo.pMappedData);
 
-            currentSize += bytesToAdd;
+        for (int i = 0; i < bufferChunks.size(); i++) {
+            auto &bufferVec = bufferChunks[i];
+            for (auto &buffer : *bufferVec) {
+                buffer->setOffset(currentSize);
+                buffer->setPointer(&pointerForUpload[currentSize]);
+                currentSize += buffer->getSize();
+
+                int offsetDiff = currentSize % uniformBufferOffsetAlign;
+                if (offsetDiff != 0) {
+                    int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+                    currentSize += bytesToAdd;
+                }
+            }
+        }
+        assert(currentSize == fullSize);
+        for (int i = 0; i < bufferChunks.size(); i++) {
+            auto &bufferVec = bufferChunks[i];
+            auto frameDepData = frameDepedantData[i];
+
+            for (auto &buffer : *bufferVec) {
+                buffer->update(frameDepData);
+            }
+        }
+        if (currentSize > 0) {
+            bufferForUploadVLK->uploadFromStaging(currentSize);
         }
     }
-    for (auto &buffer : buffers) {
-        buffer->update();
-    }
-
-    if (currentSize > 0) {
-        bufferForUploadVLK->uploadFromStaging(currentSize);
-    }
-
-
 }
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
@@ -1092,15 +1107,15 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
     } else if (shaderName == "waterShader"){
-        IShaderPermutation *iPremutation = new GWmoWaterShaderPermutationVLK(shaderName, this);
+        IShaderPermutation *iPremutation = new GWaterShaderPermutation(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
     } else if (shaderName == "adtShader"){
         IShaderPermutation *iPremutation = new GAdtShaderPermutationVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
-    } else if (shaderName == "adtWater"){
-        IShaderPermutation *iPremutation = new GAdtShaderPermutationVLK(shaderName, this);
+    } else if (shaderName == "skyConus"){
+        IShaderPermutation *iPremutation = new GSkyConusShaderVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
     } else if (shaderName == "imguiShader") {
@@ -1340,7 +1355,7 @@ void GDeviceVLK::commitFrame() {
 
         std::array<VkClearValue, 2> clearValues = {};
         clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
-        clearValues[1].depthStencil = {1.0f, 0};
+        clearValues[1].depthStencil = {getInvertZ() ? 0.0f : 1.0f, 0};
 
         VkRenderPassBeginInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1512,8 +1527,7 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
         this->internalDrawStageAndDeps(drawStage->drawStageDependencies[i]);
     }
 
-    if (drawStage->meshesToRender == nullptr)
-        return;
+    this->setInvertZ(drawStage->invertedZ);
 
     if (drawStage->clearScreen) {
         clearColor[0] = drawStage->clearColor[0];
@@ -1524,27 +1538,40 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
     int updateFrame = getUpdateFrameNumber();
     auto commandBufferForFilling = renderCommandBuffers[updateFrame];
 
-    VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
-    VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
-    int8_t lastIsScissorsEnabled = -1;
+    std::array<VkViewport, (int)ViewportType::vp_MAX> viewportsForThisStage;
 
-    uint32_t dynamicOffset[7] = {};
-
-    VkViewport usualViewport;
+    VkViewport &usualViewport = viewportsForThisStage[(int)ViewportType::vp_usual];
     usualViewport.width = drawStage->viewPortDimensions.maxs[0];
     usualViewport.height =  drawStage->viewPortDimensions.maxs[1];
     usualViewport.x = drawStage->viewPortDimensions.mins[0];
     usualViewport.y =  drawStage->viewPortDimensions.mins[1];
-    usualViewport.minDepth = 0;
-    usualViewport.maxDepth = 0.990f;
+    if (!getInvertZ()) {
+        usualViewport.minDepth = 0;
+        usualViewport.maxDepth = 0.990f;
+    } else {
+        usualViewport.minDepth = 0.06;
+        usualViewport.maxDepth = 1.0f;
+    }
 
-    VkViewport mapAreaViewport = usualViewport;
-    mapAreaViewport.minDepth = 0.991f;
-    mapAreaViewport.maxDepth = 0.996f;
+    VkViewport &mapAreaViewport = viewportsForThisStage[(int)ViewportType::vp_mapArea];
+    mapAreaViewport = usualViewport;
+    if (!getInvertZ()) {
+        mapAreaViewport.minDepth = 0.991f;
+        mapAreaViewport.maxDepth = 0.996f;
+    } else {
+        mapAreaViewport.minDepth = 0.04f;
+        mapAreaViewport.maxDepth = 0.05f;
+    }
 
-    VkViewport skyBoxViewport = usualViewport;
-    skyBoxViewport.minDepth = 0.997f;
-    skyBoxViewport.maxDepth = 1.0f;
+    VkViewport &skyBoxViewport = viewportsForThisStage[(int)ViewportType::vp_skyBox];
+    skyBoxViewport = usualViewport;
+    if (!getInvertZ()) {
+        skyBoxViewport.minDepth = 0.997f;
+        skyBoxViewport.maxDepth = 1.0f;
+    } else {
+        skyBoxViewport.minDepth = 0;
+        skyBoxViewport.maxDepth = 0.03f;
+    }
 
 
     //Set scissors
@@ -1555,13 +1582,33 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
     vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
 
     //Set new viewport
-    enum class ViewportType {vp_usual, vp_mapArea, vp_skyBox};
-    ViewportType lastViewPort = ViewportType::vp_usual;
     vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
 
-    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
+    if (drawStage->opaqueMeshes != nullptr)
+        drawMeshesInternal(drawStage, drawStage->opaqueMeshes, viewportsForThisStage, defaultScissor);
+    if (drawStage->transparentMeshes != nullptr)
+        drawMeshesInternal(drawStage, drawStage->transparentMeshes, viewportsForThisStage, defaultScissor);
 
-    auto iMeshes = drawStage->meshesToRender->meshes;
+}
+
+void GDeviceVLK::drawMeshesInternal(
+    const HDrawStage &drawStage,
+    const HMeshesToRender &meshes,
+    const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
+    VkRect2D &defaultScissor) {
+
+    int updateFrame = getUpdateFrameNumber();
+    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
+
+    ViewportType lastViewPort = ViewportType::vp_usual;
+
+    VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
+    VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
+    int8_t lastIsScissorsEnabled = -1;
+    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
+    uint32_t dynamicOffset[7] = {};
+
+    auto iMeshes = meshes->meshes;
 
     for (auto &mesh: iMeshes) {
         auto *meshVLK = ((GMeshVLK *)mesh.get());
@@ -1592,17 +1639,10 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
 
         ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
         if (lastViewPort != newViewPort) {
-            switch (newViewPort) {
-                case ViewportType::vp_usual:
-                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
-                    break;
-                case ViewportType::vp_skyBox:
-                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &skyBoxViewport);
-                    break;
-                case ViewportType::vp_mapArea:
-                    vkCmdSetViewport(commandBufferForFilling, 0, 1, &mapAreaViewport);
-                    break;
+            if (viewportsForThisStage[+newViewPort].height > 32768) {
+                std::cout << "newViewPort = " << +newViewPort << std::endl;
             }
+            vkCmdSetViewport(commandBufferForFilling, 0, 1, &viewportsForThisStage[+newViewPort]);
 
             lastViewPort = newViewPort;
         }
@@ -1653,6 +1693,7 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
         vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }
 }
+
 void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
     int updateFrame = getUpdateFrameNumber();
 
@@ -1693,5 +1734,12 @@ void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
 
     if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
+    }
+}
+
+void GDeviceVLK::initUploadThread() {
+    if (getIsAsynBuffUploadSupported()) {
+        createCommandPoolForUpload();
+        createCommandBuffersForUpload();
     }
 }

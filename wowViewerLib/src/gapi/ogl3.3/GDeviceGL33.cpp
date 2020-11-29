@@ -652,7 +652,6 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     if (m_isInSkyBoxDepthMode != hmesh->getIsSkyBox()) {
         if (hmesh->getIsSkyBox()) {
             glDepthRange(0, 0.002); //default
-
         } else {
             glDepthRange(0.002, 1.0f);
         }
