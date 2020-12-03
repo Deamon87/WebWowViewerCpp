@@ -1310,6 +1310,7 @@ void WmoObject::checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogR
         float distanceToFog = (fogPosVec - cameraLocal).Length();
         if ((distanceToFog < fogRecord.larger_radius) || fogRecord.flag_infinite_radius) {
             LightResult wmoFog;
+            wmoFog.id = -1;
             wmoFog.FogScaler = fogRecord.fog.start_scalar;
             wmoFog.FogEnd = fogRecord.fog.end;
             wmoFog.FogDensity = 0.18f;

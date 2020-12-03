@@ -787,9 +787,6 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         mathfu::vec4 FogHeightCoefficients = {0, 0, 0, 0};
 
         std::vector<LightResult> combinedResults = {};
-        std::sort(combinedResults.begin(), combinedResults.end(), [](const LightResult &a, const LightResult &b) -> bool {
-            return a.blendCoef > b.blendCoef;
-        });
         float totalSummator = 0.0;
 
         //Apply fog from WMO
@@ -868,6 +865,10 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
                 combinedResults.push_back(globalFog);
             }
         }
+        std::sort(combinedResults.begin(), combinedResults.end(), [](const LightResult &a, const LightResult &b) -> bool {
+            return a.blendCoef > b.blendCoef;
+        });
+
         //Rebalance blendCoefs
         if (totalSummator < 1.0f && totalSummator > 0.0f) {
             for (auto &_light : combinedResults) {
@@ -895,7 +896,9 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         //In case of no data -> disable the fog
         {
             auto fdd = cullStage->frameDepedantData;
-            fdd->FogDataFound = combinedResults.size() > 0;
+            fdd->FogDataFound = !combinedResults.empty();
+//            std::cout << "combinedResults.empty() = " << combinedResults.empty() << std::endl;
+//            std::cout << "combinedResults.size() = " << combinedResults.size() << std::endl;
             fdd->FogEnd = FogEnd;
             fdd->FogScaler = FogScaler;
             fdd->FogDensity = FogDensity;

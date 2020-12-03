@@ -91,6 +91,8 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
+    bool skipGenerationOfMipMaps = true;
+
     logGLError
     bool generateMipMaps = false;
     switch (textureFormat) {
@@ -172,6 +174,7 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
                              &mipmaps[k].texture[0]);
                 logGLError
             }
+            skipGenerationOfMipMaps = false;
             break;
         case TextureFormat::None:
         case TextureFormat::RGBA:
@@ -208,7 +211,9 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
     }
 #endif
     logGLError
-    glGenerateMipmap(GL_TEXTURE_2D);
+    if (!skipGenerationOfMipMaps) {
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
     logGLError
 }
 

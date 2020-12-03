@@ -16,7 +16,7 @@
 #include <emscripten/html5.h>
 #include <GLFW/glfw3.h>
 
-ApiContainer apiContainer;
+std::shared_ptr<ApiContainer> apiContainer = std::make_shared<ApiContainer>();
 HttpRequestProcessor *processor;
 SceneComposer *sceneComposer;
 std::shared_ptr<IScene> currentScene = std::make_shared<NullScene>();
@@ -75,7 +75,7 @@ void convertColors(int index, int start, int mid, int end, std::array<std::array
 
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
-    auto controllable = apiContainer.camera;
+    auto controllable = apiContainer->camera;
 
 //    if (!pointerIsLocked) {
     if (mleft_pressed == 1) {
@@ -133,7 +133,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    auto controllable = apiContainer.camera;
+    auto controllable = apiContainer->camera;
     if ( action == GLFW_PRESS) {
         switch (key) {
             case 'W' :
@@ -191,7 +191,7 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
 
             case 'O':
-                apiContainer.camera->setCameraPos(0,0,0);
+                apiContainer->camera->setCameraPos(0,0,0);
                 break;
             case GLFW_KEY_LEFT_SHIFT:
                 controllable->setMovementSpeed(1.0f);
@@ -204,7 +204,7 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    auto controllable = apiContainer.camera;
+    auto controllable = apiContainer->camera;
 
     controllable->zoomInFromMouseScroll(yoffset/240.0f);
 }
@@ -222,15 +222,15 @@ void setScene(int sceneType, std::string name, int cameraNum) {
         currentScene = std::make_shared<NullScene>();
     } else if (sceneType == 0) {
 //        m_usePlanarCamera = cameraNum == -1;
-        apiContainer.camera = planarCamera;
+        apiContainer->camera = planarCamera;
 
-        currentScene = std::make_shared<M2Scene>(&apiContainer, name , cameraNum);
+        currentScene = std::make_shared<M2Scene>(apiContainer, name , cameraNum);
     } else if (sceneType == 1) {
-        apiContainer.camera = firstPersonCamera;
+        apiContainer->camera = firstPersonCamera;
 
-        currentScene = std::make_shared<WmoScene>(&apiContainer, name);
+        currentScene = std::make_shared<WmoScene>(apiContainer, name);
     } else if (sceneType == 2) {
-        apiContainer.camera = firstPersonCamera;
+        apiContainer->camera = firstPersonCamera;
 
         std::string &adtFileName = name;
 
@@ -248,13 +248,13 @@ void setScene(int sceneType, std::string name, int cameraNum) {
         float adt_y_min = AdtIndexToWorldCoordinate(i);
         float adt_y_max = AdtIndexToWorldCoordinate(i+1);
 
-        apiContainer.camera->setCameraPos(
+        apiContainer->camera->setCameraPos(
             (adt_x_min+adt_x_max) / 2.0,
             (adt_y_min+adt_y_max) / 2.0,
             200
         );
 
-        currentScene = std::make_shared<Map>(&apiContainer, adtFileName, i, j, mapName);
+        currentScene = std::make_shared<Map>(apiContainer, adtFileName, i, j, mapName);
     }
 }
 
@@ -270,16 +270,16 @@ extern "C" {
         canvHeight = p_canvHeight;
 
 
-        apiContainer.camera = firstPersonCamera;
-        apiContainer.getConfig()->globalLighting = EParameterSource::eConfig;
+        apiContainer->camera = firstPersonCamera;
+        apiContainer->getConfig()->globalLighting = EParameterSource::eConfig;
 
         auto ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
-        apiContainer.getConfig()->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-        apiContainer.getConfig()->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-        apiContainer.getConfig()->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-        apiContainer.getConfig()->exteriorDirectColor = mathfu::vec4(0.3,0.3,0.3,0.3);
-        apiContainer.getConfig()->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
+        apiContainer->getConfig()->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        apiContainer->getConfig()->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        apiContainer->getConfig()->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        apiContainer->getConfig()->exteriorDirectColor = mathfu::vec4(0.3,0.3,0.3,0.3);
+        apiContainer->getConfig()->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
 
         emscripten_run_script("Module['hammerJsAssignControl']()");
 
@@ -304,8 +304,8 @@ extern "C" {
 
         processor = new HttpRequestProcessor(url, urlFileId);
         processor->setThreaded(false);
-        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
-        processor->setFileRequester(apiContainer.cacheStorage.get());
+        apiContainer->cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+        processor->setFileRequester(apiContainer->cacheStorage.get());
 
         //        testConf = new Config();
 //        testConf->setSunColor(0.0,0.0,0.0,0.0);
@@ -330,11 +330,11 @@ extern "C" {
 
         auto hdevice = IDeviceFactory::createDevice(glVersion, nullptr);
 
-        apiContainer.databaseHandler = nullptr;
-        apiContainer.hDevice = hdevice;
-        apiContainer.camera = std::make_shared<FirstPersonCamera>();
+        apiContainer->databaseHandler = nullptr;
+        apiContainer->hDevice = hdevice;
+        apiContainer->camera = std::make_shared<FirstPersonCamera>();
 
-        sceneComposer = new SceneComposer(&apiContainer);
+        sceneComposer = new SceneComposer(apiContainer);
 
         glfwSetWindowUserPointer(window, nullptr);
         glfwSetKeyCallback(window, onKey);
@@ -347,7 +347,7 @@ extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void setNewUrls(char *url, char *urlFileId) {
         processor->setUrls(url, urlFileId);
-        apiContainer.cacheStorage->actuallDropCache();
+        apiContainer->cacheStorage->actuallDropCache();
     }
     EMSCRIPTEN_KEEPALIVE
     void setScene(int sceneType, char *name, int cameraNum) {
@@ -355,15 +355,15 @@ extern "C" {
     }
     EMSCRIPTEN_KEEPALIVE
     void setMap(int mapId, int wdtFileId, float x, float y, float z) {
-        apiContainer.camera = firstPersonCamera;
+        apiContainer->camera = firstPersonCamera;
 
-        apiContainer.camera->setCameraPos(
+        apiContainer->camera->setCameraPos(
             x,
             y,
             z
         );
 
-        currentScene = std::make_shared<Map>(&apiContainer, mapId, wdtFileId);
+        currentScene = std::make_shared<Map>(apiContainer, mapId, wdtFileId);
     }
     EMSCRIPTEN_KEEPALIVE
     void setSceneFileDataId(int sceneType, int fileDataId, int cameraNum) {
@@ -371,13 +371,13 @@ extern "C" {
             currentScene = std::make_shared<NullScene>();
         } else if (sceneType == 0) {
 //        m_usePlanarCamera = cameraNum == -1;
-            apiContainer.camera = planarCamera;
+            apiContainer->camera = planarCamera;
 
-            currentScene = std::make_shared<M2Scene>(&apiContainer, fileDataId , cameraNum);
+            currentScene = std::make_shared<M2Scene>(apiContainer, fileDataId , cameraNum);
         } else if (sceneType == 1) {
-            apiContainer.camera = firstPersonCamera;
+            apiContainer->camera = firstPersonCamera;
 
-            currentScene = std::make_shared<WmoScene>(&apiContainer, fileDataId);
+            currentScene = std::make_shared<WmoScene>(apiContainer, fileDataId);
         }
     }
     EMSCRIPTEN_KEEPALIVE
@@ -388,56 +388,56 @@ extern "C" {
     }
     EMSCRIPTEN_KEEPALIVE
     void addHorizontalViewDir(float val) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->addHorizontalViewDir(val);
     }
     EMSCRIPTEN_KEEPALIVE
     void addVerticalViewDir(float val ) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->addVerticalViewDir(val);
     }
     EMSCRIPTEN_KEEPALIVE
     void zoomInFromMouseScroll(float val ) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->zoomInFromMouseScroll(val);
     }
     EMSCRIPTEN_KEEPALIVE
     void addCameraViewOffset(float val1, float val2 ) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->addCameraViewOffset(val1, val2);
     }
     EMSCRIPTEN_KEEPALIVE
     void startMovingForward() {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->startMovingForward();
     }
     EMSCRIPTEN_KEEPALIVE
     void startMovingBackwards() {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->startMovingBackwards();
     }
     EMSCRIPTEN_KEEPALIVE
     void stopMovingForward() {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->stopMovingForward();
     }
     EMSCRIPTEN_KEEPALIVE
     void stopMovingBackwards() {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->stopMovingBackwards();
     }
 
     EMSCRIPTEN_KEEPALIVE
     void setClearColor(float r, float g, float b) {
-        apiContainer.getConfig()->clearColor = mathfu::vec4(r,g,b,0.0);
+        apiContainer->getConfig()->clearColor = mathfu::vec4(r,g,b,0.0);
     }
     EMSCRIPTEN_KEEPALIVE
     void setFarPlane(float value) {
-        apiContainer.getConfig()->farPlane = value;
+        apiContainer->getConfig()->farPlane = value;
     }
     EMSCRIPTEN_KEEPALIVE
     void setFarPlaneForCulling(float value) {
-        apiContainer.getConfig()->farPlaneForCulling = value;
+        apiContainer->getConfig()->farPlaneForCulling = value;
     }
 
     EMSCRIPTEN_KEEPALIVE
@@ -487,34 +487,34 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     void setScenePos(float x, float y, float z) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->setCameraPos(x,y,z);
     }
 
     EMSCRIPTEN_KEEPALIVE
     void gameloop(double deltaTime) {
         if (sceneComposer == nullptr) return;
-        if (apiContainer.hDevice == nullptr) return;
+        if (apiContainer->hDevice == nullptr) return;
 
         glfwPollEvents();
 
         processor->processRequests(false);
         processor->processResults(10);
 
-        apiContainer.camera->tick(deltaTime*(1000.0f));
+        apiContainer->camera->tick(deltaTime*(1000.0f));
 
-        float farPlaneRendering = apiContainer.getConfig()->farPlane;
-        float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
+        float farPlaneRendering = apiContainer->getConfig()->farPlane;
+        float farPlaneCulling = apiContainer->getConfig()->farPlaneForCulling;
 
         float nearPlane = 1.0;
         float fov = toRadian(45.0);
 
         float canvasAspect = (float)canvWidth / (float)canvHeight;
 
-        auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-        auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+        auto cameraMatricesCulling = apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+        auto cameraMatricesRendering = apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
 
-        bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+        bool isInfZSupported = apiContainer->camera->isCompatibleWithInfiniteZ();
         if (isInfZSupported)
         {
             float f = 1.0f / tan(fov / 2.0f);
@@ -528,7 +528,7 @@ extern "C" {
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
 
         bool clearOnUi = true;
-        auto clearColor = apiContainer.getConfig()->clearColor;
+        auto clearColor = apiContainer->getConfig()->clearColor;
 
         auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
         auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
