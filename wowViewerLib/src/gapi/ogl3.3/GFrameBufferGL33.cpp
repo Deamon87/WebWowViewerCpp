@@ -15,12 +15,12 @@ GFrameBufferGL33::GFrameBufferGL33 (
     attachmentTextures = std::vector<HGTexture>(textureAttachments.size());
     for (int i = 0; i < textureAttachments.size(); i++) {
         if (textureAttachments[i] != ITextureFormat::itNone) {
-            attachmentTextures[i] = mdevice.createTexture();
+            attachmentTextures[i] = mdevice.createTexture(false, false);
             attachmentTextures[i]->loadData(width, height, nullptr, textureAttachments[i]);
         }
     }
     if (depthAttachment != ITextureFormat::itNone) {
-        depthTexture = mdevice.createTexture();
+        depthTexture = mdevice.createTexture(false, false);
         depthTexture->loadData(width, height, nullptr, depthAttachment);
         }
     glGenFramebuffers(+1, &m_renderBufFbo);

@@ -6,7 +6,10 @@
 #include "GTextureVLK.h"
 #include "../../interface/IDevice.h"
 
-GTextureVLK::GTextureVLK(IDevice &device) : m_device(dynamic_cast<GDeviceVLK &>(device)) {
+GTextureVLK::GTextureVLK(IDevice &device, bool xWrapTex, bool yWrapTex) : m_device(dynamic_cast<GDeviceVLK &>(device)) {
+    this->m_wrapX = xWrapTex;
+    this->m_wrapY = yWrapTex;
+
     createBuffer();
 }
 

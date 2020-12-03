@@ -11,9 +11,8 @@
 
 
 GBlpTextureGL33::GBlpTextureGL33(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
-    : GTextureGL33(device), m_texture(texture) {
-    this->xWrapTex = xWrapTex;
-    this->yWrapTex = yWrapTex;
+    : GTextureGL33(device, xWrapTex, yWrapTex), m_texture(texture) {
+
 }
 
 GBlpTextureGL33::~GBlpTextureGL33() {

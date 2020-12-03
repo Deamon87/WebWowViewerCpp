@@ -587,6 +587,12 @@ void FrontendUI::showQuickLinksDialog() {
             replacementTextureFDids[11] = 3087540;
             openM2SceneByfdid(3087468, replacementTextureFDids);
     }
+
+    if (ImGui::Button("Nagrand skybox", ImVec2(-1, 0))) {
+
+        openM2SceneByfdid(130575, replacementTextureFDids);
+
+    }
     if (ImGui::Button("3445776 PBR cloud sky in Maw", ImVec2(-1, 0))) {
             openM2SceneByfdid(3445776, replacementTextureFDids);
     }
@@ -869,7 +875,7 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
 
         // Upload texture to graphics system
 
-        this->fontTexture = m_device->createTexture();
+        this->fontTexture = m_device->createTexture(false, false);
         this->fontTexture->loadData(width, height, pixels, ITextureFormat::itRGBA);
 
         // Store our identifier

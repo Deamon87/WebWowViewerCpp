@@ -12,7 +12,7 @@ class GDeviceVLK;
 class GTextureVLK : public ITexture {
     friend class GDeviceVLK;
 protected:
-    explicit GTextureVLK(IDevice &device);
+    explicit GTextureVLK(IDevice &device, bool xWrapTex, bool yWrapTex);
     void createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
 public:
     ~GTextureVLK() override;

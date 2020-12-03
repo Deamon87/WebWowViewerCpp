@@ -44,6 +44,8 @@ struct FrameDepedantData {
     mathfu::vec3 interiorSunDir;
 
 //Sky params
+    bool overrideValuesWithFinalFog = false;
+
     mathfu::vec4 SkyTopColor;
     mathfu::vec4 SkyMiddleColor;
     mathfu::vec4 SkyBand1Color;

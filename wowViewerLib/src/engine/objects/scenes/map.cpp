@@ -281,12 +281,23 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
     auto skyVs = device->createUniformBufferChunk(sizeof(DnSky::meshWideBlockVS));
     skyVs->setUpdateHandler([config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<DnSky::meshWideBlockVS>();
-        meshblockVS.skyColor[0] = frameDepedantData->SkyTopColor;
-        meshblockVS.skyColor[1] = frameDepedantData->SkyMiddleColor;
-        meshblockVS.skyColor[2] = frameDepedantData->SkyBand1Color;
-        meshblockVS.skyColor[3] = frameDepedantData->SkyBand2Color;
-        meshblockVS.skyColor[4] = frameDepedantData->SkySmogColor;
-        meshblockVS.skyColor[5] = frameDepedantData->SkyFogColor;
+
+        if (!frameDepedantData->overrideValuesWithFinalFog) {
+            meshblockVS.skyColor[0] = frameDepedantData->SkyTopColor;
+            meshblockVS.skyColor[1] = frameDepedantData->SkyMiddleColor;
+            meshblockVS.skyColor[2] = frameDepedantData->SkyBand1Color;
+            meshblockVS.skyColor[3] = frameDepedantData->SkyBand2Color;
+            meshblockVS.skyColor[4] = frameDepedantData->SkySmogColor;
+            meshblockVS.skyColor[5] = frameDepedantData->SkyFogColor;
+        } else {
+            auto EndFogColorV4 = mathfu::vec4(frameDepedantData->EndFogColor, 0.0);
+            meshblockVS.skyColor[0] = EndFogColorV4;
+            meshblockVS.skyColor[1] = EndFogColorV4;
+            meshblockVS.skyColor[2] = EndFogColorV4;
+            meshblockVS.skyColor[3] = EndFogColorV4;
+            meshblockVS.skyColor[4] = EndFogColorV4;
+            meshblockVS.skyColor[5] = EndFogColorV4;
+        }
     });
 
     //TODO: Pass m_skyConeAlpha to fragment shader
@@ -635,7 +646,10 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 
             skyBox->setAlpha(_light.blendCoef);
             if ((_light.skyBoxFlags & 2) == 0) {
-                m_skyConeAlpha -= _light.blendCoef;
+//                m_skyConeAlpha -= _light.blendCoef;
+//                In this case conus is still rendered been, but all values are final fog values.
+                auto fdd = cullStage->frameDepedantData;
+                fdd->overrideValuesWithFinalFog = true;
             }
             
             if (_light.skyBoxFlags & 1) {

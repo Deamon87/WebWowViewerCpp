@@ -647,14 +647,21 @@ mathfu::vec4 M2Object::getCombinedColor(
     return submeshColor;
 }
 
-float M2Object::getTransparency(
+float M2Object::getTextureWeight(
         M2SkinProfile *skinData,
+        M2Data * m2Data,
         int batchIndex,
+        int textureIndex,
         const std::vector<float> &transparencies) {
     float transparency = 1.0;
 
-    int transpIndex = skinData->batches[batchIndex]->textureWeightComboIndex;
-    if ((transpIndex >= 0) && (transparencies.size() > transpIndex)) {
+    int transpLookupIndex = skinData->batches[batchIndex]->textureWeightComboIndex + textureIndex;
+    int transpIndex = -1;
+    if ((transpLookupIndex >= 0) && (transpLookupIndex < m2Data->transparency_lookup_table.size)) {
+        transpIndex = *m2Data->transparency_lookup_table[transpLookupIndex];
+    }
+
+    if ((transpIndex >= 0) && (transparencies.size() > (transpIndex))) {
         transparency = transparencies[transpIndex];
     }
 
@@ -1533,7 +1540,7 @@ void M2Object::initSubmeshColors() {
 
 }
 void M2Object::initTransparencies() {
-    transparencies = std::vector<float>(m_m2Geom->getM2Data()->transparency_lookup_table.size);
+    transparencies = std::vector<float>(m_m2Geom->getM2Data()->texture_weights.size);
 }
 
 void M2Object::initLights() {

@@ -33,6 +33,7 @@ enum class CacheHolderType {
 class IFileRequest {
 public:
     virtual void requestFile(const char* fileName, CacheHolderType holderType) = 0;
+    virtual ~IFileRequest()= default;
 };
 
 class IFileRequester {

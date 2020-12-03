@@ -541,9 +541,9 @@ HGTexture GDeviceGL20::createBlpTexture(HBlpTexture &texture, bool xWrapTex, boo
     return hgTexture;
 }
 
-HGTexture GDeviceGL20::createTexture() {
+HGTexture GDeviceGL20::createTexture(bool xWrapTex, bool yWrapTex) {
     std::shared_ptr<GTextureGL20> hgTexture;
-    hgTexture.reset(new GTextureGL20(*this));
+    hgTexture.reset(new GTextureGL20(*this, xWrapTex, yWrapTex));
     return hgTexture;
 }
 
@@ -573,10 +573,10 @@ void GDeviceGL20::bindProgram(IShaderPermutation *iProgram) {
 GDeviceGL20::GDeviceGL20() {
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
-    m_blackPixelTexture = createTexture();
+    m_blackPixelTexture = createTexture(false, false);
     m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
 
-    m_whitePixelTexture = createTexture();
+    m_whitePixelTexture = createTexture(false, false);
     m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
 
     m_defaultVao = this->createVertexBufferBindings();

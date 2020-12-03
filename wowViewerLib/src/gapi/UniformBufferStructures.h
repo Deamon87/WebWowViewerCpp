@@ -86,6 +86,7 @@ namespace M2 {
         int BlendMode;
 
         mathfu::vec4_packed uFogColorAndAlphaTest;
+        mathfu::vec4_packed uTexSampleAlpha;
 
         mathfu::vec4_packed uPcColor;
     };

@@ -34,6 +34,8 @@ private:
 public:
     std::mutex accessMutex;
     std::mutex getFileMutex;
+    std::mutex objectsToBeProcessedMutex;
+
     std::unique_lock<std::mutex> processCacheLock;
     std::unique_lock<std::mutex> provideFileLock;
     std::unordered_map<std::string, std::weak_ptr<T>> m_cache;
@@ -49,7 +51,12 @@ public:
         processCacheLock.lock();
         while (!m_objectsToBeProcessed.empty())
         {
+            std::unique_lock<std::mutex> lck (objectsToBeProcessedMutex,std::defer_lock);
+            lck.lock();
             auto const it = m_objectsToBeProcessed.front();
+            m_objectsToBeProcessed.pop_front();
+            lck.unlock();
+
             std::weak_ptr<T> weakPtr = m_cache.at(it.fileName);
 
 //            std::cout << "Processing file " << it.fileName << std::endl << std::flush;
@@ -62,8 +69,6 @@ public:
                 }
             }
 //            std::cout << "Processed file " << it.fileName << std::endl << std::flush;
-
-            m_objectsToBeProcessed.pop_front();
 
             objectsProcessed++;
             if (objectsProcessed > limit) {
@@ -82,7 +87,10 @@ public:
         provideFileLock.lock();
         auto it = m_cache.find(fileName);
         if (it != m_cache.end()) {
+            std::unique_lock<std::mutex> lck (objectsToBeProcessedMutex,std::defer_lock);
+            lck.lock();
             m_objectsToBeProcessed.push_front({fileName, fileContent});
+            lck.unlock();
         }
         provideFileLock.unlock();
     }

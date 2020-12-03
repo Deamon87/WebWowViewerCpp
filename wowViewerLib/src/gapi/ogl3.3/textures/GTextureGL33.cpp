@@ -7,7 +7,10 @@
 #include "../../../engine/opengl/header.h"
 #include "../../interface/IDevice.h"
 
-GTextureGL33::GTextureGL33(IDevice &device) : m_device(dynamic_cast<GDeviceGL33 &>(device)) {
+GTextureGL33::GTextureGL33(IDevice &device, bool xWrapTex, bool yWrapTex) : m_device(dynamic_cast<GDeviceGL33 &>(device)) {
+    this->xWrapTex = xWrapTex;
+    this->yWrapTex = yWrapTex;
+
     createBuffer();
 }
 
@@ -61,8 +64,16 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (xWrapTex) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    }
+    if (yWrapTex) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
     if (data != nullptr) {
         glGenerateMipmap(GL_TEXTURE_2D);
     }

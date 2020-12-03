@@ -7,9 +7,7 @@
 #include "../../../engine/texture/DxtDecompress.h"
 
 GBlpTextureVLK::GBlpTextureVLK(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
-    : GTextureVLK(device), m_texture(texture) {
-    this->m_wrapX = xWrapTex;
-    this->m_wrapY = yWrapTex;
+    : GTextureVLK(device,xWrapTex,yWrapTex), m_texture(texture) {
 }
 
 GBlpTextureVLK::~GBlpTextureVLK() {
@@ -41,7 +39,7 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
             break;
 
         case TextureFormat::BGRA:
-            textureFormatGPU = VK_FORMAT_B8G8R8A8_SNORM;
+            textureFormatGPU = VK_FORMAT_B8G8R8A8_UNORM;
             break;
 
         default:

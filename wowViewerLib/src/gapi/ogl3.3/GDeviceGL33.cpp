@@ -854,9 +854,9 @@ HGTexture GDeviceGL33::createBlpTexture(HBlpTexture &texture, bool xWrapTex, boo
     return hgTexture;
 }
 
-HGTexture GDeviceGL33::createTexture() {
+HGTexture GDeviceGL33::createTexture(bool xWrapTex, bool yWrapTex) {
     std::shared_ptr<GTextureGL33> hgTexture;
-    hgTexture.reset(new GTextureGL33(*this));
+    hgTexture.reset(new GTextureGL33(*this, xWrapTex, yWrapTex));
     return hgTexture;
 }
 
@@ -885,10 +885,10 @@ void GDeviceGL33::bindProgram(IShaderPermutation *iProgram) {
 GDeviceGL33::GDeviceGL33() {
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
-    m_blackPixelTexture = createTexture();
+    m_blackPixelTexture = createTexture(false, false);
     m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
 
-    m_whitePixelTexture = createTexture();
+    m_whitePixelTexture = createTexture(false, false);
     m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
 
     m_defaultVao = this->createVertexBufferBindings();

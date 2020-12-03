@@ -88,7 +88,7 @@ public:
     HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override {return nullptr;};
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
-    HGTexture createTexture() override;
+    HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;
     HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
     HGTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;

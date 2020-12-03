@@ -197,7 +197,7 @@ class IDevice {
         virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) = 0;
 
         virtual HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
-        virtual HGTexture createTexture() = 0;
+        virtual HGTexture createTexture(bool xWrapTex, bool yWrapTex) = 0;
         virtual HGTexture getWhiteTexturePixel() = 0;
         virtual HGTexture getBlackTexturePixel() {return nullptr;};
         virtual HGMesh createMesh(gMeshTemplate &meshTemplate) = 0;

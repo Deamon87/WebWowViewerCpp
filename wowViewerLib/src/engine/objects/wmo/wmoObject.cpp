@@ -84,7 +84,7 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
 
     bool isInDefaultDoodadSetDef =
         (index >= defaultDooodadSetDef->firstinstanceindex) &&
-        (index < defaultDooodadSetDef->firstinstanceindex + doodadSetDef->numDoodads);
+        (index < defaultDooodadSetDef->firstinstanceindex + defaultDooodadSetDef->numDoodads);
 
     bool isInCurrentDoodadSetDef =
         (index >= doodadSetDef->firstinstanceindex) &&

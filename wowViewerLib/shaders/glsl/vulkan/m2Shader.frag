@@ -50,6 +50,8 @@ layout(std140, set=0, binding=3) uniform modelWideBlockPS {
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     ivec4 PixelShader_UnFogged_IsAffectedByLight_blendMode;
     vec4 uFogColorAndAlphaTest;
+    vec4 uTexSampleAlpha;
+
 
     vec4 uPcColor;
 };
@@ -201,7 +203,7 @@ void main() {
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 15 ) {//Combiners_Opaque_Mod2xNA_Alpha_Add
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a));
-        specular = tex3.rgb * tex3.a * genericParams[0].b;
+        specular = tex3.rgb * tex3.a * uTexSampleAlpha.b;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 16 ) {//Combiners_Mod_AddAlpha
@@ -224,7 +226,7 @@ void main() {
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 20 ) {//Combiners_Opaque_AddAlpha_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
-        specular = tex2.rgb * tex2.a * genericParams[0].g;
+        specular = tex2.rgb * tex2.a * uTexSampleAlpha.g;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 21 ) {//Combiners_Mod_Add_Alpha
@@ -239,30 +241,30 @@ void main() {
     } else if ( uPixelShader == 23 ) {//Combiners_Mod_AddAlpha_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb;
         opacity = tex.a * vDiffuseColor.a;
-        specular = tex2.rgb * tex2.a * genericParams[0].g;
+        specular = tex2.rgb * tex2.a * uTexSampleAlpha.g;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 24 ) {//Combiners_Opaque_Mod_Add_Wgt
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
-        specular = tex.rgb * tex.a * genericParams[0].r;
+        specular = tex.rgb * tex.a * uTexSampleAlpha.r;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 25 ) {//Combiners_Opaque_Mod2xNA_Alpha_UnshAlpha
-        float glowOpacity = clamp((tex3.a * genericParams[0].z), 0.0, 1.0);
+        float glowOpacity = clamp((tex3.a * uTexSampleAlpha.z), 0.0, 1.0);
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb * tex2.rgb * 2.000000, tex.rgb, vec3(tex.a)) * (1.000000 - glowOpacity);
         specular = tex3.rgb * glowOpacity;
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 26 ) {//Combiners_Mod_Dual_Crossfade
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
-        opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * vDiffuseColor.a;
+        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(uTexSampleAlpha.g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(uTexSampleAlpha.b, 0.000000, 1.000000))).rgb;
+        opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(uTexSampleAlpha.g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(uTexSampleAlpha.b, 0.000000, 1.000000))).a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 27 ) {//Combiners_Opaque_Mod2xNA_Alpha_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex.rgb * tex2.rgb * 2.000000, tex3.rgb, vec3(tex3.a)), tex.rgb, vec3(tex.a));
         opacity = vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 28 ) {//Combiners_Mod_Masked_Dual_Crossfade
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).rgb;
-        opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(genericParams[0].g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(genericParams[0].b, 0.000000, 1.000000))).a * tex4WithTextCoord2.a * vDiffuseColor.a;
+        matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(mix(tex, tex2WithTextCoord1, vec4(clamp(uTexSampleAlpha.g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(uTexSampleAlpha.b, 0.000000, 1.000000))).rgb;
+        opacity = mix(mix(tex, tex2WithTextCoord1, vec4(clamp(uTexSampleAlpha.g, 0.000000, 1.000000))), tex3WithTextCoord1, vec4(clamp(uTexSampleAlpha.b, 0.000000, 1.000000))).a * tex4WithTextCoord2.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 29 ) {//Combiners_Opaque_Alpha
         matDiffuse = vDiffuseColor.rgb * 2.000000 * mix(tex.rgb, tex2.rgb, vec3(tex2.a));
@@ -289,8 +291,9 @@ void main() {
 
         //Unusued
     } else if ( uPixelShader == 35 ) {//Combiners_Mod_Mod_Mod_Const
-        matDiffuse = vDiffuseColor.rgb * 2.000000 * (tex * tex2 * tex3 * genericParams[0]).rgb;
-        opacity = (tex * tex2 * tex3 * genericParams[0]).a * vDiffuseColor.a;
+        vec4 pc_channelScaler = vec4(1.0);
+        matDiffuse = vDiffuseColor.rgb * 2.000000 * (tex * tex2 * tex3 * pc_channelScaler).rgb;
+        opacity = (tex * tex2 * tex3 * pc_channelScaler).a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 36 ) {//unk shader combiner
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;

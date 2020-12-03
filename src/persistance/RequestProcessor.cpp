@@ -35,29 +35,28 @@ void RequestProcessor::addRequest (std::string &fileName, CacheHolderType holder
 void RequestProcessor::processRequests (bool calledFromThread) {
     using namespace std::chrono_literals;
     // critical section (exclusive access to std::cout signaled by locking lck):
-    if (calledFromThread){
-        std::unique_lock<std::mutex> lck (requestMtx,std::defer_lock);
+    std::unique_lock<std::mutex> lck (requestMtx,std::defer_lock);
 
-        while (true) {
+    if (calledFromThread){
+        while (!this->isTerminating) {
             if (m_requestQueue.empty()) {
                 std::this_thread::sleep_for(1ms);
                 continue;
             }
 
             lck.lock();
-            auto it = m_requestQueue.begin();
+            auto it = m_requestQueue.front();
+            m_requestQueue.pop_front();
             lck.unlock();
 
-            this->processFileRequest(it->fileName, it->holderType);
-
-            lck.lock();
-            m_requestQueue.erase(it);
-            lck.unlock();
+            this->processFileRequest(it.fileName, it.holderType);
         }
     } else if (!m_threaded) {
         while (!m_requestQueue.empty()) {
+            lck.lock();
             auto it = m_requestQueue.front();
             m_requestQueue.pop_front();
+            lck.unlock();
 
             this->processFileRequest(it.fileName, it.holderType);
         }
@@ -84,26 +83,23 @@ void RequestProcessor::processResults(int limit) {
     for (int i = 0; i < limit; i++) {
         if (m_resultQueue.empty()) break;
 
-        if (m_threaded) lck.lock();
-        auto it = &m_resultQueue.front();
-        if (m_threaded) lck.unlock();
+        lck.lock();
+        auto it = m_resultQueue.front();
+        m_resultQueue.pop_front();
+        lck.unlock();
 
 //        std::cout << "it->buffer.use_count() = " << it->buffer.use_count() << std::endl << std::flush;
 
-        HFileContent bufferCpy = it->buffer;
+        HFileContent bufferCpy = it.buffer;
         m_fileRequester->provideFile(
-            it->holderType,
-            it->fileName.c_str(),
+            it.holderType,
+            it.fileName.c_str(),
             bufferCpy
         );
 
         std::unique_lock<std::mutex> setLck (setProcessingMtx,std::defer_lock);
         setLck.lock();
-        currentlyProcessingFnames.erase(it->fileName);
+        currentlyProcessingFnames.erase(it.fileName);
         setLck.unlock();
-
-        if (m_threaded) lck.lock();
-        m_resultQueue.pop_front();
-        if (m_threaded) lck.unlock();
     }
 }

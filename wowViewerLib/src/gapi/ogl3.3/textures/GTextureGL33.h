@@ -12,7 +12,7 @@
 class GTextureGL33 : public ITexture {
     friend class GDeviceGL33;
 protected:
-    explicit GTextureGL33(IDevice &device);
+    explicit GTextureGL33(IDevice &device, bool xWrapTex, bool yWrapTex);
 public:
     ~GTextureGL33() override;
 
@@ -38,6 +38,9 @@ protected:
     bool m_loaded = false;
     int width = 0;
     int height = 0;
+
+    bool xWrapTex;
+    bool yWrapTex;
 };
 
 

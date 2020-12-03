@@ -15,6 +15,7 @@ struct MapRecord {
 };
 
 struct LightResult {
+    int id;
     float ambientColor[3];
     float horizontAmbientColor[3];
     float groundAmbientColor[3];

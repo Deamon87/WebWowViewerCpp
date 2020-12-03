@@ -18,6 +18,13 @@ protected:
     RequestProcessor() {
 
     }
+    ~RequestProcessor() {
+        if (loaderThread != nullptr) {
+            isTerminating = true;
+            loaderThread->join();
+            loaderThread = nullptr;
+        }
+    };
 
 protected:
     IFileRequester *m_fileRequester = nullptr;
@@ -48,7 +55,8 @@ private:
         HFileContent buffer = nullptr;
     };
 
-    std::thread *loaderThread;
+    bool isTerminating = false;
+    std::shared_ptr<std::thread> loaderThread = nullptr;
 
     std::list<RequestStruct> m_requestQueue;
     std::list<ResultStruct> m_resultQueue;
@@ -71,7 +79,7 @@ public:
     void setThreaded(bool value) {
         m_threaded = value;
         if (value) {
-            loaderThread = new std::thread(([&](){
+            loaderThread = std::make_shared<std::thread>(([&](){
                 this->processRequests(true);
             }));
         }

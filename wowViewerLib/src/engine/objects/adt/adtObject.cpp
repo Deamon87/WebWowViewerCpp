@@ -739,7 +739,7 @@ void AdtObject::loadAlphaTextures() {
 
     int createdThisRun = 0;
     for (int i = 0; i < chunkCount; i++) {
-        HGTexture alphaTexture = m_api->hDevice->createTexture();
+        HGTexture alphaTexture = m_api->hDevice->createTexture(false, false);
         std::vector<uint8_t> alphaTextureData;
         m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData);
 

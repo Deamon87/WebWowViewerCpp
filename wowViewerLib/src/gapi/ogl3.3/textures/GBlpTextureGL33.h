@@ -24,9 +24,6 @@ private:
 private:
     HBlpTexture m_texture;
 
-    bool xWrapTex;
-    bool yWrapTex;
-
     bool m_loaded = false;
 };
 

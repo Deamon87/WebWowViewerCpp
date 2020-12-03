@@ -970,12 +970,12 @@ typedef std::shared_ptr<GMeshVLK> HVKMesh;
 void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantData) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
     if (!m_blackPixelTexture) {
-        m_blackPixelTexture = createTexture();
+        m_blackPixelTexture = createTexture(false, false);
         unsigned int zero = 0;
         m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
     }
     if (!m_whitePixelTexture) {
-        m_whitePixelTexture = createTexture();
+        m_whitePixelTexture = createTexture(false, false);
         unsigned int ff = 0xffffffff;
         m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
     }
@@ -1196,9 +1196,9 @@ HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool
     return hgTexture;
 }
 
-HGTexture GDeviceVLK::createTexture() {
+HGTexture GDeviceVLK::createTexture(bool xWrapTex, bool yWrapTex) {
     std::shared_ptr<GTextureVLK> h_texture;
-    h_texture.reset(new GTextureVLK(*this));
+    h_texture.reset(new GTextureVLK(*this, xWrapTex, yWrapTex));
 
     return h_texture;
 }

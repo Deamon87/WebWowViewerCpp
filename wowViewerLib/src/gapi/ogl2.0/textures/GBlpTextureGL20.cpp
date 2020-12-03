@@ -9,9 +9,7 @@
 #include "../../../engine/texture/DxtDecompress.h"
 
 GBlpTextureGL20::GBlpTextureGL20(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
-    : GTextureGL20(device), m_texture(texture) {
-    this->xWrapTex = xWrapTex;
-    this->yWrapTex = yWrapTex;
+    : GTextureGL20(device, xWrapTex, yWrapTex), m_texture(texture) {
 }
 
 GBlpTextureGL20::~GBlpTextureGL20() {

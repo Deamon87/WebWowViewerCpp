@@ -12,7 +12,7 @@
 class GTextureGL20 : public ITexture {
     friend class GDeviceGL20;
 protected:
-    explicit GTextureGL20(IDevice &device);
+    explicit GTextureGL20(IDevice &device, bool xWrapTex, bool yWrapTex);
 public:
     ~GTextureGL20() override;
 
@@ -34,6 +34,8 @@ protected:
     IDevice &m_device;
 
     bool m_loaded = false;
+    bool xWrapTex;
+    bool yWrapTex;
 };
 
 

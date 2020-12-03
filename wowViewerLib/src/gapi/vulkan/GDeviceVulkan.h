@@ -116,7 +116,7 @@ public:
     HGVertexBufferBindings createVertexBufferBindings() override;
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
-    HGTexture createTexture() override;
+    HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;
     HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) override;
