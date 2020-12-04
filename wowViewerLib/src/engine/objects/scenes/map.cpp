@@ -792,7 +792,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         float FogHeightScaler = 0;
         float FogHeightDensity = 0;
         float SunFogAngle = 0;
-        mathfu::vec3 FogColor = {0, 0, 0};
+
         mathfu::vec3 EndFogColor = {0, 0, 0};
         float EndFogColorDistance = 0;
         mathfu::vec3 SunFogColor = {0, 0, 0};
@@ -871,7 +871,6 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
                 globalFog.blendCoef = 1.0 - totalSummator;
                 globalFog.isDefault = true;
 
-                globalFog.FogColor = {config->FogColor.z, config->FogColor.y, config->FogColor.x};
                 globalFog.EndFogColor = {config->EndFogColor.z, config->EndFogColor.y, config->EndFogColor.x};
                 globalFog.SunFogColor = {config->SunFogColor.z, config->SunFogColor.y, config->SunFogColor.x};
                 globalFog.FogHeightColor = {config->FogHeightColor.z, config->FogHeightColor.y, config->FogHeightColor.x};
@@ -898,7 +897,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
             FogHeightDensity += _light.FogHeightScaler * _light.blendCoef;
             SunFogAngle += _light.SunFogAngle * _light.blendCoef;
-            FogColor += mathfu::vec3(_light.FogColor.data()) * _light.blendCoef;
+
             EndFogColor += mathfu::vec3(_light.EndFogColor.data()) * _light.blendCoef;
             EndFogColorDistance += _light.EndFogColorDistance * _light.blendCoef;
             SunFogColor += mathfu::vec3(_light.SunFogColor.data()) * _light.blendCoef;
@@ -920,7 +919,11 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             fdd->FogHeightScaler = FogHeightScaler;
             fdd->FogHeightDensity = FogHeightDensity;
             fdd->SunFogAngle = SunFogAngle;
-            fdd->FogColor = mathfu::vec3(FogColor[2], FogColor[1], FogColor[0]);
+            if (fdd->overrideValuesWithFinalFog) {
+                fdd->FogColor = mathfu::vec3(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
+            } else {
+                fdd->FogColor = fdd->SkyFogColor.xyz();
+            }
             fdd->EndFogColor = mathfu::vec3(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
             fdd->EndFogColorDistance = EndFogColorDistance;
             fdd->SunFogColor = mathfu::vec3(SunFogColor[2], SunFogColor[1], SunFogColor[0]);

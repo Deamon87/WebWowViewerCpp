@@ -36,7 +36,7 @@
         return false;
     }
 
-    if (pA->getMeshType() == MeshType::eM2Mesh && pA->getIsTransparent() && pB->getIsTransparent()) {
+    if (pA->getMeshType() == MeshType::eM2Mesh && pB->getMeshType() == MeshType::eM2Mesh && pA->getIsTransparent() && pB->getIsTransparent()) {
         if (pA->priorityPlane() != pB->priorityPlane()) {
             return pB->priorityPlane() > pA->priorityPlane();
         }

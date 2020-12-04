@@ -536,7 +536,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             addOnlyOne(lightResult, lastLdRes, innerAlpha);
         }
 
-        lightResult.FogColor = lightResult.SkyFogColor;
+
         lightResults.push_back(lightResult);
 
         totalSummator += innerResult.blendAlpha;

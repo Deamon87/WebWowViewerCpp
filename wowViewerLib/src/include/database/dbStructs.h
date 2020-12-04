@@ -40,7 +40,7 @@ struct LightResult {
     float FogHeightScaler;
     float FogHeightDensity;
     float SunFogAngle;
-    std::array<float, 3> FogColor;
+
     std::array<float, 3> EndFogColor;
     float EndFogColorDistance;
     std::array<float, 3> SunFogColor;
