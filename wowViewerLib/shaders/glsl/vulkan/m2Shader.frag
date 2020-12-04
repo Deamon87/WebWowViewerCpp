@@ -90,8 +90,6 @@ void main() {
     vec4 finalColor = vec4(0);
     vec4 meshResColor = vDiffuseColor;
 
-//    if(meshResColor.a < uAlphaTest)
-//        discard;
     vec3 accumLight;
     if ((PixelShader_UnFogged_IsAffectedByLight_blendMode.z == 1)) {
         vec3 vPos3 = vPosition.xyz;
@@ -146,7 +144,6 @@ void main() {
 
     } else if ( uPixelShader == 2 ) {//Combiners_Opaque_Mod
         matDiffuse = vDiffuseColor.rgb * 2.000000 * tex.rgb * tex2.rgb;
-        opacity = tex2.a * vDiffuseColor.a;
         opacity = tex2.a * vDiffuseColor.a;
         finalOpacity = opacity * visParams.r;
     } else if ( uPixelShader == 3 ) {//Combiners_Opaque_Mod2x

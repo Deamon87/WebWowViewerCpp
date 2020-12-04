@@ -255,7 +255,7 @@ std::array<uint16_t,300> skyConusIBO = {
     121 ,  97 ,  121  ,
 };
 
-HGMesh createSkyMesh(IDevice *device, Config *config) {
+HGVertexBufferBindings createSkyBindings(IDevice *device) {
     auto skyIBO = device->createIndexBuffer();
     skyIBO->uploadData(
         skyConusIBO.data(),
@@ -278,11 +278,15 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
     skyBindings->addVertexBufferBinding(vertexBinding);
     skyBindings->save();
 
+    return skyBindings;
+}
+
+HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config *config, bool conusFor0x4Sky) {
     auto skyVs = device->createUniformBufferChunk(sizeof(DnSky::meshWideBlockVS));
-    skyVs->setUpdateHandler([config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
+    skyVs->setUpdateHandler([config, conusFor0x4Sky](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<DnSky::meshWideBlockVS>();
 
-        if (!frameDepedantData->overrideValuesWithFinalFog) {
+        if (!conusFor0x4Sky) {
             meshblockVS.skyColor[0] = frameDepedantData->SkyTopColor;
             meshblockVS.skyColor[1] = frameDepedantData->SkyMiddleColor;
             meshblockVS.skyColor[2] = frameDepedantData->SkyBand1Color;
@@ -290,13 +294,14 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
             meshblockVS.skyColor[4] = frameDepedantData->SkySmogColor;
             meshblockVS.skyColor[5] = frameDepedantData->SkyFogColor;
         } else {
-            auto EndFogColorV4 = mathfu::vec4(frameDepedantData->EndFogColor, 0.0);
-            meshblockVS.skyColor[0] = EndFogColorV4;
-            meshblockVS.skyColor[1] = EndFogColorV4;
-            meshblockVS.skyColor[2] = EndFogColorV4;
-            meshblockVS.skyColor[3] = EndFogColorV4;
-            meshblockVS.skyColor[4] = EndFogColorV4;
-            meshblockVS.skyColor[5] = EndFogColorV4;
+            auto EndFogColorV4_1 = mathfu::vec4(frameDepedantData->EndFogColor, 0.0);
+            auto EndFogColorV4_2 = mathfu::vec4(frameDepedantData->EndFogColor, 1.0);
+            meshblockVS.skyColor[0] = EndFogColorV4_1;
+            meshblockVS.skyColor[1] = EndFogColorV4_1;
+            meshblockVS.skyColor[2] = EndFogColorV4_1;
+            meshblockVS.skyColor[3] = EndFogColorV4_1;
+            meshblockVS.skyColor[4] = EndFogColorV4_1;
+            meshblockVS.skyColor[5] = EndFogColorV4_2;
         }
     });
 
@@ -310,7 +315,7 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
     meshTemplate.depthCulling = true;
     meshTemplate.backFaceCulling = false;
     meshTemplate.skybox = true;
-    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+    meshTemplate.blendMode = conusFor0x4Sky ? EGxBlendEnum::GxBlend_Alpha : EGxBlendEnum::GxBlend_Opaque;
 
     meshTemplate.texture.resize(0);
 
@@ -324,8 +329,13 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
     meshTemplate.ubo[4] = nullptr;
 
     meshTemplate.element = DrawElementMode::TRIANGLE_STRIP;
-    meshTemplate.start = 0;
-    meshTemplate.end = 300;
+    if (conusFor0x4Sky) {
+        meshTemplate.start = 198 * 2;
+        meshTemplate.end = 102;
+    } else {
+        meshTemplate.start = 0;
+        meshTemplate.end = 300;
+    }
 
     //Make mesh
     HGMesh hmesh =  device->createMesh(meshTemplate);
@@ -645,11 +655,15 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             }
 
             skyBox->setAlpha(_light.blendCoef);
-            if ((_light.skyBoxFlags & 2) == 0) {
-//                m_skyConeAlpha -= _light.blendCoef;
-//                In this case conus is still rendered been, but all values are final fog values.
+            if ((_light.skyBoxFlags & 4) > 0 ) {
+                //In this case conus is still rendered been, but all values are final fog values.
                 auto fdd = cullStage->frameDepedantData;
                 fdd->overrideValuesWithFinalFog = true;
+            }
+
+            if ((_light.skyBoxFlags & 2) == 0) {
+//                m_skyConeAlpha -= _light.blendCoef;
+                m_skyConeAlpha -= _light.blendCoef;
             }
             
             if (_light.skyBoxFlags & 1) {
@@ -760,12 +774,12 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         }
         if (config->skyParams == EParameterSource::eDatabase) {
             auto fdd = cullStage->frameDepedantData;
-            fdd->SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 0);
-            fdd->SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 0);
-            fdd->SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 0);
-            fdd->SkyBand2Color =    mathfu::vec4(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0], 0);
-            fdd->SkySmogColor =     mathfu::vec4(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0], 0);
-            fdd->SkyFogColor =      mathfu::vec4(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0], 0);
+            fdd->SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 1.0);
+            fdd->SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 1.0);
+            fdd->SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 1.0);
+            fdd->SkyBand2Color =    mathfu::vec4(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0], 1.0);
+            fdd->SkySmogColor =     mathfu::vec4(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0], 1.0);
+            fdd->SkyFogColor =      mathfu::vec4(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0], 1.0);
         }
     }
 
@@ -1306,7 +1320,9 @@ void Map::doPostLoad(HCullStage cullStage) {
         quadBindings->save();
     }
     if (skyMesh == nullptr) {
-        skyMesh = createSkyMesh(m_api->hDevice.get(), m_api->getConfig());
+        auto skyMeshBinding = createSkyBindings(m_api->hDevice.get());
+        skyMesh = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), false);
+        skyMesh0x4Sky = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), true);
     }
 };
 
@@ -1501,13 +1517,21 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
     auto transparentMeshes = std::vector<HGMesh>();
 
     auto cullStage = updateStage->cullResult;
+    auto fdd = cullStage->frameDepedantData;
 
-    if ( !m_suppressDrawingSky && (m_skyConeAlpha > 0) && (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit)) {
-        if (skyMesh != nullptr)
-            opaqueMeshes.push_back(skyMesh);
+    if ( !m_suppressDrawingSky && (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit)) {
+        if (fdd->overrideValuesWithFinalFog) {
+            if (skyMesh0x4Sky != nullptr) {
+                transparentMeshes.push_back(skyMesh0x4Sky);
+                skyMesh0x4Sky->setSortDistance(0);
+
+            }
+        }
+        if ((m_skyConeAlpha > 0) ) {
+            if (skyMesh != nullptr)
+                opaqueMeshes.push_back(skyMesh);
+        }
     }
-
-
 
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;

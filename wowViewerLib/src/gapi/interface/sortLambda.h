@@ -14,12 +14,12 @@
         return true;
 }
 
-    if (pA->getMeshType() > pB->getMeshType()) {
-        return false;
-    }
-    if (pA->getMeshType() < pB->getMeshType()) {
-        return true;
-    }
+//    if (pA->getMeshType() > pB->getMeshType()) {
+//        return false;
+//    }
+//    if (pA->getMeshType() < pB->getMeshType()) {
+//        return true;
+//    }
 
 //    if (pA->m_renderOrder != pB->m_renderOrder ) {
 //        if (!pA->getIsTransparent()) {
@@ -71,6 +71,13 @@
         if (pA->getSortDistance() < pB->getSortDistance()) {
             return false;
         }
+    }
+
+    if (pA->getSortDistance() > pB->getSortDistance()) {
+        return true;
+    }
+    if (pA->getSortDistance() < pB->getSortDistance()) {
+        return false;
     }
 
     if (pA->bindings() != pB->bindings()) {

@@ -661,7 +661,7 @@ float M2Object::getTextureWeight(
         transpIndex = *m2Data->transparency_lookup_table[transpLookupIndex];
     }
 
-    if ((transpIndex >= 0) && (transparencies.size() > (transpIndex))) {
+    if ((transpIndex >= 0) && (transparencies.size() > transpIndex)) {
         transparency = transparencies[transpIndex];
     }
 
@@ -860,9 +860,16 @@ void M2Object::sortMaterials(mathfu::mat4 &modelViewMat) {
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
-    for (int i = 0; i < this->m_meshArray.size(); i++) {
+    for (int i = 0; i < this->m_meshNaturalArray.size(); i++) {
         //Update info for sorting
-        M2MeshBufferUpdater::updateSortData(this->m_meshArray[i], *this, m_materialArray[i], m2File, skinData, modelViewMat);
+        M2MeshBufferUpdater::updateSortData(this->m_meshNaturalArray[i], *this, m_materialArray[i], m2File, skinData, modelViewMat);
+    }
+    for (int i = 0; i < this->m_meshForcedTranspArray.size(); i++) {
+        //Update info for sorting
+        if (this->m_meshForcedTranspArray[i] != nullptr) {
+            M2MeshBufferUpdater::updateSortData(this->m_meshForcedTranspArray[i], *this, m_materialArray[i], m2File,
+                                                skinData, modelViewMat);
+        }
     }
 }
 
@@ -1327,7 +1334,8 @@ bool M2Object::checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection 
 
 void M2Object::createMeshes() {
     /* 1. Free previous subMeshArray */
-    this->m_meshArray.clear();
+    this->m_meshNaturalArray.clear();
+    this->m_meshForcedTranspArray.clear();
     this->m_materialArray.clear();
 
     createBoundingBoxMesh();
@@ -1349,16 +1357,28 @@ void M2Object::createMeshes() {
             continue;
         }
         M2MaterialInst material;
-        HGM2Mesh hmesh = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, material);
+        EGxBlendEnum mainBlendMode;
+        HGM2Mesh hmesh = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, material, mainBlendMode, false);
 
         if (hmesh == nullptr)
             continue;
-        //hmesh->m_query = occlusionQuery;
 
-        this->m_meshArray.push_back(hmesh);
         this->m_materialArray.push_back(material);
-
+        this->m_meshNaturalArray.push_back(hmesh);
         M2MeshBufferUpdater::assignUpdateEvents(hmesh, this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinProfile);
+
+        if (mainBlendMode == EGxBlendEnum::GxBlend_Opaque) {
+            EGxBlendEnum blendMode = EGxBlendEnum::GxBlend_Alpha;
+            M2MaterialInst materialTransp;
+            HGM2Mesh hmeshTrans = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, materialTransp, blendMode, true);
+
+            this->m_materialArray.push_back(material);
+            this->m_meshForcedTranspArray.push_back(hmeshTrans);
+            M2MeshBufferUpdater::assignUpdateEvents(hmeshTrans, this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinProfile);
+
+        } else {
+            m_meshForcedTranspArray.push_back(nullptr);
+        }
     }
 
     // Create meshes requiring dynamic
@@ -1374,7 +1394,8 @@ void M2Object::createMeshes() {
 
         //Try to create mesh
         M2MaterialInst testMaterial;
-        auto testMesh = createSingleMesh(m_m2Data, i, 0, dynVaos[0], m2Batch, skinSection, testMaterial);
+        EGxBlendEnum blendMode;
+        auto testMesh = createSingleMesh(m_m2Data, i, 0, dynVaos[0], m2Batch, skinSection, testMaterial,blendMode, false);
         if (testMesh == nullptr)
             continue;
 
@@ -1385,7 +1406,7 @@ void M2Object::createMeshes() {
 
             M2MaterialInst material;
             int correction = skinSection->indexStart + (skinSection->Level << 16);
-            dynamicMeshData[k].m_mesh = createSingleMesh(m_m2Data, i, correction, dynVaos[k], m2Batch, skinSection, material);
+            dynamicMeshData[k].m_mesh = createSingleMesh(m_m2Data, i, correction, dynVaos[k], m2Batch, skinSection, material, blendMode, false);
 
             this->m_materialArray.push_back(material);
             M2MeshBufferUpdater::assignUpdateEvents(dynamicMeshData[k].m_mesh, this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinProfile);
@@ -1397,7 +1418,7 @@ void M2Object::createMeshes() {
 
 HGM2Mesh
 M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
-                           const M2SkinSection *skinSection, M2MaterialInst &material) {
+                           const M2SkinSection *skinSection, M2MaterialInst &material, EGxBlendEnum &blendMode, bool overrideBlend) {
 
     if (!prepearMaterial(material, i)) return nullptr;
 
@@ -1426,7 +1447,12 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     meshTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
     meshTemplate.triCCW = 1;
 
-    meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
+    if (overrideBlend) {
+        meshTemplate.blendMode = blendMode;
+    } else {
+        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
+        blendMode = meshTemplate.blendMode;
+    }
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16) - indexStartCorrection) * 2;
     meshTemplate.end = skinSection->indexCount;
@@ -1494,17 +1520,22 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
     int minBatch = m_api->getConfig()->m2MinBatch;
-    int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshArray.size());
+    int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshNaturalArray.size());
 
     for (int i = minBatch; i < maxBatch; i++) {
         float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, i, skinData);
         if ((finalTransparency < 0.0001) ) continue;
 
-        this->m_meshArray[i]->setRenderOrder(renderOrder);
-        if (this->m_meshArray[i]->getIsTransparent()) {
-            transparentMeshes.push_back(this->m_meshArray[i]);
+        HGM2Mesh mesh = this->m_meshNaturalArray[i];
+        if (finalTransparency < 1.0 && this->m_meshForcedTranspArray[i] != nullptr) {
+            mesh = this->m_meshForcedTranspArray[i];
+        }
+
+        mesh->setRenderOrder(renderOrder);
+        if (mesh->getIsTransparent()) {
+            transparentMeshes.push_back(mesh);
         } else {
-            opaqueMeshes.push_back(this->m_meshArray[i]);
+            opaqueMeshes.push_back(mesh);
         }
     }
 

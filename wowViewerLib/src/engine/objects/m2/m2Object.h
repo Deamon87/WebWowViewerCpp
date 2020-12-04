@@ -129,7 +129,10 @@ private:
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
-    std::vector<HGM2Mesh> m_meshArray;
+    std::vector<HGM2Mesh> m_meshNaturalArray;
+    std::vector<HGM2Mesh> m_meshForcedTranspArray;
+
+    //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, 4>> dynamicMeshes;
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
@@ -277,7 +280,7 @@ public:
     }
 
     HGM2Mesh createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
-                              const M2SkinSection *skinSection, M2MaterialInst &material);
+                              const M2SkinSection *skinSection, M2MaterialInst &material, EGxBlendEnum &blendMode, bool overrideBlend);
 
     void updateDynamicMeshes();
 };

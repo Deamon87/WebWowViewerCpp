@@ -17,6 +17,8 @@ float M2MeshBufferUpdater::calcFinalTransparency(const M2Object &m2Object, int b
         finalTransparency *= transparency;
     }
 
+    finalTransparency *= m2Object.m_alpha;
+
 	return finalTransparency;
 }
 

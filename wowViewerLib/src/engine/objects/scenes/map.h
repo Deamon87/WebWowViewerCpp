@@ -58,6 +58,7 @@ protected:
     HGVertexBufferBindings quadBindings;
     float m_skyConeAlpha = 0.0;
     HGMesh skyMesh = nullptr;
+    HGMesh skyMesh0x4Sky = nullptr;
 
     //Map mode
     std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};

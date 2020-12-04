@@ -468,6 +468,9 @@ void FrontendUI::showQuickLinksDialog() {
 //    if (ImGui::Button("Azeroth map: Lion's Rest (Legion)", ImVec2(-1, 0))) {
 //        openMapByIdAndFilename(0, "azeroth", -8739, 944, 200);
 //    }
+    if (ImGui::Button("Nyalotha map", ImVec2(-1, 0))) {
+        openSceneByfdid(2217, 2842322, -11595, 9280, 260);
+    }
     if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
         openWMOSceneByfdid(1247268);
     }
@@ -485,6 +488,9 @@ void FrontendUI::showQuickLinksDialog() {
             replacementTextureFDids[11] = 3071379;
 
             openM2SceneByfdid(3071370, replacementTextureFDids);
+    }
+    if (ImGui::Button("COT hourglass", ImVec2(-1, 0))) {
+        openM2SceneByfdid(190850, replacementTextureFDids);
     }
     if (ImGui::Button("Northrend Human Inn", ImVec2(-1, 0))) {
             openWMOSceneByfdid(114998);
@@ -1268,7 +1274,6 @@ void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x,
     currentScene = std::make_shared<Map>(m_api, mapId, mapName);
     m_api->camera->setCameraPos(x,y,z);
 }
-
 void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
     currentScene = std::make_shared<M2Scene>(m_api, m2Fdid, -1);
     currentScene->setReplaceTextureArray(replacementTextureIds);
@@ -1280,7 +1285,6 @@ void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementText
 //
     m_api->camera->setCameraPos(0, 0, 0);
 }
-
 void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds) {
     currentScene = std::make_shared<M2Scene>(m_api, m2FileName, -1);
     currentScene->setReplaceTextureArray(replacementTextureIds);
