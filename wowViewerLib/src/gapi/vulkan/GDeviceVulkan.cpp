@@ -1601,7 +1601,7 @@ void GDeviceVLK::drawMeshesInternal(
     int updateFrame = getUpdateFrameNumber();
     auto commandBufferForFilling = renderCommandBuffers[updateFrame];
 
-    ViewportType lastViewPort = ViewportType::vp_usual;
+    ViewportType lastViewPort = ViewportType::vp_none;
 
     VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
     VkBuffer lastVertexBuffer = VK_NULL_HANDLE;

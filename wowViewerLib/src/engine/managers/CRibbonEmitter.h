@@ -80,7 +80,7 @@ private:
 
         HGVertexBufferBindings m_bindings;
         std::vector<HGParticleMesh> m_meshes = {};
-        bool isDead = false;
+        bool isDead = true;
     };
 
     std::array<RibbonFrame, 4> frame;

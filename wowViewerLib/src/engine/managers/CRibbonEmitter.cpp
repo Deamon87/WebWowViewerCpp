@@ -187,7 +187,7 @@ CRibbonEmitter * CRibbonEmitter::SetGravity(float a2)
 //----- (00A19A80) --------------------------------------------------------
 bool CRibbonEmitter::IsDead() const
 {
-  return this->m_readPos == this->m_writePos;
+  return (this->m_readPos == this->m_writePos) || (m_gxIndices.size() <= 0);
 }
 
 //----- (00A19AA0) --------------------------------------------------------

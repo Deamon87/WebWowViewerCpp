@@ -24,7 +24,8 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
     m_supportThreads = false;
 //    m_supportThreads = emscripten_run_script_int("(SharedArrayBuffer != null) ? 1 : 0") == 1;
 #endif
-    nextDeltaTime = std::promise<float>();
+    nextDeltaTime[getPromiseInd()] = std::promise<float>();
+    nextDeltaTimeForUpdate[getPromiseInd()] = std::promise<float>();
 
     if (m_supportThreads) {
         loadingResourcesThread = std::thread([&]() {
@@ -50,14 +51,17 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
                 using namespace std::chrono_literals;
                 FrameCounter frameCounter;
 
+                auto currIndex = getPromiseInd();
+
                 while (!this->m_isTerminating) {
-                    auto future = nextDeltaTime.get_future();
+                    //std::cout << "cullingThread " << currIndex << std::endl;
+                    auto future = nextDeltaTime[currIndex].get_future();
                     future.wait();
+                    auto nextIndex = getNextPromiseInd();
 
                     //                std::cout << "update frame = " << getDevice()->getUpdateFrameNumber() << std::endl;
 
                     int currentFrame = m_apiContainer->hDevice->getCullingFrameNumber();
-                    nextDeltaTime = std::promise<float>();
 
                     frameCounter.beginMeasurement();
                     DoCulling();
@@ -65,6 +69,8 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
                     frameCounter.endMeasurement("Culling thread ");
 
                     this->cullingFinished.set_value(true);
+                    currIndex = nextIndex;
+                    
                 }
 //            } catch(const std::exception &e) {
 //                std::cerr << e.what() << std::endl;
@@ -78,13 +84,18 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
             updateThread = std::thread(([&]() {
 //                try {
                     this->m_apiContainer->hDevice->initUploadThread();
+                    auto currIndex = getPromiseInd();
                     while (!this->m_isTerminating) {
-                        auto future = nextDeltaTimeForUpdate.get_future();
+
+                        //std::cout << "updateThread " << currIndex << std::endl;
+                        auto future = nextDeltaTimeForUpdate[currIndex].get_future();
                         future.wait();
-                        nextDeltaTimeForUpdate = std::promise<float>();
+                        auto nextIndex = getNextPromiseInd();
+
                         DoUpdate();
 
                         updateFinished.set_value(true);
+                        currIndex = nextIndex;
                     }
 //                } catch(const std::exception &e) {
 //                    std::cerr << e.what() << std::endl;
@@ -207,14 +218,21 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     if (m_supportThreads) {
         cullingFuture = cullingFinished.get_future();
 
-        nextDeltaTime.set_value(1.0f);
+        nextDeltaTime[getNextPromiseInd()] = std::promise<float>();
+        nextDeltaTime[getPromiseInd()].set_value(1.0f);
+        //std::cout << "set new nextDeltaTime value for " << getPromiseInd() << "frame " << std::endl;
+        //std::cout << "set new nextDeltaTime promise for " << getNextPromiseInd() << "frame " << std::endl;
         if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
-            nextDeltaTimeForUpdate.set_value(1.0f);
+            nextDeltaTimeForUpdate[getNextPromiseInd()] = std::promise<float>();
+            nextDeltaTimeForUpdate[getPromiseInd()].set_value(1.0f);
+
+            //std::cout << "set new nextDeltaTime value for " << getPromiseInd() << "frame " << std::endl;
+            //std::cout << "set new nextDeltaTimeForUpdate promise for " << getNextPromiseInd() << "frame " << std::endl;
             updateFuture = updateFinished.get_future();
         }
     }
 
-    if (frameScenario == nullptr) return;
+    //if (frameScenario == nullptr) return;
 
 //    if (needToDropCache) {
 //        if (cacheStorage) {

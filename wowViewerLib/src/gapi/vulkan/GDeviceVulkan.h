@@ -55,7 +55,7 @@ class GDeviceVLK : public IDevice {
     };
 
 public:
-    enum class ViewportType {vp_usual = 0, vp_mapArea = 1, vp_skyBox = 2, vp_MAX = 3};
+    enum class ViewportType {vp_none = -1, vp_usual = 0, vp_mapArea = 1, vp_skyBox = 2, vp_MAX = 3};
 
     explicit GDeviceVLK(vkCallInitCallback * callBacks);
     ~GDeviceVLK() override = default;;

@@ -1,6 +1,7 @@
 #include <mutex>
 #include <vector>
 #include <iostream>
+#include <sstream>
 #include "RequestProcessor.h"
 
 std::mutex requestMtx;           // mutex for critical section
@@ -16,7 +17,16 @@ void RequestProcessor::addRequest (std::string &fileName, CacheHolderType holder
     std::unique_lock<std::mutex> setLck (setProcessingMtx,std::defer_lock);
     setLck.lock();
     if (currentlyProcessingFnames.count(fileName) > 0) {
-        std::cout << "RequestProcessor::addRequest : duplicate detected for fileName = " << fileName << std::endl;
+        uint32_t fileDataId = 0;
+        if (fileName.find("File") == 0) {
+            std::stringstream ss;
+            std::string fileDataIdHex = fileName.substr(4, fileName.find(".") - 4);
+
+            ss << std::hex << fileDataIdHex;
+            ss >> fileDataId;
+        }
+        std::cout << "RequestProcessor::addRequest : duplicate detected for fileName = " << fileName
+            << " " << ((fileDataId > 0) ? ("(fileDataId = "+std::to_string(fileDataId)+")"): "") <<std::endl;
         return;
     }
     currentlyProcessingFnames.insert(fileName);
