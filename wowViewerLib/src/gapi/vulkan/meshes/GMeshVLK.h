@@ -32,8 +32,8 @@ public:
     void setLayer(int layer) override { throw "Not Implemented";};
     void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
     void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
-    void setSortDistance(float distance) override { throw "Not Implemented";};
-    float getSortDistance() override { throw "Not Implemented";};
+    void setSortDistance(float distance) override { m_sortDistance = distance;};
+    float getSortDistance() override { return m_sortDistance; };
 
 protected:
     MeshType m_meshType;

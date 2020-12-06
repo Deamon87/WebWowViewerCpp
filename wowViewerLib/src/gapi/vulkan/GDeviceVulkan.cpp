@@ -77,7 +77,7 @@ bool checkValidationLayerSupport() {
         bool layerFound = false;
 
         for (const auto& layerProperties : availableLayers) {
-            if (strcmp(layerName, layerProperties.layerName) == 0) {
+            if (strncmp(layerName, layerProperties.layerName, 255) == 0) {
                 layerFound = true;
                 break;
             }
@@ -960,7 +960,8 @@ void GDeviceVLK::endUpdateForNextFrame() {
     }
 
     while ((!listOfDeallocators.empty())&&(listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
-        listOfDeallocators.front().callback();
+        auto stuff = listOfDeallocators.front();
+        stuff.callback();
 
         listOfDeallocators.pop_front();
     }

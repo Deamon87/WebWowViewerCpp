@@ -464,6 +464,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
         openWMOSceneByfdid(2756726);
     }
+    if (ImGui::Button("Stormwind mage portal", ImVec2(-1, 0))) {
+        openM2SceneByfdid(2394711, replacementTextureFDids);
+    }
 
 //    if (ImGui::Button("Azeroth map: Lion's Rest (Legion)", ImVec2(-1, 0))) {
 //        openMapByIdAndFilename(0, "azeroth", -8739, 944, 200);
@@ -742,8 +745,9 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->useGaussBlur = useGaussBlur;
         }
 
-        if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
-            m_api->getConfig()->useGaussBlur = useGaussBlur;
+        bool disableFog = m_api->getConfig()->disableFog;
+        if (ImGui::Checkbox("Disable fog", &disableFog)) {
+            m_api->getConfig()->disableFog = disableFog;
         }
 
         pauseAnimation = m_api->getConfig()->pauseAnimation;

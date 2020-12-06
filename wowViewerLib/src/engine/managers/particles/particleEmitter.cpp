@@ -267,7 +267,7 @@ void ParticleEmitter::createMesh() {
     if (m_indexVBO == nullptr) {
         m_indexVBO = device->createIndexBuffer();
         int vo = 0;
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < MAX_PARTICLES_PER_EMITTER; i++) {
             szIndexBuff.push_back(vo + 0);
             szIndexBuff.push_back(vo + 1);
             szIndexBuff.push_back(vo + 2);
@@ -1088,6 +1088,9 @@ ParticleEmitter::BuildQuadT3(
     static const float vys[4] = {1, -1, 1, -1};
     static const float txs[4] = {0, 0, 1, 1};
     static const float tys[4] = {0, 1, 0, 1};
+
+    if (szVertexCnt >= MAX_PARTICLES_PER_EMITTER) return;
+
     ParticleBuffStructQuad &record = szVertexBuf[szVertexCnt++];
 
 //    mathfu::mat4 inverseLookAt = mathfu::mat4::Identity();

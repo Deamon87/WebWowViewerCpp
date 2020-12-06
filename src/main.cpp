@@ -338,8 +338,8 @@ int main(){
     glfwInit();
 
 //    std::string rendererName = "ogl2";
-    std::string rendererName = "ogl3";
-//    std::string rendererName = "vulkan";
+//    std::string rendererName = "ogl3";
+    std::string rendererName = "vulkan";
 
     //FOR OGL
 
@@ -464,7 +464,7 @@ int main(){
         lastFrame = currentFrame;
         if (currentDeltaAfterDraw < 5.0) {
             using namespace std::chrono_literals;
-            std::this_thread::sleep_for(std::chrono::milliseconds((int)(5.0 - currentDeltaAfterDraw)));
+            std::this_thread::sleep_for(std::chrono::milliseconds((int)(1.0)));
         }
 
         if (rendererName == "ogl3" || rendererName == "ogl2") {

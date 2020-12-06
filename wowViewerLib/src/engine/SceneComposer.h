@@ -44,7 +44,8 @@ public:
     ~SceneComposer() {
         m_isTerminating = true;
         try {
-            nextDeltaTime.set_value(1.0f);
+            float delta = 1.0f;
+            nextDeltaTime.set_value(delta);
         } catch (...) {}
 
         cullingThread.join();

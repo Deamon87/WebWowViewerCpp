@@ -1832,9 +1832,9 @@ void M2Object::createVertexBindings() {
 
 void M2Object::updateDynamicMeshes() {
     auto rootMatInverse = bonesMatrices[0].Inverse();
+    auto frameNum = m_api->hDevice->getUpdateFrameNumber();
 
     for (auto &dynamicMesh: dynamicMeshes) {
-        auto frameNum = m_api->hDevice->getUpdateFrameNumber();
         auto &dynMeshData = dynamicMesh[frameNum];
 
         M2SkinProfile* skinProfile = this->m_skinGeom->getSkinData();

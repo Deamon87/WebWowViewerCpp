@@ -64,7 +64,15 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
         minSize = (int32_t) (floor((1 + 3) / 4) * floor((1 + 3) / 4) * 8);
     }
 
+    int mipmapsCnt = 0;
     for (int i = 0; i < 15; i++) {
+        if ((blpFile->lengths[i] == 0) || (blpFile->offsets[i] == 0)) break;
+        mipmapsCnt++;
+    }
+
+    mipmaps.resize(mipmapsCnt);
+
+    for (int i = 0; i < mipmapsCnt; i++) {
         if ((blpFile->lengths[i] == 0) || (blpFile->offsets[i] == 0)) break;
 
         uint8_t *data = ((uint8_t *) blpFile)+blpFile->offsets[i]; //blpFile->lengths[i]);
@@ -80,10 +88,10 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
 
 //        if (minSize == validSize) break;
 
-        mipmapStruct_t mipmapStruct;
+        mipmapStruct_t &mipmapStruct = mipmaps[i];
         mipmapStruct.height = height;
         mipmapStruct.width = width;
-        mipmapStruct.texture = std::vector<uint8_t>(validSize, 0);
+        mipmapStruct.texture.resize(validSize, 0);
 
         if ((blpFile->colorEncoding == 1) && (blpFile->preferredFormat == 8)) {//Unk format && pixel format 8
             uint8_t *paleteData = data;
@@ -110,7 +118,7 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
 
         }
 
-        mipmaps.push_back(mipmapStruct);
+        
 
         height = height / 2;
         width = width / 2;
