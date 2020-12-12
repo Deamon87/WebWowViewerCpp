@@ -135,6 +135,14 @@ struct vkCallInitCallback {
 };
 #endif
 
+struct FramebufAvalabilityStruct {
+    int width; int height;
+    std::vector<ITextureFormat> attachments;
+    ITextureFormat depthAttachment;
+    HFrameBuffer frameBuffer;
+    int frame;
+};
+
 class IDevice {
     public:
         virtual ~IDevice() {};

@@ -51,6 +51,9 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
                 using namespace std::chrono_literals;
                 FrameCounter frameCounter;
 
+                //NOTE: it's required to have separate counting process here with getPromiseInd/getNextPromiseInd,
+                //cause it's not known if the frameNumber will be updated from main thread before
+                //new currIndex is calculated (and if that doenst happen, desync in numbers happens)
                 auto currIndex = getPromiseInd();
 
                 while (!this->m_isTerminating) {
@@ -84,6 +87,8 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
             updateThread = std::thread(([&]() {
 //                try {
                     this->m_apiContainer->hDevice->initUploadThread();
+
+                    //NOTE: Refer to comment in cullingThread code
                     auto currIndex = getPromiseInd();
                     while (!this->m_isTerminating) {
 

@@ -70,7 +70,15 @@ void main() {
         vec3 matDiffuse = vColor.xyz * textureMod.rgb;
         finalColor = vec4(matDiffuse.rgb, opacity);
     } else if (uNonOptPixelShader == 4) { //Refraction
-        //TODO:!
+        float t0_973 = tex.x;
+        float t1_978 = tex2.y;
+        float t2_983 = tex3.z;
+        float textureMod_986 = (((t0_973 * t1_978) * t2_983) * 4.0);
+        float depthScale_991 = (1.0 - clamp((vPosition.z * 0.00999999978), 0, 1));
+        float textureMod_992 = (textureMod_986 * depthScale_991);
+        float height_995 = (textureMod_992 * vColor.x);
+        float alpha_997 = (textureMod_992 * vColor.w);
+        finalColor = vec4(height_995, 0.0, 0.0, alpha_997);
     }
 
     if(finalColor.a < uAlphaTest)

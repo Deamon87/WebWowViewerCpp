@@ -3,6 +3,7 @@
 //
 
 #include "ViewsObjects.h"
+#include <execution>
 
 void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
     {
@@ -37,7 +38,7 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
     }
 
     //Delete duplicates
-    std::sort( candidates.begin(), candidates.end() );
+    std::sort(std::execution::par_unseq, candidates.begin(), candidates.end() );
     candidates.erase( unique( candidates.begin(), candidates.end() ), candidates.end() );
 
 //    std::vector<bool> candidateResults = std::vector<bool>(candidates.size(), false);

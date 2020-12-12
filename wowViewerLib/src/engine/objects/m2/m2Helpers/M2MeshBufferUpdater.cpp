@@ -97,32 +97,32 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
     M2Batch *textMaterial = m2SkinProfile->batches.getElement(materialData.batchIndex);
     M2SkinSection *submesh = m2SkinProfile->skinSections.getElement(textMaterial->skinSectionIndex);
 
-    mathfu::vec4 centerBB = mathfu::vec4(mathfu::vec3(submesh->sortCenterPosition), 1.0);
+    mathfu::vec4 sortCenterPosition = mathfu::vec4(mathfu::vec3(submesh->sortCenterPosition), 1.0);
 
     const mathfu::mat4 &boneMat = m2Object.bonesMatrices[submesh->centerBoneIndex];
-    centerBB = modelViewMat * (boneMat * centerBB);
+    sortCenterPosition = modelViewMat * (boneMat * sortCenterPosition);
 
-    float value = centerBB.xyz().Length();
+    float value = sortCenterPosition.xyz().Length();
 
     if (textMaterial->flags & 3) {
         mathfu::vec4 resultPoint;
 
         if ( value > 0.00000023841858 ) {
-            resultPoint = centerBB * (1.0f / value);
+            resultPoint = sortCenterPosition * (1.0f / value);
         } else {
-            resultPoint = centerBB;
+            resultPoint = sortCenterPosition;
         }
 
         mathfu::mat4 mat4 = modelViewMat * boneMat;
-        float dist = mat4.GetColumn(3).xyz().Length();
-        float sortDist = dist * submesh->sortRadius;
+        float scale = mat4.GetColumn(0).xyz().Length();
+        float sortDist = scale * submesh->sortRadius;
 
         resultPoint *= sortDist;
 
         if (textMaterial->flags & 1) {
-            value = (centerBB - resultPoint).xyz().Length();
+            value = (sortCenterPosition - resultPoint).xyz().Length();
         } else {
-            value = (centerBB + resultPoint).xyz().Length();
+            value = (sortCenterPosition + resultPoint).xyz().Length();
         }
     }
 

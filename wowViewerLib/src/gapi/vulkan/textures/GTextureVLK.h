@@ -6,13 +6,23 @@
 #define AWEBWOWVIEWERCPP_GTEXTUREVLK_H
 
 class GDeviceVLK;
+class GFrameBufferVLK;
 #include "../GDeviceVulkan.h"
 #include "../../interface/textures/ITexture.h"
 
 class GTextureVLK : public ITexture {
     friend class GDeviceVLK;
+    friend class GFrameBufferVLK;
 protected:
     explicit GTextureVLK(IDevice &device, bool xWrapTex, bool yWrapTex);
+    //Used for rendering to texture in framebuffer
+    explicit GTextureVLK(IDevice &device,
+                         int width, int height,
+                         bool xWrapTex, bool yWrapTex,
+                         bool isDepthTexture,
+                         const VkFormat textureFormatGPU,
+                         int vulkanMipMapCount,
+                         VkImageUsageFlags imageUsageFlags);
     void createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
 public:
     ~GTextureVLK() override;
@@ -29,7 +39,6 @@ public:
         VkSampler sampler;
         VkImage image;
         VkImageLayout imageLayout;
-        VkDeviceMemory deviceMemory;
         VkImageView view;
     } texture;
 private:
@@ -52,6 +61,16 @@ protected:
     bool m_loaded = false;
     bool m_wrapX = true;
     bool m_wrapY = true;
+
+    int m_width = 0;
+    int m_height = 0;
+
+    void createVulkanImageObject(
+        bool isDepthTexture,
+        const VkFormat textureFormatGPU,
+        int vulkanMipMapCount,
+        VkImageUsageFlags imageUsageFlags
+    );
 };
 
 

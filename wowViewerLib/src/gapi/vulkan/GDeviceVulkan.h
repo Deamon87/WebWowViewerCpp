@@ -67,6 +67,7 @@ public:
     unsigned int getCullingFrameNumber() override;
     unsigned int getDrawFrameNumber() override;
 
+    bool getIsRenderbufferSupported() override {return true;}
 
     void increaseFrameNumber() override;
     bool getIsAsynBuffUploadSupported() override {
@@ -123,7 +124,7 @@ public:
     HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) override;
     HGPUFence createFence() override;
 
-    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override {return nullptr;};
+    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override ;
 
     HPipelineVLK createPipeline(HGVertexBufferBindings m_bindings,
                                 HGShaderPermutation shader,
@@ -208,6 +209,7 @@ public:
         listOfDeallocators.push_back(dr);
     };
 
+    VkFormat findDepthFormat();
 private:
     void drawMesh(HGMesh &hmesh);
     void internalDrawStageAndDeps(HDrawStage drawStage);
@@ -235,15 +237,17 @@ private:
     void createDepthResources();
 
 
-    VkFormat findDepthFormat();
+
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
-    void drawMeshesInternal(    const HDrawStage &drawStage,
-                                const HMeshesToRender &iMeshes,
-                            const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
-                            VkRect2D &defaultScissor);
+    bool drawMeshesInternal(
+        const HDrawStage &drawStage,
+        VkCommandBuffer commandBufferForFilling,
+        const HMeshesToRender &iMeshes,
+        const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
+        VkRect2D &defaultScissor);
 
 protected:
     struct BlpCacheRecord {
@@ -337,7 +341,9 @@ protected:
 
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkCommandBuffer> renderCommandBuffers;
-    std::vector<bool> renderCommandBuffersNull;
+    std::vector<bool> renderCommandBuffersNotNull;
+    std::vector<VkCommandBuffer> renderCommandBuffersForFrameBuffers;
+    std::vector<bool> renderCommandBuffersForFrameBuffersNotNull;
     std::vector<VkCommandBuffer> uploadCommandBuffers;
     std::vector<VkCommandBuffer> textureTransferCommandBuffers;
     std::vector<bool> textureTransferCommandBufferNull;
@@ -403,7 +409,7 @@ protected:
         HGUniformBuffer m_uniformBufferForUpload;
     };
 
-    FrameUniformBuffers m_UBOFrames[4];
+    std::array<FrameUniformBuffers, 4> m_UBOFrames;
 
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 
@@ -412,7 +418,7 @@ protected:
     int uniformBuffersCreated = 0;
     bool attachmentsReady = false;
 
-
+    std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 };
 
 

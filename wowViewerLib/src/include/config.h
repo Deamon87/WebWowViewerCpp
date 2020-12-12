@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_CONFIG_H
 
 #include <string>
+#include <thread>
 #include <mathfu/glsl_mappings.h>
 
 enum class EParameterSource: char {
@@ -15,6 +16,10 @@ enum class EParameterSource: char {
 };
 
 class Config {
+public:
+    Config() {
+        threadCount = std::max<int>((int)std::thread::hardware_concurrency()-2, 1);
+    }
 
 public:
     bool renderAdt = true;

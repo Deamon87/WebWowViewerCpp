@@ -31,6 +31,7 @@
 #include "shaders/GImguiShaderPermutation.h"
 #include "shaders/GM2RibbonShaderPermutationVLK.h"
 #include "shaders/GSkyConusShaderVLK.h"
+#include "GFrameBufferVLK.h"
 //#include "fastmemcp.h"
 
 const int WIDTH = 1900;
@@ -172,7 +173,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -777,16 +778,32 @@ void GDeviceVLK::createCommandBuffers() {
 }
 void GDeviceVLK::createCommandBuffersForUpload() {
     renderCommandBuffers.resize(4);
-    renderCommandBuffersNull.resize(4);
-    for (int i = 0; i < 4; i++) renderCommandBuffersNull[i] = true;
-    VkCommandBufferAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = renderCommandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-    allocInfo.commandBufferCount = (uint32_t) renderCommandBuffers.size();
+    renderCommandBuffersNotNull.resize(4);
+    renderCommandBuffersForFrameBuffers.resize(4);
+    renderCommandBuffersForFrameBuffersNotNull.resize(4);
+    for (int i = 0; i < 4; i++) renderCommandBuffersNotNull[i] = false;
+    {
+        VkCommandBufferAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = renderCommandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+        allocInfo.commandBufferCount = (uint32_t) renderCommandBuffers.size();
 
-    if (vkAllocateCommandBuffers(device, &allocInfo, renderCommandBuffers.data()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate command buffers!");
+        if (vkAllocateCommandBuffers(device, &allocInfo, renderCommandBuffers.data()) != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate command buffers!");
+        }
+    }
+
+    {
+        VkCommandBufferAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = renderCommandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = (uint32_t) renderCommandBuffersForFrameBuffers.size();
+
+        if (vkAllocateCommandBuffers(device, &allocInfo, renderCommandBuffersForFrameBuffers.data()) != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate command buffers!");
+        }
     }
 
     uploadCommandBuffers.resize(4);
@@ -1370,7 +1387,7 @@ void GDeviceVLK::commitFrame() {
 
         vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-        if (!renderCommandBuffersNull[currentDrawFrame]) {
+        if (renderCommandBuffersNotNull[currentDrawFrame]) {
             vkCmdExecuteCommands(commandBufferForFilling, 1, &renderCommandBuffers[currentDrawFrame]);
         }
 
@@ -1399,27 +1416,21 @@ void GDeviceVLK::commitFrame() {
         submitInfo.waitSemaphoreCount = 1;
     }
 
-
-
-
     submitInfo.pWaitSemaphores = &waitSemaphores[0];
     submitInfo.pWaitDstStageMask = &waitStages[0];
 
-    std::array<VkCommandBuffer, 2> grCommandBuffers;
+    std::vector<VkCommandBuffer> grCommandBuffers = {};
     if (!textureTransferCommandBufferNull[currentDrawFrame]) {
-        grCommandBuffers = {textureTransferCommandBuffers[currentDrawFrame], commandBufferForFilling};
-
-        submitInfo.commandBufferCount = 2;
-    } else {
-        grCommandBuffers = {commandBufferForFilling};
-
-        submitInfo.commandBufferCount = 1;
+        grCommandBuffers.push_back(textureTransferCommandBuffers[currentDrawFrame]);
     }
-    submitInfo.pCommandBuffers = &grCommandBuffers[0];
+    if (renderCommandBuffersForFrameBuffersNotNull[currentDrawFrame]) {
+        grCommandBuffers.push_back(renderCommandBuffersForFrameBuffers[currentDrawFrame]);
+    }
+    submitInfo.commandBufferCount = grCommandBuffers.size();
+    submitInfo.pCommandBuffers = grCommandBuffers.data();
 
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderFinishedSemaphores[currentDrawFrame];
-
 
 //    if (!renderCommandBuffersNull[currentDrawFrame]) {
     {
@@ -1539,6 +1550,28 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
     int updateFrame = getUpdateFrameNumber();
     auto commandBufferForFilling = renderCommandBuffers[updateFrame];
 
+    if (drawStage->target != nullptr) {
+        commandBufferForFilling = renderCommandBuffersForFrameBuffers[updateFrame];
+
+        GFrameBufferVLK *frameBufferVlk = dynamic_cast<GFrameBufferVLK *>(drawStage->target.get());
+
+        std::array<VkClearValue,2> clearValues;
+        clearValues[0].color = { clearColor[0], clearColor[1], clearColor[2] };
+        clearValues[1].depthStencil = {getInvertZ() ? 0.0f : 1.0f, 0};
+
+        VkRenderPassBeginInfo renderPassInfo = {};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.pNext = NULL;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = frameBufferVlk->m_frameBuffer;
+        renderPassInfo.renderArea.offset = {drawStage->viewPortDimensions.mins[0], drawStage->viewPortDimensions.mins[1]};
+        renderPassInfo.renderArea.extent = {static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]), static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])};
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
+
+        vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    }
+
     std::array<VkViewport, (int)ViewportType::vp_MAX> viewportsForThisStage;
 
     VkViewport &usualViewport = viewportsForThisStage[(int)ViewportType::vp_usual];
@@ -1585,21 +1618,30 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
     //Set new viewport
     vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
 
+    bool atLeastOneDrawCall = false;
     if (drawStage->opaqueMeshes != nullptr)
-        drawMeshesInternal(drawStage, drawStage->opaqueMeshes, viewportsForThisStage, defaultScissor);
+        atLeastOneDrawCall |= drawMeshesInternal(drawStage, commandBufferForFilling, drawStage->opaqueMeshes, viewportsForThisStage, defaultScissor);
     if (drawStage->transparentMeshes != nullptr)
-        drawMeshesInternal(drawStage, drawStage->transparentMeshes, viewportsForThisStage, defaultScissor);
+        atLeastOneDrawCall |= drawMeshesInternal(drawStage, commandBufferForFilling, drawStage->transparentMeshes, viewportsForThisStage, defaultScissor);
+
+    if (drawStage->target != nullptr) {
+        vkCmdEndRenderPass(commandBufferForFilling);
+        renderCommandBuffersForFrameBuffersNotNull[updateFrame] = atLeastOneDrawCall | renderCommandBuffersForFrameBuffersNotNull[updateFrame];
+    } else {
+        renderCommandBuffersNotNull[updateFrame] = atLeastOneDrawCall | renderCommandBuffersNotNull[updateFrame];
+    }
 
 }
 
-void GDeviceVLK::drawMeshesInternal(
+//Returns true if at least once command was written to buffer
+bool GDeviceVLK::drawMeshesInternal(
     const HDrawStage &drawStage,
+    VkCommandBuffer commandBufferForFilling,
     const HMeshesToRender &meshes,
     const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
     VkRect2D &defaultScissor) {
 
     int updateFrame = getUpdateFrameNumber();
-    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
 
     ViewportType lastViewPort = ViewportType::vp_none;
 
@@ -1610,6 +1652,8 @@ void GDeviceVLK::drawMeshesInternal(
     uint32_t dynamicOffset[7] = {};
 
     auto iMeshes = meshes->meshes;
+
+    bool atLeastOneDrawcall = false;
 
     for (auto &mesh: iMeshes) {
         auto *meshVLK = ((GMeshVLK *)mesh.get());
@@ -1682,7 +1726,8 @@ void GDeviceVLK::drawMeshesInternal(
         auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
         auto imageDescSet = meshVLK->imageDescriptorSets[updateFrame]->getDescSet();
 
-        renderCommandBuffersNull[updateFrame] = false;
+        atLeastOneDrawcall = true;
+
         //UBO
         vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
@@ -1693,47 +1738,80 @@ void GDeviceVLK::drawMeshesInternal(
 
         vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }
+
+    return atLeastOneDrawcall;
 }
 
 void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
     int updateFrame = getUpdateFrameNumber();
-
-    VkCommandBufferInheritanceInfo bufferInheritanceInfo;
-    bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-    bufferInheritanceInfo.pNext = nullptr;
-    bufferInheritanceInfo.renderPass = renderPass;
-    bufferInheritanceInfo.subpass = 0;
-    bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
-    bufferInheritanceInfo.occlusionQueryEnable = false;
-    bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
-    bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
-
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-    beginInfo.pNext = NULL;
-    beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
 
 //    std::cout << "drawStageAndDeps: updateFrame = " << updateFrame << std::endl;
     vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
     //Update
     if (m_shaderDescriptorUpdateNeeded) {
-        for(auto shaderVLKRec : m_shaderPermutCache) {
+        for (auto shaderVLKRec : m_shaderPermutCache) {
             ((GShaderPermutationVLK *) shaderVLKRec.second.get())->updateDescriptorSet(updateFrame);
         }
         m_shaderDescriptorUpdateNeeded = false;
     }
 
     auto commandBufferForFilling = renderCommandBuffers[updateFrame];
-    renderCommandBuffersNull[updateFrame] = true;
-    if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer!");
+    auto commandBufferForFillingFrameBuf = renderCommandBuffersForFrameBuffers[updateFrame];
+
+    renderCommandBuffersNotNull[updateFrame] = false;
+    renderCommandBuffersForFrameBuffersNotNull[updateFrame] = false;
+
+    {
+        VkCommandBufferInheritanceInfo bufferInheritanceInfo;
+        bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+        bufferInheritanceInfo.pNext = nullptr;
+        bufferInheritanceInfo.renderPass = renderPass;
+        bufferInheritanceInfo.subpass = 0;
+        bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
+        bufferInheritanceInfo.occlusionQueryEnable = false;
+        bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
+        bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
+
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+        beginInfo.pNext = NULL;
+        beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
+
+        if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("failed to begin recording command buffer!");
+        }
+    }
+
+    {
+        VkCommandBufferInheritanceInfo bufferInheritanceInfo;
+        bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+        bufferInheritanceInfo.pNext = nullptr;
+        bufferInheritanceInfo.renderPass = VK_NULL_HANDLE;
+        bufferInheritanceInfo.subpass = 0;
+        bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
+        bufferInheritanceInfo.occlusionQueryEnable = false;
+        bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
+        bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
+
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+        beginInfo.pNext = NULL;
+        beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
+
+        if (vkBeginCommandBuffer(commandBufferForFillingFrameBuf, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("failed to begin recording command buffer!");
+        }
     }
 
     internalDrawStageAndDeps(drawStage);
 
     if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
+    if (vkEndCommandBuffer(commandBufferForFillingFrameBuf) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
 }
@@ -1743,4 +1821,48 @@ void GDeviceVLK::initUploadThread() {
         createCommandPoolForUpload();
         createCommandBuffersForUpload();
     }
+}
+
+HFrameBuffer GDeviceVLK::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments,
+                                           ITextureFormat depthAttachment, int frameNumber) {
+
+    if (frameNumber > -1) {
+        for (auto &framebufAvalability : m_createdFrameBuffers) {
+            if (framebufAvalability.frame >= m_frameNumber &&
+                framebufAvalability.attachments.size() == attachments.size() &&
+                framebufAvalability.width == width &&
+                framebufAvalability.height == height
+                ) {
+                //Check frame definition
+                bool notEqual = false;
+                for (int i = 0; i < attachments.size(); i++) {
+                    if (attachments[i] != framebufAvalability.attachments[i]) {
+                        notEqual = true;
+                        break;
+                    }
+                }
+                if (!notEqual) {
+                    framebufAvalability.frame = m_frameNumber + frameNumber;
+                    return framebufAvalability.frameBuffer;
+                }
+            }
+        }
+    }
+
+    HFrameBuffer h_frameBuffer = std::make_shared<GFrameBufferVLK>(*this, attachments, depthAttachment, width, height);
+
+    if (frameNumber > -1) {
+        FramebufAvalabilityStruct avalabilityStruct;
+        avalabilityStruct.frameBuffer = h_frameBuffer;
+        avalabilityStruct.height = height;
+        avalabilityStruct.width = width;
+        avalabilityStruct.frame = m_frameNumber + frameNumber;
+        avalabilityStruct.attachments = attachments;
+        avalabilityStruct.depthAttachment = depthAttachment;
+
+        m_createdFrameBuffers.push_back(avalabilityStruct);
+    }
+
+    return h_frameBuffer;
+
 }

@@ -22,7 +22,7 @@ GFrameBufferGL33::GFrameBufferGL33 (
     if (depthAttachment != ITextureFormat::itNone) {
         depthTexture = mdevice.createTexture(false, false);
         depthTexture->loadData(width, height, nullptr, depthAttachment);
-        }
+    }
     glGenFramebuffers(+1, &m_renderBufFbo);
     glGenFramebuffers(+1, &m_textureFbo);
     //1. First fill framebuffer with renderbuffers

@@ -505,7 +505,7 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
 
     int numThreads = m_api->getConfig()->threadCount;
 
-    #pragma omp parallel for schedule(dynamic, 4) num_threads(numThreads)
+    #pragma omp parallel for schedule(dynamic, 200) default(none) shared(delta, forces) num_threads(numThreads)
     for (int i = 0; i < this->particles.size(); i++) {
         auto &p = this->particles[i];
         bool killParticle = false;

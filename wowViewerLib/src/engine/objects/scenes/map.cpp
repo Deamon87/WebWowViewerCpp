@@ -5,6 +5,7 @@
 #include <iostream>
 #include <set>
 #include <cmath>
+#include <execution>
 #include "map.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/grahamScan.h"
@@ -573,13 +574,17 @@ void Map::checkCulling(HCullStage cullStage) {
     std::copy(cullStage->exteriorView.drawnM2s.begin(), cullStage->exteriorView.drawnM2s.end(), inserter);
 
     //Sort and delete duplicates
-    std::sort( cullStage->m2Array.begin(), cullStage->m2Array.end() );
-    cullStage->m2Array.erase( unique( cullStage->m2Array.begin(), cullStage->m2Array.end() ), cullStage->m2Array.end() );
-    cullStage->m2Array = std::vector<std::shared_ptr<M2Object>>(cullStage->m2Array.begin(), cullStage->m2Array.end());
+    if (cullStage->m2Array.size() > 2) {
+//        internal::parallel_sort(cullStage->m2Array.begin(), cullStage->m2Array.end(),
+//                                [](auto &first, auto &end) { return first < end; });
+
+        std::sort(std::execution::par_unseq, cullStage->m2Array.begin(), cullStage->m2Array.end() );
+        cullStage->m2Array.erase(unique(cullStage->m2Array.begin(), cullStage->m2Array.end()),
+                                 cullStage->m2Array.end());
+    }
 
     std::sort( cullStage->wmoArray.begin(), cullStage->wmoArray.end() );
     cullStage->wmoArray.erase( unique( cullStage->wmoArray.begin(), cullStage->wmoArray.end() ), cullStage->wmoArray.end() );
-    cullStage->wmoArray = std::vector<std::shared_ptr<WmoObject>>(cullStage->wmoArray.begin(), cullStage->wmoArray.end());
 
     cullStage->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>(cullStage->adtArray.begin(), cullStage->adtArray.end());
 
@@ -1142,7 +1147,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     {
         int numThreads = m_api->getConfig()->threadCount;
 
-        #pragma omp parallel for num_threads(numThreads)
+        #pragma omp parallel for schedule(static, 1000) default( none) shared(m2ObjectsCandidates,cameraPos, cullStage, frustumPoints)
         for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
             auto m2ObjectCandidate = m2ObjectsCandidates[i];
             bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
@@ -1344,12 +1349,24 @@ void Map::update(HUpdateStage updateStage) {
 //    #pragma
     int numThreads = m_api->getConfig()->threadCount;
     {
-        #pragma omp parallel for num_threads(numThreads) schedule(dynamic, 4)
-        for (const auto& m2Object : updateStage->cullResult->m2Array) {
+
+        auto &m2Array = updateStage->cullResult->m2Array;
+        auto n = m2Array.size();
+        #pragma omp parallel for schedule(static, 1000) num_threads(numThreads) default(none) shared(m2Array,n, deltaTime, cameraVec3,lookAtMat)
+        for (int i = 0; i < n; i++ ) {
+            auto m2Object = m2Array[i];
             if (m2Object != nullptr) {
                 m2Object->update(deltaTime, cameraVec3, lookAtMat);
             }
         }
+
+
+
+//        std::for_each(std::execution::par_unseq,
+//            updateStage->cullResult->m2Array.begin(),
+//            updateStage->cullResult->m2Array.end(), [&](const std::shared_ptr<M2Object> &m2Object) {
+//                m2Object->update(deltaTime, cameraVec3, lookAtMat);
+//        });
     }
 
 //        });
@@ -1563,13 +1580,18 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 //        s.insert(i);
 //    m2ObjectsRendered.assign( s.begin(), s.end() );
 
-    std::set<std::shared_ptr<M2Object>> s;
-    unsigned size = m2ObjectsRendered.size();
-    for( unsigned i = 0; i < size; ++i ) s.insert( m2ObjectsRendered[i] );
-    m2ObjectsRendered.assign( s.begin(), s.end() );
+//    std::set<std::shared_ptr<M2Object>> s;
+//    unsigned size = m2ObjectsRendered.size();
+//    for( unsigned i = 0; i < size; ++i ) s.insert( m2ObjectsRendered[i] );
+//    m2ObjectsRendered.assign( s.begin(), s.end() );
 
-//    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
-//    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
+    if (m2ObjectsRendered.size() > 2) {
+        internal::parallel_sort(m2ObjectsRendered.begin(), m2ObjectsRendered.end(),
+                                [](auto &first, auto &end) { return first < end; });
+
+//    std::sort(std::execution::par_unseq, m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
+        m2ObjectsRendered.erase(unique(m2ObjectsRendered.begin(), m2ObjectsRendered.end()), m2ObjectsRendered.end());
+    }
 
 //    if (m_api->getConfig()->getRenderM2()) {
     for (auto &m2Object : m2ObjectsRendered) {

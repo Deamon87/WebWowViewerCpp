@@ -245,13 +245,6 @@ protected:
     };
 #endif
 
-    struct FramebufAvalabilityStruct {
-        int width; int height;
-        std::vector<ITextureFormat> attachments;
-        ITextureFormat depthAttachment;
-        HFrameBuffer frameBuffer;
-        int frame;
-    };
     std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 
     std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
