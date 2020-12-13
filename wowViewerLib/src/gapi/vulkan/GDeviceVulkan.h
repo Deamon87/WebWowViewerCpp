@@ -160,6 +160,9 @@ public:
     virtual VkDevice getVkDevice() {
         return device;
     };
+    virtual VkPhysicalDevice getVkPhysicalDevice() {
+        return physicalDevice;
+    };
     virtual VkExtent2D getCurrentExtent() {
         return swapChainExtent;
     };
@@ -213,6 +216,8 @@ public:
     };
 
     VkFormat findDepthFormat();
+
+    void singleExecuteAndWait(std::function<void(VkCommandBuffer commandBuffer)> callback);
 private:
     void drawMesh(HGMesh &hmesh);
     void internalDrawStageAndDeps(HDrawStage drawStage);

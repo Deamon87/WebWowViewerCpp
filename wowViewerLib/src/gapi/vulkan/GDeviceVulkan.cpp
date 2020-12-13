@@ -1999,5 +1999,59 @@ HFrameBuffer GDeviceVLK::createFrameBuffer(int width, int height, std::vector<IT
     }
 
     return h_frameBuffer;
+}
 
+void GDeviceVLK::singleExecuteAndWait(std::function<void(VkCommandBuffer)> callback) {
+    //Allocate temporary command buffer
+    VkCommandBufferAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer copyCmd;
+
+    if (vkAllocateCommandBuffers(device, &allocInfo, &copyCmd) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    beginInfo.pNext = NULL;
+    beginInfo.pInheritanceInfo = NULL;
+
+    ERR_GUARD_VULKAN(vkBeginCommandBuffer(copyCmd, &beginInfo));
+
+    callback(copyCmd);
+
+
+    if (copyCmd == VK_NULL_HANDLE)
+    {
+        return;
+    }
+
+    ERR_GUARD_VULKAN(vkEndCommandBuffer(copyCmd));
+
+    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &copyCmd;
+    submitInfo.signalSemaphoreCount = 0;
+    submitInfo.pSignalSemaphores = nullptr;
+
+    // Create fence to ensure that the command buffer has finished executing
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.pNext = NULL;
+    fenceInfo.flags = 0;
+
+    VkFence fence;
+    ERR_GUARD_VULKAN(vkCreateFence(device, &fenceInfo, nullptr, &fence));
+    // Submit to the queue
+    ERR_GUARD_VULKAN(vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence));
+    // Wait for the fence to signal that command buffer has finished executing
+    ERR_GUARD_VULKAN(vkWaitForFences(device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
+
+    vkDestroyFence(device, fence, nullptr);
+    vkFreeCommandBuffers(device, commandPool, 1, &copyCmd);
 }

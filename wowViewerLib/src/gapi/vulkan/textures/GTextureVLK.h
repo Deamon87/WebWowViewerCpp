@@ -57,6 +57,8 @@ private:
 protected:
     GDeviceVLK &m_device;
 
+    bool stagingBufferCreated = false;
+
     bool m_uploaded = false;
     bool m_loaded = false;
     bool m_wrapX = true;

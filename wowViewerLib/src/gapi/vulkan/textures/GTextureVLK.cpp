@@ -38,6 +38,7 @@ GTextureVLK::GTextureVLK(IDevice &device,
     //this is texture for use in framebuffer, that's why it is set as initialized
     m_loaded = true;
     m_uploaded = true;
+    stagingBufferCreated = false;
 }
 
 
@@ -58,14 +59,17 @@ void GTextureVLK::destroyBuffer() {
     auto &l_imageAllocation = imageAllocation;
     auto &l_stagingBuffer = stagingBuffer;
     auto &l_stagingBufferAlloc = stagingBufferAlloc;
+    auto l_stagingBufferCreated = stagingBufferCreated;
 
     m_device.addDeallocationRecord(
-        [l_device, l_texture, l_imageAllocation, l_stagingBuffer, l_stagingBufferAlloc]() {
+        [l_device, l_texture, l_imageAllocation, l_stagingBuffer, l_stagingBufferAlloc, l_stagingBufferCreated]() {
             vkDestroyImageView(l_device->getVkDevice(), l_texture.view, nullptr);
             vkDestroySampler(l_device->getVkDevice(), l_texture.sampler, nullptr);
-
             vmaDestroyImage(l_device->getVMAAllocator(), l_texture.image, l_imageAllocation);
-            vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingBuffer, l_stagingBufferAlloc);
+
+            if (l_stagingBufferCreated) {
+                vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingBuffer, l_stagingBufferAlloc);
+            }
     });
 }
 
@@ -95,7 +99,7 @@ void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat tex
     mipmapsVector.push_back(mipmap);
 
 
-    createTexture(mipmapsVector, VK_FORMAT_B8G8R8A8_UNORM, unifiedBuffer);
+    createTexture(mipmapsVector, VK_FORMAT_R8G8B8A8_UNORM, unifiedBuffer);
 }
 
 void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer) {// Copy data to an optimal tiled image
@@ -189,7 +193,6 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
 
     // Transition the texture image layout to transfer target, so we can safely copy our buffer data to it.
     VkImageMemoryBarrier imageMemoryBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-    imageMemoryBarrier.image = texture.image;
     imageMemoryBarrier.subresourceRange = subresourceRange;
     imageMemoryBarrier.srcAccessMask = 0;
     imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -265,6 +268,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     texture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     m_uploaded = true;
+    stagingBufferCreated = true;
 }
 
 void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat textureFormatGPU, int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) {

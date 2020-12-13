@@ -26,11 +26,14 @@ public:
 
     static void iterateOverAttachments(std::vector<ITextureFormat> textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback);
 
+
 private:
     GDeviceVLK &mdevice;
 
     std::vector<HGTexture> attachmentTextures;
     HGTexture depthTexture;
+
+    std::vector<VkFormat> attachmentFormats;
 
     int m_width = 0;
     int m_height = 0;
