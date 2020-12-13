@@ -24,15 +24,20 @@ public:
     VkShaderModule getFragmentModule() {return fragShaderModule;}
     VkDescriptorSetLayout getImageDescriptorLayout() {return imageDescriptorSetLayout;}
     VkDescriptorSetLayout getUboDescriptorLayout() {return uboDescriptorSetLayout;}
-    std::string getShaderName() {return m_shaderName; }
+
     virtual int getTextureBindingStart() = 0;
     virtual int getTextureCount() = 0;
 
     const shaderMetaData *fragShaderMeta;
     const shaderMetaData *vertShaderMeta;
 
+    std::string getShaderName() {
+        return m_shaderName;
+    }
+
 protected:
     explicit GShaderPermutationVLK(std::string &shaderName, IDevice *device);
+    explicit GShaderPermutationVLK(std::string &shaderName, std::string &shaderVertName, std::string &shaderFragName, IDevice *device);
 
     VkShaderModule createShaderModule(const std::vector<char>& code);
 
@@ -52,7 +57,12 @@ protected:
 
 
 private:
+    //Used only for logging
     std::string m_shaderName;
+
+    //Used for getting SPIRV
+    std::string m_shaderNameVert;
+    std::string m_shaderNameFrag;
 
     void createUBODescriptorLayout();
 

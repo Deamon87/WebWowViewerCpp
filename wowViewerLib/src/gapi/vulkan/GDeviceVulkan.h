@@ -128,12 +128,15 @@ public:
 
     HPipelineVLK createPipeline(HGVertexBufferBindings m_bindings,
                                 HGShaderPermutation shader,
+                                VkRenderPass renderPass,
                                 DrawElementMode element,
                                 int8_t backFaceCulling,
                                 int8_t triCCW,
                                 EGxBlendEnum blendMode,
                                 int8_t depthCulling,
                                 int8_t depthWrite);
+
+    VkRenderPass getRenderPass(std::vector<ITextureFormat> textureAttachments, ITextureFormat depthAttachment);
 
     HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
@@ -245,6 +248,7 @@ private:
     bool drawMeshesInternal(
         const HDrawStage &drawStage,
         VkCommandBuffer commandBufferForFilling,
+        VkRenderPass renderPass,
         const HMeshesToRender &iMeshes,
         const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
         VkRect2D &defaultScissor);
@@ -273,6 +277,7 @@ protected:
 
     struct PipelineCacheRecord {
         HGShaderPermutation shader;
+        VkRenderPass renderPass;
         DrawElementMode element;
         int8_t backFaceCulling;
         int8_t triCCW;
@@ -284,6 +289,7 @@ protected:
         bool operator==(const PipelineCacheRecord &other) const {
             return
                 (shader == other.shader) &&
+                (renderPass == other.renderPass) &&
                 (element == other.element) &&
                 (backFaceCulling == other.backFaceCulling) &&
                 (triCCW == other.triCCW) &&
@@ -297,6 +303,7 @@ protected:
         std::size_t operator()(const PipelineCacheRecord& k) const {
             using std::hash;
             return hash<void*>{}(k.shader.get()) ^
+            hash<void*>{}(k.renderPass) ^
             (hash<int8_t >{}(k.backFaceCulling) << 2) ^
             (hash<int8_t >{}(k.triCCW) << 4) ^
             (hash<int8_t >{}(k.depthCulling) << 8) ^
@@ -419,6 +426,14 @@ protected:
     bool attachmentsReady = false;
 
     std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
+
+    struct RenderPassAvalabilityStruct {
+        std::vector<ITextureFormat> attachments;
+        ITextureFormat depthAttachment;
+        VkRenderPass renderPass;
+    };
+
+    std::vector<RenderPassAvalabilityStruct> m_createdRenderPasses;
 };
 
 

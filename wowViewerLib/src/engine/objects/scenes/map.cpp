@@ -1699,7 +1699,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 
     HDrawStage origResultDrawStage = resultDrawStage;
     bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
-    frameBufferSupported = false;
+
     if (frameBufferSupported) {
         //Create new drawstage and draw everything there
         resultDrawStage = std::make_shared<DrawStage>();
@@ -1924,7 +1924,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         });
 
 
-        auto shader = m_api->hDevice->getShader("fullScreen_quad", nullptr);
+        auto shader = m_api->hDevice->getShader("ffxGlowQuad", nullptr);
         gMeshTemplate meshTemplate(quadBindings, shader);
         meshTemplate.meshType = MeshType::eGeneralMesh;
         meshTemplate.depthWrite = false;

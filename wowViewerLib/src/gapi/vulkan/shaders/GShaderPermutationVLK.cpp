@@ -45,7 +45,14 @@ VkShaderModule GShaderPermutationVLK::createShaderModule(const std::vector<char>
 }
 
 GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderName, IDevice * device) :
-    m_device(dynamic_cast<GDeviceVLK *>(device)), m_shaderName(shaderName){
+    m_device(dynamic_cast<GDeviceVLK *>(device)), m_shaderName(shaderName), m_shaderNameVert(shaderName), m_shaderNameFrag(shaderName){
+
+}
+
+GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderName, std::string &shaderVertName, std::string &shaderFragName,
+                                             IDevice *device) :
+    m_device(dynamic_cast<GDeviceVLK *>(device)), m_shaderName(shaderName), m_shaderNameVert(shaderVertName), m_shaderNameFrag(shaderFragName){
+                                             
 
 }
 
@@ -207,14 +214,14 @@ void GShaderPermutationVLK::createUboDescriptorSets() {
 }
 
 void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
-    auto vertShaderCode = readFile("spirv/" + m_shaderName + ".vert.spv");
-    auto fragShaderCode = readFile("spirv/" + m_shaderName + ".frag.spv");
+    auto vertShaderCode = readFile("spirv/" + m_shaderNameVert + ".vert.spv");
+    auto fragShaderCode = readFile("spirv/" + m_shaderNameFrag + ".frag.spv");
 
     vertShaderModule = createShaderModule(vertShaderCode);
     fragShaderModule = createShaderModule(fragShaderCode);
 
-    vertShaderMeta = &shaderMetaInfo.at(m_shaderName + ".vert.spv");
-    fragShaderMeta = &shaderMetaInfo.at(m_shaderName + ".frag.spv");
+    vertShaderMeta = &shaderMetaInfo.at(m_shaderNameVert + ".vert.spv");
+    fragShaderMeta = &shaderMetaInfo.at(m_shaderNameFrag + ".frag.spv");
 
 
     this->createUBODescriptorLayout();

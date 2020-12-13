@@ -3,15 +3,17 @@
 layout (location = 0) in vec2 position;
 
 layout(std140, binding=2) uniform meshWideBlockVS {
-    float uWidth;
-    float uHeight;
-    float uX;
-    float uY;
+    vec4 uWidth_uHeight_uX_uY;
 };
 
 layout(location = 0) out vec2 texCoord;
 
 void main() {
+    float uWidth = uWidth_uHeight_uX_uY.x;
+    float uHeight = uWidth_uHeight_uX_uY.y;
+    float uX = uWidth_uHeight_uX_uY.z;
+    float uY = uWidth_uHeight_uX_uY.w;
+
     //texCoord = texture;
     texCoord = position.xy * 0.5 + 0.5;
 

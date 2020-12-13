@@ -18,6 +18,8 @@ GTextureVLK::GTextureVLK(IDevice &device,
                          bool isDepthTexture,
                          const VkFormat textureFormatGPU,
                          int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(dynamic_cast<GDeviceVLK &>(device)) {
+    //For use in frameBuffer
+
     this->m_wrapX = xWrapTex;
     this->m_wrapY = yWrapTex;
 
@@ -32,6 +34,10 @@ GTextureVLK::GTextureVLK(IDevice &device,
         vulkanMipMapCount,
         imageUsageFlags
     );
+
+    //this is texture for use in framebuffer, that's why it is set as initialized
+    m_loaded = true;
+    m_uploaded = true;
 }
 
 
@@ -335,7 +341,7 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
     }
     // The subresource range describes the set of mip levels (and array layers) that can be accessed through this image view
     // It's possible to create multiple image views for a single image referring to different (and/or overlapping) ranges of the image
-    view.subresourceRange.aspectMask = !isDepthTexture ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    view.subresourceRange.aspectMask = !isDepthTexture ? VK_IMAGE_ASPECT_COLOR_BIT : (VK_IMAGE_ASPECT_DEPTH_BIT);
     view.subresourceRange.baseMipLevel = 0;
     view.subresourceRange.baseArrayLayer = 0;
     view.subresourceRange.layerCount = 1;

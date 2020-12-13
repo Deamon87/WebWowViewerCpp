@@ -190,7 +190,7 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
         iPremutation = new GSkyConus(shaderName, this);
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
-    } else if (shaderName == "fullScreen_quad") {
+    } else if (shaderName == "ffxGlowQuad") {
         iPremutation = new GFFXGlow(shaderName, this);
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;

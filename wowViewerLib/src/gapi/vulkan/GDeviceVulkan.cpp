@@ -32,6 +32,8 @@
 #include "shaders/GM2RibbonShaderPermutationVLK.h"
 #include "shaders/GSkyConusShaderVLK.h"
 #include "GFrameBufferVLK.h"
+#include "shaders/GFFXgauss4VLK.h"
+#include "shaders/GFFXGlowVLK.h"
 //#include "fastmemcp.h"
 
 const int WIDTH = 1900;
@@ -173,7 +175,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -1136,6 +1138,16 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         IShaderPermutation *iPremutation = new GSkyConusShaderVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
+    } else if (shaderName == "fullScreen_ffxgauss4") {
+        IShaderPermutation *iPremutation = new GFFXgauss4VLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+        m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "ffxGlowQuad") {
+        IShaderPermutation *iPremutation = new GFFXGlowVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+        m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "imguiShader") {
         IShaderPermutation *iPremutation = new GImguiShaderPermutation(shaderName, this);
         sharedPtr.reset(iPremutation);
@@ -1426,6 +1438,8 @@ void GDeviceVLK::commitFrame() {
     if (renderCommandBuffersForFrameBuffersNotNull[currentDrawFrame]) {
         grCommandBuffers.push_back(renderCommandBuffersForFrameBuffers[currentDrawFrame]);
     }
+    grCommandBuffers.push_back(commandBufferForFilling);
+
     submitInfo.commandBufferCount = grCommandBuffers.size();
     submitInfo.pCommandBuffers = grCommandBuffers.data();
 
@@ -1478,8 +1492,120 @@ void GDeviceVLK::setViewPortDimensions(float x, float y, float width, float heig
 
 }
 
+VkRenderPass GDeviceVLK::getRenderPass(
+    std::vector<ITextureFormat> textureAttachments,
+    ITextureFormat depthAttachment
+) {
+    for (auto &renderPassAvalability : m_createdRenderPasses) {
+        if (renderPassAvalability.attachments.size() == textureAttachments.size() &&
+            renderPassAvalability.depthAttachment == depthAttachment)
+        {
+            //Check frame definition
+            bool notEqual = false;
+            for (int i = 0; i < textureAttachments.size(); i++) {
+                if (textureAttachments[i] != renderPassAvalability.attachments[i]) {
+                    notEqual = true;
+                    break;
+                }
+            }
+            if (!notEqual) {
+                return renderPassAvalability.renderPass;
+            }
+        }
+    }
+
+    std::vector<VkAttachmentDescription> attachmentDescriptions = {};
+    std::vector<VkAttachmentReference> colorReferences;
+    uint32_t colorRefIndex = 0;
+
+    GFrameBufferVLK::iterateOverAttachments(textureAttachments, [&](int i, VkFormat textureFormat) {
+        VkAttachmentDescription colorAttachment;
+        colorAttachment.format = textureFormat;
+        colorAttachment.flags = 0;
+        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        attachmentDescriptions.push_back(colorAttachment);
+        colorReferences.push_back({ colorRefIndex++, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+    });
+    VkFormat fbDepthFormat = findDepthFormat();
+
+    // Depth attachment
+    VkAttachmentDescription depthAttachmentDesc;
+    depthAttachmentDesc.flags = 0;
+    depthAttachmentDesc.format = fbDepthFormat;
+    depthAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    attachmentDescriptions.push_back(depthAttachmentDesc);
+
+    VkAttachmentReference depthReference = { static_cast<uint32_t>(colorReferences.size()), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+
+    // Create a separate render pass for the offscreen rendering as it may differ from the one used for scene rendering
+    VkSubpassDescription subpassDescription = {};
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount = colorReferences.size();
+    subpassDescription.pColorAttachments = colorReferences.data();
+    subpassDescription.pDepthStencilAttachment = &depthReference;
+
+
+    // Use subpass dependencies for layout transitions
+    std::array<VkSubpassDependency, 2> dependencies;
+
+    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass = 0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    dependencies[1].srcSubpass = 0;
+    dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    // Create the actual renderpass
+    VkRenderPassCreateInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.pNext = nullptr;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
+    renderPassInfo.pAttachments = attachmentDescriptions.data();
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpassDescription;
+    renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+    renderPassInfo.pDependencies = dependencies.data();
+
+    VkRenderPass renderPass;
+    ERR_GUARD_VULKAN(vkCreateRenderPass(getVkDevice(), &renderPassInfo, nullptr, &renderPass));
+
+
+    RenderPassAvalabilityStruct avalabilityStruct;
+    avalabilityStruct.attachments = textureAttachments;
+    avalabilityStruct.depthAttachment = depthAttachment;
+    avalabilityStruct.renderPass = renderPass;
+
+    m_createdRenderPasses.push_back(avalabilityStruct);
+
+    return renderPass;
+}
+
 HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
                                         HGShaderPermutation shader,
+                                        VkRenderPass renderPass,
                                         DrawElementMode element,
                                         int8_t backFaceCulling,
                                         int8_t triCCW,
@@ -1489,6 +1615,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
 
     PipelineCacheRecord pipelineCacheRecord;
     pipelineCacheRecord.shader = shader;
+    pipelineCacheRecord.renderPass = renderPass;
     pipelineCacheRecord.element = element;
     pipelineCacheRecord.backFaceCulling = backFaceCulling;
     pipelineCacheRecord.triCCW = triCCW;
@@ -1506,7 +1633,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
     }
 
     std::shared_ptr<GPipelineVLK> hgPipeline;
-    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, shader, element, backFaceCulling, triCCW, blendMode, depthCulling, depthWrite));
+    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, renderPass, shader, element, backFaceCulling, triCCW, blendMode, depthCulling, depthWrite));
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;
@@ -1549,11 +1676,15 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
 
     int updateFrame = getUpdateFrameNumber();
     auto commandBufferForFilling = renderCommandBuffers[updateFrame];
+    //Default renderPass for rendering to screen framebuffers
+    VkRenderPass renderPass = getRenderPass();
 
     if (drawStage->target != nullptr) {
         commandBufferForFilling = renderCommandBuffersForFrameBuffers[updateFrame];
 
         GFrameBufferVLK *frameBufferVlk = dynamic_cast<GFrameBufferVLK *>(drawStage->target.get());
+
+        renderPass = frameBufferVlk->m_renderPass;
 
         std::array<VkClearValue,2> clearValues;
         clearValues[0].color = { clearColor[0], clearColor[1], clearColor[2] };
@@ -1562,11 +1693,11 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
         VkRenderPassBeginInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.pNext = NULL;
-        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.renderPass = frameBufferVlk->m_renderPass;
         renderPassInfo.framebuffer = frameBufferVlk->m_frameBuffer;
         renderPassInfo.renderArea.offset = {drawStage->viewPortDimensions.mins[0], drawStage->viewPortDimensions.mins[1]};
         renderPassInfo.renderArea.extent = {static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]), static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])};
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.clearValueCount = clearValues.size();
         renderPassInfo.pClearValues = clearValues.data();
 
         vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -1620,15 +1751,15 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
 
     bool atLeastOneDrawCall = false;
     if (drawStage->opaqueMeshes != nullptr)
-        atLeastOneDrawCall |= drawMeshesInternal(drawStage, commandBufferForFilling, drawStage->opaqueMeshes, viewportsForThisStage, defaultScissor);
+        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass, drawStage->opaqueMeshes, viewportsForThisStage, defaultScissor) || atLeastOneDrawCall;
     if (drawStage->transparentMeshes != nullptr)
-        atLeastOneDrawCall |= drawMeshesInternal(drawStage, commandBufferForFilling, drawStage->transparentMeshes, viewportsForThisStage, defaultScissor);
+        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass, drawStage->transparentMeshes, viewportsForThisStage, defaultScissor) || atLeastOneDrawCall;
 
     if (drawStage->target != nullptr) {
         vkCmdEndRenderPass(commandBufferForFilling);
-        renderCommandBuffersForFrameBuffersNotNull[updateFrame] = atLeastOneDrawCall | renderCommandBuffersForFrameBuffersNotNull[updateFrame];
+        renderCommandBuffersForFrameBuffersNotNull[updateFrame] = renderCommandBuffersForFrameBuffersNotNull[updateFrame] || atLeastOneDrawCall;
     } else {
-        renderCommandBuffersNotNull[updateFrame] = atLeastOneDrawCall | renderCommandBuffersNotNull[updateFrame];
+        renderCommandBuffersNotNull[updateFrame] = renderCommandBuffersNotNull[updateFrame] || atLeastOneDrawCall;
     }
 
 }
@@ -1637,6 +1768,7 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
 bool GDeviceVLK::drawMeshesInternal(
     const HDrawStage &drawStage,
     VkCommandBuffer commandBufferForFilling,
+    VkRenderPass renderPass,
     const HMeshesToRender &meshes,
     const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
     VkRect2D &defaultScissor) {
@@ -1675,11 +1807,13 @@ bool GDeviceVLK::drawMeshesInternal(
             }
         }
 
-        if (lastPipeline != meshVLK->hgPipelineVLK) {
-            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              meshVLK->hgPipelineVLK->graphicsPipeline);
+        std::shared_ptr<GPipelineVLK> h_pipeLine = meshVLK->getPipeLineForRenderPass(renderPass);
 
-            lastPipeline = meshVLK->hgPipelineVLK;
+        if (lastPipeline != h_pipeLine) {
+            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              h_pipeLine->graphicsPipeline);
+
+            lastPipeline = h_pipeLine;
         }
 
         ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
@@ -1730,11 +1864,11 @@ bool GDeviceVLK::drawMeshesInternal(
 
         //UBO
         vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                meshVLK->hgPipelineVLK->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
+                                h_pipeLine->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
 
         //Image
         vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                meshVLK->hgPipelineVLK->pipelineLayout, 1, 1, &imageDescSet, 0, 0);
+                                h_pipeLine->pipelineLayout, 1, 1, &imageDescSet, 0, 0);
 
         vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }
@@ -1828,8 +1962,9 @@ HFrameBuffer GDeviceVLK::createFrameBuffer(int width, int height, std::vector<IT
 
     if (frameNumber > -1) {
         for (auto &framebufAvalability : m_createdFrameBuffers) {
-            if (framebufAvalability.frame >= m_frameNumber &&
+            if ((framebufAvalability.frame < m_frameNumber) &&
                 framebufAvalability.attachments.size() == attachments.size() &&
+                framebufAvalability.depthAttachment == depthAttachment &&
                 framebufAvalability.width == width &&
                 framebufAvalability.height == height
                 ) {
@@ -1842,7 +1977,7 @@ HFrameBuffer GDeviceVLK::createFrameBuffer(int width, int height, std::vector<IT
                     }
                 }
                 if (!notEqual) {
-                    framebufAvalability.frame = m_frameNumber + frameNumber;
+                    framebufAvalability.frame = m_frameNumber + frameNumber+3;
                     return framebufAvalability.frameBuffer;
                 }
             }
@@ -1856,7 +1991,7 @@ HFrameBuffer GDeviceVLK::createFrameBuffer(int width, int height, std::vector<IT
         avalabilityStruct.frameBuffer = h_frameBuffer;
         avalabilityStruct.height = height;
         avalabilityStruct.width = width;
-        avalabilityStruct.frame = m_frameNumber + frameNumber;
+        avalabilityStruct.frame = m_frameNumber + frameNumber+3;
         avalabilityStruct.attachments = attachments;
         avalabilityStruct.depthAttachment = depthAttachment;
 

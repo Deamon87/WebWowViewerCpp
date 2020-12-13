@@ -99,7 +99,7 @@ struct DrawStage {
     bool clearScreen = false;
     mathfu::vec4 clearColor;
 
-    HFrameBuffer target;
+    HFrameBuffer target = nullptr;
 };
 typedef std::shared_ptr<DrawStage> HDrawStage;
 

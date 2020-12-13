@@ -21,23 +21,16 @@ public:
     void bindFrameBuffer() override;
     void copyRenderBufferToTexture() override;
 
-    struct Texture {
-        VkSampler sampler;
-        VkImage image;
-        VkImageLayout imageLayout;
-        VkImageView view;
-    } texture;
-
     VkRenderPass m_renderPass;
     VkFramebuffer m_frameBuffer;
+
+    static void iterateOverAttachments(std::vector<ITextureFormat> textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback);
 
 private:
     GDeviceVLK &mdevice;
 
     std::vector<HGTexture> attachmentTextures;
     HGTexture depthTexture;
-
-    ITextureFormat m_depthAttachment;
 
     int m_width = 0;
     int m_height = 0;

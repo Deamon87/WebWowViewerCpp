@@ -405,7 +405,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GWaterShaderPermutation.cpp
             src/gapi/vulkan/shaders/GWaterShaderPermutation.h
             src/gapi/vulkan/shaders/GSkyConusShaderVLK.cpp
-            src/gapi/vulkan/shaders/GSkyConusShaderVLK.h src/gapi/vulkan/GFrameBufferVLK.cpp src/gapi/vulkan/GFrameBufferVLK.h)
+            src/gapi/vulkan/shaders/GSkyConusShaderVLK.h src/gapi/vulkan/GFrameBufferVLK.cpp src/gapi/vulkan/GFrameBufferVLK.h src/gapi/vulkan/shaders/GFFXgauss4VLK.cpp src/gapi/vulkan/shaders/GFFXgauss4VLK.h src/gapi/vulkan/shaders/GFFXGlowVLK.cpp src/gapi/vulkan/shaders/GFFXGlowVLK.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)

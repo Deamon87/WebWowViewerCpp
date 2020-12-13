@@ -9,10 +9,6 @@
 #include "../shaders/GShaderPermutationVLK.h"
 #include "../buffers/GUniformBufferVLK.h"
 
-
-
-
-
 GMeshVLK::GMeshVLK(IDevice &device,
              const gMeshTemplate &meshTemplate
 ) : m_device(dynamic_cast<GDeviceVLK &>(device)), m_shader(meshTemplate.shader), m_meshType(meshTemplate.meshType) {
@@ -54,7 +50,6 @@ GMeshVLK::GMeshVLK(IDevice &device,
 
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(m_shader.get());
     createDescriptorSets(shaderVLK);
-    hgPipelineVLK = m_device.createPipeline(m_bindings, m_shader, m_element, m_backFaceCulling, m_triCCW, m_blendMode,m_depthCulling, m_depthWrite);
 
     //Check the buffer sizes
     std::unordered_map<int,uboBindingData> shaderLayoutBindings;
@@ -78,11 +73,26 @@ GMeshVLK::GMeshVLK(IDevice &device,
         auto it = shaderLayoutBindings.find(i);
         if (it != shaderLayoutBindings.end()) {
             if ((m_UniformBuffer[i] != nullptr) && (it->second.size != (m_UniformBuffer[i]->getSize()))) {
-                std::cout << "buffers missmatch!" << std::endl;
+                std::cout << "buffers missmatch! for shaderName = " << shaderVLK->getShaderName() <<
+                " index = " << i <<
+                " expected size " << (it->second.size) <<
+                ", provided size = " << (m_UniformBuffer[i]->getSize()) <<
+                std::endl;
             }
         }
     }
 }
+
+//Works under assumption that meshes do not often change the renderpass on which they are rendered
+std::shared_ptr<GPipelineVLK> GMeshVLK::getPipeLineForRenderPass(VkRenderPass renderPass) {
+    if (m_lastRenderPass != renderPass) {
+        m_lastPipelineForRenderPass = m_device.createPipeline(m_bindings, m_shader, renderPass, m_element, m_backFaceCulling, m_triCCW, m_blendMode,m_depthCulling, m_depthWrite);
+        m_lastRenderPass = renderPass;
+    }
+
+    return m_lastPipelineForRenderPass;
+}
+
 
 void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
 
@@ -94,7 +104,6 @@ void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
     }
 
     descriptorSetsUpdated = std::vector<bool>(4, false);
-
 
     for (int j = 0; j < 4; j++) {
         std::vector<VkWriteDescriptorSet> descriptorWrites;

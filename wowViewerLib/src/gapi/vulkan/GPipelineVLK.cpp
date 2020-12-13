@@ -34,6 +34,7 @@ BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
 
 GPipelineVLK::GPipelineVLK(IDevice &device,
     HGVertexBufferBindings m_bindings,
+    VkRenderPass renderPass,
     HGShaderPermutation shader,
     DrawElementMode element,
     int8_t backFaceCulling,
@@ -57,6 +58,7 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(shader.get());
 
     createPipeline(shaderVLK,
+        renderPass,
         element,
         backFaceCulling,
         triCCW,
@@ -73,6 +75,7 @@ GPipelineVLK::~GPipelineVLK() {
 
 void GPipelineVLK::createPipeline(
         GShaderPermutationVLK *shaderVLK,
+        VkRenderPass renderPass,
         DrawElementMode m_element,
         int8_t m_backFaceCulling,
         int8_t m_triCCW,
@@ -84,7 +87,6 @@ void GPipelineVLK::createPipeline(
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
 
     auto swapChainExtent = m_device.getCurrentExtent();
-    auto renderPass = m_device.getRenderPass();
 
 
     //Create Graphic pipeline for Vulkan

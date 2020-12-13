@@ -327,10 +327,14 @@ int main(){
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);
-    //const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
+#ifndef _MSC_VER
+    const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
+#endif
 #endif
 
+
     signal(SIGABRT, &my_function_to_handle_aborts);
+    signal(SIGSEGV, &my_function_to_handle_aborts);
 
 
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
