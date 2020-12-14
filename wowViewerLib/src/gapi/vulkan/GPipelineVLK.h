@@ -14,7 +14,7 @@ class GPipelineVLK {
 public:
     explicit GPipelineVLK(IDevice &m_device,
                           HGVertexBufferBindings m_bindings,
-                          VkRenderPass renderPass,
+                          std::shared_ptr<GRenderPassVLK> renderPass,
                           HGShaderPermutation shader,
                           DrawElementMode element,
                           int8_t backFaceCulling,
@@ -26,7 +26,7 @@ public:
 
     void createPipeline(
         GShaderPermutationVLK *shaderVLK,
-        VkRenderPass renderPass,
+        std::shared_ptr<GRenderPassVLK> renderPass,
         DrawElementMode m_element,
         int8_t m_backFaceCulling,
         int8_t m_triCCW,

@@ -54,7 +54,7 @@ void RequestProcessor::processRequests (bool calledFromThread) {
                 continue;
             }
 
-            lck.lock();
+            lck.lock(); 
             auto it = m_requestQueue.front();
             m_requestQueue.pop_front();
             lck.unlock();

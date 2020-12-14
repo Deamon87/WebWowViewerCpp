@@ -84,7 +84,7 @@ GMeshVLK::GMeshVLK(IDevice &device,
 }
 
 //Works under assumption that meshes do not often change the renderpass on which they are rendered
-std::shared_ptr<GPipelineVLK> GMeshVLK::getPipeLineForRenderPass(VkRenderPass renderPass) {
+std::shared_ptr<GPipelineVLK> GMeshVLK::getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass) {
     if (m_lastRenderPass != renderPass) {
         m_lastPipelineForRenderPass = m_device.createPipeline(m_bindings, m_shader, renderPass, m_element, m_backFaceCulling, m_triCCW, m_blendMode,m_depthCulling, m_depthWrite);
         m_lastRenderPass = renderPass;

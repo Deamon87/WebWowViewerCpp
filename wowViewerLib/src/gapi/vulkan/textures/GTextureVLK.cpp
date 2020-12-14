@@ -17,6 +17,7 @@ GTextureVLK::GTextureVLK(IDevice &device,
                          bool xWrapTex, bool yWrapTex,
                          bool isDepthTexture,
                          const VkFormat textureFormatGPU,
+                         VkSampleCountFlagBits numSamples,
                          int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(dynamic_cast<GDeviceVLK &>(device)) {
     //For use in frameBuffer
 
@@ -31,6 +32,7 @@ GTextureVLK::GTextureVLK(IDevice &device,
     createVulkanImageObject(
         isDepthTexture,
         textureFormatGPU,
+        numSamples,
         vulkanMipMapCount,
         imageUsageFlags
     );
@@ -173,6 +175,7 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     createVulkanImageObject(
         false,
         textureFormatGPU,
+        VK_SAMPLE_COUNT_1_BIT,
         vulkanMipMapCount,
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
     );
@@ -271,14 +274,16 @@ void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &te
     stagingBufferCreated = true;
 }
 
-void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat textureFormatGPU, int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) {
+void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat textureFormatGPU,
+                                          VkSampleCountFlagBits numSamples, int vulkanMipMapCount,
+                                          VkImageUsageFlags imageUsageFlags) {
     //3. Create Image on GPU side
     VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imageCreateInfo.format = textureFormatGPU;
     imageCreateInfo.mipLevels = vulkanMipMapCount;
     imageCreateInfo.arrayLayers = 1;
-    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.samples = numSamples;
     imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     // Set initial layout of the image to undefined
@@ -316,7 +321,7 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
     // This feature is optional, so we must check if it's supported on the device
     if (m_device.getIsAnisFiltrationSupported()) {
       // Use max. level of anisotropy for this example
-      sampler.maxAnisotropy = m_device.getAnisLevel();
+      sampler.maxAnisotropy = std::min<float>(m_device.getAnisLevel(), vulkanMipMapCount);
       sampler.anisotropyEnable = VK_TRUE;
     } else {
       // The device does not support anisotropic filtering

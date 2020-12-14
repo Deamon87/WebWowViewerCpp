@@ -21,6 +21,7 @@ protected:
                          bool xWrapTex, bool yWrapTex,
                          bool isDepthTexture,
                          const VkFormat textureFormatGPU,
+                         VkSampleCountFlagBits numSamples,
                          int vulkanMipMapCount,
                          VkImageUsageFlags imageUsageFlags);
     void createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
@@ -70,6 +71,7 @@ protected:
     void createVulkanImageObject(
         bool isDepthTexture,
         const VkFormat textureFormatGPU,
+        VkSampleCountFlagBits numSamples,
         int vulkanMipMapCount,
         VkImageUsageFlags imageUsageFlags
     );

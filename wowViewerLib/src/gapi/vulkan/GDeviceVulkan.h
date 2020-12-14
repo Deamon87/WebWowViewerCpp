@@ -21,6 +21,7 @@ class GM2MeshVLK;
 class GOcclusionQueryVLK;
 class GParticleMeshVLK;
 class GPipelineVLK;
+class GRenderPassVLK;
 class GDescriptorPoolVLK;
 
 typedef std::shared_ptr<GPipelineVLK> HPipelineVLK;
@@ -73,9 +74,8 @@ public:
     bool getIsAsynBuffUploadSupported() override {
         return true;
     }
-    int getMaxSamplesCnt() override {
-        return 1;
-    }
+    int getMaxSamplesCnt() override;
+    VkSampleCountFlagBits getMaxSamplesBit();
 
     bool canUploadInSeparateThread() {
         return uploadQueue != graphicsQueue;
@@ -128,7 +128,7 @@ public:
 
     HPipelineVLK createPipeline(HGVertexBufferBindings m_bindings,
                                 HGShaderPermutation shader,
-                                VkRenderPass renderPass,
+                                std::shared_ptr<GRenderPassVLK> renderPass,
                                 DrawElementMode element,
                                 int8_t backFaceCulling,
                                 int8_t triCCW,
@@ -136,7 +136,10 @@ public:
                                 int8_t depthCulling,
                                 int8_t depthWrite);
 
-    VkRenderPass getRenderPass(std::vector<ITextureFormat> textureAttachments, ITextureFormat depthAttachment);
+    std::shared_ptr<GRenderPassVLK> getRenderPass(std::vector<ITextureFormat> textureAttachments,
+                                                  ITextureFormat depthAttachment,
+                                                  VkSampleCountFlagBits sampleCountFlagBits,
+                                                  bool isSwapChainPass);
 
     HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
@@ -166,10 +169,8 @@ public:
     virtual VkExtent2D getCurrentExtent() {
         return swapChainExtent;
     };
-    virtual VkRenderPass getRenderPass() {
-        return renderPass;
-    };
-//    int currentFrameSemaphore = 0;
+
+    //    int currentFrameSemaphore = 0;
     bool framebufferResized = false;
 
     VmaAllocator getVMAAllocator() {
@@ -253,7 +254,7 @@ private:
     bool drawMeshesInternal(
         const HDrawStage &drawStage,
         VkCommandBuffer commandBufferForFilling,
-        VkRenderPass renderPass,
+        std::shared_ptr<GRenderPassVLK> renderPass,
         const HMeshesToRender &iMeshes,
         const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
         VkRect2D &defaultScissor);
@@ -282,7 +283,7 @@ protected:
 
     struct PipelineCacheRecord {
         HGShaderPermutation shader;
-        VkRenderPass renderPass;
+        std::shared_ptr<GRenderPassVLK> renderPass;
         DrawElementMode element;
         int8_t backFaceCulling;
         int8_t triCCW;
@@ -308,7 +309,7 @@ protected:
         std::size_t operator()(const PipelineCacheRecord& k) const {
             using std::hash;
             return hash<void*>{}(k.shader.get()) ^
-            hash<void*>{}(k.renderPass) ^
+            hash<void*>{}(k.renderPass.get()) ^
             (hash<int8_t >{}(k.backFaceCulling) << 2) ^
             (hash<int8_t >{}(k.triCCW) << 4) ^
             (hash<int8_t >{}(k.depthCulling) << 8) ^
@@ -339,7 +340,7 @@ protected:
     std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
-    VkRenderPass renderPass;
+    std::shared_ptr<GRenderPassVLK> swapchainRenderPass;
 
 
     VkCommandPool commandPool;
@@ -392,6 +393,7 @@ protected:
     int8_t m_triCCW = -1;
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
+    int maxMultiSample = -1;
     float m_anisotropicLevel = 0.0;
     bool m_isInvertZ = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
@@ -435,7 +437,9 @@ protected:
     struct RenderPassAvalabilityStruct {
         std::vector<ITextureFormat> attachments;
         ITextureFormat depthAttachment;
-        VkRenderPass renderPass;
+        std::shared_ptr<GRenderPassVLK> renderPass;
+        VkSampleCountFlagBits sampleCountFlagBits;
+        bool isSwapChainPass;
     };
 
     std::vector<RenderPassAvalabilityStruct> m_createdRenderPasses;

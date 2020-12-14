@@ -6,6 +6,7 @@
 #include "GPipelineVLK.h"
 #include "shaders/GShaderPermutationVLK.h"
 #include <array>
+#include "GRenderPassVLK.h"
 
 struct BlendModeDescVLK {
     bool blendModeEnable;
@@ -34,7 +35,7 @@ BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
 
 GPipelineVLK::GPipelineVLK(IDevice &device,
     HGVertexBufferBindings m_bindings,
-    VkRenderPass renderPass,
+    std::shared_ptr<GRenderPassVLK> renderPass,
     HGShaderPermutation shader,
     DrawElementMode element,
     int8_t backFaceCulling,
@@ -75,7 +76,7 @@ GPipelineVLK::~GPipelineVLK() {
 
 void GPipelineVLK::createPipeline(
         GShaderPermutationVLK *shaderVLK,
-        VkRenderPass renderPass,
+        std::shared_ptr<GRenderPassVLK> renderPass,
         DrawElementMode m_element,
         int8_t m_backFaceCulling,
         int8_t m_triCCW,
@@ -172,7 +173,7 @@ void GPipelineVLK::createPipeline(
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampling.rasterizationSamples = renderPass->getSampleCountBit();
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
     colorBlendAttachment.colorWriteMask =
@@ -245,7 +246,7 @@ void GPipelineVLK::createPipeline(
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = renderPass->getRenderPass();
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 

@@ -34,6 +34,7 @@
 #include "GFrameBufferVLK.h"
 #include "shaders/GFFXgauss4VLK.h"
 #include "shaders/GFFXGlowVLK.h"
+#include "GRenderPassVLK.h"
 //#include "fastmemcp.h"
 
 const int WIDTH = 1900;
@@ -413,63 +414,11 @@ VkFormat GDeviceVLK::findDepthFormat() {
 }
 
 void GDeviceVLK::createRenderPass() {
-    VkAttachmentDescription colorAttachment = {};
-    colorAttachment.format = swapChainImageFormat;
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentDescription depthAttachment = {};
-    depthAttachment.format = findDepthFormat();
-    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-
-    VkAttachmentReference colorAttachmentRef = {};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference depthAttachmentRef = {};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-    VkSubpassDependency dependency = {};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
-    VkRenderPassCreateInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.pNext = nullptr;
-    renderPassInfo.attachmentCount = 2;
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
-
-    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create render pass!");
-    }
+    swapchainRenderPass = std::make_shared<GRenderPassVLK>(*this,
+                                                  std::vector({swapChainImageFormat}),
+                                                  findDepthFormat(),
+                                                  VK_SAMPLE_COUNT_1_BIT,
+                                                  true);
 }
 
 void GDeviceVLK::createColorResources() {
@@ -581,7 +530,8 @@ void GDeviceVLK::createFramebuffers() {
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.pNext = NULL;
-        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.flags = 0;
+        framebufferInfo.renderPass = swapchainRenderPass->getRenderPass();
         framebufferInfo.attachmentCount = 2;
         framebufferInfo.pAttachments = &attachments[0];
         framebufferInfo.width = swapChainExtent.width;
@@ -1390,7 +1340,7 @@ void GDeviceVLK::commitFrame() {
         VkRenderPassBeginInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.pNext = NULL;
-        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.renderPass = swapchainRenderPass->getRenderPass();
         renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapChainExtent;
@@ -1492,13 +1442,17 @@ void GDeviceVLK::setViewPortDimensions(float x, float y, float width, float heig
 
 }
 
-VkRenderPass GDeviceVLK::getRenderPass(
+std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
     std::vector<ITextureFormat> textureAttachments,
-    ITextureFormat depthAttachment
+    ITextureFormat depthAttachment,
+    VkSampleCountFlagBits sampleCountFlagBits,
+    bool isSwapChainPass
 ) {
     for (auto &renderPassAvalability : m_createdRenderPasses) {
         if (renderPassAvalability.attachments.size() == textureAttachments.size() &&
-            renderPassAvalability.depthAttachment == depthAttachment)
+            renderPassAvalability.depthAttachment == depthAttachment &&
+            renderPassAvalability.sampleCountFlagBits == sampleCountFlagBits &&
+            renderPassAvalability.isSwapChainPass == isSwapChainPass)
         {
             //Check frame definition
             bool notEqual = false;
@@ -1514,89 +1468,25 @@ VkRenderPass GDeviceVLK::getRenderPass(
         }
     }
 
-    std::vector<VkAttachmentDescription> attachmentDescriptions = {};
-    std::vector<VkAttachmentReference> colorReferences;
-    uint32_t colorRefIndex = 0;
+    std::vector<VkFormat> attachmentFormats = {};
 
     GFrameBufferVLK::iterateOverAttachments(textureAttachments, [&](int i, VkFormat textureFormat) {
-        VkAttachmentDescription colorAttachment;
-        colorAttachment.format = textureFormat;
-        colorAttachment.flags = 0;
-        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-        attachmentDescriptions.push_back(colorAttachment);
-        colorReferences.push_back({ colorRefIndex++, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+        attachmentFormats.push_back(textureFormat);
     });
     VkFormat fbDepthFormat = findDepthFormat();
 
-    // Depth attachment
-    VkAttachmentDescription depthAttachmentDesc;
-    depthAttachmentDesc.flags = 0;
-    depthAttachmentDesc.format = fbDepthFormat;
-    depthAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    attachmentDescriptions.push_back(depthAttachmentDesc);
-
-    VkAttachmentReference depthReference = { static_cast<uint32_t>(colorReferences.size()), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-
-    // Create a separate render pass for the offscreen rendering as it may differ from the one used for scene rendering
-    VkSubpassDescription subpassDescription = {};
-    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount = colorReferences.size();
-    subpassDescription.pColorAttachments = colorReferences.data();
-    subpassDescription.pDepthStencilAttachment = &depthReference;
-
-
-    // Use subpass dependencies for layout transitions
-    std::array<VkSubpassDependency, 2> dependencies;
-
-    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass = 0;
-    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    dependencies[1].srcSubpass = 0;
-    dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    // Create the actual renderpass
-    VkRenderPassCreateInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.pNext = nullptr;
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
-    renderPassInfo.pAttachments = attachmentDescriptions.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpassDescription;
-    renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-    renderPassInfo.pDependencies = dependencies.data();
-
-    VkRenderPass renderPass;
-    ERR_GUARD_VULKAN(vkCreateRenderPass(getVkDevice(), &renderPassInfo, nullptr, &renderPass));
-
+    auto renderPass = std::make_shared<GRenderPassVLK>(*this,
+        attachmentFormats,
+       findDepthFormat(),
+        sampleCountFlagBits,
+       false);
 
     RenderPassAvalabilityStruct avalabilityStruct;
     avalabilityStruct.attachments = textureAttachments;
     avalabilityStruct.depthAttachment = depthAttachment;
     avalabilityStruct.renderPass = renderPass;
+    avalabilityStruct.sampleCountFlagBits = sampleCountFlagBits;
+    avalabilityStruct.isSwapChainPass = isSwapChainPass;
 
     m_createdRenderPasses.push_back(avalabilityStruct);
 
@@ -1605,7 +1495,7 @@ VkRenderPass GDeviceVLK::getRenderPass(
 
 HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
                                         HGShaderPermutation shader,
-                                        VkRenderPass renderPass,
+                                        std::shared_ptr<GRenderPassVLK> renderPass,
                                         DrawElementMode element,
                                         int8_t backFaceCulling,
                                         int8_t triCCW,
@@ -1633,7 +1523,9 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
     }
 
     std::shared_ptr<GPipelineVLK> hgPipeline;
-    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, renderPass, shader, element, backFaceCulling, triCCW, blendMode, depthCulling, depthWrite));
+    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, renderPass,
+                                      shader, element, backFaceCulling, triCCW, blendMode,
+                                      depthCulling, depthWrite));
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;
@@ -1677,7 +1569,7 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
     int updateFrame = getUpdateFrameNumber();
     auto commandBufferForFilling = renderCommandBuffers[updateFrame];
     //Default renderPass for rendering to screen framebuffers
-    VkRenderPass renderPass = getRenderPass();
+    std::shared_ptr<GRenderPassVLK> renderPass = swapchainRenderPass;
 
     if (drawStage->target != nullptr) {
         commandBufferForFilling = renderCommandBuffersForFrameBuffers[updateFrame];
@@ -1686,14 +1578,15 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
 
         renderPass = frameBufferVlk->m_renderPass;
 
-        std::array<VkClearValue,2> clearValues;
-        clearValues[0].color = { clearColor[0], clearColor[1], clearColor[2] };
-        clearValues[1].depthStencil = {getInvertZ() ? 0.0f : 1.0f, 0};
+        std::vector<VkClearValue> clearValues = renderPass->produceClearColorVec(
+            { clearColor[0], clearColor[1], clearColor[2] },
+            getInvertZ() ? 0.0f : 1.0f
+        );
 
         VkRenderPassBeginInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.pNext = NULL;
-        renderPassInfo.renderPass = frameBufferVlk->m_renderPass;
+        renderPassInfo.renderPass = renderPass->getRenderPass();
         renderPassInfo.framebuffer = frameBufferVlk->m_frameBuffer;
         renderPassInfo.renderArea.offset = {drawStage->viewPortDimensions.mins[0], drawStage->viewPortDimensions.mins[1]};
         renderPassInfo.renderArea.extent = {static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]), static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])};
@@ -1768,7 +1661,7 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
 bool GDeviceVLK::drawMeshesInternal(
     const HDrawStage &drawStage,
     VkCommandBuffer commandBufferForFilling,
-    VkRenderPass renderPass,
+    std::shared_ptr<GRenderPassVLK> renderPass,
     const HMeshesToRender &meshes,
     const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
     VkRect2D &defaultScissor) {
@@ -1900,7 +1793,7 @@ void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
         VkCommandBufferInheritanceInfo bufferInheritanceInfo;
         bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
         bufferInheritanceInfo.pNext = nullptr;
-        bufferInheritanceInfo.renderPass = renderPass;
+        bufferInheritanceInfo.renderPass = swapchainRenderPass->getRenderPass();
         bufferInheritanceInfo.subpass = 0;
         bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
         bufferInheritanceInfo.occlusionQueryEnable = false;
@@ -2054,4 +1947,81 @@ void GDeviceVLK::singleExecuteAndWait(std::function<void(VkCommandBuffer)> callb
 
     vkDestroyFence(device, fence, nullptr);
     vkFreeCommandBuffers(device, commandPool, 1, &copyCmd);
+}
+
+static const constexpr VkSampleCountFlagBits sampleCountToVkSampleCountFlagBits(uint8_t sampleCount) {
+    switch (sampleCount) {
+        case 1:
+            return VK_SAMPLE_COUNT_1_BIT;
+        case 2:
+            return VK_SAMPLE_COUNT_2_BIT;
+        case 4:
+            return VK_SAMPLE_COUNT_4_BIT;
+        case 8:
+            return VK_SAMPLE_COUNT_8_BIT;
+        case 16:
+            return VK_SAMPLE_COUNT_16_BIT;
+        case 32:
+            return VK_SAMPLE_COUNT_32_BIT;
+        case 64:
+            return VK_SAMPLE_COUNT_64_BIT;
+        default:
+            return VK_SAMPLE_COUNT_1_BIT;
+    }
+    return VK_SAMPLE_COUNT_1_BIT;
+};
+static const constexpr uint8_t countFlagBitsToSampleCount(VkSampleCountFlagBits sampleCountBit) {
+    switch (sampleCountBit) {
+        case VK_SAMPLE_COUNT_1_BIT:
+            return 1;
+        case VK_SAMPLE_COUNT_2_BIT:
+            return 2;
+        case VK_SAMPLE_COUNT_4_BIT:
+            return 4;
+        case VK_SAMPLE_COUNT_8_BIT:
+            return 8;
+        case VK_SAMPLE_COUNT_16_BIT:
+            return 16;
+        case VK_SAMPLE_COUNT_32_BIT:
+            return 32;
+        case VK_SAMPLE_COUNT_64_BIT:
+            return 64;
+        default:
+            return 1;
+    }
+
+    return 1;
+}
+
+
+int GDeviceVLK::getMaxSamplesCnt() {
+    if (maxMultiSample < 0)  {
+        VkPhysicalDeviceProperties physicalDeviceProperties;
+        vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+
+        VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+        if (counts & VK_SAMPLE_COUNT_64_BIT) {
+            maxMultiSample = countFlagBitsToSampleCount(VK_SAMPLE_COUNT_64_BIT);
+        } else if (counts & VK_SAMPLE_COUNT_32_BIT) {
+            maxMultiSample = countFlagBitsToSampleCount(VK_SAMPLE_COUNT_32_BIT);
+        } else if (counts & VK_SAMPLE_COUNT_16_BIT) {
+            maxMultiSample = countFlagBitsToSampleCount(VK_SAMPLE_COUNT_16_BIT);
+        } else if (counts & VK_SAMPLE_COUNT_8_BIT) {
+            maxMultiSample = countFlagBitsToSampleCount(VK_SAMPLE_COUNT_8_BIT);
+        } else if (counts & VK_SAMPLE_COUNT_4_BIT) {
+            maxMultiSample = countFlagBitsToSampleCount(VK_SAMPLE_COUNT_4_BIT);
+        } else if (counts & VK_SAMPLE_COUNT_2_BIT) {
+            maxMultiSample = countFlagBitsToSampleCount(VK_SAMPLE_COUNT_2_BIT);
+        } else if (counts & VK_SAMPLE_COUNT_1_BIT) {
+            maxMultiSample = countFlagBitsToSampleCount(VK_SAMPLE_COUNT_1_BIT);
+        } else {
+            maxMultiSample = countFlagBitsToSampleCount(VK_SAMPLE_COUNT_1_BIT);
+        }
+    }
+
+    return maxMultiSample;
+}
+
+VkSampleCountFlagBits GDeviceVLK::getMaxSamplesBit() {
+    return sampleCountToVkSampleCountFlagBits(getMaxSamplesCnt());
 }

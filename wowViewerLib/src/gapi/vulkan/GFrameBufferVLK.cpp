@@ -5,6 +5,7 @@
 #include <cstring>
 #include "GFrameBufferVLK.h"
 #include "textures/GTextureVLK.h"
+#include "GRenderPassVLK.h"
 
 void GFrameBufferVLK::iterateOverAttachments(std::vector<ITextureFormat> textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback) {
     for (int i = 0; i < textureAttachments.size(); i++) {
@@ -26,7 +27,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> te
                                  ITextureFormat depthAttachment,
                                  int width, int height) : mdevice(dynamic_cast<GDeviceVLK &>(device)), m_height(height), m_width(width) {
 
-
+    VkSampleCountFlagBits sampleBit = mdevice.getMaxSamplesBit();
     std::vector<VkImageView> attachments;
 
     //Encapsulated for loop
@@ -38,13 +39,31 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> te
             false, false,
             false,
             textureFormat,
+            sampleBit,
             1,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
         ));
         attachmentTextures.push_back(h_texture);
+        attachments.push_back(h_texture->texture.view);
         attachmentFormats.push_back(textureFormat);
 
-        attachments.push_back(h_texture->texture.view);
+        if (mdevice.getMaxSamplesBit() != VK_SAMPLE_COUNT_1_BIT) {
+            std::shared_ptr<GTextureVLK> h_texture;
+            h_texture.reset(new GTextureVLK(
+                mdevice,
+                width, height,
+                false, false,
+                false,
+                textureFormat,
+                VK_SAMPLE_COUNT_1_BIT,
+                1,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+            ));
+            attachmentTextures.push_back(h_texture);
+            attachments.push_back(h_texture->texture.view);
+        }
+
+
     });
 
     //Depth attachment
@@ -59,6 +78,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> te
             false, false,
             true,
             fbDepthFormat,
+            sampleBit,
             1,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
         ));
@@ -67,12 +87,12 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> te
         attachments.push_back(h_depthTexture->texture.view);
     }
 
-    m_renderPass = mdevice.getRenderPass(textureAttachments, depthAttachment);
+    m_renderPass = mdevice.getRenderPass(textureAttachments, depthAttachment, mdevice.getMaxSamplesBit(), false);
 
     VkFramebufferCreateInfo fbufCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     fbufCreateInfo.pNext = nullptr;
     fbufCreateInfo.flags = 0;
-    fbufCreateInfo.renderPass = m_renderPass;
+    fbufCreateInfo.renderPass = m_renderPass->getRenderPass();
     fbufCreateInfo.attachmentCount = attachments.size();
     fbufCreateInfo.pAttachments = attachments.data();
     fbufCreateInfo.width = width;
@@ -112,7 +132,7 @@ void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *
     }
 
     // Source for the copy is the last rendered swapchain image
-    VkImage srcImage = ((GTextureVLK *)(attachmentTextures[attachmentIndex].get()))->texture.image;
+    VkImage srcImage = ((GTextureVLK *)(getAttachment(attachmentIndex).get()))->texture.image;
 
     // Create the linear tiled destination image to copy to and to read the memory from
     VkImageCreateInfo imageCreateCI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -306,13 +326,21 @@ void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *
         colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), colorFormat) != formatsBGR.end());
     }
 
-    std::memcpy(outputdata, (void *) data, (4 * width * height));
+    //Flip image from vulkan
+    for (int i = 0; i < height; i++) {
+        std::memcpy((uint8_t *)outputdata + ((height - i - 1) *4 * width), (uint8_t *) data + (i *4 * width), (4 * width));
+    }
 
     vmaUnmapMemory(mdevice.getVMAAllocator(), imageAllocation);
     vmaDestroyImage(mdevice.getVMAAllocator(), dstImage, imageAllocation);
 }
 
 HGTexture GFrameBufferVLK::getAttachment(int index) {
+    //If multisampling is active - return only resolved textures
+    if (mdevice.getMaxSamplesBit() != VK_SAMPLE_COUNT_1_BIT) {
+        index = 2*index+1;
+    }
+
     return attachmentTextures[index];
 }
 

@@ -405,11 +405,6 @@ void AdtObject::loadWater() {
             }
         }
     }
-
-
-
-
-
 }
 
 

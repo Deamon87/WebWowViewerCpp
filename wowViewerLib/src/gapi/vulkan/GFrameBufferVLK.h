@@ -21,7 +21,7 @@ public:
     void bindFrameBuffer() override;
     void copyRenderBufferToTexture() override;
 
-    VkRenderPass m_renderPass;
+    std::shared_ptr<GRenderPassVLK> m_renderPass;
     VkFramebuffer m_frameBuffer;
 
     static void iterateOverAttachments(std::vector<ITextureFormat> textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback);
@@ -33,6 +33,7 @@ private:
     std::vector<HGTexture> attachmentTextures;
     HGTexture depthTexture;
 
+    //Used only in readRGBAPixels function
     std::vector<VkFormat> attachmentFormats;
 
     int m_width = 0;
