@@ -88,7 +88,7 @@ struct DrawStage {
 
     HFrameDepedantData frameDepedantData;
     HMeshesToRender opaqueMeshes;
-    HMeshesToRender transparentMeshes;
+    HMeshesToRender transparentMeshes = nullptr;
     std::vector<HDrawStage> drawStageDependencies;
 
     bool invertedZ = false;

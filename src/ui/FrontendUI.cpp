@@ -1154,7 +1154,10 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
 
         HFrameBuffer fb = nullptr;
         if (isScreenshot) {
-            fb = apiContainer.hDevice->createFrameBuffer(width, height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32, 4);
+            fb = apiContainer.hDevice->createFrameBuffer(width, height,
+                                                         {ITextureFormat::itRGBA},
+                                                         ITextureFormat::itDepth32,
+                                                         apiContainer.hDevice->getMaxSamplesCnt(), 4);
         }
 
         cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);

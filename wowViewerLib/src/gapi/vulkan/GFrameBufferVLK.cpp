@@ -25,9 +25,11 @@ void GFrameBufferVLK::iterateOverAttachments(std::vector<ITextureFormat> texture
 
 GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> textureAttachments,
                                  ITextureFormat depthAttachment,
-                                 int width, int height) : mdevice(dynamic_cast<GDeviceVLK &>(device)), m_height(height), m_width(width) {
+                                 int multiSampleCnt,
+                                 int width, int height) : mdevice(dynamic_cast<GDeviceVLK &>(device)),
+                                                          m_height(height), m_width(width),
+                                                          m_multiSampleCnt(multiSampleCnt){
 
-    VkSampleCountFlagBits sampleBit = mdevice.getMaxSamplesBit();
     std::vector<VkImageView> attachments;
 
     //Encapsulated for loop
@@ -39,7 +41,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> te
             false, false,
             false,
             textureFormat,
-            sampleBit,
+            sampleCountToVkSampleCountFlagBits(multiSampleCnt),
             1,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
         ));
@@ -47,7 +49,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> te
         attachments.push_back(h_texture->texture.view);
         attachmentFormats.push_back(textureFormat);
 
-        if (mdevice.getMaxSamplesBit() != VK_SAMPLE_COUNT_1_BIT) {
+        if (multiSampleCnt > 1) {
             std::shared_ptr<GTextureVLK> h_texture;
             h_texture.reset(new GTextureVLK(
                 mdevice,
@@ -78,7 +80,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> te
             false, false,
             true,
             fbDepthFormat,
-            sampleBit,
+            sampleCountToVkSampleCountFlagBits(multiSampleCnt),
             1,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
         ));
@@ -87,7 +89,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> te
         attachments.push_back(h_depthTexture->texture.view);
     }
 
-    m_renderPass = mdevice.getRenderPass(textureAttachments, depthAttachment, mdevice.getMaxSamplesBit(), false);
+    m_renderPass = mdevice.getRenderPass(textureAttachments, depthAttachment, sampleCountToVkSampleCountFlagBits(multiSampleCnt), false);
 
     VkFramebufferCreateInfo fbufCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     fbufCreateInfo.pNext = nullptr;
@@ -103,7 +105,11 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> te
 }
 
 GFrameBufferVLK::~GFrameBufferVLK() {
-
+    auto *l_device = &mdevice;
+    auto l_frameBuffer = m_frameBuffer;
+    mdevice.addDeallocationRecord([l_device, l_frameBuffer]() -> void {
+        vkDestroyFramebuffer(l_device->getVkDevice(), l_frameBuffer, nullptr);
+    });
 }
 
 void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *outputdata) {
@@ -327,8 +333,12 @@ void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *
     }
 
     //Flip image from vulkan
+    int lineLenInBytes = 4 * width;
+    if (lineLenInBytes != subResourceLayout.rowPitch) {
+        lineLenInBytes = subResourceLayout.rowPitch;
+    }
     for (int i = 0; i < height; i++) {
-        std::memcpy((uint8_t *)outputdata + ((height - i - 1) *4 * width), (uint8_t *) data + (i *4 * width), (4 * width));
+        std::memcpy((uint8_t *)outputdata + ((height - i - 1) * (4 * width)), (uint8_t *) data + (i *lineLenInBytes), (4 * width));
     }
 
     vmaUnmapMemory(mdevice.getVMAAllocator(), imageAllocation);
@@ -337,7 +347,7 @@ void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *
 
 HGTexture GFrameBufferVLK::getAttachment(int index) {
     //If multisampling is active - return only resolved textures
-    if (mdevice.getMaxSamplesBit() != VK_SAMPLE_COUNT_1_BIT) {
+    if (m_multiSampleCnt > 1) {
         index = 2*index+1;
     }
 

@@ -406,7 +406,9 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
         ViewPortDimensions dimensions = {{0, 0}, {m_width, m_height}};
 
         HFrameBuffer fb = nullptr;
-        fb = m_apiContainer->hDevice->createFrameBuffer(m_width, m_height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32, 4);
+        fb = m_apiContainer->hDevice->createFrameBuffer(m_width, m_height,
+                                                        {ITextureFormat::itRGBA}, ITextureFormat::itDepth32,
+                                                        m_apiContainer->hDevice->getMaxSamplesCnt(), 4);
 
         std::vector<HDrawStage> drawStageDependencies = {};
 

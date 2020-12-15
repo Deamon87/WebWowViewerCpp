@@ -202,7 +202,7 @@ class IDevice {
         virtual HGIndexBuffer createIndexBuffer() = 0;
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
         //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
-        virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) = 0;
+        virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) = 0;
 
         virtual HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
         virtual HGTexture createTexture(bool xWrapTex, bool yWrapTex) = 0;

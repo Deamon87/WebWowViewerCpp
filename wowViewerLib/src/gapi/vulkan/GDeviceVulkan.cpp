@@ -176,7 +176,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -1635,7 +1635,10 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
     //Set scissors
     VkRect2D defaultScissor = {};
     defaultScissor.offset = {0, 0};
-    defaultScissor.extent = swapChainExtent;
+    defaultScissor.extent = {
+        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]),
+        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])
+    };
 
     vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
 
@@ -1644,9 +1647,13 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
 
     bool atLeastOneDrawCall = false;
     if (drawStage->opaqueMeshes != nullptr)
-        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass, drawStage->opaqueMeshes, viewportsForThisStage, defaultScissor) || atLeastOneDrawCall;
+        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass,
+                                                drawStage->opaqueMeshes, viewportsForThisStage,
+                                                defaultScissor) || atLeastOneDrawCall;
     if (drawStage->transparentMeshes != nullptr)
-        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass, drawStage->transparentMeshes, viewportsForThisStage, defaultScissor) || atLeastOneDrawCall;
+        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass,
+                                                drawStage->transparentMeshes, viewportsForThisStage,
+                                                defaultScissor) || atLeastOneDrawCall;
 
     if (drawStage->target != nullptr) {
         vkCmdEndRenderPass(commandBufferForFilling);
@@ -1851,7 +1858,7 @@ void GDeviceVLK::initUploadThread() {
 }
 
 HFrameBuffer GDeviceVLK::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments,
-                                           ITextureFormat depthAttachment, int frameNumber) {
+                                           ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) {
 
     if (frameNumber > -1) {
         for (auto &framebufAvalability : m_createdFrameBuffers) {
@@ -1877,7 +1884,7 @@ HFrameBuffer GDeviceVLK::createFrameBuffer(int width, int height, std::vector<IT
         }
     }
 
-    HFrameBuffer h_frameBuffer = std::make_shared<GFrameBufferVLK>(*this, attachments, depthAttachment, width, height);
+    HFrameBuffer h_frameBuffer = std::make_shared<GFrameBufferVLK>(*this, attachments, depthAttachment, multiSampleCnt, width, height);
 
     if (frameNumber > -1) {
         FramebufAvalabilityStruct avalabilityStruct;
@@ -1949,7 +1956,7 @@ void GDeviceVLK::singleExecuteAndWait(std::function<void(VkCommandBuffer)> callb
     vkFreeCommandBuffers(device, commandPool, 1, &copyCmd);
 }
 
-static const constexpr VkSampleCountFlagBits sampleCountToVkSampleCountFlagBits(uint8_t sampleCount) {
+VkSampleCountFlagBits sampleCountToVkSampleCountFlagBits(uint8_t sampleCount) {
     switch (sampleCount) {
         case 1:
             return VK_SAMPLE_COUNT_1_BIT;

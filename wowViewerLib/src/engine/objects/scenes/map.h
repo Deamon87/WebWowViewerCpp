@@ -197,7 +197,7 @@ private:
                        int viewRenderOrder,
                        HCullStage cullStage);
 
-    void doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage, HUpdateStage &updateStage) const;
+    HDrawStage doGaussBlur(const HDrawStage parentDrawStage, HUpdateStage &updateStage) const;
 
 
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults) override;

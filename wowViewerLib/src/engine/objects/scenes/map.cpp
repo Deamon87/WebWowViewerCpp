@@ -1292,11 +1292,13 @@ void Map::doPostLoad(HCullStage cullStage) {
 
     if (quadBindings == nullptr)
     {
+        const float epsilon = 0.f;
+
         std::array<mathfu::vec2_packed, 4> vertexBuffer = {
-            mathfu::vec2_packed(mathfu::vec2(-1.0f + 0.001, -1.0f+ 0.001)),
-            mathfu::vec2_packed(mathfu::vec2(-1.0f+ 0.001,  1.0f- 0.001)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f- 0.001,  -1.0f+ 0.001)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f- 0.001,  1.f- 0.001))
+            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon, -1.0f + epsilon)),
+            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon,  1.0f - epsilon)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f  - epsilon,  -1.0f+ epsilon)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f  - epsilon,  1.f  - epsilon))
         };
         std::vector<uint16_t > indexBuffer = {
             0, 1, 2,
@@ -1700,24 +1702,6 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
     HDrawStage origResultDrawStage = resultDrawStage;
     bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
 
-    if (frameBufferSupported) {
-        //Create new drawstage and draw everything there
-        resultDrawStage = std::make_shared<DrawStage>();
-
-        *resultDrawStage = *origResultDrawStage;
-
-        origResultDrawStage->opaqueMeshes = nullptr;
-        origResultDrawStage->transparentMeshes = nullptr;
-
-        resultDrawStage->target = m_api->hDevice->createFrameBuffer(
-            resultDrawStage->viewPortDimensions.maxs[0],
-            resultDrawStage->viewPortDimensions.maxs[1],
-            {ITextureFormat::itRGBA},
-            ITextureFormat::itDepth32,
-            2
-        );
-    }
-
     auto config = m_api->getConfig();
     resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
     resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk, const HFrameDepedantData &fdd) -> void {
@@ -1780,25 +1764,51 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
     updateStage->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
 
     if (frameBufferSupported ) {
-        doGaussBlur(resultDrawStage, origResultDrawStage, updateStage);
+        //Create a copy of exiting resultDrawStage
+        auto resultDrawStageCpy = std::make_shared<DrawStage>();
+        *resultDrawStageCpy = *resultDrawStage;
+        //Assign a new frame buffer to copy
+        resultDrawStageCpy->target = m_api->hDevice->createFrameBuffer(
+            resultDrawStage->viewPortDimensions.maxs[0],
+            resultDrawStage->viewPortDimensions.maxs[1],
+            {ITextureFormat::itRGBA},
+            ITextureFormat::itDepth32,
+            m_api->hDevice->getMaxSamplesCnt(),
+            2
+        );
+
+        HDrawStage lastDrawStage = nullptr;
+        HDrawStage prevDrawStage = resultDrawStageCpy;
+
+        lastDrawStage = doGaussBlur(prevDrawStage, updateStage);
+        if (lastDrawStage != nullptr)
+            prevDrawStage = lastDrawStage;
+
+
+        //End of effects stack
+        //Make last stage to draw to initial resultDrawStage target
+        prevDrawStage->target = resultDrawStage->target;
+        //Replace all data in target drawStage with new data
+        *resultDrawStage = *prevDrawStage;
     }
 }
 
-void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage, HUpdateStage &updateStage) const {
+HDrawStage Map::doGaussBlur(const HDrawStage parentDrawStage, HUpdateStage &updateStage) const {
     if (quadBindings == nullptr)
-        return;
+        return nullptr;
 
     ///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
     ///With two frameBuffers
     ///Size for buffers : is 4 times less than current canvas
-    int targetWidth = resultDrawStage->viewPortDimensions.maxs[0] >> 2;
-    int targetHeight = resultDrawStage->viewPortDimensions.maxs[1] >> 2;
+    int targetWidth = parentDrawStage->viewPortDimensions.maxs[0] >> 2;
+    int targetHeight = parentDrawStage->viewPortDimensions.maxs[1] >> 2;
 
     auto frameB1 = m_api->hDevice->createFrameBuffer(
         targetWidth,
         targetHeight,
         {ITextureFormat::itRGBA},
         ITextureFormat::itDepth32,
+        1,
         2
     );
     auto frameB2 = m_api->hDevice->createFrameBuffer(
@@ -1806,6 +1816,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         targetHeight,
         {ITextureFormat::itRGBA},
         ITextureFormat::itDepth32,
+        1,
         2
     );
 
@@ -1860,7 +1871,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
     });
     HGUniformBufferChunk frags[3] = {ffxGaussFrag, ffxGaussFrag2, ffxGaussFrag3};
 
-    HDrawStage prevStage = resultDrawStage;
+    HDrawStage prevStage = parentDrawStage;
     for (int i = 0; i < 3; i++) {
         ///1. Create draw stage
         HDrawStage drawStage = std::make_shared<DrawStage>();
@@ -1869,8 +1880,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         drawStage->matricesForRendering = nullptr;
         drawStage->setViewPort = true;
         drawStage->viewPortDimensions = {{0, 0},
-                                         {resultDrawStage->viewPortDimensions.maxs[0] >> 2,
-                                             resultDrawStage->viewPortDimensions.maxs[1] >> 2}};
+                                         {parentDrawStage->viewPortDimensions.maxs[0] >> 2,
+                                             parentDrawStage->viewPortDimensions.maxs[1] >> 2}};
         drawStage->clearScreen = false;
         drawStage->target = ((i & 1) > 0) ? frameB1 : frameB2;
 
@@ -1912,7 +1923,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
     {
         auto config = m_api->getConfig();;
 
-        auto glow = origResultDrawStage->frameDepedantData->currentGlow;
+        auto glow = parentDrawStage->frameDepedantData->currentGlow;
         auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
         updateStage->uniformBufferChunks.push_back(ffxGlowfragmentChunk);
         ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
@@ -1923,7 +1934,6 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
             meshblockVS.w = glow; //glow multiplier
         });
 
-
         auto shader = m_api->hDevice->getShader("ffxGlowQuad", nullptr);
         gMeshTemplate meshTemplate(quadBindings, shader);
         meshTemplate.meshType = MeshType::eGeneralMesh;
@@ -1933,7 +1943,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
         meshTemplate.texture.resize(2);
-        meshTemplate.texture[0] = resultDrawStage->target->getAttachment(0);
+        meshTemplate.texture[0] = parentDrawStage->target->getAttachment(0);
         meshTemplate.texture[1] = prevStage->target->getAttachment(0);
 
         meshTemplate.textureCount = 2;
@@ -1952,9 +1962,17 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
         //Make mesh
         HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
-        origResultDrawStage->drawStageDependencies = {prevStage};
-        origResultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
-        origResultDrawStage->opaqueMeshes->meshes.push_back(hmesh);
+
+        auto resultDrawStage = std::make_shared<DrawStage>();
+        *resultDrawStage = *parentDrawStage;
+        resultDrawStage->sceneWideBlockVSPSChunk = nullptr; //Since it's not used but this shader and it's important for vulkan
+        resultDrawStage->drawStageDependencies = {prevStage};
+        resultDrawStage->transparentMeshes = nullptr;
+        resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+        resultDrawStage->opaqueMeshes->meshes.push_back(hmesh);
+        resultDrawStage->target = nullptr;
+
+        return resultDrawStage;
     }
 }
 

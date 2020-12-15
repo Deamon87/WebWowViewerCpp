@@ -12,7 +12,7 @@
 
 class GFrameBufferVLK : public IFrameBuffer {
 public:
-    GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> textureAttachments, ITextureFormat depthAttachment, int width, int height);
+    GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> textureAttachments, ITextureFormat depthAttachment, int multiSampleCnt, int width, int height);
     ~GFrameBufferVLK() override;
 
     void readRGBAPixels(int x, int y, int width, int height, void *data) override;
@@ -35,6 +35,8 @@ private:
 
     //Used only in readRGBAPixels function
     std::vector<VkFormat> attachmentFormats;
+
+    int m_multiSampleCnt;
 
     int m_width = 0;
     int m_height = 0;

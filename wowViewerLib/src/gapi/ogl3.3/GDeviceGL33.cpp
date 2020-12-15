@@ -748,7 +748,7 @@ HGVertexBufferBindings GDeviceGL33::createVertexBufferBindings() {
     return h_vertexBufferBindings;
 }
 
-HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) {
+HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt,  int frameNumber) {
     if (frameNumber > -1) {
         for (auto &framebufAvalability : m_createdFrameBuffers) {
             if (framebufAvalability.frame >= m_frameNumber &&
