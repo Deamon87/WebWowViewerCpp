@@ -134,6 +134,10 @@ public:
 
     void shrinkData() override;
 
+    bool wasTexturesUploaded() override {
+        return m_textureWereUploaded;
+    }
+
     struct DeallocationRecord {
         unsigned int frameNumberToDoAt;
         std::function<void()> callback;
@@ -205,6 +209,8 @@ protected:
     HGTexture m_blackPixelTexture;
     HGTexture m_whitePixelTexture;
 
+    bool m_textureWereUploaded = false;
+
     float clearColor[3] = {0,0,0};
 
 public:
@@ -255,6 +261,7 @@ protected:
 
     int uniformBuffersCreated = 0;
     std::list<DeallocationRecord> listOfDeallocators;
+
 };
 
 

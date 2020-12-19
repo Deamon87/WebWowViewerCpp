@@ -88,31 +88,6 @@ void M2Scene::doPostLoad(HCullStage cullStage) {
     Map::doPostLoad(cullStage);
 }
 
-
-//mathfu::vec4 M2Scene::getAmbientColor() {
-//    if (doOverride) {
-//        return m_ambientColorOverride;
-//    } else {
-//        return m_m2Object->getAmbientLight();
-//    }
-//}
-//
-//bool M2Scene::getCameraSettings(M2CameraResult &result) {
-//    if (m_cameraView > -1 && m_m2Object->getGetIsLoaded()) {
-//        result = m_m2Object->updateCamera(0, m_cameraView);
-//        return true;
-//    }
-//    return false;
-//}
-//
-//void M2Scene::setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
-//    doOverride = override;
-//    m_ambientColorOverride = ambientColor;
-//
-//    m_m2Object->setAmbientColorOverride(ambientColor, override);
-//}
-
-
 void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
     //std::cout << "replaceTextureArray.size == " << replaceTextureArray.size() << std::endl;
     //std::cout << "m_m2Object == " << m_m2Object << std::endl;
@@ -134,11 +109,10 @@ void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {
 
     m_m2Object->setReplaceTextures(replaceTextures);
 }
+
 void M2Scene::setMeshIdArray(std::vector<uint8_t> &meshIds) {
     m_m2Object->setMeshIds(meshIds);
 }
-
-
 
 int M2Scene::getCameraNum() {
     return m_m2Object->getCameraNum();
@@ -197,48 +171,6 @@ void M2Scene::resetReplaceParticleColor() {
     m_m2Object->resetReplaceParticleColor();
 }
 
-
-/*
-void M2Scene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
-    if (updateStage == nullptr) return;
-    if (resultDrawStage == nullptr) return;
-
-    auto cullStage = updateStage->cullResult;
-
-    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
-
-    for (auto m2Object : updateStage->cullResult->m2Array) {
-        m2Object->collectMeshes(resultDrawStage->meshesToRender->meshes, 0);
-        m2Object->drawParticles(resultDrawStage->meshesToRender->meshes, 0);
-    }
-
-
-    auto renderMats = resultDrawStage->matricesForRendering;
-    auto config = m_api->getConfig();
-
-    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
-    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk) -> void {
-        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
-        blockPSVS->uLookAtMat = renderMats->lookAtMat;
-        blockPSVS->uPMatrix = renderMats->perspectiveMat;
-        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
-        blockPSVS->uViewUp = renderMats->viewUp;
-
-
-//        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
-        auto ambient = mathfu::vec4(1.0f, 1.0f, 1.0f, 0);
-        blockPSVS->extLight.uExteriorAmbientColor = ambient;
-        blockPSVS->extLight.uExteriorHorizontAmbientColor = ambient;
-        blockPSVS->extLight.uExteriorGroundAmbientColor = ambient;
-        blockPSVS->extLight.uExteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,1.0);
-        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(0.0,0.0,0.0,1.0);
-    });
-
-    additionalChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
-
-    std::sort(resultDrawStage->meshesToRender->meshes.begin(),
-              resultDrawStage->meshesToRender->meshes.end(),
-              IDevice::sortMeshes
-    );
+void M2Scene::testExport() {
+//    m_m2Object->
 }
-*/

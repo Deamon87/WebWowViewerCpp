@@ -15,6 +15,8 @@
 #include "../../algorithms/quick-sort-omp.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "../../shader/ShaderDefinitions.h"
+#include "tbb/tbb.h"
+#include "../../algorithms/FrameCounter.h"
 
 //#include "../../algorithms/quicksort-dualpivot.h"
 
@@ -577,8 +579,11 @@ void Map::checkCulling(HCullStage cullStage) {
     if (cullStage->m2Array.size() > 2) {
 //        internal::parallel_sort(cullStage->m2Array.begin(), cullStage->m2Array.end(),
 //                                [](auto &first, auto &end) { return first < end; });
-
+#if (_LIBCPP_HAS_PARALLEL_ALGORITHMS)
         std::sort(std::execution::par_unseq, cullStage->m2Array.begin(), cullStage->m2Array.end() );
+#else
+        std::sort(cullStage->m2Array.begin(), cullStage->m2Array.end() );
+#endif
         cullStage->m2Array.erase(unique(cullStage->m2Array.begin(), cullStage->m2Array.end()),
                                  cullStage->m2Array.end());
     }
@@ -1106,42 +1111,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 
-    //Sort and delete duplicates
-    if (m2ObjectsCandidates.size() > 0)
-    {
-        auto *sortedArrayPtr = &m2ObjectsCandidates[0];
-        std::vector<int> indexArray = std::vector<int>(m2ObjectsCandidates.size());
-        for (int i = 0; i < indexArray.size(); i++) {
-            indexArray[i] = i;
-        }
-        quickSort_parallel(
-            indexArray.data(),
-            indexArray.size(),
-            m_api->getConfig()->threadCount,
-            m_api->getConfig()->quickSortCutoff,
-            [sortedArrayPtr](int indexA, int indexB) {
-                auto *pA = sortedArrayPtr[indexA].get();
-                auto *pB = sortedArrayPtr[indexB].get();
-
-                return pA < pB;
-            });
-
-        if (m2ObjectsCandidates.size() > 1) {
-            std::shared_ptr<M2Object> prevElem = nullptr;
-            std::vector<std::shared_ptr<M2Object>> m2Unique;
-            m2Unique.reserve(indexArray.size());
-            for (int i = 0; i < indexArray.size(); i++) {
-                if (prevElem != m2ObjectsCandidates[indexArray[i]]) {
-                    m2Unique.push_back(m2ObjectsCandidates[indexArray[i]]);
-                    prevElem = m2ObjectsCandidates[indexArray[i]];
-                }
-            }
-            m2ObjectsCandidates = m2Unique;
-        }
-    }
-
-//    std::sort( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() );
-//    m2ObjectsCandidates.erase( unique( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() ), m2ObjectsCandidates.end() );
+    
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {
@@ -1200,17 +1170,17 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
         for (int i = 0; i < frustumPoints.size(); i++) {
             mathfu::vec3 &frustumPoint = frustumPoints[i];
 
-            minx = std::min(frustumPoint.x, minx);
-            maxx = std::max(frustumPoint.x, maxx);
-            miny = std::min(frustumPoint.y, miny);
-            maxy = std::max(frustumPoint.y, maxy);
+            minx = std::min<float>(frustumPoint.x, minx);
+            maxx = std::max<float>(frustumPoint.x, maxx);
+            miny = std::min<float>(frustumPoint.y, miny);
+            maxy = std::max<float>(frustumPoint.y, maxy);
         }
 
-        int adt_x_min = std::max(worldCoordinateToAdtIndex(maxy), 0);
-        int adt_x_max = std::min(worldCoordinateToAdtIndex(miny), 63);
+        int adt_x_min = std::max<float>(worldCoordinateToAdtIndex(maxy), 0);
+        int adt_x_max = std::min<float>(worldCoordinateToAdtIndex(miny), 63);
 
-        int adt_y_min = std::max(worldCoordinateToAdtIndex(maxx), 0);
-        int adt_y_max = std::min(worldCoordinateToAdtIndex(minx), 63);
+        int adt_y_min = std::max<float>(worldCoordinateToAdtIndex(maxx), 0);
+        int adt_y_max = std::min<float>(worldCoordinateToAdtIndex(minx), 63);
 
         int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
         int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
@@ -1353,22 +1323,44 @@ void Map::update(HUpdateStage updateStage) {
     {
 
         auto &m2Array = updateStage->cullResult->m2Array;
-        auto n = m2Array.size();
-        #pragma omp parallel for schedule(static, 1000) num_threads(numThreads) default(none) shared(m2Array,n, deltaTime, cameraVec3,lookAtMat)
-        for (int i = 0; i < n; i++ ) {
-            auto m2Object = m2Array[i];
-            if (m2Object != nullptr) {
-                m2Object->update(deltaTime, cameraVec3, lookAtMat);
-            }
-        }
+        m2UpdateframeCounter.beginMeasurement();
 
-
-
-//        std::for_each(std::execution::par_unseq,
-//            updateStage->cullResult->m2Array.begin(),
-//            updateStage->cullResult->m2Array.end(), [&](const std::shared_ptr<M2Object> &m2Object) {
+//        auto n = m2Array.size();
+//        #pragma omp parallel for schedule(static, 1000) num_threads(numThreads) default(none) shared(m2Array,n, deltaTime, cameraVec3,lookAtMat)
+//        for (int i = 0; i < n; i++ ) {
+//            auto m2Object = m2Array[i];
+//            if (m2Object != nullptr) {
 //                m2Object->update(deltaTime, cameraVec3, lookAtMat);
-//        });
+//            }
+//        }
+
+
+
+        //std::for_each(std::execution::par_unseq,
+        //    m2Array.begin(),
+        //    m2Array.end(), [&](const std::shared_ptr<M2Object> &m2Object) {
+        //        m2Object->update(deltaTime, cameraVec3, lookAtMat);
+        //});
+
+        /*
+        tbb::parallel_for(size_t(0), m2Array.size(), [&](size_t i) {
+            auto& m2Object = m2Array[i];
+            m2Object->update(deltaTime, cameraVec3, lookAtMat);
+        });
+        */
+
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2Array.size(), 200),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i != r.end(); ++i) {
+                    auto& m2Object = m2Array[i];
+                    m2Object->update(deltaTime, cameraVec3, lookAtMat);
+                }
+            }, tbb::simple_partitioner());
+
+        m2UpdateframeCounter.endMeasurement("M2 update");
+
+        m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
     }
 
 //        });
@@ -1588,10 +1580,9 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 //    m2ObjectsRendered.assign( s.begin(), s.end() );
 
     if (m2ObjectsRendered.size() > 2) {
-        internal::parallel_sort(m2ObjectsRendered.begin(), m2ObjectsRendered.end(),
-                                [](auto &first, auto &end) { return first < end; });
-
-//    std::sort(std::execution::par_unseq, m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
+        tbb::parallel_sort(m2ObjectsRendered.begin(), m2ObjectsRendered.end(),
+                           [](auto &first, auto &end) { return first < end; }
+        );
         m2ObjectsRendered.erase(unique(m2ObjectsRendered.begin(), m2ObjectsRendered.end()), m2ObjectsRendered.end());
     }
 
@@ -1605,37 +1596,14 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 
     //No need to sort array which has only one element
     if (transparentMeshes.size() > 1) {
-        auto *sortedArrayPtr = &transparentMeshes[0];
-        std::vector<int> indexArray = std::vector<int>(transparentMeshes.size());
-        for (int i = 0; i < indexArray.size(); i++) {
-            indexArray[i] = i;
-        }
-
-        auto *config = m_api->getConfig();
-
-//        if (config->getMovementSpeed() > 2) {
-        quickSort_parallel(
-            indexArray.data(),
-            indexArray.size(),
-            config->threadCount,
-            config->quickSortCutoff,
-#include "../../../gapi/interface/sortLambda.h"
+        tbb::parallel_sort(transparentMeshes.begin(), transparentMeshes.end(),
+            #include "../../../gapi/interface/sortLambda.h"
         );
-//        } else {
-//            quickSort_dualPoint(
-//                indexArray.data(),
-//                indexArray.size(),
-//                config->getThreadCount(),
-//                config->getQuickSortCutoff(),
-//                #include "../../../gapi/interface/sortLambda.h"
-//            );
-//        }
+//        std::sort(std::execution::par_unseq, transparentMeshes.begin(), transparentMeshes.end(),
+//            #include "../../../gapi/interface/sortLambda.h"
+//        );
+        updateStage->transparentMeshes->meshes = transparentMeshes;
 
-        auto &targetTranspMeshes = updateStage->transparentMeshes->meshes;
-        targetTranspMeshes.reserve(indexArray.size());
-        for (int i = 0; i < indexArray.size(); i++) {
-            targetTranspMeshes.push_back(transparentMeshes[indexArray[i]]);
-        }
     } else {
         auto &targetTranspMeshes = updateStage->transparentMeshes->meshes;
         for (int i = 0; i < transparentMeshes.size(); i++) {
@@ -1643,22 +1611,9 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
         }
     }
 
-//    opaqueMeshes.erase(
-//        std::remove_if(
-//            opaqueMeshes.begin(),
-//            opaqueMeshes.end(),
-//            [](const HGMesh& item) { return item == nullptr;}),
-//        opaqueMeshes.end());
-//
-//    updateStage->transparentMeshes->meshes.erase(
-//        std::remove_if(
-//            updateStage->transparentMeshes->meshes.begin(),
-//            updateStage->transparentMeshes->meshes.end(),
-//            [](const HGMesh& item) { return item == nullptr;}),
-//        updateStage->transparentMeshes->meshes.end());
-
     //1. Collect buffers
     std::vector<HGUniformBufferChunk> &bufferChunks = updateStage->uniformBufferChunks;
+    bufferChunks.reserve((opaqueMeshes.size() + updateStage->transparentMeshes->meshes.size()) * 3);
     int renderIndex = 0;
     for (const auto &mesh : opaqueMeshes) {
         for (int i = 0; i < 5; i++ ) {
@@ -1679,15 +1634,11 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
         }
     }
 
-    {
-        std::set<HGUniformBufferChunk> s;
-        unsigned size = bufferChunks.size();
-        for (unsigned i = 0; i < size; ++i) s.insert(bufferChunks[i]);
-        bufferChunks.assign(s.begin(), s.end());
-    }
+    tbb::parallel_sort(bufferChunks.begin(), bufferChunks.end(),
+                       [](auto &first, auto &end) { return first < end; }
+    );
+    bufferChunks.erase(unique(bufferChunks.begin(), bufferChunks.end()), bufferChunks.end());
 
-//    std::sort( bufferChunks.begin(), bufferChunks.end());
-//    bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
 }
 void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     auto cullStage = updateStage->cullResult;
@@ -1994,8 +1945,8 @@ void Map::loadZoneLights() {
 
             auto &points = innerZoneLightRecord.points;
             for (auto &zonePoint : zoneLight.points) {
-                minX = std::min(zonePoint.x, minX); minY = std::min(zonePoint.y, minY);
-                maxX = std::max(zonePoint.x, maxX); maxY = std::max(zonePoint.y, maxY);
+                minX = std::min<float>(zonePoint.x, minX); minY = std::min<float>(zonePoint.y, minY);
+                maxX = std::max<float>(zonePoint.x, maxX); maxY = std::max<float>(zonePoint.y, maxY);
 
                 points.push_back(mathfu::vec2(zonePoint.x, zonePoint.y));
             }

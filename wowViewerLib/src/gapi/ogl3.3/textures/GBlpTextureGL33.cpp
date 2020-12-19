@@ -230,6 +230,8 @@ bool GBlpTextureGL33::postLoad() {
     this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
     m_device.bindTexture(nullptr, 0);
 
+//    m_texture = nullptr;
+
     m_loaded = true;
     return true;
 }

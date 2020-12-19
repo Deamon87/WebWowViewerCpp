@@ -38,7 +38,11 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
     }
 
     //Delete duplicates
+#if (_LIBCPP_HAS_PARALLEL_ALGORITHMS)
     std::sort(std::execution::par_unseq, candidates.begin(), candidates.end() );
+#else
+    std::sort(candidates.begin(), candidates.end() );
+#endif
     candidates.erase( unique( candidates.begin(), candidates.end() ), candidates.end() );
 
 //    std::vector<bool> candidateResults = std::vector<bool>(candidates.size(), false);

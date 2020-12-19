@@ -1,6 +1,6 @@
-[sortedArrayPtr](int indexA, int indexB) {
-    IMesh * pA = sortedArrayPtr[indexA].get();
-    IMesh* pB = sortedArrayPtr[indexB].get();
+[](const HGMesh &indexA, const HGMesh &indexB) {
+    IMesh * pA = indexA.get();
+    IMesh* pB = indexB.get();
 
 //    HGMesh pA = sortedArrayPtr[indexA];
 //    HGMesh pB = sortedArrayPtr[indexB];

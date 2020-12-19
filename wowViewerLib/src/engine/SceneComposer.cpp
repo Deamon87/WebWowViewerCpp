@@ -51,6 +51,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
                 using namespace std::chrono_literals;
                 FrameCounter frameCounter;
 
+
                 //NOTE: it's required to have separate counting process here with getPromiseInd/getNextPromiseInd,
                 //cause it's not known if the frameNumber will be updated from main thread before
                 //new currIndex is calculated (and if that doenst happen, desync in numbers happens)
@@ -68,8 +69,8 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
 
                     frameCounter.beginMeasurement();
                     DoCulling();
-
                     frameCounter.endMeasurement("Culling thread ");
+                    m_apiContainer->getConfig()->cullingTimePerFrame = frameCounter.getTimePerFrame();
 
                     this->cullingFinished.set_value(true);
                     currIndex = nextIndex;
@@ -87,7 +88,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
             updateThread = std::thread(([&]() {
 //                try {
                     this->m_apiContainer->hDevice->initUploadThread();
-
+                    FrameCounter frameCounter;
                     //NOTE: Refer to comment in cullingThread code
                     auto currIndex = getPromiseInd();
                     while (!this->m_isTerminating) {
@@ -97,7 +98,11 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
                         future.wait();
                         auto nextIndex = getNextPromiseInd();
 
+                        frameCounter.beginMeasurement();
                         DoUpdate();
+                        frameCounter.endMeasurement("Update thread ");
+
+                        m_apiContainer->getConfig()->updateTimePerFrame = frameCounter.getTimePerFrame();
 
                         updateFinished.set_value(true);
                         currIndex = nextIndex;
@@ -153,12 +158,6 @@ void collectMeshes(HDrawStage drawStage, std::vector<HGMesh> &meshes) {
 }
 
 void SceneComposer::DoUpdate() {
-    FrameCounter frameCounter;
-
-    FrameCounter singleUpdateCNT;
-    FrameCounter meshesCollectCNT;
-
-    frameCounter.beginMeasurement();
 
     auto device = m_apiContainer->hDevice;
 
@@ -178,7 +177,6 @@ void SceneComposer::DoUpdate() {
     meshesCollectCNT.beginMeasurement();
     std::vector<HGUniformBufferChunk> additionalChunks;
 
-
     for (auto &link : frameScenario->drawStageLinks) {
         link.scene->produceDrawStage(link.drawStage, link.updateStage, additionalChunks);
     }
@@ -187,10 +185,14 @@ void SceneComposer::DoUpdate() {
     collectMeshes(frameScenario->getDrawStage(), meshes);
     meshesCollectCNT.endMeasurement("collectMeshes ");
 
+
+    updateBuffersCNT.beginMeasurement();
     for (auto updateStage : frameScenario->updateStages) {
         updateStage->cullResult->scene->updateBuffers(updateStage);
     }
+    updateBuffersCNT.endMeasurement("");
 
+    updateBuffersDeviceCNT.beginMeasurement();
     std::vector<HFrameDepedantData> frameDepDataVec = {};
     std::vector<std::vector<HGUniformBufferChunk>*> uniformChunkVec = {};
     for (auto updateStage : frameScenario->updateStages) {
@@ -198,20 +200,40 @@ void SceneComposer::DoUpdate() {
         uniformChunkVec.push_back(&updateStage->uniformBufferChunks);
     }
     device->updateBuffers(uniformChunkVec, frameDepDataVec);
+    updateBuffersDeviceCNT.endMeasurement("");
 
+    postLoadCNT.beginMeasurement();
     for (auto cullStage : frameScenario->cullStages) {
         cullStage->scene->doPostLoad(cullStage); //Do post load after rendering is done!
     }
-    device->uploadTextureForMeshes(meshes);
+    postLoadCNT.endMeasurement("");
 
+    textureUploadCNT.beginMeasurement();
+    device->uploadTextureForMeshes(meshes);
+    textureUploadCNT.endMeasurement("");
+
+    drawStageAndDepsCNT.beginMeasurement();
     if (device->getIsVulkanAxisSystem()) {
         if (frameScenario != nullptr) {
             m_apiContainer->hDevice->drawStageAndDeps(frameScenario->getDrawStage());
         }
     }
+    drawStageAndDepsCNT.endMeasurement("");
 
+    endUpdateCNT.beginMeasurement();
     device->endUpdateForNextFrame();
-    frameCounter.endMeasurement("Update Thread");
+    endUpdateCNT.endMeasurement("");
+
+    auto config = m_apiContainer->getConfig();
+    config->singleUpdateCNT = singleUpdateCNT.getTimePerFrame();
+    config->meshesCollectCNT = meshesCollectCNT.getTimePerFrame();;
+    config->updateBuffersCNT = updateBuffersCNT.getTimePerFrame();;
+    config->updateBuffersDeviceCNT = updateBuffersDeviceCNT.getTimePerFrame();;
+    config->postLoadCNT = postLoadCNT.getTimePerFrame();;
+    config->textureUploadCNT = textureUploadCNT.getTimePerFrame();;
+    config->drawStageAndDepsCNT = drawStageAndDepsCNT.getTimePerFrame();;
+    config->endUpdateCNT = endUpdateCNT.getTimePerFrame();;
+
 }
 
 void SceneComposer::draw(HFrameScenario frameScenario) {

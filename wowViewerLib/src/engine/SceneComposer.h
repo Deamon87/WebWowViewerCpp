@@ -11,7 +11,7 @@
 #include "../include/iostuff.h"
 #include "../gapi/interface/IDevice.h"
 #include "SceneScenario.h"
-
+#include "algorithms/FrameCounter.h"
 
 class SceneComposer {
 private:
@@ -26,6 +26,16 @@ private:
 
     bool m_supportThreads = true;
     bool m_isTerminating = false;
+
+
+    FrameCounter singleUpdateCNT;
+    FrameCounter meshesCollectCNT;
+    FrameCounter updateBuffersCNT;
+    FrameCounter updateBuffersDeviceCNT;
+    FrameCounter postLoadCNT;
+    FrameCounter textureUploadCNT;
+    FrameCounter drawStageAndDepsCNT;
+    FrameCounter endUpdateCNT;
 
 
 

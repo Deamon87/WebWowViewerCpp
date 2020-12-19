@@ -26,7 +26,9 @@ void RequestProcessor::addRequest (std::string &fileName, CacheHolderType holder
             ss >> fileDataId;
         }
         std::cout << "RequestProcessor::addRequest : duplicate detected for fileName = " << fileName
-            << " " << ((fileDataId > 0) ? ("(fileDataId = "+std::to_string(fileDataId)+")"): "") <<std::endl;
+            << " " << ((fileDataId > 0) ? ("(fileDataId = "+std::to_string(fileDataId)+")"): "")
+            << " holderTypeReq = " << (int)holderType
+            <<std::endl;
         return;
     }
     currentlyProcessingFnames.insert(fileName);

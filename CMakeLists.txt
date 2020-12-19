@@ -36,6 +36,8 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 	endif()
 endif() 
 
+
+
 if (WIN32 AND MSVC)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /DWIN64")
@@ -51,11 +53,12 @@ message(CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE})
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	message("This is clang")
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static -femulated-tls ")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -femulated-tls -std=c++1z")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -static -femulated-tls ")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -femulated-tls -std=c++1z")
-
+	#Force clang to use libc++
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static ")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -stdlib=libc++")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -static ")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -stdlib=libc++")
+#	link_libraries(libstdc++fs)
 
 
 	#set(_GLIBCXX_USE_C99_CHECK 0)
@@ -118,6 +121,9 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	set(BUILD_SHARED_LIBS OFF)
 	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw)
 endif()
+
+#c++ 17 FS implementation
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/filesystem_impl)
 
 #bz2renderFlag
 set(BUILD_SHARED_LIBS OFF)
@@ -334,7 +340,6 @@ else()
 	target_link_libraries(AWebWoWViewerCpp GL)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
-#Link OPENSSL only for MSVC
-
+#target_link_options(AWebWoWViewerCpp PUBLIC "SHELL: -llibg")
 
 INSTALL(TARGETS AWebWoWViewerCpp DESTINATION BIN)

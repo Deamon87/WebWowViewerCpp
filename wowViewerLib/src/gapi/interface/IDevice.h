@@ -184,6 +184,7 @@ class IDevice {
         virtual bool getIsRenderbufferSupported() {return false;}
 
         virtual void initUploadThread(){}
+        virtual double getWaitForUpdate() {return 0;}
 
     public:
         virtual HGShaderPermutation getShader(std::string shaderName, void *permutationDescriptor) = 0;
@@ -226,6 +227,7 @@ class IDevice {
         virtual void commitFrame() = 0;
 
         virtual void shrinkData() {};
+        virtual bool wasTexturesUploaded() = 0;
 };
 
 #include <cassert>

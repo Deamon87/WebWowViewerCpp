@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <mutex>
 
 
 class GVertexBufferVLK;
@@ -35,6 +36,7 @@ class gMeshTemplate;
 #include "../interface/IDevice.h"
 #include "descriptorSets/GDescriptorSet.h"
 #include "descriptorSets/GDescriptorPoolVLK.h"
+#include "../../engine/algorithms/FrameCounter.h"
 #include <optional>
 
 VkSampleCountFlagBits sampleCountToVkSampleCountFlagBits(uint8_t sampleCount);
@@ -104,11 +106,19 @@ public:
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     void drawStageAndDeps(HDrawStage drawStage) override;
+    bool wasTexturesUploaded() override {
+        return m_texturesWereUploaded;
+    };
+
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
     bool getIsVulkanAxisSystem() override {return true;}
 
     void initUploadThread() override;
 public:
+    double getWaitForUpdate() override {
+        return this->waitInDrawStageAndDeps.getTimePerFrame();
+    }
+
     std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void *permutationDescriptor) override;
 
     HGUniformBuffer createUniformBuffer(size_t size) override;
@@ -210,7 +220,10 @@ public:
         std::function<void()> callback;
     };
 
+    std::mutex m_listOfDeallocatorsAccessMtx;
+
     void addDeallocationRecord(std::function<void()> callback) {
+        std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
         DeallocationRecord dr;
         dr.frameNumberToDoAt = m_frameNumber+4;
         dr.callback = callback;
@@ -323,6 +336,8 @@ protected:
 
     VkDebugUtilsMessengerEXT debugMessenger;
 
+    int threadCount = 1;
+    FrameCounter waitInDrawStageAndDeps;
 
     QueueFamilyIndices indices;
     VkInstance vkInstance;
@@ -416,6 +431,8 @@ protected:
 
     HGTexture m_blackPixelTexture = nullptr;
     HGTexture m_whitePixelTexture = nullptr;
+
+    bool m_texturesWereUploaded = false;
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;

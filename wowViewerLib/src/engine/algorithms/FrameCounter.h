@@ -15,12 +15,19 @@ public:
     void beginMeasurement();
     void endMeasurement(const std::string &source);
 
+    double getTimePerFrame() {
+        return timePerFrame;
+    }
 private:
-#ifndef SKIP_VULKAN
-    std::chrono::system_clock::time_point m_startTime;
+//#if defined(_MSC_VER)
+    std::chrono::time_point<std::chrono::steady_clock> m_startTime;
+//#else
+//    std::chrono::system_clock::time_point m_startTime;
+//#endif
     double m_accomulatedTimeInterval = 0;
     int frameCounter = 0;
-#endif
+
+    double timePerFrame;
 
 };
 

@@ -2,7 +2,8 @@
 // Created by Deamon on 9/8/2020.
 //
 //#include "../../wowViewerLib/src/engine/SceneScenario.h"
-#include <filesystem>
+//#include <filesystem>
+#include "../../3rdparty/filesystem_impl/include/ghc/filesystem.hpp"
 #include "minimapGenerator.h"
 #include "../../wowViewerLib/src/engine/algorithms/mathHelper.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/map.h"
@@ -100,12 +101,12 @@ MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, c
         (getScreenCoordToWoWCoordMatrix().Inverse() * mathfu::vec4(maxWowWorldCoord.x, maxWowWorldCoord.y, 0, 1.0)).xy();
 
     mathfu::vec2 minOrthoMapCoord = mathfu::vec2(
-        std::min(std::min(minWowWorldCoordTransf.x, maxWowWorldCoordTransf.x), std::min(minMaxWowWorldCoordTransf.x, maxMinWowWorldCoordTransf.x)),
-        std::min(std::min(minWowWorldCoordTransf.y, maxWowWorldCoordTransf.y), std::min(minMaxWowWorldCoordTransf.y, maxMinWowWorldCoordTransf.y))
+        std::min<float>(std::min<float>(minWowWorldCoordTransf.x, maxWowWorldCoordTransf.x), std::min<float>(minMaxWowWorldCoordTransf.x, maxMinWowWorldCoordTransf.x)),
+        std::min<float>(std::min<float>(minWowWorldCoordTransf.y, maxWowWorldCoordTransf.y), std::min<float>(minMaxWowWorldCoordTransf.y, maxMinWowWorldCoordTransf.y))
     );
     mathfu::vec2 maxOrthoMapCoord = mathfu::vec2(
-        std::max(std::max(minWowWorldCoordTransf.x, maxWowWorldCoordTransf.x), std::max(minMaxWowWorldCoordTransf.x, maxMinWowWorldCoordTransf.x)),
-        std::max(std::max(minWowWorldCoordTransf.y, maxWowWorldCoordTransf.y), std::max(minMaxWowWorldCoordTransf.y, maxMinWowWorldCoordTransf.y))
+        std::max<float>(std::max<float>(minWowWorldCoordTransf.x, maxWowWorldCoordTransf.x), std::max<float>(minMaxWowWorldCoordTransf.x, maxMinWowWorldCoordTransf.x)),
+        std::max<float>(std::max<float>(minWowWorldCoordTransf.y, maxWowWorldCoordTransf.y), std::max<float>(minMaxWowWorldCoordTransf.y, maxMinWowWorldCoordTransf.y))
     );
 
     std::cout <<"Orient = " << (int)currentScenario.orientation << " XToYCoef = " << XToYCoef << std::endl;
@@ -323,7 +324,7 @@ void MinimapGenerator::setupCameraData() {
 
 
 void MinimapGenerator::process() {
-    if (!m_processor->queuesNotEmpty()) {
+    if (!m_processor->queuesNotEmpty() && !m_apiContainer->hDevice->wasTexturesUploaded()) {
         framesReady++;
     } else {
         framesReady = 0;
@@ -331,8 +332,8 @@ void MinimapGenerator::process() {
         return;
     }
 
-    if (framesReady < 15) {
-        if (drawStageStack.size() > 15)
+    if (framesReady < 3) {
+        if (drawStageStack.size() > 3)
             drawStageStack.pop_back();
         return;
     }
@@ -342,8 +343,8 @@ void MinimapGenerator::process() {
     framesReady = 0;
 
     //Make screenshot out of this drawStage
-    if (!std::filesystem::is_directory(currentScenario.folderToSave) || !std::filesystem::exists(currentScenario.folderToSave)) { // Check if src folder exists
-        std::filesystem::create_directories(currentScenario.folderToSave); // create src folder
+    if (!ghc::filesystem::is_directory(currentScenario.folderToSave) || !ghc::filesystem::exists(currentScenario.folderToSave)) { // Check if src folder exists
+        ghc::filesystem::create_directories(currentScenario.folderToSave); // create src folder
     }
 
     std::string fileName = currentScenario.folderToSave+"/map_"+std::to_string(

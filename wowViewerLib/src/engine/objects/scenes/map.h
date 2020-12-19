@@ -16,6 +16,8 @@
 #include "../wdl/wdlObject.h"
 #include "../wowFrameData.h"
 #include "../../SceneScenario.h"
+#include "tbb/tbb.h"
+#include "../../algorithms/FrameCounter.h"
 
 enum class SceneMode {
    smMap,
@@ -33,6 +35,11 @@ private:
         }
     }
 protected:
+
+    tbb::task_scheduler_init taskScheduler;
+    FrameCounter m2UpdateframeCounter;
+
+
     HApiContainer m_api = nullptr;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
     std::string mapName;
@@ -114,10 +121,10 @@ protected:
 
 public:
 
-    explicit Map() {
+    explicit Map() : taskScheduler(10){
     }
 
-    explicit Map(HApiContainer api, int mapId, std::string mapName) {
+    explicit Map(HApiContainer api, int mapId, std::string mapName) : taskScheduler(10) {
         initMapTiles();
 
         m_mapId = mapId; m_api = api; this->mapName = mapName;

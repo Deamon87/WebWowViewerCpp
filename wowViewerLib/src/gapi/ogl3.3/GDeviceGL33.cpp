@@ -1064,6 +1064,8 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         if (texture->postLoad()) texturesLoaded++;
         if (texturesLoaded > 4) return;
     }
+
+    m_textureWereUploaded = texturesLoaded > 0;
 }
 
 #ifdef __ANDROID_API__

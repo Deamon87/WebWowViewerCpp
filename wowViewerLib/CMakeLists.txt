@@ -3,7 +3,7 @@ project(WoWViewerLib)
 
 include(CheckCXXCompilerFlag)
 
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(LINK_GLEW 1)
 set(LINK_OGL2 1)
@@ -46,6 +46,9 @@ set(My_Vectorize_Compile_Options "")
 
 
 message("ENABLE_SIMD = ${ENABLE_SIMD}")
+
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/tbb)
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
@@ -474,6 +477,9 @@ if (LINK_VULKAN)
 endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
+target_link_libraries(WoWViewerLib tbb_static)
+#target_link_options(WoWViewerLib PUBLIC "SHELL: -lstdc++")
+
 
 if (ENABLE_SIMD)
     mathfu_configure_flags(WoWViewerLib TRUE)
@@ -490,7 +496,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (1)
+if (0)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)

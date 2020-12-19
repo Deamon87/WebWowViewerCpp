@@ -110,6 +110,9 @@ public:
     void setViewPortDimensions(float x, float y, float width, float height) override;
     void setInvertZ(bool value) override {m_isInvertZ = value;};
     void shrinkData() override;
+    bool wasTexturesUploaded() override {
+        return false;
+    };
 private:
     void drawMesh(HGMesh &hmesh);
     bool isDepthPreFill = false;

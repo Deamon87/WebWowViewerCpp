@@ -50,6 +50,7 @@
 #include "../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
 #include "../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
 #include "screenshots/screenshotMaker.h"
+#include <exception>
 
 //TODO: Consider using dedicated buffers for uniform data for OGL in update thread, fill them up there
 //Anb upload these buffers from main thread just before drawing
@@ -327,7 +328,7 @@ int main(){
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(_LIBCPP_VERSION)
     const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
 #endif
@@ -342,7 +343,7 @@ int main(){
     glfwInit();
 
 //    std::string rendererName = "ogl2";
-//    std::string rendererName = "ogl3";
+//      std::string rendererName = "ogl3";
     std::string rendererName = "vulkan";
 
     //FOR OGL

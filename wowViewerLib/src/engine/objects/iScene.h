@@ -32,5 +32,7 @@ public:
 
     virtual int getCameraNum() = 0;
     virtual std::shared_ptr<ICamera> createCamera(int cameraNum) = 0;
+
+    virtual void testExport() {};
 };
 #endif //WEBWOWVIEWERCPP_IINNERSCENEAPI_H

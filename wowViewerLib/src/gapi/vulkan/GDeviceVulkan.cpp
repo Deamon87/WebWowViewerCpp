@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <ctime>
 #include <array>
+#include <thread>
 #include "GDeviceVulkan.h"
 #include "../../include/vulkancontext.h"
 
@@ -35,7 +36,9 @@
 #include "shaders/GFFXgauss4VLK.h"
 #include "shaders/GFFXGlowVLK.h"
 #include "GRenderPassVLK.h"
+#include "../../engine/algorithms/FrameCounter.h"
 //#include "fastmemcp.h"
+#include <tbb/tbb.h>
 
 const int WIDTH = 1900;
 const int HEIGHT = 1000;
@@ -176,7 +179,9 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+    enableValidationLayers = false;
+
+    this->threadCount = std::max<int>((int)std::thread::hardware_concurrency() - 3, 1);
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -889,9 +894,11 @@ void GDeviceVLK::startUpdateForNextFrame() {
 
 //    std::cout << "updateBuffers: updateFrame = " << uploadFrame << std::endl;
 
+    this->waitInDrawStageAndDeps.beginMeasurement();
     vkWaitForFences(device, 1, &uploadFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkWaitForFences(device, 1, &inFlightFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &uploadFences[uploadFrame]);
+    this->waitInDrawStageAndDeps.endMeasurement("");
 
     if (vkBeginCommandBuffer(uploadCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
         std::cout << "failed to begin recording uploadCommandBuffer command buffer!" << std::endl;
@@ -928,11 +935,16 @@ void GDeviceVLK::endUpdateForNextFrame() {
         }
     }
 
-    while ((!listOfDeallocators.empty())&&(listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
-        auto stuff = listOfDeallocators.front();
-        stuff.callback();
+    {
+        std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
+        while ((!listOfDeallocators.empty()) && (listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
+            auto stuff = listOfDeallocators.front();
+            if (stuff.callback != nullptr) {
+                stuff.callback();
+            }
 
-        listOfDeallocators.pop_front();
+            listOfDeallocators.pop_front();
+        }
     }
 }
 
@@ -1010,9 +1022,19 @@ void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &
             auto &bufferVec = bufferChunks[i];
             auto frameDepData = frameDepedantData[i];
 
-            for (auto &buffer : *bufferVec) {
-                buffer->update(frameDepData);
-            }
+            int gran = std::max<int>(bufferVec->size() / this->threadCount, 1);
+
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, bufferVec->size(), gran),
+                              [&](tbb::blocked_range<size_t> r) {
+                                  for (size_t i = r.begin(); i != r.end(); ++i) {
+                                      auto& buffer = (*bufferVec)[i];
+                                      buffer->update(frameDepData);
+                                  }
+                              }, tbb::simple_partitioner());
+
+//            for (auto &buffer : *bufferVec) {
+//                buffer->update(frameDepData);
+//            }
         }
         if (currentSize > 0) {
             bufferForUploadVLK->uploadFromStaging(currentSize);
@@ -1044,6 +1066,7 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         if (texture->postLoad()) texturesLoaded++;
         if (texturesLoaded > 4) break;
     }
+    m_texturesWereUploaded = texturesLoaded > 0;
 }
 
 void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {
@@ -1780,6 +1803,8 @@ void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
     int updateFrame = getUpdateFrameNumber();
 
 //    std::cout << "drawStageAndDeps: updateFrame = " << updateFrame << std::endl;
+
+
     vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
     //Update

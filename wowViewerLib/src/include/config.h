@@ -123,6 +123,20 @@ public:
     EParameterSource glowSource = EParameterSource::eDatabase;
     float currentGlow = 0;
 
+
+    //Stuff to display in UI
+    double cullingTimePerFrame = 0;
+    double updateTimePerFrame = 0;
+    double m2UpdateTime = 0;
+
+    double singleUpdateCNT = 0;
+    double meshesCollectCNT = 0;
+    double updateBuffersCNT = 0;
+    double updateBuffersDeviceCNT = 0;
+    double postLoadCNT = 0;
+    double textureUploadCNT = 0;
+    double drawStageAndDepsCNT = 0;
+    double endUpdateCNT = 0;
 };
 
 
