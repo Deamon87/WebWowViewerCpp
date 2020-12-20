@@ -410,6 +410,10 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Start experiment")) {
                 startExperimentCallback();
             }
+            if (ImGui::MenuItem("Test export")) {
+                if (currentScene != nullptr)
+                    currentScene->testExport();
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Make screenshot")) {
                 showMakeScreenshot = true;

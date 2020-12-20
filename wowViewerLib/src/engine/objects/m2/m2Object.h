@@ -166,6 +166,8 @@ private:
     static float getTextureWeight(M2SkinProfile *skinData, M2Data *m2data, int batchIndex, int textureIndex, const std::vector<float> &transparencies) ;
 public:
 
+    void testExport();
+
     void setAlwaysDraw(bool value) {
         m_alwaysDraw = value;
     }

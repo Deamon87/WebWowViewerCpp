@@ -18,6 +18,17 @@
 
 //Legion shader stuff
 
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+
+//#define TINYGLTF_NO_STB_IMAGE_WRITE
+
+#ifndef TINYGLTF_NO_STB_IMAGE_WRITE
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
+
+#include "../../../../3rdparty/tinygltf/tiny_gltf.h"
+
 enum class M2PixelShader : int {
     //Wotlk deprecated shaders
     Combiners_Decal = -1,
@@ -1422,7 +1433,6 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
 
     if (!prepearMaterial(material, i)) return nullptr;
 
-
     M2ShaderCacheRecord cacheRecord{};
     cacheRecord.vertexShader = material.vertexShader;
     cacheRecord.pixelShader  = material.pixelShader;
@@ -1911,4 +1921,190 @@ bool M2Object::getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 
 
 void M2Object::resetReplaceParticleColor() {
     particleColorReplacementIsSet = false;
+}
+
+void M2Object::testExport() {
+    tinygltf::Model model;
+    tinygltf::TinyGLTF loader;
+
+    int iboSize;
+
+    //1. Create Buffers
+    int VBOBufferIndex = -1;
+    int IBOBufferIndex = -1;
+    {
+        //1. Create VBO
+        VBOBufferIndex = model.buffers.size();
+        {
+            tinygltf::Buffer modelVBO;
+            modelVBO.name = "vbo";
+
+            auto firstVertex = m_m2Geom->getM2Data()->vertices.getElement(0);
+            modelVBO.data = std::vector<uint8_t>((uint8_t *) firstVertex,
+                                                 (uint8_t *) (firstVertex + m_m2Geom->getM2Data()->vertices.size));
+
+            model.buffers.push_back(modelVBO);
+        }
+
+        //1.1 Create IBO
+        IBOBufferIndex = model.buffers.size();
+        {
+            tinygltf::Buffer modelIBO;
+            modelIBO.name = "ibo";
+
+            auto indicies = m_skinGeom->generateIndexBuffer();
+
+            modelIBO.data = std::vector<uint8_t>((uint8_t *) indicies.data(),
+                                                 (uint8_t *) (indicies.data() + indicies.size()));
+
+            iboSize = modelIBO.data.size();
+
+            model.buffers.push_back(modelIBO);
+        }
+
+    }
+
+    //2. Create buffer views
+    int VBOBufferViewIndex = -1;
+    int IBOBufferViewIndex = -1;
+    {
+        //2.1 Create VBO buffer view
+        VBOBufferViewIndex = model.bufferViews.size();
+        {
+            tinygltf::BufferView modelVBOView;
+            modelVBOView.buffer = VBOBufferIndex;
+            modelVBOView.byteOffset = 0;
+            modelVBOView.byteLength = m_m2Geom->getM2Data()->vertices.size * sizeof(M2Vertex);
+            modelVBOView.byteStride = 48;
+            modelVBOView.target = TINYGLTF_TARGET_ARRAY_BUFFER;
+            model.bufferViews.push_back(modelVBOView);
+        }
+        //2.1 Create IBO buffer view
+        IBOBufferViewIndex = model.bufferViews.size();
+        {
+            tinygltf::BufferView modelIBOView;
+            modelIBOView.buffer = IBOBufferIndex;
+            modelIBOView.byteOffset = 0;
+            modelIBOView.byteLength = model.buffers[IBOBufferIndex].data.size();
+            modelIBOView.byteStride = 1;
+            modelIBOView.target = TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER;
+            model.bufferViews.push_back(modelIBOView);
+        }
+    }
+
+    //2. Create accesors
+    //2.1 Accessors for VBO:
+    int accesorPosIndex = -1;
+    int accesorNormalIndex = -1;
+    int accesorTexCoordIndex = -1;
+    {
+        //Position
+        {
+            accesorPosIndex = model.accessors.size();
+
+            tinygltf::Accessor a_position;
+            a_position.bufferView = VBOBufferViewIndex;
+            a_position.name = "POSITION";
+            a_position.byteOffset = 0;
+            a_position.normalized = false;
+            a_position.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+            a_position.count = m_m2Geom->getM2Data()->vertices.size;
+            a_position.type = TINYGLTF_TYPE_VEC3;
+
+            model.accessors.push_back(a_position);
+        }
+        //Normal
+        {
+            accesorNormalIndex = model.accessors.size();
+
+            tinygltf::Accessor a_normal;
+            a_normal.bufferView = VBOBufferViewIndex;
+            a_normal.name = "NORMAL";
+            a_normal.byteOffset = 20;
+            a_normal.normalized = false;
+            a_normal.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+            a_normal.count = m_m2Geom->getM2Data()->vertices.size;
+            a_normal.type = TINYGLTF_TYPE_VEC3;
+
+            model.accessors.push_back(a_normal);
+        }
+        //aTexCoord
+        {
+            accesorTexCoordIndex = model.accessors.size();
+
+            tinygltf::Accessor a_texturecoord;
+            a_texturecoord.bufferView = VBOBufferViewIndex;
+            a_texturecoord.name = "TEXCOORD_0";
+            a_texturecoord.byteOffset = 32;
+            a_texturecoord.normalized = false;
+            a_texturecoord.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+            a_texturecoord.count = m_m2Geom->getM2Data()->vertices.size;
+            a_texturecoord.type = TINYGLTF_TYPE_VEC2;
+
+            model.accessors.push_back(a_texturecoord);
+        }
+    }
+
+    //Primitives
+    tinygltf::Mesh mesh;
+    {
+        auto skinProfile = m_skinGeom->getSkinData();
+        auto sections = skinProfile->skinSections;
+
+        int primitiveAccessorStart =  model.accessors.size();
+
+        for (int i = 0; i < sections.size; i++) {
+            auto skinSection = skinProfile->skinSections[i];
+
+            //Create accessor for IBO
+            tinygltf::Accessor a_primitive;
+            a_primitive.bufferView = IBOBufferViewIndex;
+            a_primitive.name = "";
+            a_primitive.byteOffset = (skinSection->indexStart + (skinSection->Level << 16)) * 2 ;
+            a_primitive.normalized = false;
+            a_primitive.componentType = TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT;
+            a_primitive.count = skinSection->indexCount;
+            a_primitive.type = TINYGLTF_TYPE_SCALAR;
+
+            assert(a_primitive.byteOffset <= iboSize);
+            assert((a_primitive.byteOffset+a_primitive.count) <= iboSize);
+
+            model.accessors.push_back(a_primitive);
+        }
+
+        M2Array<M2Batch> *batches = &m_skinGeom->getSkinData()->batches;
+        for (int i = 0; i < batches->size; i++) {
+            auto m2Batch = skinProfile->batches[i];
+
+            tinygltf::Primitive p;
+            p.material = -1;
+            p.attributes["POSITION"] =   accesorPosIndex;
+            p.attributes["NORMAL"] =     accesorNormalIndex;
+            p.attributes["TEXCOORD_0"] = accesorTexCoordIndex;
+            p.indices = m2Batch->skinSectionIndex + primitiveAccessorStart;
+            p.mode = TINYGLTF_MODE_TRIANGLES;
+
+            mesh.primitives.push_back(p);
+        }
+    }
+
+    model.meshes.push_back(mesh);
+    model.asset.version = "2.0";
+
+    tinygltf::Node node;
+    node.mesh = 0;
+    node.name = "scene";
+
+    model.nodes.push_back(node);
+
+    //Add scene
+    {
+        tinygltf::Scene scene;
+        scene.name = "Fox";
+        scene.nodes = {0};
+        model.scenes.push_back(scene);
+    }
+    model.defaultScene = 0;
+
+    loader.WriteGltfSceneToFile(&model, "gltf/test.gltf");
 }
