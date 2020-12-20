@@ -1997,6 +1997,8 @@ void M2Object::testExport() {
     int accesorPosIndex = -1;
     int accesorNormalIndex = -1;
     int accesorTexCoordIndex = -1;
+    int accesorJointsIndex = -1;
+    int accesorWeightsIndex = -1;
     {
         //Position
         {
@@ -2012,6 +2014,36 @@ void M2Object::testExport() {
             a_position.type = TINYGLTF_TYPE_VEC3;
 
             model.accessors.push_back(a_position);
+        }
+        //Weights
+        {
+            accesorWeightsIndex = model.accessors.size();
+
+            tinygltf::Accessor a_weights;
+            a_weights.bufferView = VBOBufferViewIndex;
+            a_weights.name = "WEIGHTS_0";
+            a_weights.byteOffset = 12;
+            a_weights.normalized = true;
+            a_weights.componentType = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
+            a_weights.count = m_m2Geom->getM2Data()->vertices.size;
+            a_weights.type = TINYGLTF_TYPE_VEC4;
+
+            model.accessors.push_back(a_weights);
+        }
+        //Joints (bone indices)
+        {
+            accesorJointsIndex = model.accessors.size();
+
+            tinygltf::Accessor a_weights;
+            a_weights.bufferView = VBOBufferViewIndex;
+            a_weights.name = "JOINTS_0";
+            a_weights.byteOffset = 16;
+            a_weights.normalized = false;
+            a_weights.componentType = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
+            a_weights.count = m_m2Geom->getM2Data()->vertices.size;
+            a_weights.type = TINYGLTF_TYPE_VEC4;
+
+            model.accessors.push_back(a_weights);
         }
         //Normal
         {
@@ -2081,6 +2113,8 @@ void M2Object::testExport() {
             p.attributes["POSITION"] =   accesorPosIndex;
             p.attributes["NORMAL"] =     accesorNormalIndex;
             p.attributes["TEXCOORD_0"] = accesorTexCoordIndex;
+            p.attributes["JOINTS_0"] =   accesorJointsIndex;
+            p.attributes["WEIGHTS_0"] =  accesorWeightsIndex;
             p.indices = m2Batch->skinSectionIndex + primitiveAccessorStart;
             p.mode = TINYGLTF_MODE_TRIANGLES;
 
@@ -2091,17 +2125,132 @@ void M2Object::testExport() {
     model.meshes.push_back(mesh);
     model.asset.version = "2.0";
 
-    tinygltf::Node node;
-    node.mesh = 0;
-    node.name = "scene";
 
-    model.nodes.push_back(node);
+    //Add skin to model
+    int skeletonIndex = model.nodes.size();
+    {
+        tinygltf::Skin skin;
+
+        std::vector<mathfu::mat4> inverBindMatrices;
+
+        auto &bones = *m_boneMasterData->getSkelData()->m_m2CompBones;
+        std::vector<int> boneStartIndexes;
+        std::vector<int> boneEndIndexes;
+
+        //Create skeleton
+         {
+             {
+                 tinygltf::Node node;
+                 node.mesh = -1;
+                 node.skin = -1;
+                 node.name = "Armature";
+                 model.nodes.push_back(node);
+             }
+            skin.skeleton = skeletonIndex;
+        }
+        for (int i = 0; i < bones.size; i++) {
+
+            auto bone = bones[i];
+//            mathfu::vec3 relativePivot = mathfu::vec3(bone->pivot);
+//            if (bone->parent_bone>-1) {
+//                relativePivot = mathfu::vec3(bone->pivot) - mathfu::vec3(bones[bone->parent_bone]->pivot);
+//            }
+
+            int bonePrefixNodeIndex = model.nodes.size();
+            {
+                tinygltf::Node node;
+                node.mesh = -1;
+                node.skin = -1;
+                node.name = "bone " + std::to_string(i) + " prefix";
+                node.translation = {
+                    bone->pivot.x,
+                    bone->pivot.y,
+                    bone->pivot.z,
+                };
+                model.nodes.push_back(node);
+                boneStartIndexes.push_back(bonePrefixNodeIndex);
+            }
+            int boneNodeIndex = model.nodes.size();
+            {
+                model.nodes[bonePrefixNodeIndex].children.push_back(boneNodeIndex);
+
+                tinygltf::Node node;
+                node.mesh = -1;
+                node.skin = -1;
+                node.name = "bone " + std::to_string(i);
+                model.nodes.push_back(node);
+
+                boneEndIndexes.push_back(boneNodeIndex);
+                skin.joints.push_back(boneNodeIndex);
+            }
+
+            if (bone->parent_bone>-1) {
+                model.nodes[boneEndIndexes[bone->parent_bone]].children.push_back(bonePrefixNodeIndex);
+            } else {
+                model.nodes[skeletonIndex].children.push_back(bonePrefixNodeIndex);
+            }
+
+            inverBindMatrices.push_back(mathfu::mat4::FromTranslationVector(-mathfu::vec3(bone->pivot)));
+        }
+        {
+            //Create inverseMat buffer
+            int inverseMatBufferIndex = model.buffers.size();
+            {
+                tinygltf::Buffer inverseMatBuffer;
+                inverseMatBuffer.name = "inverseMatBuffer";
+
+                inverseMatBuffer.data = std::vector<uint8_t>((uint8_t *) inverBindMatrices.data(),
+                                                             (uint8_t *) (inverBindMatrices.data() +
+                                                                          inverBindMatrices.size()));
+
+                model.buffers.push_back(inverseMatBuffer);
+            }
+            //Create inverseMat bufferView
+            int inverseMatBufferViewIndex = model.bufferViews.size();
+            {
+                tinygltf::BufferView inverseMatBufferView;
+                inverseMatBufferView.buffer = inverseMatBufferIndex;
+                inverseMatBufferView.byteOffset = 0;
+                inverseMatBufferView.byteLength = model.buffers[inverseMatBufferIndex].data.size();
+                inverseMatBufferView.byteStride = 0;
+                inverseMatBufferView.target = 0;
+                model.bufferViews.push_back(inverseMatBufferView);
+            }
+            //Create inverseMat accessor
+            {
+                int accesorInverseMatIndex = model.accessors.size();
+
+                tinygltf::Accessor a_inverseMat;
+                a_inverseMat.bufferView = inverseMatBufferViewIndex;
+                a_inverseMat.name = "inverseMatBuffer";
+                a_inverseMat.byteOffset = 0;
+                a_inverseMat.normalized = false;
+                a_inverseMat.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+                a_inverseMat.count = inverBindMatrices.size();
+                a_inverseMat.type = TINYGLTF_TYPE_MAT4;
+
+                model.accessors.push_back(a_inverseMat);
+                skin.inverseBindMatrices = accesorInverseMatIndex;
+            }
+        }
+        model.skins.push_back(skin);
+    }
 
     //Add scene
+    int rootSceneNodeIndex = model.nodes.size();
+    {
+        tinygltf::Node node;
+        node.mesh = 0;
+        node.skin = 0;
+        node.name = "scene";
+
+        model.nodes.push_back(node);
+    }
+
     {
         tinygltf::Scene scene;
         scene.name = "Fox";
-        scene.nodes = {0};
+        scene.nodes = {rootSceneNodeIndex, skeletonIndex};
         model.scenes.push_back(scene);
     }
     model.defaultScene = 0;
