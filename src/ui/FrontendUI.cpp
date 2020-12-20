@@ -513,6 +513,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("COT hourglass", ImVec2(-1, 0))) {
         openM2SceneByfdid(190850, replacementTextureFDids);
     }
+    if (ImGui::Button("Gryphon roost", ImVec2(-1, 0))) {
+        openM2SceneByfdid(198261, replacementTextureFDids);
+    }
     if (ImGui::Button("Northrend Human Inn", ImVec2(-1, 0))) {
             openWMOSceneByfdid(114998);
     }

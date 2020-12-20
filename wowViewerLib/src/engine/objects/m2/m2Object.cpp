@@ -2144,6 +2144,9 @@ void M2Object::testExport() {
                  node.mesh = -1;
                  node.skin = -1;
                  node.name = "Armature";
+                 auto quat = mathfu::quat::FromMatrix(MathHelper::RotationX(-M_PI_2));
+                 node.rotation = {quat[1], quat[2], quat[3], quat[0]};
+
                  model.nodes.push_back(node);
              }
             skin.skeleton = skeletonIndex;
@@ -2151,10 +2154,10 @@ void M2Object::testExport() {
         for (int i = 0; i < bones.size; i++) {
 
             auto bone = bones[i];
-//            mathfu::vec3 relativePivot = mathfu::vec3(bone->pivot);
-//            if (bone->parent_bone>-1) {
-//                relativePivot = mathfu::vec3(bone->pivot) - mathfu::vec3(bones[bone->parent_bone]->pivot);
-//            }
+            mathfu::vec3 relativePivot = mathfu::vec3(bone->pivot);
+            if (bone->parent_bone>-1) {
+                relativePivot = mathfu::vec3(bone->pivot) - mathfu::vec3(bones[bone->parent_bone]->pivot);
+            }
 
             int bonePrefixNodeIndex = model.nodes.size();
             {
@@ -2163,9 +2166,9 @@ void M2Object::testExport() {
                 node.skin = -1;
                 node.name = "bone " + std::to_string(i) + " prefix";
                 node.translation = {
-                    bone->pivot.x,
-                    bone->pivot.y,
-                    bone->pivot.z,
+                    relativePivot.x,
+                    relativePivot.y,
+                    relativePivot.z,
                 };
                 model.nodes.push_back(node);
                 boneStartIndexes.push_back(bonePrefixNodeIndex);
