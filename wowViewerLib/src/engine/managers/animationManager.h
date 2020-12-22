@@ -49,6 +49,7 @@ public:
 
     void resetCurrentAnimation();
     bool setAnimationId(int animationId, bool reset);
+    int getCurrentAnimationIndex();
     void setAnimationPercent(float percent);
     void update (
         animTime_t deltaTime,

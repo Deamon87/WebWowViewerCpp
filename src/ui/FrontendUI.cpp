@@ -19,6 +19,7 @@
 #include "../../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
 #include "../screenshots/screenshotMaker.h"
 #include "../persistance/HttpRequestProcessor.h"
+#include "../../wowViewerLib/src/exporters/gltfExporter/GLTFExporter.h"
 
 
 static const GBufferBinding imguiBindings[3] = {
@@ -411,8 +412,10 @@ void FrontendUI::showMainMenu() {
                 startExperimentCallback();
             }
             if (ImGui::MenuItem("Test export")) {
-                if (currentScene != nullptr)
-                    currentScene->testExport();
+                if (currentScene != nullptr) {
+                    std::unique_ptr<GLTFExporter> exporter;
+                    currentScene->exportScene(exporter.get());
+                }
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Make screenshot")) {

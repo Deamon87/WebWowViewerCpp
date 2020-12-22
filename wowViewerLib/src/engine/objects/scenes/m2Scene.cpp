@@ -171,6 +171,7 @@ void M2Scene::resetReplaceParticleColor() {
     m_m2Object->resetReplaceParticleColor();
 }
 
-void M2Scene::testExport() {
-    m_m2Object->testExport();
+void M2Scene::exportScene(IExporter* exporter) {
+    exporter->addM2Object(m_m2Object);
+
 }

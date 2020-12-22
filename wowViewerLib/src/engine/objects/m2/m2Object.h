@@ -26,6 +26,8 @@ class M2Object;
 
 class M2Object {
 public:
+    friend class IExporter;
+
     M2Object(HApiContainer api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
         m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox), m_overrideSkyModelMat(overrideSkyModelMat)
         {
@@ -207,6 +209,7 @@ public:
     }
 
     void setAnimationId(int animationId);
+    int getCurrentAnimationIndex();
     void resetCurrentAnimation();
     void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);
     void createPlacementMatrix(SMDoodadDef &def);

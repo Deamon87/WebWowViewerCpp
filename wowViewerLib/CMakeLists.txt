@@ -253,7 +253,7 @@ set(SOURCE_FILES
         src/engine/camera/m2TiedCamera.h
         src/engine/persistance/header/M2FileHeader.cpp
         src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp
-        src/engine/objects/m2/m2Helpers/CBoneMasterData.h)
+        src/engine/objects/m2/m2Helpers/CBoneMasterData.h src/exporters/IExporter.h src/exporters/gltfExporter/GLTFExporter.cpp src/exporters/gltfExporter/GLTFExporter.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp

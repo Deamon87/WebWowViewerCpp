@@ -1416,3 +1416,7 @@ void AnimationManager::calcAnimRepetition(AnimationStruct &animationStruct) {
             (seqRec->replay.max - seqRec->replay.min) * ((float)std::rand() / (float)RAND_MAX)
         ) - 1;
 }
+
+int AnimationManager::getCurrentAnimationIndex() {
+    return this->animationInfo.currentAnimation.animationIndex;
+}
