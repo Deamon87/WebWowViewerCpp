@@ -37,6 +37,10 @@ private:
     std::vector<int> boneEndIndexes;
     std::vector<mathfu::mat4> inverBindMatrices;
 
+    template<typename N>
+    void addTrack(tinygltf::Animation &animation, M2Track<N> &track, int animIndex, float animationLength,
+                  std::string trackName, int nodeIndex, int animationBufferIndex);
+
 public:
     GLTFExporter();
 
@@ -50,7 +54,7 @@ public:
 
     void createIBOAccessors(std::shared_ptr<M2Object> &m2Object);
 
-    void createGlTFBatches(std::shared_ptr<M2Object> &m2Object, tinygltf::Mesh mesh) ;
+    void createGlTFBatches(std::shared_ptr<M2Object> &m2Object, tinygltf::Mesh &mesh) ;
 
     void createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf::Skin &skin);
 };

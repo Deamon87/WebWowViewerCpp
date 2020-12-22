@@ -48,12 +48,31 @@ void GLTFExporter::addM2Object(std::shared_ptr<M2Object> &m2Object) {
 
     //Export current animation
     {
-        std::vector<char> animationBuffer;
+        int animationBufferIndex = model.buffers.size();
+        //Create animation buffer;
+        tinygltf::Buffer animationBuffer;
+        animationBuffer.name = "animationDataBuffer";
+
+        animationBuffer.data = std::vector<uint8_t>();
+        animationBuffer.data.reserve(1000);
+
+        model.buffers.push_back(animationBuffer);
+
+
+        tinygltf::Animation animation;
 
         auto animIndex = m2Object->getCurrentAnimationIndex();
-//        for (int i = 0;)
-    }
 
+        auto &bones = * getBoneMasterData(m2Object)->getSkelData()->m_m2CompBones;
+        auto &animations = * getBoneMasterData(m2Object)->getSkelData()->m_sequences;
+        auto animLen = animations.getElement(animIndex)->duration / 1000.f;
+        for (int i = 0; i < bones.size; i++) {
+            addTrack(animation, bones[i]->translation, animIndex, animLen,"translation", boneEndIndexes[i], animationBufferIndex);
+            addTrack(animation, bones[i]->rotation, animIndex, animLen,"rotation",boneEndIndexes[i], animationBufferIndex);
+            addTrack(animation, bones[i]->scaling, animIndex, animLen, "scale", boneEndIndexes[i],animationBufferIndex);
+        }
+        model.animations.push_back(animation);
+    }
 
     //Add scene
     int rootSceneNodeIndex = model.nodes.size();
@@ -75,6 +94,140 @@ void GLTFExporter::addM2Object(std::shared_ptr<M2Object> &m2Object) {
     model.defaultScene = 0;
 
     loader.WriteGltfSceneToFile(&model, "gltf/test.gltf");
+}
+
+template<typename N>
+void GLTFExporter::addTrack(tinygltf::Animation &animation, M2Track<N> &track, int animIndex, float animationLength,
+                            std::string trackName, int nodeIndex, int bufferIndex) {
+    std::vector<uint8_t> &buffer = model.buffers[bufferIndex].data;
+
+    if (track.timestamps.size == 0)
+        return;
+    if (track.values.size == 0)
+        return;
+
+    //1. Add time
+    int timesAccesor = -1;
+    {
+        auto &timesArr = *track.timestamps[animIndex];
+        if (timesArr.size == 0)
+            return;
+
+        auto timesInFloat = std::vector<float>(timesArr.size);
+        for (int i = 0; i < timesInFloat.size(); i++) {
+            timesInFloat[i] = (*timesArr[i]) / 1000.f;
+        }
+        //Copy values to buffer
+
+        int timesOffset = buffer.size();
+        buffer.resize(timesOffset + (timesInFloat.size() * sizeof(float)));
+        std::copy((uint8_t *)&timesInFloat[0], (uint8_t *)(&timesInFloat[0]+timesInFloat.size()), &buffer[timesOffset]);
+
+        //1.2 Create bufferView for times
+        int timesBufferView = model.bufferViews.size();
+        {
+            tinygltf::BufferView timesBufferView;
+            timesBufferView.buffer = bufferIndex;
+            timesBufferView.byteOffset = timesOffset;
+            timesBufferView.byteLength = timesInFloat.size() * sizeof(float);
+            timesBufferView.byteStride = 0;
+            timesBufferView.target = 0;
+            model.bufferViews.push_back(timesBufferView);
+        }
+
+        //1.3 Create accesor for times
+        timesAccesor = model.accessors.size();
+        {
+            tinygltf::Accessor a_times;
+            a_times.bufferView = timesBufferView;
+            a_times.name = "times_"+trackName + "_" + std::to_string(nodeIndex) + "_accessor";
+            a_times.byteOffset = 0;
+            a_times.normalized = false;
+            a_times.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+            a_times.count = timesArr.size;
+            a_times.type = TINYGLTF_TYPE_SCALAR;
+            a_times.minValues = {0};
+            a_times.maxValues = {animationLength};
+            model.accessors.push_back(a_times);
+        }
+    }
+
+    //2. Add values
+    int valuesAccesor = -1;
+    {
+        int valueOffset = -1;
+
+        auto &valueArr = *track.values[animIndex];
+        int accessor_Type = 0;
+        int valuesOffset = buffer.size();
+        int valuesSizeInBytes = 0;
+        if constexpr (std::is_same_v<N, Quat16>) {
+            accessor_Type = TINYGLTF_TYPE_VEC4;
+            auto valueVector = std::vector<mathfu::vec4_packed>(valueArr.size);
+
+            for (int i = 0; i < valueArr.size; i++) {
+                auto quat = convertHelper<Quat16, mathfu::quat>(*valueArr[i]);
+
+                valueVector[i] = {quat[1], quat[2], quat[3], quat[0]};
+            }
+
+            //Copy values to buffer
+            valuesSizeInBytes = valueVector.size() * sizeof(mathfu::vec4_packed);
+            buffer.resize(valuesOffset + valuesSizeInBytes);
+            std::copy((uint8_t *)&valueVector[0], (uint8_t *)(&valueVector[0] + valueVector.size()), &buffer[valuesOffset]);
+
+        } else if constexpr (std::is_same_v<N, C3Vector>) {
+            accessor_Type = TINYGLTF_TYPE_VEC3;
+            valuesSizeInBytes = valueArr.size * sizeof(C3Vector);
+            buffer.resize(valuesOffset + valuesSizeInBytes);
+            std::copy((uint8_t *)valueArr[0], (uint8_t *)(valueArr[0]+valueArr.size), &buffer[valuesOffset]);
+
+        } else {
+            assert("Oops!");
+        }
+
+        //2.2 Create bufferView for values
+        int valuesBufferView = model.bufferViews.size();
+        {
+            tinygltf::BufferView valueBufferView;
+            valueBufferView.buffer = bufferIndex;
+            valueBufferView.byteOffset = valuesOffset;
+            valueBufferView.byteLength = valuesSizeInBytes;
+            valueBufferView.byteStride = 0;
+            valueBufferView.target = 0;
+            model.bufferViews.push_back(valueBufferView);
+        }
+
+        //2.3 Create accesor for values
+        valuesAccesor = model.accessors.size();
+        {
+            tinygltf::Accessor a_values;
+            a_values.bufferView = valuesBufferView;
+            a_values.name = "value_"+trackName + "_" + std::to_string(nodeIndex) + "_accessor";
+            a_values.byteOffset = 0;
+            a_values.normalized = false;
+            a_values.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+            a_values.count = valueArr.size;
+            a_values.type = accessor_Type;
+
+            model.accessors.push_back(a_values);
+        }
+    }
+
+    //3. Create animation sampler
+    int animationSamplerInd = animation.samplers.size();
+    {
+        tinygltf::AnimationSampler sampler;
+        sampler.input = timesAccesor;
+        sampler.output = valuesAccesor;
+        sampler.interpolation = "LINEAR";
+        animation.samplers.push_back(sampler);
+    }
+    tinygltf::AnimationChannel animationChannel;
+    animationChannel.sampler = animationSamplerInd;
+    animationChannel.target_node = nodeIndex;
+    animationChannel.target_path = trackName;
+    animation.channels.push_back(animationChannel);
 }
 
 void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf::Skin &skin) {
@@ -146,7 +299,7 @@ void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf:
             tinygltf::Buffer inverseMatBuffer;
             inverseMatBuffer.name = "inverseMatBuffer";
 
-            inverseMatBuffer.data = std::__1::vector<uint8_t>((uint8_t *) inverBindMatrices.data(),
+            inverseMatBuffer.data = std::vector<uint8_t>((uint8_t *) inverBindMatrices.data(),
                                                               (uint8_t *) (inverBindMatrices.data() +
                                                                            inverBindMatrices.size()));
 
@@ -182,7 +335,7 @@ void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf:
     }
 }
 
-void GLTFExporter::createGlTFBatches(std::shared_ptr<M2Object> &m2Object, tinygltf::Mesh mesh) {
+void GLTFExporter::createGlTFBatches(std::shared_ptr<M2Object> &m2Object, tinygltf::Mesh &mesh) {
     auto skinProfile = getSkinGeom(m2Object)->getSkinData();
     M2Array<M2Batch> &batches = skinProfile->batches;
     for (int i = 0; i < batches.size; i++) {

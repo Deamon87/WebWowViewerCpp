@@ -413,7 +413,7 @@ void FrontendUI::showMainMenu() {
             }
             if (ImGui::MenuItem("Test export")) {
                 if (currentScene != nullptr) {
-                    std::unique_ptr<GLTFExporter> exporter;
+                    std::unique_ptr<GLTFExporter> exporter = std::make_unique<GLTFExporter>();
                     currentScene->exportScene(exporter.get());
                 }
             }
@@ -507,6 +507,12 @@ void FrontendUI::showQuickLinksDialog() {
             }
             openM2SceneByfdid(1029334, replacementTextureFDids);
     }
+    if (ImGui::Button("IGC Anduin", ImVec2(-1, 0))) {
+
+
+        openM2SceneByfdid(3849312, replacementTextureFDids);
+    }
+
     if (ImGui::Button("Fox", ImVec2(-1, 0))) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3071379;
@@ -1461,8 +1467,8 @@ void FrontendUI::startExperimentCallback() {
 
 void FrontendUI::createDefaultprocessor() {
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=2cbcbba39f2e60b17d89742ca575c730&cdnconfig=eee453d9035886d03a1308de041de88c&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=2cbcbba39f2e60b17d89742ca575c730&cdnconfig=eee453d9035886d03a1308de041de88c&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
@@ -1470,8 +1476,8 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
+    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+//    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
 ////        processor->setThreaded(false);
 ////
     m_processor->setThreaded(true);
