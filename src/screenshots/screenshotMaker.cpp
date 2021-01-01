@@ -210,7 +210,7 @@ void saveDataFromDrawStage(const HFrameBuffer& fb,
     }
 
 //    generateBitmapImage((unsigned char*) buffer.data(), screenshotHeight, screenshotWidth, screenshotWidth*4, (screenshotFileName+".bmp").c_str());
-    saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
-//    saveScreenshotLodePng(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
+    //saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
+    saveScreenshotLodePng(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
 
 }

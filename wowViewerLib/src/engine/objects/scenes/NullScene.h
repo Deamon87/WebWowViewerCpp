@@ -9,6 +9,7 @@
 
 class NullScene : public IScene {
 public:
+    ~NullScene() override {}
     virtual void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     virtual void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
     virtual void setAnimationId(int animationId) override {};

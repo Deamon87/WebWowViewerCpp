@@ -83,7 +83,7 @@ bool GBlpTextureVLK::postLoad() {
         return GTextureVLK::postLoad();
     } else {
         this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
-        m_texture = nullptr;
+//        m_texture = nullptr;
         return false;
     }
 }

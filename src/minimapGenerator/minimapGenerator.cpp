@@ -30,6 +30,8 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
     config->waterColorParams = EParameterSource::eConfig;
     config->useMinimapWaterColor = false;
     config->useCloseRiverColorForDB = true;
+//    config->adtTTLWithoutUpdate = 500; //0.5 sec
+    config->adtFreeStrategy = EFreeStrategy::eFrameBase; //
 
 
     mathfu::vec4 ambient = mathfu::vec4(0.7,0.7,0.7,1.0);
@@ -322,9 +324,9 @@ void MinimapGenerator::setupCameraData() {
     m_apiContainer->camera->tick(0);
 }
 
-
+const int waitQueueLen = 4;
 void MinimapGenerator::process() {
-    if (!m_processor->queuesNotEmpty() && !m_apiContainer->hDevice->wasTexturesUploaded()) {
+    if (m_processor->completedAllJobs() && !m_apiContainer->hDevice->wasTexturesUploaded()) {
         framesReady++;
     } else {
         framesReady = 0;
@@ -332,8 +334,8 @@ void MinimapGenerator::process() {
         return;
     }
 
-    if (framesReady < 3) {
-        if (drawStageStack.size() > 3)
+    if (framesReady < waitQueueLen) {
+        if (drawStageStack.size() > 5)
             drawStageStack.pop_back();
         return;
     }
@@ -355,7 +357,10 @@ void MinimapGenerator::process() {
 
     std::vector<uint8_t> buffer = std::vector<uint8_t>(m_width*m_height*4+1);
     saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
-    std::cout << "Saved "<<fileName << ": opaqueMeshes (" <<lastFrameIt->opaqueMeshes->meshes.size() << ") " << std::endl;
+    if (lastFrameIt->opaqueMeshes != nullptr) {
+        std::cout << "Saved " << fileName << ": opaqueMeshes (" << lastFrameIt->opaqueMeshes->meshes.size() << ") "
+                  << std::endl;
+    }
 
     m_y++;
     if (m_y >= m_chunkHeight + m_chunkStartY)  {
@@ -409,7 +414,7 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
         HFrameBuffer fb = nullptr;
         fb = m_apiContainer->hDevice->createFrameBuffer(m_width, m_height,
                                                         {ITextureFormat::itRGBA}, ITextureFormat::itDepth32,
-                                                        m_apiContainer->hDevice->getMaxSamplesCnt(), 4);
+                                                        m_apiContainer->hDevice->getMaxSamplesCnt(), waitQueueLen+1);
 
         std::vector<HDrawStage> drawStageDependencies = {};
 

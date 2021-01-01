@@ -748,7 +748,7 @@ void AdtObject::loadAlphaTextures() {
 
 
 void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
-    m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
+    if (m_freeStrategy != nullptr) m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
 
     if (!m_loaded) return;
 
@@ -828,13 +828,13 @@ void AdtObject::doPostLoad() {
     }
 }
 void AdtObject::update(animTime_t deltaTime ) {
-    m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
-
     m_lastDeltaTime = deltaTime;
     m_lastTimeOfUpdate = m_mapApi->getCurrentSceneTime();
 
 //    std::cout << "AdtObject::update finished called" << std::endl;
-    if (!m_loaded) return;
+    if (!m_loaded) {
+        return;
+    }
     if (adtWideBlockPS == nullptr) return;
 
     for (int i = 0; i < 256; i++) {
@@ -1160,8 +1160,6 @@ bool AdtObject::checkReferences(
                           int x, int y, int x_len, int y_len) {
     if (!m_loaded) return false;
 
-    m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
-
     for (int k = x; k < x+x_len; k++) {
         for (int l = y; l < y + y_len; l++) {
             int i = this->m_adtFile->mcnkMap[k][l];
@@ -1238,8 +1236,11 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
                                     mathfu::mat4 &lookAtMat4,
                                     std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                     std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
-
-    if (!this->m_loaded) return true;
+    if (!this->m_loaded) {
+        if (m_freeStrategy != nullptr)
+            m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
+        return true;
+    }
     bool atLeastOneIsDrawn = false;
 
     mostDetailedLod = 5;
@@ -1274,6 +1275,10 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
                         16, 16);
     }
 
+    if (atLeastOneIsDrawn) {
+        if (m_freeStrategy != nullptr)
+            m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
+    }
 
     return atLeastOneIsDrawn;
 }

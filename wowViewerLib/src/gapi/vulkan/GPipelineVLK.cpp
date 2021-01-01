@@ -42,7 +42,8 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     int8_t triCCW,
     EGxBlendEnum blendMode,
     int8_t depthCulling,
-    int8_t depthWrite) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
+    int8_t depthWrite,
+    bool invertZ) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
 
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
@@ -66,6 +67,7 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
         blendMode,
         depthCulling,
         depthWrite,
+        invertZ,
         vertexBindingDescriptions, vertexAttributeDescriptions);
 }
 
@@ -83,6 +85,7 @@ void GPipelineVLK::createPipeline(
         EGxBlendEnum m_blendMode,
         int8_t m_depthCulling,
         int8_t m_depthWrite,
+        bool invertZ,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
@@ -203,7 +206,7 @@ void GPipelineVLK::createPipeline(
     depthStencil.flags = 0;
     depthStencil.depthTestEnable = m_depthCulling ? VK_TRUE : VK_FALSE;
     depthStencil.depthWriteEnable = m_depthWrite ? VK_TRUE : VK_FALSE;
-    depthStencil.depthCompareOp = m_device.getInvertZ() ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
+    depthStencil.depthCompareOp = invertZ ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 

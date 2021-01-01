@@ -372,7 +372,7 @@ inline void ImGui::FileBrowser::Display()
                         selectedFilename_ = rsc.name;
                         if(!(flags_ & ImGuiFileBrowserFlags_SelectDirectory))
                             std::strncpy(inputNameBuf_->data(), selectedFilename_.c_str(),
-                                         std::min(std::strlen(selectedFilename_.c_str()), INPUT_NAME_BUF_SIZE));
+                                         std::min<int>(std::strlen(selectedFilename_.c_str()), INPUT_NAME_BUF_SIZE));
                     }
                 }
             }

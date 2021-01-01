@@ -5,11 +5,16 @@
 #ifndef AWEBWOWVIEWERCPP_DRAWSTAGE_H
 #define AWEBWOWVIEWERCPP_DRAWSTAGE_H
 
+#include <memory>
+
 struct DrawStage;
 struct CameraMatrices;
 struct ViewPortDimensions;
 
+struct FrameDepedantData;
+
 typedef std::shared_ptr<DrawStage> HDrawStage;
+typedef std::shared_ptr<FrameDepedantData> HFrameDepedantData;
 
 #include <memory>
 #ifndef M_PI
@@ -80,7 +85,7 @@ struct FrameDepedantData {
     mathfu::vec4 closeOceanColor = mathfu::vec4(0,0,0,0);
     mathfu::vec4 farOceanColor = mathfu::vec4(0,0,0,0);
 };
-typedef std::shared_ptr<FrameDepedantData> HFrameDepedantData;
+
 
 struct DrawStage {
     HCameraMatrices matricesForRendering;

@@ -145,7 +145,8 @@ public:
                                 int8_t triCCW,
                                 EGxBlendEnum blendMode,
                                 int8_t depthCulling,
-                                int8_t depthWrite);
+                                int8_t depthWrite,
+                                bool invertZ);
 
     std::shared_ptr<GRenderPassVLK> getRenderPass(std::vector<ITextureFormat> textureAttachments,
                                                   ITextureFormat depthAttachment,
@@ -304,6 +305,7 @@ protected:
         EGxBlendEnum blendMode;
         int8_t depthCulling;
         int8_t depthWrite;
+        bool invertZ;
 
 
         bool operator==(const PipelineCacheRecord &other) const {
@@ -315,7 +317,8 @@ protected:
                 (triCCW == other.triCCW) &&
                 (blendMode == other.blendMode) &&
                 (depthCulling == other.depthCulling) &&
-                (depthWrite == other.depthWrite);
+                (depthWrite == other.depthWrite) &&
+                (invertZ == other.invertZ);
 
         };
     };

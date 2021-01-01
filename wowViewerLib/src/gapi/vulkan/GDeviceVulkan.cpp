@@ -329,6 +329,7 @@ void GDeviceVLK::createSwapChain() {
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.pNext = nullptr;
     createInfo.surface = vkSurface;
+    createInfo.flags = 0;
 
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
@@ -1524,7 +1525,8 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
                                         int8_t triCCW,
                                         EGxBlendEnum blendMode,
                                         int8_t depthCulling,
-                                        int8_t depthWrite) {
+                                        int8_t depthWrite,
+                                        bool invertZ) {
 
     PipelineCacheRecord pipelineCacheRecord;
     pipelineCacheRecord.shader = shader;
@@ -1535,6 +1537,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
     pipelineCacheRecord.blendMode = blendMode;
     pipelineCacheRecord.depthCulling = depthCulling;
     pipelineCacheRecord.depthWrite = depthWrite;
+    pipelineCacheRecord.invertZ = invertZ;
 
     auto i = loadedPipeLines.find(pipelineCacheRecord);
     if (i != loadedPipeLines.end()) {
@@ -1548,7 +1551,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
     std::shared_ptr<GPipelineVLK> hgPipeline;
     hgPipeline.reset(new GPipelineVLK(*this, m_bindings, renderPass,
                                       shader, element, backFaceCulling, triCCW, blendMode,
-                                      depthCulling, depthWrite));
+                                      depthCulling, depthWrite, invertZ));
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;
@@ -1603,7 +1606,7 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
 
         std::vector<VkClearValue> clearValues = renderPass->produceClearColorVec(
             { clearColor[0], clearColor[1], clearColor[2] },
-            getInvertZ() ? 0.0f : 1.0f
+            drawStage->invertedZ ? 0.0f : 1.0f
         );
 
         VkRenderPassBeginInfo renderPassInfo = {};
@@ -1630,7 +1633,7 @@ void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
         usualViewport.minDepth = 0;
         usualViewport.maxDepth = 0.990f;
     } else {
-        usualViewport.minDepth = 0.06;
+        usualViewport.minDepth = 0.06f;
         usualViewport.maxDepth = 1.0f;
     }
 
@@ -1704,33 +1707,62 @@ bool GDeviceVLK::drawMeshesInternal(
     VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
     int8_t lastIsScissorsEnabled = -1;
     std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
-    uint32_t dynamicOffset[7] = {};
+//    uint32_t dynamicOffset[7] = {};
 
-    auto iMeshes = meshes->meshes;
+    auto &iMeshes = meshes->meshes;
+
+    auto dynamicOffsetPerMesh = std::vector<std::array<uint32_t, 7>>(iMeshes.size());
+    auto uboIndPerMesh = std::vector<uint32_t>(iMeshes.size());
+
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0, iMeshes.size(), 500),
+    [&](tbb::blocked_range<size_t> r) {
+      for (size_t i = r.begin(); i != r.end(); ++i) {
+          auto *meshVLK = ((GMeshVLK *)iMeshes[i].get());
+          auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
+          uint32_t uboInd = 0;
+          auto *uboB = drawStage->sceneWideBlockVSPSChunk.get();
+          if (uboB) {
+              dynamicOffsetPerMesh[i][uboInd++] = (uboB)->getOffset();
+          }
+
+          for (int k = 1; k < 6; k++) {
+              if (shaderVLK->hasBondUBO[k]) {
+                  auto *uboB = (meshVLK->getUniformBuffer(k).get());
+                  if (uboB) {
+                      dynamicOffsetPerMesh[i][uboInd++] = (uboB)->getOffset();
+                  }
+              }
+          }
+          uboIndPerMesh[i] = uboInd;
+      }
+    }, tbb::simple_partitioner());
 
     bool atLeastOneDrawcall = false;
+    VkDeviceSize offsets[] = {0};
 
-    for (auto &mesh: iMeshes) {
-        auto *meshVLK = ((GMeshVLK *)mesh.get());
+    for (int i = 0; i < iMeshes.size(); i++) {
+        auto *meshVLK = ((GMeshVLK *)iMeshes[i].get());
+//        auto *meshVLK = ((GMeshVLK *)mesh.get());
         auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
         auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
 
-        uint32_t uboInd = 0;
-        auto *uboB = drawStage->sceneWideBlockVSPSChunk.get();
-        if (uboB) {
-            dynamicOffset[uboInd++] = (uboB)->getOffset();
-        }
+//        uint32_t uboInd = 0;
+//        auto *uboB = drawStage->sceneWideBlockVSPSChunk.get();
+//        if (uboB) {
+//            dynamicOffset[uboInd++] = (uboB)->getOffset();
+//        }
+//
+//        for (int k = 1; k < 6; k++) {
+//            if (shaderVLK->hasBondUBO[k]) {
+//                auto *uboB = (meshVLK->getUniformBuffer(k).get());
+//                if (uboB) {
+//                    dynamicOffset[uboInd++] = (uboB)->getOffset();
+//                }
+//            }
+//        }
 
-        for (int k = 1; k < 6; k++) {
-            if (shaderVLK->hasBondUBO[k]) {
-                auto *uboB = (meshVLK->getUniformBuffer(k).get());
-                if (uboB) {
-                    dynamicOffset[uboInd++] = (uboB)->getOffset();
-                }
-            }
-        }
-
-        std::shared_ptr<GPipelineVLK> h_pipeLine = meshVLK->getPipeLineForRenderPass(renderPass);
+        std::shared_ptr<GPipelineVLK> h_pipeLine = meshVLK->getPipeLineForRenderPass(renderPass, drawStage->invertedZ);
 
         if (lastPipeline != h_pipeLine) {
             vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -1766,7 +1798,7 @@ bool GDeviceVLK::drawMeshesInternal(
 
         auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
         auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
-        VkDeviceSize offsets[] = {0};
+
 
         if (lastIndexBuffer != indexBuffer) {
             vkCmdBindIndexBuffer(commandBufferForFilling, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
@@ -1787,11 +1819,11 @@ bool GDeviceVLK::drawMeshesInternal(
 
         //UBO
         vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                h_pipeLine->pipelineLayout, 0, 1, &uboDescSet, uboInd, &dynamicOffset[0]);
+                                h_pipeLine->pipelineLayout, 0, 1, &uboDescSet, uboIndPerMesh[i], dynamicOffsetPerMesh[i].data());
 
         //Image
         vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                h_pipeLine->pipelineLayout, 1, 1, &imageDescSet, 0, 0);
+                                h_pipeLine->pipelineLayout, 1, 1, &imageDescSet, 0, nullptr);
 
         vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
     }

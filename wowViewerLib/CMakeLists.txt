@@ -253,7 +253,11 @@ set(SOURCE_FILES
         src/engine/camera/m2TiedCamera.h
         src/engine/persistance/header/M2FileHeader.cpp
         src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp
-        src/engine/objects/m2/m2Helpers/CBoneMasterData.h src/exporters/IExporter.h src/exporters/gltfExporter/GLTFExporter.cpp src/exporters/gltfExporter/GLTFExporter.h)
+        src/engine/objects/m2/m2Helpers/CBoneMasterData.h
+        src/exporters/IExporter.h
+        src/exporters/gltfExporter/GLTFExporter.cpp
+        src/exporters/gltfExporter/GLTFExporter.h
+        src/engine/objects/iScene.cpp)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -408,7 +412,15 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GWaterShaderPermutation.cpp
             src/gapi/vulkan/shaders/GWaterShaderPermutation.h
             src/gapi/vulkan/shaders/GSkyConusShaderVLK.cpp
-            src/gapi/vulkan/shaders/GSkyConusShaderVLK.h src/gapi/vulkan/GFrameBufferVLK.cpp src/gapi/vulkan/GFrameBufferVLK.h src/gapi/vulkan/shaders/GFFXgauss4VLK.cpp src/gapi/vulkan/shaders/GFFXgauss4VLK.h src/gapi/vulkan/shaders/GFFXGlowVLK.cpp src/gapi/vulkan/shaders/GFFXGlowVLK.h src/gapi/vulkan/GRenderPassVLK.cpp src/gapi/vulkan/GRenderPassVLK.h)
+            src/gapi/vulkan/shaders/GSkyConusShaderVLK.h
+            src/gapi/vulkan/GFrameBufferVLK.cpp
+            src/gapi/vulkan/GFrameBufferVLK.h
+            src/gapi/vulkan/shaders/GFFXgauss4VLK.cpp
+            src/gapi/vulkan/shaders/GFFXgauss4VLK.h
+            src/gapi/vulkan/shaders/GFFXGlowVLK.cpp
+            src/gapi/vulkan/shaders/GFFXGlowVLK.h
+            src/gapi/vulkan/GRenderPassVLK.cpp
+            src/gapi/vulkan/GRenderPassVLK.h )
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
@@ -496,7 +508,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (0)
+if (1)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)

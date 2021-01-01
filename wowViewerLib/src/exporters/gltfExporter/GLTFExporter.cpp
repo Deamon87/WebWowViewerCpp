@@ -474,7 +474,7 @@ void GLTFExporter::createVboAndIbo(std::shared_ptr<M2Object> &m2Object) {
             modelVBO.name = "vbo";
 
             auto firstVertex = m2Data->vertices.getElement(0);
-            modelVBO.data = std::__1::vector<uint8_t>((uint8_t *) firstVertex,
+            modelVBO.data = std::vector<uint8_t>((uint8_t *) firstVertex,
                                                       (uint8_t *) (firstVertex + m2Data->vertices.size));
 
             model.buffers.push_back(modelVBO);
@@ -488,7 +488,7 @@ void GLTFExporter::createVboAndIbo(std::shared_ptr<M2Object> &m2Object) {
 
             auto indicies = getSkinGeom(m2Object)->generateIndexBuffer();
 
-            modelIBO.data = std::__1::vector<uint8_t>((uint8_t *) indicies.data(),
+            modelIBO.data = std::vector<uint8_t>((uint8_t *) indicies.data(),
                                                       (uint8_t *) (indicies.data() + indicies.size()));
 
             iboSize = modelIBO.data.size();

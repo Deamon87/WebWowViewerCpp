@@ -36,7 +36,7 @@ public:
     float getSortDistance() override { return m_sortDistance; };
 
 
-    std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass);
+    std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass, bool invertedZ);
 
 protected:
     MeshType m_meshType;

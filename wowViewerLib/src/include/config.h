@@ -15,6 +15,11 @@ enum class EParameterSource: char {
     eM2
 };
 
+enum class EFreeStrategy : char {
+    eTimeBased,
+    eFrameBase
+};
+
 class Config {
 public:
     Config() {
@@ -122,6 +127,11 @@ public:
 
     EParameterSource glowSource = EParameterSource::eDatabase;
     float currentGlow = 0;
+
+    //Culling preferences
+    double adtTTLWithoutUpdate = 10000; //10 secs by default
+    double adtFTLWithoutUpdate = 4; //25 frames by default
+    EFreeStrategy adtFreeStrategy = EFreeStrategy::eTimeBased;
 
 
     //Stuff to display in UI

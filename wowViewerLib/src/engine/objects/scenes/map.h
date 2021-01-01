@@ -25,7 +25,7 @@ enum class SceneMode {
    smWMO
 };
 
-class Map : public IMapApi, public IScene {
+class Map : public IScene, public IMapApi {
 private:
     void initMapTiles() {
         for (auto &x : mapTiles) {
@@ -47,7 +47,6 @@ protected:
     SceneMode m_sceneMode = SceneMode::smMap;
 
     float m_currentTime = 0;
-    float m_lastTimeAdtCleanup = 0;
 
     bool m_lockedMap = false;
 
@@ -119,9 +118,12 @@ protected:
     std::vector<mapInnerZoneLightRecord> m_zoneLights;
     void loadZoneLights();
 
+    FreeStrategy adtFreeLambda;
+    FreeStrategy zeroStateLambda;
 public:
 
     explicit Map() : taskScheduler(10){
+        createAdtFreeLamdas();
     }
 
     explicit Map(HApiContainer api, int mapId, std::string mapName) : taskScheduler(10) {
@@ -129,6 +131,7 @@ public:
 
         m_mapId = mapId; m_api = api; this->mapName = mapName;
         m_sceneMode = SceneMode::smMap;
+        createAdtFreeLamdas();
 
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
@@ -138,6 +141,7 @@ public:
         m_wdlObject->setMapApi(this);
 
         loadZoneLights();
+
     };
 
     explicit Map(HApiContainer api, int mapId, int wdtFileDataId) {
@@ -145,6 +149,8 @@ public:
 
         m_mapId = mapId; m_api = api; mapName = "";
         m_sceneMode = SceneMode::smMap;
+
+        createAdtFreeLamdas();
 
         m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
 
@@ -156,6 +162,8 @@ public:
 
         m_mapId = 0; m_api = api; this->mapName = mapName;
         m_sceneMode = SceneMode::smMap;
+
+        createAdtFreeLamdas();
 
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
@@ -173,8 +181,8 @@ public:
     };
 
     ~Map() override {
-
-	} ;
+        std::cout << "Map destroyed " << std::endl;
+	};
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
@@ -208,6 +216,8 @@ private:
 
 
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults) override;
+
+    void createAdtFreeLamdas();
 };
 
 #endif //WEBWOWVIEWERCPP_MAP_H

@@ -29,17 +29,19 @@ protected:
 protected:
     IFileRequester *m_fileRequester = nullptr;
 
-    virtual void processFileRequest(std::string &fileName, CacheHolderType holderType) = 0;
+    virtual void processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) = 0;
 public:
     void setFileRequester(IFileRequester *fileRequester) {
         m_fileRequester = fileRequester;
     }
 
+    void requestFile(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) override;
 private:
     class RequestStruct {
     public:
         std::string fileName;
         CacheHolderType holderType;
+        std::weak_ptr<PersistentFile> s_file;
     };
 
     class ResultStruct {
@@ -66,11 +68,10 @@ private:
 
     int currentlyProcessing = 0;
 public:
-    void processResults(int limit);
     void processRequests(bool calledFromThread);
 
-    bool queuesNotEmpty() {
-        return (!m_requestQueue.empty()) || (!m_resultQueue.empty());
+    bool completedAllJobs() {
+        return (m_requestQueue.empty()) && (m_resultQueue.empty()) && (toBeProcessed == 0);
     };
 
     bool getThreaded() {
@@ -86,9 +87,8 @@ public:
     }
 
 protected:
-    void addRequest (std::string &fileName, CacheHolderType holderType);
-
-    void provideResult(std::string &fileName, HFileContent content, CacheHolderType holderType);
+    std::atomic<int> toBeProcessed = 0;
+    void processResult( std::shared_ptr<PersistentFile> s_file, HFileContent content, const std::string &fileName);
 };
 
 typedef std::shared_ptr<RequestProcessor> HRequestProcessor;

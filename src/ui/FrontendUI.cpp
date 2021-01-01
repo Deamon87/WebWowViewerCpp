@@ -20,6 +20,7 @@
 #include "../screenshots/screenshotMaker.h"
 #include "../persistance/HttpRequestProcessor.h"
 #include "../../wowViewerLib/src/exporters/gltfExporter/GLTFExporter.h"
+#include "../../wowViewerLib/src/engine/objects/scenes/NullScene.h"
 
 
 static const GBufferBinding imguiBindings[3] = {
@@ -1335,7 +1336,7 @@ void FrontendUI::unloadScene() {
     if (m_api->cacheStorage) {
         m_api->cacheStorage->actuallDropCache();
     }
-    currentScene = nullptr;
+    currentScene = std::make_shared<NullScene>();
 }
 
 int FrontendUI::getCameraNumCallback() {
@@ -1394,15 +1395,15 @@ void FrontendUI::startExperimentCallback() {
 //            ScenarioOrientation::so45DegreeTick0,
 //            "shadowlands/orient0"
 //        }
-//        {
-//            1643,
-//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-//            mathfu::vec2(291 , 647 ),
-//            mathfu::vec2(2550, 2895),
-//            ScenarioOrientation::so45DegreeTick0,
-//            "kultiras/orient0"
-//        }
+        {
+            1643,
+            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+            mathfu::vec2(291 , 647 ),
+            mathfu::vec2(2550, 2895),
+            ScenarioOrientation::so45DegreeTick0,
+            "kultiras/orient0"
+        },
 //        {
 //            530,
 //            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
@@ -1476,8 +1477,8 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-//    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
+//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
 ////        processor->setThreaded(false);
 ////
     m_processor->setThreaded(true);

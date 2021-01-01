@@ -1166,7 +1166,9 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
 //    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
 
 
-
+        //TODO: IN minimap generation and in ORTHO, this approach forces to load 10x10 ADTs, which is absurd.
+        //TODO: For Ortho, it seems it would be mandatory to precalc bounding volumes for each ADT from Top-Bottom view,
+        //TODO: put them into Octotree structure and query that structure here
         for (int i = 0; i < frustumPoints.size(); i++) {
             mathfu::vec3 &frustumPoint = frustumPoints[i];
 
@@ -1228,8 +1230,9 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
                             adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
                         }
 
-
                         adtObject->setMapApi(this);
+                        adtObject->setFreeStrategy(zeroStateLambda);
+
                         mapTiles[i][j] = adtObject;
                     }
                 }
@@ -1238,6 +1241,38 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
             wmoCandidates.push_back(wmoMap);
         }
     }
+}
+
+void Map::createAdtFreeLamdas() {
+    FreeStrategy lamda;
+    auto *config = m_api->getConfig();
+    if (m_api->getConfig()->adtFreeStrategy == EFreeStrategy::eTimeBased) {
+        int l_currentTime = 0;
+        lamda = [l_currentTime, config](bool doCheck, bool doUpdate, animTime_t currentTime) mutable -> bool {
+            if (doCheck) {
+                return (currentTime - l_currentTime) > config->adtTTLWithoutUpdate;
+            }
+            if (doUpdate) {
+                l_currentTime = currentTime;
+            }
+            return false;
+        };
+    } else if (m_api->getConfig()->adtFreeStrategy == EFreeStrategy::eFrameBase) {
+        int l_currentFrame = 0;
+        auto l_hDevice = m_api->hDevice;
+        lamda = [l_currentFrame, config, l_hDevice](bool doCheck, bool doUpdate, animTime_t currentTime) mutable -> bool {
+            if (doCheck) {
+                return (l_hDevice->getFrameNumber() - l_currentFrame) > config->adtFTLWithoutUpdate;
+            }
+            if (doUpdate) {
+                l_currentFrame = l_hDevice->getFrameNumber();
+            }
+            return false;
+        };
+    }
+    adtFreeLambda = lamda;
+    zeroStateLambda = lamda;
+
 }
 
 void Map::doPostLoad(HCullStage cullStage) {
@@ -1383,18 +1418,20 @@ void Map::update(HUpdateStage updateStage) {
     };
 
     //Cleanup ADT every 10 seconds
-    if (this->m_currentTime + updateStage->delta- this->m_lastTimeAdtCleanup > 10000) {
+    if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
         for (int i = 0; i < 64; i++) {
             for (int j = 0; j < 64; j++) {
                 auto adtObj = mapTiles[i][j];
                 //Free obj, if it was unused for 10 secs
-                if (adtObj != nullptr && ((this->m_currentTime - adtObj->getLastTimeOfUpdate()) > 10000)) {
+                if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
+//                    std::cout << "try to free adtObj" << std::endl;
+
                     mapTiles[i][j] = nullptr;
                 }
             }
         }
 
-        this->m_lastTimeAdtCleanup = this->m_currentTime;
+        adtFreeLambda(false, true, this->m_currentTime + updateStage->delta);
     }
     this->m_currentTime += updateStage->delta;
 
@@ -1533,7 +1570,8 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
     auto cullStage = updateStage->cullResult;
     auto fdd = cullStage->frameDepedantData;
 
-    if ( !m_suppressDrawingSky && (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit)) {
+    if (m_api->getConfig()->renderSkyDom && !m_suppressDrawingSky &&
+        (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit)) {
         if (fdd->overrideValuesWithFinalFog) {
             if (skyMesh0x4Sky != nullptr) {
                 transparentMeshes.push_back(skyMesh0x4Sky);

@@ -21,16 +21,23 @@ class M2Object;
 #include "../iMapApi.h"
 #include "../ViewsObjects.h"
 
+typedef std::function<bool(bool doCheck, bool doUpdate, animTime_t currentTime)> FreeStrategy;
 
 class AdtObject {
 public:
     AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
     AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
-    ~AdtObject() = default;
+    ~AdtObject() {
+//        std::cout << "~AdtObject called" << std::endl;
+    };
+
+    void setFreeStrategy(FreeStrategy &freeStrat) {
+        m_freeStrategy = freeStrat;
+        m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
+    }
 
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
-        m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
     }
 
     void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
@@ -61,11 +68,12 @@ public:
                     std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates, std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
                     int x, int y, int x_len, int y_len);
 
-    animTime_t getLastTimeOfUpdate() {
-        return m_lastTimeOfUpdateOrRefCheck;
+    FreeStrategy &getFreeStrategy() {
+        return m_freeStrategy;
     }
 private:
-    animTime_t m_lastTimeOfUpdateOrRefCheck = 0;
+    FreeStrategy m_freeStrategy;
+
     animTime_t m_lastTimeOfUpdate = 0;
     animTime_t m_lastDeltaTime = 0;
 

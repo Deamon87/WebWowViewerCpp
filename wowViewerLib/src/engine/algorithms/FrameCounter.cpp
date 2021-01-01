@@ -24,7 +24,8 @@ void FrameCounter::endMeasurement(const std::string &source) {
     m_accomulatedTimeInterval += time_taken;
 //
     //More than 1 second elapsed
-    if (m_accomulatedTimeInterval > 1000) {
+//    if (m_accomulatedTimeInterval > 1000) {
+    if (frameCounter > 10) {
         timePerFrame = m_accomulatedTimeInterval / frameCounter;
 //
 

@@ -53,7 +53,6 @@ JNIEXPORT void JNICALL
 Java_livingwallpaper_wow_deamon87_wowlivingwallpaper_NativeWoWLib_draw(JNIEnv *env, jobject thiz,
                                                                        jdouble deltaTime) {
     processor->processRequests(false);
-    processor->processResults(10);
 
     if (windowSizeChanged) {
         scene->setScreenSize(canvWidth, canvHeight);

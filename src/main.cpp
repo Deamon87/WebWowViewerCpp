@@ -31,11 +31,7 @@
 #include <csignal>
 #include <exception>
 #include <GLFW/glfw3.h>
-//#include "persistance/ZipRequestProcessor.h"
-#include "persistance/CascRequestProcessor.h"
-#include "persistance/HttpZipRequestProcessor.h"
-//#include "persistance/MpqRequestProcessor.h"
-#include "persistance/HttpRequestProcessor.h"
+
 
 
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
@@ -453,7 +449,6 @@ int main(){
                 if (!processor->getThreaded()) {
                     processor->processRequests(false);
                 }
-                processor->processResults(10);
             }
         }
 
