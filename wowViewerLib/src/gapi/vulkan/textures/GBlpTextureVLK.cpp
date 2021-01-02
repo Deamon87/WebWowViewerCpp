@@ -16,7 +16,7 @@ GBlpTextureVLK::~GBlpTextureVLK() {
 
 
 static int texturesUploaded = 0;
-void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 //    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
 
     VkFormat textureFormatGPU;
@@ -48,10 +48,12 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
     }
 //    }
 
+    auto &mipmaps = *hmipmaps;
+
     /* S3TC is not supported on mobile platforms */
     bool compressedTextSupported = m_device.getIsCompressedTexturesSupported();
     if (!compressedTextSupported && textureFormat !=  TextureFormat::BGRA) {
-        this->decompressAndUpload(textureFormat, mipmaps);
+        this->decompressAndUpload(textureFormat, hmipmaps);
         return;
     }
 
@@ -65,7 +67,7 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
         std::copy(&mipmaps[i].texture[0], &mipmaps[i].texture[0]+mipmaps[i].texture.size(), std::back_inserter(unitedBuffer));
     }
 
-    createTexture(mipmaps, textureFormatGPU, unitedBuffer);
+    createTexture(hmipmaps, textureFormatGPU, unitedBuffer);
 }
 
 //bool GBlpTextureVLK::getIsLoaded() {
@@ -89,6 +91,6 @@ bool GBlpTextureVLK::postLoad() {
 }
 
 
-void GBlpTextureVLK::decompressAndUpload(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+void GBlpTextureVLK::decompressAndUpload(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 
 }

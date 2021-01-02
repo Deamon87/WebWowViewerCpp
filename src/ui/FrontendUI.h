@@ -170,6 +170,8 @@ private:
     int screenShotHeight = 100;
     int screenshotFrame = -1;
 
+    std::shared_ptr<IExporter> exporter;
+    int exporterFramesReady = 0;
 
    std::shared_ptr<MapConstructionWindow> m_mapConstructionWindow = nullptr;
 

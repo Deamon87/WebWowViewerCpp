@@ -43,7 +43,7 @@ void GBlpTextureGL33::unbind() {
 }
 
 static int texturesUploaded = 0;
-void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 //    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
 
     GLuint textureGPUFormat = 0;
@@ -92,6 +92,7 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const Mipmaps
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
     bool skipGenerationOfMipMaps = true;
+    auto &mipmaps = *hmipmaps;
 
     logGLError
     bool generateMipMaps = false;

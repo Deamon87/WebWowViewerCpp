@@ -52,7 +52,7 @@ TextureFormat getTextureType(BlpFile *blpFile) {
     }
     return textureFormat;
 }
-void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &mipmaps) {
+HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat) {
     int32_t width = blpFile->width;
     int32_t height = blpFile->height;
 
@@ -69,8 +69,9 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
         if ((blpFile->lengths[i] == 0) || (blpFile->offsets[i] == 0)) break;
         mipmapsCnt++;
     }
+    auto mipmaps = std::make_shared<std::vector<mipmapStruct_t>>();
 
-    mipmaps.resize(mipmapsCnt);
+    mipmaps->resize(mipmapsCnt);
 
     for (int i = 0; i < mipmapsCnt; i++) {
         if ((blpFile->lengths[i] == 0) || (blpFile->offsets[i] == 0)) break;
@@ -88,7 +89,7 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
 
 //        if (minSize == validSize) break;
 
-        mipmapStruct_t &mipmapStruct = mipmaps[i];
+        mipmapStruct_t &mipmapStruct = (*mipmaps)[i];
         mipmapStruct.height = height;
         mipmapStruct.width = width;
         mipmapStruct.texture.resize(validSize, 0);
@@ -118,13 +119,12 @@ void parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, MipmapsVector &
 
         }
 
-        
-
         height = height / 2;
         width = width / 2;
         height = (height == 0) ? 1 : height;
         width = (width == 0) ? 1 : width;
     }
+    return mipmaps;
 }
 
 void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
@@ -138,7 +138,7 @@ void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
 
     /* Load texture by mipmaps */
     assert(this->m_textureFormat != TextureFormat::None);
-    parseMipmaps(pBlpFile, m_textureFormat, m_mipmaps);
+    m_mipmaps = parseMipmaps(pBlpFile, m_textureFormat);
 
 //    /* Load texture into GL memory */
 //    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);

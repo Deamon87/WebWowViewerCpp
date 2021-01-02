@@ -30,6 +30,10 @@ public:
         m_modelFileId = fileDataId;
     };
 
+    std::string getName() {
+        return m_modelName;
+    }
+
     void process(HFileContent m2File, const std::string &fileName) override;
     HGVertexBuffer getVBO(IDevice &device);
     HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);

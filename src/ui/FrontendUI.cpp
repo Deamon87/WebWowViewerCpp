@@ -19,7 +19,7 @@
 #include "../../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
 #include "../screenshots/screenshotMaker.h"
 #include "../persistance/HttpRequestProcessor.h"
-#include "../../wowViewerLib/src/exporters/gltfExporter/GLTFExporter.h"
+#include "../exporters/gltfExporter/GLTFExporter.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/NullScene.h"
 
 
@@ -414,8 +414,9 @@ void FrontendUI::showMainMenu() {
             }
             if (ImGui::MenuItem("Test export")) {
                 if (currentScene != nullptr) {
-                    std::unique_ptr<GLTFExporter> exporter = std::make_unique<GLTFExporter>();
+                    exporter = std::make_shared<GLTFExporter>("./gltf/");
                     currentScene->exportScene(exporter.get());
+                    exporterFramesReady = 0;
                 }
             }
             ImGui::Separator();
@@ -924,6 +925,15 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
         return;
     }
 
+    if (exporter != nullptr) {
+        if (m_processor->completedAllJobs() && !m_api->hDevice->wasTexturesUploaded()) {
+            exporterFramesReady++;
+        }
+        if (exporterFramesReady > 5) {
+            exporter->saveToFile("model.gltf");
+            exporter = nullptr;
+        }
+    }
 
     lastWidth = resultDrawStage->viewPortDimensions.maxs[0];
     lastHeight = resultDrawStage->viewPortDimensions.maxs[1];
@@ -1477,8 +1487,8 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
+    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+//    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
 ////        processor->setThreaded(false);
 ////
     m_processor->setThreaded(true);

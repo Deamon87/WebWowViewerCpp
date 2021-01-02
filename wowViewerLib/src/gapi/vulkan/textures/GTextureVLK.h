@@ -24,14 +24,14 @@ protected:
                          VkSampleCountFlagBits numSamples,
                          int vulkanMipMapCount,
                          VkImageUsageFlags imageUsageFlags);
-    void createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
+    void createTexture(const HMipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
 public:
     ~GTextureVLK() override;
 
     void readData(std::vector<uint8_t> &buff) override {};
     void loadData(int width, int height, void *data, ITextureFormat textureFormat) override;
     bool getIsLoaded() override;
-    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
+    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override {
         throw "Not Implemented in this class";
     }
     bool postLoad() override;;

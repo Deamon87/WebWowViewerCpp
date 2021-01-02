@@ -1,7 +1,8 @@
 //
 // Created by Deamon on 12/22/2020.
 //
-
+#define _USE_MATH_DEFINES // for C++
+#include <cmath>
 #include "GLTFExporter.h"
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -12,29 +13,39 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #endif
 
-#include "../../engine/algorithms/mathHelper.h"
-#include "../../../../../3rdparty/tinygltf/tiny_gltf.h"
-#include "../../engine/ApiContainer.h"
-#include "../../engine/objects/m2/m2Object.h"
+#include "../../../wowViewerLib/src/engine/algorithms/mathHelper.h"
+#include "../../../wowViewerLib/3rdparty/tinygltf/tiny_gltf.h"
+#include "../../../wowViewerLib/src/engine/ApiContainer.h"
+#include "../../../wowViewerLib/src/engine/objects/m2/m2Object.h"
+#include "../../screenshots/screenshotMaker.h"
+#include "../../../wowViewerLib/src/engine/texture/DxtDecompress.h"
 
 void GLTFExporter::addM2Object(std::shared_ptr<M2Object> &m2Object) {
-    tinygltf::TinyGLTF loader;
+    m2sToExport.push_back(m2Object);
+}
+void GLTFExporter::exportM2Object(std::shared_ptr<M2Object> &m2Object) {
+    M2ModelData m2ModelData;
 
     //1. Create Buffers
-    createVboAndIbo(m2Object);
+    createVboAndIbo(m2ModelData, m2Object);
 
     //2. Create buffer views
-    createVBOAndIBOViews(m2Object);
+    createVBOAndIBOViews(m2ModelData, m2Object);
 
     //2. Create accesors
     //2.1 Accessors for VBO:
-    createAttributesForVBO(m2Object);
+    createAttributesForVBO(m2ModelData, m2Object);
+
+    //Export textures
+    {
+        createTextures(m2ModelData, m2Object);
+    }
 
     //Primitives
     tinygltf::Mesh mesh;
     {
-        createIBOAccessors(m2Object);
-        createGlTFBatches(m2Object, mesh);
+        createIBOAccessors(m2ModelData, m2Object);
+        createGlTFBatches(m2ModelData, m2Object, mesh);
     }
 
     model.meshes.push_back(mesh);
@@ -42,7 +53,7 @@ void GLTFExporter::addM2Object(std::shared_ptr<M2Object> &m2Object) {
     //Add skin (armature of bones) to model
     {
         tinygltf::Skin skin;
-        createSkeleton(m2Object, skin);
+        createSkeleton(m2ModelData, m2Object, skin);
         model.skins.push_back(skin);
     }
 
@@ -67,12 +78,14 @@ void GLTFExporter::addM2Object(std::shared_ptr<M2Object> &m2Object) {
         auto &animations = * getBoneMasterData(m2Object)->getSkelData()->m_sequences;
         auto animLen = animations.getElement(animIndex)->duration / 1000.f;
         for (int i = 0; i < bones.size; i++) {
-            addTrack(animation, bones[i]->translation, animIndex, animLen,"translation", boneEndIndexes[i], animationBufferIndex);
-            addTrack(animation, bones[i]->rotation, animIndex, animLen,"rotation",boneEndIndexes[i], animationBufferIndex);
-            addTrack(animation, bones[i]->scaling, animIndex, animLen, "scale", boneEndIndexes[i],animationBufferIndex);
+            addTrack(animation, bones[i]->translation, animIndex, animLen,"translation", m2ModelData.boneEndIndexes[i], animationBufferIndex);
+            addTrack(animation, bones[i]->rotation, animIndex, animLen,"rotation",m2ModelData.boneEndIndexes[i], animationBufferIndex);
+            addTrack(animation, bones[i]->scaling, animIndex, animLen, "scale", m2ModelData.boneEndIndexes[i],animationBufferIndex);
         }
         model.animations.push_back(animation);
     }
+
+
 
     //Add scene
     int rootSceneNodeIndex = model.nodes.size();
@@ -80,7 +93,7 @@ void GLTFExporter::addM2Object(std::shared_ptr<M2Object> &m2Object) {
         tinygltf::Node node;
         node.mesh = 0;
         node.skin = 0;
-        node.name = "Fox";
+        node.name = getM2Geom(m2Object)->getName();
 
         model.nodes.push_back(node);
     }
@@ -88,12 +101,92 @@ void GLTFExporter::addM2Object(std::shared_ptr<M2Object> &m2Object) {
     {
         tinygltf::Scene scene;
         scene.name = "scene";
-        scene.nodes = {rootSceneNodeIndex, skeletonIndex};
+        scene.nodes = {rootSceneNodeIndex, m2ModelData.skeletonIndex};
         model.scenes.push_back(scene);
     }
     model.defaultScene = 0;
+}
 
-    loader.WriteGltfSceneToFile(&model, "gltf/test.gltf");
+void GLTFExporter::createTextures(GLTFExporter::M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object) {
+    m2ModelData.textureIndexStart = model.textures.size();
+
+    auto m2Geom = getM2Geom(m2Object);
+    auto &m2Texts = m2Geom->getM2Data()->textures;
+    auto m2TextsSize = std::max<int>(m2Texts.size, m2Geom->textureFileDataIDs.size());
+    for (int i = 0; i < m2TextsSize; i++) {
+        bool wrapX = false;
+        bool wrapY = false;
+        if (i < m2Texts.size) {
+            auto *m2Texture = m2Texts[i];
+
+            wrapX = (m2Texture->flags & 1) > 0;
+            wrapY = (m2Texture->flags & 2) > 0;
+        }
+
+        auto textureData = getM2BlpTextureData(m2Object, i);
+        std::string texturePath = textureData->getTextureName();
+
+        //1. Save texture to file
+        decodeTextureAndSaveToFile(textureData, m_folderPath + texturePath);
+
+        //2. Create sampler
+        int samplerIndex = model.samplers.size();
+        {
+            tinygltf::Sampler sampler;
+            sampler.name = "text_sampler_"+std::to_string(i);
+            sampler.minFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
+            sampler.magFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
+            sampler.wrapS = wrapX ? TINYGLTF_TEXTURE_WRAP_REPEAT : TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE;
+            sampler.wrapT = wrapX ? TINYGLTF_TEXTURE_WRAP_REPEAT : TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE;
+
+            model.samplers.push_back(sampler);
+        }
+        //3. Create image
+        int imageIndex = model.images.size();
+        {
+            auto &topMipMap = (*textureData->getMipmapsVector())[0];
+            model.images.resize(model.images.size() + 1);
+            tinygltf::Image &image = model.images[imageIndex];
+            image.name = "text_image_"+std::to_string(i);
+            image.height = topMipMap.height;
+            image.width = topMipMap.width;
+            image.bits = 8;
+            image.pixel_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
+            image.mimeType = "image/png";
+            image.uri = texturePath;
+        }
+        //4. Create texture
+        int textureIndex = model.textures.size();
+        {
+            tinygltf::Texture gltfText;
+            gltfText.name = "texture_"+std::to_string(i);
+            gltfText.sampler = samplerIndex;
+            gltfText.source = imageIndex;
+            model.textures.push_back(gltfText);
+        }
+    }
+}
+
+void GLTFExporter::decodeTextureAndSaveToFile(HBlpTexture textureData, const std::string &texturePath) {
+    HMipmapsVector mipmaps = textureData->getMipmapsVector();
+
+    //1. Save texture to file
+    auto &topMipMap = (*mipmaps)[0];
+    //1.1 Decompress
+    auto decodedResult = std::vector<unsigned char>(topMipMap.width * topMipMap.height * 4);
+    auto textureFormat = textureData->getTextureFormat();
+    if (textureFormat == TextureFormat::S3TC_RGB_DXT1 || textureFormat == TextureFormat::S3TC_RGBA_DXT1)
+    {
+        bool hasAlpha = (textureFormat == TextureFormat::S3TC_RGBA_DXT1);
+        DecompressBC1( topMipMap.width, topMipMap.height, topMipMap.texture.data(), decodedResult.data(), hasAlpha);
+    } else if (textureFormat == TextureFormat::S3TC_RGBA_DXT3) {
+        DecompressBC2(topMipMap.width, topMipMap.height, topMipMap.texture.data(), decodedResult.data());
+    }
+    else if (textureFormat == TextureFormat::S3TC_RGBA_DXT5){
+        DecompressBC3(topMipMap.width, topMipMap.height, topMipMap.texture.data(), decodedResult.data());
+    }
+
+    saveScreenshotLodePng( texturePath, topMipMap.width, topMipMap.height, decodedResult);
 }
 
 template<typename N>
@@ -230,11 +323,11 @@ void GLTFExporter::addTrack(tinygltf::Animation &animation, M2Track<N> &track, i
     animation.channels.push_back(animationChannel);
 }
 
-void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf::Skin &skin) {
+void GLTFExporter::createSkeleton(M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object, tinygltf::Skin &skin) {
     auto &bones = * getBoneMasterData(m2Object)->getSkelData()->m_m2CompBones;
 
     //Create skeleton
-    skeletonIndex = model.nodes.size();
+    m2ModelData.skeletonIndex = model.nodes.size();
     {
         {
             tinygltf::Node node;
@@ -246,7 +339,7 @@ void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf:
 
             model.nodes.push_back(node);
         }
-        skin.skeleton = skeletonIndex;
+        skin.skeleton = m2ModelData.skeletonIndex;
     }
     for (int i = 0; i < bones.size; i++) {
 
@@ -268,7 +361,7 @@ void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf:
                 relativePivot.z,
             };
             model.nodes.push_back(node);
-            boneStartIndexes.push_back(bonePrefixNodeIndex);
+            m2ModelData.boneStartIndexes.push_back(bonePrefixNodeIndex);
         }
         int boneNodeIndex = model.nodes.size();
         {
@@ -280,17 +373,17 @@ void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf:
             node.name = "bone " + std::to_string(i);
             model.nodes.push_back(node);
 
-            boneEndIndexes.push_back(boneNodeIndex);
+            m2ModelData.boneEndIndexes.push_back(boneNodeIndex);
             skin.joints.push_back(boneNodeIndex);
         }
 
         if (bone->parent_bone>-1) {
-            model.nodes[boneEndIndexes[bone->parent_bone]].children.push_back(bonePrefixNodeIndex);
+            model.nodes[m2ModelData.boneEndIndexes[bone->parent_bone]].children.push_back(bonePrefixNodeIndex);
         } else {
-            model.nodes[skeletonIndex].children.push_back(bonePrefixNodeIndex);
+            model.nodes[m2ModelData.skeletonIndex].children.push_back(bonePrefixNodeIndex);
         }
 
-        inverBindMatrices.push_back(mathfu::mat4::FromTranslationVector(-mathfu::vec3(bone->pivot)));
+        m2ModelData.inverBindMatrices.push_back(mathfu::mat4::FromTranslationVector(-mathfu::vec3(bone->pivot)));
     }
     {
         //Create inverseMat buffer
@@ -299,9 +392,9 @@ void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf:
             tinygltf::Buffer inverseMatBuffer;
             inverseMatBuffer.name = "inverseMatBuffer";
 
-            inverseMatBuffer.data = std::vector<uint8_t>((uint8_t *) inverBindMatrices.data(),
-                                                              (uint8_t *) (inverBindMatrices.data() +
-                                                                           inverBindMatrices.size()));
+            inverseMatBuffer.data = std::vector<uint8_t>((uint8_t *) m2ModelData.inverBindMatrices.data(),
+                                                              (uint8_t *) (m2ModelData.inverBindMatrices.data() +
+                                                                               m2ModelData.inverBindMatrices.size()));
 
             model.buffers.push_back(inverseMatBuffer);
         }
@@ -326,7 +419,7 @@ void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf:
             a_inverseMat.byteOffset = 0;
             a_inverseMat.normalized = false;
             a_inverseMat.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
-            a_inverseMat.count = inverBindMatrices.size();
+            a_inverseMat.count = m2ModelData.inverBindMatrices.size();
             a_inverseMat.type = TINYGLTF_TYPE_MAT4;
 
             model.accessors.push_back(a_inverseMat);
@@ -335,38 +428,67 @@ void GLTFExporter::createSkeleton(std::shared_ptr<M2Object> &m2Object, tinygltf:
     }
 }
 
-void GLTFExporter::createGlTFBatches(std::shared_ptr<M2Object> &m2Object, tinygltf::Mesh &mesh) {
+void GLTFExporter::createGlTFBatches(M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object, tinygltf::Mesh &mesh) {
     auto skinProfile = getSkinGeom(m2Object)->getSkinData();
+    auto m_m2Data = getM2Geom(m2Object)->getM2Data();
     M2Array<M2Batch> &batches = skinProfile->batches;
+
+
     for (int i = 0; i < batches.size; i++) {
         auto m2Batch = batches[i];
 
+        int renderFlagIndex = m2Batch->materialIndex;
+        auto renderFlag = m_m2Data->materials[renderFlagIndex];
+
+        int materialIndex = model.materials.size();
+        tinygltf::Material material;
+        material.name = "batch_" + std::to_string(i);
+        if (renderFlag->blending_mode == 0) {
+            material.alphaMode = "OPAQUE";
+            material.alphaCutoff = 0;
+        } else if (renderFlag->blending_mode == 1) {
+            material.alphaMode = "MASK";
+            material.alphaCutoff = 128.0f/255.0f;
+        } else {
+            material.alphaMode = "BLEND";
+            material.alphaCutoff = 1.0f/255.0f;
+        }
+        material.doubleSided = (renderFlag->flags & 0x4);
+        material.pbrMetallicRoughness.baseColorTexture.index =
+            m2ModelData.textureIndexStart +
+            *m_m2Data->texture_lookup_table[m2Batch->textureComboIndex + 0];
+        material.pbrMetallicRoughness.baseColorTexture.texCoord = 0;
+        model.materials.push_back(material);
+
+
         tinygltf::Primitive p;
-        p.material = -1;
-        p.attributes["POSITION"] = accesorPosIndex;
-        p.attributes["NORMAL"] = accesorNormalIndex;
-        p.attributes["TEXCOORD_0"] = accesorTexCoordIndex;
-        p.attributes["JOINTS_0"] = accesorJointsIndex;
-        p.attributes["WEIGHTS_0"] = accesorWeightsIndex;
-        p.indices = m2Batch->skinSectionIndex + IBOAccessorsStart;
+        p.material = materialIndex;
+        p.attributes["POSITION"] = m2ModelData.accesorPosIndex;
+        p.attributes["NORMAL"] = m2ModelData.accesorNormalIndex;
+        p.attributes["TEXCOORD_0"] = m2ModelData.accesorTexCoordIndex;
+        p.attributes["TEXCOORD_1"] = m2ModelData.accesorTexCoordIndex2;
+        p.attributes["JOINTS_0"] = m2ModelData.accesorJointsIndex;
+        p.attributes["WEIGHTS_0"] = m2ModelData.accesorWeightsIndex;
+        p.indices = m2Batch->skinSectionIndex + m2ModelData.IBOAccessorsStart;
         p.mode = TINYGLTF_MODE_TRIANGLES;
+        p.material = materialIndex;
 
         mesh.primitives.push_back(p);
     }
 }
 
-void GLTFExporter::createIBOAccessors(std::shared_ptr<M2Object> &m2Object) {
+void GLTFExporter::createIBOAccessors(M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object) {
     auto skinProfile = getSkinGeom(m2Object)->getSkinData();
     auto sections = skinProfile->skinSections;
 
-    IBOAccessorsStart =  model.accessors.size();
+    m2ModelData.IBOAccessorsStart =  model.accessors.size();
 
     for (int i = 0; i < sections.size; i++) {
         auto skinSection = skinProfile->skinSections[i];
 
         //Create accessor for IBO
         tinygltf::Accessor a_primitive;
-        a_primitive.bufferView = IBOBufferViewIndex;
+        a_primitive.bufferView = m2ModelData.IBOBufferViewIndex;
         a_primitive.name = "";
         a_primitive.byteOffset = (skinSection->indexStart + (skinSection->Level << 16)) * 2 ;
         a_primitive.normalized = false;
@@ -374,21 +496,21 @@ void GLTFExporter::createIBOAccessors(std::shared_ptr<M2Object> &m2Object) {
         a_primitive.count = skinSection->indexCount;
         a_primitive.type = TINYGLTF_TYPE_SCALAR;
 
-        assert(a_primitive.byteOffset <= iboSize);
-        assert((a_primitive.byteOffset+a_primitive.count) <= iboSize);
+        assert(a_primitive.byteOffset <= m2ModelData.iboSize);
+        assert((a_primitive.byteOffset+a_primitive.count) <= m2ModelData.iboSize);
 
         model.accessors.push_back(a_primitive);
     }
 }
 
-void GLTFExporter::createAttributesForVBO(std::shared_ptr<M2Object> &m2Object) {
+void GLTFExporter::createAttributesForVBO(M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object) {
     auto m2Data = getM2Geom(m2Object)->getM2Data();
     //Position
     {
-        accesorPosIndex = model.accessors.size();
+        m2ModelData.accesorPosIndex = model.accessors.size();
 
         tinygltf::Accessor a_position;
-        a_position.bufferView = VBOBufferViewIndex;
+        a_position.bufferView = m2ModelData.VBOBufferViewIndex;
         a_position.name = "POSITION";
         a_position.byteOffset = 0;
         a_position.normalized = false;
@@ -400,10 +522,10 @@ void GLTFExporter::createAttributesForVBO(std::shared_ptr<M2Object> &m2Object) {
     }
     //Weights
     {
-        accesorWeightsIndex = model.accessors.size();
+        m2ModelData.accesorWeightsIndex = model.accessors.size();
 
         tinygltf::Accessor a_weights;
-        a_weights.bufferView = VBOBufferViewIndex;
+        a_weights.bufferView = m2ModelData.VBOBufferViewIndex;
         a_weights.name = "WEIGHTS_0";
         a_weights.byteOffset = 12;
         a_weights.normalized = true;
@@ -415,10 +537,10 @@ void GLTFExporter::createAttributesForVBO(std::shared_ptr<M2Object> &m2Object) {
     }
     //Joints (bone indices)
     {
-        accesorJointsIndex = model.accessors.size();
+        m2ModelData.accesorJointsIndex = model.accessors.size();
 
         tinygltf::Accessor a_weights;
-        a_weights.bufferView = VBOBufferViewIndex;
+        a_weights.bufferView = m2ModelData.VBOBufferViewIndex;
         a_weights.name = "JOINTS_0";
         a_weights.byteOffset = 16;
         a_weights.normalized = false;
@@ -430,10 +552,10 @@ void GLTFExporter::createAttributesForVBO(std::shared_ptr<M2Object> &m2Object) {
     }
     //Normal
     {
-        accesorNormalIndex = model.accessors.size();
+        m2ModelData.accesorNormalIndex = model.accessors.size();
 
         tinygltf::Accessor a_normal;
-        a_normal.bufferView = VBOBufferViewIndex;
+        a_normal.bufferView = m2ModelData.VBOBufferViewIndex;
         a_normal.name = "NORMAL";
         a_normal.byteOffset = 20;
         a_normal.normalized = false;
@@ -445,10 +567,10 @@ void GLTFExporter::createAttributesForVBO(std::shared_ptr<M2Object> &m2Object) {
     }
     //aTexCoord
     {
-        accesorTexCoordIndex = model.accessors.size();
+        m2ModelData.accesorTexCoordIndex = model.accessors.size();
 
         tinygltf::Accessor a_texturecoord;
-        a_texturecoord.bufferView = VBOBufferViewIndex;
+        a_texturecoord.bufferView = m2ModelData.VBOBufferViewIndex;
         a_texturecoord.name = "TEXCOORD_0";
         a_texturecoord.byteOffset = 32;
         a_texturecoord.normalized = false;
@@ -458,17 +580,32 @@ void GLTFExporter::createAttributesForVBO(std::shared_ptr<M2Object> &m2Object) {
 
         model.accessors.push_back(a_texturecoord);
     }
+    //aTexCoord
+    {
+        m2ModelData.accesorTexCoordIndex2 = model.accessors.size();
+
+        tinygltf::Accessor a_texturecoord;
+        a_texturecoord.bufferView = m2ModelData.VBOBufferViewIndex;
+        a_texturecoord.name = "TEXCOORD_1";
+        a_texturecoord.byteOffset = 40;
+        a_texturecoord.normalized = false;
+        a_texturecoord.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+        a_texturecoord.count = m2Data->vertices.size;
+        a_texturecoord.type = TINYGLTF_TYPE_VEC2;
+
+        model.accessors.push_back(a_texturecoord);
+    }
 }
 
-GLTFExporter::GLTFExporter() {
+GLTFExporter::GLTFExporter(std::string folderPath) : m_folderPath(folderPath) {
     model.asset.version = "2.0";
 }
 
-void GLTFExporter::createVboAndIbo(std::shared_ptr<M2Object> &m2Object) {
+void GLTFExporter::createVboAndIbo(M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object) {
     auto m2Data = getM2Geom(m2Object)->getM2Data();
     {
         //1. Create VBO
-        VBOBufferIndex = model.buffers.size();
+        m2ModelData.VBOBufferIndex = model.buffers.size();
         {
             tinygltf::Buffer modelVBO;
             modelVBO.name = "vbo";
@@ -481,7 +618,7 @@ void GLTFExporter::createVboAndIbo(std::shared_ptr<M2Object> &m2Object) {
         }
 
         //1.1 Create IBO
-        IBOBufferIndex = model.buffers.size();
+        m2ModelData.IBOBufferIndex = model.buffers.size();
         {
             tinygltf::Buffer modelIBO;
             modelIBO.name = "ibo";
@@ -491,20 +628,20 @@ void GLTFExporter::createVboAndIbo(std::shared_ptr<M2Object> &m2Object) {
             modelIBO.data = std::vector<uint8_t>((uint8_t *) indicies.data(),
                                                       (uint8_t *) (indicies.data() + indicies.size()));
 
-            iboSize = modelIBO.data.size();
+            m2ModelData.iboSize = modelIBO.data.size();
 
             model.buffers.push_back(modelIBO);
         }
     }
 }
 
-void GLTFExporter::createVBOAndIBOViews(std::shared_ptr<M2Object> &m2Object) {
+void GLTFExporter::createVBOAndIBOViews(M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object) {
     {
         //2.1 Create VBO buffer view
-        VBOBufferViewIndex = model.bufferViews.size();
+        m2ModelData.VBOBufferViewIndex = model.bufferViews.size();
         {
             tinygltf::BufferView modelVBOView;
-            modelVBOView.buffer = VBOBufferIndex;
+            modelVBOView.buffer = m2ModelData.VBOBufferIndex;
             modelVBOView.byteOffset = 0;
             modelVBOView.byteLength = getM2Geom(m2Object)->getM2Data()->vertices.size * sizeof(M2Vertex);
             modelVBOView.byteStride = 48;
@@ -512,15 +649,25 @@ void GLTFExporter::createVBOAndIBOViews(std::shared_ptr<M2Object> &m2Object) {
             model.bufferViews.push_back(modelVBOView);
         }
         //2.1 Create IBO buffer view
-        IBOBufferViewIndex = model.bufferViews.size();
+        m2ModelData.IBOBufferViewIndex = model.bufferViews.size();
         {
             tinygltf::BufferView modelIBOView;
-            modelIBOView.buffer = IBOBufferIndex;
+            modelIBOView.buffer = m2ModelData.IBOBufferIndex;
             modelIBOView.byteOffset = 0;
-            modelIBOView.byteLength = model.buffers[IBOBufferIndex].data.size();
+            modelIBOView.byteLength = model.buffers[m2ModelData.IBOBufferIndex].data.size();
             modelIBOView.byteStride = 1;
             modelIBOView.target = TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER;
             model.bufferViews.push_back(modelIBOView);
         }
     }
+}
+
+void GLTFExporter::saveToFile(std::string filePath) {
+    tinygltf::TinyGLTF loader;
+
+    for (auto &m2Object : m2sToExport) {
+        exportM2Object(m2Object);
+    }
+
+    loader.WriteGltfSceneToFile(&model, m_folderPath+filePath);
 }

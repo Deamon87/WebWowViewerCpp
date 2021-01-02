@@ -26,7 +26,7 @@ void GBlpTextureGL4x::unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
     GLuint textureGPUFormat = 0;
 //     if (ext) {
     switch (textureFormat) {
@@ -63,6 +63,7 @@ void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const Mipmaps
     bool useDXT5Decoding = false;
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+    auto &mipmaps = *hmipmaps;
 
     glTexStorage2D(GL_TEXTURE_2D, mipmaps.size(), textureGPUFormat, mipmaps[0].width, mipmaps[0].height);
 

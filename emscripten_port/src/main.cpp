@@ -258,10 +258,11 @@ void setScene(int sceneType, std::string name, int cameraNum) {
     }
 }
 
-
 extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void createWebJsScene(int p_canvWidth, int p_canvHeight, char *url, char *urlFileId) {
+        auto temp_gc = new tbb::global_control(tbb::global_control::max_allowed_parallelism, 1);
+
         if (!glfwInit()) {
             fputs("Failed to initialize GLFW", stderr);
             return;
@@ -493,20 +494,21 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     void gameloop(double deltaTime) {
+
+
         if (sceneComposer == nullptr) return;
         if (apiContainer->hDevice == nullptr) return;
 
         glfwPollEvents();
 
         processor->processRequests(false);
-        processor->processResults(10);
 
         apiContainer->camera->tick(deltaTime*(1000.0f));
 
         float farPlaneRendering = apiContainer->getConfig()->farPlane;
         float farPlaneCulling = apiContainer->getConfig()->farPlaneForCulling;
 
-        float nearPlane = 1.0;
+        float nearPlane = 1.0 ;
         float fov = toRadian(45.0);
 
         float canvasAspect = (float)canvWidth / (float)canvHeight;

@@ -48,6 +48,7 @@ set(My_Vectorize_Compile_Options "")
 message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
 
+SET(TBB_BUILD_SHARED 0)
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/tbb)
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
@@ -255,8 +256,6 @@ set(SOURCE_FILES
         src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp
         src/engine/objects/m2/m2Helpers/CBoneMasterData.h
         src/exporters/IExporter.h
-        src/exporters/gltfExporter/GLTFExporter.cpp
-        src/exporters/gltfExporter/GLTFExporter.h
         src/engine/objects/iScene.cpp)
 
 set(OPENGL20_IMPLEMENTATION
@@ -508,7 +507,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (1)
+if (0)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)

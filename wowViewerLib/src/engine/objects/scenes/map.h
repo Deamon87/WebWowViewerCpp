@@ -120,11 +120,12 @@ protected:
 
     FreeStrategy adtFreeLambda;
     FreeStrategy zeroStateLambda;
+
+protected:
+    explicit Map() : taskScheduler(10){
+    }
 public:
 
-    explicit Map() : taskScheduler(10){
-        createAdtFreeLamdas();
-    }
 
     explicit Map(HApiContainer api, int mapId, std::string mapName) : taskScheduler(10) {
         initMapTiles();
@@ -181,7 +182,7 @@ public:
     };
 
     ~Map() override {
-        std::cout << "Map destroyed " << std::endl;
+//        std::cout << "Map destroyed " << std::endl;
 	};
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};

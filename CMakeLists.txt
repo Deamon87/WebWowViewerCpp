@@ -197,6 +197,9 @@ set(SOURCE_FILES
 		src/screenshots/lodepng/lodepng.cpp
 		src/screenshots/lodepng/lodepng.h
 
+		src/exporters/gltfExporter/GLTFExporter.cpp
+		src/exporters/gltfExporter/GLTFExporter.h
+
 		src/ui/childWindow/mapConstructionWindow.cpp
 		src/ui/childWindow/mapConstructionWindow.h)
 

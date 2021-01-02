@@ -14,7 +14,6 @@
 #define GLFW_INCLUDE_GLCOREARB
  
 //#define __EMSCRIPTEN__
-#include "engine/HeadersGL.h"
 
 #ifdef LINK_VULKAN
 #define GLFW_INCLUDE_VULKAN

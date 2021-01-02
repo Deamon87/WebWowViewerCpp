@@ -59,6 +59,7 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
 
                 if (!CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1 - totalBytesRead, &dwBytesRead)) {
                     std::cout << "Could read from file "<< fileName << std::endl << std::flush;
+                    toBeProcessed--;
                     return;
                 }
 

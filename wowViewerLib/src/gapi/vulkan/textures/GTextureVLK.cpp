@@ -92,22 +92,24 @@ void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat tex
     std::vector<uint8_t > unifiedBuffer((uint8_t *)data, (uint8_t *)data + (width*height*4));
 
 
-    MipmapsVector mipmapsVector;
+    HMipmapsVector mipmapsVector = std::make_shared<std::vector<mipmapStruct_t>>();
     mipmapStruct_t mipmap;
     mipmap.height = height;
     mipmap.width = width;
     mipmap.texture = unifiedBuffer;
 
-    mipmapsVector.push_back(mipmap);
+    mipmapsVector->push_back(mipmap);
 
 
     createTexture(mipmapsVector, VK_FORMAT_R8G8B8A8_UNORM, unifiedBuffer);
 }
 
-void GTextureVLK::createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer) {// Copy data to an optimal tiled image
+void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer) {// Copy data to an optimal tiled image
     if (m_uploaded) {
         std::cout << "oops!" << std::endl << std::flush;
     }
+
+    auto &mipmaps = *hmipmaps;
 
     m_width = mipmaps[0].width;
     m_height = mipmaps[0].height;
