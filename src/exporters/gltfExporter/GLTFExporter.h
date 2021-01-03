@@ -18,7 +18,7 @@ private:
 
     template<typename N>
     void addTrack(tinygltf::Animation &animation, M2Track<N> &track, int animIndex, float animationLength,
-                  std::string trackName, int nodeIndex, int animationBufferIndex);
+                  std::string trackName, int nodeIndex, int animationBufferIndex, M2Array<M2Loop> &globalSequences);
 
     struct M2ModelData {
         int VBOBufferIndex = -1;

@@ -76,11 +76,12 @@ void GLTFExporter::exportM2Object(std::shared_ptr<M2Object> &m2Object) {
 
         auto &bones = * getBoneMasterData(m2Object)->getSkelData()->m_m2CompBones;
         auto &animations = * getBoneMasterData(m2Object)->getSkelData()->m_sequences;
+        auto &globalSequences = * getBoneMasterData(m2Object)->getSkelData()->m_globalSequences;
         auto animLen = animations.getElement(animIndex)->duration / 1000.f;
         for (int i = 0; i < bones.size; i++) {
-            addTrack(animation, bones[i]->translation, animIndex, animLen,"translation", m2ModelData.boneEndIndexes[i], animationBufferIndex);
-            addTrack(animation, bones[i]->rotation, animIndex, animLen,"rotation",m2ModelData.boneEndIndexes[i], animationBufferIndex);
-            addTrack(animation, bones[i]->scaling, animIndex, animLen, "scale", m2ModelData.boneEndIndexes[i],animationBufferIndex);
+            addTrack(animation, bones[i]->translation, animIndex, animLen,"translation", m2ModelData.boneEndIndexes[i], animationBufferIndex,globalSequences);
+            addTrack(animation, bones[i]->rotation, animIndex, animLen,"rotation",m2ModelData.boneEndIndexes[i], animationBufferIndex,globalSequences);
+            addTrack(animation, bones[i]->scaling, animIndex, animLen, "scale", m2ModelData.boneEndIndexes[i],animationBufferIndex,globalSequences);
         }
         model.animations.push_back(animation);
     }
@@ -221,13 +222,23 @@ void GLTFExporter::decodeTextureAndSaveToFile(HBlpTexture textureData, const std
 
 template<typename N>
 void GLTFExporter::addTrack(tinygltf::Animation &animation, M2Track<N> &track, int animIndex, float animationLength,
-                            std::string trackName, int nodeIndex, int bufferIndex) {
+                            std::string trackName, int nodeIndex, int bufferIndex, M2Array<M2Loop> &globalSequences) {
     std::vector<uint8_t> &buffer = model.buffers[bufferIndex].data;
+
+    if (track.timestamps.size <= animIndex) {
+        animIndex = 0;
+    }
 
     if (track.timestamps.size == 0 || animIndex >= track.timestamps.size)
         return;
     if (track.values.size == 0 || animIndex >= track.timestamps.size)
         return;
+
+    if (track.global_sequence > -1) {
+        if (track.global_sequence >= globalSequences.size) return;
+
+        animationLength = globalSequences[track.global_sequence]->timestamp / 1000.0f;
+    }
 
     //1. Add time
     int timesAccesor = -1;
