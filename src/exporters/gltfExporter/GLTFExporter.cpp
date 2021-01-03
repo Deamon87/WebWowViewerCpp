@@ -107,6 +107,16 @@ void GLTFExporter::exportM2Object(std::shared_ptr<M2Object> &m2Object) {
     model.defaultScene = 0;
 }
 
+static bool endsWith(std::string_view str, std::string_view suffix)
+{
+    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+}
+
+static bool startsWith(std::string_view str, std::string_view prefix)
+{
+    return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
+}
+
 void GLTFExporter::createTextures(GLTFExporter::M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object) {
     m2ModelData.textureIndexStart = model.textures.size();
 
@@ -123,11 +133,26 @@ void GLTFExporter::createTextures(GLTFExporter::M2ModelData &m2ModelData, std::s
             wrapY = (m2Texture->flags & 2) > 0;
         }
 
-        auto textureData = getM2BlpTextureData(m2Object, i);
-        std::string texturePath = textureData->getTextureName();
-
         //1. Save texture to file
-        decodeTextureAndSaveToFile(textureData, m_folderPath + texturePath);
+        auto textureData = getM2BlpTextureData(m2Object, i);
+        std::string texturePath;
+        if (textureData != nullptr) {
+            texturePath = textureData->getTextureName();
+
+            //Fix unk extension for textures
+            std::string unksuffix = ".unk";
+            if (endsWith(texturePath, unksuffix)) {
+                texturePath.resize(texturePath.size() - unksuffix.size());
+                texturePath = texturePath + ".png";
+            }
+            std::cout << "m_folderPath+texturePath = " << m_folderPath+texturePath << std::endl;
+            decodeTextureAndSaveToFile(textureData, m_folderPath + texturePath);
+        } else {
+            texturePath = "blackTexture.png";
+            std::vector <uint8_t> rgbaBuff = {0};
+            std::cout << "m_folderPath+texturePath = " << m_folderPath+texturePath << std::endl;
+            saveScreenshotLodePng( m_folderPath+texturePath, 1, 1, rgbaBuff);
+        }
 
         //2. Create sampler
         int samplerIndex = model.samplers.size();
@@ -144,12 +169,15 @@ void GLTFExporter::createTextures(GLTFExporter::M2ModelData &m2ModelData, std::s
         //3. Create image
         int imageIndex = model.images.size();
         {
-            auto &topMipMap = (*textureData->getMipmapsVector())[0];
+
             model.images.resize(model.images.size() + 1);
             tinygltf::Image &image = model.images[imageIndex];
             image.name = "text_image_"+std::to_string(i);
-            image.height = topMipMap.height;
-            image.width = topMipMap.width;
+            if (textureData != nullptr) {
+                auto &topMipMap = (*textureData->getMipmapsVector())[0];
+                image.height = topMipMap.height;
+                image.width = topMipMap.width;
+            }
             image.bits = 8;
             image.pixel_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
             image.mimeType = "image/png";
@@ -184,6 +212,8 @@ void GLTFExporter::decodeTextureAndSaveToFile(HBlpTexture textureData, const std
     }
     else if (textureFormat == TextureFormat::S3TC_RGBA_DXT5){
         DecompressBC3(topMipMap.width, topMipMap.height, topMipMap.texture.data(), decodedResult.data());
+    } else {
+        decodedResult = topMipMap.texture;
     }
 
     saveScreenshotLodePng( texturePath, topMipMap.width, topMipMap.height, decodedResult);
@@ -194,9 +224,9 @@ void GLTFExporter::addTrack(tinygltf::Animation &animation, M2Track<N> &track, i
                             std::string trackName, int nodeIndex, int bufferIndex) {
     std::vector<uint8_t> &buffer = model.buffers[bufferIndex].data;
 
-    if (track.timestamps.size == 0)
+    if (track.timestamps.size == 0 || animIndex >= track.timestamps.size)
         return;
-    if (track.values.size == 0)
+    if (track.values.size == 0 || animIndex >= track.timestamps.size)
         return;
 
     //1. Add time

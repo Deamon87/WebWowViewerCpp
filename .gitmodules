@@ -47,3 +47,6 @@
 [submodule "wowViewerLib/3rdparty/tinygltf"]
 	path = wowViewerLib/3rdparty/tinygltf
 	url = https://github.com/syoyo/tinygltf
+[submodule "emscripten_port/3rdparty/zipper"]
+	path = emscripten_port/3rdparty/zipper
+	url = https://github.com/sebastiandev/zipper.git

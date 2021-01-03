@@ -47,6 +47,7 @@ void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3
 
 extern "C" {
     extern void supplyPointer(int *availablePointer, int length);
+    extern void offerFileAsDownload(std::string filename, std::string mime);
 }
 
 void M2Scene::doPostLoad(HCullStage cullStage) {

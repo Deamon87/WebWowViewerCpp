@@ -8,10 +8,17 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <png.h>
-#include "../../wowViewerLib/src/engine/ApiContainer.h"
 
+//Do not include libpng in Emscripten version
+#ifndef __EMSCRIPTEN__
+#include <png.h>
+#endif
+
+#include "../../wowViewerLib/src/engine/ApiContainer.h"
+#ifndef __EMSCRIPTEN__
 void saveScreenshot(const std::string& name, int width, int height, std::vector<uint8_t> &rgbaBuff);
+#endif
+
 void saveScreenshotLodePng(const std::string &name, int width, int height, std::vector <uint8_t> &rgbaBuff);
 
 void saveDataFromDrawStage(const HFrameBuffer& fb,

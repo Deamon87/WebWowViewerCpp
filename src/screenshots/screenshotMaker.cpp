@@ -3,7 +3,8 @@
 //
 #include "screenshotMaker.h"
 #include "lodepng/lodepng.h"
-
+#include <fstream>
+#ifndef __EMSCRIPTEN__
 void saveScreenshot(const std::string &name, int width, int height, std::vector <uint8_t> &rgbaBuff) {
     FILE *fp = fopen(name.c_str(), "wb");
     if (!fp) {
@@ -60,6 +61,7 @@ void saveScreenshot(const std::string &name, int width, int height, std::vector 
     png_destroy_write_struct(&png_ptr, nullptr);
     fclose(fp);
 }
+#endif
 
 //Lodepng part
 void saveScreenshotLodePng(const std::string &name, int width, int height, std::vector <uint8_t> &rgbaBuff){
@@ -68,11 +70,8 @@ void saveScreenshotLodePng(const std::string &name, int width, int height, std::
 
     unsigned error = lodepng_encode32(&png, &pngsize, rgbaBuff.data(), width, height);
     if(!error) {
-        FILE* imageFile = fopen(name.c_str(), "wb");
-
-        fwrite(png, 1, pngsize, imageFile);
-
-        fclose(imageFile);
+        std::ofstream f(name);
+        f.write((const char *)(png), pngsize);
     }
 
     /*if there's an error, display it*/
