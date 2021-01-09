@@ -883,21 +883,28 @@ bool WmoObject::startTraversingWMOGroup(
 
         for (int i = 0; i< mainGeom->groupsLen; i++) {
             if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
-                if (this->groupObjects[i] != nullptr && this->groupObjects[i]->checkGroupFrustum(cameraVec4, frustumPlanesExt, frustumPointsExt)) {
-                    exteriorView.drawnWmos.push_back(this->groupObjects[i]);
+                if (this->groupObjects[i] != nullptr) {
+                    bool drawDoodads, drawGroup;
+                    this->groupObjects[i]->checkGroupFrustum(drawDoodads, drawGroup, cameraVec4, frustumPlanesExt, frustumPointsExt);
+                    if (drawDoodads) {
+                        exteriorView.wmosForM2.push_back(this->groupObjects[i]);
+                    }
+                    if (drawGroup) {
+                        exteriorView.drawnWmos.push_back(this->groupObjects[i]);
 
-                    this->transverseGroupWMO(
-                        i,
-                        false,
-                        createdInteriorViews,
-                        exteriorView,
-                        cameraVec4,
-                        cameraLocal,
-                        inverseTransposeModelMat,
-                        transverseVisitedPortals,
-                        frustumPlanes,
-                        globalLevel,
-                        0);
+                        this->transverseGroupWMO(
+                            i,
+                            false,
+                            createdInteriorViews,
+                            exteriorView,
+                            cameraVec4,
+                            cameraLocal,
+                            inverseTransposeModelMat,
+                            transverseVisitedPortals,
+                            frustumPlanes,
+                            globalLevel,
+                            0);
+                    }
                 }
             }
         }

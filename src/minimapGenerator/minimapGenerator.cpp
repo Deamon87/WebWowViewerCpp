@@ -34,11 +34,13 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
     config->adtFreeStrategy = EFreeStrategy::eFrameBase; //
 
 
-    mathfu::vec4 ambient = mathfu::vec4(0.7,0.7,0.7,1.0);
-    config->exteriorAmbientColor = ambient;
-    config->exteriorHorizontAmbientColor = ambient;
-    config->exteriorGroundAmbientColor = ambient;
+//    mathfu::vec4 ambient = ;
+    config->exteriorAmbientColor =  mathfu::vec4(0.5f,0.5f,0.5f,1.0);;
+    config->exteriorHorizontAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
+    config->exteriorGroundAmbientColor = mathfu::vec4(0.0,0.0,0.0,1.0);
+    config->exteriorDirectColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
 
+    config->adtSpecMult = 0.0;
 
     config->disableFog = true;
     config->renderSkyDom = false;
@@ -46,9 +48,16 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
 //    m_apiContainer.getConfig()->setDisableFog()
 }
 void MinimapGenerator::startScenarios(std::vector<ScenarioDef> &scenarioList) {
+    m_isInGeneration = true;
     scenarioListToProcess = scenarioList;
 
     startNextScenario();
+}
+
+void MinimapGenerator::startPreview(ScenarioDef &scenarioDef) {
+    currentScenario = scenarioDef;
+
+    setupScenarioData();
 }
 
 void MinimapGenerator::startNextScenario() {
@@ -58,6 +67,11 @@ void MinimapGenerator::startNextScenario() {
     currentScenario = scenarioListToProcess.back();
     scenarioListToProcess.pop_back();
 
+    setupScenarioData();
+}
+
+
+void MinimapGenerator::setupScenarioData() {
     XToYCoefCalculated = false;
     calcXtoYCoef();
 
@@ -69,12 +83,12 @@ void MinimapGenerator::startNextScenario() {
     }
 
     if (currentScenario.orientation == ScenarioOrientation::soTopDownOrtho) {
-        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticTopDownCamera>();
+        m_apiContainer->camera = std::__1::make_shared<FirstPersonOrthoStaticTopDownCamera>();
     } else {
-        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
+        m_apiContainer->camera = std::__1::make_shared<FirstPersonOrthoStaticCamera>();
     }
 
-    m_currentScene = std::make_shared<Map>(m_apiContainer, mapRecord.ID, mapRecord.WdtFileID);
+    m_currentScene = std::__1::make_shared<Map>(m_apiContainer, mapRecord.ID, mapRecord.WdtFileID);
 
     auto config = m_apiContainer->getConfig();
     config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
@@ -85,10 +99,8 @@ void MinimapGenerator::startNextScenario() {
     m_x = m_chunkStartX;
     m_y = m_chunkStartY;
 
-
     setupCameraData();
 }
-
 
 
 void
@@ -299,9 +311,14 @@ float MinimapGenerator::getXScreenSpaceDimension() {
 
 
 void MinimapGenerator::setupCameraData() {
-    mathfu::vec3 lookAtPoint = mathfu::vec3(getYScreenSpaceDimension() * m_y,
-                                            getXScreenSpaceDimension() * m_x,
-                                      1);
+   setLookAtPoint(getYScreenSpaceDimension() * m_y, getXScreenSpaceDimension() * m_x);
+}
+
+void MinimapGenerator::setZoom(float zoom) {
+    m_zoom = zoom;
+}
+void MinimapGenerator::setLookAtPoint(float x, float y) {
+    mathfu::vec3 lookAtPoint = mathfu::vec3(x, y, 1);
 
     lookAtPoint = getScreenCoordToWoWCoordMatrix() * lookAtPoint;
 
@@ -323,6 +340,7 @@ void MinimapGenerator::setupCameraData() {
     );
     m_apiContainer->camera->tick(0);
 }
+
 
 const int waitQueueLen = 4;
 void MinimapGenerator::process() {
@@ -407,7 +425,7 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
     }
 
     mathfu::vec4 clearColor = m_apiContainer->getConfig()->clearColor;
-
+    m_lastDraw = nullptr;
     if (m_currentScene != nullptr) {
         ViewPortDimensions dimensions = {{0, 0}, {m_width, m_height}};
 
@@ -424,8 +442,11 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
             updateStage, m_currentScene, cameraMatricesRendering,
             drawStageDependencies, true, dimensions, true, false, clearColor, fb);
 
-
-        drawStageStack.push_front(sceneDrawStage);
+        m_lastDraw = sceneDrawStage;
+        //We dont need stack in preview mode
+        if (isInGenerationMode()) {
+            drawStageStack.push_front(sceneDrawStage);
+        }
         return sceneDrawStage;
     }
 
@@ -439,7 +460,7 @@ bool MinimapGenerator::isDone() {
 float MinimapGenerator::GetOrthoDimension() {
 //    return MathHelper::TILESIZE*0.25*0.5f;
 //    return MathHelper::TILESIZE*0.25;
-    return MathHelper::TILESIZE;
+    return MathHelper::TILESIZE / m_zoom;
 }
 
 mathfu::mat4 MinimapGenerator::getOrthoMatrix() {
@@ -506,5 +527,13 @@ int MinimapGenerator::XNumbering() {
         case ScenarioOrientation::so45DegreeTick3:
             return 1;
     }
+}
+
+HDrawStage MinimapGenerator::getLastDrawStage() {
+    return m_lastDraw;
+}
+
+Config *MinimapGenerator::getConfig() {
+    return m_apiContainer->getConfig();
 }
 

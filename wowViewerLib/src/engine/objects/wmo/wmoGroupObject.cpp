@@ -753,10 +753,13 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
     m_wmoApi->updateBB();
 }
 
-bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
+void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
+                                       mathfu::vec4 &cameraPos,
                                        std::vector<mathfu::vec4> &frustumPlanes,
                                        std::vector<mathfu::vec3> &points) {
-    if (!m_loaded) return true;
+    drawDoodads = false;
+    drawGroup = false;
+    if (!m_loaded) return;
     CAaBox bbArray = this->m_worldGroupBorder;
 
     bool isInsideM2Volume = (
@@ -765,7 +768,7 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
         cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
     );
 
-    bool drawDoodads = isInsideM2Volume || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
+    drawDoodads = isInsideM2Volume || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
 
     bbArray = this->m_volumeWorldGroupBorder;
     bool isInsideGroup = (
@@ -774,8 +777,7 @@ bool WmoGroupObject::checkGroupFrustum(mathfu::vec4 &cameraPos,
         cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
     );
 
-    bool drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
-    return drawGroup;
+    drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
 }
 
 bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,

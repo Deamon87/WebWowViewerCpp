@@ -63,6 +63,11 @@ private:
     std::array<HCullStage, 4> m_cullstages;
 
     HMinimapGenerator minimapGenerator;
+    ScenarioDef sceneDef;
+    float previewX = 0;
+    float previewY = 0;
+    float previewZoom = 1;
+
     std::shared_ptr<IScene> currentScene = nullptr;
 
     bool openCascCallback(std::string cascPath);
@@ -99,6 +104,7 @@ private:
         }
     }
 
+    auto createMinimapGenerator();
 
     std::array<char, 128> filterText = {0};
     bool refilterIsNeeded = false;
@@ -115,6 +121,7 @@ private:
     bool showSettings = false;
     bool showQuickLinks = false;
     bool showAboutWindow = false;
+    bool showMinimapGeneratorSettings = false;
 //  c bool showWorldPosTooltip = false;
 
     bool showMapConstruction = false;
@@ -200,8 +207,11 @@ public:
     void showQuickLinksDialog();
 
     void showCurrentStatsDialog();
+    void showMinimapGenerationSettingsDialog();
 
     void openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z);
+
+    void editComponentsForConfig(Config *config);
 };
 
 

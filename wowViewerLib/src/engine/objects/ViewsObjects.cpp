@@ -32,7 +32,7 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<H
 
 void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     std::vector<std::shared_ptr<M2Object>> candidates;
-    for (auto &wmoGroup : drawnWmos) {
+    for (auto &wmoGroup : wmosForM2) {
         auto doodads = wmoGroup->getDoodads();
         std::copy(doodads->begin(), doodads->end(), std::back_inserter(candidates));
     }

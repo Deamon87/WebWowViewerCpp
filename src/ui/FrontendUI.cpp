@@ -96,6 +96,7 @@ void FrontendUI::composeUI() {
     showMapSelectionDialog();
     showMakeScreenshotDialog();
     showCurrentStatsDialog();
+    showMinimapGenerationSettingsDialog();
 
     // Rendering
     ImGui::Render();
@@ -510,9 +511,13 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(1029334, replacementTextureFDids);
     }
     if (ImGui::Button("IGC Anduin", ImVec2(-1, 0))) {
-
-
         openM2SceneByfdid(3849312, replacementTextureFDids);
+    }
+    if (ImGui::Button("Nether collector top", ImVec2(-1, 0))) {
+        openM2SceneByfdid(193157, replacementTextureFDids);
+    }
+    if (ImGui::Button("Сollector top", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(113540);
     }
 
     if (ImGui::Button("Fox", ImVec2(-1, 0))) {
@@ -1218,7 +1223,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     if ((minimapGenerator != nullptr) && (minimapGenerator->isDone()))
         minimapGenerator = nullptr;
 
-    if (minimapGenerator != nullptr) {
+    if (minimapGenerator != nullptr && minimapGenerator->isInGenerationMode()) {
         minimapGenerator->process();
     }
 
@@ -1388,12 +1393,41 @@ void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
 }
 
 void FrontendUI::startExperimentCallback() {
+    showMinimapGeneratorSettings = true;
+}
+
+void FrontendUI::createDefaultprocessor() {
+
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=data&filedataid=";
+//
+//Classics
+//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
+//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
+//        processor = new HttpZipRequestProcessor(url);
+////        processor = new ZipRequestProcessor(filePath);
+////        processor = new MpqRequestProcessor(filePath);
+//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
+////        processor->setThreaded(false);
+////
+    m_processor->setThreaded(true);
+    m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_processor.get());
+    m_processor->setFileRequester(m_api->cacheStorage.get());
+}
+
+auto FrontendUI::createMinimapGenerator() {
     minimapGenerator = std::make_shared<MinimapGenerator>(
         m_api->cacheStorage,
         m_api->hDevice,
         m_processor,
         m_api->databaseHandler
     );
+
+    minimapGenerator->setZoom(previewZoom);
+    minimapGenerator->setLookAtPoint(previewX, previewY);
+
+    return minimapGenerator;
 
     std::vector<ScenarioDef> scenarios = {
 //        {
@@ -1473,25 +1507,178 @@ void FrontendUI::startExperimentCallback() {
 //            "kalimdor/rotation3"
 //        },
 //    };
-    minimapGenerator->startScenarios(scenarios);
 }
 
-void FrontendUI::createDefaultprocessor() {
+void FrontendUI::editComponentsForConfig(Config * config) {
+    if (config == nullptr) return;
+    {
+        auto ambient = config->exteriorAmbientColor;
+        exteriorAmbientColor = {ambient.x, ambient.y, ambient.z};
+        ImVec4 col = ImVec4(ambient.x, ambient.y, ambient.z, 1.0);
+        if (ImGui::ColorButton("ExteriorAmbientColor##3b", col)) {
+            ImGui::OpenPopup("Exterior Ambient picker");
+        }
+        ImGui::SameLine();
+        ImGui::Text("Exterior Ambient");
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=data&filedataid=";
-//
-//Classics
-//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
-//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
-//        processor = new HttpZipRequestProcessor(url);
-////        processor = new ZipRequestProcessor(filePath);
-////        processor = new MpqRequestProcessor(filePath);
-    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-//    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
-////        processor->setThreaded(false);
-////
-    m_processor->setThreaded(true);
-    m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_processor.get());
-    m_processor->setFileRequester(m_api->cacheStorage.get());
+        if (ImGui::BeginPopup("Exterior Ambient picker")) {
+            if (ImGui::ColorPicker3("Exterior Ambient", exteriorAmbientColor.data())) {
+                config->exteriorAmbientColor = mathfu::vec4(
+                    exteriorAmbientColor[0], exteriorAmbientColor[1], exteriorAmbientColor[2], 1.0);
+            }
+            ImGui::EndPopup();
+        }
+    }
+
+    {
+        auto horizontAmbient = config->exteriorHorizontAmbientColor;
+        exteriorHorizontAmbientColor = {horizontAmbient.x, horizontAmbient.y, horizontAmbient.z};
+        ImVec4 col = ImVec4(horizontAmbient.x, horizontAmbient.y, horizontAmbient.z, 1.0);
+        if (ImGui::ColorButton("ExteriorHorizontAmbientColor##3b", col)) {
+            ImGui::OpenPopup("Exterior Horizont Ambient picker");
+        }
+        ImGui::SameLine();
+        ImGui::Text("Exterior Horizont Ambient");
+
+        if (ImGui::BeginPopup("Exterior Horizont Ambient picker")) {
+            if (ImGui::ColorPicker3("Exterior Horizont Ambient", exteriorHorizontAmbientColor.data())) {
+                config->exteriorHorizontAmbientColor = mathfu::vec4 (
+                    exteriorHorizontAmbientColor[0],
+                    exteriorHorizontAmbientColor[1], exteriorHorizontAmbientColor[2], 1.0);
+            }
+            ImGui::EndPopup();
+        }
+    }
+    {
+        auto groundAmbient = config->exteriorGroundAmbientColor;
+        exteriorGroundAmbientColor = {groundAmbient.x, groundAmbient.y, groundAmbient.z};
+        ImVec4 col = ImVec4(groundAmbient.x, groundAmbient.y, groundAmbient.z, 1.0);
+
+        if (ImGui::ColorButton("ExteriorGroundAmbientColor##3b", col)) {
+            ImGui::OpenPopup("Exterior Ground Ambient picker");
+        }
+        ImGui::SameLine();
+        ImGui::Text("Exterior Ground Ambient");
+
+        if (ImGui::BeginPopup("Exterior Ground Ambient picker")) {
+            if (ImGui::ColorPicker3("Exterior Ground Ambient", exteriorGroundAmbientColor.data())) {
+                config->exteriorGroundAmbientColor = mathfu::vec4(
+                    exteriorGroundAmbientColor[0],
+                    exteriorGroundAmbientColor[1], exteriorGroundAmbientColor[2], 1.0);
+            }
+            ImGui::EndPopup();
+        }
+    }
+    {
+        auto directColor = config->exteriorDirectColor;
+        std::array<float, 3> exteriorDirectColor = {directColor.x, directColor.y, directColor.z};
+        ImVec4 col = ImVec4(directColor.x, directColor.y, directColor.z, 1.0);
+
+        if (ImGui::ColorButton("ExteriorDirectColor##3b", col)) {
+            ImGui::OpenPopup("Exterior Direct Color picker");
+        }
+        ImGui::SameLine();
+        ImGui::Text("Exterior Direct Color");
+
+        if (ImGui::BeginPopup("Exterior Direct Color picker")) {
+            if (ImGui::ColorPicker3("Exterior Direct Color", exteriorDirectColor.data())) {
+                config->exteriorDirectColor = mathfu::vec4(
+                    exteriorDirectColor[0],
+                    exteriorDirectColor[1],
+                    exteriorDirectColor[2], 1.0);
+            }
+            ImGui::EndPopup();
+        }
+    }
+
+}
+
+void FrontendUI::showMinimapGenerationSettingsDialog() {
+    if(showMinimapGeneratorSettings) {
+        ImGui::Begin("Minimap Generator settings", &showMinimapGeneratorSettings);
+        ImGui::Columns(2, NULL, true);
+        //Left panel
+        {
+            if (minimapGenerator != nullptr) {
+                auto currentTime = minimapGenerator->getConfig()->currentTime;
+                ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
+                if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
+                    minimapGenerator->getConfig()->currentTime = currentTime;
+                }
+
+                editComponentsForConfig(minimapGenerator->getConfig());
+            }
+
+            if (ImGui::Button("Start")) {
+                if (minimapGenerator == nullptr) {
+                    createMinimapGenerator();
+                }
+//            minimapGenerator->startScenarios();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Start Preview")) {
+                sceneDef = {
+                    0,
+                    mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+                    mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+                    mathfu::vec2(-5817, -1175),
+                    mathfu::vec2(1758, 10491),
+                    ScenarioOrientation::soTopDownOrtho,
+                    "outland/topDown1"
+                };
+
+                if (minimapGenerator == nullptr) {
+                    createMinimapGenerator();
+                }
+                minimapGenerator->startPreview(sceneDef);
+            }
+        }
+
+
+        //Right panel
+        ImGui::NextColumn();
+
+        {
+            ImGui::BeginChild("Minimap Gen Preview", ImVec2(0, 0));
+            {
+                bool changed = false;
+                changed |= ImGui::InputFloat("x", &previewX);
+                changed |= ImGui::InputFloat("y", &previewY);
+
+
+                if (changed && minimapGenerator != nullptr) {
+                    minimapGenerator->setLookAtPoint(previewX, previewY);
+                }
+                if (ImGui::SliderFloat("Zoom", &previewZoom, 0.1, 10)) {
+                    minimapGenerator->setZoom(previewZoom);
+                }
+
+                ImGui::BeginChild("Minimap Gen Preview image", ImVec2(0, 0),
+                                  true, ImGuiWindowFlags_AlwaysHorizontalScrollbar |
+                                  ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
+                if (minimapGenerator != nullptr) {
+                    auto drawStage = minimapGenerator->getLastDrawStage();
+                    if (drawStage != nullptr) {
+                        auto texture = drawStage->target->getAttachment(0);
+                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                        ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
+                        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+
+                        ImGui::ImageButton(texture, ImVec2(1024, 1024));
+
+                        ImGui::PopStyleVar(3);
+                    }
+                }
+                ImGui::EndChild();
+
+            }
+            ImGui::EndChild();
+
+
+        }
+        ImGui::Columns(1);
+
+        ImGui::End();
+    }
 }

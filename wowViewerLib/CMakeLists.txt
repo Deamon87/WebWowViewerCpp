@@ -419,7 +419,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GFFXGlowVLK.cpp
             src/gapi/vulkan/shaders/GFFXGlowVLK.h
             src/gapi/vulkan/GRenderPassVLK.cpp
-            src/gapi/vulkan/GRenderPassVLK.h )
+            src/gapi/vulkan/GRenderPassVLK.h src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
@@ -507,7 +507,7 @@ else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
 endif()
 
-if (0)
+if (1)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)

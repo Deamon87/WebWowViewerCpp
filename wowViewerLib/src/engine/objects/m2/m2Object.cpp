@@ -469,6 +469,29 @@ M2Object::~M2Object() {
 void M2Object::createAABB() {
     M2Data *m2Data = m_m2Geom->getM2Data();
 
+    //Debug: calc bounding box from verticies
+    {
+        auto min = mathfu::vec3(9999, 9999, 9999);
+        auto max = mathfu::vec3(-9999, -9999, -9999);
+
+        for (int i = 0; i < m2Data->vertices.size; i++) {
+            auto *vertex = m2Data->vertices.getElement(i);
+
+            min = mathfu::vec3(mathfu::vec3(std::min(min.x, vertex->pos.x),
+                                                             std::min(min.y, vertex->pos.y),
+                                                             std::min(min.z, vertex->pos.z)));
+
+            max = mathfu::vec3(mathfu::vec3(std::max(max.x, vertex->pos.x),
+                                                             std::max(max.y, vertex->pos.y),
+                                                             std::max(max.z, vertex->pos.z)));
+        }
+
+//        std::cout << "calculated min = (" << min.x << ", " << min.y << ", " << min.z << ")" << std::endl;
+//        std::cout << "calculated max = (" << max.x << ", " << max.y << ", " << max.z << ")" << std::endl;
+    }
+
+
+
     {
         C3Vector min = m2Data->bounding_box.min;
         C3Vector max = m2Data->bounding_box.max;
@@ -1281,32 +1304,32 @@ void M2Object::createBoundingBoxMesh() {
     meshTemplate.ubo[3] = nullptr;
     meshTemplate.ubo[4] = nullptr;
 
-    M2Data *m2Data = m_m2Geom->getM2Data();
-    CAaBox &aaBox = m2Data->bounding_box;
+    auto l_m2Geom = m_m2Geom;
+    bbBlockVS->setUpdateHandler([this, l_m2Geom](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+        M2Data *m2Data = l_m2Geom->getM2Data();
+        CAaBox &aaBox = m2Data->bounding_box;
 
 
-    mathfu::vec3 center = mathfu::vec3(
-        (aaBox.min.x + aaBox.max.x) / 2,
-        (aaBox.min.y + aaBox.max.y) / 2,
-        (aaBox.min.z + aaBox.max.z) / 2
-    );
+        mathfu::vec3 center = mathfu::vec3(
+            (aaBox.min.x + aaBox.max.x) / 2,
+            (aaBox.min.y + aaBox.max.y) / 2,
+            (aaBox.min.z + aaBox.max.z) / 2
+        );
 
-    mathfu::vec3 scale = mathfu::vec3(
-        aaBox.max.x - center[0],
-        aaBox.max.y - center[1],
-        aaBox.max.z - center[2]
-    );
+        mathfu::vec3 scale = mathfu::vec3(
+            aaBox.max.x - center[0],
+            aaBox.max.y - center[1],
+            aaBox.max.z - center[2]
+        );
 
-    bbModelWideBlockVS &blockVS = bbBlockVS->getObject<bbModelWideBlockVS>();
-    blockVS.uPlacementMat = m_placementMatrix;
-    blockVS.uBBScale = mathfu::vec4_packed(mathfu::vec4(scale, 0.0));
-    blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
-    blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
-
-//    bbBlockVS->save(true);
+        bbModelWideBlockVS &blockVS = self->getObject<bbModelWideBlockVS>();
+        blockVS.uPlacementMat = m_placementMatrix;
+        blockVS.uBBScale = mathfu::vec4_packed(mathfu::vec4(scale, 0.0));
+        blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
+        blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
+    });
 
     boundingBoxMesh = m_api->hDevice->createMesh(meshTemplate);
-
     occlusionQuery = m_api->hDevice->createQuery(boundingBoxMesh);
 }
 
@@ -1546,6 +1569,8 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
             opaqueMeshes.push_back(mesh);
         }
     }
+
+//    transparentMeshes.push_back(boundingBoxMesh);
 //    std::cout << "Collected meshes at update frame =" << m_api->hDevice->getUpdateFrameNumber() << std::endl;
 
 //    renderedThisFrame.push_back(occlusionQuery);

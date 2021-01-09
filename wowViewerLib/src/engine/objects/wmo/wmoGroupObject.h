@@ -48,7 +48,8 @@ public:
     bool doPostLoad();
     void update();
     void uploadGeneratorBuffers();
-    bool checkGroupFrustum(mathfu::vec4 &cameraVec4,
+    void checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
+                           mathfu::vec4 &cameraVec4,
                            std::vector<mathfu::vec4> &frustumPlanes,
                            std::vector<mathfu::vec3> &points);
 

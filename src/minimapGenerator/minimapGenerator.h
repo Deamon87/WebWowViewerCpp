@@ -46,6 +46,7 @@ private:
     int m_x = 0;
     int m_y = 0;
 
+    float m_zoom;
 
 
     float XToYCoef = 0;
@@ -56,6 +57,9 @@ private:
     int m_chunkWidth = 64;
     int m_chunkHeight = 64;
 
+    bool m_isInGeneration = false;
+
+    HDrawStage m_lastDraw = nullptr;
     std::list<HDrawStage> drawStageStack = {};
     int framesReady = 0;
 
@@ -70,8 +74,12 @@ public:
     void startScenarios(std::vector<ScenarioDef> &scenarioListToProcess);
     void process();
     bool isDone();
+    bool isInGenerationMode() { return m_isInGeneration;}
     void setupCameraData();
     HDrawStage createSceneDrawStage(HFrameScenario sceneScenario);
+    HDrawStage getLastDrawStage();
+    Config *getConfig();
+
 
     float GetOrthoDimension();
 
@@ -83,8 +91,15 @@ public:
     int YNumbering();
 
     float getYScreenSpaceDimension();
-
     float getXScreenSpaceDimension();
+
+
+    void setupScenarioData();
+
+    void setLookAtPoint(float x, float y);
+    void setZoom(float zoom);
+
+    void startPreview(ScenarioDef &scenarioDef);
 };
 
 typedef std::shared_ptr<MinimapGenerator> HMinimapGenerator;

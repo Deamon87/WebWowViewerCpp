@@ -123,7 +123,7 @@ void main() {
     float specBlend = final.a;
     vec3 halfVec = -(normalize((scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition))));
     vec3 lSpecular = ((scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
-    vec3 specTerm = (vec3(specBlend) * lSpecular);
+    vec3 specTerm = (vec3(specBlend) * lSpecular) * scene.extLight.adtSpecMult.x;
     finalColor.rgb += specTerm;
 
     finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, 0);

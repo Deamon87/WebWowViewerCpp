@@ -32,6 +32,7 @@
 #include "shaders/GImguiShaderPermutation.h"
 #include "shaders/GM2RibbonShaderPermutationVLK.h"
 #include "shaders/GSkyConusShaderVLK.h"
+#include "shaders/GDrawBoundingBoxVLK.h"
 #include "GFrameBufferVLK.h"
 #include "shaders/GFFXgauss4VLK.h"
 #include "shaders/GFFXGlowVLK.h"

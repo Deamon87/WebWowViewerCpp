@@ -28,6 +28,7 @@ struct SceneExteriorLight {
     mathfu::vec4_packed uExteriorGroundAmbientColor;
     mathfu::vec4_packed uExteriorDirectColor;
     mathfu::vec4_packed uExteriorDirectColorDir;
+    mathfu::vec4_packed uAdtSpecMult;
 };
 
 struct sceneWideBlockVSPS {

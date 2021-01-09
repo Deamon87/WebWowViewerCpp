@@ -84,6 +84,8 @@ public:
     mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
     mathfu::vec3 exteriorDirectColorDir;
 
+    float adtSpecMult = 1.0;
+
     mathfu::vec4 interiorAmbientColor;
     mathfu::vec4 interiorSunColor;
     mathfu::vec3 interiorSunDir;

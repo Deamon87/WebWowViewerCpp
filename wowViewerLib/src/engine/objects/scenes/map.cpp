@@ -1706,6 +1706,7 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         blockPSVS->extLight.uExteriorGroundAmbientColor = fdd->exteriorGroundAmbientColor;
         blockPSVS->extLight.uExteriorDirectColor = fdd->exteriorDirectColor;
         blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
+        blockPSVS->extLight.uAdtSpecMult = mathfu::vec4(config->adtSpecMult, 0,0,1.0);
 
 //        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
         float fogEnd = config->farPlane;
