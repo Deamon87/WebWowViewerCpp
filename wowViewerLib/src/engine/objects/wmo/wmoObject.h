@@ -133,6 +133,8 @@ public:
     void createM2Array();
     void updateBB() override ;
 
+    CAaBox getAABB();
+
 public:
     //Portal culling
 //    bool startTraversingFromInteriorWMO (

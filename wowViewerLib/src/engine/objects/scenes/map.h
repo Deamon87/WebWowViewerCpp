@@ -92,6 +92,7 @@ protected:
     int getCameraNum() override {return 0;};
     std::shared_ptr<ICamera> createCamera(int cameraNum) override { return nullptr;};
 
+
     animTime_t getCurrentSceneTime() override ;
 
     virtual void getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
@@ -120,6 +121,8 @@ protected:
 
     FreeStrategy adtFreeLambda;
     FreeStrategy zeroStateLambda;
+
+    HADTBoundingBoxHolder m_adtBBHolder = nullptr;
 
 protected:
     explicit Map() : taskScheduler(10){
@@ -195,6 +198,9 @@ public:
     };
     void resetAnimation() override {
 
+    }
+    void setAdtBoundingBoxHolder(HADTBoundingBoxHolder bbHolder) override {
+        m_adtBBHolder = bbHolder;
     }
 
 

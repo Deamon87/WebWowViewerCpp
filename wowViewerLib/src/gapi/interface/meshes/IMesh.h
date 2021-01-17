@@ -114,7 +114,7 @@ protected:
     int m_start;
     int m_end;
 
-    std::vector<HGTexture> m_texture;
+    std::vector<HGTexture> m_texture = {};
     int m_textureCount;
 
     std::array<HGUniformBufferChunk,6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};

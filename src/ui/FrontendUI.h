@@ -79,7 +79,6 @@ private:
 
     void getCameraPos(float &cameraX,float &cameraY,float &cameraZ);
     void makeScreenshotCallback(std::string fileName, int width, int height);
-    void startExperimentCallback();
 
     void getAdtSelectionMinimap(int wdtFileDataId) {
         m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);

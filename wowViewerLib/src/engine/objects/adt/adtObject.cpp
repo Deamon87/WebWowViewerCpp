@@ -1333,6 +1333,38 @@ AdtObject::AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDa
     lodNormalTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataIDs.mapTextureN);
 }
 
+CAaBox AdtObject::calcAABB() {
+    mathfu::vec3 minCoord = mathfu::vec3(20000, 20000, 20000);
+    mathfu::vec3 maxCoord = mathfu::vec3(-20000, -20000, -20000);
+
+    for (auto &aaBox : tileAabb) {
+        minCoord = mathfu::vec3(
+            std::min<float>(minCoord.x, aaBox.min.x),
+            std::min<float>(minCoord.y, aaBox.min.y),
+            std::min<float>(minCoord.z, aaBox.min.z)
+        );
+        maxCoord = mathfu::vec3(
+            std::max<float>(maxCoord.x, aaBox.max.x),
+            std::max<float>(maxCoord.y, aaBox.max.y),
+            std::max<float>(maxCoord.z, aaBox.max.z)
+        );
+    }
+    for (auto &aaBox : waterTileAabb) {
+        minCoord = mathfu::vec3(
+            std::min<float>(minCoord.x, aaBox.min.x),
+            std::min<float>(minCoord.y, aaBox.min.y),
+            std::min<float>(minCoord.z, aaBox.min.z)
+        );
+        maxCoord = mathfu::vec3(
+            std::max<float>(maxCoord.x, aaBox.max.x),
+            std::max<float>(maxCoord.y, aaBox.max.y),
+            std::max<float>(maxCoord.z, aaBox.max.z)
+        );
+    }
+
+    return CAaBox(mathfu::vec3_packed(minCoord), mathfu::vec3_packed(maxCoord));
+}
+
 int AdtObject::getAreaId(int mcnk_x, int mcnk_y) {
     if (!m_loaded) {
         return 0;

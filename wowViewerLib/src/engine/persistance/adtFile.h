@@ -89,6 +89,8 @@ public:
     PointerChecker<float> floatDataBlob = floatDataBlob_len;
     int floatDataBlob_len = 0;
 
+    MLHeader * mlHeader = nullptr;
+
     PointerChecker<uint16_t> mvli_indicies = mvli_len;
     int mvli_len = 0;
 

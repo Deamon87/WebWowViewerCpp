@@ -102,6 +102,11 @@ struct SMMapObjDefObj1 {                        // same as MODF but without boun
     uint16_t unk;
 };
 
+struct MLHeader {
+    uint32_t unknown;
+    float some_kind_of_bounding[6];
+};
+
 struct SMLodLevelPerObject
 {
     uint32_t m2LodOffset[3];  //Index into MLDD per lod

@@ -1193,6 +1193,17 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
                     if ((i < 0) || (i > 64)) continue;
                     if ((j < 0) || (j > 64)) continue;
 
+                    if (this->m_adtBBHolder != nullptr) {
+                        bool bbCheck = MathHelper::checkFrustum(
+                            cullStage->exteriorView.frustumPlanes[0], //TODO:!
+                            (*this->m_adtBBHolder)[i][j],
+                            frustumPoints
+                        );
+
+                        if (!bbCheck)
+                            continue;
+                    }
+
                     auto adtObject = mapTiles[i][j];
                     if (adtObject != nullptr) {
 

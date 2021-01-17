@@ -35,5 +35,6 @@ public:
     virtual std::shared_ptr<ICamera> createCamera(int cameraNum) = 0;
 
     virtual void exportScene(IExporter * exporter) {};
+    virtual void setAdtBoundingBoxHolder(HADTBoundingBoxHolder bbHolder) {};
 };
 #endif //WEBWOWVIEWERCPP_IINNERSCENEAPI_H

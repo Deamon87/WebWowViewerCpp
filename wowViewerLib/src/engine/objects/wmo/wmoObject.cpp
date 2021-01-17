@@ -739,6 +739,10 @@ void WmoObject::updateBB() {
     }
 }
 
+CAaBox WmoObject::getAABB() {
+    return this->m_bbox;
+}
+
 void WmoObject::createM2Array() {
 }
 

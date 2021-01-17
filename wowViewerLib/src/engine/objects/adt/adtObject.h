@@ -49,6 +49,11 @@ public:
 
     int getAreaId(int mcnk_x, int mcnk_y);
 
+    int getAdtX() {return adt_x;}
+    int getAdtY() {return adt_y;}
+
+    CAaBox calcAABB();
+
     bool checkFrustumCulling(
             ADTObjRenderRes &adtFrustRes,
             mathfu::vec4 &cameraPos,

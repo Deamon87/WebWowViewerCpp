@@ -64,9 +64,6 @@ int screenshotWidth = 100;
 int screenshotHeight = 100;
 bool needToMakeScreenshot = false;
 
-
-
-
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     if (stopMouse) return;
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);

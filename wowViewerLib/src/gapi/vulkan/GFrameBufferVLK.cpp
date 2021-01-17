@@ -133,7 +133,7 @@ void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *
     // Check if the device supports blitting to linear images
     vkGetPhysicalDeviceFormatProperties(physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
     if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
-        std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
+        //std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
         supportsBlit = false;
     }
 

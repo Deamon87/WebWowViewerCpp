@@ -201,16 +201,13 @@ set(SOURCE_FILES
 		src/exporters/gltfExporter/GLTFExporter.h
 
 		src/ui/childWindow/mapConstructionWindow.cpp
-		src/ui/childWindow/mapConstructionWindow.h)
+		src/ui/childWindow/mapConstructionWindow.h
+		src/ui/imguiLib/groupPanel/groupPanel.cpp
+		src/ui/imguiLib/groupPanel/groupPanel.h
 
+		src/main.cpp
+        src/ui/imguiLib/disablableButton/disablableButton.cpp src/ui/imguiLib/disablableButton/disablableButton.h)
 
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-	set(SOURCE_FILES ${SOURCE_FILES}
-		src/main.cpp)
-else()
-	set(SOURCE_FILES ${SOURCE_FILES}
-			src/jniLib.cpp src/database/dbStructs.h src/ui/imguiLib/imguiCustomConfig.h)
-endif()
 
 
 #########################################################

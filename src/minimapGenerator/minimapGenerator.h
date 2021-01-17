@@ -25,9 +25,21 @@ struct ScenarioDef {
     mathfu::vec2 minWowWorldCoord;
     mathfu::vec2 maxWowWorldCoord;
 
+    int imageHeight;
+    int imageWidth;
+
     ScenarioOrientation orientation = ScenarioOrientation::so45DegreeTick0;
 
     std::string folderToSave;
+
+    HADTBoundingBoxHolder boundingBoxHolder = nullptr;
+};
+
+enum class EMGMode {
+    eNone,
+    eBoundingBoxCalculation,
+    eScreenshotGeneration,
+    ePreview,
 };
 
 class MinimapGenerator {
@@ -57,10 +69,11 @@ private:
     int m_chunkWidth = 64;
     int m_chunkHeight = 64;
 
-    bool m_isInGeneration = false;
+    EMGMode m_mgMode = EMGMode::eNone;
 
     HDrawStage m_lastDraw = nullptr;
     std::list<HDrawStage> drawStageStack = {};
+    std::list<HCullStage> cullStageStack = {};
     int framesReady = 0;
 
     mathfu::mat4 getOrthoMatrix();
@@ -74,12 +87,18 @@ public:
     void startScenarios(std::vector<ScenarioDef> &scenarioListToProcess);
     void process();
     bool isDone();
-    bool isInGenerationMode() { return m_isInGeneration;}
+    EMGMode getCurrentMode() { return m_mgMode;}
     void setupCameraData();
     HDrawStage createSceneDrawStage(HFrameScenario sceneScenario);
     HDrawStage getLastDrawStage();
     Config *getConfig();
 
+    void getCurrentTileCoordinates(int &x, int &y, int &maxX, int &maxY) {
+        x = m_x;
+        y = m_y;
+        maxX = m_chunkWidth;
+        maxY = m_chunkHeight;
+    }
 
     float GetOrthoDimension();
 
@@ -100,6 +119,10 @@ public:
     void setZoom(float zoom);
 
     void startPreview(ScenarioDef &scenarioDef);
+    void stopPreview();
+
+    void startBoundingBoxCalc(ScenarioDef &scenarioDef);
+    void stopBoundingBoxCalc();
 };
 
 typedef std::shared_ptr<MinimapGenerator> HMinimapGenerator;

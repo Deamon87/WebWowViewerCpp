@@ -33,8 +33,6 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
 //    config->adtTTLWithoutUpdate = 500; //0.5 sec
     config->adtFreeStrategy = EFreeStrategy::eFrameBase; //
 
-
-//    mathfu::vec4 ambient = ;
     config->exteriorAmbientColor =  mathfu::vec4(0.5f,0.5f,0.5f,1.0);;
     config->exteriorHorizontAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
     config->exteriorGroundAmbientColor = mathfu::vec4(0.0,0.0,0.0,1.0);
@@ -45,20 +43,39 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
     config->disableFog = true;
     config->renderSkyDom = false;
     config->currentGlow = 0;
-//    m_apiContainer.getConfig()->setDisableFog()
 }
 void MinimapGenerator::startScenarios(std::vector<ScenarioDef> &scenarioList) {
-    m_isInGeneration = true;
+    m_mgMode = EMGMode::eScreenshotGeneration;
     scenarioListToProcess = scenarioList;
+    setZoom(1.0f);
 
     startNextScenario();
 }
 
 void MinimapGenerator::startPreview(ScenarioDef &scenarioDef) {
+    m_mgMode = EMGMode::ePreview;
     currentScenario = scenarioDef;
 
     setupScenarioData();
 }
+void MinimapGenerator::stopPreview() {
+    m_mgMode = EMGMode::eNone;
+}
+void MinimapGenerator::startBoundingBoxCalc(ScenarioDef &scenarioDef) {
+    m_mgMode = EMGMode::eBoundingBoxCalculation;
+    currentScenario = scenarioDef;
+
+    currentScenario.orientation = ScenarioOrientation::soTopDownOrtho;
+//    currentScenario.minWowWorldCoord = mathfu::vec2(-MathHelper::TILESIZE * 32, -MathHelper::TILESIZE * 32);
+    currentScenario.minWowWorldCoord = mathfu::vec2(-MathHelper::TILESIZE * 32, -MathHelper::TILESIZE * 32);
+    currentScenario.maxWowWorldCoord = mathfu::vec2(MathHelper::TILESIZE * 32, MathHelper::TILESIZE * 32);
+
+    setupScenarioData();
+}
+void MinimapGenerator::stopBoundingBoxCalc() {
+    m_mgMode = EMGMode::eNone;
+}
+
 
 void MinimapGenerator::startNextScenario() {
     if (scenarioListToProcess.size() == 0)
@@ -83,12 +100,15 @@ void MinimapGenerator::setupScenarioData() {
     }
 
     if (currentScenario.orientation == ScenarioOrientation::soTopDownOrtho) {
-        m_apiContainer->camera = std::__1::make_shared<FirstPersonOrthoStaticTopDownCamera>();
+        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticTopDownCamera>();
     } else {
-        m_apiContainer->camera = std::__1::make_shared<FirstPersonOrthoStaticCamera>();
+        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
     }
 
-    m_currentScene = std::__1::make_shared<Map>(m_apiContainer, mapRecord.ID, mapRecord.WdtFileID);
+    m_currentScene = std::make_shared<Map>(m_apiContainer, mapRecord.ID, mapRecord.WdtFileID);
+    if (m_mgMode == EMGMode::eScreenshotGeneration) {
+        m_currentScene->setAdtBoundingBoxHolder(currentScenario.boundingBoxHolder);
+    }
 
     auto config = m_apiContainer->getConfig();
     config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
@@ -98,6 +118,9 @@ void MinimapGenerator::setupScenarioData() {
 
     m_x = m_chunkStartX;
     m_y = m_chunkStartY;
+
+    m_width = currentScenario.imageWidth;
+    m_height = currentScenario.imageHeight;
 
     setupCameraData();
 }
@@ -126,9 +149,9 @@ MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, c
     std::cout <<"Orient = " << (int)currentScenario.orientation << " XToYCoef = " << XToYCoef << std::endl;
 
     m_chunkStartX = std::floor(((minOrthoMapCoord.y) / getXScreenSpaceDimension())) ;
-    m_chunkWidth = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y) / getXScreenSpaceDimension()) + 0.99 ) + 1;
+    m_chunkWidth = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y) / getXScreenSpaceDimension()) + 0.99 );
     m_chunkStartY = std::floor(((minOrthoMapCoord.x) / getYScreenSpaceDimension())) ; //Y goes in reverse, that's why there is - here instead of +
-    m_chunkHeight = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x) / getYScreenSpaceDimension()) + 0.99) + 1;
+    m_chunkHeight = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x) / getYScreenSpaceDimension()) + 0.99);
 
     std::cout << "m_chunkStartX = " << m_chunkStartX << " m_chunkWidth = " << m_chunkWidth
               << " m_chunkStartY = " << m_chunkStartY << " m_chunkHeight = " << m_chunkHeight << std::endl;
@@ -282,36 +305,38 @@ void MinimapGenerator::calcXtoYCoef() {
 float MinimapGenerator::getYScreenSpaceDimension() {
     switch (currentScenario.orientation) {
         case ScenarioOrientation::soTopDownOrtho:
-            return GetOrthoDimension() * 2.0f;
+            return GetOrthoDimension();
         case ScenarioOrientation::so45DegreeTick0:
-            return GetOrthoDimension() * 2.0f * XToYCoef;
+            return GetOrthoDimension() * XToYCoef;
         case ScenarioOrientation::so45DegreeTick1:
-            return GetOrthoDimension() * 2.0f * (1.0f/XToYCoef);
+            return GetOrthoDimension() * (1.0f/XToYCoef);
         case ScenarioOrientation::so45DegreeTick2:
-            return GetOrthoDimension() * 2.0f * XToYCoef;
+            return GetOrthoDimension() * XToYCoef;
         case ScenarioOrientation::so45DegreeTick3:
-            return GetOrthoDimension() * 2.0f * (1.0f/XToYCoef);
+            return GetOrthoDimension() * (1.0f/XToYCoef);
     }
 
 }
 float MinimapGenerator::getXScreenSpaceDimension() {
     switch (currentScenario.orientation) {
         case ScenarioOrientation::soTopDownOrtho:
-            return GetOrthoDimension() * 2.0f;
+            return GetOrthoDimension();
         case ScenarioOrientation::so45DegreeTick0:
-            return GetOrthoDimension() * 2.0f;
+            return GetOrthoDimension();
         case ScenarioOrientation::so45DegreeTick1:
-            return GetOrthoDimension() * 2.0;
+            return GetOrthoDimension();
         case ScenarioOrientation::so45DegreeTick2:
-            return GetOrthoDimension() * 2.0;
+            return GetOrthoDimension();
         case ScenarioOrientation::so45DegreeTick3:
-            return GetOrthoDimension() * 2.0f;
+            return GetOrthoDimension();
     }
 }
 
-
 void MinimapGenerator::setupCameraData() {
-   setLookAtPoint(getYScreenSpaceDimension() * m_y, getXScreenSpaceDimension() * m_x);
+    setLookAtPoint(
+    getYScreenSpaceDimension() * m_y + (getYScreenSpaceDimension() / 2.0f) ,
+    getXScreenSpaceDimension() * m_x + (getXScreenSpaceDimension() / 2.0f)
+    );
 }
 
 void MinimapGenerator::setZoom(float zoom) {
@@ -321,16 +346,13 @@ void MinimapGenerator::setLookAtPoint(float x, float y) {
     mathfu::vec3 lookAtPoint = mathfu::vec3(x, y, 1);
 
     lookAtPoint = getScreenCoordToWoWCoordMatrix() * lookAtPoint;
-
-
-    std::cout << "lookAtPoint = (" << lookAtPoint.x << ", " << lookAtPoint.y << ", " << lookAtPoint.z << ") " << std::endl;
-
+    //std::cout << "lookAtPoint = (" << lookAtPoint.x << ", " << lookAtPoint.y << ", " << lookAtPoint.z << ") " << std::endl;
 
     mathfu::vec3 lookAtVec3 = getLookAtVec3();
     lookAtPoint -= (4000.0f*lookAtVec3);
-    mathfu::vec3 cameraPos = lookAtPoint-(2000.0f*lookAtVec3);
 
-    std::cout << "cameraPos = (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ") " << std::endl;
+    mathfu::vec3 cameraPos = lookAtPoint-(2000.0f*lookAtVec3);
+//    std::cout << "cameraPos = (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ") " << std::endl;
 
     m_apiContainer->camera->setCameraPos(
         cameraPos.x, cameraPos.y, cameraPos.z
@@ -342,42 +364,124 @@ void MinimapGenerator::setLookAtPoint(float x, float y) {
 }
 
 
-const int waitQueueLen = 4;
+const int waitQueueLen = 5;
 void MinimapGenerator::process() {
     if (m_processor->completedAllJobs() && !m_apiContainer->hDevice->wasTexturesUploaded()) {
         framesReady++;
     } else {
         framesReady = 0;
         drawStageStack.clear();
+        cullStageStack.clear();
         return;
     }
 
     if (framesReady < waitQueueLen) {
-        if (drawStageStack.size() > 5)
+        if (drawStageStack.size() > 5) {
             drawStageStack.pop_back();
+            cullStageStack.pop_back();
+        }
         return;
     }
 
     auto lastFrameIt = drawStageStack.back();
+    auto lastFrameCull = cullStageStack.back();
     drawStageStack.clear();
+    cullStageStack.clear();
     framesReady = 0;
 
-    //Make screenshot out of this drawStage
-    if (!ghc::filesystem::is_directory(currentScenario.folderToSave) || !ghc::filesystem::exists(currentScenario.folderToSave)) { // Check if src folder exists
-        ghc::filesystem::create_directories(currentScenario.folderToSave); // create src folder
-    }
+    if (m_mgMode == EMGMode::eBoundingBoxCalculation) {
+        mathfu::vec3 minCoord = mathfu::vec3(20000, 20000, 20000);
+        mathfu::vec3 maxCoord = mathfu::vec3(-20000, -20000, -20000);
 
-    std::string fileName = currentScenario.folderToSave+"/map_"+std::to_string(
-        (XNumbering() > 0) ? (m_x-m_chunkStartX) : ((m_chunkWidth-1) - (m_x-m_chunkStartX))
-    )+"_"+std::to_string(
-        (YNumbering() > 0) ? (m_y-m_chunkStartY) : ((m_chunkHeight-1) - (m_y-m_chunkStartY))
-    )+".png";
+        for (auto &m2Object: lastFrameCull->m2Array) {
+            auto objBB = m2Object->getAABB();
+            minCoord = mathfu::vec3(
+                std::min<float>(minCoord.x, objBB.min.x),
+                std::min<float>(minCoord.y, objBB.min.y),
+                std::min<float>(minCoord.z, objBB.min.z)
+            );
+            maxCoord = mathfu::vec3(
+                std::max<float>(maxCoord.x, objBB.max.x),
+                std::max<float>(maxCoord.y, objBB.max.y),
+                std::max<float>(maxCoord.z, objBB.max.z)
+            );
+        }
 
-    std::vector<uint8_t> buffer = std::vector<uint8_t>(m_width*m_height*4+1);
-    saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
-    if (lastFrameIt->opaqueMeshes != nullptr) {
-        std::cout << "Saved " << fileName << ": opaqueMeshes (" << lastFrameIt->opaqueMeshes->meshes.size() << ") "
-                  << std::endl;
+        for (auto &wmoObject: lastFrameCull->wmoArray) {
+            auto objBB = wmoObject->getAABB();
+            minCoord = mathfu::vec3(
+                std::min<float>(minCoord.x, objBB.min.x),
+                std::min<float>(minCoord.y, objBB.min.y),
+                std::min<float>(minCoord.z, objBB.min.z)
+            );
+            maxCoord = mathfu::vec3(
+                std::max<float>(maxCoord.x, objBB.max.x),
+                std::max<float>(maxCoord.y, objBB.max.y),
+                std::max<float>(maxCoord.z, objBB.max.z)
+            );
+        }
+
+        int adt_x = ((m_chunkWidth - 1) - (m_x - m_chunkStartX));
+        int adt_y = ((m_chunkHeight - 1) - (m_y - m_chunkStartY));
+        for (auto &adtObjectRes: lastFrameCull->adtArray) {
+            auto adtObj = adtObjectRes->adtObject;
+            if (adtObj->getAdtX() != adt_x || adtObj->getAdtY() != adt_y) {
+                continue;
+            }
+
+            auto objBB = adtObj->calcAABB();
+            minCoord = mathfu::vec3(
+                std::min<float>(minCoord.x, objBB.min.x),
+                std::min<float>(minCoord.y, objBB.min.y),
+                std::min<float>(minCoord.z, objBB.min.z)
+            );
+            maxCoord = mathfu::vec3(
+                std::max<float>(maxCoord.x, objBB.max.x),
+                std::max<float>(maxCoord.y, objBB.max.y),
+                std::max<float>(maxCoord.z, objBB.max.z)
+            );
+        }
+
+//        std::cout << "minCoord = (" << minCoord.x << ", " << minCoord.y << ", " << minCoord.z << ")" << std::endl;
+//        std::cout << "maxCoord = (" << maxCoord.x << ", " << maxCoord.y << ", " << maxCoord.z << ")" << std::endl;
+
+        //Set x-y limits according to current adt index, since bounding box counting process is done per ADT
+        minCoord = mathfu::vec3(
+            AdtIndexToWorldCoordinate(adt_y - 1),
+            AdtIndexToWorldCoordinate(adt_x - 1),
+            minCoord.z);
+
+        maxCoord = mathfu::vec3(
+            AdtIndexToWorldCoordinate(adt_y),
+            AdtIndexToWorldCoordinate(adt_x),
+            minCoord.z);
+
+        if (currentScenario.boundingBoxHolder != nullptr) {
+            (*currentScenario.boundingBoxHolder)[adt_x][adt_y] = CAaBox(
+                C3Vector(minCoord),
+                C3Vector(maxCoord)
+            );
+        }
+
+    } else if (m_mgMode == EMGMode::eScreenshotGeneration) {
+        //Make screenshot out of this drawStage
+        if (!ghc::filesystem::is_directory(currentScenario.folderToSave) ||
+            !ghc::filesystem::exists(currentScenario.folderToSave)) { // Check if src folder exists
+            ghc::filesystem::create_directories(currentScenario.folderToSave); // create src folder
+        }
+
+        std::string fileName = currentScenario.folderToSave + "/map_" + std::to_string(
+            (XNumbering() > 0) ? (m_x - m_chunkStartX) : ((m_chunkWidth - 1) - (m_x - m_chunkStartX))
+        ) + "_" + std::to_string(
+            (YNumbering() > 0) ? (m_y - m_chunkStartY) : ((m_chunkHeight - 1) - (m_y - m_chunkStartY))
+        ) + ".png";
+
+        std::vector<uint8_t> buffer = std::vector<uint8_t>(m_width * m_height * 4 + 1);
+        saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
+        if (lastFrameIt->opaqueMeshes != nullptr) {
+            std::cout << "Saved " << fileName << ": opaqueMeshes (" << lastFrameIt->opaqueMeshes->meshes.size() << ") "
+                      << std::endl;
+        }
     }
 
     m_y++;
@@ -385,7 +489,7 @@ void MinimapGenerator::process() {
         m_x++;
         m_y = m_chunkStartY;
     }
-    std::cout << "m_x = " << m_x << " out of (" << m_chunkStartX+m_chunkWidth << ") m_y = " << m_y << " out of (" << m_chunkStartY+m_chunkHeight << ")" << std::endl;
+//    std::cout << "m_x = " << m_x << " out of (" << m_chunkStartX+m_chunkWidth << ") m_y = " << m_y << " out of (" << m_chunkStartY+m_chunkHeight << ")" << std::endl;
 
     if (m_x >= (m_chunkWidth + m_chunkStartX)) {
         startNextScenario();
@@ -444,8 +548,9 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
 
         m_lastDraw = sceneDrawStage;
         //We dont need stack in preview mode
-        if (isInGenerationMode()) {
+        if (m_mgMode != EMGMode::ePreview) {
             drawStageStack.push_front(sceneDrawStage);
+            cullStageStack.push_front(cullStage);
         }
         return sceneDrawStage;
     }
@@ -465,8 +570,8 @@ float MinimapGenerator::GetOrthoDimension() {
 
 mathfu::mat4 MinimapGenerator::getOrthoMatrix() {
     return mathfu::mat4::Ortho(
-        -GetOrthoDimension(),GetOrthoDimension(),
-        -GetOrthoDimension(),GetOrthoDimension(),
+        -GetOrthoDimension() / 2.0f,GetOrthoDimension() / 2.0f,
+        -GetOrthoDimension() / 2.0f,GetOrthoDimension() / 2.0f,
         1,10000
     );
 }

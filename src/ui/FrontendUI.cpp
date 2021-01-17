@@ -8,6 +8,8 @@
 #include <imguiImpl/imgui_impl_opengl3.h>
 #include <iostream>
 #include <mathfu/glsl_mappings.h>
+#include <groupPanel/groupPanel.h>
+#include <disablableButton/disablableButton.h>
 #include "imguiLib/imguiImpl/imgui_impl_glfw.h"
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
@@ -332,18 +334,15 @@ void FrontendUI::showAdtSelectionMinimap() {
                     auto mousePos = ImGui::GetMousePos();
                     ImGuiStyle &style = ImGui::GetStyle();
 
-
                     mousePos.x += ImGui::GetScrollX() - ImGui::GetWindowPos().x - style.WindowPadding.x;
                     mousePos.y += ImGui::GetScrollY() - ImGui::GetWindowPos().y - style.WindowPadding.y;
 
                     mousePos.x = ((mousePos.x / minimapZoom) / defaultImageDimension);
                     mousePos.y = ((mousePos.y / minimapZoom) / defaultImageDimension);
 
-                    mousePos.x = (32.0f - mousePos.x) * MathHelper::TILESIZE;
-                    mousePos.y = (32.0f - mousePos.y) * MathHelper::TILESIZE;
+                    worldPosX = AdtIndexToWorldCoordinate(mousePos.x);
+                    worldPosY = AdtIndexToWorldCoordinate(mousePos.y);
 
-                    worldPosX = mousePos.y;
-                    worldPosY = mousePos.x;
 //                                if ()
                     ImGui::OpenPopup("AdtWorldCoordsTest");
                     std::cout << "world coords : x = " << worldPosX << " y = " << worldPosY
@@ -410,8 +409,8 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
             if (ImGui::MenuItem("Open MapConstruction")) {showMapConstruction = true;}
-            if (ImGui::MenuItem("Start experiment")) {
-                startExperimentCallback();
+            if (ImGui::MenuItem("Open minimap generator")) {
+                showMinimapGeneratorSettings = true;
             }
             if (ImGui::MenuItem("Test export")) {
                 if (currentScene != nullptr) {
@@ -1223,7 +1222,12 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     if ((minimapGenerator != nullptr) && (minimapGenerator->isDone()))
         minimapGenerator = nullptr;
 
-    if (minimapGenerator != nullptr && minimapGenerator->isInGenerationMode()) {
+    if (minimapGenerator != nullptr &&
+        (
+            minimapGenerator->getCurrentMode() == EMGMode::eScreenshotGeneration ||
+            minimapGenerator->getCurrentMode() == EMGMode::eBoundingBoxCalculation
+        )
+    ) {
         minimapGenerator->process();
     }
 
@@ -1253,7 +1257,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         }
         needToMakeScreenshot = false;
     }
-    if (minimapGenerator != nullptr) {
+    if (minimapGenerator != nullptr && minimapGenerator->getCurrentMode() != EMGMode::eNone) {
         uiDependecies.push_back(minimapGenerator->createSceneDrawStage(sceneScenario));
     }
 
@@ -1392,10 +1396,6 @@ void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
     cameraZ = currentCameraPos[2];
 }
 
-void FrontendUI::startExperimentCallback() {
-    showMinimapGeneratorSettings = true;
-}
-
 void FrontendUI::createDefaultprocessor() {
 
     const char * url = "https://wow.tools/casc/file/fname?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=";
@@ -1427,6 +1427,18 @@ auto FrontendUI::createMinimapGenerator() {
     minimapGenerator->setZoom(previewZoom);
     minimapGenerator->setLookAtPoint(previewX, previewY);
 
+    sceneDef = {
+        0,
+        mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+        mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+        mathfu::vec2(-15801, -7000),
+        mathfu::vec2(5000, 6000),
+        512,
+        512,
+        ScenarioOrientation::so45DegreeTick0,
+        "azeroth/topDown1"
+    };
+
     return minimapGenerator;
 
     std::vector<ScenarioDef> scenarios = {
@@ -1445,6 +1457,8 @@ auto FrontendUI::createMinimapGenerator() {
             mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
             mathfu::vec2(291 , 647 ),
             mathfu::vec2(2550, 2895),
+            256,
+            256,
             ScenarioOrientation::so45DegreeTick0,
             "kultiras/orient0"
         },
@@ -1484,6 +1498,8 @@ auto FrontendUI::createMinimapGenerator() {
             mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
             mathfu::vec2(-12182, -8803),
             mathfu::vec2(12058, 4291),
+            256,
+            256,
             ScenarioOrientation::so45DegreeTick1,
             "kalimdor/rotation1_new"
         }
@@ -1511,6 +1527,8 @@ auto FrontendUI::createMinimapGenerator() {
 
 void FrontendUI::editComponentsForConfig(Config * config) {
     if (config == nullptr) return;
+
+    ImGui::BeginGroupPanel("Exterior Lighting");
     {
         auto ambient = config->exteriorAmbientColor;
         exteriorAmbientColor = {ambient.x, ambient.y, ambient.z};
@@ -1590,54 +1608,70 @@ void FrontendUI::editComponentsForConfig(Config * config) {
             ImGui::EndPopup();
         }
     }
+    ImGui::EndGroupPanel();
 
 }
 
 void FrontendUI::showMinimapGenerationSettingsDialog() {
     if(showMinimapGeneratorSettings) {
+        if (minimapGenerator == nullptr) {
+            createMinimapGenerator();
+        }
+
         ImGui::Begin("Minimap Generator settings", &showMinimapGeneratorSettings);
         ImGui::Columns(2, NULL, true);
         //Left panel
         {
-            if (minimapGenerator != nullptr) {
-                auto currentTime = minimapGenerator->getConfig()->currentTime;
-                ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
-                if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
-                    minimapGenerator->getConfig()->currentTime = currentTime;
-                }
-
-                editComponentsForConfig(minimapGenerator->getConfig());
+            auto currentTime = minimapGenerator->getConfig()->currentTime;
+            ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
+            if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
+                minimapGenerator->getConfig()->currentTime = currentTime;
             }
+
+            editComponentsForConfig(minimapGenerator->getConfig());
 
             if (ImGui::Button("Start")) {
-                if (minimapGenerator == nullptr) {
-                    createMinimapGenerator();
-                }
-//            minimapGenerator->startScenarios();
+                std::vector<ScenarioDef> list = {sceneDef};
+
+                minimapGenerator->startScenarios(list);
             }
             ImGui::SameLine();
-            if (ImGui::Button("Start Preview")) {
-                sceneDef = {
-                    0,
-                    mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-                    mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-                    mathfu::vec2(-5817, -1175),
-                    mathfu::vec2(1758, 10491),
-                    ScenarioOrientation::soTopDownOrtho,
-                    "outland/topDown1"
-                };
-
-                if (minimapGenerator == nullptr) {
-                    createMinimapGenerator();
+            if (minimapGenerator->getCurrentMode() != EMGMode::ePreview) {
+                bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
+                if (ImGui::ButtonDisablable("Start Preview", isDisabled)) {
+                    minimapGenerator->startPreview(sceneDef);
                 }
-                minimapGenerator->startPreview(sceneDef);
+            } else {
+                if (ImGui::Button("Stop Preview")) {
+                    minimapGenerator->stopPreview();
+                }
             }
+            ImGui::SameLine();
+            if (minimapGenerator->getCurrentMode() != EMGMode::eBoundingBoxCalculation) {
+                bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
+                if (ImGui::ButtonDisablable("Start BBox calc", isDisabled)) {
+                    minimapGenerator->startBoundingBoxCalc(sceneDef);
+                }
+            } else {
+                if (ImGui::Button("Stop BBox calc")) {
+                    minimapGenerator->stopBoundingBoxCalc();
+                }
+            }
+
+            if (minimapGenerator->getCurrentMode() != EMGMode::eNone && minimapGenerator->getCurrentMode() != EMGMode::ePreview) {
+                int x, y, maxX, maxY;
+                minimapGenerator->getCurrentTileCoordinates(x, y, maxX, maxY);
+
+                ImGui::Text("X: %02d out of %02d", x, maxX);
+                ImGui::Text("Y: %02d out of %02d", y, maxY);
+
+            }
+
         }
 
 
         //Right panel
         ImGui::NextColumn();
-
         {
             ImGui::BeginChild("Minimap Gen Preview", ImVec2(0, 0));
             {
@@ -1657,19 +1691,22 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                                   true, ImGuiWindowFlags_AlwaysHorizontalScrollbar |
                                   ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
-                if (minimapGenerator != nullptr) {
-                    auto drawStage = minimapGenerator->getLastDrawStage();
-                    if (drawStage != nullptr) {
-                        auto texture = drawStage->target->getAttachment(0);
-                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-                        ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
-                        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+                auto drawStage = minimapGenerator->getLastDrawStage();
+                if (drawStage != nullptr) {
+                    auto texture = drawStage->target->getAttachment(0);
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
+                    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0,0,0,1.0));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0,0,0,1.0));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0,0,0,1.0));
 
-                        ImGui::ImageButton(texture, ImVec2(1024, 1024));
+                    ImGui::ImageButton(texture, ImVec2(512, 512));
 
-                        ImGui::PopStyleVar(3);
-                    }
+                    ImGui::PopStyleColor(3);
+                    ImGui::PopStyleVar(3);
                 }
+
                 ImGui::EndChild();
 
             }
@@ -1680,5 +1717,9 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
         ImGui::Columns(1);
 
         ImGui::End();
+    } else {
+        if (minimapGenerator != nullptr && minimapGenerator->getCurrentMode() == EMGMode::eNone) {
+            minimapGenerator = nullptr;
+        }
     }
 }

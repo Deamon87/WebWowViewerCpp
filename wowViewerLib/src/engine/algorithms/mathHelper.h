@@ -121,7 +121,7 @@ inline int worldCoordinateToGlobalAdtChunk(float x) {
     return floor(( (32.0f*16.0f) - (x / (MathHelper::CHUNKSIZE)   )));
 }
 
-inline float AdtIndexToWorldCoordinate(int x) {
+inline float AdtIndexToWorldCoordinate(float x) {
     return (32.0f - x) * MathHelper::TILESIZE;
 }
 

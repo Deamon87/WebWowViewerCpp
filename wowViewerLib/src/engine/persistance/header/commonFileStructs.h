@@ -137,8 +137,8 @@ public:
 //        return *this;
 //    }
 
-    C3Vector min;
-    C3Vector max;
+    C3Vector min = mathfu::vec3_packed(mathfu::vec3(20000, 20000, 20000));
+    C3Vector max = mathfu::vec3_packed(mathfu::vec3(-20000, -20000, -20000));
 };
 struct CRect
 {

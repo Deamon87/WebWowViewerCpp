@@ -96,7 +96,7 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MAMP',
             {
                 [](AdtFile& file, ChunkData& chunkData){
-                    debuglog("Entered MTXF");
+                    debuglog("Entered MAMP");
 //                    std::cout << "Found MAMP" << std::endl;
                     file.mamp_len = chunkData.chunkLen / sizeof(char);
                     chunkData.readValues(file.mamp, file.mamp_len);
@@ -404,6 +404,16 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                             }
                         }
                     }
+                }
+            }
+        },
+        {
+            'MLHD',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLHD ");
+
+                    chunkData.readValue(file.mlHeader);
                 }
             }
         },
