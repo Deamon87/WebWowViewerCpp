@@ -16,8 +16,15 @@ enum class ScenarioOrientation {
     so45DegreeTick2,
     so45DegreeTick3,
 };
+enum class EMGMode {
+    eNone,
+    eBoundingBoxCalculation,
+    eScreenshotGeneration,
+    ePreview,
+};
 
 struct ScenarioDef {
+    EMGMode mode;
     int mapId;
     mathfu::vec4 closeOceanColor;
     mathfu::vec4 closeRiverColor;
@@ -28,6 +35,9 @@ struct ScenarioDef {
     int imageHeight;
     int imageWidth;
 
+    float zoom = 1.0f;
+    bool doBoundingBoxPreCalc = false;
+
     ScenarioOrientation orientation = ScenarioOrientation::so45DegreeTick0;
 
     std::string folderToSave;
@@ -35,12 +45,7 @@ struct ScenarioDef {
     HADTBoundingBoxHolder boundingBoxHolder = nullptr;
 };
 
-enum class EMGMode {
-    eNone,
-    eBoundingBoxCalculation,
-    eScreenshotGeneration,
-    ePreview,
-};
+
 
 class MinimapGenerator {
 private:
@@ -75,6 +80,7 @@ private:
     std::list<HDrawStage> drawStageStack = {};
     std::list<HCullStage> cullStageStack = {};
     int framesReady = 0;
+    bool pauseAddingToStack = false;
 
     mathfu::mat4 getOrthoMatrix();
     mathfu::vec3 getLookAtVec3();
@@ -94,8 +100,8 @@ public:
     Config *getConfig();
 
     void getCurrentTileCoordinates(int &x, int &y, int &maxX, int &maxY) {
-        x = m_x;
-        y = m_y;
+        x = (XNumbering() > 0) ? (m_x - m_chunkStartX) : ((m_chunkWidth  - 1) - (m_x - m_chunkStartX));
+        y = (YNumbering() > 0) ? (m_y - m_chunkStartY) : ((m_chunkHeight - 1) - (m_y - m_chunkStartY));
         maxX = m_chunkWidth;
         maxY = m_chunkHeight;
     }
@@ -123,6 +129,8 @@ public:
 
     void startBoundingBoxCalc(ScenarioDef &scenarioDef);
     void stopBoundingBoxCalc();
+
+    void saveDrawStageToFile(std::string folderToSave, const std::shared_ptr<DrawStage> &lastFrameIt);
 };
 
 typedef std::shared_ptr<MinimapGenerator> HMinimapGenerator;

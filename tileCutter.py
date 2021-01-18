@@ -39,7 +39,7 @@ class ZoomCreator:
         pasteIntoResult(result, getFileNameForZoom(2*x,   2*y+1, currentZoom+1), 0, 1024)
         pasteIntoResult(result, getFileNameForZoom(2*x+1, 2*y+1, currentZoom+1), 1024, 1024)
         result = result.resize((1024, 1024), Image.LANCZOS)
-        result.save(getFileNameForZoom(x, y, currentZoom))
+        result.save(getFileNameForZoom(x, y, currentZoom), optimize=True, quality=95)
 
 
 if __name__ == '__main__':

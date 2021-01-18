@@ -1275,10 +1275,10 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
                         16, 16);
     }
 
-    if (atLeastOneIsDrawn) {
+//    if (atLeastOneIsDrawn) {
         if (m_freeStrategy != nullptr)
             m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
-    }
+//    }
 
     return atLeastOneIsDrawn;
 }

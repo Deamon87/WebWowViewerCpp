@@ -70,7 +70,7 @@ void saveScreenshotLodePng(const std::string &name, int width, int height, std::
 
     unsigned error = lodepng_encode32(&png, &pngsize, rgbaBuff.data(), width, height);
     if(!error) {
-        std::ofstream f(name);
+        std::ofstream f(name,std::ofstream::binary);
         f.write((const char *)(png), pngsize);
     }
 
@@ -211,5 +211,4 @@ void saveDataFromDrawStage(const HFrameBuffer& fb,
 //    generateBitmapImage((unsigned char*) buffer.data(), screenshotHeight, screenshotWidth, screenshotWidth*4, (screenshotFileName+".bmp").c_str());
     //saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
     saveScreenshotLodePng(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
-
 }

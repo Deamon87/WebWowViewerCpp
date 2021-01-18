@@ -1219,9 +1219,6 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
 }
 
 HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, double deltaTime) {
-    if ((minimapGenerator != nullptr) && (minimapGenerator->isDone()))
-        minimapGenerator = nullptr;
-
     if (minimapGenerator != nullptr &&
         (
             minimapGenerator->getCurrentMode() == EMGMode::eScreenshotGeneration ||
@@ -1428,6 +1425,7 @@ auto FrontendUI::createMinimapGenerator() {
     minimapGenerator->setLookAtPoint(previewX, previewY);
 
     sceneDef = {
+        EMGMode::eScreenshotGeneration,
         0,
         mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
         mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
@@ -1435,94 +1433,98 @@ auto FrontendUI::createMinimapGenerator() {
         mathfu::vec2(5000, 6000),
         512,
         512,
+        4.0f,
+        true,
         ScenarioOrientation::so45DegreeTick0,
         "azeroth/topDown1"
     };
 
     return minimapGenerator;
 
-    std::vector<ScenarioDef> scenarios = {
+//    std::vector<ScenarioDef> scenarios = {
+////        {
+////            2222,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-9750, -8001   ),
+////            mathfu::vec2(8333, 9500 ),
+////            ScenarioOrientation::so45DegreeTick0,
+////            "shadowlands/orient0"
+////        }
 //        {
-//            2222,
+//            1643,
 //            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
 //            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-//            mathfu::vec2(-9750, -8001   ),
-//            mathfu::vec2(8333, 9500 ),
+//            mathfu::vec2(291 , 647 ),
+//            mathfu::vec2(2550, 2895),
+//            256,
+//            256,
+//            4.0f,
 //            ScenarioOrientation::so45DegreeTick0,
-//            "shadowlands/orient0"
-//        }
-        {
-            1643,
-            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-            mathfu::vec2(291 , 647 ),
-            mathfu::vec2(2550, 2895),
-            256,
-            256,
-            ScenarioOrientation::so45DegreeTick0,
-            "kultiras/orient0"
-        },
+//            "kultiras/orient0"
+//        },
+////        {
+////            530,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-5817, -1175),
+////            mathfu::vec2(1758, 10491),
+////            ScenarioOrientation::so45DegreeTick0,
+////            "outland/topDown1"
+////        }
+////        {
+////            0,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-9081, -20),
+////            mathfu::vec2(-8507, 1296),
+////            ScenarioOrientation::soTopDownOrtho,
+////            "azeroth/topDown"
+////        }
+////    };
+//
+////        std::vector<ScenarioDef> scenarios = {
+////        {
+////            1,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-12182, -8803 ),
+////            mathfu::vec2(12058, 4291),
+////            ScenarioOrientation::so45DegreeTick0,
+////            "kalimdor/rotation0"
+////        },
 //        {
-//            530,
+//            1,
 //            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
 //            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-//            mathfu::vec2(-5817, -1175),
-//            mathfu::vec2(1758, 10491),
-//            ScenarioOrientation::so45DegreeTick0,
-//            "outland/topDown1"
-//        }
-//        {
-//            0,
-//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-//            mathfu::vec2(-9081, -20),
-//            mathfu::vec2(-8507, 1296),
-//            ScenarioOrientation::soTopDownOrtho,
-//            "azeroth/topDown"
+//            mathfu::vec2(-12182, -8803),
+//            mathfu::vec2(12058, 4291),
+//            256,
+//            256,
+//            4.0f,
+//            ScenarioOrientation::so45DegreeTick1,
+//            "kalimdor/rotation1_new"
 //        }
 //    };
-
-//        std::vector<ScenarioDef> scenarios = {
-//        {
-//            1,
-//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-//            mathfu::vec2(-12182, -8803 ),
-//            mathfu::vec2(12058, 4291),
-//            ScenarioOrientation::so45DegreeTick0,
-//            "kalimdor/rotation0"
-//        },
-        {
-            1,
-            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-            mathfu::vec2(-12182, -8803),
-            mathfu::vec2(12058, 4291),
-            256,
-            256,
-            ScenarioOrientation::so45DegreeTick1,
-            "kalimdor/rotation1_new"
-        }
-    };
-//        {
-//            1,
-//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-//            mathfu::vec2(-12182, -8803 ),
-//            mathfu::vec2(12058, 4291),
-//            ScenarioOrientation::so45DegreeTick2,
-//            "kalimdor/rotation2"
-//        },
-//        {
-//            1,
-//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-//            mathfu::vec2(-12182, -8803 ),
-//            mathfu::vec2(12058, 4291),
-//            ScenarioOrientation::so45DegreeTick3,
-//            "kalimdor/rotation3"
-//        },
-//    };
+////        {
+////            1,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-12182, -8803 ),
+////            mathfu::vec2(12058, 4291),
+////            ScenarioOrientation::so45DegreeTick2,
+////            "kalimdor/rotation2"
+////        },
+////        {
+////            1,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-12182, -8803 ),
+////            mathfu::vec2(12058, 4291),
+////            ScenarioOrientation::so45DegreeTick3,
+////            "kalimdor/rotation3"
+////        },
+////    };
 }
 
 void FrontendUI::editComponentsForConfig(Config * config) {
@@ -1629,11 +1631,17 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
             }
 
             editComponentsForConfig(minimapGenerator->getConfig());
+            if (minimapGenerator->getCurrentMode() != EMGMode::eScreenshotGeneration) {
+                bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
+                if (ImGui::ButtonDisablable("Start Screenshot Gen", isDisabled)) {
+                    std::vector<ScenarioDef> list = {sceneDef};
 
-            if (ImGui::Button("Start")) {
-                std::vector<ScenarioDef> list = {sceneDef};
-
-                minimapGenerator->startScenarios(list);
+                    minimapGenerator->startScenarios(list);
+                }
+            } else {
+                if (ImGui::Button("Stop Screenshot Gen")) {
+                    minimapGenerator->stopPreview();
+                }
             }
             ImGui::SameLine();
             if (minimapGenerator->getCurrentMode() != EMGMode::ePreview) {
@@ -1662,8 +1670,8 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                 int x, y, maxX, maxY;
                 minimapGenerator->getCurrentTileCoordinates(x, y, maxX, maxY);
 
-                ImGui::Text("X: %02d out of %02d", x, maxX);
-                ImGui::Text("Y: %02d out of %02d", y, maxY);
+                ImGui::Text("X: % 03d out of % 03d", x, maxX);
+                ImGui::Text("Y: % 03d out of % 03d", y, maxY);
 
             }
 

@@ -46,8 +46,31 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
 }
 void MinimapGenerator::startScenarios(std::vector<ScenarioDef> &scenarioList) {
     m_mgMode = EMGMode::eScreenshotGeneration;
-    scenarioListToProcess = scenarioList;
+
     setZoom(1.0f);
+
+    scenarioListToProcess = {};
+    for (auto &scenario : scenarioList) {
+        scenarioListToProcess.push_back(scenario);
+
+        if (scenario.doBoundingBoxPreCalc) {
+            auto scenarionCopy = scenario;
+            scenarionCopy.mode = EMGMode::eBoundingBoxCalculation;
+            scenarionCopy.orientation = ScenarioOrientation::soTopDownOrtho;
+
+            scenarionCopy.minWowWorldCoord = mathfu::vec2(-MathHelper::TILESIZE * 32, -MathHelper::TILESIZE * 32);
+            scenarionCopy.maxWowWorldCoord = mathfu::vec2(MathHelper::TILESIZE * 32, MathHelper::TILESIZE * 32);
+
+            scenarionCopy.doBoundingBoxPreCalc = false;
+            scenarionCopy.zoom = 1.0f;
+            if (scenarionCopy.boundingBoxHolder == nullptr) {
+                scenarionCopy.boundingBoxHolder = std::make_shared<ADTBoundingBoxHolder>();
+                scenario.boundingBoxHolder = std::make_shared<ADTBoundingBoxHolder>();
+            }
+            scenarioListToProcess.push_back(scenarionCopy);
+        }
+
+    }
 
     startNextScenario();
 }
@@ -78,10 +101,13 @@ void MinimapGenerator::stopBoundingBoxCalc() {
 
 
 void MinimapGenerator::startNextScenario() {
-    if (scenarioListToProcess.size() == 0)
+    if (scenarioListToProcess.size() == 0) {
+        m_mgMode = EMGMode::eNone;
         return;
+    }
 
     currentScenario = scenarioListToProcess.back();
+
     scenarioListToProcess.pop_back();
 
     setupScenarioData();
@@ -89,6 +115,10 @@ void MinimapGenerator::startNextScenario() {
 
 
 void MinimapGenerator::setupScenarioData() {
+    m_mgMode = currentScenario.mode;
+
+    m_zoom = currentScenario.zoom;
+
     XToYCoefCalculated = false;
     calcXtoYCoef();
 
@@ -121,6 +151,8 @@ void MinimapGenerator::setupScenarioData() {
 
     m_width = currentScenario.imageWidth;
     m_height = currentScenario.imageHeight;
+
+    pauseAddingToStack = false;
 
     setupCameraData();
 }
@@ -370,23 +402,30 @@ void MinimapGenerator::process() {
         framesReady++;
     } else {
         framesReady = 0;
+        pauseAddingToStack = false;
         drawStageStack.clear();
         cullStageStack.clear();
         return;
     }
 
     if (framesReady < waitQueueLen) {
-        if (drawStageStack.size() > 5) {
+        if (drawStageStack.size() > waitQueueLen) {
             drawStageStack.pop_back();
             cullStageStack.pop_back();
         }
         return;
     }
+    if (!pauseAddingToStack) {
+        pauseAddingToStack = true;
+        framesReady = 0;
+        return;
+    }
 
-    auto lastFrameIt = drawStageStack.back();
-    auto lastFrameCull = cullStageStack.back();
+    auto lastFrameIt = drawStageStack.front();
+    auto lastFrameCull = cullStageStack.front();
     drawStageStack.clear();
     cullStageStack.clear();
+    pauseAddingToStack = false;
     framesReady = 0;
 
     if (m_mgMode == EMGMode::eBoundingBoxCalculation) {
@@ -454,7 +493,7 @@ void MinimapGenerator::process() {
         maxCoord = mathfu::vec3(
             AdtIndexToWorldCoordinate(adt_y),
             AdtIndexToWorldCoordinate(adt_x),
-            minCoord.z);
+            maxCoord.z);
 
         if (currentScenario.boundingBoxHolder != nullptr) {
             (*currentScenario.boundingBoxHolder)[adt_x][adt_y] = CAaBox(
@@ -463,25 +502,10 @@ void MinimapGenerator::process() {
             );
         }
 
+        saveDrawStageToFile(currentScenario.folderToSave+"/minimap", lastFrameIt);
     } else if (m_mgMode == EMGMode::eScreenshotGeneration) {
         //Make screenshot out of this drawStage
-        if (!ghc::filesystem::is_directory(currentScenario.folderToSave) ||
-            !ghc::filesystem::exists(currentScenario.folderToSave)) { // Check if src folder exists
-            ghc::filesystem::create_directories(currentScenario.folderToSave); // create src folder
-        }
-
-        std::string fileName = currentScenario.folderToSave + "/map_" + std::to_string(
-            (XNumbering() > 0) ? (m_x - m_chunkStartX) : ((m_chunkWidth - 1) - (m_x - m_chunkStartX))
-        ) + "_" + std::to_string(
-            (YNumbering() > 0) ? (m_y - m_chunkStartY) : ((m_chunkHeight - 1) - (m_y - m_chunkStartY))
-        ) + ".png";
-
-        std::vector<uint8_t> buffer = std::vector<uint8_t>(m_width * m_height * 4 + 1);
-        saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
-        if (lastFrameIt->opaqueMeshes != nullptr) {
-            std::cout << "Saved " << fileName << ": opaqueMeshes (" << lastFrameIt->opaqueMeshes->meshes.size() << ") "
-                      << std::endl;
-        }
+        saveDrawStageToFile(currentScenario.folderToSave, lastFrameIt);
     }
 
     m_y++;
@@ -495,6 +519,26 @@ void MinimapGenerator::process() {
         startNextScenario();
     } else {
         setupCameraData();
+    }
+}
+
+void MinimapGenerator::saveDrawStageToFile(std::string folderToSave, const std::shared_ptr<DrawStage> &lastFrameIt) {
+    if (!ghc::filesystem::is_directory(folderToSave) ||
+        !ghc::filesystem::exists(folderToSave)) { // Check if src folder exists
+        ghc::filesystem::create_directories(folderToSave); // create src folder
+    }
+
+    std::string fileName = folderToSave + "/map_" + std::to_string(
+        (XNumbering() > 0) ? (m_x - m_chunkStartX) : ((m_chunkWidth - 1) - (m_x - m_chunkStartX))
+    ) + "_" + std::to_string(
+        (YNumbering() > 0) ? (m_y - m_chunkStartY) : ((m_chunkHeight - 1) - (m_y - m_chunkStartY))
+    ) + ".png";
+
+    std::__1::vector<uint8_t> buffer = std::__1::vector<uint8_t>(m_width * m_height * 4 + 1);
+    saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
+    if (lastFrameIt->opaqueMeshes != nullptr) {
+        std::cout << "Saved " << fileName << ": opaqueMeshes (" << lastFrameIt->opaqueMeshes->meshes.size() << ") "
+                  << std::endl;
     }
 }
 
@@ -536,7 +580,7 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
         HFrameBuffer fb = nullptr;
         fb = m_apiContainer->hDevice->createFrameBuffer(m_width, m_height,
                                                         {ITextureFormat::itRGBA}, ITextureFormat::itDepth32,
-                                                        m_apiContainer->hDevice->getMaxSamplesCnt(), waitQueueLen+1);
+                                                        m_apiContainer->hDevice->getMaxSamplesCnt(), 2*waitQueueLen+1);
 
         std::vector<HDrawStage> drawStageDependencies = {};
 
@@ -548,7 +592,7 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
 
         m_lastDraw = sceneDrawStage;
         //We dont need stack in preview mode
-        if (m_mgMode != EMGMode::ePreview) {
+        if (m_mgMode != EMGMode::ePreview && !pauseAddingToStack) {
             drawStageStack.push_front(sceneDrawStage);
             cullStageStack.push_front(cullStage);
         }

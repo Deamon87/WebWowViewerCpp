@@ -1220,6 +1220,13 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
                             frustumPoints,
                             hullLines,
                             lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+
+                        if (this->m_adtBBHolder != nullptr) {
+                            //When adt passes BBHolder test, consider it influences the picture even if checkFrustumCulling
+                            //is false. So do forceful update for freeStrategy
+                            adtObject->getFreeStrategy()(false, true, this->getCurrentSceneTime());
+                        }
+
                         if (result) {
                             cullStage->exteriorView.drawnADTs.push_back(adtFrustRes);
                             cullStage->adtArray.push_back(adtFrustRes);

@@ -132,7 +132,7 @@ public:
 
     //Culling preferences
     double adtTTLWithoutUpdate = 10000; //10 secs by default
-    double adtFTLWithoutUpdate = 4; //25 frames by default
+    double adtFTLWithoutUpdate = 6; //25 frames by default
     EFreeStrategy adtFreeStrategy = EFreeStrategy::eTimeBased;
 
 
