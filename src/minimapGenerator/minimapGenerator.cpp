@@ -160,6 +160,8 @@ void MinimapGenerator::setupScenarioData() {
 
 void
 MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, const mathfu::vec2 &maxWowWorldCoord) {
+    calcXtoYCoef();
+
     mathfu::mat4 viewProj = genTempProjectMatrix();
 
     mathfu::vec4 corner0 =
@@ -246,39 +248,19 @@ void MinimapGenerator::calcXtoYCoef() {
 
         //Round1
         {
-            mathfu::vec3 point = mathfu::vec3(0,
-                                              0,
-                                              2000);
-            std::cout << "point = (" << point.x << " " << point.y << " " << point.z << std::endl;
-            m_apiContainer->camera->setCameraPos(
-                point.x, point.y, point.z
-            );
-            ((FirstPersonOrthoStaticCamera *) m_apiContainer->camera.get())->setCameraLookAt(
-                point.x + 1, point.y + 1, point.z - 1
-            );
-            m_apiContainer->camera->tick(0);
-            float nearPlane = 1.0;
-            float fov = toRadian(45.0);
-
-            float canvasAspect = (float)m_width / (float)m_height;
-            float farPlaneRendering = m_apiContainer->getConfig()->farPlane;
-            float farPlaneCulling = m_apiContainer->getConfig()->farPlaneForCulling;
-
-            HCameraMatrices cameraMatricesRendering = m_apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-
-            auto viewProj = orthoProjection * cameraMatricesRendering->lookAtMat;
+            auto viewProj = genTempProjectMatrix();
 
             mathfu::vec4 vec4TopTrans = viewProj.Inverse() * vec4Top;
-            vec4TopTrans *= (1.0f / vec4TopTrans[3]);
+            vec4TopTrans *= (1.0f / vec4TopTrans.w);
 
             mathfu::vec4 vec4TopBottomTrans = viewProj.Inverse() * vec4TopBottom;
-            vec4TopBottomTrans *= (1.0f / vec4TopBottomTrans[3]);
+            vec4TopBottomTrans *= (1.0f / vec4TopBottomTrans.w);
 
             mathfu::vec4 vec4BotTrans = viewProj.Inverse() * vec4Bottom;
-            vec4BotTrans *= (1.0f / vec4BotTrans[3]);
+            vec4BotTrans *= (1.0f / vec4BotTrans.w);
 
             mathfu::vec4 vec4BottomTopTrans = viewProj.Inverse() * vec4BottomTop;
-            vec4BottomTopTrans *= (1.0f / vec4BottomTopTrans[3]);
+            vec4BottomTopTrans *= (1.0f / vec4BottomTopTrans.w);
 
 
             float minX = std::min<float>(std::min<float>(vec4TopTrans.x, vec4TopBottomTrans.x),
@@ -307,28 +289,28 @@ void MinimapGenerator::setupCameraData() {
     //Do reverse transform here
     auto min1 = mathfu::vec4(
         m_chunkStartY + (m_y * 2.0f),
-        m_chunkStartX + (m_x * 2.0f),
+        m_chunkStartX + m_chunkWidth - ((m_x - 1) * 2.0f),
         0,
         1
     );
 
     auto min2 = mathfu::vec4(
         m_chunkStartY + (m_y * 2.0f),
-        m_chunkStartX + (m_x * 2.0f),
+        m_chunkStartX + m_chunkWidth - ((m_x - 1) * 2.0f),
         1,
         1
     );
 
     auto max1 = mathfu::vec4(
         m_chunkStartY + ((m_y + 1) * 2.0f),
-        m_chunkStartX + ((m_x + 1) * 2.0f),
+        m_chunkStartX + m_chunkWidth - ((m_x) * 2.0f),
         0,
         1
     );
 
     auto max2 = mathfu::vec4(
         m_chunkStartY + ((m_y + 1) * 2.0f),
-        m_chunkStartX + ((m_x + 1) * 2.0f),
+        m_chunkStartX + m_chunkWidth - ((m_x) * 2.0f),
         1,
         1
     );
@@ -355,7 +337,7 @@ void MinimapGenerator::setupCameraData() {
     auto max = (max1 - max2) * alphaMax + max2;
 
     setLookAtPoint(
-        -(max.x + min.x) * 0.5,
+        (max.x + min.x) * 0.5,
         (max.y + min.y) * 0.5
     );
 }

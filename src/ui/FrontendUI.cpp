@@ -1424,19 +1424,34 @@ auto FrontendUI::createMinimapGenerator() {
     minimapGenerator->setZoom(previewZoom);
     minimapGenerator->setLookAtPoint(previewX, previewY);
 
+//    sceneDef = {
+//        EMGMode::eScreenshotGeneration,
+//        0,
+//        mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+//        mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+//        mathfu::vec2(0, 0),
+//        mathfu::vec2(MathHelper::TILESIZE*2, MathHelper::TILESIZE*2),
+//        1024,
+//        1024,
+//        1.0f,
+//        false,
+//        ScenarioOrientation::so45DegreeTick3,
+//        "azeroth/topDown1"
+//    };
+
     sceneDef = {
         EMGMode::eScreenshotGeneration,
-        0,
+        530,
         mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
         mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-        mathfu::vec2(0, 0),
-        mathfu::vec2(MathHelper::TILESIZE*2, MathHelper::TILESIZE*2),
+        mathfu::vec2(-5817, -1175),
+        mathfu::vec2(1758, 10491),
         1024,
         1024,
         1.0f,
         false,
         ScenarioOrientation::so45DegreeTick0,
-        "azeroth/topDown1"
+        "outland/topDown1"
     };
 
     return minimapGenerator;
