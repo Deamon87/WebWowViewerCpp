@@ -63,6 +63,8 @@ void MinimapGenerator::startScenarios(std::vector<ScenarioDef> &scenarioList) {
 
             scenarionCopy.doBoundingBoxPreCalc = false;
             scenarionCopy.zoom = 1.0f;
+            scenarionCopy.imageWidth = 512;
+            scenarionCopy.imageHeight = 512;
             if (scenarionCopy.boundingBoxHolder == nullptr) {
                 scenarionCopy.boundingBoxHolder = std::make_shared<ADTBoundingBoxHolder>();
                 scenario.boundingBoxHolder = std::make_shared<ADTBoundingBoxHolder>();
@@ -92,6 +94,7 @@ void MinimapGenerator::startBoundingBoxCalc(ScenarioDef &scenarioDef) {
 //    currentScenario.minWowWorldCoord = mathfu::vec2(-MathHelper::TILESIZE * 32, -MathHelper::TILESIZE * 32);
     currentScenario.minWowWorldCoord = mathfu::vec2(-MathHelper::TILESIZE * 32, -MathHelper::TILESIZE * 32);
     currentScenario.maxWowWorldCoord = mathfu::vec2(MathHelper::TILESIZE * 32, MathHelper::TILESIZE * 32);
+    currentScenario.zoom = 1.0f;
 
     setupScenarioData();
 }
@@ -119,9 +122,6 @@ void MinimapGenerator::setupScenarioData() {
 
     m_zoom = currentScenario.zoom;
 
-    XToYCoefCalculated = false;
-    calcXtoYCoef();
-
     MapRecord mapRecord;
     if (!m_apiContainer->databaseHandler->getMapById(currentScenario.mapId, mapRecord)) {
         std::cout << "Couldnt get data for mapId " << currentScenario.mapId << std::endl;
@@ -146,8 +146,8 @@ void MinimapGenerator::setupScenarioData() {
 
     setMinMaxXYWidhtHeight(currentScenario.minWowWorldCoord, currentScenario.maxWowWorldCoord);
 
-    m_x = m_chunkStartX;
-    m_y = m_chunkStartY;
+    m_x = 0;
+    m_y = 0;
 
     m_width = currentScenario.imageWidth;
     m_height = currentScenario.imageHeight;
@@ -160,43 +160,84 @@ void MinimapGenerator::setupScenarioData() {
 
 void
 MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, const mathfu::vec2 &maxWowWorldCoord) {
-    mathfu::vec2 minWowWorldCoordTransf =
-        (getScreenCoordToWoWCoordMatrix().Inverse() * mathfu::vec4(minWowWorldCoord.x, minWowWorldCoord.y, 0, 1.0)).xy();
-    mathfu::vec2 minMaxWowWorldCoordTransf =
-        (getScreenCoordToWoWCoordMatrix().Inverse() * mathfu::vec4(minWowWorldCoord.x, maxWowWorldCoord.y, 0, 1.0)).xy();
-    mathfu::vec2 maxMinWowWorldCoordTransf =
-        (getScreenCoordToWoWCoordMatrix().Inverse() * mathfu::vec4(maxWowWorldCoord.x, minWowWorldCoord.y, 0, 1.0)).xy();
-    mathfu::vec2 maxWowWorldCoordTransf =
-        (getScreenCoordToWoWCoordMatrix().Inverse() * mathfu::vec4(maxWowWorldCoord.x, maxWowWorldCoord.y, 0, 1.0)).xy();
+    mathfu::mat4 viewProj = genTempProjectMatrix();
+
+    mathfu::vec4 corner0 =
+        (viewProj * mathfu::vec4(minWowWorldCoord.x, minWowWorldCoord.y, 0, 1.0));
+    mathfu::vec4 corner1 =
+        (viewProj * mathfu::vec4(minWowWorldCoord.x, maxWowWorldCoord.y, 0, 1.0));
+    mathfu::vec4 corner2 =
+        (viewProj * mathfu::vec4(maxWowWorldCoord.x, minWowWorldCoord.y, 0, 1.0));
+    mathfu::vec4 corner3 =
+        (viewProj * mathfu::vec4(maxWowWorldCoord.x, maxWowWorldCoord.y, 0, 1.0));
+
+    corner0 = corner0 * (1.0f / corner0.w);
+    corner1 = corner1 * (1.0f / corner1.w);
+    corner2 = corner2 * (1.0f / corner2.w);
+    corner3 = corner3 * (1.0f / corner3.w);
+
 
     mathfu::vec2 minOrthoMapCoord = mathfu::vec2(
-        std::min<float>(std::min<float>(minWowWorldCoordTransf.x, maxWowWorldCoordTransf.x), std::min<float>(minMaxWowWorldCoordTransf.x, maxMinWowWorldCoordTransf.x)),
-        std::min<float>(std::min<float>(minWowWorldCoordTransf.y, maxWowWorldCoordTransf.y), std::min<float>(minMaxWowWorldCoordTransf.y, maxMinWowWorldCoordTransf.y))
+        std::min<float>(std::min<float>(corner0.x, corner1.x), std::min<float>(corner2.x, corner3.x)),
+        std::min<float>(std::min<float>(corner0.y, corner1.y), std::min<float>(corner2.y, corner3.y))
     );
     mathfu::vec2 maxOrthoMapCoord = mathfu::vec2(
-        std::max<float>(std::max<float>(minWowWorldCoordTransf.x, maxWowWorldCoordTransf.x), std::max<float>(minMaxWowWorldCoordTransf.x, maxMinWowWorldCoordTransf.x)),
-        std::max<float>(std::max<float>(minWowWorldCoordTransf.y, maxWowWorldCoordTransf.y), std::max<float>(minMaxWowWorldCoordTransf.y, maxMinWowWorldCoordTransf.y))
+        std::max<float>(std::max<float>(corner0.x, corner1.x), std::max<float>(corner2.x, corner3.x)),
+        std::max<float>(std::max<float>(corner0.y, corner1.y), std::max<float>(corner2.y, corner3.y))
     );
 
-    std::cout <<"Orient = " << (int)currentScenario.orientation << " XToYCoef = " << XToYCoef << std::endl;
+    std::cout <<"Orient = " << (int)currentScenario.orientation << std::endl;
 
-    m_chunkStartX = std::floor(((minOrthoMapCoord.y) / getXScreenSpaceDimension())) ;
-    m_chunkWidth = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y) / getXScreenSpaceDimension()) + 0.99 );
-    m_chunkStartY = std::floor(((minOrthoMapCoord.x) / getYScreenSpaceDimension())) ; //Y goes in reverse, that's why there is - here instead of +
-    m_chunkHeight = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x) / getYScreenSpaceDimension()) + 0.99);
+    m_chunkStartX = std::floor(((minOrthoMapCoord.y))) ;
+    m_chunkWidth = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y)/ 2.0f) + 0.99 ) ;
+    m_chunkStartY = std::floor((minOrthoMapCoord.x));
+    m_chunkHeight = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x)/ 2.0f) + 0.99);
 
     std::cout << "m_chunkStartX = " << m_chunkStartX << " m_chunkWidth = " << m_chunkWidth
               << " m_chunkStartY = " << m_chunkStartY << " m_chunkHeight = " << m_chunkHeight << std::endl;
 }
 
+mathfu::mat4 MinimapGenerator::genTempProjectMatrix() {
+    auto orthoProjection = getOrthoMatrix();
+
+    mathfu::vec3 lookAtPoint = mathfu::vec3(0, 0, 0);
+    lookAtPoint = lookAtPoint;
+    //std::cout << "lookAtPoint = (" << lookAtPoint.x << ", " << lookAtPoint.y << ", " << lookAtPoint.z << ") " << std::endl;
+
+    mathfu::vec3 lookAtVec3 = getLookAtVec3();
+    lookAtPoint -= (4000.0f*lookAtVec3);
+
+    mathfu::vec3 cameraPos = lookAtPoint-(2000.0f*lookAtVec3);
+
+    std::shared_ptr<ICamera> tempCamera;
+    if (currentScenario.orientation == ScenarioOrientation::soTopDownOrtho) {
+        tempCamera = std::make_shared<FirstPersonOrthoStaticTopDownCamera>();
+    } else {
+        tempCamera = std::make_shared<FirstPersonOrthoStaticCamera>();
+    }
+
+    tempCamera->setCameraPos(cameraPos.x, cameraPos.y, cameraPos.z);
+    tempCamera->setCameraLookAt(lookAtPoint.x, lookAtPoint.y, lookAtPoint.z);
+    tempCamera->tick(0);
+
+    float nearPlane = 1.0;
+    float fov = toRadian(45.0);
+
+    float canvasAspect = (float) m_width / (float) m_height;
+    float farPlaneRendering = m_apiContainer->getConfig()->farPlane;
+
+    HCameraMatrices cameraMatricesRendering = tempCamera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+    auto viewProj = orthoProjection * cameraMatricesRendering->lookAtMat;
+    return viewProj;
+}
+
 void MinimapGenerator::calcXtoYCoef() {
 
     //Code that tries to calc the step on y and x
-    if (!XToYCoefCalculated)
     {
         auto orthoProjection = getOrthoMatrix();
 
-        auto xyDelta= mathfu::vec4(0,0,0,0);
+        //
         const mathfu::vec4 vec4Top = {1, 1, 1, 1};
         const mathfu::vec4 vec4TopBottom = {1, -1, 1, 1};
         const mathfu::vec4 vec4Bottom = {-1, -1, 1, 1};
@@ -208,7 +249,6 @@ void MinimapGenerator::calcXtoYCoef() {
             mathfu::vec3 point = mathfu::vec3(0,
                                               0,
                                               2000);
-            point = getScreenCoordToWoWCoordMatrix() * point;
             std::cout << "point = (" << point.x << " " << point.y << " " << point.z << std::endl;
             m_apiContainer->camera->setCameraPos(
                 point.x, point.y, point.z
@@ -226,10 +266,7 @@ void MinimapGenerator::calcXtoYCoef() {
 
             HCameraMatrices cameraMatricesRendering = m_apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
 
-
-
-            auto viewProj = cameraMatricesRendering->lookAtMat * orthoProjection;
-//        auto viewProj =  cameraMatrices->lookAtMat * orthoProjection;
+            auto viewProj = orthoProjection * cameraMatricesRendering->lookAtMat;
 
             mathfu::vec4 vec4TopTrans = viewProj.Inverse() * vec4Top;
             vec4TopTrans *= (1.0f / vec4TopTrans[3]);
@@ -243,10 +280,6 @@ void MinimapGenerator::calcXtoYCoef() {
             mathfu::vec4 vec4BottomTopTrans = viewProj.Inverse() * vec4BottomTop;
             vec4BottomTopTrans *= (1.0f / vec4BottomTopTrans[3]);
 
-            vec4TopTrans = getScreenCoordToWoWCoordMatrix().Inverse() * vec4TopTrans;
-            vec4TopBottomTrans = getScreenCoordToWoWCoordMatrix().Inverse() * vec4TopBottomTrans;
-            vec4BotTrans = getScreenCoordToWoWCoordMatrix().Inverse() * vec4BotTrans;
-            vec4BottomTopTrans = getScreenCoordToWoWCoordMatrix().Inverse() * vec4BottomTopTrans;
 
             float minX = std::min<float>(std::min<float>(vec4TopTrans.x, vec4TopBottomTrans.x),
                                          std::min<float>(vec4BotTrans.x, vec4BottomTopTrans.x));
@@ -257,12 +290,8 @@ void MinimapGenerator::calcXtoYCoef() {
             float maxY = std::max<float>(std::max<float>(vec4TopTrans.y, vec4TopBottomTrans.y),
                                          std::max<float>(vec4BotTrans.y, vec4BottomTopTrans.y));
 
-            XToYCoef = (maxY - minY) / (maxX - minX);
-            XToYCoefCalculated = true;
-
             std::cout << "vec4TopTrans1 = (" << vec4TopTrans[0] << " " << vec4TopTrans[1] << " " << vec4TopTrans[2]
                       << std::endl;
-
             std::cout << "vec4TopBottomTrans1 = (" << vec4TopBottomTrans[0] << " " << vec4TopBottomTrans[1] << " " << vec4TopBottomTrans[2]
                       << std::endl;
             std::cout << "vec4BotTrans1 = (" << vec4BotTrans[0] << " " << vec4BotTrans[1] << " " << vec4BotTrans[2]
@@ -270,104 +299,64 @@ void MinimapGenerator::calcXtoYCoef() {
             std::cout << "vec4BottomTopTrans1 = (" << vec4BottomTopTrans[0] << " " << vec4BottomTopTrans[1] << " " << vec4BottomTopTrans[2]
                       << std::endl;
 
-
-            xyDelta = mathfu::vec4(
-                vec4TopTrans[0] - vec4BotTrans[0],
-                vec4TopTrans[1] - vec4BotTrans[1],
-                0, 1);
-
-            std::cout << "xyDelta = " << xyDelta[0] << " " << xyDelta[1] << std::endl;
         }
 
-//
-//        //Round 2
-//        {
-//            auto point = mathfu::vec3(MathHelper::TILESIZE *0.25* (1.73f),
-//            0,
-//                                 2000);
-//            point = MathHelper::RotationZ(M_PI / 4) * point;
-//
-//            std::cout << "point = (" << point.x << " " << point.y << " " << point.z << std::endl;
-//
-//            m_apiContainer->camera->setCameraPos(
-//                point.x, point.y, point.z
-//            );
-//            ((FirstPersonOrthoStaticCamera *) m_apiContainer->camera.get())->setCameraLookAt(
-//                point.x + 1, point.y + 1, point.z - 1
-//            );
-//            m_apiContainer->camera->tick(0);
-//
-//            float nearPlane = 1.0;
-//            float fov = toRadian(45.0);
-//
-//            float canvasAspect = (float)m_width / (float)m_height;
-//            float farPlaneRendering = m_apiContainer->getConfig()->farPlane;
-//            float farPlaneCulling = m_apiContainer->getConfig()->farPlaneForCulling;
-//
-//            HCameraMatrices cameraMatricesRendering = m_apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-//
-//            auto viewProj = cameraMatricesRendering->lookAtMat * orthoProjection;
-//
-//            mathfu::vec4 vec4TopTrans = viewProj.Inverse() * vec4Top;
-//            vec4TopTrans *= (1.0f / vec4TopTrans[3]);
-//
-//            mathfu::vec4 vec4TopBottomTrans = viewProj.Inverse() * vec4TopBottom;
-//            vec4TopBottomTrans *= (1.0f / vec4TopBottomTrans[3]);
-//
-//            mathfu::vec4 vec4BotTrans = viewProj.Inverse() * vec4Bottom;
-//            vec4BotTrans *= (1.0f / vec4BotTrans[3]);
-//
-//            mathfu::vec4 vec4BottomTopTrans = viewProj.Inverse() * vec4BottomTop;
-//            vec4BottomTopTrans *= (1.0f / vec4BottomTopTrans[3]);
-//
-//            std::cout << "vec4TopTrans2 = (" << vec4TopTrans[0] << " " << vec4TopTrans[1] << " " << vec4TopTrans[2]
-//                      << std::endl;
-//
-//            std::cout << "vec4TopBottomTrans2 = (" << vec4TopBottomTrans[0] << " " << vec4TopBottomTrans[1] << " " << vec4TopBottomTrans[2]
-//                      << std::endl;
-//            std::cout << "vec4BotTrans2 = (" << vec4BotTrans[0] << " " << vec4BotTrans[1] << " " << vec4BotTrans[2]
-//                      << std::endl;
-//            std::cout << "vec4BottomTopTrans2 = (" << vec4BottomTopTrans[0] << " " << vec4BottomTopTrans[1] << " " << vec4BottomTopTrans[2]
-//                      << std::endl;
-//        }
-
     }
 }
-
-float MinimapGenerator::getYScreenSpaceDimension() {
-    switch (currentScenario.orientation) {
-        case ScenarioOrientation::soTopDownOrtho:
-            return GetOrthoDimension();
-        case ScenarioOrientation::so45DegreeTick0:
-            return GetOrthoDimension() * XToYCoef;
-        case ScenarioOrientation::so45DegreeTick1:
-            return GetOrthoDimension() * (1.0f/XToYCoef);
-        case ScenarioOrientation::so45DegreeTick2:
-            return GetOrthoDimension() * XToYCoef;
-        case ScenarioOrientation::so45DegreeTick3:
-            return GetOrthoDimension() * (1.0f/XToYCoef);
-    }
-
-}
-float MinimapGenerator::getXScreenSpaceDimension() {
-    switch (currentScenario.orientation) {
-        case ScenarioOrientation::soTopDownOrtho:
-            return GetOrthoDimension();
-        case ScenarioOrientation::so45DegreeTick0:
-            return GetOrthoDimension();
-        case ScenarioOrientation::so45DegreeTick1:
-            return GetOrthoDimension();
-        case ScenarioOrientation::so45DegreeTick2:
-            return GetOrthoDimension();
-        case ScenarioOrientation::so45DegreeTick3:
-            return GetOrthoDimension();
-    }
-}
-
 void MinimapGenerator::setupCameraData() {
+    //Do reverse transform here
+    auto min1 = mathfu::vec4(
+        m_chunkStartY + (m_y * 2.0f),
+        m_chunkStartX + (m_x * 2.0f),
+        0,
+        1
+    );
+
+    auto min2 = mathfu::vec4(
+        m_chunkStartY + (m_y * 2.0f),
+        m_chunkStartX + (m_x * 2.0f),
+        1,
+        1
+    );
+
+    auto max1 = mathfu::vec4(
+        m_chunkStartY + ((m_y + 1) * 2.0f),
+        m_chunkStartX + ((m_x + 1) * 2.0f),
+        0,
+        1
+    );
+
+    auto max2 = mathfu::vec4(
+        m_chunkStartY + ((m_y + 1) * 2.0f),
+        m_chunkStartX + ((m_x + 1) * 2.0f),
+        1,
+        1
+    );
+
+    auto tempViewProjMatInv = genTempProjectMatrix().Inverse();
+
+    min1 = tempViewProjMatInv * min1;
+    min1 = min1 * ( 1.0f / min1.w);
+
+    min2 = tempViewProjMatInv * min2;
+    min2 = min2 * ( 1.0f / min2.w);
+
+    max1 = tempViewProjMatInv * max1;
+    max1 = max1 * ( 1.0f / max1.w);
+
+    max2 = tempViewProjMatInv * max2;
+    max2 = max2 * ( 1.0f / max2.w);
+
+    //Reproject to get proper zero in z
+    float alphaMin = -min2.z / (min1.z - min2.z);
+    auto min = (min1 - min2) * alphaMin + min2;
+
+    float alphaMax = -max2.z / (max1.z - max2.z);
+    auto max = (max1 - max2) * alphaMax + max2;
+
     setLookAtPoint(
-    getYScreenSpaceDimension() * m_y + (getYScreenSpaceDimension() / 2.0f) ,
-    getXScreenSpaceDimension() * m_x + (getXScreenSpaceDimension() / 2.0f)
+        -(max.x + min.x) * 0.5,
+        (max.y + min.y) * 0.5
     );
 }
 
@@ -375,9 +364,9 @@ void MinimapGenerator::setZoom(float zoom) {
     m_zoom = zoom;
 }
 void MinimapGenerator::setLookAtPoint(float x, float y) {
-    mathfu::vec3 lookAtPoint = mathfu::vec3(x, y, 1);
+    mathfu::vec3 lookAtPoint = mathfu::vec3(x, y, 0);
 
-    lookAtPoint = getScreenCoordToWoWCoordMatrix() * lookAtPoint;
+    lookAtPoint = lookAtPoint;
     //std::cout << "lookAtPoint = (" << lookAtPoint.x << ", " << lookAtPoint.y << ", " << lookAtPoint.z << ") " << std::endl;
 
     mathfu::vec3 lookAtVec3 = getLookAtVec3();
@@ -389,7 +378,7 @@ void MinimapGenerator::setLookAtPoint(float x, float y) {
     m_apiContainer->camera->setCameraPos(
         cameraPos.x, cameraPos.y, cameraPos.z
     );
-    ((FirstPersonOrthoStaticCamera*)m_apiContainer->camera.get())->setCameraLookAt(
+    m_apiContainer->camera->setCameraLookAt(
         lookAtPoint.x, lookAtPoint.y, lookAtPoint.z
     );
     m_apiContainer->camera->tick(0);
@@ -460,8 +449,8 @@ void MinimapGenerator::process() {
             );
         }
 
-        int adt_x = ((m_chunkWidth - 1) - (m_x - m_chunkStartX));
-        int adt_y = ((m_chunkHeight - 1) - (m_y - m_chunkStartY));
+        int adt_y = ((m_chunkWidth - 1) - (m_x));
+        int adt_x = ((m_chunkHeight - 1) - (m_y));
         for (auto &adtObjectRes: lastFrameCull->adtArray) {
             auto adtObj = adtObjectRes->adtObject;
             if (adtObj->getAdtX() != adt_x || adtObj->getAdtY() != adt_y) {
@@ -508,14 +497,14 @@ void MinimapGenerator::process() {
         saveDrawStageToFile(currentScenario.folderToSave, lastFrameIt);
     }
 
-    m_y++;
-    if (m_y >= m_chunkHeight + m_chunkStartY)  {
-        m_x++;
-        m_y = m_chunkStartY;
+    m_x++;
+    if (m_x >= m_chunkWidth)  {
+        m_y++;
+        m_x = 0;
     }
 //    std::cout << "m_x = " << m_x << " out of (" << m_chunkStartX+m_chunkWidth << ") m_y = " << m_y << " out of (" << m_chunkStartY+m_chunkHeight << ")" << std::endl;
 
-    if (m_x >= (m_chunkWidth + m_chunkStartX)) {
+    if (m_y >= (m_chunkHeight)) {
         startNextScenario();
     } else {
         setupCameraData();
@@ -529,16 +518,16 @@ void MinimapGenerator::saveDrawStageToFile(std::string folderToSave, const std::
     }
 
     std::string fileName = folderToSave + "/map_" + std::to_string(
-        (XNumbering() > 0) ? (m_x - m_chunkStartX) : ((m_chunkWidth - 1) - (m_x - m_chunkStartX))
+        (m_y)
     ) + "_" + std::to_string(
-        (YNumbering() > 0) ? (m_y - m_chunkStartY) : ((m_chunkHeight - 1) - (m_y - m_chunkStartY))
+        (m_x)
     ) + ".png";
 
     std::__1::vector<uint8_t> buffer = std::__1::vector<uint8_t>(m_width * m_height * 4 + 1);
     saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
     if (lastFrameIt->opaqueMeshes != nullptr) {
-        std::cout << "Saved " << fileName << ": opaqueMeshes (" << lastFrameIt->opaqueMeshes->meshes.size() << ") "
-                  << std::endl;
+//        std::cout << "Saved " << fileName << ": opaqueMeshes (" << lastFrameIt->opaqueMeshes->meshes.size() << ") "
+//                  << std::endl;
     }
 }
 
@@ -602,10 +591,6 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
     return nullptr;
 }
 
-bool MinimapGenerator::isDone() {
-    return (m_x >= (m_chunkWidth + m_chunkStartX) && scenarioListToProcess.size() == 0 );
-}
-
 float MinimapGenerator::GetOrthoDimension() {
 //    return MathHelper::TILESIZE*0.25*0.5f;
 //    return MathHelper::TILESIZE*0.25;
@@ -619,20 +604,7 @@ mathfu::mat4 MinimapGenerator::getOrthoMatrix() {
         1,10000
     );
 }
-mathfu::mat4 MinimapGenerator::getScreenCoordToWoWCoordMatrix() {
-    switch (currentScenario.orientation) {
-        case ScenarioOrientation::soTopDownOrtho:
-            return mathfu::mat4::Identity();
-        case ScenarioOrientation::so45DegreeTick0:
-            return MathHelper::RotationZ(M_PI/4);
-        case ScenarioOrientation::so45DegreeTick1:
-            return MathHelper::RotationZ((1*M_PI/2)+ (M_PI/4) );
-        case ScenarioOrientation::so45DegreeTick2:
-            return MathHelper::RotationZ((2*M_PI/2)+ (M_PI/4) );
-        case ScenarioOrientation::so45DegreeTick3:
-            return MathHelper::RotationZ((3*M_PI/2)+ (M_PI/4) );
-    }
-}
+
 mathfu::vec3 MinimapGenerator::getLookAtVec3() {
     switch (currentScenario.orientation) {
         case ScenarioOrientation::soTopDownOrtho:
@@ -645,36 +617,6 @@ mathfu::vec3 MinimapGenerator::getLookAtVec3() {
             return mathfu::vec3(-1,-1,-1);
         case ScenarioOrientation::so45DegreeTick3:
             return mathfu::vec3(-1,1,-1);
-    }
-}
-int MinimapGenerator::YNumbering() {
-    switch (currentScenario.orientation) {
-        case ScenarioOrientation::soTopDownOrtho:
-            return -1;
-        case ScenarioOrientation::so45DegreeTick0:
-            return -1;
-        case ScenarioOrientation::so45DegreeTick1:
-            return 1;
-        case ScenarioOrientation::so45DegreeTick2:
-            return -1;
-        case ScenarioOrientation::so45DegreeTick3:
-            return 1;
-    }
-}
-
-
-int MinimapGenerator::XNumbering() {
-    switch (currentScenario.orientation) {
-        case ScenarioOrientation::soTopDownOrtho:
-            return -1;
-        case ScenarioOrientation::so45DegreeTick0:
-            return -1;
-        case ScenarioOrientation::so45DegreeTick1:
-            return 1;
-        case ScenarioOrientation::so45DegreeTick2:
-            return -1;
-        case ScenarioOrientation::so45DegreeTick3:
-            return 1;
     }
 }
 

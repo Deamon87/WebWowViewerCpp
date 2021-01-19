@@ -66,9 +66,6 @@ private:
     float m_zoom;
 
 
-    float XToYCoef = 0;
-    bool XToYCoefCalculated = false;
-
     int m_chunkStartX = -32;
     int m_chunkStartY= -32;
     int m_chunkWidth = 64;
@@ -84,15 +81,15 @@ private:
 
     mathfu::mat4 getOrthoMatrix();
     mathfu::vec3 getLookAtVec3();
-    mathfu::mat4 getScreenCoordToWoWCoordMatrix();
     void startNextScenario();
+
+    mathfu::mat4 genTempProjectMatrix();
 public:
 
     MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice, HRequestProcessor processor, IClientDatabase*);
 
     void startScenarios(std::vector<ScenarioDef> &scenarioListToProcess);
     void process();
-    bool isDone();
     EMGMode getCurrentMode() { return m_mgMode;}
     void setupCameraData();
     HDrawStage createSceneDrawStage(HFrameScenario sceneScenario);
@@ -100,8 +97,8 @@ public:
     Config *getConfig();
 
     void getCurrentTileCoordinates(int &x, int &y, int &maxX, int &maxY) {
-        x = (XNumbering() > 0) ? (m_x - m_chunkStartX) : ((m_chunkWidth  - 1) - (m_x - m_chunkStartX));
-        y = (YNumbering() > 0) ? (m_y - m_chunkStartY) : ((m_chunkHeight - 1) - (m_y - m_chunkStartY));
+        x = m_x;
+        y = m_y;
         maxX = m_chunkWidth;
         maxY = m_chunkHeight;
     }
@@ -111,13 +108,6 @@ public:
     void calcXtoYCoef();
 
     void setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, const mathfu::vec2 &maxWowWorldCoord);
-
-    int XNumbering();
-    int YNumbering();
-
-    float getYScreenSpaceDimension();
-    float getXScreenSpaceDimension();
-
 
     void setupScenarioData();
 
@@ -131,6 +121,7 @@ public:
     void stopBoundingBoxCalc();
 
     void saveDrawStageToFile(std::string folderToSave, const std::shared_ptr<DrawStage> &lastFrameIt);
+
 };
 
 typedef std::shared_ptr<MinimapGenerator> HMinimapGenerator;

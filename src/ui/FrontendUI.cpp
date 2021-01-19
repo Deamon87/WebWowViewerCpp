@@ -1429,12 +1429,12 @@ auto FrontendUI::createMinimapGenerator() {
         0,
         mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
         mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-        mathfu::vec2(-15801, -7000),
-        mathfu::vec2(5000, 6000),
-        512,
-        512,
-        4.0f,
-        true,
+        mathfu::vec2(0, 0),
+        mathfu::vec2(MathHelper::TILESIZE*2, MathHelper::TILESIZE*2),
+        1024,
+        1024,
+        1.0f,
+        false,
         ScenarioOrientation::so45DegreeTick0,
         "azeroth/topDown1"
     };
