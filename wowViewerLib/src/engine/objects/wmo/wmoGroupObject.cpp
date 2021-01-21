@@ -759,7 +759,14 @@ void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
                                        std::vector<mathfu::vec3> &points) {
     drawDoodads = false;
     drawGroup = false;
-    if (!m_loaded) return;
+    if (!m_loaded) {
+        //Force load of group if it's exterior
+        if (m_main_groupInfo->flags.EXTERIOR > 0) {
+            drawGroup = true;
+            drawDoodads = true;
+        }
+        return;
+    }
     CAaBox bbArray = this->m_worldGroupBorder;
 
     bool isInsideM2Volume = (

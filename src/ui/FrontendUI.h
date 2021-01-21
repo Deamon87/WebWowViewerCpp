@@ -68,6 +68,7 @@ private:
     float previewY = 0;
     float previewZoom = 1;
 
+
     std::shared_ptr<IScene> currentScene = nullptr;
 
     bool openCascCallback(std::string cascPath);

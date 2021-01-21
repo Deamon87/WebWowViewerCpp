@@ -36,5 +36,6 @@ public:
 
     virtual void exportScene(IExporter * exporter) {};
     virtual void setAdtBoundingBoxHolder(HADTBoundingBoxHolder bbHolder) {};
+    virtual void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> mandatoryADTs) {};
 };
 #endif //WEBWOWVIEWERCPP_IINNERSCENEAPI_H

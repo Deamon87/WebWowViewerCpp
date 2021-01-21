@@ -74,10 +74,13 @@ private:
     EMGMode m_mgMode = EMGMode::eNone;
 
     HDrawStage m_lastDraw = nullptr;
-    std::list<HDrawStage> drawStageStack = {};
-    std::list<HCullStage> cullStageStack = {};
+
+    std::vector<std::vector<std::array<uint8_t, 2>>> mandatoryADTMap;
+
+    HDrawStage m_candidateDS = nullptr;
+    HCullStage m_candidateCS = nullptr;
     int framesReady = 0;
-    bool pauseAddingToStack = false;
+    bool prepearCandidate = false;
 
     mathfu::mat4 getOrthoMatrix();
     mathfu::vec3 getLookAtVec3();

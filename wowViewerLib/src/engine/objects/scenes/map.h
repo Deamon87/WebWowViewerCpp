@@ -42,6 +42,7 @@ protected:
 
     HApiContainer m_api = nullptr;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
+    std::vector<std::array<uint8_t, 2>> m_mandatoryADT;
     std::string mapName;
 
     SceneMode m_sceneMode = SceneMode::smMap;
@@ -105,6 +106,11 @@ protected:
                                        std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                        std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 
+    void checkADTCulling(int i, int j, std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4,
+                              mathfu::vec4 &cameraPos, std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
+                              std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                              std::vector<std::shared_ptr<WmoObject>> &wmoCandidates)
+
     virtual void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);
 
@@ -128,8 +134,6 @@ protected:
     explicit Map() : taskScheduler(10){
     }
 public:
-
-
     explicit Map(HApiContainer api, int mapId, std::string mapName) : taskScheduler(10) {
         initMapTiles();
 
@@ -192,7 +196,9 @@ public:
     void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
     void checkCulling(HCullStage cullStage) override;
 
-
+    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> mandatoryADTs) override {
+        m_mandatoryADT = mandatoryADTs;
+    }
     void setAnimationId(int animationId) override {
 
     };
@@ -202,6 +208,7 @@ public:
     void setAdtBoundingBoxHolder(HADTBoundingBoxHolder bbHolder) override {
         m_adtBBHolder = bbHolder;
     }
+
 
 
     void doPostLoad(HCullStage cullStage) override;

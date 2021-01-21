@@ -1165,10 +1165,6 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
 
 //    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
 
-
-        //TODO: IN minimap generation and in ORTHO, this approach forces to load 10x10 ADTs, which is absurd.
-        //TODO: For Ortho, it seems it would be mandatory to precalc bounding volumes for each ADT from Top-Bottom view,
-        //TODO: put them into Octotree structure and query that structure here
         for (int i = 0; i < frustumPoints.size(); i++) {
             mathfu::vec3 &frustumPoint = frustumPoints[i];
 
@@ -1184,80 +1180,93 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
         int adt_y_min = std::max<float>(worldCoordinateToAdtIndex(maxx), 0);
         int adt_y_max = std::min<float>(worldCoordinateToAdtIndex(minx), 63);
 
-        int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
-        int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
+
 
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
             for (int i = adt_x_min; i <= adt_x_max; i++) {
                 for (int j = adt_y_min; j <= adt_y_max; j++) {
-                    if ((i < 0) || (i > 64)) continue;
-                    if ((j < 0) || (j > 64)) continue;
-
-                    if (this->m_adtBBHolder != nullptr) {
-                        bool bbCheck = MathHelper::checkFrustum(
-                            cullStage->exteriorView.frustumPlanes[0], //TODO:!
-                            (*this->m_adtBBHolder)[i][j],
-                            frustumPoints
-                        );
-
-                        if (!bbCheck)
-                            continue;
-                    }
-
-                    auto adtObject = mapTiles[i][j];
-                    if (adtObject != nullptr) {
-
-                        std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
-                        adtFrustRes->adtObject = adtObject;
-
-
-                        bool result = adtObject->checkFrustumCulling(
-                            *adtFrustRes.get(),
-                            cameraPos,
-                            adt_global_x,
-                            adt_global_y,
-                            cullStage->exteriorView.frustumPlanes[0], //TODO:!
-                            frustumPoints,
-                            hullLines,
-                            lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-
-                        if (this->m_adtBBHolder != nullptr) {
-                            //When adt passes BBHolder test, consider it influences the picture even if checkFrustumCulling
-                            //is false. So do forceful update for freeStrategy
-                            adtObject->getFreeStrategy()(false, true, this->getCurrentSceneTime());
-                        }
-
-                        if (result) {
-                            cullStage->exteriorView.drawnADTs.push_back(adtFrustRes);
-                            cullStage->adtArray.push_back(adtFrustRes);
-                        }
-                    } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
-                        if (m_wdtfile->mphd->flags.wdt_has_maid) {
-                            auto &mapFileIds = m_wdtfile->mapFileDataIDs[j * 64 + i];
-                            if (mapFileIds.rootADT > 0) {
-                                adtObject = std::make_shared<AdtObject>(m_api, i, j,
-                                                                        m_wdtfile->mapFileDataIDs[j * 64 + i],
-                                                                        m_wdtfile);
-                            } else {
-                                continue;
-                            }
-                        } else {
-                            std::string adtFileTemplate =
-                                "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" +
-                                std::to_string(j);
-                            adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
-                        }
-
-                        adtObject->setMapApi(this);
-                        adtObject->setFreeStrategy(zeroStateLambda);
-
-                        mapTiles[i][j] = adtObject;
-                    }
+                    checkADTCulling(i, j, hullLines, lookAtMat4, cameraPos, frustumPoints, cullStage, m2ObjectsCandidates, wmoCandidates);
                 }
             }
+            for (auto &mandatoryAdt : m_mandatoryADT) {
+                checkADTCulling(mandatoryAdt[0], mandatoryAdt[1], hullLines, lookAtMat4, cameraPos, frustumPoints, cullStage, m2ObjectsCandidates, wmoCandidates);
+            }
+
         } else {
             wmoCandidates.push_back(wmoMap);
         }
+    }
+}
+
+void Map::checkADTCulling(int i, int j, std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4,
+                          mathfu::vec4 &cameraPos, std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
+                          std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                          std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
+    if ((i < 0) || (i > 64)) return;
+    if ((j < 0) || (j > 64)) return;
+
+    int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
+    int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
+
+    if (this->m_adtBBHolder != nullptr) {
+        bool bbCheck = MathHelper::checkFrustum(
+            cullStage->exteriorView.frustumPlanes[0], //TODO:!
+            (*this->m_adtBBHolder)[i][j],
+            frustumPoints
+        );
+
+        if (!bbCheck)
+            return;
+    }
+
+    auto adtObject = mapTiles[i][j];
+    if (adtObject != nullptr) {
+
+        std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
+        adtFrustRes->adtObject = adtObject;
+
+
+        bool result = adtObject->checkFrustumCulling(
+            *adtFrustRes.get(),
+            cameraPos,
+            adt_global_x,
+            adt_global_y,
+            cullStage->exteriorView.frustumPlanes[0], //TODO:!
+            frustumPoints,
+            hullLines,
+            lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+
+//        if (this->m_adtBBHolder != nullptr) {
+//            //When adt passes BBHolder test, consider it influences the picture even if checkFrustumCulling
+//            //is false. So do forceful update for freeStrategy
+//            adtObject->getFreeStrategy()(false, true, this->getCurrentSceneTime());
+//        }
+
+        if (result) {
+            cullStage->exteriorView.drawnADTs.push_back(adtFrustRes);
+            cullStage->adtArray.push_back(adtFrustRes);
+        }
+    } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
+        if (m_wdtfile->mphd->flags.wdt_has_maid) {
+            auto &mapFileIds = m_wdtfile->mapFileDataIDs[j * 64 + i];
+            if (mapFileIds.rootADT > 0) {
+                adtObject = std::make_shared<AdtObject>(m_api, i, j,
+                                                        m_wdtfile->mapFileDataIDs[j * 64 + i],
+                                                        m_wdtfile);
+            } else {
+                return;
+            }
+        } else {
+            std::string adtFileTemplate =
+                "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" +
+                std::to_string(j);
+            adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+        }
+
+        adtObject->setMapApi(this);
+        adtObject->setFreeStrategy(zeroStateLambda);
+
+        mapTiles[i][j] = adtObject;
     }
 }
 

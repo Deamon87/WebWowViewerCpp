@@ -1405,7 +1405,7 @@ void FrontendUI::createDefaultprocessor() {
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
 //    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-    m_processor = std::make_shared<CascRequestProcessor>("e:/games/wow beta/World of Warcraft Beta/");
+    m_processor = std::make_shared<CascRequestProcessor>("f:/games/wow/");
 ////        processor->setThreaded(false);
 ////
     m_processor->setThreaded(true);
@@ -1444,12 +1444,12 @@ auto FrontendUI::createMinimapGenerator() {
         530,
         mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
         mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-        mathfu::vec2(-5817, -1175),
-        mathfu::vec2(1758, 10491),
+        mathfu::vec2(1627, -1175),
+        mathfu::vec2(6654 , 4689 ),
         1024,
         1024,
         1.0f,
-        false,
+        true,
         ScenarioOrientation::so45DegreeTick0,
         "outland/topDown1"
     };
@@ -1639,6 +1639,33 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
         ImGui::Columns(2, NULL, true);
         //Left panel
         {
+            ImGui::BeginGroupPanel("Scenario Type");
+            {
+                if (ImGui::RadioButton("Generate screenshots", &sceneDef.mode, EMGMode::eScreenshotGeneration)) {
+                }
+                if (ImGui::RadioButton("Generate bounding box", &sceneDef.mode, EMGMode::eBoundingBoxCalculation)) {
+                }
+                if (ImGui::RadioButton("Preview", &sceneDef.mode, EMGMode::ePreview)) {
+                }
+            }
+            ImGui::EndGroupPanel();
+            ImGui::SameLine();
+            ImGui::BeginGroupPanel("Orientation");
+            {
+                if (ImGui::RadioButton("Ortho projection", &sceneDef.orientation, ScenarioOrientation::soTopDownOrtho)) {
+                }
+                if (ImGui::RadioButton("At 45° tick 0", &sceneDef.orientation, ScenarioOrientation::so45DegreeTick0)) {
+                }
+                if (ImGui::RadioButton("At 45° tick 1", &sceneDef.orientation, ScenarioOrientation::so45DegreeTick1)) {
+                }
+                if (ImGui::RadioButton("At 45° tick 2", &sceneDef.orientation, ScenarioOrientation::so45DegreeTick2)) {
+                }
+                if (ImGui::RadioButton("At 45° tick 3", &sceneDef.orientation, ScenarioOrientation::so45DegreeTick3)) {
+                }
+            }
+            ImGui::EndGroupPanel();
+
+
             auto currentTime = minimapGenerator->getConfig()->currentTime;
             ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
             if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
@@ -1699,15 +1726,19 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
             ImGui::BeginChild("Minimap Gen Preview", ImVec2(0, 0));
             {
                 bool changed = false;
-                changed |= ImGui::InputFloat("x", &previewX);
-                changed |= ImGui::InputFloat("y", &previewY);
+                bool readOnly = minimapGenerator->getCurrentMode() != EMGMode::ePreview;
 
+                const char * fmt = "%.3f";
+                changed |= ImGui::InputFloat("x", &previewX, 0.0f, 0.0f, fmt, readOnly ? ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly: 0);
+                changed |= ImGui::InputFloat("y", &previewY, 0.0f, 0.0f, fmt, readOnly ? ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly: 0);
 
-                if (changed && minimapGenerator != nullptr) {
+                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
                     minimapGenerator->setLookAtPoint(previewX, previewY);
                 }
                 if (ImGui::SliderFloat("Zoom", &previewZoom, 0.1, 10)) {
-                    minimapGenerator->setZoom(previewZoom);
+                    if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                        minimapGenerator->setZoom(previewZoom);
+                    }
                 }
 
                 ImGui::BeginChild("Minimap Gen Preview image", ImVec2(0, 0),

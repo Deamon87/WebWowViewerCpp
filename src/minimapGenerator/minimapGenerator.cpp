@@ -35,7 +35,7 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
 
     config->exteriorAmbientColor =  mathfu::vec4(0.5f,0.5f,0.5f,1.0);;
     config->exteriorHorizontAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
-    config->exteriorGroundAmbientColor = mathfu::vec4(0.0,0.0,0.0,1.0);
+    config->exteriorGroundAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
     config->exteriorDirectColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
 
     config->adtSpecMult = 0.0;
@@ -51,6 +51,11 @@ void MinimapGenerator::startScenarios(std::vector<ScenarioDef> &scenarioList) {
 
     scenarioListToProcess = {};
     for (auto &scenario : scenarioList) {
+        auto boundingBoxHolder = scenario.boundingBoxHolder;
+        if (boundingBoxHolder == nullptr && scenario.doBoundingBoxPreCalc) {
+            scenario.boundingBoxHolder = boundingBoxHolder;
+        }
+
         scenarioListToProcess.push_back(scenario);
 
         if (scenario.doBoundingBoxPreCalc) {
@@ -65,21 +70,19 @@ void MinimapGenerator::startScenarios(std::vector<ScenarioDef> &scenarioList) {
             scenarionCopy.zoom = 1.0f;
             scenarionCopy.imageWidth = 512;
             scenarionCopy.imageHeight = 512;
-            if (scenarionCopy.boundingBoxHolder == nullptr) {
-                scenarionCopy.boundingBoxHolder = std::make_shared<ADTBoundingBoxHolder>();
-                scenario.boundingBoxHolder = std::make_shared<ADTBoundingBoxHolder>();
-            }
+            scenarionCopy.boundingBoxHolder = boundingBoxHolder;
+
             scenarioListToProcess.push_back(scenarionCopy);
         }
-
     }
 
     startNextScenario();
 }
 
 void MinimapGenerator::startPreview(ScenarioDef &scenarioDef) {
-    m_mgMode = EMGMode::ePreview;
+//    m_mgMode = EMGMode::ePreview;
     currentScenario = scenarioDef;
+    currentScenario.mode = EMGMode::ePreview;
 
     setupScenarioData();
 }
@@ -119,8 +122,9 @@ void MinimapGenerator::startNextScenario() {
 
 void MinimapGenerator::setupScenarioData() {
     m_mgMode = currentScenario.mode;
-
     m_zoom = currentScenario.zoom;
+
+    mandatoryADTMap.resize(0);
 
     MapRecord mapRecord;
     if (!m_apiContainer->databaseHandler->getMapById(currentScenario.mapId, mapRecord)) {
@@ -152,7 +156,78 @@ void MinimapGenerator::setupScenarioData() {
     m_width = currentScenario.imageWidth;
     m_height = currentScenario.imageHeight;
 
-    pauseAddingToStack = false;
+    //Assign mandatory adt for every cell on the screen
+    if (m_mgMode == EMGMode::eScreenshotGeneration && currentScenario.boundingBoxHolder != nullptr) {
+        //currentScenario.boundingBoxHolder
+        mandatoryADTMap.resize(m_chunkWidth);
+        for (int i = 0; i < m_chunkWidth; i++) {
+            mandatoryADTMap[i].resize(m_chunkHeight);
+        }
+
+        for (int adt_x = 0; adt_x < 64; adt_x++) {
+            for (int adt_y = 0; adt_y < 64; adt_y++) {
+                auto aaBB = (*currentScenario.boundingBoxHolder)[adt_x][adt_y];
+                //Project aaBB into screenSpace coordinates
+                std::array<float, 2> minMaxX = {aaBB.min.x, aaBB.min.x};
+                std::array<float, 2> minMaxY = {aaBB.min.y, aaBB.min.y};
+                std::array<float, 2> minMaxZ = {aaBB.min.z, aaBB.min.z};
+                std::vector<mathfu::vec4> corners;
+
+                for (int i = 0; i < 2; i++) {
+                    for (int j = 0; j < 2; j++) {
+                        for (int k = 0; k < 2; k++) {
+                            corners.push_back(
+                                mathfu::vec4(
+                                    minMaxX[i],
+                                    minMaxY[j],
+                                    minMaxZ[k],
+                                    1.0f
+                                )
+                            );
+                        }
+                    }
+                }
+
+                mathfu::mat4 viewProj = genTempProjectMatrix();
+                for (int i = 0; i < corners.size(); i++) {
+                    corners[i] = viewProj * corners[i];
+                    corners[i] = corners[i] * (1.0f / corners[i].w);
+                }
+
+                std::array<float, 2> minMaxScreenX = {20000, -20000};
+                std::array<float, 2> minMaxScreenY = {20000, -20000};
+                std::array<float, 2> minMaxScreenZ = {20000, -20000};
+
+                for (int i = 0; i < corners.size(); i++) {
+                    minMaxScreenX[0] = std::min(corners[i].x, minMaxScreenX[0]);
+                    minMaxScreenX[1] = std::max(corners[i].x, minMaxScreenX[1]);
+
+                    minMaxScreenY[0] = std::min(corners[i].y, minMaxScreenY[0]);
+                    minMaxScreenY[1] = std::max(corners[i].y, minMaxScreenY[1]);
+
+                    minMaxScreenZ[0] = std::min(corners[i].z, minMaxScreenZ[0]);
+                    minMaxScreenZ[1] = std::max(corners[i].z, minMaxScreenZ[1]);
+                }
+
+                //Add adt to all occupied cells
+                //TODO: figure out /2.0f part
+                for (int i = std::floor(minMaxScreenX[0]); i < std::ceil((minMaxScreenX[1] - minMaxScreenX[0]) / 2.0f); i++) {
+                    for (int j = std::floor(minMaxScreenY[0]); j < std::ceil((minMaxScreenY[1] - minMaxScreenY[0]) / 2.0f); j++) {
+                        if (i < m_chunkStartX)
+                            return;
+                        if (j < m_chunkStartY)
+                            return;
+                        if (i > m_chunkStartY + m_chunkHeight)
+
+                        mandatoryADTMap[i - m_chunkStartX][]
+                }
+            }
+        }
+
+    }
+
+
+    prepearCandidate = false;
 
     setupCameraData();
 }
@@ -162,38 +237,96 @@ void
 MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, const mathfu::vec2 &maxWowWorldCoord) {
     calcXtoYCoef();
 
+    bool useZCoord = false;
+    float minZ = 20000; float maxZ = -20000;
+    if (currentScenario.boundingBoxHolder && m_mgMode != EMGMode::eBoundingBoxCalculation) {
+        std::cout << "Using bounding box data to calc minMax Z" << std::endl;
+        useZCoord = true;
+
+        for (int adt_y = worldCoordinateToAdtIndex(minWowWorldCoord.x);
+            adt_y < worldCoordinateToAdtIndex(maxWowWorldCoord.x); adt_y++) {
+
+            for (int adt_x = worldCoordinateToAdtIndex(minWowWorldCoord.y);
+                 adt_x < worldCoordinateToAdtIndex(maxWowWorldCoord.y); adt_x++) {
+
+                minZ = std::min((*currentScenario.boundingBoxHolder)[adt_x][adt_y].min.z, minZ);
+                maxZ = std::max((*currentScenario.boundingBoxHolder)[adt_x][adt_y].max.z, maxZ);
+            }
+        }
+    }
+    std::array<float, 2> minMaxX = {minWowWorldCoord.x, maxWowWorldCoord.x};
+    std::array<float, 2> minMaxY = {minWowWorldCoord.y, maxWowWorldCoord.y};
+    std::array<float, 2> minMaxZ = {minZ, maxZ};
+
     mathfu::mat4 viewProj = genTempProjectMatrix();
 
-    mathfu::vec4 corner0 =
-        (viewProj * mathfu::vec4(minWowWorldCoord.x, minWowWorldCoord.y, 0, 1.0));
-    mathfu::vec4 corner1 =
-        (viewProj * mathfu::vec4(minWowWorldCoord.x, maxWowWorldCoord.y, 0, 1.0));
-    mathfu::vec4 corner2 =
-        (viewProj * mathfu::vec4(maxWowWorldCoord.x, minWowWorldCoord.y, 0, 1.0));
-    mathfu::vec4 corner3 =
-        (viewProj * mathfu::vec4(maxWowWorldCoord.x, maxWowWorldCoord.y, 0, 1.0));
+    std::vector<mathfu::vec4> corners;
+    if (useZCoord) {
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                for (int k = 0; k < 2; k++) {
+                    corners.push_back(
+                        mathfu::vec4(
+                            minMaxX[i],
+                            minMaxY[j],
+                            minMaxZ[k],
+                            1.0f
+                        )
+                    );
+                }
+            }
+        }
+    } else {
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                corners.push_back(
+                    mathfu::vec4(
+                        minMaxX[i],
+                        minMaxY[j],
+                        0,
+                        1.0f
+                    )
+                );
+            }
+        }
+    }
 
-    corner0 = corner0 * (1.0f / corner0.w);
-    corner1 = corner1 * (1.0f / corner1.w);
-    corner2 = corner2 * (1.0f / corner2.w);
-    corner3 = corner3 * (1.0f / corner3.w);
+    for (int i = 0; i < corners.size(); i++) {
+        corners[i] = viewProj * corners[i];
+        corners[i] = corners[i] * (1.0f / corners[i].w);
+    }
+
+    std::array<float, 2> minMaxScreenX = {20000, -20000};
+    std::array<float, 2> minMaxScreenY = {20000, -20000};
+    std::array<float, 2> minMaxScreenZ = {20000, -20000};
+
+    for (int i = 0; i < corners.size(); i++) {
+        minMaxScreenX[0] = std::min(corners[i].x, minMaxScreenX[0]);
+        minMaxScreenX[1] = std::max(corners[i].x, minMaxScreenX[1]);
+
+        minMaxScreenY[0] = std::min(corners[i].y, minMaxScreenY[0]);
+        minMaxScreenY[1] = std::max(corners[i].y, minMaxScreenY[1]);
+
+        minMaxScreenZ[0] = std::min(corners[i].z, minMaxScreenZ[0]);
+        minMaxScreenZ[1] = std::max(corners[i].z, minMaxScreenZ[1]);
+    }
 
 
     mathfu::vec2 minOrthoMapCoord = mathfu::vec2(
-        std::min<float>(std::min<float>(corner0.x, corner1.x), std::min<float>(corner2.x, corner3.x)),
-        std::min<float>(std::min<float>(corner0.y, corner1.y), std::min<float>(corner2.y, corner3.y))
+        minMaxScreenX[0],
+        minMaxScreenY[0]
     );
     mathfu::vec2 maxOrthoMapCoord = mathfu::vec2(
-        std::max<float>(std::max<float>(corner0.x, corner1.x), std::max<float>(corner2.x, corner3.x)),
-        std::max<float>(std::max<float>(corner0.y, corner1.y), std::max<float>(corner2.y, corner3.y))
+        minMaxScreenX[1],
+        minMaxScreenY[1]
     );
 
     std::cout <<"Orient = " << (int)currentScenario.orientation << std::endl;
 
-    m_chunkStartX = std::floor(((minOrthoMapCoord.y))) ;
-    m_chunkWidth = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y)/ 2.0f) + 0.99 ) ;
-    m_chunkStartY = std::floor((minOrthoMapCoord.x));
-    m_chunkHeight = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x)/ 2.0f) + 0.99);
+    m_chunkStartX = std::floor(((minOrthoMapCoord.x))) ;
+    m_chunkWidth = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x) / 2.0f) + 0.99 ) ;
+    m_chunkStartY = std::floor((minOrthoMapCoord.y));
+    m_chunkHeight = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y)/ 2.0f) + 0.99);
 
     std::cout << "m_chunkStartX = " << m_chunkStartX << " m_chunkWidth = " << m_chunkWidth
               << " m_chunkStartY = " << m_chunkStartY << " m_chunkHeight = " << m_chunkHeight << std::endl;
@@ -288,29 +421,29 @@ void MinimapGenerator::calcXtoYCoef() {
 void MinimapGenerator::setupCameraData() {
     //Do reverse transform here
     auto min1 = mathfu::vec4(
-        m_chunkStartY + (m_y * 2.0f),
-        m_chunkStartX + m_chunkWidth - ((m_x - 1) * 2.0f),
+        m_chunkStartX + (m_x * 2.0f),
+        m_chunkStartY + (2.0f * m_chunkHeight) - ((m_y - 1) * 2.0f),
         0,
         1
     );
 
     auto min2 = mathfu::vec4(
-        m_chunkStartY + (m_y * 2.0f),
-        m_chunkStartX + m_chunkWidth - ((m_x - 1) * 2.0f),
+        m_chunkStartX + (m_x * 2.0f),
+        m_chunkStartY + (2.0f * m_chunkHeight) - ((m_y - 1) * 2.0f),
         1,
         1
     );
 
     auto max1 = mathfu::vec4(
-        m_chunkStartY + ((m_y + 1) * 2.0f),
-        m_chunkStartX + m_chunkWidth - ((m_x) * 2.0f),
+        m_chunkStartX + ((m_x + 1) * 2.0f),
+        m_chunkStartY + (2.0f * m_chunkHeight) - ((m_y) * 2.0f),
         0,
         1
     );
 
     auto max2 = mathfu::vec4(
-        m_chunkStartY + ((m_y + 1) * 2.0f),
-        m_chunkStartX + m_chunkWidth - ((m_x) * 2.0f),
+        m_chunkStartX + ((m_x + 1) * 2.0f),
+        m_chunkStartY + (2.0f * m_chunkHeight) - ((m_y) * 2.0f),
         1,
         1
     );
@@ -335,6 +468,11 @@ void MinimapGenerator::setupCameraData() {
 
     float alphaMax = -max2.z / (max1.z - max2.z);
     auto max = (max1 - max2) * alphaMax + max2;
+
+
+    std::cout << "(Debug) m_x = " << m_x << " m_y = " << m_y <<
+        ", x = " << (max.x + min.x) * 0.5f <<
+        ", y = " << (max.y + min.y) * 0.5f << std::endl;
 
     setLookAtPoint(
         (max.x + min.x) * 0.5,
@@ -373,30 +511,30 @@ void MinimapGenerator::process() {
         framesReady++;
     } else {
         framesReady = 0;
-        pauseAddingToStack = false;
-        drawStageStack.clear();
-        cullStageStack.clear();
+        prepearCandidate = false;
+        m_candidateDS = nullptr;
+        m_candidateCS = nullptr;
         return;
     }
 
     if (framesReady < waitQueueLen) {
-        if (drawStageStack.size() > waitQueueLen) {
-            drawStageStack.pop_back();
-            cullStageStack.pop_back();
-        }
         return;
     }
-    if (!pauseAddingToStack) {
-        pauseAddingToStack = true;
+
+    if (!prepearCandidate) {
+        prepearCandidate = true;
+        m_candidateDS = nullptr;
+        m_candidateCS = nullptr;
         framesReady = 0;
         return;
     }
 
-    auto lastFrameIt = drawStageStack.front();
-    auto lastFrameCull = cullStageStack.front();
-    drawStageStack.clear();
-    cullStageStack.clear();
-    pauseAddingToStack = false;
+
+    auto lastFrameIt = m_candidateDS;
+    auto lastFrameCull = m_candidateCS;
+    m_candidateDS = nullptr;
+    m_candidateCS = nullptr;
+    prepearCandidate = false;
     framesReady = 0;
 
     if (m_mgMode == EMGMode::eBoundingBoxCalculation) {
@@ -500,9 +638,9 @@ void MinimapGenerator::saveDrawStageToFile(std::string folderToSave, const std::
     }
 
     std::string fileName = folderToSave + "/map_" + std::to_string(
-        (m_y)
-    ) + "_" + std::to_string(
         (m_x)
+    ) + "_" + std::to_string(
+        (m_y)
     ) + ".png";
 
     std::__1::vector<uint8_t> buffer = std::__1::vector<uint8_t>(m_width * m_height * 4 + 1);
@@ -549,9 +687,14 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
         ViewPortDimensions dimensions = {{0, 0}, {m_width, m_height}};
 
         HFrameBuffer fb = nullptr;
+        int frameWait = 4;
+        if (prepearCandidate && m_candidateDS == nullptr ) {
+            frameWait = waitQueueLen+4;
+        }
+
         fb = m_apiContainer->hDevice->createFrameBuffer(m_width, m_height,
                                                         {ITextureFormat::itRGBA}, ITextureFormat::itDepth32,
-                                                        m_apiContainer->hDevice->getMaxSamplesCnt(), 2*waitQueueLen+1);
+                                                        m_apiContainer->hDevice->getMaxSamplesCnt(), frameWait);
 
         std::vector<HDrawStage> drawStageDependencies = {};
 
@@ -563,9 +706,9 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
 
         m_lastDraw = sceneDrawStage;
         //We dont need stack in preview mode
-        if (m_mgMode != EMGMode::ePreview && !pauseAddingToStack) {
-            drawStageStack.push_front(sceneDrawStage);
-            cullStageStack.push_front(cullStage);
+        if (m_mgMode != EMGMode::ePreview && prepearCandidate && m_candidateDS == nullptr) {
+            m_candidateDS = sceneDrawStage;
+            m_candidateCS = cullStage;
         }
         return sceneDrawStage;
     }
