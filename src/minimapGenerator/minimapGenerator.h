@@ -8,43 +8,7 @@
 #include "../../wowViewerLib/src/engine/ApiContainer.h"
 #include "../../wowViewerLib/src/engine/SceneScenario.h"
 #include "../persistance/RequestProcessor.h"
-
-enum class ScenarioOrientation {
-    soTopDownOrtho,
-    so45DegreeTick0,
-    so45DegreeTick1,
-    so45DegreeTick2,
-    so45DegreeTick3,
-};
-enum class EMGMode {
-    eNone,
-    eBoundingBoxCalculation,
-    eScreenshotGeneration,
-    ePreview,
-};
-
-struct ScenarioDef {
-    EMGMode mode;
-    int mapId;
-    mathfu::vec4 closeOceanColor;
-    mathfu::vec4 closeRiverColor;
-
-    mathfu::vec2 minWowWorldCoord;
-    mathfu::vec2 maxWowWorldCoord;
-
-    int imageHeight;
-    int imageWidth;
-
-    float zoom = 1.0f;
-    bool doBoundingBoxPreCalc = false;
-
-    ScenarioOrientation orientation = ScenarioOrientation::so45DegreeTick0;
-
-    std::string folderToSave;
-
-    HADTBoundingBoxHolder boundingBoxHolder = nullptr;
-};
-
+#include "entities.h"
 
 
 class MinimapGenerator {
@@ -65,7 +29,6 @@ private:
 
     float m_zoom;
 
-
     int m_chunkStartX = -32;
     int m_chunkStartY= -32;
     int m_chunkWidth = 64;
@@ -75,7 +38,10 @@ private:
 
     HDrawStage m_lastDraw = nullptr;
 
-    std::vector<std::vector<std::array<uint8_t, 2>>> mandatoryADTMap;
+    HADTBoundingBoxHolder boundingBoxHolder = nullptr;
+
+    //Per X dimension, per Y dimension, vector of mandatory adt {x, y} coordinates
+    std::vector<std::vector<std::vector<std::array<uint8_t, 2>>>> mandatoryADTMap;
 
     HDrawStage m_candidateDS = nullptr;
     HCullStage m_candidateCS = nullptr;

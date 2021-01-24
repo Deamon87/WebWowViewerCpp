@@ -20,6 +20,7 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
     m_apiContainer->cacheStorage = cacheStorage;
     m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
     m_apiContainer->databaseHandler = dbhandler;
+
     m_processor = processor;
 
     auto config = m_apiContainer->getConfig();
@@ -51,29 +52,29 @@ void MinimapGenerator::startScenarios(std::vector<ScenarioDef> &scenarioList) {
 
     scenarioListToProcess = {};
     for (auto &scenario : scenarioList) {
-        auto boundingBoxHolder = scenario.boundingBoxHolder;
-        if (boundingBoxHolder == nullptr && scenario.doBoundingBoxPreCalc) {
-            scenario.boundingBoxHolder = boundingBoxHolder;
-        }
+//        auto boundingBoxHolder = scenario.boundingBoxHolder;
+//        if (boundingBoxHolder == nullptr && scenario.doBoundingBoxPreCalc) {
+//            scenario.boundingBoxHolder = boundingBoxHolder;
+//        }
 
         scenarioListToProcess.push_back(scenario);
 
-        if (scenario.doBoundingBoxPreCalc) {
-            auto scenarionCopy = scenario;
-            scenarionCopy.mode = EMGMode::eBoundingBoxCalculation;
-            scenarionCopy.orientation = ScenarioOrientation::soTopDownOrtho;
-
-            scenarionCopy.minWowWorldCoord = mathfu::vec2(-MathHelper::TILESIZE * 32, -MathHelper::TILESIZE * 32);
-            scenarionCopy.maxWowWorldCoord = mathfu::vec2(MathHelper::TILESIZE * 32, MathHelper::TILESIZE * 32);
-
-            scenarionCopy.doBoundingBoxPreCalc = false;
-            scenarionCopy.zoom = 1.0f;
-            scenarionCopy.imageWidth = 512;
-            scenarionCopy.imageHeight = 512;
-            scenarionCopy.boundingBoxHolder = boundingBoxHolder;
-
-            scenarioListToProcess.push_back(scenarionCopy);
-        }
+//        if (scenario.doBoundingBoxPreCalc) {
+//            auto scenarionCopy = scenario;
+//            scenarionCopy.mode = EMGMode::eBoundingBoxCalculation;
+//            scenarionCopy.orientation = ScenarioOrientation::soTopDownOrtho;
+//
+//            scenarionCopy.minWowWorldCoord = mathfu::vec2(-MathHelper::TILESIZE * 32, -MathHelper::TILESIZE * 32);
+//            scenarionCopy.maxWowWorldCoord = mathfu::vec2(MathHelper::TILESIZE * 32, MathHelper::TILESIZE * 32);
+//
+//            scenarionCopy.doBoundingBoxPreCalc = false;
+//            scenarionCopy.zoom = 1.0f;
+//            scenarionCopy.imageWidth = 512;
+//            scenarionCopy.imageHeight = 512;
+//            scenarionCopy.boundingBoxHolder = boundingBoxHolder;
+//
+//            scenarioListToProcess.push_back(scenarionCopy);
+//        }
     }
 
     startNextScenario();
@@ -141,23 +142,24 @@ void MinimapGenerator::setupScenarioData() {
 
     m_currentScene = std::make_shared<Map>(m_apiContainer, mapRecord.ID, mapRecord.WdtFileID);
     if (m_mgMode == EMGMode::eScreenshotGeneration) {
-        m_currentScene->setAdtBoundingBoxHolder(currentScenario.boundingBoxHolder);
+        m_currentScene->setAdtBoundingBoxHolder(boundingBoxHolder);
     }
 
     auto config = m_apiContainer->getConfig();
     config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
-    config->closeRiverColor = currentScenario.closeRiverColor;//{0.345206976, 0.329288304, 0.270450264, 0};
+    config->closeRiverColor = {0.345206976, 0.329288304, 0.270450264, 0};
 
     setMinMaxXYWidhtHeight(currentScenario.minWowWorldCoord, currentScenario.maxWowWorldCoord);
 
     m_x = 0;
-    m_y = 0;
+    //To make AABB work for sure!
+    m_y = m_chunkHeight - 1;
 
     m_width = currentScenario.imageWidth;
     m_height = currentScenario.imageHeight;
 
     //Assign mandatory adt for every cell on the screen
-    if (m_mgMode == EMGMode::eScreenshotGeneration && currentScenario.boundingBoxHolder != nullptr) {
+    if (m_mgMode == EMGMode::eScreenshotGeneration && boundingBoxHolder != nullptr) {
         //currentScenario.boundingBoxHolder
         mandatoryADTMap.resize(m_chunkWidth);
         for (int i = 0; i < m_chunkWidth; i++) {
@@ -166,7 +168,7 @@ void MinimapGenerator::setupScenarioData() {
 
         for (int adt_x = 0; adt_x < 64; adt_x++) {
             for (int adt_y = 0; adt_y < 64; adt_y++) {
-                auto aaBB = (*currentScenario.boundingBoxHolder)[adt_x][adt_y];
+                auto aaBB = (*boundingBoxHolder)[adt_x][adt_y];
                 //Project aaBB into screenSpace coordinates
                 std::array<float, 2> minMaxX = {aaBB.min.x, aaBB.min.x};
                 std::array<float, 2> minMaxY = {aaBB.min.y, aaBB.min.y};
@@ -210,25 +212,26 @@ void MinimapGenerator::setupScenarioData() {
                 }
 
                 //Add adt to all occupied cells
-                //TODO: figure out /2.0f part
                 for (int i = std::floor(minMaxScreenX[0]); i < std::ceil((minMaxScreenX[1] - minMaxScreenX[0]) / 2.0f); i++) {
                     for (int j = std::floor(minMaxScreenY[0]); j < std::ceil((minMaxScreenY[1] - minMaxScreenY[0]) / 2.0f); j++) {
                         if (i < m_chunkStartX)
                             return;
                         if (j < m_chunkStartY)
                             return;
+                        if (i > m_chunkStartX + m_chunkWidth)
+                            return;
                         if (i > m_chunkStartY + m_chunkHeight)
+                            return;
 
-                        mandatoryADTMap[i - m_chunkStartX][]
+                        std::array<uint8_t, 2> adtCoord = {static_cast<unsigned char>(adt_x), static_cast<unsigned char>(adt_y)};
+                        mandatoryADTMap[i - m_chunkStartX][j - m_chunkStartY].push_back(adtCoord);
+                    }
                 }
             }
         }
-
     }
 
-
     prepearCandidate = false;
-
     setupCameraData();
 }
 
@@ -239,7 +242,7 @@ MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, c
 
     bool useZCoord = false;
     float minZ = 20000; float maxZ = -20000;
-    if (currentScenario.boundingBoxHolder && m_mgMode != EMGMode::eBoundingBoxCalculation) {
+    if (boundingBoxHolder && m_mgMode != EMGMode::eBoundingBoxCalculation) {
         std::cout << "Using bounding box data to calc minMax Z" << std::endl;
         useZCoord = true;
 
@@ -249,8 +252,8 @@ MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, c
             for (int adt_x = worldCoordinateToAdtIndex(minWowWorldCoord.y);
                  adt_x < worldCoordinateToAdtIndex(maxWowWorldCoord.y); adt_x++) {
 
-                minZ = std::min((*currentScenario.boundingBoxHolder)[adt_x][adt_y].min.z, minZ);
-                maxZ = std::max((*currentScenario.boundingBoxHolder)[adt_x][adt_y].max.z, maxZ);
+                minZ = std::min((*boundingBoxHolder)[adt_x][adt_y].min.z, minZ);
+                maxZ = std::max((*boundingBoxHolder)[adt_x][adt_y].max.z, maxZ);
             }
         }
     }
@@ -323,10 +326,10 @@ MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, c
 
     std::cout <<"Orient = " << (int)currentScenario.orientation << std::endl;
 
-    m_chunkStartX = std::floor(((minOrthoMapCoord.x))) ;
-    m_chunkWidth = std::floor(((maxOrthoMapCoord.x - minOrthoMapCoord.x) / 2.0f) + 0.99 ) ;
-    m_chunkStartY = std::floor((minOrthoMapCoord.y));
-    m_chunkHeight = std::floor(((maxOrthoMapCoord.y - minOrthoMapCoord.y)/ 2.0f) + 0.99);
+    m_chunkStartX = std::floor((minOrthoMapCoord.x) / 2.0f) ;
+    m_chunkStartY = std::floor((minOrthoMapCoord.y) / 2.0f);
+    m_chunkWidth = std::ceil(((maxOrthoMapCoord.x - minOrthoMapCoord.x) / 2.0f)) ;
+    m_chunkHeight = std::ceil(((maxOrthoMapCoord.y - minOrthoMapCoord.y)/ 2.0f));
 
     std::cout << "m_chunkStartX = " << m_chunkStartX << " m_chunkWidth = " << m_chunkWidth
               << " m_chunkStartY = " << m_chunkStartY << " m_chunkHeight = " << m_chunkHeight << std::endl;
@@ -421,29 +424,29 @@ void MinimapGenerator::calcXtoYCoef() {
 void MinimapGenerator::setupCameraData() {
     //Do reverse transform here
     auto min1 = mathfu::vec4(
-        m_chunkStartX + (m_x * 2.0f),
-        m_chunkStartY + (2.0f * m_chunkHeight) - ((m_y - 1) * 2.0f),
+        (m_chunkStartX + m_x) * 2.0f,
+        (m_chunkStartY + m_chunkHeight - (m_y - 1)) * 2.0f,
         0,
         1
     );
 
     auto min2 = mathfu::vec4(
-        m_chunkStartX + (m_x * 2.0f),
-        m_chunkStartY + (2.0f * m_chunkHeight) - ((m_y - 1) * 2.0f),
+        (m_chunkStartX + m_x) * 2.0f,
+        (m_chunkStartY + m_chunkHeight - (m_y - 1)) * 2.0f,
         1,
         1
     );
 
     auto max1 = mathfu::vec4(
-        m_chunkStartX + ((m_x + 1) * 2.0f),
-        m_chunkStartY + (2.0f * m_chunkHeight) - ((m_y) * 2.0f),
+        (m_chunkStartX + m_x + 1) * 2.0f,
+        (m_chunkStartY + m_chunkHeight - m_y) * 2.0f,
         0,
         1
     );
 
     auto max2 = mathfu::vec4(
-        m_chunkStartX + ((m_x + 1) * 2.0f),
-        m_chunkStartY + (2.0f * m_chunkHeight) - ((m_y) * 2.0f),
+        (m_chunkStartX + m_x + 1) * 2.0f,
+        (m_chunkStartY + m_chunkHeight - m_y) * 2.0f,
         1,
         1
     );
@@ -470,6 +473,11 @@ void MinimapGenerator::setupCameraData() {
     auto max = (max1 - max2) * alphaMax + max2;
 
 
+    if (mandatoryADTMap.size() > 0) {
+        auto adtVec = mandatoryADTMap[m_x][m_y];
+        m_currentScene->setMandatoryADTs(adtVec);
+    }
+
     std::cout << "(Debug) m_x = " << m_x << " m_y = " << m_y <<
         ", x = " << (max.x + min.x) * 0.5f <<
         ", y = " << (max.y + min.y) * 0.5f << std::endl;
@@ -483,6 +491,7 @@ void MinimapGenerator::setupCameraData() {
 void MinimapGenerator::setZoom(float zoom) {
     m_zoom = zoom;
 }
+
 void MinimapGenerator::setLookAtPoint(float x, float y) {
     mathfu::vec3 lookAtPoint = mathfu::vec3(x, y, 0);
 
@@ -604,8 +613,8 @@ void MinimapGenerator::process() {
             AdtIndexToWorldCoordinate(adt_x),
             maxCoord.z);
 
-        if (currentScenario.boundingBoxHolder != nullptr) {
-            (*currentScenario.boundingBoxHolder)[adt_x][adt_y] = CAaBox(
+        if (boundingBoxHolder != nullptr) {
+            (*boundingBoxHolder)[adt_x][adt_y] = CAaBox(
                 C3Vector(minCoord),
                 C3Vector(maxCoord)
             );
@@ -617,14 +626,14 @@ void MinimapGenerator::process() {
         saveDrawStageToFile(currentScenario.folderToSave, lastFrameIt);
     }
 
-    m_x++;
-    if (m_x >= m_chunkWidth)  {
-        m_y++;
-        m_x = 0;
+    m_y--;
+    if (m_y < 0)  {
+        m_x++;
+        m_y = m_chunkHeight - 1;
     }
 //    std::cout << "m_x = " << m_x << " out of (" << m_chunkStartX+m_chunkWidth << ") m_y = " << m_y << " out of (" << m_chunkStartY+m_chunkHeight << ")" << std::endl;
 
-    if (m_y >= (m_chunkHeight)) {
+    if (m_x >= m_chunkWidth) {
         startNextScenario();
     } else {
         setupCameraData();

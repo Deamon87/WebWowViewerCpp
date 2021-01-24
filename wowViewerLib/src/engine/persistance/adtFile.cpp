@@ -169,6 +169,18 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             }
         },
         {
+            'MLMX',
+            {
+                [](AdtFile& file, ChunkData& chunkData){
+                    debuglog("Entered MLMX");
+
+                    file.wmoLodExtents_len = chunkData.chunkLen / sizeof(LodExtents);
+                    chunkData.readValues(file.wmoLodExtents, file.wmoLodExtents_len);
+                }
+            }
+        },
+
+        {
             'MLDL',
             {
                 [](AdtFile& file, ChunkData& chunkData){

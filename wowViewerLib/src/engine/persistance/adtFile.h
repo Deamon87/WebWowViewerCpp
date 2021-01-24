@@ -77,6 +77,9 @@ public:
     PointerChecker<SMMapObjDef> mapObjDef = mapObjDef_len;
     int mapObjDef_len = 0;
 
+    PointerChecker<LodExtents> wmoLodExtents = wmoLodExtents_len;
+    int wmoLodExtents_len = 0;
+
     PointerChecker<SMDoodadDef> doodadDefObj1 = doodadDefObj1_len;
     int doodadDefObj1_len = 0;
 

@@ -109,7 +109,7 @@ protected:
     void checkADTCulling(int i, int j, std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4,
                               mathfu::vec4 &cameraPos, std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
                               std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                              std::vector<std::shared_ptr<WmoObject>> &wmoCandidates)
+                              std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 
     virtual void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);

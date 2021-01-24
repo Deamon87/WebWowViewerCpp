@@ -16,7 +16,6 @@ typedef std::shared_ptr<ApiContainer> HApiContainer;
 #include "../include/databaseHandler.h"
 
 
-
 class ApiContainer {
 private:
     Config config;

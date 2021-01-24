@@ -206,7 +206,7 @@ set(SOURCE_FILES
 		src/ui/imguiLib/groupPanel/groupPanel.h
 
 		src/main.cpp
-        src/ui/imguiLib/disablableButton/disablableButton.cpp src/ui/imguiLib/disablableButton/disablableButton.h)
+        src/ui/imguiLib/disablableButton/disablableButton.cpp src/ui/imguiLib/disablableButton/disablableButton.h src/minimapGenerator/storage/CMinimapDataDB.cpp src/minimapGenerator/storage/CMinimapDataDB.h src/minimapGenerator/entities.h src/ui/imguiLib/compactColorPicker/compactColorPicker.cpp src/ui/imguiLib/compactColorPicker/compactColorPicker.h)
 
 
 

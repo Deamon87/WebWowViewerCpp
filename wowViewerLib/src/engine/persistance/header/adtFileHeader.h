@@ -102,6 +102,13 @@ struct SMMapObjDefObj1 {                        // same as MODF but without boun
     uint16_t unk;
 };
 
+PACK(
+struct LodExtents
+{
+    CAaBox bounding;
+    float radius;
+});
+
 struct MLHeader {
     uint32_t unknown;
     float some_kind_of_bounding[6];

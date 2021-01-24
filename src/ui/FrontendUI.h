@@ -13,6 +13,7 @@
 #include "childWindow/mapConstructionWindow.h"
 #include "../minimapGenerator/minimapGenerator.h"
 #include "../persistance/CascRequestProcessor.h"
+#include "../minimapGenerator/storage/CMinimapDataDB.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -62,8 +63,12 @@ public:
 private:
     std::array<HCullStage, 4> m_cullstages;
 
+    std::shared_ptr<CMinimapDataDB> m_minimapDB;
+
     HMinimapGenerator minimapGenerator;
-    ScenarioDef sceneDef;
+    std::vector<ScenarioDef> sceneDefList;
+    std::vector<RiverColorOverride> riverColorOverrides;
+    ScenarioDef *sceneDef = nullptr;
     float previewX = 0;
     float previewY = 0;
     float previewZoom = 1;

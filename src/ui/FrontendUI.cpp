@@ -10,6 +10,7 @@
 #include <mathfu/glsl_mappings.h>
 #include <groupPanel/groupPanel.h>
 #include <disablableButton/disablableButton.h>
+#include <compactColorPicker/compactColorPicker.h>
 #include "imguiLib/imguiImpl/imgui_impl_glfw.h"
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
@@ -1439,20 +1440,39 @@ auto FrontendUI::createMinimapGenerator() {
 //        "azeroth/topDown1"
 //    };
 
-    sceneDef = {
-        EMGMode::eScreenshotGeneration,
-        530,
-        mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
-        mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
-        mathfu::vec2(1627, -1175),
-        mathfu::vec2(6654 , 4689 ),
-        1024,
-        1024,
-        1.0f,
-        true,
-        ScenarioOrientation::so45DegreeTick0,
-        "outland/topDown1"
+    sceneDefList = {
+        {
+            -1,
+            EMGMode::eScreenshotGeneration,
+            530,
+            "Netherstorm",
+            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+            mathfu::vec2(1627, -1175),
+            mathfu::vec2(6654 , 4689 ),
+            1024,
+            1024,
+            1.0f,
+            ScenarioOrientation::so45DegreeTick0,
+            "outland/netherstorm"
+        },
+        {
+            -1,
+            EMGMode::eScreenshotGeneration,
+            1,
+            "Kalimdor, rot 0",
+            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+            mathfu::vec2(-12182, -8803 ),
+            mathfu::vec2(12058, 4291),
+            1024,
+            1024,
+            1.0f,
+            ScenarioOrientation::so45DegreeTick0,
+            "kalimdor/rotation0"
+        }
     };
+
+    sceneDef = nullptr;
+
 
     return minimapGenerator;
 
@@ -1546,87 +1566,15 @@ void FrontendUI::editComponentsForConfig(Config * config) {
     if (config == nullptr) return;
 
     ImGui::BeginGroupPanel("Exterior Lighting");
-    {
-        auto ambient = config->exteriorAmbientColor;
-        exteriorAmbientColor = {ambient.x, ambient.y, ambient.z};
-        ImVec4 col = ImVec4(ambient.x, ambient.y, ambient.z, 1.0);
-        if (ImGui::ColorButton("ExteriorAmbientColor##3b", col)) {
-            ImGui::OpenPopup("Exterior Ambient picker");
-        }
-        ImGui::SameLine();
-        ImGui::Text("Exterior Ambient");
-
-        if (ImGui::BeginPopup("Exterior Ambient picker")) {
-            if (ImGui::ColorPicker3("Exterior Ambient", exteriorAmbientColor.data())) {
-                config->exteriorAmbientColor = mathfu::vec4(
-                    exteriorAmbientColor[0], exteriorAmbientColor[1], exteriorAmbientColor[2], 1.0);
-            }
-            ImGui::EndPopup();
-        }
-    }
 
     {
-        auto horizontAmbient = config->exteriorHorizontAmbientColor;
-        exteriorHorizontAmbientColor = {horizontAmbient.x, horizontAmbient.y, horizontAmbient.z};
-        ImVec4 col = ImVec4(horizontAmbient.x, horizontAmbient.y, horizontAmbient.z, 1.0);
-        if (ImGui::ColorButton("ExteriorHorizontAmbientColor##3b", col)) {
-            ImGui::OpenPopup("Exterior Horizont Ambient picker");
-        }
-        ImGui::SameLine();
-        ImGui::Text("Exterior Horizont Ambient");
-
-        if (ImGui::BeginPopup("Exterior Horizont Ambient picker")) {
-            if (ImGui::ColorPicker3("Exterior Horizont Ambient", exteriorHorizontAmbientColor.data())) {
-                config->exteriorHorizontAmbientColor = mathfu::vec4 (
-                    exteriorHorizontAmbientColor[0],
-                    exteriorHorizontAmbientColor[1], exteriorHorizontAmbientColor[2], 1.0);
-            }
-            ImGui::EndPopup();
-        }
+        ImGui::CompactColorPicker("Exterior Ambient", config->exteriorAmbientColor);
+        ImGui::CompactColorPicker("Exterior Horizon Ambient", config->exteriorHorizontAmbientColor);
+        ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorGroundAmbientColor);
+        ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorDirectColor);
     }
-    {
-        auto groundAmbient = config->exteriorGroundAmbientColor;
-        exteriorGroundAmbientColor = {groundAmbient.x, groundAmbient.y, groundAmbient.z};
-        ImVec4 col = ImVec4(groundAmbient.x, groundAmbient.y, groundAmbient.z, 1.0);
 
-        if (ImGui::ColorButton("ExteriorGroundAmbientColor##3b", col)) {
-            ImGui::OpenPopup("Exterior Ground Ambient picker");
-        }
-        ImGui::SameLine();
-        ImGui::Text("Exterior Ground Ambient");
-
-        if (ImGui::BeginPopup("Exterior Ground Ambient picker")) {
-            if (ImGui::ColorPicker3("Exterior Ground Ambient", exteriorGroundAmbientColor.data())) {
-                config->exteriorGroundAmbientColor = mathfu::vec4(
-                    exteriorGroundAmbientColor[0],
-                    exteriorGroundAmbientColor[1], exteriorGroundAmbientColor[2], 1.0);
-            }
-            ImGui::EndPopup();
-        }
-    }
-    {
-        auto directColor = config->exteriorDirectColor;
-        std::array<float, 3> exteriorDirectColor = {directColor.x, directColor.y, directColor.z};
-        ImVec4 col = ImVec4(directColor.x, directColor.y, directColor.z, 1.0);
-
-        if (ImGui::ColorButton("ExteriorDirectColor##3b", col)) {
-            ImGui::OpenPopup("Exterior Direct Color picker");
-        }
-        ImGui::SameLine();
-        ImGui::Text("Exterior Direct Color");
-
-        if (ImGui::BeginPopup("Exterior Direct Color picker")) {
-            if (ImGui::ColorPicker3("Exterior Direct Color", exteriorDirectColor.data())) {
-                config->exteriorDirectColor = mathfu::vec4(
-                    exteriorDirectColor[0],
-                    exteriorDirectColor[1],
-                    exteriorDirectColor[2], 1.0);
-            }
-            ImGui::EndPopup();
-        }
-    }
     ImGui::EndGroupPanel();
-
 }
 
 void FrontendUI::showMinimapGenerationSettingsDialog() {
@@ -1634,91 +1582,206 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
         if (minimapGenerator == nullptr) {
             createMinimapGenerator();
         }
+        if (m_minimapDB == nullptr) {
+            m_minimapDB = std::make_shared<CMinimapDataDB>("minimapdb.sqlite");
+            m_minimapDB->getScenarios(sceneDefList);
+        }
 
         ImGui::Begin("Minimap Generator settings", &showMinimapGeneratorSettings);
         ImGui::Columns(2, NULL, true);
         //Left panel
+        ImGui::BeginTabBar("MinimapGenTabs");
         {
-            ImGui::BeginGroupPanel("Scenario Type");
+            bool listOpened = this->sceneDef == nullptr;
+            bool staticAlwaysTrue = true;
+            if (ImGui::BeginTabItem("List"))
             {
-                if (ImGui::RadioButton("Generate screenshots", &sceneDef.mode, EMGMode::eScreenshotGeneration)) {
-                }
-                if (ImGui::RadioButton("Generate bounding box", &sceneDef.mode, EMGMode::eBoundingBoxCalculation)) {
-                }
-                if (ImGui::RadioButton("Preview", &sceneDef.mode, EMGMode::ePreview)) {
-                }
-            }
-            ImGui::EndGroupPanel();
-            ImGui::SameLine();
-            ImGui::BeginGroupPanel("Orientation");
-            {
-                if (ImGui::RadioButton("Ortho projection", &sceneDef.orientation, ScenarioOrientation::soTopDownOrtho)) {
-                }
-                if (ImGui::RadioButton("At 45° tick 0", &sceneDef.orientation, ScenarioOrientation::so45DegreeTick0)) {
-                }
-                if (ImGui::RadioButton("At 45° tick 1", &sceneDef.orientation, ScenarioOrientation::so45DegreeTick1)) {
-                }
-                if (ImGui::RadioButton("At 45° tick 2", &sceneDef.orientation, ScenarioOrientation::so45DegreeTick2)) {
-                }
-                if (ImGui::RadioButton("At 45° tick 3", &sceneDef.orientation, ScenarioOrientation::so45DegreeTick3)) {
-                }
-            }
-            ImGui::EndGroupPanel();
+                //The table
+                ImGui::BeginChild("Scenario List");
+                ImGui::Columns(3, "scenarioListcolumns"); // 3-ways, with border
+                ImGui::Separator();
+                ImGui::Text("");
+                ImGui::NextColumn();
+                ImGui::Text("Name");
+                ImGui::NextColumn();
+                ImGui::Text("Actions");
+                ImGui::NextColumn();
+                ImGui::Separator();
 
+                for (int i = 0; i < this->sceneDefList.size(); i++) {
+                    auto &l_sceneDef = sceneDefList[i];
+                    bool checked = true;
+                    ImGui::Checkbox("", &checked);
+                    ImGui::NextColumn();
+                    ImGui::Text("%s", l_sceneDef.name.c_str());
+                    ImGui::NextColumn();
+                    if (ImGui::Button(("Edit##" + std::to_string(i)).c_str())) {
+                        this->sceneDef = &l_sceneDef;
+                    }
+                    ImGui::NextColumn();
+                }
+                ImGui::Columns(1);
+                ImGui::Separator();
+                ImGui::EndChild();
 
-            auto currentTime = minimapGenerator->getConfig()->currentTime;
-            ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
-            if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
-                minimapGenerator->getConfig()->currentTime = currentTime;
-            }
-
-            editComponentsForConfig(minimapGenerator->getConfig());
-            if (minimapGenerator->getCurrentMode() != EMGMode::eScreenshotGeneration) {
-                bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
-                if (ImGui::ButtonDisablable("Start Screenshot Gen", isDisabled)) {
-                    std::vector<ScenarioDef> list = {sceneDef};
-
-                    minimapGenerator->startScenarios(list);
-                }
-            } else {
-                if (ImGui::Button("Stop Screenshot Gen")) {
-                    minimapGenerator->stopPreview();
-                }
-            }
-            ImGui::SameLine();
-            if (minimapGenerator->getCurrentMode() != EMGMode::ePreview) {
-                bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
-                if (ImGui::ButtonDisablable("Start Preview", isDisabled)) {
-                    minimapGenerator->startPreview(sceneDef);
-                }
-            } else {
-                if (ImGui::Button("Stop Preview")) {
-                    minimapGenerator->stopPreview();
-                }
-            }
-            ImGui::SameLine();
-            if (minimapGenerator->getCurrentMode() != EMGMode::eBoundingBoxCalculation) {
-                bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
-                if (ImGui::ButtonDisablable("Start BBox calc", isDisabled)) {
-                    minimapGenerator->startBoundingBoxCalc(sceneDef);
-                }
-            } else {
-                if (ImGui::Button("Stop BBox calc")) {
-                    minimapGenerator->stopBoundingBoxCalc();
-                }
+                ImGui::EndTabItem();
             }
 
-            if (minimapGenerator->getCurrentMode() != EMGMode::eNone && minimapGenerator->getCurrentMode() != EMGMode::ePreview) {
-                int x, y, maxX, maxY;
-                minimapGenerator->getCurrentTileCoordinates(x, y, maxX, maxY);
+            if (sceneDef != nullptr) {
+                bool opened = true;
+                if (ImGui::BeginTabItem("Edit", &opened, ImGuiTabItemFlags_SetSelected)) {
+                    {
+                        opened = true;
+                        ImGui::InputInt("Map Id", &sceneDef->mapId);
+                        auto scenarioName = std::array<char,128>();
+                        if (sceneDef->name.size() > 128) sceneDef->name.resize(128);
+                        std::copy(sceneDef->name.begin(), sceneDef->name.end(), scenarioName.data());
+                        if (ImGui::InputText("Scenario name", scenarioName.data(), 128)) {
+                            sceneDef->name = std::string(std::begin(scenarioName), std::end(scenarioName));
+                        }
 
-                ImGui::Text("X: % 03d out of % 03d", x, maxX);
-                ImGui::Text("Y: % 03d out of % 03d", y, maxY);
 
+                        ImGui::BeginGroupPanel("Scenario Type");
+                        {
+                            if (ImGui::RadioButton("Generate screenshots", &sceneDef->mode, EMGMode::eScreenshotGeneration)) {
+                            }
+                            if (ImGui::RadioButton("Generate bounding box", &sceneDef->mode, EMGMode::eBoundingBoxCalculation)) {
+                            }
+                            if (ImGui::RadioButton("Preview", &sceneDef->mode, EMGMode::ePreview)) {
+                            }
+                        }
+                        ImGui::EndGroupPanel();
+                        ImGui::SameLine();
+                        ImGui::BeginGroupPanel("Orientation");
+                        {
+                            if (ImGui::RadioButton("Ortho projection", &sceneDef->orientation, ScenarioOrientation::soTopDownOrtho)) {
+                            }
+                            if (ImGui::RadioButton("At 45° tick 0", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick0)) {
+                            }
+                            if (ImGui::RadioButton("At 45° tick 1", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick1)) {
+                            }
+                            if (ImGui::RadioButton("At 45° tick 2", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick2)) {
+                            }
+                            if (ImGui::RadioButton("At 45° tick 3", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick3)) {
+                            }
+                        }
+                        ImGui::EndGroupPanel();
+                        ImGui::SameLine();
+                        ImGui::BeginGroupPanel("Ocean color override");
+                        {
+
+                            ImGui::CompactColorPicker("Close Ocean Color", sceneDef->closeOceanColor);
+
+
+                            ImGui::EndGroupPanel();
+                        }
+                        ImGui::BeginGroupPanel("Generation boundaries");
+                        {
+                            ImGui::Text("In world coordinates");
+                            ImGui::InputFloat("Min x", &sceneDef->minWowWorldCoord.x);
+                            ImGui::InputFloat("Min y", &sceneDef->minWowWorldCoord.y);
+                            ImGui::InputFloat("Max x", &sceneDef->maxWowWorldCoord.x);
+                            ImGui::InputFloat("Max y", &sceneDef->maxWowWorldCoord.y);
+                            ImGui::EndGroupPanel();
+                        }
+                        ImGui::SameLine();
+                        ImGui::BeginGroupPanel("Image settings");
+                        {
+                            ImGui::PushItemWidth(100);
+                            ImGui::InputInt("Image Width", &sceneDef->imageWidth);
+                            ImGui::InputInt("Image Height", &sceneDef->imageHeight);
+                            ImGui::PopItemWidth();
+                            ImGui::EndGroupPanel();
+                        }
+
+
+
+                        ImGui::BeginGroupPanel("Global map settings");
+                        {
+                            ImGui::BeginGroupPanel("River color overrides");
+                            {
+                                for (int i = 0; i < riverColorOverrides.size(); i++) {
+
+                                    ImGui::PushID(i);
+                                    ImGui::CompactColorPicker("River Color Override", riverColorOverrides[i].color);
+                                    ImGui::SameLine();
+                                    ImGui::InputInt("Area Id", &riverColorOverrides[i].areaId);
+
+                                    ImGui::PopID();
+                                }
+
+                                if (ImGui::Button("Add  override")) {
+                                    riverColorOverrides.push_back({});
+                                }
+                            }
+                            ImGui::EndGroupPanel();
+                        }
+                        ImGui::EndGroupPanel();
+
+                        auto currentTime = minimapGenerator->getConfig()->currentTime;
+                        ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
+                        if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
+                            minimapGenerator->getConfig()->currentTime = currentTime;
+                        }
+
+                        editComponentsForConfig(minimapGenerator->getConfig());
+
+                        if (minimapGenerator->getCurrentMode() != EMGMode::eScreenshotGeneration) {
+                            bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
+                            if (ImGui::ButtonDisablable("Start Screenshot Gen", isDisabled)) {
+                                std::vector<ScenarioDef> list = {*sceneDef};
+
+                                minimapGenerator->startScenarios(list);
+                            }
+                        } else {
+                            if (ImGui::Button("Stop Screenshot Gen")) {
+                                minimapGenerator->stopPreview();
+                            }
+                        }
+                        ImGui::SameLine();
+                        if (minimapGenerator->getCurrentMode() != EMGMode::ePreview) {
+                            bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
+                            if (ImGui::ButtonDisablable("Start Preview", isDisabled)) {
+                                minimapGenerator->startPreview(*sceneDef);
+                            }
+                        } else {
+                            if (ImGui::Button("Stop Preview")) {
+                                minimapGenerator->stopPreview();
+                            }
+                        }
+                        ImGui::SameLine();
+                        if (minimapGenerator->getCurrentMode() != EMGMode::eBoundingBoxCalculation) {
+                            bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
+                            if (ImGui::ButtonDisablable("Start BBox calc", isDisabled)) {
+                                minimapGenerator->startBoundingBoxCalc(*sceneDef);
+                            }
+                        } else {
+                            if (ImGui::Button("Stop BBox calc")) {
+                                minimapGenerator->stopBoundingBoxCalc();
+                            }
+                        }
+
+                        if (minimapGenerator->getCurrentMode() != EMGMode::eNone && minimapGenerator->getCurrentMode() != EMGMode::ePreview) {
+                            int x, y, maxX, maxY;
+                            minimapGenerator->getCurrentTileCoordinates(x, y, maxX, maxY);
+
+                            ImGui::Text("X: % 03d out of % 03d", x, maxX);
+                            ImGui::Text("Y: % 03d out of % 03d", y, maxY);
+
+                        }
+                    }
+
+                    ImGui::EndTabItem();
+
+                }
+                if (!opened) {
+                    sceneDef = nullptr;
+                }
             }
 
+
+            ImGui::EndTabBar();
         }
-
 
         //Right panel
         ImGui::NextColumn();

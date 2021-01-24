@@ -645,14 +645,12 @@ void WmoObject::updateTransformedAntiPortalPoints(){
 }
 
 void WmoObject::setLoadingParam(SMMapObjDef &mapObjDef) {
-    //this->m_placementMatrix = mathfu::mat4::Identity();
     createPlacementMatrix(mapObjDef);
 
     this->m_doodadSet = mapObjDef.doodadSet;
     this->m_nameSet = mapObjDef.nameSet;
 }
 void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
-    //this->m_placementMatrix = mathfu::mat4::Identity();
     createPlacementMatrix(mapObjDef);
 
     this->m_doodadSet = mapObjDef.doodadSet;
@@ -719,9 +717,7 @@ void WmoObject::createBB(CAaBox bbox) {
 
 void WmoObject::updateBB() {
     CAaBox &AABB = this->m_bbox;
-//
-//    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
-//
+
     for (int j = 0; j < this->groupObjects.size(); j++) {
         std::shared_ptr<WmoGroupObject> wmoGroupObject= this->groupObjects[j];
 
