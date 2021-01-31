@@ -27,7 +27,6 @@ enum class EMGMode {
 
 struct ScenarioDef {
     int id;
-    EMGMode mode;
     int mapId;
     std::string name;
 
@@ -46,8 +45,5 @@ struct ScenarioDef {
     std::string folderToSave;
 };
 
-struct RiverColorOverride {
-    int areaId;
-    mathfu::vec4 color;
-};
+
 #endif //AWEBWOWVIEWERCPP_ENTITIES_H

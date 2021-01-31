@@ -287,6 +287,7 @@ public:
     HGM2Mesh createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
                               const M2SkinSection *skinSection, M2MaterialInst &material, EGxBlendEnum &blendMode, bool overrideBlend);
 
+    HGM2Mesh createWaterfallMesh();
     void updateDynamicMeshes();
 };
 

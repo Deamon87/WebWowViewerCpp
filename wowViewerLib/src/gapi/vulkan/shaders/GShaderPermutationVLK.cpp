@@ -124,7 +124,7 @@ void GShaderPermutationVLK::createImageDescriptorLayout() {
         imageLayoutBinding.descriptorCount = 1;
         imageLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         imageLayoutBinding.pImmutableSamplers = nullptr;
-        imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT  | VK_SHADER_STAGE_VERTEX_BIT;
 
         shaderLayoutBindings.push_back(imageLayoutBinding);
     }

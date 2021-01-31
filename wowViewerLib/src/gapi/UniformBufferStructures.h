@@ -91,6 +91,21 @@ namespace M2 {
 
         mathfu::vec4_packed uPcColor;
     };
+
+    namespace WaterfallData {
+        struct meshWideBlockVS {
+            mathfu::vec4_packed bumpScale;
+            mathfu::mat4 uTextMat[2];
+        };
+        struct meshWideBlockPS {
+            mathfu::vec4_packed values0;
+            mathfu::vec4_packed values1;
+            mathfu::vec4_packed m_values2;
+            mathfu::vec4_packed m_values3;
+            mathfu::vec4_packed m_values4;
+            mathfu::vec4_packed baseColor;
+        };
+    }
 }
 namespace Particle {
     struct meshParticleWideBlockPS {

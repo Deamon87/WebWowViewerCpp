@@ -199,6 +199,7 @@ public:
     void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> mandatoryADTs) override {
         m_mandatoryADT = mandatoryADTs;
     }
+    void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) override;
     void setAnimationId(int animationId) override {
 
     };

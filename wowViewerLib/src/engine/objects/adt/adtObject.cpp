@@ -45,9 +45,10 @@ void AdtObject::loadingFinished() {
 
     loadM2s();
     loadWmos();
-    loadWater();
 
     m_loaded = true;
+
+    loadWater();
 }
 
 void AdtObject::loadM2s() {
@@ -281,13 +282,32 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
     //Query river color
     mathfu::vec3 closeRiverColor = {0, 0, 0};
     if (m_api->getConfig()->useCloseRiverColorForDB) {
+
         mathfu::vec3 waterPos = (mathfu::vec3(waterAaBB.max) + mathfu::vec3(waterAaBB.min)) / 2.0f;
-        std::vector<LightResult> lightResults = {};
-        this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults);
-        for (auto &_light : lightResults) {
-            closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
+        bool waterColorFound = true;
+        if (m_api->getConfig()->colorOverrideHolder != nullptr) {
+            waterColorFound = false;
+            int adt_global_x = worldCoordinateToGlobalAdtChunk(waterPos.y) % 16;
+            int adt_global_y = worldCoordinateToGlobalAdtChunk(waterPos.x) % 16;
+
+            auto areaId = getAreaId(adt_global_x, adt_global_y);
+
+            for (auto &riverOverride : *m_api->getConfig()->colorOverrideHolder) {
+                if (riverOverride.areaId == areaId) {
+                    closeRiverColor = riverOverride.color.xyz();
+                    waterColorFound = true;
+                    break;
+                }
+            }
         }
-        closeRiverColor = mathfu::vec3(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0]);
+        if (!waterColorFound) {
+            std::vector<LightResult> lightResults = {};
+            this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults);
+            for (auto &_light : lightResults) {
+                closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
+            }
+            closeRiverColor = mathfu::vec3(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0]);
+        }
     }
 
 
@@ -1331,6 +1351,37 @@ AdtObject::AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDa
 
     lodDiffuseTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataIDs.mapTexture);
     lodNormalTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataIDs.mapTextureN);
+}
+
+bool AdtObject::getWaterColorFromDB(mathfu::vec4 cameraPos, mathfu::vec3 &closeRiverColor) {
+    auto adt_x = worldCoordinateToAdtIndex(cameraPos.y);
+    auto adt_y = worldCoordinateToAdtIndex(cameraPos.x);
+
+    if (adt_x != getAdtX() || adt_y != getAdtY())
+        return false;
+
+    int x_chunk = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
+    int y_chunk = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
+
+    int i = this->m_adtFile->mcnkMap[x_chunk][y_chunk];
+    auto &waterAaBB = waterTileAabb[i];
+
+    if (
+        waterAaBB.min.x > 32*MathHelper::TILESIZE || waterAaBB.max.x < -32*MathHelper::TILESIZE ||
+        waterAaBB.min.y > 32*MathHelper::TILESIZE || waterAaBB.max.x < -32*MathHelper::TILESIZE ||
+        waterAaBB.min.z > 32*MathHelper::TILESIZE || waterAaBB.max.x < -32*MathHelper::TILESIZE
+    ) return false;
+
+    mathfu::vec3 waterPos = (mathfu::vec3(waterAaBB.max) + mathfu::vec3(waterAaBB.min)) / 2.0f;
+    std::vector<LightResult> lightResults = {};
+    closeRiverColor = {0,0,0};
+    this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults);
+    for (auto &_light : lightResults) {
+        closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
+    }
+    closeRiverColor = mathfu::vec3(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0]);
+
+    return true;
 }
 
 CAaBox AdtObject::calcAABB() {

@@ -882,15 +882,18 @@ void M2Object::sortMaterials(mathfu::mat4 &modelViewMat) {
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
-    for (int i = 0; i < this->m_meshNaturalArray.size(); i++) {
-        //Update info for sorting
-        M2MeshBufferUpdater::updateSortData(this->m_meshNaturalArray[i], *this, m_materialArray[i], m2File, skinData, modelViewMat);
-    }
-    for (int i = 0; i < this->m_meshForcedTranspArray.size(); i++) {
-        //Update info for sorting
-        if (this->m_meshForcedTranspArray[i] != nullptr) {
-            M2MeshBufferUpdater::updateSortData(this->m_meshForcedTranspArray[i], *this, m_materialArray[i], m2File,
+    if (m_m2Geom->m_wfv3 == nullptr) {
+        for (int i = 0; i < this->m_meshNaturalArray.size(); i++) {
+            //Update info for sorting
+            M2MeshBufferUpdater::updateSortData(this->m_meshNaturalArray[i], *this, m_materialArray[i], m2File,
                                                 skinData, modelViewMat);
+        }
+        for (int i = 0; i < this->m_meshForcedTranspArray.size(); i++) {
+            //Update info for sorting
+            if (this->m_meshForcedTranspArray[i] != nullptr) {
+                M2MeshBufferUpdater::updateSortData(this->m_meshForcedTranspArray[i], *this, m_materialArray[i], m2File,
+                                                    skinData, modelViewMat);
+            }
         }
     }
 }
@@ -1029,8 +1032,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         this->particleEmitters,
         this->ribbonEmitters
     );
-
-
 
     int minParticle = m_api->getConfig()->minParticle;
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
@@ -1354,6 +1355,115 @@ bool M2Object::checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection 
     return true;
 }
 
+float wfv_convert(float value, int16_t random) {
+    if ( value == 0.0 )
+        return 0.0;
+
+    int invertedVal = (int)(float)(1000.0 / fabs(value));
+
+    if ( !invertedVal )
+        return 0.0;
+
+    float multiplier = 1.0;
+
+    if ( value <= 0.0 )
+        multiplier = -1.0;
+    else
+        multiplier = 1.0;
+    return (float)((float)(int)(random % invertedVal) / (float)invertedVal) * multiplier;
+}
+
+HGM2Mesh M2Object::createWaterfallMesh() {
+    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("waterfallShader", nullptr);
+
+    gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
+
+    auto skinData = m_skinGeom->getSkinData();
+    auto m2Data = m_m2Geom->getM2Data();
+    auto wfv3Data = m_m2Geom->m_wfv3;
+
+    auto m2Batch = skinData->batches.getElement(0);
+    auto skinSection = skinData->skinSections[m2Batch->skinSectionIndex];
+
+    int renderFlagIndex = m2Batch->materialIndex;
+
+    meshTemplate.depthWrite = false;
+    meshTemplate.depthCulling = true;
+    meshTemplate.backFaceCulling = false;
+    meshTemplate.triCCW = 1;
+
+    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+
+    meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16)) * 2;
+    meshTemplate.end = skinSection->indexCount;
+    meshTemplate.element = DrawElementMode::TRIANGLES;
+    meshTemplate.skybox = m_boolSkybox;
+
+    HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
+    meshTemplate.texture.resize(5);
+    meshTemplate.textureCount = 5;
+    meshTemplate.texture[0] = getTexture(0); //mask
+    meshTemplate.texture[1] = getTexture(1); //whiteWater
+    meshTemplate.texture[2] = getTexture(2); //noise
+    meshTemplate.texture[3] = getTexture(3); //bumpTexture
+    meshTemplate.texture[4] = getTexture(4); //normalTex
+
+
+    meshTemplate.ubo[0] = nullptr;
+    meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
+    meshTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::WaterfallData::meshWideBlockVS));
+
+    meshTemplate.ubo[2]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+        auto &meshblockVS = self->getObject<M2::WaterfallData::meshWideBlockVS>();
+        meshblockVS.bumpScale = mathfu::vec4(wfv3Data->bumpScale, 0, 0, 0);
+
+        M2MeshBufferUpdater::fillTextureMatrices(*this, 0, m2Data, skinData, meshblockVS.uTextMat);
+    });
+
+    meshTemplate.ubo[3] = nullptr;
+    meshTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::WaterfallData::meshWideBlockPS));
+    meshTemplate.ubo[4]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+        auto &meshblockPS = self->getObject<M2::WaterfallData::meshWideBlockPS>();
+        meshblockPS.baseColor = mathfu::vec4(
+            wfv3Data->basecolor.a / 255.0f,
+            wfv3Data->basecolor.r / 255.0f,
+            wfv3Data->basecolor.g / 255.0f,
+            wfv3Data->basecolor.b / 255.0f);
+
+        meshblockPS.values0.x = wfv3Data->values0.x;
+        meshblockPS.values0.y = wfv3Data->values0.y;
+        meshblockPS.values0.z = wfv3Data->values0.z;
+        meshblockPS.values0.w = wfv3Data->values0_w;
+
+        meshblockPS.values1.x = wfv3Data->value1_x;
+        meshblockPS.values1.y = wfv3Data->value1_y;
+        meshblockPS.values1.w = wfv3Data->value1_w;
+
+        meshblockPS.m_values3.x = wfv3Data->value3_x;
+        meshblockPS.m_values3.y = wfv3Data->value3_y;
+
+        meshblockPS.m_values2.x = wfv3Data->field_30 & 2;
+        meshblockPS.m_values2.y = wfv3Data->field_30 & 1;
+
+        meshblockPS.m_values2.w = wfv3Data->value2_w;
+        meshblockPS.m_values3.w = wfv3Data->values3_w;
+        meshblockPS.m_values4.y = wfv3Data->values4_y;
+
+        meshblockPS.values1.z =   wfv_convert(meshblockPS.values1.y, (int16_t)((uint64_t)this));
+        meshblockPS.m_values2.z = wfv_convert(meshblockPS.m_values2.w, (int16_t)((uint64_t)this));
+        meshblockPS.m_values3.z = wfv_convert(wfv3Data->unk3, (int16_t)((uint64_t)this));
+    });
+
+    //Make mesh
+    auto hmesh = m_api->hDevice->createM2Mesh(meshTemplate);
+    hmesh->setM2Object(this);
+    hmesh->setLayer(0);
+    hmesh->setPriorityPlane(0);
+    hmesh->setQuery(nullptr);
+
+    return hmesh;
+}
+
 void M2Object::createMeshes() {
     /* 1. Free previous subMeshArray */
     this->m_meshNaturalArray.clear();
@@ -1371,70 +1481,83 @@ void M2Object::createMeshes() {
     /* 2. Fill the materialArray */
     std::vector<int> batchesRequiringDynamicVao = {};
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
-    for (int i = 0; i < batches->size; i++) {
-        auto m2Batch = skinProfile->batches[i];
-        auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
-        if (!checkifBonesAreInRange(skinProfile, skinSection)) {
-            batchesRequiringDynamicVao.push_back(i);
-            continue;
-        }
-        M2MaterialInst material;
-        EGxBlendEnum mainBlendMode;
-        HGM2Mesh hmesh = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, material, mainBlendMode, false);
 
-        if (hmesh == nullptr)
-            continue;
-
-        this->m_materialArray.push_back(material);
-        this->m_meshNaturalArray.push_back(hmesh);
-        M2MeshBufferUpdater::assignUpdateEvents(hmesh, this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinProfile);
-
-        if (mainBlendMode == EGxBlendEnum::GxBlend_Opaque) {
-            EGxBlendEnum blendMode = EGxBlendEnum::GxBlend_Alpha;
-            M2MaterialInst materialTransp;
-            HGM2Mesh hmeshTrans = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, materialTransp, blendMode, true);
-
-            this->m_materialArray.push_back(material);
-            this->m_meshForcedTranspArray.push_back(hmeshTrans);
-            M2MeshBufferUpdater::assignUpdateEvents(hmeshTrans, this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinProfile);
-
-        } else {
-            m_meshForcedTranspArray.push_back(nullptr);
-        }
-    }
-
-    // Create meshes requiring dynamic
-    for (int j = 0; j < batchesRequiringDynamicVao.size(); j++) {
-        int i = batchesRequiringDynamicVao[j];
-        auto m2Batch = skinProfile->batches[i];
-        auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
-
-        std::array<HGVertexBufferDynamic, 4> dynVBOs;
-        auto dynVaos = m_m2Geom->createDynamicVao(*m_api->hDevice, dynVBOs, m_skinGeom.get(), skinSection);
-
-        std::array<dynamicVaoMeshFrame, 4> dynamicMeshData;
-
-        //Try to create mesh
-        M2MaterialInst testMaterial;
-        EGxBlendEnum blendMode;
-        auto testMesh = createSingleMesh(m_m2Data, i, 0, dynVaos[0], m2Batch, skinSection, testMaterial,blendMode, false);
-        if (testMesh == nullptr)
-            continue;
-
-        for (int k = 0; k < 4; k++) {
-            dynamicMeshData[k].batchIndex = i;
-            dynamicMeshData[k].m_bindings = dynVaos[k];
-            dynamicMeshData[k].m_bufferVBO = dynVBOs[k];
-
+    if (m_m2Geom->m_wfv3 == nullptr) {
+        for (int i = 0; i < batches->size; i++) {
+            auto m2Batch = skinProfile->batches[i];
+            auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
+            if (!checkifBonesAreInRange(skinProfile, skinSection)) {
+                batchesRequiringDynamicVao.push_back(i);
+                continue;
+            }
             M2MaterialInst material;
-            int correction = skinSection->indexStart + (skinSection->Level << 16);
-            dynamicMeshData[k].m_mesh = createSingleMesh(m_m2Data, i, correction, dynVaos[k], m2Batch, skinSection, material, blendMode, false);
+            EGxBlendEnum mainBlendMode;
+            HGM2Mesh hmesh = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, material,
+                                              mainBlendMode, false);
+
+            if (hmesh == nullptr)
+                continue;
 
             this->m_materialArray.push_back(material);
-            M2MeshBufferUpdater::assignUpdateEvents(dynamicMeshData[k].m_mesh, this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinProfile);
+            this->m_meshNaturalArray.push_back(hmesh);
+            M2MeshBufferUpdater::assignUpdateEvents(hmesh, this, m_materialArray[m_materialArray.size() - 1], m_m2Data,
+                                                    skinProfile);
+
+            if (mainBlendMode == EGxBlendEnum::GxBlend_Opaque) {
+                EGxBlendEnum blendMode = EGxBlendEnum::GxBlend_Alpha;
+                M2MaterialInst materialTransp;
+                HGM2Mesh hmeshTrans = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection,
+                                                       materialTransp, blendMode, true);
+
+                this->m_materialArray.push_back(material);
+                this->m_meshForcedTranspArray.push_back(hmeshTrans);
+                M2MeshBufferUpdater::assignUpdateEvents(hmeshTrans, this, m_materialArray[m_materialArray.size() - 1],
+                                                        m_m2Data, skinProfile);
+
+            } else {
+                m_meshForcedTranspArray.push_back(nullptr);
+            }
         }
 
-        dynamicMeshes.push_back(dynamicMeshData);
+        // Create meshes requiring dynamic
+        for (int j = 0; j < batchesRequiringDynamicVao.size(); j++) {
+            int i = batchesRequiringDynamicVao[j];
+            auto m2Batch = skinProfile->batches[i];
+            auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
+
+            std::array<HGVertexBufferDynamic, 4> dynVBOs;
+            auto dynVaos = m_m2Geom->createDynamicVao(*m_api->hDevice, dynVBOs, m_skinGeom.get(), skinSection);
+
+            std::array<dynamicVaoMeshFrame, 4> dynamicMeshData;
+
+            //Try to create mesh
+            M2MaterialInst testMaterial;
+            EGxBlendEnum blendMode;
+            auto testMesh = createSingleMesh(m_m2Data, i, 0, dynVaos[0], m2Batch, skinSection, testMaterial, blendMode,
+                                             false);
+            if (testMesh == nullptr)
+                continue;
+
+            for (int k = 0; k < 4; k++) {
+                dynamicMeshData[k].batchIndex = i;
+                dynamicMeshData[k].m_bindings = dynVaos[k];
+                dynamicMeshData[k].m_bufferVBO = dynVBOs[k];
+
+                M2MaterialInst material;
+                int correction = skinSection->indexStart + (skinSection->Level << 16);
+                dynamicMeshData[k].m_mesh = createSingleMesh(m_m2Data, i, correction, dynVaos[k], m2Batch, skinSection,
+                                                             material, blendMode, false);
+
+                this->m_materialArray.push_back(material);
+                M2MeshBufferUpdater::assignUpdateEvents(dynamicMeshData[k].m_mesh, this,
+                                                        m_materialArray[m_materialArray.size() - 1], m_m2Data,
+                                                        skinProfile);
+            }
+
+            dynamicMeshes.push_back(dynamicMeshData);
+        }
+    } else {
+        m_meshNaturalArray.push_back(createWaterfallMesh());
     }
 }
 
@@ -1548,7 +1671,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
         if ((finalTransparency < 0.0001) ) continue;
 
         HGM2Mesh mesh = this->m_meshNaturalArray[i];
-        if (finalTransparency < 1.0 && this->m_meshForcedTranspArray[i] != nullptr) {
+        if (finalTransparency < 1.0 && i < this->m_meshForcedTranspArray.size() && this->m_meshForcedTranspArray[i] != nullptr) {
             mesh = this->m_meshForcedTranspArray[i];
         }
 

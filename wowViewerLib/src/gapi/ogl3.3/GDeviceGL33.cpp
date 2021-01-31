@@ -23,6 +23,7 @@
 #include "GFrameBufferGL33.h"
 #include "shaders/GFFXGlow.h"
 #include "shaders/GSkyConus.h"
+#include "shaders/GWaterfallShaderGL33.h"
 
 namespace GL33 {
     BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -188,6 +189,10 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "skyConus") {
         iPremutation = new GSkyConus(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "GWaterfallShaderGL33") {
+        iPremutation = new GWaterfallShaderGL33(shaderName, this);
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "ffxGlowQuad") {

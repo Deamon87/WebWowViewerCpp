@@ -91,6 +91,8 @@ public:
 
     static float distanceFromAABBToPoint(const CAaBox &aabb, mathfu::vec3 &p);
 
+    static bool isAabbIntersect2d(CAaBox a, CAaBox b);
+
     static bool isPointInsideAABB(const CAaBox &aabb, mathfu::vec3 &p);
     static bool isPointInsideAABB(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
 

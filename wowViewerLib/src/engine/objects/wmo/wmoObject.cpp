@@ -827,7 +827,7 @@ bool WmoObject::startTraversingWMOGroup(
         }
     }
 
-    if (traversingFromInterior) {
+    if (traversingFromInterior && m_api->getConfig()->usePortalCulling) {
         InteriorView &interiorView = createdInteriorViews[groupId];
         std::shared_ptr<WmoGroupObject> nextGroupObject = groupObjects[groupId];
         //5.1 The portal is into interior wmo group. So go on.
@@ -882,7 +882,7 @@ bool WmoObject::startTraversingWMOGroup(
 
 
         for (int i = 0; i< mainGeom->groupsLen; i++) {
-            if ((mainGeom->groups[i].flags.EXTERIOR) > 0) { //exterior
+            if ((mainGeom->groups[i].flags.EXTERIOR) > 0 || !m_api->getConfig()->usePortalCulling) { //exterior
                 if (this->groupObjects[i] != nullptr) {
                     bool drawDoodads, drawGroup;
                     this->groupObjects[i]->checkGroupFrustum(drawDoodads, drawGroup, cameraVec4, frustumPlanesExt, frustumPointsExt);

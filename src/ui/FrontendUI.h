@@ -66,9 +66,11 @@ private:
     std::shared_ptr<CMinimapDataDB> m_minimapDB;
 
     HMinimapGenerator minimapGenerator;
+    HADTBoundingBoxHolder boundingBoxHolder;
     std::vector<ScenarioDef> sceneDefList;
-    std::vector<RiverColorOverride> riverColorOverrides;
+    HRiverColorOverrideHolder riverColorOverrides;
     ScenarioDef *sceneDef = nullptr;
+    bool editTabOpened;
     float previewX = 0;
     float previewY = 0;
     float previewZoom = 1;
@@ -212,6 +214,8 @@ public:
     void showQuickLinksDialog();
 
     void showCurrentStatsDialog();
+
+    void restartMinimapGenPreview();
     void showMinimapGenerationSettingsDialog();
 
     void openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z);

@@ -35,7 +35,9 @@ public:
     virtual std::shared_ptr<ICamera> createCamera(int cameraNum) = 0;
 
     virtual void exportScene(IExporter * exporter) {};
+
     virtual void setAdtBoundingBoxHolder(HADTBoundingBoxHolder bbHolder) {};
     virtual void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> mandatoryADTs) {};
+    virtual void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) {};
 };
 #endif //WEBWOWVIEWERCPP_IINNERSCENEAPI_H

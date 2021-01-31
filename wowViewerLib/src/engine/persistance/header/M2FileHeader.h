@@ -425,6 +425,28 @@ struct EXP2
     M2Array<Exp2Record> content;
 };
 
+PACK(
+struct WaterFallDataV3 {
+    float bumpScale;
+    C3Vector values0;
+    float value1_w;
+    float values0_w;
+    float value1_x;
+    float value1_y;
+    float value2_w;
+    float value3_x;
+    float value3_y;
+    CImVector basecolor;
+    uint16_t field_30;
+    uint16_t field_32;
+    float values3_w;
+    float unk3;
+    float values4_y;
+    float unk5;
+    float unk6;
+    float unk7;
+});
+
 void initEXP2(EXP2 *exp2);
 
 void initM2Textures(void* sectionStart, M2Array<M2Texture> &textures);

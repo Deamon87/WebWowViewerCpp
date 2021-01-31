@@ -118,7 +118,7 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
             {
                 [](M2Geom &file, ChunkData &chunkData) {
                     debuglog("Entered 3VFW");
-                    file.m_wfv3 = 1;
+                    chunkData.readValue(file.m_wfv3);
 
                 }
             }

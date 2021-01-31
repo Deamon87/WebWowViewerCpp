@@ -41,6 +41,12 @@ struct wmoShader {
     };
 };
 
+struct waterfallShader {
+    enum class Attribute {
+        aPosition = 0, aNormal = 1, bones = 2, boneWeights = 3, aTexCoord = 4, aTexCoord2 = 5, waterfallShaderAttributeEnd
+    };
+};
+
 struct waterShader {
     enum class Attribute {
         aPositionTransp = 0, aTexCoord = 1, waterShaderAttributeEnd
@@ -142,6 +148,13 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 {"aTexCoord3", 4},
 {"aColor", 5},
 {"aColor2", 6},
+}},{"waterfallShader",  {
+{"aPosition", 0},
+{"aNormal", 1},
+{"bones", 2},
+{"boneWeights", 3},
+{"aTexCoord", 4},
+{"aTexCoord2", 5},
 }},{"waterShader",  {
 {"aPositionTransp", 0},
 {"aTexCoord", 1},
@@ -198,6 +211,13 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {0,1,64},
 {0,0,368},
 {0,2,16},
+}
+}
+},{ "waterfallShader.frag.spv", {
+{
+{0,4,96},
+{0,0,368},
+{0,1,14144},
 }
 }
 },{ "waterShader.vert.spv", {
@@ -382,6 +402,13 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 {0,4,32},
 }
 }
+},{ "waterfallShader.vert.spv", {
+{
+{0,2,144},
+{0,1,14144},
+{0,0,368},
+}
+}
 },{ "adtShader.vert.spv", {
 {
 {0,0,368},
@@ -433,6 +460,51 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       4, {
         {"_435.UseLitColor_EnableAlpha_PixelShader_BlendMode", false, 0, 1, 4, 0},
         {"_435.FogColor_AlphaTest", true, 16, 1, 4, 0},
+      }
+    },
+  }},
+  {"waterfallShader",  {
+    {
+      2, {
+        {"_55.bumpScale", true, 0, 1, 4, 0},
+        {"_55.uTextMat[0]", true, 16, 4, 4, 2},
+      }
+    },
+    {
+      1, {
+        {"_104.uPlacementMat", true, 0, 4, 4, 0},
+        {"_104.uBoneMatrixes[0]", true, 64, 4, 4, 220},
+      }
+    },
+    {
+      0, {
+        {"_199.scene.uLookAtMat", true, 0, 4, 4, 0},
+        {"_199.scene.uPMatrix", true, 64, 4, 4, 0},
+        {"_199.scene.uViewUp", true, 128, 1, 4, 0},
+        {"_199.scene.uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_199.scene.extLight.uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_199.scene.extLight.uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_199.scene.extLight.uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_199.scene.extLight.uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_199.scene.extLight.uExteriorDirectColorDir", true, 224, 1, 4, 0},
+        {"_199.scene.extLight.adtSpecMult", true, 240, 1, 4, 0},
+        {"_199.fogData.densityParams", true, 256, 1, 4, 0},
+        {"_199.fogData.heightPlane", true, 272, 1, 4, 0},
+        {"_199.fogData.color_and_heightRate", true, 288, 1, 4, 0},
+        {"_199.fogData.heightDensity_and_endColor", true, 304, 1, 4, 0},
+        {"_199.fogData.sunAngle_and_sunColor", true, 320, 1, 4, 0},
+        {"_199.fogData.heightColor_and_endFogDistance", true, 336, 1, 4, 0},
+        {"_199.fogData.sunPercentage", true, 352, 1, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_215.values0", true, 0, 1, 4, 0},
+        {"_215.values1", true, 16, 1, 4, 0},
+        {"_215.values2", true, 32, 1, 4, 0},
+        {"_215.values3", true, 48, 1, 4, 0},
+        {"_215.values4", true, 64, 1, 4, 0},
+        {"_215.baseColor", true, 80, 1, 4, 0},
       }
     },
   }},

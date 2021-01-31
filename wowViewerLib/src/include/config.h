@@ -9,6 +9,14 @@
 #include <thread>
 #include <mathfu/glsl_mappings.h>
 
+struct RiverColorOverride {
+    int areaId = -1;
+    mathfu::vec4 color = {0,0,0,0};
+};
+
+typedef std::vector<RiverColorOverride> RiverColorOverrideHolder;
+typedef std::shared_ptr<RiverColorOverrideHolder> HRiverColorOverrideHolder;
+
 enum class EParameterSource: char {
     eConfig,
     eDatabase,
@@ -32,7 +40,7 @@ public:
     bool renderM2 = true;
     bool renderBSP = false;
     bool renderPortals = false;
-    bool usePortalCulling = true;
+    bool usePortalCulling = false;
     bool useInstancing = false;
 
     bool disableFog = false;
@@ -149,6 +157,8 @@ public:
     double textureUploadCNT = 0;
     double drawStageAndDepsCNT = 0;
     double endUpdateCNT = 0;
+
+    HRiverColorOverrideHolder colorOverrideHolder = nullptr;
 };
 
 

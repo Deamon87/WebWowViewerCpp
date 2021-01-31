@@ -20,6 +20,7 @@ int anisFiltrationSupported = -1;
 
 bool IDevice::getIsCompressedTexturesSupported() {
 #ifdef __EMSCRIPTEN__
+    compressedTexturesSupported = 0;
     if (compressedTexturesSupported == -1){
         auto res = emscripten_webgl_enable_extension(emscripten_webgl_get_current_context(), "WEBGL_compressed_texture_s3tc");
         std::cout << "texture_s3tc returned " << res << std::endl;

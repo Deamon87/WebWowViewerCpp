@@ -9,8 +9,8 @@
 
 CMinimapDataDB::CMinimapDataDB(std::string fileName) : m_sqliteDatabase(fileName, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
     char *sErrMsg = "";
-    sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA synchronous = OFF", NULL, NULL, &sErrMsg);
-    sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA schema.journal_mode = MEMORY", NULL, NULL, &sErrMsg);
+//    sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA synchronous = OFF", NULL, NULL, &sErrMsg);
+//    sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA schema.journal_mode = MEMORY", NULL, NULL, &sErrMsg);
 
     //-------------------------------
     // Create Scenario table
@@ -23,6 +23,7 @@ CMinimapDataDB::CMinimapDataDB(std::string fileName) : m_sqliteDatabase(fileName
                               "    id                   INTEGER PRIMARY KEY,\n"
                               "    map_id               INTEGER,\n"
                               "    orientation          INTEGER,\n"
+                              "    name                 VARCHAR(256),\n"
                               "    ocean_color_0        FLOAT,\n"
                               "    ocean_color_1        FLOAT,\n"
                               "    ocean_color_2        FLOAT,\n"
@@ -108,7 +109,7 @@ CMinimapDataDB::CMinimapDataDB(std::string fileName) : m_sqliteDatabase(fileName
 
 void CMinimapDataDB::getScenarios(std::vector<ScenarioDef> &scenarioList) {
     SQLite::Statement getScenarioList(m_sqliteDatabase,
-    "select s.id, s.map_id, s.orientation,\n"
+    "select s.id, s.map_id, s.orientation, s.name, \n"
     "       s.ocean_color_0, s.ocean_color_1, s.ocean_color_2, s.ocean_color_3,\n"
     "       s.world_coord_min_x, s.world_coord_min_y, s.world_coord_max_x, s.world_coord_max_y,\n"
     "       s.image_width, s.image_height, s.zoom, s.folderToSave from scenarios s;"
@@ -121,7 +122,8 @@ void CMinimapDataDB::getScenarios(std::vector<ScenarioDef> &scenarioList) {
 
         scenarioDef.id = getScenarioList.getColumn(0).getInt();
         scenarioDef.mapId = getScenarioList.getColumn(1).getInt();
-        scenarioDef.orientation = static_cast<ScenarioOrientation>(getScenarioList.getColumn(3).getInt());
+        scenarioDef.orientation = static_cast<ScenarioOrientation>(getScenarioList.getColumn(2).getInt());
+        scenarioDef.name = getScenarioList.getColumn(3).getString();
         scenarioDef.closeOceanColor = mathfu::vec4(
             getScenarioList.getColumn(4).getDouble(),
             getScenarioList.getColumn(5).getDouble(),
@@ -283,7 +285,7 @@ void CMinimapDataDB::saveAdtBoundingBoxes(int mapId, ADTBoundingBoxHolder &bound
     }
 
     //2. Insert into database
-    SQLite::Statement insertBB(m_sqliteDatabase, "insert into adt_bounding_boxes(map_id, adt_x, adt_y, min_x, min_y, min_z, max_x, max_y, max_z)\n"
+    SQLite::Statement insertBB(m_sqliteDatabase, "insert into adt_bounding_boxes(map_id, adt_x, adt_y, min_x, min_y, min_z, max_x, max_y, max_z) "
                                                  "values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 64; j++) {
@@ -335,10 +337,11 @@ void CMinimapDataDB::saveRiverColorOverrides(int mapId, std::vector<RiverColorOv
 
     //1. Clear all records for that mapId from DB
     {
-        SQLite::Statement cleanABB(m_sqliteDatabase,
+        SQLite::Statement cleanRiverColor(m_sqliteDatabase,
                                    "delete from river_color_overrides where map_id = ?"
         );
-        cleanABB.exec();
+        cleanRiverColor.bind(1, mapId);
+        cleanRiverColor.exec();
     }
 
     SQLite::Statement saveRiverColor(m_sqliteDatabase, "insert into river_color_overrides(map_id, area_id, "
@@ -358,7 +361,7 @@ void CMinimapDataDB::saveRiverColorOverrides(int mapId, std::vector<RiverColorOv
 
         saveRiverColor.exec();
     }
-
+    transaction.commit();
 }
 
 bool CMinimapDataDB::getWmoAABBOverride(int mapId, int uniqueId, CAaBox &aaBox) {

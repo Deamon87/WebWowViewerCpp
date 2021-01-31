@@ -11,6 +11,7 @@
 #include <groupPanel/groupPanel.h>
 #include <disablableButton/disablableButton.h>
 #include <compactColorPicker/compactColorPicker.h>
+#include <imageButton2/imageButton2.h>
 #include "imguiLib/imguiImpl/imgui_impl_glfw.h"
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
@@ -485,6 +486,9 @@ void FrontendUI::showQuickLinksDialog() {
     ImGui::Begin("Quick Links", &showQuickLinks);
 
 
+    if (ImGui::Button("(WMO) NPE Ship with waterfall model", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(3314067);
+    }
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
         openWMOSceneByfdid(2756726);
     }
@@ -1415,15 +1419,27 @@ void FrontendUI::createDefaultprocessor() {
 }
 
 auto FrontendUI::createMinimapGenerator() {
+    boundingBoxHolder = std::make_shared<ADTBoundingBoxHolder>();
+    riverColorOverrides = std::make_shared<RiverColorOverrideHolder>();
+
+    if (sceneDef != nullptr) {
+        m_minimapDB->getAdtBoundingBoxes(sceneDef->mapId, *boundingBoxHolder);
+        m_minimapDB->getRiverColorOverrides(sceneDef->mapId, *riverColorOverrides);
+    }
+
     minimapGenerator = std::make_shared<MinimapGenerator>(
         m_api->cacheStorage,
         m_api->hDevice,
         m_processor,
-        m_api->databaseHandler
+        m_api->databaseHandler,
+        boundingBoxHolder
     );
+
+    minimapGenerator->getConfig()->colorOverrideHolder = riverColorOverrides;
 
     minimapGenerator->setZoom(previewZoom);
     minimapGenerator->setLookAtPoint(previewX, previewY);
+
 
 //    sceneDef = {
 //        EMGMode::eScreenshotGeneration,
@@ -1443,7 +1459,6 @@ auto FrontendUI::createMinimapGenerator() {
     sceneDefList = {
         {
             -1,
-            EMGMode::eScreenshotGeneration,
             530,
             "Netherstorm",
             mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
@@ -1457,7 +1472,6 @@ auto FrontendUI::createMinimapGenerator() {
         },
         {
             -1,
-            EMGMode::eScreenshotGeneration,
             1,
             "Kalimdor, rot 0",
             mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
@@ -1470,9 +1484,6 @@ auto FrontendUI::createMinimapGenerator() {
             "kalimdor/rotation0"
         }
     };
-
-    sceneDef = nullptr;
-
 
     return minimapGenerator;
 
@@ -1577,15 +1588,23 @@ void FrontendUI::editComponentsForConfig(Config * config) {
     ImGui::EndGroupPanel();
 }
 
+void FrontendUI::restartMinimapGenPreview() {
+    minimapGenerator->stopPreview();
+    minimapGenerator->startPreview(*sceneDef);
+    minimapGenerator->setZoom(previewZoom);
+    minimapGenerator->setLookAtPoint(previewX, previewY);
+}
+
 void FrontendUI::showMinimapGenerationSettingsDialog() {
     if(showMinimapGeneratorSettings) {
-        if (minimapGenerator == nullptr) {
-            createMinimapGenerator();
-        }
         if (m_minimapDB == nullptr) {
             m_minimapDB = std::make_shared<CMinimapDataDB>("minimapdb.sqlite");
             m_minimapDB->getScenarios(sceneDefList);
         }
+        if (minimapGenerator == nullptr) {
+            createMinimapGenerator();
+        }
+
 
         ImGui::Begin("Minimap Generator settings", &showMinimapGeneratorSettings);
         ImGui::Columns(2, NULL, true);
@@ -1617,6 +1636,8 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                     ImGui::NextColumn();
                     if (ImGui::Button(("Edit##" + std::to_string(i)).c_str())) {
                         this->sceneDef = &l_sceneDef;
+                        editTabOpened = true;
+                        createMinimapGenerator();
                     }
                     ImGui::NextColumn();
                 }
@@ -1628,10 +1649,8 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
             }
 
             if (sceneDef != nullptr) {
-                bool opened = true;
-                if (ImGui::BeginTabItem("Edit", &opened, ImGuiTabItemFlags_SetSelected)) {
+                if (editTabOpened && ImGui::BeginTabItem("Edit", &editTabOpened, ImGuiTabItemFlags_SetSelected)) {
                     {
-                        opened = true;
                         ImGui::InputInt("Map Id", &sceneDef->mapId);
                         auto scenarioName = std::array<char,128>();
                         if (sceneDef->name.size() > 128) sceneDef->name.resize(128);
@@ -1639,42 +1658,36 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                         if (ImGui::InputText("Scenario name", scenarioName.data(), 128)) {
                             sceneDef->name = std::string(std::begin(scenarioName), std::end(scenarioName));
                         }
-
-
-                        ImGui::BeginGroupPanel("Scenario Type");
-                        {
-                            if (ImGui::RadioButton("Generate screenshots", &sceneDef->mode, EMGMode::eScreenshotGeneration)) {
-                            }
-                            if (ImGui::RadioButton("Generate bounding box", &sceneDef->mode, EMGMode::eBoundingBoxCalculation)) {
-                            }
-                            if (ImGui::RadioButton("Preview", &sceneDef->mode, EMGMode::ePreview)) {
-                            }
-                        }
-                        ImGui::EndGroupPanel();
-                        ImGui::SameLine();
                         ImGui::BeginGroupPanel("Orientation");
                         {
                             if (ImGui::RadioButton("Ortho projection", &sceneDef->orientation, ScenarioOrientation::soTopDownOrtho)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
                             }
                             if (ImGui::RadioButton("At 45° tick 0", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick0)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
                             }
                             if (ImGui::RadioButton("At 45° tick 1", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick1)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
                             }
                             if (ImGui::RadioButton("At 45° tick 2", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick2)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
                             }
                             if (ImGui::RadioButton("At 45° tick 3", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick3)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
                             }
                         }
                         ImGui::EndGroupPanel();
                         ImGui::SameLine();
-                        ImGui::BeginGroupPanel("Ocean color override");
-                        {
-
-                            ImGui::CompactColorPicker("Close Ocean Color", sceneDef->closeOceanColor);
-
-
-                            ImGui::EndGroupPanel();
-                        }
                         ImGui::BeginGroupPanel("Generation boundaries");
                         {
                             ImGui::Text("In world coordinates");
@@ -1684,7 +1697,11 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                             ImGui::InputFloat("Max y", &sceneDef->maxWowWorldCoord.y);
                             ImGui::EndGroupPanel();
                         }
-                        ImGui::SameLine();
+                        ImGui::BeginGroupPanel("Ocean color override");
+                        {
+                            ImGui::CompactColorPicker("Close Ocean Color", sceneDef->closeOceanColor);
+                            ImGui::EndGroupPanel();
+                        }
                         ImGui::BeginGroupPanel("Image settings");
                         {
                             ImGui::PushItemWidth(100);
@@ -1700,23 +1717,49 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                         {
                             ImGui::BeginGroupPanel("River color overrides");
                             {
-                                for (int i = 0; i < riverColorOverrides.size(); i++) {
+                                for (int i = 0; i < riverColorOverrides->size(); i++) {
+                                    auto &riverColorOverride = riverColorOverrides->operator[](i);
 
                                     ImGui::PushID(i);
-                                    ImGui::CompactColorPicker("River Color Override", riverColorOverrides[i].color);
+                                    if (ImGui::Button("Copy from current")) {
+                                        int areaId, parentAreaId;
+                                        mathfu::vec4 riverColor;
+
+                                        minimapGenerator->getCurrentFDData(areaId, parentAreaId, riverColor);
+                                        riverColorOverride.areaId = areaId;
+                                        riverColorOverride.color = riverColor;
+                                    }
                                     ImGui::SameLine();
-                                    ImGui::InputInt("Area Id", &riverColorOverrides[i].areaId);
+                                    ImGui::CompactColorPicker("River Color Override", riverColorOverride.color);
+                                    ImGui::SameLine();
+                                    ImGui::PushItemWidth(100);
+                                    ImGui::InputInt("Area Id", &riverColorOverride.areaId);
+                                    ImGui::PopItemWidth();
+
 
                                     ImGui::PopID();
                                 }
 
                                 if (ImGui::Button("Add  override")) {
-                                    riverColorOverrides.push_back({});
+                                    riverColorOverrides->push_back({});
                                 }
                             }
                             ImGui::EndGroupPanel();
                         }
                         ImGui::EndGroupPanel();
+
+                        ImGui::BeginGroupPanel("Current stats");
+                        {
+                            int areaId, parentAreaId;
+                            mathfu::vec4 riverColor;
+
+                            minimapGenerator->getCurrentFDData(areaId, parentAreaId, riverColor);
+                            ImGui::Text("Current areaId %d", areaId);
+                            ImGui::Text("Current parent areaId %d", parentAreaId);
+                            ImGui::CompactColorPicker("Current River Color", riverColor);
+
+                            ImGui::EndGroupPanel();
+                        }
 
                         auto currentTime = minimapGenerator->getConfig()->currentTime;
                         ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
@@ -1743,6 +1786,8 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                             bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
                             if (ImGui::ButtonDisablable("Start Preview", isDisabled)) {
                                 minimapGenerator->startPreview(*sceneDef);
+                                minimapGenerator->setZoom(previewZoom);
+                                minimapGenerator->setLookAtPoint(previewX, previewY);
                             }
                         } else {
                             if (ImGui::Button("Stop Preview")) {
@@ -1769,13 +1814,18 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                             ImGui::Text("Y: % 03d out of % 03d", y, maxY);
 
                         }
+
+                        if (ImGui::Button("Save")) {
+                            m_minimapDB->saveScenario(*sceneDef);
+                            m_minimapDB->saveRiverColorOverrides(sceneDef->mapId, *riverColorOverrides);
+                            m_minimapDB->saveAdtBoundingBoxes(sceneDef->mapId, *boundingBoxHolder);
+                        }
                     }
 
                     ImGui::EndTabItem();
 
-                }
-                if (!opened) {
-                    sceneDef = nullptr;
+                } else {
+                    //sceneDef = nullptr;
                 }
             }
 
@@ -1803,6 +1853,9 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                         minimapGenerator->setZoom(previewZoom);
                     }
                 }
+                if (ImGui::Button("Reload")) {
+                    minimapGenerator->reload();
+                }
 
                 ImGui::BeginChild("Minimap Gen Preview image", ImVec2(0, 0),
                                   true, ImGuiWindowFlags_AlwaysHorizontalScrollbar |
@@ -1818,7 +1871,19 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0,0,0,1.0));
                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0,0,0,1.0));
 
-                    ImGui::ImageButton(texture, ImVec2(512, 512));
+                    const int imageSize = 512;
+
+                    if (ImGui::ImageButton2(texture, "previewImage", ImVec2(imageSize, imageSize))) {
+                        auto mousePos = ImGui::GetMousePos();
+                        ImGuiStyle &style = ImGui::GetStyle();
+
+                        mousePos.x += -ImGui::GetWindowPos().x - style.WindowPadding.x;
+                        mousePos.y += -ImGui::GetWindowPos().y - style.WindowPadding.y;
+
+                        previewX = (0.5f - (mousePos.y / (float)imageSize)) * minimapGenerator->GetOrthoDimension() + previewX;
+                        previewY = (0.5f - (mousePos.x / (float)imageSize)) * minimapGenerator->GetOrthoDimension() + previewY;
+                        minimapGenerator->setLookAtPoint(previewX, previewY);
+                    };
 
                     ImGui::PopStyleColor(3);
                     ImGui::PopStyleVar(3);

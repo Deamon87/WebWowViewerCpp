@@ -36,6 +36,7 @@
 #include "GFrameBufferVLK.h"
 #include "shaders/GFFXgauss4VLK.h"
 #include "shaders/GFFXGlowVLK.h"
+#include "shaders/GWaterfallShaderVLK.h"
 #include "GRenderPassVLK.h"
 #include "../../engine/algorithms/FrameCounter.h"
 //#include "fastmemcp.h"
@@ -180,7 +181,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     this->threadCount = std::max<int>((int)std::thread::hardware_concurrency() - 3, 1);
 
@@ -1120,6 +1121,11 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "ffxGlowQuad") {
         IShaderPermutation *iPremutation = new GFFXGlowVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+        m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "waterfallShader") {
+        IShaderPermutation *iPremutation = new GWaterfallShaderVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
         m_shaderPermutCache[hash] = sharedPtr;

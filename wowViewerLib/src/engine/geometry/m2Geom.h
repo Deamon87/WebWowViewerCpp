@@ -55,7 +55,7 @@ public:
     std::vector<TXAC> txacMParticle = {};
 
     int m_skid = -1;
-    int m_wfv3 = 0;
+    WaterFallDataV3 *m_wfv3 = 0;
 
 private:
     HFileContent m2File;

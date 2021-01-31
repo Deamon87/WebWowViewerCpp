@@ -38,10 +38,12 @@ private:
 
     HDrawStage m_lastDraw = nullptr;
 
-    HADTBoundingBoxHolder boundingBoxHolder = nullptr;
+    HADTBoundingBoxHolder m_boundingBoxHolder = nullptr;
 
     //Per X dimension, per Y dimension, vector of mandatory adt {x, y} coordinates
     std::vector<std::vector<std::vector<std::array<uint8_t, 2>>>> mandatoryADTMap;
+
+    std::array<HCullStage, 4> stackOfCullStages;
 
     HDrawStage m_candidateDS = nullptr;
     HCullStage m_candidateCS = nullptr;
@@ -55,7 +57,7 @@ private:
     mathfu::mat4 genTempProjectMatrix();
 public:
 
-    MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice, HRequestProcessor processor, IClientDatabase*);
+    MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice, HRequestProcessor processor, IClientDatabase*, HADTBoundingBoxHolder boundingBoxHolder);
 
     void startScenarios(std::vector<ScenarioDef> &scenarioListToProcess);
     void process();
@@ -72,6 +74,8 @@ public:
         maxY = m_chunkHeight;
     }
 
+    void getCurrentFDData(int &areaId, int &parentAreaId, mathfu::vec4 &riverColor);
+
     float GetOrthoDimension();
 
     void calcXtoYCoef();
@@ -82,6 +86,8 @@ public:
 
     void setLookAtPoint(float x, float y);
     void setZoom(float zoom);
+
+    void reload();
 
     void startPreview(ScenarioDef &scenarioDef);
     void stopPreview();

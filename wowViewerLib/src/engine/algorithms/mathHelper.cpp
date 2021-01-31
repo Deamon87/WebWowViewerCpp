@@ -93,7 +93,7 @@ std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(mathfu::mat4 &ma
 
     for (int i = 0; i < 6; i++) {
         //Hand made normalize
-        float invVecLength = 1 / (planes[i].xyz().Length());
+        float invVecLength = 1.0f / (planes[i].xyz().Length());
         planes[i] = planes[i] * invVecLength;
     }
 
@@ -633,4 +633,12 @@ bool MathHelper::isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, con
 //    }
 
     return false;
+}
+
+bool MathHelper::isAabbIntersect2d(CAaBox a, CAaBox b) {
+
+    bool result = (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
+               (a.min.y <= b.max.y && a.max.y >= b.min.y);
+
+    return result;
 }

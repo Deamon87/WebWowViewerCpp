@@ -499,9 +499,14 @@ void Map::checkCulling(HCullStage cullStage) {
             areaRecord = m_api->databaseHandler->getArea(cullStage->adtAreadId);
         }
     }
+
+
     m_api->getConfig()->areaName = areaRecord.areaName;
     stateForConditions.currentAreaId = areaRecord.areaId;
     stateForConditions.currentParentAreaId = areaRecord.parentAreaId;
+
+    cullStage->areaId = areaRecord.areaId;
+    cullStage->parentAreaId = areaRecord.parentAreaId;
 
     updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
 
@@ -1052,7 +1057,32 @@ void Map::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::s
         }
     }
 }
+void Map::getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) {
+    areaId = 0;
+    parentAreaId = 0;
 
+    if (m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+        if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+            int adt_x = worldCoordinateToAdtIndex(cameraPos.y);
+            int adt_y = worldCoordinateToAdtIndex(cameraPos.x);
+            if ((adt_x >= 64) || (adt_x < 0)) return;
+            if ((adt_y >= 64) || (adt_y < 0)) return;
+
+            auto &adtObjectCameraAt = mapTiles[adt_x][adt_y];
+
+            int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
+            int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
+
+            areaId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
+
+            if (areaId > 0 && (m_api->databaseHandler != nullptr)) {
+                auto areaRecord = m_api->databaseHandler->getArea(areaId);
+                parentAreaId = areaRecord.parentAreaId;
+            }
+        }
+    }
+
+}
 void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::vector<mathfu::vec3> &frustumPoints,
                         std::vector<mathfu::vec3> &hullLines,

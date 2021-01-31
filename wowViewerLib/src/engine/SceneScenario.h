@@ -32,6 +32,9 @@ struct CullStage {
 //Output:
     int adtAreadId = -1;
 
+    int areaId = -1;
+    int parentAreaId = -1;
+
     std::vector<WmoGroupResult> m_currentInteriorGroups = {};
     bool currentWmoGroupIsExtLit = false;
     bool currentWmoGroupShowExtSkybox = false;

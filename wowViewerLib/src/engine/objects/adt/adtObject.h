@@ -53,6 +53,7 @@ public:
     int getAdtY() {return adt_y;}
 
     CAaBox calcAABB();
+    bool getWaterColorFromDB(mathfu::vec4 cameraPos, mathfu::vec3 &closeRiverColor);
 
     bool checkFrustumCulling(
             ADTObjRenderRes &adtFrustRes,
