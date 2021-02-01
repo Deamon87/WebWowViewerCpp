@@ -40,7 +40,7 @@ public:
     bool renderM2 = true;
     bool renderBSP = false;
     bool renderPortals = false;
-    bool usePortalCulling = false;
+    bool usePortalCulling = true;
     bool useInstancing = false;
 
     bool disableFog = false;

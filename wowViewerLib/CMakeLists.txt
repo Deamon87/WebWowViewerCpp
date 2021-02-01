@@ -340,7 +340,11 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GSkyConus.cpp
         src/gapi/ogl3.3/shaders/GFFXgauss4.h
         src/gapi/ogl3.3/shaders/GFFXGlow.cpp
-        src/gapi/ogl3.3/shaders/GFFXGlow.h src/gapi/ogl3.3/shaders/GWaterShaderGL33.cpp src/gapi/ogl3.3/shaders/GWaterShaderGL33.h)
+        src/gapi/ogl3.3/shaders/GFFXGlow.h
+        src/gapi/ogl3.3/shaders/GWaterShaderGL33.cpp
+        src/gapi/ogl3.3/shaders/GWaterShaderGL33.h
+        src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.cpp
+        src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.h)
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
@@ -419,7 +423,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GFFXGlowVLK.cpp
             src/gapi/vulkan/shaders/GFFXGlowVLK.h
             src/gapi/vulkan/GRenderPassVLK.cpp
-            src/gapi/vulkan/GRenderPassVLK.h src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp src/gapi/vulkan/shaders/GWaterfallShaderVLK.h src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.cpp src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.h)
+            src/gapi/vulkan/GRenderPassVLK.h src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)

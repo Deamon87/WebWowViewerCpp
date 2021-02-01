@@ -109,6 +109,7 @@ void main() {
     vec4 finalColor = vec4(
         mix(colorAfterLight.rgb, whiteWater_val_baseColor_mix.rgb, values3.w),
         1.0 - mask_val_0.z
+//        whiteWater_val.a+0.2
     );
 
     outputColor = finalColor;

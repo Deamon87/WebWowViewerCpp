@@ -191,7 +191,7 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
         iPremutation = new GSkyConus(shaderName, this);
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
-    } else if (shaderName == "GWaterfallShaderGL33") {
+    } else if (shaderName == "waterfallShader") {
         iPremutation = new GWaterfallShaderGL33(shaderName, this);
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;

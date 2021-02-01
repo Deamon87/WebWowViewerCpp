@@ -434,8 +434,8 @@ struct WaterFallDataV3 {
     float value1_x;
     float value1_y;
     float value2_w;
-    float value3_x;
     float value3_y;
+    float value3_x;
     CImVector basecolor;
     uint16_t field_30;
     uint16_t field_32;

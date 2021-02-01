@@ -12,7 +12,7 @@ class GWaterfallShaderGL33 : public GShaderPermutationGL33 {
 protected:
     explicit GWaterfallShaderGL33(std::string &shaderName, IDevice *device);
 
-    virtual void compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) override;
+    void compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) override;
 };
 
 

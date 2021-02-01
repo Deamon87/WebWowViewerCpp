@@ -342,8 +342,8 @@ void FrontendUI::showAdtSelectionMinimap() {
                     mousePos.x = ((mousePos.x / minimapZoom) / defaultImageDimension);
                     mousePos.y = ((mousePos.y / minimapZoom) / defaultImageDimension);
 
-                    worldPosX = AdtIndexToWorldCoordinate(mousePos.x);
-                    worldPosY = AdtIndexToWorldCoordinate(mousePos.y);
+                    worldPosX = AdtIndexToWorldCoordinate(mousePos.y);
+                    worldPosY = AdtIndexToWorldCoordinate(mousePos.x);
 
 //                                if ()
                     ImGui::OpenPopup("AdtWorldCoordsTest");
