@@ -5,6 +5,7 @@
 #include "mathHelper.h"
 #include "grahamScan.h"
 #include <cmath>
+#include <array>
 
 
 float MathHelper::fp69ToFloat(uint16_t x) {
@@ -641,4 +642,69 @@ bool MathHelper::isAabbIntersect2d(CAaBox a, CAaBox b) {
                (a.min.y <= b.max.y && a.max.y >= b.min.y);
 
     return result;
+}
+
+mathfu::vec3 MathHelper::calcExteriorColorDir(mathfu::mat4 lookAtMat, int time) {
+    // Phi Table
+    static const std::array<std::array<float, 2>, 4> phiTable = {
+        {
+            { 0.0f,  2.2165682f },
+            { 0.25f, 1.9198623f },
+            { 0.5f,  2.2165682f },
+            { 0.75f, 1.9198623f }
+        }
+    };
+
+    // Theta Table
+
+
+    static const std::array<std::array<float, 2>, 4> thetaTable = {
+        {
+            {0.0f, 3.926991f},
+            {0.25f, 3.926991f},
+            { 0.5f,  3.926991f },
+            { 0.75f, 3.926991f }
+        }
+    };
+
+//    float phi = DayNight::InterpTable(&DayNight::phiTable, 4u, DayNight::g_dnInfo.dayProgression);
+//    float theta = DayNight::InterpTable(&DayNight::thetaTable, 4u, DayNight::g_dnInfo.dayProgression);
+
+    float phi = phiTable[0][1];
+    float theta = thetaTable[0][1];
+
+    //Find Index
+    float timeF = time / 2880.0f;
+    int firstIndex = -1;
+    for (int i = 0; i < 4; i++) {
+        if (timeF < phiTable[i][0]) {
+            firstIndex = i;
+            break;
+        }
+    }
+    if (firstIndex == -1) {
+        firstIndex = 3;
+    }
+    {
+        float alpha =  (phiTable[firstIndex][0] -  timeF) / (thetaTable[firstIndex][0] - thetaTable[firstIndex-1][0]);
+        phi = phiTable[firstIndex][1]*(1.0 - alpha) + phiTable[firstIndex - 1][1]*alpha;
+    }
+
+
+    // Convert from spherical coordinates to XYZ
+    // x = rho * sin(phi) * cos(theta)
+    // y = rho * sin(phi) * sin(theta)
+    // z = rho * cos(phi)
+
+    float sinPhi = (float) sin(phi);
+    float cosPhi = (float) cos(phi);
+
+    float sinTheta = (float) sin(theta);
+    float cosTheta = (float) cos(theta);
+
+    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
+
+    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
+//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
+    return (lookAtRotation * sunDirWorld.xyz());
 }

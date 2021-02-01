@@ -70,7 +70,7 @@ void main() {
         blizzTranspose(uPlacementMat) *
         blizzTranspose(boneTransformMat);
 
-    vNormal = normalize(viewModelMatTransposed * aNormal);
+    vNormal = (scene.uLookAtMat * uPlacementMat * vec4(aNormal, 0)).xyz;
     vPosition = pos;
 
     vTexCoord = aTexCoord;

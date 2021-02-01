@@ -50,7 +50,7 @@ const InteriorLightParam intLight = {
 void main() {
 
     vec2 normalTex_val = texture(uNormalTex, vTexCoord2_animated).xy;
-    normalTex_val = (normalTex_val*2.0f - 1.0f) * (values3.x * 100);
+    vec2 normalTex_val_traformed = (normalTex_val*2.0f - 1.0f) * (values3.x * 100);
 
     vec3 worldSpaceDerivX = dFdx(vPosition);
     vec3 worldSpaceDerivY = dFdy(vPosition);
@@ -61,8 +61,8 @@ void main() {
     float derivNormVal = dot(worldSpaceDerivX, derivNormalCross);
 
     vec2 texCoordDeriv = vec2(
-        dot(dFdx(vTexCoord2_animated).xy, normalTex_val),
-        dot(dFdy(vTexCoord2_animated).xy, normalTex_val)
+        dot(dFdx(vTexCoord2_animated).xy, normalTex_val_traformed),
+        dot(dFdy(vTexCoord2_animated).xy, normalTex_val_traformed)
     );
 
     int cond0 = ((derivNormVal > 0) ? 0 : 1) - ((derivNormVal < 0) ? 0 : 1);
@@ -89,7 +89,7 @@ void main() {
         (values0.w * 2.0f + 1.0f) -
         values0.w, 0.0f, 1.0f);
 
-    vec4 whiteWater_val_baseColor_mix = mix(whiteWater_val, baseColor, mix_alpha);
+    vec4 whiteWater_val_baseColor_mix = mix(baseColor, whiteWater_val, mix_alpha);
 
     vec3 colorAfterLight = calcLight(
         whiteWater_val_baseColor_mix.rgb,
@@ -103,12 +103,14 @@ void main() {
         vec3(0.0) /* specular */
     );
 
+
+
     float w_clamped = clamp((1.0f - mask_val_0.w) * values1.w, 0.0f, 1.0f);
     float w_alpha_combined = clamp(w_clamped + mix_alpha, 0.0f, 1.0f);
 
     vec4 finalColor = vec4(
         mix(colorAfterLight.rgb, whiteWater_val_baseColor_mix.rgb, values3.w),
-        1.0 - mask_val_0.z
+        w_alpha_combined
 //        whiteWater_val.a+0.2
     );
 

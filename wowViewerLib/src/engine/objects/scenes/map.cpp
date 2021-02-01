@@ -345,71 +345,6 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     return hmesh;
 }
 
-mathfu::vec3 calcExteriorColorDir(HCameraMatrices cameraMatrices, int time) {
-    // Phi Table
-    static const std::array<std::array<float, 2>, 4> phiTable = {
-        {
-            { 0.0f,  2.2165682f },
-            { 0.25f, 1.9198623f },
-            { 0.5f,  2.2165682f },
-            { 0.75f, 1.9198623f }
-        }
-    };
-
-    // Theta Table
-
-
-    static const std::array<std::array<float, 2>, 4> thetaTable = {
-        {
-            {0.0f, 3.926991f},
-            {0.25f, 3.926991f},
-            { 0.5f,  3.926991f },
-            { 0.75f, 3.926991f }
-        }
-    };
-
-//    float phi = DayNight::InterpTable(&DayNight::phiTable, 4u, DayNight::g_dnInfo.dayProgression);
-//    float theta = DayNight::InterpTable(&DayNight::thetaTable, 4u, DayNight::g_dnInfo.dayProgression);
-
-    float phi = phiTable[0][1];
-    float theta = thetaTable[0][1];
-
-    //Find Index
-    float timeF = time / 2880.0f;
-    int firstIndex = -1;
-    for (int i = 0; i < 4; i++) {
-        if (timeF < phiTable[i][0]) {
-            firstIndex = i;
-            break;
-        }
-    }
-    if (firstIndex == -1) {
-        firstIndex = 3;
-    }
-    {
-        float alpha =  (phiTable[firstIndex][0] -  timeF) / (thetaTable[firstIndex][0] - thetaTable[firstIndex-1][0]);
-        phi = phiTable[firstIndex][1]*(1.0 - alpha) + phiTable[firstIndex - 1][1]*alpha;
-    }
-
-
-    // Convert from spherical coordinates to XYZ
-    // x = rho * sin(phi) * cos(theta)
-    // y = rho * sin(phi) * sin(theta)
-    // z = rho * cos(phi)
-
-    float sinPhi = (float) sin(phi);
-    float cosPhi = (float) cos(phi);
-
-    float sinTheta = (float) sin(theta);
-    float cosTheta = (float) cos(theta);
-
-    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(cameraMatrices->lookAtMat);
-
-    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
-    return (lookAtRotation * sunDirWorld.xyz());
-}
-
 void Map::checkCulling(HCullStage cullStage) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
 //    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
@@ -749,8 +684,8 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             fdd->exteriorHorizontAmbientColor = mathfu::vec4(horizontAmbientColor[2], horizontAmbientColor[1],
                                                     horizontAmbientColor[0], 0);
             fdd->exteriorDirectColor = mathfu::vec4(directColor[2], directColor[1], directColor[0], 0);
-            auto extDir = calcExteriorColorDir(
-                cullStage->matricesForCulling,
+            auto extDir = MathHelper::calcExteriorColorDir(
+                cullStage->matricesForCulling->lookAtMat,
                 m_api->getConfig()->currentTime
             );
             fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
@@ -761,8 +696,8 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             fdd->exteriorGroundAmbientColor = config->exteriorGroundAmbientColor;
             fdd->exteriorHorizontAmbientColor = config->exteriorHorizontAmbientColor;
             fdd->exteriorDirectColor = config->exteriorDirectColor;
-            auto extDir = calcExteriorColorDir(
-                cullStage->matricesForCulling,
+            auto extDir = MathHelper::calcExteriorColorDir(
+                cullStage->matricesForCulling->lookAtMat,
                 m_api->getConfig()->currentTime
             );
             fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };

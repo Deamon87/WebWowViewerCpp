@@ -445,6 +445,10 @@ extern "C" {
         apiContainer->getConfig()->clearColor = mathfu::vec4(r,g,b,0.0);
     }
     EMSCRIPTEN_KEEPALIVE
+    void enablePortalCulling(bool value) {
+        apiContainer->getConfig()->usePortalCulling = value;
+    }
+    EMSCRIPTEN_KEEPALIVE
     void setFarPlane(float value) {
         apiContainer->getConfig()->farPlane = value;
     }

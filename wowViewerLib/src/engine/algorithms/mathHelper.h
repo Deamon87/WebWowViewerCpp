@@ -106,6 +106,7 @@ public:
     static float distance_aux(float p, float lower, float upper);
 
     static float distanceFromAABBToPoint2DSquared(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
+    static mathfu::vec3 calcExteriorColorDir(mathfu::mat4 lookAtMat, int time);
 };
 
 const float ROUNDING_ERROR_f32 = 0.001f;
