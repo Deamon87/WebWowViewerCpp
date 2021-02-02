@@ -18,6 +18,7 @@ typedef std::vector<RiverColorOverride> RiverColorOverrideHolder;
 typedef std::shared_ptr<RiverColorOverrideHolder> HRiverColorOverrideHolder;
 
 enum class EParameterSource: char {
+    eNone,
     eConfig,
     eDatabase,
     eM2

@@ -124,6 +124,34 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
             }
         },
         {
+            '1VFW',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered 1VFW");
+                    float bumpScale;
+                    chunkData.readValue(bumpScale);
+                    WaterFallDataV3 *dataV3 = new WaterFallDataV3();
+                    dataV3->bumpScale = bumpScale;
+                    dataV3->values0 = mathfu::vec3(0,0.5,0);
+                    dataV3->value1_w = 1.0f;
+                    dataV3->values0_w = 0.5;
+                    dataV3->value1_x = 0;
+                    dataV3->value1_y = 0;
+                    dataV3->value2_w = 0;
+                    dataV3->value3_y = 0;
+                    dataV3->value3_x = 0;
+                    dataV3->basecolor = {0xff, 0xff, 0xff, 0xff};
+                    dataV3->field_30 = 0;
+                    dataV3->field_32 = 0;
+                    dataV3->values3_w = 0;
+                    dataV3->values3_z = 0;
+                    dataV3->values4_y = 0;
+
+                    file.m_wfv1 = dataV3;
+                }
+            }
+        },
+        {
             'CBAP',
             {
                 [](M2Geom &file, ChunkData &chunkData) {

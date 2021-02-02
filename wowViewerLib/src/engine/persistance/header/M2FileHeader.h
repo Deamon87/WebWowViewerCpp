@@ -440,7 +440,7 @@ struct WaterFallDataV3 {
     uint16_t field_30;
     uint16_t field_32;
     float values3_w;
-    float unk3;
+    float values3_z;
     float values4_y;
     float unk5;
     float unk6;

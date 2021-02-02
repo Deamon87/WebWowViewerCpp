@@ -2577,7 +2577,7 @@ struct meshWideBlockPS
     vec4 baseColor;
 };
 
-uniform meshWideBlockPS _215;
+uniform meshWideBlockPS _216;
 
 struct sceneWideBlockVSPS
 {
@@ -2585,7 +2585,7 @@ struct sceneWideBlockVSPS
     PSFog fogData;
 };
 
-uniform sceneWideBlockVSPS _465;
+uniform sceneWideBlockVSPS _466;
 
 struct modelWideBlockVS
 {
@@ -2593,7 +2593,7 @@ struct modelWideBlockVS
     mat4 uBoneMatrixes[220];
 };
 
-uniform modelWideBlockVS _550;
+uniform modelWideBlockVS _549;
 
 uniform sampler2D uNormalTex;
 uniform sampler2D uNoise;
@@ -2667,49 +2667,49 @@ vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorE
 void main()
 {
     vec2 normalTex_val = texture2D(uNormalTex, vTexCoord2_animated).xy;
-    normalTex_val = ((normalTex_val * 2.0) - vec2(1.0)) * (_215.values3.x * 100.0);
+    vec2 normalTex_val_traformed = ((normalTex_val * 2.0) - vec2(1.0)) * (_216.values3.x * 100.0);
     vec3 worldSpaceDerivX = dFdx(vPosition);
     vec3 worldSpaceDerivY = dFdy(vPosition);
     vec3 vNormalNormalized = normalize(vNormal);
     vec3 derivNormalCross = cross(worldSpaceDerivY, vNormalNormalized);
     float derivNormVal = dot(worldSpaceDerivX, derivNormalCross);
-    vec2 texCoordDeriv = vec2(dot(dFdx(vTexCoord2_animated), normalTex_val), dot(dFdy(vTexCoord2_animated), normalTex_val));
+    vec2 texCoordDeriv = vec2(dot(dFdx(vTexCoord2_animated), normalTex_val_traformed), dot(dFdy(vTexCoord2_animated), normalTex_val_traformed));
     int cond0 = ((derivNormVal > 0.0) ? 0 : 1) - ((derivNormVal < 0.0) ? 0 : 1);
     vec3 normalVecDerivCross = (vNormalNormalized * abs(derivNormVal)) - (((cross(vNormalNormalized, worldSpaceDerivX) * texCoordDeriv.y) + (derivNormalCross * texCoordDeriv.x)) * float(cond0));
     vec3 normalVecDerivCrossNormalized = normalize(normalVecDerivCross);
-    vec2 vTexCoordNorm = vTexCoord / vec2(_215.values1.x);
-    float noise0 = texture2D(uNoise, vec2(vTexCoordNorm.x - _215.values1.z, (vTexCoordNorm.y - _215.values1.z) - _215.values2.z)).x;
-    float _noise1 = texture2D(uNoise, vec2((vTexCoordNorm.x - _215.values1.z) + 0.4180000126361846923828125, ((vTexCoordNorm.y + 0.3549999892711639404296875) + _215.values1.z) - _215.values2.z)).x;
-    float _noise2 = texture2D(uNoise, vec2((vTexCoordNorm.x + _215.values1.z) + 0.8650000095367431640625, ((vTexCoordNorm.y + 0.1480000019073486328125) - _215.values1.z) - _215.values2.z)).x;
-    float _noise3 = texture2D(uNoise, vec2((vTexCoordNorm.x + _215.values1.z) + 0.65100002288818359375, ((vTexCoordNorm.y + 0.75199997425079345703125) + _215.values1.z) - _215.values2.z)).x;
+    vec2 vTexCoordNorm = vTexCoord / vec2(_216.values1.x);
+    float noise0 = texture2D(uNoise, vec2(vTexCoordNorm.x - _216.values1.z, (vTexCoordNorm.y - _216.values1.z) - _216.values2.z)).x;
+    float _noise1 = texture2D(uNoise, vec2((vTexCoordNorm.x - _216.values1.z) + 0.4180000126361846923828125, ((vTexCoordNorm.y + 0.3549999892711639404296875) + _216.values1.z) - _216.values2.z)).x;
+    float _noise2 = texture2D(uNoise, vec2((vTexCoordNorm.x + _216.values1.z) + 0.8650000095367431640625, ((vTexCoordNorm.y + 0.1480000019073486328125) - _216.values1.z) - _216.values2.z)).x;
+    float _noise3 = texture2D(uNoise, vec2((vTexCoordNorm.x + _216.values1.z) + 0.65100002288818359375, ((vTexCoordNorm.y + 0.75199997425079345703125) + _216.values1.z) - _216.values2.z)).x;
     float noise_avr = abs(((noise0 + _noise1) + _noise2) + _noise3) * 0.25;
-    float noiseFinal = clamp(exp((_215.values0.x * log2(noise_avr)) * 2.2000000476837158203125) * _215.values0.y, 0.0, 1.0);
+    float noiseFinal = clamp(exp((_216.values0.x * log2(noise_avr)) * 2.2000000476837158203125) * _216.values0.y, 0.0, 1.0);
     vec4 whiteWater_val = texture2D(uWhiteWater, vTexCoord2_animated);
     vec4 mask_val_0 = texture2D(uMask, vTexCoord);
-    vec4 mask_val_1 = texture2D(uMask, vec2(vTexCoord.x, vTexCoord.y + _215.values3.z));
-    float mix_alpha = clamp((((((whiteWater_val.w * noiseFinal) - (mask_val_1.y * mask_val_0.x)) * 2.0) + _215.values0.z) * ((_215.values0.w * 2.0) + 1.0)) - _215.values0.w, 0.0, 1.0);
-    vec4 whiteWater_val_baseColor_mix = mix(whiteWater_val, _215.baseColor, vec4(mix_alpha));
+    vec4 mask_val_1 = texture2D(uMask, vec2(vTexCoord.x, vTexCoord.y + _216.values3.z));
+    float mix_alpha = clamp((((((whiteWater_val.w * noiseFinal) - (mask_val_1.y * mask_val_0.x)) * 2.0) + _216.values0.z) * ((_216.values0.w * 2.0) + 1.0)) - _216.values0.w, 0.0, 1.0);
+    vec4 whiteWater_val_baseColor_mix = mix(_216.baseColor, whiteWater_val, vec4(mix_alpha));
     vec3 param = whiteWater_val_baseColor_mix.xyz;
     vec3 param_1 = normalVecDerivCrossNormalized;
     bool param_2 = true;
     float param_3 = 0.0;
     SceneWideParams param_4;
-    param_4.uLookAtMat = _465.scene.uLookAtMat;
-    param_4.uPMatrix = _465.scene.uPMatrix;
-    param_4.uViewUp = _465.scene.uViewUp;
-    param_4.uInteriorSunDir = _465.scene.uInteriorSunDir;
-    param_4.extLight.uExteriorAmbientColor = _465.scene.extLight.uExteriorAmbientColor;
-    param_4.extLight.uExteriorHorizontAmbientColor = _465.scene.extLight.uExteriorHorizontAmbientColor;
-    param_4.extLight.uExteriorGroundAmbientColor = _465.scene.extLight.uExteriorGroundAmbientColor;
-    param_4.extLight.uExteriorDirectColor = _465.scene.extLight.uExteriorDirectColor;
-    param_4.extLight.uExteriorDirectColorDir = _465.scene.extLight.uExteriorDirectColorDir;
-    param_4.extLight.adtSpecMult = _465.scene.extLight.adtSpecMult;
+    param_4.uLookAtMat = _466.scene.uLookAtMat;
+    param_4.uPMatrix = _466.scene.uPMatrix;
+    param_4.uViewUp = _466.scene.uViewUp;
+    param_4.uInteriorSunDir = _466.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _466.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _466.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _466.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _466.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _466.scene.extLight.uExteriorDirectColorDir;
+    param_4.extLight.adtSpecMult = _466.scene.extLight.adtSpecMult;
     InteriorLightParam param_5 = InteriorLightParam(vec4(0.0), vec4(0.0, 0.0, 0.0, 1.0));
     vec3 param_6 = vec3(0.0);
     vec3 colorAfterLight = calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0), vec3(0.0));
-    float w_clamped = clamp((1.0 - mask_val_0.w) * _215.values1.w, 0.0, 1.0);
+    float w_clamped = clamp((1.0 - mask_val_0.w) * _216.values1.w, 0.0, 1.0);
     float w_alpha_combined = clamp(w_clamped + mix_alpha, 0.0, 1.0);
-    vec4 finalColor = vec4(mix(colorAfterLight, whiteWater_val_baseColor_mix.xyz, vec3(_215.values3.w)), 1.0 - mask_val_0.z);
+    vec4 finalColor = vec4(mix(colorAfterLight, whiteWater_val_baseColor_mix.xyz, vec3(_216.values3.w)), w_alpha_combined);
     gl_FragData[0] = finalColor;
 }
 
@@ -2810,7 +2810,7 @@ void main()
     mat4 param_1 = _104.uPlacementMat;
     mat4 param_2 = boneTransformMat;
     mat3 viewModelMatTransposed = (blizzTranspose(param) * blizzTranspose(param_1)) * blizzTranspose(param_2);
-    vNormal = normalize(viewModelMatTransposed * aNormal);
+    vNormal = ((_199.scene.uLookAtMat * _104.uPlacementMat) * vec4(aNormal, 0.0)).xyz;
     vPosition = pos;
     vTexCoord = aTexCoord;
     vTexCoord2_animated = texCoord2;
@@ -6051,19 +6051,19 @@ layout(std140) uniform meshWideBlockPS
     vec4 values3;
     vec4 values4;
     vec4 baseColor;
-} _215;
+} _216;
 
 layout(std140) uniform sceneWideBlockVSPS
 {
     SceneWideParams scene;
     PSFog fogData;
-} _465;
+} _466;
 
 layout(std140) uniform modelWideBlockVS
 {
     mat4 uPlacementMat;
     mat4 uBoneMatrixes[220];
-} _550;
+} _549;
 
 uniform sampler2D uNormalTex;
 uniform sampler2D uNoise;
@@ -6138,49 +6138,49 @@ vec3 calcLight(vec3 matDiffuse, vec3 vNormal_1, bool applyLight, float interiorE
 void main()
 {
     vec2 normalTex_val = texture(uNormalTex, vTexCoord2_animated).xy;
-    normalTex_val = ((normalTex_val * 2.0) - vec2(1.0)) * (_215.values3.x * 100.0);
+    vec2 normalTex_val_traformed = ((normalTex_val * 2.0) - vec2(1.0)) * (_216.values3.x * 100.0);
     vec3 worldSpaceDerivX = dFdx(vPosition);
     vec3 worldSpaceDerivY = dFdy(vPosition);
     vec3 vNormalNormalized = normalize(vNormal);
     vec3 derivNormalCross = cross(worldSpaceDerivY, vNormalNormalized);
     float derivNormVal = dot(worldSpaceDerivX, derivNormalCross);
-    vec2 texCoordDeriv = vec2(dot(dFdx(vTexCoord2_animated), normalTex_val), dot(dFdy(vTexCoord2_animated), normalTex_val));
+    vec2 texCoordDeriv = vec2(dot(dFdx(vTexCoord2_animated), normalTex_val_traformed), dot(dFdy(vTexCoord2_animated), normalTex_val_traformed));
     int cond0 = ((derivNormVal > 0.0) ? 0 : 1) - ((derivNormVal < 0.0) ? 0 : 1);
     vec3 normalVecDerivCross = (vNormalNormalized * abs(derivNormVal)) - (((cross(vNormalNormalized, worldSpaceDerivX) * texCoordDeriv.y) + (derivNormalCross * texCoordDeriv.x)) * float(cond0));
     vec3 normalVecDerivCrossNormalized = normalize(normalVecDerivCross);
-    vec2 vTexCoordNorm = vTexCoord / vec2(_215.values1.x);
-    float noise0 = texture(uNoise, vec2(vTexCoordNorm.x - _215.values1.z, (vTexCoordNorm.y - _215.values1.z) - _215.values2.z)).x;
-    float _noise1 = texture(uNoise, vec2((vTexCoordNorm.x - _215.values1.z) + 0.4180000126361846923828125, ((vTexCoordNorm.y + 0.3549999892711639404296875) + _215.values1.z) - _215.values2.z)).x;
-    float _noise2 = texture(uNoise, vec2((vTexCoordNorm.x + _215.values1.z) + 0.8650000095367431640625, ((vTexCoordNorm.y + 0.1480000019073486328125) - _215.values1.z) - _215.values2.z)).x;
-    float _noise3 = texture(uNoise, vec2((vTexCoordNorm.x + _215.values1.z) + 0.65100002288818359375, ((vTexCoordNorm.y + 0.75199997425079345703125) + _215.values1.z) - _215.values2.z)).x;
+    vec2 vTexCoordNorm = vTexCoord / vec2(_216.values1.x);
+    float noise0 = texture(uNoise, vec2(vTexCoordNorm.x - _216.values1.z, (vTexCoordNorm.y - _216.values1.z) - _216.values2.z)).x;
+    float _noise1 = texture(uNoise, vec2((vTexCoordNorm.x - _216.values1.z) + 0.4180000126361846923828125, ((vTexCoordNorm.y + 0.3549999892711639404296875) + _216.values1.z) - _216.values2.z)).x;
+    float _noise2 = texture(uNoise, vec2((vTexCoordNorm.x + _216.values1.z) + 0.8650000095367431640625, ((vTexCoordNorm.y + 0.1480000019073486328125) - _216.values1.z) - _216.values2.z)).x;
+    float _noise3 = texture(uNoise, vec2((vTexCoordNorm.x + _216.values1.z) + 0.65100002288818359375, ((vTexCoordNorm.y + 0.75199997425079345703125) + _216.values1.z) - _216.values2.z)).x;
     float noise_avr = abs(((noise0 + _noise1) + _noise2) + _noise3) * 0.25;
-    float noiseFinal = clamp(exp((_215.values0.x * log2(noise_avr)) * 2.2000000476837158203125) * _215.values0.y, 0.0, 1.0);
+    float noiseFinal = clamp(exp((_216.values0.x * log2(noise_avr)) * 2.2000000476837158203125) * _216.values0.y, 0.0, 1.0);
     vec4 whiteWater_val = texture(uWhiteWater, vTexCoord2_animated);
     vec4 mask_val_0 = texture(uMask, vTexCoord);
-    vec4 mask_val_1 = texture(uMask, vec2(vTexCoord.x, vTexCoord.y + _215.values3.z));
-    float mix_alpha = clamp((((((whiteWater_val.w * noiseFinal) - (mask_val_1.y * mask_val_0.x)) * 2.0) + _215.values0.z) * ((_215.values0.w * 2.0) + 1.0)) - _215.values0.w, 0.0, 1.0);
-    vec4 whiteWater_val_baseColor_mix = mix(whiteWater_val, _215.baseColor, vec4(mix_alpha));
+    vec4 mask_val_1 = texture(uMask, vec2(vTexCoord.x, vTexCoord.y + _216.values3.z));
+    float mix_alpha = clamp((((((whiteWater_val.w * noiseFinal) - (mask_val_1.y * mask_val_0.x)) * 2.0) + _216.values0.z) * ((_216.values0.w * 2.0) + 1.0)) - _216.values0.w, 0.0, 1.0);
+    vec4 whiteWater_val_baseColor_mix = mix(_216.baseColor, whiteWater_val, vec4(mix_alpha));
     vec3 param = whiteWater_val_baseColor_mix.xyz;
     vec3 param_1 = normalVecDerivCrossNormalized;
     bool param_2 = true;
     float param_3 = 0.0;
     SceneWideParams param_4;
-    param_4.uLookAtMat = _465.scene.uLookAtMat;
-    param_4.uPMatrix = _465.scene.uPMatrix;
-    param_4.uViewUp = _465.scene.uViewUp;
-    param_4.uInteriorSunDir = _465.scene.uInteriorSunDir;
-    param_4.extLight.uExteriorAmbientColor = _465.scene.extLight.uExteriorAmbientColor;
-    param_4.extLight.uExteriorHorizontAmbientColor = _465.scene.extLight.uExteriorHorizontAmbientColor;
-    param_4.extLight.uExteriorGroundAmbientColor = _465.scene.extLight.uExteriorGroundAmbientColor;
-    param_4.extLight.uExteriorDirectColor = _465.scene.extLight.uExteriorDirectColor;
-    param_4.extLight.uExteriorDirectColorDir = _465.scene.extLight.uExteriorDirectColorDir;
-    param_4.extLight.adtSpecMult = _465.scene.extLight.adtSpecMult;
+    param_4.uLookAtMat = _466.scene.uLookAtMat;
+    param_4.uPMatrix = _466.scene.uPMatrix;
+    param_4.uViewUp = _466.scene.uViewUp;
+    param_4.uInteriorSunDir = _466.scene.uInteriorSunDir;
+    param_4.extLight.uExteriorAmbientColor = _466.scene.extLight.uExteriorAmbientColor;
+    param_4.extLight.uExteriorHorizontAmbientColor = _466.scene.extLight.uExteriorHorizontAmbientColor;
+    param_4.extLight.uExteriorGroundAmbientColor = _466.scene.extLight.uExteriorGroundAmbientColor;
+    param_4.extLight.uExteriorDirectColor = _466.scene.extLight.uExteriorDirectColor;
+    param_4.extLight.uExteriorDirectColorDir = _466.scene.extLight.uExteriorDirectColorDir;
+    param_4.extLight.adtSpecMult = _466.scene.extLight.adtSpecMult;
     InteriorLightParam param_5 = InteriorLightParam(vec4(0.0), vec4(0.0, 0.0, 0.0, 1.0));
     vec3 param_6 = vec3(0.0);
     vec3 colorAfterLight = calcLight(param, param_1, param_2, param_3, param_4, param_5, param_6, vec3(0.0), vec3(0.0));
-    float w_clamped = clamp((1.0 - mask_val_0.w) * _215.values1.w, 0.0, 1.0);
+    float w_clamped = clamp((1.0 - mask_val_0.w) * _216.values1.w, 0.0, 1.0);
     float w_alpha_combined = clamp(w_clamped + mix_alpha, 0.0, 1.0);
-    vec4 finalColor = vec4(mix(colorAfterLight, whiteWater_val_baseColor_mix.xyz, vec3(_215.values3.w)), 1.0 - mask_val_0.z);
+    vec4 finalColor = vec4(mix(colorAfterLight, whiteWater_val_baseColor_mix.xyz, vec3(_216.values3.w)), w_alpha_combined);
     outputColor = finalColor;
 }
 
@@ -6274,7 +6274,7 @@ void main()
     mat4 param_1 = _104.uPlacementMat;
     mat4 param_2 = boneTransformMat;
     mat3 viewModelMatTransposed = (blizzTranspose(param) * blizzTranspose(param_1)) * blizzTranspose(param_2);
-    vNormal = normalize(viewModelMatTransposed * aNormal);
+    vNormal = ((_199.scene.uLookAtMat * _104.uPlacementMat) * vec4(aNormal, 0.0)).xyz;
     vPosition = pos;
     vTexCoord = aTexCoord;
     vTexCoord2_animated = texCoord2;

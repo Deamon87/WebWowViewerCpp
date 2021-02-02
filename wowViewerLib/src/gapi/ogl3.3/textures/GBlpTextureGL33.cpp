@@ -171,7 +171,7 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmap
         case TextureFormat::BGRA:
         logGLError
             for( int k = 0; k < mipmaps.size(); k++) {
-                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                              &mipmaps[k].texture[0]);
                 logGLError
             }

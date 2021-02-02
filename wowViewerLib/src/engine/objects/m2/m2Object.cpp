@@ -882,7 +882,7 @@ void M2Object::sortMaterials(mathfu::mat4 &modelViewMat) {
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
-    if (m_m2Geom->m_wfv3 == nullptr) {
+    if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
         for (int i = 0; i < this->m_meshNaturalArray.size(); i++) {
             //Update info for sorting
             M2MeshBufferUpdater::updateSortData(this->m_meshNaturalArray[i], *this, m_materialArray[i], m2File,
@@ -1380,7 +1380,7 @@ HGM2Mesh M2Object::createWaterfallMesh() {
 
     auto skinData = m_skinGeom->getSkinData();
     auto m2Data = m_m2Geom->getM2Data();
-    auto wfv3Data = m_m2Geom->m_wfv3;
+    auto wfv3Data = m_m2Geom->m_wfv3 != nullptr ? m_m2Geom->m_wfv3 : m_m2Geom->m_wfv1;
 
     auto m2Batch = skinData->batches.getElement(0);
     auto skinSection = skinData->skinSections[m2Batch->skinSectionIndex];
@@ -1451,7 +1451,7 @@ HGM2Mesh M2Object::createWaterfallMesh() {
 
         meshblockPS.values1.z =   wfv_convert(meshblockPS.values1.y, (int16_t)((uint64_t)this));
         meshblockPS.m_values2.z = wfv_convert(meshblockPS.m_values2.w, (int16_t)((uint64_t)this));
-        meshblockPS.m_values3.z = wfv_convert(wfv3Data->unk3, (int16_t)((uint64_t)this));
+        meshblockPS.m_values3.z = wfv_convert(wfv3Data->values3_z, (int16_t)((uint64_t)this));
     });
 
     //Make mesh
@@ -1482,7 +1482,7 @@ void M2Object::createMeshes() {
     std::vector<int> batchesRequiringDynamicVao = {};
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
 
-    if (m_m2Geom->m_wfv3 == nullptr) {
+    if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
         for (int i = 0; i < batches->size; i++) {
             auto m2Batch = skinProfile->batches[i];
             auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];

@@ -26,6 +26,8 @@ void WmoScene::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathf
 void WmoScene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                                        StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
     Config* config = this->m_api->getConfig();
+    config->globalFog = EParameterSource::eNone;
+
     Map::updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
 
     mathfu::vec4 ambient = mathfu::vec4(1.0,1.0,1.0,1.0);

@@ -492,6 +492,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
         openWMOSceneByfdid(2756726);
     }
+    if (ImGui::Button("Original WVF1 model", ImVec2(-1, 0))) {
+        openM2SceneByfdid(2445860, replacementTextureFDids);
+    }
     if (ImGui::Button("Stormwind mage portal", ImVec2(-1, 0))) {
         openM2SceneByfdid(2394711, replacementTextureFDids);
     }

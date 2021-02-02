@@ -167,7 +167,11 @@ mathfu::mat4 M2MeshBufferUpdater::getTextureMatrix(const M2Object &m2Object, int
 void M2MeshBufferUpdater::fillTextureMatrices(const M2Object &m2Object, int batchIndex, M2Data *m2Data,
                                 M2SkinProfile *m2SkinProfile, mathfu::mat4 *uTextMat) {
 
-    const auto textureAnim = m2SkinProfile->batches[batchIndex]->textureTransformComboIndex;
+    auto textureAnim = m2SkinProfile->batches[batchIndex]->textureTransformComboIndex;
+
+    if (m2Object.m_m2Geom->m_wfv1 != nullptr) {
+        textureAnim = 1; // hack for fdid 2445860
+    }
 
     int16_t textureMatIndex = -1;
     if (textureAnim < m2Data->texture_transforms_lookup_table.size)

@@ -56,6 +56,8 @@ public:
 
     int m_skid = -1;
     WaterFallDataV3 *m_wfv3 = 0;
+    WaterFallDataV3 *m_wfv1 = 0;
+
 
 private:
     HFileContent m2File;
