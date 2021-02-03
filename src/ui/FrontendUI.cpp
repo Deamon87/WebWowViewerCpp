@@ -1412,8 +1412,8 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-    m_processor = std::make_shared<CascRequestProcessor>("f:/games/wow/");
+    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+//    m_processor = std::make_shared<CascRequestProcessor>("f:/games/wow/");
 ////        processor->setThreaded(false);
 ////
     m_processor->setThreaded(true);

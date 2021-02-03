@@ -1668,7 +1668,8 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
 
     for (int i = minBatch; i < maxBatch; i++) {
         float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, i, skinData);
-        if ((finalTransparency < 0.0001) ) continue;
+        if ((finalTransparency < 0.0001) )
+            continue;
 
         HGM2Mesh mesh = this->m_meshNaturalArray[i];
         if (finalTransparency < 1.0 && i < this->m_meshForcedTranspArray.size() && this->m_meshForcedTranspArray[i] != nullptr) {

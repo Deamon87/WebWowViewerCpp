@@ -47,28 +47,32 @@ const InteriorLightParam intLight = {
     vec4(0,0,0,1)
 };
 
+// For references:
+// http://mmikkelsen3d.blogspot.com/2011/07/derivative-maps.html
+// http://www.thetenthplanet.de/archives/1180
+// https://mmikk.github.io/papers3d/mm_sfgrad_bump.pdf
+
+vec3 PerturbNormal ( vec3 surf_pos, vec3 surf_norm )
+{
+    vec2 dBdUV = (texture(uNormalTex, vTexCoord2_animated).xy*2.0f - 1.0f) * (values3.x * 100);
+
+    vec2 duv1 = dFdx( vTexCoord2_animated ).xy;
+    vec2 duv2 = dFdy( vTexCoord2_animated ).xy;
+
+    vec3 vSigmaS = dFdx ( surf_pos );
+    vec3 vSigmaT = dFdy ( surf_pos );
+    vec3 vN = surf_norm ; // normalized
+    vec3 vR1 = cross ( vSigmaT , vN );
+    vec3 vR2 = cross (vN , vSigmaS );
+    float fDet = dot ( vSigmaS , vR1 );
+    float dBs = dBdUV.x * duv1.x + dBdUV.y * duv1.y;
+    float dBt = dBdUV.x * duv2.x + dBdUV.y * duv2.y;
+    vec3 vSurfGrad = sign ( fDet ) * ( dBs * vR1 + dBt * vR2 );
+    return normalize ( abs ( fDet )*vN - vSurfGrad );
+}
+
 void main() {
-
-    vec2 normalTex_val = texture(uNormalTex, vTexCoord2_animated).xy;
-    vec2 normalTex_val_traformed = (normalTex_val*2.0f - 1.0f) * (values3.x * 100);
-
-    vec3 worldSpaceDerivX = dFdx(vPosition);
-    vec3 worldSpaceDerivY = dFdy(vPosition);
-
-    vec3 vNormalNormalized = normalize(vNormal);
-
-    vec3 derivNormalCross = cross(worldSpaceDerivY, vNormalNormalized);
-    float derivNormVal = dot(worldSpaceDerivX, derivNormalCross);
-
-    vec2 texCoordDeriv = vec2(
-        dot(dFdx(vTexCoord2_animated).xy, normalTex_val_traformed),
-        dot(dFdy(vTexCoord2_animated).xy, normalTex_val_traformed)
-    );
-
-    int cond0 = ((derivNormVal > 0) ? 0 : 1) - ((derivNormVal < 0) ? 0 : 1);
-
-    vec3 normalVecDerivCross = (abs(derivNormVal) * vNormalNormalized) - (texCoordDeriv.y * cross(vNormalNormalized, worldSpaceDerivX) + texCoordDeriv.x * derivNormalCross) * cond0;
-    vec3 normalVecDerivCrossNormalized = normalize(normalVecDerivCross);
+    vec3 perturbedNormal = PerturbNormal(vPosition, normalize(vNormal));
 
     vec2 vTexCoordNorm = vTexCoord / values1.x;
 
@@ -93,7 +97,7 @@ void main() {
 
     vec3 colorAfterLight = calcLight(
         whiteWater_val_baseColor_mix.rgb,
-        normalVecDerivCrossNormalized,
+        perturbedNormal,
         true,
         0.0,
         scene,
