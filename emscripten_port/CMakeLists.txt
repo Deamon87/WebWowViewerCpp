@@ -55,6 +55,7 @@ if (COMPILE_WITH_SIMD)
     set(EMSCRIPTEN_SIMD 1)
 endif()
 
+set (LIBZ_INCLUDE_DIR "${EMSCRIPTEN_ROOT_PATH}/tests/third_party/zlib")
 set (ZLIB_INCLUDE_DIR "${EMSCRIPTEN_ROOT_PATH}/tests/third_party/zlib")
 set (ZLIB_LIBRARY "${EMSCRIPTEN_ROOT_PATH}/tests/third_party/zlib")
 
