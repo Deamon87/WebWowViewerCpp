@@ -694,7 +694,6 @@ void WmoGroupObject::loadDoodads() {
         m_doodads[i] = newDoodad;
         std::function<void()> event = [&, newDoodad]() -> void {
             this->m_recalcBoundries = true;
-
         };
         if (m_doodads[i] != nullptr) {
             m_doodads[i]->addPostLoadEvent(event);

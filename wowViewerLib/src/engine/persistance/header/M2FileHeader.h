@@ -428,7 +428,9 @@ struct EXP2
 PACK(
 struct WaterFallDataV3 {
     float bumpScale;
-    C3Vector values0;
+    float values0_x;
+    float values0_y;
+    float values0_z;
     float value1_w;
     float values0_w;
     float value1_x;
@@ -437,14 +439,15 @@ struct WaterFallDataV3 {
     float value3_y;
     float value3_x;
     CImVector basecolor;
-    uint16_t field_30;
-    uint16_t field_32;
+    uint16_t flags;
+    uint16_t unk0;
     float values3_w;
     float values3_z;
     float values4_y;
-    float unk5;
-    float unk6;
-    float unk7;
+    float unk1;
+    float unk2;
+    float unk3;
+    float unk4;
 });
 
 void initEXP2(EXP2 *exp2);

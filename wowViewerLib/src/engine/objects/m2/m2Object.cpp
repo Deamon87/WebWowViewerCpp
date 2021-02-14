@@ -1430,9 +1430,9 @@ HGM2Mesh M2Object::createWaterfallMesh() {
             wfv3Data->basecolor.g / 255.0f,
             wfv3Data->basecolor.b / 255.0f);
 
-        meshblockPS.values0.x = wfv3Data->values0.x;
-        meshblockPS.values0.y = wfv3Data->values0.y;
-        meshblockPS.values0.z = wfv3Data->values0.z;
+        meshblockPS.values0.x = wfv3Data->values0_x;
+        meshblockPS.values0.y = wfv3Data->values0_y;
+        meshblockPS.values0.z = wfv3Data->values0_z;
         meshblockPS.values0.w = wfv3Data->values0_w;
 
         meshblockPS.values1.x = wfv3Data->value1_x;
@@ -1442,8 +1442,8 @@ HGM2Mesh M2Object::createWaterfallMesh() {
         meshblockPS.m_values3.x = wfv3Data->value3_x;
         meshblockPS.m_values3.y = wfv3Data->value3_y;
 
-        meshblockPS.m_values2.x = wfv3Data->field_30 & 2;
-        meshblockPS.m_values2.y = wfv3Data->field_30 & 1;
+        meshblockPS.m_values2.x = wfv3Data->flags & 2;
+        meshblockPS.m_values2.y = wfv3Data->flags & 1;
 
         meshblockPS.m_values2.w = wfv3Data->value2_w;
         meshblockPS.m_values3.w = wfv3Data->values3_w;

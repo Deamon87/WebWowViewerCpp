@@ -34,7 +34,9 @@ public:
         return m_localGroupBorder;
     }
     const HWmoGroupGeom getWmoGroupGeom() const { return m_geom; };
-    const std::vector <std::shared_ptr<M2Object>> *getDoodads() const { return &m_doodads; };
+    const std::vector <std::shared_ptr<M2Object>> *getDoodads() const {
+        return &m_doodads;
+    };
 
     void setWmoApi(IWmoApi *api);
     IWmoApi *getWmoApi() { return m_wmoApi; };

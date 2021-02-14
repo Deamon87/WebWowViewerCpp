@@ -20,7 +20,7 @@ layout(std140, binding=0) uniform sceneWideBlockVSPS {
 //Individual meshes
 layout(std140, binding=4) uniform meshWideBlockPS {
     vec4 uAlphaTestv;
-    ivec4 uPixelShaderv;
+    ivec4 uPixelShaderBlendModev;
 };
 
 layout(set=1,binding=5) uniform sampler2D uTexture;
@@ -40,7 +40,7 @@ void main() {
         discard;
 
     vec4 finalColor = vec4((tex * vColor ).rgb, tex.a*vColor.a );
-    int uNonOptPixelShader = uPixelShaderv.x;
+    int uNonOptPixelShader = uPixelShaderBlendModev.x;
     if (uNonOptPixelShader == 0) { //particle_mod
         vec3 matDiffuse = vColor.xyz * tex.rgb;
 
@@ -93,7 +93,7 @@ void main() {
 //        .xyz;
     vec3 sunDir =scene.extLight.uExteriorDirectColorDir.xyz;
 
-    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz, uPixelShaderv.y);
+    finalColor = makeFog(fogData, finalColor, vPosition.xyz, sunDir.xyz, uPixelShaderBlendModev.y);
 
     outputColor.rgba = finalColor ;
 }

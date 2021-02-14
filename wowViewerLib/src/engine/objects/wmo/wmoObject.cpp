@@ -90,7 +90,8 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
         (index >= doodadSetDef->firstinstanceindex) &&
         (index < doodadSetDef->firstinstanceindex + doodadSetDef->numDoodads);
 
-    if (!isInCurrentDoodadSetDef && !isInDefaultDoodadSetDef) return nullptr;
+    if (!isInCurrentDoodadSetDef && !isInDefaultDoodadSetDef)
+        return nullptr;
 
     auto iterator = this->m_doodadsUnorderedMap.find(index);
     if (iterator != this->m_doodadsUnorderedMap.end())
@@ -834,6 +835,7 @@ bool WmoObject::startTraversingWMOGroup(
         if (!interiorView.viewCreated) {
             interiorView.viewCreated = true;
             interiorView.drawnWmos.push_back(nextGroupObject);
+            interiorView.wmosForM2.push_back(nextGroupObject);
             interiorView.portalIndex = -1;
             interiorView.frustumPlanes.push_back(frustumPlanesExt);
         }
@@ -1070,6 +1072,7 @@ void WmoObject::transverseGroupWMO(
             if (!interiorView.viewCreated) {
                 interiorView.viewCreated = true;
                 interiorView.drawnWmos.push_back(nextGroupObject);
+                interiorView.wmosForM2.push_back(nextGroupObject);
                 interiorView.portalIndex = relation->portal_index;
             }
 

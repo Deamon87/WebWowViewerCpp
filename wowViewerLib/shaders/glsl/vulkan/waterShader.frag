@@ -31,6 +31,6 @@ void main() {
     vec3 sunDir =scene.extLight.uExteriorDirectColorDir.xyz;
 
     //BlendMode is always GxBlend_Alpha
-    finalColor = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz, 2);
+    finalColor = makeFog(fogData, vec4(finalColor, 1.0), vPosition.xyz, sunDir.xyz, 2).rgb;
     outputColor = vec4(finalColor, 0.7);
 }

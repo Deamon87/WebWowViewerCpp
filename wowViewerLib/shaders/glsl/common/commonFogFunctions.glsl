@@ -48,10 +48,12 @@ vec3 validateFogColor(in vec3 fogColor, int blendMode) {
     return mix(fogColor, fogColors[blendMode], fogMix[blendMode]);
 }
 
-vec3 makeFog(const in PSFog fogData, in vec3 final, in vec3 vertexInViewSpace, in vec3 sunDirInViewSpace, in int blendMode) {
-    //The best solution so far is to not apply fog to blendmode GxBlend_BlendAdd
-    if (blendMode == 13)
-        return final;
+vec4 makeFog(const in PSFog fogData, in vec4 final, in vec3 vertexInViewSpace, in vec3 sunDirInViewSpace, in int blendMode) {
+//    //The best solution so far is to not apply fog to blendmode GxBlend_BlendAdd
+//    if (blendMode == 13)
+//        return final;
+
+
 
     vec4 l_densityParams = fogData.densityParams;
     vec4 l_heightPlane = fogData.heightPlane;
@@ -70,6 +72,12 @@ vec3 makeFog(const in PSFog fogData, in vec3 final, in vec3 vertexInViewSpace, i
     float heightFog = clamp((height * l_color_and_heightRate.w), 0, 1);
     float finalFog = mix(expFog, expFogHeight, heightFog);
     float endFadeFog = clamp((1.42857146 * (1.0 - (vLength / end))), 0, 1);
+
+    float alpha = 1.0;
+    if (blendMode == 13) {
+        alpha = min(finalFog, endFadeFog);
+    }
+
     vec3 endColor = validateFogColor(l_heightDensity_and_endColor.yzw, blendMode);
     vec4 l_heightColor_and_endFogDistance = fogData.heightColor_and_endFogDistance;
 
@@ -90,6 +98,6 @@ vec3 makeFog(const in PSFog fogData, in vec3 final, in vec3 vertexInViewSpace, i
 
     fogFinal = mix(fogFinal, final.xyz, vec3(min(finalFog, endFadeFog)));
 
-    return fogFinal;
+    return vec4(fogFinal, final.a * alpha);
 }
 

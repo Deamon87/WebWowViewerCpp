@@ -508,6 +508,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
         openWMOSceneByfdid(1247268);
     }
+    if (ImGui::Button("Ironforge.wmo", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(113992);
+    }
 
     if (ImGui::Button("Some item", ImVec2(-1, 0))) {
             replacementTextureFDids = std::vector<int>(17);
@@ -1412,8 +1415,8 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-//    m_processor = std::make_shared<CascRequestProcessor>("f:/games/wow/");
+//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+    m_processor = std::make_shared<CascRequestProcessor>("f:/games/wow/");
 ////        processor->setThreaded(false);
 ////
     m_processor->setThreaded(true);

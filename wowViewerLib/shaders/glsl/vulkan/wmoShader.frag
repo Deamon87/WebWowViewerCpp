@@ -243,9 +243,9 @@ void main() {
     if(finalColor.a < FogColor_AlphaTest.w)
         discard;
 
-    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, UseLitColor_EnableAlpha_PixelShader_BlendMode.w);
+    finalColor = makeFog(fogData, finalColor, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, UseLitColor_EnableAlpha_PixelShader_BlendMode.w);
 
-    finalColor.a = 1.0; //do I really need it now?
+//    finalColor.a = 1.0; //do I really need it now?
 
     outputColor = finalColor;
 }

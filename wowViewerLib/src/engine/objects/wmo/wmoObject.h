@@ -46,7 +46,7 @@ private:
     CAaBox m_bbox;
 
     int m_nameSet;
-    int m_doodadSet;
+    int m_doodadSet = -1;
 
     std::vector<PortalInfo_t> geometryPerPortal;
 
