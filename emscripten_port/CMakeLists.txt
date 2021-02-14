@@ -55,11 +55,14 @@ if (COMPILE_WITH_SIMD)
     set(EMSCRIPTEN_SIMD 1)
 endif()
 
+set(BUILD_SHARED_VERSION 0)
+set(BUILD_STATIC_VERSION 1)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../3rdparty/zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
 
 set (LIBZ_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
 set (ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
-set (ZLIB_LIBRARY "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
+set (ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib/libz.a")
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/zlib)
 
 add_subdirectory(3rdparty/zipper)
 
@@ -86,6 +89,7 @@ add_executable(project ${SOURCE_FILES})
 add_dependencies(project WoWViewerLib)
 
 target_link_libraries(project WoWViewerLib)
+target_link_libraries(project zlibstatic)
 target_link_libraries(project staticZipper)
 
 target_link_options(project PUBLIC "SHELL: --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/prejs.js --js-library ${CMAKE_CURRENT_SOURCE_DIR}/jsLib.js")
