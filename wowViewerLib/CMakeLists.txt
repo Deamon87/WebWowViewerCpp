@@ -256,7 +256,7 @@ set(SOURCE_FILES
         src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp
         src/engine/objects/m2/m2Helpers/CBoneMasterData.h
         src/exporters/IExporter.h
-        src/engine/objects/iScene.cpp)
+        src/engine/objects/iScene.cpp src/engine/algorithms/C3Spline.cpp src/engine/algorithms/C3Spline.h src/engine/algorithms/C3Spline_Bezier3.cpp src/engine/algorithms/C3Spline_Bezier3.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp

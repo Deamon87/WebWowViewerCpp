@@ -13,6 +13,7 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../../persistance/header/M2FileHeader.h"
 #include "../../../gapi/UniformBufferStructures.h"
+#include "generators/CSplineGenerator.h"
 
 
 HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
@@ -136,6 +137,9 @@ ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, M2Obje
             break;
         case 2:
             this->generator = new CSphereGenerator(this->m_seed, particle, 0 != (m_data->old.flags & 0x100));
+            break;
+        case 3:
+            this->generator = new CSplineGenerator(this->m_seed, particle, 0 != (m_data->old.flags & 0x100));
             break;
         default:
 //            this->generator = new CPlaneGenerator(this->m_seed, particle);

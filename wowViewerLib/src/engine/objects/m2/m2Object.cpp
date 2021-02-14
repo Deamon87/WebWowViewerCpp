@@ -1949,7 +1949,6 @@ void M2Object::createVertexBindings() {
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
 
-
         M2::modelWideBlockPS &blockPS = self->getObject<M2::modelWideBlockPS>();
 
         blockPS.intLight.uInteriorAmbientColorAndApplyInteriorLight =

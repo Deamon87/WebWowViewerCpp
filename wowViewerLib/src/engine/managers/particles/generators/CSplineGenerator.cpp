@@ -3,6 +3,13 @@
 //
 
 #include "CSplineGenerator.h"
+#include "../../../algorithms/mathHelper.h"
+
+CSplineGenerator::CSplineGenerator(CRndSeed &seed, M2Particle *particle, bool particlesGoUp) :
+    CParticleGenerator(seed, particle), particlesGoUp(particlesGoUp), splineBezier3(particle->old.splinePoints) {
+
+}
+
 
 void CSplineGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     float dvary = delta * this->seed.UniformPos();
@@ -38,14 +45,47 @@ void CSplineGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
         areaX = 0.0;
     }
 
-    auto areaY = this->aniProp.emissionAreaX;
+    auto areaY = this->aniProp.emissionAreaY;
     if (areaY >= 0.0) {
         areaY = std::min(areaY, 1.0f);
     } else {
         areaY = 0.0;
     }
 
-    float emissionArea = areaY - areaX;
-    float radius = areaX + emissionArea* this->seed.UniformPos();
+    if (fabs(this->aniProp.emissionAreaY - this->m_areaY) >= 0.00000023841858f) {
+        this->m_areaY = areaY;
+    } else {
+        areaY = (areaY - areaX) * this->seed.UniformPos() + areaX;
+    }
+
+    //Get particle position from spline using areaY as angle and C3Spline::Pos
+    splineBezier3.posArclength(areaY, p.position);
+
+    float velocity = this->CalcVelocity();
+    float zSource = this->aniProp.zSource;
+    mathfu::vec3 resVelocityVector = mathfu::vec3(0,0,0);
+    if (zSource > 0.001) {
+        auto pos = p.position;
+        float zdiff = pos.z - zSource;
+        velocity = velocity / sqrt(pos.y*pos.y + pos.x * pos.x + zdiff*zdiff);
+        resVelocityVector.x = pos.x * velocity;
+        resVelocityVector.y = pos.y * velocity;
+        resVelocityVector.z = zdiff * velocity;
+    } else if (!feq(this->aniProp.verticalRange,0.0)){
+        //Get vector from spline using areaY and C3Spline::Vel
+        splineBezier3.velArclength(areaY, p.position);
+
+        mathfu::vec3 vec;
+        vec = vec.Normalized();
+
+        auto rotMat = mathfu::quat::FromAngleAxis(this->seed.Uniform() * aniProp.verticalRange, vec).ToMatrix();
+        auto zVec = rotMat.GetColumn(2);
+        if ( !feq(this->aniProp.horizontalRange,0.0) ) {
+            p.position += (this->aniProp.horizontalRange * this->seed.UniformPos());
+        }
+
+        resVelocityVector = zVec * velocity;
+    }
 
 }
+

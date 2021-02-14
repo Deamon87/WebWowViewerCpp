@@ -114,7 +114,7 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     }
 
     auto m2Object = std::make_shared<M2Object>(m_api);
-    m2Object->setDiffuseColor(doodadDef->color);
+
     m2Object->setLoadParams(0, {},{});
     if (fileIdMode) {
         m2Object->setModelFileId(doodadfileDataId);
@@ -123,6 +123,17 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     }
     m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
+
+    if (doodadDef->color.a != 255 && doodadDef->color.a < this->mainGeom->lightsLen) {
+
+        auto &light = this->mainGeom->lights[doodadDef->color.a];
+        m2Object->setDiffuseColor(light.color);
+
+
+        std::cout << "Found index into MOLT = " << (int)doodadDef->color.a << std::endl;
+    } else {
+        m2Object->setDiffuseColor(doodadDef->color);
+    }
 
     this->m_doodadsUnorderedMap[index] = m2Object;
 
