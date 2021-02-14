@@ -55,9 +55,11 @@ if (COMPILE_WITH_SIMD)
     set(EMSCRIPTEN_SIMD 1)
 endif()
 
-set (LIBZ_INCLUDE_DIR "${EMSCRIPTEN_ROOT_PATH}/tests/third_party/zlib")
-set (ZLIB_INCLUDE_DIR "${EMSCRIPTEN_ROOT_PATH}/tests/third_party/zlib")
-set (ZLIB_LIBRARY "${EMSCRIPTEN_ROOT_PATH}/tests/third_party/zlib")
+add_subdirectory(${PROJECT_SOURCE_DIR}/../3rdparty/zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
+
+set (LIBZ_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
+set (ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
+set (ZLIB_LIBRARY "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
 
 add_subdirectory(3rdparty/zipper)
 
