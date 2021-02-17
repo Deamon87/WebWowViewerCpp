@@ -13,6 +13,13 @@ public:
 
     void posArclength( float angle, mathfu::vec3 &pos);
     void velArclength(float t, mathfu::vec3 &vel);
+
+    mathfu::vec3 getFirstPoint() {
+        return mathfu::vec3(m_splinePoints[0]);
+    };
+    mathfu::vec3 getLastPoint() {
+        return mathfu::vec3(m_splinePoints[m_splinePoints.size() - 1]);
+    };
 private:
     float segLength(unsigned int segment);
 

@@ -59,11 +59,19 @@ void CSplineGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
     }
 
     //Get particle position from spline using areaY as angle and C3Spline::Pos
-    splineBezier3.posArclength(areaY, p.position);
+    if (areaY > 0.0) {
+        if (areaY < 1.0f ) {
+            splineBezier3.posArclength(areaY, p.position);
+        } else {
+            p.position = splineBezier3.getLastPoint();
+        }
+    } else {
+        p.position = splineBezier3.getFirstPoint();
+    }
 
     float velocity = this->CalcVelocity();
     float zSource = this->aniProp.zSource;
-    mathfu::vec3 resVelocityVector = mathfu::vec3(0,0,0);
+    mathfu::vec3 resVelocityVector = mathfu::vec3(0,0,velocity);
     if (zSource > 0.001) {
         auto pos = p.position;
         float zdiff = pos.z - zSource;
@@ -73,7 +81,10 @@ void CSplineGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
         resVelocityVector.z = zdiff * velocity;
     } else if (!feq(this->aniProp.verticalRange,0.0)){
         //Get vector from spline using areaY and C3Spline::Vel
-        splineBezier3.velArclength(areaY, p.position);
+        float t = areaY;
+        t = std::max(t, 0.0f);
+        t = std::min(t, 1.0f);
+        splineBezier3.velArclength(t, p.position);
 
         mathfu::vec3 vec;
         vec = vec.Normalized();
@@ -86,6 +97,7 @@ void CSplineGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
 
         resVelocityVector = zVec * velocity;
     }
+    p.velocity = resVelocityVector;
 
 }
 
