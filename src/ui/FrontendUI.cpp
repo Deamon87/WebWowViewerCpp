@@ -25,7 +25,7 @@
 #include "../persistance/HttpRequestProcessor.h"
 #include "../exporters/gltfExporter/GLTFExporter.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/NullScene.h"
-
+#include "../exporters/dataExporter/DataExporterClass.h"
 
 static const GBufferBinding imguiBindings[3] = {
     {+imguiShader::Attribute::Position, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos)},
@@ -421,6 +421,9 @@ void FrontendUI::showMainMenu() {
                     exporterFramesReady = 0;
                 }
             }
+            if (ImGui::MenuItem("Test data export")) {
+                dataExporter = new DataExporterClass(m_api);
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Make screenshot")) {
                 showMakeScreenshot = true;
@@ -522,6 +525,9 @@ void FrontendUI::showQuickLinksDialog() {
     }
     if (ImGui::Button("IGC Anduin", ImVec2(-1, 0))) {
         openM2SceneByfdid(3849312, replacementTextureFDids);
+    }
+    if (ImGui::Button("Spline emitter", ImVec2(-1, 0))) {
+        openM2SceneByfdid(1536145, replacementTextureFDids);
     }
     if (ImGui::Button("Nether collector top", ImVec2(-1, 0))) {
         openM2SceneByfdid(193157, replacementTextureFDids);
@@ -1237,6 +1243,14 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         )
     ) {
         minimapGenerator->process();
+    }
+
+    if (dataExporter != nullptr) {
+        dataExporter->process();
+        if (dataExporter->isDone()) {
+            delete dataExporter;
+            dataExporter = nullptr;
+        }
     }
 
     if (screenshotDS != nullptr) {

@@ -135,6 +135,7 @@ public:
     virtual void setEnd(int end)  = 0;
 
 public:
+    virtual void * getM2Object() = 0;
     virtual void setM2Object(void * m2Object) = 0;
     virtual void setLayer(int layer)  = 0;
     virtual void setPriorityPlane(int priorityPlane) = 0;

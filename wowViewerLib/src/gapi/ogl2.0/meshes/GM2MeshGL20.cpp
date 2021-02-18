@@ -11,6 +11,9 @@ GM2MeshGL20::GM2MeshGL20(IDevice &device, const gMeshTemplate &meshTemplate) : G
 void GM2MeshGL20::setM2Object(void *m2Object) {
     m_m2Object = (m2Object);
 }
+void *GM2MeshGL20::getM2Object() {
+    return m_m2Object;
+}
 
 void GM2MeshGL20::setLayer(int layer) {
     m_layer = layer;
@@ -30,3 +33,5 @@ float GM2MeshGL20::getSortDistance() {
 void GM2MeshGL20::setQuery(const HGOcclusionQuery &query) {
     m_query = query;
 }
+
+

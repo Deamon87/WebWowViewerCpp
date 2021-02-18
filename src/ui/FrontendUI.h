@@ -14,6 +14,7 @@
 #include "../minimapGenerator/minimapGenerator.h"
 #include "../persistance/CascRequestProcessor.h"
 #include "../minimapGenerator/storage/CMinimapDataDB.h"
+#include "../exporters/dataExporter/DataExporterClass.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -189,6 +190,9 @@ private:
 
    std::shared_ptr<MapConstructionWindow> m_mapConstructionWindow = nullptr;
 
+
+//Test export
+    DataExporterClass *dataExporter = nullptr;
 
 public:
     void overrideCascOpened(bool value) {

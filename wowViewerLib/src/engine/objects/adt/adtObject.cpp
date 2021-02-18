@@ -391,7 +391,9 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
         };
     });
 
-    return m_api->hDevice->createMesh(meshTemplate);
+    auto mesh = m_api->hDevice->createMesh(meshTemplate);
+    mesh->setSortDistance(0);
+    return mesh;
 }
 void AdtObject::loadWater() {
     if (m_adtFile->mH2OHeader == nullptr) return;

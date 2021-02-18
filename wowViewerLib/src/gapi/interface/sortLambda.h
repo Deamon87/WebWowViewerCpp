@@ -49,18 +49,18 @@
         if (pA->getSortDistance() < pB->getSortDistance()) {
             return false;
         }
-    }
 
-    if (pA->getSortDistance() > pB->getSortDistance()) {
-        return true;
-    }
-    if (pA->getSortDistance() < pB->getSortDistance()) {
-        return false;
-    }
-
-    if (pA->getMeshType() == MeshType::eM2Mesh && pB->getMeshType() == MeshType::eM2Mesh && pA->getIsTransparent() && pB->getIsTransparent()) {
-        if (pB->layer() != pA->layer()) {
-            return !(pB->layer() < pA->layer());
+        if (pA->getM2Object() == pB->getM2Object()) {
+            if (pB->layer() != pA->layer()) {
+                return pB->layer() < pA->layer();
+            }
+        }
+    } else {
+        if (pA->getSortDistance() > pB->getSortDistance()) {
+            return true;
+        }
+        if (pA->getSortDistance() < pB->getSortDistance()) {
+            return false;
         }
     }
 

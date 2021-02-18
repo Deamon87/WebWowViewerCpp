@@ -45,6 +45,8 @@ public:
 
     M2Data *m_m2Data = nullptr;
     std::vector<uint32_t> skinFileDataIDs;
+    std::vector<uint32_t> recursiveFileDataIDs;
+    std::vector<uint32_t> particleModelFileDataIDs;
     std::vector<uint32_t> textureFileDataIDs;
     std::vector<M2_AFID> animationFileDataIDs;
 

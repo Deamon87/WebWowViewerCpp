@@ -28,6 +28,7 @@ public:
     void setStart(int start) override;
     void setEnd(int end) override;
 public:
+    void *getM2Object() override { return nullptr; };
     void setM2Object(void * m2Object) override { /*  throw "Not Implemented"; */};
     void setLayer(int layer) override { /*  throw "Not Implemented"; */};
     void setPriorityPlane(int priorityPlane) override { /*  throw "Not Implemented"; */};

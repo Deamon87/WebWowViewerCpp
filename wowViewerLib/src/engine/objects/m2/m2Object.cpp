@@ -1672,7 +1672,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
             continue;
 
         HGM2Mesh mesh = this->m_meshNaturalArray[i];
-        if (finalTransparency < 1.0 && i < this->m_meshForcedTranspArray.size() && this->m_meshForcedTranspArray[i] != nullptr) {
+        if (finalTransparency < 0.999 && i < this->m_meshForcedTranspArray.size() && this->m_meshForcedTranspArray[i] != nullptr) {
             mesh = this->m_meshForcedTranspArray[i];
         }
 

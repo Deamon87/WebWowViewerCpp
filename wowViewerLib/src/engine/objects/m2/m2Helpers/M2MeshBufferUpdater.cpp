@@ -35,12 +35,8 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
         auto renderFlag = m2Data->materials[renderFlagIndex];
 
         mathfu::vec4 meshColor = M2Object::getCombinedColor(m2SkinProfile, batchIndex, m2Object->subMeshColors);
-        float transparency = M2Object::getTextureWeight(m2SkinProfile, m2Object->m_m2Geom->getM2Data(), batchIndex, 0, m2Object->transparencies);
 
-        float finalTransparency = meshColor.w;
-        if (batch->textureCount && !(batch->flags & 0x40)) {
-            finalTransparency *= transparency;
-        }
+        float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*m2Object, batchIndex, m2SkinProfile);
 
         auto &meshblockVS = self->getObject<M2::meshWideBlockVS>();
         meshblockVS.Color_Transparency = mathfu::vec4_packed(mathfu::vec4(meshColor.x, meshColor.y, meshColor.z, finalTransparency));

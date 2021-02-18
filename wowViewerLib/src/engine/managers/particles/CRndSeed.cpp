@@ -29,9 +29,8 @@ float CRndSeed::Uniform() {
     } else {
         result = fi.f - 2.0f;
     }
-//    result = (float) (drand48() * 2.0f - 1.0f);
-//    result = 0.0;
-    assert(result < 1.0 || result > -1.0);
+
+    assert(result < 1.0 && result > -1.0);
     return result;
 }
 
@@ -43,17 +42,9 @@ float CRndSeed::UniformPos() {
     uint32_t u = this->uint32t();
     // [1, 2)
     fi.i = 0x3f800000 | (0x7fffff & u);
-    float result;
-    if (u & 0x80000000) {
-        result = 1.0f - fi.f;
-    } else {
-        result =  fi.f - 1.0f;
-    }
+    float result = fi.f - 1.0;
 
-//    result = (float) drand48();
-//    result = 0.5;
-
-    assert(result > 0.0 || result < 1.0);
+    assert(result > 0.0 && result < 1.0);
     return result;
 }
 

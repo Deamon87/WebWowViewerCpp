@@ -89,7 +89,27 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
             {
                 [](M2Geom &file, ChunkData &chunkData) {
                     debuglog("Entered RPID");
+                    file.recursiveFileDataIDs =
+                        std::vector<uint32_t>(chunkData.chunkLen / 4);
 
+                    for (int i = 0; i < file.recursiveFileDataIDs.size(); i++) {
+                        chunkData.readValue(file.recursiveFileDataIDs[i]);
+                    }
+
+                }
+            }
+        },
+        {
+            'DIPG',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered GPID");
+                    file.particleModelFileDataIDs =
+                        std::vector<uint32_t>(chunkData.chunkLen / 4);
+
+                    for (int i = 0; i < file.particleModelFileDataIDs.size(); i++) {
+                        chunkData.readValue(file.particleModelFileDataIDs[i]);
+                    }
 
                 }
             }
