@@ -36,26 +36,34 @@
         return false;
     }
 
-    if (((pA->getMeshType() == MeshType::eM2Mesh && pB->getMeshType() == MeshType::eM2Mesh) ||
-        (pA->getMeshType() == MeshType::eParticleMesh && pB->getMeshType() == MeshType::eParticleMesh)) &&
-        pA->getIsTransparent() && pB->getIsTransparent()) {
-        if (pA->priorityPlane()!= pB->priorityPlane()) {
-            return pB->priorityPlane() > pA->priorityPlane();
-        }
+    if (pA->getIsTransparent() && pB->getIsTransparent()) {
+        if (((pA->getMeshType() == MeshType::eM2Mesh || pA->getMeshType() == MeshType::eParticleMesh) &&
+            (pB->getMeshType() == MeshType::eM2Mesh || pB->getMeshType() == MeshType::eParticleMesh))) {
+            if (pA->priorityPlane()!= pB->priorityPlane()) {
+                return pB->priorityPlane() > pA->priorityPlane();
+            }
 
-        if (pA->getSortDistance() > pB->getSortDistance()) {
-            return true;
-        }
-        if (pA->getSortDistance() < pB->getSortDistance()) {
-            return false;
-        }
+            if (pA->getSortDistance() < pB->getSortDistance()) {
+                return true;
+            }
+            if (pA->getSortDistance() > pB->getSortDistance()) {
+                return false;
+            }
 
-        if (pA->getM2Object() == pB->getM2Object()) {
-            if (pB->layer() != pA->layer()) {
-                return pB->layer() < pA->layer();
+            if (pA->getM2Object() == pB->getM2Object()) {
+                if (pB->layer() != pA->layer()) {
+                    return pB->layer() < pA->layer();
+                }
+            }
+        } else {
+            if (pA->getSortDistance() < pB->getSortDistance()) {
+                return true;
+            }
+            if (pA->getSortDistance() > pB->getSortDistance()) {
+                return false;
             }
         }
-    } else {
+    }else {
         if (pA->getSortDistance() > pB->getSortDistance()) {
             return true;
         }
