@@ -44,7 +44,7 @@ float CRndSeed::UniformPos() {
     fi.i = 0x3f800000 | (0x7fffff & u);
     float result = fi.f - 1.0;
 
-    assert(result >= 0.0 && result =< 1.0);
+    assert(result >= 0.0 && result <= 1.0);
     return result;
 }
 

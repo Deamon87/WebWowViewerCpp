@@ -84,9 +84,9 @@ void CSplineGenerator::CreateParticle(CParticle2 &p, animTime_t delta) {
         float t = areaY;
         t = std::max(t, 0.0f);
         t = std::min(t, 1.0f);
-        splineBezier3.velArclength(t, p.position);
 
         mathfu::vec3 vec;
+        splineBezier3.velArclength(t, vec);
         vec = vec.Normalized();
 
         auto rotMat = mathfu::quat::FromAngleAxis(this->seed.Uniform() * aniProp.verticalRange, vec).ToMatrix();

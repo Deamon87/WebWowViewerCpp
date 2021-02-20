@@ -543,11 +543,11 @@ void ParticleEmitter::EmitNewParticles(animTime_t delta) {
 
     float rate = this->generator->GetEmissionRate();
     this->emission += delta * rate;
-    while (this->emission > 1) {
+    while (this->emission > 1.0f) {
         if (particles.size() < MAX_PARTICLES_PER_EMITTER) {
             this->CreateParticle(delta);
         }
-        this->emission -= 1;
+        this->emission -= 1.0f;
     }
 }
 void ParticleEmitter::CreateParticle(animTime_t delta) {

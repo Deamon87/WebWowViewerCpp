@@ -23,7 +23,7 @@ float CParticleGenerator::GetLifeSpan(int16_t state) {
 
 float CParticleGenerator::CalcVelocity() {
     float velocity = aniProp.emissionSpeed;
-    velocity *= 1.0 + aniProp.speedVariation * seed.Uniform();
+    velocity *= 1.0f + aniProp.speedVariation * seed.Uniform();
     return velocity;
 }
 
