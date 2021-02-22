@@ -302,7 +302,7 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
         }
         if (!waterColorFound) {
             std::vector<LightResult> lightResults = {};
-            this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults);
+            this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults, nullptr);
             for (auto &_light : lightResults) {
                 closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
             }
@@ -1377,7 +1377,7 @@ bool AdtObject::getWaterColorFromDB(mathfu::vec4 cameraPos, mathfu::vec3 &closeR
     mathfu::vec3 waterPos = (mathfu::vec3(waterAaBB.max) + mathfu::vec3(waterAaBB.min)) / 2.0f;
     std::vector<LightResult> lightResults = {};
     closeRiverColor = {0,0,0};
-    this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults);
+    this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults, nullptr);
     for (auto &_light : lightResults) {
         closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
     }

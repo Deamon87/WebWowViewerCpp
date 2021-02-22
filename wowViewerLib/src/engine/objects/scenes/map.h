@@ -230,7 +230,7 @@ private:
     HDrawStage doGaussBlur(const HDrawStage parentDrawStage, HUpdateStage &updateStage) const;
 
 
-    void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults) override;
+    void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) override;
 
     void createAdtFreeLamdas();
 };

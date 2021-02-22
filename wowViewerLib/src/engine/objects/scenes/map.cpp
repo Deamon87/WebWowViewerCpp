@@ -563,7 +563,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
-        getLightResultsFromDB(cameraVec3, config, lightResults);
+        getLightResultsFromDB(cameraVec3, config, lightResults, &stateForConditions);
 
         //Delete skyboxes that are not in light array
         std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
@@ -887,7 +887,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 //    this->m_api->getConfig()->setClearColor(0,0,0,0);
 }
 
-void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults) {
+void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) {
     if (m_api->databaseHandler == nullptr)
         return ;
 
@@ -902,6 +902,10 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
         laabb.max = (mathfu::vec3(laabb.max) + vec50);
         if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
             zoneLightFound = true;
+
+            if (stateForConditions != nullptr) {
+                stateForConditions->currentZoneLights.push_back(zoneLight.ID);
+            }
             LightId = zoneLight.LightID;
             break;
         }
@@ -909,6 +913,9 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
 
     if (zoneLightFound) {
         m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
+        if (stateForConditions != nullptr) {
+            stateForConditions->currentZoneLights.push_back(zoneLightResult.lightParamId);
+        }
     }
 
     m_api->databaseHandler->getEnvInfo(m_mapId,
@@ -918,6 +925,13 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
                                        config->currentTime,
                                        lightResults
     );
+
+
+    if (stateForConditions != nullptr) {
+        for (auto &_light : lightResults) {
+            stateForConditions->currentZoneLights.push_back(_light.lightParamId);
+        }
+    }
 
     //Calc final blendcoef for zoneLight;
     if (zoneLightFound) {

@@ -150,6 +150,13 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                         conditionPassed = false;
                     break;
                 }
+                case 2 : {
+                    auto it = std::find(state.currentLightParams.begin(), state.currentLightParams.end(), condition.conditionValue);
+                    if (it == state.currentLightParams.end()) {
+                        conditionPassed = false;
+                    }
+                    break;
+                }
                 case 3 : {
                     auto it = std::find(state.currentSkyboxIds.begin(), state.currentSkyboxIds.end(), condition.conditionValue);
                     if (it == state.currentSkyboxIds.end()) {
@@ -157,7 +164,15 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                     }
                     break;
                 }
-            }
+                case 5 : {
+                    auto it = std::find(state.currentZoneLights.begin(), state.currentZoneLights.end(), condition.conditionValue);
+                    if (it == state.currentZoneLights.end()) {
+                        conditionPassed = false;
+                    }
+                    break;
+                }
+                default:
+                    std::cout << "Unk condition " << (int) condition.conditionType << std::endl;            }
         }
 
         if (conditionPassed) {

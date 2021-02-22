@@ -526,6 +526,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("IGC Anduin", ImVec2(-1, 0))) {
         openM2SceneByfdid(3849312, replacementTextureFDids);
     }
+    if (ImGui::Button("Steamscale mount", ImVec2(-1, 0))) {
+        openM2SceneByfdid(2843110, replacementTextureFDids);
+    }
     if (ImGui::Button("Spline emitter", ImVec2(-1, 0))) {
         openM2SceneByfdid(1536145, replacementTextureFDids);
     }
@@ -587,6 +590,9 @@ void FrontendUI::showQuickLinksDialog() {
             openWMOSceneByfdid(3565693);
     }
 
+    if (ImGui::Button("Vanilla login screen", ImVec2(-1, 0))) {
+            openM2SceneByfdid(131970, replacementTextureFDids);
+    }
     if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
             openM2SceneByfdid(131982, replacementTextureFDids);
             //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
@@ -1429,8 +1435,8 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-    m_processor = std::make_shared<CascRequestProcessor>("f:/games/wow/");
+    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+//    m_processor = std::make_shared<CascRequestProcessor>("f:/games/wow/");
 ////        processor->setThreaded(false);
 ////
     m_processor->setThreaded(true);

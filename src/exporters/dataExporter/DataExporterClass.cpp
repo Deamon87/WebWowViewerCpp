@@ -6,8 +6,8 @@
 
 DataExporterClass::DataExporterClass(HApiContainer apiContainer) {
     m_apiContainer = apiContainer;
-
-    outputLog.open ("m2Log.m2");
+    processedFiles = 0;
+    outputLog.open ("m2Log.txt");
     csv = new io::CSVReader<2, io::trim_chars<' '>, io::no_quote_escape<';'>>("c:\\Users\\Deamon\\Downloads\\listfile (5).csv");
 }
 
@@ -58,13 +58,28 @@ void DataExporterClass::process() {
                     emitterGenerator = "UNK_GENERATOR_"+std::to_string(pe->old.emitterType);
                 }
 
+                std::string txacVal = "";
+                if (i < m_m2Geom->txacMParticle.size() && (m_m2Geom->txacMParticle[i].value != 0)) {
+                    txacVal = "TXAC = ("
+                        + std::to_string((int)m_m2Geom->txacMParticle[i].perByte[0])
+                        + ", "
+                        + std::to_string((int)m_m2Geom->txacMParticle[i].perByte[0])
+                        + ") ";
+                }
+
                 outputLog << "( "
                     << (isRecursive ? ("RECURSIVE " + std::to_string(m_m2Geom->recursiveFileDataIDs[i]) + " ") : "")
                     << (isModelEmitter ? ("MODEL " + std::to_string(m_m2Geom->particleModelFileDataIDs[i]) + " ") : "")
+                    << txacVal
                     << emitterGenerator
                     << " ) ";
             }
-            outputLog << std::endl << std::flush;
+            processedFiles++;
+            outputLog << std::endl;
+            if (processedFiles % 1000 == 0) {
+                outputLog << std::flush;
+            }
+
         }
 
         m_m2Geom = nullptr;

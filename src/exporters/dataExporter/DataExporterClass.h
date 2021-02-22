@@ -31,6 +31,7 @@ private:
     io::CSVReader<2, io::trim_chars<' '>, io::no_quote_escape<';'>> *csv ;
 
     bool finished = false;
+    int processedFiles = 0;
 
     std::ofstream outputLog;
 };

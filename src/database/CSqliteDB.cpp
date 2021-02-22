@@ -435,10 +435,12 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
 
         lightResult.skyBoxFdid = 0;
         lightResult.lightSkyboxId = 0;
+        lightResult.lightParamId = 0;
 
 
         auto &innerResult = innerResults[i];
         lightResult.isDefault = innerResult.isDefault;
+        lightResult.lightParamId = innerResult.paramId;
 
         getLightData.reset();
 

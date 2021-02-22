@@ -53,6 +53,7 @@ struct LightResult {
     int skyBoxFdid;
     int skyBoxFlags;
     int lightSkyboxId;
+    int lightParamId;
     float glow = 0;
     float blendCoef;
     bool isDefault = false;

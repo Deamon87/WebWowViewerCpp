@@ -13,6 +13,8 @@ struct StateForConditions {
     int currentAreaId = 0;
     int currentParentAreaId = 0;
     std::vector<int> currentSkyboxIds = {};
+    std::vector<int> currentLightParams = {};
+    std::vector<int> currentZoneLights = {};
 };
 
 class IMapApi {
@@ -23,7 +25,7 @@ public:
     virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) = 0;
     virtual std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) = 0;
     virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) = 0;
-    virtual void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults) = 0;
+    virtual void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults,StateForConditions *stateForConditions) = 0;
 
 
     virtual animTime_t getCurrentSceneTime() = 0;
