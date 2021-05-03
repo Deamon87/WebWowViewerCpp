@@ -50,3 +50,7 @@
 [submodule "emscripten_port/3rdparty/zipper"]
 	path = emscripten_port/3rdparty/zipper
 	url = https://github.com/sebastiandev/zipper.git
+[submodule "3rdparty/libressl"]
+	path = 3rdparty/libressl
+	url = https://github.com/libressl-portable/portable.git
+

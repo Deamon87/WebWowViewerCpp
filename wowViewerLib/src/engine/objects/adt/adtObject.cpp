@@ -1182,6 +1182,9 @@ bool AdtObject::checkReferences(
                           int x, int y, int x_len, int y_len) {
     if (!m_loaded) return false;
 
+    if (m_freeStrategy != nullptr)
+        m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
+
     for (int k = x; k < x+x_len; k++) {
         for (int l = y; l < y + y_len; l++) {
             int i = this->m_adtFile->mcnkMap[k][l];

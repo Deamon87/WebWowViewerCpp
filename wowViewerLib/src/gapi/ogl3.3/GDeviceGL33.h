@@ -46,16 +46,16 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 
 #define OPENGL_DGB_MESSAGE 1
 
-#ifdef __EMSCRIPTEN__
+#if defined(WITH_GLESv2) || defined(__EMSCRIPTEN__)
 #define OPENGL_DGB_MESSAGE 0
 #endif
 
-//#define logGLError { \
-//  auto currentOGLError = glGetError(); \
-//  if (currentOGLError != 0)            \
-//    std::cout << "OGL Error at "<<__FUNCTION__<<" line " << __LINE__ << " error " << currentOGLError << " " << std::endl;\
-//}
-#define logGLError
+#define logGLError { \
+  auto currentOGLError = glGetError(); \
+  if (currentOGLError != 0)            \
+    std::cout << "OGL Error at "<<__FUNCTION__<<" line " << __LINE__ << " error " << currentOGLError << " " << std::endl;\
+}
+//#define logGLError
 
 class GDeviceGL33 : public IDevice {
 public:
@@ -185,6 +185,7 @@ protected:
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
     int m_maxMultiSampling = 0;
+    int m_maxMultiSamplingRGBA = 0;
     bool m_isInSkyBoxDepthMode = false;
     int8_t m_isScissorsEnabled = -1;
     bool m_isInvertZ = false;

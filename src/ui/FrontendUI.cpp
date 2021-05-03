@@ -1325,6 +1325,7 @@ bool FrontendUI::openCascCallback(std::string cascPath) {
     HRequestProcessor newProcessor = nullptr;
     std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
     try {
+        cascPath = cascPath + ":wowt";
         newProcessor = std::make_shared<CascRequestProcessor>(cascPath.c_str());
         newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
         newProcessor->setThreaded(true);
@@ -1435,13 +1436,21 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-//    m_processor = std::make_shared<CascRequestProcessor>("f:/games/wow/");
+//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+    m_processor = std::make_shared<CascRequestProcessor>("e:\\games\\wow beta\\World of Warcraft Beta\\:wowt");
 ////        processor->setThreaded(false);
 ////
     m_processor->setThreaded(true);
     m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_processor.get());
     m_processor->setFileRequester(m_api->cacheStorage.get());
+    overrideCascOpened(true);
+
+
+    {
+        std::vector<int> replacementTextureFDids = {0,0,3607739};
+//        replacementTextureFDids[2] = 3607739;
+        openM2SceneByfdid(3607377, replacementTextureFDids);
+    }
 }
 
 auto FrontendUI::createMinimapGenerator() {

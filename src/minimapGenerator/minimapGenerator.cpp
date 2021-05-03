@@ -47,6 +47,9 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shar
     config->disableFog = true;
     config->renderSkyDom = false;
     config->currentGlow = 0;
+
+    config->farPlane = 10000;
+    config->farPlaneForCulling = 10000;
 }
 void MinimapGenerator::startScenarios(std::vector<ScenarioDef> &scenarioList) {
     m_mgMode = EMGMode::eScreenshotGeneration;
@@ -508,9 +511,9 @@ void MinimapGenerator::setLookAtPoint(float x, float y) {
     //std::cout << "lookAtPoint = (" << lookAtPoint.x << ", " << lookAtPoint.y << ", " << lookAtPoint.z << ") " << std::endl;
 
     mathfu::vec3 lookAtVec3 = getLookAtVec3();
-    lookAtPoint -= (4000.0f*lookAtVec3);
+    lookAtPoint -= (7000.0f*lookAtVec3);
 
-    mathfu::vec3 cameraPos = lookAtPoint-(2000.0f*lookAtVec3);
+    mathfu::vec3 cameraPos = lookAtPoint-(3000.0f*lookAtVec3);
 //    std::cout << "cameraPos = (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ") " << std::endl;
 
     m_apiContainer->camera->setCameraPos(

@@ -19,6 +19,15 @@ public:
     static constexpr float CHUNKSIZE = TILESIZE / 16.0f;
     static constexpr float UNITSIZE =  CHUNKSIZE / 8.0f;
 
+    typedef struct {
+        double h;       // angle in degrees
+        double s;       // a fraction between 0 and 1
+        double v;       // a fraction between 0 and 1
+    } hsv;
+
+    static hsv rgb2hsv(mathfu::vec3 in);
+    static mathfu::vec3 hsv2rgb(hsv in);
+
     static float fp69ToFloat(uint16_t x);
 
     static mathfu::vec2 convertV69ToV2(vector_2fp_6_9 &fp69);

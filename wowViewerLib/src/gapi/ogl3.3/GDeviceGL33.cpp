@@ -62,24 +62,19 @@ namespace GL33 {
     //}
 
 
-//    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
-//                    const void *userParam) {
-//        fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-//                source,
-//                type,
-//                id,
-//                severity,
-//                std::string(message, message + length).c_str());
-//        if (severity == 37190) {
-//            std::cout << "lol";
+    void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+                    const void *userParam) {
+//        if (type == GL_DEBUG_TYPE_ERROR_KHR) {
+            fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+                    source,
+                    type,
+                    id,
+                    severity,
+                    std::string(message, message + length).c_str());
+            fflush(stdout);
 //        }
-//        if (type == GL_DEBUG_TYPE_ERROR) {
-//            std::cout << "lol Error" << std::endl;
-//            __debugbreak;
-//        }
-//
-//        fflush(stdout);
-//    }
+
+    }
 }
 
 void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {
@@ -584,6 +579,7 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 
         m_lastDepthCulling = hmesh->m_depthCulling;
     }
+
     if (m_backFaceCulling != hmesh->m_backFaceCulling) {
         if (hmesh->m_backFaceCulling > 0) {
             glEnable(GL_CULL_FACE);
@@ -907,7 +903,9 @@ GDeviceGL33::GDeviceGL33() {
     }
 
     glGetIntegerv ( GL_MAX_SAMPLES, &m_maxMultiSampling );
-    std::cout << std::endl << "m_maxMultiSampling = " << m_maxMultiSampling << std::endl;
+    glGetInternalformativ(GL_RENDERBUFFER, GL_RGBA8, GL_SAMPLES, 1, &m_maxMultiSamplingRGBA);
+    std::cout << "m_maxMultiSampling = " << m_maxMultiSampling << std::endl;
+    std::cout << "m_maxMultiSamplingRGBA = " << m_maxMultiSamplingRGBA << std::endl;
 
     //From https://en.wikibooks.org/wiki/OpenGL_Programming/Bounding_box
     static const float vertices[] = {

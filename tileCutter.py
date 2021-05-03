@@ -15,14 +15,16 @@ def pasteIntoResult(result, filename, x, y):
         # trash_dst = os.path.expanduser("~/.Trash/%s" % filename)
         # os.rename(filename, trash_dst)
 
-def getFileNameForZoom(x,y,zoom):
+def getTargetDirectory(zoom):
     if (zoom == maxZoom):
-        return (sys.argv[3]+sys.argv[4]+"%d_%d.png") % (x, y)
-    else:
-        directory = sys.argv[3]+("%d" % (zoom))
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        return (directory+"/"+sys.argv[4]+"%d_%d.png") % (x, y)
+        return sys.argv[3]
+
+    return sys.argv[3]+("%d" % (zoom))
+
+def getFileNameForZoom(x,y,zoom):
+    directory = getTargetDirectory(zoom)
+
+    return (directory+"/"+sys.argv[4]+"%d_%d.png") % (x, y)
 
 class ZoomCreator:
     def __init__(self, constX, constZoom):
@@ -52,6 +54,11 @@ if __name__ == '__main__':
     print "maxY", maxY
 
     for currentZoom in reversed(xrange(1, maxZoom)):
+        # Create directory if not exists
+        targetDir = getTargetDirectory(currentZoom)
+        if not os.path.exists(targetDir):
+            os.makedirs(targetDir)
+
         pool = Pool(cpu_count())
 
         xRange = xrange(0, int(math.ceil(float(maxX+1) / pow(2.0, maxZoom - currentZoom))))

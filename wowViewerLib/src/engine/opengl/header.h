@@ -2,18 +2,14 @@
 #define WOWMAPVIEWERREVIVED_HEADER_H
 
 #define GL_GLEXT_PROTOTYPES 1
-#if defined(WITH_GLESv2) || defined(EMSCRIPTEN)
+#if defined(WITH_GLESv2) || defined(__EMSCRIPTEN__)
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 
-#ifndef EMSCRIPTEN
-#include <GLES3/gl3ext.h>
-#include <GLES3/gl3platform.h>
-#else
+
 #define GL_BGRA GL_BGRA_EXT
 #define glClearDepth glClearDepthf
 #define glDepthRange glDepthRangef
-#endif
 
 #define glGenVertexArrays glGenVertexArraysOES
 #define glBindVertexArray glBindVertexArrayOES

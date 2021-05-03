@@ -31,7 +31,7 @@ private:
     virtual void bind(); //Should be called only by GDevice
     void unbind();
 protected:
-    GLuint textureIdentifier;
+    GLuint textureIdentifier = 0;
 
     GDeviceGL33 &m_device;
 

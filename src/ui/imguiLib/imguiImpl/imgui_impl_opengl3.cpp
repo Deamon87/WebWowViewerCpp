@@ -164,7 +164,7 @@ bool    ImGui_ImplOpenGL3_Init(const char* glsl_version)
         glsl_version = "#version 100";
 #elif defined(IMGUI_IMPL_OPENGL_ES3)
     if (glsl_version == NULL)
-        glsl_version = "#version 300 es";
+        glsl_version = "#version 310 es";
 #else
     if (glsl_version == NULL)
         glsl_version = "#version 130";

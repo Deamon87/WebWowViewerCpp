@@ -167,6 +167,11 @@ unsigned char* createBitmapInfoHeader(int height, int width) {
     return infoHeader;
 }
 
+static bool endsWith3(std::string_view str, std::string_view suffix)
+{
+    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+}
+
 void saveDataFromDrawStage(const HFrameBuffer& fb,
                            const std::string& screenshotFileName,
                            int screenshotWidth, int screenshotHeight,
@@ -208,7 +213,11 @@ void saveDataFromDrawStage(const HFrameBuffer& fb,
         }
     }
 
+    std::string screenshotFileNamePath = screenshotFileName;
+    if (!endsWith3(screenshotFileName, "png")) {
+        screenshotFileNamePath = screenshotFileName + ".png";
+    }
 //    generateBitmapImage((unsigned char*) buffer.data(), screenshotHeight, screenshotWidth, screenshotWidth*4, (screenshotFileName+".bmp").c_str());
     //saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
-    saveScreenshotLodePng(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
+    saveScreenshotLodePng(screenshotFileNamePath, screenshotWidth, screenshotHeight, buffer);
 }

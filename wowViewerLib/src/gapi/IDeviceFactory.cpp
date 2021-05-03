@@ -15,7 +15,7 @@
 #endif
 
 void initOGLPointers(){
-#ifdef _WIN32
+#if defined(_WIN32) && (!defined(WITH_GLESv2) && !defined(__EMSCRIPTEN__))
     glewExperimental = true; // Needed in core profile
     auto result = glewInit();
 

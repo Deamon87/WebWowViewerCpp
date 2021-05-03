@@ -23,10 +23,19 @@ GFrameBufferGL33::GFrameBufferGL33 (
         depthTexture = mdevice.createTexture(false, false);
         depthTexture->loadData(width, height, nullptr, depthAttachment);
     }
+
+    defaultTextureForRenderBufFBO = mdevice.createTexture(false, false);
+    defaultTextureForRenderBufFBO->loadData(width, height, nullptr, ITextureFormat::itRGBA);
+
     glGenFramebuffers(+1, &m_renderBufFbo);
     glGenFramebuffers(+1, &m_textureFbo);
-    //1. First fill framebuffer with renderbuffers
+
+    //Create m_renderBufFbo
     this->bindFrameBuffer();
+    //1.1 To make OGL ES happy
+    ((GTextureGL33 *)defaultTextureForRenderBufFBO.get())->bindToCurrentFrameBufferAsColor(0);
+
+    //1.2 First fill framebuffer with renderbuffers
     renderBufferAttachments = std::vector<GLuint>(textureAttachments.size());
     for (int i = 0; i < renderBufferAttachments.size(); i++) {
         if (textureAttachments[i] == ITextureFormat::itDepth32) continue;
@@ -51,7 +60,7 @@ GFrameBufferGL33::GFrameBufferGL33 (
         }
 
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthBufferAttachment);
-        }
+    }
 //    {
 //        auto frameBuffStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 //        if (frameBuffStatus != GL_FRAMEBUFFER_COMPLETE)
@@ -62,11 +71,11 @@ GFrameBufferGL33::GFrameBufferGL33 (
     glBindFramebuffer(GL_FRAMEBUFFER, m_textureFbo);
     for (int i = 0; i < textureAttachments.size(); i++) {
         ((GTextureGL33 *)attachmentTextures[i].get())->bindToCurrentFrameBufferAsColor(i);
-        }
+    }
 
     if (depthTexture != nullptr) {
         ((GTextureGL33 *) depthTexture.get())->bindToCurrentFrameBufferAsDepth();
-        } else {
+    } else {
 
     }
     //    {
@@ -120,9 +129,17 @@ void GFrameBufferGL33::bindFrameBuffer(){
 }
 
 void GFrameBufferGL33::copyRenderBufferToTexture(){
+    logGLError
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderBufFbo);
+    logGLError
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_textureFbo);
+
+    logGLError
     glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    logGLError
+//    glInvalidateFramebuffer(GL_READ_FRAMEBUFFER, attachmentCount, attachments)
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 }
 
 void GFrameBufferGL33::readRGBAPixels(int x, int y, int width, int height, void *data) {

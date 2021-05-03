@@ -1249,6 +1249,33 @@ mathfu::vec4 WmoGroupObject::getAmbientColor() {
     return mathfu::vec4(0,0,0,0);
 }
 
+void AdjustLighting(const mathfu::vec3 color_in, mathfu::vec3 &color_out_0, uint8_t a4, mathfu::vec3 &color_out_1, uint8_t a6)
+{
+    float maxInputComponent = std::max<float>(color_in.x, std::max<float>(color_in.y, color_in.z));
+
+    uint8_t v10 = 1;
+    color_out_0 = color_in;
+    if ( maxInputComponent > 0 )
+    {
+        v10 = std::floor(maxInputComponent * 255.0f);
+    }
+    if ( v10 < a4 )
+    {
+        auto hsv = MathHelper::rgb2hsv(color_in);
+        hsv.v = (float)((float)(a4) / (float)(v10)) * hsv.v;
+        color_out_0 = MathHelper::hsv2rgb(hsv);
+    }
+    if ( v10 <= a6 )
+    {
+        color_out_1 = color_in;
+    }
+    else
+    {
+        float v12 = (float)((float)a6) / (float)v10;
+        color_out_1 = v12 * color_in;
+    }
+}
+
 void WmoGroupObject::assignInteriorParams(std::shared_ptr<M2Object> m2Object) {
     mathfu::vec4 ambientColor = getAmbientColor();
 
@@ -1283,8 +1310,17 @@ void WmoGroupObject::assignInteriorParams(std::shared_ptr<M2Object> m2Object) {
                 temp2, temp, bspLeafList, cameraLocal, topZ, bottomZ, mocvColor, false);
 
             if (bottomZ < 99999) {
-                mocvColor = mathfu::vec4(mocvColor.z, mocvColor.y, mocvColor.x, 0);
-                ambientColor += mocvColor;
+                mocvColor = mathfu::vec4(mocvColor.x, mocvColor.y, mocvColor.z, 0);
+
+                mathfu::vec3 someColor;
+                mathfu::vec3 colorCombined = (2.0f * mocvColor.xyz()) + ambientColor.xyz();
+                colorCombined = mathfu::vec3::Min(mathfu::vec3(1.0f, 1.0f, 1.0f), colorCombined);
+                mathfu::vec3 ambientOut = {0,0,0};
+                AdjustLighting(colorCombined, someColor, 0xA8u, ambientOut, 0x60u);
+
+                ambientColor = mathfu::vec4(ambientOut.x, ambientOut.y, ambientOut.z, ambientColor.w);
+
+//                ambientColor += mocvColor;
             }
         }
 

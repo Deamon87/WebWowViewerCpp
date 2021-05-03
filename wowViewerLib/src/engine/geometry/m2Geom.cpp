@@ -173,6 +173,9 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
                 }
             }
         },
+//        {
+//            'DETL',
+//        }
         {
             'CBAP',
             {

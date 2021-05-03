@@ -708,3 +708,103 @@ mathfu::vec3 MathHelper::calcExteriorColorDir(mathfu::mat4 lookAtMat, int time) 
 //    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
     return (lookAtRotation * sunDirWorld.xyz());
 }
+
+mathfu::vec3 MathHelper::hsv2rgb(MathHelper::hsv in) {
+    double      hh, p, q, t, ff;
+    long        i;
+    mathfu::vec3    out;
+
+    if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
+        out.x = in.v;
+        out.y = in.v;
+        out.z = in.v;
+        return out;
+    }
+    hh = in.h;
+    if(hh >= 360.0) hh = 0.0;
+    hh /= 60.0;
+    i = (long)hh;
+    ff = hh - i;
+    p = in.v * (1.0 - in.s);
+    q = in.v * (1.0 - (in.s * ff));
+    t = in.v * (1.0 - (in.s * (1.0 - ff)));
+
+    switch(i) {
+        case 0:
+            out.x = in.v;
+            out.y = t;
+            out.z = p;
+            break;
+        case 1:
+            out.x = q;
+            out.y = in.v;
+            out.z = p;
+            break;
+        case 2:
+            out.x = p;
+            out.y = in.v;
+            out.z = t;
+            break;
+
+        case 3:
+            out.x = p;
+            out.y = q;
+            out.z = in.v;
+            break;
+        case 4:
+            out.x = t;
+            out.y = p;
+            out.z = in.v;
+            break;
+        case 5:
+        default:
+            out.x = in.v;
+            out.y = p;
+            out.z = q;
+            break;
+    }
+    return out;
+}
+
+MathHelper::hsv MathHelper::rgb2hsv(mathfu::vec3 in) {
+    hsv         out;
+    double      min, max, delta;
+
+    min = in.x < in.y ? in.x : in.y;
+    min = min  < in.z ? min  : in.z;
+
+    max = in.x > in.y ? in.x : in.y;
+    max = max  > in.z ? max  : in.z;
+
+    out.v = max;                                // v
+    delta = max - min;
+    if (delta < 0.00001)
+    {
+        out.s = 0;
+        out.h = 0; // undefined, maybe nan?
+        return out;
+    }
+    if( max > 0.0 ) { // NOTE: if Max is == 0, this divide would cause a crash
+        out.s = (delta / max);                  // s
+    } else {
+        // if max is 0, then r = g = b = 0
+        // s = 0, h is undefined
+        out.s = 0.0;
+        out.h = -1; //NAN;                            // its now undefined
+        return out;
+    }
+    if( in.x >= max )                           // > is bogus, just keeps compilor happy
+        out.h = ( in.y - in.z ) / delta;        // between yellow & magenta
+    else
+    if( in.y >= max )
+        out.h = 2.0 + ( in.z - in.x ) / delta;  // between cyan & yellow
+    else
+        out.h = 4.0 + ( in.x - in.y ) / delta;  // between magenta & cyan
+
+    out.h *= 60.0;                              // degrees
+
+    if( out.h < 0.0 )
+        out.h += 360.0;
+
+    return out;
+}
