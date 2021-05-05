@@ -21,13 +21,13 @@ struct skeleton_attachment_header {
 
 struct skeleton_bone_header {
     M2Array<M2CompBone> bones;
-    M2Array<uint16_t> key_bone_lookup;
+    M2Array<int16_t> key_bone_lookup;
 } ;
 
 struct skeleton_sequence_header {
     M2Array<M2Loop> global_loops;
     M2Array<M2Sequence> sequences;
-    M2Array<uint16_t> sequence_lookups;
+    M2Array<int16_t> sequence_lookups;
     uint8_t _0x18[8];                     // Is this already part of the data? Always 0 as of Legion (7.3.2.25079).
 } ;
 

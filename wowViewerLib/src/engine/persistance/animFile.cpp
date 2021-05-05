@@ -17,20 +17,20 @@ chunkDef<AnimFile> AnimFile::animFileTable = {
             }
         },
         {
-            'AFSA',
+            'ASFA',
             {
                 [](AnimFile &file, ChunkData &chunkData) {
-
-
+                    file.m_animFileAttachAnimDataBlob_len = chunkData.chunkLen;
+                    chunkData.readValues(file.m_animFileAttachAnimDataBlob, chunkData.chunkLen);
                 },
             }
         },
         {
-            'AFSB',
+            'BSFA',
             {
                 [](AnimFile &file, ChunkData &chunkData) {
-
-
+                    file.m_animFileBoneAnimDataBlob_len = chunkData.chunkLen;
+                    chunkData.readValues(file.m_animFileBoneAnimDataBlob, chunkData.chunkLen);
                 },
             }
         }
@@ -40,13 +40,10 @@ chunkDef<AnimFile> AnimFile::animFileTable = {
 void AnimFile::process(HFileContent animFile, const std::string &fileName) {
     m_animFile = animFile;
     auto &fileVec = *m_animFile.get();
-    if (
+    int chunk = *(uint32_t *) &fileVec[0];
 
-        fileVec[0] == 'A' &&
-        fileVec[1] == 'F' &&
-        fileVec[2] == 'M' &&
-        fileVec[3] == '2'
-    ) {
+
+    if (chunk == 'BSFA' || chunk == 'ASFA' || chunk == '2MFA') {
         CChunkFileReader reader(fileVec);
         reader.processFile(*this, &AnimFile::animFileTable);
     } else {

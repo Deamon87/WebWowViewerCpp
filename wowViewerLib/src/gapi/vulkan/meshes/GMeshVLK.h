@@ -28,12 +28,16 @@ public:
     void setStart(int start) override;
     void setEnd(int end) override;
 public:
+    void *getM2Object() override { return nullptr; };
     void setM2Object(void * m2Object) override { throw "Not Implemented";};
     void setLayer(int layer) override { throw "Not Implemented";};
     void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
     void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
-    void setSortDistance(float distance) override { throw "Not Implemented";};
-    float getSortDistance() override { throw "Not Implemented";};
+    void setSortDistance(float distance) override { m_sortDistance = distance;};
+    float getSortDistance() override { return m_sortDistance; };
+
+
+    std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass, bool invertedZ);
 
 protected:
     MeshType m_meshType;
@@ -65,7 +69,8 @@ private:
 
     VkDescriptorPool m_descriptorPool;
 
-    std::shared_ptr<GPipelineVLK> hgPipelineVLK;
+    std::shared_ptr<GRenderPassVLK> m_lastRenderPass = nullptr;
+    std::shared_ptr<GPipelineVLK> m_lastPipelineForRenderPass;
 
 
 private:

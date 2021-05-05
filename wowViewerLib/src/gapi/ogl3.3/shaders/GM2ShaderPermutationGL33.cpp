@@ -29,8 +29,10 @@ void GM2ShaderPermutationGL33::compileShader(const std::string &vertExtraDef, co
     //Init newly created shader
     glUseProgram(this->m_programBuffer);
 
+//    std::cout << "before setting uTextures" << std::endl;
     if (hasUnf("uTexture")) {
         glUniform1i(this->getUnf("uTexture"), 0);
+//        std::cout << "uTexture location " << this->getUnf("uTexture") << "was set" << std::endl;
     }
     if (hasUnf("uTexture2")) {
         glUniform1i(this->getUnf("uTexture2"), 1);

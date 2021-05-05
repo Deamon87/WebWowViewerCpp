@@ -13,6 +13,7 @@ protected:
     GM2MeshGL20(IDevice &device, const gMeshTemplate &meshTemplate);
 
 public:
+    void *getM2Object() override;
     void setM2Object(void * m2Object) override;
     void setLayer(int layer) override;
     void setPriorityPlane(int priorityPlane) override;

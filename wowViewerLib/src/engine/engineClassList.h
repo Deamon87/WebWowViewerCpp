@@ -9,7 +9,7 @@ class AdtObject;
 class M2Object;
 class WmoObject;
 class AnimationManager;
-class M2SkinProfile;
+struct M2SkinProfile;
 
 class ParticleEmitter;
 

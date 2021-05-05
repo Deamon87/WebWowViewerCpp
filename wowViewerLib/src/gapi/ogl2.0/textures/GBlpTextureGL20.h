@@ -14,7 +14,7 @@ class GBlpTextureGL20 : public GTextureGL20 {
     explicit GBlpTextureGL20(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GBlpTextureGL20() override;
-    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override;
+    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override;
 
     bool getIsLoaded() override;
     bool postLoad() override;
@@ -23,9 +23,6 @@ private:
     void unbind();
 private:
     HBlpTexture m_texture;
-
-    bool xWrapTex;
-    bool yWrapTex;
 
     bool m_loaded = false;
 };

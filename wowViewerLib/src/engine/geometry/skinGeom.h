@@ -18,6 +18,8 @@ public:
     void process(HFileContent skinFile, const std::string &fileName) override;
     HGIndexBuffer getIBO(IDevice &device);
 
+    std::vector<uint16_t> generateIndexBuffer();
+
     M2SkinProfile * getSkinData(){ if (fsStatus == FileStatus::FSLoaded) {return m_skinData;} else {return nullptr;}};
 
     void fixData(M2Data *m2File);

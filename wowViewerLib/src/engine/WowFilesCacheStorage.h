@@ -39,7 +39,7 @@ private:
     Cache<SkelFile> skelCache;
 public:
     WoWFilesCacheStorage(IFileRequest * requestProcessor);
-    void provideFile(CacheHolderType holderType, const char *fileName, const HFileContent &data) override ;
+    void provideFile(CacheHolderType holderType, const char *fileName, const HFileContent &data)  ;
     void rejectFile(CacheHolderType holderType, const char* fileName) override ;
 
     void actuallDropCache();

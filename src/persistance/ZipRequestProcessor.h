@@ -40,7 +40,7 @@ public:
         m_fileRequester = fileRequester;
     }
     void loadingFinished(std::vector<unsigned char> * file);
-    void requestFile(const char* fileName, CacheHolderType holderType) override;
+    void requestFile(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) override;
 };
 
 

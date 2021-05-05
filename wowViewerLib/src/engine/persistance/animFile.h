@@ -21,9 +21,14 @@ public:
         this->m_postLoadFunction = postLoadFunction;
     };
 public:
-    uint8_t *m_animFileDataBlob = 0;
+    uint8_t *m_animFileDataBlob = nullptr;
     int m_animFileDataBlob_len = -1;
 
+    uint8_t *m_animFileBoneAnimDataBlob = nullptr;
+    int m_animFileBoneAnimDataBlob_len = -1;
+
+    uint8_t *m_animFileAttachAnimDataBlob = nullptr;
+    int m_animFileAttachAnimDataBlob_len = -1;
 private:
 
     HFileContent m_animFile;

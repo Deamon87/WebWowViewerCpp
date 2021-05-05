@@ -27,7 +27,7 @@ struct mipmapStruct_t {
     int32_t width;
     int32_t height;
 };
-typedef std::vector<mipmapStruct_t> MipmapsVector;
+typedef std::shared_ptr<std::vector<mipmapStruct_t>> HMipmapsVector;
 
 class BlpTexture : public PersistentFile{
 public:
@@ -36,7 +36,7 @@ public:
 
     std::string getTextureName() { return m_textureName; };
     void process(HFileContent blpFile, const std::string &fileName) override;
-    const MipmapsVector& getMipmapsVector() {
+    const HMipmapsVector& getMipmapsVector() {
         return m_mipmaps;
     }
 
@@ -46,7 +46,7 @@ public:
 private:
     std::string m_textureName;
 
-    MipmapsVector m_mipmaps;
+    HMipmapsVector m_mipmaps;
     TextureFormat m_textureFormat = TextureFormat::None;
 };
 

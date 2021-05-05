@@ -36,6 +36,8 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 	endif()
 endif() 
 
+
+
 if (WIN32 AND MSVC)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /DWIN64")
@@ -51,11 +53,12 @@ message(CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE})
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	message("This is clang")
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static -femulated-tls ")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -femulated-tls -std=c++1z")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -static -femulated-tls ")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -femulated-tls -std=c++1z")
-
+	#Force clang to use libc++
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static ")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -stdlib=libc++")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -static ")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -stdlib=libc++")
+#	link_libraries(libstdc++fs)
 
 
 	#set(_GLIBCXX_USE_C99_CHECK 0)
@@ -90,8 +93,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/zlib)
 set(BUILD_SHARED_LIBS OFF)
 if (MSVC)
 	set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/zlib ${CMAKE_BINARY_DIR}/3rdparty/zlib)
-#	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
-	if (CMAKE_BUILD_TYPE EQUAL "Debug")
+	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
+	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.lib")
 	else()
 		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.lib")
@@ -102,7 +106,8 @@ endif()
 
 #libpng
 if (MSVC)
-	set(PNG_BUILD_ZLIB ON)
+	#set(PNG_BUILD_ZLIB ON)
+	set(PNG_BUILD_ZLIB OFF)
 else()
 	set(PNG_BUILD_ZLIB OFF)
 endif()
@@ -117,11 +122,22 @@ if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw)
 endif()
 
+#c++ 17 FS implementation
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/filesystem_impl)
+
 #bz2renderFlag
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(3rdparty/bzip)
 
+#file(WRITE 3rdparty/libressl/ssl/version "1.1.1")
+#file(WRITE 3rdparty/libressl/crypto/version "1.1.1")
+#file(WRITE 3rdparty/libressl/tls/version "1.1.1")
+#add_subdirectory(3rdparty/libressl ${CMAKE_CURRENT_BINARY_DIR}/libressl)
 
+#cpr
+include(FetchContent)
+FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG c8d33915dbd88ad6c92b258869b03aba06587ff9) # the commit hash for 1.5.0
+FetchContent_MakeAvailable(cpr)
 
 
 #PolyM
@@ -143,8 +159,10 @@ endif()
 if (WIN32)
 	set(WITH_LIBTOMCRYPT true)
 endif()
-option(CASC_BUILD_STATIC_LIB "" ON)
-option(CASC_BUILD_SHARED_LIB "" OFF)
+
+set(CASC_BUILD_STATIC_LIB 1)
+set(CASC_BUILD_STATIC_LIB ON CACHE BOOL "Set static lib from main project")
+set(CASC_BUILD_SHARED_LIB true CACHE BOOL "Turn off shared lib ")
 add_subdirectory(3rdparty/casclib)
 
 
@@ -160,8 +178,8 @@ include_directories(${GLEW_INCLUDE_DIRS})
 
 
 set(SOURCE_FILES
-#		src/persistance/httpFile/httpFile.cpp
-#		src/persistance/httpFile/httpFile.h
+		src/persistance/httpFile/httpFile.cpp
+		src/persistance/httpFile/httpFile.h
 		src/persistance/RequestProcessor.cpp
 		src/persistance/RequestProcessor.h
 		src/persistance/ZipRequestProcessor.cpp
@@ -170,8 +188,8 @@ set(SOURCE_FILES
 #		src/persistance/HttpZipRequestProcessor.h
 		src/persistance/CascRequestProcessor.cpp
 		src/persistance/CascRequestProcessor.h
-#		src/persistance/HttpRequestProcessor.cpp
-#		src/persistance/HttpRequestProcessor.h
+		src/persistance/HttpRequestProcessor.cpp
+		src/persistance/HttpRequestProcessor.h
 
 		src/ui/imguiLib/imgui.cpp
 		src/ui/imguiLib/imgui_demo.cpp
@@ -180,16 +198,23 @@ set(SOURCE_FILES
 		src/ui/imguiLib/imguiImpl/imgui_impl_glfw.cpp
 		src/ui/FrontendUI.cpp src/ui/FrontendUI.h
 		src/database/CSqliteDB.cpp src/database/CSqliteDB.h
-)
+		src/minimapGenerator/minimapGenerator.cpp
+		src/screenshots/screenshotMaker.h
+		src/screenshots/screenshotMaker.cpp
+		src/screenshots/lodepng/lodepng.cpp
+		src/screenshots/lodepng/lodepng.h
 
+		src/exporters/gltfExporter/GLTFExporter.cpp
+		src/exporters/gltfExporter/GLTFExporter.h
 
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-	set(SOURCE_FILES ${SOURCE_FILES}
-		src/main.cpp)
-else()
-	set(SOURCE_FILES ${SOURCE_FILES}
-			src/jniLib.cpp src/database/dbStructs.h src/ui/imguiLib/imguiCustomConfig.h)
-endif()
+		src/ui/childWindow/mapConstructionWindow.cpp
+		src/ui/childWindow/mapConstructionWindow.h
+		src/ui/imguiLib/groupPanel/groupPanel.cpp
+		src/ui/imguiLib/groupPanel/groupPanel.h
+
+		src/main.cpp
+        src/ui/imguiLib/disablableButton/disablableButton.cpp src/ui/imguiLib/disablableButton/disablableButton.h src/minimapGenerator/storage/CMinimapDataDB.cpp src/minimapGenerator/storage/CMinimapDataDB.h src/minimapGenerator/entities.h src/ui/imguiLib/compactColorPicker/compactColorPicker.cpp src/ui/imguiLib/compactColorPicker/compactColorPicker.h src/ui/imguiLib/imageButton2/imageButton2.cpp src/ui/imguiLib/imageButton2/imageButton2.h src/exporters/dataExporter/DataExporterClass.cpp src/exporters/dataExporter/DataExporterClass.h)
+
 
 
 #########################################################
@@ -246,9 +271,39 @@ add_dependencies(AWebWoWViewerCpp WoWViewerLib)
 add_dependencies(AWebWoWViewerCpp casc_static)
 
 #TODO: platform dependant!!
-if (NOT CMAKE_NDK_BUILD MATCHES 1)
-	add_dependencies(AWebWoWViewerCpp glfw)
-	set_property(TARGET AWebWoWViewerCpp PROPERTY CXX_STANDARD 17)
+add_dependencies(AWebWoWViewerCpp glfw)
+check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17) 
+if(HAVE_FLAG_STD_CXX17)
+	# Have -std=c++17, use it
+	message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
+	#    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++17" )
+	#    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++17" )
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17" )
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17" )
+else()
+	check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
+	if(HAVE_FLAG_STD_CXX1Z)
+		#        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
+		#        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
+	else()
+		message(ERROR "No supported flags")
+	endif()
+endif() 
+
+if (MSVC)
+	include(CheckCXXCompilerFlag)
+	CHECK_CXX_COMPILER_FLAG("/std:c++17" _cpp_17_flag_supported)
+	message("MSVC Is on")
+	if (_cpp_17_flag_supported)
+		message("/std:c++17 is supported")
+		#target_compile_options(AWebWoWViewerCpp "/std:c++17")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++17")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++17")
+		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++17")
+		#target_compile_options(AWebWoWViewerCpp /std:c++17)
+	endif()
 endif()
 
 link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
@@ -279,7 +334,7 @@ endif()
 target_link_libraries(AWebWoWViewerCpp casc_static)
 
 target_link_libraries(AWebWoWViewerCpp png_static)
-
+target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})
 
@@ -292,7 +347,6 @@ else()
 	target_link_libraries(AWebWoWViewerCpp GL)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
-#Link OPENSSL only for MSVC
-
+#target_link_options(AWebWoWViewerCpp PUBLIC "SHELL: -llibg")
 
 INSTALL(TARGETS AWebWoWViewerCpp DESTINATION BIN)

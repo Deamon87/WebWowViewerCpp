@@ -3,20 +3,26 @@ project(WoWViewerLib)
 
 include(CheckCXXCompilerFlag)
 
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(LINK_GLEW 1)
 set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)
-set(LINK_VULKAN 0)
-set(LINK_OPENMP 1)
+set(LINK_EGL 1)
+option(LINK_VULKAN "Enable Vulkan" ON)
+set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
-set(EMSCRIPTEN_SIMD 0)
+option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
 
 if (CMAKE_NDK_BUILD)
     set(LINK_GLEW 0)
 ENDIF()
+
+if (NOT EGL_PATH)
+    set(LINK_EGL 0)
+endif()
+
 
 if (EMSCRIPTEN)
     message(This is EMSCRIPTEN)
@@ -32,19 +38,28 @@ ENDIF()
 if (LINK_OGL2)
     add_definitions(-DLINK_OGL2)
 endif()
+if (LINK_EGL)
+    add_definitions(-DLINK_EGL)
+    add_definitions(-DWITH_GLESv2)
+endif()
 if (LINK_OGL3)
     add_definitions(-DLINK_OGL3)
 endif()
 if (LINK_OGL4)
     add_definitions(-DLINK_OGL4)
 endif()
-if (LINK_VULKAN)
+if (LINK_VULKAN EQUAL ON)
     add_definitions(-DLINK_VULKAN)
 endif()
 
+set(My_Vectorize_Compile_Options "")
 
 
+message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
+
+SET(TBB_BUILD_SHARED 0)
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/tbb)
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
@@ -55,21 +70,21 @@ endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS" )
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
  
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
 if (EMSCRIPTEN)
+    message("EMSCRIPTEN ENABLE_SIMD = ${ENABLE_SIMD}")
+    if (ENABLE_SIMD)
+        set(My_Vectorize_Compile_Options "${My_Vectorize_Compile_Options};-msimd128;-msse2;-msse;-ftree-vectorize")
+    endif()
 else()
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize" )
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3 -msse3 -mavx2 -ftree-vectorize")
+    set(My_Vectorize_Compile_Options "${My_Vectorize_Compile_Options};-msse3;-mavx2;-ftree-vectorize")
+
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3" )
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3")
 endif()
 
-if (EMSCRIPTEN_SIMD)
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -msimd128")
 
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -msimd128" )
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -msimd128")
-endif()
 
 
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
@@ -87,7 +102,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu)
 
-message(${CMAKE_SYSTEM_NAME})
+message(CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME})
+string(TOUPPER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LOWERCASE)
 if (LINK_GLEW)
     if (WIN32)
         MESSAGE(IT IS WINDOWS!!!!)
@@ -97,7 +113,8 @@ if (LINK_GLEW)
         elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
             set(GLEW_LIBRARIES ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32.lib )
         endif()
-    else()
+    elseif(NOT CMAKE_SYSTEM_NAME_LOWERCASE MATCHES "ANDROID")
+
         find_package(GLEW REQUIRED)
         if (GLEW_FOUND)
             set(glew_include ${GLEW_INCLUDE_DIRS})
@@ -115,7 +132,6 @@ endif(LINK_GLEW)
 
 
 set(SOURCE_FILES
-        src/engine/wowScene.h
         src/engine/shader/ShaderRuntimeData.cpp
         src/engine/shader/ShaderRuntimeData.h
         src/engine/opengl/header.h
@@ -123,6 +139,10 @@ set(SOURCE_FILES
         src/engine/camera/firstPersonCamera.h
         src/engine/camera/firstPersonOrthoCamera.cpp
         src/engine/camera/firstPersonOrthoCamera.h
+        src/engine/camera/firstPersonOrthoStaticCamera.cpp
+        src/engine/camera/firstPersonOrthoStaticCamera.h
+        src/engine/camera/firstPersonOrthoStaticTopDownCamera.cpp
+        src/engine/camera/firstPersonOrthoStaticTopDownCamera.h
         src/include/config.h
         src/engine/camera/CameraInterface.h
         src/engine/persistance/header/commonFileStructs.h
@@ -239,7 +259,16 @@ set(SOURCE_FILES
         src/engine/DrawStage.h
         src/include/iostuff.h
         src/engine/ApiContainer.cpp
-        src/engine/ApiContainer.h src/engine/CameraMatrices.h src/engine/persistance/header/wdlHeader.h src/engine/camera/m2TiedCamera.cpp src/engine/camera/m2TiedCamera.h)
+        src/engine/ApiContainer.h
+        src/engine/CameraMatrices.h
+        src/engine/persistance/header/wdlHeader.h
+        src/engine/camera/m2TiedCamera.cpp
+        src/engine/camera/m2TiedCamera.h
+        src/engine/persistance/header/M2FileHeader.cpp
+        src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp
+        src/engine/objects/m2/m2Helpers/CBoneMasterData.h
+        src/exporters/IExporter.h
+        src/engine/objects/iScene.cpp src/engine/algorithms/C3Spline.cpp src/engine/algorithms/C3Spline.h src/engine/algorithms/C3Spline_Bezier3.cpp src/engine/algorithms/C3Spline_Bezier3.h)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
@@ -323,7 +352,11 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GSkyConus.cpp
         src/gapi/ogl3.3/shaders/GFFXgauss4.h
         src/gapi/ogl3.3/shaders/GFFXGlow.cpp
-        src/gapi/ogl3.3/shaders/GFFXGlow.h)
+        src/gapi/ogl3.3/shaders/GFFXGlow.h
+        src/gapi/ogl3.3/shaders/GWaterShaderGL33.cpp
+        src/gapi/ogl3.3/shaders/GWaterShaderGL33.h
+        src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.cpp
+        src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.h)
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
@@ -363,7 +396,7 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h src/engine/persistance/header/skelFileHeader.h)
 endif()
 
-if (LINK_VULKAN)
+if (LINK_VULKAN EQUAL ON)
     set(VULKAN_IMPLEMENTATION
             src/include/vulkancontext.h
             src/gapi/vulkan/GDeviceVulkan.cpp
@@ -375,7 +408,6 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
             src/gapi/vulkan/shaders/GM2ParticleShaderPermutationVLK.cpp
             src/gapi/vulkan/shaders/GM2RibbonShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GWMOWaterShaderVLK.cpp
             src/gapi/vulkan/shaders/GWMOShaderPermutationVLK.cpp
             src/gapi/vulkan/meshes/GM2MeshVLK.cpp
             src/gapi/vulkan/meshes/GMeshVLK.cpp
@@ -392,15 +424,25 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorSet.h
             src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp
             src/gapi/vulkan/shaders/GImguiShaderPermutation.h
-            src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.cpp
-            src/gapi/vulkan/shaders/GAdtWaterShaderPermutation.h)
+            src/gapi/vulkan/shaders/GWaterShaderPermutation.cpp
+            src/gapi/vulkan/shaders/GWaterShaderPermutation.h
+            src/gapi/vulkan/shaders/GSkyConusShaderVLK.cpp
+            src/gapi/vulkan/shaders/GSkyConusShaderVLK.h
+            src/gapi/vulkan/GFrameBufferVLK.cpp
+            src/gapi/vulkan/GFrameBufferVLK.h
+            src/gapi/vulkan/shaders/GFFXgauss4VLK.cpp
+            src/gapi/vulkan/shaders/GFFXgauss4VLK.h
+            src/gapi/vulkan/shaders/GFFXGlowVLK.cpp
+            src/gapi/vulkan/shaders/GFFXGlowVLK.h
+            src/gapi/vulkan/GRenderPassVLK.cpp
+            src/gapi/vulkan/GRenderPassVLK.h src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
     include_directories(${Vulkan_INCLUDE_DIR})
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
             find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "$ENV{VULKAN_SDK}/lib")
             IF (Vulkan_LIBRARY)
                 set(Vulkan_FOUND ON)
-                MESSAGE("Using bundled Vulkan library version win32")
+                MESSAGE("Using bundled Vulkan library version win32, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
             ENDIF()
         ENDIF()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
@@ -437,25 +479,34 @@ else()
 endif()
 
 add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
-target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
+if (NOT MSVC)
+    target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
+endif()
+foreach(X IN LISTS My_Vectorize_Compile_Options)
+    target_compile_options(WoWViewerLib PRIVATE ${X})
+endforeach()
 target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
 set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
 
 if (LINK_OPENMP)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(WoWViewerLib PRIVATE -fopenmp=libgomp)
-        target_link_libraries(WoWViewerLib -fopenmp=libgomp)
+        MESSAGE("OPENMP CLANG ROUTE WAS TAKEN")
+        target_compile_options(WoWViewerLib PRIVATE -fopenmp=libomp)
+        target_link_libraries(WoWViewerLib -fopenmp=libomp)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         MESSAGE("OPENMP GNU ROUTE WAS TAKEN")
         target_compile_options(WoWViewerLib PRIVATE -fopenmp)
         target_link_libraries(WoWViewerLib -fopenmp)
     endif()
 endif()
-if (LINK_VULKAN)
+if (LINK_VULKAN EQUAL ON)
     target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
 endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
+target_link_libraries(WoWViewerLib tbb_static)
+#target_link_options(WoWViewerLib PUBLIC "SHELL: -lstdc++")
+
 
 if (ENABLE_SIMD)
     mathfu_configure_flags(WoWViewerLib TRUE)
@@ -463,17 +514,20 @@ else()
     mathfu_configure_flags(WoWViewerLib FALSE) #This being TRUE somehow breaks current ribbonEmitter code
 endif()
 
-if (LINK_VULKAN)
-    #Vulkan stuff
-    add_custom_target(
-            Shaders
-            DEPENDS ${SPIRV_BINARY_FILES}
-    )
-    add_dependencies(WoWViewerLib Shaders)
-    target_include_directories(WoWViewerLib INTERFACE ${Vulkan_INCLUDE_DIR})
+if (LINK_VULKAN EQUAL ON)
+    message("Include vulkan include dir ${Vulkan_INCLUDE_DIR}")
+    target_include_directories(WoWViewerLib PUBLIC ${Vulkan_INCLUDE_DIR})
+    target_compile_definitions(WoWViewerLib PUBLIC -DLINK_VULKAN)
     #Vulkan stuff end
 else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
+endif()
+
+if (LINK_EGL)
+    target_compile_definitions(WoWViewerLib PUBLIC -DWITH_GLESv2)
+    target_include_directories(WoWViewerLib PUBLIC ${EGL_PATH}/include/)
+    target_link_libraries(WoWViewerLib ${EGL_PATH}/libGLESv2.lib)
+    target_link_libraries(WoWViewerLib ${EGL_PATH}/libEGL.lib)
 endif()
 
 if (1)
@@ -490,7 +544,7 @@ endif()
 
 set(ext_inDir ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
 
-if (LINK_VULKAN)
+if (LINK_VULKAN EQUAL ON)
     set(ext_inDir ${ext_inDir} ${Vulkan_INCLUDE_DIR})
 endif()
 set(WoWViewerLib_INCLUDE_DIRS ${ext_inDir} CACHE INTERNAL "")

@@ -12,14 +12,24 @@
 
 struct AnimationStruct {
     int animationIndex;
+
+    int repeatTimes = 1;
     animTime_t animationTime;
     M2Sequence *animationRecord;
+    bool animationFoundInParent;
+
+    int mainVariationIndex;
+    M2Sequence* mainVariationRecord;
 };
 
 struct FullAnimationInfo {
     AnimationStruct currentAnimation;
     AnimationStruct nextSubAnimation;
     float blendFactor;
+
+    //TODO:
+    // float currentAnimationBlendOut;
+    // float nextSubAnimationBlendIn;
 };
 
 

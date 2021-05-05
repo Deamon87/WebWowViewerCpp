@@ -28,6 +28,7 @@ struct SceneExteriorLight {
     mathfu::vec4_packed uExteriorGroundAmbientColor;
     mathfu::vec4_packed uExteriorDirectColor;
     mathfu::vec4_packed uExteriorDirectColorDir;
+    mathfu::vec4_packed uAdtSpecMult;
 };
 
 struct sceneWideBlockVSPS {
@@ -83,11 +84,36 @@ namespace M2 {
         int PixelShader;
         int UnFogged;
         int IsAffectedByLight;
-        int LightCount;
+        int BlendMode;
 
         mathfu::vec4_packed uFogColorAndAlphaTest;
+        mathfu::vec4_packed uTexSampleAlpha;
 
         mathfu::vec4_packed uPcColor;
+    };
+
+    namespace WaterfallData {
+        struct meshWideBlockVS {
+            mathfu::vec4_packed bumpScale;
+            mathfu::mat4 uTextMat[2];
+        };
+        struct meshWideBlockPS {
+            mathfu::vec4_packed values0;
+            mathfu::vec4_packed values1;
+            mathfu::vec4_packed m_values2;
+            mathfu::vec4_packed m_values3;
+            mathfu::vec4_packed m_values4;
+            mathfu::vec4_packed baseColor;
+        };
+    }
+}
+namespace Particle {
+    struct meshParticleWideBlockPS {
+        float uAlphaTest;
+        float padding[3]; // according to std140
+        int uPixelShader;
+        int uBlendMode;
+        int padding2[2];
     };
 }
 
@@ -100,6 +126,7 @@ namespace WMO {
     struct meshWideBlockVS {
         int VertexShader;
         int UseLitColor;
+
         int padding[2];
     };
 
@@ -112,7 +139,7 @@ namespace WMO {
         int UseLitColor;
         int EnableAlpha;
         int PixelShader;
-        int padding;
+        int BlendMode;
         mathfu::vec4_packed uFogColor_AlphaTest;
 //    )}
     };
@@ -123,8 +150,7 @@ namespace ADT {
     };
 
     struct modelWideBlockPS {
-        mathfu::vec4_packed uFogStartAndFogEnd;
-        mathfu::vec4_packed uFogColor;
+        int useHeightMixFormula[4];
     };
 
     struct meshWideBlockPS {

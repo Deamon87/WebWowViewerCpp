@@ -72,7 +72,7 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
+    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     void drawStageAndDeps(HDrawStage drawStage) override {};
@@ -85,10 +85,10 @@ public:
     HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
-    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override {return nullptr;};
+    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) override {return nullptr;};
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
-    HGTexture createTexture() override;
+    HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;
     HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
     HGTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
@@ -110,6 +110,9 @@ public:
     void setViewPortDimensions(float x, float y, float width, float height) override;
     void setInvertZ(bool value) override {m_isInvertZ = value;};
     void shrinkData() override;
+    bool wasTexturesUploaded() override {
+        return false;
+    };
 private:
     void drawMesh(HGMesh &hmesh);
     bool isDepthPreFill = false;

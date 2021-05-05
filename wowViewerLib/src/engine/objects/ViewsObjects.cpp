@@ -3,18 +3,26 @@
 //
 
 #include "ViewsObjects.h"
+#include <execution>
 
-void ExteriorView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
-    auto inserter = std::back_inserter(renderedThisFrame);
-    std::copy(drawnChunks.begin(), drawnChunks.end(), inserter);
+void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
+    {
+        auto inserter = std::back_inserter(opaqueMeshes);
+        std::copy(this->m_opaqueMeshes.begin(), this->m_opaqueMeshes.end(), inserter);
+    }
 
-    GeneralView::collectMeshes(renderedThisFrame);
+    {
+        auto inserter = std::back_inserter(transparentMeshes);
+        std::copy(this->m_transparentMeshes.begin(), this->m_transparentMeshes.end(), inserter);
+    }
+
+    GeneralView::collectMeshes(opaqueMeshes, transparentMeshes);
 }
 
 
-void GeneralView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
+void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
     for (auto& wmoGroup : drawnWmos) {
-        wmoGroup->collectMeshes(renderedThisFrame, renderOrder);
+        wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
 //    for (auto& m2 : drawnM2s) {
 //        m2->collectMeshes(renderedThisFrame, renderOrder);
@@ -24,13 +32,17 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &renderedThisFrame) {
 
 void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
     std::vector<std::shared_ptr<M2Object>> candidates;
-    for (auto &wmoGroup : drawnWmos) {
+    for (auto &wmoGroup : wmosForM2) {
         auto doodads = wmoGroup->getDoodads();
         std::copy(doodads->begin(), doodads->end(), std::back_inserter(candidates));
     }
 
     //Delete duplicates
-    std::sort( candidates.begin(), candidates.end() );
+#if (_LIBCPP_HAS_PARALLEL_ALGORITHMS)
+    std::sort(std::execution::par_unseq, candidates.begin(), candidates.end() );
+#else
+    std::sort(candidates.begin(), candidates.end() );
+#endif
     candidates.erase( unique( candidates.begin(), candidates.end() ), candidates.end() );
 
 //    std::vector<bool> candidateResults = std::vector<bool>(candidates.size(), false);

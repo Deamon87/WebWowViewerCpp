@@ -15,7 +15,7 @@ class WmoGroupObject;
 
 class WmoGroupObject {
 public:
-    WmoGroupObject(mathfu::mat4 &modelMatrix, ApiContainer *api, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
+    WmoGroupObject(mathfu::mat4 &modelMatrix, HApiContainer api, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
         m_modelMatrix = &modelMatrix;
         m_groupNumber = groupNumber;
         m_main_groupInfo = &groupInfo;
@@ -34,21 +34,24 @@ public:
         return m_localGroupBorder;
     }
     const HWmoGroupGeom getWmoGroupGeom() const { return m_geom; };
-    const std::vector <std::shared_ptr<M2Object>> *getDoodads() const { return &m_doodads; };
+    const std::vector <std::shared_ptr<M2Object>> *getDoodads() const {
+        return &m_doodads;
+    };
 
     void setWmoApi(IWmoApi *api);
     IWmoApi *getWmoApi() { return m_wmoApi; };
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
 
-    void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
 
 
     bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
     bool doPostLoad();
     void update();
     void uploadGeneratorBuffers();
-    bool checkGroupFrustum(mathfu::vec4 &cameraVec4,
+    void checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
+                           mathfu::vec4 &cameraVec4,
                            std::vector<mathfu::vec4> &frustumPlanes,
                            std::vector<mathfu::vec3> &points);
 
@@ -62,7 +65,7 @@ public:
                             PointerChecker<SMOPortalRef> &portalRels,
                             std::vector<WmoGroupResult> &candidateGroups);
 private:
-    ApiContainer *m_api = nullptr;
+    HApiContainer m_api = nullptr;
     IWmoApi *m_wmoApi = nullptr;
     HWmoGroupGeom m_geom = nullptr;
 

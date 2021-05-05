@@ -59,6 +59,9 @@ public:
     bool isCompatibleWithInfiniteZ() override {
         return false;
     }
+
+    void setCameraLookAt(float x, float y, float z) override {};
+
 };
 
 

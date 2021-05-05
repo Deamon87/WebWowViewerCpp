@@ -123,12 +123,12 @@ void WdlObject::loadingFinished() {
     this->loadWmos();
 }
 
-WdlObject::WdlObject(ApiContainer *api, std::string &wdlFileName) {
+WdlObject::WdlObject(HApiContainer api, std::string &wdlFileName) {
     m_api = api;
     m_wdlFile = m_api->cacheStorage->getWdlFileCache()->get(wdlFileName);
 }
 
-WdlObject::WdlObject(ApiContainer *api, int wdlFileDataId) {
+WdlObject::WdlObject(HApiContainer api, int wdlFileDataId) {
     m_api = api;
     m_wdlFile = m_api->cacheStorage->getWdlFileCache()->getFileId(wdlFileDataId);
 }
@@ -150,6 +150,13 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                         conditionPassed = false;
                     break;
                 }
+                case 2 : {
+                    auto it = std::find(state.currentLightParams.begin(), state.currentLightParams.end(), condition.conditionValue);
+                    if (it == state.currentLightParams.end()) {
+                        conditionPassed = false;
+                    }
+                    break;
+                }
                 case 3 : {
                     auto it = std::find(state.currentSkyboxIds.begin(), state.currentSkyboxIds.end(), condition.conditionValue);
                     if (it == state.currentSkyboxIds.end()) {
@@ -157,7 +164,15 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                     }
                     break;
                 }
-            }
+                case 5 : {
+                    auto it = std::find(state.currentZoneLights.begin(), state.currentZoneLights.end(), condition.conditionValue);
+                    if (it == state.currentZoneLights.end()) {
+                        conditionPassed = false;
+                    }
+                    break;
+                }
+                default:
+                    std::cout << "Unk condition " << (int) condition.conditionType << std::endl;            }
         }
 
         if (conditionPassed) {

@@ -234,34 +234,20 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
     }
 }
 
-void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
-    std::vector<HGL20Mesh> &meshes = (std::vector<HGL20Mesh> &) iMeshes;
-
-    //1. Collect buffers
-    std::vector<IUniformBufferChunk *> buffers;
-    int renderIndex = 0;
-    for (const auto &mesh : meshes) {
-        for (int i = 0; i < 5; i++ ) {
-            IUniformBufferChunk * buffer = (IUniformBufferChunk *)mesh->m_UniformBuffer[i].get();
-            if (buffer != nullptr) {
-                buffers.push_back(buffer);
-
-            }
-        }
-    }
-
-    std::sort( buffers.begin(), buffers.end());
-    buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
-
+void GDeviceGL20::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
     int fullSize = 0;
-    for (auto &buffer : buffers) {
-        fullSize += buffer->getSize();
-        if (uniformBufferOffsetAlign > 0) {
-            int offsetDiff = fullSize % uniformBufferOffsetAlign;
-            if (offsetDiff != 0) {
-                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-                fullSize += bytesToAdd;
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        for (auto &bufferChunk : *bufferVec) {
+            fullSize += bufferChunk->getSize();
+            if (uniformBufferOffsetAlign > 0) {
+                int offsetDiff = fullSize % uniformBufferOffsetAlign;
+                if (offsetDiff != 0) {
+                    int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+                    fullSize += bytesToAdd;
+                }
             }
         }
     }
@@ -284,23 +270,30 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
     //Buffer identifier was changed, so we need to update shader UBO descriptor
 
     char *pointerForUpload = static_cast<char *>(&aggregationBufferForUpload[0]);
-    for (const auto &bufferChunk : buffers) {
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        for (const auto &bufferChunk : *bufferVec) {
+            bufferChunk->setOffset(currentSize);
+            bufferChunk->setPointer(&pointerForUpload[currentSize]);
+            currentSize += bufferChunk->getSize();
 
-        bufferChunk->setOffset(currentSize);
-        bufferChunk->setPointer(&pointerForUpload[currentSize]);
-        currentSize += bufferChunk->getSize();
+            if (uniformBufferOffsetAlign > 0) {
+                int offsetDiff = currentSize % uniformBufferOffsetAlign;
+                if (offsetDiff != 0) {
+                    int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-        if (uniformBufferOffsetAlign > 0) {
-            int offsetDiff = currentSize % uniformBufferOffsetAlign;
-            if (offsetDiff != 0) {
-                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
-
-                currentSize += bytesToAdd;
+                    currentSize += bytesToAdd;
+                }
             }
         }
     }
-    for (auto &buffer : buffers) {
-        buffer->update();
+
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        auto frameDepData = frameDepedantDataVec[i];
+        for (const auto &bufferChunk : *bufferVec) {
+            bufferChunk->update(frameDepData);
+        }
     }
 
     if (currentSize > 0) {
@@ -444,7 +437,10 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
         ((GOcclusionQueryGL20 *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
+#pragma clang diagnostic pop
 
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
         ((GOcclusionQueryGL20 *)gm2Mesh->m_query.get())->endConditionalRendering();
@@ -545,9 +541,9 @@ HGTexture GDeviceGL20::createBlpTexture(HBlpTexture &texture, bool xWrapTex, boo
     return hgTexture;
 }
 
-HGTexture GDeviceGL20::createTexture() {
+HGTexture GDeviceGL20::createTexture(bool xWrapTex, bool yWrapTex) {
     std::shared_ptr<GTextureGL20> hgTexture;
-    hgTexture.reset(new GTextureGL20(*this));
+    hgTexture.reset(new GTextureGL20(*this, xWrapTex, yWrapTex));
     return hgTexture;
 }
 
@@ -577,10 +573,10 @@ void GDeviceGL20::bindProgram(IShaderPermutation *iProgram) {
 GDeviceGL20::GDeviceGL20() {
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
-    m_blackPixelTexture = createTexture();
+    m_blackPixelTexture = createTexture(false, false);
     m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
 
-    m_whitePixelTexture = createTexture();
+    m_whitePixelTexture = createTexture(false, false);
     m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
 
     m_defaultVao = this->createVertexBufferBindings();
@@ -757,7 +753,7 @@ void GDeviceGL20::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 }
 
 #ifdef __ANDROID_API__
-#include "../androidLogSupport.h"
+#include "../../engine/androidLogSupport.h"
 #endif
 
 std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType) {
@@ -791,7 +787,7 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
     if (g_assetMgr == nullptr) {
         std::cout << "g_assetMgr == nullptr";
     }
-    std::string filename = "glsl/" + shaderName + ".glsl";
+    std::string filename = "glsl/" + fileName + ".glsl";
 
     std::cout << "AAssetManager_open" << std::endl;
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);
@@ -816,13 +812,13 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
     AAsset_close(asset);
     std::cout << "asset closed" << std::endl;
 
-    return std::string(outBuf.begin(), outBuf.end());
+    std::string result = std::string(outBuf.begin(), outBuf.end());
 #else
     std::ifstream t(fullPath);
 
     std::string result = std::string((std::istreambuf_iterator<char>(t)),
                            std::istreambuf_iterator<char>());
-
+#endif
     //Delete version
     {
         auto start = result.find("#version");
@@ -903,7 +899,6 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
 
     shaderCache[hashRecord] = result;
     return result;
-#endif
 }
 
 float GDeviceGL20::getAnisLevel() {

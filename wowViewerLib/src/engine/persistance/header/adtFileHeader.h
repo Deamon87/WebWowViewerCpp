@@ -102,6 +102,18 @@ struct SMMapObjDefObj1 {                        // same as MODF but without boun
     uint16_t unk;
 };
 
+PACK(
+struct LodExtents
+{
+    CAaBox bounding;
+    float radius;
+});
+
+struct MLHeader {
+    uint32_t unknown;
+    float some_kind_of_bounding[6];
+};
+
 struct SMLodLevelPerObject
 {
     uint32_t m2LodOffset[3];  //Index into MLDD per lod
@@ -258,9 +270,9 @@ struct SMLayer
 struct SMTextureFlags
 {
     uint32_t do_not_load_specular_or_height_texture_but_use_cubemap : 1; // probably just 'disable_all_shading'
-    uint32_t : 3;                                                        // no non-zero values in 20490
+    uint32_t unk1: 3;                                                        // no non-zero values in 20490
     uint32_t texture_scale : 4;
-    uint32_t : 24;
+    uint32_t unk2: 24;
 };
 
 struct SMTextureParams {

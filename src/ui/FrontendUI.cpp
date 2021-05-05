@@ -2,16 +2,34 @@
 // Created by deamon on 20.12.19.
 //
 
-#include <GLFW/glfw3.h>
 #include "FrontendUI.h"
 
+#ifndef __ANDROID_API__
+#include "imguiLib/imguiImpl/imgui_impl_glfw.h"
 #include <imguiImpl/imgui_impl_opengl3.h>
+#else
+#include <imguiImpl/imgui_impl_android.h>
+#endif
+
 #include <iostream>
 #include <mathfu/glsl_mappings.h>
-#include "imguiLib/imguiImpl/imgui_impl_glfw.h"
+#include <groupPanel/groupPanel.h>
+#include <disablableButton/disablableButton.h>
+#include <compactColorPicker/compactColorPicker.h>
+#include <imageButton2/imageButton2.h>
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
-
+#include "childWindow/mapConstructionWindow.h"
+#include "../persistance/CascRequestProcessor.h"
+#include "../../wowViewerLib/src/engine/objects/scenes/map.h"
+#include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
+#include "../../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
+#include "../../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
+#include "../screenshots/screenshotMaker.h"
+#include "../persistance/HttpRequestProcessor.h"
+#include "../exporters/gltfExporter/GLTFExporter.h"
+#include "../../wowViewerLib/src/engine/objects/scenes/NullScene.h"
+#include "../exporters/dataExporter/DataExporterClass.h"
 
 static const GBufferBinding imguiBindings[3] = {
     {+imguiShader::Attribute::Position, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos)},
@@ -20,10 +38,6 @@ static const GBufferBinding imguiBindings[3] = {
 };
 
 void FrontendUI::composeUI() {
-    m_api->getConfig()->setUseTimedGloabalLight(useTimedGlobalLight);
-    m_api->getConfig()->setUseM2AmbientLight(useM2AmbientLight);
-    m_api->getConfig()->setUseGaussBlur(useGaussBlur);
-
     if (this->fontTexture == nullptr)
         return;
 
@@ -62,21 +76,20 @@ void FrontendUI::composeUI() {
 
     if (fileDialog.HasSelected()) {
         std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
-        if (openCascCallback) {
-            if (!openCascCallback(fileDialog.GetSelected().string())) {
-                ImGui::OpenPopup("Casc failed");
-                cascOpened = false;
-            } else {
-                ImGui::OpenPopup("Casc succesed");
-                cascOpened = true;
-            }
+
+        if (!openCascCallback(fileDialog.GetSelected().string())) {
+            ImGui::OpenPopup("Casc failed");
+            cascOpened = false;
+        } else {
+            ImGui::OpenPopup("Casc succesed");
+            cascOpened = true;
         }
         fileDialog.ClearSelected();
     }
     if (createFileDialog.HasSelected()) {
-        if (makeScreenshotCallback) {
-            makeScreenshotCallback(createFileDialog.GetSelected().string(), screenShotWidth, screenShotHeight);
-        }
+        screenshotFilename = createFileDialog.GetSelected().string();
+        needToMakeScreenshot = true;
+
         createFileDialog.ClearSelected();
     }
 
@@ -87,9 +100,11 @@ void FrontendUI::composeUI() {
     showSettingsDialog();
     showQuickLinksDialog();
 
+    showMapConstructionDialog();
     showMapSelectionDialog();
     showMakeScreenshotDialog();
     showCurrentStatsDialog();
+    showMinimapGenerationSettingsDialog();
 
     // Rendering
     ImGui::Render();
@@ -104,9 +119,7 @@ void FrontendUI::showCurrentStatsDialog() {
                      &showCurrentStats);                          // Create a window called "Hello, world!" and append into it.
 
         static float cameraPosition[3] = {0, 0, 0};
-        if (getCameraPos) {
-            getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
-        }
+        getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
 
         ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
                     cameraPosition[2]);               // Display some text (you can use a format strings too)
@@ -115,6 +128,33 @@ void FrontendUI::showCurrentStatsDialog() {
                     ImGui::GetIO().Framerate);
 //            if(getCurrentAreaName) {
         ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
+        ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
+        ImGui::NewLine();
+        ImGui::Text("Elapsed time on culling : %.3f ms", m_api->getConfig()->cullingTimePerFrame);
+        ImGui::Text("Elapsed time on update : %.3f ms",  m_api->getConfig()->updateTimePerFrame);
+        ImGui::Text("Elapsed time on m2 update : %.3f ms",  m_api->getConfig()->m2UpdateTime);
+        ImGui::Text("Elapsed time on wait for begin update: %.3f ms",  m_api->hDevice->getWaitForUpdate());
+
+        ImGui::Text("Elapsed time on singleUpdateCNT: %.3f ms",  m_api->getConfig()->singleUpdateCNT);
+        ImGui::Text("Elapsed time on meshesCollectCNT: %.3f ms",  m_api->getConfig()->meshesCollectCNT);
+        ImGui::Text("Elapsed time on updateBuffersCNT: %.3f ms",  m_api->getConfig()->updateBuffersCNT);
+        ImGui::Text("Elapsed time on updateBuffersDeviceCNT: %.3f ms",  m_api->getConfig()->updateBuffersDeviceCNT);
+        ImGui::Text("Elapsed time on postLoadCNT: %.3f ms",  m_api->getConfig()->postLoadCNT);
+        ImGui::Text("Elapsed time on textureUploadCNT: %.3f ms",  m_api->getConfig()->textureUploadCNT);
+        ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms",  m_api->getConfig()->drawStageAndDepsCNT);
+        ImGui::Text("Elapsed time on endUpdateCNT: %.3f ms",  m_api->getConfig()->endUpdateCNT);
+
+        int currentFrame = m_api->hDevice->getDrawFrameNumber();
+        auto &cullStageData = m_cullstages[currentFrame];
+
+        int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.size() : 0;
+        int wmoObjectsDrawn = cullStageData!= nullptr ? cullStageData->wmoArray.size() : 0;
+
+        ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
+        ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
+
+//        ImGui::Text("Current Fog scaler: %f", m_api->getConfig()->getFogScaler());
+//        ImGui::Text("Current Fog density: %f", m_api->getConfig()->getFogDensity());
 //            }
         ImGui::End();
     }
@@ -155,13 +195,20 @@ void FrontendUI::filterMapList(std::string text) {
         }
     }
 }
+void FrontendUI::showMapConstructionDialog() {
+    if (!showMapConstruction) return;
 
+    if (m_mapConstructionWindow == nullptr)
+        m_mapConstructionWindow = std::make_shared<MapConstructionWindow>(m_api);
+
+    showMapConstruction = m_mapConstructionWindow->render();
+
+}
 void FrontendUI::showMapSelectionDialog() {
     if (showSelectMap) {
         if (mapList.size() == 0) {
             getMapList(mapList);
             refilterIsNeeded = true;
-
         }
         if (refilterIsNeeded) {
             filterMapList(std::string(&filterText[0]));
@@ -226,13 +273,13 @@ void FrontendUI::showMapSelectionDialog() {
                     }
                     bool hovered = ImGui::IsItemHovered();
                     ImGui::NextColumn();
-                    ImGui::Text(mapListStringMap[i][1].c_str());
+                    ImGui::Text("%s", mapListStringMap[i][1].c_str());
                     ImGui::NextColumn();
-                    ImGui::Text(mapListStringMap[i][2].c_str());
+                    ImGui::Text("%s", mapListStringMap[i][2].c_str());
                     ImGui::NextColumn();
-                    ImGui::Text(mapListStringMap[i][3].c_str());
+                    ImGui::Text("%s", mapListStringMap[i][3].c_str());
                     ImGui::NextColumn();
-                    ImGui::Text(mapListStringMap[i][4].c_str());
+                    ImGui::Text("%s", mapListStringMap[i][4].c_str());
                     ImGui::NextColumn();
                 }
                 ImGui::Columns(1);
@@ -293,18 +340,15 @@ void FrontendUI::showAdtSelectionMinimap() {
                     auto mousePos = ImGui::GetMousePos();
                     ImGuiStyle &style = ImGui::GetStyle();
 
-
                     mousePos.x += ImGui::GetScrollX() - ImGui::GetWindowPos().x - style.WindowPadding.x;
                     mousePos.y += ImGui::GetScrollY() - ImGui::GetWindowPos().y - style.WindowPadding.y;
 
                     mousePos.x = ((mousePos.x / minimapZoom) / defaultImageDimension);
                     mousePos.y = ((mousePos.y / minimapZoom) / defaultImageDimension);
 
-                    mousePos.x = (32.0f - mousePos.x) * 533.33333f;
-                    mousePos.y = (32.0f - mousePos.y) * 533.33333f;
+                    worldPosX = AdtIndexToWorldCoordinate(mousePos.y);
+                    worldPosY = AdtIndexToWorldCoordinate(mousePos.x);
 
-                    worldPosX = mousePos.y;
-                    worldPosY = mousePos.x;
 //                                if ()
                     ImGui::OpenPopup("AdtWorldCoordsTest");
                     std::cout << "world coords : x = " << worldPosX << " y = " << worldPosY
@@ -327,10 +371,10 @@ void FrontendUI::showAdtSelectionMinimap() {
     if (ImGui::BeginPopup("AdtWorldCoordsTest", ImGuiWindowFlags_NoMove)) {
         ImGui::Text("Pos: (%.2f,%.2f,200)", worldPosX, worldPosY);
         if (ImGui::Button("Go")) {
-            if (openSceneByfdid) {
-                openSceneByfdid(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
-                showSelectMap = false;
-            }
+
+            openSceneByfdid(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+            showSelectMap = false;
+
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -360,9 +404,7 @@ void FrontendUI::showMainMenu() {
                 showSelectMap = true;
             }
             if (ImGui::MenuItem("Unload scene", "", false, cascOpened)) {
-                if (unloadScene) {
-                    unloadScene();
-                }
+                unloadScene();
             }
             ImGui::EndMenu();
         }
@@ -372,6 +414,20 @@ void FrontendUI::showMainMenu() {
             ImGui::Separator();
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
+            if (ImGui::MenuItem("Open MapConstruction")) {showMapConstruction = true;}
+            if (ImGui::MenuItem("Open minimap generator")) {
+                showMinimapGeneratorSettings = true;
+            }
+            if (ImGui::MenuItem("Test export")) {
+                if (currentScene != nullptr) {
+                    exporter = std::make_shared<GLTFExporter>("./gltf/");
+                    currentScene->exportScene(exporter.get());
+                    exporterFramesReady = 0;
+                }
+            }
+            if (ImGui::MenuItem("Test data export")) {
+                dataExporter = new DataExporterClass(m_api);
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Make screenshot")) {
                 showMakeScreenshot = true;
@@ -386,6 +442,28 @@ void FrontendUI::showMainMenu() {
 }
 
 //
+
+#ifdef __ANDROID_API__
+void FrontendUI::initImgui(ANativeWindow* window) {
+    emptyMinimap();
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void) io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
+
+    // Setup Platform/Renderer bindings
+    ImGui_ImplAndroid_Init(window);
+}
+
+#else
 
 void FrontendUI::initImgui(GLFWwindow *window) {
 
@@ -406,6 +484,7 @@ void FrontendUI::initImgui(GLFWwindow *window) {
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
 }
+#endif
 
 void FrontendUI::newFrame() {
 //    ImGui_ImplOpenGL3_NewFrame();
@@ -413,8 +492,11 @@ void FrontendUI::newFrame() {
     if (this->fontTexture == nullptr)
         return;
 
-
+#ifdef __ANDROID_API__
+    ImGui_ImplAndroid_NewFrame();
+#else
     ImGui_ImplGlfw_NewFrame();
+#endif
     ImGui::NewFrame();
 }
 
@@ -428,17 +510,6 @@ bool FrontendUI::getStopKeyboard() {
     return io.WantCaptureKeyboard;
 }
 
-void FrontendUI::setOpenCascStorageCallback(std::function<bool(std::string cascPath)> callback) {
-    openCascCallback = callback;
-}
-
-void FrontendUI::setOpenSceneByfdidCallback(std::function<void(int mapId, int wdtFileId, float x, float y, float z)> callback) {
-    openSceneByfdid = callback;
-}
-
-void FrontendUI::setGetCameraPos(std::function<void(float &cameraX, float &cameraY, float &cameraZ)> callback) {
-    getCameraPos = callback;
-}
 
 
 void FrontendUI::showQuickLinksDialog() {
@@ -446,206 +517,247 @@ void FrontendUI::showQuickLinksDialog() {
     std::vector<int> replacementTextureFDids = {};
 
     ImGui::Begin("Quick Links", &showQuickLinks);
+
+
+    if (ImGui::Button("(WMO) NPE Ship with waterfall model", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(3314067);
+    }
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
-            openWMOSceneByfdid(2756726);
-        }
+        openWMOSceneByfdid(2756726);
+    }
+    if (ImGui::Button("Original WVF1 model", ImVec2(-1, 0))) {
+        openM2SceneByfdid(2445860, replacementTextureFDids);
+    }
+    if (ImGui::Button("Stormwind mage portal", ImVec2(-1, 0))) {
+        openM2SceneByfdid(2394711, replacementTextureFDids);
+    }
+
+//    if (ImGui::Button("Azeroth map: Lion's Rest (Legion)", ImVec2(-1, 0))) {
+//        openMapByIdAndFilename(0, "azeroth", -8739, 944, 200);
+//    }
+    if (ImGui::Button("Nyalotha map", ImVec2(-1, 0))) {
+        openSceneByfdid(2217, 2842322, -11595, 9280, 260);
+    }
+    if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(1247268);
+    }
+    if (ImGui::Button("Ironforge.wmo", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(113992);
     }
 
     if (ImGui::Button("Some item", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[1] = 528801;
             for (auto &fdid: replacementTextureFDids) {
                 fdid = 1029337;
             }
             openM2SceneByfdid(1029334, replacementTextureFDids);
-        }
+    }
+    if (ImGui::Button("IGC Anduin", ImVec2(-1, 0))) {
+        openM2SceneByfdid(3849312, replacementTextureFDids);
+    }
+    if (ImGui::Button("Steamscale mount", ImVec2(-1, 0))) {
+        openM2SceneByfdid(2843110, replacementTextureFDids);
+    }
+    if (ImGui::Button("Spline emitter", ImVec2(-1, 0))) {
+        openM2SceneByfdid(1536145, replacementTextureFDids);
+    }
+    if (ImGui::Button("Nether collector top", ImVec2(-1, 0))) {
+        openM2SceneByfdid(193157, replacementTextureFDids);
+    }
+    if (ImGui::Button("Сollector top", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(113540);
+    }
+
+    if (ImGui::Button("Fox", ImVec2(-1, 0))) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[11] = 3071379;
+
+            openM2SceneByfdid(3071370, replacementTextureFDids);
+    }
+    if (ImGui::Button("COT hourglass", ImVec2(-1, 0))) {
+        openM2SceneByfdid(190850, replacementTextureFDids);
+    }
+    if (ImGui::Button("Gryphon roost", ImVec2(-1, 0))) {
+        openM2SceneByfdid(198261, replacementTextureFDids);
     }
     if (ImGui::Button("Northrend Human Inn", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
             openWMOSceneByfdid(114998);
-        }
+    }
+    if (ImGui::Button("Strange WMO", ImVec2(-1, 0))) {
+            openWMOSceneByfdid(2342637);
+    }
+    if (ImGui::Button("Flyingsprite", ImVec2(-1, 0))) {
+            replacementTextureFDids = std::vector<int>(17);
+
+            replacementTextureFDids[11] = 3059000;
+            openM2SceneByfdid(3024835, replacementTextureFDids);
+    }
+    if (ImGui::Button("maldraxxusflyer", ImVec2(-1, 0))) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[11] = 3196375;
+            openM2SceneByfdid(3196372, replacementTextureFDids);
+    }
+    if (ImGui::Button("ridingphoenix", ImVec2(-1, 0))) {
+            replacementTextureFDids = std::vector<int>(17);
+
+            openM2SceneByfdid(125644, replacementTextureFDids);
+    }
+    if (ImGui::Button("Upright Orc", ImVec2(-1, 0))) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[1] = 3844710;
+            openM2SceneByfdid(1968587, replacementTextureFDids);
+    }
+    if (ImGui::Button("quillboarbrute.m2", ImVec2(-1, 0))) {
+            replacementTextureFDids = std::vector<int>(17);
+            replacementTextureFDids[11] = 1786107;
+            openM2SceneByfdid(1784020, replacementTextureFDids);
     }
     if (ImGui::Button("WMO With Horde Symbol", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
             openWMOSceneByfdid(1846142);
-        }
     }
     if (ImGui::Button("WMO 3565693", ImVec2(-1, 0))) {
-        if (openWMOSceneByfdid) {
             openWMOSceneByfdid(3565693);
-        }
     }
 
+    if (ImGui::Button("Vanilla login screen", ImVec2(-1, 0))) {
+            openM2SceneByfdid(131970, replacementTextureFDids);
+    }
     if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(131982, replacementTextureFDids);
             //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
-            m_api->getConfig()->setBCLightHack(true);
-
-        }
+            m_api->getConfig()->BCLightHack = true;
     }
     if (ImGui::Button("Wrath login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(236122, replacementTextureFDids);
-        }
     }
 
     if (ImGui::Button("Cataclysm login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(466614, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Panda login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(631713, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Draenor login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByName) {
             openM2SceneByName("interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(1396280, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
-        }
     }
     if (ImGui::Button("BfA login screen", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(2021650, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
-        }
+    }
+    if (ImGui::Button("Shadowlands login screen", ImVec2(-1, 0))) {
+            openM2SceneByfdid(3846560, replacementTextureFDids);
+//            m_api->getConfig()->setBCLightHack(true);
     }
 
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3445776, replacementTextureFDids);
-        }
     }
 
     if (ImGui::Button("Pink serpent", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
 
             replacementTextureFDids[11] = 2905480;
             replacementTextureFDids[12] = 2905481;
             replacementTextureFDids[13] = 577442;
             openM2SceneByfdid(577443, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Wolf", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
 
             replacementTextureFDids[11] = 126494;
             replacementTextureFDids[12] = 126495;
             replacementTextureFDids[13] = 0;
             openM2SceneByfdid(126487, replacementTextureFDids);
-        }
     }
 
     if (ImGui::Button("Aggramar", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 1599776;
             openM2SceneByfdid(1599045, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("M2 3087468", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3087540;
             openM2SceneByfdid(3087468, replacementTextureFDids);
-        }
+    }
+
+    if (ImGui::Button("Nagrand skybox", ImVec2(-1, 0))) {
+
+        openM2SceneByfdid(130575, replacementTextureFDids);
+
+    }
+    if (ImGui::Button("Torghast raid skybox", ImVec2(-1, 0))) {
+
+        openM2SceneByfdid(4001212, replacementTextureFDids);
+
+    }
+    if (ImGui::Button("3445776 PBR cloud sky in Maw", ImVec2(-1, 0))) {
+            openM2SceneByfdid(3445776, replacementTextureFDids);
     }
     if (ImGui::Button("M2 3572296", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3572296, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("M2 3487959", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3487959, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("M2 1729717 waterfall", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(1729717, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Maw jailer", ImVec2(-1, 0))) {
 //        3096499,3096495
         replacementTextureFDids = std::vector<int>(17);
         replacementTextureFDids[11] = 3096499;
         replacementTextureFDids[12] = 3096495;
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3095966, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Creature with colors", ImVec2(-1, 0))) {
 //        3096499,3096495
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(1612576, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("IC new sky", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3159936, replacementTextureFDids);
-        }
     }
 
 
     if (ImGui::Button("vampire candle", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(3184581, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Bog Creature", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3732358;
             replacementTextureFDids[12] = 3732360;
             replacementTextureFDids[13] = 3732368;
 
             openM2SceneByfdid(3732303, replacementTextureFDids);
-        }
     }
 
     ImGui::Separator();
     ImGui::Text("Models for billboard checking");
     ImGui::NewLine();
     if (ImGui::Button("Dalaran dome", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(203598, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Gift of Nzoth", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(2432705, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Plagueheart Shoulderpad", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(143343, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Dalaran eye", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             openM2SceneByfdid(243044, replacementTextureFDids);
-        }
     }
     if (ImGui::Button("Hand weapon", ImVec2(-1, 0))) {
-        if (openM2SceneByfdid) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[1] = 528801;
             for (auto &fdid: replacementTextureFDids) {
                 fdid = 528801;
             }
             openM2SceneByfdid(528797, replacementTextureFDids);
-        }
     }
 
     ImGui::End();
@@ -719,51 +831,65 @@ void FrontendUI::showSettingsDialog() {
 //        }
 
         if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
-            m_api->getConfig()->setFarPlane(farPlane);
-            m_api->getConfig()->setFarPlaneForCulling(farPlane+50);
+            m_api->getConfig()->farPlane = farPlane;
+            m_api->getConfig()->farPlaneForCulling = farPlane+50;
         }
 
         if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
-            m_api->getConfig()->setUseGaussBlur(useGaussBlur);
+            m_api->getConfig()->useGaussBlur = useGaussBlur;
+        }
+
+        bool disableFog = m_api->getConfig()->disableFog;
+        if (ImGui::Checkbox("Disable fog", &disableFog)) {
+            m_api->getConfig()->disableFog = disableFog;
+        }
+
+        pauseAnimation = m_api->getConfig()->pauseAnimation;
+        if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
+            m_api->getConfig()->pauseAnimation = pauseAnimation;
         }
 
         if (ImGui::Button("Reset Animation")) {
-            if (resetAnimationCallback) {
                 resetAnimationCallback();
-            }
         }
 
         ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
         if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
-            m_api->getConfig()->setCurrentTime(currentTime);
+            m_api->getConfig()->currentTime = currentTime;
         }
 
-
-
-        movementSpeed =m_api->getConfig()->getMovementSpeed();
-        if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 10)) {
-            m_api->getConfig()->setMovementSpeed(movementSpeed);
+        if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 100)) {
             m_api->camera->setMovementSpeed(movementSpeed);
         }
 
-        if (ImGui::Checkbox("Use global timed light", &useTimedGlobalLight)) {
-            m_api->getConfig()->setUseTimedGloabalLight(useTimedGlobalLight);
-            if (useTimedGlobalLight) {
-                useM2AmbientLight = false;
-                m_api->getConfig()->setUseM2AmbientLight(useM2AmbientLight);
+        switch(m_api->getConfig()->globalLighting) {
+            case EParameterSource::eDatabase: {
+                lightSource = 0;
+                break;
+            }
+            case EParameterSource::eM2: {
+                lightSource = 1;
+                break;
+            }
+            case EParameterSource::eConfig: {
+                lightSource = 2;
+                break;
             }
         }
 
-        if (ImGui::Checkbox("Use ambient light from M2  (only for M2 scenes)", &useM2AmbientLight)) {
-            m_api->getConfig()->setUseM2AmbientLight(useM2AmbientLight);
-            if (useM2AmbientLight) {
-                useTimedGlobalLight = false;
-                m_api->getConfig()->setUseTimedGloabalLight(useTimedGlobalLight);
-            }
+        if (ImGui::RadioButton("Use global timed light", &lightSource, 0)) {
+            m_api->getConfig()->globalLighting = EParameterSource::eDatabase;
         }
-        if (!useTimedGlobalLight && !useM2AmbientLight) {
+        if (ImGui::RadioButton("Use ambient light from M2  (only for M2 scenes)", &lightSource, 1)) {
+            m_api->getConfig()->globalLighting = EParameterSource::eM2;
+        }
+        if (ImGui::RadioButton("Manual light", &lightSource, 2)) {
+            m_api->getConfig()->globalLighting = EParameterSource::eConfig;
+        }
+
+        if (m_api->getConfig()->globalLighting == EParameterSource::eConfig) {
             {
-                auto ambient = m_api->getConfig()->getExteriorAmbientColor();
+                auto ambient = m_api->getConfig()->exteriorAmbientColor;
                 exteriorAmbientColor = {ambient.x, ambient.y, ambient.z};
                 ImVec4 col = ImVec4(ambient.x, ambient.y, ambient.z, 1.0);
                 if (ImGui::ColorButton("ExteriorAmbientColor##3b", col)) {
@@ -774,7 +900,7 @@ void FrontendUI::showSettingsDialog() {
 
                 if (ImGui::BeginPopup("Exterior Ambient picker")) {
                     if (ImGui::ColorPicker3("Exterior Ambient", exteriorAmbientColor.data())) {
-                        m_api->getConfig()->setExteriorAmbientColor(
+                        m_api->getConfig()->exteriorAmbientColor = mathfu::vec4(
                             exteriorAmbientColor[0], exteriorAmbientColor[1], exteriorAmbientColor[2], 1.0);
                     }
                     ImGui::EndPopup();
@@ -782,7 +908,7 @@ void FrontendUI::showSettingsDialog() {
             }
 
             {
-                auto horizontAmbient = m_api->getConfig()->getExteriorHorizontAmbientColor();
+                auto horizontAmbient = m_api->getConfig()->exteriorHorizontAmbientColor;
                 exteriorHorizontAmbientColor = {horizontAmbient.x, horizontAmbient.y, horizontAmbient.z};
                 ImVec4 col = ImVec4(horizontAmbient.x, horizontAmbient.y, horizontAmbient.z, 1.0);
                 if (ImGui::ColorButton("ExteriorHorizontAmbientColor##3b", col)) {
@@ -793,7 +919,7 @@ void FrontendUI::showSettingsDialog() {
 
                 if (ImGui::BeginPopup("Exterior Horizont Ambient picker")) {
                     if (ImGui::ColorPicker3("Exterior Horizont Ambient", exteriorHorizontAmbientColor.data())) {
-                        m_api->getConfig()->setExteriorHorizontAmbientColor(
+                        m_api->getConfig()->exteriorHorizontAmbientColor = mathfu::vec4 (
                             exteriorHorizontAmbientColor[0],
                             exteriorHorizontAmbientColor[1], exteriorHorizontAmbientColor[2], 1.0);
                     }
@@ -801,7 +927,7 @@ void FrontendUI::showSettingsDialog() {
                 }
             }
             {
-                auto groundAmbient = m_api->getConfig()->getExteriorGroundAmbientColor();
+                auto groundAmbient = m_api->getConfig()->exteriorGroundAmbientColor;
                 exteriorGroundAmbientColor = {groundAmbient.x, groundAmbient.y, groundAmbient.z};
                 ImVec4 col = ImVec4(groundAmbient.x, groundAmbient.y, groundAmbient.z, 1.0);
 
@@ -813,7 +939,7 @@ void FrontendUI::showSettingsDialog() {
 
                 if (ImGui::BeginPopup("Exterior Ground Ambient picker")) {
                     if (ImGui::ColorPicker3("Exterior Ground Ambient", exteriorGroundAmbientColor.data())) {
-                        m_api->getConfig()->setExteriorGroundAmbientColor(
+                        m_api->getConfig()->exteriorGroundAmbientColor = mathfu::vec4(
                             exteriorGroundAmbientColor[0],
                             exteriorGroundAmbientColor[1], exteriorGroundAmbientColor[2], 1.0);
                     }
@@ -853,7 +979,7 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
 
         // Upload texture to graphics system
 
-        this->fontTexture = m_device->createTexture();
+        this->fontTexture = m_device->createTexture(false, false);
         this->fontTexture->loadData(width, height, pixels, ITextureFormat::itRGBA);
 
         // Store our identifier
@@ -861,10 +987,20 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
         return;
     }
 
+    if (exporter != nullptr) {
+        if (m_processor->completedAllJobs() && !m_api->hDevice->wasTexturesUploaded()) {
+            exporterFramesReady++;
+        }
+        if (exporterFramesReady > 5) {
+            exporter->saveToFile("model.gltf");
+            exporter = nullptr;
+        }
+    }
+
     lastWidth = resultDrawStage->viewPortDimensions.maxs[0];
     lastHeight = resultDrawStage->viewPortDimensions.maxs[1];
 
-    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+    resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
 
     auto *draw_data = ImGui::GetDrawData();
 
@@ -873,7 +1009,6 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
     if (fb_width <= 0 || fb_height <= 0) {
         return;
     }
-
 
     ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
     ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
@@ -901,7 +1036,7 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
     }
 
     auto uboPart = m_device->createUniformBufferChunk(sizeof(mathfu::mat4));
-    uboPart->setUpdateHandler([ortho_projection](IUniformBufferChunk* self) {
+    uboPart->setUpdateHandler([ortho_projection](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) {
         self->getObject<mathfu::mat4>() = ortho_projection;
     });
 
@@ -980,39 +1115,34 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
                     meshTemplate.start = pcmd->IdxOffset * 2;
                     meshTemplate.end = pcmd->ElemCount;
 
-                    resultDrawStage->meshesToRender->meshes.push_back(m_device->createMesh(meshTemplate));
+                    resultDrawStage->opaqueMeshes->meshes.push_back(m_device->createMesh(meshTemplate));
                 }
             }
         }
     }
+
+    //1. Collect buffers
+    auto &bufferChunks = updateStage->uniformBufferChunks;
+    int renderIndex = 0;
+    for (const auto &mesh : resultDrawStage->opaqueMeshes->meshes) {
+        for (int i = 0; i < 5; i++ ) {
+            auto bufferChunk = mesh->getUniformBuffer(i);
+
+            if (bufferChunk != nullptr) {
+                bufferChunks.push_back(bufferChunk);
+            }
+        }
+    }
+
+    std::sort( bufferChunks.begin(), bufferChunks.end());
+    bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
 }
 
-void FrontendUI::setOpenWMOSceneByfdidCallback(std::function<void(int wmoFDid)> callback) {
-    this->openWMOSceneByfdid = callback;
-}
-
-void FrontendUI::setOpenM2SceneByfdidCallback(std::function<void(int, std::vector<int>&)> callback) {
-    this->openM2SceneByfdid = callback;
-}
-
-void FrontendUI::setOpenM2SceneByFilenameCallback(std::function<void(std::string, std::vector<int>&)> callback) {
-    this->openM2SceneByName = callback;
-}
 
 void FrontendUI::getMapList(std::vector<MapRecord> &mapList) {
     if (m_api->databaseHandler == nullptr)  return;
 
     m_api->databaseHandler->getMapArray(mapList);
-}
-
-void FrontendUI::setGetCameraNum(std::function <int()> callback) {
-    getCameraNumCallback = callback;
-}
-void FrontendUI::setSelectNewCamera(std::function <bool(int cameraNum)> callback) {
-    setNewCameraCallback = callback;
-}
-void FrontendUI::setResetAnimation(std::function <void()> callback) {
-    resetAnimationCallback = callback;
 }
 
 bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap,
@@ -1044,11 +1174,7 @@ bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 6
 
 std::string FrontendUI::getCurrentAreaName() {
     auto conf = m_api->getConfig();
-    return conf->getAreaName();
-}
-
-void FrontendUI::setMakeScreenshotCallback(std::function<void(std::string fileName, int, int)> callback) {
-    makeScreenshotCallback = callback;
+    return conf->areaName;
 }
 
 void FrontendUI::showMakeScreenshotDialog() {
@@ -1080,4 +1206,772 @@ void FrontendUI::showMakeScreenshotDialog() {
        }
 
    }
+}
+
+void FrontendUI::produceUpdateStage(HUpdateStage updateStage) {
+    this->update(updateStage);
+
+
+}
+
+HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
+                                ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene, HCullStage &cullStage) {
+    float farPlaneRendering = apiContainer.getConfig()->farPlane;
+    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
+
+    float nearPlane = 1.0;
+    float fov = toRadian(45.0);
+
+    float canvasAspect = (float)width / (float)height;
+
+    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    HCameraMatrices cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+    //Frustum matrix with reversed Z
+
+    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+    if (isInfZSupported)
+    {
+        float f = 1.0f / tan(fov / 2.0f);
+        cameraMatricesRendering->perspectiveMat = mathfu::mat4(
+            f / canvasAspect, 0.0f,  0.0f,  0.0f,
+            0.0f,    f,  0.0f,  0.0f,
+            0.0f, 0.0f,  1, -1.0f,
+            0.0f, 0.0f, 1,  0.0f);
+    }
+
+    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
+        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
+
+        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
+                                                                  0, -1, 0, 0,
+                                                                  0, 0, 1.0/2.0, 1/2.0,
+                                                                  0, 0, 0, 1).Transpose();
+
+        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
+    }
+
+    auto clearColor = apiContainer.getConfig()->clearColor;
+
+    if (currentScene != nullptr) {
+        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
+
+        HFrameBuffer fb = nullptr;
+        if (isScreenshot) {
+            fb = apiContainer.hDevice->createFrameBuffer(width, height,
+                                                         {ITextureFormat::itRGBA},
+                                                         ITextureFormat::itDepth32,
+                                                         apiContainer.hDevice->getMaxSamplesCnt(), 4);
+        }
+
+        cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
+        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
+        std::vector<HDrawStage> drawStageDependencies = {};
+        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, drawStageDependencies, true,
+                                                                dimensions,
+                                                                true, isInfZSupported, clearColor, fb);
+
+        return sceneDrawStage;
+    }
+
+    return nullptr;
+}
+
+HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, double deltaTime) {
+    if (minimapGenerator != nullptr &&
+        (
+            minimapGenerator->getCurrentMode() == EMGMode::eScreenshotGeneration ||
+            minimapGenerator->getCurrentMode() == EMGMode::eBoundingBoxCalculation
+        )
+    ) {
+        minimapGenerator->process();
+    }
+
+    if (dataExporter != nullptr) {
+        dataExporter->process();
+        if (dataExporter->isDone()) {
+            delete dataExporter;
+            dataExporter = nullptr;
+        }
+    }
+
+    if (screenshotDS != nullptr) {
+        if (screenshotFrame + 5 <= m_api->hDevice->getFrameNumber()) {
+            std::vector<uint8_t> buffer = std::vector<uint8_t>(screenShotWidth*screenShotHeight*4+1);
+
+            saveDataFromDrawStage(screenshotDS->target, screenshotFilename, screenShotWidth, screenShotHeight, buffer);
+
+            screenshotDS = nullptr;
+        }
+    }
+
+
+    HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
+    std::vector<HDrawStage> uiDependecies = {};
+
+    if (needToMakeScreenshot)
+    {
+        HCullStage temp = nullptr;
+        auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true, *m_api,
+                                              currentScene,temp);
+        if (drawStage != nullptr) {
+            uiDependecies.push_back(drawStage);
+            screenshotDS = drawStage;
+            screenshotFrame = m_api->hDevice->getFrameNumber();
+        }
+        needToMakeScreenshot = false;
+    }
+    if (minimapGenerator != nullptr && minimapGenerator->getCurrentMode() != EMGMode::eNone) {
+        uiDependecies.push_back(minimapGenerator->createSceneDrawStage(sceneScenario));
+    }
+
+    //DrawStage for current frame
+    bool clearOnUi = true;
+    if (currentScene != nullptr && m_api->camera != nullptr)
+    {
+        int currentFrame = m_api->hDevice->getDrawFrameNumber();
+        auto &cullStageData = m_cullstages[currentFrame];
+        cullStageData = nullptr;
+
+        auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime, false, *m_api,
+                                              currentScene, cullStageData);
+        if (drawStage != nullptr) {
+            uiDependecies.push_back(drawStage);
+            clearOnUi = false;
+        }
+    }
+    //DrawStage for UI
+    {
+        ViewPortDimensions dimension = {
+            {0,     0},
+            {canvWidth, canvHeight}
+        };
+        auto clearColor = m_api->getConfig()->clearColor;
+
+        auto uiCullStage = sceneScenario->addCullStage(nullptr, getShared());
+        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
+        HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, getShared(), nullptr, uiDependecies,
+                                                                  true, dimension, clearOnUi, false, clearColor, nullptr);
+    }
+
+    return sceneScenario;
+}
+
+bool FrontendUI::openCascCallback(std::string cascPath) {
+    HRequestProcessor newProcessor = nullptr;
+    std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
+    try {
+        cascPath = cascPath + ":wowt";
+        newProcessor = std::make_shared<CascRequestProcessor>(cascPath.c_str());
+        newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
+        newProcessor->setThreaded(true);
+        newProcessor->setFileRequester(newStorage.get());
+    } catch (...){
+        return false;
+    };
+
+    m_api->cacheStorage = newStorage;
+    m_processor = newProcessor;
+
+    return true;
+}
+
+void FrontendUI::openSceneByfdid(int mapId, int wdtFileId, float x, float y, float z) {
+    if (m_api->cacheStorage) {
+//            storage->actuallDropCache();
+    }
+
+    currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
+    m_api->camera = std::make_shared<FirstPersonCamera>();
+    m_api->camera->setCameraPos(x, y, z);
+    m_api->camera->setMovementSpeed(movementSpeed);
+}
+
+void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
+    currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
+    m_api->camera->setCameraPos(0, 0, 0);
+}
+
+void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z) {
+    currentScene = std::make_shared<Map>(m_api, mapId, mapName);
+    m_api->camera->setCameraPos(x,y,z);
+}
+void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
+    currentScene = std::make_shared<M2Scene>(m_api, m2Fdid, -1);
+    currentScene->setReplaceTextureArray(replacementTextureIds);
+
+
+    m_api->camera = std::make_shared<FirstPersonCamera>();
+    m_api->camera->setMovementSpeed(movementSpeed);
+    m_api->getConfig()->BCLightHack = false;
+//
+    m_api->camera->setCameraPos(0, 0, 0);
+}
+void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds) {
+    currentScene = std::make_shared<M2Scene>(m_api, m2FileName, -1);
+    currentScene->setReplaceTextureArray(replacementTextureIds);
+
+    m_api->camera = std::make_shared<FirstPersonCamera>();
+    m_api->camera->setCameraPos(0, 0, 0);
+    m_api->camera->setMovementSpeed(movementSpeed);
+}
+
+void FrontendUI::unloadScene() {
+    if (m_api->cacheStorage) {
+        m_api->cacheStorage->actuallDropCache();
+    }
+    currentScene = std::make_shared<NullScene>();
+}
+
+int FrontendUI::getCameraNumCallback() {
+    if (currentScene != nullptr) {
+        return currentScene->getCameraNum();
+    }
+
+    return 0;
+}
+
+bool FrontendUI::setNewCameraCallback(int cameraNum) {
+    if (currentScene == nullptr) return false;
+
+    auto newCamera = currentScene->createCamera(cameraNum);
+    if (newCamera == nullptr) {
+        m_api->camera = std::make_shared<FirstPersonCamera>();
+        m_api->camera->setMovementSpeed(movementSpeed);
+        return false;
+    }
+
+    m_api->camera = newCamera;
+    return true;
+}
+
+void FrontendUI::resetAnimationCallback() {
+    currentScene->resetAnimation();
+}
+
+void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
+    if (m_api->camera == nullptr) {
+        cameraX = 0; cameraY = 0; cameraZ = 0;
+        return;
+    }
+    float currentCameraPos[4] = {0,0,0,0};
+    m_api->camera->getCameraPosition(&currentCameraPos[0]);
+    cameraX = currentCameraPos[0];
+    cameraY = currentCameraPos[1];
+    cameraZ = currentCameraPos[2];
+}
+
+void FrontendUI::createDefaultprocessor() {
+
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=data&filedataid=";
+//
+//Classics
+//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
+//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
+//        processor = new HttpZipRequestProcessor(url);
+////        processor = new ZipRequestProcessor(filePath);
+////        processor = new MpqRequestProcessor(filePath);
+//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+    m_processor = std::make_shared<CascRequestProcessor>("e:\\games\\wow beta\\World of Warcraft Beta\\:wowt");
+////        processor->setThreaded(false);
+////
+    m_processor->setThreaded(true);
+    m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_processor.get());
+    m_processor->setFileRequester(m_api->cacheStorage.get());
+    overrideCascOpened(true);
+
+
+    {
+        std::vector<int> replacementTextureFDids = {0,0,3607739};
+//        replacementTextureFDids[2] = 3607739;
+        openM2SceneByfdid(3607377, replacementTextureFDids);
+    }
+}
+
+auto FrontendUI::createMinimapGenerator() {
+    boundingBoxHolder = std::make_shared<ADTBoundingBoxHolder>();
+    riverColorOverrides = std::make_shared<RiverColorOverrideHolder>();
+
+    if (sceneDef != nullptr) {
+        m_minimapDB->getAdtBoundingBoxes(sceneDef->mapId, *boundingBoxHolder);
+        m_minimapDB->getRiverColorOverrides(sceneDef->mapId, *riverColorOverrides);
+    }
+
+    minimapGenerator = std::make_shared<MinimapGenerator>(
+        m_api->cacheStorage,
+        m_api->hDevice,
+        m_processor,
+        m_api->databaseHandler,
+        boundingBoxHolder
+    );
+
+    minimapGenerator->getConfig()->colorOverrideHolder = riverColorOverrides;
+
+    minimapGenerator->setZoom(previewZoom);
+    minimapGenerator->setLookAtPoint(previewX, previewY);
+
+
+//    sceneDef = {
+//        EMGMode::eScreenshotGeneration,
+//        0,
+//        mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+//        mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+//        mathfu::vec2(0, 0),
+//        mathfu::vec2(MathHelper::TILESIZE*2, MathHelper::TILESIZE*2),
+//        1024,
+//        1024,
+//        1.0f,
+//        false,
+//        ScenarioOrientation::so45DegreeTick3,
+//        "azeroth/topDown1"
+//    };
+
+    sceneDefList = {
+        {
+            -1,
+            530,
+            "Netherstorm",
+            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+            mathfu::vec2(1627, -1175),
+            mathfu::vec2(6654 , 4689 ),
+            1024,
+            1024,
+            1.0f,
+            ScenarioOrientation::so45DegreeTick0,
+            "outland/netherstorm"
+        },
+        {
+            -1,
+            1,
+            "Kalimdor, rot 0",
+            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+            mathfu::vec2(-12182, -8803 ),
+            mathfu::vec2(12058, 4291),
+            1024,
+            1024,
+            1.0f,
+            ScenarioOrientation::so45DegreeTick0,
+            "kalimdor/rotation0"
+        }
+    };
+
+    return minimapGenerator;
+
+//    std::vector<ScenarioDef> scenarios = {
+////        {
+////            2222,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-9750, -8001   ),
+////            mathfu::vec2(8333, 9500 ),
+////            ScenarioOrientation::so45DegreeTick0,
+////            "shadowlands/orient0"
+////        }
+//        {
+//            1643,
+//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+//            mathfu::vec2(291 , 647 ),
+//            mathfu::vec2(2550, 2895),
+//            256,
+//            256,
+//            4.0f,
+//            ScenarioOrientation::so45DegreeTick0,
+//            "kultiras/orient0"
+//        },
+////        {
+////            530,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-5817, -1175),
+////            mathfu::vec2(1758, 10491),
+////            ScenarioOrientation::so45DegreeTick0,
+////            "outland/topDown1"
+////        }
+////        {
+////            0,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-9081, -20),
+////            mathfu::vec2(-8507, 1296),
+////            ScenarioOrientation::soTopDownOrtho,
+////            "azeroth/topDown"
+////        }
+////    };
+//
+////        std::vector<ScenarioDef> scenarios = {
+////        {
+////            1,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-12182, -8803 ),
+////            mathfu::vec2(12058, 4291),
+////            ScenarioOrientation::so45DegreeTick0,
+////            "kalimdor/rotation0"
+////        },
+//        {
+//            1,
+//            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+//            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+//            mathfu::vec2(-12182, -8803),
+//            mathfu::vec2(12058, 4291),
+//            256,
+//            256,
+//            4.0f,
+//            ScenarioOrientation::so45DegreeTick1,
+//            "kalimdor/rotation1_new"
+//        }
+//    };
+////        {
+////            1,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-12182, -8803 ),
+////            mathfu::vec2(12058, 4291),
+////            ScenarioOrientation::so45DegreeTick2,
+////            "kalimdor/rotation2"
+////        },
+////        {
+////            1,
+////            mathfu::vec4(0.0671968088, 0.294095874, 0.348881632, 0),
+////            mathfu::vec4(0.345206976, 0.329288304, 0.270450264, 0),
+////            mathfu::vec2(-12182, -8803 ),
+////            mathfu::vec2(12058, 4291),
+////            ScenarioOrientation::so45DegreeTick3,
+////            "kalimdor/rotation3"
+////        },
+////    };
+}
+
+void FrontendUI::editComponentsForConfig(Config * config) {
+    if (config == nullptr) return;
+
+    ImGui::BeginGroupPanel("Exterior Lighting");
+
+    {
+        ImGui::CompactColorPicker("Exterior Ambient", config->exteriorAmbientColor);
+        ImGui::CompactColorPicker("Exterior Horizon Ambient", config->exteriorHorizontAmbientColor);
+        ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorGroundAmbientColor);
+        ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorDirectColor);
+    }
+
+    ImGui::EndGroupPanel();
+}
+
+void FrontendUI::restartMinimapGenPreview() {
+    minimapGenerator->stopPreview();
+    minimapGenerator->startPreview(*sceneDef);
+    minimapGenerator->setZoom(previewZoom);
+    minimapGenerator->setLookAtPoint(previewX, previewY);
+}
+
+void FrontendUI::showMinimapGenerationSettingsDialog() {
+    if(showMinimapGeneratorSettings) {
+        if (m_minimapDB == nullptr) {
+            m_minimapDB = std::make_shared<CMinimapDataDB>("minimapdb.sqlite");
+            m_minimapDB->getScenarios(sceneDefList);
+        }
+        if (minimapGenerator == nullptr) {
+            createMinimapGenerator();
+        }
+
+
+        ImGui::Begin("Minimap Generator settings", &showMinimapGeneratorSettings);
+        ImGui::Columns(2, NULL, true);
+        //Left panel
+        ImGui::BeginTabBar("MinimapGenTabs");
+        {
+            bool listOpened = this->sceneDef == nullptr;
+            bool staticAlwaysTrue = true;
+            if (ImGui::BeginTabItem("List"))
+            {
+                //The table
+                ImGui::BeginChild("Scenario List");
+                ImGui::Columns(3, "scenarioListcolumns"); // 3-ways, with border
+                ImGui::Separator();
+                ImGui::Text("");
+                ImGui::NextColumn();
+                ImGui::Text("Name");
+                ImGui::NextColumn();
+                ImGui::Text("Actions");
+                ImGui::NextColumn();
+                ImGui::Separator();
+
+                for (int i = 0; i < this->sceneDefList.size(); i++) {
+                    auto &l_sceneDef = sceneDefList[i];
+                    bool checked = true;
+                    ImGui::Checkbox("", &checked);
+                    ImGui::NextColumn();
+                    ImGui::Text("%s", l_sceneDef.name.c_str());
+                    ImGui::NextColumn();
+                    if (ImGui::Button(("Edit##" + std::to_string(i)).c_str())) {
+                        this->sceneDef = &l_sceneDef;
+                        editTabOpened = true;
+                        createMinimapGenerator();
+                    }
+                    ImGui::NextColumn();
+                }
+                ImGui::Columns(1);
+                ImGui::Separator();
+                ImGui::EndChild();
+
+                ImGui::EndTabItem();
+            }
+
+            if (sceneDef != nullptr) {
+                if (editTabOpened && ImGui::BeginTabItem("Edit", &editTabOpened, ImGuiTabItemFlags_SetSelected)) {
+                    {
+                        ImGui::InputInt("Map Id", &sceneDef->mapId);
+                        auto scenarioName = std::array<char,128>();
+                        if (sceneDef->name.size() > 128) sceneDef->name.resize(128);
+                        std::copy(sceneDef->name.begin(), sceneDef->name.end(), scenarioName.data());
+                        if (ImGui::InputText("Scenario name", scenarioName.data(), 128)) {
+                            sceneDef->name = std::string(std::begin(scenarioName), std::end(scenarioName));
+                        }
+                        ImGui::BeginGroupPanel("Orientation");
+                        {
+                            if (ImGui::RadioButton("Ortho projection", &sceneDef->orientation, ScenarioOrientation::soTopDownOrtho)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
+                            }
+                            if (ImGui::RadioButton("At 45° tick 0", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick0)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
+                            }
+                            if (ImGui::RadioButton("At 45° tick 1", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick1)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
+                            }
+                            if (ImGui::RadioButton("At 45° tick 2", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick2)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
+                            }
+                            if (ImGui::RadioButton("At 45° tick 3", &sceneDef->orientation, ScenarioOrientation::so45DegreeTick3)) {
+                                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                                    restartMinimapGenPreview();
+                                }
+                            }
+                        }
+                        ImGui::EndGroupPanel();
+                        ImGui::SameLine();
+                        ImGui::BeginGroupPanel("Generation boundaries");
+                        {
+                            ImGui::Text("In world coordinates");
+                            ImGui::InputFloat("Min x", &sceneDef->minWowWorldCoord.x);
+                            ImGui::InputFloat("Min y", &sceneDef->minWowWorldCoord.y);
+                            ImGui::InputFloat("Max x", &sceneDef->maxWowWorldCoord.x);
+                            ImGui::InputFloat("Max y", &sceneDef->maxWowWorldCoord.y);
+                            ImGui::EndGroupPanel();
+                        }
+                        ImGui::BeginGroupPanel("Ocean color override");
+                        {
+                            ImGui::CompactColorPicker("Close Ocean Color", sceneDef->closeOceanColor);
+                            ImGui::EndGroupPanel();
+                        }
+                        ImGui::BeginGroupPanel("Image settings");
+                        {
+                            ImGui::PushItemWidth(100);
+                            ImGui::InputInt("Image Width", &sceneDef->imageWidth);
+                            ImGui::InputInt("Image Height", &sceneDef->imageHeight);
+                            ImGui::PopItemWidth();
+                            ImGui::EndGroupPanel();
+                        }
+
+
+
+                        ImGui::BeginGroupPanel("Global map settings");
+                        {
+                            ImGui::BeginGroupPanel("River color overrides");
+                            {
+                                for (int i = 0; i < riverColorOverrides->size(); i++) {
+                                    auto &riverColorOverride = riverColorOverrides->operator[](i);
+
+                                    ImGui::PushID(i);
+                                    if (ImGui::Button("Copy from current")) {
+                                        int areaId, parentAreaId;
+                                        mathfu::vec4 riverColor;
+
+                                        minimapGenerator->getCurrentFDData(areaId, parentAreaId, riverColor);
+                                        riverColorOverride.areaId = areaId;
+                                        riverColorOverride.color = riverColor;
+                                    }
+                                    ImGui::SameLine();
+                                    ImGui::CompactColorPicker("River Color Override", riverColorOverride.color);
+                                    ImGui::SameLine();
+                                    ImGui::PushItemWidth(100);
+                                    ImGui::InputInt("Area Id", &riverColorOverride.areaId);
+                                    ImGui::PopItemWidth();
+
+
+                                    ImGui::PopID();
+                                }
+
+                                if (ImGui::Button("Add  override")) {
+                                    riverColorOverrides->push_back({});
+                                }
+                            }
+                            ImGui::EndGroupPanel();
+                        }
+                        ImGui::EndGroupPanel();
+
+                        ImGui::BeginGroupPanel("Current stats");
+                        {
+                            int areaId, parentAreaId;
+                            mathfu::vec4 riverColor;
+
+                            minimapGenerator->getCurrentFDData(areaId, parentAreaId, riverColor);
+                            ImGui::Text("Current areaId %d", areaId);
+                            ImGui::Text("Current parent areaId %d", parentAreaId);
+                            ImGui::CompactColorPicker("Current River Color", riverColor);
+
+                            ImGui::EndGroupPanel();
+                        }
+
+                        auto currentTime = minimapGenerator->getConfig()->currentTime;
+                        ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
+                        if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
+                            minimapGenerator->getConfig()->currentTime = currentTime;
+                        }
+
+                        editComponentsForConfig(minimapGenerator->getConfig());
+
+                        if (minimapGenerator->getCurrentMode() != EMGMode::eScreenshotGeneration) {
+                            bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
+                            if (ImGui::ButtonDisablable("Start Screenshot Gen", isDisabled)) {
+                                std::vector<ScenarioDef> list = {*sceneDef};
+
+                                minimapGenerator->startScenarios(list);
+                            }
+                        } else {
+                            if (ImGui::Button("Stop Screenshot Gen")) {
+                                minimapGenerator->stopPreview();
+                            }
+                        }
+                        ImGui::SameLine();
+                        if (minimapGenerator->getCurrentMode() != EMGMode::ePreview) {
+                            bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
+                            if (ImGui::ButtonDisablable("Start Preview", isDisabled)) {
+                                minimapGenerator->startPreview(*sceneDef);
+                                minimapGenerator->setZoom(previewZoom);
+                                minimapGenerator->setLookAtPoint(previewX, previewY);
+                            }
+                        } else {
+                            if (ImGui::Button("Stop Preview")) {
+                                minimapGenerator->stopPreview();
+                            }
+                        }
+                        ImGui::SameLine();
+                        if (minimapGenerator->getCurrentMode() != EMGMode::eBoundingBoxCalculation) {
+                            bool isDisabled = minimapGenerator->getCurrentMode() != EMGMode::eNone;
+                            if (ImGui::ButtonDisablable("Start BBox calc", isDisabled)) {
+                                minimapGenerator->startBoundingBoxCalc(*sceneDef);
+                            }
+                        } else {
+                            if (ImGui::Button("Stop BBox calc")) {
+                                minimapGenerator->stopBoundingBoxCalc();
+                            }
+                        }
+
+                        if (minimapGenerator->getCurrentMode() != EMGMode::eNone && minimapGenerator->getCurrentMode() != EMGMode::ePreview) {
+                            int x, y, maxX, maxY;
+                            minimapGenerator->getCurrentTileCoordinates(x, y, maxX, maxY);
+
+                            ImGui::Text("X: % 03d out of % 03d", x, maxX);
+                            ImGui::Text("Y: % 03d out of % 03d", y, maxY);
+
+                        }
+
+                        if (ImGui::Button("Save")) {
+                            m_minimapDB->saveScenario(*sceneDef);
+                            m_minimapDB->saveRiverColorOverrides(sceneDef->mapId, *riverColorOverrides);
+                            m_minimapDB->saveAdtBoundingBoxes(sceneDef->mapId, *boundingBoxHolder);
+                        }
+                    }
+
+                    ImGui::EndTabItem();
+
+                } else {
+                    //sceneDef = nullptr;
+                }
+            }
+
+
+            ImGui::EndTabBar();
+        }
+
+        //Right panel
+        ImGui::NextColumn();
+        {
+            ImGui::BeginChild("Minimap Gen Preview", ImVec2(0, 0));
+            {
+                bool changed = false;
+                bool readOnly = minimapGenerator->getCurrentMode() != EMGMode::ePreview;
+
+                const char * fmt = "%.3f";
+                changed |= ImGui::InputFloat("x", &previewX, 0.0f, 0.0f, fmt, readOnly ? ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly: 0);
+                changed |= ImGui::InputFloat("y", &previewY, 0.0f, 0.0f, fmt, readOnly ? ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly: 0);
+
+                if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                    minimapGenerator->setLookAtPoint(previewX, previewY);
+                }
+                if (ImGui::SliderFloat("Zoom", &previewZoom, 0.1, 10)) {
+                    if (minimapGenerator->getCurrentMode() == EMGMode::ePreview) {
+                        minimapGenerator->setZoom(previewZoom);
+                    }
+                }
+                if (ImGui::Button("Reload")) {
+                    minimapGenerator->reload();
+                }
+
+                ImGui::BeginChild("Minimap Gen Preview image", ImVec2(0, 0),
+                                  true, ImGuiWindowFlags_AlwaysHorizontalScrollbar |
+                                  ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
+                auto drawStage = minimapGenerator->getLastDrawStage();
+                if (drawStage != nullptr) {
+                    auto texture = drawStage->target->getAttachment(0);
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
+                    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0,0,0,1.0));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0,0,0,1.0));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0,0,0,1.0));
+
+                    const int imageSize = 512;
+
+                    if (ImGui::ImageButton2(texture, "previewImage", ImVec2(imageSize, imageSize))) {
+                        auto mousePos = ImGui::GetMousePos();
+                        ImGuiStyle &style = ImGui::GetStyle();
+
+                        mousePos.x += -ImGui::GetWindowPos().x - style.WindowPadding.x;
+                        mousePos.y += -ImGui::GetWindowPos().y - style.WindowPadding.y;
+
+                        previewX = (0.5f - (mousePos.y / (float)imageSize)) * minimapGenerator->GetOrthoDimension() + previewX;
+                        previewY = (0.5f - (mousePos.x / (float)imageSize)) * minimapGenerator->GetOrthoDimension() + previewY;
+                        minimapGenerator->setLookAtPoint(previewX, previewY);
+                    };
+
+                    ImGui::PopStyleColor(3);
+                    ImGui::PopStyleVar(3);
+                }
+
+                ImGui::EndChild();
+
+            }
+            ImGui::EndChild();
+
+
+        }
+        ImGui::Columns(1);
+
+        ImGui::End();
+    } else {
+        if (minimapGenerator != nullptr && minimapGenerator->getCurrentMode() == EMGMode::eNone) {
+            minimapGenerator = nullptr;
+        }
+    }
 }

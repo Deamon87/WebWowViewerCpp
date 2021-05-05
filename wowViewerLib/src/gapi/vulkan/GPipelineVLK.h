@@ -14,23 +14,27 @@ class GPipelineVLK {
 public:
     explicit GPipelineVLK(IDevice &m_device,
                           HGVertexBufferBindings m_bindings,
+                          std::shared_ptr<GRenderPassVLK> renderPass,
                           HGShaderPermutation shader,
                           DrawElementMode element,
                           int8_t backFaceCulling,
                           int8_t triCCW,
                           EGxBlendEnum blendMode,
                           int8_t depthCulling,
-                          int8_t depthWrite);
+                          int8_t depthWrite,
+                          bool invertZ);
     ~GPipelineVLK();
 
     void createPipeline(
         GShaderPermutationVLK *shaderVLK,
+        std::shared_ptr<GRenderPassVLK> renderPass,
         DrawElementMode m_element,
         int8_t m_backFaceCulling,
         int8_t m_triCCW,
         EGxBlendEnum m_blendMode,
         int8_t m_depthCulling,
         int8_t m_depthWrite,
+        bool invertZ,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);

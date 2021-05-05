@@ -6,21 +6,32 @@
 #define AWEBWOWVIEWERCPP_GTEXTUREVLK_H
 
 class GDeviceVLK;
+class GFrameBufferVLK;
 #include "../GDeviceVulkan.h"
 #include "../../interface/textures/ITexture.h"
 
 class GTextureVLK : public ITexture {
     friend class GDeviceVLK;
+    friend class GFrameBufferVLK;
 protected:
-    explicit GTextureVLK(IDevice &device);
-    void createTexture(const MipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
+    explicit GTextureVLK(IDevice &device, bool xWrapTex, bool yWrapTex);
+    //Used for rendering to texture in framebuffer
+    explicit GTextureVLK(IDevice &device,
+                         int width, int height,
+                         bool xWrapTex, bool yWrapTex,
+                         bool isDepthTexture,
+                         const VkFormat textureFormatGPU,
+                         VkSampleCountFlagBits numSamples,
+                         int vulkanMipMapCount,
+                         VkImageUsageFlags imageUsageFlags);
+    void createTexture(const HMipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
 public:
     ~GTextureVLK() override;
 
     void readData(std::vector<uint8_t> &buff) override {};
     void loadData(int width, int height, void *data, ITextureFormat textureFormat) override;
     bool getIsLoaded() override;
-    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
+    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override {
         throw "Not Implemented in this class";
     }
     bool postLoad() override;;
@@ -29,7 +40,6 @@ public:
         VkSampler sampler;
         VkImage image;
         VkImageLayout imageLayout;
-        VkDeviceMemory deviceMemory;
         VkImageView view;
     } texture;
 private:
@@ -48,10 +58,23 @@ private:
 protected:
     GDeviceVLK &m_device;
 
+    bool stagingBufferCreated = false;
+
     bool m_uploaded = false;
     bool m_loaded = false;
     bool m_wrapX = true;
     bool m_wrapY = true;
+
+    int m_width = 0;
+    int m_height = 0;
+
+    void createVulkanImageObject(
+        bool isDepthTexture,
+        const VkFormat textureFormatGPU,
+        VkSampleCountFlagBits numSamples,
+        int vulkanMipMapCount,
+        VkImageUsageFlags imageUsageFlags
+    );
 };
 
 

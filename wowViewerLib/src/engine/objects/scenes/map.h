@@ -16,6 +16,8 @@
 #include "../wdl/wdlObject.h"
 #include "../wowFrameData.h"
 #include "../../SceneScenario.h"
+#include "tbb/tbb.h"
+#include "../../algorithms/FrameCounter.h"
 
 enum class SceneMode {
    smMap,
@@ -23,17 +25,29 @@ enum class SceneMode {
    smWMO
 };
 
-class Map : public IMapApi, public IScene {
+class Map : public IScene, public IMapApi {
+private:
+    void initMapTiles() {
+        for (auto &x : mapTiles) {
+            for (auto &y : x) {
+                y = nullptr;
+            }
+        }
+    }
 protected:
-    ApiContainer *m_api = nullptr;
+
+    tbb::task_scheduler_init taskScheduler;
+    FrameCounter m2UpdateframeCounter;
+
+
+    HApiContainer m_api = nullptr;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
+    std::vector<std::array<uint8_t, 2>> m_mandatoryADT;
     std::string mapName;
 
     SceneMode m_sceneMode = SceneMode::smMap;
 
     float m_currentTime = 0;
-    float m_lastTimeLightCheck = 0;
-    float m_lastTimeAdtCleanup = 0;
 
     bool m_lockedMap = false;
 
@@ -51,6 +65,7 @@ protected:
     HGVertexBufferBindings quadBindings;
     float m_skyConeAlpha = 0.0;
     HGMesh skyMesh = nullptr;
+    HGMesh skyMesh0x4Sky = nullptr;
 
     //Map mode
     std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};
@@ -78,6 +93,7 @@ protected:
     int getCameraNum() override {return 0;};
     std::shared_ptr<ICamera> createCamera(int cameraNum) override { return nullptr;};
 
+
     animTime_t getCurrentSceneTime() override ;
 
     virtual void getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
@@ -89,6 +105,11 @@ protected:
                                        std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
                                        std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                        std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+
+    void checkADTCulling(int i, int j, std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4,
+                              mathfu::vec4 &cameraPos, std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
+                              std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                              std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 
     virtual void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);
@@ -103,14 +124,22 @@ protected:
     };
     std::vector<mapInnerZoneLightRecord> m_zoneLights;
     void loadZoneLights();
-public:
 
-    explicit Map() {
+    FreeStrategy adtFreeLambda;
+    FreeStrategy zeroStateLambda;
+
+    HADTBoundingBoxHolder m_adtBBHolder = nullptr;
+
+protected:
+    explicit Map() : taskScheduler(10){
     }
+public:
+    explicit Map(HApiContainer api, int mapId, std::string mapName) : taskScheduler(10) {
+        initMapTiles();
 
-    explicit Map(ApiContainer *api, int mapId, std::string mapName) {
-        m_mapId = mapId; m_api = api; mapName = mapName;
+        m_mapId = mapId; m_api = api; this->mapName = mapName;
         m_sceneMode = SceneMode::smMap;
+        createAdtFreeLamdas();
 
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
@@ -120,20 +149,29 @@ public:
         m_wdlObject->setMapApi(this);
 
         loadZoneLights();
+
     };
 
-    explicit Map(ApiContainer *api, int mapId, int wdtFileDataId) {
+    explicit Map(HApiContainer api, int mapId, int wdtFileDataId) {
+        initMapTiles();
+
         m_mapId = mapId; m_api = api; mapName = "";
         m_sceneMode = SceneMode::smMap;
+
+        createAdtFreeLamdas();
 
         m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
 
         loadZoneLights();
     };
 
-    explicit Map(ApiContainer *api, std::string adtFileName, int i, int j, std::string mapName) {
+    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) {
+        initMapTiles();
+
         m_mapId = 0; m_api = api; this->mapName = mapName;
         m_sceneMode = SceneMode::smMap;
+
+        createAdtFreeLamdas();
 
         std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
         std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
@@ -151,25 +189,34 @@ public:
     };
 
     ~Map() override {
-
-	} ;
+//        std::cout << "Map destroyed " << std::endl;
+	};
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
+    void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
     void checkCulling(HCullStage cullStage) override;
 
+    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> mandatoryADTs) override {
+        m_mandatoryADT = mandatoryADTs;
+    }
+    void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) override;
+    void setAnimationId(int animationId) override {};
+    void setMeshIds(std::vector<uint8_t> &meshIds) override {};
 
-    void setAnimationId(int animationId) override {
-
-    };
     void resetAnimation() override {
 
     }
+    void setAdtBoundingBoxHolder(HADTBoundingBoxHolder bbHolder) override {
+        m_adtBBHolder = bbHolder;
+    }
+
 
 
     void doPostLoad(HCullStage cullStage) override;
 
-    void update(HUpdateStage updateStage) override;
-    void updateBuffers(HCullStage cullStage) override;
+    void update(HUpdateStage updateStage);
+    void updateBuffers(HUpdateStage updateStage) override;
+    void produceUpdateStage(HUpdateStage updateStage) override;
     void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
@@ -180,10 +227,12 @@ private:
                        int viewRenderOrder,
                        HCullStage cullStage);
 
-    void doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage) const;
+    HDrawStage doGaussBlur(const HDrawStage parentDrawStage, HUpdateStage &updateStage) const;
 
 
+    void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) override;
 
+    void createAdtFreeLamdas();
 };
 
 #endif //WEBWOWVIEWERCPP_MAP_H

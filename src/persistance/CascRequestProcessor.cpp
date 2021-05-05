@@ -6,12 +6,22 @@
 #include <sstream>
 #include "CascRequestProcessor.h"
 
-void CascRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType) {
-    std::string fileName_s(fileName);
-    this->addRequest(fileName_s,holderType);
-}
+void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
+    auto perstFile = s_file.lock();
+    if (perstFile == nullptr) {
+        uint32_t fileDataId = 0;
+        if (fileName.find("File") == 0) {
+            std::stringstream ss;
+            std::string fileDataIdHex = fileName.substr(4, fileName.find(".") - 4);
 
-void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType) {
+            ss << std::hex << fileDataIdHex;
+            ss >> fileDataId;
+        }
+        std::cout << "perstFile for " << fileName << "(fileDataId = "<<fileDataId<<" ) is expired" << std::endl;
+        toBeProcessed--;
+        return;
+    }
+
     std::string fileNameFixed = fileName;
     std::replace( fileNameFixed.begin(), fileNameFixed.end(), '/', '\\');
 
@@ -49,6 +59,8 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
 
                 if (!CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1 - totalBytesRead, &dwBytesRead)) {
                     std::cout << "Could read from file "<< fileName << std::endl << std::flush;
+                    toBeProcessed--;
+                    this->m_fileRequester->rejectFile(holderType, fileName.c_str());
                     return;
                 }
 
@@ -58,8 +70,12 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     }
 
     if (fileOpened) {
-        this->provideResult(fileName, fileContent, holderType);
+        toBeProcessed--;
+        processResult(perstFile, fileContent, fileName);
+
+//        this->provideResult(fileName, fileContent, holderType);
     } else {
+        toBeProcessed--;
         std::cout << "Could not open file "<< fileName << std::endl << std::flush;
         this->m_fileRequester->rejectFile(holderType, fileName.c_str());
     }

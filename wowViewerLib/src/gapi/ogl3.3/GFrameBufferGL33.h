@@ -30,6 +30,7 @@ private:
     std::vector<HGTexture> attachmentTextures;
     HGTexture depthTexture;
 
+    HGTexture defaultTextureForRenderBufFBO;
 
     GLuint m_renderBufFbo;
     ITextureFormat m_depthAttachment;

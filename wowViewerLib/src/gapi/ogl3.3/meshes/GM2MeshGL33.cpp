@@ -12,6 +12,11 @@ void GM2MeshGL33::setM2Object(void *m2Object) {
     m_m2Object = (m2Object);
 }
 
+void *GM2MeshGL33::getM2Object() {
+    return m_m2Object;
+}
+
+
 void GM2MeshGL33::setLayer(int layer) {
     m_layer = layer;
 }

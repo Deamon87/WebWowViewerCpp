@@ -30,5 +30,7 @@ public:
 
     virtual void setCameraPos(float x, float y, float z) = 0;
     virtual void getCameraPosition(float *position) = 0;
+    virtual void setCameraLookAt(float x, float y, float z) = 0;
+
 };
 #endif //WOWVIEWERLIB_CONTROLLABLE_H

@@ -12,27 +12,21 @@
 #include <thread>
 
 #define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
-const float ROUNDING_ERROR_f32 = 0.001f;
-inline bool feq(const float a, const float b, const float tolerance = ROUNDING_ERROR_f32)
-{
-    return (a + tolerance >= b) && (a - tolerance <= b);
-}
-
-
-inline int worldCoordinateToAdtIndex(float x) {
-    return floor((32.0f - (x / 533.33333f)));
-}
-
-inline int worldCoordinateToGlobalAdtChunk(float x) {
-    return floor(( (32.0f*16.0f) - (x / (533.33333f / 16.0f)   )));
-}
-
-inline float AdtIndexToWorldCoordinate(int x) {
-    return (32.0f - x) * 533.33333f;
-}
 
 class MathHelper {
 public:
+    static constexpr float TILESIZE =  1600.0f/3.0f ;
+    static constexpr float CHUNKSIZE = TILESIZE / 16.0f;
+    static constexpr float UNITSIZE =  CHUNKSIZE / 8.0f;
+
+    typedef struct {
+        double h;       // angle in degrees
+        double s;       // a fraction between 0 and 1
+        double v;       // a fraction between 0 and 1
+    } hsv;
+
+    static hsv rgb2hsv(mathfu::vec3 in);
+    static mathfu::vec3 hsv2rgb(hsv in);
 
     static float fp69ToFloat(uint16_t x);
 
@@ -79,7 +73,6 @@ public:
     };
 
     static const mathfu::mat4 &getAdtToWorldMat4() {
-        const float TILESIZE = 533.333333333f;
 
 //        mathfu::mat4 adtToWorldMat4 = mathfu::mat4::Identity();
 //        adtToWorldMat4 *= MathHelper::RotationX(toRadian(90));
@@ -107,6 +100,8 @@ public:
 
     static float distanceFromAABBToPoint(const CAaBox &aabb, mathfu::vec3 &p);
 
+    static bool isAabbIntersect2d(CAaBox a, CAaBox b);
+
     static bool isPointInsideAABB(const CAaBox &aabb, mathfu::vec3 &p);
     static bool isPointInsideAABB(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
 
@@ -120,7 +115,26 @@ public:
     static float distance_aux(float p, float lower, float upper);
 
     static float distanceFromAABBToPoint2DSquared(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
+    static mathfu::vec3 calcExteriorColorDir(mathfu::mat4 lookAtMat, int time);
 };
 
+const float ROUNDING_ERROR_f32 = 0.001f;
+inline bool feq(const float a, const float b, const float tolerance = ROUNDING_ERROR_f32)
+{
+    return (a + tolerance >= b) && (a - tolerance <= b);
+}
+
+
+inline int worldCoordinateToAdtIndex(float x) {
+    return floor((32.0f - (x / MathHelper::TILESIZE)));
+}
+
+inline int worldCoordinateToGlobalAdtChunk(float x) {
+    return floor(( (32.0f*16.0f) - (x / (MathHelper::CHUNKSIZE)   )));
+}
+
+inline float AdtIndexToWorldCoordinate(float x) {
+    return (32.0f - x) * MathHelper::TILESIZE;
+}
 
 #endif //WOWVIEWERLIB_MATHHELPER_H
