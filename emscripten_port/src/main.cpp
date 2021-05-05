@@ -1,6 +1,7 @@
 #include "../../wowViewerLib/src/gapi/IDeviceFactory.h"
 #include "RequestProcessor.h"
 #include "HttpRequestProcessor.h"
+#include "../../src/screenshots/screenshotMaker.h"
 #include "../../wowViewerLib/src/engine/ApiContainer.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
 #include "../../wowViewerLib/src/engine/SceneComposer.h"
@@ -27,6 +28,14 @@ std::shared_ptr<IScene> currentScene = std::make_shared<NullScene>();
 
 std::shared_ptr<ICamera> planarCamera = std::make_shared<PlanarCamera>();
 std::shared_ptr<ICamera> firstPersonCamera = std::make_shared<FirstPersonCamera>();
+
+//Variable for making a screenshot
+std::string screenshotFilename = "";
+HDrawStage screenshotDS = nullptr;
+bool needToMakeScreenshot = false;
+int screenShotWidth = 100;
+int screenShotHeight = 100;
+int screenshotFrame = -1;
 
 std::shared_ptr<IExporter> exporter = nullptr;
 int exporterFramesReady = 0;
@@ -263,6 +272,72 @@ void setScene(int sceneType, std::string name, int cameraNum) {
     }
 }
 
+HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime,
+                                bool isScreenshot, ApiContainer &apiContainer,
+                                const std::shared_ptr<IScene> &currentScene,
+                                HCullStage &cullStage,
+                                std::vector<HDrawStage> &drawStageDependencies
+) {
+    float farPlaneRendering = apiContainer.getConfig()->farPlane;
+    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
+
+    float nearPlane = 1.0;
+    float fov = toRadian(45.0);
+
+    float canvasAspect = (float)width / (float)height;
+
+    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    HCameraMatrices cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+    //Frustum matrix with reversed Z
+
+    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+    if (isInfZSupported)
+    {
+        float f = 1.0f / tan(fov / 2.0f);
+        cameraMatricesRendering->perspectiveMat = mathfu::mat4(
+            f / canvasAspect, 0.0f,  0.0f,  0.0f,
+            0.0f,    f,  0.0f,  0.0f,
+            0.0f, 0.0f,  1, -1.0f,
+            0.0f, 0.0f, 1,  0.0f);
+    }
+
+    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
+        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
+
+        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
+                                                                  0, -1, 0, 0,
+                                                                  0, 0, 1.0/2.0, 1/2.0,
+                                                                  0, 0, 0, 1).Transpose();
+
+        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
+    }
+
+    auto clearColor = apiContainer.getConfig()->clearColor;
+
+    if (currentScene != nullptr) {
+        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
+
+        HFrameBuffer fb = nullptr;
+        if (isScreenshot) {
+            fb = apiContainer.hDevice->createFrameBuffer(width, height,
+                                                         {ITextureFormat::itRGBA},
+                                                         ITextureFormat::itDepth32,
+                                                         apiContainer.hDevice->getMaxSamplesCnt(), 4);
+        }
+
+        cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
+        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
+        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, drawStageDependencies, true,
+                                                                dimensions,
+                                                                true, isInfZSupported, clearColor, fb);
+
+        return sceneDrawStage;
+    }
+
+    return nullptr;
+}
+
+
 extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void createWebJsScene(int p_canvWidth, int p_canvHeight, char *url, char *urlFileId) {
@@ -351,10 +426,16 @@ extern "C" {
     }
 
     EMSCRIPTEN_KEEPALIVE
+    void createScreenshot() {
+        screenshotFilename = "screenshot.png";
+        needToMakeScreenshot = true;
+    }
+
+    EMSCRIPTEN_KEEPALIVE
     void startExport() {
         exporter = std::make_shared<GLTFExporter>("./gltf/");
         currentScene->exportScene(exporter.get());
-        exporterFramesReady = 0;
+
     }
 
     EMSCRIPTEN_KEEPALIVE
@@ -562,44 +643,43 @@ extern "C" {
             }
         }
 
+        if (screenshotDS != nullptr) {
+            if (screenshotFrame + 5 <= apiContainer->hDevice->getFrameNumber()) {
+                std::vector<uint8_t> buffer = std::vector<uint8_t>(screenShotWidth*screenShotHeight*4+1);
+
+                saveDataFromDrawStage(screenshotDS->target, screenshotFilename, screenShotWidth, screenShotHeight, buffer);
+                offerFileAsDownload(screenshotFilename.c_str(), screenshotFilename.size());
+                screenshotDS = nullptr;
+            }
+        }
+
         glfwPollEvents();
 
         processor->processRequests(false);
 
         apiContainer->camera->tick(deltaTime*(1000.0f));
 
-        float farPlaneRendering = apiContainer->getConfig()->farPlane;
-        float farPlaneCulling = apiContainer->getConfig()->farPlaneForCulling;
-
-        float nearPlane = 1.0 ;
-        float fov = toRadian(45.0);
-
-        float canvasAspect = (float)canvWidth / (float)canvHeight;
-
-        auto cameraMatricesCulling = apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-        auto cameraMatricesRendering = apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-
-        bool isInfZSupported = apiContainer->camera->isCompatibleWithInfiniteZ();
-        if (isInfZSupported)
+        HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
+        std::vector<HDrawStage> additionalDependencies = {};
+        if (needToMakeScreenshot)
         {
-            float f = 1.0f / tan(fov / 2.0f);
-            cameraMatricesRendering->perspectiveMat = mathfu::mat4(
-                f / canvasAspect, 0.0f,  0.0f,  0.0f,
-                0.0f,    f,  0.0f,  0.0f,
-                0.0f, 0.0f,  1, -1.0f,
-                0.0f, 0.0f, 1,  0.0f);
+            HCullStage temp = nullptr;
+            screenShotWidth = canvWidth;
+            screenShotHeight = canvHeight;
+            std::vector<HDrawStage> deps = {};
+            auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, 0, true, *apiContainer,
+                                                  currentScene,temp, deps);
+            if (drawStage != nullptr) {
+                additionalDependencies.push_back(drawStage);
+                screenshotDS = drawStage;
+                screenshotFrame = apiContainer->hDevice->getFrameNumber();
+            }
+            needToMakeScreenshot = false;
         }
 
-        HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
-
-        bool clearOnUi = true;
-        auto clearColor = apiContainer->getConfig()->clearColor;
-
-        auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
-        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
-        ViewPortDimensions dimensions = {{0, 0}, {canvWidth, canvHeight}};
-        auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
-                                    dimensions, true, isInfZSupported, clearColor, nullptr);
+        HCullStage cullStage = nullptr;
+        auto sceneDrawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime,
+                                                   false, *apiContainer, currentScene, cullStage, additionalDependencies);
 
 
 
