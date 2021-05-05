@@ -229,6 +229,7 @@ public:
 
     float getHeight();
     void getAvailableAnimation(std::vector<int> &allAnimationList);
+    void getMeshIds(std::vector<int> &meshIdList);
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
 

@@ -168,7 +168,7 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmap
             break;
         }
 
-        case TextureFormat::BGRA:
+        case TextureFormat::RGBA:
         logGLError
             for( int k = 0; k < mipmaps.size(); k++) {
                 glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
@@ -178,7 +178,6 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmap
             skipGenerationOfMipMaps = false;
             break;
         case TextureFormat::None:
-        case TextureFormat::RGBA:
         case TextureFormat::PalARGB1555DitherFloydSteinberg:
         case TextureFormat::PalARGB4444DitherFloydSteinberg:
         case TextureFormat::PalARGB2565DitherFloydSteinberg:

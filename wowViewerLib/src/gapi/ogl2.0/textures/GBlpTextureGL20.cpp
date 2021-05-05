@@ -141,14 +141,14 @@ void GBlpTextureGL20::createGlTexture(TextureFormat textureFormat, const HMipmap
             break;
         }
 
-        case TextureFormat::BGRA:
+        case TextureFormat::RGBA:
             for( int k = 0; k < mipmaps.size(); k++) {
-                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                              &mipmaps[k].texture[0]);
             }
             break;
         case TextureFormat::None:
-        case TextureFormat::RGBA:
+        case TextureFormat::BGRA:
         case TextureFormat::PalARGB1555DitherFloydSteinberg:
         case TextureFormat::PalARGB4444DitherFloydSteinberg:
         case TextureFormat::PalARGB2565DitherFloydSteinberg:

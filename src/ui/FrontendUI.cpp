@@ -2,17 +2,21 @@
 // Created by deamon on 20.12.19.
 //
 
-#include <GLFW/glfw3.h>
 #include "FrontendUI.h"
 
+#ifndef __ANDROID_API__
+#include "imguiLib/imguiImpl/imgui_impl_glfw.h"
 #include <imguiImpl/imgui_impl_opengl3.h>
+#else
+#include <imguiImpl/imgui_impl_android.h>
+#endif
+
 #include <iostream>
 #include <mathfu/glsl_mappings.h>
 #include <groupPanel/groupPanel.h>
 #include <disablableButton/disablableButton.h>
 #include <compactColorPicker/compactColorPicker.h>
 #include <imageButton2/imageButton2.h>
-#include "imguiLib/imguiImpl/imgui_impl_glfw.h"
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
 #include "childWindow/mapConstructionWindow.h"
@@ -439,6 +443,28 @@ void FrontendUI::showMainMenu() {
 
 //
 
+#ifdef __ANDROID_API__
+void FrontendUI::initImgui(ANativeWindow* window) {
+    emptyMinimap();
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void) io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
+
+    // Setup Platform/Renderer bindings
+    ImGui_ImplAndroid_Init(window);
+}
+
+#else
+
 void FrontendUI::initImgui(GLFWwindow *window) {
 
     emptyMinimap();
@@ -458,6 +484,7 @@ void FrontendUI::initImgui(GLFWwindow *window) {
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
 }
+#endif
 
 void FrontendUI::newFrame() {
 //    ImGui_ImplOpenGL3_NewFrame();
@@ -465,8 +492,11 @@ void FrontendUI::newFrame() {
     if (this->fontTexture == nullptr)
         return;
 
-
+#ifdef __ANDROID_API__
+    ImGui_ImplAndroid_NewFrame();
+#else
     ImGui_ImplGlfw_NewFrame();
+#endif
     ImGui::NewFrame();
 }
 
@@ -659,6 +689,11 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Nagrand skybox", ImVec2(-1, 0))) {
 
         openM2SceneByfdid(130575, replacementTextureFDids);
+
+    }
+    if (ImGui::Button("Torghast raid skybox", ImVec2(-1, 0))) {
+
+        openM2SceneByfdid(4001212, replacementTextureFDids);
 
     }
     if (ImGui::Button("3445776 PBR cloud sky in Maw", ImVec2(-1, 0))) {

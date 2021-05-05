@@ -25,11 +25,11 @@ TextureFormat getTextureType(BlpFile *blpFile) {
             textureFormat = TextureFormat::S3TC_RGBA_DXT3;
             break;
         case 2:
-            textureFormat = TextureFormat::BGRA;
+            textureFormat = TextureFormat::RGBA;
             break;
 
         case 3:
-            textureFormat = TextureFormat::BGRA;
+            textureFormat = TextureFormat::RGBA;
             break;
         case 4:
             textureFormat = TextureFormat::PalARGB1555DitherFloydSteinberg;
@@ -41,7 +41,7 @@ TextureFormat getTextureType(BlpFile *blpFile) {
             textureFormat = TextureFormat::S3TC_RGBA_DXT5;
             break;
         case 8:
-            textureFormat = TextureFormat::BGRA;
+            textureFormat = TextureFormat::RGBA;
             break;
         case 9:
             textureFormat = TextureFormat::PalARGB2565DitherFloydSteinberg;
@@ -94,29 +94,46 @@ HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat) {
         mipmapStruct.width = width;
         mipmapStruct.texture.resize(validSize, 0);
 
-        if ((blpFile->colorEncoding == 1) && (blpFile->preferredFormat == 8)) {//Unk format && pixel format 8
-            uint8_t *paleteData = data;
-            validSize = 4 * width * height;
-            mipmapStruct.texture = std::vector<uint8_t>(validSize, 0);
+        //If the bytes are not compressed
+        if (blpFile->preferredFormat == BLPPixelFormat::PIXEL_UNSPECIFIED) {
+            //If the
+            if (blpFile->colorEncoding == BLPColorEncoding::COLOR_PALETTE) {
+                uint8_t *paleteData = data;
+                validSize = 4 * width * height;
+                mipmapStruct.texture = std::vector<uint8_t>(validSize, 0);
 
-            for (int j = 0; j< width*height; j++) {
-                uint8_t colIndex = paleteData[j];
-                uint8_t b = blpFile->palette[colIndex*4 + 0];
-                uint8_t g = blpFile->palette[colIndex*4 + 1];
-                uint8_t r = blpFile->palette[colIndex*4 + 2];
-                uint8_t a = paleteData[width*height + j];
+                for (int j = 0; j< width*height; j++) {
+                    uint8_t colIndex = paleteData[j];
+                    uint8_t b = blpFile->palette[colIndex*4 + 0];
+                    uint8_t g = blpFile->palette[colIndex*4 + 1];
+                    uint8_t r = blpFile->palette[colIndex*4 + 2];
+                    uint8_t a = paleteData[width*height + j];
 
-                mipmapStruct.texture[j*4 + 0] = r;
-                mipmapStruct.texture[j*4 + 1] = g;
-                mipmapStruct.texture[j*4 + 2] = b;
-                mipmapStruct.texture[j*4 + 3] = a;
+                    mipmapStruct.texture[j*4 + 0] = r;
+                    mipmapStruct.texture[j*4 + 1] = g;
+                    mipmapStruct.texture[j*4 + 2] = b;
+                    mipmapStruct.texture[j*4 + 3] = a;
+                }
+            } else if (blpFile->colorEncoding == BLPColorEncoding::COLOR_ARGB8888) {
+                //Turn BGRA into RGBA
+
+                validSize = 4 * width * height;
+                mipmapStruct.texture = std::vector<uint8_t>(validSize, 0);
+                for (int j = 0; j< width*height; j++) {
+                    uint8_t b = data[j*4 + 0];
+                    uint8_t g = data[j*4 + 1];
+                    uint8_t r = data[j*4 + 2];
+                    uint8_t a = data[j*4 + 3];
+
+                    mipmapStruct.texture[j*4 + 0] = r;
+                    mipmapStruct.texture[j*4 + 1] = g;
+                    mipmapStruct.texture[j*4 + 2] = b;
+                    mipmapStruct.texture[j*4 + 3] = a;
+                }
+
+            } else {
+                std::copy(data, data + blpFile->lengths[i], &mipmapStruct.texture[0]);
             }
-        } else {
-            std::copy(data, data+blpFile->lengths[i], &mipmapStruct.texture[0]);
-        }
-
-        if (textureFormat == TextureFormat::BGRA) {
-
         }
 
         height = height / 2;
@@ -130,6 +147,7 @@ HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat) {
 void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
+    std::cout << fileName << std::endl;
     BlpFile *pBlpFile = (BlpFile *) &(*blpFile.get())[0];
     if (pBlpFile->fileIdent != '2PLB') {
         std::cout << pBlpFile->fileIdent;

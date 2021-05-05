@@ -5,6 +5,11 @@
 #ifndef AWEBWOWVIEWERCPP_FRONTENDUI_H
 #define AWEBWOWVIEWERCPP_FRONTENDUI_H
 
+#ifdef __ANDROID_API__
+#include <android/native_window.h>
+#else
+#include <GLFW/glfw3.h>
+#endif
 
 #include "imguiLib/imgui.h"
 #include <fileBrowser/imfilebrowser.h>
@@ -43,6 +48,7 @@ public:
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
     void setAnimationId(int animationId) override {};
+    void setMeshIds(std::vector<uint8_t> &meshIds) override {};
 
     void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
     void produceUpdateStage(HUpdateStage updateStage) override;
@@ -198,7 +204,12 @@ public:
     void overrideCascOpened(bool value) {
         cascOpened = value;
     }
+
+#ifdef __ANDROID_API__
+    void initImgui(ANativeWindow* window);
+#else
     void initImgui(GLFWwindow* window);
+#endif
 
     void composeUI();
     void newFrame();

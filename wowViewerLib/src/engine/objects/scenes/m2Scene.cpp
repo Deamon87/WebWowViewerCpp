@@ -46,7 +46,8 @@ void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3
 }
 
 extern "C" {
-    extern void supplyPointer(int *availablePointer, int length);
+    extern void supplyAnimationList(int *availablePointer, int length);
+    extern void supplyMeshIds(int *availablePointer, int length);
     extern void offerFileAsDownload(std::string filename, std::string mime);
 }
 
@@ -80,10 +81,17 @@ void M2Scene::doPostLoad(HCullStage cullStage) {
             m_api->camera->setCameraPos(1.0,0,0);
             m_api->camera->setCameraOffset(0,0,0);
         }
+#ifdef __EMSCRIPTEN__
         std::vector <int> availableAnimations;
         m_m2Object->getAvailableAnimation(availableAnimations);
-#ifdef __EMSCRIPTEN__
-        supplyPointer(&availableAnimations[0], availableAnimations.size());
+
+        supplyAnimationList(&availableAnimations[0], availableAnimations.size());
+
+        std::vector<int> meshIds;
+        m_m2Object->getMeshIds(meshIds);
+
+        supplyMeshIds(&meshIds[0], meshIds.size());
+
 #endif
         }
     Map::doPostLoad(cullStage);

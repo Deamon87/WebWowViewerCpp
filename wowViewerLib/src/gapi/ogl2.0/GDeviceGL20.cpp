@@ -753,7 +753,7 @@ void GDeviceGL20::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 }
 
 #ifdef __ANDROID_API__
-#include "../androidLogSupport.h"
+#include "../../engine/androidLogSupport.h"
 #endif
 
 std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType) {
@@ -787,7 +787,7 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
     if (g_assetMgr == nullptr) {
         std::cout << "g_assetMgr == nullptr";
     }
-    std::string filename = "glsl/" + shaderName + ".glsl";
+    std::string filename = "glsl/" + fileName + ".glsl";
 
     std::cout << "AAssetManager_open" << std::endl;
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);
@@ -812,13 +812,13 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
     AAsset_close(asset);
     std::cout << "asset closed" << std::endl;
 
-    return std::string(outBuf.begin(), outBuf.end());
+    std::string result = std::string(outBuf.begin(), outBuf.end());
 #else
     std::ifstream t(fullPath);
 
     std::string result = std::string((std::istreambuf_iterator<char>(t)),
                            std::istreambuf_iterator<char>());
-
+#endif
     //Delete version
     {
         auto start = result.find("#version");
@@ -899,7 +899,6 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
 
     shaderCache[hashRecord] = result;
     return result;
-#endif
 }
 
 float GDeviceGL20::getAnisLevel() {

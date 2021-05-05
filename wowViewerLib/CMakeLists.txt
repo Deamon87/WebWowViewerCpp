@@ -10,7 +10,7 @@ set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)
 set(LINK_EGL 1)
-set(LINK_VULKAN 1)
+option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
@@ -48,7 +48,7 @@ endif()
 if (LINK_OGL4)
     add_definitions(-DLINK_OGL4)
 endif()
-if (LINK_VULKAN)
+if (LINK_VULKAN EQUAL ON)
     add_definitions(-DLINK_VULKAN)
 endif()
 
@@ -396,7 +396,7 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h src/engine/persistance/header/skelFileHeader.h)
 endif()
 
-if (LINK_VULKAN)
+if (LINK_VULKAN EQUAL ON)
     set(VULKAN_IMPLEMENTATION
             src/include/vulkancontext.h
             src/gapi/vulkan/GDeviceVulkan.cpp
@@ -499,7 +499,7 @@ if (LINK_OPENMP)
         target_link_libraries(WoWViewerLib -fopenmp)
     endif()
 endif()
-if (LINK_VULKAN)
+if (LINK_VULKAN EQUAL ON)
     target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
 endif()
 
@@ -514,7 +514,7 @@ else()
     mathfu_configure_flags(WoWViewerLib FALSE) #This being TRUE somehow breaks current ribbonEmitter code
 endif()
 
-if (LINK_VULKAN)
+if (LINK_VULKAN EQUAL ON)
     message("Include vulkan include dir ${Vulkan_INCLUDE_DIR}")
     target_include_directories(WoWViewerLib PUBLIC ${Vulkan_INCLUDE_DIR})
     target_compile_definitions(WoWViewerLib PUBLIC -DLINK_VULKAN)
@@ -530,7 +530,7 @@ if (LINK_EGL)
     target_link_libraries(WoWViewerLib ${EGL_PATH}/libEGL.lib)
 endif()
 
-if (0)
+if (1)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
@@ -544,7 +544,7 @@ endif()
 
 set(ext_inDir ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
 
-if (LINK_VULKAN)
+if (LINK_VULKAN EQUAL ON)
     set(ext_inDir ${ext_inDir} ${Vulkan_INCLUDE_DIR})
 endif()
 set(WoWViewerLib_INCLUDE_DIRS ${ext_inDir} CACHE INTERNAL "")

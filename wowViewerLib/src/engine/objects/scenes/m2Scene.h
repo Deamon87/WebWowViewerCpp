@@ -39,6 +39,9 @@ public:
     void setAnimationId(int animationId) override {
         m_m2Object->setAnimationId(animationId);
     };
+    void setMeshIds(std::vector<uint8_t> &meshIds) override {
+        m_m2Object->setMeshIds(meshIds);
+    };
     void resetAnimation() override {
         m_m2Object->resetCurrentAnimation();
     }

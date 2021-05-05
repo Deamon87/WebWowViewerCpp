@@ -4,6 +4,7 @@
 
 #include <locale>
 #include <iomanip>
+#include <unordered_set>
 #include "m2Object.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../managers/animationManager.h"
@@ -1747,6 +1748,23 @@ void M2Object::getAvailableAnimation(std::vector<int> &allAnimationList) {
 
     std::sort( allAnimationList.begin(), allAnimationList.end());
     allAnimationList.erase( unique( allAnimationList.begin(), allAnimationList.end() ), allAnimationList.end());
+}
+void M2Object::getMeshIds(std::vector<int> &meshIdList) {
+//    this->m_skin
+    std::unordered_set<int> meshIdSet;
+
+    auto skinData = m_skinGeom->getSkinData();
+    M2Array<M2Batch>& batches = skinData->batches;
+
+
+    for (int i = 0; i < batches.size; i++) {
+        auto m2Batch = batches[i];
+        auto skinSection = skinData->skinSections[m2Batch->skinSectionIndex];
+
+        meshIdSet.insert(skinSection->skinSectionId);
+    }
+
+    meshIdList = std::vector<int>(meshIdSet.begin(), meshIdSet.end());
 }
 
 

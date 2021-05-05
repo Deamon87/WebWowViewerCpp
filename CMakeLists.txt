@@ -159,8 +159,10 @@ endif()
 if (WIN32)
 	set(WITH_LIBTOMCRYPT true)
 endif()
+
+set(CASC_BUILD_STATIC_LIB 1)
 set(CASC_BUILD_STATIC_LIB ON CACHE BOOL "Set static lib from main project")
-option(CASC_BUILD_SHARED_LIB "" OFF)
+set(CASC_BUILD_SHARED_LIB true CACHE BOOL "Turn off shared lib ")
 add_subdirectory(3rdparty/casclib)
 
 

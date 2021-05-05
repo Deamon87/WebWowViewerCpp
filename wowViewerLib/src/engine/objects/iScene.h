@@ -21,6 +21,7 @@ public:
     virtual void resetReplaceParticleColor() {};
 
     virtual void setAnimationId(int animationId) = 0;
+    virtual void setMeshIds(std::vector<uint8_t> &meshIds) = 0;
     virtual void resetAnimation() = 0;
 
     virtual void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) = 0;

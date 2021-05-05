@@ -1072,7 +1072,7 @@ void GDeviceGL33::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 }
 
 #ifdef __ANDROID_API__
-#include "../androidLogSupport.h"
+#include "../../engine/androidLogSupport.h"
 #endif
 
 std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType) {
@@ -1105,7 +1105,7 @@ std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType
     if (g_assetMgr == nullptr) {
         std::cout << "g_assetMgr == nullptr";
     }
-    std::string filename = "glsl/" + shaderName + ".glsl";
+    std::string filename = fullPath;
 
     std::cout << "AAssetManager_open" << std::endl;
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);

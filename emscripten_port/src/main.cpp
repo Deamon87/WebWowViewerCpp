@@ -463,6 +463,15 @@ extern "C" {
             currentScene->setAnimationId(animationId);
         }
     }
+
+    EMSCRIPTEN_KEEPALIVE
+    void setMeshIdArray(uint8_t *meshIds, int length) {
+        if (currentScene != nullptr) {
+            auto meshIdsVec = std::vector<uint8_t>(meshIds, meshIds+length);
+            currentScene->setMeshIds(meshIdsVec);
+        }
+    }
+
     EMSCRIPTEN_KEEPALIVE
     void setReplaceParticleColors(
         int start0, int start1, int start2,

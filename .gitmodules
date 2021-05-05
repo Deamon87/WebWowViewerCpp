@@ -54,3 +54,6 @@
 	path = 3rdparty/libressl
 	url = https://github.com/libressl-portable/portable.git
 
+[submodule "3rdparty/mdebtls"]
+	path = 3rdparty/mdebtls
+	url = https://github.com/ARMmbed/mbedtls

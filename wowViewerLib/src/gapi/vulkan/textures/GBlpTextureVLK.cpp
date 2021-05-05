@@ -38,8 +38,8 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const HMipmaps
             textureFormatGPU = VK_FORMAT_BC3_UNORM_BLOCK;
             break;
 
-        case TextureFormat::BGRA:
-            textureFormatGPU = VK_FORMAT_B8G8R8A8_UNORM;
+        case TextureFormat::RGBA:
+            textureFormatGPU = VK_FORMAT_R8G8B8A8_UNORM;
             break;
 
         default:

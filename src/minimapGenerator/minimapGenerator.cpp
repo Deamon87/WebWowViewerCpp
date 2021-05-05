@@ -688,7 +688,7 @@ void MinimapGenerator::saveDrawStageToFile(std::string folderToSave, const std::
         (m_y)
     ) + ".png";
 
-    std::__1::vector<uint8_t> buffer = std::__1::vector<uint8_t>(m_width * m_height * 4 + 1);
+    std::vector<uint8_t> buffer = std::vector<uint8_t>(m_width * m_height * 4 + 1);
     saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
     if (lastFrameIt->opaqueMeshes != nullptr) {
 //        std::cout << "Saved " << fileName << ": opaqueMeshes (" << lastFrameIt->opaqueMeshes->meshes.size() << ") "

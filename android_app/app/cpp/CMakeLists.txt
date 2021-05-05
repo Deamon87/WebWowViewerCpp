@@ -16,24 +16,23 @@ endif(COMMAND cmake_policy)
 message("Test message")
 
 set(USE_NEON 0)
-if (CMAKE_SYSTEM_NAME_LOWERCASE MATCHES "ANDROID")
-	include_directories(BEFORE SYSTEM "${NDK_PATH}/include/c++/4.9.x/" "${NDK_PATH}/sysroot/usr/include/")
-	message(ERROR " CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
-	message(ERROR " ANDROID_ABI = ${ANDROID_ABI}")
-	#TODO: check ANDROID_ARM_NEON too
-	if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
-		include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
-		set(USE_NEON 1)
-	elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
-		include_directories(${ANDROID_SYSROOT}/usr/include/aarch64-linux-android)
-		set(USE_NEON 1)
-	elseif(${ANDROID_ABI} STREQUAL "x86_64")
-		include_directories(${ANDROID_SYSROOT}/usr/include/x86_64-linux-android)
-		set(USE_NEON 0)
-	else()
-		include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
-		set(USE_NEON 0)
-	endif()
+
+include_directories(BEFORE SYSTEM "${NDK_PATH}/include/c++/4.9.x/" "${NDK_PATH}/sysroot/usr/include/")
+message(ERROR " CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
+message(ERROR " ANDROID_ABI = ${ANDROID_ABI}")
+#TODO: check ANDROID_ARM_NEON too
+if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
+	include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
+	set(USE_NEON 1)
+elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
+	include_directories(${ANDROID_SYSROOT}/usr/include/aarch64-linux-android)
+	set(USE_NEON 1)
+elseif(${ANDROID_ABI} STREQUAL "x86_64")
+	include_directories(${ANDROID_SYSROOT}/usr/include/x86_64-linux-android)
+	set(USE_NEON 0)
+else()
+	include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
+	set(USE_NEON 0)
 endif()
 
 
@@ -110,8 +109,9 @@ set(PNG_ARM_NEON off CACHE STRING "Shut off .s files for clang compiler" FORCE)
 
 add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/libpng ${CMAKE_CURRENT_BINARY_DIR}/libpng)
 include_directories(${VIEWER_IMPORT_DIR}/3rdparty/libpng)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/libpng)
 include_directories(${VIEWER_IMPORT_DIR}/3rdparty/SQLiteCpp/sqlite3)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libpng)
+
 #c++ 17 FS implementation
 add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/filesystem_impl ${CMAKE_CURRENT_BINARY_DIR}/filesystem_impl)
 
@@ -126,8 +126,7 @@ add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/mdebtls ${CMAKE_CURRENT_BINARY_DI
 SET(MBEDCRYPTO_LIBRARY "mbedcrypto.so")
 SET(MBEDTLS_LIBRARY "mbedx509.so")
 SET(MBEDX509_LIBRARY "mbedtls.so")
-SET(MBEDTLS_INCLUDE_DIRS "mbedtls.so")
-set(MBEDTLS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/mdebtls/include)
+set(MBEDTLS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/mdebtls/include ${CMAKE_CURRENT_SOURCE_DIR}/src/includes)
 
 #cpr
 set(CMAKE_USE_OPENSSL OFF CACHE BOOL "Use OpenSSL code. OFF" )
@@ -192,7 +191,7 @@ set(SOURCE_FILES
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/imgui_demo.cpp
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/imgui_draw.cpp
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/imgui_widgets.cpp
-        ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/imguiImpl/imgui_impl_glfw.cpp
+        ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/imguiImpl/imgui_impl_android.cpp
         ${VIEWER_IMPORT_DIR}/src/ui/FrontendUI.cpp
         ${VIEWER_IMPORT_DIR}/src/ui/FrontendUI.h
         ${VIEWER_IMPORT_DIR}/src/database/CSqliteDB.cpp
@@ -211,7 +210,7 @@ set(SOURCE_FILES
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/groupPanel/groupPanel.cpp
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/groupPanel/groupPanel.h
 
-        ${VIEWER_IMPORT_DIR}/src/main.cpp
+
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/disablableButton/disablableButton.cpp
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/disablableButton/disablableButton.h
         ${VIEWER_IMPORT_DIR}/src/minimapGenerator/storage/CMinimapDataDB.cpp
@@ -263,8 +262,9 @@ endif()
 
 add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/SQLiteCpp ${CMAKE_CURRENT_BINARY_DIR}/SQLiteCpp)
 
-#add_definitions(-DLINK_VULKAN)
-add_library(AWebWoWViewerCpp ${SOURCE_FILES})
+set(LINK_VULKAN OFF CACHE BOOL "Disable vulkan linking" )
+
+add_library(AWebWoWViewerCpp SHARED ${SOURCE_FILES})
 message(ccp WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(AWebWoWViewerCpp PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
@@ -328,7 +328,7 @@ target_link_libraries(AWebWoWViewerCpp WoWViewerLib)
 
 #  target_link_libraries(AWebWoWViewerCpp Threads::Threads)
 
-  target_link_libraries(AWebWoWViewerCpp EGL)
+  target_link_libraries(AWebWoWViewerCpp libEGL)
   target_link_libraries(AWebWoWViewerCpp GLESv2)
   target_link_libraries(AWebWoWViewerCpp android)
   target_link_libraries(AWebWoWViewerCpp log)

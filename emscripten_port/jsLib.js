@@ -1,9 +1,15 @@
 mergeInto(LibraryManager.library, {
-    supplyPointer: function(arrPtr, length) {
+    supplyAnimationList: function(arrPtr, length) {
         var animationIdArr = Module.HEAP32.subarray(arrPtr / 4, arrPtr / 4 + length);
         console.log(animationIdArr);
 
         Module['animationArrayCallback'](animationIdArr);
+    },
+    supplyMeshIds: function(arrPtr, length) {
+        var animationIdArr = Module.HEAP32.subarray(arrPtr / 4, arrPtr / 4 + length);
+        console.log(animationIdArr);
+
+        Module['meshIdArrayCallback'](animationIdArr);
     },
     offerFileAsDownload : function(filename_ptr, filename_len) {
         let mime = "application/octet-stream";
