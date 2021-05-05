@@ -173,9 +173,15 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
                 }
             }
         },
-//        {
-//            'DETL',
-//        }
+        {
+            '1DGP',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered PGD1");
+                    chunkData.readValue(file.particleGeosetData);
+                }
+            }
+        },
         {
             'CBAP',
             {
@@ -288,8 +294,12 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
 
     initTracks(nullptr);
 
-    if (m_wfv3 != 0)  {
+    if (m_wfv3 != nullptr)  {
         m2Header->textures.size = 4;
+    }
+
+    if (particleGeosetData != nullptr) {
+        particleGeosetData->pgd.initM2Array(&particleGeosetData->pgd);
     }
 
     //Step 2: init tracks

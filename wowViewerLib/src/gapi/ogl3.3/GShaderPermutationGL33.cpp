@@ -185,8 +185,8 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 #endif
     bool geomShaderExists = false;
     if (esVersion) {
-        vertExtraDefStrings = "#version 310 es\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 310 es\n" + geomExtraDefStrings;
+        vertExtraDefStrings = "#version 300 es\n" + vertExtraDefStrings;
+        geomExtraDefStrings = "#version 300 es\n" + geomExtraDefStrings;
     } else {
         vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
         geomExtraDefStrings = "#version 330\n" + geomExtraDefStrings;
@@ -210,7 +210,7 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 #endif
 
     if (esVersion) {
-        fragExtraDefStrings = "#version 310 es\n" + fragExtraDefStrings;
+        fragExtraDefStrings = "#version 300 es\n" + fragExtraDefStrings;
     } else {
         fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
     }

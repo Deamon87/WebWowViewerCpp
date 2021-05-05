@@ -1777,7 +1777,17 @@ void M2Object::drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
 
 
     for (int i = minParticle; i < maxParticle; i++) {
-//    for (int i = 0; i< particleEmitters.size(); i++) {
+
+        //Respect PGD1 chunk
+        if (m_m2Geom->particleGeosetData != nullptr) {
+            auto geoset = *m_m2Geom->particleGeosetData->pgd.getElement(i);
+            auto meshGroup = (geoset / 100);
+            if ((meshGroup < this->m_meshIds.size()) && (geoset > 0) &&
+                (m_meshIds[meshGroup] != (geoset % 100))) {
+                continue;
+            }
+        }
+
         particleEmitters[i]->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
 

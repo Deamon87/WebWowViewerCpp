@@ -450,6 +450,10 @@ struct WaterFallDataV3 {
     float unk4;
 });
 
+struct PGD1_chunk {
+    M2Array<uint16_t> pgd;
+};
+
 void initEXP2(EXP2 *exp2);
 
 void initM2Textures(void* sectionStart, M2Array<M2Texture> &textures);

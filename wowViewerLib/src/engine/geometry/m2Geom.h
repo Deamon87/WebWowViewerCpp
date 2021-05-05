@@ -52,6 +52,8 @@ public:
 
     std::vector<uint16_t> blackListAnimations;
 
+    PGD1_chunk * particleGeosetData = nullptr;
+
     EXP2 *exp2 = nullptr;
     std::vector<TXAC> txacMesh = {};
     std::vector<TXAC> txacMParticle = {};

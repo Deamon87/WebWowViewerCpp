@@ -1,3 +1,13 @@
+(function (array) {
+    var nDataBytes = array.length;
+    var dataPtr = Module._malloc(nDataBytes);
+
+    var dataHeap = new Uint8Array(Module.HEAPU8.buffer, dataPtr, nDataBytes);
+    dataHeap.set(new Uint8Array(array));
+
+    Module._setMeshIdArray(dataHeap.byteOffset, array.length);
+})([0,1,3,5])
+
 mergeInto(LibraryManager.library, {
     supplyAnimationList: function(arrPtr, length) {
         var animationIdArr = Module.HEAP32.subarray(arrPtr / 4, arrPtr / 4 + length);
@@ -9,7 +19,9 @@ mergeInto(LibraryManager.library, {
         var animationIdArr = Module.HEAP32.subarray(arrPtr / 4, arrPtr / 4 + length);
         console.log(animationIdArr);
 
-        Module['meshIdArrayCallback'](animationIdArr);
+        if (Module['meshIdArrayCallback']) {
+            Module['meshIdArrayCallback'](animationIdArr);
+        }
     },
     offerFileAsDownload : function(filename_ptr, filename_len) {
         let mime = "application/octet-stream";

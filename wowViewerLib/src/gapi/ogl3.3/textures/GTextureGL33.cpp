@@ -50,27 +50,6 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
 
 
     m_device.bindTexture(this, 0);
-    bool isEmptyTexture = data == nullptr;
-#if defined(WITH_GLESv2) || defined(__EMSCRIPTEN__)
-    int elementSize = 4;
-    if (textureFormat == ITextureFormat::itRGBAFloat32)
-        elementSize = 4 * 4;
-    if (textureFormat == ITextureFormat::itDepth32)
-        elementSize = 64;
-
-    auto tmpData = std::vector<uint8_t>(width*height * elementSize, 0);
-    if (data == nullptr) {
-        data = tmpData.data();
-    }
-#endif
-#if defined(WITH_GLESv2) || defined(__EMSCRIPTEN__)
-    if (data != nullptr) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    }
-#endif
-
-
     if (textureFormat == ITextureFormat::itRGBA) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     } else if (textureFormat == ITextureFormat::itRGBAFloat32)  {
@@ -78,27 +57,23 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
     }else if (textureFormat == ITextureFormat::itDepth32)  {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, data);
     }
-    if (!isEmptyTexture) {
+    if (data != nullptr) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        if (xWrapTex) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        } else {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        }
-        if (yWrapTex) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        } else {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        }
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+    if (xWrapTex) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     } else {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
-
-
+    if (yWrapTex) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
     if (data != nullptr) {
         glGenerateMipmap(GL_TEXTURE_2D);
     }
@@ -108,7 +83,7 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
 }
 
 void GTextureGL33::readData(std::vector<uint8_t> &buff) {
-#if !(defined(WITH_GLESv2) || defined(__EMSCRIPTEN__))
+#ifndef __EMSCRIPTEN__
     if (buff.size() < width*height*4) {
     }
 
@@ -131,7 +106,7 @@ void GTextureGL33::readData(std::vector<uint8_t> &buff) {
 #endif
 }
 
-void GTextureGL33:: bindToCurrentFrameBufferAsColor(uint8_t attachmentIndex) {
+void GTextureGL33::bindToCurrentFrameBufferAsColor(uint8_t attachmentIndex) {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+attachmentIndex, GL_TEXTURE_2D, this->textureIdentifier, 0);
 }
 void GTextureGL33::bindToCurrentFrameBufferAsDepth() {

@@ -177,14 +177,13 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmap
             }
             skipGenerationOfMipMaps = false;
             break;
-        case TextureFormat::None:
-        case TextureFormat::PalARGB1555DitherFloydSteinberg:
-        case TextureFormat::PalARGB4444DitherFloydSteinberg:
-        case TextureFormat::PalARGB2565DitherFloydSteinberg:
+
+        default:
             std::cout << "Detected unhandled texture format" << std::endl;
-        break;
+            break;
     }
 #ifndef WITH_GLESv2
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, (GLint) 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) mipmaps.size()-1);
 #endif
     logGLError
