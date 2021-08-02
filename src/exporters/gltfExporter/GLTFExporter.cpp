@@ -19,6 +19,7 @@
 #include "../../../wowViewerLib/src/engine/objects/m2/m2Object.h"
 #include "../../screenshots/screenshotMaker.h"
 #include "../../../wowViewerLib/src/engine/texture/DxtDecompress.h"
+#include "../../../wowViewerLib/src/include/string_utils.h"
 
 void GLTFExporter::addM2Object(std::shared_ptr<M2Object> &m2Object) {
     m2sToExport.push_back(m2Object);
@@ -108,15 +109,6 @@ void GLTFExporter::exportM2Object(std::shared_ptr<M2Object> &m2Object) {
     model.defaultScene = 0;
 }
 
-static bool endsWith(std::string_view str, std::string_view suffix)
-{
-    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
-}
-
-static bool startsWith(std::string_view str, std::string_view prefix)
-{
-    return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
-}
 
 void GLTFExporter::createTextures(GLTFExporter::M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object) {
     m2ModelData.textureIndexStart = model.textures.size();

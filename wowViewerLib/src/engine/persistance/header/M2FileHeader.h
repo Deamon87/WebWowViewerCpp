@@ -154,7 +154,8 @@ struct M2Ribbon
     M2Track<unsigned char> visibilityTrack;
 
     int16_t priorityPlane;
-    uint16_t padding;
+    int8_t ribbonColorIndex;
+    int8_t textureTransformLookupIndex;
 
 };
 
@@ -339,6 +340,9 @@ struct M2Data {
         uint32_t flag_unk_0x2000 : 1;                       // seen in UI_MainMenu_Legion
         uint32_t flag_unk_0x4000 : 1;
         uint32_t flag_unk_0x8000 : 1;                       // seen in UI_MainMenu_Legion
+        uint32_t flag_unk_0x10000 : 1;
+        uint32_t flag_unk_0x20000 : 1;
+        uint32_t flag_unk_0x40000 : 1;
     } global_flags;
 
     M2Array<M2Loop> global_loops;                        // Timestamps used in global looping animations.

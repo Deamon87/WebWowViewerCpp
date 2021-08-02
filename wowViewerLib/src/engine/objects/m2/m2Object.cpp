@@ -1640,20 +1640,23 @@ void M2Object::initRibbonEmitters() {
 //    return;
     ribbonEmitters = std::vector<CRibbonEmitter *>();
 //    ribbonEmitters.reserve(m_m2Geom->getM2Data()->ribbon_emitters.size);
-    for (int i = 0; i < m_m2Geom->getM2Data()->ribbon_emitters.size; i++) {
-        M2Ribbon *m2Ribbon = m_m2Geom->getM2Data()->ribbon_emitters.getElement(i);
+    auto m2Data = m_m2Geom->getM2Data();
+    for (int i = 0; i < m2Data->ribbon_emitters.size; i++) {
+        M2Ribbon *m2Ribbon = m2Data->ribbon_emitters.getElement(i);
 
         std::vector<M2Material> materials(m2Ribbon->materialIndices.size);
         std::vector<int> textureIndicies(m2Ribbon->textureIndices.size);
         for (size_t j = 0; j < materials.size(); j++) {
-            materials[j] = *m_m2Geom->getM2Data()->materials[*m2Ribbon->materialIndices[j]];
+            materials[j] = *m2Data->materials[*m2Ribbon->materialIndices[j]];
         }
 
         for (size_t j = 0; j < textureIndicies.size(); j++) {
             textureIndicies[j] = *m2Ribbon->textureIndices[j];
         }
 
-        auto emitter = new CRibbonEmitter(m_api, this, materials, textureIndicies);
+        int textureTransformLookup = (m2Data->global_flags.flag_unk_0x20000 != 0) ? m2Ribbon->textureTransformLookupIndex : -1;
+
+        auto emitter = new CRibbonEmitter(m_api, this, materials, textureIndicies, textureTransformLookup);
         ribbonEmitters.push_back(emitter);
 
         CImVector color;
@@ -1765,6 +1768,16 @@ void M2Object::getMeshIds(std::vector<int> &meshIdList) {
     }
 
     meshIdList = std::vector<int>(meshIdSet.begin(), meshIdSet.end());
+}
+mathfu::mat4 M2Object::getTextureTransformByLookup(int textureTrasformlookup) {
+    if (textureTrasformlookup < this->m_m2Geom->getM2Data()->texture_transforms_lookup_table.size) {
+        auto textureTransformIndex = *this->m_m2Geom->getM2Data()->texture_transforms_lookup_table.getElement(textureTrasformlookup);
+        if (textureTransformIndex >= 0 && textureTransformIndex < this->textAnimMatrices.size()) {
+            return this->textAnimMatrices[textureTransformIndex];
+        }
+    }
+
+    return mathfu::mat4::Identity();
 }
 
 

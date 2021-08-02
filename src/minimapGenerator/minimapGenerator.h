@@ -57,7 +57,10 @@ private:
     mathfu::mat4 genTempProjectMatrix();
 public:
 
-    MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice, HRequestProcessor processor, IClientDatabase*, HADTBoundingBoxHolder boundingBoxHolder);
+    MinimapGenerator(HWoWFilesCacheStorage cacheStorage,
+                     std::shared_ptr<IDevice> hDevice,
+                     HRequestProcessor processor,
+                     std::shared_ptr<IClientDatabase> dbhandler, HADTBoundingBoxHolder boundingBoxHolder);
 
     void startScenarios(std::vector<ScenarioDef> &scenarioListToProcess);
     void process();

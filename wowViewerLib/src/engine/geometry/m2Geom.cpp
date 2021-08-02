@@ -279,7 +279,7 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
             }
         }
 
-        std::cout << "Found " << directLights << " direct lights and " << pointLights << " point lights" << std::endl;
+        //std::cout << "Found " << directLights << " direct lights and " << pointLights << " point lights" << std::endl;
     }
 
     if (m2Header->global_flags.flag_has_blend_maps) {

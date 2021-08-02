@@ -21,6 +21,7 @@ struct CRibbonVertex
 
 
 class CRibbonEmitter {
+    int textureTransformLookup = -1;
     int m_refCount;
     std::vector<float> m_edges;
     int m_writePos;
@@ -88,7 +89,7 @@ private:
     void createMesh(M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
 
 public:
-    CRibbonEmitter(HApiContainer m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
+    CRibbonEmitter(HApiContainer m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies, int textureTransformLookup);
     void SetDataEnabled(char a2);
     void SetUserEnabled(char a2);
     CRibbonEmitter *SetGravity(float a2);

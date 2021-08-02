@@ -14,8 +14,11 @@ static GBufferBinding staticRibbonBindings[3] = {
 };
 
 //----- (00A19710) --------------------------------------------------------
-CRibbonEmitter::CRibbonEmitter(HApiContainer api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) : m_api(api)
+CRibbonEmitter::CRibbonEmitter(HApiContainer api, M2Object *object,
+                               std::vector<M2Material> &materials,
+                               std::vector<int> &textureIndicies, int textureTransformLookup) : m_api(api)
 {
+  this->textureTransformLookup = textureTransformLookup;
   this->m_refCount = 1;
   this->m_prevPos.x = 0.0;
   this->m_prevPos.y = 0.0;
@@ -144,12 +147,28 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
 
         auto blendMode = meshTemplate.blendMode;
-        meshTemplate.ubo[4]->setUpdateHandler([blendMode](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
+        auto textureTransformLookupIndex = (this->textureTransformLookup>=0) ? this->textureTransformLookup + i : -1;
+        meshTemplate.ubo[4]->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
             Particle::meshParticleWideBlockPS& blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
 
             blockPS.uAlphaTest = -1.0f;
             blockPS.uPixelShader = 0;
             blockPS.uBlendMode = static_cast<int>(blendMode);
+
+            mathfu::mat4 textureTransformMat = mathfu::mat4::Identity();
+            if (textureTransformLookupIndex >= 0) {
+                textureTransformMat = m2Object->getTextureTransformByLookup(textureTransformLookupIndex);
+            }
+
+            auto textureTranslate = textureTransformMat.GetColumn(3);
+            blockPS.textureTranslate0 = textureTranslate.x;
+            blockPS.textureTranslate1 = textureTranslate.y;
+            blockPS.textureTranslate2 = textureTranslate.z;
+
+            blockPS.textureScale0 = textureTransformMat.GetColumn(0).Length();
+            blockPS.textureScale1 = textureTransformMat.GetColumn(1).Length();
+            blockPS.textureScale2 = textureTransformMat.GetColumn(2).Length();
+
         });
 
         
@@ -215,7 +234,7 @@ void CRibbonEmitter::SetAlpha(float a2)
 void  CRibbonEmitter::InitInterpDeltas()
 {
   float diffLen = (this->m_prevPos - this->m_currPos).LengthSquared();
-  assert(diffLen >= 0.0);
+//  assert(diffLen >= 0.0);
 
   float scale = sqrtf(diffLen);
 

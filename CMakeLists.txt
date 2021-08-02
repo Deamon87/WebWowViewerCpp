@@ -172,6 +172,10 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 endif()
 
 add_subdirectory(wowViewerLib)
+if (LINK_EGL)
+	add_definitions(-DLINK_EGL)
+	add_definitions(-DWITH_GLESv2)
+endif()
 
 
 include_directories(${GLEW_INCLUDE_DIRS})
@@ -213,7 +217,7 @@ set(SOURCE_FILES
 		src/ui/imguiLib/groupPanel/groupPanel.h
 
 		src/main.cpp
-        src/ui/imguiLib/disablableButton/disablableButton.cpp src/ui/imguiLib/disablableButton/disablableButton.h src/minimapGenerator/storage/CMinimapDataDB.cpp src/minimapGenerator/storage/CMinimapDataDB.h src/minimapGenerator/entities.h src/ui/imguiLib/compactColorPicker/compactColorPicker.cpp src/ui/imguiLib/compactColorPicker/compactColorPicker.h src/ui/imguiLib/imageButton2/imageButton2.cpp src/ui/imguiLib/imageButton2/imageButton2.h src/exporters/dataExporter/DataExporterClass.cpp src/exporters/dataExporter/DataExporterClass.h)
+        src/ui/imguiLib/disablableButton/disablableButton.cpp src/ui/imguiLib/disablableButton/disablableButton.h src/minimapGenerator/storage/CMinimapDataDB.cpp src/minimapGenerator/storage/CMinimapDataDB.h src/minimapGenerator/entities.h src/ui/imguiLib/compactColorPicker/compactColorPicker.cpp src/ui/imguiLib/compactColorPicker/compactColorPicker.h src/ui/imguiLib/imageButton2/imageButton2.cpp src/ui/imguiLib/imageButton2/imageButton2.h src/exporters/dataExporter/DataExporterClass.cpp src/exporters/dataExporter/DataExporterClass.h src/database/CEmptySqliteDB.cpp src/database/CEmptySqliteDB.h)
 
 
 

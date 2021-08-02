@@ -9,6 +9,7 @@ set(LINK_GLEW 1)
 set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)
+set(LINK_EGL 1 PARENT_SCOPE)
 set(LINK_EGL 1)
 option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
@@ -20,6 +21,7 @@ if (CMAKE_NDK_BUILD)
 ENDIF()
 
 if (NOT EGL_PATH)
+    set(LINK_EGL 0 PARENT_SCOPE)
     set(LINK_EGL 0)
 endif()
 
@@ -27,7 +29,7 @@ endif()
 if (EMSCRIPTEN)
     message(This is EMSCRIPTEN)
     set(LINK_GLEW 0)
-    set(LINK_VULKAN 0)
+    set(LINK_VULKAN OFF)
     set(LINK_OPENMP 0)
     set(LINK_OGL4 0)
     if (NOT EMSCRIPTEN_SIMD)
@@ -268,7 +270,7 @@ set(SOURCE_FILES
         src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp
         src/engine/objects/m2/m2Helpers/CBoneMasterData.h
         src/exporters/IExporter.h
-        src/engine/objects/iScene.cpp src/engine/algorithms/C3Spline.cpp src/engine/algorithms/C3Spline.h src/engine/algorithms/C3Spline_Bezier3.cpp src/engine/algorithms/C3Spline_Bezier3.h)
+        src/engine/objects/iScene.cpp src/engine/algorithms/C3Spline.cpp src/engine/algorithms/C3Spline.h src/engine/algorithms/C3Spline_Bezier3.cpp src/engine/algorithms/C3Spline_Bezier3.h src/include/string_utils.h src/include/string_utlis.cpp)
 
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp

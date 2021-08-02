@@ -110,10 +110,18 @@ namespace M2 {
 namespace Particle {
     struct meshParticleWideBlockPS {
         float uAlphaTest;
-        float padding[3]; // according to std140
+        float textureScale0;
+        float textureScale1;
+        float textureScale2;
         int uPixelShader;
         int uBlendMode;
-        int padding2[2];
+        int padding2;   // according to std140
+        int padding3;   // according to std140
+        float textureTranslate0;
+        float textureTranslate1;
+        float textureTranslate2;
+        float padding4; // according to std140
+
     };
 }
 

@@ -21,17 +21,17 @@ GBlpTextureGL33::~GBlpTextureGL33() {
 
 void GBlpTextureGL33::bind() {
 #if OPENGL_DGB_MESSAGE
-    std::string debugMess = "Binding Texture "+m_texture->getTextureName();
+    std::string debugMess = "Binding Texture "+m_texture->getTextureName() + "(texture id = " + std::to_string(this->textureIdentifier)+")";
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, (GLsizei)((uint64_t)this&0xfffffff), GLsizei(debugMess.size()), debugMess.c_str());
 
-        glDebugMessageInsert( GL_DEBUG_SOURCE_APPLICATION,
+    glDebugMessageInsert( GL_DEBUG_SOURCE_APPLICATION,
                               GL_DEBUG_TYPE_MARKER, 1,
                               GL_DEBUG_SEVERITY_LOW,
                               GLsizei(debugMess.size()),
                               debugMess.c_str()
-        );
+    );
 #endif
-
+    //std::cout << "Binding Texture "+m_texture->getTextureName() + "(texture id = " + std::to_string(this->textureIdentifier)+")" << std::endl;
     glBindTexture(GL_TEXTURE_2D, textureIdentifier);
 #if OPENGL_DGB_MESSAGE
     glPopDebugGroup();

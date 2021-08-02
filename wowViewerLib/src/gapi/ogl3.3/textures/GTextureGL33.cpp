@@ -19,7 +19,9 @@ GTextureGL33::~GTextureGL33() {
 }
 
 void GTextureGL33::createBuffer() {
+    logGLError
     glGenTextures(1, &textureIdentifier);
+    logGLError
 }
 
 void GTextureGL33::destroyBuffer() {
@@ -30,12 +32,15 @@ void GTextureGL33::destroyBuffer() {
 }
 
 void GTextureGL33::bind() {
+    logGLError
     glBindTexture(GL_TEXTURE_2D, textureIdentifier);
-
+    logGLError
 }
 
 void GTextureGL33::unbind() {
+    logGLError
     glBindTexture(GL_TEXTURE_2D, 0);
+    logGLError
 }
 
 bool GTextureGL33::getIsLoaded() {
@@ -57,8 +62,11 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
     }else if (textureFormat == ITextureFormat::itDepth32)  {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, data);
     }
+
     if (data != nullptr) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, (GLint) 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -83,7 +91,7 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
 }
 
 void GTextureGL33::readData(std::vector<uint8_t> &buff) {
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(WITH_GLESv2))
     if (buff.size() < width*height*4) {
     }
 

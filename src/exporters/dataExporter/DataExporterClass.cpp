@@ -3,17 +3,13 @@
 //
 
 #include "DataExporterClass.h"
+#include "../../../wowViewerLib/src/include/string_utils.h"
 
 DataExporterClass::DataExporterClass(HApiContainer apiContainer) {
     m_apiContainer = apiContainer;
     processedFiles = 0;
     outputLog.open ("m2Log.txt");
-    csv = new io::CSVReader<2, io::trim_chars<' '>, io::no_quote_escape<';'>>("c:\\Users\\Deamon\\Downloads\\listfile (5).csv");
-}
-
-static bool endsWith2(std::string_view str, std::string_view suffix)
-{
-    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+    csv = new io::CSVReader<2, io::trim_chars<' '>, io::no_quote_escape<';'>>("listfile.csv");
 }
 
 void DataExporterClass::process() {
@@ -23,10 +19,10 @@ void DataExporterClass::process() {
     if (m_m2Geom == nullptr) {
 
         while (csv->read_row(currentFileDataId, currentFileName)) {
-            if (endsWith2(currentFileName, ".m2"))
+            if (endsWith(currentFileName, ".m2"))
                 break;
         }
-        if (!endsWith2(currentFileName, ".m2")) {
+        if (!endsWith(currentFileName, ".m2")) {
             finished = true;
             return;
         }
@@ -37,7 +33,7 @@ void DataExporterClass::process() {
         m_m2Geom = nullptr;
 
     if (m_m2Geom != nullptr && m_m2Geom->getStatus() == FileStatus::FSLoaded) {
-        if (m_m2Geom->m_m2Data->particle_emitters.size > 0) {
+        if (m_m2Geom->m_m2Data->particle_emitters.size > 0 || m_m2Geom->m_m2Data->ribbon_emitters.size > 0) {
 
             outputLog << currentFileName << " ";
             for (int i = 0; i < m_m2Geom->m_m2Data->particle_emitters.size; i++) {
@@ -73,6 +69,19 @@ void DataExporterClass::process() {
                     << txacVal
                     << emitterGenerator
                     << " ) ";
+            }
+
+            for (int i = 0; i < m_m2Geom->m_m2Data->ribbon_emitters.size; i++) {
+                auto ribbon = m_m2Geom->m_m2Data->ribbon_emitters[i];
+                bool isRibbonSubstitution = ribbon->ribbonColorIndex > 0;
+                bool isTextureTransform = (m_m2Geom->m_m2Data->global_flags.flag_unk_0x20000 > 0);
+
+                if (isRibbonSubstitution || isTextureTransform) {
+                    outputLog << "( ribbon " << i << " "
+                        << (isRibbonSubstitution ? ("ribbonColorIndex = " + std::to_string(ribbon->ribbonColorIndex) + " " ) : "")
+                        << (isTextureTransform ? ("textureTransformLookupIndex = " + std::to_string(ribbon->textureTransformLookupIndex) + " ") : "")
+                        << " ) ";
+                }
             }
             processedFiles++;
             outputLog << std::endl;

@@ -65,13 +65,13 @@ namespace GL33 {
     void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
                     const void *userParam) {
 //        if (type == GL_DEBUG_TYPE_ERROR_KHR) {
-            fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-                    source,
-                    type,
-                    id,
-                    severity,
-                    std::string(message, message + length).c_str());
-            fflush(stdout);
+//            fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+//                    source,
+//                    type,
+//                    id,
+//                    severity,
+//                    std::string(message, message + length).c_str());
+//            fflush(stdout);
 //        }
 
     }
@@ -666,24 +666,24 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
         ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
-#if OPENGL_DGB_MESSAGE
-    std::string debugMess =
-        "Drawing mesh "
-        " meshType = " + std::to_string((int)hmesh->getMeshType()) +
-        " priorityPlane = " + std::to_string(hmesh->priorityPlane()) +
-        " sortDistance = " + std::to_string(hmesh->getSortDistance()) +
-        " layer = " + std::to_string(hmesh->layer()) +
-        " blendMode = " + std::to_string((int)hmesh->getGxBlendMode());
-
-    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, (GLsizei)((uint64_t)this&0xfffffff), GLsizei(debugMess.size()), debugMess.c_str());
-
-    glDebugMessageInsert( GL_DEBUG_SOURCE_APPLICATION,
-                          GL_DEBUG_TYPE_MARKER, 1,
-                          GL_DEBUG_SEVERITY_LOW,
-                          GLsizei(debugMess.size()),
-                          debugMess.c_str()
-    );
-#endif
+//#if OPENGL_DGB_MESSAGE
+//    std::string debugMess =
+//        "Drawing mesh "
+//        " meshType = " + std::to_string((int)hmesh->getMeshType()) +
+//        " priorityPlane = " + std::to_string(hmesh->priorityPlane()) +
+//        " sortDistance = " + std::to_string(hmesh->getSortDistance()) +
+//        " layer = " + std::to_string(hmesh->layer()) +
+//        " blendMode = " + std::to_string((int)hmesh->getGxBlendMode());
+//
+//    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, (GLsizei)((uint64_t)this&0xfffffff), GLsizei(debugMess.size()), debugMess.c_str());
+//
+//    glDebugMessageInsert( GL_DEBUG_SOURCE_APPLICATION,
+//                          GL_DEBUG_TYPE_MARKER, 1,
+//                          GL_DEBUG_SEVERITY_LOW,
+//                          GLsizei(debugMess.size()),
+//                          debugMess.c_str()
+//    );
+//#endif
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
@@ -708,9 +708,9 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 #endif
 
 
-#if OPENGL_DGB_MESSAGE
-    glPopDebugGroup();
-#endif
+//#if OPENGL_DGB_MESSAGE
+//    glPopDebugGroup();
+//#endif
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
         ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->endConditionalRendering();
     }
@@ -968,10 +968,10 @@ GDeviceGL33::GDeviceGL33() {
 
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
 
-//    glEnable(GL_DEBUG_OUTPUT);
-//    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-//    glDebugMessageCallback(GL33::debug_func, NULL);
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+    glDebugMessageCallback(GL33::debug_func, NULL);
 }
 
 HGOcclusionQuery GDeviceGL33::createQuery(HGMesh boundingBoxMesh) {

@@ -45,6 +45,7 @@
 #include "../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
 #include "../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
 #include "screenshots/screenshotMaker.h"
+#include "database/CEmptySqliteDB.h"
 #include <exception>
 
 //TODO: Consider using dedicated buffers for uniform data for OGL in update thread, fill them up there
@@ -307,7 +308,6 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 #endif
 
 
-
 double currentFrame;
 double lastFrame;
 
@@ -335,6 +335,10 @@ int main(){
     glfwInit();
 
     bool egl = false;
+#ifdef WITH_GLESv2
+    egl = true;
+#endif
+
 //    std::string rendererName = "ogl2";
       std::string rendererName = "ogl3";
 //    std::string rendererName = "vulkan";
@@ -400,15 +404,11 @@ int main(){
     }
 
     //Open Sql storage
-	
-    CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
-
-
     HApiContainer apiContainer = std::make_shared<ApiContainer>();
 
     //Create device
     auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
-    apiContainer->databaseHandler = sqliteDB;
+    apiContainer->databaseHandler = std::make_shared<CEmptySqliteDB>() ;
     apiContainer->hDevice = hdevice;
     apiContainer->camera = std::make_shared<FirstPersonCamera>();
 
@@ -445,10 +445,6 @@ int main(){
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
-        if (apiContainer->getConfig()->pauseAnimation) {
-            deltaTime = 0.0;
-        }
-
         {
             auto processor = frontendUI->getProcessor();
             if (frontendUI->getProcessor()) {
@@ -463,6 +459,9 @@ int main(){
 
         //DrawStage for screenshot
 //        needToMakeScreenshot = true;
+        if (apiContainer->getConfig()->pauseAnimation) {
+            deltaTime = 0.0;
+        }
         auto sceneScenario = frontendUI->createFrameScenario(canvWidth, canvHeight, deltaTime);
 
         sceneComposer.draw(sceneScenario);

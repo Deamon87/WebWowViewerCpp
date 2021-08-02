@@ -26,13 +26,14 @@ class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI
 //Implementation of iInnerSceneApi
 public:
     void createDefaultprocessor();
+    void createDatabaseHandler();
 
     FrontendUI(HApiContainer api, HRequestProcessor processor) {
         m_api = api;
         m_processor = processor;
 
 
-        this->createDefaultprocessor();
+        //this->createDefaultprocessor();
 
     }
     ~FrontendUI() override {};
@@ -124,7 +125,7 @@ private:
     bool refilterIsNeeded = false;
     void filterMapList(std::string text);
 
-    ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory);
+    ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory, true);
     ImGui::FileBrowser createFileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);
 
     bool show_demo_window = true;

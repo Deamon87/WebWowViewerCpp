@@ -30,6 +30,8 @@
 #include "../exporters/gltfExporter/GLTFExporter.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/NullScene.h"
 #include "../exporters/dataExporter/DataExporterClass.h"
+#include "../database/CSqliteDB.h"
+#include "../database/CEmptySqliteDB.h"
 
 static const GBufferBinding imguiBindings[3] = {
     {+imguiShader::Attribute::Position, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos)},
@@ -76,8 +78,12 @@ void FrontendUI::composeUI() {
 
     if (fileDialog.HasSelected()) {
         std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
+        std::string cascPath = fileDialog.GetSelected().string();
+        std::string product = fileDialog.getProductBuild();
+        if (!product.empty())
+            cascPath = cascPath + ":"+product;
 
-        if (!openCascCallback(fileDialog.GetSelected().string())) {
+        if (!openCascCallback(cascPath)) {
             ImGui::OpenPopup("Casc failed");
             cascOpened = false;
         } else {
@@ -1360,7 +1366,6 @@ bool FrontendUI::openCascCallback(std::string cascPath) {
     HRequestProcessor newProcessor = nullptr;
     std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
     try {
-        cascPath = cascPath + ":wowt";
         newProcessor = std::make_shared<CascRequestProcessor>(cascPath.c_str());
         newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
         newProcessor->setThreaded(true);
@@ -1460,6 +1465,13 @@ void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
     cameraZ = currentCameraPos[2];
 }
 
+inline bool fileExistsNotNull (const std::string& name) {
+    ghc::filesystem::path p{name};
+
+    return exists(p) && ghc::filesystem::file_size(p) > 10;
+}
+
+
 void FrontendUI::createDefaultprocessor() {
 
     const char * url = "https://wow.tools/casc/file/fname?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=";
@@ -1472,7 +1484,7 @@ void FrontendUI::createDefaultprocessor() {
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
 //    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-    m_processor = std::make_shared<CascRequestProcessor>("e:\\games\\wow beta\\World of Warcraft Beta\\:wowt");
+//    m_processor = std::make_shared<CascRequestProcessor>("e:\\games\\wow beta\\World of Warcraft Beta\\:wowt");
 ////        processor->setThreaded(false);
 ////
     m_processor->setThreaded(true);
@@ -1481,10 +1493,17 @@ void FrontendUI::createDefaultprocessor() {
     overrideCascOpened(true);
 
 
-    {
-        std::vector<int> replacementTextureFDids = {0,0,3607739};
-//        replacementTextureFDids[2] = 3607739;
-        openM2SceneByfdid(3607377, replacementTextureFDids);
+//    {
+//        std::vector<int> replacementTextureFDids = {0,0,3607739};
+////        replacementTextureFDids[2] = 3607739;
+//        openM2SceneByfdid(4062864, replacementTextureFDids);
+//    }
+
+    //Create default database handler
+    if (fileExistsNotNull("./export.db3")) {
+        m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
+    } else {
+        m_api->databaseHandler = std::make_shared<CEmptySqliteDB>();
     }
 }
 
@@ -1974,4 +1993,8 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
             minimapGenerator = nullptr;
         }
     }
+}
+
+void FrontendUI::createDatabaseHandler() {
+
 }

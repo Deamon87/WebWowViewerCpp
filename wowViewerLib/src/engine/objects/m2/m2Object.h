@@ -230,6 +230,7 @@ public:
     float getHeight();
     void getAvailableAnimation(std::vector<int> &allAnimationList);
     void getMeshIds(std::vector<int> &meshIdList);
+    mathfu::mat4 getTextureTransformByLookup(int textureTrasformlookup);
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
 

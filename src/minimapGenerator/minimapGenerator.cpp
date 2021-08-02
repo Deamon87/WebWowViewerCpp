@@ -14,7 +14,7 @@
 
 
 MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice,
-                                   HRequestProcessor processor, IClientDatabase* dbhandler,
+                                   HRequestProcessor processor, std::shared_ptr<IClientDatabase> dbhandler,
                                    HADTBoundingBoxHolder boundingBoxHolder) {
     m_apiContainer = std::make_shared<ApiContainer>();
 
