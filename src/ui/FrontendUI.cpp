@@ -17,6 +17,7 @@
 #include <disablableButton/disablableButton.h>
 #include <compactColorPicker/compactColorPicker.h>
 #include <imageButton2/imageButton2.h>
+#include <stateSaver/stateSaver.h>
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
 #include "childWindow/mapConstructionWindow.h"
@@ -477,7 +478,25 @@ void FrontendUI::initImgui(GLFWwindow *window) {
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+    auto context = ImGui::CreateContext();
+    auto &fileDialog = this->fileDialog;
+    addIniCallback(context,
+               "Global Settings",
+               [&fileDialog](const char* line) -> void {
+                    char lastCascDir[256];
+                    if (sscanf(line, "lastCascDir=%[^\n\r]", &lastCascDir) == 1) {
+                        std::string s = std::string(&lastCascDir[0]);
+//                        std::cout << " read string s = " << s << std::endl;
+
+                        fileDialog.SetPwd(s);
+                    }
+               },
+               [&fileDialog](ImGuiTextBuffer* buf) -> void {
+                   std::string currPath = fileDialog.GetSelected();
+                   buf->appendf("lastCascDir=%s\n", currPath.c_str());
+               }
+       );
+
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls

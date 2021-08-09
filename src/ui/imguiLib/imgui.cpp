@@ -3774,9 +3774,15 @@ void ImGui::Initialize(ImGuiContext* context)
         ImGuiSettingsHandler ini_handler;
         ini_handler.TypeName = "Window";
         ini_handler.TypeHash = ImHashStr("Window");
-        ini_handler.ReadOpenFn = WindowSettingsHandler_ReadOpen;
-        ini_handler.ReadLineFn = WindowSettingsHandler_ReadLine;
-        ini_handler.WriteAllFn = WindowSettingsHandler_WriteAll;
+        ini_handler.ReadOpenFn = [](ImGuiContext* g, ImGuiSettingsHandler* gg, const char* name) -> void* {
+            return WindowSettingsHandler_ReadOpen(g, gg, name);
+        };
+        ini_handler.ReadLineFn = [](ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line) -> void {
+            WindowSettingsHandler_ReadLine(ctx, handler, entry, line);
+        };
+        ini_handler.WriteAllFn = [](ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) -> void {
+            WindowSettingsHandler_WriteAll(ctx, handler, buf);
+        };
         g.SettingsHandlers.push_back(ini_handler);
     }
 
@@ -9357,7 +9363,7 @@ ImGuiSettingsHandler* ImGui::FindSettingsHandler(const char* type_name)
 {
     ImGuiContext& g = *GImGui;
     const ImGuiID type_hash = ImHashStr(type_name);
-    for (int handler_n = 0; handler_n < g.SettingsHandlers.Size; handler_n++)
+    for (int handler_n = 0; handler_n < g.SettingsHandlers.size(); handler_n++)
         if (g.SettingsHandlers[handler_n].TypeHash == type_hash)
             return &g.SettingsHandlers[handler_n];
     return NULL;
@@ -9442,7 +9448,7 @@ const char* ImGui::SaveIniSettingsToMemory(size_t* out_size)
     g.SettingsDirtyTimer = 0.0f;
     g.SettingsIniData.Buf.resize(0);
     g.SettingsIniData.Buf.push_back(0);
-    for (int handler_n = 0; handler_n < g.SettingsHandlers.Size; handler_n++)
+    for (int handler_n = 0; handler_n < g.SettingsHandlers.size(); handler_n++)
     {
         ImGuiSettingsHandler* handler = &g.SettingsHandlers[handler_n];
         handler->WriteAllFn(&g, handler, &g.SettingsIniData);

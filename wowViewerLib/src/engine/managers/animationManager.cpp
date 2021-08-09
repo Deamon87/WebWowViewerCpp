@@ -1100,6 +1100,11 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
 //            diffuse_intensity = 1.0;
 //        }
 
+        if (boneMasterData->getM2Geom()->getM2Data()->global_flags.flag_unk_0x8000 == 0) {
+            attenuation_start =  1.6666f;
+            attenuation_end = 5.2666602f;
+        }
+
         lights[i].ambient_color = ambient_color;
         lights[i].ambient_intensity = ambient_intensity;
         lights[i].ambient_color = ambient_color * ambient_intensity;

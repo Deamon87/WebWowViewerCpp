@@ -207,14 +207,14 @@ void MinimapGenerator::setupScenarioData() {
                 std::array<float, 2> minMaxScreenZ = {20000, -20000};
 
                 for (int i = 0; i < corners.size(); i++) {
-                    minMaxScreenX[0] = std::min(corners[i].x, minMaxScreenX[0]);
-                    minMaxScreenX[1] = std::max(corners[i].x, minMaxScreenX[1]);
+                    minMaxScreenX[0] = std::min<float>(corners[i].x, minMaxScreenX[0]);
+                    minMaxScreenX[1] = std::max<float>(corners[i].x, minMaxScreenX[1]);
 
-                    minMaxScreenY[0] = std::min(corners[i].y, minMaxScreenY[0]);
-                    minMaxScreenY[1] = std::max(corners[i].y, minMaxScreenY[1]);
+                    minMaxScreenY[0] = std::min<float>(corners[i].y, minMaxScreenY[0]);
+                    minMaxScreenY[1] = std::max<float>(corners[i].y, minMaxScreenY[1]);
 
-                    minMaxScreenZ[0] = std::min(corners[i].z, minMaxScreenZ[0]);
-                    minMaxScreenZ[1] = std::max(corners[i].z, minMaxScreenZ[1]);
+                    minMaxScreenZ[0] = std::min<float>(corners[i].z, minMaxScreenZ[0]);
+                    minMaxScreenZ[1] = std::max<float>(corners[i].z, minMaxScreenZ[1]);
                 }
 
                 //Add adt to all occupied cells
@@ -260,11 +260,11 @@ MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, c
 
                 auto adtMinZ = (*m_boundingBoxHolder)[adt_x][adt_y].min.z;
                 if (adtMinZ < 32*MathHelper::TILESIZE)
-                    minZ = std::min(adtMinZ, minZ);
+                    minZ = std::min<float>(adtMinZ, minZ);
 
                 auto adtMaxZ = (*m_boundingBoxHolder)[adt_x][adt_y].max.z;
                 if (adtMaxZ > -32*MathHelper::TILESIZE) {
-                    maxZ = std::max((*m_boundingBoxHolder)[adt_x][adt_y].max.z, maxZ);
+                    maxZ = std::max<float>((*m_boundingBoxHolder)[adt_x][adt_y].max.z, maxZ);
                 }
             }
         }
@@ -316,14 +316,14 @@ MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, c
     std::array<float, 2> minMaxScreenZ = {20000, -20000};
 
     for (int i = 0; i < corners.size(); i++) {
-        minMaxScreenX[0] = std::min(corners[i].x, minMaxScreenX[0]);
-        minMaxScreenX[1] = std::max(corners[i].x, minMaxScreenX[1]);
+        minMaxScreenX[0] = std::min<float>(corners[i].x, minMaxScreenX[0]);
+        minMaxScreenX[1] = std::max<float>(corners[i].x, minMaxScreenX[1]);
 
-        minMaxScreenY[0] = std::min(corners[i].y, minMaxScreenY[0]);
-        minMaxScreenY[1] = std::max(corners[i].y, minMaxScreenY[1]);
+        minMaxScreenY[0] = std::min<float>(corners[i].y, minMaxScreenY[0]);
+        minMaxScreenY[1] = std::max<float>(corners[i].y, minMaxScreenY[1]);
 
-        minMaxScreenZ[0] = std::min(corners[i].z, minMaxScreenZ[0]);
-        minMaxScreenZ[1] = std::max(corners[i].z, minMaxScreenZ[1]);
+        minMaxScreenZ[0] = std::min<float>(corners[i].z, minMaxScreenZ[0]);
+        minMaxScreenZ[1] = std::max<float>(corners[i].z, minMaxScreenZ[1]);
     }
 
 
