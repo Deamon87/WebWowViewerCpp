@@ -88,4 +88,35 @@ vec3 calcLight(
 
 
     return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) + specTerm + emTerm;
+
+
+//    vec3 normalDirection = normalize(vNormal);
+//
+//    vec3 viewDirection = normalize(_WorldSpaceCameraPos - vec3(position));
+//    vec3 lightDirection;
+//    float attenuation;
+//
+//    if (0.0 == _WorldSpaceLightPos0.w) // directional light?
+//    {
+//        attenuation = 1.0; // no attenuation
+//        lightDirection = normalize(vec3(_WorldSpaceLightPos0));
+//    }
+//    else // point or spot light
+//    {
+//        vec3 vertexToLightSource =
+//        vec3(_WorldSpaceLightPos0 - position);
+//        float distance = length(vertexToLightSource);
+//        attenuation = 1.0 / distance; // linear attenuation
+//        lightDirection = normalize(vertexToLightSource);
+//    }
+//
+//    vec4 fragmentColor = vec4(0.0, 0.0, 0.0, 0.0);
+//    if (dot(normalDirection, lightDirection) > 0.0
+//    // light source on the right side?
+//        && attenuation *  pow(max(0.0, dot(reflect(-lightDirection, normalDirection), viewDirection)), _Shininess) > 0.5)
+//    // more than half highlight intensity?
+//    {
+//        fragmentColor = vec4(_LightColor0.rgb, 1.0) * _SpecColor;
+//    }
+
 }

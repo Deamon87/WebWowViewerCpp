@@ -450,29 +450,13 @@ void FrontendUI::showMainMenu() {
 
 //
 
+void FrontendUI::initImgui(
 #ifdef __ANDROID_API__
-void FrontendUI::initImgui(ANativeWindow* window) {
-    emptyMinimap();
-
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    (void) io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
-
-    // Setup Platform/Renderer bindings
-    ImGui_ImplAndroid_Init(window);
-}
-
+    ANativeWindow *window
 #else
-
-void FrontendUI::initImgui(GLFWwindow *window) {
+    GLFWwindow *window
+#endif
+) {
 
     emptyMinimap();
 
@@ -507,9 +491,12 @@ void FrontendUI::initImgui(GLFWwindow *window) {
     //ImGui::StyleColorsClassic();
 
     // Setup Platform/Renderer bindings
+#ifdef __ANDROID_API__
+    ImGui_ImplAndroid_Init(window);
+#else
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-}
 #endif
+}
 
 void FrontendUI::newFrame() {
 //    ImGui_ImplOpenGL3_NewFrame();
@@ -1486,8 +1473,14 @@ void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
 
 inline bool fileExistsNotNull (const std::string& name) {
     ghc::filesystem::path p{name};
+    std::error_code errorCode;
 
-    return exists(p) && ghc::filesystem::file_size(p) > 10;
+    bool fileExists = exists(p,errorCode) && ghc::filesystem::file_size(p) > 10;
+    if (errorCode) {
+        std::cout << "errorCode = " << errorCode.message() << std::endl;
+    }
+
+    return fileExists;
 }
 
 
@@ -1518,12 +1511,6 @@ void FrontendUI::createDefaultprocessor() {
 //        openM2SceneByfdid(4062864, replacementTextureFDids);
 //    }
 
-    //Create default database handler
-    if (fileExistsNotNull("./export.db3")) {
-        m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
-    } else {
-        m_api->databaseHandler = std::make_shared<CEmptySqliteDB>();
-    }
 }
 
 auto FrontendUI::createMinimapGenerator() {
@@ -2015,5 +2002,9 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
 }
 
 void FrontendUI::createDatabaseHandler() {
-
+    if (fileExistsNotNull("./export.db3")) {
+        m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
+    } else {
+        m_api->databaseHandler = std::make_shared<CEmptySqliteDB>();
+    }
 }

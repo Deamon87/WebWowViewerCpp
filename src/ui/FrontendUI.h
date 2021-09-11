@@ -32,7 +32,7 @@ public:
         m_api = api;
         m_processor = processor;
 
-
+        this->createDatabaseHandler();
         //this->createDefaultprocessor();
 
     }
@@ -209,7 +209,13 @@ public:
 #ifdef __ANDROID_API__
     void initImgui(ANativeWindow* window);
 #else
-    void initImgui(GLFWwindow* window);
+    void initImgui(
+#ifdef __ANDROID_API__
+    ANativeWindow *window
+#else
+    GLFWwindow *window
+#endif
+);
 #endif
 
     void composeUI();

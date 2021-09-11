@@ -99,6 +99,7 @@ void SkinGeom::fixData(M2Data *m2File) {
 }
 
 void SkinGeom::fixShaderIdBasedOnLayer(M2Data *m2File) {
+/*
     M2SkinProfile* skinFileData = this->m_skinData;
 
     bool reducingIsNeeded = false;
@@ -208,6 +209,7 @@ void SkinGeom::fixShaderIdBasedOnLayer(M2Data *m2File) {
             }
         }
     }
+    */
 }
 
 std::vector<uint16_t> SkinGeom::generateIndexBuffer() {

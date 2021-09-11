@@ -4,7 +4,9 @@ project(AWebWoWViewerCpp)
 include(ExternalProject)
 
 enable_language( C CXX ASM )
-
+message(WARNING ANDROID_PLATFORM_LEVEL is ${ANDROID_PLATFORM_LEVEL})
+message(WARNING CMAKE_ANDROID_NATIVE_LIB_DIRECTORIES is ${CMAKE_ANDROID_NATIVE_LIB_DIRECTORIES})
+message(WARNING ANDROID_NATIVE_LIB_DIRECTORIES is ${ANDROID_NATIVE_LIB_DIRECTORIES})
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 if(POLICY CMP0077)
@@ -49,33 +51,6 @@ message(CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE})
 #set(CMAKE_BUILD_TYPE Release)
 #set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC ")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC  ")
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	message("This is clang")
-	#Force clang to use libc++
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -static ")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static -stdlib=libc++")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -static ")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -stdlib=libc++")
-#	link_libraries(libstdc++fs)
-
-
-	#set(_GLIBCXX_USE_C99_CHECK 0)
-	#set(_GLIBCXX_USE_C99_DYNAMIC 0)
-	#set(_GLIBCXX_USE_C99_LONG_LONG_CHECK 0)
-	#set(_GLIBCXX_USE_C99_LONG_LONG_DYNAMIC 0)
-#	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
-#	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
-#	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
-endif()
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	link_libraries(stdc++fs)
-#	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread")
-#	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread ")
-#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
-endif()
-
-
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -pthread")
 
 #ZLib library
@@ -120,33 +95,13 @@ set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/bzip ${CMAKE_CURRENT_BINARY_DIR}/bzip)
 
 #mdebtls as replacement for openssl
-set(USE_STATIC_MBEDTLS_LIBRARY ON CACHE BOOL "Use static" )
-set(USE_SHARED_MBEDTLS_LIBRARY ON CACHE BOOL "Do not use shared" )
-add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/mdebtls ${CMAKE_CURRENT_BINARY_DIR}/mdebtls)
-SET(MBEDCRYPTO_LIBRARY "mbedcrypto.so")
-SET(MBEDTLS_LIBRARY "mbedx509.so")
-SET(MBEDX509_LIBRARY "mbedtls.so")
-set(MBEDTLS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/mdebtls/include ${CMAKE_CURRENT_SOURCE_DIR}/src/includes)
-
-#cpr
-set(CMAKE_USE_OPENSSL OFF CACHE BOOL "Use OpenSSL code. OFF" )
-set(CMAKE_USE_MBEDTLS ON CACHE BOOL "ON" )
-include(FetchContent)
-FetchContent_Declare(cpr
-		GIT_REPOSITORY https://github.com/whoshuu/cpr.git
-		GIT_TAG c8d33915dbd88ad6c92b258869b03aba06587ff9 # the commit hash for 1.5.0
-		)
-#FetchContent_MakeAvailable(cpr)
-FetchContent_GetProperties(cpr)
-if(NOT cpr_POPULATED)
-	MESSAGE("CPR IS NOT POPULATED")
-	FetchContent_Populate(cpr)
-
-	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR})
-else()
-	MESSAGE("CPR IS POPULATED")
-endif()
-
+#set(USE_STATIC_MBEDTLS_LIBRARY ON CACHE BOOL "Use static" )
+#set(USE_SHARED_MBEDTLS_LIBRARY ON CACHE BOOL "Do not use shared" )
+#add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/mdebtls ${CMAKE_CURRENT_BINARY_DIR}/mdebtls)
+#SET(MBEDCRYPTO_LIBRARY "mbedcrypto.so")
+#SET(MBEDTLS_LIBRARY "mbedx509.so")
+#SET(MBEDX509_LIBRARY "mbedtls.so")
+#set(MBEDTLS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/mdebtls/include ${CMAKE_CURRENT_SOURCE_DIR}/src/includes)
 
 #CascLib
 add_definitions(-DCASCLIB_NO_AUTO_LINK_LIBRARY)
@@ -174,6 +129,7 @@ add_subdirectory(${VIEWER_IMPORT_DIR}/wowViewerLib ${CMAKE_CURRENT_BINARY_DIR}/w
 
 
 set(SOURCE_FILES
+		src/main.cpp
         ${VIEWER_IMPORT_DIR}/src/persistance/httpFile/httpFile.cpp
         ${VIEWER_IMPORT_DIR}/src/persistance/httpFile/httpFile.h
         ${VIEWER_IMPORT_DIR}/src/persistance/RequestProcessor.cpp
@@ -221,7 +177,12 @@ set(SOURCE_FILES
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/imageButton2/imageButton2.cpp
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/imageButton2/imageButton2.h
         ${VIEWER_IMPORT_DIR}/src/exporters/dataExporter/DataExporterClass.cpp
-        ${VIEWER_IMPORT_DIR}/src/exporters/dataExporter/DataExporterClass.h)
+        ${VIEWER_IMPORT_DIR}/src/exporters/dataExporter/DataExporterClass.h
+		${VIEWER_IMPORT_DIR}/src/database/CEmptySqliteDB.cpp
+		${VIEWER_IMPORT_DIR}/src/database/CEmptySqliteDB.h
+		${VIEWER_IMPORT_DIR}/src/ui/imguiLib/stateSaver/stateSaver.h
+		${VIEWER_IMPORT_DIR}/src/ui/imguiLib/stateSaver/stateSaver.cpp
+		)
 
 string(TOUPPER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LOWERCASE)
 
@@ -313,32 +274,37 @@ if (MSVC)
 	endif()
 endif()
 
-target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
-target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
 target_link_libraries(AWebWoWViewerCpp zlibstatic)
 
 target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
-	target_link_libraries(AWebWoWViewerCpp ssp)
-endif()
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
-	target_link_libraries(AWebWoWViewerCpp ssp)
-endif()
+#if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+#	target_link_libraries(AWebWoWViewerCpp ssp)
+#endif()
+#if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+#	target_link_libraries(AWebWoWViewerCpp ssp)
+#endif()
 target_link_libraries(AWebWoWViewerCpp WoWViewerLib)
 
 #  target_link_libraries(AWebWoWViewerCpp Threads::Threads)
 
-  target_link_libraries(AWebWoWViewerCpp libEGL)
-  target_link_libraries(AWebWoWViewerCpp GLESv2)
-  target_link_libraries(AWebWoWViewerCpp android)
-  target_link_libraries(AWebWoWViewerCpp log)
+find_library(log-lib log REQUIRED)
+find_library(libGLESv3 GLESv3 REQUIRED)
+find_library(libEGL EGL REQUIRED)
+find_library(libAndroid android REQUIRED)
+
+
+#TODO:!!!!
+target_link_libraries(AWebWoWViewerCpp "${libGLESv3}")
+target_link_libraries(AWebWoWViewerCpp "${log-lib}")
+target_link_libraries(AWebWoWViewerCpp "${libEGL}")
+target_link_libraries(AWebWoWViewerCpp "${libAndroid}")
+#  target_link_libraries(AWebWoWViewerCpp android)
 
 #target_link_libraries(AWebWoWViewerCpp polym)
 #target_link_libraries(AWebWoWViewerCpp storm)
 target_link_libraries(AWebWoWViewerCpp casc_static)
 
 target_link_libraries(AWebWoWViewerCpp png_static)
-target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	include_directories(AWebWoWViewerCpp "./wowViewerLib/src/opengl")
@@ -346,5 +312,5 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	target_link_libraries(AWebWoWViewerCpp -lm)
 	target_link_libraries(AWebWoWViewerCpp -lwininet)
 else()
-	target_link_libraries(AWebWoWViewerCpp GL)
+#	target_link_libraries(AWebWoWViewerCpp GL)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

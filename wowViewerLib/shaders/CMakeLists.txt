@@ -1,4 +1,4 @@
-if (CMAKE_NDK_BUILD MATCHES 1)
+if (ANDROID)
     set(GLSL_TARGET_FOLDER ${ANDROID_ASSETSFOLDER})
 else()
     set(GLSL_TARGET_FOLDER ${CMAKE_BINARY_DIR})
@@ -11,30 +11,54 @@ endif()
 
 message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/spirv-cross)
-set(BUILD_EXTERNAL OFF)
-add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/glsllang)
-if(EMSCRIPTEN)
-    target_link_options(glslangValidator PUBLIC -s NODERAWFS=1)
-endif()
-set(BUILD_EXTERNAL OFF)
-
-set(SPIRV_REF_SOURCES
-        src/spirv/spirv_refl_main.cpp
-        src/spirv/webGLSLCompiler.cpp
-        src/spirv/webGLSLCompiler.h
-        src/spirv/dumpShaderFields.h src/spirv/dumpShaderMetaData.h src/spirv/dumpGLSLShader.h)
 set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/engine/shader/ShaderDefinitions.h)
-set_target_properties(glslangValidator PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_executable(spirv_reflection ${SPIRV_REF_SOURCES})
-set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-target_link_libraries(spirv_reflection spirv-cross-c)
-target_include_directories(spirv_reflection PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross/)
-if(EMSCRIPTEN)
-    target_link_options(spirv_reflection PUBLIC -s NODERAWFS=1)
+if(NOT ANDROID)
+    #GLSL Compiler
+    add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/spirv-cross)
+    set(BUILD_EXTERNAL OFF)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/glsllang)
+    if(EMSCRIPTEN)
+        target_link_options(glslangValidator PUBLIC -s NODERAWFS=1)
+    endif()
+    set(BUILD_EXTERNAL OFF)
+    set_target_properties(glslangValidator PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+    #SPIRV_Reflections
+    set(SPIRV_REF_SOURCES
+            src/spirv/spirv_refl_main.cpp
+            src/spirv/webGLSLCompiler.cpp
+            src/spirv/webGLSLCompiler.h
+            src/spirv/dumpShaderFields.h src/spirv/dumpShaderMetaData.h src/spirv/dumpGLSLShader.h)
+
+    add_executable(spirv_reflection ${SPIRV_REF_SOURCES})
+    set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+    target_link_libraries(spirv_reflection spirv-cross-c)
+    target_include_directories(spirv_reflection PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/spirv-cross/)
+    if(EMSCRIPTEN)
+        target_link_options(spirv_reflection PUBLIC -s NODERAWFS=1)
+    endif()
+    set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+#    set(PATH_TO_NATIVE_GLSL_VALIDATOR "${CMAKE_BINARY_DIR}/glslangValidator${CMAKE_EXECUTABLE_SUFFIX}")
+#    set(PATH_TO_NATIVE_SPIRV_REFLECTION "${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX}")
+else()
+    MESSAGE(WARNING "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
+    MESSAGE(WARNING "PATH_TO_NATIVE_GLSL_VALIDATOR = ${PATH_TO_NATIVE_GLSL_VALIDATOR}")
+    MESSAGE(WARNING "PATH_TO_NATIVE_SPIRV_REFLECTION = ${PATH_TO_NATIVE_SPIRV_REFLECTION}")
+    if (NOT EXISTS "${PATH_TO_NATIVE_GLSL_VALIDATOR}")
+        MESSAGE(ERROR "Native precompiled GLSL Validator is required for Android")
+        return()
+    endif()
+    if (NOT EXISTS "${PATH_TO_NATIVE_SPIRV_REFLECTION}")
+        MESSAGE(ERROR "Native precompiled Spirv Reflection is required for Android")
+        return()
+    endif()
+
+    add_custom_target(glslangValidator)
+    add_custom_target(spirv_reflection)
 endif()
-set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
 
 macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
     message(STATUS "Configuring directory ${destDir}")
@@ -53,7 +77,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     OUTPUT ${SPIRV_NonOpt}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                    COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/glslangValidator${CMAKE_EXECUTABLE_SUFFIX} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
+                    COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_GLSL_VALIDATOR} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
                     DEPENDS ${srcTemplatePath} glslangValidator)
 
 #            if(SPIRV_OPT_APP)
@@ -89,8 +113,8 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     OUTPUT ${GLSL20_FILE}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL20}"
-                    COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX} -glsl100 ${SPIRV_NonOpt} > ${GLSL20_FILE_FULLPATH}
-                    DEPENDS ${SPIRV_NonOpt})
+                    COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -glsl100 ${SPIRV_NonOpt} > ${GLSL20_FILE_FULLPATH}
+                    DEPENDS ${SPIRV_NonOpt} spirv_reflection)
 
             list(APPEND GLSL20Files ${GLSL20_FILE})
 
@@ -101,8 +125,8 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     OUTPUT ${GLSL33_FILE}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL33}"
-                    COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX} -glsl330 ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
-                    DEPENDS ${SPIRV_NonOpt})
+                    COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -glsl330 ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
+                    DEPENDS ${SPIRV_NonOpt} spirv_reflection)
 
             list(APPEND GLSL30Files ${GLSL33_FILE})
 
@@ -121,7 +145,7 @@ configure_filesVLK(${PROJECT_SOURCE_DIR}/shaders/glsl/vulkan ${GLSL_TARGET_FOLDE
 
 add_custom_target(
         SPIRV_EXTRACT_META
-        COMMAND ${APP_RUN_PREFIX} ${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX} -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
+        COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
         VERBATIM)
 

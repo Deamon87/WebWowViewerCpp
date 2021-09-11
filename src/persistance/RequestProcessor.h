@@ -15,7 +15,7 @@
 
 class RequestProcessor : public IFileRequest {
 protected:
-    RequestProcessor() {
+    RequestProcessor() : toBeProcessed(0){
 
     }
     ~RequestProcessor() {
@@ -87,7 +87,7 @@ public:
     }
 
 protected:
-    std::atomic<int> toBeProcessed = 0;
+    std::atomic<int> toBeProcessed;
     void processResult( std::shared_ptr<PersistentFile> s_file, HFileContent content, const std::string &fileName);
 };
 

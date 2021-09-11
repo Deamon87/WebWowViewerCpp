@@ -631,7 +631,6 @@ extern "C" {
                     if (entry.status().type() == ghc::filesystem::file_type::regular) {
                         std::ifstream input1(exportDir+filenameStr);
 
-
                         zipper.add(input1, filenameStr);
                     }
                 }
@@ -639,7 +638,6 @@ extern "C" {
                 ghc::filesystem::remove_all(exportDir, errorCode); // Deletes one or more files recursively.
 
                 offerFileAsDownload(archiveName.c_str(), archiveName.size());
-
             }
         }
 

@@ -209,7 +209,6 @@ set(SOURCE_FILES
         src/engine/managers/particles/generators/CPlaneGenerator.h
         src/engine/texture/DxtDecompress.cpp
         src/engine/texture/DxtDecompress.h
-        src/engine/androidLogSupport.h
         src/engine/persistance/texFile.cpp src/engine/persistance/texFile.h
         src/engine/persistance/header/texFileHeader.h
         src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp

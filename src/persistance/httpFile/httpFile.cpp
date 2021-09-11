@@ -1,7 +1,10 @@
 #include "httpFile.h"
+#ifndef __ANDROID__
 #include "cpr/cpr.h"
+#endif
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 
 
 std::string url_encode(const std::string &value) {
@@ -44,6 +47,7 @@ void HttpFile::setCallback(HTTPReadyCallback callback) {
 
 void HttpFile::startDownloading() {
     std::string escaped_url = m_httpUrl;
+#ifndef __ANDROID__
     auto verSSL = cpr::VerifySsl{false};
 
     auto r = cpr::Get(cpr::Url{escaped_url}, verSSL );
@@ -64,6 +68,8 @@ void HttpFile::startDownloading() {
                   escaped_url << std::endl << std::flush;
         m_failCallback({});
     }
+#else
+#endif
 }
 
 void HttpFile::setFailCallback(HTTPReadyCallback callback) {
