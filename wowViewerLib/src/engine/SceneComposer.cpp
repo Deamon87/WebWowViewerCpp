@@ -157,59 +157,84 @@ void collectMeshes(HDrawStage drawStage, std::vector<HGMesh> &meshes) {
     }
 }
 
-void SceneComposer::DoUpdate() {
+#define logExecution { \
+    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+}
 
+void SceneComposer::DoUpdate() {
+    logExecution
     auto device = m_apiContainer->hDevice;
+    logExecution
 
     int updateObjFrame = device->getUpdateFrameNumber();
-
+    logExecution
     auto frameScenario = m_frameScenarios[updateObjFrame];
     if (frameScenario == nullptr) return;
-
+    logExecution
     device->startUpdateForNextFrame();
-
+    logExecution
     singleUpdateCNT.beginMeasurement();
+    logExecution
     for (auto updateStage : frameScenario->updateStages) {
         updateStage->cullResult->scene->produceUpdateStage(updateStage);
     }
+    logExecution
     singleUpdateCNT.endMeasurement("single update ");
-
+    logExecution
     meshesCollectCNT.beginMeasurement();
+    logExecution
     std::vector<HGUniformBufferChunk> additionalChunks;
-
+    logExecution
     for (auto &link : frameScenario->drawStageLinks) {
+        logExecution
         link.scene->produceDrawStage(link.drawStage, link.updateStage, additionalChunks);
+        logExecution
     }
 
     std::vector<HGMesh> meshes;
+    logExecution
     collectMeshes(frameScenario->getDrawStage(), meshes);
+    logExecution
     meshesCollectCNT.endMeasurement("collectMeshes ");
-
+    logExecution
 
     updateBuffersCNT.beginMeasurement();
+    logExecution
     for (auto updateStage : frameScenario->updateStages) {
+        logExecution
         updateStage->cullResult->scene->updateBuffers(updateStage);
+        logExecution
     }
     updateBuffersCNT.endMeasurement("");
+    logExecution
 
     updateBuffersDeviceCNT.beginMeasurement();
+    logExecution
     std::vector<HFrameDepedantData> frameDepDataVec = {};
+    logExecution
     std::vector<std::vector<HGUniformBufferChunk>*> uniformChunkVec = {};
+    logExecution
     for (auto updateStage : frameScenario->updateStages) {
         frameDepDataVec.push_back(updateStage->cullResult->frameDepedantData);
         uniformChunkVec.push_back(&updateStage->uniformBufferChunks);
     }
+    logExecution
     device->updateBuffers(uniformChunkVec, frameDepDataVec);
+    logExecution
     updateBuffersDeviceCNT.endMeasurement("");
-
+    logExecution
     postLoadCNT.beginMeasurement();
     for (auto cullStage : frameScenario->cullStages) {
+        logExecution
         cullStage->scene->doPostLoad(cullStage); //Do post load after rendering is done!
+        logExecution
     }
     postLoadCNT.endMeasurement("");
-
+    logExecution
     textureUploadCNT.beginMeasurement();
+    logExecution
     device->uploadTextureForMeshes(meshes);
+    logExecution
     textureUploadCNT.endMeasurement("");
 
     drawStageAndDepsCNT.beginMeasurement();
@@ -219,10 +244,12 @@ void SceneComposer::DoUpdate() {
         }
     }
     drawStageAndDepsCNT.endMeasurement("");
-
+    logExecution
     endUpdateCNT.beginMeasurement();
     device->endUpdateForNextFrame();
+    logExecution
     endUpdateCNT.endMeasurement("");
+    logExecution
 
     auto config = m_apiContainer->getConfig();
     config->singleUpdateCNT = singleUpdateCNT.getTimePerFrame();
@@ -233,8 +260,14 @@ void SceneComposer::DoUpdate() {
     config->textureUploadCNT = textureUploadCNT.getTimePerFrame();;
     config->drawStageAndDepsCNT = drawStageAndDepsCNT.getTimePerFrame();;
     config->endUpdateCNT = endUpdateCNT.getTimePerFrame();;
+    logExecution
 
 }
+
+#define logExecution { \
+    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+}
+
 
 void SceneComposer::draw(HFrameScenario frameScenario) {
 //    std::cout << __FILE__ << ":" << __LINE__<< "m_apiContainer == nullptr :" << ((m_apiContainer == nullptr) ? "true" : "false") << std::endl;
@@ -242,20 +275,27 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
 
     std::future<bool> cullingFuture;
     std::future<bool> updateFuture;
+    logExecution
     if (m_supportThreads) {
         cullingFuture = cullingFinished.get_future();
-
+        logExecution
         nextDeltaTime[getNextPromiseInd()] = std::promise<float>();
+        logExecution
         nextDeltaTime[getPromiseInd()].set_value(1.0f);
         //std::cout << "set new nextDeltaTime value for " << getPromiseInd() << "frame " << std::endl;
         //std::cout << "set new nextDeltaTime promise for " << getNextPromiseInd() << "frame " << std::endl;
+        logExecution
         if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
+            logExecution
             nextDeltaTimeForUpdate[getNextPromiseInd()] = std::promise<float>();
+            logExecution
             nextDeltaTimeForUpdate[getPromiseInd()].set_value(1.0f);
 
             //std::cout << "set new nextDeltaTime value for " << getPromiseInd() << "frame " << std::endl;
             //std::cout << "set new nextDeltaTimeForUpdate promise for " << getNextPromiseInd() << "frame " << std::endl;
+            logExecution
             updateFuture = updateFinished.get_future();
+            logExecution
         }
     }
 
@@ -270,37 +310,48 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
 
 
     m_apiContainer->hDevice->reset();
+    logExecution
     int currentFrame = m_apiContainer->hDevice->getDrawFrameNumber();
     auto thisFrameScenario = m_frameScenarios[currentFrame];
-
+    logExecution
     m_frameScenarios[currentFrame] = frameScenario;
-
+    logExecution
     if (!m_supportThreads) {
         processCaches(10);
         DoCulling();
     }
-
+    logExecution
     m_apiContainer->hDevice->beginFrame();
     if (thisFrameScenario != nullptr && !m_apiContainer->hDevice->getIsVulkanAxisSystem()) {
         m_apiContainer->hDevice->drawStageAndDeps(thisFrameScenario->getDrawStage());
     }
+    logExecution
 
     m_apiContainer->hDevice->commitFrame();
+    logExecution
     m_apiContainer->hDevice->reset();
+    logExecution
     if (!m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
+        logExecution
         DoUpdate();
+        logExecution
     }
+    logExecution
 
     if (m_supportThreads) {
         cullingFuture.wait();
+        logExecution
         cullingFinished = std::promise<bool>();
-
+        logExecution
         if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
             updateFuture.wait();
+            logExecution
             updateFinished = std::promise<bool>();
+            logExecution
         }
     }
 
-
+    logExecution
     m_apiContainer->hDevice->increaseFrameNumber();
+    logExecution
 }

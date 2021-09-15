@@ -1106,6 +1106,12 @@ std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType
         std::cout << "g_assetMgr == nullptr";
     }
     std::string filename = fullPath;
+    //Trim dot and slash at the start
+    if (filename[0] == '.')
+        filename = filename.substr(1, filename.length()-1);
+    if (filename[0] == '/')
+        filename = filename.substr(1, filename.length()-1);
+
 
     std::cout << "AAssetManager_open" << std::endl;
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);
@@ -1130,12 +1136,13 @@ std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType
     AAsset_close(asset);
     std::cout << "asset closed" << std::endl;
 
-    return std::string(outBuf.begin(), outBuf.end());
+    std::string result = std::string(outBuf.begin(), outBuf.end());
 #else
     std::ifstream t(fullPath);
 
     std::string result = std::string((std::istreambuf_iterator<char>(t)),
                            std::istreambuf_iterator<char>());
+#endif
 
     //Delete version
     {
@@ -1143,6 +1150,12 @@ std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType
         if (start != std::string::npos) {
             auto end = result.find("\n");
             result = result.substr(end);
+            std::cout << "version deleted for shader " << fileName << std::endl;
+            std::cout << "shader :  " << result << std::endl;
+
+        } else {
+            std::cout << "version not found for shader " << fileName << std::endl;
+            std::cout << "shader :  " << result << std::endl;
         }
     }
 
@@ -1160,7 +1173,7 @@ std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType
 
     shaderCache[hashRecord] = result;
     return result;
-#endif
+
 }
 
 float GDeviceGL33::getAnisLevel() {

@@ -979,26 +979,34 @@ void FrontendUI::showSettingsDialog() {
     }
 }
 
-
+#define logExecution { \
+    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+}
 void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     auto m_device = m_api->hDevice;
 
+    logExecution
     if (this->fontTexture == nullptr) {
+        logExecution
         ImGuiIO& io = ImGui::GetIO();
+        logExecution
         unsigned char* pixels;
         int width, height;
+        logExecution
         io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
-
+        logExecution
         // Upload texture to graphics system
-
+        logExecution
         this->fontTexture = m_device->createTexture(false, false);
         this->fontTexture->loadData(width, height, pixels, ITextureFormat::itRGBA);
-
+        logExecution
         // Store our identifier
+        logExecution
         io.Fonts->TexID = this->fontTexture;
+        logExecution
         return;
     }
-
+    logExecution
     if (exporter != nullptr) {
         if (m_processor->completedAllJobs() && !m_api->hDevice->wasTexturesUploaded()) {
             exporterFramesReady++;
@@ -1008,29 +1016,32 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
             exporter = nullptr;
         }
     }
-
+    logExecution
     lastWidth = resultDrawStage->viewPortDimensions.maxs[0];
     lastHeight = resultDrawStage->viewPortDimensions.maxs[1];
 
     resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
-
+    logExecution
     auto *draw_data = ImGui::GetDrawData();
+    logExecution
+    if (draw_data == nullptr)
+        return;
 
     int  fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
     int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
     if (fb_width <= 0 || fb_height <= 0) {
         return;
     }
-
+    logExecution
     ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
     ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
-
+    logExecution
     //Create projection matrix:
     float L = draw_data->DisplayPos.x;
     float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
     float T = draw_data->DisplayPos.y;
     float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
-
+    logExecution
     mathfu::mat4 ortho_projection =
         {
             { 2.0f/(R-L),   0.0f,         0.0f,   0.0f },
@@ -1039,6 +1050,7 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
             { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
         };
 
+    logExecution
     if (m_device->getIsVulkanAxisSystem()) {
         static const mathfu::mat4 vulkanMatrixFix1 = mathfu::mat4(1, 0, 0, 0,
                                                                  0, -1, 0, 0,
@@ -1046,14 +1058,15 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
                                                                  0, 0, 0, 1).Transpose();
         ortho_projection = vulkanMatrixFix1 * ortho_projection;
     }
-
+    logExecution
     auto uboPart = m_device->createUniformBufferChunk(sizeof(mathfu::mat4));
     uboPart->setUpdateHandler([ortho_projection](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) {
         self->getObject<mathfu::mat4>() = ortho_projection;
     });
 
+    logExecution
     auto shaderPermute = m_device->getShader("imguiShader", nullptr);
-
+    logExecution
     // Render command lists
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
@@ -1472,6 +1485,10 @@ void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
 }
 
 inline bool fileExistsNotNull (const std::string& name) {
+#ifdef ANDROID
+    return false;
+#endif
+
     ghc::filesystem::path p{name};
     std::error_code errorCode;
 

@@ -755,7 +755,9 @@ void GDeviceGL20::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 #ifdef __ANDROID_API__
 #include "../../engine/androidLogSupport.h"
 #endif
-
+#define logExecution { \
+    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+}
 std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType) {
     std::string fullPath;
     trim(fileName);
@@ -787,9 +789,15 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
     if (g_assetMgr == nullptr) {
         std::cout << "g_assetMgr == nullptr";
     }
-    std::string filename = "glsl/" + fileName + ".glsl";
+    std::string filename = fullPath;
+    //Trim dot and slash at the start
+    if (filename[0] == '.')
+        filename = filename.substr(1, filename.length()-1);
+    if (filename[0] == '/')
+        filename = filename.substr(1, filename.length()-1);
 
     std::cout << "AAssetManager_open" << std::endl;
+    std::cout << "Opening assest at \"" << filename << "\n" << std::endl;
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);
     std::cout << "AAssetManager_opened" << std::endl;
     if (asset == nullptr) {
@@ -811,20 +819,28 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
     std::cout << "file fully read" << std::endl;
     AAsset_close(asset);
     std::cout << "asset closed" << std::endl;
-
+    logExecution
     std::string result = std::string(outBuf.begin(), outBuf.end());
+    logExecution
 #else
     std::ifstream t(fullPath);
 
     std::string result = std::string((std::istreambuf_iterator<char>(t)),
                            std::istreambuf_iterator<char>());
 #endif
+    logExecution
     //Delete version
     {
         auto start = result.find("#version");
         if (start != std::string::npos) {
             auto end = result.find("\n");
             result = result.substr(end);
+            std::cout << "version deleted for shader " << fileName << std::endl;
+            std::cout << "shader :  " << result << std::endl;
+
+        } else {
+            std::cout << "version not found for shader " << fileName << std::endl;
+            std::cout << "shader :  " << result << std::endl;
         }
     }
 
