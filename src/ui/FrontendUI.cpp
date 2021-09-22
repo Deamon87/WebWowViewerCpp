@@ -535,7 +535,9 @@ void FrontendUI::showQuickLinksDialog() {
     std::vector<int> replacementTextureFDids = {};
 
     ImGui::Begin("Quick Links", &showQuickLinks);
-
+    if (ImGui::Button("nightborne model", ImVec2(-1, 0))) {
+        openM2SceneByfdid(1810676, replacementTextureFDids);
+    }
 
     if (ImGui::Button("(WMO) NPE Ship with waterfall model", ImVec2(-1, 0))) {
         openWMOSceneByfdid(3314067);
@@ -984,10 +986,10 @@ void FrontendUI::showSettingsDialog() {
         ImGui::End();
     }
 }
-
-#define logExecution { \
-    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
-}
+#define logExecution {}
+//#define logExecution { \
+//    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+//}
 void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     auto m_device = m_api->hDevice;
 
@@ -1514,8 +1516,8 @@ inline bool fileExistsNotNull (const std::string& name) {
 
 void FrontendUI::createDefaultprocessor() {
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=6116c52b23b01bf112b67f571749c38f&cdnconfig=86bf8d360110ae471e61d7b9c99c2c08&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=822a5e72301f9ae6de1840bb5f9961ef&cdnconfig=a22fd94489c2cc9e2debe3f1a8e6b377&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=822a5e72301f9ae6de1840bb5f9961ef&cdnconfig=a22fd94489c2cc9e2debe3f1a8e6b377&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
@@ -1523,7 +1525,7 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-//    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
 //    m_processor = std::make_shared<CascRequestProcessor>("e:\\games\\wow beta\\World of Warcraft Beta\\:wowt");
 ////        processor->setThreaded(false);
 ////

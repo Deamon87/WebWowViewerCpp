@@ -844,7 +844,7 @@ bool M2Object::doPostLoad(){
     this->createAABB();
 
     if (m_skinGeom == nullptr || m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
-    if (m_m2Geom->m_skid > 0 && m_skelGeom->getStatus() != FileStatus::FSLoaded) {
+    if (m_m2Geom->m_skid > 0 && (m_skelGeom == nullptr || m_skelGeom->getStatus() != FileStatus::FSLoaded)) {
         return false;
     }
     if (m_m2Geom->m_skid > 0 && m_skelGeom->getStatus() == FileStatus::FSLoaded &&

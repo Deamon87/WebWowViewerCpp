@@ -968,10 +968,10 @@ GDeviceGL33::GDeviceGL33() {
 
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
 
-    glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-    glDebugMessageCallback(GL33::debug_func, NULL);
+//    glEnable(GL_DEBUG_OUTPUT);
+//    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+//    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+//    glDebugMessageCallback(GL33::debug_func, NULL);
 }
 
 HGOcclusionQuery GDeviceGL33::createQuery(HGMesh boundingBoxMesh) {
@@ -1150,12 +1150,12 @@ std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType
         if (start != std::string::npos) {
             auto end = result.find("\n");
             result = result.substr(end);
-            std::cout << "version deleted for shader " << fileName << std::endl;
-            std::cout << "shader :  " << result << std::endl;
+//            std::cout << "version deleted for shader " << fileName << std::endl;
+//            std::cout << "shader :  " << result << std::endl;
 
         } else {
-            std::cout << "version not found for shader " << fileName << std::endl;
-            std::cout << "shader :  " << result << std::endl;
+//            std::cout << "version not found for shader " << fileName << std::endl;
+//            std::cout << "shader :  " << result << std::endl;
         }
     }
 

@@ -156,10 +156,10 @@ void collectMeshes(HDrawStage drawStage, std::vector<HGMesh> &meshes) {
         collectMeshes(deps, meshes);
     }
 }
-
-#define logExecution { \
-    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
-}
+#define logExecution {}
+//#define logExecution { \
+//    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+//}
 
 void SceneComposer::DoUpdate() {
     logExecution
@@ -263,10 +263,10 @@ void SceneComposer::DoUpdate() {
     logExecution
 
 }
-
-#define logExecution { \
-    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
-}
+#define logExecution {}
+//#define logExecution { \
+//    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+//}
 
 
 void SceneComposer::draw(HFrameScenario frameScenario) {

@@ -795,6 +795,7 @@ void main()
 struct modelWideBlockVS
 {
     mat4 ProjMtx;
+    vec4 uiScale;
 };
 
 uniform modelWideBlockVS _30;
@@ -809,7 +810,7 @@ void main()
 {
     Frag_UV = UV;
     Frag_Color = Color;
-    gl_Position = _30.ProjMtx * vec4(Position, 0.0, 1.0);
+    gl_Position = _30.ProjMtx * vec4(Position * _30.uiScale.x, 0.0, 1.0);
 }
 
 
@@ -1983,21 +1984,22 @@ struct SceneWideParams
     SceneExteriorLight extLight;
 };
 
+struct meshWideBlockPS
+{
+    vec4 uAlphaTestScalev;
+    ivec4 uPixelShaderv;
+    vec4 uTextureTranslate;
+};
+
+uniform meshWideBlockPS _256;
+
 struct sceneWideBlockVSPS
 {
     SceneWideParams scene;
     PSFog fogData;
 };
 
-uniform sceneWideBlockVSPS _286;
-
-struct meshWideBlockPS
-{
-    vec4 uAlphaTestv;
-    ivec4 uPixelShaderv;
-};
-
-uniform meshWideBlockPS _299;
+uniform sceneWideBlockVSPS _304;
 
 uniform sampler2D uTexture;
 
@@ -2065,21 +2067,23 @@ vec4 makeFog(PSFog fogData, vec4 final, vec3 vertexInViewSpace, vec3 sunDirInVie
 
 void main()
 {
-    vec4 tex = texture2D(uTexture, vTexcoord0);
+    vec2 textCoordScale = _256.uAlphaTestScalev.yz;
+    vec2 texcoord = (vTexcoord0 * textCoordScale) + _256.uTextureTranslate.xy;
+    vec4 tex = texture2D(uTexture, texcoord);
     vec4 finalColor = vec4(vColor.xyz * tex.xyz, tex.w * vColor.w);
-    vec3 sunDir = _286.scene.extLight.uExteriorDirectColorDir.xyz;
+    vec3 sunDir = _304.scene.extLight.uExteriorDirectColorDir.xyz;
     PSFog arg;
-    arg.densityParams = _286.fogData.densityParams;
-    arg.heightPlane = _286.fogData.heightPlane;
-    arg.color_and_heightRate = _286.fogData.color_and_heightRate;
-    arg.heightDensity_and_endColor = _286.fogData.heightDensity_and_endColor;
-    arg.sunAngle_and_sunColor = _286.fogData.sunAngle_and_sunColor;
-    arg.heightColor_and_endFogDistance = _286.fogData.heightColor_and_endFogDistance;
-    arg.sunPercentage = _286.fogData.sunPercentage;
+    arg.densityParams = _304.fogData.densityParams;
+    arg.heightPlane = _304.fogData.heightPlane;
+    arg.color_and_heightRate = _304.fogData.color_and_heightRate;
+    arg.heightDensity_and_endColor = _304.fogData.heightDensity_and_endColor;
+    arg.sunAngle_and_sunColor = _304.fogData.sunAngle_and_sunColor;
+    arg.heightColor_and_endFogDistance = _304.fogData.heightColor_and_endFogDistance;
+    arg.sunPercentage = _304.fogData.sunPercentage;
     vec4 param = finalColor;
     vec3 param_1 = vPosition;
     vec3 param_2 = sunDir;
-    int param_3 = _299.uPixelShaderv.y;
+    int param_3 = _256.uPixelShaderv.y;
     finalColor = makeFog(arg, param, param_1, param_2, param_3);
     gl_FragData[0] = finalColor;
 }
@@ -4007,6 +4011,7 @@ void main()
 layout(std140) uniform modelWideBlockVS
 {
     mat4 ProjMtx;
+    vec4 uiScale;
 } _30;
 
 out vec2 Frag_UV;
@@ -4019,7 +4024,7 @@ void main()
 {
     Frag_UV = UV;
     Frag_Color = Color;
-    gl_Position = _30.ProjMtx * vec4(Position, 0.0, 1.0);
+    gl_Position = _30.ProjMtx * vec4(Position * _30.uiScale.x, 0.0, 1.0);
 }
 
 
@@ -5174,17 +5179,18 @@ struct SceneWideParams
     SceneExteriorLight extLight;
 };
 
+layout(std140) uniform meshWideBlockPS
+{
+    vec4 uAlphaTestScalev;
+    ivec4 uPixelShaderv;
+    vec4 uTextureTranslate;
+} _256;
+
 layout(std140) uniform sceneWideBlockVSPS
 {
     SceneWideParams scene;
     PSFog fogData;
-} _286;
-
-layout(std140) uniform meshWideBlockPS
-{
-    vec4 uAlphaTestv;
-    ivec4 uPixelShaderv;
-} _299;
+} _304;
 
 uniform sampler2D uTexture;
 
@@ -5253,21 +5259,23 @@ vec4 makeFog(PSFog fogData, vec4 final, vec3 vertexInViewSpace, vec3 sunDirInVie
 
 void main()
 {
-    vec4 tex = texture(uTexture, vTexcoord0);
+    vec2 textCoordScale = _256.uAlphaTestScalev.yz;
+    vec2 texcoord = (vTexcoord0 * textCoordScale) + _256.uTextureTranslate.xy;
+    vec4 tex = texture(uTexture, texcoord);
     vec4 finalColor = vec4(vColor.xyz * tex.xyz, tex.w * vColor.w);
-    vec3 sunDir = _286.scene.extLight.uExteriorDirectColorDir.xyz;
+    vec3 sunDir = _304.scene.extLight.uExteriorDirectColorDir.xyz;
     PSFog arg;
-    arg.densityParams = _286.fogData.densityParams;
-    arg.heightPlane = _286.fogData.heightPlane;
-    arg.color_and_heightRate = _286.fogData.color_and_heightRate;
-    arg.heightDensity_and_endColor = _286.fogData.heightDensity_and_endColor;
-    arg.sunAngle_and_sunColor = _286.fogData.sunAngle_and_sunColor;
-    arg.heightColor_and_endFogDistance = _286.fogData.heightColor_and_endFogDistance;
-    arg.sunPercentage = _286.fogData.sunPercentage;
+    arg.densityParams = _304.fogData.densityParams;
+    arg.heightPlane = _304.fogData.heightPlane;
+    arg.color_and_heightRate = _304.fogData.color_and_heightRate;
+    arg.heightDensity_and_endColor = _304.fogData.heightDensity_and_endColor;
+    arg.sunAngle_and_sunColor = _304.fogData.sunAngle_and_sunColor;
+    arg.heightColor_and_endFogDistance = _304.fogData.heightColor_and_endFogDistance;
+    arg.sunPercentage = _304.fogData.sunPercentage;
     vec4 param = finalColor;
     vec3 param_1 = vPosition;
     vec3 param_2 = sunDir;
-    int param_3 = _299.uPixelShaderv.y;
+    int param_3 = _256.uPixelShaderv.y;
     finalColor = makeFog(arg, param, param_1, param_2, param_3);
     outputColor = finalColor;
 }

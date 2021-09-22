@@ -40,9 +40,10 @@ int canvHeight;
 AAssetManager * g_assetMgr = nullptr;
 static JavaVM *gJavaVM;
 
-#define logExecution { \
-    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
-}
+#define logExecution {}
+//#define logExecution { \
+//    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+//}
 
 static int ShowSoftKeyboardInput();
 static int PollUnicodeChars();

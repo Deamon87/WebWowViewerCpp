@@ -755,9 +755,10 @@ void GDeviceGL20::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 #ifdef __ANDROID_API__
 #include "../../engine/androidLogSupport.h"
 #endif
-#define logExecution { \
-    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
-}
+#define logExecution {}
+//#define logExecution { \
+//    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+//}
 std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType) {
     std::string fullPath;
     trim(fileName);
@@ -835,12 +836,12 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
         if (start != std::string::npos) {
             auto end = result.find("\n");
             result = result.substr(end);
-            std::cout << "version deleted for shader " << fileName << std::endl;
-            std::cout << "shader :  " << result << std::endl;
+//            std::cout << "version deleted for shader " << fileName << std::endl;
+//            std::cout << "shader :  " << result << std::endl;
 
         } else {
-            std::cout << "version not found for shader " << fileName << std::endl;
-            std::cout << "shader :  " << result << std::endl;
+//            std::cout << "version not found for shader " << fileName << std::endl;
+//            std::cout << "shader :  " << result << std::endl;
         }
     }
 

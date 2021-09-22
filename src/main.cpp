@@ -431,6 +431,7 @@ int main(){
     //Otherwise keys like backspace, delete etc wont work
 
     frontendUI->initImgui(window);
+    frontendUI->createDefaultprocessor();
     glfwSwapInterval(0);
 
 //try {
