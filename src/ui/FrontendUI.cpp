@@ -33,6 +33,7 @@
 #include "../exporters/dataExporter/DataExporterClass.h"
 #include "../database/CSqliteDB.h"
 #include "../database/CEmptySqliteDB.h"
+#include "../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 
 static const GBufferBinding imguiBindings[3] = {
     {+imguiShader::Attribute::Position, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos)},
@@ -499,6 +500,7 @@ void FrontendUI::initImgui(
 }
 
 void FrontendUI::newFrame() {
+
 //    ImGui_ImplOpenGL3_NewFrame();
     //Create Font image
     if (this->fontTexture == nullptr)
@@ -510,6 +512,10 @@ void FrontendUI::newFrame() {
     ImGui_ImplGlfw_NewFrame();
 #endif
     ImGui::NewFrame();
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.uiScale = this->uiScale;
+    io.DisplaySize = ImVec2((float)io.DisplaySize.x / io.uiScale, (float)io.DisplaySize.y / io.uiScale);
 }
 
 bool FrontendUI::getStopMouse() {
@@ -1037,10 +1043,11 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
     ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
     logExecution
     //Create projection matrix:
-    float L = draw_data->DisplayPos.x;
-    float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
-    float T = draw_data->DisplayPos.y;
-    float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
+    auto uiScale = ImGui::GetIO().uiScale;
+    float L = draw_data->DisplayPos.x * uiScale;
+    float R = (draw_data->DisplayPos.x + draw_data->DisplaySize.x) * uiScale;
+    float T = draw_data->DisplayPos.y * uiScale;
+    float B = (draw_data->DisplayPos.y + draw_data->DisplaySize.y) * uiScale;
     logExecution
     mathfu::mat4 ortho_projection =
         {
@@ -1059,9 +1066,13 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
         ortho_projection = vulkanMatrixFix1 * ortho_projection;
     }
     logExecution
-    auto uboPart = m_device->createUniformBufferChunk(sizeof(mathfu::mat4));
-    uboPart->setUpdateHandler([ortho_projection](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) {
-        self->getObject<mathfu::mat4>() = ortho_projection;
+    auto uboPart = m_device->createUniformBufferChunk(sizeof(ImgUI::modelWideBlockVS));
+
+
+    uboPart->setUpdateHandler([ortho_projection,uiScale](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) {
+        auto &uni = self->getObject<ImgUI::modelWideBlockVS>();
+        uni.projectionMat = ortho_projection;
+        uni.scale[0] = uiScale;
     });
 
     logExecution
@@ -1126,11 +1137,11 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
                     meshTemplate.scissorEnabled = true;
                     //Vulkan has different clip offset compared to OGL
                     if (!m_device->getIsVulkanAxisSystem()) {
-                        meshTemplate.scissorOffset = {(int)clip_rect.x, (int)(fb_height - clip_rect.w)};
-                        meshTemplate.scissorSize = {(int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y)};
+                        meshTemplate.scissorOffset = {(int)(clip_rect.x* uiScale), (int)((fb_height - clip_rect.w)* uiScale)};
+                        meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x) * uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
                     } else {
-                        meshTemplate.scissorOffset = {(int)clip_rect.x, (int)(clip_rect.y)};
-                        meshTemplate.scissorSize = {(int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y)};
+                        meshTemplate.scissorOffset = {(int)(clip_rect.x * uiScale), (int)((clip_rect.y) * uiScale)};
+                        meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x)* uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
                     }
 
                     meshTemplate.ubo[1] = uboPart;

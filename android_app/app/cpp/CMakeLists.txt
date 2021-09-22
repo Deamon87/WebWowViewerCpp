@@ -130,6 +130,7 @@ add_subdirectory(${VIEWER_IMPORT_DIR}/wowViewerLib ${CMAKE_CURRENT_BINARY_DIR}/w
 
 set(SOURCE_FILES
 		src/main.cpp
+		${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
         ${VIEWER_IMPORT_DIR}/src/persistance/httpFile/httpFile.cpp
         ${VIEWER_IMPORT_DIR}/src/persistance/httpFile/httpFile.h
         ${VIEWER_IMPORT_DIR}/src/persistance/RequestProcessor.cpp
@@ -234,6 +235,7 @@ target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWView
 #target_compile_options(AWebWoWViewerCpp PRIVATE "-static")
 target_compile_definitions(AWebWoWViewerCpp PUBLIC -DIMGUI_USER_CONFIG=<imguiCustomConfig.h>)
 target_include_directories(AWebWoWViewerCpp PUBLIC ${VIEWER_IMPORT_DIR}/src/ui/imguiLib)
+target_include_directories(AWebWoWViewerCpp PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue)
 
 add_dependencies(AWebWoWViewerCpp WoWViewerLib)
 #add_dependencies(AWebWoWViewerCpp storm)

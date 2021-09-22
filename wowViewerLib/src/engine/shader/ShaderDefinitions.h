@@ -315,7 +315,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },{ "imguiShader.vert.spv", {
 {
-{0,1,64},
+{0,1,80},
 }
 }
 },{ "drawFrustumShader.frag.spv", {
@@ -667,6 +667,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     {
       1, {
         {"_30.ProjMtx", true, 0, 4, 4, 0},
+        {"_30.uiScale", true, 64, 1, 4, 0},
       }
     },
   }},

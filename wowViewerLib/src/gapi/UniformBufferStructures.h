@@ -168,6 +168,13 @@ namespace ADT {
     };
 }
 
+namespace ImgUI {
+    struct modelWideBlockVS {
+        mathfu::mat4 projectionMat;
+        float scale[4];
+    };
+}
+
 namespace FXGauss {
     struct meshWideBlockPS {
         float texOffsetX[4];

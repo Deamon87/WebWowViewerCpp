@@ -68,6 +68,10 @@ public:
     void resetAnimation() override {};
 
     HFrameScenario createFrameScenario(int canvWidth, int canvHeight, double deltaTime);
+
+    void setUIScale(float scale) {
+        uiScale = scale;
+    }
 private:
     std::array<HCullStage, 4> m_cullstages;
 
@@ -82,6 +86,8 @@ private:
     float previewX = 0;
     float previewY = 0;
     float previewZoom = 1;
+
+    float uiScale = 1;
 
 
     std::shared_ptr<IScene> currentScene = nullptr;

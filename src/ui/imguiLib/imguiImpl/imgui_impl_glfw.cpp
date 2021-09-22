@@ -254,7 +254,9 @@ static void ImGui_ImplGlfw_UpdateMousePosAndButtons()
         {
             double mouse_x, mouse_y;
             glfwGetCursorPos(g_Window, &mouse_x, &mouse_y);
-            io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
+            auto uiScale = ImGui::GetIO().uiScale;
+
+            io.MousePos = ImVec2((float)mouse_x / uiScale, (float)mouse_y / uiScale);
         }
     }
 }
