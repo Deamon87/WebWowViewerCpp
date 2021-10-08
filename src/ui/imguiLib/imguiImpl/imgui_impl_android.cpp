@@ -82,6 +82,9 @@ int32_t ImGui_ImplAndroid_HandleInputEvent(AInputEvent* input_event)
             {
                 io.MouseDown[0] = (event_action == AMOTION_EVENT_ACTION_DOWN) ? true : false;
                 io.MousePos = ImVec2(AMotionEvent_getX(input_event, event_pointer_index), AMotionEvent_getY(input_event, event_pointer_index));
+                auto uiScale = ImGui::GetIO().uiScale;
+                io.MousePos = ImVec2((float)io.MousePos.x / uiScale, (float)io.MousePos.y / uiScale);
+
             }
             break;
         case AMOTION_EVENT_ACTION_BUTTON_PRESS:
@@ -95,7 +98,13 @@ int32_t ImGui_ImplAndroid_HandleInputEvent(AInputEvent* input_event)
             break;
         case AMOTION_EVENT_ACTION_HOVER_MOVE: // Hovering: Tool moves while NOT pressed (such as a physical mouse)
         case AMOTION_EVENT_ACTION_MOVE:       // Touch pointer moves while DOWN
-            io.MousePos = ImVec2(AMotionEvent_getX(input_event, event_pointer_index), AMotionEvent_getY(input_event, event_pointer_index));
+            {
+                io.MousePos = ImVec2(AMotionEvent_getX(input_event, event_pointer_index),
+                                     AMotionEvent_getY(input_event, event_pointer_index));
+
+                auto uiScale = ImGui::GetIO().uiScale;
+                io.MousePos = ImVec2((float) io.MousePos.x / uiScale, (float) io.MousePos.y / uiScale);
+            }
             break;
         case AMOTION_EVENT_ACTION_SCROLL:
             io.MouseWheel = AMotionEvent_getAxisValue(input_event, AMOTION_EVENT_AXIS_VSCROLL, event_pointer_index);

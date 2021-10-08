@@ -6,9 +6,19 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputMethodManager;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class MainActivity extends NativeActivity {
+
+    static {
+        System.loadLibrary("AWebWoWViewerCpp");
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -42,4 +52,49 @@ public class MainActivity extends NativeActivity {
         Integer a = unicodeCharacterQueue.poll();
         return (a != null) ? a : 0;
     }
+
+    public void downloadFile(String url, long userDataForRequest) {
+        try {
+            URL urlObj = new URL(url);
+            URLConnection urlConnection = urlObj.openConnection();
+            InputStream in = urlConnection.getInputStream();
+
+            byte[] data = readAllBytes(in);
+//            downloadFailed(userDataForRequest);
+            downloadSucceeded(userDataForRequest, data);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            downloadFailed(userDataForRequest);
+        }
+
+    }
+
+    public static byte[] readAllBytes(InputStream inputStream) throws IOException {
+        final int bufLen = 4 * 0x400; // 4KB
+        byte[] buf = new byte[bufLen];
+        int readLen;
+        IOException exception = null;
+
+        try {
+            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                while ((readLen = inputStream.read(buf, 0, bufLen)) != -1)
+                    outputStream.write(buf, 0, readLen);
+
+                return outputStream.toByteArray();
+            }
+        } catch (IOException e) {
+            exception = e;
+            throw e;
+        } finally {
+            if (exception == null) inputStream.close();
+            else try {
+                inputStream.close();
+            } catch (IOException e) {
+                exception.addSuppressed(e);
+            }
+        }
+    }
+
+    public native void downloadSucceeded(long userDataPtr, byte[] data );
+    public native void downloadFailed(long userDataPtr);
 }

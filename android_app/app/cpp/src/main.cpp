@@ -17,7 +17,7 @@
 #include "../../../../wowViewerLib/src/engine/SceneComposer.h"
 #include "../../../../src/ui/FrontendUI.h"
 #include "../../../../src/ui/imguiLib/imguiImpl/imgui_impl_android.h"
-#include "../../../../src/persistance/HttpRequestProcessor.h"
+#include "HttpRequestProcessor.h"
 #include "../../../../wowViewerLib/src/engine/androidLogSupport.h"
 
 SceneComposer *sceneComposer= nullptr;
@@ -45,8 +45,18 @@ static JavaVM *gJavaVM;
 //    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
 //}
 
+std::shared_ptr<HttpRequestProcessorAndroid> m_processor = nullptr;
+
 static int ShowSoftKeyboardInput();
 static int PollUnicodeChars();
+
+int32_t getDensityDpi(android_app* app) {
+    AConfiguration* config = AConfiguration_new();
+    AConfiguration_fromAssetManager(config, app->activity->assetManager);
+    int32_t density = AConfiguration_getDensity(config);
+    AConfiguration_delete(config);
+    return density;
+}
 
 void init(struct android_app* app)
 {
@@ -55,6 +65,7 @@ void init(struct android_app* app)
 
     g_App = app;
     ANativeWindow_acquire(g_App->window);
+
 
     // Initialize EGL
     // This is mostly boilerplate code for EGL...
@@ -122,6 +133,45 @@ void init(struct android_app* app)
     logExecution
     frontendUI = std::make_shared<FrontendUI>(apiContainer, nullptr);
     logExecution
+    frontendUI->setUIScale(3); //TODO:!!
+    logExecution
+
+    //-----------------------------------------------------
+    ///DEFAULT provider
+
+    {
+
+        const char * url = "https://wow.tools/casc/file/fname?buildconfig=822a5e72301f9ae6de1840bb5f9961ef&cdnconfig=a22fd94489c2cc9e2debe3f1a8e6b377&filename=";
+        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=822a5e72301f9ae6de1840bb5f9961ef&cdnconfig=a22fd94489c2cc9e2debe3f1a8e6b377&filename=data&filedataid=";
+//
+//Classics
+//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
+//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
+//        processor = new HttpZipRequestProcessor(url);
+////        processor = new ZipRequestProcessor(filePath);
+////        processor = new MpqRequestProcessor(filePath);
+        m_processor = std::make_shared<HttpRequestProcessorAndroid>(url, urlFileId, g_App);
+//    m_processor = std::make_shared<CascRequestProcessor>("e:\\games\\wow beta\\World of Warcraft Beta\\:wowt");
+////        processor->setThreaded(false);
+////
+        m_processor->setThreaded(true);
+        apiContainer->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_processor.get());
+        m_processor->setFileRequester(apiContainer->cacheStorage.get());
+        frontendUI->overrideCascOpened(true);
+
+//    {
+//        std::vector<int> replacementTextureFDids = {0,0,3607739};
+////        replacementTextureFDids[2] = 3607739;
+//        openM2SceneByfdid(4062864, replacementTextureFDids);
+//    }
+
+    };
+
+    //-----------------------------------------------------
+
+
+
+
 //    auto window = ANativeWindow_fromSurface(env, surface);
     auto window = g_App->window;
     logExecution
@@ -131,9 +181,9 @@ void init(struct android_app* app)
     g_Initialized = true;
 }
 
+auto currentFrame = std::chrono::high_resolution_clock::now();;
+auto lastFrame = std::chrono::high_resolution_clock::now();
 
-double currentFrame = 0.0f;
-double lastFrame = 0.0f;
 void tick()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -172,7 +222,9 @@ void tick()
     canvHeight = window_height;
     canvWidth = window_width;
 
-    double deltaTime = currentFrame - lastFrame;
+    currentFrame = std::chrono::high_resolution_clock::now();;
+    double deltaTime = std::chrono::duration<double>(currentFrame - lastFrame).count() ;
+    lastFrame = currentFrame;
 
     apiContainer->camera->tick(deltaTime*(1000.0f));
     //DrawStage for screenshot
@@ -356,7 +408,6 @@ void android_main(struct android_app* app) {
 // the resulting Unicode characters here via JNI and send them to Dear ImGui.
 static int PollUnicodeChars()
 {
-    return 0;
     JavaVM* java_vm = g_App->activity->vm;
     JNIEnv* java_env = NULL;
 
@@ -393,7 +444,6 @@ static int PollUnicodeChars()
 // Therefore, we call ShowSoftKeyboardInput() of the main activity implemented in MainActivity.kt via JNI.
 static int ShowSoftKeyboardInput()
 {
-    return 0;
     JavaVM* java_vm = g_App->activity->vm;
     JNIEnv* java_env = NULL;
 

@@ -1,5 +1,8 @@
 #version 450
 
+precision highp float;
+precision highp int;
+
 layout (location = 0) in vec2 position;
 
 layout(std140, binding=2) uniform meshWideBlockVS {

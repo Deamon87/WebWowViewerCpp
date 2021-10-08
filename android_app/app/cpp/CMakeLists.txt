@@ -95,13 +95,13 @@ set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/bzip ${CMAKE_CURRENT_BINARY_DIR}/bzip)
 
 #mdebtls as replacement for openssl
-#set(USE_STATIC_MBEDTLS_LIBRARY ON CACHE BOOL "Use static" )
-#set(USE_SHARED_MBEDTLS_LIBRARY ON CACHE BOOL "Do not use shared" )
-#add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/mdebtls ${CMAKE_CURRENT_BINARY_DIR}/mdebtls)
-#SET(MBEDCRYPTO_LIBRARY "mbedcrypto.so")
-#SET(MBEDTLS_LIBRARY "mbedx509.so")
-#SET(MBEDX509_LIBRARY "mbedtls.so")
-#set(MBEDTLS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/mdebtls/include ${CMAKE_CURRENT_SOURCE_DIR}/src/includes)
+set(USE_STATIC_MBEDTLS_LIBRARY ON CACHE BOOL "Use static" )
+set(USE_SHARED_MBEDTLS_LIBRARY ON CACHE BOOL "Do not use shared" )
+add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/mdebtls ${CMAKE_CURRENT_BINARY_DIR}/mdebtls)
+SET(MBEDCRYPTO_LIBRARY "mbedcrypto.so")
+SET(MBEDTLS_LIBRARY "mbedx509.so")
+SET(MBEDX509_LIBRARY "mbedtls.so")
+set(MBEDTLS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/mdebtls/include ${CMAKE_CURRENT_SOURCE_DIR}/src/includes)
 
 #CascLib
 add_definitions(-DCASCLIB_NO_AUTO_LINK_LIBRARY)
@@ -143,6 +143,9 @@ set(SOURCE_FILES
         ${VIEWER_IMPORT_DIR}/src/persistance/CascRequestProcessor.h
         ${VIEWER_IMPORT_DIR}/src/persistance/HttpRequestProcessor.cpp
         ${VIEWER_IMPORT_DIR}/src/persistance/HttpRequestProcessor.h
+
+		src/HttpRequestProcessor.cpp
+		src/HttpRequestProcessor.h
 
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/imgui.cpp
         ${VIEWER_IMPORT_DIR}/src/ui/imguiLib/imgui_demo.cpp
@@ -240,6 +243,7 @@ target_include_directories(AWebWoWViewerCpp PUBLIC ${ANDROID_NDK}/sources/androi
 add_dependencies(AWebWoWViewerCpp WoWViewerLib)
 #add_dependencies(AWebWoWViewerCpp storm)
 add_dependencies(AWebWoWViewerCpp casc_static)
+
 
 #TODO: platform dependant!!
 check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)

@@ -185,24 +185,18 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 #endif
     bool geomShaderExists = false;
     if (esVersion) {
+#if defined(__EMSCRIPTEN__)
         vertExtraDefStrings = "#version 300 es\n" + vertExtraDefStrings;
         geomExtraDefStrings = "#version 300 es\n" + geomExtraDefStrings;
+#else
+        vertExtraDefStrings = "#version 310 es\n" + vertExtraDefStrings;
+        geomExtraDefStrings = "#version 310 es\n" + geomExtraDefStrings;
+#endif
     } else {
         vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
         geomExtraDefStrings = "#version 330\n" + geomExtraDefStrings;
     }
 
-    if (!esVersion) {
-        vertExtraDefStrings +=
-            "#define precision\n"
-            "#define lowp\n"
-            "#define mediump\n"
-            "#define highp\n"
-            "#define FLOATDEC\n";
-    } else {
-        vertExtraDefStrings += "#define FLOATDEC float;\n";
-        vertExtraDefStrings += "precision mediump float;\n";
-    };
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
 
 #ifdef __EMSCRIPTEN__
@@ -210,23 +204,14 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 #endif
 
     if (esVersion) {
+#if defined(__EMSCRIPTEN__)
         fragExtraDefStrings = "#version 300 es\n" + fragExtraDefStrings;
+#else
+        fragExtraDefStrings = "#version 310 es\n" + fragExtraDefStrings;
+#endif
     } else {
         fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
     }
-
-    if (!esVersion) {
-        fragExtraDefStrings +=
-            "#define precision\n"
-            "#define lowp\n"
-            "#define mediump\n"
-            "#define highp\n"
-            "#define FLOATDEC\n";
-    } else {
-        fragExtraDefStrings += "precision mediump float;\n";
-        fragExtraDefStrings += "#define FLOATDEC float;\n";
-
-    };
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);

@@ -6,8 +6,8 @@
 #define MAX_MATRIX_NUM 220
 #endif
 
-
 precision highp float;
+precision highp int;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"

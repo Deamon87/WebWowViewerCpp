@@ -85,9 +85,9 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmap
 //        << "useDXT3Decoding = " << useDXT3Decoding << " "
 //        << "useDXT5Decoding = " << useDXT5Decoding << " " << std::endl;
 
-//    useDXT1Decoding = true; // Note: manual DXT1 decompression loses alpha channel for S3TC_RGBA_DXT1 textures
-//    useDXT3Decoding = true;
-//    useDXT5Decoding = true;
+    useDXT1Decoding = true; // Note: manual DXT1 decompression loses alpha channel for S3TC_RGBA_DXT1 textures
+    useDXT3Decoding = true;
+    useDXT5Decoding = true;
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 

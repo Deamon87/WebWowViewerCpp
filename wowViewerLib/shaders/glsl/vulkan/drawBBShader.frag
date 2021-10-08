@@ -1,6 +1,7 @@
 #version 450
 
 precision highp float;
+precision highp int;
 
 layout(std140, binding=0) uniform modelWideBlockVS {
     mat4 uPlacementMat;

@@ -1,5 +1,8 @@
 #version 450
 
+precision highp float;
+precision highp int;
+
 layout (location = 0) in vec2 Position;
 layout (location = 1) in vec2 UV;
 layout (location = 2) in vec4 Color;

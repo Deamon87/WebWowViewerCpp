@@ -2,6 +2,7 @@
 #extension GL_GOOGLE_include_directive: require
 
 precision highp float;
+precision highp int;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"

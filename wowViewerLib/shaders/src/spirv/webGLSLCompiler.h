@@ -29,6 +29,8 @@ namespace SPIRV_CROSS_NAMESPACE
             // Emit the OpenGL ES shading language instead of desktop OpenGL.
             bool es = false;
 
+            bool webgl20 = false;
+
             // Debug option to always emit temporary variables for all expressions.
             bool force_temporary = false;
 

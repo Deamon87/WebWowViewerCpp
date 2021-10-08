@@ -5,6 +5,7 @@
 #include "../common/commonLightFunctions.glsl"
 
 precision highp float;
+precision highp int;
 
 layout(location = 0) in vec2 vChunkCoords;
 layout(location = 1) in vec3 vPosition;

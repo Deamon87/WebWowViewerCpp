@@ -1562,6 +1562,10 @@ string WebGLSLCompiler::layout_for_variable(const SPIRVariable &var)
     if (is_legacy())
         return "";
 
+    if (options.webgl20){
+        return "";
+    }
+
     if (subpass_input_is_framebuffer_fetch(var.self))
         return "";
 

@@ -122,10 +122,19 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
             get_filename_component(GLSL30_FILE_FULLPATH "${GLSL33_FILE}"
                     REALPATH BASE_DIR "${CMAKE_BINARY_DIR}")
 
+            SET(GLSL330_OPTION "")
+            if (ANDROID)
+                SET(GLSL330_OPTION "-glslEs310")
+            elseif(EMSCRIPTEN)
+                SET(GLSL330_OPTION "-glslEs300")
+            else()
+                SET(GLSL330_OPTION "-glsl330")
+            endif()
+
             add_custom_command(
                     OUTPUT ${GLSL33_FILE}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL33}"
-                    COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -glsl330 ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
+                    COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} ${GLSL330_OPTION} ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
                     DEPENDS ${SPIRV_NonOpt} spirv_reflection)
 
             list(APPEND GLSL30Files ${GLSL33_FILE})

@@ -6,6 +6,7 @@
 #include "../common/commonFogFunctions.glsl"
 
 precision highp float;
+precision highp int;
 
 layout(location=0) in vec3 vPosition;
 layout(location=1) in vec2 vTextCoords;

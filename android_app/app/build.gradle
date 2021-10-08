@@ -19,7 +19,7 @@ if (project.rootProject.file('local.properties').canRead()) {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdk 29
     buildToolsVersion "30.0.0"
     ndkVersion "23.0.7599858"
 

@@ -1,6 +1,7 @@
 #version 450
 
 precision highp float;
+precision highp int;
 
 //Individual mesh
 layout(std140, binding=1) uniform modelWideBlockVS {

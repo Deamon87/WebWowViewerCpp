@@ -9,7 +9,7 @@
 #include "webGLSLCompiler.h"
 #include "fileHelpers.h"
 
-void dumpGLSLText(std::vector<std::string> &shaderFilePaths, int glslVersion) {
+void dumpGLSLText(std::vector<std::string> &shaderFilePaths, int glslVersion, bool isES) {
 
     // Read SPIR-V from disk or similar.
     spirv_cross::WebGLSLCompiler::Options options;
@@ -58,19 +58,27 @@ void dumpGLSLText(std::vector<std::string> &shaderFilePaths, int glslVersion) {
 
             // Some arbitrary remapping if we want.
 
-            if (glslVersion >= 300) {
-                glsl.unset_decoration(resource.id, spv::DecorationBinding);
+            if (isES) {
+                if (glslVersion <= 300) {
+//                    glsl.unset_decoration(resource.id, spv::DecorationAlignment);
+                }
                 options.enable_420pack_extension = false;
             } else {
-                glsl.unset_decoration(resource.id, spv::DecorationBinding);
-                options.enable_420pack_extension = false;
+                if (glslVersion > 300) {
+                    glsl.unset_decoration(resource.id, spv::DecorationBinding);
+                    options.enable_420pack_extension = false;
+                } else {
+                    glsl.unset_decoration(resource.id, spv::DecorationBinding);
+                    options.enable_420pack_extension = false;
+                }
             }
         }
 
         // Set some options.
 
         options.version = glslVersion;
-        options.es = false;
+        options.es = isES;
+        options.webgl20 = false; //options.es && glslVersion <= 300;
         glsl.set_common_options(options);
 
 
