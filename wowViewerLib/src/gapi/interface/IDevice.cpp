@@ -53,4 +53,14 @@ bool IDevice::getIsAnisFiltrationSupported() {
 #endif
 }
 
+std::string IDevice::insertAfterVersion(std::string &glslShaderString, std::string stringToPaste) {
+    auto start = glslShaderString.find("#version");
+    if (start != std::string::npos) {
+        auto end = glslShaderString.find("\n", start+1);
+        return glslShaderString.insert(end+1, stringToPaste);
+    } else {
+        return glslShaderString.insert(0, stringToPaste);
+    }
+}
+
 

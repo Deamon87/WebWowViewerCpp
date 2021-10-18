@@ -228,6 +228,8 @@ class IDevice {
 
         virtual void shrinkData() {};
         virtual bool wasTexturesUploaded() = 0;
+
+        static std::string insertAfterVersion(std::string &glslShaderString, std::string stringToPaste);
 };
 
 #include <cassert>

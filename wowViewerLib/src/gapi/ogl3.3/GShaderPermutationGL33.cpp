@@ -184,18 +184,6 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
     esVersion = true;
 #endif
     bool geomShaderExists = false;
-    if (esVersion) {
-#if defined(__EMSCRIPTEN__)
-        vertExtraDefStrings = "#version 300 es\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 300 es\n" + geomExtraDefStrings;
-#else
-        vertExtraDefStrings = "#version 310 es\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 310 es\n" + geomExtraDefStrings;
-#endif
-    } else {
-        vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 330\n" + geomExtraDefStrings;
-    }
 
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
 
@@ -203,29 +191,16 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
     geomShaderExists = false;
 #endif
 
-    if (esVersion) {
-#if defined(__EMSCRIPTEN__)
-        fragExtraDefStrings = "#version 300 es\n" + fragExtraDefStrings;
-#else
-        fragExtraDefStrings = "#version 310 es\n" + fragExtraDefStrings;
-#endif
-    } else {
-        fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
-    }
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
     int maxMatrixUniforms = MAX_MATRIX_NUM;//(maxVertexUniforms / 4) - 9;
 
-    vertExtraDefStrings = vertExtraDefStrings + "#define COMPILING_VS 1\r\n ";
-    geomExtraDefStrings = geomExtraDefStrings + "#define COMPILING_GS 1\r\n";
-    fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
+    std::string geometryShaderString = "";
 
-    std::string geometryShaderString = vertShaderString;
-
-    vertShaderString = vertShaderString.insert(0, vertExtraDefStrings);
-    fragmentShaderString = fragmentShaderString.insert(0, fragExtraDefStrings);
-    geometryShaderString = geometryShaderString.insert(0, geomExtraDefStrings);
+    vertShaderString = IDevice::insertAfterVersion(vertShaderString, vertExtraDefStrings);
+    fragmentShaderString = IDevice::insertAfterVersion(fragmentShaderString, fragExtraDefStrings);
+    geometryShaderString = IDevice::insertAfterVersion(geometryShaderString, geomExtraDefStrings);
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     const GLchar *vertexShaderConst = (const GLchar *)vertShaderString.c_str();

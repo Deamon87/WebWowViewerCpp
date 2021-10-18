@@ -54,17 +54,15 @@ BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
 //}
 
 void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-    fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-            source,
-            type,
-            id,
-            severity,
-            std::string(message, message+length).c_str());
-    if (severity == 37190) {
-        std::cout << "lol";
-    }
-
-    fflush(stdout);
+//        if (type == GL_DEBUG_TYPE_ERROR) {
+//            fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+//                    source,
+//                    type,
+//                    id,
+//                    severity,
+//                    std::string(message, message + length).c_str());
+//            fflush(stdout);
+//        }
 }
 
 void GDeviceGL20::bindIndexBuffer(IIndexBuffer *buffer) {
@@ -858,15 +856,21 @@ float GDeviceGL20::getAnisLevel() {
 }
 
 void GDeviceGL20::clearScreen() {
-#ifndef WITH_GLESv2
-    glClearDepthf(1.0f);
-#else
-    glClearDepthf(1.0f);
-#endif
+    if (m_isInvertZ) {
+        glClearDepthf(0.0f);
+    } else {
+        glClearDepthf(1.0f);
+    }
+
     glDisable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+    if (m_isInvertZ) {
+        glDepthFunc(GL_GEQUAL);
+    } else {
+        glDepthFunc(GL_LEQUAL);
+    }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
+    glDisable(GL_SCISSOR_TEST);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);
 //    glClearColor(0.25, 0.06, 0.015, 0.0);
     glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
@@ -886,7 +890,7 @@ void GDeviceGL20::setClearScreenColor(float r, float g, float b) {
 }
 
 void GDeviceGL20::beginFrame() {
-    this->clearScreen();
+
 }
 
 void GDeviceGL20::commitFrame() {

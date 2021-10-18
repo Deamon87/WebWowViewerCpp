@@ -20,6 +20,7 @@ public:
 
     void createBuffer() override;
     void *getPtr(){ return dataPtr; }
+    int getLen(){ return m_length; }
 private:
 
     void destroyBuffer();
@@ -33,6 +34,7 @@ private:
 
 private:
     void *dataPtr;
+    int m_length = 0;
 
 };
 

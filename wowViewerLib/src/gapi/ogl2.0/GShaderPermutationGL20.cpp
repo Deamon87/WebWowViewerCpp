@@ -88,15 +88,7 @@ GShaderPermutationGL20::GShaderPermutationGL20(std::string &shaderName, IDevice 
 
 }
 
-static std::string insertAfterVersion(std::string &glslShaderString, std::string stringToPaste) {
-    auto start = glslShaderString.find("#version");
-    if (start != std::string::npos) {
-        auto end = glslShaderString.find("\n");
-        return glslShaderString.insert(end+1, stringToPaste);
-    } else {
-        return glslShaderString.insert(0, stringToPaste);
-    }
-}
+
 
 void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
@@ -125,8 +117,8 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
 //    vertExtraDefStrings = vertExtraDefStrings + "#define COMPILING_VS 1\r\n ";
 //    fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
 
-    vertShaderString = insertAfterVersion(vertShaderString, vertExtraDefStrings);
-    fragmentShaderString = insertAfterVersion(fragmentShaderString, fragExtraDefStrings);
+    vertShaderString = IDevice::insertAfterVersion(vertShaderString, vertExtraDefStrings);
+    fragmentShaderString = IDevice::insertAfterVersion(fragmentShaderString, fragExtraDefStrings);
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     const GLchar *vertexShaderConst = (const GLchar *)vertShaderString.c_str();
@@ -211,7 +203,7 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
 //    printf("Active Uniforms: %d\n", count);
     for (GLint i = 0; i < count; i++)
     {
-        const GLsizei bufSize = 32; // maximum name length
+        const GLsizei bufSize = 256; // maximum name length
         GLchar name[bufSize]; // variable name in GLSL
         GLsizei length; // name length
         GLint size; // size of the variable
@@ -362,7 +354,7 @@ void GShaderPermutationGL20::bindUniformBuffer(IUniformBuffer *buffer, int slot,
     if (buffer == nullptr) {
         m_UniformBuffer[slot].buffer = nullptr;
     }  else {
-        if (buffer != m_UniformBuffer[slot].buffer || m_UniformBuffer[slot].offset != offset) {
+        if ((buffer != m_UniformBuffer[slot].buffer) || (m_UniformBuffer[slot].offset != offset)) {
 
             auto vec = {&fieldDefMapPerShaderNameVert, &fieldDefMapPerShaderNameFrag};
             for (auto &fieldDefMapPerShaderName : vec) {
@@ -370,7 +362,8 @@ void GShaderPermutationGL20::bindUniformBuffer(IUniformBuffer *buffer, int slot,
                 {
                     auto it = shaderDef.find(slot);
                     bool found = it != shaderDef.end();
-                    if (!found) continue;
+                    if (!found)
+                        continue;
                 }
                 auto const &fieldVector = shaderDef.at(slot);
 
@@ -383,9 +376,14 @@ void GShaderPermutationGL20::bindUniformBuffer(IUniformBuffer *buffer, int slot,
 
                     if (!hasUnf(hashedStr)) continue;
 
+//                    std::cout << "binding uniform field " << fieldDef.name << std::endl;
+
                     auto uniformLoc = getUnf(hashedStr);
 //                fieldDef.isFloat
                     auto fieldOffset = fieldDef.offset + offset;
+                    if (fieldOffset > gbuffer->getLen()) {
+                        continue;
+                    }
                     char *fieldPtr = &((char *) gbuffer->getPtr())[fieldOffset];
 
 //                fieldDef.columns

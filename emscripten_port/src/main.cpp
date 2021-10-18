@@ -406,7 +406,6 @@ extern "C" {
             if (uboSize > 0) {
                 glVersion = "ogl3";
             }
-
         }
 
         auto hdevice = IDeviceFactory::createDevice(glVersion, nullptr);

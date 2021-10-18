@@ -114,7 +114,7 @@ GFrameBufferGL33::~GFrameBufferGL33() {
         }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDeleteFramebuffers(1, &m_renderBufFbo);
-    }
+}
 
 HGTexture GFrameBufferGL33::getAttachment(int index){
     return attachmentTextures[index];
