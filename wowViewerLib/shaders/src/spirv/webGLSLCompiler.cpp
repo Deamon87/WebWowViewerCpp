@@ -836,7 +836,7 @@ void WebGLSLCompiler::emit_header()
         }
 
         case ExecutionModelFragment:
-            if (options.es)
+            if (options.es || options.webgl10)
             {
                 switch (options.fragment.default_float_precision)
                 {
@@ -1561,10 +1561,6 @@ string WebGLSLCompiler::layout_for_variable(const SPIRVariable &var)
     // layouts for legacy versions.
     if (is_legacy())
         return "";
-
-    if (options.webgl20){
-        return "";
-    }
 
     if (subpass_input_is_framebuffer_fetch(var.self))
         return "";
@@ -3013,14 +3009,20 @@ void WebGLSLCompiler::emit_resources()
                         c.specialization_constant_macro_name =
                             constant_value_macro_name(get_decoration(c.self, DecorationSpecId));
                     }
-                    emit_constant(c);
-                    emitted = true;
+                    //Webgl 1.0 do not support const arrays. Sad, but true
+                    if (!options.webgl10) {
+                        emit_constant(c);
+                        emitted = true;
+                    }
                 }
             }
             else if (id.get_type() == TypeConstantOp)
             {
-                emit_specialization_constant_op(id.get<SPIRConstantOp>());
-                emitted = true;
+                //Webgl 1.0 do not support const arrays. Sad, but true
+                if (!options.webgl10) {
+                    emit_specialization_constant_op(id.get<SPIRConstantOp>());
+                    emitted = true;
+                }
             }
             else if (id.get_type() == TypeType)
             {
@@ -3040,7 +3042,7 @@ void WebGLSLCompiler::emit_resources()
                     is_natural_struct = true;
                 }
 
-                if (is_natural_struct)
+                if (is_natural_struct )
                 {
                     if (emitted)
                         statement("");
@@ -3106,7 +3108,7 @@ void WebGLSLCompiler::emit_resources()
     }
 
     // Output UBOs and SSBOs
-    ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
+    ir.for_each_typed_id<SPIRVariable>([&](uint32_t r_id, SPIRVariable &var) {
         auto &type = this->get<SPIRType>(var.basetype);
 
         bool is_block_storage = type.storage == StorageClassStorageBuffer || type.storage == StorageClassUniform ||
@@ -3117,7 +3119,11 @@ void WebGLSLCompiler::emit_resources()
         if (var.storage != StorageClassFunction && type.pointer && is_block_storage && !is_hidden_variable(var) &&
             has_block_flags)
         {
-            emit_buffer_block(var);
+            if (options.webgl10) {
+                emit_ubo_as_uniforms(type.parent_type, "_" +std::to_string(r_id));
+            } else {
+                emit_buffer_block(var);
+            }
         }
     });
 
@@ -7496,6 +7502,8 @@ string WebGLSLCompiler::access_chain_internal(uint32_t base, const uint32_t *ind
         access_chain_internal_append_index(expr, base, type, mod_flags, access_chain_is_arrayed, index);
     };
 
+    bool doPossibleUBODereference = true;
+
     for (uint32_t i = 0; i < count; i++)
     {
         uint32_t index = indices[i];
@@ -7558,6 +7566,7 @@ string WebGLSLCompiler::access_chain_internal(uint32_t base, const uint32_t *ind
             // Arrays
         else if (!type->array.empty())
         {
+            doPossibleUBODereference = false;
             // If we are flattening multidimensional arrays, only create opening bracket on first
             // array index.
             if (options.flatten_multidimensional_arrays && !pending_array_enclose)
@@ -7664,8 +7673,11 @@ string WebGLSLCompiler::access_chain_internal(uint32_t base, const uint32_t *ind
                     expr = qual_mbr_name;
                 else if (flatten_member_reference)
                     expr += join("_", to_member_name(*type, index));
-                else
+                else if (options.webgl10 && doPossibleUBODereference) {
+                    expr += to_member_reference_webgl10(base, *type, index, ptr_chain);
+                } else {
                     expr += to_member_reference(base, *type, index, ptr_chain);
+                }
             }
 
             if (has_member_decoration(type->self, index, DecorationInvariant))
@@ -7683,6 +7695,7 @@ string WebGLSLCompiler::access_chain_internal(uint32_t base, const uint32_t *ind
             // Matrix -> Vector
         else if (type->columns > 1)
         {
+            doPossibleUBODereference = false;
             // If we have a row-major matrix here, we need to defer any transpose in case this access chain
             // is used to store a column. We can resolve it right here and now if we access a scalar directly,
             // by flipping indexing order of the matrix.
@@ -7700,6 +7713,8 @@ string WebGLSLCompiler::access_chain_internal(uint32_t base, const uint32_t *ind
             // Vector -> Scalar
         else if (type->vecsize > 1)
         {
+            doPossibleUBODereference = false;
+
             string deferred_index;
             if (row_major_matrix_needs_conversion)
             {
@@ -11418,10 +11433,81 @@ string WebGLSLCompiler::to_member_name(const SPIRType &type, uint32_t index)
         return join("_m", index);
 }
 
-string WebGLSLCompiler::to_member_reference(uint32_t, const SPIRType &type, uint32_t index, bool)
+string WebGLSLCompiler::to_member_reference(uint32_t base, const SPIRType &type, uint32_t index, bool)
 {
     return join(".", to_member_name(type, index));
 }
+
+static bool endsWith(std::string_view str, std::string_view suffix)
+{
+    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+}
+
+bool WebGLSLCompiler::canDoFlatteningForMember(uint32_t base) {
+    auto *var = maybe_get<SPIRVariable>(base);
+    if (!var) {
+        auto *expr = maybe_get<SPIRExpression>(base);
+        auto *exprType = &get_pointee_type(expr->expression_type);
+        if (expr) {
+            if (0 != expr->loaded_from) {
+                if (expr->expression_dependencies.size() > 0) {
+                    auto depId = expr->expression_dependencies[expr->expression_dependencies.size()-1];
+                    auto *depExpr = maybe_get<SPIRExpression>(depId);
+//
+                    if (depExpr != nullptr && endsWith(depExpr->expression, "]")) {
+                        return false;
+                    }
+                }
+
+
+                return canDoFlatteningForMember(expr->loaded_from);
+            } else {
+                if (expr->expression_dependencies.size() > 1) {
+                    return canDoFlatteningForMember(expr->expression_dependencies[1]);
+                }
+
+            }
+        }
+        auto *chain = maybe_get<SPIRAccessChain>(base);
+        if (chain) {
+            join("");
+        }
+
+        return false;
+    }
+//    auto *varType = &get_pointee_type(var->basetype);
+//    if (var->dependees.size() > 1) {
+//        for (auto depId : var->dependees) {
+//            auto *depVar = maybe_get<SPIRVariable>(depId);
+//            auto *depExpr = maybe_get<SPIRExpression>(depId);
+//
+//            if (depExpr != nullptr) {
+//                uint32_t type_id = expression_type_id(depId);
+//                const auto *type = &get_pointee_type(type_id);
+//                if (!type->array.empty()) {
+//                    return false;
+//                }
+//            }
+//            join("");
+//        }
+//    }
+    return var && var->storage == StorageClassUniform;
+}
+
+std::string WebGLSLCompiler::to_member_reference_webgl10(uint32_t base, const SPIRType &type, uint32_t index, bool ptr_chain) {
+    if (to_member_name(type, index) == "attenuation") {
+        join("");
+    }
+    bool doFlattening = canDoFlatteningForMember(base);
+
+    auto *chain = maybe_get<SPIRAccessChain>(base);
+    if (doFlattening && options.webgl10) {
+        return join("_", to_member_name(type, index));
+    } else {
+        return join(".", to_member_name(type, index));
+    }
+}
+
 
 string WebGLSLCompiler::to_multi_member_reference(const SPIRType &type, const SmallVector<uint32_t> &indices)
 {
@@ -12408,6 +12494,14 @@ void WebGLSLCompiler::emit_function(SPIRFunction &func, const Bitset &return_fla
     if (func.active)
         return;
     func.active = true;
+
+    //Hack for one single function, that uses consts
+    if (options.webgl10 && to_name(func.self) == "validateFogColor") {
+        statement("vec3 validateFogColor(in vec3 fogColor, int blendMode) {\n"
+                  "    return fogColor;\n"
+                  "}");
+        return;
+    }
 
     // If we depend on a function, emit that function before we emit our own function.
     for (auto block : func.blocks)
@@ -14384,4 +14478,67 @@ void WebGLSLCompiler::emit_inout_fragment_outputs_copy_to_subpass_inputs()
 bool WebGLSLCompiler::variable_is_depth_or_compare(VariableID id) const
 {
     return image_is_comparison(get<SPIRType>(get<SPIRVariable>(id).basetype), id);
+}
+
+void WebGLSLCompiler::emit_ubo_as_uniforms(spirv_cross::TypeID type, std::string namePrefix) {
+    auto memberType = get_type(type);
+    int arraySize = memberType.array.size() > 0 ? memberType.array[0] : 0;
+    bool arrayLiteral = memberType.array_size_literal.size() > 0 ? memberType.array_size_literal[0] : 0;
+    int vecSize = memberType.vecsize;
+    int width = memberType.width;
+    int columns = memberType.columns;
+
+
+    bool isStruct = memberType.basetype == spirv_cross::SPIRType::Struct;
+
+    if (isStruct) {
+        auto parentTypeId = memberType.parent_type;
+        if (parentTypeId == spirv_cross::TypeID(0)) {
+            parentTypeId = memberType.type_alias;
+        }
+        if (parentTypeId == spirv_cross::TypeID(0)) {
+            parentTypeId = memberType.self;
+        }
+//
+//        auto submemberType = glsl.get_type(submemberTypeId);
+//        int structSize = submemberType.vecsize * submemberType.columns*(submemberType.width/8);
+
+        if (arrayLiteral) {
+            statement("uniform ",variable_decl(memberType, namePrefix, 0), ";");
+//            for (int j = 0; j < arraySize; j++) {
+//
+//                for (int k = 0; k < memberType.member_types.size(); k++) {
+//                    auto memberName = get_member_name(parentTypeId, k);
+//
+//                    emit_ubo_as_uniforms(memberType.member_types[k],
+//                                namePrefix + "[" + std::to_string(j) + "]" + "." + memberName);
+//                }
+//            }
+        } else {
+            for (int k = 0; k < memberType.member_types.size(); k++) {
+                auto memberName = get_member_name(parentTypeId, k);
+
+                emit_ubo_as_uniforms(memberType.member_types[k], namePrefix + "_" + memberName);
+            }
+        }
+    } else {
+        bool isFloat = (memberType.basetype == spirv_cross::SPIRType::Float);
+//        std::cout << "{\"" <<namePrefix <<"\","<< isFloat << ", " <<columns<<","<<vecSize<<","<<arraySize << "}"<<std::endl;
+        auto &membertype = get<SPIRType>(type);
+
+        statement("uniform ",variable_decl(membertype, namePrefix, 0), ";");
+
+
+
+//        std::cout <<
+//                  namePrefix <<
+//                  ", columns = " << columns <<
+//                  ", isFloat = " << (memberType.basetype == spirv_cross::SPIRType::Float) <<
+//                  ", memberSize = " << currmemberSize <<
+//                  ", vecSize = " << vecSize <<
+//                  ", width = " << width <<
+//                  ", arraySize = " << arraySize <<
+//                  ", arrayLiteral = " << arrayLiteral <<
+//                  "  offset = " << offset << std::endl;
+    }
 }

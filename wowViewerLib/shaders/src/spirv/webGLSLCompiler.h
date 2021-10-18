@@ -29,8 +29,6 @@ namespace SPIRV_CROSS_NAMESPACE
             // Emit the OpenGL ES shading language instead of desktop OpenGL.
             bool es = false;
 
-            bool webgl20 = false;
-
             // Debug option to always emit temporary variables for all expressions.
             bool force_temporary = false;
 
@@ -82,6 +80,8 @@ namespace SPIRV_CROSS_NAMESPACE
             // In GLSL, force use of I/O block flattening, similar to
             // what happens on legacy GLSL targets for blocks and structs.
             bool force_flattened_io_blocks = false;
+
+            bool webgl10 = false;
 
             enum Precision
             {
@@ -160,6 +160,9 @@ namespace SPIRV_CROSS_NAMESPACE
         void set_common_options(const Options &opts)
         {
             options = opts;
+            if (opts.version < 100) {
+                backend.explicit_struct_type = true;
+            }
         }
 
         std::string compile() override;
@@ -285,6 +288,7 @@ namespace SPIRV_CROSS_NAMESPACE
         virtual void emit_buffer_block(const SPIRVariable &type);
         virtual void emit_push_constant_block(const SPIRVariable &var);
         virtual void emit_uniform(const SPIRVariable &var);
+        virtual void emit_ubo_as_uniforms(spirv_cross::TypeID type, std::string namePrefix);
         virtual std::string unpack_expression_type(std::string expr_str, const SPIRType &type, uint32_t physical_type_id,
                                                    bool packed_type, bool row_major);
 
@@ -574,6 +578,8 @@ namespace SPIRV_CROSS_NAMESPACE
         void strip_enclosed_expression(std::string &expr);
         std::string to_member_name(const SPIRType &type, uint32_t index);
         virtual std::string to_member_reference(uint32_t base, const SPIRType &type, uint32_t index, bool ptr_chain);
+        bool canDoFlatteningForMember(uint32_t base);
+        virtual std::string to_member_reference_webgl10(uint32_t base, const SPIRType &type, uint32_t index, bool ptr_chain);
         std::string to_multi_member_reference(const SPIRType &type, const SmallVector<uint32_t> &indices);
         std::string type_to_glsl_constructor(const SPIRType &type);
         std::string argument_decl(const SPIRFunction::Parameter &arg);

@@ -1144,21 +1144,6 @@ std::string GDeviceGL33::loadShader(std::string fileName, IShaderType shaderType
                            std::istreambuf_iterator<char>());
 #endif
 
-    //Delete version
-    {
-        auto start = result.find("#version");
-        if (start != std::string::npos) {
-            auto end = result.find("\n");
-            result = result.substr(end);
-//            std::cout << "version deleted for shader " << fileName << std::endl;
-//            std::cout << "shader :  " << result << std::endl;
-
-        } else {
-//            std::cout << "version not found for shader " << fileName << std::endl;
-//            std::cout << "shader :  " << result << std::endl;
-        }
-    }
-
     //Hack fix for bones
     {
         auto start = result.find("[bones");

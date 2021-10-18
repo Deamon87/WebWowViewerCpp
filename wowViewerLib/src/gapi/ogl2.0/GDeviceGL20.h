@@ -75,7 +75,7 @@ public:
     void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
-    void drawStageAndDeps(HDrawStage drawStage) override {};
+    void drawStageAndDeps(HDrawStage drawStage) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
     std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void *permutationDescriptor) override;
@@ -114,7 +114,7 @@ public:
         return false;
     };
 private:
-    void drawMesh(HGMesh &hmesh);
+    void drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk);
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {

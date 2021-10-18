@@ -228,10 +228,10 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
 //    }
 
     int j = 0;
-    for (auto &hgMesh : meshes) {
-        this->drawMesh(hgMesh);
-        j++;
-    }
+//    for (auto &hgMesh : meshes) {
+//        this->drawMesh(hgMesh);
+//        j++;
+//    }
 }
 
 void GDeviceGL20::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
@@ -301,7 +301,7 @@ void GDeviceGL20::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
     }
 }
 
-void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
+void GDeviceGL20::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     GMeshGL20 * hmesh = (GMeshGL20 *) hIMesh.get();
     if (hmesh->m_end <= 0) return;
 
@@ -318,9 +318,15 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
 
     bindProgram(hmesh->m_shader.get());
     bindVertexBufferBindings(hmesh->m_bindings.get());
-
     for (int i = 0; i < 5; i++) {
-        auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
+
+        IUniformBufferChunk *uniformChunk = nullptr;
+        if (i == 0) {
+            uniformChunk = matrixChunk.get();
+        } else {
+            uniformChunk = hmesh->m_UniformBuffer[i].get();
+        }
+
         if (uniformChunk != nullptr) {
             bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
         }
@@ -830,20 +836,6 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
                            std::istreambuf_iterator<char>());
 #endif
     logExecution
-    //Delete version
-    {
-        auto start = result.find("#version");
-        if (start != std::string::npos) {
-            auto end = result.find("\n");
-            result = result.substr(end);
-//            std::cout << "version deleted for shader " << fileName << std::endl;
-//            std::cout << "shader :  " << result << std::endl;
-
-        } else {
-//            std::cout << "version not found for shader " << fileName << std::endl;
-//            std::cout << "shader :  " << result << std::endl;
-        }
-    }
 
     //Hack fix for bones
     {
@@ -856,63 +848,6 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
         }
     }
 
-
-    //Hack fix for bone matrices
-    {
-        auto boneMatStart = result.find("mat4 boneTransformMat = ");
-        if (boneMatStart != std::string::npos) {
-
-            //Struct override:
-            {
-                auto structStart = result.find( "struct modelWideBlockVS");
-                auto structEnd = result.find( "};", structStart);
-
-                result = result.substr(0, structStart) +
-                    "struct modelWideBlockVS\n"
-                    "{\n"
-                    "    mat4 uPlacementMat;\n"
-                    "};"
-                    "uniform mat4 uBoneMatrixes[220];"+
-                    result.substr(structEnd+2);
-            }
-
-
-            //Get uniiform prefix
-            auto prefixEnd = result.find(".uBoneMatrixes");
-            auto prefixStart = result.rfind( " ",  prefixEnd);
-            std::string prefix = result.substr(prefixStart, prefixEnd-prefixStart+1);
-
-
-            auto startIterator = boneMatStart;
-            auto end = boneMatStart; end = 0;
-            while(startIterator != std::string::npos) {
-                end = result.find("\n", startIterator + 1);
-
-                startIterator = result.find("boneTransformMat = ", end+1);
-            }
-
-            //Replace the whole block with old info
-            result = result.substr(0, boneMatStart) +
-                "mat4 boneTransformMat = mat4(1.0);\n"
-                "\n"
-                "#if BONEINFLUENCES>0\n"
-                "    boneTransformMat = mat4(0.0);\n"
-                "    const float inttofloat = (1.0/255.0);\n"
-                "    boneTransformMat += (boneWeights.x ) * uBoneMatrixes[int(bones.x)];\n"
-                "#endif\n"
-                "#if BONEINFLUENCES>1\n"
-                "    boneTransformMat += (boneWeights.y ) * uBoneMatrixes[int(bones.y)];\n"
-                "#endif\n"
-                "#if BONEINFLUENCES>2\n"
-                "    boneTransformMat += (boneWeights.z ) * uBoneMatrixes[int(bones.z)];\n"
-                "#endif\n"
-                "#if BONEINFLUENCES>3\n"
-                "    boneTransformMat += (boneWeights.w ) * uBoneMatrixes[int(bones.w)];\n"
-                "#endif"+
-                result.substr(end);
-
-        }
-    }
 
     shaderCache[hashRecord] = result;
     return result;
@@ -968,4 +903,52 @@ void GDeviceGL20::shrinkData()  {
     }
 
     aggregationBufferForUpload = {};
+}
+
+void GDeviceGL20::drawStageAndDeps(HDrawStage drawStage) {
+
+    for (int i = 0; i < drawStage->drawStageDependencies.size(); i++) {
+        this->drawStageAndDeps(drawStage->drawStageDependencies[i]);
+    }
+
+    if (drawStage->target != nullptr) {
+        drawStage->target->bindFrameBuffer();
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    this->setViewPortDimensions(
+        drawStage->viewPortDimensions.mins[0],
+        drawStage->viewPortDimensions.mins[1],
+        drawStage->viewPortDimensions.maxs[0],
+        drawStage->viewPortDimensions.maxs[1]
+    );
+
+    this->setInvertZ(drawStage->invertedZ);
+
+    if (drawStage->clearScreen) {
+        clearColor[0] = drawStage->clearColor[0];
+        clearColor[1] = drawStage->clearColor[1];
+        clearColor[2] = drawStage->clearColor[2];
+        this->clearScreen();
+    }
+
+
+    if (drawStage->opaqueMeshes != nullptr) {
+        for (auto hgMesh : drawStage->opaqueMeshes->meshes) {
+            this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
+        }
+    }
+
+    if (drawStage->transparentMeshes != nullptr) {
+        for (auto hgMesh : drawStage->transparentMeshes->meshes) {
+            this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
+        }
+    }
+
+    if (drawStage->target != nullptr) {
+        drawStage->target->copyRenderBufferToTexture();
+    }
+//    drawMeshes(drawStage->meshesToRender->meshes);
+
 }
