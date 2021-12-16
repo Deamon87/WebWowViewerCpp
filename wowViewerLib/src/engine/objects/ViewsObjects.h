@@ -28,14 +28,27 @@ public:
     std::vector<std::shared_ptr<WmoGroupObject>> drawnWmos = {}; //Wmos which draw their meshes
     std::vector<std::shared_ptr<WmoGroupObject>> wmosForM2 = {}; //Wmo which contribute M2s to the scene
     std::vector<std::shared_ptr<M2Object>> drawnM2s = {};
+
     //Support several frustum planes because of how portal culling works
-    std::vector<std::vector<mathfu::vec3>> portalVertices = {};
+    std::vector<std::vector<mathfu::vec3>> worldPortalVertices = {};
     std::vector<std::vector<mathfu::vec4>> frustumPlanes = {};
+
     int level = -1;
     int renderOrder = -1;
+    struct PortalPointsFrame {
+        HGIndexBuffer m_indexVBO;
+        HGVertexBuffer m_bufferVBO;
+
+        HGVertexBufferBindings m_bindings;
+        std::vector<HGMesh> m_meshes = {};
+    } portalPointsFrame;
+
+
 
     virtual void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
-    virtual void setM2Lights(std::shared_ptr<M2Object> m2Object);;
+    virtual void setM2Lights(std::shared_ptr<M2Object> m2Object);
+
+    void produceTransformedPortalMeshes(HApiContainer apiContainer,std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
     void addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
 };
 

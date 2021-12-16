@@ -389,6 +389,7 @@ void WmoObject::update() {
             groupObjectsLod2[i]->update();
         }
     }
+
 }
 void WmoObject::uploadGeneratorBuffers() {
     if (!m_loaded) return;
@@ -481,7 +482,7 @@ void WmoObject::drawDebugLights(){
 
 
 void WmoObject::drawTransformedPortalPoints(){
-    return;
+
 #ifndef CULLED_NO_PORTAL_DRAWING
     /*
     if (!m_loaded) return;
@@ -1027,7 +1028,7 @@ void WmoObject::transverseGroupWMO(
             geometryPerPortal[relation->portal_index].sortedVericles.begin(),
             geometryPerPortal[relation->portal_index].sortedVericles.end(),
             std::back_inserter(portalVerticesVec),
-            [](mathfu::vec3 d) -> mathfu::vec3 { return d;}
+            [](mathfu::vec3 &d) -> mathfu::vec3 { return d;}
             );
 
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
@@ -1074,6 +1075,15 @@ void WmoObject::transverseGroupWMO(
                        }
         );
 
+        std::vector<mathfu::vec3> worldSpacePortalVertices;
+
+        std::transform(portalVerticesVec.begin(), portalVerticesVec.end(),
+                       std::back_inserter(worldSpacePortalVertices),
+                       [&](mathfu::vec3 &p) -> mathfu::vec3 {
+                           return (this->m_placementMatrix * mathfu::vec4(p, 1.0f)).xyz();
+                       }
+        );
+
         //5. Traverse next
         std::shared_ptr<WmoGroupObject> nextGroupObject = groupObjects[nextGroup];
         SMOGroupInfo &nextGroupInfo = mainGeom->groups[nextGroup];
@@ -1087,7 +1097,7 @@ void WmoObject::transverseGroupWMO(
                 interiorView.portalIndex = relation->portal_index;
             }
 
-            interiorView.portalVertices.push_back(portalVerticesVec);
+            interiorView.worldPortalVertices.push_back(worldSpacePortalVertices);
             interiorView.frustumPlanes.push_back(worldSpaceFrustumPlanes);
             if (globalLevel+1 >= interiorView.level) {
                 interiorView.level = globalLevel + 1;
@@ -1116,7 +1126,7 @@ void WmoObject::transverseGroupWMO(
                 exteriorView.viewCreated = true;
                 exteriorView.level = globalLevel + 1;
 
-                exteriorView.portalVertices.push_back(portalVerticesVec);
+                exteriorView.worldPortalVertices.push_back(worldSpacePortalVertices);
                 exteriorView.frustumPlanes.push_back(worldSpaceFrustumPlanes);
             }
         }

@@ -5,7 +5,7 @@ include(CheckCXXCompilerFlag)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(LINK_GLEW 1)
+set(LINK_GLEW 0)
 set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)

@@ -538,6 +538,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("nightborne model", ImVec2(-1, 0))) {
         openM2SceneByfdid(1810676, replacementTextureFDids);
     }
+    if (ImGui::Button("Tomb of sargares hall", ImVec2(-1, 0))) {
+        openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
+    }
 
     if (ImGui::Button("(WMO) NPE Ship with waterfall model", ImVec2(-1, 0))) {
         openWMOSceneByfdid(3314067);
@@ -1430,6 +1433,10 @@ void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
 
 void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z) {
     currentScene = std::make_shared<Map>(m_api, mapId, mapName);
+    m_api->camera->setCameraPos(x,y,z);
+}
+void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z) {
+    currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
     m_api->camera->setCameraPos(x,y,z);
 }
 void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {

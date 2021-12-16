@@ -247,6 +247,7 @@ public:
     void showMinimapGenerationSettingsDialog();
 
     void openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z);
+    void openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z);
 
     void editComponentsForConfig(Config *config);
 };

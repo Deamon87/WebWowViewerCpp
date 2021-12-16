@@ -20,9 +20,9 @@ public:
     }
 private:
 //#if defined(_MSC_VER)
-    std::chrono::time_point<std::chrono::steady_clock> m_startTime;
+//    std::chrono::time_point<std::chrono::steady_clock> m_startTime;
 //#else
-//    std::chrono::system_clock::time_point m_startTime;
+    std::chrono::system_clock::time_point m_startTime;
 //#endif
     double m_accomulatedTimeInterval = 0;
     int frameCounter = 0;

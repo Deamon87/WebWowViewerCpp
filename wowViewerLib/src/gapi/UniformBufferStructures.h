@@ -188,6 +188,12 @@ namespace DnSky {
     };
 }
 
+namespace DrawPortalShader {
+    struct meshWideBlockPS {
+        mathfu::vec4_packed uColor;
+    };
+}
+
 struct bbModelWideBlockVS {
     mathfu::mat4 uPlacementMat;
 

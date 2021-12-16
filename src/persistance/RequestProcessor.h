@@ -10,6 +10,7 @@
 #include <thread>
 #include <list>
 #include <vector>
+#include <atomic>
 #include <forward_list>
 #include <unordered_set>
 

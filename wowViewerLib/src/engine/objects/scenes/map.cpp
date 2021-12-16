@@ -1605,6 +1605,7 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 //    if (m_api->getConfig()->getRenderWMO()) {
     for (auto &view : vector) {
         view->collectMeshes(opaqueMeshes, transparentMeshes);
+        view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
     }
 //    }
 
@@ -1630,13 +1631,15 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
         m2ObjectsRendered.erase(unique(m2ObjectsRendered.begin(), m2ObjectsRendered.end()), m2ObjectsRendered.end());
     }
 
-//    if (m_api->getConfig()->getRenderM2()) {
-    for (auto &m2Object : m2ObjectsRendered) {
-        if (m2Object == nullptr) continue;
-        m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
-        m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
+    if (m_api->getConfig()->renderM2) {
+        for (auto &m2Object : m2ObjectsRendered) {
+            if (m2Object == nullptr) continue;
+            m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
+            m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
+        }
     }
-//    }
+
+
 
     //No need to sort array which has only one element
     if (transparentMeshes.size() > 1) {
