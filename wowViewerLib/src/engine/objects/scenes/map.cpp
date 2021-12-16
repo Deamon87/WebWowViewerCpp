@@ -1773,8 +1773,9 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
             {ITextureFormat::itRGBA},
             ITextureFormat::itDepth32,
             m_api->hDevice->getMaxSamplesCnt(),
-            2
+            4
         );
+        resultDrawStageCpy->viewPortDimensions.mins = {0,0};
 
         HDrawStage lastDrawStage = nullptr;
         HDrawStage prevDrawStage = resultDrawStageCpy;

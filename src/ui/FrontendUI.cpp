@@ -867,6 +867,32 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->disableFog = disableFog;
         }
 
+        bool useDoubleCameraDebug = m_api->getConfig()->doubleCameraDebug;
+        if (ImGui::Checkbox("Enable second camera(for debug)", &useDoubleCameraDebug)) {
+            m_api->getConfig()->doubleCameraDebug = useDoubleCameraDebug;
+        }
+
+        if (useDoubleCameraDebug) {
+            if (m_api->debugCamera == nullptr) {
+                m_api->debugCamera = std::make_shared<FirstPersonCamera>();
+                m_api->debugCamera->setMovementSpeed(movementSpeed);
+                float currentCameraPos[4] = {0, 0, 0, 0};
+                m_api->camera->getCameraPosition(&currentCameraPos[0]);
+
+
+                m_api->debugCamera->setCameraPos(currentCameraPos[0],
+                                                 currentCameraPos[1],
+                                                 currentCameraPos[2]);
+            }
+
+            bool controlSecondCamera = m_api->getConfig()->controlSecondCamera;
+            if (ImGui::Checkbox("Control debug camera", &controlSecondCamera)) {
+                m_api->getConfig()->controlSecondCamera = controlSecondCamera;
+            }
+        } else {
+            m_api->debugCamera = nullptr;
+        }
+
         pauseAnimation = m_api->getConfig()->pauseAnimation;
         if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
             m_api->getConfig()->pauseAnimation = pauseAnimation;
@@ -1255,8 +1281,24 @@ void FrontendUI::produceUpdateStage(HUpdateStage updateStage) {
 
 }
 
+mathfu::mat4 getInfZMatrix(float f, float aspect) {
+    return mathfu::mat4(
+        f / aspect, 0.0f,  0.0f,  0.0f,
+        0.0f,    f,  0.0f,  0.0f,
+        0.0f, 0.0f,  1, -1.0f,
+        0.0f, 0.0f, 1,  0.0f);
+}
+
 HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
+                                bool produceDoubleCamera, bool swapDebugCamera,
                                 ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene, HCullStage &cullStage) {
+
+
+    static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
+                                                              0, -1, 0, 0,
+                                                              0, 0, 1.0/2.0, 1.0/2.0,
+                                                              0, 0, 0, 1).Transpose();
+
     float farPlaneRendering = apiContainer.getConfig()->farPlane;
     float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
 
@@ -1266,32 +1308,36 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
     float canvasAspect = (float)width / (float)height;
 
     HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-    HCameraMatrices cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-    //Frustum matrix with reversed Z
+    HCameraMatrices cameraMatricesUpdate = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+    HCameraMatrices cameraMatricesRendering = cameraMatricesUpdate;
+    HCameraMatrices cameraMatricesRenderingDebug = nullptr;
 
+    if (produceDoubleCamera && apiContainer.debugCamera != nullptr)
+        cameraMatricesRenderingDebug = apiContainer.debugCamera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+
+
+    //Frustum matrix with reversed Z
     bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
     if (isInfZSupported)
     {
         float f = 1.0f / tan(fov / 2.0f);
-        cameraMatricesRendering->perspectiveMat = mathfu::mat4(
-            f / canvasAspect, 0.0f,  0.0f,  0.0f,
-            0.0f,    f,  0.0f,  0.0f,
-            0.0f, 0.0f,  1, -1.0f,
-            0.0f, 0.0f, 1,  0.0f);
+        cameraMatricesRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
+        if (cameraMatricesRenderingDebug != nullptr) {
+            cameraMatricesRenderingDebug->perspectiveMat = cameraMatricesRendering->perspectiveMat;
+        }
     }
 
     if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
         auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
 
-        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
-                                                                  0, -1, 0, 0,
-                                                                  0, 0, 1.0/2.0, 1/2.0,
-                                                                  0, 0, 0, 1).Transpose();
-
         perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
     }
 
     auto clearColor = apiContainer.getConfig()->clearColor;
+
+    if (cameraMatricesRenderingDebug && swapDebugCamera) {
+        std::swap(cameraMatricesRendering, cameraMatricesRenderingDebug);
+    }
 
     if (currentScene != nullptr) {
         ViewPortDimensions dimensions = {{0, 0}, {width, height}};
@@ -1305,11 +1351,30 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
         }
 
         cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
-        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
+        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesUpdate);
         std::vector<HDrawStage> drawStageDependencies = {};
-        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, drawStageDependencies, true,
+        if (produceDoubleCamera) {
+            std::vector<HDrawStage> drawStageDependencies__ = {};
+            HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRenderingDebug, drawStageDependencies__,
+                                                                    true,
+                                                                    dimensions,
+                                                                    true, isInfZSupported, clearColor, fb);
+            drawStageDependencies.push_back(sceneDrawStage);
+
+            int newWidth = floor(dimensions.maxs[0]*0.25f);
+            int newHeight = floor((float)newWidth / canvasAspect);
+
+            int newX = dimensions.maxs[0] - newWidth;
+            int newY = dimensions.maxs[1] - newHeight;
+
+            dimensions = {{newX, newY}, {newWidth, newHeight}};
+        }
+
+        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, drawStageDependencies,
+                                                                true,
                                                                 dimensions,
                                                                 true, isInfZSupported, clearColor, fb);
+
 
         return sceneDrawStage;
     }
@@ -1351,9 +1416,10 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
     if (needToMakeScreenshot)
     {
-        HCullStage temp = nullptr;
-        auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true, *m_api,
-                                              currentScene,temp);
+        HCullStage tempCullStage = nullptr;
+        auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true,
+                                              false, false, *m_api,
+                                              currentScene,tempCullStage);
         if (drawStage != nullptr) {
             uiDependecies.push_back(drawStage);
             screenshotDS = drawStage;
@@ -1373,7 +1439,12 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         auto &cullStageData = m_cullstages[currentFrame];
         cullStageData = nullptr;
 
-        auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime, false, *m_api,
+
+
+        auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime,
+                                              false,
+                                              m_api->getConfig()->doubleCameraDebug, false,
+                                              *m_api,
                                               currentScene, cullStageData);
         if (drawStage != nullptr) {
             uiDependecies.push_back(drawStage);

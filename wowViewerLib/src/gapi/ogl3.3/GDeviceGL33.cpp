@@ -752,7 +752,7 @@ HGVertexBufferBindings GDeviceGL33::createVertexBufferBindings() {
 HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt,  int frameNumber) {
     if (frameNumber > -1) {
         for (auto &framebufAvalability : m_createdFrameBuffers) {
-            if (framebufAvalability.frame >= m_frameNumber &&
+            if (framebufAvalability.frame <= m_frameNumber &&
                 framebufAvalability.attachments.size() == attachments.size() &&
                 framebufAvalability.width == width &&
                 framebufAvalability.height == height
@@ -1180,7 +1180,9 @@ void GDeviceGL33::clearScreen() {
     }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
-    glDisable(GL_SCISSOR_TEST);
+
+    //Note: the scissor dimensions are taken from call to setViewPortDimensions
+    glEnable(GL_SCISSOR_TEST);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);
 //    glClearColor(0.25, 0.06, 0.015, 0.0);
     glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
@@ -1213,6 +1215,7 @@ void GDeviceGL33::commitFrame() {
 
 void GDeviceGL33::setViewPortDimensions(float x, float y, float width, float height) {
     glViewport(x,y,width,height);
+    glScissor(x,y,width,height);
 }
 
 void GDeviceGL33::shrinkData()  {

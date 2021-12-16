@@ -69,6 +69,11 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
     if (stopMouse) return;
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
+    if (apiContainer->getConfig()->doubleCameraDebug &&
+        apiContainer->getConfig()->controlSecondCamera &&
+        apiContainer->debugCamera != nullptr) {
+        controllable = apiContainer->debugCamera;
+    }
 
 //    if (!pointerIsLocked) {
         if (mleft_pressed == 1) {
@@ -118,6 +123,11 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
     if (stopKeyboard) return;
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
+    if (apiContainer->getConfig()->doubleCameraDebug &&
+        apiContainer->getConfig()->controlSecondCamera &&
+        apiContainer->debugCamera != nullptr) {
+        controllable = apiContainer->debugCamera;
+    }
 
     if ( action == GLFW_PRESS) {
         switch (key) {
@@ -187,6 +197,11 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
+    if (apiContainer->getConfig()->doubleCameraDebug &&
+        apiContainer->getConfig()->controlSecondCamera &&
+        apiContainer->debugCamera != nullptr) {
+        controllable = apiContainer->debugCamera;
+    }
 
     controllable->zoomInFromMouseScroll(-yoffset/2.0f);
 }
@@ -457,6 +472,9 @@ int main(){
         }
 
         apiContainer->camera->tick(deltaTime*(1000.0f));
+        if (apiContainer->debugCamera != nullptr) {
+            apiContainer->debugCamera->tick(deltaTime * (1000.0f));
+        }
 
         //DrawStage for screenshot
 //        needToMakeScreenshot = true;
