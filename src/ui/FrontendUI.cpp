@@ -889,6 +889,11 @@ void FrontendUI::showSettingsDialog() {
             if (ImGui::Checkbox("Control debug camera", &controlSecondCamera)) {
                 m_api->getConfig()->controlSecondCamera = controlSecondCamera;
             }
+
+            bool swapMainAndDebug = m_api->getConfig()->swapMainAndDebug;
+            if (ImGui::Checkbox("Swap main and debug cameras", &swapMainAndDebug)) {
+                m_api->getConfig()->swapMainAndDebug = swapMainAndDebug;
+            }
         } else {
             m_api->debugCamera = nullptr;
         }
@@ -1443,7 +1448,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
         auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime,
                                               false,
-                                              m_api->getConfig()->doubleCameraDebug, false,
+                                              m_api->getConfig()->doubleCameraDebug, m_api->getConfig()->swapMainAndDebug,
                                               *m_api,
                                               currentScene, cullStageData);
         if (drawStage != nullptr) {

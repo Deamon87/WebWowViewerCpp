@@ -49,8 +49,10 @@ public:
 
     bool drawWmoBB = false;
     bool drawM2BB = true;
-    bool controlSecondCamera = false;
+
     bool doubleCameraDebug = false;
+    bool controlSecondCamera = false;
+    bool swapMainAndDebug = false;
 
     bool BCLightHack = false;
 

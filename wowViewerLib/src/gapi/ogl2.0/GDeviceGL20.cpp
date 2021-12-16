@@ -870,7 +870,9 @@ void GDeviceGL20::clearScreen() {
     }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
-    glDisable(GL_SCISSOR_TEST);
+
+    //Note: the scissor dimensions are taken from call to setViewPortDimensions
+    glEnable(GL_SCISSOR_TEST);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);
 //    glClearColor(0.25, 0.06, 0.015, 0.0);
     glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
@@ -899,6 +901,7 @@ void GDeviceGL20::commitFrame() {
 
 void GDeviceGL20::setViewPortDimensions(float x, float y, float width, float height) {
     glViewport(x,y,width,height);
+    glScissor(x,y,width,height);
 }
 
 void GDeviceGL20::shrinkData()  {
