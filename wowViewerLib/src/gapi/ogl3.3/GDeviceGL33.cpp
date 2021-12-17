@@ -169,29 +169,29 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
             }
         }
 
-        iPremutation = new GM2ShaderPermutationGL33(shaderName, this, *cacheRecord);
+        iPremutation = new GM2ShaderPermutationGL33(shaderName, shared_from_this(), *cacheRecord);
         sharedPtr.reset(iPremutation);
 
         std::weak_ptr<IShaderPermutation> weakPtr(sharedPtr);
         m2ShaderCache[*cacheRecord] = weakPtr;
     } else if (shaderName == "m2ParticleShader") {
-        iPremutation = new GM2ParticleShaderPermutationGL33(shaderName, this);
+        iPremutation = new GM2ParticleShaderPermutationGL33(shaderName, shared_from_this());
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "fullScreen_ffxgauss4") {
-        iPremutation = new GFFXgauss4(shaderName, this);
+        iPremutation = new GFFXgauss4(shaderName, shared_from_this());
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "skyConus") {
-        iPremutation = new GSkyConus(shaderName, this);
+        iPremutation = new GSkyConus(shaderName, shared_from_this());
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "waterfallShader") {
-        iPremutation = new GWaterfallShaderGL33(shaderName, this);
+        iPremutation = new GWaterfallShaderGL33(shaderName, shared_from_this());
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "ffxGlowQuad") {
-        iPremutation = new GFFXGlow(shaderName, this);
+        iPremutation = new GFFXGlow(shaderName, shared_from_this());
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "wmoShader") {
@@ -209,21 +209,21 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
             }
         }
 
-        iPremutation = new GWMOShaderPermutationGL33(shaderName, this, *cacheRecord);
+        iPremutation = new GWMOShaderPermutationGL33(shaderName, shared_from_this(), *cacheRecord);
         sharedPtr.reset(iPremutation);
 
         std::weak_ptr<IShaderPermutation> weakPtr(sharedPtr);
         wmoShaderCache[*cacheRecord] = weakPtr;
     } else if (shaderName == "adtShader") {
-        iPremutation = new GAdtShaderPermutationGL33(shaderName, this);
+        iPremutation = new GAdtShaderPermutationGL33(shaderName, shared_from_this());
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "waterShader") {
-        iPremutation = new GWaterShaderGL33(shaderName, this);
+        iPremutation = new GWaterShaderGL33(shaderName, shared_from_this());
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     } else {
-        iPremutation = new GShaderPermutationGL33(shaderName, this);
+        iPremutation = new GShaderPermutationGL33(shaderName, shared_from_this());
         sharedPtr.reset(iPremutation);
         m_shaderPermutCache[hash] = sharedPtr;
     }
@@ -248,7 +248,7 @@ std::shared_ptr<IShaderPermutation> GDeviceGL33::getShader(std::string shaderNam
 
 HGUniformBuffer GDeviceGL33::createUniformBuffer(size_t size) {
     std::shared_ptr<GUniformBufferGL33> h_uniformBuffer;
-    h_uniformBuffer.reset(new GUniformBufferGL33(*this, size));
+    h_uniformBuffer.reset(new GUniformBufferGL33(shared_from_this(), size));
 
 
     std::weak_ptr<GUniformBufferGL33> w_uniformBuffer = h_uniformBuffer;
@@ -723,13 +723,13 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 HGVertexBuffer GDeviceGL33::createVertexBuffer() {
     bindVertexBufferBindings(nullptr);
     std::shared_ptr<GVertexBufferGL33> h_vertexBuffer;
-    h_vertexBuffer.reset(new GVertexBufferGL33(*this));
+    h_vertexBuffer.reset(new GVertexBufferGL33(shared_from_this()));
 
     return h_vertexBuffer;
 }
 HGVertexBufferDynamic GDeviceGL33::createVertexBufferDynamic(size_t size) {
     std::shared_ptr<GVertexBufferDynamicGL33> h_vertexBuffer;
-    h_vertexBuffer.reset(new GVertexBufferDynamicGL33(*this, size));
+    h_vertexBuffer.reset(new GVertexBufferDynamicGL33(shared_from_this(), size));
 
     return h_vertexBuffer;
 };
@@ -737,14 +737,14 @@ HGVertexBufferDynamic GDeviceGL33::createVertexBufferDynamic(size_t size) {
 HGIndexBuffer GDeviceGL33::createIndexBuffer() {
     bindVertexBufferBindings(nullptr);
     std::shared_ptr<GIndexBufferGL33> h_indexBuffer;
-    h_indexBuffer.reset(new GIndexBufferGL33(*this));
+    h_indexBuffer.reset(new GIndexBufferGL33(shared_from_this()));
 
     return h_indexBuffer;
 }
 
 HGVertexBufferBindings GDeviceGL33::createVertexBufferBindings() {
     std::shared_ptr<GVertexBufferBindingsGL33> h_vertexBufferBindings;
-    h_vertexBufferBindings.reset(new GVertexBufferBindingsGL33(*this));
+    h_vertexBufferBindings.reset(new GVertexBufferBindingsGL33(shared_from_this()));
 
     return h_vertexBufferBindings;
 }
@@ -773,7 +773,7 @@ HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<I
         }
     }
 
-    HFrameBuffer h_frameBuffer = std::make_shared<GFrameBufferGL33>(*this, attachments, depthAttachment, width, height);
+    HFrameBuffer h_frameBuffer = std::make_shared<GFrameBufferGL33>(shared_from_this(), attachments, depthAttachment, width, height);
 
     if (frameNumber > -1) {
         FramebufAvalabilityStruct avalabilityStruct;
@@ -798,20 +798,20 @@ HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size) {
 };
 
 HGMesh GDeviceGL33::createMesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GMeshGL33> h_mesh = std::make_shared<GMeshGL33>(*this, meshTemplate);
+    std::shared_ptr<GMeshGL33> h_mesh = std::make_shared<GMeshGL33>(shared_from_this(), meshTemplate);
 
     return h_mesh;
 }
 
 HGM2Mesh GDeviceGL33::createM2Mesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GM2MeshGL33> h_mesh = std::make_shared<GM2MeshGL33>(*this, meshTemplate);
+    std::shared_ptr<GM2MeshGL33> h_mesh = std::make_shared<GM2MeshGL33>(shared_from_this(), meshTemplate);
 
     return h_mesh;
 }
 
 HGParticleMesh GDeviceGL33::createParticleMesh(gMeshTemplate &meshTemplate) {
     std::shared_ptr<GParticleMeshGL33> h_mesh;
-    h_mesh.reset(new GParticleMeshGL33(*this, meshTemplate));
+    h_mesh.reset(new GParticleMeshGL33(shared_from_this(), meshTemplate));
 
     return h_mesh;
 }
@@ -847,7 +847,7 @@ HGTexture GDeviceGL33::createBlpTexture(HBlpTexture &texture, bool xWrapTex, boo
 
 
     std::shared_ptr<GBlpTextureGL33> hgTexture;
-    hgTexture.reset(new GBlpTextureGL33(*this, texture, xWrapTex, yWrapTex));
+    hgTexture.reset(new GBlpTextureGL33(shared_from_this(), texture, xWrapTex, yWrapTex));
 
     std::weak_ptr<GTextureGL33> weakPtr(hgTexture);
     loadedTextureCache[blpCacheRecord] = weakPtr;
@@ -857,7 +857,7 @@ HGTexture GDeviceGL33::createBlpTexture(HBlpTexture &texture, bool xWrapTex, boo
 
 HGTexture GDeviceGL33::createTexture(bool xWrapTex, bool yWrapTex) {
     std::shared_ptr<GTextureGL33> hgTexture;
-    hgTexture.reset(new GTextureGL33(*this, xWrapTex, yWrapTex));
+    hgTexture.reset(new GTextureGL33(shared_from_this(), xWrapTex, yWrapTex));
     return hgTexture;
 }
 
@@ -884,6 +884,11 @@ void GDeviceGL33::bindProgram(IShaderPermutation *iProgram) {
 }
 
 GDeviceGL33::GDeviceGL33() {
+
+}
+
+void GDeviceGL33::initialize() {
+
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
     m_blackPixelTexture = createTexture(false, false);
@@ -976,7 +981,7 @@ GDeviceGL33::GDeviceGL33() {
 
 HGOcclusionQuery GDeviceGL33::createQuery(HGMesh boundingBoxMesh) {
     std::shared_ptr<GOcclusionQueryGL33> hgOcclusionQuery;
-    hgOcclusionQuery.reset(new GOcclusionQueryGL33(*this, boundingBoxMesh));
+    hgOcclusionQuery.reset(new GOcclusionQueryGL33(shared_from_this(), boundingBoxMesh));
 
     return hgOcclusionQuery;
 }

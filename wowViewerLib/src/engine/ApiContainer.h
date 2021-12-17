@@ -21,7 +21,7 @@ private:
     Config config;
 public:
     HWoWFilesCacheStorage cacheStorage = nullptr;
-    std::shared_ptr<IDevice> hDevice = nullptr;
+    HGDevice hDevice = nullptr;
     std::shared_ptr<IClientDatabase> databaseHandler = nullptr;
     std::shared_ptr<ICamera> camera = nullptr;
     std::shared_ptr<ICamera> debugCamera = nullptr;

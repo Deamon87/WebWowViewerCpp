@@ -147,6 +147,7 @@ class IDevice {
     public:
         virtual ~IDevice() {};
 
+        virtual void initialize() = 0;
         virtual void reset() = 0;
         virtual unsigned int getFrameNumber() = 0;
         virtual unsigned int getUpdateFrameNumber() = 0;
@@ -230,7 +231,10 @@ class IDevice {
         virtual bool wasTexturesUploaded() = 0;
 
         static std::string insertAfterVersion(std::string &glslShaderString, std::string stringToPaste);
+        virtual void addDeallocationRecord(std::function<void()> callback) {};
 };
+
+typedef std::shared_ptr<IDevice> HGDevice;
 
 #include <cassert>
 

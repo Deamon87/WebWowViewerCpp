@@ -322,13 +322,13 @@ void M2Geom::initTracks(CM2SequenceLoad * cm2SequenceLoad) {
     initM2Camera(m2Header, &m2Header->sequences, cm2SequenceLoad);
 }
 
-HGVertexBuffer M2Geom::getVBO(IDevice &device) {
+HGVertexBuffer M2Geom::getVBO(const HGDevice &device) {
     if (vertexVbo.get() == nullptr) {
         if (m_m2Data->vertices.size == 0) {
             return nullptr;
         }
 
-        vertexVbo = device.createVertexBuffer();
+        vertexVbo = device->createVertexBuffer();
         vertexVbo->uploadData(
             m_m2Data->vertices.getElement(0),
             m_m2Data->vertices.size*sizeof(M2Vertex));
@@ -393,7 +393,7 @@ std::array<HGVertexBufferBindings, 4> M2Geom::createDynamicVao(
     return result;
 }
 
-HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {
+HGVertexBufferBindings M2Geom::getVAO(const HGDevice& device, SkinGeom *skinGeom) {
     HGVertexBufferBindings bufferBindings = nullptr;
     if (vaoMap.find(skinGeom) != vaoMap.end()) {
         bufferBindings = vaoMap.at(skinGeom);
@@ -407,7 +407,7 @@ HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {
         HGIndexBuffer iboBuffer = skinGeom->getIBO(device);
 
         //2. Create buffer binding and fill it
-        bufferBindings = device.createVertexBufferBindings();
+        bufferBindings = device->createVertexBufferBindings();
         bufferBindings->setIndexBuffer(iboBuffer);
 
         GVertexBufferBinding vertexBinding;
@@ -425,7 +425,7 @@ HGVertexBufferBindings M2Geom::getVAO(IDevice &device, SkinGeom *skinGeom) {
 
 
 
-void M2Geom::loadLowPriority(HApiContainer m_api, uint32_t animationId, uint32_t variationId) {
+void M2Geom::loadLowPriority(const HApiContainer& m_api, uint32_t animationId, uint32_t variationId) {
     int animationIndex = findAnimationIndex(animationId, &m_m2Data->sequence_lookups, &m_m2Data->sequences);
     if (animationIndex < 0) return;
 

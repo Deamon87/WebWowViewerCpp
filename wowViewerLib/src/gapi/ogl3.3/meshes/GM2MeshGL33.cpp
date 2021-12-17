@@ -4,7 +4,7 @@
 
 #include "GM2MeshGL33.h"
 
-GM2MeshGL33::GM2MeshGL33(IDevice &device, const gMeshTemplate &meshTemplate) : GMeshGL33(device, meshTemplate){
+GM2MeshGL33::GM2MeshGL33(const HGDevice &device, const gMeshTemplate &meshTemplate) : GMeshGL33(device, meshTemplate){
     m_meshType = MeshType::eM2Mesh;
 }
 

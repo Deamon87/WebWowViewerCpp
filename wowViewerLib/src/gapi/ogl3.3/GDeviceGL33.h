@@ -57,11 +57,12 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 //}
 #define logGLError
 
-class GDeviceGL33 : public IDevice {
+class GDeviceGL33 : public IDevice, public std::enable_shared_from_this<GDeviceGL33> {
 public:
     GDeviceGL33();
     ~GDeviceGL33() override {};
 
+    void initialize() override;
     void reset() override;
 
     unsigned int getFrameNumber() override { return m_frameNumber; };
@@ -143,7 +144,7 @@ public:
         std::function<void()> callback;
     };
 
-    void addDeallocationRecord(std::function<void()> callback) {
+    void addDeallocationRecord(std::function<void()> callback) override {
         DeallocationRecord dr;
         dr.frameNumberToDoAt = m_frameNumber+4;
         dr.callback = callback;

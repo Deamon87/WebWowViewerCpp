@@ -58,7 +58,7 @@ private:
 public:
 
     MinimapGenerator(HWoWFilesCacheStorage cacheStorage,
-                     std::shared_ptr<IDevice> hDevice,
+                     const HGDevice &hDevice,
                      HRequestProcessor processor,
                      std::shared_ptr<IClientDatabase> dbhandler, HADTBoundingBoxHolder boundingBoxHolder);
 

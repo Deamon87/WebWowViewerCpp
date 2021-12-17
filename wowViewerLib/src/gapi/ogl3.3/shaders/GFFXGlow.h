@@ -10,7 +10,7 @@
 class GFFXGlow : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GFFXGlow(std::string &shaderName, IDevice *device);
+    explicit GFFXGlow(std::string &shaderName, const HGDevice &device);
 
     void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
 };

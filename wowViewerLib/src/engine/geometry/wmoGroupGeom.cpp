@@ -288,9 +288,9 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
 }
 
 
-HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
+HGVertexBuffer WmoGroupGeom::getVBO(const HGDevice &device) {
     if (combinedVBO == nullptr) {
-        combinedVBO = device.createVertexBuffer();
+        combinedVBO = device->createVertexBuffer();
 
         PACK(
         struct VboFormat {
@@ -354,9 +354,9 @@ HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
     return combinedVBO;
 }
 
-HGIndexBuffer WmoGroupGeom::getIBO(IDevice &device) {
+HGIndexBuffer WmoGroupGeom::getIBO(const HGDevice &device) {
     if (indexVBO == nullptr) {
-        indexVBO = device.createIndexBuffer();
+        indexVBO = device->createIndexBuffer();
         indexVBO->uploadData(
             &indicies[0],
             indicesLen * sizeof(uint16_t));
@@ -380,9 +380,9 @@ static GBufferBinding staticWMOWaterBindings[2] = {
     {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 16}
 };
 
-HGVertexBufferBindings WmoGroupGeom::getVertexBindings(IDevice &device) {
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HGDevice &device) {
     if (vertexBufferBindings == nullptr) {
-        vertexBufferBindings = device.createVertexBufferBindings();
+        vertexBufferBindings = device->createVertexBufferBindings();
         vertexBufferBindings->setIndexBuffer(getIBO(device));
 
         GVertexBufferBinding vertexBinding;
@@ -425,7 +425,7 @@ int WmoGroupGeom::getLegacyWaterType(int a) {
     return a;
 }
 
-HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
+HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HGDevice &device) {
     if (vertexWaterBufferBindings == nullptr) {
         if (this->m_mliq == nullptr) return nullptr;
 
@@ -494,18 +494,18 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
             }
         }
 
-        waterIBO = device.createIndexBuffer();
+        waterIBO = device->createIndexBuffer();
         waterIBO->uploadData(
             &iboBuffer[0],
             iboBuffer.size() * sizeof(uint16_t));
 
-        waterVBO = device.createVertexBuffer();
+        waterVBO = device->createVertexBuffer();
         waterVBO->uploadData(
             &lVertices[0],
             lVertices.size() * sizeof(LiquidVertexFormat)
         );
 
-        vertexWaterBufferBindings = device.createVertexBufferBindings();
+        vertexWaterBufferBindings = device->createVertexBufferBindings();
         vertexWaterBufferBindings->setIndexBuffer(waterIBO);
 
         GVertexBufferBinding vertexBinding;

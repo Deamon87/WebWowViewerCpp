@@ -7,7 +7,7 @@
 auto vertShaderName = std::string("drawQuad");
 auto fragShaderName = std::string("ffxgauss4");
 
-GFFXgauss4::GFFXgauss4(std::string &shaderName, IDevice *device) :
+GFFXgauss4::GFFXgauss4(std::string &shaderName, const HGDevice &device) :
     GShaderPermutationGL33(vertShaderName, fragShaderName, device) {
 
 

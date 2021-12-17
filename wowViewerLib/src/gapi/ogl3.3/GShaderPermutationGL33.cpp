@@ -135,11 +135,11 @@ namespace GL33 {
         return s;
     }
 }
-GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, IDevice * device) : m_device(device),
+GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, const HGDevice &device) : m_device(device),
     m_shaderNameVert(shaderName), m_shaderNameFrag(shaderName) {
 }
 
-GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderNameVert, std::string &shaderNameFrag, IDevice * device) : m_device(device),
+GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderNameVert, std::string &shaderNameFrag, const HGDevice &device) : m_device(device),
     m_shaderNameVert(shaderNameVert), m_shaderNameFrag(shaderNameFrag) {
 }
 

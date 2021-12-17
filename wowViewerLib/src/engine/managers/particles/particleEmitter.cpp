@@ -266,7 +266,7 @@ std::array<EGxBlendEnum, 8> PaticleBlendingModeToEGxBlendEnum1 =
     };
 
 void ParticleEmitter::createMesh() {
-    std::shared_ptr<IDevice> device = m_api->hDevice;
+    HGDevice device = m_api->hDevice;
 
     if (m_indexVBO == nullptr) {
         m_indexVBO = device->createIndexBuffer();

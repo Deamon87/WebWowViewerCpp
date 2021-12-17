@@ -5,7 +5,7 @@
 #include "GM2ShaderPermutationGL33.h"
 #include <string>
 
-GM2ShaderPermutationGL33::GM2ShaderPermutationGL33(std::string &shaderName, IDevice *device, M2ShaderCacheRecord &permutation) :
+GM2ShaderPermutationGL33::GM2ShaderPermutationGL33(std::string &shaderName, const HGDevice &device, M2ShaderCacheRecord &permutation) :
                         GShaderPermutationGL33(shaderName, device) , permutation(permutation) {}
 
 void GM2ShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {

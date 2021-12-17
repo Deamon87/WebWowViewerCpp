@@ -4,7 +4,7 @@
 
 #include "GWaterfallShaderGL33.h"
 
-GWaterfallShaderGL33::GWaterfallShaderGL33(std::string &shaderName, IDevice *device) : GShaderPermutationGL33(shaderName,
+GWaterfallShaderGL33::GWaterfallShaderGL33(std::string &shaderName, const HGDevice &device) : GShaderPermutationGL33(shaderName,
                                                                                                       device) {
 
 }

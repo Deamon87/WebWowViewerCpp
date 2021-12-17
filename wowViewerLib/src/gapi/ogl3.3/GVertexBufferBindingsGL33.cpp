@@ -19,8 +19,7 @@ constexpr GLenum toOGLEnum(GBindingType bindingType) {
     return 0;
 }
 
-GVertexBufferBindingsGL33::GVertexBufferBindingsGL33(IDevice &m_device) : m_device(
-    dynamic_cast<GDeviceGL33 &>(m_device)) {
+GVertexBufferBindingsGL33::GVertexBufferBindingsGL33(const HGDevice &m_device) : m_device(m_device) {
     m_buffer = std::vector<char>(sizeof(GLuint));
     createBuffer();
 }
@@ -35,7 +34,7 @@ void GVertexBufferBindingsGL33::createBuffer() {
 
 void GVertexBufferBindingsGL33::destroyBuffer() {
     const GLuint indent = *(const GLuint *) &this->m_buffer[0];
-    m_device.addDeallocationRecord([indent]() -> void {
+    m_device->addDeallocationRecord([indent]() -> void {
         glDeleteVertexArrays(1, &indent);
     });
 }
@@ -60,11 +59,11 @@ static int VAO_updated = 0;
 void GVertexBufferBindingsGL33::save() {
 //    std::cout << "VAO_updated = " << VAO_updated++ << std::endl;
 
-    m_device.bindVertexBufferBindings(this);
+    m_device->bindVertexBufferBindings(this);
 
-    m_device.bindIndexBuffer(m_indexBuffer.get());
+    m_device->bindIndexBuffer(m_indexBuffer.get());
     for (GVertexBufferBinding &binding : m_bindings) {
-        m_device.bindVertexBuffer(binding.vertexBuffer.get());
+        m_device->bindVertexBuffer(binding.vertexBuffer.get());
 
         for (GBufferBinding &bufferBinding : binding.bindings) {
             glEnableVertexAttribArray(bufferBinding.position);
@@ -80,7 +79,7 @@ void GVertexBufferBindingsGL33::save() {
     }
 
 
-    m_device.bindVertexBufferBindings(nullptr);
+    m_device->bindVertexBufferBindings(nullptr);
 
 }
 

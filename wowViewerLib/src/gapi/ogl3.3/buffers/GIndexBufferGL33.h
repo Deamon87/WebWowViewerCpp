@@ -13,7 +13,7 @@
 class GIndexBufferGL33 : public IIndexBuffer{
     friend class GDeviceGL33;
 
-    explicit GIndexBufferGL33(IDevice &device);
+    explicit GIndexBufferGL33(const HGDevice &device);
 public:
     ~GIndexBufferGL33() override;
 
@@ -27,7 +27,7 @@ public:
     void uploadData(void *, int length) override;
 
 private:
-    GDeviceGL33 &m_device;
+    const HGDevice m_device;
 
 private:
     std::vector<char> buffer = {};

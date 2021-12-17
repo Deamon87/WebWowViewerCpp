@@ -7,7 +7,7 @@
 #include "../../../engine/opengl/header.h"
 #include "../../interface/IDevice.h"
 
-GTextureGL33::GTextureGL33(IDevice &device, bool xWrapTex, bool yWrapTex) : m_device(dynamic_cast<GDeviceGL33 &>(device)) {
+GTextureGL33::GTextureGL33(const HGDevice &device, bool xWrapTex, bool yWrapTex) : m_device(device) {
     this->xWrapTex = xWrapTex;
     this->yWrapTex = yWrapTex;
 
@@ -26,7 +26,7 @@ void GTextureGL33::createBuffer() {
 
 void GTextureGL33::destroyBuffer() {
     const GLuint indent = textureIdentifier;
-    m_device.addDeallocationRecord([indent]() -> void {
+    m_device->addDeallocationRecord([indent]() -> void {
         glDeleteTextures(1, &indent);
     });
 }
@@ -54,7 +54,7 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
     this->height = height;
 
 
-    m_device.bindTexture(this, 0);
+    m_device->bindTexture(this, 0);
     if (textureFormat == ITextureFormat::itRGBA) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     } else if (textureFormat == ITextureFormat::itRGBAFloat32)  {
@@ -85,7 +85,7 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
     if (data != nullptr) {
         glGenerateMipmap(GL_TEXTURE_2D);
     }
-    m_device.bindTexture(nullptr, 0);
+    m_device->bindTexture(nullptr, 0);
 
     m_loaded = true;
 }
@@ -95,12 +95,12 @@ void GTextureGL33::readData(std::vector<uint8_t> &buff) {
     if (buff.size() < width*height*4) {
     }
 
-    m_device.bindTexture(this, 0);
+    m_device->bindTexture(this, 0);
 
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_BYTE, buff.data());
 
 
-    m_device.bindTexture(nullptr, 0);
+    m_device->bindTexture(nullptr, 0);
 #else
     GLuint fbo;
     glGenFramebuffers(1, &fbo);

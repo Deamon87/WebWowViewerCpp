@@ -12,7 +12,7 @@ class GOcclusionQueryGL33 : public GMeshGL33 {
 public:
     ~GOcclusionQueryGL33() override;
 protected:
-    GOcclusionQueryGL33(IDevice &device, HGMesh oclludee);
+    GOcclusionQueryGL33(const HGDevice &device, HGMesh oclludee);
 
 
 private:
