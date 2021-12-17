@@ -100,6 +100,7 @@ private:
     void openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds);
 
     void getCameraPos(float &cameraX,float &cameraY,float &cameraZ);
+    void getDebugCameraPos(float &cameraX,float &cameraY,float &cameraZ);
     void makeScreenshotCallback(std::string fileName, int width, int height);
 
     void getAdtSelectionMinimap(int wdtFileDataId) {
