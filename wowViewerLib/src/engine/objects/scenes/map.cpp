@@ -1602,12 +1602,13 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
         vector.push_back(&updateStage->cullResult->exteriorView);
     }
 
-//    if (m_api->getConfig()->getRenderWMO()) {
+    bool renderPortals = m_api->getConfig()->renderPortals;
     for (auto &view : vector) {
         view->collectMeshes(opaqueMeshes, transparentMeshes);
-        view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
+        if (renderPortals) {
+            view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
+        }
     }
-//    }
 
     std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
     for (auto &view : vector) {

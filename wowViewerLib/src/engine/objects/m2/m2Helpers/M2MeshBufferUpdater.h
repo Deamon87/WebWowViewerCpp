@@ -4,7 +4,7 @@
 
 #ifndef AWEBWOWVIEWERCPP_M2MESHBUFFERUPDATER_H
 #define AWEBWOWVIEWERCPP_M2MESHBUFFERUPDATER_H
-
+#define _USE_MATH_DEFINES
 
 #include <mathfu/glsl_mappings.h>
 #include "./../../../../gapi/UniformBufferStructures.h"

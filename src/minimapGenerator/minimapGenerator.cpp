@@ -790,6 +790,8 @@ mathfu::vec3 MinimapGenerator::getLookAtVec3() {
         case ScenarioOrientation::so45DegreeTick3:
             return mathfu::vec3(-1,1,-1);
     }
+
+    return mathfu::vec3(0,0,0);
 }
 
 HDrawStage MinimapGenerator::getLastDrawStage() {

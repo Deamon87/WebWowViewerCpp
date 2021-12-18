@@ -5,7 +5,7 @@ include(CheckCXXCompilerFlag)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(LINK_GLEW 0)
+set(LINK_GLEW 1)
 set(LINK_OGL2 1)
 set(LINK_OGL3 1)
 set(LINK_OGL4 0)
@@ -15,6 +15,10 @@ option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(LINK_GLEW 0)
+endif()
 
 if (CMAKE_NDK_BUILD)
     set(LINK_GLEW 0)

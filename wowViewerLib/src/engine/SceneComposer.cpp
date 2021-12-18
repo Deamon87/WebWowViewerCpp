@@ -24,8 +24,10 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
     m_supportThreads = false;
 //    m_supportThreads = emscripten_run_script_int("(SharedArrayBuffer != null) ? 1 : 0") == 1;
 #endif
-    nextDeltaTime[getPromiseInd()] = std::promise<float>();
-    nextDeltaTimeForUpdate[getPromiseInd()] = std::promise<float>();
+    nextDeltaTime[0] = std::promise<float>();
+    nextDeltaTime[1] = std::promise<float>();
+    nextDeltaTimeForUpdate[0] = std::promise<float>();
+    nextDeltaTimeForUpdate[1] = std::promise<float>();
 
     if (m_supportThreads) {
         loadingResourcesThread = std::thread([&]() {

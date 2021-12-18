@@ -4,6 +4,11 @@
 
 #ifndef WOWVIEWERLIB_COMMONFILESTRUCTS_H
 #define WOWVIEWERLIB_COMMONFILESTRUCTS_H
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #include <cstdint>
 #include <string>
 #include <mathfu/glsl_mappings.h>

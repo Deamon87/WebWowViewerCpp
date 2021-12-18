@@ -147,7 +147,7 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer apiContainer, std
         gMeshTemplate meshTemplate(portalPointsFrame.m_bindings, shaderPermutation);
 
         meshTemplate.depthWrite = false;
-        meshTemplate.depthCulling = false;
+        meshTemplate.depthCulling = !apiContainer->getConfig()->renderPortalsIgnoreDepth;
         meshTemplate.backFaceCulling = false;
 
         meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;

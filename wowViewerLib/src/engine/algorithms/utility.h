@@ -58,14 +58,13 @@ namespace misc
 		std::size_t position_base() const { return position; }
 
 	protected:
-		struct
-		{
+
 			std::size_t _left;
 			partition_range _range;
 			std::size_t partitions;
 			std::size_t length;
 			std::size_t position;
-		};
+
 	};
 
 

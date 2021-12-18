@@ -1,6 +1,7 @@
 //
 // Created by Deamon on 10/15/2018.
 //
+#define _USE_MATH_DEFINES
 
 #include "planarCamera.h"
 #include "../../../3rdparty/mathfu/include/mathfu/matrix.h"

@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_M2OBJECT_H
 
 class M2Object;
+#define _USE_MATH_DEFINES
 
 #include <cstdint>
 #include "mathfu/glsl_mappings.h"

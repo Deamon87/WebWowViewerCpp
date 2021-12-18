@@ -542,6 +542,9 @@ void FrontendUI::showQuickLinksDialog() {
         openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
     }
 
+    if (ImGui::Button("(WMO) Model with broken portal culling", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(4217818);
+    }
     if (ImGui::Button("(WMO) NPE Ship with waterfall model", ImVec2(-1, 0))) {
         openWMOSceneByfdid(3314067);
     }
@@ -866,6 +869,18 @@ void FrontendUI::showSettingsDialog() {
         if (ImGui::Checkbox("Disable fog", &disableFog)) {
             m_api->getConfig()->disableFog = disableFog;
         }
+
+        bool renderPortals = m_api->getConfig()->renderPortals;
+        if (ImGui::Checkbox("Render portals", &renderPortals)) {
+            m_api->getConfig()->renderPortals = renderPortals;
+        }
+        if (renderPortals) {
+            bool renderPortalsIgnoreDepth = m_api->getConfig()->renderPortalsIgnoreDepth;
+            if (ImGui::Checkbox("Ignore depth test for rendering portals", &renderPortalsIgnoreDepth)) {
+                m_api->getConfig()->renderPortalsIgnoreDepth = renderPortalsIgnoreDepth;
+            }
+        }
+
 
         bool useDoubleCameraDebug = m_api->getConfig()->doubleCameraDebug;
         if (ImGui::Checkbox("Enable second camera(for debug)", &useDoubleCameraDebug)) {
@@ -1599,8 +1614,8 @@ inline bool fileExistsNotNull (const std::string& name) {
 
 void FrontendUI::createDefaultprocessor() {
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=822a5e72301f9ae6de1840bb5f9961ef&cdnconfig=a22fd94489c2cc9e2debe3f1a8e6b377&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=822a5e72301f9ae6de1840bb5f9961ef&cdnconfig=a22fd94489c2cc9e2debe3f1a8e6b377&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=4dcdb72ad9a3e875782646a4d37ee6f9&cdnconfig=bca49000f3f121b79e63f88ffaf605ab&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=4dcdb72ad9a3e875782646a4d37ee6f9&cdnconfig=bca49000f3f121b79e63f88ffaf605ab&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
