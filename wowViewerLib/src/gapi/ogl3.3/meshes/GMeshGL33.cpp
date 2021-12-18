@@ -5,7 +5,7 @@
 #include <iostream>
 #include "GMeshGL33.h"
 
-GMeshGL33::GMeshGL33(IDevice &device,
+GMeshGL33::GMeshGL33(const HGDevice &device,
              const gMeshTemplate &meshTemplate
 ) : m_device(device), m_shader(meshTemplate.shader), m_meshType(meshTemplate.meshType) {
 

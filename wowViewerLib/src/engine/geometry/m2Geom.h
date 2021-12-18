@@ -35,11 +35,11 @@ public:
     }
 
     void process(HFileContent m2File, const std::string &fileName) override;
-    HGVertexBuffer getVBO(IDevice &device);
-    HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
+    HGVertexBuffer getVBO(const HGDevice &device);
+    HGVertexBufferBindings getVAO(const HGDevice& device, SkinGeom *skinGeom);
     std::array<HGVertexBufferBindings, 4> createDynamicVao(IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
                                                                SkinGeom *skinGeom, M2SkinSection *skinSection);
-    void loadLowPriority(HApiContainer m_api, uint32_t animationId, uint32_t subAnimationId);
+    void loadLowPriority(const HApiContainer& m_api, uint32_t animationId, uint32_t subAnimationId);
 
     M2Data * getM2Data(){ if (fsStatus == FileStatus::FSLoaded) {return m_m2Data;} else {return nullptr;}};
 

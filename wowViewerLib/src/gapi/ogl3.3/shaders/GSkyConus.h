@@ -10,7 +10,7 @@
 class GSkyConus : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GSkyConus(std::string &shaderName, IDevice *device);
+    explicit GSkyConus(std::string &shaderName, const HGDevice &device);
 
     void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
 

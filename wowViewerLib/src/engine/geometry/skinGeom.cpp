@@ -21,11 +21,11 @@ void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
 
     fsStatus = FileStatus::FSLoaded;
 }
-HGIndexBuffer SkinGeom::getIBO(IDevice &device) {
+HGIndexBuffer SkinGeom::getIBO(const HGDevice &device) {
     if (indexVbo == nullptr) {
         auto indicies = generateIndexBuffer();
 
-        indexVbo = device.createIndexBuffer();
+        indexVbo = device->createIndexBuffer();
         indexVbo->uploadData(
             &indicies[0],
             indicies.size() * sizeof(uint16_t));

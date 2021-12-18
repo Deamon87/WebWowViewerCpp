@@ -1861,10 +1861,10 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
 }
 
 void M2Object::createVertexBindings() {
-    std::shared_ptr<IDevice> device = m_api->hDevice;
+    HGDevice device = m_api->hDevice;
 
     //2. Create buffer binding and fill it
-    bufferBindings = m_m2Geom->getVAO(*device, m_skinGeom.get());
+    bufferBindings = m_m2Geom->getVAO(device, m_skinGeom.get());
 
     //3. Create model wide uniform buffer
 //    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(mathfu::mat4) * (m_m2Geom->m_m2Data->bones.size + 1));

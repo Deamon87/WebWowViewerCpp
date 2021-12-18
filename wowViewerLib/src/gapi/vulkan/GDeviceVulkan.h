@@ -223,7 +223,7 @@ public:
 
     std::mutex m_listOfDeallocatorsAccessMtx;
 
-    void addDeallocationRecord(std::function<void()> callback) {
+    void addDeallocationRecord(std::function<void()> callback) override {
         std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
         DeallocationRecord dr;
         dr.frameNumberToDoAt = m_frameNumber+4;

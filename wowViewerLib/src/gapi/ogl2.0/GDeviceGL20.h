@@ -45,6 +45,7 @@ public:
     GDeviceGL20();
     ~GDeviceGL20() override {};
 
+    void initialize() override;
     void reset() override;
 
     unsigned int getFrameNumber() override { return m_frameNumber; };

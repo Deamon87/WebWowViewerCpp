@@ -10,7 +10,7 @@
 class GWaterfallShaderGL33 : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GWaterfallShaderGL33(std::string &shaderName, IDevice *device);
+    explicit GWaterfallShaderGL33(std::string &shaderName, const HGDevice &device);
 
     void compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) override;
 };

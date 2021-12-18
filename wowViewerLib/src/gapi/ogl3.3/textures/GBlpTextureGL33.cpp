@@ -10,7 +10,7 @@
 
 
 
-GBlpTextureGL33::GBlpTextureGL33(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
+GBlpTextureGL33::GBlpTextureGL33(HGDevice device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
     : GTextureGL33(device, xWrapTex, yWrapTex), m_texture(texture) {
 
 }
@@ -76,9 +76,9 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmap
 //    }
 
     /* S3TC is not supported on mobile platforms */
-    bool useDXT1Decoding = !m_device.getIsCompressedTexturesSupported();
-    bool useDXT3Decoding = !m_device.getIsCompressedTexturesSupported();
-    bool useDXT5Decoding = !m_device.getIsCompressedTexturesSupported();
+    bool useDXT1Decoding = !m_device->getIsCompressedTexturesSupported();
+    bool useDXT3Decoding = !m_device->getIsCompressedTexturesSupported();
+    bool useDXT5Decoding = !m_device->getIsCompressedTexturesSupported();
 
 //    std::cout
 //        << "useDXT1Decoding = " << useDXT1Decoding << " "
@@ -205,8 +205,8 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmap
     logGLError
     bool anisFilterExt = true;
 #ifndef WITH_GLESv2
-    if (m_device.getIsAnisFiltrationSupported()) {
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_device.getAnisLevel());
+    if (m_device->getIsAnisFiltrationSupported()) {
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_device->getAnisLevel());
     }
 #endif
     logGLError
@@ -225,9 +225,9 @@ bool GBlpTextureGL33::postLoad() {
     if (m_texture == nullptr) return false;
     if (m_texture->getStatus() != FileStatus::FSLoaded) return false;
 
-    m_device.bindTexture(this, 0);
+    m_device->bindTexture(this, 0);
     this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
-    m_device.bindTexture(nullptr, 0);
+    m_device->bindTexture(nullptr, 0);
 
 //    m_texture = nullptr;
 

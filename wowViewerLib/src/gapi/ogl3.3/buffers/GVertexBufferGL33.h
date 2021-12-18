@@ -15,7 +15,7 @@ class GDeviceGL33;
 class GVertexBufferGL33 : public IVertexBuffer {
     friend class GDeviceGL33;
 
-    explicit GVertexBufferGL33(IDevice &device);
+    explicit GVertexBufferGL33(const HGDevice &device);
 public:
     ~GVertexBufferGL33() override;
 private:
@@ -28,7 +28,7 @@ public:
     void uploadData(void *, int length) override;
 
 private:
-    GDeviceGL33 &m_device;
+    const HGDevice m_device;
 
 private:
     std::vector<char> pIdentifierBuffer {};

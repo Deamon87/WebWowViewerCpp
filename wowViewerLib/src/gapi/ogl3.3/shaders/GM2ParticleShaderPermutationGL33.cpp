@@ -3,7 +3,7 @@
 //
 
 #include "GM2ParticleShaderPermutationGL33.h"
-GM2ParticleShaderPermutationGL33::GM2ParticleShaderPermutationGL33(std::string &shaderName, IDevice *device) : GShaderPermutationGL33(shaderName,
+GM2ParticleShaderPermutationGL33::GM2ParticleShaderPermutationGL33(std::string &shaderName, const HGDevice &device) : GShaderPermutationGL33(shaderName,
                                                                                                           device) {}
 
 void GM2ParticleShaderPermutationGL33::compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) {

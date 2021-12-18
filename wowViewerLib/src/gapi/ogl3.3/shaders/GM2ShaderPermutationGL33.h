@@ -13,7 +13,7 @@ public:
     ~GM2ShaderPermutationGL33() override {};
 
 protected:
-    explicit GM2ShaderPermutationGL33(std::string &shaderName, IDevice *device, M2ShaderCacheRecord &permutation);
+    explicit GM2ShaderPermutationGL33(std::string &shaderName, const HGDevice &device, M2ShaderCacheRecord &permutation);
 
     void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
     M2ShaderCacheRecord &permutation;

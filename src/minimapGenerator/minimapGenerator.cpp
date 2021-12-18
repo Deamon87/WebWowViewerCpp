@@ -13,7 +13,7 @@
 #include "../../wowViewerLib/src/engine/camera/firstPersonOrthoStaticTopDownCamera.h"
 
 
-MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, std::shared_ptr<IDevice> hDevice,
+MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, const HGDevice &hDevice,
                                    HRequestProcessor processor, std::shared_ptr<IClientDatabase> dbhandler,
                                    HADTBoundingBoxHolder boundingBoxHolder) {
     m_apiContainer = std::make_shared<ApiContainer>();

@@ -403,8 +403,8 @@ void WmoGroupObject::createMeshes() {
 
     PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
 
-    std::shared_ptr<IDevice> device = m_api->hDevice;
-    HGVertexBufferBindings binding = m_geom->getVertexBindings(*device);
+    HGDevice device = m_api->hDevice;
+    HGVertexBufferBindings binding = m_geom->getVertexBindings(device);
 
     vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockVS));
 
@@ -597,8 +597,8 @@ void WmoGroupObject::setLiquidType() {
 
 void WmoGroupObject::createWaterMeshes() {
 
-    std::shared_ptr<IDevice> device = m_api->hDevice;
-    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(*device);
+    HGDevice device = m_api->hDevice;
+    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(device);
     if (binding == nullptr)
         return;
 

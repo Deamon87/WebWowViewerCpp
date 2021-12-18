@@ -15,7 +15,7 @@ class GUniformBufferGL33 : public IUniformBuffer {
 public:
     friend class GDeviceGL33;
 
-    explicit GUniformBufferGL33(IDevice &device, size_t size);
+    explicit GUniformBufferGL33(const HGDevice &device, size_t size);
     ~GUniformBufferGL33() override;
 
     void createBuffer() override;
@@ -29,7 +29,7 @@ private:
     void uploadData(void * data, int length);
 
 private:
-    GDeviceGL33 &m_device;
+    const HGDevice m_device;
 
 private:
     size_t m_size;

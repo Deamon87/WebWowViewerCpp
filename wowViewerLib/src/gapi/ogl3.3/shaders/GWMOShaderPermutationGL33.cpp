@@ -5,7 +5,7 @@
 #include "GWMOShaderPermutationGL33.h"
 
 
-GWMOShaderPermutationGL33::GWMOShaderPermutationGL33(std::string &shaderName, IDevice *device, WMOShaderCacheRecord &permutation) :
+GWMOShaderPermutationGL33::GWMOShaderPermutationGL33(std::string &shaderName, const HGDevice &device, WMOShaderCacheRecord &permutation) :
             GShaderPermutationGL33(shaderName,device), permutation(permutation) {}
 
 void GWMOShaderPermutationGL33::compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) {

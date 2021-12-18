@@ -10,7 +10,7 @@
 class GM2ParticleShaderPermutationGL33 : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GM2ParticleShaderPermutationGL33(std::string &shaderName, IDevice *device);
+    explicit GM2ParticleShaderPermutationGL33(std::string &shaderName, const HGDevice &device);
 
     virtual void compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) override;
 };

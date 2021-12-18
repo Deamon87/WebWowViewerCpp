@@ -130,7 +130,15 @@ void FrontendUI::showCurrentStatsDialog() {
         getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
 
         ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
-                    cameraPosition[2]);               // Display some text (you can use a format strings too)
+                    cameraPosition[2]);
+
+        if (m_api->getConfig()->doubleCameraDebug) {
+            static float debugCameraPosition[3] = {0, 0, 0};
+            getCameraPos(debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
+
+            ImGui::Text("Current debug camera position: (%.1f,%.1f,%.1f)",
+                        debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
+        }
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
                     ImGui::GetIO().Framerate);
@@ -160,6 +168,40 @@ void FrontendUI::showCurrentStatsDialog() {
 
         ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
         ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
+
+        if (ImGui::CollapsingHeader("Current fog params")) {
+            if (cullStageData->frameDepedantData != nullptr) {
+                ImGui::Text("Fog end: %.3f", cullStageData->frameDepedantData->FogEnd);
+                ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDepedantData->FogScaler);
+                ImGui::Text("Fog Density: %.3f", cullStageData->frameDepedantData->FogDensity);
+                ImGui::Text("Fog Height: %.3f", cullStageData->frameDepedantData->FogHeight);
+                ImGui::Text("Fog Height Scaler: %.3f", cullStageData->frameDepedantData->FogHeightScaler);
+                ImGui::Text("Fog Height Density: %.3f", cullStageData->frameDepedantData->FogHeightDensity);
+                ImGui::Text("Sun Fog Angle: %.3f", cullStageData->frameDepedantData->SunFogAngle);
+                ImGui::Text("Fog Color: (%.3f, %.3f, %.3f)",
+                            cullStageData->frameDepedantData->FogColor.x,
+                            cullStageData->frameDepedantData->FogColor.y,
+                            cullStageData->frameDepedantData->FogColor.z);
+                ImGui::Text("End Fog Color: (%.3f, %.3f, %.3f)",
+                            cullStageData->frameDepedantData->EndFogColor.x,
+                            cullStageData->frameDepedantData->EndFogColor.y,
+                            cullStageData->frameDepedantData->EndFogColor.z);
+                ImGui::Text("End Fog Color Distance: %.3f", cullStageData->frameDepedantData->EndFogColorDistance);
+                ImGui::Text("Sun Fog Color: (%.3f, %.3f, %.3f)",
+                            cullStageData->frameDepedantData->SunFogColor.x,
+                            cullStageData->frameDepedantData->SunFogColor.y,
+                            cullStageData->frameDepedantData->SunFogColor.z);
+                ImGui::Text("Sun Fog Strength: %.3f", cullStageData->frameDepedantData->SunFogStrength);
+                ImGui::Text("Fog Height Color: (%.3f, %.3f, %.3f)",
+                            cullStageData->frameDepedantData->FogHeightColor.x,
+                            cullStageData->frameDepedantData->FogHeightColor.y,
+                            cullStageData->frameDepedantData->FogHeightColor.z);
+                ImGui::Text("Fog Height Coefficients: (%.3f, %.3f, %.3f)",
+                            cullStageData->frameDepedantData->FogHeightCoefficients.x,
+                            cullStageData->frameDepedantData->FogHeightCoefficients.y,
+                            cullStageData->frameDepedantData->FogHeightCoefficients.z);
+            }
+        }
 
 //        ImGui::Text("Current Fog scaler: %f", m_api->getConfig()->getFogScaler());
 //        ImGui::Text("Current Fog density: %f", m_api->getConfig()->getFogDensity());
@@ -1595,6 +1637,18 @@ void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
     cameraZ = currentCameraPos[2];
 }
 
+void FrontendUI::getDebugCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
+    if (m_api->debugCamera == nullptr) {
+        cameraX = 0; cameraY = 0; cameraZ = 0;
+        return;
+    }
+    float currentCameraPos[4] = {0,0,0,0};
+    m_api->debugCamera->getCameraPosition(&currentCameraPos[0]);
+    cameraX = currentCameraPos[0];
+    cameraY = currentCameraPos[1];
+    cameraZ = currentCameraPos[2];
+}
+
 inline bool fileExistsNotNull (const std::string& name) {
 #ifdef ANDROID
     return false;
@@ -1631,14 +1685,6 @@ void FrontendUI::createDefaultprocessor() {
     m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_processor.get());
     m_processor->setFileRequester(m_api->cacheStorage.get());
     overrideCascOpened(true);
-
-
-//    {
-//        std::vector<int> replacementTextureFDids = {0,0,3607739};
-////        replacementTextureFDids[2] = 3607739;
-//        openM2SceneByfdid(4062864, replacementTextureFDids);
-//    }
-
 }
 
 auto FrontendUI::createMinimapGenerator() {

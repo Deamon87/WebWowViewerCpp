@@ -575,6 +575,10 @@ void GDeviceGL20::bindProgram(IShaderPermutation *iProgram) {
 }
 
 GDeviceGL20::GDeviceGL20() {
+
+}
+
+void GDeviceGL20::initialize() {
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
     m_blackPixelTexture = createTexture(false, false);

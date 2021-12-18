@@ -311,7 +311,7 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
     }
 
 
-    std::shared_ptr<IDevice> device = m_api->hDevice;
+    HGDevice device = m_api->hDevice;
 
     auto waterIBO = device->createIndexBuffer();
     waterIBO->uploadData(
@@ -526,7 +526,7 @@ void AdtObject::createVBO() {
     }
 
     /* 1.3 Make combinedVbo */
-    std::shared_ptr<IDevice> device = m_api->hDevice;
+    HGDevice device = m_api->hDevice;
     combinedVbo = device->createVertexBuffer();
     combinedVbo->uploadData(vboArray.data(), vboArray.size()*sizeof(float));
 
@@ -624,7 +624,7 @@ void AdtObject::calcBoundingBoxes() {
 }
 
 void AdtObject::createMeshes() {
-    std::shared_ptr<IDevice> device = m_api->hDevice;
+    HGDevice device = m_api->hDevice;
 
     auto adtFileTex = m_adtFileTex;
     auto adtFile = m_adtFile;

@@ -14,7 +14,7 @@ class GMeshGL33 : public IMesh {
     friend class GDeviceGL33;
 
 public:
-    explicit GMeshGL33(IDevice &device,
+    explicit GMeshGL33(const HGDevice &device,
                        const gMeshTemplate &meshTemplate
     );
 
@@ -61,7 +61,7 @@ private:
     int m_element;
 
 private:
-    IDevice &m_device;
+    const HGDevice m_device;
 };
 
 
