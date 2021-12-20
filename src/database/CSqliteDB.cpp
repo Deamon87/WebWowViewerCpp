@@ -10,51 +10,65 @@
 
 CSqliteDB::CSqliteDB(std::string dbFileName) :
     m_sqliteDatabase(dbFileName, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE),
-    getWmoAreaAreaName(m_sqliteDatabase,
-        "select wat.AreaName_lang as wmoAreaName, at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from WMOAreaTable wat "
-        "left join AreaTable at on at.id = wat.AreaTableID "
-        "where wat.WMOID = ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC"),
+    getWmoAreaAreaName(m_sqliteDatabase, R"(===
+        select wat.AreaName_lang as wmoAreaName, at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from WMOAreaTable wat
+        left join AreaTable at on at.id = wat.AreaTableID
+        where wat.WMOID = ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC
+        ===)"),
     getAreaNameStatement(m_sqliteDatabase,
         "select at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from AreaTable at where at.ID = ?"),
 
     getLightStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow, IFNULL(ls.Flags, 0) from Light l "
-        "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
-        "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
-        " where  "
-        "   ((l.ContinentID = ?) and (( "
-        "    abs(l.GameCoords_0 - ?) < l.GameFalloffEnd and "
-        "    abs(l.GameCoords_1 - ?) < l.GameFalloffEnd and "
-        "    abs(l.GameCoords_2 - ?) < l.GameFalloffEnd "
-        "  ) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0))) "
-        "    or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)  "
-        "ORDER BY l.ID desc"),
+        R"(===
+        select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0,
+            IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow, IFNULL(ls.Flags, 0)
+        from Light l
+            left join LightParams lp on lp.ID = l.LightParamsID_0
+            left join LightSkybox ls on ls.ID = lp.LightSkyboxID
+         where
+           ((l.ContinentID = ?) and ((
+            abs(l.GameCoords_0 - ?) < l.GameFalloffEnd and
+            abs(l.GameCoords_1 - ?) < l.GameFalloffEnd and
+            abs(l.GameCoords_2 - ?) < l.GameFalloffEnd
+          ) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0)))
+            or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)
+        ORDER BY l.ID desc
+        ===)"),
     getLightByIdStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow, IFNULL(ls.Flags, 0) from Light l "
-        "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
-        "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
-        " where l.ID = ?"),
+      R"(===
+        select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0,
+        IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow, IFNULL(ls.Flags, 0) from Light l
+        left join LightParams lp on lp.ID = l.LightParamsID_0
+        left join LightSkybox ls on ls.ID = lp.LightSkyboxID
+        where l.ID = ?
+      ===)"),
     getLightData(m_sqliteDatabase,
-        "select ld.AmbientColor, ld.HorizonAmbientColor, ld.GroundAmbientColor, ld.DirectColor, "
-        "ld.RiverCloseColor, ld.RiverFarColor, ld.OceanCloseColor, ld.OceanFarColor, "
-        "ld.SkyTopColor, ld.SkyMiddleColor, ld.SkyBand1Color, ld.SkyBand2Color, ld.SkySmogColor, ld.SkyFogColor, "
-        "ld.FogEnd, ld.FogScaler, ld.FogDensity, ld.FogHeight, ld.FogHeightScaler, ld.FogHeightDensity, ld.SunFogAngle, "
-        "ld.EndFogColor, ld.EndFogColorDistance, ld.SunFogColor, ld.SunFogStrength, ld.FogHeightColor, "
-        "ld.FogHeightCoefficients_0, ld.FogHeightCoefficients_1, ld.FogHeightCoefficients_2, ld.FogHeightCoefficients_3, "
-        "ld.Time from LightData ld "
-        "where ld.LightParamID = ? ORDER BY Time ASC"
+    R"(===
+        select ld.AmbientColor, ld.HorizonAmbientColor, ld.GroundAmbientColor, ld.DirectColor,
+        ld.RiverCloseColor, ld.RiverFarColor, ld.OceanCloseColor, ld.OceanFarColor,
+        ld.SkyTopColor, ld.SkyMiddleColor, ld.SkyBand1Color, ld.SkyBand2Color, ld.SkySmogColor, ld.SkyFogColor,
+        ld.FogEnd, ld.FogScaler, ld.FogDensity, ld.FogHeight, ld.FogHeightScaler, ld.FogHeightDensity, ld.SunFogAngle,
+        ld.EndFogColor, ld.EndFogColorDistance, ld.SunFogColor, ld.SunFogStrength, ld.FogHeightColor,
+        ld.FogHeightCoefficients_0, ld.FogHeightCoefficients_1, ld.FogHeightCoefficients_2, ld.FogHeightCoefficients_3,
+        ld.Time from LightData ld "
+        where ld.LightParamID = ? ORDER BY Time ASC
+        ===)"
         ),
     getLiquidObjectInfo(m_sqliteDatabase,
-        "select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidObject lo "
-        "left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lo.LiquidTypeID "
-        "left join LiquidType lt on lt.ID = lo.LiquidTypeID "
-        "left join LiquidMaterial lm on lt.MaterialID = lm.ID "
-        "where lo.ID = ? "
+    R"(===
+        select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidObject lo
+        left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lo.LiquidTypeID "
+        left join LiquidType lt on lt.ID = lo.LiquidTypeID "
+        left join LiquidMaterial lm on lt.MaterialID = lm.ID "
+        where lo.ID = ?
+        ===)"
     ),
     getLiquidTypeInfo(m_sqliteDatabase,
-        "select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidType lt "
-        " left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lt.ID "
-        " where lt.ID = ? order by ltxt.OrderIndex"
+  R"(===
+        select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidType lt
+        left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lt.ID
+        where lt.ID = ? order by ltxt.OrderIndex
+        ===)"
     ),
     getZoneLightInfo(m_sqliteDatabase,
         "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"
@@ -63,10 +77,10 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "select Pos_0, Pos_1 from ZoneLightPoint where ZoneLightID = ? order by PointOrder;"
     ),
     getMapList(m_sqliteDatabase,
-           "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.WdtFileDataID > 0"
+        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.WdtFileDataID > 0"
     ),
     getMapByIdStatement(m_sqliteDatabase,
-               "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.ID = ?"
+       "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.ID = ?"
     )
 {
     char *sErrMsg = "";

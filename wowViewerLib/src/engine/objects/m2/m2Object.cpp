@@ -1204,7 +1204,6 @@ void M2Object::createBoundingBoxMesh() {
         M2Data *m2Data = l_m2Geom->getM2Data();
         CAaBox &aaBox = m2Data->bounding_box;
 
-
         mathfu::vec3 center = mathfu::vec3(
             (aaBox.min.x + aaBox.max.x) / 2,
             (aaBox.min.y + aaBox.max.y) / 2,
