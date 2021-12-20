@@ -278,7 +278,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 },{ "drawBBShader.vert.spv", {
 {
 {0,1,112},
-{0,0,128},
+{0,0,368},
 }
 }
 },{ "drawFrustumShader.frag.spv", {
@@ -303,7 +303,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },{ "drawBBShader.frag.spv", {
 {
-{0,0,112},
+{0,1,112},
 }
 }
 },{ "drawLinesShader.frag.spv", {
@@ -485,8 +485,23 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"drawBBShader",  {
     {
       0, {
-        {"_59_uLookAtMat", true, 0, 4, 4, 0},
-        {"_59_uPMatrix", true, 64, 4, 4, 0},
+        {"_62_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_62_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_62_scene_uViewUp", true, 128, 1, 4, 0},
+        {"_62_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_62_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_62_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_62_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_62_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_62_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
+        {"_62_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
+        {"_62_fogData_densityParams", true, 256, 1, 4, 0},
+        {"_62_fogData_heightPlane", true, 272, 1, 4, 0},
+        {"_62_fogData_color_and_heightRate", true, 288, 1, 4, 0},
+        {"_62_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
+        {"_62_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
+        {"_62_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
+        {"_62_fogData_sunPercentage", true, 352, 1, 4, 0},
       }
     },
     {
@@ -829,7 +844,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"drawBBShader",  {
     {
-      0, {
+      1, {
         {"_13_uPlacementMat", true, 0, 4, 4, 0},
         {"_13_uBBScale", true, 64, 1, 4, 0},
         {"_13_uBBCenter", true, 80, 1, 4, 0},

@@ -49,7 +49,7 @@ public:
     bool renderSkyDom = true;
 
     bool drawWmoBB = false;
-    bool drawM2BB = true;
+    bool drawM2BB = false;
 
     bool doubleCameraDebug = false;
     bool controlSecondCamera = false;

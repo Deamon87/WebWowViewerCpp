@@ -1,18 +1,23 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
 precision highp float;
 precision highp int;
+
+#include "../common/commonLightFunctions.glsl"
+#include "../common/commonFogFunctions.glsl"
 
 /* vertex shader code */
 layout(location = 0) in vec3 aPosition;
 
-layout(std140, binding=0) uniform sceneWideBlockVSPS {
-    mat4 uLookAtMat;
-    mat4 uPMatrix;
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
+    SceneWideParams scene;
+    PSFog fogData;
 };
 
 // Whole model
-layout(std140, binding=1) uniform modelWideBlockVS {
+layout(std140, set=0, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 
     vec4 uBBScale;
@@ -27,5 +32,5 @@ void main() {
         aPosition.z*uBBScale.z + uBBCenter.z,
     1);
 
-    gl_Position = uPMatrix * uLookAtMat * uPlacementMat * worldPoint;
+    gl_Position = scene.uPMatrix * scene.uLookAtMat * uPlacementMat * worldPoint;
 }
