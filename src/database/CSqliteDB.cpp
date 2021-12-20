@@ -437,6 +437,17 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         lightResult.lightSkyboxId = 0;
         lightResult.lightParamId = 0;
 
+        lightResult.FogEnd = 0.0;
+        lightResult.FogScaler = 0.0;
+        lightResult.FogDensity = 0.0;
+        lightResult.FogHeight = 0.0;
+        lightResult.FogHeightScaler = 0.0;
+        lightResult.FogHeightDensity = 0.0;
+        lightResult.SunFogAngle = 0.0;
+        lightResult.EndFogColorDistance = 0.0;
+        lightResult.SunFogStrength = 0.0;
+
+
 
         auto &innerResult = innerResults[i];
         lightResult.isDefault = innerResult.isDefault;

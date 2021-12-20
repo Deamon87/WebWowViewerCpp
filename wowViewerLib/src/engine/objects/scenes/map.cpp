@@ -845,7 +845,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             FogDensity += _light.FogDensity * _light.blendCoef;
             FogHeight += _light.FogHeight * _light.blendCoef;
             FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
-            FogHeightDensity += _light.FogHeightScaler * _light.blendCoef;
+            FogHeightDensity += _light.FogHeightDensity * _light.blendCoef;
             SunFogAngle += _light.SunFogAngle * _light.blendCoef;
 
             EndFogColor += mathfu::vec3(_light.EndFogColor.data()) * _light.blendCoef;

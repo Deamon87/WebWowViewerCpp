@@ -5,8 +5,6 @@
 #ifndef WOWMAPVIEWERREVIVED_FIRSTPERSONORTHOCAMERA_H
 #define WOWMAPVIEWERREVIVED_FIRSTPERSONORTHOCAMERA_H
 
-#include <mathfu/vector.h>
-#include "mathfu/glsl_mappings.h"
 #include "CameraInterface.h"
 
 

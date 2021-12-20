@@ -5,8 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_CPARTICLEGENERATOR_H
 #define WEBWOWVIEWERCPP_CPARTICLEGENERATOR_H
 
-
-#include "mathfu/glsl_mappings.h"
 #include "../particle.h"
 #include "../CGeneratorAniProp.h"
 #include "../CRndSeed.h"
