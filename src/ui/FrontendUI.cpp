@@ -909,6 +909,21 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->disableFog = disableFog;
         }
 
+        bool renderM2 = m_api->getConfig()->renderM2;
+        if (ImGui::Checkbox("Render M2", &renderM2)) {
+            m_api->getConfig()->renderM2 = renderM2;
+        }
+
+        bool renderWMO = m_api->getConfig()->renderWMO;
+        if (ImGui::Checkbox("Render WMO", &renderWMO)) {
+            m_api->getConfig()->renderWMO = renderWMO;
+        }
+
+        bool drawM2BB = m_api->getConfig()->drawM2BB;
+        if (ImGui::Checkbox("Render M2 Bounding Box", &drawM2BB)) {
+            m_api->getConfig()->drawM2BB = drawM2BB;
+        }
+
         bool useDoubleCameraDebug = m_api->getConfig()->doubleCameraDebug;
         if (ImGui::Checkbox("Enable second camera(for debug)", &useDoubleCameraDebug)) {
             m_api->getConfig()->doubleCameraDebug = useDoubleCameraDebug;

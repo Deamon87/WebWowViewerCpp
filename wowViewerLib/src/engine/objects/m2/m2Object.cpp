@@ -1172,7 +1172,7 @@ bool M2Object::prepearMaterial(M2MaterialInst &materialData, int batchIndex) {
 }
 
 void M2Object::createBoundingBoxMesh() {
-    return;
+
     //Create bounding box mesh
     HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", nullptr);
 
@@ -1181,11 +1181,11 @@ void M2Object::createBoundingBoxMesh() {
     meshTemplate.depthWrite = false;
     meshTemplate.depthCulling = true;
     meshTemplate.backFaceCulling = false;
-    meshTemplate.colorMask = 0;
+//    meshTemplate.colorMask = 0;
     meshTemplate.start = 0;
     meshTemplate.end = 36;
 
-    meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Opaque;
+    meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Alpha;
 
     meshTemplate.element = DrawElementMode::TRIANGLES;
     meshTemplate.textureCount = 0;
@@ -1225,6 +1225,7 @@ void M2Object::createBoundingBoxMesh() {
     });
 
     boundingBoxMesh = m_api->hDevice->createMesh(meshTemplate);
+    boundingBoxMesh->setRenderOrder(1000);
     occlusionQuery = m_api->hDevice->createQuery(boundingBoxMesh);
 }
 
@@ -1560,35 +1561,40 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
     int minBatch = m_api->getConfig()->m2MinBatch;
     int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshNaturalArray.size());
 
-    for (int i = minBatch; i < maxBatch; i++) {
-        float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, i, skinData);
-        if ((finalTransparency < 0.0001) )
-            continue;
+    if (m_api->getConfig()->renderM2) {
+        for (int i = minBatch; i < maxBatch; i++) {
+            float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, i, skinData);
+            if ((finalTransparency < 0.0001))
+                continue;
 
-        HGM2Mesh mesh = this->m_meshNaturalArray[i];
-        if (finalTransparency < 0.999 && i < this->m_meshForcedTranspArray.size() && this->m_meshForcedTranspArray[i] != nullptr) {
-            mesh = this->m_meshForcedTranspArray[i];
+            HGM2Mesh mesh = this->m_meshNaturalArray[i];
+            if (finalTransparency < 0.999 && i < this->m_meshForcedTranspArray.size() &&
+                this->m_meshForcedTranspArray[i] != nullptr) {
+                mesh = this->m_meshForcedTranspArray[i];
+            }
+
+            mesh->setRenderOrder(renderOrder);
+            if (mesh->getIsTransparent()) {
+                transparentMeshes.push_back(mesh);
+            } else {
+                opaqueMeshes.push_back(mesh);
+            }
         }
 
-        mesh->setRenderOrder(renderOrder);
-        if (mesh->getIsTransparent()) {
-            transparentMeshes.push_back(mesh);
-        } else {
-            opaqueMeshes.push_back(mesh);
+        for (auto &dynMesh: dynamicMeshes) {
+            HGParticleMesh mesh = dynMesh[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
+            mesh->setRenderOrder(renderOrder);
+            if (mesh->getIsTransparent()) {
+                transparentMeshes.push_back(mesh);
+            } else {
+                opaqueMeshes.push_back(mesh);
+            }
         }
     }
 
-    for (auto &dynMesh : dynamicMeshes) {
-        HGParticleMesh mesh = dynMesh[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
-        mesh->setRenderOrder(renderOrder);
-        if (mesh->getIsTransparent()) {
-            transparentMeshes.push_back(mesh);
-        } else {
-            opaqueMeshes.push_back(mesh);
-        }
+    if (m_api->getConfig()->drawM2BB) {
+        transparentMeshes.push_back(boundingBoxMesh);
     }
-
-//    transparentMeshes.push_back(boundingBoxMesh);
 //    std::cout << "Collected meshes at update frame =" << m_api->hDevice->getUpdateFrameNumber() << std::endl;
 
 //    renderedThisFrame.push_back(occlusionQuery);
