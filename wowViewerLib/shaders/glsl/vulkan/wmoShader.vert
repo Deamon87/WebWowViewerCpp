@@ -52,11 +52,11 @@ void main() {
 
 
     gl_Position = scene.uPMatrix * cameraPoint;
-    vPosition = vec4(cameraPoint.xyz, aColor.w);
+    vPosition = vec4(cameraPoint.xyz, 0);
     vNormal = normalize(viewModelMatTransposed * aNormal);
 
-    vColor.rgba = vec4(vec3(0.5, 0.499989986, 0.5), 1.0);
-    vColor2 = vec4((aColor.bgr * 2.0), aColor2.a);
+    vColor = aColor.bgra;
+    vColor2 = aColor2;
     int uVertexShader = VertexShader_UseLitColor.x;
    if ( uVertexShader == -1 ) {
        vTexCoord = aTexCoord;
@@ -100,14 +100,4 @@ void main() {
        vTexCoord2 = vPosition.xy * -0.239999995;
        vTexCoord3 = aTexCoord3; //not used
    }
-
-
-//
-//    vs_out.vTexCoord = vTexCoord;
-//    vs_out.vTexCoord2 = vTexCoord2;
-//    vs_out.vTexCoord3 = vTexCoord3;
-//    vs_out.vColor = vColor;
-//    vs_out.vColor2 = vColor2;
-//    vs_out.vPosition = vPosition;
-//    vs_out.vNormal = vNormal;
 }

@@ -107,7 +107,8 @@ void main() {
         intLight,
         vec3(0.0), /* accumLight */
         vec3(0.0), /*precomputedLight*/
-        vec3(0.0) /* specular */
+        vec3(0.0), /* specular */
+        vec3(0.0) /* emissive */
     );
 
 
