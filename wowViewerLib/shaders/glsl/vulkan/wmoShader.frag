@@ -104,7 +104,7 @@ void main() {
     float distFade = 1.0;
 
     if ( uPixelShader == -1 ) {
-        matDiffuse = tex.rgb * vColor.rgb + tex2.rgb*vColor2.bgr;
+        matDiffuse = tex.rgb * tex2.rgb;
         finalOpacity = tex.a;
     } else if (uPixelShader == 0) { //MapObjDiffuse
 
@@ -178,7 +178,6 @@ void main() {
 
         float mixFactor = clamp((tex3.a * vColor2.a), 0.0, 1.0);
         matDiffuse =
-            (vColor.rgb * 2.0) *
             mix(mix(((tex.rgb * tex2.rgb) * 2.0), tex3.rgb, mixFactor), tex.rgb, tex.a);
 
         finalOpacity = tex.a;
