@@ -8,7 +8,7 @@
 #include "./../../../gapi/interface/IDevice.h"
 #include <algorithm>
 
-std::vector<mathfu::vec3> CreateOccluders(const HWmoGroupGeom groupGeom)
+std::vector<mathfu::vec3> createOccluders(const HWmoGroupGeom& groupGeom)
 {
     std::vector<mathfu::vec3> points(0);
 

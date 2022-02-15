@@ -662,9 +662,6 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     if (gOcclusionQuery != nullptr) {
         gOcclusionQuery->beginQuery();
     }
-    if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
-        ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->beginConditionalRendering();
-    }
 
 //#if OPENGL_DGB_MESSAGE
 //    std::string debugMess =
@@ -711,10 +708,6 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 //#if OPENGL_DGB_MESSAGE
 //    glPopDebugGroup();
 //#endif
-    if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
-        ((GOcclusionQueryGL33 *)gm2Mesh->m_query.get())->endConditionalRendering();
-    }
-
     if (gOcclusionQuery != nullptr) {
         gOcclusionQuery->endQuery();
     }

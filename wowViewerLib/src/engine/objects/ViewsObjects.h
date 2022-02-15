@@ -54,7 +54,7 @@ public:
 
 class InteriorView : public GeneralView {
 public:
-    int portalIndex;
+    int portalIndex = -1;
     void setM2Lights(std::shared_ptr<M2Object> m2Object) override;
 };
 

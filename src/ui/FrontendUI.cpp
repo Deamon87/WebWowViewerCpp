@@ -590,6 +590,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("(WMO) NPE Ship with waterfall model", ImVec2(-1, 0))) {
         openWMOSceneByfdid(3314067);
     }
+    if (ImGui::Button("(WMO) Gazebo 590182", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(590182);
+    }
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
         openWMOSceneByfdid(2756726);
     }

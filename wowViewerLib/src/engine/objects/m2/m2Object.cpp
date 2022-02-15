@@ -1271,7 +1271,9 @@ void M2Object::createBoundingBoxMesh() {
 
     boundingBoxMesh = m_api->hDevice->createMesh(meshTemplate);
     boundingBoxMesh->setRenderOrder(1000);
-    occlusionQuery = m_api->hDevice->createQuery(boundingBoxMesh);
+
+    for (auto &a : occlusionQueries)
+        a = m_api->hDevice->createQuery(boundingBoxMesh);
 }
 
 bool M2Object::checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *skinSection) {

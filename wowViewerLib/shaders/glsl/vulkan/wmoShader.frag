@@ -212,7 +212,7 @@ void main() {
         finalOpacity = 1.0;
     } else if (uPixelShader == 15) { //MapObjTwoLayerDiffuseMod2x
         vec3 layer1 = tex.rgb;
-        vec3 layer2 = mix(layer1, tex2.rbg, vec3(tex2.a));
+        vec3 layer2 = mix(layer1, tex2.rgb, vec3(tex2.a));
         vec3 layer3 = mix(layer2, layer1, vec3(vColor2.a));
 
         matDiffuse = layer3 * tex3.rgb * 2.0;
