@@ -318,7 +318,8 @@ void main() {
             scene,
             intLight,
             accumLight, vec3(0.0),
-            specular
+            specular,
+            vec3(0.0) /* emissive */
         ) ,
         finalOpacity
     );
