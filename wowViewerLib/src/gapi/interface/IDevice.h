@@ -151,6 +151,7 @@ class IDevice {
         virtual void reset() = 0;
         virtual unsigned int getFrameNumber() = 0;
         virtual unsigned int getUpdateFrameNumber() = 0;
+        virtual unsigned int getOcclusionFrameNumber() = 0;
         virtual unsigned int getCullingFrameNumber() = 0;
         virtual unsigned int getDrawFrameNumber() = 0;
 

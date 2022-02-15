@@ -1020,6 +1020,9 @@ unsigned int GDeviceGL33::getUpdateFrameNumber() {
     return (m_frameNumber + 1) & 3;
 //    return 0;
 }
+unsigned int GDeviceGL33::getOcclusionFrameNumber() {
+    return (m_frameNumber + 2) & 3;
+}
 unsigned int GDeviceGL33::getCullingFrameNumber() {
     return (m_frameNumber + 3) & 3;
 //    return 0;

@@ -43,7 +43,7 @@ typedef std::shared_ptr<GMeshGL20> HGL20Mesh;
 class GDeviceGL20 : public IDevice {
 public:
     GDeviceGL20();
-    ~GDeviceGL20() override {};
+    ~GDeviceGL20() override = default;;
 
     void initialize() override;
     void reset() override;
@@ -51,6 +51,7 @@ public:
     unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() override;
     unsigned int getCullingFrameNumber() override;
+    unsigned int getOcclusionFrameNumber() override;
     unsigned int getDrawFrameNumber() override;
 
 

@@ -78,7 +78,7 @@ public:
         return m_freeStrategy;
     }
 private:
-    FreeStrategy m_freeStrategy;
+    FreeStrategy m_freeStrategy = [](bool doCheck, bool doUpdate, animTime_t currentTime) -> bool {return false;};
 
     animTime_t m_lastTimeOfUpdate = 0;
     animTime_t m_lastDeltaTime = 0;

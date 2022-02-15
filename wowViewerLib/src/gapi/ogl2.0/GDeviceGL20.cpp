@@ -717,6 +717,9 @@ unsigned int GDeviceGL20::getCullingFrameNumber() {
     return (m_frameNumber + 3) & 3;
 //    return 0;
 }
+unsigned int GDeviceGL20::getOcclusionFrameNumber() {
+    return (m_frameNumber + 2) & 3;
+}
 unsigned int GDeviceGL20::getDrawFrameNumber() {
     return m_frameNumber & 3;
 }
