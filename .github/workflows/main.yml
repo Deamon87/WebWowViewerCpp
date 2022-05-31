@@ -157,19 +157,22 @@ jobs:
         run: |
           mkdir build
           mkdir instdir
+          cd build
           cmake \
-            -S . \
-            -B ./build \
+            -S ../ \
+            -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
-            -DCMAKE_INSTALL_PREFIX:PATH=instdir
+            -DCMAKE_INSTALL_PREFIX:PATH=../instdir
       - name: Build
         shell: bash
-        run: cmake --build ./build --config ${{ matrix.config.build_type }}
+        working-directory: build
+        run: cmake --build . --config ${{ matrix.config.build_type }}
 
       - name: Install Strip
         shell: bash
-        run: cmake --install ./build --strip
+        working-directory: build
+        run: cmake --install . --strip
 
       - name: Pack
         shell: bash
