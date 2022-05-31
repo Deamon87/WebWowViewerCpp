@@ -154,7 +154,7 @@ if(NOT wolfssl_POPULATED)
 	FetchContent_Populate(wolfssl)
 	message("wolfssl_BINARY_DIR = ${wolfssl_BINARY_DIR}")
 	# Bring the populated content into the build
-	add_subdirectory(${wolfssl_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/cpr-build EXCLUDE_FROM_ALL)
+	add_subdirectory(${wolfssl_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/wolfssl-build-bin EXCLUDE_FROM_ALL)
 endif()
 
 
@@ -179,7 +179,7 @@ if(NOT cpr_POPULATED)
 	FetchContent_Populate(cpr)
 	message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
 	# Bring the populated content into the build
-	add_subdirectory(${cpr_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/cpr-build EXCLUDE_FROM_ALL)
+	add_subdirectory(${cpr_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/cpr-build-bin EXCLUDE_FROM_ALL)
 endif()
 
 #PolyM
