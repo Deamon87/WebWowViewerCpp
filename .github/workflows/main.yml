@@ -159,7 +159,7 @@ jobs:
           mkdir instdir
           cmake \
             -S . \
-            -B . \
+            -B ./build \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
             -DCMAKE_INSTALL_PREFIX:PATH=instdir
