@@ -149,12 +149,14 @@ FetchContent_Declare(wolfssl
 		INSTALL_DIR ${CMAKE_BINARY_DIR}) # the commit hash for 1.5.0
 #FetchContent_MakeAvailable(wolfssl)
 FetchContent_GetProperties(wolfssl)
+message("wolfssl_POPULATED = ${wolfssl_POPULATED}")
 if(NOT wolfssl_POPULATED)
 	# Fetch the content using previously declared details
 	FetchContent_Populate(wolfssl)
 	message("wolfssl_BINARY_DIR = ${wolfssl_BINARY_DIR}")
+	message("wolfssl_SOURCE_DIR = ${wolfssl_SOURCE_DIR}")
 	# Bring the populated content into the build
-	add_subdirectory(${wolfssl_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/wolfssl-build-bin EXCLUDE_FROM_ALL)
+	add_subdirectory(${wolfssl_SOURCE_DIR} ${wolfssl_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
 
@@ -174,12 +176,14 @@ SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib
 FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG db351ffbbadc6c4e9239daaa26e9aefa9f0ec82d) # the commit hash for 1.8.3
 #FetchContent_MakeAvailable(cpr)
 FetchContent_GetProperties(cpr)
+message("cpr_POPULATED = ${cpr_POPULATED}")
 if(NOT cpr_POPULATED)
 	# Fetch the content using previously declared details
 	FetchContent_Populate(cpr)
 	message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
+	message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
 	# Bring the populated content into the build
-	add_subdirectory(${cpr_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/cpr-build-bin EXCLUDE_FROM_ALL)
+	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
 #PolyM
