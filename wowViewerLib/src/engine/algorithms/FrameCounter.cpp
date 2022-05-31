@@ -15,7 +15,7 @@ void FrameCounter::beginMeasurement() {
 
 void FrameCounter::endMeasurement(const std::string &source) {
 //    #ifndef SKIP_VULKAN
-    auto end = std::chrono::high_resolution_clock::now();
+    hi_res_time_point end = std::chrono::high_resolution_clock::now();
     frameCounter++;
 
     double time_taken =
