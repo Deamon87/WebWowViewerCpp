@@ -158,7 +158,8 @@ if(NOT wolfssl_POPULATED)
 	# Bring the populated content into the build
 	add_subdirectory(${wolfssl_SOURCE_DIR} ${wolfssl_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
-
+get_property(WolfSSL_LIBRARY_location TARGET wolfssl PROPERTY LIBRARY_OUTPUT_DIRECTORY)
+message("WolfSSL_LIBRARY_location = ${WolfSSL_LIBRARY_location}")
 
 get_target_property(WolfSSL_INCLUDE_DIR wolfssl INTERFACE_INCLUDE_DIRECTORIES)
 SET(WolfSSL_INCLUDE_DIR "${WolfSSL_INCLUDE_DIR};${wolfssl_SOURCE_DIR}/wolfssl")
