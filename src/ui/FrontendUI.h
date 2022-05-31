@@ -73,7 +73,7 @@ public:
         uiScale = scale;
     }
 private:
-    std::array<HCullStage, 4> m_cullstages;
+    std::array<HCullStage, 4> m_cullstages = {};
 
     std::shared_ptr<CMinimapDataDB> m_minimapDB;
 

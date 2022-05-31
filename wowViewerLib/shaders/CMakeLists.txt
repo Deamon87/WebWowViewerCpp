@@ -15,9 +15,9 @@ set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/engine/shader/ShaderDefinitions.h)
 
 if(NOT ANDROID)
     #GLSL Compiler
-    add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/spirv-cross)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/spirv-cross EXCLUDE_FROM_ALL)
     set(BUILD_EXTERNAL OFF)
-    add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/glsllang)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/glsllang EXCLUDE_FROM_ALL)
     if(EMSCRIPTEN)
         target_link_options(glslangValidator PUBLIC -s NODERAWFS=1)
     endif()
@@ -60,11 +60,20 @@ else()
 endif()
 
 
-macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
+macro(configure_filesVLK srcDir srcCommonDir destDir destDirGL20 destDirGL33 )
     message(STATUS "Configuring directory ${destDir}")
     make_directory(${destDir})
 
     file(GLOB templateFiles RELATIVE ${srcDir} ${srcDir}/*.frag ${srcDir}/*.vert)
+    file(GLOB commonFilesRelative RELATIVE ${srcCommonDir} ${srcCommonDir}/*.glsl)
+
+    foreach(commonFileRelative ${commonFilesRelative})
+        set(commonFileFullPath ${srcCommonDir}/${commonFileRelative})
+        if(NOT IS_DIRECTORY ${commonFileFullPath})
+            list(APPEND commonFiles ${commonFileFullPath})
+        endif()
+    endforeach(commonFileRelative)
+
     foreach(templateFile ${templateFiles})
         set(srcTemplatePath ${srcDir}/${templateFile})
         if(NOT IS_DIRECTORY ${srcTemplatePath})
@@ -78,7 +87,7 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
                     OUTPUT ${SPIRV_NonOpt}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
                     COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_GLSL_VALIDATOR} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
-                    DEPENDS ${srcTemplatePath} glslangValidator)
+                    DEPENDS ${srcTemplatePath} glslangValidator ${commonFiles})
 
 #            if(SPIRV_OPT_APP)
 #                add_custom_command(
@@ -159,19 +168,29 @@ macro(configure_filesVLK srcDir destDir destDirGL20 destDirGL33 )
 #    endif()
 endmacro(configure_filesVLK)
 
-configure_filesVLK(${PROJECT_SOURCE_DIR}/shaders/glsl/vulkan ${GLSL_TARGET_FOLDER}/spirv
-        ${GLSL_TARGET_FOLDER}/glsl/glsl20/ ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
+configure_filesVLK(
+        ${PROJECT_SOURCE_DIR}/shaders/glsl/vulkan
+        ${PROJECT_SOURCE_DIR}/shaders/glsl/common
+        ${GLSL_TARGET_FOLDER}/spirv
+        ${GLSL_TARGET_FOLDER}/glsl/glsl20/
+        ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
 
-add_custom_target(
-        SPIRV_EXTRACT_META
+add_custom_command(
+        OUTPUT ${SPIRV_META_FILE}
         COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
-        DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
-        VERBATIM)
+        DEPENDS ${SPIRV_BINARY_FILES} spirv_reflection glslangValidator ShadersVulkanNonOpt
+)
+
+add_custom_target(SPIRV_EXTRACT_META DEPENDS ${SPIRV_META_FILE})
 
 
 add_custom_target(
         ShadersGLSL20
         DEPENDS ${GLSL20Files}
+)
+add_custom_target(
+        ShadersVulkanNonOpt
+        DEPENDS ${SPIRV_BINARY_FILES_NON_OPT}
 )
 add_dependencies(ShadersGLSL20 spirv_reflection)
 
@@ -182,10 +201,19 @@ add_custom_target(
 )
 add_dependencies(ShadersGLSL33 spirv_reflection)
 
-add_dependencies(SPIRV_EXTRACT_META spirv_reflection glslangValidator ${SPIRV_NonOpt})
-
 add_custom_target(
     GenerateForWebgl
     DEPENDS ${GLSL20Files}
     DEPENDS ${GLSL30Files}
+)
+
+#Add shaders on install
+install(FILES ${GLSL20Files}
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/glsl/glsl20/
+)
+install(FILES ${GLSL30Files}
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/glsl/glsl3.3/
+)
+install(FILES ${SPIRV_BINARY_FILES_NON_OPT}
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
 )

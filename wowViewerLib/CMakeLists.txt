@@ -65,7 +65,7 @@ message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
 
 SET(TBB_BUILD_SHARED 0)
-add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/tbb)
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/tbb EXCLUDE_FROM_ALL)
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
@@ -106,18 +106,21 @@ set(mathfu_build_benchmarks OFF CACHE BOOL "")
 set(mathfu_build_tests OFF CACHE BOOL "")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu)
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu EXCLUDE_FROM_ALL)
 
 message(CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME})
 string(TOUPPER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LOWERCASE)
 if (LINK_GLEW)
     if (WIN32)
         MESSAGE(IT IS WINDOWS!!!!)
+
         set(GLEW_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/include)
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
             set(GLEW_LIBRARIES ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32.lib )
+            set(GLEW_DLL "${PROJECT_SOURCE_DIR}/3rdparty/glew_win/bin/Release/x64/glew32.dll")
         elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
             set(GLEW_LIBRARIES ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32.lib )
+            set(GLEW_DLL "${PROJECT_SOURCE_DIR}/3rdparty/glew_win/bin/Release/Win32/glew32.dll")
         endif()
     elseif(NOT CMAKE_SYSTEM_NAME_LOWERCASE MATCHES "ANDROID")
 
@@ -512,6 +515,11 @@ target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 target_link_libraries(WoWViewerLib tbb_static)
 #target_link_options(WoWViewerLib PUBLIC "SHELL: -lstdc++")
 
+if (WIN32)
+    install(FILES ${GLEW_DLL}
+            DESTINATION ${CMAKE_INSTALL_BINDIR}
+            )
+endif()
 
 if (ENABLE_SIMD)
     mathfu_configure_flags(WoWViewerLib TRUE)

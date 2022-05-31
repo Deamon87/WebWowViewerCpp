@@ -170,7 +170,7 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
 
         if (ImGui::CollapsingHeader("Current fog params")) {
-            if (cullStageData->frameDepedantData != nullptr) {
+            if (cullStageData != nullptr && cullStageData->frameDepedantData != nullptr) {
                 ImGui::Text("Fog end: %.3f", cullStageData->frameDepedantData->FogEnd);
                 ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDepedantData->FogScaler);
                 ImGui::Text("Fog Density: %.3f", cullStageData->frameDepedantData->FogDensity);

@@ -87,58 +87,100 @@ endif()
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -pthread")
 
 #ZLib library
-set(BUILD_SHARED_LIBS OFF)
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib EXCLUDE_FROM_ALL)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/zlib)
-set(BUILD_SHARED_LIBS OFF)
-if (MSVC)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+
+#find_package(ZLIB)
+
+if (TRUE)
 	set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/zlib ${CMAKE_BINARY_DIR}/3rdparty/zlib)
 	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
-	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.lib")
-	else()
-		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.lib")
-	endif()
-	set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/3rdparty/zlib)
+
+	set(ZLIB_LIBRARY "$<TARGET_FILE:zlibstatic>" CACHE BOOL "")
+#
+#
+#	if (MSVC)
+#		if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#			set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.lib")
+#		else()
+#			set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.lib")
+#		endif()
+#	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+#		if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#			set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.a")
+#		else()
+#			set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.a")
+#		endif()
+#	endif()
 endif()
 
 
 #libpng
-if (MSVC)
-	#set(PNG_BUILD_ZLIB ON)
-	set(PNG_BUILD_ZLIB OFF)
-else()
-	set(PNG_BUILD_ZLIB OFF)
-endif()
+set(PNG_BUILD_ZLIB OFF CACHE BOOL "")
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libpng EXCLUDE_FROM_ALL)
 include_directories(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
 include_directories(${CMAKE_SOURCE_DIR}/3rdparty/SQLiteCpp/sqlite3)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libpng)
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
-	set(BUILD_SHARED_LIBS OFF)
-	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw)
+	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw EXCLUDE_FROM_ALL)
 endif()
 
 #c++ 17 FS implementation
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/filesystem_impl)
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/filesystem_impl EXCLUDE_FROM_ALL)
 
 #bz2renderFlag
-set(BUILD_SHARED_LIBS OFF)
-add_subdirectory(3rdparty/bzip)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+add_subdirectory(3rdparty/bzip EXCLUDE_FROM_ALL)
 
-#file(WRITE 3rdparty/libressl/ssl/version "1.1.1")
-#file(WRITE 3rdparty/libressl/crypto/version "1.1.1")
-#file(WRITE 3rdparty/libressl/tls/version "1.1.1")
-#add_subdirectory(3rdparty/libressl ${CMAKE_CURRENT_BINARY_DIR}/libressl)
+
+
+include(FetchContent)
+
+SET(WOLFSSL_DES3 1)
+SET(WOLFSSL_OPENSSLEXTRA 1)
+FetchContent_Declare(wolfssl
+		GIT_REPOSITORY https://github.com/wolfSSL/wolfssl.git
+		INSTALL_DIR ${CMAKE_BINARY_DIR}) # the commit hash for 1.5.0
+#FetchContent_MakeAvailable(wolfssl)
+FetchContent_GetProperties(wolfssl)
+if(NOT wolfssl_POPULATED)
+	# Fetch the content using previously declared details
+	FetchContent_Populate(wolfssl)
+
+	# Bring the populated content into the build
+	add_subdirectory(${wolfssl_SOURCE_DIR} ${wolfssl_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+
+get_target_property(WolfSSL_INCLUDE_DIR wolfssl INTERFACE_INCLUDE_DIRECTORIES)
+SET(WolfSSL_INCLUDE_DIR "${WolfSSL_INCLUDE_DIR};${wolfssl_SOURCE_DIR}/wolfssl")
+SET(WolfSSL_LIBRARY $<TARGET_FILE:wolfssl>)
+
+message(WolfSSL_INCLUDE_DIR = ${WolfSSL_INCLUDE_DIR})
+message(WolfSSL_LIBRARY = ${WolfSSL_LIBRARY})
 
 #cpr
-include(FetchContent)
-FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG c8d33915dbd88ad6c92b258869b03aba06587ff9) # the commit hash for 1.5.0
-FetchContent_MakeAvailable(cpr)
+check_include_file("limits.h" HAVE_LIMITS_H)
+add_compile_definitions(HAVE_LIMITS_H)
+SET(CMAKE_USE_OPENSSL 0)
+SET(CMAKE_USE_WOLFSSL 1)
+SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib as external project
+FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG db351ffbbadc6c4e9239daaa26e9aefa9f0ec82d) # the commit hash for 1.8.3
+#FetchContent_MakeAvailable(cpr)
+FetchContent_GetProperties(cpr)
+if(NOT cpr_POPULATED)
+	# Fetch the content using previously declared details
+	FetchContent_Populate(cpr)
 
+	# Bring the populated content into the build
+	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 #PolyM
 #add_subdirectory(3rdparty/PolyM) 
@@ -163,7 +205,7 @@ endif()
 set(CASC_BUILD_STATIC_LIB 1)
 set(CASC_BUILD_STATIC_LIB ON CACHE BOOL "Set static lib from main project")
 set(CASC_BUILD_SHARED_LIB true CACHE BOOL "Turn off shared lib ")
-add_subdirectory(3rdparty/casclib)
+add_subdirectory(3rdparty/casclib EXCLUDE_FROM_ALL)
 
 
 if (CMAKE_NDK_BUILD MATCHES 1)
@@ -271,7 +313,7 @@ find_package( Threads REQUIRED )
 #endif()
 
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp)
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp EXCLUDE_FROM_ALL)
 
 #add_definitions(-DLINK_VULKAN)
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
@@ -290,7 +332,7 @@ add_dependencies(AWebWoWViewerCpp casc_static)
 
 #TODO: platform dependant!!
 add_dependencies(AWebWoWViewerCpp glfw)
-check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17) 
+check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
 if(HAVE_FLAG_STD_CXX17)
 	# Have -std=c++17, use it
 	message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
@@ -308,7 +350,7 @@ else()
 	else()
 		message(ERROR "No supported flags")
 	endif()
-endif() 
+endif()
 
 if (MSVC)
 	include(CheckCXXCompilerFlag)
@@ -324,10 +366,11 @@ if (MSVC)
 	endif()
 endif()
 
-link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
+target_link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
 target_link_libraries(AWebWoWViewerCpp zlibstatic)
+target_link_libraries(AWebWoWViewerCpp zlib)
 
 target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
 if (NOT MSVC)
@@ -365,6 +408,7 @@ endif()
 target_link_libraries(AWebWoWViewerCpp casc_static)
 
 target_link_libraries(AWebWoWViewerCpp png_static)
+target_link_libraries(AWebWoWViewerCpp wolfssl)
 target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})
@@ -380,4 +424,26 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 #target_link_options(AWebWoWViewerCpp PUBLIC "SHELL: -llibg")
 
-INSTALL(TARGETS AWebWoWViewerCpp DESTINATION BIN)
+install(TARGETS AWebWoWViewerCpp
+		EXPORT ${PROJECT_NAME}Targets
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		COMPONENT libraries)
+
+INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT Libraries)
+
+if( MINGW )
+	message( STATUS "    Installing system-libraries: MinGW DLLs." )
+	get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
+	set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${Mingw_Path}/libgcc_s_seh-1.dll ${Mingw_Path}/libstdc++-6.dll ${Mingw_Path}/libssp-0.dll ${Mingw_Path}/libwinpthread-1.dll)
+endif( MINGW )
+include( InstallRequiredSystemLibraries )
+
+
+# Actually install it when make install is called.
+# Note, this works with CPack
+if( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
+	install( PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT System )
+endif( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
+
+include(CPack)

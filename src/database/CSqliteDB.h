@@ -12,7 +12,7 @@
 
 class CSqliteDB : public IClientDatabase {
 public:
-    CSqliteDB(std::string dbFileName);
+    explicit CSqliteDB(std::string dbFileName);
     void getMapArray(std::vector<MapRecord> &mapRecords) override;
     bool getMapById(int mapId, MapRecord &mapRecord) override;
     AreaRecord getArea(int areaId) override;

@@ -57,14 +57,14 @@ endif()
 
 set(BUILD_SHARED_VERSION 0)
 set(BUILD_STATIC_VERSION 1)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../3rdparty/zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../3rdparty/zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib EXCLUDE_FROM_ALL)
 
 set (LIBZ_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
 set (ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
 set (ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib/libz.a")
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/zlib)
 
-add_subdirectory(3rdparty/zipper)
+add_subdirectory(3rdparty/zipper EXCLUDE_FROM_ALL)
 
 #set(PNG_BUILD_ZLIB OFF)
 #add_subdirectory(../3rdparty/libpng ${CMAKE_CURRENT_BINARY_DIR}/libpng)

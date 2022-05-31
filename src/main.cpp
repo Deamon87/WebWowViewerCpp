@@ -441,12 +441,20 @@ int main(){
     glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback( window, mouse_button_callback);
 
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    float xscale, yscale;
+    glfwGetMonitorContentScale(primaryMonitor, &xscale, &yscale);
+
+
+
+
+
     //This has to be called after setting all callbacks specific to this app.
     //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
     //Otherwise keys like backspace, delete etc wont work
 
     frontendUI->initImgui(window);
-    frontendUI->createDefaultprocessor();
+//    frontendUI->createDefaultprocessor();
     glfwSwapInterval(0);
 
 //try {
