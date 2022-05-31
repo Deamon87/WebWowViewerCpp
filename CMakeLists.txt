@@ -189,6 +189,8 @@ if(NOT cpr_POPULATED)
 	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
+add_dependencies(cpr wolfssl)
+
 #PolyM
 #add_subdirectory(3rdparty/PolyM) 
 #include_directories(3rdparty/PolyM)
@@ -417,7 +419,8 @@ endif()
 target_link_libraries(AWebWoWViewerCpp casc_static)
 
 target_link_libraries(AWebWoWViewerCpp png_static)
-target_link_libraries(AWebWoWViewerCpp wolfssl)
+add_dependencies(AWebWoWViewerCpp wolfssl)
+target_link_libraries(AWebWoWViewerCpp )
 target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})

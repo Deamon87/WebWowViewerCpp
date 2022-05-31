@@ -570,7 +570,46 @@ bool FrontendUI::getStopKeyboard() {
     return io.WantCaptureKeyboard;
 }
 
+std::shared_ptr<IScene> setScene(const HApiContainer& apiContainer, int sceneType, const std::string& name, int cameraNum) {
+    apiContainer->camera = std::make_shared<FirstPersonCamera>();
+    if (sceneType == -1) {
+        return std::make_shared<NullScene>();
+    } else if (sceneType == 0) {
+//        m_usePlanarCamera = cameraNum == -1;
 
+
+        return std::make_shared<M2Scene>(apiContainer, name , cameraNum);
+    } else if (sceneType == 1) {
+        return std::make_shared<WmoScene>(apiContainer, name);
+    } else if (sceneType == 2) {
+        auto &adtFileName = name;
+
+        size_t lastSlashPos = adtFileName.find_last_of("/");
+        size_t underscorePosFirst = adtFileName.find_last_of("_");
+        size_t underscorePosSecond = adtFileName.find_last_of("_", underscorePosFirst-1);
+        std::string mapName = adtFileName.substr(lastSlashPos+1, underscorePosSecond-lastSlashPos-1);
+
+        int i = std::stoi(adtFileName.substr(underscorePosSecond+1, underscorePosFirst-underscorePosSecond-1));
+        int j = std::stoi(adtFileName.substr(underscorePosFirst+1, adtFileName.size()-underscorePosFirst-5));
+
+        float adt_x_min = AdtIndexToWorldCoordinate(j);
+        float adt_x_max = AdtIndexToWorldCoordinate(j+1);
+
+        float adt_y_min = AdtIndexToWorldCoordinate(i);
+        float adt_y_max = AdtIndexToWorldCoordinate(i+1);
+
+        apiContainer->camera = std::make_shared<FirstPersonCamera>();
+        apiContainer->camera->setCameraPos(
+            (adt_x_min+adt_x_max) / 2.0,
+            (adt_y_min+adt_y_max) / 2.0,
+            200
+        );
+
+        return std::make_shared<Map>(apiContainer, adtFileName, i, j, mapName);
+    }
+
+    return nullptr;
+}
 
 void FrontendUI::showQuickLinksDialog() {
     if (!showQuickLinks) return;
@@ -765,16 +804,16 @@ void FrontendUI::showQuickLinksDialog() {
 
     }
     if (ImGui::Button("3445776 PBR cloud sky in Maw", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3445776, replacementTextureFDids);
+        openM2SceneByfdid(3445776, replacementTextureFDids);
     }
     if (ImGui::Button("M2 3572296", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3572296, replacementTextureFDids);
+        openM2SceneByfdid(3572296, replacementTextureFDids);
     }
     if (ImGui::Button("M2 3487959", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3487959, replacementTextureFDids);
+        openM2SceneByfdid(3487959, replacementTextureFDids);
     }
     if (ImGui::Button("M2 1729717 waterfall", ImVec2(-1, 0))) {
-            openM2SceneByfdid(1729717, replacementTextureFDids);
+        openM2SceneByfdid(1729717, replacementTextureFDids);
     }
     if (ImGui::Button("Maw jailer", ImVec2(-1, 0))) {
 //        3096499,3096495
@@ -803,7 +842,9 @@ void FrontendUI::showQuickLinksDialog() {
 
             openM2SceneByfdid(3732303, replacementTextureFDids);
     }
-
+    if (ImGui::Button("Bugged ADT (SL)", ImVec2(-1, 0))) {
+        currentScene = setScene(m_api, 2, "world/maps/2363/2363_31_31.adt", 0);
+    }
     ImGui::Separator();
     ImGui::Text("Models for billboard checking");
     ImGui::NewLine();
@@ -1682,8 +1723,8 @@ inline bool fileExistsNotNull (const std::string& name) {
 
 void FrontendUI::createDefaultprocessor() {
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=4dcdb72ad9a3e875782646a4d37ee6f9&cdnconfig=bca49000f3f121b79e63f88ffaf605ab&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=4dcdb72ad9a3e875782646a4d37ee6f9&cdnconfig=bca49000f3f121b79e63f88ffaf605ab&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=73819d732878c4352c634c4d40ba5baa&cdnconfig=819e3df384392721acdd4e96ab8e0431&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=73819d732878c4352c634c4d40ba5baa&cdnconfig=819e3df384392721acdd4e96ab8e0431&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
