@@ -445,7 +445,7 @@ int main(){
     float xscale, yscale;
     glfwGetMonitorContentScale(primaryMonitor, &xscale, &yscale);
 
-
+    frontendUI->setUIScale(std::max<float>(xscale, yscale));
 
 
 
