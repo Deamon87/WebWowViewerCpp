@@ -119,7 +119,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install ninja-build cmake
           sudo apt-get install xorg-dev libglu1-mesa-dev
-          ninja --v~ersion
+          ninja --version
           cmake --version
           gcc --version
           git clone https://github.com/emscripten-core/emsdk.git
