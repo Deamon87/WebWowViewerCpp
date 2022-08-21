@@ -43,8 +43,6 @@ public:
         std::vector<HGMesh> m_meshes = {};
     } portalPointsFrame;
 
-
-
     virtual void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
     virtual void setM2Lights(std::shared_ptr<M2Object> m2Object);
 

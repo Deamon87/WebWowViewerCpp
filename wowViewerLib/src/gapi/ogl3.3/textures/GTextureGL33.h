@@ -25,7 +25,11 @@ public:
     bool postLoad() override { return false;};
     void bindToCurrentFrameBufferAsColor(uint8_t attachmentIndex);
     void bindToCurrentFrameBufferAsDepth();
+
+    static int getCurrentGLTexturesAllocated() {return currentGLTexturesAllocated;}
 private:
+
+    static int currentGLTexturesAllocated;
     void createBuffer();
     void destroyBuffer();
     virtual void bind(); //Should be called only by GDevice

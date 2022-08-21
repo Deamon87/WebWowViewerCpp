@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.6)
 project(WoWViewerLib)
 
 include(CheckCXXCompilerFlag)
@@ -15,6 +15,7 @@ option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
+
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(LINK_GLEW 0)
@@ -54,7 +55,7 @@ endif()
 if (LINK_OGL4)
     add_definitions(-DLINK_OGL4)
 endif()
-if (LINK_VULKAN EQUAL ON)
+if (LINK_VULKAN)
     add_definitions(-DLINK_VULKAN)
 endif()
 
@@ -195,8 +196,6 @@ set(SOURCE_FILES
         src/engine/objects/scenes/m2Scene.cpp
 #        src/engine/objects/scenes/creatureScene.cpp
 #        src/engine/objects/scenes/creatureScene.h
-        src/engine/algorithms/PortalCullingAlgo.cpp
-        src/engine/algorithms/PortalCullingAlgo.h
         src/engine/objects/scenes/wmoScene.cpp
         src/engine/objects/scenes/wmoScene.h
         src/engine/objects/objectCache.h
@@ -407,7 +406,8 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h src/engine/persistance/header/skelFileHeader.h)
 endif()
 
-if (LINK_VULKAN EQUAL ON)
+set(Vulkan_INCLUDE_DIR "")
+if (LINK_VULKAN)
     set(VULKAN_IMPLEMENTATION
             src/include/vulkancontext.h
             src/gapi/vulkan/GDeviceVulkan.cpp
@@ -446,8 +446,12 @@ if (LINK_VULKAN EQUAL ON)
             src/gapi/vulkan/shaders/GFFXGlowVLK.cpp
             src/gapi/vulkan/shaders/GFFXGlowVLK.h
             src/gapi/vulkan/GRenderPassVLK.cpp
-            src/gapi/vulkan/GRenderPassVLK.h src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
-    include_directories(${Vulkan_INCLUDE_DIR})
+            src/gapi/vulkan/GRenderPassVLK.h
+            src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp
+            src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h
+            src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp
+            src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
+    set(Vulkan_INCLUDE_DIR $ENV{VULKAN_SDK}/Include)
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
             find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "$ENV{VULKAN_SDK}/lib")
@@ -509,6 +513,7 @@ add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPE
 if (NOT MSVC)
     target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
 endif()
+
 foreach(X IN LISTS My_Vectorize_Compile_Options)
     target_compile_options(WoWViewerLib PRIVATE ${X})
 endforeach()
@@ -526,7 +531,7 @@ if (LINK_OPENMP)
         target_link_libraries(WoWViewerLib -fopenmp)
     endif()
 endif()
-if (LINK_VULKAN EQUAL ON)
+if (LINK_VULKAN)
     target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
 endif()
 
@@ -546,7 +551,7 @@ else()
     mathfu_configure_flags(WoWViewerLib FALSE) #This being TRUE somehow breaks current ribbonEmitter code
 endif()
 
-if (LINK_VULKAN EQUAL ON)
+if (LINK_VULKAN)
     message("Include vulkan include dir ${Vulkan_INCLUDE_DIR}")
     target_include_directories(WoWViewerLib PUBLIC ${Vulkan_INCLUDE_DIR})
     target_compile_definitions(WoWViewerLib PUBLIC -DLINK_VULKAN)
@@ -576,7 +581,7 @@ endif()
 
 set(ext_inDir ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
 
-if (LINK_VULKAN EQUAL ON)
+if (LINK_VULKAN)
     set(ext_inDir ${ext_inDir} ${Vulkan_INCLUDE_DIR})
 endif()
 set(WoWViewerLib_INCLUDE_DIRS ${ext_inDir} CACHE INTERNAL "")

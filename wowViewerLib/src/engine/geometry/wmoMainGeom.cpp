@@ -188,6 +188,15 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                         }
                     }
                 },
+                {
+                    'MCVP', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MCVP");
+                            object.convexVolumePlanesLen = chunkData.chunkLen / sizeof(mathfu::vec4_packed);
+                            chunkData.readValues(object.convexVolumePlanes, object.convexVolumePlanesLen);
+                        }
+                    }
+                }
 
         }
 };

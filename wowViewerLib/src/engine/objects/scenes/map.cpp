@@ -1781,9 +1781,11 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         HDrawStage lastDrawStage = nullptr;
         HDrawStage prevDrawStage = resultDrawStageCpy;
 
-        lastDrawStage = doGaussBlur(prevDrawStage, updateStage);
-        if (lastDrawStage != nullptr)
-            prevDrawStage = lastDrawStage;
+        if (!config->disableGlow) {
+            lastDrawStage = doGaussBlur(prevDrawStage, updateStage);
+            if (lastDrawStage != nullptr)
+                prevDrawStage = lastDrawStage;
+        }
 
 
         //End of effects stack

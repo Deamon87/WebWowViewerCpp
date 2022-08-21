@@ -1,0 +1,14 @@
+1353545;dbfilesclient/areatable.db2
+Light
+LightParams
+LightSkybox
+LiquidType
+LiquidTypeXTexture
+LiquidMaterial
+LiquidObject
+LiquidType
+LiquidTypeXTexture
+Map
+WMOAreaTable
+ZoneLight
+ZoneLightPoint

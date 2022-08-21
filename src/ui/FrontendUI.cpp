@@ -126,48 +126,57 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::Begin("Current stats",
                      &showCurrentStats);                          // Create a window called "Hello, world!" and append into it.
 
-        static float cameraPosition[3] = {0, 0, 0};
-        getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+        if (ImGui::CollapsingHeader("Camera position")) {
+            static float cameraPosition[3] = {0, 0, 0};
+            getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
 
-        ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
-                    cameraPosition[2]);
+            ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
+                        cameraPosition[2]);
 
-        if (m_api->getConfig()->doubleCameraDebug) {
-            static float debugCameraPosition[3] = {0, 0, 0};
-            getCameraPos(debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
+            if (m_api->getConfig()->doubleCameraDebug) {
+                static float debugCameraPosition[3] = {0, 0, 0};
+                getDebugCameraPos(debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
 
-            ImGui::Text("Current debug camera position: (%.1f,%.1f,%.1f)",
-                        debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
+                ImGui::Text("Current debug camera position: (%.1f,%.1f,%.1f)",
+                            debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
+            }
         }
-
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
                     ImGui::GetIO().Framerate);
 //            if(getCurrentAreaName) {
         ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
-        ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
-        ImGui::NewLine();
-        ImGui::Text("Elapsed time on culling : %.3f ms", m_api->getConfig()->cullingTimePerFrame);
-        ImGui::Text("Elapsed time on update : %.3f ms",  m_api->getConfig()->updateTimePerFrame);
-        ImGui::Text("Elapsed time on m2 update : %.3f ms",  m_api->getConfig()->m2UpdateTime);
-        ImGui::Text("Elapsed time on wait for begin update: %.3f ms",  m_api->hDevice->getWaitForUpdate());
 
-        ImGui::Text("Elapsed time on singleUpdateCNT: %.3f ms",  m_api->getConfig()->singleUpdateCNT);
-        ImGui::Text("Elapsed time on meshesCollectCNT: %.3f ms",  m_api->getConfig()->meshesCollectCNT);
-        ImGui::Text("Elapsed time on updateBuffersCNT: %.3f ms",  m_api->getConfig()->updateBuffersCNT);
-        ImGui::Text("Elapsed time on updateBuffersDeviceCNT: %.3f ms",  m_api->getConfig()->updateBuffersDeviceCNT);
-        ImGui::Text("Elapsed time on postLoadCNT: %.3f ms",  m_api->getConfig()->postLoadCNT);
-        ImGui::Text("Elapsed time on textureUploadCNT: %.3f ms",  m_api->getConfig()->textureUploadCNT);
-        ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms",  m_api->getConfig()->drawStageAndDepsCNT);
-        ImGui::Text("Elapsed time on endUpdateCNT: %.3f ms",  m_api->getConfig()->endUpdateCNT);
+        ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
+        ImGui::Text("Current textures in use %d", m_api->hDevice->getCurrentTextureAllocated());
+
+        ImGui::NewLine();
+
+        if (ImGui::CollapsingHeader("Elapsed times")) {
+            ImGui::Text("Elapsed time on culling : %.3f ms", m_api->getConfig()->cullingTimePerFrame);
+            ImGui::Text("Elapsed time on update : %.3f ms", m_api->getConfig()->updateTimePerFrame);
+            ImGui::Text("Elapsed time on m2 update : %.3f ms", m_api->getConfig()->m2UpdateTime);
+            ImGui::Text("Elapsed time on wait for begin update: %.3f ms", m_api->hDevice->getWaitForUpdate());
+
+            ImGui::Text("Elapsed time on singleUpdateCNT: %.3f ms", m_api->getConfig()->singleUpdateCNT);
+            ImGui::Text("Elapsed time on meshesCollectCNT: %.3f ms", m_api->getConfig()->meshesCollectCNT);
+            ImGui::Text("Elapsed time on updateBuffersCNT: %.3f ms", m_api->getConfig()->updateBuffersCNT);
+            ImGui::Text("Elapsed time on updateBuffersDeviceCNT: %.3f ms", m_api->getConfig()->updateBuffersDeviceCNT);
+            ImGui::Text("Elapsed time on postLoadCNT: %.3f ms", m_api->getConfig()->postLoadCNT);
+            ImGui::Text("Elapsed time on textureUploadCNT: %.3f ms", m_api->getConfig()->textureUploadCNT);
+            ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms", m_api->getConfig()->drawStageAndDepsCNT);
+            ImGui::Text("Elapsed time on endUpdateCNT: %.3f ms", m_api->getConfig()->endUpdateCNT);
+        }
 
         int currentFrame = m_api->hDevice->getDrawFrameNumber();
         auto &cullStageData = m_cullstages[currentFrame];
 
-        int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.size() : 0;
-        int wmoObjectsDrawn = cullStageData!= nullptr ? cullStageData->wmoArray.size() : 0;
+        if (ImGui::CollapsingHeader("Objects Drawn")) {
+            int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.size() : 0;
+            int wmoObjectsDrawn = cullStageData!= nullptr ? cullStageData->wmoArray.size() : 0;
 
-        ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
-        ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
+            ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
+            ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
+        }
 
         if (ImGui::CollapsingHeader("Current fog params")) {
             if (cullStageData != nullptr && cullStageData->frameDepedantData != nullptr) {
@@ -203,9 +212,6 @@ void FrontendUI::showCurrentStatsDialog() {
             }
         }
 
-//        ImGui::Text("Current Fog scaler: %f", m_api->getConfig()->getFogScaler());
-//        ImGui::Text("Current Fog density: %f", m_api->getConfig()->getFogDensity());
-//            }
         ImGui::End();
     }
 }
@@ -722,6 +728,11 @@ void FrontendUI::showQuickLinksDialog() {
 //            m_api->getConfig()->setBCLightHack(true);
     }
 
+    if (ImGui::Button("DragonLands login screen", ImVec2(-1, 0))) {
+            openM2SceneByfdid(4684877, replacementTextureFDids);
+//            m_api->getConfig()->setBCLightHack(true);
+    }
+
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
             openM2SceneByfdid(3445776, replacementTextureFDids);
     }
@@ -831,10 +842,11 @@ void FrontendUI::showQuickLinksDialog() {
     ImGui::End();
 }
 
+static HGTexture blpText = nullptr;
+
 void FrontendUI::showSettingsDialog() {
     if(showSettings) {
         ImGui::Begin("Settings", &showSettings);
-
         {
             std::string currentCamera;
             if (currentCameraNum == -1) {
@@ -903,8 +915,8 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->farPlaneForCulling = farPlane+50;
         }
 
-        if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
-            m_api->getConfig()->useGaussBlur = useGaussBlur;
+        if (ImGui::Checkbox("Disable glow", &disableGlow)) {
+            m_api->getConfig()->disableGlow = disableGlow;
         }
 
         bool disableFog = m_api->getConfig()->disableFog;
@@ -1070,6 +1082,31 @@ void FrontendUI::showSettingsDialog() {
                     }
                     ImGui::EndPopup();
                 }
+            }
+        }
+
+        //Glow source
+        switch(m_api->getConfig()->glowSource) {
+            case EParameterSource::eDatabase: {
+                glowSource = 0;
+                break;
+            }
+            case EParameterSource::eConfig: {
+                glowSource = 1;
+                break;
+            }
+        }
+
+        if (ImGui::RadioButton("Use glow from database", &glowSource, 0)) {
+            m_api->getConfig()->glowSource = EParameterSource::eDatabase;
+        }
+        if (ImGui::RadioButton("Manual glow", &glowSource, 1)) {
+            m_api->getConfig()->glowSource = EParameterSource::eConfig;
+        }
+
+        if (m_api->getConfig()->glowSource == EParameterSource::eConfig) {
+            if (ImGui::SliderFloat("Custom glow", &customGlow, 0.0, 10)) {
+                m_api->getConfig()->currentGlow = customGlow;
             }
         }
 
@@ -1682,8 +1719,8 @@ inline bool fileExistsNotNull (const std::string& name) {
 
 void FrontendUI::createDefaultprocessor() {
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=4dcdb72ad9a3e875782646a4d37ee6f9&cdnconfig=bca49000f3f121b79e63f88ffaf605ab&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=4dcdb72ad9a3e875782646a4d37ee6f9&cdnconfig=bca49000f3f121b79e63f88ffaf605ab&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=9a77c0cdef71f18aaee8ba081865b6fd&cdnconfig=dd2c07aa3d4621529a93921750262d28&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=9a77c0cdef71f18aaee8ba081865b6fd&cdnconfig=dd2c07aa3d4621529a93921750262d28&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";

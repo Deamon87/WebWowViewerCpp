@@ -14,36 +14,36 @@
 TextureFormat getTextureType(BlpFile *blpFile) {
     TextureFormat textureFormat = TextureFormat::None;
     switch (blpFile->preferredFormat) {
-        case 0:
+        case BLPPixelFormat::PIXEL_DXT1:
             if (blpFile->alphaChannelBitDepth > 0) {
                 textureFormat = TextureFormat::S3TC_RGBA_DXT1;
             } else {
                 textureFormat = TextureFormat::S3TC_RGB_DXT1;
             }
             break;
-        case 1:
+        case BLPPixelFormat::PIXEL_DXT3:
             textureFormat = TextureFormat::S3TC_RGBA_DXT3;
             break;
-        case 2:
+        case BLPPixelFormat::PIXEL_ARGB8888:
             textureFormat = TextureFormat::RGBA;
             break;
 
-        case 3:
-            textureFormat = TextureFormat::RGBA;
-            break;
-        case 4:
+        case BLPPixelFormat::PIXEL_ARGB1555:
             textureFormat = TextureFormat::PalARGB1555DitherFloydSteinberg;
             break;
-        case 5:
+        case BLPPixelFormat::PIXEL_ARGB4444:
             textureFormat = TextureFormat::PalARGB4444DitherFloydSteinberg;
             break;
-        case 7:
-            textureFormat = TextureFormat::S3TC_RGBA_DXT5;
-            break;
-        case 8:
+        case BLPPixelFormat::PIXEL_RGB565:
             textureFormat = TextureFormat::RGBA;
             break;
-        case 9:
+        case BLPPixelFormat::PIXEL_DXT5:
+            textureFormat = TextureFormat::S3TC_RGBA_DXT5;
+            break;
+        case BLPPixelFormat::PIXEL_UNSPECIFIED:
+            textureFormat = TextureFormat::RGBA;
+            break;
+        case BLPPixelFormat::PIXEL_ARGB2565:
             textureFormat = TextureFormat::PalARGB2565DitherFloydSteinberg;
             break;
 
@@ -149,6 +149,8 @@ void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
 //    std::cout << fileName << std::endl;
+    int fileSize = blpFile->size();
+//    std::cout << fileSize << std::endl;
     BlpFile *pBlpFile = (BlpFile *) &(*blpFile.get())[0];
     if (pBlpFile->fileIdent != '2PLB') {
         std::cout << pBlpFile->fileIdent;

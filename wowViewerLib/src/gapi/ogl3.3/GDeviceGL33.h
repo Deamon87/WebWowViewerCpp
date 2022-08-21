@@ -156,13 +156,13 @@ private:
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {
-        BlpTexture* texture;
+        std::string textureFileName;
         bool wrapX;
         bool wrapY;
 
         bool operator==(const BlpCacheRecord &other) const {
           return
-              (texture == other.texture) &&
+              (textureFileName == other.textureFileName) &&
               (wrapX == other.wrapX) &&
               (wrapY == other.wrapY);
 
@@ -171,7 +171,7 @@ protected:
     struct BlpCacheRecordHasher {
         std::size_t operator()(const BlpCacheRecord& k) const {
             using std::hash;
-            return hash<void*>{}(k.texture) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
+            return hash<std::string>{}(k.textureFileName) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL33>, BlpCacheRecordHasher> loadedTextureCache;
@@ -240,6 +240,8 @@ public:
         };
     };
     std::unordered_map<WMOShaderCacheRecord, std::weak_ptr<IShaderPermutation>, WMOShaderCacheRecordHasher> wmoShaderCache;
+
+    virtual int getCurrentTextureAllocated() {return GTextureGL33::getCurrentGLTexturesAllocated();}
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;

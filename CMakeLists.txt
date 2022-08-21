@@ -102,21 +102,6 @@ if (TRUE)
 	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
 	set(ZLIB_LIBRARY "$<TARGET_FILE:zlibstatic>" CACHE BOOL "")
-#
-#
-#	if (MSVC)
-#		if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-#			set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.lib")
-#		else()
-#			set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.lib")
-#		endif()
-#	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-#		if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-#			set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.a")
-#		else()
-#			set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.a")
-#		endif()
-#	endif()
 endif()
 
 
@@ -140,44 +125,16 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/filesystem_impl EXCLUDE_FROM_ALL)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 add_subdirectory(3rdparty/bzip EXCLUDE_FROM_ALL)
 
-
-
 include(FetchContent)
-
-SET(WOLFSSL_DES3 1)
-SET(WOLFSSL_OPENSSLEXTRA 1)
-FetchContent_Declare(wolfssl
-		GIT_REPOSITORY https://github.com/wolfSSL/wolfssl.git
-		INSTALL_DIR ${CMAKE_BINARY_DIR}) # the commit hash for 1.5.0
-#FetchContent_MakeAvailable(wolfssl)
-FetchContent_GetProperties(wolfssl)
-message("wolfssl_POPULATED = ${wolfssl_POPULATED}")
-if(NOT wolfssl_POPULATED)
-	# Fetch the content using previously declared details
-	FetchContent_Populate(wolfssl)
-	message("wolfssl_BINARY_DIR = ${wolfssl_BINARY_DIR}")
-	message("wolfssl_SOURCE_DIR = ${wolfssl_SOURCE_DIR}")
-	# Bring the populated content into the build
-	add_subdirectory(${wolfssl_SOURCE_DIR} ${wolfssl_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-get_property(WolfSSL_LIBRARY_location TARGET wolfssl PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-message("WolfSSL_LIBRARY_location = ${WolfSSL_LIBRARY_location}")
-
-get_target_property(WolfSSL_INCLUDE_DIR wolfssl INTERFACE_INCLUDE_DIRECTORIES)
-SET(WolfSSL_INCLUDE_DIR "${WolfSSL_INCLUDE_DIR};${wolfssl_SOURCE_DIR}/wolfssl")
-SET(WolfSSL_LIBRARY $<TARGET_FILE:wolfssl>)
-
-message(WolfSSL_INCLUDE_DIR = ${WolfSSL_INCLUDE_DIR})
-message(WolfSSL_LIBRARY = ${WolfSSL_LIBRARY})
 
 #cpr
 check_include_file("limits.h" HAVE_LIMITS_H)
 add_compile_definitions(HAVE_LIMITS_H)
 SET(CMAKE_USE_OPENSSL 0)
-SET(CMAKE_USE_WOLFSSL 1)
+SET(CMAKE_USE_WOLFSSL 0)
 SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib as external project
 FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG db351ffbbadc6c4e9239daaa26e9aefa9f0ec82d) # the commit hash for 1.8.3
-#FetchContent_MakeAvailable(cpr)
+
 FetchContent_GetProperties(cpr)
 message("cpr_POPULATED = ${cpr_POPULATED}")
 if(NOT cpr_POPULATED)
@@ -322,7 +279,7 @@ find_package( Threads REQUIRED )
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp EXCLUDE_FROM_ALL)
 
-#add_definitions(-DLINK_VULKAN)
+add_definitions(-DLINK_VULKAN)
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
 message(ccp WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(AWebWoWViewerCpp PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
@@ -379,7 +336,6 @@ target_link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
 target_link_libraries(AWebWoWViewerCpp zlibstatic)
-target_link_libraries(AWebWoWViewerCpp zlib)
 
 target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
 if (NOT MSVC)
@@ -417,7 +373,6 @@ endif()
 target_link_libraries(AWebWoWViewerCpp casc_static)
 
 target_link_libraries(AWebWoWViewerCpp png_static)
-target_link_libraries(AWebWoWViewerCpp wolfssl)
 target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})

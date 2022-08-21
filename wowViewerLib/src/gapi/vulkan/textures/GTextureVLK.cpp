@@ -241,20 +241,13 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
         imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     }
-    ///SeparateUploadQueue reference: https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples "Upload data from the CPU to an image sampled in a fragment shader"
+    ///SeparateUploadQueue reference: https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples
+    /// "Upload data from the CPU to an image sampled in a fragment shader"
 
 
     // Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
     // Source pipeline stage stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
     // Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-    vkCmdPipelineBarrier(
-        m_device.getUploadCommandBuffer(),
-        VK_PIPELINE_STAGE_TRANSFER_BIT ,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &imageMemoryBarrier);
 
     if (m_device.canUploadInSeparateThread()) {
         vkCmdPipelineBarrier(
@@ -267,6 +260,15 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
             1, &imageMemoryBarrier);
 
         m_device.signalTextureTransferCommandRecorded();
+    } else {
+        vkCmdPipelineBarrier(
+                m_device.getUploadCommandBuffer(),
+                VK_PIPELINE_STAGE_TRANSFER_BIT ,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &imageMemoryBarrier);
     }
 
     // Store current layout for later reuse

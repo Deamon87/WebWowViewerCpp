@@ -80,12 +80,9 @@ public:
     float farPlane = 1000;
     float farPlaneForCulling = 400;
 
-    bool useGaussBlur = true;
+    bool disableGlow = false;
 
     bool pauseAnimation = false;
-
-    bool useTimedGloabalLight = true;
-    bool useM2AmbientLight = false;
 
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
 

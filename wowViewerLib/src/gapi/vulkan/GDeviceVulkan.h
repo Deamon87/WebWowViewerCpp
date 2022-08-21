@@ -41,7 +41,7 @@ class gMeshTemplate;
 
 VkSampleCountFlagBits sampleCountToVkSampleCountFlagBits(uint8_t sampleCount);
 
-class GDeviceVLK : public IDevice {
+class GDeviceVLK : public IDevice, public std::enable_shared_from_this<GDeviceVLK> {
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
@@ -64,11 +64,14 @@ public:
     explicit GDeviceVLK(vkCallInitCallback * callBacks);
     ~GDeviceVLK() override = default;;
 
+    void initialize() override;
+
     void reset() override;
 
     unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() override;
     unsigned int getCullingFrameNumber() override;
+    unsigned int getOcclusionFrameNumber() override;
     unsigned int getDrawFrameNumber() override;
 
     bool getIsRenderbufferSupported() override {return true;}

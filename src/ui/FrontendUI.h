@@ -73,7 +73,7 @@ public:
         uiScale = scale;
     }
 private:
-    std::array<HCullStage, 4> m_cullstages = {};
+    std::array<HCullStage, 4>   m_cullstages = {};
 
     std::shared_ptr<CMinimapDataDB> m_minimapDB;
 
@@ -161,10 +161,14 @@ private:
     float prevMinimapZoom = 1;
     int prevMapId = -1;
     bool isWmoMap = false;
-    bool useGaussBlur = true;
+
     bool pauseAnimation = true;
 
     int lightSource = 0;
+
+    bool disableGlow = false;
+    int glowSource = 0;
+    float customGlow = 0.0;
 
     int currentCameraNum = -1;
 

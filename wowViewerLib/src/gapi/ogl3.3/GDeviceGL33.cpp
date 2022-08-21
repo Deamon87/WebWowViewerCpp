@@ -834,9 +834,9 @@ void GDeviceGL33::bindTexture(ITexture *iTexture, int slot) {
 
 HGTexture GDeviceGL33::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
     BlpCacheRecord blpCacheRecord;
-    blpCacheRecord.texture = texture.get();
-    blpCacheRecord.wrapX = xWrapTex;
-    blpCacheRecord.wrapY = yWrapTex;
+    blpCacheRecord.textureFileName = texture->getTextureName();
+    blpCacheRecord.wrapX = false;
+    blpCacheRecord.wrapY = false;
 
     auto i = loadedTextureCache[blpCacheRecord];
     if (!i.expired()) {

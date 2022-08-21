@@ -233,6 +233,8 @@ class IDevice {
 
         static std::string insertAfterVersion(std::string &glslShaderString, std::string stringToPaste);
         virtual void addDeallocationRecord(std::function<void()> callback) {};
+
+        virtual int getCurrentTextureAllocated() {return 0;}
 };
 
 typedef std::shared_ptr<IDevice> HGDevice;

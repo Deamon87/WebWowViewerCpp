@@ -6,7 +6,7 @@
 #define WOWVIEWERLIB_BLPFILEHEADER_H
 #include <cstdint>
 
-enum BLPColorEncoding : uint8_t {
+enum class BLPColorEncoding : uint8_t {
     COLOR_JPEG = 0, // not supported
     COLOR_PALETTE = 1,
     COLOR_DXT = 2,
@@ -14,7 +14,7 @@ enum BLPColorEncoding : uint8_t {
     COLOR_ARGB8888_dup = 4,    // same decompression, likely other PIXEL_FORMAT
 };
 
-enum BLPPixelFormat : uint8_t {
+enum class BLPPixelFormat : uint8_t {
     PIXEL_DXT1 = 0,
     PIXEL_DXT3 = 1,
     PIXEL_ARGB8888 = 2,
@@ -32,9 +32,9 @@ enum BLPPixelFormat : uint8_t {
 struct BlpFile{
     uint32_t fileIdent;
     int32_t version;
-    uint8_t colorEncoding;
+    BLPColorEncoding colorEncoding;
     uint8_t alphaChannelBitDepth;
-    uint8_t preferredFormat;
+    BLPPixelFormat preferredFormat;
     uint8_t mipmap_level_and_flags;
     int32_t width;
     int32_t height;
