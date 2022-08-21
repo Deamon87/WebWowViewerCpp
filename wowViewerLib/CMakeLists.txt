@@ -22,6 +22,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 #MacOS system
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(LINK_OGL2 0)
     set(LINK_GLEW 0)
 endif()
 
@@ -282,6 +283,7 @@ set(SOURCE_FILES
         src/exporters/IExporter.h
         src/engine/objects/iScene.cpp src/engine/algorithms/C3Spline.cpp src/engine/algorithms/C3Spline.h src/engine/algorithms/C3Spline_Bezier3.cpp src/engine/algorithms/C3Spline_Bezier3.h src/include/string_utils.h src/include/string_utlis.cpp)
 
+if (LINK_OGL2)
 set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
         src/gapi/ogl2.0/textures/GBlpTextureGL20.h
@@ -319,6 +321,7 @@ set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/shaders/GAdtShaderPermutationGL20.h
         src/gapi/ogl2.0/GOcclusionQueryGL20.cpp
         src/gapi/ogl2.0/GOcclusionQueryGL20.h)
+endif()
 
 set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
