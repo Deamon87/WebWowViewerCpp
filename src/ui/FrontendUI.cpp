@@ -6,7 +6,6 @@
 
 #ifndef __ANDROID_API__
 #include "imguiLib/imguiImpl/imgui_impl_glfw.h"
-#include <imguiImpl/imgui_impl_opengl3.h>
 #else
 #include <imguiImpl/imgui_impl_android.h>
 #endif
