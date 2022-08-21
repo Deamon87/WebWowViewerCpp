@@ -115,9 +115,20 @@ jobs:
         # cmd "${{ matrix.config.environment_script }}"
       - name: Install emscripten on Emscripten target
         if: startsWith(matrix.config.name, 'emscripten')
-        uses: lovasoa/setup-emscripten@master
-        with:
-          emscripten-version: '1.38.47'
+        run: |
+          sudo apt-get update
+          sudo apt-get install ninja-build cmake
+          sudo apt-get install xorg-dev libglu1-mesa-dev
+          ninja --v~ersion
+          cmake --version
+          gcc --version
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          git pull
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+          cd ..
 
       - name: Install dependencies on ubuntu
         if: startsWith(matrix.config.name, 'Ubuntu_Latest_GCC')
