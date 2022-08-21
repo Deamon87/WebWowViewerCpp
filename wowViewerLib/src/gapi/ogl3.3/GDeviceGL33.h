@@ -241,7 +241,7 @@ public:
     };
     std::unordered_map<WMOShaderCacheRecord, std::weak_ptr<IShaderPermutation>, WMOShaderCacheRecordHasher> wmoShaderCache;
 
-    virtual int getCurrentTextureAllocated() {return GTextureGL33::getCurrentGLTexturesAllocated();}
+    int getCurrentTextureAllocated() override {return GTextureGL33::getCurrentGLTexturesAllocated();}
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;

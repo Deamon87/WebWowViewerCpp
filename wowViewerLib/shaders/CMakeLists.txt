@@ -210,12 +210,18 @@ add_custom_target(
 )
 
 #Add shaders on install
-install(FILES ${GLSL20Files}
-        DESTINATION ${CMAKE_INSTALL_BINDIR}/glsl/glsl20/
-)
-install(FILES ${GLSL30Files}
-        DESTINATION ${CMAKE_INSTALL_BINDIR}/glsl/glsl3.3/
-)
-install(FILES ${SPIRV_BINARY_FILES_NON_OPT}
-        DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
-)
+if(LINK_OGL2)
+    install(FILES ${GLSL20Files}
+            DESTINATION ${CMAKE_INSTALL_BINDIR}/glsl/glsl20/
+    )
+endif()
+if(LINK_OGL3)
+    install(FILES ${GLSL30Files}
+            DESTINATION ${CMAKE_INSTALL_BINDIR}/glsl/glsl3.3/
+    )
+endif()
+if(LINK_VULKAN)
+    install(FILES ${SPIRV_BINARY_FILES_NON_OPT}
+            DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
+    )
+endif()

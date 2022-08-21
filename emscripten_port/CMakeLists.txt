@@ -82,8 +82,6 @@ set(SOURCE_FILES src/main.cpp
         ../src/screenshots/screenshotMaker.cpp
         )
 
-
-
 add_executable(project ${SOURCE_FILES})
 
 add_dependencies(project WoWViewerLib)
@@ -111,3 +109,9 @@ set_target_properties(project
         PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../${OUTPUTDIR}"
         )
+
+install(TARGETS project
+        EXPORT ${PROJECT_NAME}Targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        COMPONENT libraries)
