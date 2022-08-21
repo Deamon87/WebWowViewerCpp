@@ -194,6 +194,9 @@ jobs:
         run: |
           mkdir build
           mkdir instdir
+          cd instdir
+          INSTALL_LOC="$(pwd)"
+          cd ..
           cd build
           cmake \
             -S ../ \
@@ -201,7 +204,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
             ${{ matrix.config.cmake_defines}}
-            -DCMAKE_INSTALL_PREFIX:PATH=../instdir
+            -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Configure emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         shell: bash
@@ -212,13 +215,16 @@ jobs:
           cd ..
           mkdir build
           mkdir instdir
+          cd instdir
+          INSTALL_LOC="$(pwd)"
+          cd ..
           cd build
           cmake \
             -S ../emscripten_port \
             -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_LOC} \
-            -DCMAKE_INSTALL_PREFIX:PATH=../instdir
+            -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Build
         shell: bash
         working-directory: build
