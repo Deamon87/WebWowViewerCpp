@@ -12,7 +12,6 @@ set(CMAKE_BUILD_PARALLEL_LEVEL 1)
 add_link_options("SHELL: -s ALLOW_MEMORY_GROWTH=1")
 add_link_options("SHELL: -s DISABLE_EXCEPTION_CATCHING=0")
 add_link_options("SHELL: -s TOTAL_MEMORY=40MB")
-add_link_options("SHELL: -s USE_ZLIB=1 ")
 
 message( EMSCRIPTEN_ROOT_PATH = ${EMSCRIPTEN_ROOT_PATH})
 
@@ -57,15 +56,16 @@ endif()
 
 set(BUILD_SHARED_VERSION 0)
 set(BUILD_STATIC_VERSION 1)
-#add_subdirectory(${PROJECT_SOURCE_DIR}/../3rdparty/zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib EXCLUDE_FROM_ALL)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../3rdparty/zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib EXCLUDE_FROM_ALL)
 #
-#set (LIBZ_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
-#set (ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
-#set (ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib/libz.a")
+set (LIBZ_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
+set (ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib/")
+set (ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib/libz.a")
 #include_directories(${CMAKE_CURRENT_BINARY_DIR}/zlib)
 
 add_subdirectory(3rdparty/zipper EXCLUDE_FROM_ALL)
-
+add_dependencies(staticZipper zlibstatic)
+target_include_directories(staticZipper PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/zlib>)
 #set(PNG_BUILD_ZLIB OFF)
 #add_subdirectory(../3rdparty/libpng ${CMAKE_CURRENT_BINARY_DIR}/libpng)
 #include_directories(../3rdparty/libpng)
@@ -86,9 +86,10 @@ add_executable(project ${SOURCE_FILES})
 
 add_dependencies(project WoWViewerLib)
 
-#target_link_libraries(project zlibstatic)
+target_link_libraries(project zlibstatic)
 target_link_libraries(project WoWViewerLib)
 target_link_libraries(project staticZipper)
+
 
 target_link_options(project PUBLIC "SHELL: --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/prejs.js --js-library ${CMAKE_CURRENT_SOURCE_DIR}/jsLib.js")
 target_link_options(project PUBLIC "SHELL: -s USE_GLFW=3 --preload-file glsl -s ALLOW_MEMORY_GROWTH=1")
