@@ -622,7 +622,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Tomb of sargares hall", ImVec2(-1, 0))) {
         openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
     }
-
+    if (ImGui::Button("10.0 Raid WMO", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(4282557);
+    }
     if (ImGui::Button("(WMO) Model with broken portal culling", ImVec2(-1, 0))) {
         openWMOSceneByfdid(4217818);
     }
@@ -675,7 +677,26 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Сollector top", ImVec2(-1, 0))) {
         openWMOSceneByfdid(113540);
     }
+    if (ImGui::Button("10.0 unk model", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
 
+        openM2SceneByfdid(4519090, replacementTextureFDids);
+    }
+    if (ImGui::Button("10.0 strange shoulders", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[2] = 4615508;
+//        replacementTextureFDids[3] = 4615508;
+
+
+
+        openM2SceneByfdid(4614814, replacementTextureFDids);
+    }
+    if (ImGui::Button("DF chicken", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[11] = 4007136;
+
+        openM2SceneByfdid(4005446, replacementTextureFDids);
+    }
     if (ImGui::Button("Fox", ImVec2(-1, 0))) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3071379;

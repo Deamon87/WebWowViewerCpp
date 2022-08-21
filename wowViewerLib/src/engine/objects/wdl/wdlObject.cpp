@@ -134,7 +134,7 @@ WdlObject::WdlObject(HApiContainer api, int wdlFileDataId) {
 }
 
 void WdlObject::checkSkyScenes(const StateForConditions &state,
-                               std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                               std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                const mathfu::vec4 &cameraPos,
                                const std::vector<mathfu::vec4> &frustumPlanes,
                                const std::vector<mathfu::vec3> &frustumPoints
@@ -178,7 +178,7 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
         if (conditionPassed) {
             for (auto &m2Object : skyScene.m2Objects) {
                 if (m2Object->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints)) {
-                    m2ObjectsCandidates.push_back(m2Object);
+                    m2ObjectsCandidates.insert(m2Object);
                 }
             }
         }

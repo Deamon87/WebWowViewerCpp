@@ -25,9 +25,9 @@ public:
 class GeneralView {
 public:
     bool viewCreated = false;
-    std::vector<std::shared_ptr<WmoGroupObject>> drawnWmos = {}; //Wmos which draw their meshes
-    std::vector<std::shared_ptr<WmoGroupObject>> wmosForM2 = {}; //Wmo which contribute M2s to the scene
-    std::vector<std::shared_ptr<M2Object>> drawnM2s = {};
+    std::unordered_set<std::shared_ptr<WmoGroupObject>> drawnWmos = {}; //Wmos which draw their meshes
+    std::unordered_set<std::shared_ptr<WmoGroupObject>> wmosForM2 = {}; //Wmo which contribute M2s to the scene
+    std::unordered_set<std::shared_ptr<M2Object>> drawnM2s = {};
 
     //Support several frustum planes because of how portal culling works
     std::vector<std::vector<mathfu::vec3>> worldPortalVertices = {};
@@ -55,6 +55,7 @@ public:
 class InteriorView : public GeneralView {
 public:
     int portalIndex;
+    std::shared_ptr<WmoGroupObject> ownerGroupWMO = {}; //Wmos which portals belong to
     void setM2Lights(std::shared_ptr<M2Object> m2Object) override;
 };
 

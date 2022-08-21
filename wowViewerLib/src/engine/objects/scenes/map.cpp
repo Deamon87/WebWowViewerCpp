@@ -492,7 +492,7 @@ void Map::checkCulling(HCullStage cullStage) {
                     model->checkFrustumCulling(cameraPos,
                                                frustumPlanes,
                                                frustumPoints);
-                    cullStage->exteriorView.drawnM2s.push_back(model);
+                    cullStage->exteriorView.drawnM2s.insert(model);
                 }
             }
         }
@@ -1110,7 +1110,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
             auto m2ObjectCandidate = m2ObjectsCandidates[i];
             if (m2ObjectCandidate->m_cullResult) {
-                cullStage->exteriorView.drawnM2s.push_back(m2ObjectCandidate);
+                cullStage->exteriorView.drawnM2s.insert(m2ObjectCandidate);
                 cullStage->m2Array.push_back(m2ObjectCandidate);
             }
         }
