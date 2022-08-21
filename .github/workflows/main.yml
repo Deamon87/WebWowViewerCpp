@@ -127,7 +127,7 @@ jobs:
           git pull
           ./emsdk install latest
           ./emsdk activate latest
-
+          cd ..
       - name: Install dependencies on ubuntu
         if: startsWith(matrix.config.name, 'Ubuntu_Latest_GCC')
         run: |

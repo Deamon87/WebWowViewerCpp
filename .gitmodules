@@ -40,7 +40,7 @@
 	url = https://github.com/glennrp/libpng.git
 [submodule "wowViewerLib/3rdparty/tbb"]
 	path = wowViewerLib/3rdparty/tbb
-	url = https://github.com/wjakob/tbb
+	url = https://github.com/Deamon87/tbb.git
 [submodule "3rdparty/filesystem_impl"]
 	path = 3rdparty/filesystem_impl
 	url = https://github.com/gulrak/filesystem.git
