@@ -279,8 +279,11 @@ find_package( Threads REQUIRED )
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp EXCLUDE_FROM_ALL)
 
-add_definitions(-DLINK_VULKAN)
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
+if (Vulkan_FOUND)
+	add_definitions(-DLINK_VULKAN)
+endif()
+
 message(ccp WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(AWebWoWViewerCpp PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
