@@ -55,11 +55,14 @@ message(CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE})
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	message("This is clang")
-	#Force clang to use libc++
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libstdc++")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}  ")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -stdlib=libstdc++")
+#	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ")
+#	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}  ")
+
+	#Do not force libstdc++ on MacOS system
+	if (NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libstdc++")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -stdlib=libstdc++")
+	endif()
 #	link_libraries(libstdc++fs)
 
 
