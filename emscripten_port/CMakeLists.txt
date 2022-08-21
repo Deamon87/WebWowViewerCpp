@@ -49,7 +49,7 @@ endif()
 
 set(EMSCRIPTEN 1)
 
-set(OUTPUTDIR "")
+set(OUTPUTDIR "build")
 if (COMPILE_WITH_SIMD)
     set(OUTPUTDIR "simd_version/")
     set(EMSCRIPTEN_SIMD 1)
@@ -57,12 +57,12 @@ endif()
 
 set(BUILD_SHARED_VERSION 0)
 set(BUILD_STATIC_VERSION 1)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../3rdparty/zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib EXCLUDE_FROM_ALL)
-
-set (LIBZ_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
-set (ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
-set (ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib/libz.a")
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/zlib)
+#add_subdirectory(${PROJECT_SOURCE_DIR}/../3rdparty/zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib EXCLUDE_FROM_ALL)
+#
+#set (LIBZ_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
+#set (ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../3rdparty/zlib")
+#set (ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib/libz.a")
+#include_directories(${CMAKE_CURRENT_BINARY_DIR}/zlib)
 
 add_subdirectory(3rdparty/zipper EXCLUDE_FROM_ALL)
 
@@ -86,8 +86,8 @@ add_executable(project ${SOURCE_FILES})
 
 add_dependencies(project WoWViewerLib)
 
+#target_link_libraries(project zlibstatic)
 target_link_libraries(project WoWViewerLib)
-target_link_libraries(project zlibstatic)
 target_link_libraries(project staticZipper)
 
 target_link_options(project PUBLIC "SHELL: --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/prejs.js --js-library ${CMAKE_CURRENT_SOURCE_DIR}/jsLib.js")
@@ -96,13 +96,14 @@ target_link_options(project PUBLIC "SHELL: -s TOTAL_MEMORY=40MB")
 target_link_options(project PUBLIC "SHELL: -s FETCH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1")
 
 target_link_options(project PUBLIC "SHELL: -fno-rtti ")
-target_link_options(project PUBLIC "SHELL: -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"FS\"]")
+target_link_options(project PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=[\"FS\"]")
 
 target_link_options(project PUBLIC "SHELL: -s ENVIRONMENT=\"web\" " )
 target_link_options(project PUBLIC "SHELL: -s USE_PTHREADS=0")
 target_link_options(project PUBLIC "SHELL: --bind ")
 #target_link_options(project PUBLIC "SHELL: -s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=2")
 #target_link_options(project PUBLIC "SHELL: -s ENVIRONMENT=\"web,worker\" " )
+
 
 
 set_target_properties(project
@@ -114,4 +115,8 @@ install(TARGETS project
         EXPORT ${PROJECT_NAME}Targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        COMPONENT libraries)
+        COMPONENT Runtime)
+
+install(DIRECTORY "${CMAKE_BINARY_DIR}/../${OUTPUTDIR}/"
+        TYPE BIN
+        FILES_MATCHING PATTERN "*.*")
