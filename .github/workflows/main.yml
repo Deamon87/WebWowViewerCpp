@@ -202,14 +202,16 @@ jobs:
         run: |
           cd emsdk
           source ./emsdk_env.sh
+          TOOLCHAIN_LOC="$(find . -name 'Emscripten.cmake')"
           cd ..
           mkdir build
           mkdir instdir
           cd build
-          emcmake cmake \
+          cmake \
             -S ../emscripten_port \
             -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
+            -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_LOC}
             -DCMAKE_INSTALL_PREFIX:PATH=../instdir
       - name: Build
         shell: bash
