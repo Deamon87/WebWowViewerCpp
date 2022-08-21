@@ -146,8 +146,6 @@ if(NOT cpr_POPULATED)
 	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
-add_dependencies(cpr wolfssl)
-
 #PolyM
 #add_subdirectory(3rdparty/PolyM) 
 #include_directories(3rdparty/PolyM)
