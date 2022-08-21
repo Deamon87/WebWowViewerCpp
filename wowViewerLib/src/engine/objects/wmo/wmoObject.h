@@ -166,6 +166,9 @@ public:
         std::vector<mathfu::vec4> &frustumPlanes,
         std::vector<std::shared_ptr<M2Object>> &m2Candidates);
 
+    void addSplitChildWMOsToView(InteriorView &interiorView, int groupId);
+
+
     void transverseGroupWMO (
         int groupId,
         bool traversingStartedFromInterior,

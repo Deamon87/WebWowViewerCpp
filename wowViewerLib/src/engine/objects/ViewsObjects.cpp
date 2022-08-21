@@ -69,7 +69,7 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
     for (auto &m2Candidate : candidates) {
         if (m2Candidate == nullptr) continue;
         if (m2Candidate->m_cullResult) {
-            drawnM2s.push_back(m2Candidate);
+            drawnM2s.insert(m2Candidate);
         }
     }
 }
@@ -182,11 +182,11 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer apiContainer, std
 }
 
 void InteriorView::setM2Lights(std::shared_ptr<M2Object> m2Object) {
-    if (!drawnWmos[0]->getIsLoaded()) return;
+    if (ownerGroupWMO == nullptr || !ownerGroupWMO->getIsLoaded()) return;
 
-    if (drawnWmos[0]->getDontUseLocalLightingForM2()) {
+    if (ownerGroupWMO->getDontUseLocalLightingForM2()) {
         m2Object->setUseLocalLighting(false);
     } else {
-        drawnWmos[0]->assignInteriorParams(m2Object);
+        ownerGroupWMO->assignInteriorParams(m2Object);
     }
 }

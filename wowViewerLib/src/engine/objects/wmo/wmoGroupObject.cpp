@@ -165,7 +165,7 @@ inline constexpr const int operator+(WmoPixelShader const val) { return static_c
 
 inline constexpr const int operator+(WmoVertexShader const val) { return static_cast<const int>(val); };
 
-const int MAX_WMO_SHADERS = 23;
+const int MAX_WMO_SHADERS = 24;
 static const struct {
     int vertexShader;
     int pixelShader;
@@ -284,7 +284,12 @@ static const struct {
     {
         +WmoVertexShader::MapObjParallax,
         +WmoPixelShader::MapObjParallax,
-    }
+    },
+    //23 // TODO: stub for now
+    {
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjTwoLayerDiffuseMod2x,
+    },
 };
 
 
@@ -449,6 +454,9 @@ void WmoGroupObject::createMeshes() {
         if (shaderId >= MAX_WMO_SHADERS) {
             shaderId = 0;
         }
+//        if (shaderId == 23) {
+//            std::cout << "Hello" << std::endl;
+//        }
         int pixelShader = wmoMaterialShader[shaderId].pixelShader;
         int vertexShader = wmoMaterialShader[shaderId].vertexShader;
 
