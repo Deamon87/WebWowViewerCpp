@@ -168,18 +168,6 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 #ifdef __ANDROID_API__
     esVersion = true;
 #endif
-#ifdef __APPLE__
-    #include "TargetConditionals.h"
-#if TARGET_IPHONE_SIMULATOR
-    glsl330 = false;
-#elif TARGET_OS_IPHONE
-    glsl330 = false;
-#elif TARGET_OS_MAC
-    glsl330 = true;
-#else
-#   error "Unknown Apple platform"
-#endif
-#endif
 #if (defined(WITH_GLESv2) || defined(__EMSCRIPTEN__))
     esVersion = true;
 #endif
