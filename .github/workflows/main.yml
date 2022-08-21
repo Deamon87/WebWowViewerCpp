@@ -202,7 +202,7 @@ jobs:
         run: |
           cd emsdk
           source ./emsdk_env.sh
-          TOOLCHAIN_LOC="$(find . -name 'Emscripten.cmake')"
+          TOOLCHAIN_LOC="$(find ~+ . -name 'Emscripten.cmake' -print -quit)"
           cd ..
           mkdir build
           mkdir instdir
