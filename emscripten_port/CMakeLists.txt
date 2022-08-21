@@ -48,7 +48,7 @@ endif()
 
 set(EMSCRIPTEN 1)
 
-set(OUTPUTDIR "build")
+set(OUTPUTDIR "build_packed")
 if (COMPILE_WITH_SIMD)
     set(OUTPUTDIR "simd_version/")
     set(EMSCRIPTEN_SIMD 1)
