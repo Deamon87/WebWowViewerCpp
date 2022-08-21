@@ -2,6 +2,9 @@
 
 #extension GL_GOOGLE_include_directive: require
 
+precision highp float;
+precision highp int;
+
 #include "../common/commonLightFunctions.glsl"
 
 layout(location = 0) in float aHeight;

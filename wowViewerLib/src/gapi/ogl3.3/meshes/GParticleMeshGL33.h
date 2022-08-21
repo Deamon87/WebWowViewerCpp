@@ -10,7 +10,7 @@
 class GParticleMeshGL33 : public GMeshGL33 {
     friend class GDeviceGL33;
 protected:
-    GParticleMeshGL33(IDevice &device, const gMeshTemplate &meshTemplate);
+    GParticleMeshGL33(const HGDevice &device, const gMeshTemplate &meshTemplate);
 public:
     float getSortDistance() override {
         return m_sortDistance;

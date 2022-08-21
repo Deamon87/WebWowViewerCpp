@@ -2,6 +2,9 @@
 
 #extension GL_GOOGLE_include_directive: require
 
+precision highp float;
+precision highp int;
+
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
 
@@ -14,15 +17,23 @@ layout(std140, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
 };
+layout(std140, binding=4) uniform meshWideBlockPS {
+    vec4 uAlphaTestScalev;
+    ivec4 uPixelShaderv;
+    vec4 uTextureTranslate;
+};
 
 layout(set=1, binding=5) uniform sampler2D uTexture;
 
 layout(location = 0) out vec4 outputColor;
 
 void main() {
-    vec4 tex = texture(uTexture, vTexcoord0).rgba;
+    vec2 textCoordScale = uAlphaTestScalev.yz;
+    vec2 texcoord = (vTexcoord0 * textCoordScale) + uTextureTranslate.xy;
 
-    vec4 finalColor = vec4((vColor.rgb*tex.rgb), tex.a * vColor.a );
+    vec4 tex = texture(uTexture, texcoord).rgba;
+
+    vec4 finalColor = vec4((vColor.rgb*tex.rgb), tex.a * vColor.a);
 
 
 //    vec3 sunDir =
@@ -34,7 +45,7 @@ void main() {
 //        .xyz;
     vec3 sunDir =scene.extLight.uExteriorDirectColorDir.xyz;
 
-    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz);
+    finalColor = makeFog(fogData, finalColor, vPosition.xyz, sunDir.xyz, uPixelShaderv.y);
 
     outputColor = finalColor;
 }

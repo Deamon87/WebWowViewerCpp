@@ -22,10 +22,6 @@ std::string int_to_hex( T i )
     return stream.str();
 }
 
-void HttpRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType) {
-    std::string fileName_s(fileName);
-    this->addRequest(fileName_s, holderType);
-}
 std::string char_to_escape( char i )
 {
     std::stringstream stream;
@@ -44,7 +40,12 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
     return str;
 }
 
-void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType) {
+void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
+    auto perstFile = s_file.lock();
+    if (perstFile == nullptr){
+        toBeProcessed--;
+        return;
+    }
 
     const std::string charsToEscape = " !*'();:@&=+$,/?#[]";
 
@@ -96,14 +97,15 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
                   std::istream_iterator<unsigned char>(),
                   std::back_inserter(*vec.get()));
 
-        provideResult(fileName, vec, holderType);
+        processResult(perstFile, vec, fileName);
+        toBeProcessed--;
 
         return;
     }
 //
-    HttpFile * httpFile = new HttpFile(fullUrl);
+    auto httpFile = std::make_shared<HttpFile>(fullUrl);
     httpFile->setCallback(
-            [fileName, this, holderType, httpFile, fullUrl](HFileContent fileContent) -> void {
+            [fileName, this, holderType, httpFile, fullUrl, perstFile](HFileContent fileContent) -> void {
                 std::string newFileName = fileName;
 
                 if (holderType != CacheHolderType::CACHE_ANIM && fileContent->size() > 4 && (*(uint32_t *)fileContent->data() == 0)) {
@@ -121,13 +123,14 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
                 FILE.close();
 
                 //Provide file!
-                provideResult(newFileName, fileContent, holderType);
+                processResult(perstFile, fileContent, fileName);
+                toBeProcessed--;
             }
     );
     httpFile->setFailCallback([fileName, this, holderType, httpFile](HFileContent fileContent) -> void {
         this->m_fileRequester->rejectFile(holderType, fileName.c_str());
+        toBeProcessed--;
     });
     httpFile->startDownloading();
 
-    delete httpFile;
 }

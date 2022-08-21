@@ -154,7 +154,8 @@ struct M2Ribbon
     M2Track<unsigned char> visibilityTrack;
 
     int16_t priorityPlane;
-    uint16_t padding;
+    int8_t ribbonColorIndex;
+    int8_t textureTransformLookupIndex;
 
 };
 
@@ -334,11 +335,14 @@ struct M2Data {
         uint32_t flag_camera_related : 1;                   // TODO: verify version
         uint32_t flag_new_particle_record : 1;              // In CATA: new version of ParticleEmitters. By default, length of M2ParticleOld is 476.
         uint32_t flag_unk_0x400 : 1;
-        uint32_t flag_unk_0x800 : 1;
+        uint32_t flag_texture_transforms_use_bone_sequences  : 1;
         uint32_t flag_unk_0x1000 : 1;
         uint32_t flag_unk_0x2000 : 1;                       // seen in UI_MainMenu_Legion
         uint32_t flag_unk_0x4000 : 1;
         uint32_t flag_unk_0x8000 : 1;                       // seen in UI_MainMenu_Legion
+        uint32_t flag_unk_0x10000 : 1;
+        uint32_t flag_unk_0x20000 : 1;
+        uint32_t flag_unk_0x40000 : 1;
     } global_flags;
 
     M2Array<M2Loop> global_loops;                        // Timestamps used in global looping animations.
@@ -425,7 +429,52 @@ struct EXP2
     M2Array<Exp2Record> content;
 };
 
+PACK(
+struct WaterFallDataV3 {
+    float bumpScale;
+    float values0_x;
+    float values0_y;
+    float values0_z;
+    float value1_w;
+    float values0_w;
+    float value1_x;
+    float value1_y;
+    float value2_w;
+    float value3_y;
+    float value3_x;
+    CImVector basecolor;
+    uint16_t flags;
+    uint16_t unk0;
+    float values3_w;
+    float values3_z;
+    float values4_y;
+    float unk1;
+    float unk2;
+    float unk3;
+    float unk4;
+});
 
+struct PGD1_chunk {
+    M2Array<uint16_t> pgd;
+};
+
+void initEXP2(EXP2 *exp2);
+
+void initM2Textures(void* sectionStart, M2Array<M2Texture> &textures);
+
+void initCompBones(void* sectionStart, M2Array<M2CompBone> *bones, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Color(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2TextureWeight(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2TextureTransform(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Attachment(void* sectionStart, M2Array<M2Attachment> *attachments, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Event(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Light(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Particle(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Ribbon(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2Camera(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad);
+void initM2ParticlePartTracks(M2Data *m2Header);
+
+int findAnimationIndex(uint32_t anim_id, M2Array<int16_t> *sequence_lookups, M2Array<M2Sequence> *sequences);
 
 template <typename ToCheck, std::size_t ExpectedSize, std::size_t RealSize = sizeof(ToCheck)>
 void check_size() {

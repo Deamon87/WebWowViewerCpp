@@ -4,6 +4,7 @@ struct SceneExteriorLight {
      vec4 uExteriorGroundAmbientColor;
      vec4 uExteriorDirectColor;
      vec4 uExteriorDirectColorDir;
+     vec4 adtSpecMult;
  };
 
 
@@ -27,7 +28,8 @@ vec3 calcLight(
     float interiorExteriorBlend,
     readonly SceneWideParams sceneParams,
     readonly InteriorLightParam intLight,
-    readonly vec3 accumLight, const vec3 precomputedLight, const vec3 specular) {
+    readonly vec3 accumLight, const vec3 precomputedLight, const vec3 specular,
+    readonly const vec3 emissive) {
 
     vec3 currColor;
     vec3 localDiffuse = accumLight;
@@ -83,8 +85,39 @@ vec3 calcLight(
     //Specular term
     vec3 specTerm = specular;
     //Emission term
-    vec3 emTerm = vec3(0,0,0);
+    vec3 emTerm = emissive;
 
 
     return sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) + specTerm + emTerm;
+
+
+//    vec3 normalDirection = normalize(vNormal);
+//
+//    vec3 viewDirection = normalize(_WorldSpaceCameraPos - vec3(position));
+//    vec3 lightDirection;
+//    float attenuation;
+//
+//    if (0.0 == _WorldSpaceLightPos0.w) // directional light?
+//    {
+//        attenuation = 1.0; // no attenuation
+//        lightDirection = normalize(vec3(_WorldSpaceLightPos0));
+//    }
+//    else // point or spot light
+//    {
+//        vec3 vertexToLightSource =
+//        vec3(_WorldSpaceLightPos0 - position);
+//        float distance = length(vertexToLightSource);
+//        attenuation = 1.0 / distance; // linear attenuation
+//        lightDirection = normalize(vertexToLightSource);
+//    }
+//
+//    vec4 fragmentColor = vec4(0.0, 0.0, 0.0, 0.0);
+//    if (dot(normalDirection, lightDirection) > 0.0
+//    // light source on the right side?
+//        && attenuation *  pow(max(0.0, dot(reflect(-lightDirection, normalDirection), viewDirection)), _Shininess) > 0.5)
+//    // more than half highlight intensity?
+//    {
+//        fragmentColor = vec4(_LightColor0.rgb, 1.0) * _SpecColor;
+//    }
+
 }

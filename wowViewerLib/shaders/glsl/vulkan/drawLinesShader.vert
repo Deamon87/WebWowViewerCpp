@@ -1,5 +1,8 @@
 #version 450
 
+precision highp float;
+precision highp int;
+
 /* vertex shader code */
 layout(location = 0) in vec2 aPosition;
 

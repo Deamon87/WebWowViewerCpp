@@ -21,8 +21,8 @@ public:
     ~GShaderPermutationGL33() override {};
 
 protected:
-    explicit GShaderPermutationGL33(std::string &shaderName, IDevice *device);
-    explicit GShaderPermutationGL33(std::string &shaderNameVert, std::string &shaderNameFrag, IDevice *device);
+    explicit GShaderPermutationGL33(std::string &shaderName, const HGDevice &device);
+    explicit GShaderPermutationGL33(std::string &shaderNameVert, std::string &shaderNameFrag, const HGDevice &device);
 
     void compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) override;
     bool hasUnf(const HashedString name) {
@@ -41,7 +41,7 @@ protected:
 
     unsigned int m_programBuffer = 0;
 private:
-    IDevice *m_device;
+    HGDevice m_device;
 private:
     std::unordered_map<size_t, unsigned int> m_uniformMap;
     std::array<int, 5> m_uboBlockIndex;

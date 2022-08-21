@@ -8,7 +8,7 @@
 
 
 
-GVertexBufferGL33::GVertexBufferGL33(IDevice &device)  : m_device(dynamic_cast<GDeviceGL33 &>(device)) {
+GVertexBufferGL33::GVertexBufferGL33(const HGDevice &device)  : m_device(device) {
     pIdentifierBuffer = std::vector<char>(sizeof(GLuint));
     createBuffer();
 }
@@ -23,15 +23,15 @@ void GVertexBufferGL33::createBuffer() {
 
 void GVertexBufferGL33::destroyBuffer() {
     const GLuint indent = *(const GLuint *) &this->pIdentifierBuffer[0];
-    m_device.addDeallocationRecord([indent]() -> void {
+    m_device->addDeallocationRecord([indent]() -> void {
         glDeleteBuffers(1, &indent);
     });
 }
 
 static int vbo_uploaded = 0;
 void GVertexBufferGL33::uploadData(void * data, int length) {
-    m_device.bindVertexBufferBindings(nullptr);
-    m_device.bindVertexBuffer(this);
+    m_device->bindVertexBufferBindings(nullptr);
+    m_device->bindVertexBuffer(this);
 
     assert(m_buffCreated);
     if (!(length > 0 && length < (400*1024*1024))) {
@@ -52,7 +52,7 @@ void GVertexBufferGL33::uploadData(void * data, int length) {
 //        glUnmapBuffer(GL_ARRAY_BUFFER);
     }
 
-    m_device.bindVertexBuffer(nullptr);
+    m_device->bindVertexBuffer(nullptr);
     m_dataUploaded = true;
 }
 

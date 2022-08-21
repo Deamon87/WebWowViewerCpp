@@ -11,18 +11,31 @@
 #include "../include/iostuff.h"
 #include "../gapi/interface/IDevice.h"
 #include "SceneScenario.h"
-
+#include "algorithms/FrameCounter.h"
 
 class SceneComposer {
 private:
-    ApiContainer *m_apiContainer;
+    HApiContainer m_apiContainer = nullptr;
+
 private:
+
+
     std::thread cullingThread;
     std::thread updateThread;
     std::thread loadingResourcesThread;
 
-    bool m_supportThreads = false;
+    bool m_supportThreads = true;
     bool m_isTerminating = false;
+
+
+    FrameCounter singleUpdateCNT;
+    FrameCounter meshesCollectCNT;
+    FrameCounter updateBuffersCNT;
+    FrameCounter updateBuffersDeviceCNT;
+    FrameCounter postLoadCNT;
+    FrameCounter textureUploadCNT;
+    FrameCounter drawStageAndDepsCNT;
+    FrameCounter endUpdateCNT;
 
 
 
@@ -30,15 +43,45 @@ private:
     void DoUpdate();
     void processCaches(int limit);
 
-    std::promise<float> nextDeltaTime;
-    std::promise<float> nextDeltaTimeForUpdate;
+    //Flip-flop delta promises
+    std::array<std::promise<float>,2> nextDeltaTime;
+    std::array<std::promise<float>,2> nextDeltaTimeForUpdate;
     std::promise<bool> cullingFinished;
     std::promise<bool> updateFinished;
 
     std::array<HFrameScenario, 4> m_frameScenarios;
-public:
-    SceneComposer(ApiContainer *apiContainer);
 
+    int getPromiseInd() {
+        auto frameNum = m_apiContainer->hDevice->getFrameNumber();
+        auto promiseInd = frameNum & 1;
+        return promiseInd;
+    }
+    int getNextPromiseInd() {
+        auto frameNum = m_apiContainer->hDevice->getFrameNumber();
+        auto promiseInd = (frameNum + 1) & 1;
+        return promiseInd;
+    }
+public:
+    SceneComposer(HApiContainer apiContainer);
+    ~SceneComposer() {
+        m_isTerminating = true;
+        auto promiseInd = getPromiseInd();
+        try {
+            float delta = 1.0f;
+            nextDeltaTime[promiseInd].set_value(delta);
+        } catch (...) {}
+
+        cullingThread.join();
+
+        if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
+            try {
+                nextDeltaTimeForUpdate[promiseInd].set_value(1.0f);
+            } catch (...) {}
+            updateThread.join();
+        }
+
+        loadingResourcesThread.join();
+    }
 
     void draw(HFrameScenario frameScenario);
 };

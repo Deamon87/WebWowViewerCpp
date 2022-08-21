@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_M2OBJECT_H
 
 class M2Object;
+#define _USE_MATH_DEFINES
 
 #include <cstdint>
 #include "mathfu/glsl_mappings.h"
@@ -22,10 +23,13 @@ class M2Object;
 #include "mathfu/internal/vector_4.h"
 #include "../../managers/CRibbonEmitter.h"
 #include "../../ApiContainer.h"
+#include "m2Helpers/CBoneMasterData.h"
 
 class M2Object {
 public:
-    M2Object(ApiContainer *api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
+    friend class IExporter;
+
+    M2Object(HApiContainer api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
         m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox), m_overrideSkyModelMat(overrideSkyModelMat)
         {
     }
@@ -73,11 +77,13 @@ private:
     CAaBox aabb;
     CAaBox colissionAabb;
 
-    ApiContainer *m_api = nullptr;
+    HApiContainer m_api = nullptr;
 
     HM2Geom m_m2Geom = nullptr;
     HSkinGeom m_skinGeom = nullptr;
     HSkelGeom m_skelGeom = nullptr;
+    HSkelGeom m_parentSkelGeom = nullptr;
+    std::shared_ptr<CBoneMasterData> m_boneMasterData = nullptr;
 
     HGVertexBufferBindings bufferBindings = nullptr;
     HGUniformBufferChunk vertexModelWideUniformBuffer = nullptr;
@@ -94,11 +100,6 @@ private:
     bool animationOverrideActive = false;
     float animationOverridePercent = 0;
 
-    mathfu::vec4 m_sunDirOverride;
-    bool m_setSunDir = false;
-
-
-    bool m_hasBillboards = false;
     std::string m_modelName;
     std::string m_nameTemplate = "";
 
@@ -131,7 +132,10 @@ private:
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
-    std::vector<HGM2Mesh> m_meshArray;
+    std::vector<HGM2Mesh> m_meshNaturalArray;
+    std::vector<HGM2Mesh> m_meshForcedTranspArray;
+
+    //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, 4>> dynamicMeshes;
     std::vector<M2MaterialInst> m_materialArray;
     AnimationManager *m_animationManager;
@@ -155,7 +159,6 @@ private:
     void initRibbonEmitters();
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &modelViewMat);
-    bool checkIfHasBillboarded();
     bool checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *mesh);
 
 
@@ -163,8 +166,10 @@ private:
     void createBoundingBoxMesh();
 
     static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> &subMeshColors) ;
-    static float getTransparency(M2SkinProfile *skinData, int batchIndex, const std::vector<float> &transparencies) ;
+    static float getTextureWeight(M2SkinProfile *skinData, M2Data *m2data, int batchIndex, int textureIndex, const std::vector<float> &transparencies) ;
 public:
+
+    void testExport();
 
     void setAlwaysDraw(bool value) {
         m_alwaysDraw = value;
@@ -188,6 +193,7 @@ public:
                        std::vector<HBlpTexture> replaceTextures);
 
     void setReplaceTextures(std::vector<HBlpTexture> &replaceTextures);
+    void setMeshIds(std::vector<uint8_t> &meshIds);
     void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);
     void resetReplaceParticleColor();
     bool getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);
@@ -204,6 +210,7 @@ public:
     }
 
     void setAnimationId(int animationId);
+    int getCurrentAnimationIndex();
     void resetCurrentAnimation();
     void createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat);
     void createPlacementMatrix(SMDoodadDef &def);
@@ -223,21 +230,18 @@ public:
 
     float getHeight();
     void getAvailableAnimation(std::vector<int> &allAnimationList);
+    void getMeshIds(std::vector<int> &meshIdList);
+    mathfu::mat4 getTextureTransformByLookup(int textureTrasformlookup);
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
-    bool getHasBillboarded() {
-        return m_hasBillboards;
-    }
-    bool getIsInstancable();
 
-
-    bool prepearMatrial(M2MaterialInst &materialData, int materialIndex);
-    void collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder);
+    bool prepearMaterial(M2MaterialInst &materialData, int materialIndex);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
 
     bool setUseLocalLighting(bool value) {
-        if (hasModf0x2Flag) {
-            m_useLocalDiffuseColor = 0;
-        }
+//        if (hasModf0x2Flag) {
+//            m_useLocalDiffuseColor = 0;
+//        }
         if (m_useLocalDiffuseColor == -1) {
             m_useLocalDiffuseColor = value ? 1 : 0;
         }
@@ -249,6 +253,9 @@ public:
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
                                    const std::vector<mathfu::vec4> &frustumPlanes,
                                    const std::vector<mathfu::vec3> &frustumPoints);
+
+    bool isMainDataLoaded();
+    bool isGeomReqFilesLoaded();
 
     bool doPostLoad();
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
@@ -273,16 +280,10 @@ public:
         m_ambientColorOverride = ambientColor;
     }
 
-    void setSunDirOverride(mathfu::vec4 &sunDir, bool override) {
-        m_setSunDir = override;
-        m_sunDirOverride = sunDir;
-    }
-
-    void drawParticles(std::vector<HGMesh> &meshes, int renderOrder);
+    void drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes,  int renderOrder);
 
     void createVertexBindings();
 
-    mathfu::vec3 getSunDir();
     int getCameraNum() {
         if (!getGetIsLoaded()) return 0;
 
@@ -290,8 +291,9 @@ public:
     }
 
     HGM2Mesh createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
-                              const M2SkinSection *skinSection, M2MaterialInst &material);
+                              const M2SkinSection *skinSection, M2MaterialInst &material, EGxBlendEnum &blendMode, bool overrideBlend);
 
+    HGM2Mesh createWaterfallMesh();
     void updateDynamicMeshes();
 };
 

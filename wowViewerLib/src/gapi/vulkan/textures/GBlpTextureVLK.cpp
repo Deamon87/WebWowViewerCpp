@@ -7,9 +7,7 @@
 #include "../../../engine/texture/DxtDecompress.h"
 
 GBlpTextureVLK::GBlpTextureVLK(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
-    : GTextureVLK(device), m_texture(texture) {
-    this->m_wrapX = xWrapTex;
-    this->m_wrapY = yWrapTex;
+    : GTextureVLK(device,xWrapTex,yWrapTex), m_texture(texture) {
 }
 
 GBlpTextureVLK::~GBlpTextureVLK() {
@@ -18,7 +16,7 @@ GBlpTextureVLK::~GBlpTextureVLK() {
 
 
 static int texturesUploaded = 0;
-void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 //    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
 
     VkFormat textureFormatGPU;
@@ -40,8 +38,8 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
             textureFormatGPU = VK_FORMAT_BC3_UNORM_BLOCK;
             break;
 
-        case TextureFormat::BGRA:
-            textureFormatGPU = VK_FORMAT_B8G8R8A8_SNORM;
+        case TextureFormat::RGBA:
+            textureFormatGPU = VK_FORMAT_R8G8B8A8_UNORM;
             break;
 
         default:
@@ -50,10 +48,12 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
     }
 //    }
 
+    auto &mipmaps = *hmipmaps;
+
     /* S3TC is not supported on mobile platforms */
     bool compressedTextSupported = m_device.getIsCompressedTexturesSupported();
     if (!compressedTextSupported && textureFormat !=  TextureFormat::BGRA) {
-        this->decompressAndUpload(textureFormat, mipmaps);
+        this->decompressAndUpload(textureFormat, hmipmaps);
         return;
     }
 
@@ -67,7 +67,7 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
         std::copy(&mipmaps[i].texture[0], &mipmaps[i].texture[0]+mipmaps[i].texture.size(), std::back_inserter(unitedBuffer));
     }
 
-    createTexture(mipmaps, textureFormatGPU, unitedBuffer);
+    createTexture(hmipmaps, textureFormatGPU, unitedBuffer);
 }
 
 //bool GBlpTextureVLK::getIsLoaded() {
@@ -76,18 +76,21 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const MipmapsV
 
 bool GBlpTextureVLK::postLoad() {
     if (m_loaded) return false;
-    if (m_texture == nullptr) return false;
-    if (m_texture->getStatus() != FileStatus::FSLoaded) return false;
+    if (!m_uploaded) {
+        if (m_texture == nullptr) return false;
+        if (m_texture->getStatus() != FileStatus::FSLoaded) return false;
+    }
 
     if (m_uploaded) {
         return GTextureVLK::postLoad();
     } else {
         this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
+//        m_texture = nullptr;
         return false;
     }
 }
 
 
-void GBlpTextureVLK::decompressAndUpload(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+void GBlpTextureVLK::decompressAndUpload(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 
 }

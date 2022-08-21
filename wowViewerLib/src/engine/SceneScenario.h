@@ -32,6 +32,9 @@ struct CullStage {
 //Output:
     int adtAreadId = -1;
 
+    int areaId = -1;
+    int parentAreaId = -1;
+
     std::vector<WmoGroupResult> m_currentInteriorGroups = {};
     bool currentWmoGroupIsExtLit = false;
     bool currentWmoGroupShowExtSkybox = false;
@@ -40,6 +43,8 @@ struct CullStage {
 
     ExteriorView exteriorView = ExteriorView();
     std::vector<InteriorView> interiorViews = {};
+
+    HFrameDepedantData frameDepedantData = std::make_shared<FrameDepedantData>();
 
     std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
     std::vector<std::shared_ptr<M2Object>> m2Array = {};
@@ -52,6 +57,14 @@ struct UpdateStage {
     HCullStage cullResult;
     animTime_t delta;
     HCameraMatrices cameraMatrices;
+
+//Output
+    HMeshesToRender opaqueMeshes;
+    HMeshesToRender transparentMeshes;
+
+    std::vector<HGUniformBufferChunk> uniformBufferChunks;
+    std::vector<HGTexture> texturesForUpload;
+    //
 };
 typedef std::shared_ptr<UpdateStage> HUpdateStage;
 
@@ -81,11 +94,11 @@ public:
     HDrawStage addDrawStage(HUpdateStage updateStage,
                             HScene scene,
                             HCameraMatrices matricesForDrawing,
-                            const std::vector<HDrawStage> &drawStageDependencies,
+                            std::vector<HDrawStage> const &drawStageDependencies,
                             bool setViewPort,
-                            const ViewPortDimensions &viewPortDimensions,
-                            bool clearScreen,
-                            const mathfu::vec4 &clearColor, HFrameBuffer fbTarget);
+                            ViewPortDimensions const &viewPortDimensions,
+                            bool clearScreen, bool invertedZ,
+                            mathfu::vec4 const &clearColor, HFrameBuffer fbTarget);
 
     HDrawStage getDrawStage();
 };

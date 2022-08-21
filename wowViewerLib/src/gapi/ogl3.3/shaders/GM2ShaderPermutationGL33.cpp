@@ -5,7 +5,7 @@
 #include "GM2ShaderPermutationGL33.h"
 #include <string>
 
-GM2ShaderPermutationGL33::GM2ShaderPermutationGL33(std::string &shaderName, IDevice *device, M2ShaderCacheRecord &permutation) :
+GM2ShaderPermutationGL33::GM2ShaderPermutationGL33(std::string &shaderName, const HGDevice &device, M2ShaderCacheRecord &permutation) :
                         GShaderPermutationGL33(shaderName, device) , permutation(permutation) {}
 
 void GM2ShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
@@ -29,8 +29,10 @@ void GM2ShaderPermutationGL33::compileShader(const std::string &vertExtraDef, co
     //Init newly created shader
     glUseProgram(this->m_programBuffer);
 
+//    std::cout << "before setting uTextures" << std::endl;
     if (hasUnf("uTexture")) {
         glUniform1i(this->getUnf("uTexture"), 0);
+//        std::cout << "uTexture location " << this->getUnf("uTexture") << "was set" << std::endl;
     }
     if (hasUnf("uTexture2")) {
         glUniform1i(this->getUnf("uTexture2"), 1);

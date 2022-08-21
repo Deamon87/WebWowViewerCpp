@@ -5,6 +5,7 @@
 #include "mathHelper.h"
 #include "grahamScan.h"
 #include <cmath>
+#include <array>
 
 
 float MathHelper::fp69ToFloat(uint16_t x) {
@@ -93,7 +94,7 @@ std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(mathfu::mat4 &ma
 
     for (int i = 0; i < 6; i++) {
         //Hand made normalize
-        float invVecLength = 1 / (planes[i].xyz().Length());
+        float invVecLength = 1.0f / (planes[i].xyz().Length());
         planes[i] = planes[i] * invVecLength;
     }
 
@@ -303,15 +304,15 @@ bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAa
         if (out == 8) return false;
     }
 
-    // check frustum outside/inside box
-//    if (points.size() > 0) {
-//        int out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x > box.max.x) ? 1 : 0); if (out == 8) return false;
-//            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x < box.min.x) ? 1 : 0); if (out == 8) return false;
-//            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y > box.max.y) ? 1 : 0); if (out == 8) return false;
-//            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y < box.min.y) ? 1 : 0); if (out == 8) return false;
-//            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z > box.max.z) ? 1 : 0); if (out == 8) return false;
-//            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z < box.min.z) ? 1 : 0); if (out == 8) return false;
-//    }
+//     check frustum outside/inside box
+    if (points.size() > 0) {
+        int out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x > box.max.x) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x < box.min.x) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y > box.max.y) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y < box.min.y) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z > box.max.z) ? 1 : 0); if (out == 8) return false;
+            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z < box.min.z) ? 1 : 0); if (out == 8) return false;
+    }
 
     return true;
 }
@@ -633,4 +634,177 @@ bool MathHelper::isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, con
 //    }
 
     return false;
+}
+
+bool MathHelper::isAabbIntersect2d(CAaBox a, CAaBox b) {
+
+    bool result = (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
+               (a.min.y <= b.max.y && a.max.y >= b.min.y);
+
+    return result;
+}
+
+mathfu::vec3 MathHelper::calcExteriorColorDir(mathfu::mat4 lookAtMat, int time) {
+    // Phi Table
+    static const std::array<std::array<float, 2>, 4> phiTable = {
+        {
+            { 0.0f,  2.2165682f },
+            { 0.25f, 1.9198623f },
+            { 0.5f,  2.2165682f },
+            { 0.75f, 1.9198623f }
+        }
+    };
+
+    // Theta Table
+
+
+    static const std::array<std::array<float, 2>, 4> thetaTable = {
+        {
+            {0.0f, 3.926991f},
+            {0.25f, 3.926991f},
+            { 0.5f,  3.926991f },
+            { 0.75f, 3.926991f }
+        }
+    };
+
+//    float phi = DayNight::InterpTable(&DayNight::phiTable, 4u, DayNight::g_dnInfo.dayProgression);
+//    float theta = DayNight::InterpTable(&DayNight::thetaTable, 4u, DayNight::g_dnInfo.dayProgression);
+
+    float phi = phiTable[0][1];
+    float theta = thetaTable[0][1];
+
+    //Find Index
+    float timeF = time / 2880.0f;
+    int firstIndex = -1;
+    for (int i = 0; i < 4; i++) {
+        if (timeF < phiTable[i][0]) {
+            firstIndex = i;
+            break;
+        }
+    }
+    if (firstIndex == -1) {
+        firstIndex = 3;
+    }
+    {
+        float alpha =  (phiTable[firstIndex][0] -  timeF) / (thetaTable[firstIndex][0] - thetaTable[firstIndex-1][0]);
+        phi = phiTable[firstIndex][1]*(1.0 - alpha) + phiTable[firstIndex - 1][1]*alpha;
+    }
+
+
+    // Convert from spherical coordinates to XYZ
+    // x = rho * sin(phi) * cos(theta)
+    // y = rho * sin(phi) * sin(theta)
+    // z = rho * cos(phi)
+
+    float sinPhi = (float) sin(phi);
+    float cosPhi = (float) cos(phi);
+
+    float sinTheta = (float) sin(theta);
+    float cosTheta = (float) cos(theta);
+
+    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
+
+    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
+//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
+    return (lookAtRotation * sunDirWorld.xyz());
+}
+
+mathfu::vec3 MathHelper::hsv2rgb(MathHelper::hsv in) {
+    double      hh, p, q, t, ff;
+    long        i;
+    mathfu::vec3    out;
+
+    if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
+        out.x = in.v;
+        out.y = in.v;
+        out.z = in.v;
+        return out;
+    }
+    hh = in.h;
+    if(hh >= 360.0) hh = 0.0;
+    hh /= 60.0;
+    i = (long)hh;
+    ff = hh - i;
+    p = in.v * (1.0 - in.s);
+    q = in.v * (1.0 - (in.s * ff));
+    t = in.v * (1.0 - (in.s * (1.0 - ff)));
+
+    switch(i) {
+        case 0:
+            out.x = in.v;
+            out.y = t;
+            out.z = p;
+            break;
+        case 1:
+            out.x = q;
+            out.y = in.v;
+            out.z = p;
+            break;
+        case 2:
+            out.x = p;
+            out.y = in.v;
+            out.z = t;
+            break;
+
+        case 3:
+            out.x = p;
+            out.y = q;
+            out.z = in.v;
+            break;
+        case 4:
+            out.x = t;
+            out.y = p;
+            out.z = in.v;
+            break;
+        case 5:
+        default:
+            out.x = in.v;
+            out.y = p;
+            out.z = q;
+            break;
+    }
+    return out;
+}
+
+MathHelper::hsv MathHelper::rgb2hsv(mathfu::vec3 in) {
+    hsv         out;
+    double      min, max, delta;
+
+    min = in.x < in.y ? in.x : in.y;
+    min = min  < in.z ? min  : in.z;
+
+    max = in.x > in.y ? in.x : in.y;
+    max = max  > in.z ? max  : in.z;
+
+    out.v = max;                                // v
+    delta = max - min;
+    if (delta < 0.00001)
+    {
+        out.s = 0;
+        out.h = 0; // undefined, maybe nan?
+        return out;
+    }
+    if( max > 0.0 ) { // NOTE: if Max is == 0, this divide would cause a crash
+        out.s = (delta / max);                  // s
+    } else {
+        // if max is 0, then r = g = b = 0
+        // s = 0, h is undefined
+        out.s = 0.0;
+        out.h = -1; //NAN;                            // its now undefined
+        return out;
+    }
+    if( in.x >= max )                           // > is bogus, just keeps compilor happy
+        out.h = ( in.y - in.z ) / delta;        // between yellow & magenta
+    else
+    if( in.y >= max )
+        out.h = 2.0 + ( in.z - in.x ) / delta;  // between cyan & yellow
+    else
+        out.h = 4.0 + ( in.x - in.y ) / delta;  // between magenta & cyan
+
+    out.h *= 60.0;                              // degrees
+
+    if( out.h < 0.0 )
+        out.h += 360.0;
+
+    return out;
 }

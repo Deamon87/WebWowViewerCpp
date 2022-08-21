@@ -12,7 +12,7 @@
 
 class IDeviceFactory {
 public:
-    static std::shared_ptr<IDevice> createDevice(std::string gapiName, void* data);
+    static HGDevice createDevice(std::string gapiName, void* data);
 
 };
 

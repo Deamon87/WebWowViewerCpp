@@ -14,6 +14,7 @@ struct UserDataForRequest {
     std::string fileName;
     CacheHolderType holderType;
     HttpRequestProcessor *processor;
+    std::shared_ptr<PersistentFile> s_file;
 };
 
 //void downloadProgress(emscripten_fetch_t *fetch) {
@@ -44,12 +45,8 @@ void downloadSucceeded(emscripten_fetch_t *fetch) {
             return;
         }
 
-
-        userDataForRequest->processor->provideResult(userDataForRequest->fileName, fileContent,
-                                                     userDataForRequest->holderType);
-        userDataForRequest->processor->currentlyProcessing--;
-
-
+        userDataForRequest->s_file->process(fileContent, userDataForRequest->fileName);
+        userDataForRequest->processor->toBeProcessed--;
 
         // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
         delete userDataForRequest;
@@ -63,7 +60,7 @@ void downloadSucceeded(emscripten_fetch_t *fetch) {
 void downloadFailed(emscripten_fetch_t *fetch) {
     printf("Downloading %s failed, HTTP failure status code: %d.\n", fetch->url, fetch->status);
     UserDataForRequest * userDataForRequest = (UserDataForRequest *)fetch->userData;
-    userDataForRequest->processor->currentlyProcessing--;
+    userDataForRequest->processor->toBeProcessed--;
 
     emscripten_fetch_close(fetch); // Also free data on failure.
 
@@ -87,12 +84,6 @@ std::string char_to_escape( char i )
     return stream.str();
 }
 
-void HttpRequestProcessor::requestFile(const char *fileName, CacheHolderType holderType) {
-    std::string fileName_s(fileName);
-    this->addRequest(fileName_s, holderType);
-}
-
-
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
@@ -102,7 +93,12 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
     return str;
 }
 
-void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType) {
+void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
+    auto perstFile = s_file.lock();
+    if (perstFile == nullptr){
+        toBeProcessed--;
+        return;
+    }
 //    std::cout << "processFileRequest : filename = " << fileName << std::endl;
 
     const std::string charsToEscape = " !*'();:@&=+$,/?#[]";
@@ -122,7 +118,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         ss >> fileDataId;
 
         if (fileDataId == 0) {
-            currentlyProcessing--;
+            toBeProcessed--;
             return;
         }
 
@@ -137,6 +133,7 @@ void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     userDataForRequest->fileName = fileName;
     userDataForRequest->holderType = holderType;
     userDataForRequest->processor = this;
+    userDataForRequest->s_file = perstFile;
 
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);

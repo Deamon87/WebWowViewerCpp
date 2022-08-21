@@ -1,0 +1,83 @@
+plugins {
+    id 'com.android.application'
+}
+
+def Properties properties = new Properties()
+def String python_exe = new String("")
+def String glsl_validator_exe = new String("")
+def String spirv_reflection_exe = new String("")
+def String assetsFolderAbsolutePath = files("./src/main/assets")[0].getAbsolutePath();
+assetsFolderAbsolutePath = assetsFolderAbsolutePath.replaceAll("\\\\", "/").toString()
+
+if (project.rootProject.file('local.properties').canRead()) {
+    properties.load(new FileInputStream(project.rootProject.file('local.properties')))
+    glsl_validator_exe = properties.getProperty("glsl.validator.exe").toString().trim()
+    python_exe = properties.getProperty("python.exe").toString()
+    spirv_reflection_exe = properties.getProperty("spirv.reflection.exe").toString().trim()
+} else {
+    throw new GradleException("Could not read local.properties!")
+}
+
+android {
+    compileSdk 29
+    buildToolsVersion "30.0.0"
+    ndkVersion "23.0.7599858"
+
+    defaultConfig {
+        applicationId "com.deamon.wow.viewer"
+        minSdkVersion 24
+        targetSdkVersion 30
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                targets "AWebWoWViewerCpp"
+                arguments "-DPATH_TO_NATIVE_GLSL_VALIDATOR=${glsl_validator_exe} ",
+                        "-DPATH_TO_NATIVE_SPIRV_REFLECTION=${spirv_reflection_exe} ",
+                        "-DANDROID_ASSETSFOLDER =${assetsFolderAbsolutePath}",
+                        "-DPYTHON_EXECUTABLE=${python_exe} "
+                cppFlags "-DUSEES3=1"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    externalNativeBuild {
+        cmake {
+            version "3.18.1"
+            path file('cpp/CMakeLists.txt')
+
+//            cppFlags.add("-std=c++11")
+//            targets "AWebWoWViewerCpp"
+        }
+    }
+    packagingOptions{
+        doNotStrip "*/armeabi/*.so"
+        doNotStrip "*/armeabi-v7a/*.so"
+        doNotStrip "*/arm64-v8a/*.so"
+        doNotStrip "*/x86/*.so"
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.3.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.0'
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+}

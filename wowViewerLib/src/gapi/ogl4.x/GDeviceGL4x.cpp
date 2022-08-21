@@ -416,7 +416,7 @@ void GDeviceGL4x::drawMesh(HGMesh hIMesh) {
     }
 
     if (m_lastBlendMode != hmesh->m_blendMode) {
-        BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
+        BlendModeDesc &selectedBlendMode = GL33::blendModes[(char)hmesh->m_blendMode];
         if ((m_lastBlendMode == EGxBlendEnum::GxBlend_UNDEFINED) ||
             (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
             if (selectedBlendMode.blendModeEnable) {

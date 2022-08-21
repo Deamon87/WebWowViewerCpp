@@ -7,7 +7,7 @@
 auto GFFXGlow_vertShaderName = std::string("drawQuad");
 auto GFFXGlow_fragShaderName = std::string("ffxglow");
 
-GFFXGlow::GFFXGlow(std::string &shaderName, IDevice *device) :
+GFFXGlow::GFFXGlow(std::string &shaderName, const HGDevice &device) :
     GShaderPermutationGL33(GFFXGlow_vertShaderName, GFFXGlow_fragShaderName, device) {
 }
 

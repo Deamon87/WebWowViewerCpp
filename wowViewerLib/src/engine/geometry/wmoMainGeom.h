@@ -27,45 +27,51 @@ public:
     SMOHeader *header;
 
     PointerChecker<SMOGroupInfo> groups = (groupsLen);
-    int groupsLen;
+    int groupsLen = 0;
 
     std::vector<std::vector<uint32_t>> gfids;
 
     PointerChecker<C3Vector> portal_vertices = (portal_verticesLen);
-    int portal_verticesLen;
+    int portal_verticesLen = 0;
 
     PointerChecker<SMOPortal> portals = (portalsLen);
-    int portalsLen;
+    int portalsLen = 0;
 
     PointerChecker<SMOPortalRef> portalReferences = (portalReferencesLen);
-    int portalReferencesLen;
+    int portalReferencesLen = 0;
 
     PointerChecker<SMOMaterial> materials = (materialsLen);
-    int materialsLen;
+    int materialsLen = 0;
 
     PointerChecker<char> textureNamesField = (textureNamesFieldLen);
     int textureNamesFieldLen = 0;
 
     PointerChecker<char> doodadNamesField = (doodadNamesFieldLen);
-    int doodadNamesFieldLen;
+    int doodadNamesFieldLen = 0;
 
     PointerChecker<int> doodadFileDataIds = (doodadFileDataIdsLen);
     int doodadFileDataIdsLen = 0;
 
     PointerChecker<SMODoodadSet> doodadSets = (doodadSetsLen);
-    int doodadSetsLen;
+    int doodadSetsLen = 0;
 
     PointerChecker<SMODoodadDef> doodadDefs = (doodadDefsLen);
-    int doodadDefsLen;
+    int doodadDefsLen = 0;
 
     PointerChecker<SMOLight> lights = (lightsLen);
     int lightsLen = 0;
 
     PointerChecker<SMOFog> fogs = (fogsLen);
-    int fogsLen;
+    int fogsLen = 0;
 
     PointerChecker<char> skyBoxM2FileName = (skyBoxM2FileNameLen);
     int skyBoxM2FileNameLen = 0;
+
+    PointerChecker<MAVG> mavgs = (mavgsLen);
+    int mavgsLen = 0;
+
+    PointerChecker<mathfu::vec4_packed> convexVolumePlanes = (convexVolumePlanesLen);
+    int convexVolumePlanesLen = 0;
 
     int skyboxM2FileId = 0;
 };

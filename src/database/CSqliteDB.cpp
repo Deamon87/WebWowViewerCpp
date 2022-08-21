@@ -10,58 +10,78 @@
 
 CSqliteDB::CSqliteDB(std::string dbFileName) :
     m_sqliteDatabase(dbFileName, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE),
-    getWmoAreaAreaName(m_sqliteDatabase,
-        "select wat.AreaName_lang as wmoAreaName, at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from WMOAreaTable wat "
-        "left join AreaTable at on at.id = wat.AreaTableID "
-        "where wat.WMOID = ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC"),
+    getWmoAreaAreaName(m_sqliteDatabase, R"===(
+        select wat.AreaName_lang as wmoAreaName, at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from WMOAreaTable wat
+        left join AreaTable at on at.id = wat.AreaTableID
+        where wat.WMOID = ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC
+        )==="),
     getAreaNameStatement(m_sqliteDatabase,
         "select at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from AreaTable at where at.ID = ?"),
 
     getLightStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow, IFNULL(ls.Flags, 0) from Light l "
-        "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
-        "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
-        " where  "
-        "   ((l.ContinentID = ?) and (( "
-        "    abs(l.GameCoords_0 - ?) < l.GameFalloffEnd and "
-        "    abs(l.GameCoords_1 - ?) < l.GameFalloffEnd and "
-        "    abs(l.GameCoords_2 - ?) < l.GameFalloffEnd "
-        "  ) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0))) "
-        "    or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)  "
-        "ORDER BY l.ID desc"),
+        R"===(
+        select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0,
+            IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow, IFNULL(ls.Flags, 0)
+        from Light l
+            left join LightParams lp on lp.ID = l.LightParamsID_0
+            left join LightSkybox ls on ls.ID = lp.LightSkyboxID
+         where
+           ((l.ContinentID = ?) and ((
+            abs(l.GameCoords_0 - ?) < l.GameFalloffEnd and
+            abs(l.GameCoords_1 - ?) < l.GameFalloffEnd and
+            abs(l.GameCoords_2 - ?) < l.GameFalloffEnd
+          ) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0)))
+            or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)
+        ORDER BY l.ID desc
+        )==="),
     getLightByIdStatement(m_sqliteDatabase,
-        "select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0, IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow, IFNULL(ls.Flags, 0) from Light l "
-        "    left join LightParams lp on lp.ID = l.LightParamsID_0 "
-        "    left join LightSkybox ls on ls.ID = lp.LightSkyboxID "
-        " where l.ID = ?"),
+      R"===(
+        select l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0,
+        IFNULL(ls.SkyboxFileDataID, 0), IFNULL(lp.LightSkyboxID, 0), lp.Glow, IFNULL(ls.Flags, 0) from Light l
+        left join LightParams lp on lp.ID = l.LightParamsID_0
+        left join LightSkybox ls on ls.ID = lp.LightSkyboxID
+        where l.ID = ?
+      )==="),
     getLightData(m_sqliteDatabase,
-        "select ld.AmbientColor, ld.HorizonAmbientColor, ld.GroundAmbientColor, ld.DirectColor, ld.RiverCloseColor, "
-        "ld.SkyTopColor, ld.SkyMiddleColor, ld.SkyBand1Color, ld.SkyBand2Color, ld.SkySmogColor, ld.SkyFogColor, "
-        "ld.FogEnd, ld.FogScaler, ld.FogDensity, ld.FogHeight, ld.FogHeightScaler, ld.FogHeightDensity, ld.SunFogAngle, "
-        "ld.EndFogColor, ld.EndFogColorDistance, ld.SunFogColor, ld.SunFogStrength, ld.FogHeightColor, "
-        "ld.FogHeightCoefficients_0, ld.FogHeightCoefficients_1, ld.FogHeightCoefficients_2, ld.FogHeightCoefficients_3, "
-        "ld.Time from LightData ld "
-        "where ld.LightParamID = ? ORDER BY Time ASC"
+    R"===(
+        select ld.AmbientColor, ld.HorizonAmbientColor, ld.GroundAmbientColor, ld.DirectColor,
+        ld.RiverCloseColor, ld.RiverFarColor, ld.OceanCloseColor, ld.OceanFarColor,
+        ld.SkyTopColor, ld.SkyMiddleColor, ld.SkyBand1Color, ld.SkyBand2Color, ld.SkySmogColor, ld.SkyFogColor,
+        ld.FogEnd, ld.FogScaler, ld.FogDensity, ld.FogHeight, ld.FogHeightScaler, ld.FogHeightDensity, ld.SunFogAngle,
+        ld.EndFogColor, ld.EndFogColorDistance, ld.SunFogColor, ld.SunFogStrength, ld.FogHeightColor,
+        ld.FogHeightCoefficients_0, ld.FogHeightCoefficients_1, ld.FogHeightCoefficients_2, ld.FogHeightCoefficients_3,
+        ld.Time from LightData ld
+        where ld.LightParamID = ? ORDER BY Time ASC
+        )==="
         ),
     getLiquidObjectInfo(m_sqliteDatabase,
-        "select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.MinimapStaticCol from LiquidObject lo "
-        "left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lo.LiquidTypeID "
-        "left join LiquidType lt on lt.ID = lo.LiquidTypeID "
-        "left join LiquidMaterial lm on lt.MaterialID = lm.ID "
-        "where lo.ID = ? "
+    R"===(
+        select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidObject lo
+        left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lo.LiquidTypeID
+        left join LiquidType lt on lt.ID = lo.LiquidTypeID
+        left join LiquidMaterial lm on lt.MaterialID = lm.ID
+        where lo.ID = ?
+        )==="
     ),
     getLiquidTypeInfo(m_sqliteDatabase,
-        "select ltxt.FileDataID from LiquidTypeXTexture ltxt "
-        "where ltxt.LiquidTypeID = ? order by ltxt.OrderIndex"
+  R"===(
+        select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidType lt
+        left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lt.ID
+        where lt.ID = ? order by ltxt.OrderIndex
+        )==="
     ),
     getZoneLightInfo(m_sqliteDatabase,
         "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"
     ),
     getZoneLightPointsInfo(m_sqliteDatabase,
         "select Pos_0, Pos_1 from ZoneLightPoint where ZoneLightID = ? order by PointOrder;"
+    ),
+    getMapList(m_sqliteDatabase,
+        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.WdtFileDataID > 0"
+    ),
+    getMapByIdStatement(m_sqliteDatabase,
+       "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.ID = ?"
     )
-
-
 {
     char *sErrMsg = "";
     sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA synchronous = OFF", NULL, NULL, &sErrMsg);
@@ -71,7 +91,7 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
 }
 
 void CSqliteDB::getMapArray(std::vector<MapRecord> &mapRecords) {
-    SQLite::Statement getMapList(m_sqliteDatabase, "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.WdtFileDataID > 0");
+    getMapList.reset();
 
     while (getMapList.executeStep())
     {
@@ -154,6 +174,11 @@ void initWithZeros(float *colorF) {
     colorF[1] = 0;
     colorF[2] = 0;
 }
+void initWithZeros(std::array<float, 3> &colorF) {
+    colorF[0] = 0;
+    colorF[1] = 0;
+    colorF[2] = 0;
+}
 void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
     colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
                                     getFloatFromInt<0>(lastLdRes) *
@@ -165,11 +190,28 @@ void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlpha
                                     getFloatFromInt<2>(lastLdRes) *
                                     (1.0 - timeAlphaBlend)) * innerAlpha;
 }
+void blendTwoAndAdd(std::array<float, 3> &colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
+    colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
+                  getFloatFromInt<0>(lastLdRes) *
+                  (1.0 - timeAlphaBlend)) * innerAlpha;
+    colorF[1] += (getFloatFromInt<1>(currLdRes) * timeAlphaBlend +
+                  getFloatFromInt<1>(lastLdRes) *
+                  (1.0 - timeAlphaBlend)) * innerAlpha;
+    colorF[2] += (getFloatFromInt<2>(currLdRes) * timeAlphaBlend +
+                  getFloatFromInt<2>(lastLdRes) *
+                  (1.0 - timeAlphaBlend)) * innerAlpha;
+}
 void blendTwoAndAdd(float &colorF, float currLdRes, float lastLdRes, float timeAlphaBlend, float innerAlpha) {
     colorF += (currLdRes * timeAlphaBlend + lastLdRes * (1.0 - timeAlphaBlend)) * innerAlpha;
 }
 
 void addOnlyOne(float *colorF, int currLdRes, float innerAlpha) {
+    colorF[0] += getFloatFromInt<0>(currLdRes) * innerAlpha;
+    colorF[1] += getFloatFromInt<1>(currLdRes) * innerAlpha;
+    colorF[2] += getFloatFromInt<2>(currLdRes) * innerAlpha;
+}
+
+void addOnlyOne(std::array<float, 3> &colorF, int currLdRes, float innerAlpha) {
     colorF[0] += getFloatFromInt<0>(currLdRes) * innerAlpha;
     colorF[1] += getFloatFromInt<1>(currLdRes) * innerAlpha;
     colorF[2] += getFloatFromInt<2>(currLdRes) * innerAlpha;
@@ -273,7 +315,11 @@ void CSqliteDB::addOnlyOne(LightResult &lightResult,
     ::addOnlyOne(lightResult.groundAmbientColor, currLdRes.groundAmbientColor, innerAlpha);
 
     ::addOnlyOne(lightResult.directColor, currLdRes.directLight, innerAlpha);
+
     ::addOnlyOne(lightResult.closeRiverColor, currLdRes.closeRiverColor, innerAlpha);
+    ::addOnlyOne(lightResult.farRiverColor, currLdRes.farRiverColor, innerAlpha);
+    ::addOnlyOne(lightResult.closeOceanColor, currLdRes.closeOceanColor, innerAlpha);
+    ::addOnlyOne(lightResult.farOceanColor, currLdRes.farOceanColor, innerAlpha);
 
     ::addOnlyOne(lightResult.SkyTopColor, currLdRes.SkyTopColor, innerAlpha);
     ::addOnlyOne(lightResult.SkyMiddleColor, currLdRes.SkyMiddleColor, innerAlpha);
@@ -318,6 +364,15 @@ void CSqliteDB::blendTwoAndAdd(LightResult &lightResult, const CSqliteDB::InnerL
 
     ::blendTwoAndAdd(lightResult.closeRiverColor,
                      currLdRes.closeRiverColor, lastLdRes.closeRiverColor,
+                     timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.farRiverColor,
+                     currLdRes.farRiverColor, lastLdRes.farRiverColor,
+                     timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.closeOceanColor,
+                     currLdRes.closeOceanColor, lastLdRes.closeOceanColor,
+                     timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.farOceanColor,
+                     currLdRes.farOceanColor, lastLdRes.farOceanColor,
                      timeAlphaBlend, innerAlpha);
 
     ::blendTwoAndAdd(lightResult.SkyTopColor,
@@ -375,6 +430,9 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         initWithZeros(lightResult.groundAmbientColor);
         initWithZeros(lightResult.directColor);
         initWithZeros(lightResult.closeRiverColor);
+        initWithZeros(lightResult.farRiverColor);
+        initWithZeros(lightResult.closeOceanColor);
+        initWithZeros(lightResult.farOceanColor);
 
         initWithZeros(lightResult.SkyTopColor);
         initWithZeros(lightResult.SkyMiddleColor);
@@ -387,14 +445,27 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         initWithZeros(lightResult.SunFogColor);
         initWithZeros(lightResult.FogHeightColor);
         initWithZeros(lightResult.FogHeightCoefficients);
-        lightResult.FogHeightCoefficients[4] = 0;
+        lightResult.FogHeightCoefficients[3] = 0;
 
         lightResult.skyBoxFdid = 0;
         lightResult.lightSkyboxId = 0;
+        lightResult.lightParamId = 0;
+
+        lightResult.FogEnd = 0.0;
+        lightResult.FogScaler = 0.0;
+        lightResult.FogDensity = 0.0;
+        lightResult.FogHeight = 0.0;
+        lightResult.FogHeightScaler = 0.0;
+        lightResult.FogHeightDensity = 0.0;
+        lightResult.SunFogAngle = 0.0;
+        lightResult.EndFogColorDistance = 0.0;
+        lightResult.SunFogStrength = 0.0;
+
 
 
         auto &innerResult = innerResults[i];
         lightResult.isDefault = innerResult.isDefault;
+        lightResult.lightParamId = innerResult.paramId;
 
         getLightData.reset();
 
@@ -428,33 +499,37 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             }
 
             currLdRes.directLight = getLightData.getColumn(3);
+
             currLdRes.closeRiverColor = getLightData.getColumn(4);
+            currLdRes.farRiverColor = getLightData.getColumn(5);
+            currLdRes.closeOceanColor = getLightData.getColumn(6);
+            currLdRes.farOceanColor = getLightData.getColumn(7);
 
-            currLdRes.SkyTopColor = getLightData.getColumn(5);
-            currLdRes.SkyMiddleColor = getLightData.getColumn(6);
-            currLdRes.SkyBand1Color = getLightData.getColumn(7);
-            currLdRes.SkyBand2Color = getLightData.getColumn(8);
-            currLdRes.SkySmogColor = getLightData.getColumn(9);
-            currLdRes.SkyFogColor = getLightData.getColumn(10);
+            currLdRes.SkyTopColor = getLightData.getColumn(8);
+            currLdRes.SkyMiddleColor = getLightData.getColumn(9);
+            currLdRes.SkyBand1Color = getLightData.getColumn(10);
+            currLdRes.SkyBand2Color = getLightData.getColumn(11);
+            currLdRes.SkySmogColor = getLightData.getColumn(12);
+            currLdRes.SkyFogColor = getLightData.getColumn(13);
 
-            currLdRes.FogEnd = getLightData.getColumn(11).getDouble();
-            currLdRes.FogScaler = getLightData.getColumn(12).getDouble();
-            currLdRes.FogDensity = getLightData.getColumn(13).getDouble();
-            currLdRes.FogHeight = getLightData.getColumn(14).getDouble();
-            currLdRes.FogHeightScaler = getLightData.getColumn(15).getDouble();
-            currLdRes.FogHeightDensity = getLightData.getColumn(16).getDouble();
-            currLdRes.SunFogAngle = getLightData.getColumn(17).getDouble();
-            currLdRes.EndFogColor = getLightData.getColumn(18);
-            currLdRes.EndFogColorDistance = getLightData.getColumn(19).getDouble();
-            currLdRes.SunFogColor = getLightData.getColumn(20);
-            currLdRes.SunFogStrength = getLightData.getColumn(21).getDouble();
-            currLdRes.FogHeightColor = getLightData.getColumn(22);
-            currLdRes.FogHeightCoefficients[0] = getLightData.getColumn(23).getDouble();
-            currLdRes.FogHeightCoefficients[1] = getLightData.getColumn(24).getDouble();
-            currLdRes.FogHeightCoefficients[2] = getLightData.getColumn(25).getDouble();
-            currLdRes.FogHeightCoefficients[3] = getLightData.getColumn(26).getDouble();
+            currLdRes.FogEnd = getLightData.getColumn(14).getDouble();
+            currLdRes.FogScaler = getLightData.getColumn(15).getDouble();
+            currLdRes.FogDensity = getLightData.getColumn(16).getDouble();
+            currLdRes.FogHeight = getLightData.getColumn(17).getDouble();
+            currLdRes.FogHeightScaler = getLightData.getColumn(18).getDouble();
+            currLdRes.FogHeightDensity = getLightData.getColumn(19).getDouble();
+            currLdRes.SunFogAngle = getLightData.getColumn(20).getDouble();
+            currLdRes.EndFogColor = getLightData.getColumn(21);
+            currLdRes.EndFogColorDistance = getLightData.getColumn(22).getDouble();
+            currLdRes.SunFogColor = getLightData.getColumn(23);
+            currLdRes.SunFogStrength = getLightData.getColumn(24).getDouble();
+            currLdRes.FogHeightColor = getLightData.getColumn(25);
+            currLdRes.FogHeightCoefficients[0] = getLightData.getColumn(26).getDouble();
+            currLdRes.FogHeightCoefficients[1] = getLightData.getColumn(27).getDouble();
+            currLdRes.FogHeightCoefficients[2] = getLightData.getColumn(28).getDouble();
+            currLdRes.FogHeightCoefficients[3] = getLightData.getColumn(29).getDouble();
 
-            currLdRes.time = getLightData.getColumn(27);
+            currLdRes.time = getLightData.getColumn(30);
 
             if (!currLdRes.EndFogColor) {
                 currLdRes.EndFogColor = currLdRes.SkyFogColor;
@@ -488,6 +563,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             addOnlyOne(lightResult, lastLdRes, innerAlpha);
         }
 
+
         lightResults.push_back(lightResult);
 
         totalSummator += innerResult.blendAlpha;
@@ -511,17 +587,43 @@ void CSqliteDB::getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &
         lm.color1[0] = getFloatFromInt<0>(color1);
         lm.color1[1] = getFloatFromInt<1>(color1);
         lm.color1[2] = getFloatFromInt<2>(color1);
+        int color2 = getLiquidObjectInfo.getColumn(4).getInt();
+        lm.color2[0] = getFloatFromInt<0>(color2);
+        lm.color2[1] = getFloatFromInt<1>(color2);
+        lm.color2[2] = getFloatFromInt<2>(color2);
+        lm.flags = getLiquidObjectInfo.getColumn(5).getInt();
+        int minimapStaticCol = getLiquidObjectInfo.getColumn(6).getInt();
+        lm.minimapStaticCol[0] = getFloatFromInt<0>(minimapStaticCol);
+        lm.minimapStaticCol[1] = getFloatFromInt<1>(minimapStaticCol);
+        lm.minimapStaticCol[2] = getFloatFromInt<2>(minimapStaticCol);
+
 
         loData.push_back(lm);
     }
 }
 
-void CSqliteDB::getLiquidTypeData(int liquidTypeId, std::vector<int > &fileDataIds) {
+void CSqliteDB::getLiquidTypeData(int liquidTypeId, std::vector<LiquidTypeData > &liquidTypeData) {
     getLiquidTypeInfo.reset();
 
     getLiquidTypeInfo.bind(1, liquidTypeId);
     while (getLiquidTypeInfo.executeStep()) {
-        fileDataIds.push_back(getLiquidTypeInfo.getColumn(0).getInt());
+        LiquidTypeData ltd = {};
+        ltd.FileDataId = getLiquidTypeInfo.getColumn(0).getInt();
+        int color1 = getLiquidTypeInfo.getColumn(1).getInt();
+        ltd.color1[0] = getFloatFromInt<0>(color1);
+        ltd.color1[1] = getFloatFromInt<1>(color1);
+        ltd.color1[2] = getFloatFromInt<2>(color1);
+        int color2 = getLiquidTypeInfo.getColumn(2).getInt();
+        ltd.color2[0] = getFloatFromInt<0>(color2);
+        ltd.color2[1] = getFloatFromInt<1>(color2);
+        ltd.color2[2] = getFloatFromInt<2>(color2);
+        ltd.flags = getLiquidTypeInfo.getColumn(3).getInt();
+        int minimapStaticCol = getLiquidTypeInfo.getColumn(4).getInt();
+        ltd.minimapStaticCol[0] = getFloatFromInt<0>(minimapStaticCol);
+        ltd.minimapStaticCol[1] = getFloatFromInt<1>(minimapStaticCol);
+        ltd.minimapStaticCol[2] = getFloatFromInt<2>(minimapStaticCol);
+
+        liquidTypeData.push_back(ltd);
     }
 
 }
@@ -555,4 +657,23 @@ void CSqliteDB::getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLight
             zoneLight.points.push_back(pt);
         }
     }
+}
+
+bool CSqliteDB::getMapById(int mapId, MapRecord &mapRecord) {
+    getMapByIdStatement.reset();
+
+    getMapByIdStatement.bind(1, mapId);
+
+    while (getMapByIdStatement.executeStep())
+    {
+        // Demonstrate how to get some typed column value
+        mapRecord.ID = getMapByIdStatement.getColumn(0);
+        mapRecord.MapDirectory = std::string((const char*) getMapByIdStatement.getColumn(1));
+        mapRecord.MapName = std::string((const char*) getMapByIdStatement.getColumn(2));
+        mapRecord.WdtFileID = getMapByIdStatement.getColumn(3);
+        mapRecord.MapType = getMapByIdStatement.getColumn(4);
+
+        return true;
+    }
+    return false;
 }

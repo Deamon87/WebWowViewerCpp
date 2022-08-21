@@ -14,7 +14,6 @@
 #define GLFW_INCLUDE_GLCOREARB
  
 //#define __EMSCRIPTEN__
-#include "engine/HeadersGL.h"
 
 #ifdef LINK_VULKAN
 #define GLFW_INCLUDE_VULKAN
@@ -23,18 +22,15 @@
 #undef GLFW_INCLUDE_VULKAN
 #endif
 
-#include <GLFW/glfw3.h>
+
+#include <cmath>
+#include <vector>
 #include <string>
 #include <iostream>
-#include <cmath>
 #include <csignal>
 #include <exception>
+#include <GLFW/glfw3.h>
 
-//#include "persistance/ZipRequestProcessor.h"
-#include "persistance/CascRequestProcessor.h"
-#include "persistance/HttpZipRequestProcessor.h"
-//#include "persistance/MpqRequestProcessor.h"
-#include "persistance/HttpRequestProcessor.h"
 
 
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
@@ -48,8 +44,13 @@
 #include "../wowViewerLib/src/engine/ApiContainer.h"
 #include "../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
 #include "../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
-#include <png.h>
+#include "screenshots/screenshotMaker.h"
+#include "database/CEmptySqliteDB.h"
+#include <exception>
 
+//TODO: Consider using dedicated buffers for uniform data for OGL in update thread, fill them up there
+//Anb upload these buffers from main thread just before drawing
+//Reason: void SceneComposer::DoUpdate takes 25% of time with OGL backend
 
 int mleft_pressed = 0;
 int mright_pressed = 0;
@@ -63,14 +64,16 @@ std::string screenshotFileName = "";
 int screenshotWidth = 100;
 int screenshotHeight = 100;
 bool needToMakeScreenshot = false;
-int screenshotFrame = -1;
-HDrawStage screenshotDS = nullptr;
-
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     if (stopMouse) return;
-    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
+    if (apiContainer->getConfig()->doubleCameraDebug &&
+        apiContainer->getConfig()->controlSecondCamera &&
+        apiContainer->debugCamera != nullptr) {
+        controllable = apiContainer->debugCamera;
+    }
 
 //    if (!pointerIsLocked) {
         if (mleft_pressed == 1) {
@@ -118,8 +121,13 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (stopKeyboard) return;
-    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
+    if (apiContainer->getConfig()->doubleCameraDebug &&
+        apiContainer->getConfig()->controlSecondCamera &&
+        apiContainer->debugCamera != nullptr) {
+        controllable = apiContainer->debugCamera;
+    }
 
     if ( action == GLFW_PRESS) {
         switch (key) {
@@ -187,8 +195,13 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     if (stopMouse) return;
 
-    ApiContainer * apiContainer = (ApiContainer *)glfwGetWindowUserPointer(window);
+    HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
+    if (apiContainer->getConfig()->doubleCameraDebug &&
+        apiContainer->getConfig()->controlSecondCamera &&
+        apiContainer->debugCamera != nullptr) {
+        controllable = apiContainer->debugCamera;
+    }
 
     controllable->zoomInFromMouseScroll(-yoffset/2.0f);
 }
@@ -268,64 +281,7 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
 void beforeCrash(void);
 
-HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
-                                ApiContainer &apiContainer, const std::shared_ptr<IScene> &currentScene) {
-    float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
-    float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
 
-    float nearPlane = 1.0;
-    float fov = toRadian(45.0);
-
-    float canvasAspect = (float)width / (float)height;
-
-    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-    HCameraMatrices cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-    //Frustum matrix with reversed Z
-
-    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
-    apiContainer.hDevice->setInvertZ(isInfZSupported);
-    if (isInfZSupported)
-    {
-        float f = 1.0f / tan(fov / 2.0f);
-        cameraMatricesRendering->perspectiveMat = mathfu::mat4(
-            f / canvasAspect, 0.0f,  0.0f,  0.0f,
-            0.0f,    f,  0.0f,  0.0f,
-            0.0f, 0.0f,  1, -1.0f,
-            0.0f, 0.0f, 1,  0.0f);
-    }
-
-    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
-        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
-
-        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
-                                                                  0, -1, 0, 0,
-                                                                  0, 0, 1.0/2.0, 1/2.0,
-                                                                  0, 0, 0, 1).Transpose();
-
-        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
-    }
-
-    auto clearColor = apiContainer.getConfig()->getClearColor();
-
-    if (currentScene != nullptr) {
-        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
-
-        HFrameBuffer fb = nullptr;
-        if (isScreenshot) {
-            fb = apiContainer.hDevice->createFrameBuffer(width, height, {ITextureFormat::itRGBA},ITextureFormat::itDepth32, 4);
-        }
-
-        auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
-        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
-        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
-                                                          dimensions,
-                                                          true, clearColor, fb);
-
-        return sceneDrawStage;
-    }
-
-    return nullptr;
-}
 
 
 extern "C" void my_function_to_handle_aborts(int signal_number)
@@ -366,63 +322,6 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 }
 #endif
 
-void saveScreenshot(const std::string& name, int width, int height, std::vector<uint8_t> &rgbaBuff) {
-    FILE *fp = fopen(name.c_str(), "wb");
-    if (!fp) {
-        return;
-    }
-
-    png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (!png_ptr) {
-        fclose(fp);
-        return;
-    }
-
-    png_infop png_info;
-    if (!(png_info = png_create_info_struct(png_ptr))) {
-        png_destroy_write_struct(&png_ptr, nullptr);
-        return;
-    }
-
-    if (setjmp(png_jmpbuf(png_ptr))) {
-        png_destroy_write_struct(&png_ptr, nullptr);
-        return;
-    }
-
-    png_init_io(png_ptr, fp);
-
-    png_set_IHDR(png_ptr, png_info, width, height, 8, PNG_COLOR_TYPE_RGB,
-                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
-                 PNG_FILTER_TYPE_DEFAULT);
-
-    std::shared_ptr<std::vector<uint8_t>> data = std::make_shared<std::vector<uint8_t>>(width*height*3);
-    std::shared_ptr<std::vector<uint8_t*>> rows = std::make_shared<std::vector<uint8_t*>>(height);
-
-    for (int i = 0; i < height; ++i) {
-        (*rows)[height - i - 1] = data->data() + (i*width*3);
-        for (int j = 0; j < width; ++j) {
-            int i1 = (i*width+j)*3;
-            int i2 = (i*width+j)*4;
-
-            char r = rgbaBuff[++i2];
-            char g = rgbaBuff[++i2];
-            char b = rgbaBuff[++i2];
-            char a = rgbaBuff[++i2];
-
-            (*data)[i1++] = a;
-            (*data)[i1++] = r;
-            (*data)[i1++] = g;
-        }
-    }
-    png_set_rows(png_ptr, png_info, rows->data());
-    png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
-    png_write_end(png_ptr, png_info);
-
-
-    png_destroy_write_struct(&png_ptr, nullptr);
-    fclose(fp);
-}
-
 
 double currentFrame;
 double lastFrame;
@@ -436,28 +335,45 @@ int main(){
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);
-    //const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
+#if !defined(_MSC_VER) && !defined(_LIBCPP_VERSION)
+    const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
+#endif
 #endif
 
+
     signal(SIGABRT, &my_function_to_handle_aborts);
+    signal(SIGSEGV, &my_function_to_handle_aborts);
 
 
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
     glfwInit();
 
+    bool egl = false;
+#ifdef WITH_GLESv2
+    egl = true;
+#endif
+
 //    std::string rendererName = "ogl2";
-    std::string rendererName = "ogl3";
+      std::string rendererName = "ogl3";
 //    std::string rendererName = "vulkan";
 
     //FOR OGL
 
     if (rendererName == "ogl3") {
         glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        if (egl) {
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL ES 3.1
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+            glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+        } else {
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
+
+        }
 //    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //We don't want the old OpenGL
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
     } else if ( rendererName == "ogl2") {
         glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
@@ -465,6 +381,9 @@ int main(){
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 //    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE); //We don't want the old OpenGL
+
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
     } else if (rendererName == "vulkan"){
         //For Vulkan
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -500,145 +419,19 @@ int main(){
     }
 
     //Open Sql storage
-	
-    CSqliteDB *sqliteDB = new CSqliteDB("./export.db3");
+    HApiContainer apiContainer = std::make_shared<ApiContainer>();
 
-
-    ApiContainer apiContainer;
-    RequestProcessor *processor = nullptr;
-//    {
-        const char * url = "https://wow.tools/casc/file/fname?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=";
-        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=d40df72310590c634855b413870d97d2&cdnconfig=546b178da14301cf4749c1c772bb11c1&filename=data&filedataid=";
-//
-//Classics
-//        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
-//        const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=data&filedataid=";
-//        processor = new HttpZipRequestProcessor(url);
-////        processor = new ZipRequestProcessor(filePath);
-////        processor = new MpqRequestProcessor(filePath);
-//        processor = new HttpRequestProcessor(url, urlFileId);
-        processor = new CascRequestProcessor("e:/games/wow beta/World of Warcraft Beta/");
-////        processor->setThreaded(false);
-////
-        processor->setThreaded(true);
-        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
-        processor->setFileRequester(apiContainer.cacheStorage.get());
-
-//    }
     //Create device
     auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
+    apiContainer->databaseHandler = std::make_shared<CEmptySqliteDB>() ;
+    apiContainer->hDevice = hdevice;
+    apiContainer->camera = std::make_shared<FirstPersonCamera>();
 
-    std::shared_ptr<IScene> currentScene = nullptr;
-
-    apiContainer.databaseHandler = sqliteDB;
-    apiContainer.hDevice = hdevice;
-    apiContainer.camera = std::make_shared<FirstPersonCamera>();
-
-    SceneComposer sceneComposer = SceneComposer(&apiContainer);
+    SceneComposer sceneComposer = SceneComposer(apiContainer);
 
     //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
-    std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(&apiContainer);
-    frontendUI->overrideCascOpened(true);
-    frontendUI->setOpenCascStorageCallback([&processor, &apiContainer, &sceneComposer](std::string cascPath) -> bool {
-        CascRequestProcessor *newProcessor = nullptr;
-        std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
-        try {
-            newProcessor = new CascRequestProcessor(cascPath.c_str());
-            newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor);
-            newProcessor->setThreaded(true);
-            newProcessor->setFileRequester(newStorage.get());
-        } catch (...){
-            delete newProcessor;
-            return false;
-        };
-
-        apiContainer.cacheStorage = newStorage;
-        processor = newProcessor;
-
-        return true;
-    });
-    frontendUI->setOpenSceneByfdidCallback([&currentScene, &apiContainer](int mapId, int wdtFileId, float x, float y, float z) {
-//        scene->setSceneWithFileDataId(1, 113992, -1); //Ironforge
-        if (apiContainer.cacheStorage) {
-//            storage->actuallDropCache();
-        }
-
-        currentScene = std::make_shared<Map>(&apiContainer, mapId, wdtFileId);
-        apiContainer.camera = std::make_shared<FirstPersonCamera>();
-        apiContainer.camera->setCameraPos(x, y, z);
-//        scene->setMap(mapId, wdtFileId, x, y, z); //Ironforge
-    });
-    frontendUI->setOpenWMOSceneByfdidCallback([&currentScene, &apiContainer](int wmoFDid) {
-        currentScene = std::make_shared<WmoScene>(&apiContainer, wmoFDid);
-        apiContainer.camera->setCameraPos(0, 0, 0);
-    });
-    frontendUI->setOpenM2SceneByfdidCallback([&currentScene, &apiContainer](int m2FDid, std::vector<int> &replacementTextureIds) {
-        currentScene = std::make_shared<M2Scene>(&apiContainer, m2FDid, -1);
-        currentScene->setReplaceTextureArray(replacementTextureIds);
-
-
-        apiContainer.camera = std::make_shared<FirstPersonCamera>();
-        apiContainer.getConfig()->setBCLightHack(false);
-//
-        apiContainer.camera->setCameraPos(0, 0, 0);
-    });
-    frontendUI->setOpenM2SceneByFilenameCallback([&currentScene, &apiContainer](std::string m2FileName, std::vector<int> &replacementTextureIds) {
-        currentScene = std::make_shared<M2Scene>(&apiContainer, m2FileName, -1);
-        currentScene->setReplaceTextureArray(replacementTextureIds);
-
-        apiContainer.camera = std::make_shared<FirstPersonCamera>();
-        apiContainer.camera->setCameraPos(0, 0, 0);
-    });
-
-
-    frontendUI->setUnloadScene([&apiContainer, &currentScene]()->void {
-        if (apiContainer.cacheStorage) {
-            apiContainer.cacheStorage->actuallDropCache();
-        }
-        currentScene = nullptr;
-        //scene->setSceneWithFileDataId(-1, 0, -1);
-    });
-
-    frontendUI->setGetCameraNum([&apiContainer, &currentScene]()-> int {
-        if (currentScene != nullptr) {
-            return currentScene->getCameraNum();
-        }
-
-        return 0;
-    });
-    frontendUI->setSelectNewCamera([&apiContainer, &currentScene](int cameraNum)-> bool {
-        if (currentScene == nullptr) return false;
-
-        auto newCamera = currentScene->createCamera(cameraNum);
-        if (newCamera == nullptr) {
-            apiContainer.camera = std::make_shared<FirstPersonCamera>();
-            return false;
-        }
-
-        apiContainer.camera = newCamera;
-        return true;
-    });
-    frontendUI->setResetAnimation([&currentScene]() -> void {
-        currentScene->resetAnimation();
-    });
-
-    frontendUI->setGetCameraPos([&apiContainer](float &cameraX,float &cameraY,float &cameraZ) -> void {
-        float currentCameraPos[4] = {0,0,0,0};
-        apiContainer.camera->getCameraPosition(&currentCameraPos[0]);
-        cameraX = currentCameraPos[0];
-        cameraY = currentCameraPos[1];
-        cameraZ = currentCameraPos[2];
-    });
-
-    frontendUI->setMakeScreenshotCallback([&apiContainer](std::string fileName, int width, int height) -> void {
-        screenshotWidth  = width;
-        screenshotHeight = height;
-        screenshotFileName = fileName;
-
-        needToMakeScreenshot = true;
-    });
-
+    std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(apiContainer, nullptr);
 
     glfwSetWindowUserPointer(window, &apiContainer);
     glfwSetKeyCallback(window, onKey);
@@ -648,11 +441,20 @@ int main(){
     glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback( window, mouse_button_callback);
 
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    float xscale, yscale;
+    glfwGetMonitorContentScale(primaryMonitor, &xscale, &yscale);
+
+    frontendUI->setUIScale(std::max<float>(xscale, yscale));
+
+
+
     //This has to be called after setting all callbacks specific to this app.
     //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
     //Otherwise keys like backspace, delete etc wont work
 
     frontendUI->initImgui(window);
+    frontendUI->createDefaultprocessor();
     glfwSwapInterval(0);
 
 //try {
@@ -667,82 +469,27 @@ int main(){
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
+        {
+            auto processor = frontendUI->getProcessor();
+            if (frontendUI->getProcessor()) {
 
-        if (processor) {
-            if (!processor->getThreaded()) {
-                processor->processRequests(false);
-            }
-            processor->processResults(10);
-        }
-//        if (windowSizeChanged) {
-//            scene->setScreenSize(canvWidth, canvHeight);
-//            windowSizeChanged = false;
-//        }
-
-//        scene->draw((deltaTime*(1000.0f))); //miliseconds
-
-        apiContainer.camera->tick(deltaTime*(1000.0f));
-
-        if (screenshotDS != nullptr) {
-            if (screenshotFrame + 5 <= apiContainer.hDevice->getFrameNumber()) {
-                std::vector<uint8_t> buffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4+1);
-
-                screenshotDS->target->readRGBAPixels( 0, 0, screenshotWidth, screenshotHeight, buffer.data());
-                saveScreenshot(screenshotFileName, screenshotWidth, screenshotHeight, buffer);
-
-
-                screenshotDS = nullptr;
+                if (!processor->getThreaded()) {
+                    processor->processRequests(false);
+                }
             }
         }
 
-        HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
-        std::vector<HDrawStage> uiDependecies = {};
+        apiContainer->camera->tick(deltaTime*(1000.0f));
+        if (apiContainer->debugCamera != nullptr) {
+            apiContainer->debugCamera->tick(deltaTime * (1000.0f));
+        }
 
         //DrawStage for screenshot
 //        needToMakeScreenshot = true;
-        if (needToMakeScreenshot)
-        {
-            auto drawStage = createSceneDrawStage(sceneScenario, screenshotWidth, screenshotHeight, deltaTime, true, apiContainer,
-                                                  currentScene);
-            if (drawStage != nullptr) {
-                uiDependecies.push_back(drawStage);
-                screenshotDS = drawStage;
-                screenshotFrame = apiContainer.hDevice->getFrameNumber();
-            }
-            needToMakeScreenshot = false;
+        if (apiContainer->getConfig()->pauseAnimation) {
+            deltaTime = 0.0;
         }
-
-        //DrawStage for current frame
-        bool clearOnUi = true;
-        {
-            auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime, false, apiContainer,
-                                                  currentScene);
-            if (drawStage != nullptr) {
-                uiDependecies.push_back(drawStage);
-                clearOnUi = false;
-            }
-        }
-        //DrawStage for UI
-        {
-            ViewPortDimensions dimension = {
-                {0,     0},
-                {canvWidth, canvHeight}
-            };
-            auto clearColor = apiContainer.getConfig()->getClearColor();
-
-            auto uiCullStage = sceneScenario->addCullStage(nullptr, frontendUI);
-            auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
-            HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(uiUpdateStage, frontendUI, nullptr, uiDependecies, true,
-                dimension, clearOnUi, clearColor, nullptr);
-        }
-        //        auto updateResult = scene->cull(camera)->update(camera);
-//        SceneComposer::All({
-//            updateResult->render(camera)->toFB(frameBuffer, viewPortDims),
-//            updateResult->render(cameraDebug)->toFB(frameBuffer, viewPortDims);
-//        }).then([]{
-//            frontendUI->bind("", frameBuffer.getTexture())
-//            SceneComposer.renderToScreen()
-//        });
+        auto sceneScenario = frontendUI->createFrameScenario(canvWidth, canvHeight, deltaTime);
 
         sceneComposer.draw(sceneScenario);
 
@@ -750,7 +497,7 @@ int main(){
         lastFrame = currentFrame;
         if (currentDeltaAfterDraw < 5.0) {
             using namespace std::chrono_literals;
-            std::this_thread::sleep_for(std::chrono::milliseconds((int)(5.0 - currentDeltaAfterDraw)));
+            std::this_thread::sleep_for(std::chrono::milliseconds((int)(1.0)));
         }
 
         if (rendererName == "ogl3" || rendererName == "ogl2") {

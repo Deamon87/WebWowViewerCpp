@@ -1,6 +1,9 @@
-#version 420
+#version 450
 
-layout(location = 1) in vec2 texCoord;
+precision highp float;
+precision highp int;
+
+layout(location = 0) in vec2 texCoord;
 
 layout(std140, binding=4) uniform meshWideBlockPS {
     vec4 blurAmount;

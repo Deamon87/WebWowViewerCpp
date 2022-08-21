@@ -21,19 +21,26 @@ class M2Object;
 #include "../iMapApi.h"
 #include "../ViewsObjects.h"
 
+typedef std::function<bool(bool doCheck, bool doUpdate, animTime_t currentTime)> FreeStrategy;
 
 class AdtObject {
 public:
-    AdtObject(ApiContainer *api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
-    AdtObject(ApiContainer *api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
-    ~AdtObject() = default;
+    AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
+    AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
+    ~AdtObject() {
+//        std::cout << "~AdtObject called" << std::endl;
+    };
+
+    void setFreeStrategy(FreeStrategy &freeStrat) {
+        m_freeStrategy = freeStrat;
+        m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
+    }
 
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
-        m_lastTimeOfUpdateOrRefCheck = m_mapApi->getCurrentSceneTime();
     }
 
-    void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &renderedThisFrame, int renderOrder);
+    void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
 
     void update(animTime_t deltaTime);
@@ -41,6 +48,12 @@ public:
     void doPostLoad();
 
     int getAreaId(int mcnk_x, int mcnk_y);
+
+    int getAdtX() {return adt_x;}
+    int getAdtY() {return adt_y;}
+
+    CAaBox calcAABB();
+    bool getWaterColorFromDB(mathfu::vec4 cameraPos, mathfu::vec3 &closeRiverColor);
 
     bool checkFrustumCulling(
             ADTObjRenderRes &adtFrustRes,
@@ -61,11 +74,12 @@ public:
                     std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates, std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
                     int x, int y, int x_len, int y_len);
 
-    animTime_t getLastTimeOfUpdate() {
-        return m_lastTimeOfUpdateOrRefCheck;
+    FreeStrategy &getFreeStrategy() {
+        return m_freeStrategy;
     }
 private:
-    animTime_t m_lastTimeOfUpdateOrRefCheck = 0;
+    FreeStrategy m_freeStrategy = [](bool doCheck, bool doUpdate, animTime_t currentTime) -> bool {return false;};
+
     animTime_t m_lastTimeOfUpdate = 0;
     animTime_t m_lastDeltaTime = 0;
 
@@ -79,7 +93,7 @@ private:
     void createMeshes();
     void loadAlphaTextures();
 
-    ApiContainer *m_api;
+    HApiContainer m_api;
     IMapApi *m_mapApi;
     HWdtFile m_wdtFile= nullptr;
 
@@ -119,7 +133,10 @@ private:
     HBlpTexture lodDiffuseTexture  = nullptr;
     HBlpTexture lodNormalTexture  = nullptr;
 
-    std::vector<HGMesh> adtMeshes = {};
+
+    std::array<HGMesh, 16*16> adtMeshes = {};
+    //16x16, then layer
+    std::array<std::vector<HGMesh>, 16*16> waterMeshes = {};
     std::vector<HGMesh> adtLodMeshes;
 
     std::vector<CAaBox> tileAabb;
@@ -133,10 +150,6 @@ private:
 
     std::string m_adtFileTemplate;
 
-    HGVertexBuffer waterVBO;
-    HGIndexBuffer waterIBO;
-    HGVertexBufferBindings vertexWaterBufferBindings;
-    HGMesh waterMesh = nullptr;
 
     struct lodLevels {
         std::vector<std::shared_ptr<M2Object>> m2Objects;
@@ -162,6 +175,8 @@ private:
     void loadM2s();
     void loadWmos();
     void loadWater();
+    HGMesh createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos);
+
 
     bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                                  std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines, int x,

@@ -28,6 +28,7 @@ public:
     void setStart(int start) override;
     void setEnd(int end) override;
 public:
+    void *getM2Object() override { return nullptr; };
     void setM2Object(void * m2Object) override { /*  throw "Not Implemented"; */};
     void setLayer(int layer) override { /*  throw "Not Implemented"; */};
     void setPriorityPlane(int priorityPlane) override { /*  throw "Not Implemented"; */};
@@ -38,10 +39,7 @@ public:
 protected:
     MeshType m_meshType;
 private:
-
     HGShaderPermutation m_shader;
-
-    std::array<HGUniformBufferChunk,6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;
@@ -50,14 +48,9 @@ private:
     EGxBlendEnum m_blendMode;
     bool m_isTransparent;
 
-
-
     uint8_t m_colorMask = 0;
 
     int m_element;
-
-
-
 private:
     IDevice &m_device;
 };

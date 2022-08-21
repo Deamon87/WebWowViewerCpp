@@ -28,6 +28,7 @@ struct SceneExteriorLight {
     mathfu::vec4_packed uExteriorGroundAmbientColor;
     mathfu::vec4_packed uExteriorDirectColor;
     mathfu::vec4_packed uExteriorDirectColorDir;
+    mathfu::vec4_packed uAdtSpecMult;
 };
 
 struct sceneWideBlockVSPS {
@@ -83,11 +84,44 @@ namespace M2 {
         int PixelShader;
         int UnFogged;
         int IsAffectedByLight;
-        int LightCount;
+        int BlendMode;
 
         mathfu::vec4_packed uFogColorAndAlphaTest;
+        mathfu::vec4_packed uTexSampleAlpha;
 
         mathfu::vec4_packed uPcColor;
+    };
+
+    namespace WaterfallData {
+        struct meshWideBlockVS {
+            mathfu::vec4_packed bumpScale;
+            mathfu::mat4 uTextMat[2];
+        };
+        struct meshWideBlockPS {
+            mathfu::vec4_packed values0;
+            mathfu::vec4_packed values1;
+            mathfu::vec4_packed m_values2;
+            mathfu::vec4_packed m_values3;
+            mathfu::vec4_packed m_values4;
+            mathfu::vec4_packed baseColor;
+        };
+    }
+}
+namespace Particle {
+    struct meshParticleWideBlockPS {
+        float uAlphaTest;
+        float textureScale0;
+        float textureScale1;
+        float textureScale2;
+        int uPixelShader;
+        int uBlendMode;
+        int padding2;   // according to std140
+        int padding3;   // according to std140
+        float textureTranslate0;
+        float textureTranslate1;
+        float textureTranslate2;
+        float padding4; // according to std140
+
     };
 }
 
@@ -100,6 +134,7 @@ namespace WMO {
     struct meshWideBlockVS {
         int VertexShader;
         int UseLitColor;
+
         int padding[2];
     };
 
@@ -112,7 +147,7 @@ namespace WMO {
         int UseLitColor;
         int EnableAlpha;
         int PixelShader;
-        int padding;
+        int BlendMode;
         mathfu::vec4_packed uFogColor_AlphaTest;
 //    )}
     };
@@ -123,14 +158,20 @@ namespace ADT {
     };
 
     struct modelWideBlockPS {
-        mathfu::vec4_packed uFogStartAndFogEnd;
-        mathfu::vec4_packed uFogColor;
+        int useHeightMixFormula[4];
     };
 
     struct meshWideBlockPS {
         float uHeightScale[4];
         float uHeightOffset[4];
         mathfu::mat4 animationMat[4];
+    };
+}
+
+namespace ImgUI {
+    struct modelWideBlockVS {
+        mathfu::mat4 projectionMat;
+        float scale[4];
     };
 }
 
@@ -144,6 +185,12 @@ namespace FXGauss {
 namespace DnSky {
     struct meshWideBlockVS {
         mathfu::vec4_packed skyColor[6];
+    };
+}
+
+namespace DrawPortalShader {
+    struct meshWideBlockPS {
+        mathfu::vec4_packed uColor;
     };
 }
 

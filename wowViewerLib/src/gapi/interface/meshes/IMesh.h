@@ -51,8 +51,6 @@ enum class DrawElementMode {
     TRIANGLE_STRIP
 };
 
-extern BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX];
-
 class gMeshTemplate {
 public:
     gMeshTemplate(HGVertexBufferBindings bindings, HGShaderPermutation shader) : bindings(bindings), shader(shader) {}
@@ -114,8 +112,10 @@ protected:
     int m_start;
     int m_end;
 
-    std::vector<HGTexture> m_texture;
+    std::vector<HGTexture> m_texture = {};
     int m_textureCount;
+
+    std::array<HGUniformBufferChunk,6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
 public:
     virtual ~IMesh(){
@@ -133,6 +133,7 @@ public:
     virtual void setEnd(int end)  = 0;
 
 public:
+    virtual void * getM2Object() = 0;
     virtual void setM2Object(void * m2Object) = 0;
     virtual void setLayer(int layer)  = 0;
     virtual void setPriorityPlane(int priorityPlane) = 0;

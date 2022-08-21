@@ -16,7 +16,9 @@ public:
     SkinGeom(int fileDataId){};
 
     void process(HFileContent skinFile, const std::string &fileName) override;
-    HGIndexBuffer getIBO(IDevice &device);
+    HGIndexBuffer getIBO(const HGDevice &device);
+
+    std::vector<uint16_t> generateIndexBuffer();
 
     M2SkinProfile * getSkinData(){ if (fsStatus == FileStatus::FSLoaded) {return m_skinData;} else {return nullptr;}};
 

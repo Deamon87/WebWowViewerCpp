@@ -26,8 +26,8 @@ public:
     bool hasWater() const {return m_mliq != nullptr; };
 
 
-    HGVertexBufferBindings getVertexBindings(IDevice &device);
-    HGVertexBufferBindings getWaterVertexBindings(IDevice &device);
+    HGVertexBufferBindings getVertexBindings(const HGDevice &device);
+    HGVertexBufferBindings getWaterVertexBindings(const HGDevice &device);
 private:
     int normalOffset = 0;
     int textOffset = 0;
@@ -39,8 +39,8 @@ private:
     std::function<void (WmoGroupGeom& wmoGroupGeom)> m_attenuateFunc;
 
     int getLegacyWaterType(int a);
-    HGVertexBuffer getVBO(IDevice &device);
-    HGIndexBuffer getIBO(IDevice &device);
+    HGVertexBuffer getVBO(const HGDevice &device);
+    HGIndexBuffer getIBO(const HGDevice &device);
 public:
     HFileContent m_wmoGroupFile;
 

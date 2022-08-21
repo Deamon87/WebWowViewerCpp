@@ -14,7 +14,7 @@
 
 class GFrameBufferGL33 : public IFrameBuffer {
 public:
-    GFrameBufferGL33(IDevice &device, std::vector<ITextureFormat> textureAttachments, ITextureFormat depthAttachment, int width, int height);
+    GFrameBufferGL33(const HGDevice &device, std::vector<ITextureFormat> textureAttachments, ITextureFormat depthAttachment, int width, int height);
     ~GFrameBufferGL33() override;
 
     void readRGBAPixels(int x, int y, int width, int height, void *data) override;
@@ -25,11 +25,12 @@ public:
 
 
 private:
-    IDevice &mdevice;
+    HGDevice mdevice;
 
     std::vector<HGTexture> attachmentTextures;
     HGTexture depthTexture;
 
+    HGTexture defaultTextureForRenderBufFBO;
 
     GLuint m_renderBufFbo;
     ITextureFormat m_depthAttachment;

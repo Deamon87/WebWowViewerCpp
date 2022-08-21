@@ -3,6 +3,8 @@
 #extension GL_GOOGLE_include_directive: require
 
 precision highp float;
+precision highp int;
+
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec4 vColor;
 layout(location = 2) in vec2 vTexcoord0;
@@ -20,7 +22,7 @@ layout(std140, binding=0) uniform sceneWideBlockVSPS {
 //Individual meshes
 layout(std140, binding=4) uniform meshWideBlockPS {
     vec4 uAlphaTestv;
-    ivec4 uPixelShaderv;
+    ivec4 uPixelShaderBlendModev;
 };
 
 layout(set=1,binding=5) uniform sampler2D uTexture;
@@ -40,7 +42,7 @@ void main() {
         discard;
 
     vec4 finalColor = vec4((tex * vColor ).rgb, tex.a*vColor.a );
-    int uNonOptPixelShader = uPixelShaderv.x;
+    int uNonOptPixelShader = uPixelShaderBlendModev.x;
     if (uNonOptPixelShader == 0) { //particle_mod
         vec3 matDiffuse = vColor.xyz * tex.rgb;
 
@@ -70,7 +72,15 @@ void main() {
         vec3 matDiffuse = vColor.xyz * textureMod.rgb;
         finalColor = vec4(matDiffuse.rgb, opacity);
     } else if (uNonOptPixelShader == 4) { //Refraction
-        //TODO:!
+        float t0_973 = tex.x;
+        float t1_978 = tex2.y;
+        float t2_983 = tex3.z;
+        float textureMod_986 = (((t0_973 * t1_978) * t2_983) * 4.0);
+        float depthScale_991 = (1.0 - clamp((vPosition.z * 0.00999999978), 0, 1));
+        float textureMod_992 = (textureMod_986 * depthScale_991);
+        float height_995 = (textureMod_992 * vColor.x);
+        float alpha_997 = (textureMod_992 * vColor.w);
+        finalColor = vec4(height_995, 0.0, 0.0, alpha_997);
     }
 
     if(finalColor.a < uAlphaTest)
@@ -85,7 +95,7 @@ void main() {
 //        .xyz;
     vec3 sunDir =scene.extLight.uExteriorDirectColorDir.xyz;
 
-    finalColor.rgb = makeFog(fogData, finalColor.rgb, vPosition.xyz, sunDir.xyz);
+    finalColor = makeFog(fogData, finalColor, vPosition.xyz, sunDir.xyz, uPixelShaderBlendModev.y);
 
     outputColor.rgba = finalColor ;
 }

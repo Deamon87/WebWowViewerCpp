@@ -33,12 +33,12 @@ struct WmoGroupResult {
 class WmoObject : public IWmoApi {
 
 public:
-    WmoObject(ApiContainer *api) : m_api(api) {
+    WmoObject(HApiContainer api) : m_api(api) {
     }
 
 	~WmoObject();
 private:
-    ApiContainer *m_api;
+    HApiContainer m_api;
 
     HWmoMainGeom mainGeom = nullptr;
     bool m_loading = false;
@@ -46,7 +46,7 @@ private:
     CAaBox m_bbox;
 
     int m_nameSet;
-    int m_doodadSet;
+    int m_doodadSet = -1;
 
     std::vector<PortalInfo_t> geometryPerPortal;
 
@@ -64,7 +64,7 @@ private:
 
     std::vector<bool> drawGroupWMO;
     std::vector<int> lodGroupLevelWMO;
-    std::vector<std::shared_ptr<M2Object>> m_doodadsArray;
+    std::unordered_map<int, std::shared_ptr<M2Object>> m_doodadsUnorderedMap;
 
     std::shared_ptr<M2Object> skyBox = nullptr;
 
@@ -108,6 +108,7 @@ public:
 
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
     virtual SMOHeader *getWmoHeader() override;
+    mathfu::vec3 getAmbientColor() override;
 
     virtual PointerChecker<SMOMaterial> &getMaterials() override;
 
@@ -123,7 +124,7 @@ public:
     void createGroupObjects();
 
 
-    bool checkFog(mathfu::vec3 &cameraPos, CImVector &fogColor);
+    void checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults);
 
     bool doPostLoad(int &processedThisFrame);
     void update();
@@ -131,6 +132,8 @@ public:
 
     void createM2Array();
     void updateBB() override ;
+
+    CAaBox getAABB();
 
 public:
     //Portal culling
@@ -162,6 +165,9 @@ public:
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
         std::vector<std::shared_ptr<M2Object>> &m2Candidates);
+
+    void addSplitChildWMOsToView(InteriorView &interiorView, int groupId);
+
 
     void transverseGroupWMO (
         int groupId,

@@ -6,7 +6,7 @@
 
 
 GFrameBufferGL33::GFrameBufferGL33 (
-    IDevice &device,
+    const HGDevice &device,
     std::vector<ITextureFormat> textureAttachments,
     ITextureFormat depthAttachment,
     int width, int height) : mdevice(device), m_height(height), m_width(width) {
@@ -15,18 +15,27 @@ GFrameBufferGL33::GFrameBufferGL33 (
     attachmentTextures = std::vector<HGTexture>(textureAttachments.size());
     for (int i = 0; i < textureAttachments.size(); i++) {
         if (textureAttachments[i] != ITextureFormat::itNone) {
-            attachmentTextures[i] = mdevice.createTexture();
+            attachmentTextures[i] = mdevice->createTexture(false, false);
             attachmentTextures[i]->loadData(width, height, nullptr, textureAttachments[i]);
-            }
+        }
     }
     if (depthAttachment != ITextureFormat::itNone) {
-        depthTexture = mdevice.createTexture();
+        depthTexture = mdevice->createTexture(false, false);
         depthTexture->loadData(width, height, nullptr, depthAttachment);
-        }
+    }
+
+    defaultTextureForRenderBufFBO = mdevice->createTexture(false, false);
+    defaultTextureForRenderBufFBO->loadData(width, height, nullptr, ITextureFormat::itRGBA);
+
     glGenFramebuffers(+1, &m_renderBufFbo);
     glGenFramebuffers(+1, &m_textureFbo);
-    //1. First fill framebuffer with renderbuffers
+
+    //Create m_renderBufFbo
     this->bindFrameBuffer();
+    //1.1 To make OGL ES happy
+    ((GTextureGL33 *)defaultTextureForRenderBufFBO.get())->bindToCurrentFrameBufferAsColor(0);
+
+    //1.2 First fill framebuffer with renderbuffers
     renderBufferAttachments = std::vector<GLuint>(textureAttachments.size());
     for (int i = 0; i < renderBufferAttachments.size(); i++) {
         if (textureAttachments[i] == ITextureFormat::itDepth32) continue;
@@ -35,23 +44,23 @@ GFrameBufferGL33::GFrameBufferGL33 (
         glBindRenderbuffer(GL_RENDERBUFFER, renderBufferAttachments[i]);
 
         if (textureAttachments[i] == ITextureFormat::itRGBA) {
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device.getMaxSamplesCnt(), GL_RGBA8, width, height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device->getMaxSamplesCnt(), GL_RGBA8, width, height);
         } else if (textureAttachments[i] == ITextureFormat::itRGBAFloat32)  {
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device.getMaxSamplesCnt(), GL_RGBA32F, width, height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device->getMaxSamplesCnt(), GL_RGBA32F, width, height);
         }
 
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_RENDERBUFFER, renderBufferAttachments[i]);
-        }
+    }
     if (depthAttachment != ITextureFormat::itNone) {
         glGenRenderbuffers(1, &depthBufferAttachment);
         glBindRenderbuffer(GL_RENDERBUFFER, depthBufferAttachment);
 
         if (depthAttachment == ITextureFormat::itDepth32)  {
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device.getMaxSamplesCnt(), GL_DEPTH32F_STENCIL8, width, height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, device->getMaxSamplesCnt(), GL_DEPTH32F_STENCIL8, width, height);
         }
 
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthBufferAttachment);
-        }
+    }
 //    {
 //        auto frameBuffStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 //        if (frameBuffStatus != GL_FRAMEBUFFER_COMPLETE)
@@ -62,11 +71,11 @@ GFrameBufferGL33::GFrameBufferGL33 (
     glBindFramebuffer(GL_FRAMEBUFFER, m_textureFbo);
     for (int i = 0; i < textureAttachments.size(); i++) {
         ((GTextureGL33 *)attachmentTextures[i].get())->bindToCurrentFrameBufferAsColor(i);
-        }
+    }
 
     if (depthTexture != nullptr) {
         ((GTextureGL33 *) depthTexture.get())->bindToCurrentFrameBufferAsDepth();
-        } else {
+    } else {
 
     }
     //    {
@@ -105,7 +114,7 @@ GFrameBufferGL33::~GFrameBufferGL33() {
         }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDeleteFramebuffers(1, &m_renderBufFbo);
-    }
+}
 
 HGTexture GFrameBufferGL33::getAttachment(int index){
     return attachmentTextures[index];
@@ -120,9 +129,17 @@ void GFrameBufferGL33::bindFrameBuffer(){
 }
 
 void GFrameBufferGL33::copyRenderBufferToTexture(){
+    logGLError
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderBufFbo);
+    logGLError
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_textureFbo);
-    glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    logGLError
+    glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    logGLError
+//    glInvalidateFramebuffer(GL_READ_FRAMEBUFFER, attachmentCount, attachments)
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 }
 
 void GFrameBufferGL33::readRGBAPixels(int x, int y, int width, int height, void *data) {
@@ -131,6 +148,8 @@ void GFrameBufferGL33::readRGBAPixels(int x, int y, int width, int height, void 
 
 //    ((GTextureGL33 *)attachmentTextures[0].get())->bindToCurrentFrameBufferAsDepth()
 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glReadPixels( x,y,  width, height,  GL_RGBA, GL_UNSIGNED_BYTE, data);
 

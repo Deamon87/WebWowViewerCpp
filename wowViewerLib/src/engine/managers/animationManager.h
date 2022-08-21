@@ -12,25 +12,26 @@ class AnimationManager;
 #include "particles/particleEmitter.h"
 #include "CRibbonEmitter.h"
 #include "../algorithms/animate.h"
+#include "../objects/m2/m2Helpers/CBoneMasterData.h"
 
 class AnimationManager {
 private:
-    ApiContainer *m_api;
-    HM2Geom m_m2Geom;
-    M2Data *m_m2File;
+    HApiContainer m_api;
+    std::shared_ptr<CBoneMasterData> boneMasterData;
 
-    int mainAnimationId;
-    int mainAnimationIndex = -1;
     FullAnimationInfo animationInfo;
 
-    bool firstCalc;
-    bool isAnimated;
+    bool firstCalc = true;
     bool deferredLoadingStarted = false;
+
+    bool isMirrored = false;
+    bool m_hasExp2 = false;
 
     int leftHandClosed = 0;
     int rightHandClosed = 0;
 
     std::vector<animTime_t> globalSequenceTimes;
+    std::vector<animTime_t> parentGlobalSequenceTimes;
     std::vector<bool> bonesIsCalculated;
     std::vector<mathfu::mat4> blendMatrixArray;
     std::vector<std::vector<int>> childBonesLookup;
@@ -39,16 +40,16 @@ private:
     void initBlendMatrices();
     void initGlobalSequenceTimes();
 
-    const int findAnimationIndex(uint32_t anim_id) const;
-
     void calculateBoneTree();
     void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices);
 
+    void calcAnimRepetition(AnimationStruct &animationStruct);
 public:
-    AnimationManager(ApiContainer *api, HM2Geom m2File);
+    AnimationManager(HApiContainer api, std::shared_ptr<CBoneMasterData> boneMasterData, bool hasExp2);
 
     void resetCurrentAnimation();
     bool setAnimationId(int animationId, bool reset);
+    int getCurrentAnimationIndex();
     void setAnimationPercent(float percent);
     void update (
         animTime_t deltaTime,
@@ -79,9 +80,6 @@ public:
 
     bool getIsFirstCalc() {
         return firstCalc;
-    }
-    bool getIsAnimated() {
-        return isAnimated;
     }
 
     void calcLights(std::vector<M2LightResult> &lights,

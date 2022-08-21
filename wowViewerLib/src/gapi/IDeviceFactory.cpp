@@ -15,7 +15,7 @@
 #endif
 
 void initOGLPointers(){
-#ifdef _WIN32
+#if defined(_WIN32) && (!defined(WITH_GLESv2) && !defined(__EMSCRIPTEN__))
     glewExperimental = true; // Needed in core profile
     auto result = glewInit();
 
@@ -25,18 +25,24 @@ void initOGLPointers(){
 #endif
 }
 
-std::shared_ptr<IDevice> IDeviceFactory::createDevice(std::string gapiName, void * data) {
+HGDevice IDeviceFactory::createDevice(std::string gapiName, void * data) {
 #ifdef LINK_OGL2
     if (gapiName == "ogl2") {
         initOGLPointers();
-        return std::make_shared<GDeviceGL20>();
+
+        auto device = std::make_shared<GDeviceGL20>();
+        device->initialize();
+        return device;
     } else
 #endif
 
 #ifdef LINK_OGL3
     if (gapiName == "ogl3") {
         initOGLPointers();
-        return std::make_shared<GDeviceGL33>();
+
+        auto device = std::make_shared<GDeviceGL33>();
+        device->initialize();
+        return device;
     } else
 #endif
 #ifdef LINK_OGL4

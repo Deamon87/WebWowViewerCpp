@@ -16,8 +16,8 @@
 class WdlObject {
 
 public:
-    explicit WdlObject(ApiContainer *api, std::string &wdlFileName);
-    explicit WdlObject(ApiContainer *api, int wdlFileDataId);
+    explicit WdlObject(HApiContainer api, std::string &wdlFileName);
+    explicit WdlObject(HApiContainer api, int wdlFileDataId);
 
     void setMapApi(IMapApi *api) {
         m_mapApi = api;
@@ -27,7 +27,7 @@ public:
     std::vector<std::shared_ptr<WmoObject>> wmoObjects;
 
 private:
-    ApiContainer *m_api;
+    HApiContainer m_api;
     IMapApi *m_mapApi;
 
     HWdlFile m_wdlFile;
@@ -60,7 +60,8 @@ public:
                                         std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                         std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
 
-    void checkSkyScenes(const StateForConditions &state, std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+    void checkSkyScenes(const StateForConditions &state,
+                        std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                         const mathfu::vec4 &cameraPos,
                         const std::vector<mathfu::vec4> &frustumPlanes,
                         const std::vector<mathfu::vec3> &frustumPoints);

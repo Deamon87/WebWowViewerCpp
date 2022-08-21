@@ -13,7 +13,7 @@
 class GVertexBufferDynamicGL33 : public IVertexBufferDynamic {
     friend class GDeviceGL33;
 
-    explicit GVertexBufferDynamicGL33(IDevice &device, size_t maxSize);
+    explicit GVertexBufferDynamicGL33(const HGDevice &device, size_t maxSize);
 public:
     ~GVertexBufferDynamicGL33() override;
 
@@ -31,7 +31,7 @@ public:
     void uploadData(void *, int length) override;
 
 private:
-	GDeviceGL33 &m_device;
+    const HGDevice m_device;
 
 private:
     std::vector<char> m_buffer;

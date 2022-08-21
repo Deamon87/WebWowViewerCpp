@@ -38,3 +38,22 @@
 [submodule "3rdparty/libpng"]
 	path = 3rdparty/libpng
 	url = https://github.com/glennrp/libpng.git
+[submodule "wowViewerLib/3rdparty/tbb"]
+	path = wowViewerLib/3rdparty/tbb
+	url = https://github.com/Deamon87/tbb.git
+[submodule "3rdparty/filesystem_impl"]
+	path = 3rdparty/filesystem_impl
+	url = https://github.com/gulrak/filesystem.git
+[submodule "wowViewerLib/3rdparty/tinygltf"]
+	path = wowViewerLib/3rdparty/tinygltf
+	url = https://github.com/syoyo/tinygltf
+[submodule "emscripten_port/3rdparty/zipper"]
+	path = emscripten_port/3rdparty/zipper
+	url = https://github.com/sebastiandev/zipper.git
+[submodule "3rdparty/libressl"]
+	path = 3rdparty/libressl
+	url = https://github.com/libressl-portable/portable.git
+
+[submodule "3rdparty/mdebtls"]
+	path = 3rdparty/mdebtls
+	url = https://github.com/ARMmbed/mbedtls

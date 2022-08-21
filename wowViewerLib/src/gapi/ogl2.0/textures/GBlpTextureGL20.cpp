@@ -9,9 +9,7 @@
 #include "../../../engine/texture/DxtDecompress.h"
 
 GBlpTextureGL20::GBlpTextureGL20(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
-    : GTextureGL20(device), m_texture(texture) {
-    this->xWrapTex = xWrapTex;
-    this->yWrapTex = yWrapTex;
+    : GTextureGL20(device, xWrapTex, yWrapTex), m_texture(texture) {
 }
 
 GBlpTextureGL20::~GBlpTextureGL20() {
@@ -27,7 +25,7 @@ void GBlpTextureGL20::unbind() {
 }
 
 static int texturesUploaded = 0;
-void GBlpTextureGL20::createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) {
+void GBlpTextureGL20::createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 //    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
 
     GLuint textureGPUFormat = 0;
@@ -70,6 +68,7 @@ void GBlpTextureGL20::createGlTexture(TextureFormat textureFormat, const Mipmaps
 
 //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 
+    auto &mipmaps = *hmipmaps;
     bool generateMipMaps = false;
     switch (textureFormat) {
         case TextureFormat::S3TC_RGB_DXT1:
@@ -142,12 +141,19 @@ void GBlpTextureGL20::createGlTexture(TextureFormat textureFormat, const Mipmaps
             break;
         }
 
-        case TextureFormat::BGRA:
+        case TextureFormat::RGBA:
             for( int k = 0; k < mipmaps.size(); k++) {
-                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+                glTexImage2D(GL_TEXTURE_2D, k, GL_RGBA, mipmaps[k].width, mipmaps[k].height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                              &mipmaps[k].texture[0]);
             }
             break;
+        case TextureFormat::None:
+        case TextureFormat::BGRA:
+        case TextureFormat::PalARGB1555DitherFloydSteinberg:
+        case TextureFormat::PalARGB4444DitherFloydSteinberg:
+        case TextureFormat::PalARGB2565DitherFloydSteinberg:
+            std::cout << "Detected unhandled texture format" << std::endl;
+        break;
     }
 #ifndef WITH_GLESv2
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) mipmaps.size()-1);

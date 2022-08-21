@@ -11,9 +11,10 @@ class GM2MeshGL33 : public GMeshGL33 {
     friend class GDeviceGL33;
 
 public:
-    GM2MeshGL33(IDevice &device, const gMeshTemplate &meshTemplate);
+    GM2MeshGL33(const HGDevice &device, const gMeshTemplate &meshTemplate);
 
 public:
+    void *getM2Object() override;
     void setM2Object(void * m2Object) override;
     void setLayer(int layer) override;
     void setPriorityPlane(int priorityPlane) override;

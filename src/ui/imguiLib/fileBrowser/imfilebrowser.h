@@ -2,14 +2,21 @@
 
 #include <array>
 #include <cstring>
-#include <filesystem>
+#include <iostream>
+//#include <filesystem>
+#include <fstream>
 #include <functional>
 #include <memory>
 #include <string>
 
+#include "../../../../3rdparty/filesystem_impl/include/ghc/filesystem.hpp"
+
 #ifndef IMGUI_VERSION
 #   error "include imgui.h before this header"
 #endif
+
+#include "../../database/csvtest/csv.h"
+#include "../../../../wowViewerLib/src/include/string_utils.h"
 
 using ImGuiFileBrowserFlags = int;
 
@@ -31,7 +38,7 @@ namespace ImGui
     public:
 
         // pwd is set to current working directory by default
-        explicit FileBrowser(ImGuiFileBrowserFlags flags = 0);
+        explicit FileBrowser(ImGuiFileBrowserFlags flags = 0, bool cascOpenMode = false );
 
         FileBrowser(const FileBrowser &copyFrom);
 
@@ -56,10 +63,10 @@ namespace ImGui
         bool HasSelected() const noexcept;
 
         // set current browsing directory
-        bool SetPwd(const std::filesystem::path &pwd = std::filesystem::current_path());
+        bool SetPwd(const ghc::filesystem::path &pwd = ghc::filesystem::current_path());
 
         // returns selected filename. make sense only when HasSelected returns true
-        std::filesystem::path GetSelected() const;
+        ghc::filesystem::path GetSelected() const;
 
         // set selected filename to empty
         void ClearSelected();
@@ -67,7 +74,16 @@ namespace ImGui
         // set file type filters. eg. { ".h", ".cpp", ".hpp", ".cc", ".inl" }
         void SetTypeFilters(const std::vector<const char*> &typeFilters);
 
+        bool isCascOpenMode() { return m_cascOpenMode;};
+        std::string getProductBuild() { return currentBuild;};
     private:
+
+        void loadBuildsFromBuildInfo();
+
+        bool m_cascOpenMode = false;
+        ghc::filesystem::path m_last_pwd_forBuildInfo;
+        std::vector<std::string> availableBuilds;
+        std::string currentBuild = "";
 
         class ScopeGuard
         {
@@ -80,7 +96,7 @@ namespace ImGui
             ~ScopeGuard() { func_(); }
         };
 
-        void SetPwdUncatched(const std::filesystem::path &pwd);
+        void SetPwdUncatched(const ghc::filesystem::path &pwd);
 
 #ifdef _WIN32
         static std::uint32_t GetDrivesBitMask();
@@ -101,7 +117,7 @@ namespace ImGui
         std::vector<const char*> typeFilters_;
         int typeFilterIndex_;
 
-        std::filesystem::path pwd_;
+        ghc::filesystem::path pwd_;
         std::string selectedFilename_;
 
         struct FileRecord
@@ -126,17 +142,23 @@ namespace ImGui
     };
 } // namespace ImGui
 
-inline ImGui::FileBrowser::FileBrowser(ImGuiFileBrowserFlags flags)
+inline ImGui::FileBrowser::FileBrowser(ImGuiFileBrowserFlags flags, bool cascOpenMode)
     : flags_(flags),
       openFlag_(false), closeFlag_(false), isOpened_(false), ok_(false),
+      m_cascOpenMode(cascOpenMode),
       inputNameBuf_(std::make_unique<std::array<char, INPUT_NAME_BUF_SIZE>>())
 {
     if(flags_ & ImGuiFileBrowserFlags_CreateNewDir)
         newDirNameBuf_ = std::make_unique<std::array<char, INPUT_NAME_BUF_SIZE>>();
 
     inputNameBuf_->at(0) = '\0';
-    SetTitle("file browser");
-    SetPwd(std::filesystem::current_path());
+    if (m_cascOpenMode) {
+        SetTitle("Select WoW Directory");
+    } else {
+        SetTitle("file browser");
+    }
+
+    SetPwd(ghc::filesystem::current_path());
 
     typeFilters_.clear();
     typeFilterIndex_ = 0;
@@ -161,7 +183,7 @@ inline ImGui::FileBrowser &ImGui::FileBrowser::operator=(const FileBrowser &copy
     closeFlag_ = copyFrom.closeFlag_;
     isOpened_  = copyFrom.isOpened_;
     ok_        = copyFrom.ok_;
-    
+
     statusStr_ = "";
     pwd_ = copyFrom.pwd_;
     selectedFilename_ = copyFrom.selectedFilename_;
@@ -205,6 +227,51 @@ inline void ImGui::FileBrowser::Close()
 inline bool ImGui::FileBrowser::IsOpened() const noexcept
 {
     return isOpened_;
+}
+
+inline bool fileExistsNotNull1 (const std::string& name) {
+    ghc::filesystem::path p{name};
+
+    return exists(p) && ghc::filesystem::file_size(p) > 10;
+}
+
+inline void ImGui::FileBrowser::loadBuildsFromBuildInfo() {
+    availableBuilds.clear();
+    currentBuild = "";
+    std::string buildFile = GetSelected() / ".build.info";
+//    std::cout<<buildFile<<std::endl;
+    if (fileExistsNotNull1(buildFile)) {
+        auto lineReader = io::LineReader(buildFile);
+        std::string header = lineReader.next_line();
+        std::vector<std::string> headerNames;
+        tokenize(header, "|", headerNames);
+
+        int productIndex = -1;
+        for (int i = 0; i < headerNames.size(); i++) {
+            if (startsWith(headerNames[i], "Product")) {
+                productIndex = i;
+                break;
+            }
+        }
+        if (productIndex == -1) return;
+
+        while(char*line = lineReader.next_line()){
+            std::string content = line;
+            std::vector<std::string> values;
+            tokenize(content, "|", values);
+            if (productIndex < values.size()) {
+                availableBuilds.push_back(values[productIndex]);
+            }
+        }
+    }
+
+
+    std::sort(availableBuilds.begin(), availableBuilds.end());
+    availableBuilds.erase(std::unique(availableBuilds.begin(), availableBuilds.end()), availableBuilds.end());
+
+    if (availableBuilds.size()>0) {
+        currentBuild = availableBuilds[0];
+    }
 }
 
 inline void ImGui::FileBrowser::Display()
@@ -286,7 +353,7 @@ inline void ImGui::FileBrowser::Display()
     if(newPwdLastSecIdx >= 0)
     {
         int i = 0;
-        std::filesystem::path newPwd;
+        ghc::filesystem::path newPwd;
         for(auto &sec : pwd_)
         {
             if(i++ > newPwdLastSecIdx)
@@ -333,7 +400,7 @@ inline void ImGui::FileBrowser::Display()
     // browse files in a child window
 
     float reserveHeight = GetItemsLineHeightWithSpacing();
-    std::filesystem::path newPwd; bool setNewPwd = false;
+    ghc::filesystem::path newPwd; bool setNewPwd = false;
     if(!(flags_ & ImGuiFileBrowserFlags_SelectDirectory) && (flags_ & ImGuiFileBrowserFlags_EnterNewFilename))
         reserveHeight += GetItemsLineHeightWithSpacing();
     {
@@ -366,7 +433,8 @@ inline void ImGui::FileBrowser::Display()
                     {
                         selectedFilename_ = rsc.name;
                         if(!(flags_ & ImGuiFileBrowserFlags_SelectDirectory))
-                            std::strcpy(inputNameBuf_->data(), selectedFilename_.c_str());
+                            std::strncpy(inputNameBuf_->data(), selectedFilename_.c_str(),
+                                         std::min<int>(std::strlen(selectedFilename_.c_str()), INPUT_NAME_BUF_SIZE));
                     }
                 }
             }
@@ -422,6 +490,35 @@ inline void ImGui::FileBrowser::Display()
         ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) && IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && escIdx >= 0 && IsKeyPressed(escIdx)))
         CloseCurrentPopup();
 
+    if (m_cascOpenMode) {
+        if (pwd_ != m_last_pwd_forBuildInfo) {
+            loadBuildsFromBuildInfo();
+            m_last_pwd_forBuildInfo = pwd_;
+        }
+
+        SameLine();
+        ImGui::Text("Select product build:");
+        SameLine();
+        if (ImGui::BeginCombo("##buildSelect",
+                              currentBuild.c_str())) // The second parameter is the label previewed before opening the combo.
+        {
+            if (availableBuilds.empty()) {
+                availableBuilds.push_back("");
+            }
+            for (int n = 0; n < availableBuilds.size(); n++)
+            {
+                bool is_selected = (availableBuilds[n] == currentBuild);
+                if (ImGui::Selectable(availableBuilds[n].c_str(), is_selected)) {
+                    currentBuild = availableBuilds[n];
+                }
+
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+            }
+            ImGui::EndCombo();
+        }
+    }
+
     if(!statusStr_.empty() && !(flags_ & ImGuiFileBrowserFlags_NoStatusBar))
     {
         SameLine();
@@ -442,7 +539,7 @@ inline bool ImGui::FileBrowser::HasSelected() const noexcept
     return ok_;
 }
 
-inline bool ImGui::FileBrowser::SetPwd(const std::filesystem::path &pwd)
+inline bool ImGui::FileBrowser::SetPwd(const ghc::filesystem::path &pwd)
 {
     try
     {
@@ -458,11 +555,11 @@ inline bool ImGui::FileBrowser::SetPwd(const std::filesystem::path &pwd)
         statusStr_ = "last error: unknown";
     }
 
-    SetPwdUncatched(std::filesystem::current_path());
+    SetPwdUncatched(ghc::filesystem::current_path());
     return false;
 }
 
-inline std::filesystem::path ImGui::FileBrowser::GetSelected() const
+inline ghc::filesystem::path ImGui::FileBrowser::GetSelected() const
 {
     return pwd_ / selectedFilename_;
 }
@@ -480,11 +577,11 @@ inline void ImGui::FileBrowser::SetTypeFilters(const std::vector<const char*> &t
     typeFilterIndex_ = 0;
 }
 
-inline void ImGui::FileBrowser::SetPwdUncatched(const std::filesystem::path &pwd)
+inline void ImGui::FileBrowser::SetPwdUncatched(const ghc::filesystem::path &pwd)
 {
     fileRecords_ = { FileRecord{ true, "..", "[D] .." } };
 
-    for(auto &p : std::filesystem::directory_iterator(pwd))
+    for(auto &p : ghc::filesystem::directory_iterator(pwd))
     {
         FileRecord rcd;
 

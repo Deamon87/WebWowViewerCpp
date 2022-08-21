@@ -87,6 +87,8 @@ public:
     void tick(animTime_t timeDelta) override;
     void setCameraPos(float x, float y, float z) override;
     void setCameraOffset(float x, float y, float z) override;
+
+    void setCameraLookAt(float x, float y, float z) override {} ;
 };
 
 #endif //AWEBWOWVIEWERCPP_PLANARCAMERA_H

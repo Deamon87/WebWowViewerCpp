@@ -56,7 +56,7 @@ struct CParticleMaterialFlags {
 
 class ParticleEmitter {
 public:
-    ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw);
+    ParticleEmitter(HApiContainer api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw);
     ~ParticleEmitter() {
         delete generator;
     }
@@ -67,7 +67,7 @@ public:
     CParticleGenerator * getGenerator(){
         return generator;
     }
-    void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
     void updateBuffers();
 
     int flags = 6;
@@ -78,7 +78,7 @@ public:
     static float RandTable[128];
     static bool randTableInited;
 private:
-    ApiContainer *m_api;
+    HApiContainer m_api;
 
     M2Particle *m_data;
     M2Object *m2Object;

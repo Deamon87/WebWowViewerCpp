@@ -6,6 +6,7 @@
 #include "GPipelineVLK.h"
 #include "shaders/GShaderPermutationVLK.h"
 #include <array>
+#include "GRenderPassVLK.h"
 
 struct BlendModeDescVLK {
     bool blendModeEnable;
@@ -34,13 +35,15 @@ BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
 
 GPipelineVLK::GPipelineVLK(IDevice &device,
     HGVertexBufferBindings m_bindings,
+    std::shared_ptr<GRenderPassVLK> renderPass,
     HGShaderPermutation shader,
     DrawElementMode element,
     int8_t backFaceCulling,
     int8_t triCCW,
     EGxBlendEnum blendMode,
     int8_t depthCulling,
-    int8_t depthWrite) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
+    int8_t depthWrite,
+    bool invertZ) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
 
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
@@ -57,12 +60,14 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(shader.get());
 
     createPipeline(shaderVLK,
+        renderPass,
         element,
         backFaceCulling,
         triCCW,
         blendMode,
         depthCulling,
         depthWrite,
+        invertZ,
         vertexBindingDescriptions, vertexAttributeDescriptions);
 }
 
@@ -73,18 +78,19 @@ GPipelineVLK::~GPipelineVLK() {
 
 void GPipelineVLK::createPipeline(
         GShaderPermutationVLK *shaderVLK,
+        std::shared_ptr<GRenderPassVLK> renderPass,
         DrawElementMode m_element,
         int8_t m_backFaceCulling,
         int8_t m_triCCW,
         EGxBlendEnum m_blendMode,
         int8_t m_depthCulling,
         int8_t m_depthWrite,
+        bool invertZ,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
 
     auto swapChainExtent = m_device.getCurrentExtent();
-    auto renderPass = m_device.getRenderPass();
 
 
     //Create Graphic pipeline for Vulkan
@@ -170,7 +176,7 @@ void GPipelineVLK::createPipeline(
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampling.rasterizationSamples = renderPass->getSampleCountBit();
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
     colorBlendAttachment.colorWriteMask =
@@ -200,7 +206,7 @@ void GPipelineVLK::createPipeline(
     depthStencil.flags = 0;
     depthStencil.depthTestEnable = m_depthCulling ? VK_TRUE : VK_FALSE;
     depthStencil.depthWriteEnable = m_depthWrite ? VK_TRUE : VK_FALSE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depthStencil.depthCompareOp = invertZ ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 
@@ -243,7 +249,7 @@ void GPipelineVLK::createPipeline(
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = renderPass->getRenderPass();
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 

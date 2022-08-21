@@ -1,9 +1,10 @@
 #version 450
 
 precision highp float;
+precision highp int;
 
 layout(std140, binding=1) uniform modelWideBlockPS {
-uniform vec3 uColor;
+    vec3 uColor;
 };
 
 layout(location = 0) out vec4 fragColor;

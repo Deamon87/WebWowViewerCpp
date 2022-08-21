@@ -21,6 +21,7 @@ struct CRibbonVertex
 
 
 class CRibbonEmitter {
+    int textureTransformLookup = -1;
     int m_refCount;
     std::vector<float> m_edges;
     int m_writePos;
@@ -72,7 +73,7 @@ class CRibbonEmitter {
     int m_priority;
 
 private:
-    ApiContainer *m_api;
+    HApiContainer m_api;
 
     struct RibbonFrame {
         HGIndexBuffer m_indexVBO;
@@ -80,7 +81,7 @@ private:
 
         HGVertexBufferBindings m_bindings;
         std::vector<HGParticleMesh> m_meshes = {};
-        bool isDead = false;
+        bool isDead = true;
     };
 
     std::array<RibbonFrame, 4> frame;
@@ -88,7 +89,7 @@ private:
     void createMesh(M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
 
 public:
-    CRibbonEmitter(ApiContainer *m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
+    CRibbonEmitter(HApiContainer m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies, int textureTransformLookup);
     void SetDataEnabled(char a2);
     void SetUserEnabled(char a2);
     CRibbonEmitter *SetGravity(float a2);
@@ -114,7 +115,7 @@ public:
     //CTexture **SetTexture(unsigned int a2, CTexture *a3);
     //int ReplaceTexture(unsigned int a2, CTexture *a3);
 
-    void collectMeshes(std::vector<HGMesh> &meshes, int renderOrder);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
 
     void updateBuffers();
 };

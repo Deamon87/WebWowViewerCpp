@@ -7,7 +7,12 @@
 #include "../../../engine/opengl/header.h"
 #include "../../interface/IDevice.h"
 
-GTextureGL33::GTextureGL33(IDevice &device) : m_device(dynamic_cast<GDeviceGL33 &>(device)) {
+int GTextureGL33::currentGLTexturesAllocated = 0;
+
+GTextureGL33::GTextureGL33(const HGDevice &device, bool xWrapTex, bool yWrapTex) : m_device(device) {
+    this->xWrapTex = xWrapTex;
+    this->yWrapTex = yWrapTex;
+
     createBuffer();
 }
 
@@ -16,23 +21,30 @@ GTextureGL33::~GTextureGL33() {
 }
 
 void GTextureGL33::createBuffer() {
+    logGLError
     glGenTextures(1, &textureIdentifier);
+    logGLError
+    GTextureGL33::currentGLTexturesAllocated++;
 }
 
 void GTextureGL33::destroyBuffer() {
     const GLuint indent = textureIdentifier;
-    m_device.addDeallocationRecord([indent]() -> void {
+    m_device->addDeallocationRecord([indent]() -> void {
         glDeleteTextures(1, &indent);
+        GTextureGL33::currentGLTexturesAllocated--;
     });
 }
 
 void GTextureGL33::bind() {
+    logGLError
     glBindTexture(GL_TEXTURE_2D, textureIdentifier);
-
+    logGLError
 }
 
 void GTextureGL33::unbind() {
+    logGLError
     glBindTexture(GL_TEXTURE_2D, 0);
+    logGLError
 }
 
 bool GTextureGL33::getIsLoaded() {
@@ -46,7 +58,7 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
     this->height = height;
 
 
-    m_device.bindTexture(this, 0);
+    m_device->bindTexture(this, 0);
     if (textureFormat == ITextureFormat::itRGBA) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     } else if (textureFormat == ITextureFormat::itRGBAFloat32)  {
@@ -54,32 +66,45 @@ void GTextureGL33::loadData(int width, int height, void *data, ITextureFormat te
     }else if (textureFormat == ITextureFormat::itDepth32)  {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, data);
     }
+
     if (data != nullptr) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, (GLint) 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint) 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (xWrapTex) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    }
+    if (yWrapTex) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
     if (data != nullptr) {
         glGenerateMipmap(GL_TEXTURE_2D);
     }
-    m_device.bindTexture(nullptr, 0);
+    m_device->bindTexture(nullptr, 0);
+
+    m_loaded = true;
 }
 
 void GTextureGL33::readData(std::vector<uint8_t> &buff) {
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(WITH_GLESv2))
     if (buff.size() < width*height*4) {
     }
 
-    m_device.bindTexture(this, 0);
+    m_device->bindTexture(this, 0);
 
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_BYTE, buff.data());
 
 
-    m_device.bindTexture(nullptr, 0);
+    m_device->bindTexture(nullptr, 0);
 #else
     GLuint fbo;
     glGenFramebuffers(1, &fbo);

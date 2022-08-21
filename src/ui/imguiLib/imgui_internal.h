@@ -776,9 +776,9 @@ struct ImGuiSettingsHandler
 {
     const char* TypeName;       // Short description stored in .ini file. Disallowed characters: '[' ']'
     ImGuiID     TypeHash;       // == ImHashStr(TypeName)
-    void*       (*ReadOpenFn)(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name);              // Read: Called when entering into a new ini entry e.g. "[Window][Name]"
-    void        (*ReadLineFn)(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line); // Read: Called for every line of text within an ini entry
-    void        (*WriteAllFn)(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* out_buf);      // Write: Output every entries into 'out_buf'
+    std::function<void*(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name)> ReadOpenFn;              // Read: Called when entering into a new ini entry e.g. "[Window][Name]"
+    std::function<void (ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line)> ReadLineFn; // Read: Called for every line of text within an ini entry
+    std::function<void (ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* out_buf)> WriteAllFn;      // Write: Output every entries into 'out_buf'
     void*       UserData;
 
     ImGuiSettingsHandler() { memset(this, 0, sizeof(*this)); }
@@ -1136,7 +1136,7 @@ struct ImGuiContext
     bool                    SettingsLoaded;
     float                   SettingsDirtyTimer;                 // Save .ini Settings to memory when time reaches zero
     ImGuiTextBuffer         SettingsIniData;                    // In memory .ini settings
-    ImVector<ImGuiSettingsHandler>      SettingsHandlers;       // List of .ini settings handlers
+    std::vector<ImGuiSettingsHandler>      SettingsHandlers;       // List of .ini settings handlers
     ImChunkStream<ImGuiWindowSettings>  SettingsWindows;        // ImGuiWindow .ini settings entries
 
     // Capture/Logging

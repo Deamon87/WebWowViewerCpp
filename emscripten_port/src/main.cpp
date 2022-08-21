@@ -1,6 +1,7 @@
 #include "../../wowViewerLib/src/gapi/IDeviceFactory.h"
 #include "RequestProcessor.h"
 #include "HttpRequestProcessor.h"
+#include "../../src/screenshots/screenshotMaker.h"
 #include "../../wowViewerLib/src/engine/ApiContainer.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
 #include "../../wowViewerLib/src/engine/SceneComposer.h"
@@ -9,14 +10,18 @@
 #include "../../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/map.h"
+#include "../../src/exporters/gltfExporter/GLTFExporter.h"
+#include "../../3rdparty/filesystem_impl/include/ghc/filesystem.hpp"
 #include <iostream>
 #include <memory>
 #include <emscripten/threading.h>
 #include <emscripten.h>
 #include <emscripten/html5.h>
+#include <emscripten/bind.h>
 #include <GLFW/glfw3.h>
+#include <zipper/zipper.h>
 
-ApiContainer apiContainer;
+std::shared_ptr<ApiContainer> apiContainer = std::make_shared<ApiContainer>();
 HttpRequestProcessor *processor;
 SceneComposer *sceneComposer;
 std::shared_ptr<IScene> currentScene = std::make_shared<NullScene>();
@@ -24,7 +29,16 @@ std::shared_ptr<IScene> currentScene = std::make_shared<NullScene>();
 std::shared_ptr<ICamera> planarCamera = std::make_shared<PlanarCamera>();
 std::shared_ptr<ICamera> firstPersonCamera = std::make_shared<FirstPersonCamera>();
 
+//Variable for making a screenshot
+std::string screenshotFilename = "";
+HDrawStage screenshotDS = nullptr;
+bool needToMakeScreenshot = false;
+int screenShotWidth = 100;
+int screenShotHeight = 100;
+int screenshotFrame = -1;
 
+std::shared_ptr<IExporter> exporter = nullptr;
+int exporterFramesReady = 0;
 
 int canvWidth = 640;
 int canvHeight = 480;
@@ -75,7 +89,7 @@ void convertColors(int index, int start, int mid, int end, std::array<std::array
 
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
-    auto controllable = apiContainer.camera;
+    auto controllable = apiContainer->camera;
 
 //    if (!pointerIsLocked) {
     if (mleft_pressed == 1) {
@@ -133,7 +147,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    auto controllable = apiContainer.camera;
+    auto controllable = apiContainer->camera;
     if ( action == GLFW_PRESS) {
         switch (key) {
             case 'W' :
@@ -191,7 +205,7 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
 
             case 'O':
-                apiContainer.camera->setCameraPos(0,0,0);
+                apiContainer->camera->setCameraPos(0,0,0);
                 break;
             case GLFW_KEY_LEFT_SHIFT:
                 controllable->setMovementSpeed(1.0f);
@@ -204,7 +218,7 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    auto controllable = apiContainer.camera;
+    auto controllable = apiContainer->camera;
 
     controllable->zoomInFromMouseScroll(yoffset/240.0f);
 }
@@ -222,15 +236,15 @@ void setScene(int sceneType, std::string name, int cameraNum) {
         currentScene = std::make_shared<NullScene>();
     } else if (sceneType == 0) {
 //        m_usePlanarCamera = cameraNum == -1;
-        apiContainer.camera = planarCamera;
+        apiContainer->camera = planarCamera;
 
-        currentScene = std::make_shared<M2Scene>(&apiContainer, name , cameraNum);
+        currentScene = std::make_shared<M2Scene>(apiContainer, name , cameraNum);
     } else if (sceneType == 1) {
-        apiContainer.camera = firstPersonCamera;
+        apiContainer->camera = firstPersonCamera;
 
-        currentScene = std::make_shared<WmoScene>(&apiContainer, name);
+        currentScene = std::make_shared<WmoScene>(apiContainer, name);
     } else if (sceneType == 2) {
-        apiContainer.camera = firstPersonCamera;
+        apiContainer->camera = firstPersonCamera;
 
         std::string &adtFileName = name;
 
@@ -248,20 +262,87 @@ void setScene(int sceneType, std::string name, int cameraNum) {
         float adt_y_min = AdtIndexToWorldCoordinate(i);
         float adt_y_max = AdtIndexToWorldCoordinate(i+1);
 
-        apiContainer.camera->setCameraPos(
+        apiContainer->camera->setCameraPos(
             (adt_x_min+adt_x_max) / 2.0,
             (adt_y_min+adt_y_max) / 2.0,
             200
         );
 
-        currentScene = std::make_shared<Map>(&apiContainer, adtFileName, i, j, mapName);
+        currentScene = std::make_shared<Map>(apiContainer, adtFileName, i, j, mapName);
     }
+}
+
+HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime,
+                                bool isScreenshot, ApiContainer &apiContainer,
+                                const std::shared_ptr<IScene> &currentScene,
+                                HCullStage &cullStage,
+                                std::vector<HDrawStage> &drawStageDependencies
+) {
+    float farPlaneRendering = apiContainer.getConfig()->farPlane;
+    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
+
+    float nearPlane = 1.0;
+    float fov = toRadian(45.0);
+
+    float canvasAspect = (float)width / (float)height;
+
+    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    HCameraMatrices cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+    //Frustum matrix with reversed Z
+
+    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+    if (isInfZSupported)
+    {
+        float f = 1.0f / tan(fov / 2.0f);
+        cameraMatricesRendering->perspectiveMat = mathfu::mat4(
+            f / canvasAspect, 0.0f,  0.0f,  0.0f,
+            0.0f,    f,  0.0f,  0.0f,
+            0.0f, 0.0f,  1, -1.0f,
+            0.0f, 0.0f, 1,  0.0f);
+    }
+
+    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
+        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
+
+        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
+                                                                  0, -1, 0, 0,
+                                                                  0, 0, 1.0/2.0, 1/2.0,
+                                                                  0, 0, 0, 1).Transpose();
+
+        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
+    }
+
+    auto clearColor = apiContainer.getConfig()->clearColor;
+
+    if (currentScene != nullptr) {
+        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
+
+        HFrameBuffer fb = nullptr;
+        if (isScreenshot) {
+            fb = apiContainer.hDevice->createFrameBuffer(width, height,
+                                                         {ITextureFormat::itRGBA},
+                                                         ITextureFormat::itDepth32,
+                                                         apiContainer.hDevice->getMaxSamplesCnt(), 4);
+        }
+
+        cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
+        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
+        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, drawStageDependencies, true,
+                                                                dimensions,
+                                                                true, isInfZSupported, clearColor, fb);
+
+        return sceneDrawStage;
+    }
+
+    return nullptr;
 }
 
 
 extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void createWebJsScene(int p_canvWidth, int p_canvHeight, char *url, char *urlFileId) {
+        auto temp_gc = new tbb::global_control(tbb::global_control::max_allowed_parallelism, 1);
+
         if (!glfwInit()) {
             fputs("Failed to initialize GLFW", stderr);
             return;
@@ -270,7 +351,16 @@ extern "C" {
         canvHeight = p_canvHeight;
 
 
-        apiContainer.camera = firstPersonCamera;
+        apiContainer->camera = firstPersonCamera;
+        apiContainer->getConfig()->globalLighting = EParameterSource::eConfig;
+
+        auto ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
+
+        apiContainer->getConfig()->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        apiContainer->getConfig()->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        apiContainer->getConfig()->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        apiContainer->getConfig()->exteriorDirectColor = mathfu::vec4(0.3,0.3,0.3,0.3);
+        apiContainer->getConfig()->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
 
         emscripten_run_script("Module['hammerJsAssignControl']()");
 
@@ -295,8 +385,8 @@ extern "C" {
 
         processor = new HttpRequestProcessor(url, urlFileId);
         processor->setThreaded(false);
-        apiContainer.cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
-        processor->setFileRequester(apiContainer.cacheStorage.get());
+        apiContainer->cacheStorage = std::make_shared<WoWFilesCacheStorage>(processor);
+        processor->setFileRequester(apiContainer->cacheStorage.get());
 
         //        testConf = new Config();
 //        testConf->setSunColor(0.0,0.0,0.0,0.0);
@@ -316,16 +406,15 @@ extern "C" {
             if (uboSize > 0) {
                 glVersion = "ogl3";
             }
-
         }
 
         auto hdevice = IDeviceFactory::createDevice(glVersion, nullptr);
 
-        apiContainer.databaseHandler = nullptr;
-        apiContainer.hDevice = hdevice;
-        apiContainer.camera = std::make_shared<FirstPersonCamera>();
+        apiContainer->databaseHandler = nullptr;
+        apiContainer->hDevice = hdevice;
+        apiContainer->camera = std::make_shared<FirstPersonCamera>();
 
-        sceneComposer = new SceneComposer(&apiContainer);
+        sceneComposer = new SceneComposer(apiContainer);
 
         glfwSetWindowUserPointer(window, nullptr);
         glfwSetKeyCallback(window, onKey);
@@ -336,9 +425,22 @@ extern "C" {
     }
 
     EMSCRIPTEN_KEEPALIVE
+    void createScreenshot() {
+        screenshotFilename = "screenshot.png";
+        needToMakeScreenshot = true;
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    void startExport() {
+        exporter = std::make_shared<GLTFExporter>("./gltf/");
+        currentScene->exportScene(exporter.get());
+
+    }
+
+    EMSCRIPTEN_KEEPALIVE
     void setNewUrls(char *url, char *urlFileId) {
         processor->setUrls(url, urlFileId);
-        apiContainer.cacheStorage->actuallDropCache();
+        apiContainer->cacheStorage->actuallDropCache();
     }
     EMSCRIPTEN_KEEPALIVE
     void setScene(int sceneType, char *name, int cameraNum) {
@@ -346,15 +448,15 @@ extern "C" {
     }
     EMSCRIPTEN_KEEPALIVE
     void setMap(int mapId, int wdtFileId, float x, float y, float z) {
-        apiContainer.camera = firstPersonCamera;
+        apiContainer->camera = firstPersonCamera;
 
-        apiContainer.camera->setCameraPos(
+        apiContainer->camera->setCameraPos(
             x,
             y,
             z
         );
 
-        currentScene = std::make_shared<Map>(&apiContainer, mapId, wdtFileId);
+        currentScene = std::make_shared<Map>(apiContainer, mapId, wdtFileId);
     }
     EMSCRIPTEN_KEEPALIVE
     void setSceneFileDataId(int sceneType, int fileDataId, int cameraNum) {
@@ -362,13 +464,13 @@ extern "C" {
             currentScene = std::make_shared<NullScene>();
         } else if (sceneType == 0) {
 //        m_usePlanarCamera = cameraNum == -1;
-            apiContainer.camera = planarCamera;
+            apiContainer->camera = planarCamera;
 
-            currentScene = std::make_shared<M2Scene>(&apiContainer, fileDataId , cameraNum);
+            currentScene = std::make_shared<M2Scene>(apiContainer, fileDataId , cameraNum);
         } else if (sceneType == 1) {
-            apiContainer.camera = firstPersonCamera;
+            apiContainer->camera = firstPersonCamera;
 
-            currentScene = std::make_shared<WmoScene>(&apiContainer, fileDataId);
+            currentScene = std::make_shared<WmoScene>(apiContainer, fileDataId);
         }
     }
     EMSCRIPTEN_KEEPALIVE
@@ -379,56 +481,60 @@ extern "C" {
     }
     EMSCRIPTEN_KEEPALIVE
     void addHorizontalViewDir(float val) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->addHorizontalViewDir(val);
     }
     EMSCRIPTEN_KEEPALIVE
     void addVerticalViewDir(float val ) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->addVerticalViewDir(val);
     }
     EMSCRIPTEN_KEEPALIVE
     void zoomInFromMouseScroll(float val ) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->zoomInFromMouseScroll(val);
     }
     EMSCRIPTEN_KEEPALIVE
     void addCameraViewOffset(float val1, float val2 ) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->addCameraViewOffset(val1, val2);
     }
     EMSCRIPTEN_KEEPALIVE
     void startMovingForward() {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->startMovingForward();
     }
     EMSCRIPTEN_KEEPALIVE
     void startMovingBackwards() {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->startMovingBackwards();
     }
     EMSCRIPTEN_KEEPALIVE
     void stopMovingForward() {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->stopMovingForward();
     }
     EMSCRIPTEN_KEEPALIVE
     void stopMovingBackwards() {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->stopMovingBackwards();
     }
 
     EMSCRIPTEN_KEEPALIVE
     void setClearColor(float r, float g, float b) {
-        apiContainer.getConfig()->setClearColor(r,g,b,0.0);
+        apiContainer->getConfig()->clearColor = mathfu::vec4(r,g,b,0.0);
+    }
+    EMSCRIPTEN_KEEPALIVE
+    void enablePortalCulling(bool value) {
+        apiContainer->getConfig()->usePortalCulling = value;
     }
     EMSCRIPTEN_KEEPALIVE
     void setFarPlane(float value) {
-        apiContainer.getConfig()->setFarPlane(value);
+        apiContainer->getConfig()->farPlane = value;
     }
     EMSCRIPTEN_KEEPALIVE
     void setFarPlaneForCulling(float value) {
-        apiContainer.getConfig()->setFarPlaneForCulling(value);
+        apiContainer->getConfig()->farPlaneForCulling = value;
     }
 
     EMSCRIPTEN_KEEPALIVE
@@ -437,6 +543,15 @@ extern "C" {
             currentScene->setAnimationId(animationId);
         }
     }
+
+    EMSCRIPTEN_KEEPALIVE
+    void setMeshIdArray(uint8_t *meshIds, int length) {
+        if (currentScene != nullptr) {
+            auto meshIdsVec = std::vector<uint8_t>(meshIds, meshIds+length);
+            currentScene->setMeshIds(meshIdsVec);
+        }
+    }
+
     EMSCRIPTEN_KEEPALIVE
     void setReplaceParticleColors(
         int start0, int start1, int start2,
@@ -478,49 +593,93 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     void setScenePos(float x, float y, float z) {
-        auto controllable = apiContainer.camera;
+        auto controllable = apiContainer->camera;
         controllable->setCameraPos(x,y,z);
     }
+    extern void offerFileAsDownload(const char *filename, int filename_len);
 
     EMSCRIPTEN_KEEPALIVE
     void gameloop(double deltaTime) {
+
+
         if (sceneComposer == nullptr) return;
+        if (apiContainer->hDevice == nullptr) return;
+
+        if (exporter != nullptr && processor != nullptr) {
+            if (processor->completedAllJobs() && !apiContainer->hDevice->wasTexturesUploaded()) {
+                exporterFramesReady++;
+            }
+            if (exporterFramesReady > 5) {
+                std::string exportDir = "./gltf/";
+                if (!ghc::filesystem::is_directory(exportDir) || !ghc::filesystem::exists(exportDir)) {
+                    ghc::filesystem::create_directory(exportDir); // create src folder
+                }
+                exporter->saveToFile("model.gltf");
+                exporter = nullptr;
+
+                std::error_code errorCode;
+
+                //Add files to archive and download it
+                std::string archiveName = "export.zip";
+                ghc::filesystem::remove_all(archiveName, errorCode); //Delete file if exists
+
+                zipper::Zipper zipper(archiveName);
+
+                for (const auto& entry : ghc::filesystem::directory_iterator(exportDir)) {
+                    const auto filenameStr = entry.path().filename().string();
+                    if (entry.status().type() == ghc::filesystem::file_type::regular) {
+                        std::ifstream input1(exportDir+filenameStr);
+
+                        zipper.add(input1, filenameStr);
+                    }
+                }
+                zipper.close();
+                ghc::filesystem::remove_all(exportDir, errorCode); // Deletes one or more files recursively.
+
+                offerFileAsDownload(archiveName.c_str(), archiveName.size());
+            }
+        }
+
+        if (screenshotDS != nullptr) {
+            if (screenshotFrame + 5 <= apiContainer->hDevice->getFrameNumber()) {
+                std::vector<uint8_t> buffer = std::vector<uint8_t>(screenShotWidth*screenShotHeight*4+1);
+
+                saveDataFromDrawStage(screenshotDS->target, screenshotFilename, screenShotWidth, screenShotHeight, buffer);
+                offerFileAsDownload(screenshotFilename.c_str(), screenshotFilename.size());
+                screenshotDS = nullptr;
+            }
+        }
 
         glfwPollEvents();
 
         processor->processRequests(false);
-        processor->processResults(10);
 
-        apiContainer.camera->tick(deltaTime*(1000.0f));
-
-        float farPlaneRendering = apiContainer.getConfig()->getFarPlane();
-        float farPlaneCulling = apiContainer.getConfig()->getFarPlaneForCulling();
-
-        float nearPlane = 1.0;
-        float fov = toRadian(45.0);
-
-        float canvasAspect = (float)canvWidth / (float)canvHeight;
-
-        auto cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-        auto cameraMatricesRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+        apiContainer->camera->tick(deltaTime*(1000.0f));
 
         HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
+        std::vector<HDrawStage> additionalDependencies = {};
+        if (needToMakeScreenshot)
+        {
+            HCullStage temp = nullptr;
+            screenShotWidth = canvWidth;
+            screenShotHeight = canvHeight;
+            std::vector<HDrawStage> deps = {};
+            auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, 0, true, *apiContainer,
+                                                  currentScene,temp, deps);
+            if (drawStage != nullptr) {
+                additionalDependencies.push_back(drawStage);
+                screenshotDS = drawStage;
+                screenshotFrame = apiContainer->hDevice->getFrameNumber();
+            }
+            needToMakeScreenshot = false;
+        }
 
-        bool clearOnUi = true;
-        auto clearColor = apiContainer.getConfig()->getClearColor();
-//        if (currentScene != nullptr) {
-        auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
-        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesRendering);
-        ViewPortDimensions dimensions = {{0, 0}, {canvWidth, canvHeight}};
-        auto sceneDrawStage = sceneScenario->addDrawStage(updateStage, currentScene, cameraMatricesRendering, {}, true,
-                                    dimensions, true, clearColor, nullptr);
-        clearOnUi = false;
-//        }
-//        else {
-//            auto sceneDrawStage = sceneScenario->addDrawStage(nullptr, nullptr, cameraMatricesRendering, {}, true,
-//                                                              {{0, 0}, {canvWidth, canvHeight}},
-//                                                              true, clearColor);
-//        }
+        HCullStage cullStage = nullptr;
+        auto sceneDrawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime,
+                                                   false, *apiContainer, currentScene, cullStage, additionalDependencies);
+
+
+
 
 //        try {
             sceneComposer->draw(sceneScenario);

@@ -10,29 +10,39 @@
 #include <thread>
 #include <list>
 #include <vector>
+#include <atomic>
 #include <forward_list>
 #include <unordered_set>
 
 class RequestProcessor : public IFileRequest {
 protected:
-    RequestProcessor() {
+    RequestProcessor() : toBeProcessed(0){
 
     }
+    ~RequestProcessor() {
+        if (loaderThread != nullptr) {
+            isTerminating = true;
+            loaderThread->join();
+            loaderThread = nullptr;
+        }
+    };
 
 protected:
     IFileRequester *m_fileRequester = nullptr;
 
-    virtual void processFileRequest(std::string &fileName, CacheHolderType holderType) = 0;
+    virtual void processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) = 0;
 public:
     void setFileRequester(IFileRequester *fileRequester) {
         m_fileRequester = fileRequester;
     }
 
+    void requestFile(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) override;
 private:
     class RequestStruct {
     public:
         std::string fileName;
         CacheHolderType holderType;
+        std::weak_ptr<PersistentFile> s_file;
     };
 
     class ResultStruct {
@@ -48,7 +58,8 @@ private:
         HFileContent buffer = nullptr;
     };
 
-    std::thread *loaderThread;
+    bool isTerminating = false;
+    std::shared_ptr<std::thread> loaderThread = nullptr;
 
     std::list<RequestStruct> m_requestQueue;
     std::list<ResultStruct> m_resultQueue;
@@ -58,8 +69,11 @@ private:
 
     int currentlyProcessing = 0;
 public:
-    void processResults(int limit);
     void processRequests(bool calledFromThread);
+
+    bool completedAllJobs() {
+        return (m_requestQueue.empty()) && (m_resultQueue.empty()) && (toBeProcessed == 0);
+    };
 
     bool getThreaded() {
         return m_threaded;
@@ -67,17 +81,17 @@ public:
     void setThreaded(bool value) {
         m_threaded = value;
         if (value) {
-            loaderThread = new std::thread(([&](){
+            loaderThread = std::make_shared<std::thread>(([&](){
                 this->processRequests(true);
             }));
         }
     }
 
 protected:
-    void addRequest (std::string &fileName, CacheHolderType holderType);
-
-    void provideResult(std::string &fileName, HFileContent content, CacheHolderType holderType);
-
+    std::atomic<int> toBeProcessed;
+    void processResult( std::shared_ptr<PersistentFile> s_file, HFileContent content, const std::string &fileName);
 };
+
+typedef std::shared_ptr<RequestProcessor> HRequestProcessor;
 
 #endif //WEBWOWVIEWERCPP_REQUESTPROCESSOR_H

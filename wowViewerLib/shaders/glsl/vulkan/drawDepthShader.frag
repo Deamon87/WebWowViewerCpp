@@ -1,6 +1,8 @@
 #version 450
 
 precision highp float;
+precision highp int;
+
 layout(binding=3) uniform sampler2D diffuse;
 
 layout(std140, binding=2) uniform meshWideBlockPS {

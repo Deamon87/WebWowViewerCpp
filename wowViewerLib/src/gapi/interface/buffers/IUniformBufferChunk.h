@@ -7,11 +7,14 @@
 
 #include <functional>
 #include <assert.h>
+#include "../../../engine/DrawStage.h"
+
+typedef std::function<void(IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData)> IChunkHandlerType;
 
 class IUniformBufferChunk {
     friend class IDevice;
 private:
-    std::function<void(IUniformBufferChunk* self)> m_handler;
+    IChunkHandlerType m_handler;
 protected:
     size_t m_offset = 0;
     size_t m_size = 0;
@@ -43,12 +46,12 @@ public:
         return m_offset;
     }
 
-    virtual void setUpdateHandler(std::function<void(IUniformBufferChunk* self)> handler) {
+    virtual void setUpdateHandler(IChunkHandlerType handler) {
         m_handler = handler;
     };
-    virtual void update() {
+    virtual void update(const HFrameDepedantData &frameDepedantData) {
         if (m_handler) {
-            m_handler(this);
+            m_handler(this, frameDepedantData);
         }
     };
 };

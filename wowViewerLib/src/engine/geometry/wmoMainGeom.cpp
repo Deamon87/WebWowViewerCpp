@@ -178,8 +178,25 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                             chunkData.readValue(object.skyboxM2FileId);
                         }
                     }
-
                 },
+                {
+                    'MAVG', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MAVG");
+                            object.mavgsLen = chunkData.chunkLen / sizeof(MAVG);
+                            chunkData.readValues(object.mavgs, object.mavgsLen);
+                        }
+                    }
+                },
+                {
+                    'MCVP', {
+                        [](WmoMainGeom &object, ChunkData &chunkData) {
+                            debuglog("Entered MCVP");
+                            object.convexVolumePlanesLen = chunkData.chunkLen / sizeof(mathfu::vec4_packed);
+                            chunkData.readValues(object.convexVolumePlanes, object.convexVolumePlanesLen);
+                        }
+                    }
+                }
 
         }
 };

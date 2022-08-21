@@ -5,16 +5,18 @@
 #include <iostream>
 #include <set>
 #include <cmath>
+#include <execution>
 #include "map.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/grahamScan.h"
 #include "../../persistance/wdtFile.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 #include "../../../gapi/interface/IDevice.h"
-#include "../wowFrameData.h"
 #include "../../algorithms/quick-sort-omp.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "../../shader/ShaderDefinitions.h"
+#include "tbb/tbb.h"
+#include "../../algorithms/FrameCounter.h"
 
 //#include "../../algorithms/quicksort-dualpivot.h"
 
@@ -256,7 +258,7 @@ std::array<uint16_t,300> skyConusIBO = {
     121 ,  97 ,  121  ,
 };
 
-HGMesh createSkyMesh(IDevice *device, Config *config) {
+HGVertexBufferBindings createSkyBindings(IDevice *device) {
     auto skyIBO = device->createIndexBuffer();
     skyIBO->uploadData(
         skyConusIBO.data(),
@@ -279,15 +281,31 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
     skyBindings->addVertexBufferBinding(vertexBinding);
     skyBindings->save();
 
+    return skyBindings;
+}
+
+HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config *config, bool conusFor0x4Sky) {
     auto skyVs = device->createUniformBufferChunk(sizeof(DnSky::meshWideBlockVS));
-    skyVs->setUpdateHandler([config](IUniformBufferChunk *self) -> void {
+    skyVs->setUpdateHandler([config, conusFor0x4Sky](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<DnSky::meshWideBlockVS>();
-        meshblockVS.skyColor[0] = config->getSkyTopColor();
-        meshblockVS.skyColor[1] = config->getSkyMiddleColor();
-        meshblockVS.skyColor[2] = config->getSkyBand1Color();
-        meshblockVS.skyColor[3] = config->getSkyBand2Color();
-        meshblockVS.skyColor[4] = config->getSkySmogColor();
-        meshblockVS.skyColor[5] = config->getSkyFogColor();
+
+        if (!conusFor0x4Sky) {
+            meshblockVS.skyColor[0] = frameDepedantData->SkyTopColor;
+            meshblockVS.skyColor[1] = frameDepedantData->SkyMiddleColor;
+            meshblockVS.skyColor[2] = frameDepedantData->SkyBand1Color;
+            meshblockVS.skyColor[3] = frameDepedantData->SkyBand2Color;
+            meshblockVS.skyColor[4] = frameDepedantData->SkySmogColor;
+            meshblockVS.skyColor[5] = frameDepedantData->SkyFogColor;
+        } else {
+            auto EndFogColorV4_1 = mathfu::vec4(frameDepedantData->EndFogColor, 0.0);
+            auto EndFogColorV4_2 = mathfu::vec4(frameDepedantData->EndFogColor, 1.0);
+            meshblockVS.skyColor[0] = EndFogColorV4_1;
+            meshblockVS.skyColor[1] = EndFogColorV4_1;
+            meshblockVS.skyColor[2] = EndFogColorV4_1;
+            meshblockVS.skyColor[3] = EndFogColorV4_1;
+            meshblockVS.skyColor[4] = EndFogColorV4_1;
+            meshblockVS.skyColor[5] = EndFogColorV4_2;
+        }
     });
 
     //TODO: Pass m_skyConeAlpha to fragment shader
@@ -300,7 +318,7 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
     meshTemplate.depthCulling = true;
     meshTemplate.backFaceCulling = false;
     meshTemplate.skybox = true;
-    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+    meshTemplate.blendMode = conusFor0x4Sky ? EGxBlendEnum::GxBlend_Alpha : EGxBlendEnum::GxBlend_Opaque;
 
     meshTemplate.texture.resize(0);
 
@@ -314,8 +332,13 @@ HGMesh createSkyMesh(IDevice *device, Config *config) {
     meshTemplate.ubo[4] = nullptr;
 
     meshTemplate.element = DrawElementMode::TRIANGLE_STRIP;
-    meshTemplate.start = 0;
-    meshTemplate.end = 300;
+    if (conusFor0x4Sky) {
+        meshTemplate.start = 198 * 2;
+        meshTemplate.end = 102;
+    } else {
+        meshTemplate.start = 0;
+        meshTemplate.end = 300;
+    }
 
     //Make mesh
     HGMesh hmesh =  device->createMesh(meshTemplate);
@@ -411,9 +434,14 @@ void Map::checkCulling(HCullStage cullStage) {
             areaRecord = m_api->databaseHandler->getArea(cullStage->adtAreadId);
         }
     }
-    m_api->getConfig()->setAreaName(areaRecord.areaName);
+
+
+    m_api->getConfig()->areaName = areaRecord.areaName;
     stateForConditions.currentAreaId = areaRecord.areaId;
     stateForConditions.currentParentAreaId = areaRecord.parentAreaId;
+
+    cullStage->areaId = areaRecord.areaId;
+    cullStage->parentAreaId = areaRecord.parentAreaId;
 
     updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
 
@@ -458,12 +486,14 @@ void Map::checkCulling(HCullStage cullStage) {
                 frustumPoints);
         }
 
-        for (auto model : m_exteriorSkyBoxes) {
-            if (model != nullptr) {
-                model->checkFrustumCulling(cameraPos,
-                                           frustumPlanes,
-                                           frustumPoints);
-                cullStage->exteriorView.drawnM2s.push_back(model);
+        if (config->renderSkyDom) {
+            for (auto model : m_exteriorSkyBoxes) {
+                if (model != nullptr) {
+                    model->checkFrustumCulling(cameraPos,
+                                               frustumPlanes,
+                                               frustumPoints);
+                    cullStage->exteriorView.drawnM2s.insert(model);
+                }
             }
         }
     }
@@ -474,7 +504,7 @@ void Map::checkCulling(HCullStage cullStage) {
     }
     cullStage->exteriorView.addM2FromGroups(frustumMat, lookAtMat4, cameraPos);
     for (auto &adtRes : cullStage->exteriorView.drawnADTs) {
-        adtRes->adtObject->collectMeshes(*adtRes.get(),  cullStage->exteriorView.drawnChunks, cullStage->exteriorView.renderOrder);
+        adtRes->adtObject->collectMeshes(*adtRes,  cullStage->exteriorView.m_opaqueMeshes, cullStage->exteriorView.m_transparentMeshes, cullStage->exteriorView.renderOrder);
     }
 
     //Collect M2s for update
@@ -486,13 +516,20 @@ void Map::checkCulling(HCullStage cullStage) {
     std::copy(cullStage->exteriorView.drawnM2s.begin(), cullStage->exteriorView.drawnM2s.end(), inserter);
 
     //Sort and delete duplicates
-    std::sort( cullStage->m2Array.begin(), cullStage->m2Array.end() );
-    cullStage->m2Array.erase( unique( cullStage->m2Array.begin(), cullStage->m2Array.end() ), cullStage->m2Array.end() );
-    cullStage->m2Array = std::vector<std::shared_ptr<M2Object>>(cullStage->m2Array.begin(), cullStage->m2Array.end());
+    if (cullStage->m2Array.size() > 2) {
+//        internal::parallel_sort(cullStage->m2Array.begin(), cullStage->m2Array.end(),
+//                                [](auto &first, auto &end) { return first < end; });
+#if (_LIBCPP_HAS_PARALLEL_ALGORITHMS)
+        std::sort(std::execution::par_unseq, cullStage->m2Array.begin(), cullStage->m2Array.end() );
+#else
+        std::sort(cullStage->m2Array.begin(), cullStage->m2Array.end() );
+#endif
+        cullStage->m2Array.erase(unique(cullStage->m2Array.begin(), cullStage->m2Array.end()),
+                                 cullStage->m2Array.end());
+    }
 
     std::sort( cullStage->wmoArray.begin(), cullStage->wmoArray.end() );
     cullStage->wmoArray.erase( unique( cullStage->wmoArray.begin(), cullStage->wmoArray.end() ), cullStage->wmoArray.end() );
-    cullStage->wmoArray = std::vector<std::shared_ptr<WmoObject>>(cullStage->wmoArray.begin(), cullStage->wmoArray.end());
 
     cullStage->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>(cullStage->adtArray.begin(), cullStage->adtArray.end());
 
@@ -507,75 +544,26 @@ void Map::checkCulling(HCullStage cullStage) {
 //    }
 }
 
+mathfu::vec3 blendV3(mathfu::vec3 a, mathfu::vec3 b, float alpha) {
+    return (a - b) * alpha + a;
+}
+
 void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                                    StateForConditions &stateForConditions, const AreaRecord &areaRecord) {///-----------------------------------
     Config* config = this->m_api->getConfig();
 
-    if (!config->getUseTimedGloabalLight()) return;
-
     bool fogRecordWasFound = false;
     mathfu::vec3 endFogColor = mathfu::vec3(0.0, 0.0, 0.0);
 
+    std::vector<LightResult> wmoFogs = {};
     if (cullStage->m_currentWMO != nullptr) {
-        CImVector sunFogColor;
-        fogRecordWasFound = cullStage->m_currentWMO->checkFog(cameraVec3, sunFogColor);
-        if (fogRecordWasFound) {
-            endFogColor =
-                mathfu::vec3((sunFogColor.r & 0xFF) / 255.0f,
-                             ((sunFogColor.g) & 0xFF) / 255.0f,
-                             ((sunFogColor.b) & 0xFF) / 255.0f);
-        }
+        cullStage->m_currentWMO->checkFog(cameraVec3, wmoFogs);
     }
+    std::vector<LightResult> lightResults;
 
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
-        LightResult zoneLightResult;
-        std::vector<LightResult> lightResults;
-        bool zoneLightFound = false;
-        int LightId;
-        for (const auto &zoneLight : m_zoneLights) {
-            if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
-                zoneLightFound = true;
-                LightId = zoneLight.LightID;
-                break;
-            }
-        }
-
-        if (zoneLightFound) {
-            m_api->databaseHandler->getLightById(LightId, config->getCurrentTime(), zoneLightResult);
-        }
-
-        m_api->databaseHandler->getEnvInfo(m_mapId,
-                                           cameraVec3.x,
-                                           cameraVec3.y,
-                                           cameraVec3.z,
-                                           config->getCurrentTime(),
-                                           lightResults
-        );
-
-        //Calc final blendcoef for zoneLight;
-        if (zoneLightFound) {
-            float blendCoef = 1.0;
-
-            for (auto &_light : lightResults) {
-                if (!_light.isDefault) {
-                    blendCoef -= _light.blendCoef;
-                }
-            }
-            if (blendCoef > 0) {
-                zoneLightResult.blendCoef = blendCoef;
-                lightResults.push_back(zoneLightResult);
-                //Delete default from results;
-                auto it = lightResults.begin();
-                while (it != lightResults.end()) {
-                    if (it->isDefault) {
-                        lightResults.erase(it);
-                        break;
-                    } else
-                        it++;
-                }
-            }
-        }
+        getLightResultsFromDB(cameraVec3, config, lightResults, &stateForConditions);
 
         //Delete skyboxes that are not in light array
         std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
@@ -617,15 +605,21 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             }
 
             skyBox->setAlpha(_light.blendCoef);
+            if ((_light.skyBoxFlags & 4) > 0 ) {
+                //In this case conus is still rendered been, but all values are final fog values.
+                auto fdd = cullStage->frameDepedantData;
+                fdd->overrideValuesWithFinalFog = true;
+            }
+
             if ((_light.skyBoxFlags & 2) == 0) {
+//                m_skyConeAlpha -= _light.blendCoef;
                 m_skyConeAlpha -= _light.blendCoef;
             }
             
             if (_light.skyBoxFlags & 1) {
-                skyBox->setOverrideAnimationPerc(config->getCurrentTime() / 2880.0, true);
+                skyBox->setOverrideAnimationPerc(config->currentTime / 2880.0, true);
             }
         }
-
 
         //Blend glow and ambient
         mathfu::vec3 ambientColor = {0, 0, 0};
@@ -633,6 +627,9 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         mathfu::vec3 groundAmbientColor = {0, 0, 0};
         mathfu::vec3 directColor = {0, 0, 0};
         mathfu::vec3 closeRiverColor = {0, 0, 0};
+        mathfu::vec3 farRiverColor = {0, 0, 0};
+        mathfu::vec3 closeOceanColor = {0, 0, 0};
+        mathfu::vec3 farOceanColor = {0, 0, 0};
 
         mathfu::vec3 SkyTopColor = {0, 0, 0};
         mathfu::vec3 SkyMiddleColor = {0, 0, 0};
@@ -640,51 +637,27 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         mathfu::vec3 SkyBand2Color = {0, 0, 0};
         mathfu::vec3 SkySmogColor = {0, 0, 0};
         mathfu::vec3 SkyFogColor = {0, 0, 0};
+        float currentGlow = 0;
 
-        float FogEnd = 0;
-        float FogScaler = 0;
-        float FogDensity = 0;
-        float FogHeight = 0;
-        float FogHeightScaler = 0;
-        float FogHeightDensity = 0;
-        float SunFogAngle = 0;
-        mathfu::vec3 EndFogColor = {0, 0, 0};
-        float EndFogColorDistance = 0;
-        mathfu::vec3 SunFogColor = {0, 0, 0};
-        float SunFogStrength = 0;
-        mathfu::vec3 FogHeightColor = {0, 0, 0};
-        mathfu::vec4 FogHeightCoefficients = {0, 0, 0, 0};
-
-        config->currentGlow = 0;
         for (auto &_light : lightResults) {
-            config->currentGlow += _light.glow * _light.blendCoef;
+            currentGlow += _light.glow * _light.blendCoef;
+
             ambientColor += mathfu::vec3(_light.ambientColor) * _light.blendCoef;
             horizontAmbientColor += mathfu::vec3(_light.horizontAmbientColor) * _light.blendCoef;
             groundAmbientColor += mathfu::vec3(_light.groundAmbientColor) * _light.blendCoef;
-
             directColor += mathfu::vec3(_light.directColor) * _light.blendCoef;
-            closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
 
-            SkyTopColor += mathfu::vec3(_light.SkyTopColor) * _light.blendCoef;
+            closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
+            farRiverColor += mathfu::vec3(_light.farRiverColor) * _light.blendCoef;
+            closeOceanColor += mathfu::vec3(_light.closeOceanColor) * _light.blendCoef;
+            farOceanColor += mathfu::vec3(_light.farOceanColor) * _light.blendCoef;
+
+            SkyTopColor += mathfu::vec3(_light.SkyTopColor.data()) * _light.blendCoef;
             SkyMiddleColor += mathfu::vec3(_light.SkyMiddleColor) * _light.blendCoef;
             SkyBand1Color += mathfu::vec3(_light.SkyBand1Color) * _light.blendCoef;
             SkyBand2Color += mathfu::vec3(_light.SkyBand2Color) * _light.blendCoef;
             SkySmogColor += mathfu::vec3(_light.SkySmogColor) * _light.blendCoef;
-            SkyFogColor += mathfu::vec3(_light.SkyFogColor) * _light.blendCoef;
-
-            FogEnd += _light.FogEnd * _light.blendCoef;
-            FogScaler += _light.FogScaler * _light.blendCoef;
-            FogDensity += _light.FogDensity * _light.blendCoef;
-            FogHeight += _light.FogHeight * _light.blendCoef;
-            FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
-            FogHeightDensity += _light.FogHeightScaler * _light.blendCoef;
-            SunFogAngle += _light.SunFogAngle * _light.blendCoef;
-            EndFogColor += mathfu::vec3(_light.EndFogColor) * _light.blendCoef;
-            EndFogColorDistance += _light.EndFogColorDistance * _light.blendCoef;
-            SunFogColor += mathfu::vec3(_light.SunFogColor) * _light.blendCoef;
-            SunFogStrength += _light.SunFogStrength * _light.blendCoef;
-            FogHeightColor += mathfu::vec3(_light.FogHeightColor) * _light.blendCoef;
-            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients) * _light.blendCoef;
+            SkyFogColor += mathfu::vec3(_light.SkyFogColor.data()) * _light.blendCoef;
         }
 
         //Database is in BGRA
@@ -693,37 +666,296 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 //        groundAmbientColor *= ambientMult;
 //        horizontAmbientColor *= ambientMult;
 
-        config->setExteriorAmbientColor(ambientColor[2], ambientColor[1], ambientColor[0], 0);
-        config->setExteriorGroundAmbientColor(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0], 0);
-        config->setExteriorHorizontAmbientColor(horizontAmbientColor[2], horizontAmbientColor[1],
-                                                horizontAmbientColor[0], 0);
-        config->setExteriorDirectColor(directColor[2], directColor[1], directColor[0], 0);
-        config->setCloseRiverColor(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
+        if (config->glowSource == EParameterSource::eDatabase) {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->currentGlow = currentGlow;
+        } else if (config->glowSource == EParameterSource::eConfig) {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->currentGlow = config->currentGlow;
+        }
 
 
-        config->setSkyTopColor(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0]);
-        config->setSkyMiddleColor(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0]);
-        config->setSkyBand1Color(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0]);
-        config->setSkyBand2Color(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0]);
-        config->setSkySmogColor(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0]);
-        config->setSkyFogColor(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0]);
+        if (config->globalLighting == EParameterSource::eDatabase) {
+            auto fdd = cullStage->frameDepedantData;
 
-        config->setFogEnd(FogEnd);
-        config->setFogScaler(FogScaler);
-        config->setFogDensity(FogDensity);
-        config->setFogHeight(FogHeight);
-        config->setFogHeightScaler(FogHeightScaler);
-        config->setFogHeightDensity(FogHeightDensity);
-        config->setSunFogAngle(SunFogAngle);
-        config->setEndFogColor(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
-        config->setEndFogColorDistance(EndFogColorDistance);
-        config->setSunFogColor(SunFogColor[2], SunFogColor[1], SunFogColor[0]);
-        config->setSunFogStrength(SunFogStrength);
-        config->setFogHeightColor(FogHeightColor[2], FogHeightColor[1], FogHeightColor[0]);
-        config->setFogHeightCoefficients(FogHeightCoefficients[0],FogHeightCoefficients[1],FogHeightCoefficients[2],FogHeightCoefficients[3]);
+            fdd->exteriorAmbientColor = mathfu::vec4(ambientColor[2], ambientColor[1], ambientColor[0], 0);
+            fdd->exteriorGroundAmbientColor = mathfu::vec4(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0],
+                                                  0);
+            fdd->exteriorHorizontAmbientColor = mathfu::vec4(horizontAmbientColor[2], horizontAmbientColor[1],
+                                                    horizontAmbientColor[0], 0);
+            fdd->exteriorDirectColor = mathfu::vec4(directColor[2], directColor[1], directColor[0], 0);
+            auto extDir = MathHelper::calcExteriorColorDir(
+                cullStage->matricesForCulling->lookAtMat,
+                m_api->getConfig()->currentTime
+            );
+            fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
+        } else if (config->globalLighting == EParameterSource::eConfig) {
+            auto fdd = cullStage->frameDepedantData;
+
+            fdd->exteriorAmbientColor = config->exteriorAmbientColor;
+            fdd->exteriorGroundAmbientColor = config->exteriorGroundAmbientColor;
+            fdd->exteriorHorizontAmbientColor = config->exteriorHorizontAmbientColor;
+            fdd->exteriorDirectColor = config->exteriorDirectColor;
+            auto extDir = MathHelper::calcExteriorColorDir(
+                cullStage->matricesForCulling->lookAtMat,
+                m_api->getConfig()->currentTime
+            );
+            fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
+        }
+
+        {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->useMinimapWaterColor = config->useMinimapWaterColor;
+            fdd->useCloseRiverColorForDB = config->useCloseRiverColorForDB;
+        }
+        if (config->waterColorParams == EParameterSource::eDatabase)
+        {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->closeRiverColor = mathfu::vec4(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
+            fdd->farRiverColor = mathfu::vec4(farRiverColor[2], farRiverColor[1], farRiverColor[0], 0);
+            fdd->closeOceanColor = mathfu::vec4(closeOceanColor[2], closeOceanColor[1], closeOceanColor[0], 0);
+            fdd->farOceanColor = mathfu::vec4(farOceanColor[2], farOceanColor[1], farOceanColor[0], 0);
+        } else if (config->waterColorParams == EParameterSource::eConfig) {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->closeRiverColor = config->closeRiverColor;
+            fdd->farRiverColor = config->farRiverColor;
+            fdd->closeOceanColor = config->closeOceanColor;
+            fdd->farOceanColor = config->farOceanColor;
+        }
+        if (config->skyParams == EParameterSource::eDatabase) {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 1.0);
+            fdd->SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 1.0);
+            fdd->SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 1.0);
+            fdd->SkyBand2Color =    mathfu::vec4(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0], 1.0);
+            fdd->SkySmogColor =     mathfu::vec4(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0], 1.0);
+            fdd->SkyFogColor =      mathfu::vec4(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0], 1.0);
+        }
+    }
+
+    //Handle fog
+    {
+        float FogEnd = 0;
+        float FogScaler = 0;
+        float FogDensity = 0;
+        float FogHeight = 0;
+        float FogHeightScaler = 0;
+        float FogHeightDensity = 0;
+        float SunFogAngle = 0;
+
+        mathfu::vec3 EndFogColor = {0, 0, 0};
+        float EndFogColorDistance = 0;
+        mathfu::vec3 SunFogColor = {0, 0, 0};
+        float SunFogStrength = 0;
+        mathfu::vec3 FogHeightColor = {0, 0, 0};
+        mathfu::vec4 FogHeightCoefficients = {0, 0, 0, 0};
+
+        std::vector<LightResult> combinedResults = {};
+        float totalSummator = 0.0;
+
+        //Apply fog from WMO
+        {
+            bool fogDefaultExist = false;
+            int fogDefaultIndex = -1;
+            for (int i = 0; i < wmoFogs.size() && totalSummator < 1.0f; i++) {
+                auto &fogRec = wmoFogs[i];
+                if (fogRec.isDefault) {
+                    fogDefaultExist = true;
+                    fogDefaultIndex = i;
+                    continue;
+                }
+                if (totalSummator + fogRec.blendCoef > 1.0f) {
+                    fogRec.blendCoef = 1.0f - totalSummator;
+                    totalSummator = 1.0f;
+                } else {
+                    totalSummator += fogRec.blendCoef;
+                }
+                combinedResults.push_back(fogRec);
+            }
+
+            if (fogDefaultExist && totalSummator < 1.0f) {
+                wmoFogs[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
+                totalSummator = 1.0f;
+                combinedResults.push_back(wmoFogs[fogDefaultIndex]);
+            }
+        }
+
+        //Apply fogs from lights
+        if (totalSummator < 1.0) {
+            if (config->globalFog == EParameterSource::eDatabase) {
+                bool fogDefaultExist = false;
+                int fogDefaultIndex = -1;
+
+                for (int i = 0; i < lightResults.size() && totalSummator < 1.0f; i++) {
+                    auto &fogRec = lightResults[i];
+                    if (fogRec.isDefault) {
+                        fogDefaultExist = true;
+                        fogDefaultIndex = i;
+                        continue;
+                    }
+                    if (totalSummator + fogRec.blendCoef > 1.0f) {
+                        fogRec.blendCoef = 1.0f - totalSummator;
+                        totalSummator = 1.0f;
+                    } else {
+                        totalSummator += fogRec.blendCoef;
+                    }
+                    combinedResults.push_back(fogRec);
+                }
+                if (fogDefaultExist && totalSummator < 1.0f) {
+                    lightResults[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
+                    totalSummator = 1.0f;
+                    combinedResults.push_back(lightResults[fogDefaultIndex]);
+                }
+            } else if (config->globalFog == EParameterSource::eConfig) {
+                LightResult globalFog;
+                globalFog.FogScaler = config->FogScaler;
+                globalFog.FogEnd = config->FogEnd;
+                globalFog.FogDensity = config->FogDensity;
+
+                globalFog.FogHeightScaler = config->FogHeightScaler;
+                globalFog.FogHeightDensity = config->FogHeightDensity;
+                globalFog.SunFogAngle = config->SunFogAngle;
+                globalFog.EndFogColorDistance = config->EndFogColorDistance;
+                globalFog.SunFogStrength = config->SunFogStrength;
+
+                globalFog.blendCoef = 1.0 - totalSummator;
+                globalFog.isDefault = true;
+
+                globalFog.EndFogColor = {config->EndFogColor.z, config->EndFogColor.y, config->EndFogColor.x};
+                globalFog.SunFogColor = {config->SunFogColor.z, config->SunFogColor.y, config->SunFogColor.x};
+                globalFog.FogHeightColor = {config->FogHeightColor.z, config->FogHeightColor.y, config->FogHeightColor.x};
+
+                combinedResults.push_back(globalFog);
+            }
+        }
+        std::sort(combinedResults.begin(), combinedResults.end(), [](const LightResult &a, const LightResult &b) -> bool {
+            return a.blendCoef > b.blendCoef;
+        });
+
+        //Rebalance blendCoefs
+        if (totalSummator < 1.0f && totalSummator > 0.0f) {
+            for (auto &_light : combinedResults) {
+                _light.blendCoef = _light.blendCoef / totalSummator;
+            }
+        }
+
+        for (auto &_light : combinedResults) {
+            FogEnd += _light.FogEnd * _light.blendCoef;
+            FogScaler += _light.FogScaler * _light.blendCoef;
+            FogDensity += _light.FogDensity * _light.blendCoef;
+            FogHeight += _light.FogHeight * _light.blendCoef;
+            FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
+            FogHeightDensity += _light.FogHeightDensity * _light.blendCoef;
+            SunFogAngle += _light.SunFogAngle * _light.blendCoef;
+
+            EndFogColor += mathfu::vec3(_light.EndFogColor.data()) * _light.blendCoef;
+            EndFogColorDistance += _light.EndFogColorDistance * _light.blendCoef;
+            SunFogColor += mathfu::vec3(_light.SunFogColor.data()) * _light.blendCoef;
+            SunFogStrength += _light.SunFogStrength * _light.blendCoef;
+            FogHeightColor += mathfu::vec3(_light.FogHeightColor.data()) * _light.blendCoef;
+            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients) * _light.blendCoef;
+        }
+
+        //In case of no data -> disable the fog
+        {
+            auto fdd = cullStage->frameDepedantData;
+            fdd->FogDataFound = !combinedResults.empty();
+//            std::cout << "combinedResults.empty() = " << combinedResults.empty() << std::endl;
+//            std::cout << "combinedResults.size() = " << combinedResults.size() << std::endl;
+            fdd->FogEnd = FogEnd;
+            fdd->FogScaler = FogScaler;
+            fdd->FogDensity = FogDensity;
+            fdd->FogHeight = FogHeight;
+            fdd->FogHeightScaler = FogHeightScaler;
+            fdd->FogHeightDensity = FogHeightDensity;
+            fdd->SunFogAngle = SunFogAngle;
+            if (fdd->overrideValuesWithFinalFog) {
+                fdd->FogColor = mathfu::vec3(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
+            } else {
+                fdd->FogColor = fdd->SkyFogColor.xyz();
+            }
+            fdd->EndFogColor = mathfu::vec3(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
+            fdd->EndFogColorDistance = EndFogColorDistance;
+            fdd->SunFogColor = mathfu::vec3(SunFogColor[2], SunFogColor[1], SunFogColor[0]);
+            fdd->SunFogStrength = SunFogStrength;
+            fdd->FogHeightColor = mathfu::vec3(FogHeightColor[2], FogHeightColor[1], FogHeightColor[0]);
+            fdd->FogHeightCoefficients = mathfu::vec4(FogHeightCoefficients[0], FogHeightCoefficients[1],
+                                             FogHeightCoefficients[2], FogHeightCoefficients[3]);
+        }
     }
 
 //    this->m_api->getConfig()->setClearColor(0,0,0,0);
+}
+
+void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) {
+    if (m_api->databaseHandler == nullptr)
+        return ;
+
+    LightResult zoneLightResult;
+
+    bool zoneLightFound = false;
+    int LightId;
+    for (const auto &zoneLight : m_zoneLights) {
+        CAaBox laabb = zoneLight.aabb;
+        auto const vec50 = mathfu::vec3(50.0f,50.0f,0);
+        laabb.min = (mathfu::vec3(laabb.min) - vec50);
+        laabb.max = (mathfu::vec3(laabb.max) + vec50);
+        if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
+            zoneLightFound = true;
+
+            if (stateForConditions != nullptr) {
+                stateForConditions->currentZoneLights.push_back(zoneLight.ID);
+            }
+            LightId = zoneLight.LightID;
+            break;
+        }
+    }
+
+    if (zoneLightFound) {
+        m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
+        if (stateForConditions != nullptr) {
+            stateForConditions->currentZoneLights.push_back(zoneLightResult.lightParamId);
+        }
+    }
+
+    m_api->databaseHandler->getEnvInfo(m_mapId,
+                                       cameraVec3.x,
+                                       cameraVec3.y,
+                                       cameraVec3.z,
+                                       config->currentTime,
+                                       lightResults
+    );
+
+
+    if (stateForConditions != nullptr) {
+        for (auto &_light : lightResults) {
+            stateForConditions->currentZoneLights.push_back(_light.lightParamId);
+        }
+    }
+
+    //Calc final blendcoef for zoneLight;
+    if (zoneLightFound) {
+        float blendCoef = 1.0;
+
+        for (auto &_light : lightResults) {
+            if (!_light.isDefault) {
+                blendCoef -= _light.blendCoef;
+            }
+        }
+        if (blendCoef > 0) {
+            zoneLightResult.blendCoef = blendCoef;
+            lightResults.push_back(zoneLightResult);
+            //Delete default from results;
+            auto it = lightResults.begin();
+            while (it != lightResults.end()) {
+                if (it->isDefault) {
+                    lightResults.erase(it);
+                    break;
+                } else
+                    it++;
+            }
+        }
+    }
 }
 
 void Map::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
@@ -734,8 +966,12 @@ void Map::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::s
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
             int adt_x = worldCoordinateToAdtIndex(camera4.y);
             int adt_y = worldCoordinateToAdtIndex(camera4.x);
+            if ((adt_x >= 64) || (adt_x < 0)) return;
+            if ((adt_y >= 64) || (adt_y < 0)) return;
+
             cullStage->adtAreadId = -1;
-            std::shared_ptr<AdtObject> adtObjectCameraAt = mapTiles[adt_x][adt_y];
+            auto &adtObjectCameraAt = mapTiles[adt_x][adt_y];
+
             if (adtObjectCameraAt != nullptr) {
                 ADTObjRenderRes tempRes;
                 tempRes.adtObject = adtObjectCameraAt;
@@ -770,7 +1006,32 @@ void Map::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::s
         }
     }
 }
+void Map::getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) {
+    areaId = 0;
+    parentAreaId = 0;
 
+    if (m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+        if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+            int adt_x = worldCoordinateToAdtIndex(cameraPos.y);
+            int adt_y = worldCoordinateToAdtIndex(cameraPos.x);
+            if ((adt_x >= 64) || (adt_x < 0)) return;
+            if ((adt_y >= 64) || (adt_y < 0)) return;
+
+            auto &adtObjectCameraAt = mapTiles[adt_x][adt_y];
+
+            int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
+            int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
+
+            areaId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
+
+            if (areaId > 0 && (m_api->databaseHandler != nullptr)) {
+                auto areaRecord = m_api->databaseHandler->getArea(areaId);
+                parentAreaId = areaRecord.parentAreaId;
+            }
+        }
+    }
+
+}
 void Map::checkExterior(mathfu::vec4 &cameraPos,
                         std::vector<mathfu::vec3> &frustumPoints,
                         std::vector<mathfu::vec3> &hullLines,
@@ -787,7 +1048,6 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             m_wdlObject->setMapApi(this);
         }
     }
-
 
     std::vector<std::shared_ptr<M2Object>> m2ObjectsCandidates;
     std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
@@ -830,48 +1090,13 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 
-    //Sort and delete duplicates
-    if (m2ObjectsCandidates.size() > 0)
-    {
-        auto *sortedArrayPtr = &m2ObjectsCandidates[0];
-        std::vector<int> indexArray = std::vector<int>(m2ObjectsCandidates.size());
-        for (int i = 0; i < indexArray.size(); i++) {
-            indexArray[i] = i;
-        }
-        quickSort_parallel(
-            indexArray.data(),
-            indexArray.size(),
-            m_api->getConfig()->getThreadCount(),
-            m_api->getConfig()->getQuickSortCutoff(),
-            [sortedArrayPtr](int indexA, int indexB) {
-                auto *pA = sortedArrayPtr[indexA].get();
-                auto *pB = sortedArrayPtr[indexB].get();
-
-                return pA < pB;
-            });
-
-        if (m2ObjectsCandidates.size() > 1) {
-            std::shared_ptr<M2Object> prevElem = nullptr;
-            std::vector<std::shared_ptr<M2Object>> m2Unique;
-            m2Unique.reserve(indexArray.size());
-            for (int i = 0; i < indexArray.size(); i++) {
-                if (prevElem != m2ObjectsCandidates[indexArray[i]]) {
-                    m2Unique.push_back(m2ObjectsCandidates[indexArray[i]]);
-                    prevElem = m2ObjectsCandidates[indexArray[i]];
-                }
-            }
-            m2ObjectsCandidates = m2Unique;
-        }
-    }
-
-//    std::sort( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() );
-//    m2ObjectsCandidates.erase( unique( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end() ), m2ObjectsCandidates.end() );
+    
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {
-        int numThreads = m_api->getConfig()->getThreadCount();
+        int numThreads = m_api->getConfig()->threadCount;
 
-        #pragma omp parallel for num_threads(numThreads)
+        #pragma omp parallel for schedule(static, 1000) default( none) shared(m2ObjectsCandidates,cameraPos, cullStage, frustumPoints)
         for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
             auto m2ObjectCandidate = m2ObjectsCandidates[i];
             bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
@@ -885,7 +1110,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
             auto m2ObjectCandidate = m2ObjectsCandidates[i];
             if (m2ObjectCandidate->m_cullResult) {
-                cullStage->exteriorView.drawnM2s.push_back(m2ObjectCandidate);
+                cullStage->exteriorView.drawnM2s.insert(m2ObjectCandidate);
                 cullStage->m2Array.push_back(m2ObjectCandidate);
             }
         }
@@ -919,79 +1144,141 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
 
 //    std::cout << AdtIndexToWorldCoordinate(adt_y_min) <<" "<<  AdtIndexToWorldCoordinate(adt_x_min) << std::endl;
 
-
-
         for (int i = 0; i < frustumPoints.size(); i++) {
             mathfu::vec3 &frustumPoint = frustumPoints[i];
 
-            minx = std::min(frustumPoint.x, minx);
-            maxx = std::max(frustumPoint.x, maxx);
-            miny = std::min(frustumPoint.y, miny);
-            maxy = std::max(frustumPoint.y, maxy);
+            minx = std::min<float>(frustumPoint.x, minx);
+            maxx = std::max<float>(frustumPoint.x, maxx);
+            miny = std::min<float>(frustumPoint.y, miny);
+            maxy = std::max<float>(frustumPoint.y, maxy);
         }
 
-        int adt_x_min = std::max(worldCoordinateToAdtIndex(maxy), 0);
-        int adt_x_max = std::min(worldCoordinateToAdtIndex(miny), 63);
+        int adt_x_min = std::max<float>(worldCoordinateToAdtIndex(maxy), 0);
+        int adt_x_max = std::min<float>(worldCoordinateToAdtIndex(miny), 63);
 
-        int adt_y_min = std::max(worldCoordinateToAdtIndex(maxx), 0);
-        int adt_y_max = std::min(worldCoordinateToAdtIndex(minx), 63);
+        int adt_y_min = std::max<float>(worldCoordinateToAdtIndex(maxx), 0);
+        int adt_y_max = std::min<float>(worldCoordinateToAdtIndex(minx), 63);
 
-        int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
-        int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
+
 
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
             for (int i = adt_x_min; i <= adt_x_max; i++) {
                 for (int j = adt_y_min; j <= adt_y_max; j++) {
-                    if ((i < 0) || (i > 64)) continue;
-                    if ((j < 0) || (j > 64)) continue;
-
-                    auto adtObject = mapTiles[i][j];
-                    if (adtObject != nullptr) {
-
-                        std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
-                        adtFrustRes->adtObject = adtObject;
-
-
-                        bool result = adtObject->checkFrustumCulling(
-                            *adtFrustRes.get(),
-                            cameraPos,
-                            adt_global_x,
-                            adt_global_y,
-                            cullStage->exteriorView.frustumPlanes[0], //TODO:!
-                            frustumPoints,
-                            hullLines,
-                            lookAtMat4, m2ObjectsCandidates, wmoCandidates);
-                        if (result) {
-                            cullStage->exteriorView.drawnADTs.push_back(adtFrustRes);
-                            cullStage->adtArray.push_back(adtFrustRes);
-                        }
-                    } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
-                        if (m_wdtfile->mphd->flags.wdt_has_maid) {
-                            auto &mapFileIds = m_wdtfile->mapFileDataIDs[j * 64 + i];
-                            if (mapFileIds.rootADT > 0) {
-                                adtObject = std::make_shared<AdtObject>(m_api, i, j,
-                                                                        m_wdtfile->mapFileDataIDs[j * 64 + i],
-                                                                        m_wdtfile);
-                            } else {
-                                continue;
-                            }
-                        } else {
-                            std::string adtFileTemplate =
-                                "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" +
-                                std::to_string(j);
-                            adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
-                        }
-
-
-                        adtObject->setMapApi(this);
-                        mapTiles[i][j] = adtObject;
-                    }
+                    checkADTCulling(i, j, hullLines, lookAtMat4, cameraPos, frustumPoints, cullStage, m2ObjectsCandidates, wmoCandidates);
                 }
             }
+            for (auto &mandatoryAdt : m_mandatoryADT) {
+                checkADTCulling(mandatoryAdt[0], mandatoryAdt[1], hullLines, lookAtMat4, cameraPos, frustumPoints, cullStage, m2ObjectsCandidates, wmoCandidates);
+            }
+
         } else {
             wmoCandidates.push_back(wmoMap);
         }
     }
+}
+
+void Map::checkADTCulling(int i, int j, std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4,
+                          mathfu::vec4 &cameraPos, std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
+                          std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                          std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
+    if ((i < 0) || (i > 64)) return;
+    if ((j < 0) || (j > 64)) return;
+
+    int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
+    int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
+
+    if (this->m_adtBBHolder != nullptr) {
+        bool bbCheck = MathHelper::checkFrustum(
+            cullStage->exteriorView.frustumPlanes[0], //TODO:!
+            (*this->m_adtBBHolder)[i][j],
+            frustumPoints
+        );
+
+        if (!bbCheck)
+            return;
+    }
+
+    auto adtObject = mapTiles[i][j];
+    if (adtObject != nullptr) {
+
+        std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
+        adtFrustRes->adtObject = adtObject;
+
+
+        bool result = adtObject->checkFrustumCulling(
+            *adtFrustRes.get(),
+            cameraPos,
+            adt_global_x,
+            adt_global_y,
+            cullStage->exteriorView.frustumPlanes[0], //TODO:!
+            frustumPoints,
+            hullLines,
+            lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+
+//        if (this->m_adtBBHolder != nullptr) {
+//            //When adt passes BBHolder test, consider it influences the picture even if checkFrustumCulling
+//            //is false. So do forceful update for freeStrategy
+//            adtObject->getFreeStrategy()(false, true, this->getCurrentSceneTime());
+//        }
+
+        if (result) {
+            cullStage->exteriorView.drawnADTs.push_back(adtFrustRes);
+            cullStage->adtArray.push_back(adtFrustRes);
+        }
+    } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
+        if (m_wdtfile->mphd->flags.wdt_has_maid) {
+            auto &mapFileIds = m_wdtfile->mapFileDataIDs[j * 64 + i];
+            if (mapFileIds.rootADT > 0) {
+                adtObject = std::make_shared<AdtObject>(m_api, i, j,
+                                                        m_wdtfile->mapFileDataIDs[j * 64 + i],
+                                                        m_wdtfile);
+            } else {
+                return;
+            }
+        } else {
+            std::string adtFileTemplate =
+                "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" +
+                std::to_string(j);
+            adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+        }
+
+        adtObject->setMapApi(this);
+        adtObject->setFreeStrategy(zeroStateLambda);
+
+        mapTiles[i][j] = adtObject;
+    }
+}
+
+void Map::createAdtFreeLamdas() {
+    FreeStrategy lamda;
+    auto *config = m_api->getConfig();
+    if (m_api->getConfig()->adtFreeStrategy == EFreeStrategy::eTimeBased) {
+        int l_currentTime = 0;
+        lamda = [l_currentTime, config](bool doCheck, bool doUpdate, animTime_t currentTime) mutable -> bool {
+            if (doCheck) {
+                return (currentTime - l_currentTime) > config->adtTTLWithoutUpdate;
+            }
+            if (doUpdate) {
+                l_currentTime = currentTime;
+            }
+            return false;
+        };
+    } else if (m_api->getConfig()->adtFreeStrategy == EFreeStrategy::eFrameBase) {
+        int l_currentFrame = 0;
+        auto l_hDevice = m_api->hDevice;
+        lamda = [l_currentFrame, config, l_hDevice](bool doCheck, bool doUpdate, animTime_t currentTime) mutable -> bool {
+            if (doCheck) {
+                return (l_hDevice->getFrameNumber() - l_currentFrame) > config->adtFTLWithoutUpdate;
+            }
+            if (doUpdate) {
+                l_currentFrame = l_hDevice->getFrameNumber();
+            }
+            return false;
+        };
+    }
+    adtFreeLambda = lamda;
+    zeroStateLambda = lamda;
+
 }
 
 void Map::doPostLoad(HCullStage cullStage) {
@@ -1016,11 +1303,13 @@ void Map::doPostLoad(HCullStage cullStage) {
 
     if (quadBindings == nullptr)
     {
+        const float epsilon = 0.f;
+
         std::array<mathfu::vec2_packed, 4> vertexBuffer = {
-            mathfu::vec2_packed(mathfu::vec2(-1.0f + 0.001, -1.0f+ 0.001)),
-            mathfu::vec2_packed(mathfu::vec2(-1.0f+ 0.001,  1.0f- 0.001)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f- 0.001,  -1.0f+ 0.001)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f- 0.001,  1.f- 0.001))
+            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon, -1.0f + epsilon)),
+            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon,  1.0f - epsilon)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f  - epsilon,  -1.0f+ epsilon)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f  - epsilon,  1.f  - epsilon))
         };
         std::vector<uint16_t > indexBuffer = {
             0, 1, 2,
@@ -1052,74 +1341,13 @@ void Map::doPostLoad(HCullStage cullStage) {
         quadBindings->save();
     }
     if (skyMesh == nullptr) {
-        skyMesh = createSkyMesh(m_api->hDevice.get(), m_api->getConfig());
+        auto skyMeshBinding = createSkyBindings(m_api->hDevice.get());
+        skyMesh = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), false);
+        skyMesh0x4Sky = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), true);
     }
 };
 
-mathfu::vec3 calcExteriorColorDir(HCameraMatrices cameraMatrices, int time) {
-    // Phi Table
-    static const std::array<std::array<float, 2>, 4> phiTable = {
-        {
-            { 0.0f,  2.2165682f },
-            { 0.25f, 1.9198623f },
-            { 0.5f,  2.2165682f },
-            { 0.75f, 1.9198623f }
-        }
-    };
 
-    // Theta Table
-
-
-    static const std::array<std::array<float, 2>, 4> thetaTable = {
-        {
-            {0.0f, 3.926991f},
-            {0.25f, 3.926991f},
-            { 0.5f,  3.926991f },
-            { 0.75f, 3.926991f }
-        }
-    };
-
-//    float phi = DayNight::InterpTable(&DayNight::phiTable, 4u, DayNight::g_dnInfo.dayProgression);
-//    float theta = DayNight::InterpTable(&DayNight::thetaTable, 4u, DayNight::g_dnInfo.dayProgression);
-
-    float phi = phiTable[0][1];
-    float theta = thetaTable[0][1];
-
-    //Find Index
-    float timeF = time / 2880.0f;
-    int firstIndex = -1;
-    for (int i = 0; i < 4; i++) {
-        if (timeF < phiTable[i][0]) {
-            firstIndex = i;
-            break;
-        }
-    }
-    if (firstIndex == -1) {
-        firstIndex = 3;
-    }
-    {
-        float alpha =  (phiTable[firstIndex][0] -  timeF) / (thetaTable[firstIndex][0] - thetaTable[firstIndex-1][0]);
-        phi = phiTable[firstIndex][1]*(1.0 - alpha) + phiTable[firstIndex - 1][1]*alpha;
-    }
-
-
-    // Convert from spherical coordinates to XYZ
-    // x = rho * sin(phi) * cos(theta)
-    // y = rho * sin(phi) * sin(theta)
-    // z = rho * cos(phi)
-
-    float sinPhi = (float) sin(phi);
-    float cosPhi = (float) cos(phi);
-
-    float sinTheta = (float) sin(theta);
-    float cosTheta = (float) cos(theta);
-
-    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(cameraMatrices->lookAtMat);
-
-    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
-    return (lookAtRotation * sunDirWorld.xyz());
-}
 
 void Map::update(HUpdateStage updateStage) {
     mathfu::vec3 cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
@@ -1132,74 +1360,93 @@ void Map::update(HUpdateStage updateStage) {
 //        std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
 
 //    #pragma
-    int numThreads = m_api->getConfig()->getThreadCount();
+    int numThreads = m_api->getConfig()->threadCount;
     {
-        #pragma omp parallel for num_threads(numThreads) schedule(dynamic, 4)
-        for (int i = 0; i < updateStage->cullResult->m2Array.size(); i++) {
-            auto m2Object = updateStage->cullResult->m2Array[i];
-            if (m2Object != nullptr) {
-                m2Object->update(deltaTime, cameraVec3, lookAtMat);
-            }
-        }
+
+        auto &m2Array = updateStage->cullResult->m2Array;
+        m2UpdateframeCounter.beginMeasurement();
+
+//        auto n = m2Array.size();
+//        #pragma omp parallel for schedule(static, 1000) num_threads(numThreads) default(none) shared(m2Array,n, deltaTime, cameraVec3,lookAtMat)
+//        for (int i = 0; i < n; i++ ) {
+//            auto m2Object = m2Array[i];
+//            if (m2Object != nullptr) {
+//                m2Object->update(deltaTime, cameraVec3, lookAtMat);
+//            }
+//        }
+
+
+
+        //std::for_each(std::execution::par_unseq,
+        //    m2Array.begin(),
+        //    m2Array.end(), [&](const std::shared_ptr<M2Object> &m2Object) {
+        //        m2Object->update(deltaTime, cameraVec3, lookAtMat);
+        //});
+
+        /*
+        tbb::parallel_for(size_t(0), m2Array.size(), [&](size_t i) {
+            auto& m2Object = m2Array[i];
+            m2Object->update(deltaTime, cameraVec3, lookAtMat);
+        });
+        */
+
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2Array.size(), 200),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i != r.end(); ++i) {
+                    auto& m2Object = m2Array[i];
+                    m2Object->update(deltaTime, cameraVec3, lookAtMat);
+                }
+            }, tbb::simple_partitioner());
+
+        m2UpdateframeCounter.endMeasurement("M2 update");
+
+        m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
     }
 
 //        });
 //    }
 
-    for (auto &wmoObject : updateStage->cullResult->wmoArray) {
+    for (const auto &wmoObject : updateStage->cullResult->wmoArray) {
         if (wmoObject == nullptr) continue;
         wmoObject->update();
     }
 
-    for (auto &adtObjectRes : updateStage->cullResult->adtArray) {
+    for (const auto &adtObjectRes : updateStage->cullResult->adtArray) {
         adtObjectRes->adtObject->update(deltaTime);
     }
 
     //2. Calc distance every 100 ms
 //    #pragma omp parallel for
-    for (int i = 0; i < updateStage->cullResult->m2Array.size(); i++) {
-        auto m2Object = updateStage->cullResult->m2Array[i];
+    for (const auto& m2Object : updateStage->cullResult->m2Array) {
         if (m2Object == nullptr) continue;
         m2Object->calcDistance(cameraVec3);
     };
 
-
-
-
-    //Calc exteriorDirectColorDir
-    auto extDir = calcExteriorColorDir(
-        updateStage->cameraMatrices,
-        m_api->getConfig()->getCurrentTime()
-    );
-    m_api->getConfig()->setExteriorDirectColorDir(
-        extDir.x, extDir.y, extDir.z
-    );
-
-    //8. Check fog color every 2 seconds
-    if (this->m_currentTime + updateStage->delta - this->m_lastTimeLightCheck > 30) {
-
-
-        this->m_lastTimeLightCheck = this->m_currentTime;
-    }
-
     //Cleanup ADT every 10 seconds
-    if (this->m_currentTime + updateStage->delta- this->m_lastTimeAdtCleanup > 10000) {
+    if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
         for (int i = 0; i < 64; i++) {
             for (int j = 0; j < 64; j++) {
                 auto adtObj = mapTiles[i][j];
                 //Free obj, if it was unused for 10 secs
-                if (adtObj != nullptr && ((this->m_currentTime - adtObj->getLastTimeOfUpdate()) > 10000)) {
+                if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
+//                    std::cout << "try to free adtObj" << std::endl;
+
                     mapTiles[i][j] = nullptr;
                 }
             }
         }
 
-        this->m_lastTimeAdtCleanup = this->m_currentTime;
+        adtFreeLambda(false, true, this->m_currentTime + updateStage->delta);
     }
     this->m_currentTime += updateStage->delta;
+
+    //Collect meshes
 }
 
-void Map::updateBuffers(HCullStage cullStage) {
+void Map::updateBuffers(HUpdateStage updateStage) {
+    auto cullStage = updateStage->cullResult;
+
     for (int i = 0; i < cullStage->m2Array.size(); i++) {
         auto m2Object = cullStage->m2Array[i];
         if (m2Object != nullptr) {
@@ -1316,96 +1563,33 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
 animTime_t Map::getCurrentSceneTime() {
     return m_currentTime;
 }
-
-void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
-    auto cullStage = updateStage->cullResult;
-    auto renderedThisFramePreSort = std::vector<HGMesh>();
-
-    bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
-
-    if (quadBindings == nullptr)
-        return;
-
-    if ( !m_suppressDrawingSky && (m_skyConeAlpha > 0) && (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit)) {
-        renderedThisFramePreSort.push_back(skyMesh);
-    }
-
-    HDrawStage origResultDrawStage = resultDrawStage;
-    if (frameBufferSupported) {
-        //Create new drawstage and draw everything there
-        resultDrawStage = std::make_shared<DrawStage>();
-
-        resultDrawStage->drawStageDependencies = origResultDrawStage->drawStageDependencies;
-        resultDrawStage->matricesForRendering = origResultDrawStage->matricesForRendering;
-        resultDrawStage->setViewPort = origResultDrawStage->setViewPort;
-        resultDrawStage->viewPortDimensions = origResultDrawStage->viewPortDimensions;;
-        resultDrawStage->clearScreen = origResultDrawStage->clearScreen;;
-        resultDrawStage->clearColor = origResultDrawStage->clearColor;;
-
-        resultDrawStage->target = m_api->hDevice->createFrameBuffer(
-            resultDrawStage->viewPortDimensions.maxs[0],
-            resultDrawStage->viewPortDimensions.maxs[1],
-            {ITextureFormat::itRGBA},
-            ITextureFormat::itDepth32,
-            2
-        );
-    }
-    //Create scenewide uniform
-    auto renderMats = resultDrawStage->matricesForRendering;
-
-    auto config = m_api->getConfig();
-    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
-    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk) -> void {
-        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
-
-        blockPSVS->uLookAtMat = renderMats->lookAtMat;
-        blockPSVS->uPMatrix = renderMats->perspectiveMat;
-        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
-        blockPSVS->uViewUp = renderMats->viewUp;
-
-        blockPSVS->extLight.uExteriorAmbientColor = config->getExteriorAmbientColor();
-        blockPSVS->extLight.uExteriorHorizontAmbientColor = config->getExteriorHorizontAmbientColor();
-        blockPSVS->extLight.uExteriorGroundAmbientColor = config->getExteriorGroundAmbientColor();
-        blockPSVS->extLight.uExteriorDirectColor = config->getExteriorDirectColor();
-        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(config->getExteriorDirectColorDir(), 1.0);
-
-        blockPSVS->fogData.densityParams = mathfu::vec4(
-            (config->getFarPlane() - 30) * config->getFogScaler(),
-            (config->getFarPlane() - 30),
-            config->getFogDensity() / 1000,
-         0);
-        blockPSVS->fogData.heightPlane = mathfu::vec4(0,0,0,0);
-        blockPSVS->fogData.color_and_heightRate = mathfu::vec4(config->getSkyFogColor().xyz(),config->getFogHeightScaler());
-        blockPSVS->fogData.heightDensity_and_endColor = mathfu::vec4(
-            config->getFogHeightDensity(),
-            config->getEndFogColor().x,
-            config->getEndFogColor().y,
-            config->getEndFogColor().z
-        );
-        blockPSVS->fogData.sunAngle_and_sunColor = mathfu::vec4(
-            config->getSunFogAngle(),
-            config->getSunFogColor().x * config->getSunFogStrength(),
-            config->getSunFogColor().y * config->getSunFogStrength(),
-            config->getSunFogColor().z * config->getSunFogStrength()
-        );
-        blockPSVS->fogData.heightColor_and_endFogDistance = mathfu::vec4(
-            config->getFogHeightColor(),
-            (config->getEndFogColorDistance() > 0) ?
-                config->getEndFogColorDistance() :
-                1000.0f
-        );
-        blockPSVS->fogData.sunPercentage = mathfu::vec4(
-            (config->getSunFogColor().Length() > 0) ? 0.5f : 0.0f
-            , 0, 0, 0);
-
-    });
-
-
-    additionalChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
+void Map::produceUpdateStage(HUpdateStage updateStage) {
+    this->update(updateStage);
 
     //Create meshes
-    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
+    updateStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+    updateStage->transparentMeshes = std::make_shared<MeshesToRender>();
 
+    auto &opaqueMeshes = updateStage->opaqueMeshes->meshes;
+    auto transparentMeshes = std::vector<HGMesh>();
+
+    auto cullStage = updateStage->cullResult;
+    auto fdd = cullStage->frameDepedantData;
+
+    if (m_api->getConfig()->renderSkyDom && !m_suppressDrawingSky &&
+        (cullStage->exteriorView.viewCreated || cullStage->currentWmoGroupIsExtLit)) {
+        if (fdd->overrideValuesWithFinalFog) {
+            if (skyMesh0x4Sky != nullptr) {
+                transparentMeshes.push_back(skyMesh0x4Sky);
+                skyMesh0x4Sky->setSortDistance(0);
+
+            }
+        }
+        if ((m_skyConeAlpha > 0) ) {
+            if (skyMesh != nullptr)
+                opaqueMeshes.push_back(skyMesh);
+        }
+    }
 
     // Put everything into one array and sort
     std::vector<GeneralView *> vector;
@@ -1418,11 +1602,13 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         vector.push_back(&updateStage->cullResult->exteriorView);
     }
 
-//    if (m_api->getConfig()->getRenderWMO()) {
+    bool renderPortals = m_api->getConfig()->renderPortals;
     for (auto &view : vector) {
-        view->collectMeshes(renderedThisFramePreSort);
+        view->collectMeshes(opaqueMeshes, transparentMeshes);
+        if (renderPortals) {
+            view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
+        }
     }
-//    }
 
     std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
     for (auto &view : vector) {
@@ -1434,73 +1620,198 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
 //        s.insert(i);
 //    m2ObjectsRendered.assign( s.begin(), s.end() );
 
-    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
-    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
+//    std::set<std::shared_ptr<M2Object>> s;
+//    unsigned size = m2ObjectsRendered.size();
+//    for( unsigned i = 0; i < size; ++i ) s.insert( m2ObjectsRendered[i] );
+//    m2ObjectsRendered.assign( s.begin(), s.end() );
 
-//    if (m_api->getConfig()->getRenderM2()) {
-    for (auto &m2Object : m2ObjectsRendered) {
-        if (m2Object == nullptr) continue;
-        m2Object->collectMeshes(renderedThisFramePreSort, m_viewRenderOrder);
-        m2Object->drawParticles(renderedThisFramePreSort, m_viewRenderOrder);
+    if (m2ObjectsRendered.size() > 2) {
+        tbb::parallel_sort(m2ObjectsRendered.begin(), m2ObjectsRendered.end(),
+                           [](auto &first, auto &end) { return first < end; }
+        );
+        m2ObjectsRendered.erase(unique(m2ObjectsRendered.begin(), m2ObjectsRendered.end()), m2ObjectsRendered.end());
     }
-//    }
+
+    if (m_api->getConfig()->renderM2) {
+        for (auto &m2Object : m2ObjectsRendered) {
+            if (m2Object == nullptr) continue;
+            m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
+            m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
+        }
+    }
+
+
 
     //No need to sort array which has only one element
-    if (renderedThisFramePreSort.size() > 1) {
-        auto *sortedArrayPtr = &renderedThisFramePreSort[0];
-        std::vector<int> indexArray = std::vector<int>(renderedThisFramePreSort.size());
-        for (int i = 0; i < indexArray.size(); i++) {
-            indexArray[i] = i;
-        }
-
-        auto *config = m_api->getConfig();
-
-//        if (config->getMovementSpeed() > 2) {
-        quickSort_parallel(
-            indexArray.data(),
-            indexArray.size(),
-            config->getThreadCount(),
-            config->getQuickSortCutoff(),
-#include "../../../gapi/interface/sortLambda.h"
+    if (transparentMeshes.size() > 1) {
+        tbb::parallel_sort(transparentMeshes.begin(), transparentMeshes.end(),
+            #include "../../../gapi/interface/sortLambda.h"
         );
-//        } else {
-//            quickSort_dualPoint(
-//                indexArray.data(),
-//                indexArray.size(),
-//                config->getThreadCount(),
-//                config->getQuickSortCutoff(),
-//                #include "../../../gapi/interface/sortLambda.h"
-//            );
-//        }
+//        std::sort(std::execution::par_unseq, transparentMeshes.begin(), transparentMeshes.end(),
+//            #include "../../../gapi/interface/sortLambda.h"
+//        );
+        updateStage->transparentMeshes->meshes = transparentMeshes;
 
-        resultDrawStage->meshesToRender->meshes.reserve(indexArray.size());
-        for (int i = 0; i < indexArray.size(); i++) {
-            resultDrawStage->meshesToRender->meshes.push_back(renderedThisFramePreSort[indexArray[i]]);
-        }
     } else {
-        for (int i = 0; i < renderedThisFramePreSort.size(); i++) {
-            resultDrawStage->meshesToRender->meshes.push_back(renderedThisFramePreSort[i]);
+        auto &targetTranspMeshes = updateStage->transparentMeshes->meshes;
+        for (int i = 0; i < transparentMeshes.size(); i++) {
+            targetTranspMeshes.push_back(transparentMeshes[i]);
         }
     }
 
-    if (frameBufferSupported) {
-        doGaussBlur(resultDrawStage, origResultDrawStage);
+    //1. Collect buffers
+    std::vector<HGUniformBufferChunk> &bufferChunks = updateStage->uniformBufferChunks;
+    bufferChunks.reserve((opaqueMeshes.size() + updateStage->transparentMeshes->meshes.size()) * 3);
+    int renderIndex = 0;
+    for (const auto &mesh : opaqueMeshes) {
+        for (int i = 0; i < 5; i++ ) {
+            auto bufferChunk = mesh->getUniformBuffer(i);
+
+            if (bufferChunk != nullptr) {
+                bufferChunks.push_back(bufferChunk);
+            }
+        }
+    }
+    for (const auto &mesh : updateStage->transparentMeshes->meshes) {
+        for (int i = 0; i < 5; i++ ) {
+            auto bufferChunk = mesh->getUniformBuffer(i);
+
+            if (bufferChunk != nullptr) {
+                bufferChunks.push_back(bufferChunk);
+            }
+        }
+    }
+
+    tbb::parallel_sort(bufferChunks.begin(), bufferChunks.end(),
+                       [](auto &first, auto &end) { return first < end; }
+    );
+    bufferChunks.erase(unique(bufferChunks.begin(), bufferChunks.end()), bufferChunks.end());
+
+}
+void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
+    auto cullStage = updateStage->cullResult;
+
+    //Create scenewide uniform
+    resultDrawStage->frameDepedantData = updateStage->cullResult->frameDepedantData;
+    auto renderMats = resultDrawStage->matricesForRendering;
+
+    resultDrawStage->opaqueMeshes = updateStage->opaqueMeshes;
+    resultDrawStage->transparentMeshes = updateStage->transparentMeshes;
+
+    HDrawStage origResultDrawStage = resultDrawStage;
+    bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
+
+    auto config = m_api->getConfig();
+    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk, const HFrameDepedantData &fdd) -> void {
+        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
+
+        blockPSVS->uLookAtMat = renderMats->lookAtMat;
+        blockPSVS->uPMatrix = renderMats->perspectiveMat;
+        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
+        blockPSVS->uViewUp = renderMats->viewUp;
+
+        blockPSVS->extLight.uExteriorAmbientColor = fdd->exteriorAmbientColor;
+        blockPSVS->extLight.uExteriorHorizontAmbientColor = fdd->exteriorHorizontAmbientColor;
+        blockPSVS->extLight.uExteriorGroundAmbientColor = fdd->exteriorGroundAmbientColor;
+        blockPSVS->extLight.uExteriorDirectColor = fdd->exteriorDirectColor;
+        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
+        blockPSVS->extLight.uAdtSpecMult = mathfu::vec4(config->adtSpecMult, 0,0,1.0);
+
+//        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
+        float fogEnd = config->farPlane;
+        if (config->disableFog || !fdd->FogDataFound) {
+            fogEnd = 100000000.0f;
+            fdd->FogScaler = 0;
+            fdd->FogDensity = 0;
+        }
+
+        float fogStart = std::max<float>(config->farPlane - 250, 0);
+        fogStart = std::max<float>(fogEnd - fdd->FogScaler * (fogEnd - fogStart), 0);
+
+
+        blockPSVS->fogData.densityParams = mathfu::vec4(
+            fogStart,
+            fogEnd ,
+            fdd->FogDensity / 1000,
+            0);
+        blockPSVS->fogData.heightPlane = mathfu::vec4(0,0,0,0);
+        blockPSVS->fogData.color_and_heightRate = mathfu::vec4(fdd->FogColor,fdd->FogHeightScaler);
+        blockPSVS->fogData.heightDensity_and_endColor = mathfu::vec4(
+            fdd->FogHeightDensity,
+            fdd->EndFogColor.x,
+            fdd->EndFogColor.y,
+            fdd->EndFogColor.z
+        );
+        blockPSVS->fogData.sunAngle_and_sunColor = mathfu::vec4(
+            fdd->SunFogAngle,
+            fdd->SunFogColor.x * fdd->SunFogStrength,
+            fdd->SunFogColor.y * fdd->SunFogStrength,
+            fdd->SunFogColor.z * fdd->SunFogStrength
+        );
+        blockPSVS->fogData.heightColor_and_endFogDistance = mathfu::vec4(
+            fdd->FogHeightColor,
+            (fdd->EndFogColorDistance > 0) ?
+            fdd->EndFogColorDistance :
+            1000.0f
+        );
+        blockPSVS->fogData.sunPercentage = mathfu::vec4(
+            (fdd->SunFogColor.Length() > 0) ? 0.5f : 0.0f
+            , 0, 0, 0);
+
+    });
+
+    updateStage->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
+
+    if (frameBufferSupported ) {
+        //Create a copy of exiting resultDrawStage
+        auto resultDrawStageCpy = std::make_shared<DrawStage>();
+        *resultDrawStageCpy = *resultDrawStage;
+        //Assign a new frame buffer to copy
+        resultDrawStageCpy->target = m_api->hDevice->createFrameBuffer(
+            resultDrawStage->viewPortDimensions.maxs[0],
+            resultDrawStage->viewPortDimensions.maxs[1],
+            {ITextureFormat::itRGBA},
+            ITextureFormat::itDepth32,
+            m_api->hDevice->getMaxSamplesCnt(),
+            4
+        );
+        resultDrawStageCpy->viewPortDimensions.mins = {0,0};
+
+        HDrawStage lastDrawStage = nullptr;
+        HDrawStage prevDrawStage = resultDrawStageCpy;
+
+        if (!config->disableGlow) {
+            lastDrawStage = doGaussBlur(prevDrawStage, updateStage);
+            if (lastDrawStage != nullptr)
+                prevDrawStage = lastDrawStage;
+        }
+
+
+        //End of effects stack
+        //Make last stage to draw to initial resultDrawStage target
+        prevDrawStage->target = resultDrawStage->target;
+        //Replace all data in target drawStage with new data
+        *resultDrawStage = *prevDrawStage;
     }
 }
 
-void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultDrawStage) const {
+HDrawStage Map::doGaussBlur(const HDrawStage parentDrawStage, HUpdateStage &updateStage) const {
+    if (quadBindings == nullptr)
+        return nullptr;
 
     ///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
     ///With two frameBuffers
     ///Size for buffers : is 4 times less than current canvas
-    int targetWidth = resultDrawStage->viewPortDimensions.maxs[0] >> 2;
-    int targetHeight = resultDrawStage->viewPortDimensions.maxs[1] >> 2;
+    int targetWidth = parentDrawStage->viewPortDimensions.maxs[0] >> 2;
+    int targetHeight = parentDrawStage->viewPortDimensions.maxs[1] >> 2;
 
     auto frameB1 = m_api->hDevice->createFrameBuffer(
         targetWidth,
         targetHeight,
         {ITextureFormat::itRGBA},
         ITextureFormat::itDepth32,
+        1,
         2
     );
     auto frameB2 = m_api->hDevice->createFrameBuffer(
@@ -1508,11 +1819,13 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         targetHeight,
         {ITextureFormat::itRGBA},
         ITextureFormat::itDepth32,
+        1,
         2
     );
 
     auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-    vertexChunk->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+    updateStage->uniformBufferChunks.push_back(vertexChunk);
+    vertexChunk->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
         meshblockVS.x = 1;
         meshblockVS.y = 1;
@@ -1522,7 +1835,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
 
     auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+    updateStage->uniformBufferChunks.push_back(ffxGaussFrag);
+    ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {-1, 0, 0, -1};
         static const float s_texOffsetY[4] = {2, 2, -1, -1};;
@@ -1535,7 +1849,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
 
     auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+    updateStage->uniformBufferChunks.push_back(ffxGaussFrag2);
+    ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {-6, -1, 1, 6};
         static const float s_texOffsetY[4] = {0, 0, 0, 0};;
@@ -1546,7 +1861,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         }
     });
     auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self) -> void {
+    updateStage->uniformBufferChunks.push_back(ffxGaussFrag3);
+    ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {0, 0, 0, 0};
         static const float s_texOffsetY[4] = {10, 2, -2, -10};;
@@ -1558,7 +1874,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
     });
     HGUniformBufferChunk frags[3] = {ffxGaussFrag, ffxGaussFrag2, ffxGaussFrag3};
 
-    HDrawStage prevStage = resultDrawStage;
+    HDrawStage prevStage = parentDrawStage;
     for (int i = 0; i < 3; i++) {
         ///1. Create draw stage
         HDrawStage drawStage = std::make_shared<DrawStage>();
@@ -1567,8 +1883,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         drawStage->matricesForRendering = nullptr;
         drawStage->setViewPort = true;
         drawStage->viewPortDimensions = {{0, 0},
-                                         {resultDrawStage->viewPortDimensions.maxs[0] >> 2,
-                                             resultDrawStage->viewPortDimensions.maxs[1] >> 2}};
+                                         {parentDrawStage->viewPortDimensions.maxs[0] >> 2,
+                                             parentDrawStage->viewPortDimensions.maxs[1] >> 2}};
         drawStage->clearScreen = false;
         drawStage->target = ((i & 1) > 0) ? frameB1 : frameB2;
 
@@ -1599,8 +1915,8 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
         //Make mesh
         HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
-        drawStage->meshesToRender = std::make_shared<MeshesToRender>();
-        drawStage->meshesToRender->meshes.push_back(hmesh);
+        drawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+        drawStage->opaqueMeshes->meshes.push_back(hmesh);
 
         ///3. Reassign previous frame
         prevStage = drawStage;
@@ -1608,18 +1924,20 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
     //And the final is ffxglow to screen
     {
-        auto config = m_api->getConfig();
-        auto glow = config->currentGlow;
+        auto config = m_api->getConfig();;
+
+        auto glow = parentDrawStage->frameDepedantData->currentGlow;
         auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self) -> void {
+        updateStage->uniformBufferChunks.push_back(ffxGlowfragmentChunk);
+        ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
             auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
             meshblockVS.x = 1;
             meshblockVS.y = 1;
             meshblockVS.z = 0; //mix_coeficient
-            meshblockVS.w = config->getUseGaussBlur() ? fminf(0.5f, glow) : 0; //glow multiplier
+            meshblockVS.w = glow; //glow multiplier
         });
 
-        auto shader = m_api->hDevice->getShader("fullScreen_quad", nullptr);
+        auto shader = m_api->hDevice->getShader("ffxGlowQuad", nullptr);
         gMeshTemplate meshTemplate(quadBindings, shader);
         meshTemplate.meshType = MeshType::eGeneralMesh;
         meshTemplate.depthWrite = false;
@@ -1628,7 +1946,7 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
         meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
         meshTemplate.texture.resize(2);
-        meshTemplate.texture[0] = resultDrawStage->target->getAttachment(0);
+        meshTemplate.texture[0] = parentDrawStage->target->getAttachment(0);
         meshTemplate.texture[1] = prevStage->target->getAttachment(0);
 
         meshTemplate.textureCount = 2;
@@ -1647,9 +1965,17 @@ void Map::doGaussBlur(const HDrawStage &resultDrawStage, HDrawStage &origResultD
 
         //Make mesh
         HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
-        origResultDrawStage->drawStageDependencies = {prevStage};
-        origResultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
-        origResultDrawStage->meshesToRender->meshes.push_back(hmesh);
+
+        auto resultDrawStage = std::make_shared<DrawStage>();
+        *resultDrawStage = *parentDrawStage;
+        resultDrawStage->sceneWideBlockVSPSChunk = nullptr; //Since it's not used but this shader and it's important for vulkan
+        resultDrawStage->drawStageDependencies = {prevStage};
+        resultDrawStage->transparentMeshes = nullptr;
+        resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+        resultDrawStage->opaqueMeshes->meshes.push_back(hmesh);
+        resultDrawStage->target = nullptr;
+
+        return resultDrawStage;
     }
 }
 
@@ -1671,8 +1997,8 @@ void Map::loadZoneLights() {
 
             auto &points = innerZoneLightRecord.points;
             for (auto &zonePoint : zoneLight.points) {
-                minX = std::min(zonePoint.x, minX); minY = std::min(zonePoint.y, minY);
-                maxX = std::max(zonePoint.x, maxX); maxY = std::max(zonePoint.y, maxY);
+                minX = std::min<float>(zonePoint.x, minX); minY = std::min<float>(zonePoint.y, minY);
+                maxX = std::max<float>(zonePoint.x, maxX); maxY = std::max<float>(zonePoint.y, maxY);
 
                 points.push_back(mathfu::vec2(zonePoint.x, zonePoint.y));
             }

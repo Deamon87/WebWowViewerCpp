@@ -24,12 +24,12 @@ private:
 
 
 private:
-    GDeviceGL33 &m_device;
+    HGDevice m_device;
 private:
     std::vector<char> m_buffer;
 
 public:
-    explicit GVertexBufferBindingsGL33(IDevice &m_device);
+    explicit GVertexBufferBindingsGL33(const HGDevice &m_device);
     ~GVertexBufferBindingsGL33() override;
 
 private:

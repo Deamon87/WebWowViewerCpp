@@ -4,6 +4,7 @@
 
 #include <locale>
 #include <iomanip>
+#include <unordered_set>
 #include "m2Object.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../managers/animationManager.h"
@@ -16,8 +17,7 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
 
-//Legion shader stuff
-
+//Shader stuff
 enum class M2PixelShader : int {
     //Wotlk deprecated shaders
     Combiners_Decal = -1,
@@ -187,7 +187,7 @@ int getVertexShaderId(int textureCount, int16_t shaderId) {
     return result;
 }
 
-int getPixelShaderId(int textureCount, int16_t shaderId) {
+int getPixelShaderId(int textureCount, uint16_t shaderId) {
     static const std::array<uint32_t, 8> array1 = {
             +M2PixelShader::Combiners_Mod_Mod2x,
             +M2PixelShader::Combiners_Mod_Mod,
@@ -210,7 +210,7 @@ int getPixelShaderId(int textureCount, int16_t shaderId) {
     };
 
     int result;
-    if ( shaderId < 0 )
+    if ( (shaderId & 0x8000) > 0 )
     {
         int pixelShaderId = shaderId & 0x7FFF;
         if ( (unsigned int)pixelShaderId >= M2ShaderTable.size()) {
@@ -470,6 +470,29 @@ M2Object::~M2Object() {
 void M2Object::createAABB() {
     M2Data *m2Data = m_m2Geom->getM2Data();
 
+    //Debug: calc bounding box from verticies
+    {
+        auto min = mathfu::vec3(9999, 9999, 9999);
+        auto max = mathfu::vec3(-9999, -9999, -9999);
+
+        for (int i = 0; i < m2Data->vertices.size; i++) {
+            auto *vertex = m2Data->vertices.getElement(i);
+
+            min = mathfu::vec3(mathfu::vec3(std::min(min.x, vertex->pos.x),
+                                                             std::min(min.y, vertex->pos.y),
+                                                             std::min(min.z, vertex->pos.z)));
+
+            max = mathfu::vec3(mathfu::vec3(std::max(max.x, vertex->pos.x),
+                                                             std::max(max.y, vertex->pos.y),
+                                                             std::max(max.z, vertex->pos.z)));
+        }
+
+//        std::cout << "calculated min = (" << min.x << ", " << min.y << ", " << min.z << ")" << std::endl;
+//        std::cout << "calculated max = (" << max.x << ", " << max.y << ", " << max.z << ")" << std::endl;
+    }
+
+
+
     {
         C3Vector min = m2Data->bounding_box.min;
         C3Vector max = m2Data->bounding_box.max;
@@ -543,8 +566,6 @@ void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacem
 }
 
 void M2Object::createPlacementMatrix(SMDoodadDef &def) {
-    const float TILESIZE = 533.333333333;
-
     float posx = def.position.x;
     float posy = def.position.y;
     float posz = def.position.z;
@@ -649,127 +670,27 @@ mathfu::vec4 M2Object::getCombinedColor(
     return submeshColor;
 }
 
-float M2Object::getTransparency(
+float M2Object::getTextureWeight(
         M2SkinProfile *skinData,
+        M2Data * m2Data,
         int batchIndex,
+        int textureIndex,
         const std::vector<float> &transparencies) {
     float transparency = 1.0;
 
-    int transpIndex = skinData->batches[batchIndex]->textureWeightComboIndex;
+    int transpLookupIndex = skinData->batches[batchIndex]->textureWeightComboIndex + textureIndex;
+    int transpIndex = -1;
+    if ((transpLookupIndex >= 0) && (transpLookupIndex < m2Data->transparency_lookup_table.size)) {
+        transpIndex = *m2Data->transparency_lookup_table[transpLookupIndex];
+    }
+
     if ((transpIndex >= 0) && (transparencies.size() > transpIndex)) {
         transparency = transparencies[transpIndex];
     }
 
     return transparency;
 }
-typedef struct {
-    double h;       // angle in degrees
-    double s;       // a fraction between 0 and 1
-    double v;       // a fraction between 0 and 1
-} hsv;
 
-hsv rgb2hsv(mathfu::vec3 in)
-{
-    hsv         out;
-    double      min, max, delta;
-
-    min = in.x < in.y ? in.x : in.y;
-    min = min  < in.z ? min  : in.z;
-
-    max = in.x > in.y ? in.x : in.y;
-    max = max  > in.z ? max  : in.z;
-
-    out.v = max;                                // v
-    delta = max - min;
-    if (delta < 0.00001)
-    {
-        out.s = 0;
-        out.h = 0; // undefined, maybe nan?
-        return out;
-    }
-    if( max > 0.0 ) { // NOTE: if Max is == 0, this divide would cause a crash
-        out.s = (delta / max);                  // s
-    } else {
-        // if max is 0, then r = g = b = 0
-        // s = 0, h is undefined
-        out.s = 0.0;
-        out.h = NAN;                            // its now undefined
-        return out;
-    }
-    if( in.x >= max )                           // > is bogus, just keeps compilor happy
-        out.h = ( in.y - in.z ) / delta;        // between yellow & magenta
-    else
-    if( in.y >= max )
-        out.h = 2.0 + ( in.z - in.x ) / delta;  // between cyan & yellow
-    else
-        out.h = 4.0 + ( in.x - in.y ) / delta;  // between magenta & cyan
-
-    out.h *= 60.0;                              // degrees
-
-    if( out.h < 0.0 )
-        out.h += 360.0;
-
-    return out;
-}
-
-
-mathfu::vec3 hsv2rgb(hsv in)
-{
-    double      hh, p, q, t, ff;
-    long        i;
-    mathfu::vec3    out;
-
-    if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
-        out.x = in.v;
-        out.y = in.v;
-        out.z = in.v;
-        return out;
-    }
-    hh = in.h;
-    if(hh >= 360.0) hh = 0.0;
-    hh /= 60.0;
-    i = (long)hh;
-    ff = hh - i;
-    p = in.v * (1.0 - in.s);
-    q = in.v * (1.0 - (in.s * ff));
-    t = in.v * (1.0 - (in.s * (1.0 - ff)));
-
-    switch(i) {
-        case 0:
-            out.x = in.v;
-            out.y = t;
-            out.z = p;
-            break;
-        case 1:
-            out.x = q;
-            out.y = in.v;
-            out.z = p;
-            break;
-        case 2:
-            out.x = p;
-            out.y = in.v;
-            out.z = t;
-            break;
-
-        case 3:
-            out.x = p;
-            out.y = q;
-            out.z = in.v;
-            break;
-        case 4:
-            out.x = t;
-            out.y = p;
-            out.z = in.v;
-            break;
-        case 5:
-        default:
-            out.x = in.v;
-            out.y = p;
-            out.z = q;
-            break;
-    }
-    return out;
-}
 
 uint8_t miniLogic(const CImVector *a2) {
 
@@ -800,6 +721,10 @@ void M2Object::setDiffuseColor(CImVector& value) {
             value.g / 255.0f,
             value.b / 255.0f,
             value.a / 255.0f);
+
+    if (value.a != 255) {
+//        std::cout << "Found index into MOLT = " << (int)value.a << std::endl;
+    }
 
     /*
     uint8_t result = miniLogic(&value);
@@ -851,9 +776,19 @@ void M2Object::sortMaterials(mathfu::mat4 &modelViewMat) {
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
-    for (int i = 0; i < this->m_meshArray.size(); i++) {
-        //Update info for sorting
-        M2MeshBufferUpdater::updateSortData(this->m_meshArray[i], *this, m_materialArray[i], m2File, skinData, modelViewMat);
+    if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
+        for (int i = 0; i < this->m_meshNaturalArray.size(); i++) {
+            //Update info for sorting
+            M2MeshBufferUpdater::updateSortData(this->m_meshNaturalArray[i], *this, m_materialArray[i], m2File,
+                                                skinData, modelViewMat);
+        }
+        for (int i = 0; i < this->m_meshForcedTranspArray.size(); i++) {
+            //Update info for sorting
+            if (this->m_meshForcedTranspArray[i] != nullptr) {
+                M2MeshBufferUpdater::updateSortData(this->m_meshForcedTranspArray[i], *this, m_materialArray[i], m2File,
+                                                    skinData, modelViewMat);
+            }
+        }
     }
 }
 
@@ -909,7 +844,13 @@ bool M2Object::doPostLoad(){
     this->createAABB();
 
     if (m_skinGeom == nullptr || m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
-    if (m_m2Geom->m_skid > 0 && m_skelGeom->getStatus() != FileStatus::FSLoaded) {
+    if (m_m2Geom->m_skid > 0 && (m_skelGeom == nullptr || m_skelGeom->getStatus() != FileStatus::FSLoaded)) {
+        return false;
+    }
+    if (m_m2Geom->m_skid > 0 && m_skelGeom->getStatus() == FileStatus::FSLoaded &&
+        m_skelGeom->m_skpd!= nullptr && m_skelGeom->m_skpd->parent_skel_file_id != 0 && (
+            m_parentSkelGeom == nullptr || m_parentSkelGeom->getStatus() != FileStatus::FSLoaded
+        )) {
         return false;
     }
 
@@ -917,9 +858,10 @@ bool M2Object::doPostLoad(){
     m_skinGeom->fixData(m_m2Geom->getM2Data());
 
     this->createVertexBindings();
-
-
     this->createMeshes();
+
+    m_boneMasterData = std::make_shared<CBoneMasterData>(m_m2Geom, m_skelGeom, m_parentSkelGeom);
+
     this->initAnimationManager();
     this->initBoneAnimMatrices();
     this->initTextAnimMatrices();
@@ -928,7 +870,6 @@ bool M2Object::doPostLoad(){
     this->initLights();
     this->initParticleEmitters();
     this->initRibbonEmitters();
-    m_hasBillboards = checkIfHasBillboarded();
 
 
     this->m_loaded = true;
@@ -986,10 +927,8 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         this->ribbonEmitters
     );
 
-
-
-    int minParticle = m_api->getConfig()->getMinParticle();
-    int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
+    int minParticle = m_api->getConfig()->minParticle;
+    int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
     mathfu::mat4 viewMatInv = viewMat.Inverse();
 
@@ -1040,8 +979,8 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat) {
     //Manually update vertices for dynamics
     updateDynamicMeshes();
 
-    int minParticle = m_api->getConfig()->getMinParticle();
-    int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
+    int minParticle = m_api->getConfig()->minParticle;
+    int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
     for (int i = minParticle; i < maxParticle; i++) {
         particleEmitters[i]->updateBuffers();
@@ -1052,23 +991,64 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat) {
     }
 }
 
-bool M2Object::getIsInstancable() {
-    if (!m_loaded || this->m_animationManager == nullptr) return false;
+bool M2Object::isGeomReqFilesLoaded() {
+    if (!this->isMainDataLoaded()) return false;
 
-    return !(this->m_animationManager->getIsFirstCalc()|| this->m_animationManager->getIsAnimated());
+    if (m_skinGeom == nullptr) {
+        Cache<SkinGeom> *skinGeomCache = m_api->cacheStorage->getSkinGeomCache();
+        if (m_m2Geom->skinFileDataIDs.size() > 0) {
+            assert(m_m2Geom->skinFileDataIDs.size() > 0);
+            m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
+        } else if (!useFileId){
+            assert(m_nameTemplate.size() > 0);
+            std::string skinFileName = m_nameTemplate + "00.skin";
+            m_skinGeom = skinGeomCache->get(skinFileName);
+        }
+        return false;
+    }
+    if (m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
+
+    if (m_m2Geom->m_skid > 0) {
+        auto skelCache = m_api->cacheStorage->getSkelCache();
+        if (m_skelGeom == nullptr) {
+            auto skelCache = m_api->cacheStorage->getSkelCache();
+            m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
+            return false;
+        }
+        if (m_skelGeom->getStatus() == FileStatus::FSLoaded && m_parentSkelGeom == nullptr) {
+            if (m_skelGeom->m_skpd != nullptr && m_skelGeom->m_skpd->parent_skel_file_id != 0) {
+                m_parentSkelGeom = skelCache->getFileId(m_skelGeom->m_skpd->parent_skel_file_id);
+                return false;
+            }
+        }
+        if (m_parentSkelGeom != nullptr && m_parentSkelGeom->getStatus() != FileStatus::FSLoaded)
+            return false;
+    }
+
+    return true;
 }
+
+bool M2Object::isMainDataLoaded() {
+    if (!this->m_loaded && !this->m_loading) {
+        this->startLoading();
+    }
+    if (m_m2Geom == nullptr) return false;
+    if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return false;
+
+    return true;
+}
+
 const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const std::vector<mathfu::vec4> &frustumPlanes, const std::vector<mathfu::vec3> &frustumPoints) {
     m_cullResult = false;
 
     if (!this->m_hasAABB) {
-        if (!this->m_loaded && !this->m_loading) {
-            this->startLoading();
-        }
-        if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return false;
+        if (!this->isMainDataLoaded()) return false;
+
         if (m_m2Geom != nullptr) {
             this->createAABB();
+        } else {
+            return false;
         }
-        return false;
     }
 
     if (m_alwaysDraw) {
@@ -1179,7 +1159,7 @@ void M2Object::drawBB(mathfu::vec3 &color) {
 
 }
 
-bool M2Object::prepearMatrial(M2MaterialInst &materialData, int batchIndex) {
+bool M2Object::prepearMaterial(M2MaterialInst &materialData, int batchIndex) {
     auto &skinSections = m_skinGeom->getSkinData()->skinSections;
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
 
@@ -1188,9 +1168,13 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int batchIndex) {
     M2Batch* m2Batch = batches->getElement(batchIndex);
     auto skinSection = skinSections[m2Batch->skinSectionIndex];
 
-    if ((this->m_meshIds.size() > 0) && (skinSection->skinSectionId > 0) &&
-        (m_meshIds[(skinSection->skinSectionId / 100)] != (skinSection->skinSectionId % 100))) {
-        return false;
+
+    {
+        auto meshGroup = (skinSection->skinSectionId / 100);
+        if ((meshGroup < this->m_meshIds.size()) && (skinSection->skinSectionId > 0) &&
+            (m_meshIds[meshGroup] != (skinSection->skinSectionId % 100))) {
+            return false;
+        }
     }
 //        materialArray.push(materialData);
 
@@ -1208,7 +1192,7 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int batchIndex) {
     materialData.flags = m2Batch->flags;
     materialData.priorityPlane = m2Batch->priorityPlane;
 
-    if (m_api->getConfig()->getUseWotlkLogic()) {
+    if (m_api->getConfig()->useWotlkLogic) {
         std::string vertexShader;
         std::string pixelShader;
         getShaderNames(m2Batch, vertexShader, pixelShader);
@@ -1234,7 +1218,7 @@ bool M2Object::prepearMatrial(M2MaterialInst &materialData, int batchIndex) {
 }
 
 void M2Object::createBoundingBoxMesh() {
-    return;
+
     //Create bounding box mesh
     HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", nullptr);
 
@@ -1243,11 +1227,11 @@ void M2Object::createBoundingBoxMesh() {
     meshTemplate.depthWrite = false;
     meshTemplate.depthCulling = true;
     meshTemplate.backFaceCulling = false;
-    meshTemplate.colorMask = 0;
+//    meshTemplate.colorMask = 0;
     meshTemplate.start = 0;
     meshTemplate.end = 36;
 
-    meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Opaque;
+    meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Alpha;
 
     meshTemplate.element = DrawElementMode::TRIANGLES;
     meshTemplate.textureCount = 0;
@@ -1261,32 +1245,32 @@ void M2Object::createBoundingBoxMesh() {
     meshTemplate.ubo[3] = nullptr;
     meshTemplate.ubo[4] = nullptr;
 
-    M2Data *m2Data = m_m2Geom->getM2Data();
-    CAaBox &aaBox = m2Data->bounding_box;
+    auto l_m2Geom = m_m2Geom;
+    bbBlockVS->setUpdateHandler([this, l_m2Geom](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+        M2Data *m2Data = l_m2Geom->getM2Data();
+        CAaBox &aaBox = m2Data->bounding_box;
 
+        mathfu::vec3 center = mathfu::vec3(
+            (aaBox.min.x + aaBox.max.x) / 2,
+            (aaBox.min.y + aaBox.max.y) / 2,
+            (aaBox.min.z + aaBox.max.z) / 2
+        );
 
-    mathfu::vec3 center = mathfu::vec3(
-        (aaBox.min.x + aaBox.max.x) / 2,
-        (aaBox.min.y + aaBox.max.y) / 2,
-        (aaBox.min.z + aaBox.max.z) / 2
-    );
+        mathfu::vec3 scale = mathfu::vec3(
+            aaBox.max.x - center[0],
+            aaBox.max.y - center[1],
+            aaBox.max.z - center[2]
+        );
 
-    mathfu::vec3 scale = mathfu::vec3(
-        aaBox.max.x - center[0],
-        aaBox.max.y - center[1],
-        aaBox.max.z - center[2]
-    );
-
-    bbModelWideBlockVS &blockVS = bbBlockVS->getObject<bbModelWideBlockVS>();
-    blockVS.uPlacementMat = m_placementMatrix;
-    blockVS.uBBScale = mathfu::vec4_packed(mathfu::vec4(scale, 0.0));
-    blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
-    blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
-
-//    bbBlockVS->save(true);
+        bbModelWideBlockVS &blockVS = self->getObject<bbModelWideBlockVS>();
+        blockVS.uPlacementMat = m_placementMatrix;
+        blockVS.uBBScale = mathfu::vec4_packed(mathfu::vec4(scale, 0.0));
+        blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
+        blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
+    });
 
     boundingBoxMesh = m_api->hDevice->createMesh(meshTemplate);
-
+    boundingBoxMesh->setRenderOrder(1000);
     occlusionQuery = m_api->hDevice->createQuery(boundingBoxMesh);
 }
 
@@ -1311,9 +1295,119 @@ bool M2Object::checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection 
     return true;
 }
 
+float wfv_convert(float value, int16_t random) {
+    if ( value == 0.0 )
+        return 0.0;
+
+    int invertedVal = (int)(float)(1000.0 / fabs(value));
+
+    if ( !invertedVal )
+        return 0.0;
+
+    float multiplier = 1.0;
+
+    if ( value <= 0.0 )
+        multiplier = -1.0;
+    else
+        multiplier = 1.0;
+    return (float)((float)(int)(random % invertedVal) / (float)invertedVal) * multiplier;
+}
+
+HGM2Mesh M2Object::createWaterfallMesh() {
+    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("waterfallShader", nullptr);
+
+    gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
+
+    auto skinData = m_skinGeom->getSkinData();
+    auto m2Data = m_m2Geom->getM2Data();
+    auto wfv3Data = m_m2Geom->m_wfv3 != nullptr ? m_m2Geom->m_wfv3 : m_m2Geom->m_wfv1;
+
+    auto m2Batch = skinData->batches.getElement(0);
+    auto skinSection = skinData->skinSections[m2Batch->skinSectionIndex];
+
+    int renderFlagIndex = m2Batch->materialIndex;
+
+    meshTemplate.depthWrite = false;
+    meshTemplate.depthCulling = true;
+    meshTemplate.backFaceCulling = false;
+    meshTemplate.triCCW = 1;
+
+    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+
+    meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16)) * 2;
+    meshTemplate.end = skinSection->indexCount;
+    meshTemplate.element = DrawElementMode::TRIANGLES;
+    meshTemplate.skybox = m_boolSkybox;
+
+    HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
+    meshTemplate.texture.resize(5);
+    meshTemplate.textureCount = 5;
+    meshTemplate.texture[0] = getTexture(0); //mask
+    meshTemplate.texture[1] = getTexture(1); //whiteWater
+    meshTemplate.texture[2] = getTexture(2); //noise
+    meshTemplate.texture[3] = getTexture(3); //bumpTexture
+    meshTemplate.texture[4] = getTexture(4); //normalTex
+
+
+    meshTemplate.ubo[0] = nullptr;
+    meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
+    meshTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::WaterfallData::meshWideBlockVS));
+
+    meshTemplate.ubo[2]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+        auto &meshblockVS = self->getObject<M2::WaterfallData::meshWideBlockVS>();
+        meshblockVS.bumpScale = mathfu::vec4(wfv3Data->bumpScale, 0, 0, 0);
+
+        M2MeshBufferUpdater::fillTextureMatrices(*this, 0, m2Data, skinData, meshblockVS.uTextMat);
+    });
+
+    meshTemplate.ubo[3] = nullptr;
+    meshTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::WaterfallData::meshWideBlockPS));
+    meshTemplate.ubo[4]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+        auto &meshblockPS = self->getObject<M2::WaterfallData::meshWideBlockPS>();
+        meshblockPS.baseColor = mathfu::vec4(
+            wfv3Data->basecolor.a / 255.0f,
+            wfv3Data->basecolor.r / 255.0f,
+            wfv3Data->basecolor.g / 255.0f,
+            wfv3Data->basecolor.b / 255.0f);
+
+        meshblockPS.values0.x = wfv3Data->values0_x;
+        meshblockPS.values0.y = wfv3Data->values0_y;
+        meshblockPS.values0.z = wfv3Data->values0_z;
+        meshblockPS.values0.w = wfv3Data->values0_w;
+
+        meshblockPS.values1.x = wfv3Data->value1_x;
+        meshblockPS.values1.y = wfv3Data->value1_y;
+        meshblockPS.values1.w = wfv3Data->value1_w;
+
+        meshblockPS.m_values3.x = wfv3Data->value3_x;
+        meshblockPS.m_values3.y = wfv3Data->value3_y;
+
+        meshblockPS.m_values2.x = wfv3Data->flags & 2;
+        meshblockPS.m_values2.y = wfv3Data->flags & 1;
+
+        meshblockPS.m_values2.w = wfv3Data->value2_w;
+        meshblockPS.m_values3.w = wfv3Data->values3_w;
+        meshblockPS.m_values4.y = wfv3Data->values4_y;
+
+        meshblockPS.values1.z =   wfv_convert(meshblockPS.values1.y, (int16_t)((uint64_t)this));
+        meshblockPS.m_values2.z = wfv_convert(meshblockPS.m_values2.w, (int16_t)((uint64_t)this));
+        meshblockPS.m_values3.z = wfv_convert(wfv3Data->values3_z, (int16_t)((uint64_t)this));
+    });
+
+    //Make mesh
+    auto hmesh = m_api->hDevice->createM2Mesh(meshTemplate);
+    hmesh->setM2Object(this);
+    hmesh->setLayer(0);
+    hmesh->setPriorityPlane(0);
+    hmesh->setQuery(nullptr);
+
+    return hmesh;
+}
+
 void M2Object::createMeshes() {
     /* 1. Free previous subMeshArray */
-    this->m_meshArray.clear();
+    this->m_meshNaturalArray.clear();
+    this->m_meshForcedTranspArray.clear();
     this->m_materialArray.clear();
 
     createBoundingBoxMesh();
@@ -1327,58 +1421,91 @@ void M2Object::createMeshes() {
     /* 2. Fill the materialArray */
     std::vector<int> batchesRequiringDynamicVao = {};
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
-    for (int i = 0; i < batches->size; i++) {
-        auto m2Batch = skinProfile->batches[i];
-        auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
-        if (!checkifBonesAreInRange(skinProfile, skinSection)) {
-            batchesRequiringDynamicVao.push_back(i);
-            continue;
-        }
-        M2MaterialInst material;
-        HGM2Mesh hmesh = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, material);
 
-        //hmesh->m_query = occlusionQuery;
-
-        this->m_meshArray.push_back(hmesh);
-        this->m_materialArray.push_back(material);
-
-        M2MeshBufferUpdater::assignUpdateEvents(hmesh, this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinProfile);
-    }
-
-    // Create meshes requiring dynamic
-    for (int j = 0; j < batchesRequiringDynamicVao.size(); j++) {
-        int i = batchesRequiringDynamicVao[j];
-        auto m2Batch = skinProfile->batches[i];
-        auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
-
-        std::array<HGVertexBufferDynamic, 4> dynVBOs;
-        auto dynVaos = m_m2Geom->createDynamicVao(*m_api->hDevice, dynVBOs, m_skinGeom.get(), skinSection);
-
-        std::array<dynamicVaoMeshFrame, 4> dynamicMeshData;
-
-        for (int k = 0; k < 4; k++) {
-            dynamicMeshData[k].batchIndex = i;
-            dynamicMeshData[k].m_bindings = dynVaos[k];
-            dynamicMeshData[k].m_bufferVBO = dynVBOs[k];
-
+    if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
+        for (int i = 0; i < batches->size; i++) {
+            auto m2Batch = skinProfile->batches[i];
+            auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
+            if (!checkifBonesAreInRange(skinProfile, skinSection)) {
+                batchesRequiringDynamicVao.push_back(i);
+                continue;
+            }
             M2MaterialInst material;
-            int correction = skinSection->indexStart + (skinSection->Level << 16);
-            dynamicMeshData[k].m_mesh = createSingleMesh(m_m2Data, i, correction, dynVaos[k], m2Batch, skinSection, material);
+            EGxBlendEnum mainBlendMode;
+            HGM2Mesh hmesh = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, material,
+                                              mainBlendMode, false);
+
+            if (hmesh == nullptr)
+                continue;
 
             this->m_materialArray.push_back(material);
-            M2MeshBufferUpdater::assignUpdateEvents(dynamicMeshData[k].m_mesh, this, m_materialArray[m_materialArray.size()-1], m_m2Data, skinProfile);
+            this->m_meshNaturalArray.push_back(hmesh);
+            M2MeshBufferUpdater::assignUpdateEvents(hmesh, this, m_materialArray[m_materialArray.size() - 1], m_m2Data,
+                                                    skinProfile);
+
+            if (mainBlendMode == EGxBlendEnum::GxBlend_Opaque) {
+                EGxBlendEnum blendMode = EGxBlendEnum::GxBlend_Alpha;
+                M2MaterialInst materialTransp;
+                HGM2Mesh hmeshTrans = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection,
+                                                       materialTransp, blendMode, true);
+
+                this->m_materialArray.push_back(material);
+                this->m_meshForcedTranspArray.push_back(hmeshTrans);
+                M2MeshBufferUpdater::assignUpdateEvents(hmeshTrans, this, m_materialArray[m_materialArray.size() - 1],
+                                                        m_m2Data, skinProfile);
+
+            } else {
+                m_meshForcedTranspArray.push_back(nullptr);
+            }
         }
 
-        dynamicMeshes.push_back(dynamicMeshData);
+        // Create meshes requiring dynamic
+        for (int j = 0; j < batchesRequiringDynamicVao.size(); j++) {
+            int i = batchesRequiringDynamicVao[j];
+            auto m2Batch = skinProfile->batches[i];
+            auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
+
+            std::array<HGVertexBufferDynamic, 4> dynVBOs;
+            auto dynVaos = m_m2Geom->createDynamicVao(*m_api->hDevice, dynVBOs, m_skinGeom.get(), skinSection);
+
+            std::array<dynamicVaoMeshFrame, 4> dynamicMeshData;
+
+            //Try to create mesh
+            M2MaterialInst testMaterial;
+            EGxBlendEnum blendMode;
+            auto testMesh = createSingleMesh(m_m2Data, i, 0, dynVaos[0], m2Batch, skinSection, testMaterial, blendMode,
+                                             false);
+            if (testMesh == nullptr)
+                continue;
+
+            for (int k = 0; k < 4; k++) {
+                dynamicMeshData[k].batchIndex = i;
+                dynamicMeshData[k].m_bindings = dynVaos[k];
+                dynamicMeshData[k].m_bufferVBO = dynVBOs[k];
+
+                M2MaterialInst material;
+                int correction = skinSection->indexStart + (skinSection->Level << 16);
+                dynamicMeshData[k].m_mesh = createSingleMesh(m_m2Data, i, correction, dynVaos[k], m2Batch, skinSection,
+                                                             material, blendMode, false);
+
+                this->m_materialArray.push_back(material);
+                M2MeshBufferUpdater::assignUpdateEvents(dynamicMeshData[k].m_mesh, this,
+                                                        m_materialArray[m_materialArray.size() - 1], m_m2Data,
+                                                        skinProfile);
+            }
+
+            dynamicMeshes.push_back(dynamicMeshData);
+        }
+    } else {
+        m_meshNaturalArray.push_back(createWaterfallMesh());
     }
 }
 
 HGM2Mesh
 M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
-                           const M2SkinSection *skinSection, M2MaterialInst &material) {
+                           const M2SkinSection *skinSection, M2MaterialInst &material, EGxBlendEnum &blendMode, bool overrideBlend) {
 
-    prepearMatrial(material, i);
-
+    if (!prepearMaterial(material, i)) return nullptr;
 
     M2ShaderCacheRecord cacheRecord{};
     cacheRecord.vertexShader = material.vertexShader;
@@ -1404,7 +1531,12 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     meshTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
     meshTemplate.triCCW = 1;
 
-    meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
+    if (overrideBlend) {
+        meshTemplate.blendMode = blendMode;
+    } else {
+        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
+        blendMode = meshTemplate.blendMode;
+    }
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16) - indexStartCorrection) * 2;
     meshTemplate.end = skinSection->indexCount;
@@ -1434,52 +1566,47 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     return hmesh;
 }
 
-void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderOrder) {
-    //2. Check if .skin file is loaded
-    if (m_m2Geom == nullptr) {
-        return;
-    }
-
-    if (m_skinGeom == nullptr) {
-        Cache<SkinGeom> *skinGeomCache = m_api->cacheStorage->getSkinGeomCache();
-        if (m_m2Geom->skinFileDataIDs.size() > 0) {
-            assert(m_m2Geom->skinFileDataIDs.size() > 0);
-            m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
-        } else if (!useFileId){
-            assert(m_nameTemplate.size() > 0);
-            std::string skinFileName = m_nameTemplate + "00.skin";
-            m_skinGeom = skinGeomCache->get(skinFileName);
-        }
-        return;
-    }
-
-    if (m_m2Geom->m_skid > 0) {
-        if (m_skelGeom == nullptr) {
-            auto skelCache = m_api->cacheStorage->getSkelCache();
-            m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
-            return;
-        }
-    }
-
-    if (!m_loaded) return;
+void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
+    if (!this->isGeomReqFilesLoaded()) return;
 
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
-    int minBatch = m_api->getConfig()->getM2MinBatch();
-    int maxBatch = std::min(m_api->getConfig()->getM2MaxBatch(), (const int &) this->m_meshArray.size());
+    int minBatch = m_api->getConfig()->m2MinBatch;
+    int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshNaturalArray.size());
 
-    for (int i = minBatch; i < maxBatch; i++) {
-        float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, i, skinData);
-        if ((finalTransparency < 0.0001) ) continue;
+    if (m_api->getConfig()->renderM2) {
+        for (int i = minBatch; i < maxBatch; i++) {
+            float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, i, skinData);
+            if ((finalTransparency < 0.0001))
+                continue;
 
-        this->m_meshArray[i]->setRenderOrder(renderOrder);
-        renderedThisFrame.push_back(this->m_meshArray[i]);
+            HGM2Mesh mesh = this->m_meshNaturalArray[i];
+            if (finalTransparency < 0.999 && i < this->m_meshForcedTranspArray.size() &&
+                this->m_meshForcedTranspArray[i] != nullptr) {
+                mesh = this->m_meshForcedTranspArray[i];
+            }
+
+            mesh->setRenderOrder(renderOrder);
+            if (mesh->getIsTransparent()) {
+                transparentMeshes.push_back(mesh);
+            } else {
+                opaqueMeshes.push_back(mesh);
+            }
+        }
+
+        for (auto &dynMesh: dynamicMeshes) {
+            HGParticleMesh mesh = dynMesh[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
+            mesh->setRenderOrder(renderOrder);
+            if (mesh->getIsTransparent()) {
+                transparentMeshes.push_back(mesh);
+            } else {
+                opaqueMeshes.push_back(mesh);
+            }
+        }
     }
 
-    for (auto &dynMesh : dynamicMeshes) {
-        HGParticleMesh mesh = dynMesh[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
-        mesh->setRenderOrder(renderOrder);
-        renderedThisFrame.push_back(mesh);
+    if (m_api->getConfig()->drawM2BB) {
+        transparentMeshes.push_back(boundingBoxMesh);
     }
 //    std::cout << "Collected meshes at update frame =" << m_api->hDevice->getUpdateFrameNumber() << std::endl;
 
@@ -1487,27 +1614,13 @@ void M2Object::collectMeshes(std::vector<HGMesh> &renderedThisFrame, int renderO
 }
 
 void M2Object::initAnimationManager() {
-    this->m_animationManager = new AnimationManager(m_api, m_m2Geom);
-}
 
-bool M2Object::checkIfHasBillboarded() {
-    M2Data * m2File = this->m_m2Geom->getM2Data();
-    for (int i = 0; i < m2File->bones.size; i++) {
-        M2CompBone * boneDefinition = m2File->bones.getElement(i);
-        if ((
-            boneDefinition->flags.cylindrical_billboard_lock_x &
-            boneDefinition->flags.cylindrical_billboard_lock_y &
-            boneDefinition->flags.cylindrical_billboard_lock_z &
-            boneDefinition->flags.spherical_billboard) > 0) {
-            return true;
-        }
-    }
-
-    return false;
+    this->m_animationManager = new AnimationManager(m_api, m_boneMasterData, m_m2Geom->exp2 != nullptr);
 }
 
 void M2Object::initBoneAnimMatrices() {
-    this->bonesMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->bones.size, mathfu::mat4::Identity());;
+    auto &bones = *m_boneMasterData->getSkelData()->m_m2CompBones;
+    this->bonesMatrices = std::vector<mathfu::mat4>(bones.size, mathfu::mat4::Identity());;
 }
 void M2Object::initTextAnimMatrices() {
     textAnimMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->texture_transforms.size, mathfu::mat4::Identity());;
@@ -1518,7 +1631,7 @@ void M2Object::initSubmeshColors() {
 
 }
 void M2Object::initTransparencies() {
-    transparencies = std::vector<float>(m_m2Geom->getM2Data()->transparency_lookup_table.size);
+    transparencies = std::vector<float>(m_m2Geom->getM2Data()->texture_weights.size);
 }
 
 void M2Object::initLights() {
@@ -1536,8 +1649,8 @@ void M2Object::initParticleEmitters() {
 
         ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), this, m_m2Geom, txacVal);
         particleEmitters.push_back(emitter);
-        if (m_m2Geom.get()->exp2Records != nullptr && emitter->getGenerator() != nullptr) {
-            emitter->getGenerator()->getAniProp()->zSource = m_m2Geom.get()->exp2Records->getElement(i)->zSource;
+        if (m_m2Geom->exp2 != nullptr && emitter->getGenerator() != nullptr) {
+            emitter->getGenerator()->getAniProp()->zSource = m_m2Geom->exp2->content.getElement(i)->zSource;
         }
     }
 }
@@ -1546,20 +1659,23 @@ void M2Object::initRibbonEmitters() {
 //    return;
     ribbonEmitters = std::vector<CRibbonEmitter *>();
 //    ribbonEmitters.reserve(m_m2Geom->getM2Data()->ribbon_emitters.size);
-    for (int i = 0; i < m_m2Geom->getM2Data()->ribbon_emitters.size; i++) {
-        M2Ribbon *m2Ribbon = m_m2Geom->getM2Data()->ribbon_emitters.getElement(i);
+    auto m2Data = m_m2Geom->getM2Data();
+    for (int i = 0; i < m2Data->ribbon_emitters.size; i++) {
+        M2Ribbon *m2Ribbon = m2Data->ribbon_emitters.getElement(i);
 
         std::vector<M2Material> materials(m2Ribbon->materialIndices.size);
         std::vector<int> textureIndicies(m2Ribbon->textureIndices.size);
         for (size_t j = 0; j < materials.size(); j++) {
-            materials[j] = *m_m2Geom->getM2Data()->materials[*m2Ribbon->materialIndices[j]];
+            materials[j] = *m2Data->materials[*m2Ribbon->materialIndices[j]];
         }
 
         for (size_t j = 0; j < textureIndicies.size(); j++) {
             textureIndicies[j] = *m2Ribbon->textureIndices[j];
         }
 
-        auto emitter = new CRibbonEmitter(m_api, this, materials, textureIndicies);
+        int textureTransformLookup = (m2Data->global_flags.flag_unk_0x20000 != 0) ? m2Ribbon->textureTransformLookupIndex : -1;
+
+        auto emitter = new CRibbonEmitter(m_api, this, materials, textureIndicies, textureTransformLookup);
         ribbonEmitters.push_back(emitter);
 
         CImVector color;
@@ -1627,38 +1743,88 @@ mathfu::vec4 M2Object::getM2SceneAmbientLight() {
     return mathfu::vec4(ambientColor.x, ambientColor.y, ambientColor.z, 1.0) ;
 };
 
-mathfu::vec3 M2Object::getSunDir() {
-    if (m_setSunDir && getUseLocalLighting()) {
-        return mathfu::vec3(m_sunDirOverride.x, m_sunDirOverride.y, m_sunDirOverride.z);
+void M2Object::getAvailableAnimation(std::vector<int> &allAnimationList) {
+    auto &sequences = *m_boneMasterData->getSkelData()->m_sequences;
+
+    allAnimationList.resize(0);
+    for (int i = 0; i < sequences.size; i++) {
+        allAnimationList.push_back(sequences[i]->id);
+    }
+    if (m_parentSkelGeom != nullptr) {
+        auto &bannedAnims = m_m2Geom->blackListAnimations;
+        auto &sequences = *m_boneMasterData->getParentSkelData()->m_sequences;
+
+        for (int i = 0; i < sequences.size; i++) {
+            bool animationIsBanned = false;
+            for (auto const a : bannedAnims) {
+                if (a != 0 && a == sequences[i]->id) {
+                    animationIsBanned = true;
+                    break;
+                }
+            }
+            if (!animationIsBanned) {
+                allAnimationList.push_back(sequences[i]->id);
+            }
+        }
     }
 
-    return m_api->getConfig()->getExteriorDirectColorDir();
-}
-void M2Object::getAvailableAnimation(std::vector<int> &allAnimationList) {
-    allAnimationList.reserve(m_m2Geom->m_m2Data->sequences.size);
-    for (int i = 0; i < m_m2Geom->m_m2Data->sequences.size; i++) {
-        allAnimationList.push_back(m_m2Geom->m_m2Data->sequences[i]->id);
-    }
     std::sort( allAnimationList.begin(), allAnimationList.end());
     allAnimationList.erase( unique( allAnimationList.begin(), allAnimationList.end() ), allAnimationList.end());
 }
+void M2Object::getMeshIds(std::vector<int> &meshIdList) {
+//    this->m_skin
+    std::unordered_set<int> meshIdSet;
+
+    auto skinData = m_skinGeom->getSkinData();
+    M2Array<M2Batch>& batches = skinData->batches;
 
 
-void M2Object::drawParticles(std::vector<HGMesh> &meshes, int renderOrder) {
+    for (int i = 0; i < batches.size; i++) {
+        auto m2Batch = batches[i];
+        auto skinSection = skinData->skinSections[m2Batch->skinSectionIndex];
+
+        meshIdSet.insert(skinSection->skinSectionId);
+    }
+
+    meshIdList = std::vector<int>(meshIdSet.begin(), meshIdSet.end());
+}
+mathfu::mat4 M2Object::getTextureTransformByLookup(int textureTrasformlookup) {
+    if (textureTrasformlookup < this->m_m2Geom->getM2Data()->texture_transforms_lookup_table.size) {
+        auto textureTransformIndex = *this->m_m2Geom->getM2Data()->texture_transforms_lookup_table.getElement(textureTrasformlookup);
+        if (textureTransformIndex >= 0 && textureTransformIndex < this->textAnimMatrices.size()) {
+            return this->textAnimMatrices[textureTransformIndex];
+        }
+    }
+
+    return mathfu::mat4::Identity();
+}
+
+
+void M2Object::drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
 //    return;
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
-    int minParticle = m_api->getConfig()->getMinParticle();
-    int maxParticle = std::min(m_api->getConfig()->getMaxParticle(), (const int &) particleEmitters.size());
+    int minParticle = m_api->getConfig()->minParticle;
+    int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 //    int maxBatch = particleEmitters.size();
 
 
     for (int i = minParticle; i < maxParticle; i++) {
-//    for (int i = 0; i< particleEmitters.size(); i++) {
-        particleEmitters[i]->collectMeshes(meshes, renderOrder);
+
+        //Respect PGD1 chunk
+        if (m_m2Geom->particleGeosetData != nullptr) {
+            auto geoset = *m_m2Geom->particleGeosetData->pgd.getElement(i);
+            auto meshGroup = (geoset / 100);
+            if ((meshGroup < this->m_meshIds.size()) && (geoset > 0) &&
+                (m_meshIds[meshGroup] != (geoset % 100))) {
+                continue;
+            }
+        }
+
+        particleEmitters[i]->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
 
     for (int i = 0; i < ribbonEmitters.size(); i++) {
-        ribbonEmitters[i]->collectMeshes(meshes, renderOrder);
+        ribbonEmitters[i]->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
 }
 
@@ -1666,12 +1832,10 @@ HBlpTexture M2Object::getBlpTextureData(int textureInd) {
     M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
     //TODO:! Example of exception: "WORLD\\AZEROTH\\KARAZAHN\\PASSIVEDOODADS\\BURNINGBOOKS\\BOOKSONFIRE.m2"
     HBlpTexture blpData = nullptr;
-    if (textureDefinition == nullptr) {
-        return nullptr;
-    }
-    if (textureDefinition->type == 0) {
+
+    if ((textureDefinition== nullptr) || textureDefinition->type == 0) {
         blpData = getHardCodedTexture(textureInd);
-    } else if ( (textureDefinition->type < this->m_replaceTextures.size()) ){
+    } else if ((textureDefinition != nullptr) && (textureDefinition->type < this->m_replaceTextures.size()) ){
         blpData = this->m_replaceTextures[textureDefinition->type];
     }
 
@@ -1689,8 +1853,8 @@ HGTexture M2Object::getTexture(int textureInd) {
 
     HGTexture hgTexture = m_api->hDevice->createBlpTexture(
         blpData,
-        (textureDefinition->flags & 1) > 0,
-        (textureDefinition->flags & 2) > 0
+        textureDefinition!= nullptr ? ( (textureDefinition->flags & 1) > 0 ) : false,
+        textureDefinition!= nullptr ? ( (textureDefinition->flags & 2) > 0 ) : false
     );
 
     return hgTexture;
@@ -1700,7 +1864,7 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
     M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
     auto textureCache = m_api->cacheStorage->getTextureCache();
     HBlpTexture texture;
-    if (textureDefinition->filename.size > 0) {
+    if (textureDefinition != nullptr && textureDefinition->filename.size > 0) {
         std::string fileName = textureDefinition->filename.toString();
         texture = textureCache->get(fileName);
     } else if (textureInd < m_m2Geom->textureFileDataIDs.size()) {
@@ -1716,17 +1880,17 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
 }
 
 void M2Object::createVertexBindings() {
-    std::shared_ptr<IDevice> device = m_api->hDevice;
+    HGDevice device = m_api->hDevice;
 
     //2. Create buffer binding and fill it
-    bufferBindings = m_m2Geom->getVAO(*device, m_skinGeom.get());
+    bufferBindings = m_m2Geom->getVAO(device, m_skinGeom.get());
 
     //3. Create model wide uniform buffer
 //    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(mathfu::mat4) * (m_m2Geom->m_m2Data->bones.size + 1));
     vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockVS));
     fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockPS));
 
-    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
+    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         auto &blockVS = self->getObject<M2::modelWideBlockVS>();
 
         blockVS.uPlacementMat = m_placementMatrix;
@@ -1734,10 +1898,9 @@ void M2Object::createVertexBindings() {
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
     });
 
-    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self){
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
-
 
         M2::modelWideBlockPS &blockPS = self->getObject<M2::modelWideBlockPS>();
 
@@ -1768,9 +1931,9 @@ void M2Object::createVertexBindings() {
 
 void M2Object::updateDynamicMeshes() {
     auto rootMatInverse = bonesMatrices[0].Inverse();
+    auto frameNum = m_api->hDevice->getUpdateFrameNumber();
 
     for (auto &dynamicMesh: dynamicMeshes) {
-        auto frameNum = m_api->hDevice->getUpdateFrameNumber();
         auto &dynMeshData = dynamicMesh[frameNum];
 
         M2SkinProfile* skinProfile = this->m_skinGeom->getSkinData();
@@ -1822,6 +1985,13 @@ void M2Object::setReplaceTextures(std::vector<HBlpTexture> &replaceTextures) {
         createMeshes(); // recreate meshes
     }
 }
+void M2Object::setMeshIds(std::vector<uint8_t> &meshIds) {
+    m_meshIds = meshIds;
+
+    if (m_loaded) {
+        createMeshes(); // recreate meshes
+    }
+}
 
 void M2Object::setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {
     m_particleColorReplacement = particleColorReplacement;
@@ -1840,4 +2010,8 @@ bool M2Object::getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 
 
 void M2Object::resetReplaceParticleColor() {
     particleColorReplacementIsSet = false;
+}
+
+int M2Object::getCurrentAnimationIndex() {
+    return m_animationManager->getCurrentAnimationIndex();
 }

@@ -43,13 +43,15 @@ typedef std::shared_ptr<GMeshGL20> HGL20Mesh;
 class GDeviceGL20 : public IDevice {
 public:
     GDeviceGL20();
-    ~GDeviceGL20() override {};
+    ~GDeviceGL20() override = default;;
 
+    void initialize() override;
     void reset() override;
 
     unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() override;
     unsigned int getCullingFrameNumber() override;
+    unsigned int getOcclusionFrameNumber() override;
     unsigned int getDrawFrameNumber() override;
 
 
@@ -72,10 +74,10 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
+    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
-    void drawStageAndDeps(HDrawStage drawStage) override {};
+    void drawStageAndDeps(HDrawStage drawStage) override;
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
 public:
     std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void *permutationDescriptor) override;
@@ -85,10 +87,10 @@ public:
     HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
-    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override {return nullptr;};
+    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) override {return nullptr;};
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
-    HGTexture createTexture() override;
+    HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;
     HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
     HGTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
@@ -110,8 +112,11 @@ public:
     void setViewPortDimensions(float x, float y, float width, float height) override;
     void setInvertZ(bool value) override {m_isInvertZ = value;};
     void shrinkData() override;
+    bool wasTexturesUploaded() override {
+        return false;
+    };
 private:
-    void drawMesh(HGMesh &hmesh);
+    void drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk);
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {

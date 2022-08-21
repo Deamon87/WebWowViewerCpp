@@ -10,7 +10,7 @@
 class GAdtShaderPermutationGL33 : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GAdtShaderPermutationGL33(std::string &shaderName, IDevice *device);
+    explicit GAdtShaderPermutationGL33(std::string &shaderName, const HGDevice &device);
 
     void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
 

@@ -73,10 +73,20 @@ int main(int argc, char **argv)
     if (mode == "-sf") {
         dumpShaderUniformOffsets(filePaths);
     }  else if (mode == "-glsl100") {
-        dumpGLSLText(filePaths, 100);
+        dumpGLSLText(filePaths, 100, false);
+    } else if (mode == "-glsl120Es") {
+        dumpGLSLText(filePaths, 120, true);
+    } else if (mode == "-glsl120") {
+        dumpGLSLText(filePaths, 120, false);
     } else if (mode == "-glsl330") {
-        dumpGLSLText(filePaths, 330);
+        dumpGLSLText(filePaths, 330, false);
+    } else if (mode == "-glslEs310") {
+        dumpGLSLText(filePaths, 310, true);
+    } else if (mode == "-glslEs300") {
+        dumpGLSLText(filePaths, 300, true);
     }
+
+
 
     return 0;
 }

@@ -10,7 +10,7 @@
 class GFFXgauss4 : public GShaderPermutationGL33 {
     friend class GDeviceGL33;
 protected:
-    explicit GFFXgauss4(std::string &shaderName, IDevice *device);
+    explicit GFFXgauss4(std::string &shaderName, const HGDevice &device);
 
     void compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) override;
 

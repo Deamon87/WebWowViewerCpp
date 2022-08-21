@@ -1,36 +1,247 @@
+# From gist https://gist.github.com/NickNaso/0d478f1481686d5bcc868cac06620a60
 # This is a basic workflow to help you get started with Actions
+# workflow - цепочка действий
+# Имя процесса Билдится на всех типах 📦 🐍
 
 name: MapViewer CI
 
-# Controls when the workflow will run
+# Controls when the action will run. Triggers the workflow on push
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  release:
 
-  # Allows you to run this workflow manually from the Actions tab
+# Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+  # tags:
+  # - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }} # будет запускаться по очереди на всех типах машин
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {
+            name: "Windows Latest MSVC",
+            os: windows-latest,
+            artifact: "windows_msvc.7z",
+            build_type: "Release",
+            cc: "cl",
+            cxx: "cl",
+            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
+            archiver: "7z a",
+            generators: "Visual Studio 17 2022"
+          }
+          #        - {
+          #            name: "Windows Latest MinGW",
+          #            os: windows-latest,
+          #            artifact: "windows_mingw.7z",
+          #            build_type: "Release",
+          #            cc: "gcc",
+          #            cxx: "g++",
+          #            archiver: "7z a",
+          #            generators: "Ninja"
+          #          }
+          - {
+            name: "Ubuntu_Latest_GCC",
+            os: ubuntu-latest,
+            artifact: "ubuntu_gcc.7z",
+            build_type: "Release",
+            cc: "gcc",
+            cxx: "g++",
+            archiver: "7z a",
+            generators: "Ninja"
+          }
+          - {
+            name: "Emscripten",
+            os: ubuntu-latest,
+            artifact: "emscripten.7z",
+            build_type: "Release",
+            cc: "emcc",
+            cxx: "em++",
+            archiver: "7z a",
+            generators: "Ninja"
+          }
+          - {
+            name: "Ubuntu_GCC_9",
+            os: ubuntu-latest,
+            artifact: "ubuntu_gcc9.7z",
+            build_type: "Release",
+            cc: "gcc",
+            cxx: "g++",
+            archiver: "7z a",
+            generators: "Ninja"
+          }
+          - {
+            name: "macOS Latest Clang",
+            os: macos-latest,
+            artifact: "macos_clang.7z",
+            build_type: "Release",
+            cc: "clang",
+            cxx: "clang++",
+            archiver: "7za a",
+            generators: "Ninja"
+          }
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      # Installs python 3.10
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Print env
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          echo github.event.action: ${{ github.event.action }}
+          echo github.event_name: ${{ github.event_name }}
+      - name: Install dependencies on windows
+        if: startsWith(matrix.config.os, 'windows')
+        run: |
+          choco install ninja cmake
+          ninja --version
+          cmake --version
+        # cmd "${{ matrix.config.environment_script }}"
+      - name: Install emscripten on Emscripten target
+        if: startsWith(matrix.config.name, 'emscripten')
+        run: |
+          sudo mv /usr/local/bin/cmake /usr/local/bin/cmake-old
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
+          sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+          sudo apt-get update
+          sudo apt-get install ninja-build cmake
+          sudo apt-get install xorg-dev libglu1-mesa-dev
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          git pull
+          ./emsdk install latest
+          ./emsdk activate latest
+          ninja --version
+          cmake --version
+          gcc --version
+          cd ..
+      - name: Install dependencies on ubuntu
+        if: startsWith(matrix.config.name, 'Ubuntu_Latest_GCC')
+        run: |
+          sudo apt-get update
+          sudo apt-get install ninja-build cmake
+          sudo apt-get install xorg-dev libglu1-mesa-dev
+          ninja --version
+          cmake --version
+          gcc --version
+      - name: Install dependencies on ubuntu9
+        if: startsWith(matrix.config.name, 'Ubuntu_GCC_9')
+        run: |
+          echo Update gcc-9 =======================================================================
+          echo gcc version before
+          gcc --version
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install ninja-build cmake gcc-9 g++-9
+          sudo apt-get install xorg-dev libglu1-mesa-dev
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 --slave /usr/bin/g++ g++ /usr/bin/g++-9 --slave /usr/bin/gcov gcov /usr/bin/gcov-9
+          echo gcc version after
+          gcc --version
+          echo Update ninja =======================================================================
+          echo ninja version before
+          ninja --version
+          # wget https://github.com/ninja-build/ninja/releases/download/v1.10.0/ninja-linux.zip
+          wget https://github.com/ninja-build/ninja/releases/latest/download/ninja-linux.zip
+          sudo unzip ninja-linux.zip -d /usr/local/bin/
+          sudo update-alternatives --install /usr/bin/ninja ninja /usr/local/bin/ninja 1 --force
+          echo ninja version after
+          ninja --version
+          echo Update cmake =======================================================================
+          echo cmake version before
+          cmake --version
+          # curl --silent "https://api.github.com/repos/Kitware/CMake/releases/latest" | sed -n 's/.*tag_name":\s"\(.*\)".*/\1/p' | head -2
+          # wget https://github.com/Kitware/CMake/releases/latest/download/cmake-3.16.5-Linux-x86_64.sh
+          cmake_version=$(curl --silent "https://api.github.com/repos/Kitware/CMake/releases/latest" | sed -n 's/.*tag_name":\s"\(.*\)".*/\1/p' | head -2 | cut -c 2-)
+          echo cmake download latest v$cmake_version version
+          wget https://github.com/Kitware/CMake/releases/download/v$cmake_version/cmake-$cmake_version-Linux-x86_64.sh
+          chmod +x cmake-$cmake_version-Linux-x86_64.sh
+          sudo mkdir /opt/cmake
+          sudo ./cmake-$cmake_version-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
+          sudo update-alternatives --install /usr/bin/cmake cmake /opt/cmake/bin/cmake 1 --force
+          echo cmake version after
+          cmake --version
+      - name: Install dependencies on macos
+        if: startsWith(matrix.config.os, 'macos')
+        run: |
+          brew install p7zip cmake ninja
+          ninja --version
+          cmake --version
+
+      - name: Configure standalone
+        if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
+        shell: bash
+        run: |
+          mkdir build
+          mkdir instdir
+          cd build
+          cmake \
+            -S ../ \
+            -B . \
+            -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
+            -G "${{ matrix.config.generators }}" \
+            -DCMAKE_INSTALL_PREFIX:PATH=../instdir
+      - name: Configure emscripten
+        if: startsWith(matrix.config.name, 'emscripten')
+        shell: bash
+        run: |
+          cd emsdk
+          source ./emsdk_env.sh
+          TOOLCHAIN_LOC="$(find ~+ . -name 'Emscripten.cmake' -print -quit)"
+          cd ..
+          mkdir build
+          mkdir instdir
+          cd build
+          cmake \
+            -S ../emscripten_port \
+            -B . \
+            -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
+            -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_LOC} \
+            -DCMAKE_INSTALL_PREFIX:PATH=../instdir
+      - name: Build
+        shell: bash
+        working-directory: build
+        run: cmake --build . --config ${{ matrix.config.build_type }}
+
+      - name: Install Strip
+        shell: bash
+        working-directory: build
+        run: cmake --install . --strip
+
+      - name: Pack
+        shell: bash
+        working-directory: instdir
+        run: |
+          ls -laR
+          ${{ matrix.config.archiver }} ../${{ matrix.config.artifact }} .
+      - name: Upload
+        uses: actions/upload-artifact@v1
+        with:
+          path: ./${{ matrix.config.artifact }}
+          name: ${{ matrix.config.artifact }}
+
+      - name: Upload release asset
+        if: github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ matrix.config.artifact }}
+          asset_name: ${{ matrix.config.artifact }}.zip
+          asset_content_type: application/zip

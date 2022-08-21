@@ -17,23 +17,24 @@
 #include "../../engine/stringTrim.h"
 #include "buffers/GVertexBufferDynamicGL20.h"
 
-
-BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
-        /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
-        /*GxBlend_AlphaKey*/         {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
-        /*GxBlend_Alpha*/            {true,GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA},
-        /*GxBlend_Add*/              {true,GL_SRC_ALPHA,GL_ONE,GL_ZERO,GL_ONE},
-        /*GxBlend_Mod*/              {true,GL_DST_COLOR,GL_ZERO,GL_DST_ALPHA,GL_ZERO},
-        /*GxBlend_Mod2x*/            {true,GL_DST_COLOR,GL_SRC_COLOR,GL_DST_ALPHA,GL_SRC_ALPHA},
-        /*GxBlend_ModAdd*/           {true,GL_DST_COLOR,GL_ONE,GL_DST_ALPHA,GL_ONE},
-        /*GxBlend_InvSrcAlphaAdd*/   {true,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE},
-        /*GxBlend_InvSrcAlphaOpaque*/{true,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO},
-        /*GxBlend_SrcAlphaOpaque*/   {true,GL_SRC_ALPHA,GL_ZERO,GL_SRC_ALPHA,GL_ZERO},
-        /*GxBlend_NoAlphaAdd*/       {true,GL_ONE,GL_ONE,GL_ZERO,GL_ONE},
-        /*GxBlend_ConstantAlpha*/    {true,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA},
-        /*GxBlend_Screen*/           {true,GL_ONE_MINUS_DST_COLOR,GL_ONE,GL_ONE,GL_ZERO},
-        /*GxBlend_BlendAdd*/         {true,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA}
-};
+namespace GL20 {
+    BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
+            /*GxBlend_Opaque*/           {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
+            /*GxBlend_AlphaKey*/         {false,GL_ONE,GL_ZERO,GL_ONE,GL_ZERO},
+            /*GxBlend_Alpha*/            {true,GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA},
+            /*GxBlend_Add*/              {true,GL_SRC_ALPHA,GL_ONE,GL_ZERO,GL_ONE},
+            /*GxBlend_Mod*/              {true,GL_DST_COLOR,GL_ZERO,GL_DST_ALPHA,GL_ZERO},
+            /*GxBlend_Mod2x*/            {true,GL_DST_COLOR,GL_SRC_COLOR,GL_DST_ALPHA,GL_SRC_ALPHA},
+            /*GxBlend_ModAdd*/           {true,GL_DST_COLOR,GL_ONE,GL_DST_ALPHA,GL_ONE},
+            /*GxBlend_InvSrcAlphaAdd*/   {true,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE},
+            /*GxBlend_InvSrcAlphaOpaque*/{true,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO},
+            /*GxBlend_SrcAlphaOpaque*/   {true,GL_SRC_ALPHA,GL_ZERO,GL_SRC_ALPHA,GL_ZERO},
+            /*GxBlend_NoAlphaAdd*/       {true,GL_ONE,GL_ONE,GL_ZERO,GL_ONE},
+            /*GxBlend_ConstantAlpha*/    {true,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA},
+            /*GxBlend_Screen*/           {true,GL_ONE_MINUS_DST_COLOR,GL_ONE,GL_ONE,GL_ZERO},
+            /*GxBlend_BlendAdd*/         {true,GL_ONE,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA}
+    };
+}
 
 //std::string source_to_string(KHR_debug::Source source) {
 //    if(source == KHR_debug::Source::API) {
@@ -54,17 +55,15 @@ BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
 //}
 
 void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-    fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
-            source,
-            type,
-            id,
-            severity,
-            std::string(message, message+length).c_str());
-    if (severity == 37190) {
-        std::cout << "lol";
-    }
-
-    fflush(stdout);
+//        if (type == GL_DEBUG_TYPE_ERROR) {
+//            fprintf(stdout, "source: %u, type: %u, id: %u, severity: %u, msg: %s\n",
+//                    source,
+//                    type,
+//                    id,
+//                    severity,
+//                    std::string(message, message + length).c_str());
+//            fflush(stdout);
+//        }
 }
 
 void GDeviceGL20::bindIndexBuffer(IIndexBuffer *buffer) {
@@ -228,40 +227,26 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
 //    }
 
     int j = 0;
-    for (auto &hgMesh : meshes) {
-        this->drawMesh(hgMesh);
-        j++;
-    }
+//    for (auto &hgMesh : meshes) {
+//        this->drawMesh(hgMesh);
+//        j++;
+//    }
 }
 
-void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUniformBufferChunk> additionalChunks) {
-    std::vector<HGL20Mesh> &meshes = (std::vector<HGL20Mesh> &) iMeshes;
-
-    //1. Collect buffers
-    std::vector<IUniformBufferChunk *> buffers;
-    int renderIndex = 0;
-    for (const auto &mesh : meshes) {
-        for (int i = 0; i < 5; i++ ) {
-            IUniformBufferChunk * buffer = (IUniformBufferChunk *)mesh->m_UniformBuffer[i].get();
-            if (buffer != nullptr) {
-                buffers.push_back(buffer);
-
-            }
-        }
-    }
-
-    std::sort( buffers.begin(), buffers.end());
-    buffers.erase( unique( buffers.begin(), buffers.end() ), buffers.end() );
-
+void GDeviceGL20::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
     int fullSize = 0;
-    for (auto &buffer : buffers) {
-        fullSize += buffer->getSize();
-        if (uniformBufferOffsetAlign > 0) {
-            int offsetDiff = fullSize % uniformBufferOffsetAlign;
-            if (offsetDiff != 0) {
-                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-                fullSize += bytesToAdd;
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        for (auto &bufferChunk : *bufferVec) {
+            fullSize += bufferChunk->getSize();
+            if (uniformBufferOffsetAlign > 0) {
+                int offsetDiff = fullSize % uniformBufferOffsetAlign;
+                if (offsetDiff != 0) {
+                    int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
+
+                    fullSize += bytesToAdd;
+                }
             }
         }
     }
@@ -284,23 +269,30 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
     //Buffer identifier was changed, so we need to update shader UBO descriptor
 
     char *pointerForUpload = static_cast<char *>(&aggregationBufferForUpload[0]);
-    for (const auto &bufferChunk : buffers) {
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        for (const auto &bufferChunk : *bufferVec) {
+            bufferChunk->setOffset(currentSize);
+            bufferChunk->setPointer(&pointerForUpload[currentSize]);
+            currentSize += bufferChunk->getSize();
 
-        bufferChunk->setOffset(currentSize);
-        bufferChunk->setPointer(&pointerForUpload[currentSize]);
-        currentSize += bufferChunk->getSize();
+            if (uniformBufferOffsetAlign > 0) {
+                int offsetDiff = currentSize % uniformBufferOffsetAlign;
+                if (offsetDiff != 0) {
+                    int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
 
-        if (uniformBufferOffsetAlign > 0) {
-            int offsetDiff = currentSize % uniformBufferOffsetAlign;
-            if (offsetDiff != 0) {
-                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
-
-                currentSize += bytesToAdd;
+                    currentSize += bytesToAdd;
+                }
             }
         }
     }
-    for (auto &buffer : buffers) {
-        buffer->update();
+
+    for (int i = 0; i < bufferChunks.size(); i++) {
+        auto &bufferVec = bufferChunks[i];
+        auto frameDepData = frameDepedantDataVec[i];
+        for (const auto &bufferChunk : *bufferVec) {
+            bufferChunk->update(frameDepData);
+        }
     }
 
     if (currentSize > 0) {
@@ -308,7 +300,7 @@ void GDeviceGL20::updateBuffers(std::vector<HGMesh> &iMeshes, std::vector<HGUnif
     }
 }
 
-void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
+void GDeviceGL20::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     GMeshGL20 * hmesh = (GMeshGL20 *) hIMesh.get();
     if (hmesh->m_end <= 0) return;
 
@@ -325,9 +317,15 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
 
     bindProgram(hmesh->m_shader.get());
     bindVertexBufferBindings(hmesh->m_bindings.get());
-
     for (int i = 0; i < 5; i++) {
-        auto *uniformChunk = hmesh->m_UniformBuffer[i].get();
+
+        IUniformBufferChunk *uniformChunk = nullptr;
+        if (i == 0) {
+            uniformChunk = matrixChunk.get();
+        } else {
+            uniformChunk = hmesh->m_UniformBuffer[i].get();
+        }
+
         if (uniformChunk != nullptr) {
             bindUniformBuffer(bufferForUpload.get(), i, uniformChunk->getOffset(), uniformChunk->getSize());
         }
@@ -408,10 +406,10 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
     }
 
     if (m_lastBlendMode != hmesh->m_blendMode) {
-        BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
+        BlendModeDesc &selectedBlendMode = GL20::blendModes[(char)hmesh->m_blendMode];
 
         if ((m_lastBlendMode == EGxBlendEnum::GxBlend_UNDEFINED) ||
-            (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
+            (GL20::blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
             if (selectedBlendMode.blendModeEnable) {
                 glEnable(GL_BLEND);
             } else {
@@ -444,7 +442,10 @@ void GDeviceGL20::drawMesh(HGMesh &hIMesh) {
         ((GOcclusionQueryGL20 *)gm2Mesh->m_query.get())->beginConditionalRendering();
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
     glDrawElements(hmesh->m_element, hmesh->m_end, GL_UNSIGNED_SHORT, (const void *) (hmesh->m_start ));
+#pragma clang diagnostic pop
 
     if (gm2Mesh != nullptr && gm2Mesh->m_query != nullptr) {
         ((GOcclusionQueryGL20 *)gm2Mesh->m_query.get())->endConditionalRendering();
@@ -545,9 +546,9 @@ HGTexture GDeviceGL20::createBlpTexture(HBlpTexture &texture, bool xWrapTex, boo
     return hgTexture;
 }
 
-HGTexture GDeviceGL20::createTexture() {
+HGTexture GDeviceGL20::createTexture(bool xWrapTex, bool yWrapTex) {
     std::shared_ptr<GTextureGL20> hgTexture;
-    hgTexture.reset(new GTextureGL20(*this));
+    hgTexture.reset(new GTextureGL20(*this, xWrapTex, yWrapTex));
     return hgTexture;
 }
 
@@ -575,12 +576,16 @@ void GDeviceGL20::bindProgram(IShaderPermutation *iProgram) {
 }
 
 GDeviceGL20::GDeviceGL20() {
+
+}
+
+void GDeviceGL20::  initialize() {
     unsigned int ff = 0xFFFFFFFF;
     unsigned int zero = 0;
-    m_blackPixelTexture = createTexture();
+    m_blackPixelTexture = createTexture(false, false);
     m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
 
-    m_whitePixelTexture = createTexture();
+    m_whitePixelTexture = createTexture(false, false);
     m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
 
     m_defaultVao = this->createVertexBufferBindings();
@@ -713,6 +718,9 @@ unsigned int GDeviceGL20::getCullingFrameNumber() {
     return (m_frameNumber + 3) & 3;
 //    return 0;
 }
+unsigned int GDeviceGL20::getOcclusionFrameNumber() {
+    return (m_frameNumber + 2) & 3;
+}
 unsigned int GDeviceGL20::getDrawFrameNumber() {
     return m_frameNumber & 3;
 }
@@ -757,9 +765,12 @@ void GDeviceGL20::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 }
 
 #ifdef __ANDROID_API__
-#include "../androidLogSupport.h"
+#include "../../engine/androidLogSupport.h"
 #endif
-
+#define logExecution {}
+//#define logExecution { \
+//    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+//}
 std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType) {
     std::string fullPath;
     trim(fileName);
@@ -791,9 +802,15 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
     if (g_assetMgr == nullptr) {
         std::cout << "g_assetMgr == nullptr";
     }
-    std::string filename = "glsl/" + shaderName + ".glsl";
+    std::string filename = fullPath;
+    //Trim dot and slash at the start
+    if (filename[0] == '.')
+        filename = filename.substr(1, filename.length()-1);
+    if (filename[0] == '/')
+        filename = filename.substr(1, filename.length()-1);
 
     std::cout << "AAssetManager_open" << std::endl;
+    std::cout << "Opening assest at \"" << filename << "\n" << std::endl;
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);
     std::cout << "AAssetManager_opened" << std::endl;
     if (asset == nullptr) {
@@ -815,22 +832,16 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
     std::cout << "file fully read" << std::endl;
     AAsset_close(asset);
     std::cout << "asset closed" << std::endl;
-
-    return std::string(outBuf.begin(), outBuf.end());
+    logExecution
+    std::string result = std::string(outBuf.begin(), outBuf.end());
+    logExecution
 #else
     std::ifstream t(fullPath);
 
     std::string result = std::string((std::istreambuf_iterator<char>(t)),
                            std::istreambuf_iterator<char>());
-
-    //Delete version
-    {
-        auto start = result.find("#version");
-        if (start != std::string::npos) {
-            auto end = result.find("\n");
-            result = result.substr(end);
-        }
-    }
+#endif
+    logExecution
 
     //Hack fix for bones
     {
@@ -844,66 +855,8 @@ std::string GDeviceGL20::loadShader(std::string fileName, IShaderType shaderType
     }
 
 
-    //Hack fix for bone matrices
-    {
-        auto boneMatStart = result.find("mat4 boneTransformMat = ");
-        if (boneMatStart != std::string::npos) {
-
-            //Struct override:
-            {
-                auto structStart = result.find( "struct modelWideBlockVS");
-                auto structEnd = result.find( "};", structStart);
-
-                result = result.substr(0, structStart) +
-                    "struct modelWideBlockVS\n"
-                    "{\n"
-                    "    mat4 uPlacementMat;\n"
-                    "};"
-                    "uniform mat4 uBoneMatrixes[220];"+
-                    result.substr(structEnd+2);
-            }
-
-
-            //Get uniiform prefix
-            auto prefixEnd = result.find(".uBoneMatrixes");
-            auto prefixStart = result.rfind( " ",  prefixEnd);
-            std::string prefix = result.substr(prefixStart, prefixEnd-prefixStart+1);
-
-
-            auto startIterator = boneMatStart;
-            auto end = boneMatStart; end = 0;
-            while(startIterator != std::string::npos) {
-                end = result.find("\n", startIterator + 1);
-
-                startIterator = result.find("boneTransformMat = ", end+1);
-            }
-
-            //Replace the whole block with old info
-            result = result.substr(0, boneMatStart) +
-                "mat4 boneTransformMat = mat4(1.0);\n"
-                "\n"
-                "#if BONEINFLUENCES>0\n"
-                "    boneTransformMat = mat4(0.0);\n"
-                "    const float inttofloat = (1.0/255.0);\n"
-                "    boneTransformMat += (boneWeights.x ) * uBoneMatrixes[int(bones.x)];\n"
-                "#endif\n"
-                "#if BONEINFLUENCES>1\n"
-                "    boneTransformMat += (boneWeights.y ) * uBoneMatrixes[int(bones.y)];\n"
-                "#endif\n"
-                "#if BONEINFLUENCES>2\n"
-                "    boneTransformMat += (boneWeights.z ) * uBoneMatrixes[int(bones.z)];\n"
-                "#endif\n"
-                "#if BONEINFLUENCES>3\n"
-                "    boneTransformMat += (boneWeights.w ) * uBoneMatrixes[int(bones.w)];\n"
-                "#endif"+
-                result.substr(end);
-
-        }
-    }
-
     shaderCache[hashRecord] = result;
     return result;
-#endif
 }
 
 float GDeviceGL20::getAnisLevel() {
@@ -911,15 +864,23 @@ float GDeviceGL20::getAnisLevel() {
 }
 
 void GDeviceGL20::clearScreen() {
-#ifndef WITH_GLESv2
-    glClearDepthf(1.0f);
-#else
-    glClearDepthf(1.0f);
-#endif
+    if (m_isInvertZ) {
+        glClearDepthf(0.0f);
+    } else {
+        glClearDepthf(1.0f);
+    }
+
     glDisable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+    if (m_isInvertZ) {
+        glDepthFunc(GL_GEQUAL);
+    } else {
+        glDepthFunc(GL_LEQUAL);
+    }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
+
+    //Note: the scissor dimensions are taken from call to setViewPortDimensions
+    glEnable(GL_SCISSOR_TEST);
 //    glClearColor(0.0, 0.0, 0.0, 0.0);
 //    glClearColor(0.25, 0.06, 0.015, 0.0);
     glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
@@ -939,7 +900,7 @@ void GDeviceGL20::setClearScreenColor(float r, float g, float b) {
 }
 
 void GDeviceGL20::beginFrame() {
-    this->clearScreen();
+
 }
 
 void GDeviceGL20::commitFrame() {
@@ -948,6 +909,7 @@ void GDeviceGL20::commitFrame() {
 
 void GDeviceGL20::setViewPortDimensions(float x, float y, float width, float height) {
     glViewport(x,y,width,height);
+    glScissor(x,y,width,height);
 }
 
 void GDeviceGL20::shrinkData()  {
@@ -956,4 +918,52 @@ void GDeviceGL20::shrinkData()  {
     }
 
     aggregationBufferForUpload = {};
+}
+
+void GDeviceGL20::drawStageAndDeps(HDrawStage drawStage) {
+
+    for (int i = 0; i < drawStage->drawStageDependencies.size(); i++) {
+        this->drawStageAndDeps(drawStage->drawStageDependencies[i]);
+    }
+
+    if (drawStage->target != nullptr) {
+        drawStage->target->bindFrameBuffer();
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    this->setViewPortDimensions(
+        drawStage->viewPortDimensions.mins[0],
+        drawStage->viewPortDimensions.mins[1],
+        drawStage->viewPortDimensions.maxs[0],
+        drawStage->viewPortDimensions.maxs[1]
+    );
+
+    this->setInvertZ(drawStage->invertedZ);
+
+    if (drawStage->clearScreen) {
+        clearColor[0] = drawStage->clearColor[0];
+        clearColor[1] = drawStage->clearColor[1];
+        clearColor[2] = drawStage->clearColor[2];
+        this->clearScreen();
+    }
+
+
+    if (drawStage->opaqueMeshes != nullptr) {
+        for (auto hgMesh : drawStage->opaqueMeshes->meshes) {
+            this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
+        }
+    }
+
+    if (drawStage->transparentMeshes != nullptr) {
+        for (auto hgMesh : drawStage->transparentMeshes->meshes) {
+            this->drawMesh(hgMesh, drawStage->sceneWideBlockVSPSChunk);
+        }
+    }
+
+    if (drawStage->target != nullptr) {
+        drawStage->target->copyRenderBufferToTexture();
+    }
+//    drawMeshes(drawStage->meshesToRender->meshes);
+
 }

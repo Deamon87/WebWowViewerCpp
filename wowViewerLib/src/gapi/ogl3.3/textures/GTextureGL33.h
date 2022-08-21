@@ -12,32 +12,39 @@
 class GTextureGL33 : public ITexture {
     friend class GDeviceGL33;
 protected:
-    explicit GTextureGL33(IDevice &device);
+    explicit GTextureGL33(const HGDevice &device, bool xWrapTex, bool yWrapTex);
 public:
     ~GTextureGL33() override;
 
     void loadData(int width, int height, void *data, ITextureFormat textureFormat) override;
     void readData(std::vector<uint8_t> &buff) override;
     bool getIsLoaded() override;
-    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override {
+    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override {
 //        throw "Not Implemented in this class";
     }
     bool postLoad() override { return false;};
     void bindToCurrentFrameBufferAsColor(uint8_t attachmentIndex);
     void bindToCurrentFrameBufferAsDepth();
+
+    static int getCurrentGLTexturesAllocated() {return currentGLTexturesAllocated;}
 private:
+
+    static int currentGLTexturesAllocated;
     void createBuffer();
     void destroyBuffer();
     virtual void bind(); //Should be called only by GDevice
     void unbind();
 protected:
-    GLuint textureIdentifier;
+    GLuint textureIdentifier = 0;
 
-    GDeviceGL33 &m_device;
+    HGDevice m_device;
 
     bool m_loaded = false;
     int width = 0;
     int height = 0;
+
+    bool xWrapTex;
+    bool yWrapTex;
 };
 
 

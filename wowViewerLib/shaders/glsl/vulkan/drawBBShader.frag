@@ -1,8 +1,15 @@
 #version 450
 
-precision highp float;
+#extension GL_GOOGLE_include_directive: require
 
-layout(std140, binding=0) uniform modelWideBlockVS {
+precision highp float;
+precision highp int;
+
+#include "../common/commonLightFunctions.glsl"
+#include "../common/commonFogFunctions.glsl"
+
+
+layout(std140, set=0, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 
     vec4 uBBScale;

@@ -4,6 +4,7 @@
 #include "../../gapi/interface/IVertexBufferBindings.h"
 #include "../shader/ShaderDefinitions.h"
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
+#include "../../gapi/UniformBufferStructures.h"
 
 static GBufferBinding staticRibbonBindings[3] = {
     {+ribbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 24, 0 }, // 0
@@ -13,8 +14,11 @@ static GBufferBinding staticRibbonBindings[3] = {
 };
 
 //----- (00A19710) --------------------------------------------------------
-CRibbonEmitter::CRibbonEmitter(ApiContainer *api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) : m_api(api)
+CRibbonEmitter::CRibbonEmitter(HApiContainer api, M2Object *object,
+                               std::vector<M2Material> &materials,
+                               std::vector<int> &textureIndicies, int textureTransformLookup) : m_api(api)
 {
+  this->textureTransformLookup = textureTransformLookup;
   this->m_refCount = 1;
   this->m_prevPos.x = 0.0;
   this->m_prevPos.y = 0.0;
@@ -82,13 +86,6 @@ CRibbonEmitter::CRibbonEmitter(ApiContainer *api, M2Object *object, std::vector<
 
   createMesh(object, materials, textureIndicies);
 }
-PACK(
-    struct meshParticleWideBlockPS {
-        float uAlphaTest;
-        float padding[3]; // according to std140
-        int uPixelShader;
-        float padding2[3];
-    });
 
 extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
 void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) {
@@ -147,13 +144,31 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         meshTemplate.ubo[2] = nullptr;
 
         meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
 
-        meshTemplate.ubo[4]->setUpdateHandler([](IUniformBufferChunk *self) {
-            meshParticleWideBlockPS& blockPS = self->getObject<meshParticleWideBlockPS>();
+        auto blendMode = meshTemplate.blendMode;
+        auto textureTransformLookupIndex = (this->textureTransformLookup>=0) ? this->textureTransformLookup + i : -1;
+        meshTemplate.ubo[4]->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
+            Particle::meshParticleWideBlockPS& blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
 
             blockPS.uAlphaTest = -1.0f;
             blockPS.uPixelShader = 0;
+            blockPS.uBlendMode = static_cast<int>(blendMode);
+
+            mathfu::mat4 textureTransformMat = mathfu::mat4::Identity();
+            if (textureTransformLookupIndex >= 0) {
+                textureTransformMat = m2Object->getTextureTransformByLookup(textureTransformLookupIndex);
+            }
+
+            auto textureTranslate = textureTransformMat.GetColumn(3);
+            blockPS.textureTranslate0 = textureTranslate.x;
+            blockPS.textureTranslate1 = textureTranslate.y;
+            blockPS.textureTranslate2 = textureTranslate.z;
+
+            blockPS.textureScale0 = textureTransformMat.GetColumn(0).Length();
+            blockPS.textureScale1 = textureTransformMat.GetColumn(1).Length();
+            blockPS.textureScale2 = textureTransformMat.GetColumn(2).Length();
+
         });
 
         
@@ -191,7 +206,7 @@ CRibbonEmitter * CRibbonEmitter::SetGravity(float a2)
 //----- (00A19A80) --------------------------------------------------------
 bool CRibbonEmitter::IsDead() const
 {
-  return this->m_readPos == this->m_writePos;
+  return (this->m_readPos == this->m_writePos) || (m_gxIndices.size() <= 0);
 }
 
 //----- (00A19AA0) --------------------------------------------------------
@@ -219,7 +234,7 @@ void CRibbonEmitter::SetAlpha(float a2)
 void  CRibbonEmitter::InitInterpDeltas()
 {
   float diffLen = (this->m_prevPos - this->m_currPos).LengthSquared();
-  assert(diffLen >= 0.0);
+//  assert(diffLen >= 0.0);
 
   float scale = sqrtf(diffLen);
 
@@ -849,7 +864,7 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   this->m_ribbonEmitterflags.m_initialized = 1;
 }
 
-void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
+void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
 
     auto &currFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
     if (currFrame.isDead) return;
@@ -858,7 +873,11 @@ void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder)
         auto mesh = currFrame.m_meshes[i];
 
         mesh->setRenderOrder(renderOrder);
-        meshes.push_back(mesh);
+        if (mesh->getIsTransparent()) {
+            transparentMeshes.push_back(mesh);
+        } else {
+            opaqueMeshes.push_back(mesh);
+        }
     }
 }
 

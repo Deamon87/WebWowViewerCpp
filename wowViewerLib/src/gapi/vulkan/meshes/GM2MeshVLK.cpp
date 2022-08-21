@@ -30,3 +30,7 @@ float GM2MeshVLK::getSortDistance() {
 void GM2MeshVLK::setQuery(const HGOcclusionQuery &query) {
     m_query = query;
 }
+
+void *GM2MeshVLK::getM2Object() {
+    return m_m2Object;
+}

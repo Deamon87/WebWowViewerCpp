@@ -135,16 +135,17 @@ namespace GL33 {
         return s;
     }
 }
-GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, IDevice * device) : m_device(device),
+GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderName, const HGDevice &device) : m_device(device),
     m_shaderNameVert(shaderName), m_shaderNameFrag(shaderName) {
 }
 
-GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderNameVert, std::string &shaderNameFrag, IDevice * device) : m_device(device),
+GShaderPermutationGL33::GShaderPermutationGL33(std::string &shaderNameVert, std::string &shaderNameFrag, const HGDevice &device) : m_device(device),
     m_shaderNameVert(shaderNameVert), m_shaderNameFrag(shaderNameFrag) {
 }
 
 void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
+    logGLError
     std::string shaderVertFile =  m_device->loadShader(m_shaderNameVert, IShaderType::gVertexShader);
     std::string shaderFragFile =  m_device->loadShader(m_shaderNameFrag, IShaderType::gFragmentShader);
     if (shaderVertFile.length() == 0) {
@@ -167,79 +168,27 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 #ifdef __ANDROID_API__
     esVersion = true;
 #endif
-#ifdef __APPLE__
-    #include "TargetConditionals.h"
-#if TARGET_IPHONE_SIMULATOR
-    glsl330 = false;
-#elif TARGET_OS_IPHONE
-    glsl330 = false;
-#elif TARGET_OS_MAC
-    glsl330 = true;
-#else
-#   error "Unknown Apple platform"
-#endif
-#endif
-#ifdef __EMSCRIPTEN__
+#if (defined(WITH_GLESv2) || defined(__EMSCRIPTEN__))
     esVersion = true;
 #endif
     bool geomShaderExists = false;
-    if (esVersion) {
-        vertExtraDefStrings = "#version 300 es\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 300 es\n" + geomExtraDefStrings;
-    } else {
-        vertExtraDefStrings = "#version 330\n" + vertExtraDefStrings;
-        geomExtraDefStrings = "#version 330\n" + geomExtraDefStrings;
-    }
 
-    if (!esVersion) {
-        vertExtraDefStrings +=
-            "#define precision\n"
-            "#define lowp\n"
-            "#define mediump\n"
-            "#define highp\n"
-            "#define FLOATDEC\n";
-    } else {
-        vertExtraDefStrings += "#define FLOATDEC float;\n";
-        vertExtraDefStrings += "precision mediump float;\n";
-    };
     geomShaderExists = vertShaderString.find("COMPILING_GS") != std::string::npos;
 
 #ifdef __EMSCRIPTEN__
     geomShaderExists = false;
 #endif
 
-    if (esVersion) {
-        fragExtraDefStrings = "#version 300 es\n" + fragExtraDefStrings;
-    } else {
-        fragExtraDefStrings = "#version 330\n" + fragExtraDefStrings;
-    }
-
-    if (!esVersion) {
-        fragExtraDefStrings +=
-            "#define precision\n"
-            "#define lowp\n"
-            "#define mediump\n"
-            "#define highp\n"
-            "#define FLOATDEC\n";
-    } else {
-        fragExtraDefStrings += "precision mediump float;\n";
-        fragExtraDefStrings += "#define FLOATDEC float;\n";
-
-    };
 
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
     int maxMatrixUniforms = MAX_MATRIX_NUM;//(maxVertexUniforms / 4) - 9;
 
-    vertExtraDefStrings = vertExtraDefStrings + "#define COMPILING_VS 1\r\n ";
-    geomExtraDefStrings = geomExtraDefStrings + "#define COMPILING_GS 1\r\n";
-    fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
+    std::string geometryShaderString = "";
 
-    std::string geometryShaderString = vertShaderString;
-
-    vertShaderString = vertShaderString.insert(0, vertExtraDefStrings);
-    fragmentShaderString = fragmentShaderString.insert(0, fragExtraDefStrings);
-    geometryShaderString = geometryShaderString.insert(0, geomExtraDefStrings);
+    vertShaderString = IDevice::insertAfterVersion(vertShaderString, vertExtraDefStrings);
+    fragmentShaderString = IDevice::insertAfterVersion(fragmentShaderString, fragExtraDefStrings);
+    geometryShaderString = IDevice::insertAfterVersion(geometryShaderString, geomExtraDefStrings);
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     const GLchar *vertexShaderConst = (const GLchar *)vertShaderString.c_str();
@@ -271,7 +220,9 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 
     // Check if it compiled
     success = 0;
+    logGLError
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    logGLError
     if (!success) {
         // Something went wrong during compilation; get the error
         GLint maxLength = 0;
@@ -320,21 +271,28 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 
 
     /* 1.3 Link the program */
+    logGLError
     GLuint program = glCreateProgram();
+    logGLError
     glAttachShader(program, vertexShader);
+    logGLError
     glAttachShader(program, fragmentShader);
-    if (geomShaderExists)
-        glAttachShader(program, geometryShader);
+    logGLError
+//    if (geomShaderExists)
+//        glAttachShader(program, geometryShader);
 
 //    for (int i = 0; i < shaderDefinition1->attributesNum; i++) {
 //        glBindAttribLocation(program, shaderDefinition1->attributes[i].number, shaderDefinition1->attributes[i].variableName);
 //    }
 
     // link the program.
+    logGLError
     glLinkProgram(program);
-
+    logGLError
     GLint status;
+    logGLError
     glGetProgramiv(program, GL_LINK_STATUS, &status);
+    logGLError
     if (!status) {
         char logbuffer[1000];
         int loglen;
@@ -348,22 +306,32 @@ void GShaderPermutationGL33::compileShader(const std::string &vertExtraDef, cons
 
     //Get uniforms data
     GLint count;
+    logGLError
     glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &count);
+    logGLError
 //    printf("Active Uniforms: %d\n", count);
     for (GLint i = 0; i < count; i++)
     {
-        const GLsizei bufSize = 32; // maximum name length
-        GLchar name[bufSize]; // variable name in GLSL
+        const GLsizei bufSize = 256; // maximum name length
+        GLchar name[bufSize+1]; // variable name in GLSL
         GLsizei length; // name length
         GLint size; // size of the variable
         GLenum type; // type of the variable (float, vec3 or mat4, etc)
 
+        logGLError
         glGetActiveUniform(program, (GLuint)i, bufSize, &length, &size, &type, name);
+        logGLError
+        if (length <= bufSize)
+            name[length] = '\0';
+
+        logGLError
         GLint location = glGetUniformLocation(program, name);
+        logGLError
 
         this->setUnf(std::string(name), location);
 //        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
+//    if (!shaderName.compare("m2Shader")) {
 //    if (!shaderName.compare("m2Shader")) {
 //        std::cout << fragmentShaderString << std::endl << std::flush;
 //    }

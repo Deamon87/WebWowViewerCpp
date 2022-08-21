@@ -6,7 +6,7 @@
 #include "GIndexBufferGL33.h"
 #include "../GDeviceGL33.h"
 
-GIndexBufferGL33::GIndexBufferGL33(IDevice &device) : m_device(dynamic_cast<GDeviceGL33 &>(device)) {
+GIndexBufferGL33::GIndexBufferGL33(const HGDevice &device) : m_device(device) {
     buffer = std::vector<char>(sizeof(GLuint));
     createBuffer();
 }
@@ -20,15 +20,15 @@ void GIndexBufferGL33::createBuffer() {
 
 void GIndexBufferGL33::destroyBuffer() {
     const GLuint indent = *(const GLuint *) &this->buffer[0];
-    m_device.addDeallocationRecord([indent]() -> void {
+    m_device->addDeallocationRecord([indent]() -> void {
         glDeleteBuffers(1, &indent);
     });
 }
 
 static int ibo_uploaded = 0;
 void GIndexBufferGL33::uploadData(void * data, int length) {
-    m_device.bindVertexBufferBindings(nullptr);
-    m_device.bindIndexBuffer(this);
+    m_device->bindVertexBufferBindings(nullptr);
+    m_device->bindIndexBuffer(this);
 
     if (length <= 0) return;
     if (data == nullptr) return;
@@ -49,7 +49,7 @@ void GIndexBufferGL33::uploadData(void * data, int length) {
 //        glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
     }
 
-    m_device.bindIndexBuffer(nullptr);
+    m_device->bindIndexBuffer(nullptr);
     m_dataUploaded = true;
 }
 

@@ -21,22 +21,14 @@ void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
 
     fsStatus = FileStatus::FSLoaded;
 }
-HGIndexBuffer SkinGeom::getIBO(IDevice &device) {
+HGIndexBuffer SkinGeom::getIBO(const HGDevice &device) {
     if (indexVbo == nullptr) {
-        int indiciesLength = this->m_skinData->indices.size;
+        auto indicies = generateIndexBuffer();
 
-        uint16_t *indicies = new uint16_t[indiciesLength];
-
-        for (int i = 0; i < indiciesLength; i++) {
-            indicies[i] = *this->m_skinData->vertices.getElement(*this->m_skinData->indices.getElement(i));
-        }
-
-        indexVbo = device.createIndexBuffer();
+        indexVbo = device->createIndexBuffer();
         indexVbo->uploadData(
             &indicies[0],
-            indiciesLength * sizeof(uint16_t));
-
-        delete[] indicies;
+            indicies.size() * sizeof(uint16_t));
     }
 
     return indexVbo;
@@ -107,6 +99,7 @@ void SkinGeom::fixData(M2Data *m2File) {
 }
 
 void SkinGeom::fixShaderIdBasedOnLayer(M2Data *m2File) {
+/*
     M2SkinProfile* skinFileData = this->m_skinData;
 
     bool reducingIsNeeded = false;
@@ -216,4 +209,17 @@ void SkinGeom::fixShaderIdBasedOnLayer(M2Data *m2File) {
             }
         }
     }
+    */
+}
+
+std::vector<uint16_t> SkinGeom::generateIndexBuffer() {
+    int indiciesLength = this->m_skinData->indices.size;
+
+    std::vector<uint16_t> indicies = std::vector<uint16_t>(indiciesLength);
+
+    for (int i = 0; i < indiciesLength; i++) {
+        indicies[i] = *this->m_skinData->vertices.getElement(*this->m_skinData->indices.getElement(i));
+    }
+
+    return indicies;
 }

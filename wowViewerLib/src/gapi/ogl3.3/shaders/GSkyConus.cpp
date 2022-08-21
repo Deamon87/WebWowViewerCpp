@@ -7,7 +7,7 @@
 auto GSkyConus_vertShaderName = std::string("skyConus");
 auto GSkyConus_fragShaderName = std::string("skyConus");
 
-GSkyConus::GSkyConus(std::string &shaderName, IDevice *device) :
+GSkyConus::GSkyConus(std::string &shaderName, const HGDevice &device) :
     GShaderPermutationGL33(GSkyConus_vertShaderName, GSkyConus_fragShaderName, device) {
 
 

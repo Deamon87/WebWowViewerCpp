@@ -11,10 +11,10 @@
 
 class GBlpTextureGL33 : public GTextureGL33 {
     friend class GDeviceGL33;
-    explicit GBlpTextureGL33(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
+    explicit GBlpTextureGL33(HGDevice device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GBlpTextureGL33() override;
-    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override;
+    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override;
 
     bool getIsLoaded() override;
     bool postLoad() override;
@@ -23,9 +23,6 @@ private:
     void unbind();
 private:
     HBlpTexture m_texture;
-
-    bool xWrapTex;
-    bool yWrapTex;
 
     bool m_loaded = false;
 };

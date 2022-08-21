@@ -135,18 +135,29 @@ struct vkCallInitCallback {
 };
 #endif
 
+struct FramebufAvalabilityStruct {
+    int width; int height;
+    std::vector<ITextureFormat> attachments;
+    ITextureFormat depthAttachment;
+    HFrameBuffer frameBuffer;
+    int frame;
+};
+
 class IDevice {
     public:
         virtual ~IDevice() {};
 
+        virtual void initialize() = 0;
         virtual void reset() = 0;
         virtual unsigned int getFrameNumber() = 0;
         virtual unsigned int getUpdateFrameNumber() = 0;
+        virtual unsigned int getOcclusionFrameNumber() = 0;
         virtual unsigned int getCullingFrameNumber() = 0;
         virtual unsigned int getDrawFrameNumber() = 0;
 
         virtual bool getIsAsynBuffUploadSupported() = 0;
         virtual int getMaxSamplesCnt() = 0;
+        virtual int getUploadSize() {return 0;};
 
         virtual void increaseFrameNumber() = 0;
 
@@ -162,7 +173,8 @@ class IDevice {
 
         virtual void startUpdateForNextFrame() {};
         virtual void endUpdateForNextFrame() {};
-        virtual void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks)= 0;
+
+        virtual void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantData)= 0;
         virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
         virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
@@ -172,6 +184,10 @@ class IDevice {
         virtual float getAnisLevel() = 0;
         virtual bool getIsVulkanAxisSystem() {return false;}
         virtual bool getIsRenderbufferSupported() {return false;}
+
+        virtual void initUploadThread(){}
+        virtual double getWaitForUpdate() {return 0;}
+
     public:
         virtual HGShaderPermutation getShader(std::string shaderName, void *permutationDescriptor) = 0;
 
@@ -189,10 +205,10 @@ class IDevice {
         virtual HGIndexBuffer createIndexBuffer() = 0;
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
         //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
-        virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) = 0;
+        virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) = 0;
 
         virtual HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
-        virtual HGTexture createTexture() = 0;
+        virtual HGTexture createTexture(bool xWrapTex, bool yWrapTex) = 0;
         virtual HGTexture getWhiteTexturePixel() = 0;
         virtual HGTexture getBlackTexturePixel() {return nullptr;};
         virtual HGMesh createMesh(gMeshTemplate &meshTemplate) = 0;
@@ -213,7 +229,15 @@ class IDevice {
         virtual void commitFrame() = 0;
 
         virtual void shrinkData() {};
+        virtual bool wasTexturesUploaded() = 0;
+
+        static std::string insertAfterVersion(std::string &glslShaderString, std::string stringToPaste);
+        virtual void addDeallocationRecord(std::function<void()> callback) {};
+
+        virtual int getCurrentTextureAllocated() {return 0;}
 };
+
+typedef std::shared_ptr<IDevice> HGDevice;
 
 #include <cassert>
 

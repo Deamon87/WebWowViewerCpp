@@ -4,7 +4,7 @@
 
 #include "GAdtShaderPermutationGL33.h"
 
-GAdtShaderPermutationGL33::GAdtShaderPermutationGL33(std::string &shaderName, IDevice *device) : GShaderPermutationGL33(shaderName,
+GAdtShaderPermutationGL33::GAdtShaderPermutationGL33(std::string &shaderName,const HGDevice &device) : GShaderPermutationGL33(shaderName,
                                                                                                             device) {}
 
 void GAdtShaderPermutationGL33::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {

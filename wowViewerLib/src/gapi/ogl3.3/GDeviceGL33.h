@@ -42,21 +42,32 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 #include "meshes/GMeshGL33.h"
 #include "../interface/IDevice.h"
 
+
+
 #define OPENGL_DGB_MESSAGE 1
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__APPLE__)
 #define OPENGL_DGB_MESSAGE 0
 #endif
 
-class GDeviceGL33 : public IDevice {
+//#define logGLError { \
+//  auto currentOGLError = glGetError(); \
+//  if (currentOGLError != 0)            \
+//    std::cout << "OGL Error at "<<__FUNCTION__<<" line " << __LINE__ << " error " << currentOGLError << " " << std::endl;\
+//}
+#define logGLError
+
+class GDeviceGL33 : public IDevice, public std::enable_shared_from_this<GDeviceGL33> {
 public:
     GDeviceGL33();
     ~GDeviceGL33() override {};
 
+    void initialize() override;
     void reset() override;
 
     unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() override;
+    unsigned int getOcclusionFrameNumber() override;
     unsigned int getCullingFrameNumber() override;
     unsigned int getDrawFrameNumber() override;
 
@@ -68,6 +79,7 @@ public:
     int getMaxSamplesCnt() override {
         return (m_maxMultiSampling < 8) ? m_maxMultiSampling : 8;
     }
+    int getUploadSize() override {return uploadAmountInBytes;};
     virtual bool getIsRenderbufferSupported() override {return true;}
 
     float getAnisLevel() override;
@@ -82,7 +94,7 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<HGMesh> &meshes, std::vector<HGUniformBufferChunk> additionalChunks) override;
+    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     void drawStageAndDeps(HDrawStage drawStage) override;
@@ -96,11 +108,11 @@ public:
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
     //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
-    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int frameNumber) override;
+    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) override;
     HGUniformBufferChunk createUniformBufferChunk(size_t size) override;
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
-    HGTexture createTexture() override;
+    HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;
     HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
     HGTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
@@ -124,12 +136,16 @@ public:
 
     void shrinkData() override;
 
+    bool wasTexturesUploaded() override {
+        return m_textureWereUploaded;
+    }
+
     struct DeallocationRecord {
         unsigned int frameNumberToDoAt;
         std::function<void()> callback;
     };
 
-    void addDeallocationRecord(std::function<void()> callback) {
+    void addDeallocationRecord(std::function<void()> callback) override {
         DeallocationRecord dr;
         dr.frameNumberToDoAt = m_frameNumber+4;
         dr.callback = callback;
@@ -140,13 +156,13 @@ private:
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {
-        BlpTexture* texture;
+        std::string textureFileName;
         bool wrapX;
         bool wrapY;
 
         bool operator==(const BlpCacheRecord &other) const {
           return
-              (texture == other.texture) &&
+              (textureFileName == other.textureFileName) &&
               (wrapX == other.wrapX) &&
               (wrapY == other.wrapY);
 
@@ -155,7 +171,7 @@ protected:
     struct BlpCacheRecordHasher {
         std::size_t operator()(const BlpCacheRecord& k) const {
             using std::hash;
-            return hash<void*>{}(k.texture) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
+            return hash<std::string>{}(k.textureFileName) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL33>, BlpCacheRecordHasher> loadedTextureCache;
@@ -171,9 +187,11 @@ protected:
     int uniformBufferOffsetAlign = -1;
     float m_anisotropicLevel = 0.0;
     int m_maxMultiSampling = 0;
+    int m_maxMultiSamplingRGBA = 0;
     bool m_isInSkyBoxDepthMode = false;
     int8_t m_isScissorsEnabled = -1;
     bool m_isInvertZ = false;
+    int uploadAmountInBytes  = false;
     EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
     GIndexBufferGL33 *m_lastBindIndexBuffer = nullptr;
 	IVertexBuffer* m_lastBindVertexBuffer = nullptr;
@@ -193,6 +211,8 @@ protected:
 
     HGTexture m_blackPixelTexture;
     HGTexture m_whitePixelTexture;
+
+    bool m_textureWereUploaded = false;
 
     float clearColor[3] = {0,0,0};
 
@@ -220,6 +240,8 @@ public:
         };
     };
     std::unordered_map<WMOShaderCacheRecord, std::weak_ptr<IShaderPermutation>, WMOShaderCacheRecordHasher> wmoShaderCache;
+
+    int getCurrentTextureAllocated() override {return GTextureGL33::getCurrentGLTexturesAllocated();}
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
@@ -234,13 +256,6 @@ protected:
     };
 #endif
 
-    struct FramebufAvalabilityStruct {
-        int width; int height;
-        std::vector<ITextureFormat> attachments;
-        ITextureFormat depthAttachment;
-        HFrameBuffer frameBuffer;
-        int frame;
-    };
     std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 
     std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
@@ -251,9 +266,8 @@ protected:
 
     int uniformBuffersCreated = 0;
     std::list<DeallocationRecord> listOfDeallocators;
+
 };
-
-
 
 
 #endif //WEBWOWVIEWERCPP_GDEVICE_H

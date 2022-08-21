@@ -25,15 +25,8 @@ private:
                                std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
                                std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) override;
 public:
-    void setDefaultLightParams(ApiContainer *api) {
-        api->getConfig()->setExteriorAmbientColor(0.8,0.8,0.8,0.8);
-        api->getConfig()->setExteriorHorizontAmbientColor(1.0,1.0,1.0,1.0);
-        api->getConfig()->setExteriorGroundAmbientColor(1.0,1.0,1.0,1.0);
-        api->getConfig()->setExteriorDirectColor(0.3,0.3,0.3,1.3);
-        api->getConfig()->setExteriorDirectColorDir(0.0,0.0,0.0);
-    }
 
-    explicit WmoScene(ApiContainer *api, std::string wmoModel) {
+    explicit WmoScene(HApiContainer api, std::string wmoModel) {
         m_api = api; m_wmoModel = wmoModel;
         m_sceneMode = SceneMode::smWMO;
         m_suppressDrawingSky = true;
@@ -51,11 +44,9 @@ public:
         wmoObject->setModelFileName(m_wmoModel);
 
         m_wmoObject = wmoObject;
-
-        this->setDefaultLightParams(api);
     };
 
-    explicit WmoScene(ApiContainer *api, int fileDataId) {
+    explicit WmoScene(HApiContainer api, int fileDataId) {
         m_api = api;
         m_sceneMode = SceneMode::smWMO;
         m_suppressDrawingSky = true;
@@ -73,30 +64,14 @@ public:
         wmoObject->setModelFileId(fileDataId);
 
         m_wmoObject = wmoObject;
-
-        this->setDefaultLightParams(api);
     };
 
     ~WmoScene() override {
 
     }
 
-
-//    mathfu::vec4 getAmbientColor() override {
-////        if (m_wmoObject->isLoaded()) {
-////            return mathfu::vec4(m_wmoObject->getAmbientLight(), 0.0);
-////        } else
-////        return mathfu::vec4(0.0, 0.0, 0.0, 0.0);
-//        return m_api->getGlobalAmbientColor();
-//    };
-//
-//    bool getCameraSettings(M2CameraResult&) override {
-//        return false;
-//    }
-//
-//    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) override {
-//
-//    };
+    void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
+                                            StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;
 };
 
 

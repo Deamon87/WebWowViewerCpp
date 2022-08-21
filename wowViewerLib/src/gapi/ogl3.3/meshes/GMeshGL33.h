@@ -14,7 +14,7 @@ class GMeshGL33 : public IMesh {
     friend class GDeviceGL33;
 
 public:
-    explicit GMeshGL33(IDevice &device,
+    explicit GMeshGL33(const HGDevice &device,
                        const gMeshTemplate &meshTemplate
     );
 
@@ -30,6 +30,7 @@ public:
     void setStart(int start) override;
     void setEnd(int end) override;
 public:
+    void *getM2Object() override { return nullptr; };
     void setM2Object(void * m2Object) override { /*  throw "Not Implemented"; */};
     void setLayer(int layer) override { /*  throw "Not Implemented"; */};
     void setPriorityPlane(int priorityPlane) override { /*  throw "Not Implemented"; */};
@@ -60,7 +61,7 @@ private:
     int m_element;
 
 private:
-    IDevice &m_device;
+    const HGDevice m_device;
 };
 
 

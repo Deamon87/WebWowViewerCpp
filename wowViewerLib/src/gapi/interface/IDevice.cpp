@@ -21,14 +21,18 @@ int anisFiltrationSupported = -1;
 bool IDevice::getIsCompressedTexturesSupported() {
 #ifdef __EMSCRIPTEN__
     if (compressedTexturesSupported == -1){
-        if (emscripten_webgl_enable_extension(emscripten_webgl_get_current_context(), "WEBGL_compressed_texture_s3tc") == EM_TRUE) {
+        auto res = emscripten_webgl_enable_extension(emscripten_webgl_get_current_context(), "WEBGL_compressed_texture_s3tc");
+        std::cout << "texture_s3tc returned " << res << std::endl;
+        if (res == EM_TRUE) {
             compressedTexturesSupported = 1;
         } else {
             compressedTexturesSupported = 0;
         }
     }
-      return compressedTexturesSupported == 1;
+    return (compressedTexturesSupported == 1);
 
+#elif (WITH_GLESv2)
+    return false;
 #else
     return true;
 #endif
@@ -47,6 +51,16 @@ bool IDevice::getIsAnisFiltrationSupported() {
 #else
     return true;
 #endif
+}
+
+std::string IDevice::insertAfterVersion(std::string &glslShaderString, std::string stringToPaste) {
+    auto start = glslShaderString.find("#version");
+    if (start != std::string::npos) {
+        auto end = glslShaderString.find("\n", start+1);
+        return glslShaderString.insert(end+1, stringToPaste);
+    } else {
+        return glslShaderString.insert(0, stringToPaste);
+    }
 }
 
 

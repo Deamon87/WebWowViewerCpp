@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_IOSTUFF_H
 
 #include "sharedFile.h"
+#include "../engine/persistance/PersistentFile.h"
 
 #include <cstdint>
 #include <vector>
@@ -32,12 +33,12 @@ enum class CacheHolderType {
 
 class IFileRequest {
 public:
-    virtual void requestFile(const char* fileName, CacheHolderType holderType) = 0;
+    virtual void requestFile(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) = 0;
+    virtual ~IFileRequest()= default;
 };
 
 class IFileRequester {
 public:
-    virtual void provideFile(CacheHolderType holderType, const char* fileName, const HFileContent &data) = 0;
     virtual void rejectFile(CacheHolderType holderType, const char* fileName) = 0;
 };
 #endif //AWEBWOWVIEWERCPP_IOSTUFF_H

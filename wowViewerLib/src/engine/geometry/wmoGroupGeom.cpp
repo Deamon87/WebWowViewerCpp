@@ -6,6 +6,7 @@
 #include "../persistance/header/wmoFileHeader.h"
 #include "../shader/ShaderDefinitions.h"
 #include "../../gapi/interface/IDevice.h"
+#include "../algorithms/mathHelper.h"
 #include <iostream>
 
 chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
@@ -287,9 +288,9 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
 }
 
 
-HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
+HGVertexBuffer WmoGroupGeom::getVBO(const HGDevice &device) {
     if (combinedVBO == nullptr) {
-        combinedVBO = device.createVertexBuffer();
+        combinedVBO = device->createVertexBuffer();
 
         PACK(
         struct VboFormat {
@@ -353,9 +354,9 @@ HGVertexBuffer WmoGroupGeom::getVBO(IDevice &device) {
     return combinedVBO;
 }
 
-HGIndexBuffer WmoGroupGeom::getIBO(IDevice &device) {
+HGIndexBuffer WmoGroupGeom::getIBO(const HGDevice &device) {
     if (indexVBO == nullptr) {
-        indexVBO = device.createIndexBuffer();
+        indexVBO = device->createIndexBuffer();
         indexVBO->uploadData(
             &indicies[0],
             indicesLen * sizeof(uint16_t));
@@ -374,16 +375,14 @@ static GBufferBinding staticWMOBindings[7] = {
     {+wmoShader::Attribute::aColor2, 4, GBindingType::GUNSIGNED_BYTE, true, 56, 52}
 };
 
-static GBufferBinding staticWMOWaterBindings[1] = {
-    {+waterShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 12, 0},
-//    {+waterShader::Attribute::aDepth, 1, GBindingType::GFLOAT, false, 24, 0 },
-//    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 4},
-
+static GBufferBinding staticWMOWaterBindings[2] = {
+    {+waterShader::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, 24, 0},
+    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 16}
 };
 
-HGVertexBufferBindings WmoGroupGeom::getVertexBindings(IDevice &device) {
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HGDevice &device) {
     if (vertexBufferBindings == nullptr) {
-        vertexBufferBindings = device.createVertexBufferBindings();
+        vertexBufferBindings = device->createVertexBufferBindings();
         vertexBufferBindings->setIndexBuffer(getIBO(device));
 
         GVertexBufferBinding vertexBinding;
@@ -426,13 +425,16 @@ int WmoGroupGeom::getLegacyWaterType(int a) {
     return a;
 }
 
-HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
+HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HGDevice &device) {
     if (vertexWaterBufferBindings == nullptr) {
         if (this->m_mliq == nullptr) return nullptr;
 
-        const float UNITSIZE =  533.3433333f / 16.0f / 8.0f;
-
-        std::vector<mathfu::vec3_packed> lVertices;
+        PACK(
+            struct LiquidVertexFormat {
+                mathfu::vec4_packed pos_transp;
+                mathfu::vec2_packed uv;
+            });
+        std::vector<LiquidVertexFormat> lVertices;
 //        lVertices.reserve((m_mliq->xverts)*(m_mliq->yverts)*3);
 
         mathfu::vec3 pos(m_mliq->basePos.x, m_mliq->basePos.y, m_mliq->basePos.z);
@@ -442,11 +444,17 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
             for (int i = 0; i < m_mliq->xverts; i++)
             {
                 int p = j*m_mliq->xverts + i;
-                lVertices.push_back(mathfu::vec3_packed(mathfu::vec3(
-                    pos.x + (UNITSIZE * i),
-                    pos.y + (UNITSIZE * j),
-                    m_liquidVerticles[p].waterVert.height
-                )));
+
+                LiquidVertexFormat lvfVertex;
+                lvfVertex.pos_transp = mathfu::vec4_packed(mathfu::vec4(
+                    pos.x + (MathHelper::UNITSIZE * i),
+                    pos.y + (MathHelper::UNITSIZE * j),
+                    m_liquidVerticles[p].waterVert.height,
+                    1.0
+                ));
+                lvfVertex.uv = mathfu::vec2(0,0);
+
+                lVertices.push_back(lvfVertex);
             }
         }
 
@@ -467,6 +475,7 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
                 }
 
 
+
                 int16_t vertindexes[4] = {
                     (int16_t) (j * (m_mliq->xverts) + i),
                     (int16_t) (j * (m_mliq->xverts) + i + 1),
@@ -485,18 +494,18 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(IDevice &device) {
             }
         }
 
-        waterIBO = device.createIndexBuffer();
+        waterIBO = device->createIndexBuffer();
         waterIBO->uploadData(
             &iboBuffer[0],
             iboBuffer.size() * sizeof(uint16_t));
 
-        waterVBO = device.createVertexBuffer();
+        waterVBO = device->createVertexBuffer();
         waterVBO->uploadData(
             &lVertices[0],
-            lVertices.size() * sizeof(mathfu::vec3_packed)
+            lVertices.size() * sizeof(LiquidVertexFormat)
         );
 
-        vertexWaterBufferBindings = device.createVertexBufferBindings();
+        vertexWaterBufferBindings = device->createVertexBufferBindings();
         vertexWaterBufferBindings->setIndexBuffer(waterIBO);
 
         GVertexBufferBinding vertexBinding;

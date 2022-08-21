@@ -88,6 +88,8 @@ GShaderPermutationGL20::GShaderPermutationGL20(std::string &shaderName, IDevice 
 
 }
 
+
+
 void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
 
     std::string shaderVertFile =  m_device->loadShader(m_shaderName, IShaderType::gVertexShader);
@@ -108,58 +110,15 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
     std::string fragExtraDefStrings = fragExtraDef;
 
 
-    bool esVersion = false;
-#ifdef __ANDROID_API__
-    esVersion = true;
-#endif
-#ifdef __APPLE__
-    #include "TargetConditionals.h"
-#if TARGET_IPHONE_SIMULATOR
-    glsl330 = false;
-#elif TARGET_OS_IPHONE
-    glsl330 = false;
-#elif TARGET_OS_MAC
-    glsl330 = true;
-#else
-#   error "Unknown Apple platform"
-#endif
-#endif
-#ifdef __EMSCRIPTEN__
-    esVersion = true;
-#endif
-
-    if (esVersion) {
-//#ifndef __EMSCRIPTEN__
-        vertExtraDefStrings = "#version 100 \n" + vertExtraDefStrings;
-//#endif
-    } else {
-        vertExtraDefStrings = "#version 100\n" + vertExtraDefStrings;
-    }
-
-    //OGL 2.0 requires this for both vertex and fragment shader
-    vertExtraDefStrings += "precision mediump float;\n";
-
-
-    if (esVersion) {
-        fragExtraDefStrings =  fragExtraDefStrings;
-    } else {
-        fragExtraDefStrings = "#version 100\n" + fragExtraDefStrings;
-    }
-
-    //OGL 2.0 requires this for both vertex and fragment shader
-    fragExtraDefStrings += "precision mediump float;\n";
-
-
     GLint maxVertexUniforms;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
     int maxMatrixUniforms = MAX_MATRIX_NUM;//(maxVertexUniforms / 4) - 9;
 
-    vertExtraDefStrings = vertExtraDefStrings + "#define COMPILING_VS 1\r\n ";
-    fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
+//    vertExtraDefStrings = vertExtraDefStrings + "#define COMPILING_VS 1\r\n ";
+//    fragExtraDefStrings = fragExtraDefStrings + "#define COMPILING_FS 1\r\n";
 
-
-    vertShaderString = vertShaderString.insert(0, vertExtraDefStrings);
-    fragmentShaderString = fragmentShaderString.insert(0, fragExtraDefStrings);
+    vertShaderString = IDevice::insertAfterVersion(vertShaderString, vertExtraDefStrings);
+    fragmentShaderString = IDevice::insertAfterVersion(fragmentShaderString, fragExtraDefStrings);
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     const GLchar *vertexShaderConst = (const GLchar *)vertShaderString.c_str();
@@ -244,7 +203,7 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
 //    printf("Active Uniforms: %d\n", count);
     for (GLint i = 0; i < count; i++)
     {
-        const GLsizei bufSize = 32; // maximum name length
+        const GLsizei bufSize = 256; // maximum name length
         GLchar name[bufSize]; // variable name in GLSL
         GLsizei length; // name length
         GLint size; // size of the variable
@@ -254,7 +213,7 @@ void GShaderPermutationGL20::compileShader(const std::string &vertExtraDef, cons
         GLint location = glGetUniformLocation(program, name);
 
         this->setUnf(std::string(name), location);
-        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
+//        printf("Uniform #%d Type: %u Name: %s Location: %d\n", i, type, name, location);
     }
 //    if (!shaderName.compare("m2Shader")) {
 //        std::cout << fragmentShaderString << std::endl << std::flush;
@@ -376,7 +335,7 @@ static bool isHashStrInited = false;
 void GShaderPermutationGL20::bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) {
     if (!isHashStrInited) {
         boneMatHashedToReplace = [](){
-            for (auto shaderIter : fieldDefMapPerShaderName) {
+            for (auto shaderIter : fieldDefMapPerShaderNameVert) {
                 for (auto fieldVectorIter : shaderIter.second) {
                     for (auto const fieldDef : fieldVectorIter.second) {
                         if (fieldDef.name.find("uBoneMatrixes[0]") != std::string::npos) {
@@ -395,46 +354,60 @@ void GShaderPermutationGL20::bindUniformBuffer(IUniformBuffer *buffer, int slot,
     if (buffer == nullptr) {
         m_UniformBuffer[slot].buffer = nullptr;
     }  else {
-        if (buffer != m_UniformBuffer[slot].buffer || m_UniformBuffer[slot].offset != offset) {
+        if ((buffer != m_UniformBuffer[slot].buffer) || (m_UniformBuffer[slot].offset != offset)) {
 
-            auto const &shaderDef = fieldDefMapPerShaderName.at(m_shaderName);
-            auto const &fieldVector = shaderDef.at(slot);
-
-            for (auto const &fieldDef : fieldVector) {
-//                const char * cstr = name.c_str();
-                auto hashedStr = HashedString(fieldDef.name.c_str());
-                if (hashedStr == boneMatHashedToReplace) {
-                    hashedStr = boneMatHashed;
+            auto vec = {&fieldDefMapPerShaderNameVert, &fieldDefMapPerShaderNameFrag};
+            for (auto &fieldDefMapPerShaderName : vec) {
+                auto const &shaderDef = fieldDefMapPerShaderName->at(m_shaderName);
+                {
+                    auto it = shaderDef.find(slot);
+                    bool found = it != shaderDef.end();
+                    if (!found)
+                        continue;
                 }
+                auto const &fieldVector = shaderDef.at(slot);
 
-                if (!hasUnf(hashedStr)) continue;
+                for (auto const &fieldDef : fieldVector) {
+//                const char * cstr = name.c_str();
+                    auto hashedStr = HashedString(fieldDef.name.c_str());
+                    if (hashedStr == boneMatHashedToReplace) {
+                        hashedStr = boneMatHashed;
+                    }
 
-                auto uniformLoc = getUnf(hashedStr);
+                    if (!hasUnf(hashedStr)) continue;
+
+//                    std::cout << "binding uniform field " << fieldDef.name << std::endl;
+
+                    auto uniformLoc = getUnf(hashedStr);
 //                fieldDef.isFloat
-                auto fieldOffset = fieldDef.offset + offset;
-                char *fieldPtr = &((char *) gbuffer->getPtr())[fieldOffset];
+                    auto fieldOffset = fieldDef.offset + offset;
+                    if (fieldOffset > gbuffer->getLen()) {
+                        continue;
+                    }
+                    char *fieldPtr = &((char *) gbuffer->getPtr())[fieldOffset];
 
 //                fieldDef.columns
 //                fieldDef.vecSize
-                auto arraySize = fieldDef.arraySize > 0 ? fieldDef.arraySize : 1;
-                if (fieldDef.isFloat) {
-                    if (fieldDef.columns == 1) {
-                        glUniform4fv(uniformLoc, arraySize, (const GLfloat*) fieldPtr);
-                    } else if (fieldDef.columns == 2) {
-                        glUniformMatrix2fv(uniformLoc, arraySize, GL_FALSE, (const GLfloat*) fieldPtr);
-                    } else if (fieldDef.columns == 3) {
-                        glUniformMatrix3fv(uniformLoc, arraySize, GL_FALSE, (const GLfloat*) fieldPtr);
-                    } else if (fieldDef.columns == 4) {
-                        glUniformMatrix4fv(uniformLoc, arraySize, GL_FALSE, (const GLfloat*) fieldPtr);
-                    }
-                } else {
-                    if (fieldDef.columns == 1) {
-                        glUniform4iv(uniformLoc, arraySize, (const GLint *) fieldPtr);
+                    auto arraySize = fieldDef.arraySize > 0 ? fieldDef.arraySize : 1;
+                    if (fieldDef.isFloat) {
+                        if (fieldDef.columns == 1) {
+                            glUniform4fv(uniformLoc, arraySize, (const GLfloat *) fieldPtr);
+                        } else if (fieldDef.columns == 2) {
+                            glUniformMatrix2fv(uniformLoc, arraySize, GL_FALSE, (const GLfloat *) fieldPtr);
+                        } else if (fieldDef.columns == 3) {
+                            glUniformMatrix3fv(uniformLoc, arraySize, GL_FALSE, (const GLfloat *) fieldPtr);
+                        } else if (fieldDef.columns == 4) {
+                            glUniformMatrix4fv(uniformLoc, arraySize, GL_FALSE, (const GLfloat *) fieldPtr);
+                        }
+                    } else {
+                        if (fieldDef.columns == 1) {
+                            glUniform4iv(uniformLoc, arraySize, (const GLint *) fieldPtr);
+                        }
                     }
                 }
-            }
 
-            m_UniformBuffer[slot] = {gbuffer, (uint32_t)offset};
+                m_UniformBuffer[slot] = {gbuffer, (uint32_t) offset};
+            }
         }
     }
 }

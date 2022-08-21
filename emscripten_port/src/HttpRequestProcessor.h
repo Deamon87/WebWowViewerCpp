@@ -5,6 +5,7 @@
 #ifndef WEBWOWVIEWERCPP_HTTPREQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_HTTPREQUESTPROCESSOR_H
 
+#include <emscripten/fetch.h>
 #include "RequestProcessor.h"
 
 class HttpRequestProcessor : public RequestProcessor {
@@ -16,10 +17,11 @@ private:
     std::string m_urlBase;
     std::string m_urlBaseFileId;
 protected:
-    void processFileRequest(std::string &fileName, CacheHolderType holderType) override;
+    void processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) override;
 
 public:
-    void requestFile(const char* fileName, CacheHolderType holderType) override;
+    friend void downloadFailed(emscripten_fetch_t *fetch);
+    friend void downloadSucceeded(emscripten_fetch_t *fetch);
 
     void setUrls(const char *urlBase, const char *urlBaseFileId) {
         m_urlBase = std::string(urlBase);

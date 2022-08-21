@@ -12,6 +12,8 @@
 #include "generators/CPlaneGenerator.h"
 #include "../../../gapi/interface/IDevice.h"
 #include "../../persistance/header/M2FileHeader.h"
+#include "../../../gapi/UniformBufferStructures.h"
+#include "generators/CSplineGenerator.h"
 
 
 HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
@@ -87,7 +89,7 @@ static const struct {
 };
 
 
-ParticleEmitter::ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
+ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
         for (int i = 0; i < 128; i++) {
@@ -135,6 +137,9 @@ ParticleEmitter::ParticleEmitter(ApiContainer *api, M2Particle *particle, M2Obje
             break;
         case 2:
             this->generator = new CSphereGenerator(this->m_seed, particle, 0 != (m_data->old.flags & 0x100));
+            break;
+        case 3:
+            this->generator = new CSplineGenerator(this->m_seed, particle, 0 != (m_data->old.flags & 0x100));
             break;
         default:
 //            this->generator = new CPlaneGenerator(this->m_seed, particle);
@@ -248,14 +253,6 @@ void ParticleEmitter::selectShaderId() {
     }
 }
 
-PACK(
-struct meshParticleWideBlockPS {
-    float uAlphaTest;
-    float padding[3]; // according to std140
-    int uPixelShader;
-    float padding2[3];
-});
-
 std::array<EGxBlendEnum, 8> PaticleBlendingModeToEGxBlendEnum1 =
     {
         EGxBlendEnum::GxBlend_Opaque,
@@ -269,12 +266,12 @@ std::array<EGxBlendEnum, 8> PaticleBlendingModeToEGxBlendEnum1 =
     };
 
 void ParticleEmitter::createMesh() {
-    std::shared_ptr<IDevice> device = m_api->hDevice;
+    HGDevice device = m_api->hDevice;
 
     if (m_indexVBO == nullptr) {
         m_indexVBO = device->createIndexBuffer();
         int vo = 0;
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < MAX_PARTICLES_PER_EMITTER; i++) {
             szIndexBuff.push_back(vo + 0);
             szIndexBuff.push_back(vo + 1);
             szIndexBuff.push_back(vo + 2);
@@ -347,10 +344,11 @@ void ParticleEmitter::createMesh() {
         meshTemplate.ubo[2] = nullptr;
 
         meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(meshParticleWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
 
-        meshTemplate.ubo[4]->setUpdateHandler([this](IUniformBufferChunk *self) {
-            meshParticleWideBlockPS &blockPS = self->getObject<meshParticleWideBlockPS>();
+        auto l_blendMode = meshTemplate.blendMode;
+        meshTemplate.ubo[4]->setUpdateHandler([this, l_blendMode](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
+            Particle::meshParticleWideBlockPS &blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
             uint8_t blendMode = m_data->old.blendingType;
             if (blendMode == 0) {
                 blockPS.uAlphaTest = -1.0f;
@@ -363,6 +361,7 @@ void ParticleEmitter::createMesh() {
             int uPixelShader = particleMaterialShader[this->shaderId].pixelShader;
 
             blockPS.uPixelShader =  uPixelShader;
+            blockPS.uBlendMode = static_cast<int>(l_blendMode);
         });
 
         frame[i].m_mesh = device->createParticleMesh(meshTemplate);
@@ -508,9 +507,9 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
 
     std::list<int> listForDeletion;
 
-    int numThreads = m_api->getConfig()->getThreadCount();
+    int numThreads = m_api->getConfig()->threadCount;
 
-    #pragma omp parallel for schedule(dynamic, 4) num_threads(numThreads)
+    #pragma omp parallel for schedule(dynamic, 200) default(none) shared(delta, forces) num_threads(numThreads)
     for (int i = 0; i < this->particles.size(); i++) {
         auto &p = this->particles[i];
         bool killParticle = false;
@@ -544,11 +543,11 @@ void ParticleEmitter::EmitNewParticles(animTime_t delta) {
 
     float rate = this->generator->GetEmissionRate();
     this->emission += delta * rate;
-    while (this->emission > 1) {
+    while (this->emission > 1.0f) {
         if (particles.size() < MAX_PARTICLES_PER_EMITTER) {
             this->CreateParticle(delta);
         }
-        this->emission -= 1;
+        this->emission -= 1.0f;
     }
 }
 void ParticleEmitter::CreateParticle(animTime_t delta) {
@@ -1093,10 +1092,13 @@ ParticleEmitter::BuildQuadT3(
     static const float vys[4] = {1, -1, 1, -1};
     static const float txs[4] = {0, 0, 1, 1};
     static const float tys[4] = {0, 1, 0, 1};
+
+    if (szVertexCnt >= MAX_PARTICLES_PER_EMITTER) return;
+
     ParticleBuffStructQuad &record = szVertexBuf[szVertexCnt++];
 
 //    mathfu::mat4 inverseLookAt = mathfu::mat4::Identity();
-    mathfu::mat4 inverseLookAt = this->inverseViewMatrix;
+    mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
 
     for (int i = 0; i < 4; i++) {
 
@@ -1123,7 +1125,7 @@ ParticleEmitter::BuildQuadT3(
 
 }
 
-void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder) {
+void ParticleEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
     if (getGenerator() == nullptr) return;
 
     auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
@@ -1132,7 +1134,11 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &meshes, int renderOrder
 
     HGParticleMesh mesh = frame[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
     mesh->setRenderOrder(renderOrder);
-    meshes.push_back(mesh);
+    if (mesh->getIsTransparent()) {
+        transparentMeshes.push_back(mesh);
+    } else {
+        opaqueMeshes.push_back(mesh);
+    }
 }
 
 void ParticleEmitter::updateBuffers() {

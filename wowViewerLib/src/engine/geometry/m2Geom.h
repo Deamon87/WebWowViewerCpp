@@ -30,27 +30,38 @@ public:
         m_modelFileId = fileDataId;
     };
 
+    std::string getName() {
+        return m_modelName;
+    }
+
     void process(HFileContent m2File, const std::string &fileName) override;
-    HGVertexBuffer getVBO(IDevice &device);
-    HGVertexBufferBindings getVAO(IDevice &device, SkinGeom *skinGeom);
+    HGVertexBuffer getVBO(const HGDevice &device);
+    HGVertexBufferBindings getVAO(const HGDevice& device, SkinGeom *skinGeom);
     std::array<HGVertexBufferBindings, 4> createDynamicVao(IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
                                                                SkinGeom *skinGeom, M2SkinSection *skinSection);
-
-    int findAnimationIndex(uint32_t anim_id);
-    void loadLowPriority(ApiContainer *m_api, uint32_t animationId, uint32_t subAnimationId);
+    void loadLowPriority(const HApiContainer& m_api, uint32_t animationId, uint32_t subAnimationId);
 
     M2Data * getM2Data(){ if (fsStatus == FileStatus::FSLoaded) {return m_m2Data;} else {return nullptr;}};
 
     M2Data *m_m2Data = nullptr;
     std::vector<uint32_t> skinFileDataIDs;
+    std::vector<uint32_t> recursiveFileDataIDs;
+    std::vector<uint32_t> particleModelFileDataIDs;
     std::vector<uint32_t> textureFileDataIDs;
     std::vector<M2_AFID> animationFileDataIDs;
-    M2Array<Exp2Record> *exp2Records = nullptr;
+
+    std::vector<uint16_t> blackListAnimations;
+
+    PGD1_chunk * particleGeosetData = nullptr;
+
+    EXP2 *exp2 = nullptr;
     std::vector<TXAC> txacMesh = {};
     std::vector<TXAC> txacMParticle = {};
 
     int m_skid = -1;
-    int m_wfv3 = 0;
+    WaterFallDataV3 *m_wfv3 = 0;
+    WaterFallDataV3 *m_wfv1 = 0;
+
 
 private:
     HFileContent m2File;

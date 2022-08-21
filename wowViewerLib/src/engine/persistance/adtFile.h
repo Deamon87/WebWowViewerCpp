@@ -65,11 +65,20 @@ public:
     PointerChecker<SMTextureParams> mtxp = mtxp_len;
     int mtxp_len = 0;
 
+    PointerChecker<SMTextureFlags> mtxf = mtxf_len;
+    int mtxf_len = 0;
+
+    PointerChecker<char> mamp = mamp_len;
+    int mamp_len = 0;
+
     PointerChecker<SMDoodadDef> doodadDef = doodadDef_len;
     int doodadDef_len = 0;
 
     PointerChecker<SMMapObjDef> mapObjDef = mapObjDef_len;
     int mapObjDef_len = 0;
+
+    PointerChecker<LodExtents> wmoLodExtents = wmoLodExtents_len;
+    int wmoLodExtents_len = 0;
 
     PointerChecker<SMDoodadDef> doodadDefObj1 = doodadDefObj1_len;
     int doodadDefObj1_len = 0;
@@ -82,6 +91,8 @@ public:
 
     PointerChecker<float> floatDataBlob = floatDataBlob_len;
     int floatDataBlob_len = 0;
+
+    MLHeader * mlHeader = nullptr;
 
     PointerChecker<uint16_t> mvli_indicies = mvli_len;
     int mvli_len = 0;

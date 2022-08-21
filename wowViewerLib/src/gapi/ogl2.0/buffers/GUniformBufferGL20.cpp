@@ -26,6 +26,7 @@ void GUniformBufferGL20::unbind() {
 }
 
 void GUniformBufferGL20::uploadData(void * data, int length) {
-        dataPtr = data;
+    dataPtr = data;
+    m_length = length;
 }
 

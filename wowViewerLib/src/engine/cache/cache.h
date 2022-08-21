@@ -32,25 +32,34 @@ protected:
 private:
     IFileRequest *m_fileRequestProcessor;
 public:
-    std::mutex accessMutex;
+    std::mutex cacheMapMutex;
     std::mutex getFileMutex;
-    std::unique_lock<std::mutex> processCacheLock;
-    std::unique_lock<std::mutex> provideFileLock;
+    std::mutex objectsToBeProcessedMutex;
+
     std::unordered_map<std::string, std::weak_ptr<T>> m_cache;
+    std::unordered_map<int, std::weak_ptr<T>> m_cacheFdid;
     std::forward_list<FileCacheRecord> m_objectsToBeProcessed;
 public:
     Cache(IFileRequest *fileRequestProcessor, CacheHolderType holderType) : m_fileRequestProcessor(fileRequestProcessor), holderType(holderType){
-        processCacheLock = std::unique_lock<std::mutex>(accessMutex,std::defer_lock);
-        provideFileLock = std::unique_lock<std::mutex>(accessMutex,std::defer_lock);
     }
     void processCacheQueue(int limit) {
         int objectsProcessed = 0;
 
-        processCacheLock.lock();
+        auto const &m_cache_const = m_cache;
         while (!m_objectsToBeProcessed.empty())
         {
+            std::unique_lock<std::mutex> lck (objectsToBeProcessedMutex,std::defer_lock);
+            std::unique_lock<std::mutex> cacheLck (cacheMapMutex,std::defer_lock);
+
+            lck.lock();
             auto const it = m_objectsToBeProcessed.front();
-            std::weak_ptr<T> weakPtr = m_cache.at(it.fileName);
+            m_objectsToBeProcessed.pop_front();
+            lck.unlock();
+
+
+            cacheLck.lock();
+            std::weak_ptr<T> weakPtr = m_cache_const.at(it.fileName);
+            cacheLck.unlock();
 
 //            std::cout << "Processing file " << it.fileName << std::endl << std::flush;
             if (!weakPtr.expired()) {
@@ -63,14 +72,12 @@ public:
             }
 //            std::cout << "Processed file " << it.fileName << std::endl << std::flush;
 
-            m_objectsToBeProcessed.pop_front();
-
             objectsProcessed++;
             if (objectsProcessed > limit) {
                 break;
             }
         }
-        processCacheLock.unlock();
+
     }
     void provideFile(std::string &fileName, HFileContent fileContent) {
         trim(fileName);
@@ -79,12 +86,17 @@ public:
 
 //        std::cout << "filename:" << fileName << " hex: " << string_to_hex(fileName) << std::endl;
 //        std::cout << "first in storage:" << m_cache.begin()->first << " hex: " << string_to_hex(m_cache.begin()->first) << std::endl << std::flush;
-        provideFileLock.lock();
-        auto it = m_cache.find(fileName);
-        if (it != m_cache.end()) {
+        auto const &m_cache_const = m_cache;
+        
+        std::unique_lock<std::mutex> cacheLck(cacheMapMutex, std::defer_lock);
+        cacheLck.lock();
+        auto it = m_cache_const.find(fileName);
+        bool found = it != m_cache_const.end();
+        cacheLck.unlock();
+        if (found) {
+            std::lock_guard<std::mutex> guard(objectsToBeProcessedMutex);
             m_objectsToBeProcessed.push_front({fileName, fileContent});
         }
-        provideFileLock.unlock();
     }
 
     /*
@@ -93,12 +105,17 @@ public:
     std::shared_ptr<T> get (std::string fileName) {
         std::lock_guard<std::mutex> lock(getFileMutex);
 
+        std::unique_lock<std::mutex> cacheLck(cacheMapMutex, std::defer_lock);
+
         fileName = trimmed(fileName);
         std::transform(fileName.begin(), fileName.end(),fileName.begin(), ::toupper);
         std::replace(fileName.begin(), fileName.end(), '\\', '/');
 
+        cacheLck.lock();
         auto it = m_cache.find(fileName);
-        if(it != m_cache.end() ) {
+        bool found = it != m_cache.end();
+        cacheLck.unlock();
+        if(found) {
             if (std::shared_ptr<T> shared = it->second.lock()) {
                 //element found;
                 return shared;
@@ -107,10 +124,12 @@ public:
 
         std::shared_ptr<T> sharedPtr = std::make_shared<T>(fileName);
         std::weak_ptr<T> weakPtr(sharedPtr);
+        cacheLck.lock();
         m_cache[fileName] = weakPtr;
+        cacheLck.unlock();
 //        std::cout << "m_cache.size() == " << m_cache.size() << " " << __PRETTY_FUNCTION__ << std::endl;
 
-        m_fileRequestProcessor->requestFile(fileName.c_str(), this->holderType);
+        m_fileRequestProcessor->requestFile(fileName, this->holderType, weakPtr);
 
         return sharedPtr;
     }
@@ -121,28 +140,34 @@ public:
             return nullptr;
         }
 
-        std::lock_guard<std::mutex> lock(getFileMutex);
+        std::lock_guard<std::mutex> guard(getFileMutex);
+
+        std::unique_lock<std::mutex> cacheLck(cacheMapMutex, std::defer_lock);
 
         std::stringstream ss;
         ss << "File" << std::setfill('0') << std::setw(8) << std::hex << id <<".unk";
         std::string fileName = ss.str();
 
-        auto it = m_cache.find(fileName);
-        if (it != m_cache.end()) {
-            if (!it->second.expired()) {
-                return it->second.lock();
-            } else {
+        cacheLck.lock();
+        {
+            auto it = m_cache.find(fileName);
+            bool found = it != m_cache.end();
+            if (found) {
+                if (!it->second.expired()) {
+                    return it->second.lock();
+                } else {
 //                std::cout << "getFileId: fileName = " << fileName << " is expired" << std::endl;
-                m_cache.erase(it);
+                }
             }
         }
-
         std::shared_ptr<T> sharedPtr = std::make_shared<T>(id);
         std::weak_ptr<T> weakPtr(sharedPtr);
+
         m_cache[fileName] = weakPtr;
+        cacheLck.unlock();
 
 
-        m_fileRequestProcessor->requestFile(fileName.c_str(), this->holderType);
+        m_fileRequestProcessor->requestFile(fileName, this->holderType, weakPtr);
 
         return sharedPtr;
     }
@@ -150,7 +175,12 @@ public:
     void reject(std::string fileName) {
         trim(fileName);
 
+        std::unique_lock<std::mutex> cacheLck(cacheMapMutex, std::defer_lock);
+
+        cacheLck.lock();
         std::weak_ptr<T> weakPtr = m_cache[fileName];
+        cacheLck.unlock();
+
         if (!weakPtr.expired())
         {
             if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
@@ -160,8 +190,15 @@ public:
     }
 
     void clear() {
+        std::unique_lock<std::mutex> cacheLck(cacheMapMutex, std::defer_lock);
+        cacheLck.lock();
         m_cache.clear();
+        cacheLck.unlock();
+
+        std::unique_lock<std::mutex> lck(objectsToBeProcessedMutex, std::defer_lock);
+        lck.lock();
         m_objectsToBeProcessed.clear();
+        lck.unlock();
     }
 private:
     /*

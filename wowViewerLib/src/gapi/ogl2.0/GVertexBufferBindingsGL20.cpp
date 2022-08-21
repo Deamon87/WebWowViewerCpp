@@ -25,7 +25,7 @@ GVertexBufferBindingsGL20::GVertexBufferBindingsGL20(IDevice &m_device) : m_devi
 }
 
 GVertexBufferBindingsGL20::~GVertexBufferBindingsGL20() {
-//    destroyBuffer();
+    destroyBuffer();
 }
 
 void GVertexBufferBindingsGL20::createBuffer() {
@@ -33,7 +33,13 @@ void GVertexBufferBindingsGL20::createBuffer() {
 }
 
 void GVertexBufferBindingsGL20::destroyBuffer() {
-//    glDeleteVertexArrays(1, (GLuint *)&this->m_buffer[0]);
+    for (GVertexBufferBinding &binding : m_bindings) {
+        m_device.bindVertexBuffer(binding.vertexBuffer.get());
+
+        for (GBufferBinding &bufferBinding : binding.bindings) {
+            glDisableVertexAttribArray(bufferBinding.position);
+        }
+    }
 }
 
 void GVertexBufferBindingsGL20::bind() {
@@ -45,6 +51,8 @@ void GVertexBufferBindingsGL20::bind() {
 
         for (GBufferBinding &bufferBinding : binding.bindings) {
             glEnableVertexAttribArray(bufferBinding.position);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
             glVertexAttribPointer(
                 bufferBinding.position,
                 bufferBinding.size,
@@ -53,6 +61,7 @@ void GVertexBufferBindingsGL20::bind() {
                 bufferBinding.stride,
                 (const void *) bufferBinding.offset
             );
+#pragma clang diagnostic pop
         }
     }
 }

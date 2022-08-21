@@ -13,11 +13,11 @@ class GBlpTextureVLK : public GTextureVLK {
     explicit GBlpTextureVLK(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GBlpTextureVLK() override;
-    void createGlTexture(TextureFormat textureFormat, const MipmapsVector &mipmaps) override;
+    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override;
 
     bool postLoad() override;
 private:
-    void decompressAndUpload(TextureFormat textureFormat, const MipmapsVector &mipmaps);
+    void decompressAndUpload(TextureFormat textureFormat, const HMipmapsVector &hmipmaps);
 private:
     HBlpTexture m_texture;
 };
