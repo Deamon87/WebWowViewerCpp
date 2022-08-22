@@ -108,13 +108,7 @@ if (TRUE)
 endif()
 
 
-#libpng
-set(PNG_BUILD_ZLIB OFF CACHE BOOL "")
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libpng EXCLUDE_FROM_ALL)
-include_directories(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
 include_directories(${CMAKE_SOURCE_DIR}/3rdparty/SQLiteCpp/sqlite3)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libpng)
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
