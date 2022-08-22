@@ -205,8 +205,6 @@ jobs:
             -G "${{ matrix.config.generators }}" \
             ${{ matrix.config.cmake_defines}} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
-          cat /Users/runner/work/WebWowViewerCpp/WebWowViewerCpp/build/3rdparty/libpng/scripts/genout.cmake
-
       - name: Configure emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         shell: bash
