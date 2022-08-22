@@ -371,8 +371,6 @@ endif()
 #target_link_libraries(AWebWoWViewerCpp polym)
 #target_link_libraries(AWebWoWViewerCpp storm)
 target_link_libraries(AWebWoWViewerCpp casc_static)
-
-target_link_libraries(AWebWoWViewerCpp png_static)
 target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})
