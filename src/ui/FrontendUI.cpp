@@ -510,11 +510,13 @@ void FrontendUI::initImgui(
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
-    auto context = ImGui::CreateContext();
+    this->imguiContext = ImGui::CreateContext();
     auto &fileDialog = this->fileDialog;
-    addIniCallback(context,
+    auto &windowWidth = this->windowWidth;
+    auto &windowHeight = this->windowHeight;
+    addIniCallback(imguiContext,
                "Global Settings",
-               [&fileDialog](const char* line) -> void {
+               [&fileDialog, &windowWidth, &windowHeight](const char* line) -> void {
                     char lastCascDir[256];
                     if (sscanf(line, "lastCascDir=%[^\n\r]", &lastCascDir) == 1) {
                         std::string s = std::string(&lastCascDir[0]);
@@ -522,12 +524,24 @@ void FrontendUI::initImgui(
 
                         fileDialog.SetPwd(s);
                     }
+                   int lastWidth = 0;
+                   if (sscanf(line, "windowWidth=%d", &lastWidth) == 1) {
+                       windowWidth = lastWidth;
+                   }
+                   int lastHeight = 0;
+                   if (sscanf(line, "windowHeight=%d", &lastHeight) == 1) {
+                       windowHeight = lastHeight;
+                   }
                },
-               [&fileDialog](ImGuiTextBuffer* buf) -> void {
+               [&fileDialog, &windowWidth, &windowHeight](ImGuiTextBuffer* buf) -> void {
                    std::string currPath = fileDialog.GetSelected();
                    buf->appendf("lastCascDir=%s\n", currPath.c_str());
+                   buf->appendf("windowWidth=%s\n", std::to_string(windowWidth).c_str());
+                   buf->appendf("windowHeight=%s\n", std::to_string(windowHeight).c_str());
                }
        );
+
+    ImGui::LoadIniSettingsFromDisk(ImGui::GetIO().IniFilename);
 
     ImGuiIO &io = ImGui::GetIO();
     (void) io;

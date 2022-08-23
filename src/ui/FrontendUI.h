@@ -36,7 +36,9 @@ public:
         //this->createDefaultprocessor();
 
     }
-    ~FrontendUI() override {};
+    ~FrontendUI() override {
+        ImGui::DestroyContext(this->imguiContext);
+    };
     std::shared_ptr<FrontendUI> getShared()
     {
         return shared_from_this();
@@ -72,7 +74,19 @@ public:
     void setUIScale(float scale) {
         uiScale = scale;
     }
+    int getWindowWidth() {
+        return windowWidth;
+    }
+    int getWindowHeight() {
+        return windowHeight;
+    }
+    void setWindowSize(int width, int height) {
+        windowWidth = width;
+        windowHeight = height;
+    }
 private:
+    ImGuiContext* imguiContext = nullptr;
+
     std::array<HCullStage, 4>   m_cullstages = {};
 
     std::shared_ptr<CMinimapDataDB> m_minimapDB;
@@ -151,6 +165,9 @@ private:
     bool cascOpened = false;
     bool mapCanBeOpened = true;
     bool adtMinimapFilled = false;
+
+    int windowWidth = 640;
+    int windowHeight = 480;
 
     float minimapZoom = 1;
     float farPlane = 200;
