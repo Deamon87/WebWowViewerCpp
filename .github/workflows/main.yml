@@ -188,7 +188,8 @@ jobs:
           ninja --version
           cmake --version
           git clone https://github.com/Frugghi/iSSH2.git
-          cd iSSH2 --platform=macosx --archs=arm64,x86_64
+          cd iSSH2 
+          ./iSSH2.sh --platform=macosx --archs=arm64,x86_64
 
       - name: Configure standalone
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
