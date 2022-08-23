@@ -127,7 +127,7 @@ include(FetchContent)
 #cpr
 check_include_file("limits.h" HAVE_LIMITS_H)
 add_compile_definitions(HAVE_LIMITS_H)
-SET(CMAKE_USE_OPENSSL 0)
+SET(CMAKE_USE_LIBSSH2 0)
 SET(CPR_BUILD_TESTS 0)
 SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib as external project
 FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG db351ffbbadc6c4e9239daaa26e9aefa9f0ec82d) # the commit hash for 1.8.3
