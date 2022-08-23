@@ -108,13 +108,7 @@ if (TRUE)
 endif()
 
 
-#libpng
-set(PNG_BUILD_ZLIB OFF CACHE BOOL "")
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libpng EXCLUDE_FROM_ALL)
-include_directories(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
 include_directories(${CMAKE_SOURCE_DIR}/3rdparty/SQLiteCpp/sqlite3)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libpng)
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
 	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
@@ -133,8 +127,8 @@ include(FetchContent)
 #cpr
 check_include_file("limits.h" HAVE_LIMITS_H)
 add_compile_definitions(HAVE_LIMITS_H)
-SET(CMAKE_USE_OPENSSL 0)
-SET(CMAKE_USE_WOLFSSL 0)
+SET(CMAKE_USE_LIBSSH2 0)
+SET(CPR_BUILD_TESTS 0)
 SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib as external project
 FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG db351ffbbadc6c4e9239daaa26e9aefa9f0ec82d) # the commit hash for 1.8.3
 
@@ -146,7 +140,9 @@ if(NOT cpr_POPULATED)
 	message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
 	message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
 	# Bring the populated content into the build
+	set(BUILD_SHARED_LIBS ON CACHE BOOL "")
 	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
+	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 endif()
 
 #PolyM
@@ -377,8 +373,6 @@ endif()
 #target_link_libraries(AWebWoWViewerCpp polym)
 #target_link_libraries(AWebWoWViewerCpp storm)
 target_link_libraries(AWebWoWViewerCpp casc_static)
-
-target_link_libraries(AWebWoWViewerCpp png_static)
 target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})

@@ -7,11 +7,10 @@ name: MapViewer CI
 
 # Controls when the action will run. Triggers the workflow on push
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
   release:
+    types: [created]
 
 # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -35,6 +34,7 @@ jobs:
             os: windows-latest,
             artifact: "windows_msvc.7z",
             build_type: "Release",
+            cmake_defines: "",
             cc: "cl",
             cxx: "cl",
             environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
@@ -46,6 +46,7 @@ jobs:
           #            os: windows-latest,
           #            artifact: "windows_mingw.7z",
           #            build_type: "Release",
+          #            cmake_defines: "",
           #            cc: "gcc",
           #            cxx: "g++",
           #            archiver: "7z a",
@@ -56,6 +57,7 @@ jobs:
             os: ubuntu-latest,
             artifact: "ubuntu_gcc.7z",
             build_type: "Release",
+            cmake_defines: "",
             cc: "gcc",
             cxx: "g++",
             archiver: "7z a",
@@ -66,6 +68,7 @@ jobs:
             os: ubuntu-latest,
             artifact: "emscripten.7z",
             build_type: "Release",
+            cmake_defines: "",
             cc: "emcc",
             cxx: "em++",
             archiver: "7z a",
@@ -76,6 +79,7 @@ jobs:
             os: ubuntu-latest,
             artifact: "ubuntu_gcc9.7z",
             build_type: "Release",
+            cmake_defines: "",
             cc: "gcc",
             cxx: "g++",
             archiver: "7z a",
@@ -86,6 +90,7 @@ jobs:
             os: macos-latest,
             artifact: "macos_clang.7z",
             build_type: "Release",
+            cmake_defines: "-DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\"",
             cc: "clang",
             cxx: "clang++",
             archiver: "7za a",
@@ -176,6 +181,7 @@ jobs:
           sudo update-alternatives --install /usr/bin/cmake cmake /opt/cmake/bin/cmake 1 --force
           echo cmake version after
           cmake --version
+
       - name: Install dependencies on macos
         if: startsWith(matrix.config.os, 'macos')
         run: |
@@ -189,13 +195,17 @@ jobs:
         run: |
           mkdir build
           mkdir instdir
+          cd instdir
+          INSTALL_LOC="$(pwd)"
+          cd ..
           cd build
           cmake \
             -S ../ \
             -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
-            -DCMAKE_INSTALL_PREFIX:PATH=../instdir
+            ${{ matrix.config.cmake_defines}} \
+            -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Configure emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         shell: bash
@@ -206,13 +216,16 @@ jobs:
           cd ..
           mkdir build
           mkdir instdir
+          cd instdir
+          INSTALL_LOC="$(pwd)"
+          cd ..
           cd build
           cmake \
             -S ../emscripten_port \
             -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_LOC} \
-            -DCMAKE_INSTALL_PREFIX:PATH=../instdir
+            -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Build
         shell: bash
         working-directory: build
