@@ -118,7 +118,7 @@ jobs:
           ninja --version
           cmake --version
         # cmd "${{ matrix.config.environment_script }}"
-      - name: Install emscripten on Emscripten target
+      - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
           sudo mv /usr/local/bin/cmake /usr/local/bin/cmake-old
@@ -127,15 +127,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install ninja-build cmake
           sudo apt-get install xorg-dev libglu1-mesa-dev
-          git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk
-          git pull
-          ./emsdk install latest
-          ./emsdk activate latest
           ninja --version
           cmake --version
           gcc --version
           cd ..
+      - name: Setup emsdk
+        if: startsWith(matrix.config.name, 'emscripten')
+        uses: mymindstorm/setup-emsdk@v11
+        with:
+          # Make sure to set a version number!
+          version: 3.1.19
+          # This is the name of the cache folder.
+          # The cache folder will be placed in the build directory,
+          #  so make sure it doesn't conflict with anything!
+          actions-cache-folder: 'emsdk-cache'
+
       - name: Install dependencies on ubuntu
         if: startsWith(matrix.config.name, 'Ubuntu_Latest_GCC')
         run: |
@@ -210,8 +216,7 @@ jobs:
         if: startsWith(matrix.config.name, 'emscripten')
         shell: bash
         run: |
-          cd emsdk
-          source ./emsdk_env.sh
+          cd emsdk-cache
           TOOLCHAIN_LOC="$(find ~+ . -name 'Emscripten.cmake' -print -quit)"
           cd ..
           mkdir build
