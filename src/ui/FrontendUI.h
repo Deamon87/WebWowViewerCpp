@@ -15,11 +15,12 @@
 #include <fileBrowser/imfilebrowser.h>
 #include "../../wowViewerLib/src/include/database/dbStructs.h"
 #include "../../wowViewerLib/src/engine/objects/iScene.h"
-#include "childWindow/mapConstructionWindow.h"
+#include "childWindow/mapConstructionWindow/mapConstructionWindow.h"
 #include "../minimapGenerator/minimapGenerator.h"
 #include "../persistance/CascRequestProcessor.h"
 #include "../minimapGenerator/storage/CMinimapDataDB.h"
 #include "../exporters/dataExporter/DataExporterClass.h"
+#include "childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -228,6 +229,8 @@ private:
 
 //Test export
     DataExporterClass *dataExporter = nullptr;
+
+    std::shared_ptr<DatabaseUpdateWorkflow> m_databaseUpdateWorkflow = nullptr;
 
 public:
     void overrideCascOpened(bool value) {

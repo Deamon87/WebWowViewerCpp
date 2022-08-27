@@ -54,3 +54,6 @@
 [submodule "3rdparty/mdebtls"]
 	path = 3rdparty/mdebtls
 	url = https://github.com/ARMmbed/mbedtls
+[submodule "3rdparty\\DBImporter"]
+	path = 3rdparty\\DBImporter
+	url = https://github.com/Deamon87/DBImporter.git

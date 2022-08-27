@@ -19,7 +19,7 @@
 #include <stateSaver/stateSaver.h>
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
-#include "childWindow/mapConstructionWindow.h"
+#include "childWindow/mapConstructionWindow/mapConstructionWindow.h"
 #include "../persistance/CascRequestProcessor.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/map.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
@@ -103,6 +103,10 @@ void FrontendUI::composeUI() {
 
 //    if (show_demo_window)
 //        ImGui::ShowDemoWindow(&show_demo_window);
+
+    if (m_databaseUpdateWorkflow != nullptr) {
+        m_databaseUpdateWorkflow->render();
+    }
 
     showSettingsDialog();
     showQuickLinksDialog();
@@ -437,10 +441,10 @@ void FrontendUI::showAdtSelectionMinimap() {
 
     if (prevMinimapZoom != minimapZoom) {
         auto windowSize = ImGui::GetWindowSize();
-        ImGui::SetScrollX((ImGui::GetScrollX() + windowSize.x / 2.0) * minimapZoom / prevMinimapZoom -
-                          windowSize.x / 2.0);
-        ImGui::SetScrollY((ImGui::GetScrollY() + windowSize.y / 2.0) * minimapZoom / prevMinimapZoom -
-                          windowSize.y / 2.0);
+        ImGui::SetScrollX((ImGui::GetScrollX() + windowSize.x / 2.0f) * minimapZoom / prevMinimapZoom -
+                          windowSize.x / 2.0f);
+        ImGui::SetScrollY((ImGui::GetScrollY() + windowSize.y / 2.0f) * minimapZoom / prevMinimapZoom -
+                          windowSize.y / 2.0f);
     }
     prevMinimapZoom = minimapZoom;
 
@@ -460,6 +464,10 @@ void FrontendUI::showMainMenu() {
             }
             if (ImGui::MenuItem("Unload scene", "", false, cascOpened)) {
                 unloadScene();
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Update database", "", false, cascOpened)) {
+                m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>()
             }
             ImGui::EndMenu();
         }

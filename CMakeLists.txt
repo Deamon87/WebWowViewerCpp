@@ -216,8 +216,8 @@ set(SOURCE_FILES
 		src/exporters/gltfExporter/GLTFExporter.cpp
 		src/exporters/gltfExporter/GLTFExporter.h
 
-		src/ui/childWindow/mapConstructionWindow.cpp
-		src/ui/childWindow/mapConstructionWindow.h
+        src/ui/childWindow/mapConstructionWindow/mapConstructionWindow.cpp
+        src/ui/childWindow/mapConstructionWindow/mapConstructionWindow.h
 		src/ui/imguiLib/groupPanel/groupPanel.cpp
 		src/ui/imguiLib/groupPanel/groupPanel.h
 
@@ -236,7 +236,9 @@ set(SOURCE_FILES
 		src/database/CEmptySqliteDB.cpp
 		src/database/CEmptySqliteDB.h
 		src/ui/imguiLib/stateSaver/stateSaver.h
-		src/ui/imguiLib/stateSaver/stateSaver.cpp)
+		src/ui/imguiLib/stateSaver/stateSaver.cpp
+		src/database/sqlite_import/SqliteUpdater.cpp
+		src/database/sqlite_import/SqliteUpdater.h src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.cpp src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h)
 
 
 

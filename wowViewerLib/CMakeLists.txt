@@ -165,12 +165,21 @@ set(SOURCE_FILES
         src/engine/persistance/header/M2FileHeader.h
         src/engine/geometry/m2Geom.cpp
         src/engine/geometry/m2Geom.h
-        src/engine/managers/SceneGraph.cpp src/engine/managers/SceneGraph.h src/engine/persistance/header/wmoFileHeader.h
-        src/engine/texture/BlpTexture.cpp src/engine/texture/BlpTexture.h src/engine/persistance/header/blpFileHeader.h
-        src/engine/cache/cache.cpp src/engine/cache/cache.h src/engine/geometry/skinGeom.cpp
-        src/engine/geometry/skinGeom.h src/engine/persistance/header/skinFileHeader.h
-        src/engine/objects/m2/m2Object.cpp src/engine/objects/m2/m2Object.h
-        src/engine/algorithms/mathHelper.cpp src/engine/algorithms/mathHelper.h
+        src/engine/managers/SceneGraph.cpp
+        src/engine/managers/SceneGraph.h
+        src/engine/persistance/header/wmoFileHeader.h
+        src/engine/texture/BlpTexture.cpp
+        src/engine/texture/BlpTexture.h
+        src/engine/persistance/header/blpFileHeader.h
+        src/engine/cache/cache.cpp
+        src/engine/cache/cache.h
+        src/engine/geometry/skinGeom.cpp
+        src/engine/geometry/skinGeom.h
+        src/engine/persistance/header/skinFileHeader.h
+        src/engine/objects/m2/m2Object.cpp
+        src/engine/objects/m2/m2Object.h
+        src/engine/algorithms/mathHelper.cpp
+        src/engine/algorithms/mathHelper.h
         src/engine/objects/m2/m2Helpers/M2MaterialInst.cpp
         src/engine/objects/m2/m2Helpers/M2MaterialInst.h
         src/engine/managers/animationManager.cpp
@@ -208,7 +217,16 @@ set(SOURCE_FILES
         src/engine/persistance/wdtFile.h
         src/engine/managers/particles/particleEmitter.cpp
         src/engine/managers/particles/particleEmitter.h
-        src/engine/managers/particles/generators/CParticleGenerator.cpp src/engine/managers/particles/generators/CParticleGenerator.h src/engine/managers/particles/generators/CSphereGenerator.cpp src/engine/managers/particles/generators/CSphereGenerator.h src/engine/managers/particles/particle.cpp src/engine/managers/particles/particle.h src/engine/managers/particles/generators/CSplineGenerator.cpp src/engine/managers/particles/generators/CSplineGenerator.h src/engine/managers/particles/generators/CBoneGenerator.cpp src/engine/managers/particles/generators/CBoneGenerator.h
+        src/engine/managers/particles/generators/CParticleGenerator.cpp
+        src/engine/managers/particles/generators/CParticleGenerator.h
+        src/engine/managers/particles/generators/CSphereGenerator.cpp
+        src/engine/managers/particles/generators/CSphereGenerator.h
+        src/engine/managers/particles/particle.cpp
+        src/engine/managers/particles/particle.h
+        src/engine/managers/particles/generators/CSplineGenerator.cpp
+        src/engine/managers/particles/generators/CSplineGenerator.h
+        src/engine/managers/particles/generators/CBoneGenerator.cpp
+        src/engine/managers/particles/generators/CBoneGenerator.h
         src/engine/persistance/wdlFile.cpp
         src/engine/persistance/wdlFile.h
         src/engine/objects/wdl/wdlObject.cpp
@@ -231,7 +249,7 @@ set(SOURCE_FILES
         src/engine/persistance/animFile.h
         src/engine/persistance/m2File.cpp
         src/engine/persistance/m2File.h
-                src/gapi/interface/IDevice.cpp
+        src/gapi/interface/IDevice.cpp
         src/gapi/interface/textures/IBlpTexture.h
         src/gapi/interface/textures/ITexture.h
         src/gapi/interface/buffers/IIndexBuffer.h
@@ -281,7 +299,15 @@ set(SOURCE_FILES
         src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp
         src/engine/objects/m2/m2Helpers/CBoneMasterData.h
         src/exporters/IExporter.h
-        src/engine/objects/iScene.cpp src/engine/algorithms/C3Spline.cpp src/engine/algorithms/C3Spline.h src/engine/algorithms/C3Spline_Bezier3.cpp src/engine/algorithms/C3Spline_Bezier3.h src/include/string_utils.h src/include/string_utlis.cpp)
+        src/engine/objects/iScene.cpp
+        src/engine/algorithms/C3Spline.cpp
+        src/engine/algorithms/C3Spline.h
+        src/engine/algorithms/C3Spline_Bezier3.cpp
+        src/engine/algorithms/C3Spline_Bezier3.h
+        src/include/string_utils.h
+        src/include/string_utlis.cpp
+        src/engine/persistance/db2File.cpp
+        src/engine/persistance/db2File.h)
 
 if (LINK_OGL2)
 set(OPENGL20_IMPLEMENTATION
