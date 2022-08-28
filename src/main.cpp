@@ -29,6 +29,7 @@
 #include <iostream>
 #include <csignal>
 #include <exception>
+#include <algorithm>
 #include <GLFW/glfw3.h>
 
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
@@ -437,24 +438,44 @@ int main(){
     glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback( window, mouse_button_callback);
 
-    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    GLFWmonitor* windowMonitor = glfwGetPrimaryMonitor();
     float xscale, yscale;
-    glfwGetMonitorContentScale(primaryMonitor, &xscale, &yscale);
+    glfwGetMonitorContentScale(windowMonitor, &xscale, &yscale);
 
-    frontendUI->setUIScale(std::max<float>(xscale, yscale));
+    float uiScale = std::max<float>(xscale, yscale);
+    std::cout << "uiScale = " << uiScale << std::endl;
 
+    int width_mm, height_mm;
+    glfwGetMonitorPhysicalSize(windowMonitor, &width_mm, &height_mm);
+
+    if (width_mm > 0 && height_mm > 0) {
+        std::cout << "monitor width = " << width_mm << "mm, monitor height = " << height_mm << "mm" << std::endl;
+        float monitorDiag = sqrt((width_mm * width_mm) + (height_mm * height_mm)) * 3.0f / 64.0f;
+        std::cout << "monitor diag " << monitorDiag << "''" << std::endl;
+
+        if (monitorDiag > 20) {
+            uiScale = std::min<float>(uiScale, 2.0f);
+        }
+        if (monitorDiag > 25) {
+            uiScale = std::min<float>(uiScale, 1.5f);
+        }
+
+        std::cout << "corrected uiScale for monitor dimensions = " << uiScale << std::endl;
+    }
+
+    frontendUI->setUIScale(uiScale);
 
 
     //This has to be called after setting all callbacks specific to this app.
     //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
     //Otherwise keys like backspace, delete etc wont work
-
     frontendUI->initImgui(window);
     {
         int width = frontendUI->getWindowWidth();
         int height = frontendUI->getWindowHeight();
 
         glfwSetWindowSize(window, width, height);
+        glfwGetFramebufferSize(window, &canvWidth, &canvHeight);
     }
 
 //    frontendUI->createDefaultprocessor();

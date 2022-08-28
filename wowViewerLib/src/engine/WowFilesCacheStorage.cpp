@@ -39,6 +39,9 @@ void WoWFilesCacheStorage::provideFile(CacheHolderType holderType, const char *f
         case CacheHolderType::CACHE_SKEL:
             skelCache.provideFile(s_fileName, data);
             break;
+        case CacheHolderType::CACHE_DB2:
+            db2Cache.provideFile(s_fileName, data);
+            break;
     }
 }
 
@@ -53,6 +56,7 @@ void WoWFilesCacheStorage::processCaches(int limit) {
     this->skelCache.processCacheQueue(limit);
     this->m2GeomCache.processCacheQueue(limit);
     this->textureCache.processCacheQueue(limit);
+    this->db2Cache.processCacheQueue(limit);
 }
 
 void WoWFilesCacheStorage::rejectFile(CacheHolderType holderType, const char* fileName) {
@@ -89,6 +93,9 @@ void WoWFilesCacheStorage::rejectFile(CacheHolderType holderType, const char* fi
         case CacheHolderType::CACHE_SKEL:
             skelCache.reject(s_fileName);
             break;
+        case CacheHolderType::CACHE_DB2:
+            db2Cache.reject(s_fileName);
+            break;
     }
 }
 
@@ -102,7 +109,8 @@ WoWFilesCacheStorage::WoWFilesCacheStorage(IFileRequest *requestProcessor) :
     textureCache(requestProcessor, CacheHolderType::CACHE_BLP),
     adtObjectCache(requestProcessor, CacheHolderType::CACHE_ADT),
     animCache(requestProcessor, CacheHolderType::CACHE_ANIM),
-    skelCache(requestProcessor, CacheHolderType::CACHE_SKEL) {
+    skelCache(requestProcessor, CacheHolderType::CACHE_SKEL),
+    db2Cache(requestProcessor, CacheHolderType::CACHE_DB2) {
 }
 
 void WoWFilesCacheStorage::actuallDropCache() {
@@ -116,6 +124,7 @@ void WoWFilesCacheStorage::actuallDropCache() {
     this->skinGeomCache.clear();
     this->animCache.clear();
     this->textureCache.clear();
+    this->db2Cache.clear();
 }
 
 Cache<AdtFile> *WoWFilesCacheStorage::getAdtGeomCache() {
@@ -156,4 +165,8 @@ Cache<WdtFile> *WoWFilesCacheStorage::getWdtFileCache() {
 
 Cache<WdlFile> *WoWFilesCacheStorage::getWdlFileCache() {
     return &wdlCache;
+}
+
+Cache<Db2File> *WoWFilesCacheStorage::getDb2Cache() {
+    return &db2Cache;
 };

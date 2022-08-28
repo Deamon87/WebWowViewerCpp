@@ -7,5 +7,5 @@ app.use(function(req, res, next) {
     next();
 });
 // app is an express app, do what you usually do with express
-app.use("/", express.static("./"));
+app.use("/", express.static("./build"));
 app.listen(6766)

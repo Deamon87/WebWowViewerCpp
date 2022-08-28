@@ -13,12 +13,6 @@
 [submodule "3rdparty/zlib"]
 	path = 3rdparty/zlib
 	url = https://github.com/madler/zlib
-[submodule "3rdparty/libzip"]
-	path = 3rdparty/libzip
-	url = https://github.com/nih-at/libzip.git
-[submodule "3rdparty/PolyM"]
-	path = 3rdparty/PolyM
-	url = https://github.com/khuttun/PolyM
 [submodule "3rdparty/stormlib"]
 	path = 3rdparty/stormlib
 	url = https://github.com/ladislav-zezula/StormLib.git
@@ -47,10 +41,7 @@
 [submodule "emscripten_port/3rdparty/zipper"]
 	path = emscripten_port/3rdparty/zipper
 	url = https://github.com/sebastiandev/zipper.git
-[submodule "3rdparty/libressl"]
-	path = 3rdparty/libressl
-	url = https://github.com/libressl-portable/portable.git
 
-[submodule "3rdparty/mdebtls"]
-	path = 3rdparty/mdebtls
-	url = https://github.com/ARMmbed/mbedtls
+[submodule "3rdparty/DBImporter"]
+	path = 3rdparty/DBImporter
+	url = https://github.com/Deamon87/DBImporter.git

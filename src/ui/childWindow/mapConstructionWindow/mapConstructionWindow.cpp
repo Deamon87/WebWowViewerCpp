@@ -2,10 +2,10 @@
 // Created by Deamon on 10/4/2020.
 //
 
-#include <imgui.h>
-#include <imgui_internal.h>
+#include "imgui.h"
+#include "imgui_internal.h"
 #include "mapConstructionWindow.h"
-#include "../../../wowViewerLib/src/engine/algorithms/mathHelper.h"
+#include "../../../../wowViewerLib/src/engine/algorithms/mathHelper.h"
 
 MapConstructionWindow::MapConstructionWindow(HApiContainer mApi) : m_api(mApi) {}
 

@@ -42,6 +42,8 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         openFlags = CASC_OPEN_BY_FILEID;
     }
 
+    openFlags |= CASC_OVERCOME_ENCRYPTED;
+
     HANDLE fileHandle;
     HFileContent fileContent;
     bool fileOpened = false;
