@@ -29,6 +29,7 @@
 #include <iostream>
 #include <csignal>
 #include <exception>
+#include <algorithm>
 #include <GLFW/glfw3.h>
 
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
@@ -453,13 +454,13 @@ int main(){
         std::cout << "monitor diag " << monitorDiag << "''" << std::endl;
 
         if (monitorDiag > 20) {
-            uiScale = std::min(uiScale, 2.0f);
+            uiScale = std::min<float>(uiScale, 2.0f);
         }
         if (monitorDiag > 25) {
-            uiScale = std::min(uiScale, 1.5f);
+            uiScale = std::min<float>(uiScale, 1.5f);
         }
 
-        std::cout << "corrected uiScale for monitor dimentions = " << uiScale << std::endl;
+        std::cout << "corrected uiScale for monitor dimensions = " << uiScale << std::endl;
     }
 
     frontendUI->setUIScale(uiScale);
