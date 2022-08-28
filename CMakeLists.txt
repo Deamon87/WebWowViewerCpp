@@ -36,8 +36,6 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 	endif()
 endif() 
 
-
-
 if (WIN32 AND MSVC)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /DWIN64")
@@ -49,22 +47,15 @@ if (WIN32 AND MSVC)
 	add_definitions(-DWIN32_LEAN_AND_MEAN)
  endif()
 message(CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE})
-#set(CMAKE_BUILD_TYPE Release)
-#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC ")
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC  ")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	message("This is clang")
-#	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ")
-#	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}  ")
 
 	#Do not force libstdc++ on MacOS system
 	if (NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libstdc++")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -stdlib=libstdc++")
 	endif()
-#	link_libraries(libstdc++fs)
-
 
 	#set(_GLIBCXX_USE_C99_CHECK 0)
 	#set(_GLIBCXX_USE_C99_DYNAMIC 0)
@@ -76,28 +67,23 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	link_libraries(stdc++fs)
-#	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread")
-#	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread ")
-#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 endif()
 
 
 if(WIN32)
 	link_libraries(wsock32 ws2_32)
 endif()
-#if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#	link_libraries(libws2_32.a)
-#endif()
 
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -pthread")
+# DB Importer
+set(DBIMPORTER_LINK_SQLITE OFF)
+set(DBIMPORTER_SQLITE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/SQLiteCpp/include")
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/DBImporter EXCLUDE_FROM_ALL)
 
 #ZLib library
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib EXCLUDE_FROM_ALL)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/zlib)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
-
-#find_package(ZLIB)
 
 if (TRUE)
 	set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/zlib ${CMAKE_BINARY_DIR}/3rdparty/zlib)
@@ -117,10 +103,6 @@ endif()
 
 #c++ 17 FS implementation
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/filesystem_impl EXCLUDE_FROM_ALL)
-
-#bz2renderFlag
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
-add_subdirectory(3rdparty/bzip EXCLUDE_FROM_ALL)
 
 include(FetchContent)
 
@@ -144,10 +126,6 @@ if(NOT cpr_POPULATED)
 	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
 	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 endif()
-
-#PolyM
-#add_subdirectory(3rdparty/PolyM) 
-#include_directories(3rdparty/PolyM)
 
 #StormLib
 #add_subdirectory(3rdparty/stormlib)
@@ -372,9 +350,10 @@ else()
 	target_link_libraries(AWebWoWViewerCpp android)
 	target_link_libraries(AWebWoWViewerCpp log)
 endif()
-#target_link_libraries(AWebWoWViewerCpp polym)
+
 #target_link_libraries(AWebWoWViewerCpp storm)
 target_link_libraries(AWebWoWViewerCpp casc_static)
+target_link_libraries(AWebWoWViewerCpp DBImporterLib)
 target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})

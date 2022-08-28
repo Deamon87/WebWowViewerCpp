@@ -105,7 +105,12 @@ void FrontendUI::composeUI() {
 //        ImGui::ShowDemoWindow(&show_demo_window);
 
     if (m_databaseUpdateWorkflow != nullptr) {
-        m_databaseUpdateWorkflow->render();
+        if (m_databaseUpdateWorkflow->isDatabaseUpdated()) {
+            m_databaseUpdateWorkflow = nullptr;
+            m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
+        } else {
+            m_databaseUpdateWorkflow->render();
+        }
     }
 
     showSettingsDialog();
@@ -467,7 +472,7 @@ void FrontendUI::showMainMenu() {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Update database", "", false, cascOpened)) {
-                m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>()
+                m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>(m_api->cacheStorage);
             }
             ImGui::EndMenu();
         }

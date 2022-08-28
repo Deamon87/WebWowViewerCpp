@@ -14,6 +14,7 @@ public:
     Db2File(int fileDataId){};
 
     void process(HFileContent db2File, const std::string &fileName) override;
+    HFileContent getContent() { return db2Content; };
 private:
     HFileContent db2Content;
 };
