@@ -78,13 +78,11 @@ void FrontendUI::composeUI() {
     createFileDialog.Display();
 
     if (fileDialog.HasSelected()) {
-        std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
+        std::cout << "Selected filename " << fileDialog.GetSelected().string() << std::endl;
         std::string cascPath = fileDialog.GetSelected().string();
-        std::string product = fileDialog.getProductBuild();
-        if (!product.empty())
-            cascPath = cascPath + ":"+product;
+        BuildDefinition buildDef = fileDialog.getProductBuild();
 
-        if (!openCascCallback(cascPath)) {
+        if (!tryOpenCasc(cascPath, buildDef)) {
             ImGui::OpenPopup("Casc failed");
             cascOpened = false;
         } else {
@@ -107,7 +105,7 @@ void FrontendUI::composeUI() {
     if (m_databaseUpdateWorkflow != nullptr) {
         if (m_databaseUpdateWorkflow->isDatabaseUpdated()) {
             m_databaseUpdateWorkflow = nullptr;
-            m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
+            createDatabaseHandler();
         } else {
             m_databaseUpdateWorkflow->render();
         }
@@ -1669,11 +1667,13 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     return sceneScenario;
 }
 
-bool FrontendUI::openCascCallback(std::string cascPath) {
+bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
     HRequestProcessor newProcessor = nullptr;
     std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
+
+
     try {
-        newProcessor = std::make_shared<CascRequestProcessor>(cascPath.c_str());
+        newProcessor = std::make_shared<CascRequestProcessor>(cascPath, buildDef);
         newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
         newProcessor->setThreaded(true);
         newProcessor->setFileRequester(newStorage.get());
@@ -2315,9 +2315,19 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
 }
 
 void FrontendUI::createDatabaseHandler() {
+    bool forceEmptyDatabase = false;
     if (fileExistsNotNull("./export.db3")) {
-        m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
-    } else {
+        try{
+            m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
+        } catch(std::exception const& e) {
+            std::cout << "Failed to open database: " << e.what() << std::endl;
+            forceEmptyDatabase = true;
+        } catch(...) {
+            std::cout << "Exception occurred" << std::endl;
+        }
+    }
+
+    if (forceEmptyDatabase) {
         m_api->databaseHandler = std::make_shared<CEmptySqliteDB>();
     }
 }

@@ -107,7 +107,7 @@ private:
 
     std::shared_ptr<IScene> currentScene = nullptr;
 
-    bool openCascCallback(std::string cascPath);
+    bool tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef);
 
     void openSceneByfdid(int mapId, int wdtFileId, float x, float y, float z);
     void openWMOSceneByfdid(int WMOFdid);

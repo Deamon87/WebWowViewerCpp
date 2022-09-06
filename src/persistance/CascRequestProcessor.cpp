@@ -5,18 +5,102 @@
 #include <algorithm>
 #include <sstream>
 #include "CascRequestProcessor.h"
+#include "../../3rdparty/casclib/src/CascLib.h"
+#include "../../3rdparty/filesystem_impl/include/ghc/filesystem.hpp"
+
+
+CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &buildDef) {
+
+    m_cascDir = path;
+    if (!buildDef.productName.empty()) {
+        path = path + ":"+buildDef.productName+":"+buildDef.region+":"+buildDef.buildConfig;
+    }
+
+
+    bool openResult = false;
+    bool openOnlineResult = false;
+    openResult = CascOpenStorage(path.c_str(), 0xFFFFFFFF, &this->m_storage);
+    if (openResult) {
+        std::cout << "Opened CascStorage at "<< path << std::endl;
+    } else {
+        std::cout << "Could not open CascStorage at "<< path << std::endl;
+    }
+
+    if (!buildDef.buildConfig.empty()) {
+        auto cacheDir = (ghc::filesystem::current_path() / "casc_cache");
+        if (!ghc::filesystem::is_directory(cacheDir) || !ghc::filesystem::exists(cacheDir)) {
+            ghc::filesystem::create_directory(cacheDir); // create cache folder
+        }
+        std::string cacheDirStr = cacheDir;
+        if (!buildDef.productName.empty())
+            cacheDirStr = cacheDir / (":"+buildDef.productName+":"+buildDef.region+":"+buildDef.buildConfig);
+
+        CASC_OPEN_STORAGE_ARGS openArgs;
+        openArgs.Size = sizeof(CASC_OPEN_STORAGE_ARGS);
+        openArgs.szLocalPath = nullptr;
+        openArgs.szCodeName = nullptr; //buildDef.productName.c_str();
+        openArgs.szRegion = nullptr; //buildDef.region.c_str();
+        openArgs.PfnProgressCallback = nullptr;
+        openArgs.PtrProgressParam = nullptr;
+        openArgs.PfnProductCallback = nullptr;
+        openArgs.PtrProductParam = nullptr;
+        openArgs.dwLocaleMask = 0;
+        openArgs.dwFlags = 0;
+        openArgs.szBuildKey = nullptr;//buildDef.buildConfig.c_str();
+
+        if (CascOpenStorageEx(cacheDirStr.c_str(), &openArgs, true, &this->m_storageOnline)) {
+            std::cout << "Opened ONLINE CascStorage at "<< cacheDirStr << std::endl;
+        } else {
+            std::cout << "Could not open ONLINE CascStorage at "<< cacheDirStr << std::endl;
+        }
+    }
+
+    if (!openResult && !openOnlineResult) {
+        this->m_storage = nullptr;
+        this->m_storageOnline = nullptr;
+        throw "Could not open CascStorage";
+    }
+}
+
+HFileContent CascRequestProcessor::tryGetFile(void *cascStorage, void *fileNameToPass, uint32_t openFlags){
+    HANDLE fileHandle;
+    HFileContent fileContent = nullptr;
+    bool fileOpened = false;
+    if (CascOpenFile(cascStorage, fileNameToPass, 0, openFlags, &fileHandle)) {
+        DWORD fileSize1 = CascGetFileSize(fileHandle, nullptr);
+        if (fileSize1 != CASC_INVALID_SIZE) {
+            fileOpened = true;
+            fileContent = std::make_shared<FileContent>(FileContent(fileSize1 + 1));
+            auto dataPtr = fileContent->data();
+
+            DWORD totalBytesRead = 0;
+            while (totalBytesRead < fileSize1) {
+                DWORD dwBytesRead = 0;
+
+                if (!CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1 - totalBytesRead, &dwBytesRead)) {
+                    return nullptr;
+                }
+
+                totalBytesRead += dwBytesRead;
+            }
+        }
+    }
+
+    return fileContent;
+}
 
 void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
     auto perstFile = s_file.lock();
-    if (perstFile == nullptr) {
-        uint32_t fileDataId = 0;
-        if (fileName.find("File") == 0) {
-            std::stringstream ss;
-            std::string fileDataIdHex = fileName.substr(4, fileName.find(".") - 4);
+    uint32_t fileDataId = 0;
+    if (fileName.find("File") == 0) {
+        std::stringstream ss;
+        std::string fileDataIdHex = fileName.substr(4, fileName.find(".") - 4);
 
-            ss << std::hex << fileDataIdHex;
-            ss >> fileDataId;
-        }
+        ss << std::hex << fileDataIdHex;
+        ss >> fileDataId;
+    }
+
+    if (perstFile == nullptr) {
         std::cout << "perstFile for " << fileName << "(fileDataId = "<<fileDataId<<" ) is expired" << std::endl;
         toBeProcessed--;
         return;
@@ -28,12 +112,6 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
     void *fileNameToPass = (void *) fileNameFixed.c_str();
     DWORD openFlags = CASC_OPEN_BY_NAME;
     if (fileNameFixed.find("File") == 0) {
-        std::stringstream ss;
-        std::string fileDataIdHex = fileNameFixed.substr(4, fileNameFixed.find(".")-4);
-        uint32_t fileDataId;
-        ss << std::hex << fileDataIdHex;
-        ss >> fileDataId;
-
         if (fileDataId == 0) {
             return;
         }
@@ -44,41 +122,45 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
 
     openFlags |= CASC_OVERCOME_ENCRYPTED;
 
-    HANDLE fileHandle;
     HFileContent fileContent;
-    bool fileOpened = false;
-    if (CascOpenFile(m_storage, fileNameToPass, 0, openFlags, &fileHandle)) {
-        DWORD fileSize1 = CascGetFileSize(fileHandle, nullptr);
-        if (fileSize1 != CASC_INVALID_SIZE) {
-            fileOpened = true;
-            fileContent = std::make_shared<FileContent>(FileContent(fileSize1 + 1));
-            auto dataPtr = fileContent->data();
-
-            DWORD totalBytesRead = 0;
-            while (totalBytesRead < fileSize1) {
-                DWORD dwBytesRead = 0;
-
-
-                if (!CascReadFile(fileHandle, &dataPtr[totalBytesRead], fileSize1 - totalBytesRead, &dwBytesRead)) {
-                    std::cout << "Could read from file "<< fileName << std::endl << std::flush;
-                    toBeProcessed--;
-                    this->m_fileRequester->rejectFile(holderType, fileName.c_str());
-                    return;
-                }
-
-                totalBytesRead += dwBytesRead;
+    if (this->m_storage != nullptr) {
+        fileContent = this->tryGetFile(this->m_storage, fileNameToPass, openFlags);
+        if (fileContent == nullptr) {
+            if (fileDataId > 0) {
+                std::cout << "Could read fileDataId " << fileDataId << " from local " << std::endl << std::flush;
+            } else {
+                std::cout << "Could read file " << fileName << " from local " << std::endl << std::flush;
+            }
+        }
+    }
+    if (this->m_storageOnline != nullptr && fileContent == nullptr) {
+        fileContent = this->tryGetFile(this->m_storageOnline, fileNameToPass, openFlags);
+        if (fileContent == nullptr) {
+            if (fileDataId > 0) {
+                std::cout << "Could read fileDataId " << fileDataId << " from online " << std::endl << std::flush;
+            } else {
+                std::cout << "Could read file " << fileName << " from online " << std::endl << std::flush;
             }
         }
     }
 
-    if (fileOpened) {
+    if (!(fileContent == nullptr)) {
         toBeProcessed--;
         processResult(perstFile, fileContent, fileName);
-
-//        this->provideResult(fileName, fileContent, holderType);
     } else {
+        if (fileDataId > 0) {
+            std::cout << "Could read fileDataId " << fileDataId << std::endl << std::flush;
+        } else {
+            std::cout << "Could read file " << fileName << std::endl << std::flush;
+        }
         toBeProcessed--;
-        std::cout << "Could not open file "<< fileName << std::endl << std::flush;
         this->m_fileRequester->rejectFile(holderType, fileName.c_str());
     }
+}
+
+CascRequestProcessor::~CascRequestProcessor() {
+    if (m_storage != nullptr)
+        CascCloseStorage(m_storage);
+    if (m_storageOnline != nullptr)
+        CascCloseStorage(m_storageOnline);
 }
