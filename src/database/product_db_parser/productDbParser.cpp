@@ -30,7 +30,6 @@ SetOfBuildDefs ProductDbParser::parseFileContent(std::string &data) {
         if (productInstall.has_cachedproductstate()) {
             auto &cachedProductState = productInstall.cachedproductstate();
 
-
             if (cachedProductState.has_baseproductstate()) {
                 //Get the version from all the fields;
                 auto &baseProductState = cachedProductState.baseproductstate();

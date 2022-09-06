@@ -21,11 +21,13 @@ CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &b
     bool openOnlineResult = false;
     openResult = CascOpenStorage(path.c_str(), 0xFFFFFFFF, &this->m_storage);
     if (openResult) {
-        std::cout << "Opened CascStorage at "<< path << std::endl;
+        std::cout << "Opened local Casc Storage at "<< path << std::endl;
     } else {
-        std::cout << "Could not open CascStorage at "<< path << std::endl;
+        std::cout << "Could not open local Casc Storage at "<< path << std::endl;
     }
 
+    //Disable online feature for now
+    /*
     if (!buildDef.buildConfig.empty()) {
         auto cacheDir = (ghc::filesystem::current_path() / "casc_cache");
         if (!ghc::filesystem::is_directory(cacheDir) || !ghc::filesystem::exists(cacheDir)) {
@@ -48,12 +50,14 @@ CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &b
         openArgs.dwFlags = 0;
         openArgs.szBuildKey = nullptr;//buildDef.buildConfig.c_str();
 
-        if (CascOpenStorageEx(cacheDirStr.c_str(), &openArgs, true, &this->m_storageOnline)) {
+        openOnlineResult = CascOpenStorageEx(cacheDirStr.c_str(), &openArgs, true, &this->m_storageOnline);
+        if (openOnlineResult) {
             std::cout << "Opened ONLINE CascStorage at "<< cacheDirStr << std::endl;
         } else {
             std::cout << "Could not open ONLINE CascStorage at "<< cacheDirStr << std::endl;
         }
     }
+    */
 
     if (!openResult && !openOnlineResult) {
         this->m_storage = nullptr;
